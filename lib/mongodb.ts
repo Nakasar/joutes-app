@@ -1,4 +1,4 @@
-import { MongoClient } from 'mongodb';
+import {Db, MongoClient} from 'mongodb';
 
 if (!process.env.MONGODB_URI) {
   throw new Error('Please add your Mongo URI to .env.local');
@@ -29,6 +29,11 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 export default clientPromise;
+
+export async function getDb(): Promise<Db> {
+  const client = await clientPromise;
+  return client.db();
+}
 
 export const getAuthDatabaseSync = () => {
   // Use the same client instance but access it synchronously
