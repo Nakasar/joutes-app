@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Lair } from "@/lib/types/Lair";
 import { Game } from "@/lib/types/Game";
-import { deleteLair } from "./actions";
+import { deleteLair, refreshEvents } from "./actions";
 
 export function LairList({
   lairs,
@@ -14,16 +14,32 @@ export function LairList({
 }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Êtes-vous sûr de vouloir supprimer ce lieu ?")) return;
 
     setError(null);
+    setSuccess(null);
     startTransition(async () => {
       const result = await deleteLair(id);
 
       if (!result.success) {
         setError(result.error || "Erreur lors de la suppression du lieu");
+      }
+    });
+  };
+  
+  const handleRefreshEvents = async (id: string) => {
+    setError(null);
+    setSuccess(null);
+    startTransition(async () => {
+      const result = await refreshEvents(id);
+
+      if (result.success) {
+        setSuccess(result.message || "Événements rafraîchis avec succès");
+      } else {
+        setError(result.error || "Erreur lors du rafraîchissement des événements");
       }
     });
   };
@@ -37,6 +53,12 @@ export function LairList({
       {error && (
         <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
           {error}
+        </div>
+      )}
+      
+      {success && (
+        <div className="m-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+          {success}
         </div>
       )}
       
@@ -96,13 +118,25 @@ export function LairList({
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => handleDelete(lair.id)}
-                    disabled={isPending}
-                    className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                  >
-                    Supprimer
-                  </button>
+                  <div className="flex gap-2 justify-end">
+                    {lair.eventsSourceUrls && lair.eventsSourceUrls.length > 0 && (
+                      <button
+                        onClick={() => handleRefreshEvents(lair.id)}
+                        disabled={isPending}
+                        className="text-blue-600 hover:text-blue-900 disabled:opacity-50"
+                        title="Rafraîchir les événements"
+                      >
+                        🔄 Rafraîchir
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleDelete(lair.id)}
+                      disabled={isPending}
+                      className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))

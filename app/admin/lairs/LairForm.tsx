@@ -18,6 +18,7 @@ export function LairForm({
     name: "",
     banner: "",
     games: [] as string[],
+    eventsSourceUrls: [] as string[],
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,6 +33,7 @@ export function LairForm({
           name: "",
           banner: "",
           games: [],
+          eventsSourceUrls: [],
         });
         setShowForm(false);
         onSuccess();
@@ -128,6 +130,51 @@ export function LairForm({
                     </label>
                   ))
                 )}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                URLs des sources d'événements
+              </label>
+              <div className="space-y-2">
+                {formData.eventsSourceUrls.map((url, index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      type="url"
+                      value={url}
+                      onChange={(e) => {
+                        const newUrls = [...formData.eventsSourceUrls];
+                        newUrls[index] = e.target.value;
+                        setFormData({ ...formData, eventsSourceUrls: newUrls });
+                      }}
+                      placeholder="https://exemple.com/evenements"
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newUrls = formData.eventsSourceUrls.filter((_, i) => i !== index);
+                        setFormData({ ...formData, eventsSourceUrls: newUrls });
+                      }}
+                      className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                    >
+                      Retirer
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      eventsSourceUrls: [...formData.eventsSourceUrls, ""],
+                    });
+                  }}
+                  className="text-sm text-blue-600 hover:text-blue-700"
+                >
+                  + Ajouter une URL
+                </button>
               </div>
             </div>
 

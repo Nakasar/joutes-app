@@ -7,6 +7,7 @@ export const lairSchema = z.object({
   name: z.string().min(1, "Le nom du lieu est requis").max(100, "Le nom est trop long"),
   banner: z.string().url("L'URL de la bannière doit être valide"),
   games: z.array(objectIdSchema).default([]),
+  eventsSourceUrls: z.array(z.string().url("Chaque URL doit être valide")).default([]),
 });
 
 export const lairIdSchema = objectIdSchema;

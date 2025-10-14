@@ -15,6 +15,7 @@ function toLair(doc: WithId<Document>): Lair {
     banner: doc.banner,
     games: doc.games || [],
     owners: doc.owners || [],
+    eventsSourceUrls: doc.eventsSourceUrls || [],
   };
 }
 
@@ -25,6 +26,7 @@ function toDocument(lair: Omit<Lair, "id">): Omit<LairDocument, "_id"> {
     banner: lair.banner,
     games: lair.games,
     owners: lair.owners,
+    eventsSourceUrls: lair.eventsSourceUrls || [],
   };
 }
 
