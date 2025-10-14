@@ -109,7 +109,7 @@ export function LairForm({
               <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
                 {games.length === 0 ? (
                   <p className="text-sm text-gray-500">
-                    Aucun jeu disponible. Ajoutez-en d'abord dans la section
+                    Aucun jeu disponible. Ajoutez-en d&apos;abord dans la section
                     Jeux.
                   </p>
                 ) : (
@@ -135,7 +135,7 @@ export function LairForm({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                URLs des sources d'événements
+                URLs des sources d&apos;événements
               </label>
               <div className="space-y-2">
                 {formData.eventsSourceUrls.map((url, index) => (

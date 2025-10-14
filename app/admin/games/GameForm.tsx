@@ -102,7 +102,7 @@ export function GameForm({ onSuccess }: { onSuccess: () => void }) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                URL de l'icône
+                URL de l&apos;icône
               </label>
               <input
                 type="url"

@@ -70,7 +70,7 @@ export default function AdminDashboard() {
 
         <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-blue-900 mb-2">
-            Bienvenue dans l'espace administrateur
+            Bienvenue dans l&apos;espace administrateur
           </h3>
           <p className="text-blue-800">
             Ici, vous pouvez gérer tous les aspects de la plateforme de joutes.
