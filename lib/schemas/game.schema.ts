@@ -10,6 +10,7 @@ export const gameSchema = z.object({
   type: gameTypeSchema,
 });
 
-export const gameIdSchema = z.string().uuid("L'ID du jeu doit être un UUID valide");
+// Pour la validation d'ID MongoDB (ObjectId est un string hexadecimal de 24 caractères)
+export const gameIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID du jeu doit être un ObjectId MongoDB valide");
 
 export type GameInput = z.infer<typeof gameSchema>;

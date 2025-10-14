@@ -2,15 +2,15 @@
 
 import { requireAdmin } from "@/lib/middleware/admin";
 import { Game } from "@/lib/types/Game";
-import { storage } from "@/lib/storage";
 import { revalidatePath } from "next/cache";
 import { gameSchema, gameIdSchema } from "@/lib/schemas/game.schema";
 import { z } from "zod";
+import * as gamesDb from "@/lib/db/games";
 
 export async function getGames(): Promise<Game[]> {
   try {
     await requireAdmin();
-    return storage.games;
+    return await gamesDb.getAllGames();
   } catch (error) {
     throw new Error("Non autorisé");
   }
@@ -32,12 +32,7 @@ export async function createGame(formData: FormData) {
     // Valider les données avec Zod
     const validatedData = gameSchema.parse(data);
 
-    const newGame: Game = {
-      id: crypto.randomUUID(),
-      ...validatedData,
-    };
-
-    storage.games.push(newGame);
+    const newGame = await gamesDb.createGame(validatedData);
     revalidatePath("/admin/games");
     
     return { success: true, game: newGame };
@@ -48,7 +43,8 @@ export async function createGame(formData: FormData) {
         error: error.issues[0]?.message || "Données invalides" 
       };
     }
-    return { success: false, error: "Non autorisé" };
+    console.error("Erreur lors de la création du jeu:", error);
+    return { success: false, error: "Erreur lors de la création du jeu" };
   }
 }
 
@@ -59,10 +55,9 @@ export async function deleteGame(id: string) {
     // Valider l'ID
     const validatedId = gameIdSchema.parse(id);
     
-    const initialLength = storage.games.length;
-    storage.games = storage.games.filter((game) => game.id !== validatedId);
+    const deleted = await gamesDb.deleteGame(validatedId);
     
-    if (storage.games.length === initialLength) {
+    if (!deleted) {
       return { success: false, error: "Jeu non trouvé" };
     }
     
@@ -77,6 +72,7 @@ export async function deleteGame(id: string) {
         error: error.issues[0]?.message || "ID invalide" 
       };
     }
-    return { success: false, error: "Non autorisé" };
+    console.error("Erreur lors de la suppression du jeu:", error);
+    return { success: false, error: "Erreur lors de la suppression du jeu" };
   }
 }

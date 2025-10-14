@@ -2,15 +2,15 @@
 
 import { requireAdmin } from "@/lib/middleware/admin";
 import { Lair } from "@/lib/types/Lair";
-import { storage } from "@/lib/storage";
 import { revalidatePath } from "next/cache";
 import { lairSchema, lairIdSchema } from "@/lib/schemas/lair.schema";
 import { z } from "zod";
+import * as lairsDb from "@/lib/db/lairs";
 
 export async function getLairs(): Promise<Lair[]> {
   try {
     await requireAdmin();
-    return storage.lairs;
+    return await lairsDb.getAllLairs();
   } catch (error) {
     throw new Error("Non autorisé");
   }
@@ -23,13 +23,11 @@ export async function createLair(data: { name: string; banner: string; games: st
     // Valider les données avec Zod
     const validatedData = lairSchema.parse(data);
     
-    const newLair: Lair = {
-      id: crypto.randomUUID(),
+    const newLair = await lairsDb.createLair({
       ...validatedData,
       owners: [],
-    };
+    });
 
-    storage.lairs.push(newLair);
     revalidatePath("/admin/lairs");
     
     return { success: true, lair: newLair };
@@ -40,7 +38,8 @@ export async function createLair(data: { name: string; banner: string; games: st
         error: error.issues[0]?.message || "Données invalides" 
       };
     }
-    return { success: false, error: "Non autorisé" };
+    console.error("Erreur lors de la création du lieu:", error);
+    return { success: false, error: "Erreur lors de la création du lieu" };
   }
 }
 
@@ -51,10 +50,9 @@ export async function deleteLair(id: string) {
     // Valider l'ID
     const validatedId = lairIdSchema.parse(id);
     
-    const initialLength = storage.lairs.length;
-    storage.lairs = storage.lairs.filter((lair) => lair.id !== validatedId);
+    const deleted = await lairsDb.deleteLair(validatedId);
     
-    if (storage.lairs.length === initialLength) {
+    if (!deleted) {
       return { success: false, error: "Lieu non trouvé" };
     }
     
@@ -68,6 +66,7 @@ export async function deleteLair(id: string) {
         error: error.issues[0]?.message || "ID invalide" 
       };
     }
-    return { success: false, error: "Non autorisé" };
+    console.error("Erreur lors de la suppression du lieu:", error);
+    return { success: false, error: "Erreur lors de la suppression du lieu" };
   }
 }
