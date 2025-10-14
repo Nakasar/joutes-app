@@ -1,10 +1,13 @@
 import { betterAuth } from "better-auth";
 import { emailOTP } from "better-auth/plugins";
 import { Resend } from "resend";
+import { mongodbAdapter } from "better-auth/adapters/mongodb";
+import { getAuthDatabaseSync } from "@/lib/mongodb";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const auth = betterAuth({
+  database: mongodbAdapter(getAuthDatabaseSync()),
   emailAndPassword: {
     enabled: false, // Désactivé car on utilise uniquement emailOTP
   },

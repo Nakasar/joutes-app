@@ -1,7 +1,7 @@
-import { MongoClient, Db } from "mongodb";
+import { MongoClient } from 'mongodb';
 
 if (!process.env.MONGODB_URI) {
-  throw new Error("Veuillez définir la variable d'environnement MONGODB_URI");
+  throw new Error('Please add your Mongo URI to .env.local');
 }
 
 const uri = process.env.MONGODB_URI;
@@ -10,27 +10,43 @@ const options = {};
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
 
-declare global {
-  var _mongoClientPromise: Promise<MongoClient> | undefined;
-}
+if (process.env.NODE_ENV === 'development') {
+  // In development mode, use a global variable to preserve the value
+  // across module reloads caused by HMR (Hot Module Replacement).
+  const globalWithMongo = global as typeof globalThis & {
+    _mongoClientPromise?: Promise<MongoClient>;
+  };
 
-if (process.env.NODE_ENV === "development") {
-  // En développement, utiliser une variable globale pour préserver la connexion
-  // à travers les rechargements de module (HMR)
-  if (!global._mongoClientPromise) {
+  if (!globalWithMongo._mongoClientPromise) {
     client = new MongoClient(uri, options);
-    global._mongoClientPromise = client.connect();
+    globalWithMongo._mongoClientPromise = client.connect();
   }
-  clientPromise = global._mongoClientPromise;
+  clientPromise = globalWithMongo._mongoClientPromise;
 } else {
-  // En production, créer une nouvelle connexion
+  // In production mode, it's best to not use a global variable.
   client = new MongoClient(uri, options);
   clientPromise = client.connect();
 }
 
-export async function getDb(): Promise<Db> {
-  const client = await clientPromise;
-  return client.db();
-}
-
 export default clientPromise;
+
+export const getAuthDatabaseSync = () => {
+  // Use the same client instance but access it synchronously
+  // This works because better-auth will handle the connection internally
+  if (process.env.NODE_ENV === "development") {
+    const globalWithMongo = global as typeof globalThis & {
+      _mongoClient?: MongoClient;
+    };
+
+    if (!globalWithMongo._mongoClient) {
+      globalWithMongo._mongoClient = new MongoClient(uri, options);
+    }
+    return globalWithMongo._mongoClient.db();
+  } else {
+    // In production, create client if not exists (singleton pattern)
+    if (!client) {
+      client = new MongoClient(uri, options);
+    }
+    return client.db();
+  }
+};
