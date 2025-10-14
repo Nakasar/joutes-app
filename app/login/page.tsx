@@ -37,7 +37,7 @@ export default function LoginPage() {
     setError("");
 
     try {
-      await authClient.emailOtp.verifyEmail({
+      await authClient.signIn.emailOtp({
         email,
         otp,
       });
