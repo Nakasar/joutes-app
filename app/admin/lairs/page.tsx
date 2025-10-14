@@ -1,10 +1,13 @@
-import { getLairs } from "./actions";
-import { getGames } from "../games/actions";
 import { LairForm } from "./LairForm";
 import { LairList } from "./LairList";
+import { requireAdmin } from "@/lib/middleware/admin";
+import { getAllLairs } from "@/lib/db/lairs";
+import { getAllGames } from "@/lib/db/games";
 
 export default async function AdminLairsPage() {
-  const [lairs, games] = await Promise.all([getLairs(), getGames()]);
+  await requireAdmin();
+
+  const [lairs, games] = await Promise.all([getAllLairs(), getAllGames()]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">

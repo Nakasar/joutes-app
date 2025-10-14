@@ -1,9 +1,12 @@
-import { getGames } from "./actions";
+import { getAllGames } from "@/lib/db/games";
 import { GameForm } from "./GameForm";
 import { GameList } from "./GameList";
+import { requireAdmin } from "@/lib/middleware/admin";
 
 export default async function AdminGamesPage() {
-  const games = await getGames();
+  await requireAdmin();
+
+  const games = await getAllGames();
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
