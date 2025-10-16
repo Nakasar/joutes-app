@@ -60,11 +60,18 @@ export function GameList({ games }: { games: Game[] }) {
             games.map((game) => (
               <tr key={game.id}>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <img
+                  {game.icon ? <img
                     src={game.icon}
                     alt={game.name}
                     className="h-10 w-10 rounded object-cover"
-                  />
+                  /> : (
+                    <div className="h-10 w-10 rounded bg-gray-200 flex items-center justify-center text-gray-400">
+                      <span className="text-lg font-semibold">
+                        {game.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                  
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">

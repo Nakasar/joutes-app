@@ -101,11 +101,10 @@ export function GameForm() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                URL de l&apos;icône
+                URL de l&apos;icône (optionnelle)
               </label>
               <input
                 type="url"
-                required
                 value={formData.icon}
                 onChange={(e) =>
                   setFormData({ ...formData, icon: e.target.value })
@@ -116,11 +115,10 @@ export function GameForm() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                URL de la bannière
+                URL de la bannière (optionnelle)
               </label>
               <input
                 type="url"
-                required
                 value={formData.banner}
                 onChange={(e) =>
                   setFormData({ ...formData, banner: e.target.value })
