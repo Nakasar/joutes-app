@@ -16,18 +16,15 @@ export async function getGames(): Promise<Game[]> {
   }
 }
 
-export async function createGame(formData: FormData) {
+export async function createGame(data: {
+  name: string;
+  icon?: string;
+  banner?: string;
+  description: string;
+  type: string;
+}) {
   try {
     await requireAdmin();
-    
-    // Extraire les données du FormData
-    const data = {
-      name: formData.get("name") as string,
-      icon: formData.get("icon") as string,
-      banner: formData.get("banner") as string,
-      description: formData.get("description") as string,
-      type: formData.get("type") as string,
-    };
 
     // Valider les données avec Zod
     const validatedData = gameSchema.parse(data);

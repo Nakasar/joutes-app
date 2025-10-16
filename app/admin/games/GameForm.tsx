@@ -19,16 +19,15 @@ export function GameForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
-    
-    const formDataObj = new FormData();
-    formDataObj.append("name", formData.name);
-    formDataObj.append("icon", formData.icon);
-    formDataObj.append("banner", formData.banner);
-    formDataObj.append("description", formData.description);
-    formDataObj.append("type", formData.type);
 
     startTransition(async () => {
-      const result = await createGame(formDataObj);
+      const result = await createGame({
+        name: formData.name,
+        icon: formData.icon.length > 0 ? formData.icon : undefined,
+        banner: formData.banner.length > 0 ? formData.banner : undefined,
+        description: formData.description,
+        type: formData.type,
+      });
       
       if (result.success) {
         setFormData({
