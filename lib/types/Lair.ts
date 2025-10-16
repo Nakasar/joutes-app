@@ -5,7 +5,7 @@ import { Event } from "./Event";
 export type Lair = {
   id: string;
   name: string;
-  banner: string;
+  banner?: string;
 
   games: Game['id'][];
 

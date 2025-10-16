@@ -4,10 +4,10 @@ import { z } from "zod";
 const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID doit être un ObjectId MongoDB valide");
 
 export const lairSchema = z.object({
-  name: z.string().min(1, "Le nom du lieu est requis").max(100, "Le nom est trop long"),
-  banner: z.string().url("L'URL de la bannière doit être valide"),
+  name: z.string().min(1, "Le nom du lieu est requis").max(200, "Le nom est trop long"),
+  banner: z.url("L'URL de la bannière doit être valide").optional(),
   games: z.array(objectIdSchema).default([]),
-  eventsSourceUrls: z.array(z.string().url("Chaque URL doit être valide")).default([]),
+  eventsSourceUrls: z.array(z.url("Chaque URL doit être valide")).default([]),
 });
 
 export const lairIdSchema = objectIdSchema;

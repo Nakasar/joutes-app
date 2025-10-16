@@ -90,11 +90,18 @@ export function LairList({
             lairs.map((lair) => (
               <tr key={lair.id}>
                 <td className="px-6 py-4 whitespace-nowrap">
+                  {lair.banner ?
                   <img
                     src={lair.banner}
                     alt={lair.name}
                     className="h-16 w-24 rounded object-cover"
-                  />
+                  /> : (
+                    <div className="h-16 w-24 rounded bg-gray-200 flex items-center justify-center text-gray-400">
+                      <span className="text-lg font-semibold">
+                        {lair.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">

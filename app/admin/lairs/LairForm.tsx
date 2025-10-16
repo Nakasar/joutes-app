@@ -90,7 +90,6 @@ export function LairForm({
               </label>
               <input
                 type="url"
-                required
                 value={formData.banner}
                 onChange={(e) =>
                   setFormData({ ...formData, banner: e.target.value })
