@@ -6,10 +6,8 @@ import { createLair } from "./actions";
 
 export function LairForm({
   games,
-  onSuccess,
 }: {
   games: Game[];
-  onSuccess: () => void;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -36,7 +34,6 @@ export function LairForm({
           eventsSourceUrls: [],
         });
         setShowForm(false);
-        onSuccess();
       } else {
         setError(result.error || "Erreur lors de l'ajout du lieu");
       }

@@ -15,7 +15,7 @@ export default async function AdminGamesPage() {
           <h1 className="text-3xl font-bold text-gray-900">
             Gestion des Jeux
           </h1>
-          <GameForm onSuccess={() => {}} />
+          <GameForm />
         </div>
 
         <GameList games={games} />

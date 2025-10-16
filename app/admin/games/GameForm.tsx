@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { GameType } from "@/lib/types/Game";
 import { createGame } from "./actions";
 
-export function GameForm({ onSuccess }: { onSuccess: () => void }) {
+export function GameForm() {
   const [showForm, setShowForm] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +39,6 @@ export function GameForm({ onSuccess }: { onSuccess: () => void }) {
           type: "TCG",
         });
         setShowForm(false);
-        onSuccess();
       } else {
         setError(result.error || "Erreur lors de l'ajout du jeu");
       }

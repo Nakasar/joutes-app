@@ -16,7 +16,7 @@ export default async function AdminLairsPage() {
           <h1 className="text-3xl font-bold text-gray-900">
             Gestion des Lieux de Jeu
           </h1>
-          <LairForm games={games} onSuccess={() => {}} />
+          <LairForm games={games} />
         </div>
 
         <LairList lairs={lairs} games={games} />
