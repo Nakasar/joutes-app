@@ -19,7 +19,7 @@ export async function getLairs(): Promise<Lair[]> {
   }
 }
 
-export async function createLair(data: { name: string; banner: string; games: string[]; eventsSourceUrls: string[] }) {
+export async function createLair(data: { name: string; banner?: string; games: string[]; eventsSourceUrls: string[] }) {
   try {
     await requireAdmin();
     

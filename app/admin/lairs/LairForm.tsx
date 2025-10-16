@@ -24,7 +24,12 @@ export function LairForm({
     setError(null);
 
     startTransition(async () => {
-      const result = await createLair(formData);
+      const result = await createLair({
+        name: formData.name,
+        banner: formData.banner.length > 0 ? formData.banner : undefined,
+        games: formData.games,
+        eventsSourceUrls: formData.eventsSourceUrls.filter(url => url.trim() !== ""),
+      });
 
       if (result.success) {
         setFormData({
