@@ -41,7 +41,7 @@ export async function getEventsByLairId(lairId: string): Promise<Event[]> {
   const lair = await db
     .collection<LairDocument>('lairs')
     .findOne({ 
-      lairId,
+      _id: new ObjectId(lairId),
     });
 
     if (!lair || !lair.events) {
