@@ -2,6 +2,7 @@ import { getDb } from "@/lib/mongodb";
 import { Event } from "@/lib/types/Event";
 import { ObjectId, WithId, Document } from "mongodb";
 import { LairDocument } from "./lairs";
+import { Lair } from "../types/Lair";
 
 const COLLECTION_NAME = "events";
 
@@ -49,4 +50,17 @@ export async function getEventsByLairId(lairId: string): Promise<Event[]> {
     }
   
   return lair.events;
+}
+
+export async function getAllEvents(): Promise<Event[]> {
+  const db = await getDb();
+  const result = await db
+    .collection<Lair>('lairs')
+    .aggregate<Event>([
+      { $unwind: '$events' },
+      { $replaceRoot: { newRoot: '$events' } }
+    ])
+    .toArray();
+
+  return result;
 }
