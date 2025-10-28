@@ -47,7 +47,7 @@ export default async function EventsPage() {
             <CardHeader className="text-center">
               <CardTitle>Connectez-vous pour commencer</CardTitle>
               <CardDescription>
-                Accédez à votre calendrier personnalisé d'événements
+                Accédez à votre calendrier personnalisé d&apos;événements
               </CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center pb-6">
@@ -194,7 +194,7 @@ export default async function EventsPage() {
               <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <CardTitle>Aucun événement prévu</CardTitle>
               <CardDescription>
-                Aucun événement n'est prévu dans les lieux que vous suivez pour les jeux qui vous intéressent.
+                Aucun événement n&apos;est prévu dans les lieux que vous suivez pour les jeux qui vous intéressent.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex gap-4 justify-center flex-wrap pb-6">

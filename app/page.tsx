@@ -44,7 +44,7 @@ export default async function Home() {
             <CardHeader className="text-center">
               <CardTitle>Connectez-vous pour commencer</CardTitle>
               <CardDescription>
-                Accédez à votre calendrier personnalisé d'événements
+                Accédez à votre calendrier personnalisé d&apos;événements
               </CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center pb-6">

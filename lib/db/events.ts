@@ -19,6 +19,7 @@ function toEvent(doc: WithId<Document>): Event {
     endDateTime: doc.endDateTime,
     gameName: doc.gameName,
     price: doc.price,
+    url: doc.url,
     status: doc.status,
   };
 }
@@ -33,6 +34,7 @@ function toDocument(event: Omit<Event, "id">): Omit<EventDocument, "_id"> {
     gameName: event.gameName,
     price: event.price,
     status: event.status,
+    url: event.url,
   };
 }
 

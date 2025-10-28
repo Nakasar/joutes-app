@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Gamepad2, Euro } from "lucide-react";
+import Link from "next/link";
 
 type EventsCalendarProps = {
   events: Event[];
@@ -184,14 +185,14 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
               </CardTitle>
               {(currentMonth !== today.getMonth() ||
                 currentYear !== today.getFullYear()) && (
-                <Button
-                  variant="link"
-                  onClick={goToCurrentMonth}
-                  className="mt-2 text-sm"
-                >
-                  Revenir au mois actuel
-                </Button>
-              )}
+                  <Button
+                    variant="link"
+                    onClick={goToCurrentMonth}
+                    className="mt-2 text-sm"
+                  >
+                    Revenir au mois actuel
+                  </Button>
+                )}
             </div>
 
             <Button
@@ -227,22 +228,20 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
               {calendarDays.map((day, index) => (
                 <div
                   key={index}
-                  className={`min-h-[120px] border rounded-lg p-2 ${
-                    day === null
+                  className={`min-h-[120px] border rounded-lg p-2 ${day === null
                       ? "bg-muted/30"
                       : isToday(day)
-                      ? "bg-primary/10 border-primary"
-                      : "bg-card"
-                  }`}
+                        ? "bg-primary/10 border-primary"
+                        : "bg-card"
+                    }`}
                 >
                   {day !== null && (
                     <>
                       <div
-                        className={`text-sm font-semibold mb-1 ${
-                          isToday(day)
+                        className={`text-sm font-semibold mb-1 ${isToday(day)
                             ? "text-primary"
                             : "text-foreground"
-                        }`}
+                          }`}
                       >
                         {day}
                       </div>
@@ -332,11 +331,10 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
                 <div key={dayKey} className="space-y-3">
                   {/* En-tête du jour */}
                   <div
-                    className={`sticky top-16 z-10 py-3 px-4 rounded-lg font-bold text-lg capitalize ${
-                      isEventToday
+                    className={`sticky top-16 z-10 py-3 px-4 rounded-lg font-bold text-lg capitalize ${isEventToday
                         ? "bg-primary text-primary-foreground"
                         : "bg-muted"
-                    }`}
+                      }`}
                   >
                     {dayKey}
                     {isEventToday && " - Aujourd'hui"}
@@ -360,13 +358,12 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
                       return (
                         <Card
                           key={event.id}
-                          className={`hover:shadow-lg transition-shadow ${
-                            event.status === "available"
+                          className={`hover:shadow-lg transition-shadow ${event.status === "available"
                               ? "border-l-4 border-l-green-500"
                               : event.status === "sold-out"
-                              ? "border-l-4 border-l-red-500"
-                              : "border-l-4 border-l-gray-400"
-                          }`}
+                                ? "border-l-4 border-l-red-500"
+                                : "border-l-4 border-l-gray-400"
+                            }`}
                         >
                           <CardHeader className="pb-3">
                             <div className="flex items-start justify-between gap-2">
@@ -400,6 +397,13 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
                                 <span className="font-semibold">{event.price}€</span>
                               </div>
                             )}
+                            {event.url &&
+                              <Button asChild>
+                                <Link href={event.url} target="_blank" rel="noopener noreferrer">
+                                  Voir l&apos;événement
+                                </Link>
+                              </Button>
+                            }
                           </CardContent>
                         </Card>
                       );

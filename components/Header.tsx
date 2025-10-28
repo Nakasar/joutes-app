@@ -47,7 +47,7 @@ export default function Header() {
           <NavigationMenu className="hidden md:flex">
             <NavigationMenuList>
               <NavigationMenuItem>
-                <Link href="/events" legacyBehavior passHref>
+                <Link href="/events">
                   <NavigationMenuLink className={navigationMenuTriggerStyle()}>
                     <Calendar className="mr-2 h-4 w-4" />
                     Événements
@@ -55,7 +55,7 @@ export default function Header() {
                 </Link>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <Link href="/lairs" legacyBehavior passHref>
+                <Link href="/lairs">
                   <NavigationMenuLink className={navigationMenuTriggerStyle()}>
                     <MapPin className="mr-2 h-4 w-4" />
                     Lieux
