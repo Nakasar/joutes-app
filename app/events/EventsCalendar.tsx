@@ -2,7 +2,7 @@
 
 import { Event } from "@/lib/types/Event";
 import { Lair } from "@/lib/types/Lair";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 type EventsCalendarProps = {
   events: Event[];
@@ -54,13 +54,18 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
   const firstDayOfWeek = getFirstDayOfMonth(currentMonth, currentYear);
 
   // Filtrer les événements pour le mois actuel
-  const eventsInMonth = events.filter((event) => {
-    const eventDate = new Date(event.startDateTime);
-    return (
-      eventDate.getMonth() === currentMonth &&
-      eventDate.getFullYear() === currentYear
-    );
-  });
+  const eventsInMonth = useMemo(() => {
+    return events.filter((event) => {
+      const eventDate = new Date(event.startDateTime);
+      return (
+        eventDate.getMonth() === currentMonth &&
+        eventDate.getFullYear() === currentYear
+      );
+    }).sort((a, b) => {
+      // Trier par date de début
+      return new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime();
+    });
+  }, [events, currentMonth, currentYear]);
 
   // Organiser les événements par jour
   const eventsByDay = new Map<number, Event[]>();
@@ -138,23 +143,23 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
   return (
     <div>
       {/* En-tête avec navigation */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
         <button
           onClick={goToPreviousMonth}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+          className="w-full sm:w-auto px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
         >
           ← Mois précédent
         </button>
 
         <div className="text-center">
-          <h2 className="text-2xl font-bold">
+          <h2 className="text-xl sm:text-2xl font-bold">
             {monthNames[currentMonth]} {currentYear}
           </h2>
           {(currentMonth !== today.getMonth() ||
             currentYear !== today.getFullYear()) && (
             <button
               onClick={goToCurrentMonth}
-              className="mt-2 text-blue-500 hover:text-blue-700 underline"
+              className="mt-2 text-sm sm:text-base text-blue-500 hover:text-blue-700 underline"
             >
               Revenir au mois actuel
             </button>
@@ -163,14 +168,14 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
 
         <button
           onClick={goToNextMonth}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+          className="w-full sm:w-auto px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
         >
           Mois suivant →
         </button>
       </div>
 
-      {/* Calendrier */}
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-4">
+      {/* Vue calendrier (cachée sur mobile) */}
+      <div className="hidden lg:block bg-white dark:bg-gray-900 rounded-lg shadow-lg p-4">
         {/* En-têtes des jours de la semaine */}
         <div className="grid grid-cols-7 gap-2 mb-2">
           {dayNames.map((dayName) => (
@@ -247,8 +252,103 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
         </div>
       </div>
 
-      {/* Légende */}
-      <div className="mt-6 flex flex-wrap gap-4 justify-center">
+      {/* Vue liste (visible sur mobile et tablette) */}
+      <div className="lg:hidden">
+        {eventsInMonth.length === 0 ? (
+          <div className="text-center py-12 bg-white dark:bg-gray-900 rounded-lg shadow-lg">
+            <p className="text-gray-500 dark:text-gray-400">
+              Aucun événement ce mois-ci
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {eventsInMonth.map((event) => {
+              const lair = lairsMap.get(event.lairId);
+              const eventDate = new Date(event.startDateTime);
+              const endDate = new Date(event.endDateTime);
+              const dateStr = eventDate.toLocaleDateString("fr-FR", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+              });
+              const timeStr = eventDate.toLocaleTimeString("fr-FR", {
+                hour: "2-digit",
+                minute: "2-digit",
+              });
+              const endTimeStr = endDate.toLocaleTimeString("fr-FR", {
+                hour: "2-digit",
+                minute: "2-digit",
+              });
+              const isEventToday =
+                eventDate.getDate() === today.getDate() &&
+                eventDate.getMonth() === today.getMonth() &&
+                eventDate.getFullYear() === today.getFullYear();
+
+              return (
+                <div
+                  key={event.id}
+                  className={`bg-white dark:bg-gray-900 rounded-lg shadow-lg p-4 border-l-4 ${
+                    isEventToday
+                      ? "border-blue-500"
+                      : event.status === "available"
+                      ? "border-green-500"
+                      : event.status === "sold-out"
+                      ? "border-red-500"
+                      : "border-gray-400"
+                  }`}
+                >
+                  {/* Date et heure */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400 capitalize">
+                        {dateStr}
+                      </div>
+                      <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                        {timeStr} - {endTimeStr}
+                      </div>
+                    </div>
+                    <div
+                      className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
+                        event.status
+                      )}`}
+                    >
+                      {getStatusLabel(event.status)}
+                    </div>
+                  </div>
+
+                  {/* Nom de l'événement */}
+                  <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-gray-100">
+                    {event.name}
+                  </h3>
+
+                  {/* Informations */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                      <span className="text-lg">📍</span>
+                      <span className="font-medium">
+                        {lair?.name || "Lieu inconnu"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                      <span className="text-lg">🎮</span>
+                      <span>{event.gameName}</span>
+                    </div>
+                    {event.price && (
+                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                        <span className="text-lg">💰</span>
+                        <span className="font-semibold">{event.price}€</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Légende (visible uniquement sur grand écran avec le calendrier) */}
+      <div className="hidden lg:flex mt-6 flex-wrap gap-4 justify-center">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 bg-green-100 dark:bg-green-900 rounded"></div>
           <span className="text-sm">Disponible</span>
