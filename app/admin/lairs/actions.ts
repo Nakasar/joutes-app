@@ -138,11 +138,11 @@ Pour chaque événement unique, extrait:
 - name: Le nom de l'événement
 - startDateTime: La date et heure de début au format datetime ISO 8601
 - endDateTime: La date et heure de fin au format datetime ISO 8601
-- gameName: Le nom du jeu associé
+- gameName: Le nom du jeu de l'événement (parmi la liste ci-dessous si possible)
 - price: Le prix (optionnel, en nombre)
 - status: Le statut ('available' si disponible, 'sold-out' si complet, 'cancelled' si annulé)
 
-Pour le champ gameName utilise en priorité les noms de la liste fournie ci-dessous (le nom du jeu peut varier entre les évènements et lieux de jeu). Si aucun nom ne correspond, utilise le nom trouvé dans le contenu.
+Pour le champ gameName utilise en priorité les noms des jeux de la liste fournie ci-dessous (le nom du jeu peut varier entre les évènements et lieux de jeu). Si aucun nom ne correspond, utilise le nom trouvé dans la page des évènements.
 ${existingGames.map(game => `- ${game.name}`).join('\n')}
 
 # Contenu des pages :
