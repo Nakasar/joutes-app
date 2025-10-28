@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Header from "@/components/Header";
+import { DateTime } from "luxon";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,11 +29,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr">
+    <html lang="fr" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
       >
-        {children}
+        <div className="relative min-h-screen flex flex-col">
+          <Header />
+          <main className="flex-1">
+            {children}
+          </main>
+          <footer className="border-t py-6 mt-auto">
+            <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
+              <p>© {DateTime.now().year} Joutes - Ligues et rencontres multi-jeux</p>
+            </div>
+          </footer>
+        </div>
       </body>
     </html>
   );

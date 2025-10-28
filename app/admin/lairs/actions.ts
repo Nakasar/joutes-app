@@ -1,5 +1,7 @@
 "use server";
 
+import { NodeHtmlMarkdown } from 'node-html-markdown'
+import { DateTime } from "luxon";
 import { requireAdmin } from "@/lib/middleware/admin";
 import { Lair } from "@/lib/types/Lair";
 import { revalidatePath } from "next/cache";
@@ -9,6 +11,7 @@ import * as lairsDb from "@/lib/db/lairs";
 import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { Event } from "@/lib/types/Event";
+import { getAllGames } from "@/lib/db/games";
 
 export async function getLairs(): Promise<Lair[]> {
   try {
@@ -82,6 +85,7 @@ const eventSchema = z.object({
     gameName: z.string(),
     price: z.number().optional(),
     status: z.enum(['available', 'sold-out', 'cancelled']),
+    url: z.string().optional(),
   }))
 });
 
@@ -102,12 +106,18 @@ export async function refreshEvents(lairId: string) {
     if (!lair.eventsSourceUrls || lair.eventsSourceUrls.length === 0) {
       return { success: false, error: "Aucune URL source configurée pour ce lieu" };
     }
+
+    // Récupérer la liste des jeux existants dans la plateforme
+    const existingGames = await getAllGames();
     
     // Récupérer le contenu de toutes les URLs en parallèle
     const pagesContentPromises = lair.eventsSourceUrls.map(async (url) => {
       try {
         const response = await fetch(url);
-        const content = await response.text();
+        const contentRaw = await response.text();
+
+        const content = NodeHtmlMarkdown.translate(contentRaw, {}, undefined, undefined);
+
         return { url, content };
       } catch (error) {
         console.error(`Erreur lors de la récupération de l'URL ${url}:`, error);
@@ -123,17 +133,27 @@ export async function refreshEvents(lairId: string) {
     }
     
     // Combiner toutes les pages dans un seul prompt
-    const combinedPrompt = `Analyse le contenu HTML suivant provenant de ${pagesContent.length} page(s) différente(s) et extrait tous les événements UNIQUES avec leurs informations.
+    const combinedPrompt = `
+# Instructions
 
-IMPORTANT: Si un même événement apparaît plusieurs fois (même nom, même date, même lieu), ne le retourne qu'UNE SEULE FOIS.
+Analyse le contenu HTML suivant provenant de ${pagesContent.length} page(s) différente(s) et extrait tous les événements avec leurs informations.
+
+IMPORTANT: Si un même événement apparaît plusieurs fois (même nom et même date et heure et même lieu), ne le retourne qu'UNE SEULE FOIS.
+Un évènement avec le même nom peut apparaître à des dates ou heures différentes, dans ce cas, garde chaque occurence distincte.
 
 Pour chaque événement unique, extrait:
 - name: Le nom de l'événement
 - startDateTime: La date et heure de début au format datetime ISO 8601
 - endDateTime: La date et heure de fin au format datetime ISO 8601
-- gameName: Le nom du jeu associé
+- gameName: Le nom du jeu de l'événement (parmi la liste ci-dessous si possible)
 - price: Le prix (optionnel, en nombre)
 - status: Le statut ('available' si disponible, 'sold-out' si complet, 'cancelled' si annulé)
+- url: Le lien vers la page détaillée de l'événement (si disponible, en général dans une balise <a href="..."> ou <https://example.com/some/link>)
+
+Pour le champ gameName utilise en priorité les noms des jeux de la liste fournie ci-dessous (le nom du jeu peut varier entre les évènements et lieux de jeu). Si aucun nom ne correspond, utilise le nom trouvé dans la page des évènements.
+${existingGames.map(game => `- ${game.name}`).join('\n')}
+
+# Contenu des pages :
 
 ${pagesContent.map((page, index) => `
 === PAGE ${index + 1} (${page.url}) ===
@@ -150,13 +170,13 @@ ${page.content}
       
       console.log(`${object.events.length} événements uniques extraits pour le lieu ${lair.name}`);
       
-
+      
       const events: Event[] = object.events.map(event => ({
         ...event,
         id: crypto.randomUUID(),
         lairId: lair.id,
-        startDateTime: new Date(event.startDateTime).toISOString(),
-        endDateTime: new Date(event.endDateTime).toISOString(),
+        startDateTime: DateTime.fromISO(event.startDateTime, { zone: 'Europe/Paris' }).toISO() ?? event.startDateTime,
+        endDateTime: DateTime.fromISO(event.endDateTime, { zone: 'Europe/Paris' }).toISO() ?? event.endDateTime,
       }));
       await lairsDb.updateLair(lair.id, { events });
       

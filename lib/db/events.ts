@@ -19,6 +19,7 @@ function toEvent(doc: WithId<Document>): Event {
     endDateTime: doc.endDateTime,
     gameName: doc.gameName,
     price: doc.price,
+    url: doc.url,
     status: doc.status,
   };
 }
@@ -33,6 +34,7 @@ function toDocument(event: Omit<Event, "id">): Omit<EventDocument, "_id"> {
     gameName: event.gameName,
     price: event.price,
     status: event.status,
+    url: event.url,
   };
 }
 
@@ -57,6 +59,24 @@ export async function getAllEvents(): Promise<Event[]> {
   const result = await db
     .collection<Lair>('lairs')
     .aggregate<Event>([
+      { $unwind: '$events' },
+      { $replaceRoot: { newRoot: '$events' } }
+    ])
+    .toArray();
+
+  return result;
+}
+
+export async function getEventsByLairIds(lairIds: string[]): Promise<Event[]> {
+  const db = await getDb();
+  
+  // Convertir les IDs de string à ObjectId
+  const objectIds = lairIds.map(id => new ObjectId(id));
+  
+  const result = await db
+    .collection<Lair>('lairs')
+    .aggregate<Event>([
+      { $match: { _id: { $in: objectIds } } },
       { $unwind: '$events' },
       { $replaceRoot: { newRoot: '$events' } }
     ])

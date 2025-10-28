@@ -5,6 +5,7 @@ export type Event = {
   startDateTime: string;
   endDateTime: string;
   gameName: string;
+  url?: string;
   price?: number;
   status: 'available' | 'sold-out' | 'cancelled';
 };

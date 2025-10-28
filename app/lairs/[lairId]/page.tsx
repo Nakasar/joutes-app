@@ -1,10 +1,19 @@
 import { getLairById } from "@/lib/db/lairs";
 import { getEventsByLairId } from "@/lib/db/events";
 import { getGameById } from "@/lib/db/games";
+import { getUserById } from "@/lib/db/users";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Metadata } from "next";
+import FollowLairButton from "./FollowLairButton";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Gamepad2, Calendar, Clock, Euro, MapPin } from "lucide-react";
+import { DateTime } from "luxon";
 
 export async function generateMetadata({ 
   params 
@@ -43,6 +52,17 @@ export default async function LairDetailPage({
     notFound();
   }
 
+  // Vérifier si l'utilisateur est connecté et s'il suit ce lair
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  
+  let isFollowing = false;
+  if (session?.user?.id) {
+    const user = await getUserById(session.user.id);
+    isFollowing = user?.lairs?.includes(lairId) || false;
+  }
+
   const upcomingEvents = await getEventsByLairId(lairId);
   
   // Récupérer les détails des jeux
@@ -56,35 +76,48 @@ export default async function LairDetailPage({
 
   // Formater la date
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('fr-FR', {
+    const date = DateTime.fromISO(dateString);
+    return date.setLocale('fr').toLocaleString({
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-    }).format(date);
+    });
   };
 
   // Badge de statut
-  const getStatusBadge = (status: string) => {
+  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
       case 'available':
-        return <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">Disponible</span>;
+        return "default";
       case 'sold-out':
-        return <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">Complet</span>;
+        return "destructive";
       case 'cancelled':
-        return <span className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium">Annulé</span>;
+        return "secondary";
       default:
-        return null;
+        return "outline";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'available':
+        return 'Disponible';
+      case 'sold-out':
+        return 'Complet';
+      case 'cancelled':
+        return 'Annulé';
+      default:
+        return status;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       {/* Bannière */}
-      <div className="relative w-full h-64 md:h-96 bg-gradient-to-br from-blue-500 to-purple-600">
+      <div className="relative w-full h-64 md:h-96 bg-gradient-to-br from-primary/80 to-purple-600/80">
         {lair.banner ? (
           <Image
             src={lair.banner}
@@ -95,124 +128,150 @@ export default async function LairDetailPage({
           />
         ) : (
           <div className="flex items-center justify-center h-full">
-            <span className="text-white text-9xl">🎲</span>
+            <Gamepad2 className="h-24 w-24 text-white" />
           </div>
         )}
-        <div className="absolute inset-0 bg-black bg-opacity-40 flex items-end">
+        <div className="absolute inset-0 bg-black/40 flex items-end">
           <div className="container mx-auto px-4 py-8">
-            <h1 className="text-4xl md:text-6xl font-bold text-white mb-2">
+            <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
               {lair.name}
             </h1>
-            <Link 
-              href="/lairs"
-              className="text-white hover:text-gray-200 flex items-center gap-2 mt-4"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Retour à la liste des lieux
-            </Link>
+            <div className="flex flex-wrap items-center gap-4">
+              <Button variant="secondary" asChild size="sm">
+                <Link href="/lairs">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Retour à la liste
+                </Link>
+              </Button>
+              {session?.user && (
+                <FollowLairButton
+                  lairId={lairId}
+                  isFollowing={isFollowing}
+                  isAuthenticated={!!session?.user}
+                />
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Section Jeux disponibles */}
         {games.length > 0 && (
-          <section className="mb-12 bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-3xl font-bold mb-6">Jeux disponibles</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {games.map((game) => (
-                <div key={game.id} className="border rounded-lg p-4 hover:shadow-lg transition-shadow">
-                  <div className="flex items-center gap-3">
-                    {game.icon && (
-                      <div className="relative w-12 h-12 flex-shrink-0">
-                        <Image
-                          src={game.icon}
-                          alt={game.name}
-                          fill
-                          className="object-contain"
-                        />
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="text-3xl flex items-center gap-2">
+                <Gamepad2 className="h-8 w-8" />
+                Jeux disponibles
+              </CardTitle>
+              <CardDescription>
+                {games.length} jeu{games.length > 1 ? 'x' : ''} disponible{games.length > 1 ? 's' : ''} dans ce lieu
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {games.map((game) => (
+                  <Card key={game.id} className="hover:shadow-lg transition-shadow">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center gap-3 mb-3">
+                        {game.icon && (
+                          <div className="relative w-12 h-12 flex-shrink-0">
+                            <Image
+                              src={game.icon}
+                              alt={game.name}
+                              fill
+                              className="object-contain rounded"
+                            />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-lg truncate">{game.name}</h3>
+                          <Badge variant="secondary">{game.type}</Badge>
+                        </div>
                       </div>
-                    )}
-                    <div>
-                      <h3 className="font-semibold text-lg">{game.name}</h3>
-                      <p className="text-sm text-gray-600">{game.type}</p>
-                    </div>
-                  </div>
-                  {game.description && (
-                    <p className="mt-3 text-sm text-gray-700 line-clamp-2">
-                      {game.description}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
+                      {game.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {game.description}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Section Événements à venir */}
-        <section className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-3xl font-bold mb-6">Événements à venir</h2>
-          
-          {upcomingEvents.length === 0 ? (
-            <div className="text-center py-12">
-              <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <p className="text-gray-500 text-lg">Aucun événement à venir pour le moment</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {upcomingEvents.map((event) => (
-                <div 
-                  key={event.id} 
-                  className="border rounded-lg p-6 hover:shadow-lg transition-shadow"
-                >
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-xl font-semibold">{event.name}</h3>
-                        {getStatusBadge(event.status)}
-                      </div>
-                      
-                      <div className="space-y-2 text-gray-600">
-                        <div className="flex items-center gap-2">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          <span className="capitalize">{formatDate(event.startDateTime)}</span>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-3xl flex items-center gap-2">
+              <Calendar className="h-8 w-8" />
+              Événements à venir
+            </CardTitle>
+            <CardDescription>
+              Tous les événements prévus dans ce lieu
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {upcomingEvents.length === 0 ? (
+              <div className="text-center py-12">
+                <Calendar className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground text-lg">
+                  Aucun événement à venir pour le moment
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {upcomingEvents.map((event) => (
+                  <Card 
+                    key={event.id} 
+                    className="hover:shadow-lg transition-all hover:-translate-y-0.5"
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                        <div className="flex-1 space-y-3">
+                          <div className="flex flex-wrap items-center gap-3">
+                            <h3 className="text-xl font-semibold">{event.name}</h3>
+                            <Badge variant={getStatusVariant(event.status)}>
+                              {getStatusLabel(event.status)}
+                            </Badge>
+                          </div>
+                          
+                          <div className="space-y-2 text-sm">
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <Calendar className="h-4 w-4" />
+                              <span className="capitalize">{formatDate(event.startDateTime)}</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <Clock className="h-4 w-4" />
+                              <span>Fin : {formatDate(event.endDateTime)}</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              <Gamepad2 className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium">{event.gameName}</span>
+                            </div>
+                          </div>
                         </div>
                         
-                        <div className="flex items-center gap-2">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <span>Fin : {formatDate(event.endDateTime)}</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" />
-                          </svg>
-                          <span className="font-medium">{event.gameName}</span>
-                        </div>
+                        {event.price !== undefined && (
+                          <div className="flex items-center gap-2 md:flex-col md:text-right">
+                            <Euro className="h-5 w-5 text-primary" />
+                            <div className="text-3xl font-bold text-primary">
+                              {event.price === 0 ? 'Gratuit' : `${event.price}€`}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                    
-                    {event.price !== undefined && (
-                      <div className="text-right">
-                        <div className="text-3xl font-bold text-blue-600">
-                          {event.price === 0 ? 'Gratuit' : `${event.price}€`}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

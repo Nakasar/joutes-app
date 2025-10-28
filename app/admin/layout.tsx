@@ -10,7 +10,7 @@ export default async function AdminLayout({
   try {
     await requireAdmin();
   } catch {
-    redirect("/login?redirect=/admin");
+    redirect("/");
   }
 
   return (
