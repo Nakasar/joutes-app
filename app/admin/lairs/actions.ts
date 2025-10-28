@@ -1,5 +1,6 @@
 "use server";
 
+import { NodeHtmlMarkdown } from 'node-html-markdown'
 import { requireAdmin } from "@/lib/middleware/admin";
 import { Lair } from "@/lib/types/Lair";
 import { revalidatePath } from "next/cache";
@@ -112,7 +113,10 @@ export async function refreshEvents(lairId: string) {
     const pagesContentPromises = lair.eventsSourceUrls.map(async (url) => {
       try {
         const response = await fetch(url);
-        const content = await response.text();
+        const contentRaw = await response.text();
+
+        const content = NodeHtmlMarkdown.translate(contentRaw, {}, undefined, undefined);
+
         return { url, content };
       } catch (error) {
         console.error(`Erreur lors de la récupération de l'URL ${url}:`, error);
