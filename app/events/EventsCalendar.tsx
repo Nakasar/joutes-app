@@ -171,7 +171,6 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <Button
-              variant="outline"
               onClick={goToPreviousMonth}
               className="w-full sm:w-auto"
             >
@@ -186,7 +185,6 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
               {(currentMonth !== today.getMonth() ||
                 currentYear !== today.getFullYear()) && (
                   <Button
-                    variant="link"
                     onClick={goToCurrentMonth}
                     className="mt-2 text-sm"
                   >
@@ -196,7 +194,6 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
             </div>
 
             <Button
-              variant="outline"
               onClick={goToNextMonth}
               className="w-full sm:w-auto"
             >

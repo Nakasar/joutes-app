@@ -131,7 +131,7 @@ export async function refreshEvents(lairId: string) {
     const combinedPrompt = `
 # Instructions
 
-Analyse le contenu HTML suivant provenant de ${pagesContent.length} page(s) différente(s) et extrait tous les événements UNIQUES avec leurs informations.
+Analyse le contenu HTML suivant provenant de ${pagesContent.length} page(s) différente(s) et extrait tous les événements avec leurs informations.
 
 IMPORTANT: Si un même événement apparaît plusieurs fois (même nom et même date et heure et même lieu), ne le retourne qu'UNE SEULE FOIS.
 Un évènement avec le même nom peut apparaître à des dates ou heures différentes, dans ce cas, garde chaque occurence distincte.
