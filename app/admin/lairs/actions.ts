@@ -9,6 +9,7 @@ import * as lairsDb from "@/lib/db/lairs";
 import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { Event } from "@/lib/types/Event";
+import { getAllGames } from "@/lib/db/games";
 
 export async function getLairs(): Promise<Lair[]> {
   try {
@@ -102,6 +103,9 @@ export async function refreshEvents(lairId: string) {
     if (!lair.eventsSourceUrls || lair.eventsSourceUrls.length === 0) {
       return { success: false, error: "Aucune URL source configurée pour ce lieu" };
     }
+
+    // Récupérer la liste des jeux existants dans la plateforme
+    const existingGames = await getAllGames();
     
     // Récupérer le contenu de toutes les URLs en parallèle
     const pagesContentPromises = lair.eventsSourceUrls.map(async (url) => {
@@ -123,7 +127,10 @@ export async function refreshEvents(lairId: string) {
     }
     
     // Combiner toutes les pages dans un seul prompt
-    const combinedPrompt = `Analyse le contenu HTML suivant provenant de ${pagesContent.length} page(s) différente(s) et extrait tous les événements UNIQUES avec leurs informations.
+    const combinedPrompt = `
+# Instructions
+
+Analyse le contenu HTML suivant provenant de ${pagesContent.length} page(s) différente(s) et extrait tous les événements UNIQUES avec leurs informations.
 
 IMPORTANT: Si un même événement apparaît plusieurs fois (même nom, même date, même lieu), ne le retourne qu'UNE SEULE FOIS.
 
@@ -134,6 +141,11 @@ Pour chaque événement unique, extrait:
 - gameName: Le nom du jeu associé
 - price: Le prix (optionnel, en nombre)
 - status: Le statut ('available' si disponible, 'sold-out' si complet, 'cancelled' si annulé)
+
+Pour le champ gameName utilise en priorité les noms de la liste fournie ci-dessous (le nom du jeu peut varier entre les évènements et lieux de jeu). Si aucun nom ne correspond, utilise le nom trouvé dans le contenu.
+${existingGames.map(game => `- ${game.name}`).join('\n')}
+
+# Contenu des pages :
 
 ${pagesContent.map((page, index) => `
 === PAGE ${index + 1} (${page.url}) ===
