@@ -45,9 +45,9 @@ export async function addGameToUser(userId: string, gameId: string): Promise<boo
 
 export async function removeGameFromUser(userId: string, gameId: string): Promise<boolean> {
   const db = await getDb();
-  const result = await db.collection(COLLECTION_NAME).updateOne(
+  const result = await db.collection<User>(COLLECTION_NAME).updateOne(
     { _id: ObjectId.createFromHexString(userId) },
-    { $pull: { games: gameId } } as any
+    { $pull: { games: gameId } }
   );
   
   return result.modifiedCount > 0;
@@ -75,9 +75,9 @@ export async function addLairToUser(userId: string, lairId: string): Promise<boo
 
 export async function removeLairFromUser(userId: string, lairId: string): Promise<boolean> {
   const db = await getDb();
-  const result = await db.collection(COLLECTION_NAME).updateOne(
+  const result = await db.collection<User>(COLLECTION_NAME).updateOne(
     { _id: ObjectId.createFromHexString(userId) },
-    { $pull: { lairs: lairId } } as any
+    { $pull: { lairs: lairId } }
   );
   
   return result.modifiedCount > 0;

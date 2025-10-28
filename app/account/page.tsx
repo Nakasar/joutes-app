@@ -62,14 +62,14 @@ export default async function AccountPage() {
                 />
               )}
               <div>
-                <p className="text-sm text-gray-600">Nom d'utilisateur</p>
+                <p className="text-sm text-gray-600">Nom d&apos;utilisateur</p>
                 <p className="text-lg font-semibold">{user.username || "Non défini"}</p>
               </div>
             </div>
             <div>
               <p className="text-sm text-gray-600">Email</p>
               <p className="text-lg font-semibold">{user.email}</p>
-              <p className="text-xs text-gray-500 mt-1">L'email ne peut pas être modifié</p>
+              <p className="text-xs text-gray-500 mt-1">L&apos;email ne peut pas être modifié</p>
             </div>
           </div>
         </section>
