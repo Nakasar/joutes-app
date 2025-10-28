@@ -47,7 +47,6 @@ export default function Header() {
           <NavigationMenu className="hidden md:flex">
             <NavigationMenuList>
               <NavigationMenuItem>
-
                 <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
                   <Link href="/events">
                     <Calendar className="mr-2 h-4 w-4" />

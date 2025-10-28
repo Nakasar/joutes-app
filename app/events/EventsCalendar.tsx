@@ -64,8 +64,8 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
     return events.filter((event) => {
       const eventDate = DateTime.fromISO(event.startDateTime);
       return (
-        eventDate.getMonth() === currentMonth &&
-        eventDate.getFullYear() === currentYear
+        eventDate.month === currentMonth + 1 &&
+        eventDate.year === currentYear + 1
       );
     }).sort((a, b) => {
       // Trier par date de début
