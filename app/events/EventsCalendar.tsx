@@ -16,14 +16,14 @@ type EventsCalendarProps = {
 };
 
 export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps) {
-  const today = new Date();
-  const [currentMonth, setCurrentMonth] = useState(today.getMonth());
-  const [currentYear, setCurrentYear] = useState(today.getFullYear());
+  const today = DateTime.now();
+  const [currentMonth, setCurrentMonth] = useState<number>(today.month);
+  const [currentYear, setCurrentYear] = useState<number>(today.year);
 
   // Navigation entre les mois
   const goToPreviousMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
+    if (currentMonth === 1) {
+      setCurrentMonth(12);
       setCurrentYear(currentYear - 1);
     } else {
       setCurrentMonth(currentMonth - 1);
@@ -31,8 +31,8 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
   };
 
   const goToNextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
+    if (currentMonth === 12) {
+      setCurrentMonth(1);
       setCurrentYear(currentYear + 1);
     } else {
       setCurrentMonth(currentMonth + 1);
@@ -40,20 +40,21 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
   };
 
   const goToCurrentMonth = () => {
-    setCurrentMonth(today.getMonth());
-    setCurrentYear(today.getFullYear());
+    setCurrentMonth(today.month);
+    setCurrentYear(today.year);
   };
 
   // Obtenir le nombre de jours dans le mois
   const getDaysInMonth = (month: number, year: number) => {
-    return new Date(year, month + 1, 0).getDate();
+    return DateTime.local(year, month, 1).daysInMonth || 31;
   };
 
-  // Obtenir le premier jour de la semaine du mois (0 = dimanche, 1 = lundi, etc.)
+  // Obtenir le premier jour de la semaine du mois (0 = lundi, 6 = dimanche)
   const getFirstDayOfMonth = (month: number, year: number) => {
-    const day = new Date(year, month, 1).getDay();
+    const firstDay = DateTime.local(year, month, 1).weekday;
+    // weekday dans Luxon: 1 = lundi, 7 = dimanche
     // Convertir pour que lundi soit 0 et dimanche soit 6
-    return day === 0 ? 6 : day - 1;
+    return firstDay - 1;
   };
 
   const daysInMonth = getDaysInMonth(currentMonth, currentYear);
@@ -64,19 +65,21 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
     return events.filter((event) => {
       const eventDate = DateTime.fromISO(event.startDateTime);
       return (
-        eventDate.month === currentMonth + 1 &&
-        eventDate.year === currentYear + 1
+        eventDate.month === currentMonth &&
+        eventDate.year === currentYear
       );
     }).sort((a, b) => {
       // Trier par date de début
-      return new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime();
+      const dateA = DateTime.fromISO(a.startDateTime);
+      const dateB = DateTime.fromISO(b.startDateTime);
+      return dateA.toMillis() - dateB.toMillis();
     });
   }, [events, currentMonth, currentYear]);
 
   // Organiser les événements par jour
   const eventsByDay = new Map<number, Event[]>();
   eventsInMonth.forEach((event) => {
-    const day = new Date(event.startDateTime).getDate();
+    const day = DateTime.fromISO(event.startDateTime).day;
     if (!eventsByDay.has(day)) {
       eventsByDay.set(day, []);
     }
@@ -87,12 +90,12 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
   const eventsByDayForList = useMemo(() => {
     const grouped = new Map<string, Event[]>();
     eventsInMonth.forEach((event) => {
-      const eventDate = new Date(event.startDateTime);
-      const dayKey = eventDate.toLocaleDateString("fr-FR", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
+      const eventDate = DateTime.fromISO(event.startDateTime);
+      const dayKey = eventDate.setLocale('fr').toLocaleString({
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
       });
       if (!grouped.has(dayKey)) {
         grouped.set(dayKey, []);
@@ -133,9 +136,9 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
   const isToday = (day: number | null) => {
     if (day === null) return false;
     return (
-      day === today.getDate() &&
-      currentMonth === today.getMonth() &&
-      currentYear === today.getFullYear()
+      day === today.day &&
+      currentMonth === today.month &&
+      currentYear === today.year
     );
   };
 
@@ -181,10 +184,10 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
 
             <div className="text-center">
               <CardTitle className="text-2xl">
-                {monthNames[currentMonth]} {currentYear}
+                {monthNames[currentMonth - 1]} {currentYear}
               </CardTitle>
-              {(currentMonth !== today.getMonth() ||
-                currentYear !== today.getFullYear()) && (
+              {(currentMonth !== today.month ||
+                currentYear !== today.year) && (
                   <Button
                     onClick={goToCurrentMonth}
                     className="mt-2 text-sm"
@@ -246,12 +249,9 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
                       <div className="space-y-1">
                         {eventsByDay.get(day)?.map((event) => {
                           const lair = lairsMap.get(event.lairId);
-                          const startTime = new Date(
+                          const startTime = DateTime.fromISO(
                             event.startDateTime
-                          ).toLocaleTimeString("fr-FR", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          });
+                          ).toLocaleString(DateTime.TIME_24_SIMPLE);
                           return (
                             <div
                               key={event.id}
@@ -326,11 +326,11 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
         ) : (
           <div className="space-y-4">
             {Array.from(eventsByDayForList.entries()).map(([dayKey, dayEvents]) => {
-              const firstEventDate = new Date(dayEvents[0].startDateTime);
+              const firstEventDate = DateTime.fromISO(dayEvents[0].startDateTime);
               const isEventToday =
-                firstEventDate.getDate() === today.getDate() &&
-                firstEventDate.getMonth() === today.getMonth() &&
-                firstEventDate.getFullYear() === today.getFullYear();
+                firstEventDate.day === today.day &&
+                firstEventDate.month === today.month &&
+                firstEventDate.year === today.year;
 
               return (
                 <div key={dayKey} className="space-y-3">
@@ -349,16 +349,10 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
                   <div className="space-y-3">
                     {dayEvents.map((event) => {
                       const lair = lairsMap.get(event.lairId);
-                      const eventDate = new Date(event.startDateTime);
-                      const endDate = new Date(event.endDateTime);
-                      const timeStr = eventDate.toLocaleTimeString("fr-FR", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      });
-                      const endTimeStr = endDate.toLocaleTimeString("fr-FR", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      });
+                      const eventDate = DateTime.fromISO(event.startDateTime);
+                      const endDate = DateTime.fromISO(event.endDateTime);
+                      const timeStr = eventDate.toLocaleString(DateTime.TIME_24_SIMPLE);
+                      const endTimeStr = endDate.toLocaleString(DateTime.TIME_24_SIMPLE);
 
                       return (
                         <Card

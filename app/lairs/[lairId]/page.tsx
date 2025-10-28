@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Gamepad2, Calendar, Clock, Euro, MapPin } from "lucide-react";
+import { DateTime } from "luxon";
 
 export async function generateMetadata({ 
   params 
@@ -75,15 +76,15 @@ export default async function LairDetailPage({
 
   // Formater la date
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('fr-FR', {
+    const date = DateTime.fromISO(dateString);
+    return date.setLocale('fr').toLocaleString({
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-    }).format(date);
+    });
   };
 
   // Badge de statut

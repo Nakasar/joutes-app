@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
+import { DateTime } from "luxon";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,7 +40,7 @@ export default function RootLayout({
           </main>
           <footer className="border-t py-6 mt-auto">
             <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-              <p>© {new Date().getFullYear()} Joutes - Ligues et rencontres multi-jeux</p>
+              <p>© {DateTime.now().year} Joutes - Ligues et rencontres multi-jeux</p>
             </div>
           </footer>
         </div>
