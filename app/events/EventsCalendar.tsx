@@ -229,18 +229,18 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
                 <div
                   key={index}
                   className={`min-h-[120px] border rounded-lg p-2 ${day === null
-                      ? "bg-muted/30"
-                      : isToday(day)
-                        ? "bg-primary/10 border-primary"
-                        : "bg-card"
+                    ? "bg-muted/30"
+                    : isToday(day)
+                      ? "bg-primary/10 border-primary"
+                      : "bg-card"
                     }`}
                 >
                   {day !== null && (
                     <>
                       <div
                         className={`text-sm font-semibold mb-1 ${isToday(day)
-                            ? "text-primary"
-                            : "text-foreground"
+                          ? "text-primary"
+                          : "text-foreground"
                           }`}
                       >
                         {day}
@@ -281,6 +281,13 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
                                   </span>
                                 )}
                               </div>
+                              {event.url &&
+                                <Button asChild>
+                                  <Link href={event.url} target="_blank" rel="noopener noreferrer">
+                                    Voir l&apos;événement
+                                  </Link>
+                                </Button>
+                              }
                             </div>
                           );
                         })}
@@ -332,8 +339,8 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
                   {/* En-tête du jour */}
                   <div
                     className={`sticky top-16 z-10 py-3 px-4 rounded-lg font-bold text-lg capitalize ${isEventToday
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted"
                       }`}
                   >
                     {dayKey}
@@ -359,10 +366,10 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
                         <Card
                           key={event.id}
                           className={`hover:shadow-lg transition-shadow ${event.status === "available"
-                              ? "border-l-4 border-l-green-500"
-                              : event.status === "sold-out"
-                                ? "border-l-4 border-l-red-500"
-                                : "border-l-4 border-l-gray-400"
+                            ? "border-l-4 border-l-green-500"
+                            : event.status === "sold-out"
+                              ? "border-l-4 border-l-red-500"
+                              : "border-l-4 border-l-gray-400"
                             }`}
                         >
                           <CardHeader className="pb-3">
