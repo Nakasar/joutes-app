@@ -64,3 +64,21 @@ export async function getAllEvents(): Promise<Event[]> {
 
   return result;
 }
+
+export async function getEventsByLairIds(lairIds: string[]): Promise<Event[]> {
+  const db = await getDb();
+  
+  // Convertir les IDs de string à ObjectId
+  const objectIds = lairIds.map(id => new ObjectId(id));
+  
+  const result = await db
+    .collection<Lair>('lairs')
+    .aggregate<Event>([
+      { $match: { _id: { $in: objectIds } } },
+      { $unwind: '$events' },
+      { $replaceRoot: { newRoot: '$events' } }
+    ])
+    .toArray();
+
+  return result;
+}
