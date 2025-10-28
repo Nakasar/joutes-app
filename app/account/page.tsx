@@ -81,7 +81,7 @@ export default async function AccountPage() {
                   <div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                       <UserIcon className="h-4 w-4" />
-                      <span>Nom d'utilisateur</span>
+                      <span>Nom d&apos;utilisateur</span>
                     </div>
                     <p className="text-lg font-semibold">{user.username || "Non défini"}</p>
                   </div>
@@ -92,7 +92,7 @@ export default async function AccountPage() {
                     </div>
                     <p className="text-lg font-semibold">{user.email}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      L'email ne peut pas être modifié
+                      L&apos;email ne peut pas être modifié
                     </p>
                   </div>
                 </div>
