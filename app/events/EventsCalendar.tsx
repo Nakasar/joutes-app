@@ -77,6 +77,25 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
     eventsByDay.get(day)?.push(event);
   });
 
+  // Grouper les événements par jour pour la vue liste (mobile)
+  const eventsByDayForList = useMemo(() => {
+    const grouped = new Map<string, Event[]>();
+    eventsInMonth.forEach((event) => {
+      const eventDate = new Date(event.startDateTime);
+      const dayKey = eventDate.toLocaleDateString("fr-FR", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+      if (!grouped.has(dayKey)) {
+        grouped.set(dayKey, []);
+      }
+      grouped.get(dayKey)?.push(event);
+    });
+    return grouped;
+  }, [eventsInMonth]);
+
   // Noms des mois en français
   const monthNames = [
     "Janvier",
@@ -261,84 +280,95 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {eventsInMonth.map((event) => {
-              const lair = lairsMap.get(event.lairId);
-              const eventDate = new Date(event.startDateTime);
-              const endDate = new Date(event.endDateTime);
-              const dateStr = eventDate.toLocaleDateString("fr-FR", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-              });
-              const timeStr = eventDate.toLocaleTimeString("fr-FR", {
-                hour: "2-digit",
-                minute: "2-digit",
-              });
-              const endTimeStr = endDate.toLocaleTimeString("fr-FR", {
-                hour: "2-digit",
-                minute: "2-digit",
-              });
+          <div className="space-y-6">
+            {Array.from(eventsByDayForList.entries()).map(([dayKey, dayEvents]) => {
+              const firstEventDate = new Date(dayEvents[0].startDateTime);
               const isEventToday =
-                eventDate.getDate() === today.getDate() &&
-                eventDate.getMonth() === today.getMonth() &&
-                eventDate.getFullYear() === today.getFullYear();
+                firstEventDate.getDate() === today.getDate() &&
+                firstEventDate.getMonth() === today.getMonth() &&
+                firstEventDate.getFullYear() === today.getFullYear();
 
               return (
-                <div
-                  key={event.id}
-                  className={`bg-white dark:bg-gray-900 rounded-lg shadow-lg p-4 border-l-4 ${
-                    isEventToday
-                      ? "border-blue-500"
-                      : event.status === "available"
-                      ? "border-green-500"
-                      : event.status === "sold-out"
-                      ? "border-red-500"
-                      : "border-gray-400"
-                  }`}
-                >
-                  {/* Date et heure */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400 capitalize">
-                        {dateStr}
-                      </div>
-                      <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                        {timeStr} - {endTimeStr}
-                      </div>
-                    </div>
-                    <div
-                      className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
-                        event.status
-                      )}`}
-                    >
-                      {getStatusLabel(event.status)}
-                    </div>
+                <div key={dayKey} className="space-y-3">
+                  {/* En-tête du jour */}
+                  <div
+                    className={`sticky top-0 z-10 py-2 px-4 rounded-lg font-bold text-lg capitalize ${
+                      isEventToday
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    }`}
+                  >
+                    {dayKey}
+                    {isEventToday && " - Aujourd'hui"}
                   </div>
 
-                  {/* Nom de l'événement */}
-                  <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-gray-100">
-                    {event.name}
-                  </h3>
+                  {/* Événements du jour */}
+                  <div className="space-y-3 pl-2">
+                    {dayEvents.map((event) => {
+                      const lair = lairsMap.get(event.lairId);
+                      const eventDate = new Date(event.startDateTime);
+                      const endDate = new Date(event.endDateTime);
+                      const timeStr = eventDate.toLocaleTimeString("fr-FR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      });
+                      const endTimeStr = endDate.toLocaleTimeString("fr-FR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      });
 
-                  {/* Informations */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                      <span className="text-lg">📍</span>
-                      <span className="font-medium">
-                        {lair?.name || "Lieu inconnu"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                      <span className="text-lg">🎮</span>
-                      <span>{event.gameName}</span>
-                    </div>
-                    {event.price && (
-                      <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                        <span className="text-lg">💰</span>
-                        <span className="font-semibold">{event.price}€</span>
-                      </div>
-                    )}
+                      return (
+                        <div
+                          key={event.id}
+                          className={`bg-white dark:bg-gray-900 rounded-lg shadow-md p-4 border-l-4 ${
+                            event.status === "available"
+                              ? "border-green-500"
+                              : event.status === "sold-out"
+                              ? "border-red-500"
+                              : "border-gray-400"
+                          }`}
+                        >
+                          {/* Heure et statut */}
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="text-base font-bold text-gray-900 dark:text-gray-100">
+                              {timeStr} - {endTimeStr}
+                            </div>
+                            <div
+                              className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(
+                                event.status
+                              )}`}
+                            >
+                              {getStatusLabel(event.status)}
+                            </div>
+                          </div>
+
+                          {/* Nom de l'événement */}
+                          <h3 className="text-lg font-bold mb-2 text-gray-900 dark:text-gray-100">
+                            {event.name}
+                          </h3>
+
+                          {/* Informations */}
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                              <span>📍</span>
+                              <span className="font-medium">
+                                {lair?.name || "Lieu inconnu"}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                              <span>🎮</span>
+                              <span>{event.gameName}</span>
+                            </div>
+                            {event.price && (
+                              <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                <span>💰</span>
+                                <span className="font-semibold">{event.price}€</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
