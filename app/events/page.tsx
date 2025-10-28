@@ -1,7 +1,6 @@
 import { getEventsByLairIds } from "@/lib/db/events";
 import { getLairById } from "@/lib/db/lairs";
 import { getAllGames } from "@/lib/db/games";
-import { Event } from "@/lib/types/Event";
 import { Lair } from "@/lib/types/Lair";
 import EventsCalendar from "./EventsCalendar";
 import { auth } from "@/lib/auth";
