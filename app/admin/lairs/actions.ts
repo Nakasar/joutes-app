@@ -147,7 +147,7 @@ Pour chaque événement unique, extrait:
 - gameName: Le nom du jeu de l'événement (parmi la liste ci-dessous si possible)
 - price: Le prix (optionnel, en nombre)
 - status: Le statut ('available' si disponible, 'sold-out' si complet, 'cancelled' si annulé)
-- url: Le lien vers la page détaillée de l'événement (si disponible, en général dans une balise <a href="...">)
+- url: Le lien vers la page détaillée de l'événement (si disponible, en général dans une balise <a href="..."> ou <https://example.com/some/link>)
 
 Pour le champ gameName utilise en priorité les noms des jeux de la liste fournie ci-dessous (le nom du jeu peut varier entre les évènements et lieux de jeu). Si aucun nom ne correspond, utilise le nom trouvé dans la page des évènements.
 ${existingGames.map(game => `- ${game.name}`).join('\n')}
