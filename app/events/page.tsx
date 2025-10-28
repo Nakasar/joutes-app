@@ -8,6 +8,10 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { getUserById } from "@/lib/db/users";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Calendar, MapPin, Gamepad2, AlertCircle, Info } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -20,18 +24,40 @@ export default async function EventsPage() {
   // Si l'utilisateur n'est pas connecté, afficher un message
   if (!session?.user) {
     return (
-      <div className="container mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-8">Calendrier des Événements</h1>
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 text-center">
-          <p className="text-lg mb-4">
-            Vous devez être connecté pour voir les événements.
-          </p>
-          <Link 
-            href="/login"
-            className="inline-block px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
-          >
-            Se connecter
-          </Link>
+      <div className="container mx-auto p-6 max-w-4xl">
+        <div className="space-y-6">
+          <div className="text-center space-y-4 py-12">
+            <Calendar className="h-16 w-16 mx-auto text-primary" />
+            <h1 className="text-4xl font-bold tracking-tight">
+              Calendrier des Événements
+            </h1>
+            <p className="text-xl text-muted-foreground">
+              Découvrez tous les événements de jeux près de chez vous
+            </p>
+          </div>
+          
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Vous devez être connecté pour voir les événements.
+            </AlertDescription>
+          </Alert>
+
+          <Card className="border-primary/50">
+            <CardHeader className="text-center">
+              <CardTitle>Connectez-vous pour commencer</CardTitle>
+              <CardDescription>
+                Accédez à votre calendrier personnalisé d'événements
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center pb-6">
+              <Button size="lg" asChild>
+                <Link href="/login">
+                  Se connecter
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -42,13 +68,14 @@ export default async function EventsPage() {
   
   if (!user) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-6 max-w-4xl">
         <h1 className="text-3xl font-bold mb-8">Calendrier des Événements</h1>
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
-          <p className="text-lg mb-4">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
             Erreur lors de la récupération de votre profil.
-          </p>
-        </div>
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
@@ -59,33 +86,63 @@ export default async function EventsPage() {
 
   if (!hasLairs || !hasGames) {
     return (
-      <div className="container mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-8">Calendrier des Événements</h1>
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 text-center">
-          <p className="text-lg mb-4">
-            {!hasLairs && !hasGames && "Vous ne suivez aucun lieu ni aucun jeu pour le moment."}
-            {!hasLairs && hasGames && "Vous ne suivez aucun lieu pour le moment."}
-            {hasLairs && !hasGames && "Vous ne suivez aucun jeu pour le moment."}
-          </p>
-          <p className="text-base mb-4 text-gray-600 dark:text-gray-400">
-            Suivez des lieux et des jeux pour voir leurs événements ici.
-          </p>
-          <div className="flex gap-4 justify-center flex-wrap">
+      <div className="container mx-auto p-6 max-w-4xl">
+        <div className="space-y-6">
+          <div className="text-center space-y-2">
+            <h1 className="text-4xl font-bold tracking-tight">
+              Calendrier des Événements
+            </h1>
+            <p className="text-muted-foreground">
+              Personnalisez votre expérience en suivant des lieux et des jeux
+            </p>
+          </div>
+
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              {!hasLairs && !hasGames && "Vous ne suivez aucun lieu ni aucun jeu pour le moment."}
+              {!hasLairs && hasGames && "Vous ne suivez aucun lieu pour le moment."}
+              {hasLairs && !hasGames && "Vous ne suivez aucun jeu pour le moment."}
+            </AlertDescription>
+          </Alert>
+
+          <div className="grid gap-4 md:grid-cols-2">
             {!hasLairs && (
-              <Link 
-                href="/lairs"
-                className="inline-block px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
-              >
-                Découvrir les lieux
-              </Link>
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <MapPin className="h-8 w-8 text-primary mb-2" />
+                  <CardTitle>Suivez des lieux</CardTitle>
+                  <CardDescription>
+                    Découvrez les boutiques et espaces de jeu près de chez vous
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button asChild className="w-full">
+                    <Link href="/lairs">
+                      Découvrir les lieux
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
             )}
+            
             {!hasGames && (
-              <Link 
-                href="/account"
-                className="inline-block px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
-              >
-                Suivre des jeux
-              </Link>
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <Gamepad2 className="h-8 w-8 text-primary mb-2" />
+                  <CardTitle>Suivez des jeux</CardTitle>
+                  <CardDescription>
+                    Sélectionnez les jeux qui vous intéressent pour voir leurs événements
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button asChild className="w-full">
+                    <Link href="/account">
+                      Gérer mes jeux
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
             )}
           </div>
         </div>
@@ -120,39 +177,45 @@ export default async function EventsPage() {
   });
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Calendrier des Événements</h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Événements des lieux que vous suivez pour les jeux qui vous intéressent
-        </p>
-      </div>
-      {events.length === 0 ? (
-        <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-6 text-center">
-          <p className="text-lg mb-4">
-            Aucun événement prévu dans les lieux que vous suivez pour les jeux qui vous intéressent.
+    <div className="container mx-auto p-6 max-w-7xl">
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight mb-2">
+            Calendrier des Événements
+          </h1>
+          <p className="text-muted-foreground">
+            Événements des lieux que vous suivez pour les jeux qui vous intéressent
           </p>
-          <p className="text-base text-gray-600 dark:text-gray-400 mb-4">
-            Les événements affichés correspondent aux lieux et jeux que vous avez choisi de suivre.
-          </p>
-          <div className="flex gap-4 justify-center flex-wrap">
-            <Link 
-              href="/lairs"
-              className="inline-block px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
-            >
-              Gérer mes lieux
-            </Link>
-            <Link 
-              href="/account"
-              className="inline-block px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
-            >
-              Gérer mes jeux
-            </Link>
-          </div>
         </div>
-      ) : (
-        <EventsCalendar events={events} lairsMap={lairsMap} />
-      )}
+        
+        {events.length === 0 ? (
+          <Card>
+            <CardHeader className="text-center">
+              <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <CardTitle>Aucun événement prévu</CardTitle>
+              <CardDescription>
+                Aucun événement n'est prévu dans les lieux que vous suivez pour les jeux qui vous intéressent.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex gap-4 justify-center flex-wrap pb-6">
+              <Button variant="outline" asChild>
+                <Link href="/lairs">
+                  <MapPin className="mr-2 h-4 w-4" />
+                  Gérer mes lieux
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/account">
+                  <Gamepad2 className="mr-2 h-4 w-4" />
+                  Gérer mes jeux
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <EventsCalendar events={events} lairsMap={lairsMap} />
+        )}
+      </div>
     </div>
   );
 }

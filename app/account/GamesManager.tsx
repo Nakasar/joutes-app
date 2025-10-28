@@ -4,6 +4,11 @@ import { Game } from "@/lib/types/Game";
 import { useState, useTransition } from "react";
 import { addGameToUserList, removeGameFromUserList } from "./actions";
 import Image from "next/image";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Gamepad2, Trash2, Plus, Loader2, AlertCircle } from "lucide-react";
 
 interface GamesManagerProps {
   userGames: Game[];
@@ -51,79 +56,99 @@ export default function GamesManager({ userGames, allGames }: GamesManagerProps)
   };
 
   return (
-    <div>
+    <div className="space-y-6">
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       {/* Liste des jeux suivis */}
       {followedGames.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-muted-foreground space-y-2">
+          <Gamepad2 className="h-12 w-12 mx-auto opacity-50" />
           <p>Vous ne suivez aucun jeu pour le moment.</p>
-          <p className="text-sm mt-2">Ajoutez-en un ci-dessous !</p>
+          <p className="text-sm">Ajoutez-en un ci-dessous !</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {followedGames.map((game) => (
-            <div
+            <Card
               key={game.id}
-              className="border rounded-lg p-4 flex items-center justify-between hover:shadow-md transition-shadow"
+              className="hover:shadow-md transition-shadow"
             >
-              <div className="flex items-center gap-3 flex-1">
-                {game.icon && (
-                  <div className="relative w-12 h-12 flex-shrink-0">
-                    <Image
-                      src={game.icon}
-                      alt={game.name}
-                      fill
-                      className="object-contain"
-                    />
+              <CardContent className="flex items-center justify-between p-4">
+                <div className="flex items-center gap-3 flex-1">
+                  {game.icon && (
+                    <div className="relative w-12 h-12 flex-shrink-0">
+                      <Image
+                        src={game.icon}
+                        alt={game.name}
+                        fill
+                        className="object-contain rounded"
+                      />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <h3 className="font-semibold truncate">{game.name}</h3>
+                    <p className="text-sm text-muted-foreground truncate">{game.type}</p>
                   </div>
-                )}
-                <div>
-                  <h3 className="font-semibold">{game.name}</h3>
-                  <p className="text-sm text-gray-600">{game.type}</p>
                 </div>
-              </div>
-              <button
-                onClick={() => handleRemoveGame(game.id)}
-                disabled={isPending}
-                className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Retirer
-              </button>
-            </div>
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  onClick={() => handleRemoveGame(game.id)}
+                  disabled={isPending}
+                >
+                  {isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
 
       {/* Formulaire d'ajout */}
       {availableGames.length > 0 && (
-        <div className="border-t pt-6">
-          <h3 className="font-semibold mb-3">Ajouter un jeu</h3>
+        <div className="border-t pt-6 space-y-3">
+          <h3 className="font-semibold flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Ajouter un jeu
+          </h3>
           <div className="flex gap-3">
-            <select
-              value={selectedGame}
-              onChange={(e) => setSelectedGame(e.target.value)}
-              disabled={isPending}
-              className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-            >
-              <option value="">Sélectionnez un jeu...</option>
-              {availableGames.map((game) => (
-                <option key={game.id} value={game.id}>
-                  {game.name} ({game.type})
-                </option>
-              ))}
-            </select>
-            <button
+            <Select value={selectedGame} onValueChange={setSelectedGame} disabled={isPending}>
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="Sélectionnez un jeu..." />
+              </SelectTrigger>
+              <SelectContent>
+                {availableGames.map((game) => (
+                  <SelectItem key={game.id} value={game.id}>
+                    {game.name} ({game.type})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
               onClick={handleAddGame}
               disabled={!selectedGame || isPending}
-              className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isPending ? "Ajout..." : "Ajouter"}
-            </button>
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Ajout...
+                </>
+              ) : (
+                <>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Ajouter
+                </>
+              )}
+            </Button>
           </div>
         </div>
       )}

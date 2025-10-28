@@ -7,6 +7,10 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { getUserById } from "@/lib/db/users";
 import { getAllGames } from "@/lib/db/games";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Calendar, MapPin, Gamepad2, AlertCircle, Info } from "lucide-react";
 
 export default async function Home() {
   // Récupérer la session utilisateur
@@ -17,18 +21,40 @@ export default async function Home() {
   // Si l'utilisateur n'est pas connecté, afficher un message
   if (!session?.user) {
     return (
-      <div className="container mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-8">Calendrier des Événements</h1>
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 text-center">
-          <p className="text-lg mb-4">
-            Vous devez être connecté pour voir les événements.
-          </p>
-          <Link
-            href="/login"
-            className="inline-block px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
-          >
-            Se connecter
-          </Link>
+      <div className="container mx-auto p-6 max-w-4xl">
+        <div className="space-y-6">
+          <div className="text-center space-y-4 py-12">
+            <Calendar className="h-16 w-16 mx-auto text-primary" />
+            <h1 className="text-4xl font-bold tracking-tight">
+              Calendrier des Événements
+            </h1>
+            <p className="text-xl text-muted-foreground">
+              Découvrez tous les événements de jeux près de chez vous
+            </p>
+          </div>
+          
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Vous devez être connecté pour voir les événements personnalisés selon vos préférences.
+            </AlertDescription>
+          </Alert>
+
+          <Card className="border-primary/50">
+            <CardHeader className="text-center">
+              <CardTitle>Connectez-vous pour commencer</CardTitle>
+              <CardDescription>
+                Accédez à votre calendrier personnalisé d'événements
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center pb-6">
+              <Button size="lg" asChild>
+                <Link href="/login">
+                  Se connecter
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -39,13 +65,14 @@ export default async function Home() {
 
   if (!user) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-6 max-w-4xl">
         <h1 className="text-3xl font-bold mb-8">Calendrier des Événements</h1>
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
-          <p className="text-lg mb-4">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
             Erreur lors de la récupération de votre profil.
-          </p>
-        </div>
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
@@ -56,33 +83,63 @@ export default async function Home() {
 
   if (!hasLairs || !hasGames) {
     return (
-      <div className="container mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-8">Calendrier des Événements</h1>
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 text-center">
-          <p className="text-lg mb-4">
-            {!hasLairs && !hasGames && "Vous ne suivez aucun lieu ni aucun jeu pour le moment."}
-            {!hasLairs && hasGames && "Vous ne suivez aucun lieu pour le moment."}
-            {hasLairs && !hasGames && "Vous ne suivez aucun jeu pour le moment."}
-          </p>
-          <p className="text-base mb-4 text-gray-600 dark:text-gray-400">
-            Suivez des lieux et des jeux pour voir leurs événements ici.
-          </p>
-          <div className="flex gap-4 justify-center flex-wrap">
+      <div className="container mx-auto p-6 max-w-4xl">
+        <div className="space-y-6">
+          <div className="text-center space-y-2">
+            <h1 className="text-4xl font-bold tracking-tight">
+              Calendrier des Événements
+            </h1>
+            <p className="text-muted-foreground">
+              Personnalisez votre expérience en suivant des lieux et des jeux
+            </p>
+          </div>
+
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              {!hasLairs && !hasGames && "Vous ne suivez aucun lieu ni aucun jeu pour le moment."}
+              {!hasLairs && hasGames && "Vous ne suivez aucun lieu pour le moment."}
+              {hasLairs && !hasGames && "Vous ne suivez aucun jeu pour le moment."}
+            </AlertDescription>
+          </Alert>
+
+          <div className="grid gap-4 md:grid-cols-2">
             {!hasLairs && (
-              <Link
-                href="/lairs"
-                className="inline-block px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
-              >
-                Découvrir les lieux
-              </Link>
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <MapPin className="h-8 w-8 text-primary mb-2" />
+                  <CardTitle>Suivez des lieux</CardTitle>
+                  <CardDescription>
+                    Découvrez les boutiques et espaces de jeu près de chez vous
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button asChild className="w-full">
+                    <Link href="/lairs">
+                      Découvrir les lieux
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
             )}
+            
             {!hasGames && (
-              <Link
-                href="/account"
-                className="inline-block px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
-              >
-                Suivre des jeux
-              </Link>
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <Gamepad2 className="h-8 w-8 text-primary mb-2" />
+                  <CardTitle>Suivez des jeux</CardTitle>
+                  <CardDescription>
+                    Sélectionnez les jeux qui vous intéressent pour voir leurs événements
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button asChild className="w-full">
+                    <Link href="/account">
+                      Gérer mes jeux
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
             )}
           </div>
         </div>
@@ -117,9 +174,18 @@ export default async function Home() {
   });
 
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-8">Calendrier des Événements</h1>
-      <EventsCalendar events={events} lairsMap={lairsMap} />
+    <div className="container mx-auto p-6 max-w-7xl">
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight mb-2">
+            Calendrier des Événements
+          </h1>
+          <p className="text-muted-foreground">
+            Événements des lieux que vous suivez pour les jeux qui vous intéressent
+          </p>
+        </div>
+        <EventsCalendar events={events} lairsMap={lairsMap} />
+      </div>
     </div>
   );
 }
