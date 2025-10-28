@@ -1,6 +1,7 @@
 "use server";
 
 import { NodeHtmlMarkdown } from 'node-html-markdown'
+import { DateTime } from "luxon";
 import { requireAdmin } from "@/lib/middleware/admin";
 import { Lair } from "@/lib/types/Lair";
 import { revalidatePath } from "next/cache";
@@ -169,13 +170,13 @@ ${page.content}
       
       console.log(`${object.events.length} événements uniques extraits pour le lieu ${lair.name}`);
       
-
+      
       const events: Event[] = object.events.map(event => ({
         ...event,
         id: crypto.randomUUID(),
         lairId: lair.id,
-        startDateTime: new Date(event.startDateTime).toISOString(),
-        endDateTime: new Date(event.endDateTime).toISOString(),
+        startDateTime: DateTime.fromISO(event.startDateTime, { zone: 'Europe/Paris' }).toISO() ?? event.startDateTime,
+        endDateTime: DateTime.fromISO(event.endDateTime, { zone: 'Europe/Paris' }).toISO() ?? event.endDateTime,
       }));
       await lairsDb.updateLair(lair.id, { events });
       
