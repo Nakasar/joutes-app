@@ -47,20 +47,21 @@ export default function Header() {
           <NavigationMenu className="hidden md:flex">
             <NavigationMenuList>
               <NavigationMenuItem>
-                <Link href="/events">
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+
+                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                  <Link href="/events">
                     <Calendar className="mr-2 h-4 w-4" />
                     Événements
-                  </NavigationMenuLink>
-                </Link>
+                  </Link>
+                </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <Link href="/lairs">
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                  <Link href="/lairs">
                     <MapPin className="mr-2 h-4 w-4" />
                     Lieux
-                  </NavigationMenuLink>
-                </Link>
+                  </Link>
+                </NavigationMenuLink>
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
@@ -134,7 +135,7 @@ export default function Header() {
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-            
+
             {!isPending && !session && (
               <Button size="sm" asChild>
                 <Link href="/login">Connexion</Link>

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Gamepad2, Euro } from "lucide-react";
 import Link from "next/link";
+import { DateTime } from "luxon";
 
 type EventsCalendarProps = {
   events: Event[];
@@ -61,7 +62,7 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
   // Filtrer les événements pour le mois actuel
   const eventsInMonth = useMemo(() => {
     return events.filter((event) => {
-      const eventDate = new Date(event.startDateTime);
+      const eventDate = DateTime.fromISO(event.startDateTime);
       return (
         eventDate.getMonth() === currentMonth &&
         eventDate.getFullYear() === currentYear
