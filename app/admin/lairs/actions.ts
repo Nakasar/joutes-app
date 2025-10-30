@@ -50,6 +50,37 @@ export async function createLair(data: { name: string; banner?: string; games: s
   }
 }
 
+export async function updateLair(id: string, data: { name: string; banner?: string; games: string[]; eventsSourceUrls: string[] }) {
+  try {
+    await requireAdmin();
+    
+    // Valider l'ID
+    const validatedId = lairIdSchema.parse(id);
+    
+    // Valider les données avec Zod
+    const validatedData = lairSchema.parse(data);
+    
+    const updatedLair = await lairsDb.updateLair(validatedId, validatedData);
+
+    if (!updatedLair) {
+      return { success: false, error: "Lieu non trouvé" };
+    }
+
+    revalidatePath("/admin/lairs");
+    
+    return { success: true, lair: updatedLair };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { 
+        success: false, 
+        error: error.issues[0]?.message || "Données invalides" 
+      };
+    }
+    console.error("Erreur lors de la mise à jour du lieu:", error);
+    return { success: false, error: "Erreur lors de la mise à jour du lieu" };
+  }
+}
+
 export async function deleteLair(id: string) {
   try {
     await requireAdmin();

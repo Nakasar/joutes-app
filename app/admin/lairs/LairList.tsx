@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { Lair } from "@/lib/types/Lair";
 import { Game } from "@/lib/types/Game";
 import { deleteLair, refreshEvents } from "./actions";
+import { LairForm } from "./LairForm";
+import { Button } from "@/components/ui/button";
 
 export function LairList({
   lairs,
@@ -136,6 +138,19 @@ export function LairList({
                         🔄 Rafraîchir
                       </button>
                     )}
+                    <LairForm
+                      games={games}
+                      lair={lair}
+                      trigger={
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          Modifier
+                        </Button>
+                      }
+                    />
                     <button
                       onClick={() => handleDelete(lair.id)}
                       disabled={isPending}
