@@ -164,7 +164,7 @@ export default async function LairDetailPage({
                           sizes="(max-width: 768px) 100vw, 320px"
                         />
                       ) : (
-                        <div className="absolute inset-0 bg-linear-to-r from-blue-600 via-blue-500 to-amber-500 bg-blue-500" />
+                        <div className="absolute inset-0 bg-linear-to-r from-blue-600 via-blue-500 to-amber-500" />
                       )}
                     </div>
 
