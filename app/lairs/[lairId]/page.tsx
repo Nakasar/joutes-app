@@ -137,8 +137,8 @@ export default async function LairDetailPage({
         {games.length > 0 && (
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle className="text-3xl flex items-center gap-2">
-                <Gamepad2 className="h-8 w-8" />
+              <CardTitle className="text-2xl flex items-center gap-2">
+                <Gamepad2 className="h-6 w-6" />
                 Jeux disponibles
               </CardTitle>
               <CardDescription>
@@ -146,9 +146,9 @@ export default async function LairDetailPage({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
                 {games.map((game) => (
-                  <Card key={game.id} className="hover:shadow-lg transition-shadow">
+                  <Card key={game.id} className="flex-shrink-0 w-64 hover:shadow-lg transition-shadow">
                     <CardContent className="pt-6">
                       <div className="flex items-center gap-3 mb-3">
                         {game.icon && (
