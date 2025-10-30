@@ -256,7 +256,11 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
                           const eventContent = (
                             <div className="text-xs p-2 rounded-md bg-background border hover:bg-accent hover:border-accent-foreground transition-colors cursor-pointer">
                               <div className="font-semibold truncate mb-1" title={event.name}>
-                                {startTime} - {event.name}
+                                {event.name}
+                              </div>
+                              <div className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
+                                <CalendarIcon className="h-3 w-3" />
+                                {startTime}
                               </div>
                               <div className="text-xs text-muted-foreground truncate flex items-center gap-1" title={lair?.name}>
                                 <MapPin className="h-3 w-3" />
@@ -371,20 +375,20 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
                         >
                           <CardHeader className="pb-3">
                             <div className="flex items-start justify-between gap-2">
-                              <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
-                                <CalendarIcon className="h-4 w-4" />
-                                {timeStr} - {endTimeStr}
-                              </div>
+                              <CardTitle className="text-xl">
+                                {event.name}
+                              </CardTitle>
                               <Badge variant={getStatusVariant(event.status)}>
                                 {getStatusLabel(event.status)}
                               </Badge>
                             </div>
-                            <CardTitle className="text-xl">
-                              {event.name}
-                            </CardTitle>
                           </CardHeader>
 
                           <CardContent className="space-y-2">
+                            <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
+                              <CalendarIcon className="h-4 w-4" />
+                              {timeStr} - {endTimeStr}
+                            </div>
                             <div className="flex items-center gap-2 text-sm">
                               <MapPin className="h-4 w-4 text-muted-foreground" />
                               <span className="font-medium">
