@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import { Game } from "@/lib/types/Game";
 import { deleteGame } from "./actions";
+import { GameForm } from "./GameForm";
+import { Button } from "@/components/ui/button";
 
 export function GameList({ games }: { games: Game[] }) {
   const [isPending, startTransition] = useTransition();
@@ -89,13 +91,27 @@ export function GameList({ games }: { games: Game[] }) {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => handleDelete(game.id)}
-                    disabled={isPending}
-                    className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                  >
-                    Supprimer
-                  </button>
+                  <div className="flex gap-2 justify-end">
+                    <GameForm
+                      game={game}
+                      trigger={
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          Modifier
+                        </Button>
+                      }
+                    />
+                    <button
+                      onClick={() => handleDelete(game.id)}
+                      disabled={isPending}
+                      className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))
