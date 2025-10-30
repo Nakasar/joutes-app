@@ -143,7 +143,7 @@ IMPORTANT: Si un même événement apparaît plusieurs fois (même nom et même 
 Un évènement avec le même nom peut apparaître à des dates ou heures différentes, dans ce cas, garde chaque occurence distincte.
 
 Pour chaque événement unique, extrait:
-- name: Le nom de l'événement
+- name: Le nom de l'événement (retire le nom du jeu et la date et l'heure du nom de l'évènement)
 - startDateTime: La date et heure de début au format datetime ISO 8601
 - endDateTime: La date et heure de fin au format datetime ISO 8601
 - gameName: Le nom du jeu de l'événement (parmi la liste ci-dessous si possible)
@@ -153,6 +153,9 @@ Pour chaque événement unique, extrait:
 
 Pour le champ gameName utilise en priorité les noms des jeux de la liste fournie ci-dessous (le nom du jeu peut varier entre les évènements et lieux de jeu). Si aucun nom ne correspond, utilise le nom trouvé dans la page des évènements.
 ${existingGames.map(game => `- ${game.name}`).join('\n')}
+
+Concernant le titre, par exemple:  
+- Si le titre est "Soirée Jeu de Rôle - Donjons & Dragons - 15 Mars 2024 20:00", le nom de l'événement est "Soirée Jeu de Rôle".
 
 # Contenu des pages :
 
