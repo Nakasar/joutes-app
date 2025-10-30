@@ -252,11 +252,9 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
                           const startTime = DateTime.fromISO(
                             event.startDateTime
                           ).toLocaleString(DateTime.TIME_24_SIMPLE);
-                          return (
-                            <div
-                              key={event.id}
-                              className="text-xs p-2 rounded-md bg-background border"
-                            >
+                          
+                          const eventContent = (
+                            <div className="text-xs p-2 rounded-md bg-background border hover:bg-accent hover:border-accent-foreground transition-colors cursor-pointer">
                               <div className="font-semibold truncate mb-1" title={event.name}>
                                 {startTime} - {event.name}
                               </div>
@@ -279,13 +277,21 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
                                   </span>
                                 )}
                               </div>
-                              {event.url &&
-                                <Button asChild>
-                                  <Link href={event.url} target="_blank" rel="noopener noreferrer">
-                                    Voir l&apos;événement
-                                  </Link>
-                                </Button>
-                              }
+                            </div>
+                          );
+
+                          return event.url ? (
+                            <Link
+                              key={event.id}
+                              href={event.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {eventContent}
+                            </Link>
+                          ) : (
+                            <div key={event.id}>
+                              {eventContent}
                             </div>
                           );
                         })}
@@ -354,15 +360,14 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
                       const timeStr = eventDate.toLocaleString(DateTime.TIME_24_SIMPLE);
                       const endTimeStr = endDate.toLocaleString(DateTime.TIME_24_SIMPLE);
 
-                      return (
+                      const cardContent = (
                         <Card
-                          key={event.id}
                           className={`hover:shadow-lg transition-shadow ${event.status === "available"
                             ? "border-l-4 border-l-green-500"
                             : event.status === "sold-out"
                               ? "border-l-4 border-l-red-500"
                               : "border-l-4 border-l-gray-400"
-                            }`}
+                            } ${event.url ? "cursor-pointer hover:bg-accent" : ""}`}
                         >
                           <CardHeader className="pb-3">
                             <div className="flex items-start justify-between gap-2">
@@ -396,15 +401,23 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
                                 <span className="font-semibold">{event.price}€</span>
                               </div>
                             )}
-                            {event.url &&
-                              <Button asChild>
-                                <Link href={event.url} target="_blank" rel="noopener noreferrer">
-                                  Voir l&apos;événement
-                                </Link>
-                              </Button>
-                            }
                           </CardContent>
                         </Card>
+                      );
+
+                      return event.url ? (
+                        <Link
+                          key={event.id}
+                          href={event.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {cardContent}
+                        </Link>
+                      ) : (
+                        <div key={event.id}>
+                          {cardContent}
+                        </div>
                       );
                     })}
                   </div>
