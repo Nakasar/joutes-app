@@ -86,12 +86,10 @@ export default async function LairDetailPage({
       {/* Bannière */}
       <div className="relative w-full h-64 md:h-96 bg-gradient-to-br from-primary/80 to-purple-600/80">
         {lair.banner ? (
-          <Image
+          <img
             src={lair.banner}
             alt={lair.name}
-            fill
-            className="object-cover"
-            priority
+            className="absolute inset-0 w-full h-full object-cover object-center"
           />
         ) : (
           <div className="flex items-center justify-center h-full">
