@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { lairSchema, lairIdSchema } from "@/lib/schemas/lair.schema";
 import { z } from "zod";
 import * as lairsDb from "@/lib/db/lairs";
+import * as eventsDb from "@/lib/db/events";
 import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { Event } from "@/lib/types/Event";
@@ -178,7 +179,9 @@ ${page.content}
         startDateTime: DateTime.fromISO(event.startDateTime, { zone: 'Europe/Paris' }).toISO() ?? event.startDateTime,
         endDateTime: DateTime.fromISO(event.endDateTime, { zone: 'Europe/Paris' }).toISO() ?? event.endDateTime,
       }));
-      await lairsDb.updateLair(lair.id, { events });
+      
+      // Replace all events for this lair in the events collection
+      await eventsDb.replaceEventsForLair(lair.id, events);
       
       return { 
         success: true, 
