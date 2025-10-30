@@ -32,6 +32,7 @@ export function LairForm({
     games: [] as string[],
     eventsSourceUrls: [] as string[],
   });
+  const [uploading, setUploading] = useState(false);
 
   // Initialiser ou réinitialiser le formulaire avec les données du lair
   useEffect(() => {
@@ -83,6 +84,37 @@ export function LairForm({
         setError(result.error || `Erreur lors de ${lair ? "la modification" : "l'ajout"} du lieu`);
       }
     });
+  };
+
+  const handleFileUpload = async (file: File) => {
+    setUploading(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Erreur lors de l'upload");
+      }
+
+      const data = await response.json();
+      setFormData((prev) => ({ ...prev, banner: data.url }));
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Erreur lors de l'upload du fichier"
+      );
+    } finally {
+      setUploading(false);
+    }
   };
 
   const toggleGame = (gameId: string) => {
@@ -139,16 +171,41 @@ export function LairForm({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              URL de la bannière
+              Bannière du lieu
             </label>
-            <input
-              type="url"
-              value={formData.banner}
-              onChange={(e) =>
-                setFormData({ ...formData, banner: e.target.value })
-              }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+            <div className="space-y-2">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFileUpload(file);
+                }}
+                disabled={uploading}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              {uploading && (
+                <p className="text-sm text-gray-500">Upload en cours...</p>
+              )}
+              {formData.banner && !uploading && (
+                <div className="flex items-center gap-2">
+                  <img
+                    src={formData.banner}
+                    alt="Bannière"
+                    className="w-32 h-16 object-cover rounded"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData({ ...formData, banner: "" })
+                    }
+                    className="text-sm text-red-600 hover:text-red-700"
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div>
@@ -239,7 +296,7 @@ export function LairForm({
             </Button>
             <Button
               type="submit"
-              disabled={isPending}
+              disabled={isPending || uploading}
               className="flex-1"
             >
               {isPending
