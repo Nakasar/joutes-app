@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useSession, signOut } from "@/lib/auth-client";
-import { Menu, Calendar, MapPin, User, LogOut, Sparkles } from "lucide-react";
+import { Menu, Calendar, MapPin, User, LogOut, Sparkles, Shield } from "lucide-react";
+import { isAdmin } from "@/lib/config/admins";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -62,6 +63,16 @@ export default function Header() {
                   </Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
+              {session && isAdmin(session.user.email) && (
+                <NavigationMenuItem>
+                  <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                    <Link href="/admin">
+                      <Shield className="mr-2 h-4 w-4" />
+                      Administration
+                    </Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+              )}
             </NavigationMenuList>
           </NavigationMenu>
 
@@ -172,6 +183,14 @@ export default function Header() {
                   Lieux
                 </Link>
               </Button>
+              {session && isAdmin(session.user.email) && (
+                <Button variant="ghost" asChild className="justify-start">
+                  <Link href="/admin" onClick={() => setMobileMenuOpen(false)}>
+                    <Shield className="mr-2 h-4 w-4" />
+                    Administration
+                  </Link>
+                </Button>
+              )}
             </div>
           </div>
         )}
