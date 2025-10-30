@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/middleware/admin";
+import { requireAdminOrOwner } from "@/lib/middleware/admin";
 import { getLairById } from "@/lib/db/lairs";
 import { getAllGames } from "@/lib/db/games";
 import { getUserById } from "@/lib/db/users";
@@ -15,10 +15,10 @@ export default async function ManageLairPage({
 }: {
   params: Promise<{ lairId: string }>;
 }) {
-  // Vérifier que l'utilisateur est admin
-  await requireAdmin();
-
   const { lairId } = await params;
+  
+  // Vérifier que l'utilisateur est admin ou owner du lair
+  await requireAdminOrOwner(lairId);
   const lair = await getLairById(lairId);
 
   if (!lair) {

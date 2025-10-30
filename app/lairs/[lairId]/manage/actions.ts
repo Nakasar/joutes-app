@@ -1,6 +1,6 @@
 "use server";
 
-import { requireAdmin } from "@/lib/middleware/admin";
+import { requireAdminOrOwner } from "@/lib/middleware/admin";
 import { revalidatePath } from "next/cache";
 import { lairSchema, lairIdSchema } from "@/lib/schemas/lair.schema";
 import { z } from "zod";
@@ -14,7 +14,7 @@ export async function updateLairDetails(
   data: { name: string; banner?: string; games: string[] }
 ) {
   try {
-    await requireAdmin();
+    await requireAdminOrOwner(lairId);
 
     // Valider l'ID
     const validatedId = lairIdSchema.parse(lairId);
@@ -46,7 +46,7 @@ export async function updateLairDetails(
 
 export async function addOwner(lairId: string, email: string) {
   try {
-    await requireAdmin();
+    await requireAdminOrOwner(lairId);
 
     // Valider l'ID
     const validatedId = lairIdSchema.parse(lairId);
@@ -81,7 +81,7 @@ export async function addOwner(lairId: string, email: string) {
 
 export async function removeOwner(lairId: string, userId: string) {
   try {
-    await requireAdmin();
+    await requireAdminOrOwner(lairId);
 
     // Valider l'ID
     const validatedLairId = lairIdSchema.parse(lairId);

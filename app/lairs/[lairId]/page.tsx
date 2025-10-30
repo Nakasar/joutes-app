@@ -3,7 +3,7 @@ import { getEventsByLairId } from "@/lib/db/events";
 import { getGameById } from "@/lib/db/games";
 import { getUserById } from "@/lib/db/users";
 import { auth } from "@/lib/auth";
-import { checkAdmin } from "@/lib/middleware/admin";
+import { checkAdminOrOwner } from "@/lib/middleware/admin";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import Image from "next/image";
@@ -64,8 +64,8 @@ export default async function LairDetailPage({
     isFollowing = user?.lairs?.includes(lairId) || false;
   }
 
-  // Vérifier si l'utilisateur est administrateur
-  const isUserAdmin = await checkAdmin();
+  // Vérifier si l'utilisateur est administrateur ou owner du lair
+  const canManageLair = await checkAdminOrOwner(lairId);
 
   const upcomingEvents = await getEventsByLairId(lairId);
   
@@ -119,7 +119,7 @@ export default async function LairDetailPage({
                   isAuthenticated={!!session?.user}
                 />
               )}
-              {isUserAdmin && (
+              {canManageLair && (
                 <Button variant="default" asChild size="sm">
                   <Link href={`/lairs/${lairId}/manage`}>
                     <Settings className="mr-2 h-4 w-4" />
