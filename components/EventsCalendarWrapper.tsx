@@ -13,14 +13,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Calendar, MapPin, Gamepad2, AlertCircle, Info } from "lucide-react";
 
 type EventsCalendarWrapperProps = {
-  showAllGames?: boolean;
   basePath?: string;
 };
 
 export default async function EventsCalendarWrapper({ 
-  showAllGames = false, 
   basePath = "/" 
 }: EventsCalendarWrapperProps) {
+  const showAllGames = true;
   // Récupérer la session utilisateur
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -189,23 +188,7 @@ export default async function EventsCalendarWrapper({
             <h1 className="text-4xl font-bold tracking-tight mb-2">
               Calendrier des Événements
             </h1>
-            <p className="text-muted-foreground">
-              {showAllGames 
-                ? "Tous les événements des lieux que vous suivez"
-                : "Événements des lieux que vous suivez pour les jeux qui vous intéressent"
-              }
-            </p>
           </div>
-          
-          <Button 
-            variant={showAllGames ? "default" : "outline"} 
-            asChild
-          >
-            <Link href={showAllGames ? basePath : `${basePath}?showAll=true`}>
-              <Gamepad2 className="mr-2 h-4 w-4" />
-              {showAllGames ? "Mes jeux uniquement" : "Tous les jeux"}
-            </Link>
-          </Button>
         </div>
         
         {events.length === 0 ? (

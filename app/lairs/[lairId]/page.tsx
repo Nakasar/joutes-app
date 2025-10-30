@@ -3,6 +3,7 @@ import { getEventsByLairId } from "@/lib/db/events";
 import { getGameById } from "@/lib/db/games";
 import { getUserById } from "@/lib/db/users";
 import { auth } from "@/lib/auth";
+import { checkAdmin } from "@/lib/middleware/admin";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import Image from "next/image";
@@ -13,7 +14,7 @@ import EventsCalendar from "@/app/events/EventsCalendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Gamepad2, Calendar } from "lucide-react";
+import { ArrowLeft, Gamepad2, Calendar, Settings } from "lucide-react";
 
 export async function generateMetadata({ 
   params 
@@ -62,6 +63,9 @@ export default async function LairDetailPage({
     const user = await getUserById(session.user.id);
     isFollowing = user?.lairs?.includes(lairId) || false;
   }
+
+  // Vérifier si l'utilisateur est administrateur
+  const isUserAdmin = await checkAdmin();
 
   const upcomingEvents = await getEventsByLairId(lairId);
   
@@ -114,6 +118,14 @@ export default async function LairDetailPage({
                   isFollowing={isFollowing}
                   isAuthenticated={!!session?.user}
                 />
+              )}
+              {isUserAdmin && (
+                <Button variant="default" asChild size="sm">
+                  <Link href={`/lairs/${lairId}/manage`}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Gérer
+                  </Link>
+                </Button>
               )}
             </div>
           </div>

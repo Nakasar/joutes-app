@@ -334,7 +334,7 @@ export default function EventsCalendar({
                               <div className="font-semibold truncate mb-1" title={event.name}>
                                 {event.name}
                               </div>
-                              <div className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
+                              <div className="text-xs text-muted-foreground flex items-center gap-1 mb-1" suppressHydrationWarning>
                                 <CalendarIcon className="h-3 w-3" />
                                 {startTime}
                               </div>
@@ -497,7 +497,7 @@ function ListView({
                     </CardHeader>
 
                     <CardContent className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
+                      <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground" suppressHydrationWarning>
                         <CalendarIcon className="h-4 w-4" />
                         {timeStr} - {endTimeStr}
                       </div>

@@ -69,3 +69,23 @@ export async function deleteLair(id: string): Promise<boolean> {
   const result = await db.collection(COLLECTION_NAME).deleteOne({ _id: new ObjectId(id) });
   return result.deletedCount > 0;
 }
+
+export async function addOwnerToLair(lairId: string, userId: string): Promise<boolean> {
+  const db = await getDb();
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(lairId) },
+    { $addToSet: { owners: userId } }
+  );
+  
+  return result.modifiedCount > 0 || result.matchedCount > 0;
+}
+
+export async function removeOwnerFromLair(lairId: string, userId: string): Promise<boolean> {
+  const db = await getDb();
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(lairId) },
+    { $pull: { owners: userId } } as any
+  );
+  
+  return result.modifiedCount > 0;
+}
