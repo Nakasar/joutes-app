@@ -164,7 +164,7 @@ export default async function LairDetailPage({
                           sizes="(max-width: 768px) 100vw, 320px"
                         />
                       ) : (
-                        <div className="absolute inset-0 bg-linear-to-r from-blue-600 via-blue-500 to-amber-500" />
+                        <div className="absolute inset-0 bg-linear-to-br from-blue-600 via-blue-500 to-amber-500" />
                       )}
                     </div>
 
@@ -176,7 +176,7 @@ export default async function LairDetailPage({
                       {/* Logo en haut si disponible */}
                       {game.icon && (
                         <div className="flex justify-start">
-                          <div className="relative w-50 h-50 bg-white/10 backdrop-blur-sm rounded-lg p-2 shadow-xl">
+                          <div className="relative w-20 h-20 bg-white/10 backdrop-blur-sm rounded-lg p-2 shadow-xl">
                             <Image
                               src={game.icon}
                               alt={game.name}
