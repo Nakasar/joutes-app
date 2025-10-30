@@ -97,7 +97,8 @@ export async function deleteEventsByLairId(lairId: string): Promise<number> {
   return result.deletedCount;
 }
 
-// Replace all events for a lair (delete old ones and insert new ones)
+// Replace all AI-scrapped events for a lair (delete old AI-scrapped ones and insert new ones)
+// User-created events are preserved
 export async function replaceEventsForLair(lairId: string, events: Event[]): Promise<void> {
   const db = await getDb();
   
@@ -106,8 +107,11 @@ export async function replaceEventsForLair(lairId: string, events: Event[]): Pro
   
   try {
     await session.withTransaction(async () => {
-      // Delete all existing events for this lair
-      await db.collection<EventDocument>(COLLECTION_NAME).deleteMany({ lairId }, { session });
+      // Delete only AI-scrapped events for this lair
+      await db.collection<EventDocument>(COLLECTION_NAME).deleteMany({ 
+        lairId,
+        addedBy: "AI-SCRAPPING"
+      }, { session });
       
       // Insert new events if any
       if (events.length > 0) {

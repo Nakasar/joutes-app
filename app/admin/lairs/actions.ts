@@ -212,6 +212,7 @@ ${page.content}
         lairId: lair.id,
         startDateTime: DateTime.fromISO(event.startDateTime, { zone: 'Europe/Paris' }).toISO() ?? event.startDateTime,
         endDateTime: DateTime.fromISO(event.endDateTime, { zone: 'Europe/Paris' }).toISO() ?? event.endDateTime,
+        addedBy: "AI-SCRAPPING",
       }));
       
       // Replace all events for this lair in the events collection

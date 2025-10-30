@@ -182,17 +182,29 @@ export default async function LairDetailPage({
         {/* Section Événements à venir */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-3xl flex items-center gap-2">
-              <Calendar className="h-8 w-8" />
-              Événements à venir
-            </CardTitle>
-            <CardDescription>
-              {upcomingEvents.length === 0 
-                ? "Aucun événement à venir pour le moment"
-                : userGames.length > 0
-                  ? "Tous les événements de ce lieu (filtrables par vos préférences)"
-                  : "Tous les événements prévus dans ce lieu"}
-            </CardDescription>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="text-3xl flex items-center gap-2">
+                  <Calendar className="h-8 w-8" />
+                  Événements à venir
+                </CardTitle>
+                <CardDescription>
+                  {upcomingEvents.length === 0 
+                    ? "Aucun événement à venir pour le moment"
+                    : userGames.length > 0
+                      ? "Tous les événements de ce lieu (filtrables par vos préférences)"
+                      : "Tous les événements prévus dans ce lieu"}
+                </CardDescription>
+              </div>
+              {canManageLair && (
+                <Button asChild>
+                  <Link href={`/lairs/${lairId}/events/new`}>
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Ajouter un événement
+                  </Link>
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {upcomingEvents.length === 0 ? (
