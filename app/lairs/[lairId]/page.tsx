@@ -12,8 +12,8 @@ import FollowLairButton from "./FollowLairButton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Gamepad2, Calendar, Clock, Euro, MapPin } from "lucide-react";
-import { DateTime } from "luxon";
+import { ArrowLeft, Gamepad2 } from "lucide-react";
+import LairEventsCalendar from "./LairEventsCalendar";
 
 export async function generateMetadata({ 
   params 
@@ -74,45 +74,8 @@ export default async function LairDetailPage({
   );
   const games = gamesDetails.filter((game): game is NonNullable<typeof game> => game !== null);
 
-  // Formater la date
-  const formatDate = (dateString: string) => {
-    const date = DateTime.fromISO(dateString);
-    return date.setLocale('fr').toLocaleString({
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  // Badge de statut
-  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
-    switch (status) {
-      case 'available':
-        return "default";
-      case 'sold-out':
-        return "destructive";
-      case 'cancelled':
-        return "secondary";
-      default:
-        return "outline";
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'available':
-        return 'Disponible';
-      case 'sold-out':
-        return 'Complet';
-      case 'cancelled':
-        return 'Annulé';
-      default:
-        return status;
-    }
-  };
+  // Récupérer les préférences de jeux de l'utilisateur
+  const userGames = session?.user?.id ? (await getUserById(session.user.id))?.games || [] : [];
 
   return (
     <div className="min-h-screen">
@@ -203,75 +166,12 @@ export default async function LairDetailPage({
         )}
 
         {/* Section Événements à venir */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-3xl flex items-center gap-2">
-              <Calendar className="h-8 w-8" />
-              Événements à venir
-            </CardTitle>
-            <CardDescription>
-              Tous les événements prévus dans ce lieu
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {upcomingEvents.length === 0 ? (
-              <div className="text-center py-12">
-                <Calendar className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground text-lg">
-                  Aucun événement à venir pour le moment
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {upcomingEvents.map((event) => (
-                  <Card 
-                    key={event.id} 
-                    className="hover:shadow-lg transition-all hover:-translate-y-0.5"
-                  >
-                    <CardContent className="p-6">
-                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                        <div className="flex-1 space-y-3">
-                          <div className="flex flex-wrap items-center gap-3">
-                            <h3 className="text-xl font-semibold">{event.name}</h3>
-                            <Badge variant={getStatusVariant(event.status)}>
-                              {getStatusLabel(event.status)}
-                            </Badge>
-                          </div>
-                          
-                          <div className="space-y-2 text-sm">
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <Calendar className="h-4 w-4" />
-                              <span className="capitalize">{formatDate(event.startDateTime)}</span>
-                            </div>
-                            
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <Clock className="h-4 w-4" />
-                              <span>Fin : {formatDate(event.endDateTime)}</span>
-                            </div>
-                            
-                            <div className="flex items-center gap-2">
-                              <Gamepad2 className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium">{event.gameName}</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {event.price !== undefined && (
-                          <div className="flex items-center gap-2 md:flex-col md:text-right">
-                            <Euro className="h-5 w-5 text-primary" />
-                            <div className="text-3xl font-bold text-primary">
-                              {event.price === 0 ? 'Gratuit' : `${event.price}€`}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <LairEventsCalendar
+          events={upcomingEvents}
+          lair={lair}
+          userGames={userGames}
+          games={games}
+        />
       </div>
     </div>
   );
