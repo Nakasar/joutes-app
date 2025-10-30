@@ -2,23 +2,56 @@
 
 import { Event } from "@/lib/types/Event";
 import { Lair } from "@/lib/types/Lair";
+import { Game } from "@/lib/types/Game";
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Gamepad2, Euro } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Gamepad2, Euro, Filter, List, CalendarDays, Clock } from "lucide-react";
 import Link from "next/link";
 import { DateTime } from "luxon";
 
 type EventsCalendarProps = {
   events: Event[];
   lairsMap: Map<string, Lair>;
+  userGames?: Game["id"][];
+  allGames?: Game[];
+  showViewToggle?: boolean;
 };
 
-export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps) {
+export default function EventsCalendar({ 
+  events, 
+  lairsMap, 
+  userGames = [],
+  allGames = [],
+  showViewToggle = true,
+}: EventsCalendarProps) {
   const today = DateTime.now();
   const [currentMonth, setCurrentMonth] = useState<number>(today.month);
   const [currentYear, setCurrentYear] = useState<number>(today.year);
+  const [showAllGames, setShowAllGames] = useState(userGames.length === 0);
+  const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
+
+  // Créer une map des jeux pour accéder facilement au gameId par nom
+  const gameNameToIdMap = useMemo(() => {
+    const map = new Map<string, string>();
+    allGames.forEach((game) => {
+      map.set(game.name, game.id);
+    });
+    return map;
+  }, [allGames]);
+
+  // Filtrer les événements selon les préférences
+  const filteredEventsByGame = useMemo(() => {
+    if (showAllGames || userGames.length === 0 || allGames.length === 0) {
+      return events;
+    }
+
+    return events.filter((event) => {
+      const gameId = gameNameToIdMap.get(event.gameName);
+      return gameId && userGames.includes(gameId);
+    });
+  }, [events, showAllGames, userGames, gameNameToIdMap, allGames]);
 
   // Navigation entre les mois
   const goToPreviousMonth = () => {
@@ -62,7 +95,7 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
 
   // Filtrer les événements pour le mois actuel
   const eventsInMonth = useMemo(() => {
-    return events.filter((event) => {
+    return filteredEventsByGame.filter((event) => {
       const eventDate = DateTime.fromISO(event.startDateTime);
       return (
         eventDate.month === currentMonth &&
@@ -74,7 +107,7 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
       const dateB = DateTime.fromISO(b.startDateTime);
       return dateA.toMillis() - dateB.toMillis();
     });
-  }, [events, currentMonth, currentYear]);
+  }, [filteredEventsByGame, currentMonth, currentYear]);
 
   // Organiser les événements par jour
   const eventsByDay = new Map<number, Event[]>();
@@ -173,45 +206,88 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
       {/* En-tête avec navigation */}
       <Card>
         <CardHeader>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <Button
-              onClick={goToPreviousMonth}
-              className="w-full sm:w-auto"
-            >
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Mois précédent
-            </Button>
+          <div className="flex flex-col gap-4">
+            {/* Navigation mois */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <Button
+                onClick={goToPreviousMonth}
+                className="w-full sm:w-auto"
+              >
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Mois précédent
+              </Button>
 
-            <div className="text-center">
-              <CardTitle className="text-2xl">
-                {monthNames[currentMonth - 1]} {currentYear}
-              </CardTitle>
-              {(currentMonth !== today.month ||
-                currentYear !== today.year) && (
-                  <Button
-                    onClick={goToCurrentMonth}
-                    className="mt-2 text-sm"
-                  >
-                    Revenir au mois actuel
-                  </Button>
-                )}
+              <div className="text-center">
+                <CardTitle className="text-2xl">
+                  {monthNames[currentMonth - 1]} {currentYear}
+                </CardTitle>
+                {(currentMonth !== today.month ||
+                  currentYear !== today.year) && (
+                    <Button
+                      onClick={goToCurrentMonth}
+                      className="mt-2 text-sm"
+                      variant="ghost"
+                    >
+                      Revenir au mois actuel
+                    </Button>
+                  )}
+              </div>
+
+              <Button
+                onClick={goToNextMonth}
+                className="w-full sm:w-auto"
+              >
+                Mois suivant
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
             </div>
 
-            <Button
-              onClick={goToNextMonth}
-              className="w-full sm:w-auto"
-            >
-              Mois suivant
-              <ChevronRight className="ml-2 h-4 w-4" />
-            </Button>
+            {/* Boutons de contrôle */}
+            {(showViewToggle || (userGames.length > 0 && allGames.length > 0)) && (
+              <div className="flex flex-wrap gap-2 justify-center">
+                {/* Bouton de toggle vue calendrier/liste */}
+                {showViewToggle && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setViewMode(viewMode === "calendar" ? "list" : "calendar")}
+                    className="w-full sm:w-auto"
+                  >
+                    {viewMode === "calendar" ? (
+                      <>
+                        <List className="mr-2 h-4 w-4" />
+                        Vue liste
+                      </>
+                    ) : (
+                      <>
+                        <CalendarDays className="mr-2 h-4 w-4" />
+                        Vue calendrier
+                      </>
+                    )}
+                  </Button>
+                )}
+
+                {/* Bouton de filtre par jeux */}
+                {userGames.length > 0 && allGames.length > 0 && (
+                  <Button
+                    variant={showAllGames ? "outline" : "default"}
+                    onClick={() => setShowAllGames(!showAllGames)}
+                    className="w-full sm:w-auto"
+                  >
+                    <Filter className="mr-2 h-4 w-4" />
+                    {showAllGames ? "Afficher mes jeux uniquement" : "Afficher tous les jeux"}
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </CardHeader>
       </Card>
 
-      {/* Vue calendrier (cachée sur mobile) */}
-      <div className="hidden lg:block">
-        <Card>
-          <CardContent className="p-4">
+      {/* Vue calendrier */}
+      {viewMode === "calendar" && (
+        <div>
+          <Card>
+            <CardContent className="p-4">
             {/* En-têtes des jours de la semaine */}
             <div className="grid grid-cols-7 gap-2 mb-2">
               {dayNames.map((dayName) => (
@@ -320,117 +396,158 @@ export default function EventsCalendar({ events, lairsMap }: EventsCalendarProps
             <Badge variant="secondary">Annulé</Badge>
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
-      {/* Vue liste (visible sur mobile et tablette) */}
-      <div className="lg:hidden">
-        {eventsInMonth.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-12">
-              <CalendarIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">
-                Aucun événement ce mois-ci
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {Array.from(eventsByDayForList.entries()).map(([dayKey, dayEvents]) => {
-              const firstEventDate = DateTime.fromISO(dayEvents[0].startDateTime);
-              const isEventToday =
-                firstEventDate.day === today.day &&
-                firstEventDate.month === today.month &&
-                firstEventDate.year === today.year;
+      {/* Vue liste */}
+      {viewMode === "list" && (
+        <ListView 
+          eventsInMonth={eventsInMonth}
+          eventsByDayForList={eventsByDayForList}
+          lairsMap={lairsMap}
+          today={today}
+          getStatusVariant={getStatusVariant}
+          getStatusLabel={getStatusLabel}
+        />
+      )}
+    </div>
+  );
+}
 
-              return (
-                <div key={dayKey} className="space-y-3">
-                  {/* En-tête du jour */}
-                  <div
-                    className={`sticky top-16 z-10 py-3 px-4 rounded-lg font-bold text-lg capitalize ${isEventToday
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted"
-                      }`}
+// Composant pour la vue liste
+type ListViewProps = {
+  eventsInMonth: Event[];
+  eventsByDayForList: Map<string, Event[]>;
+  lairsMap: Map<string, Lair>;
+  today: DateTime;
+  getStatusVariant: (status: Event["status"]) => "default" | "secondary" | "destructive" | "outline";
+  getStatusLabel: (status: Event["status"]) => string;
+};
+
+function ListView({ 
+  eventsInMonth, 
+  eventsByDayForList, 
+  lairsMap, 
+  today,
+  getStatusVariant,
+  getStatusLabel 
+}: ListViewProps) {
+  if (eventsInMonth.length === 0) {
+    return (
+      <Card>
+        <CardContent className="text-center py-12">
+          <CalendarIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <p className="text-muted-foreground">
+            Aucun événement ce mois-ci
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {Array.from(eventsByDayForList.entries()).map(([dayKey, dayEvents]) => {
+        const firstEventDate = DateTime.fromISO(dayEvents[0].startDateTime);
+        const isEventToday =
+          firstEventDate.day === today.day &&
+          firstEventDate.month === today.month &&
+          firstEventDate.year === today.year;
+
+        return (
+          <div key={dayKey} className="space-y-3">
+            {/* En-tête du jour */}
+            <div
+              className={`sticky top-16 z-10 py-3 px-4 rounded-lg font-bold text-lg capitalize ${isEventToday
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted"
+                }`}
+            >
+              {dayKey}
+              {isEventToday && " - Aujourd'hui"}
+            </div>
+
+            {/* Événements du jour */}
+            <div className="space-y-3">
+              {dayEvents.map((event) => {
+                const lair = lairsMap.get(event.lairId);
+                const eventDate = DateTime.fromISO(event.startDateTime);
+                const endDate = DateTime.fromISO(event.endDateTime);
+                const timeStr = eventDate.toLocaleString(DateTime.TIME_24_SIMPLE);
+                const endTimeStr = endDate.toLocaleString(DateTime.TIME_24_SIMPLE);
+
+                const cardContent = (
+                  <Card
+                    className={`hover:shadow-lg transition-shadow ${event.status === "available"
+                      ? "border-l-4 border-l-green-500"
+                      : event.status === "sold-out"
+                        ? "border-l-4 border-l-red-500"
+                        : "border-l-4 border-l-gray-400"
+                      } ${event.url ? "cursor-pointer hover:bg-accent" : ""}`}
                   >
-                    {dayKey}
-                    {isEventToday && " - Aujourd'hui"}
-                  </div>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <CardTitle className="text-xl">
+                          {event.name}
+                        </CardTitle>
+                        <Badge variant={getStatusVariant(event.status)}>
+                          {getStatusLabel(event.status)}
+                        </Badge>
+                      </div>
+                    </CardHeader>
 
-                  {/* Événements du jour */}
-                  <div className="space-y-3">
-                    {dayEvents.map((event) => {
-                      const lair = lairsMap.get(event.lairId);
-                      const eventDate = DateTime.fromISO(event.startDateTime);
-                      const endDate = DateTime.fromISO(event.endDateTime);
-                      const timeStr = eventDate.toLocaleString(DateTime.TIME_24_SIMPLE);
-                      const endTimeStr = endDate.toLocaleString(DateTime.TIME_24_SIMPLE);
-
-                      const cardContent = (
-                        <Card
-                          className={`hover:shadow-lg transition-shadow ${event.status === "available"
-                            ? "border-l-4 border-l-green-500"
-                            : event.status === "sold-out"
-                              ? "border-l-4 border-l-red-500"
-                              : "border-l-4 border-l-gray-400"
-                            } ${event.url ? "cursor-pointer hover:bg-accent" : ""}`}
-                        >
-                          <CardHeader className="pb-3">
-                            <div className="flex items-start justify-between gap-2">
-                              <CardTitle className="text-xl">
-                                {event.name}
-                              </CardTitle>
-                              <Badge variant={getStatusVariant(event.status)}>
-                                {getStatusLabel(event.status)}
-                              </Badge>
-                            </div>
-                          </CardHeader>
-
-                          <CardContent className="space-y-2">
-                            <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
-                              <CalendarIcon className="h-4 w-4" />
-                              {timeStr} - {endTimeStr}
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <MapPin className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium">
-                                {lair?.name || "Lieu inconnu"}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <Gamepad2 className="h-4 w-4 text-muted-foreground" />
-                              <span>{event.gameName}</span>
-                            </div>
-                            {event.price && (
-                              <div className="flex items-center gap-2 text-sm">
-                                <Euro className="h-4 w-4 text-muted-foreground" />
-                                <span className="font-semibold">{event.price}€</span>
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      );
-
-                      return event.url ? (
-                        <Link
-                          key={event.id}
-                          href={event.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          {cardContent}
-                        </Link>
-                      ) : (
-                        <div key={event.id}>
-                          {cardContent}
+                    <CardContent className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
+                        <CalendarIcon className="h-4 w-4" />
+                        {timeStr} - {endTimeStr}
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <span>
+                          Durée : {endDate.diff(eventDate, 'hours').hours.toFixed(1)}h
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">
+                          {lair?.name || "Lieu inconnu"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Gamepad2 className="h-4 w-4 text-muted-foreground" />
+                        <span>{event.gameName}</span>
+                      </div>
+                      {event.price !== undefined && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Euro className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-semibold">
+                            {event.price === 0 ? "Gratuit" : `${event.price}€`}
+                          </span>
                         </div>
-                      );
-                    })}
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+
+                return event.url ? (
+                  <Link
+                    key={event.id}
+                    href={event.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {cardContent}
+                  </Link>
+                ) : (
+                  <div key={event.id}>
+                    {cardContent}
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        )}
-      </div>
+        );
+      })}
     </div>
   );
 }

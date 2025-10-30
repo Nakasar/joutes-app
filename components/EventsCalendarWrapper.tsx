@@ -246,7 +246,13 @@ export default async function EventsCalendarWrapper({
             </CardContent>
           </Card>
         ) : (
-          <EventsCalendar events={events} lairsMap={lairsMap} />
+          <EventsCalendar 
+            events={events} 
+            lairsMap={lairsMap} 
+            userGames={user.games}
+            allGames={allGames}
+            showViewToggle={true}
+          />
         )}
       </div>
     </div>

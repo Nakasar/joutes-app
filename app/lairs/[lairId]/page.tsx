@@ -9,11 +9,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { Metadata } from "next";
 import FollowLairButton from "./FollowLairButton";
+import EventsCalendar from "@/app/events/EventsCalendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Gamepad2 } from "lucide-react";
-import LairEventsCalendar from "./LairEventsCalendar";
+import { ArrowLeft, Gamepad2, Calendar } from "lucide-react";
 
 export async function generateMetadata({ 
   params 
@@ -76,6 +76,10 @@ export default async function LairDetailPage({
 
   // Récupérer les préférences de jeux de l'utilisateur
   const userGames = session?.user?.id ? (await getUserById(session.user.id))?.games || [] : [];
+
+  // Créer une map avec le lair pour le composant EventsCalendar
+  const lairsMap = new Map();
+  lairsMap.set(lair.id, lair);
 
   return (
     <div className="min-h-screen">
@@ -166,12 +170,39 @@ export default async function LairDetailPage({
         )}
 
         {/* Section Événements à venir */}
-        <LairEventsCalendar
-          events={upcomingEvents}
-          lair={lair}
-          userGames={userGames}
-          games={games}
-        />
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-3xl flex items-center gap-2">
+              <Calendar className="h-8 w-8" />
+              Événements à venir
+            </CardTitle>
+            <CardDescription>
+              {upcomingEvents.length === 0 
+                ? "Aucun événement à venir pour le moment"
+                : userGames.length > 0
+                  ? "Tous les événements de ce lieu (filtrables par vos préférences)"
+                  : "Tous les événements prévus dans ce lieu"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {upcomingEvents.length === 0 ? (
+              <div className="text-center py-12">
+                <Calendar className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground text-lg">
+                  Aucun événement à venir pour le moment
+                </p>
+              </div>
+            ) : (
+              <EventsCalendar
+                events={upcomingEvents}
+                lairsMap={lairsMap}
+                userGames={userGames}
+                allGames={games}
+                showViewToggle={true}
+              />
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
