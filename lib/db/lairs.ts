@@ -82,9 +82,9 @@ export async function addOwnerToLair(lairId: string, userId: string): Promise<bo
 
 export async function removeOwnerFromLair(lairId: string, userId: string): Promise<boolean> {
   const db = await getDb();
-  const result = await db.collection(COLLECTION_NAME).updateOne(
+  const result = await db.collection<LairDocument>(COLLECTION_NAME).updateOne(
     { _id: new ObjectId(lairId) },
-    { $pull: { owners: userId } } as any
+    { $pull: { owners: userId } }
   );
   
   return result.modifiedCount > 0;
