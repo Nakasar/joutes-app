@@ -31,6 +31,33 @@ export async function getUserByEmail(email: string): Promise<User | null> {
   return user ? toUser(user) : null;
 }
 
+export async function searchUsersByUsername(searchTerm: string): Promise<User[]> {
+  const db = await getDb();
+  const users = await db
+    .collection(COLLECTION_NAME)
+    .find({
+      $or: [
+        { username: { $regex: searchTerm, $options: "i" } },
+        { displayName: { $regex: searchTerm, $options: "i" } },
+      ],
+    })
+    .limit(10)
+    .toArray();
+  return users.map(toUser);
+}
+
+export async function getUserByUsernameAndDiscriminator(
+  displayName: string,
+  discriminator: string
+): Promise<User | null> {
+  const db = await getDb();
+  const user = await db.collection(COLLECTION_NAME).findOne({
+    displayName,
+    discriminator,
+  });
+  return user ? toUser(user) : null;
+}
+
 export async function updateUserGames(userId: string, games: string[]): Promise<boolean> {
   const db = await getDb();
   const result = await db.collection(COLLECTION_NAME).updateOne(

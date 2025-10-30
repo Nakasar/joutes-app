@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useSession, signOut } from "@/lib/auth-client";
-import { Menu, Calendar, MapPin, User, LogOut, Sparkles, Shield } from "lucide-react";
+import { Menu, Calendar, MapPin, User, LogOut, Sparkles, Shield, GamepadIcon } from "lucide-react";
 import { isAdmin } from "@/lib/config/admins";
 import { Button } from "@/components/ui/button";
 import {
@@ -63,6 +63,16 @@ export default function Header() {
                   </Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
+              {session && (
+                <NavigationMenuItem>
+                  <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                    <Link href="/game-matches">
+                      <GamepadIcon className="mr-2 h-4 w-4" />
+                      Parties
+                    </Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+              )}
               {session && isAdmin(session.user.email) && (
                 <NavigationMenuItem>
                   <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
@@ -183,6 +193,14 @@ export default function Header() {
                   Lieux
                 </Link>
               </Button>
+              {session && (
+                <Button variant="ghost" asChild className="justify-start">
+                  <Link href="/game-matches" onClick={() => setMobileMenuOpen(false)}>
+                    <GamepadIcon className="mr-2 h-4 w-4" />
+                    Parties
+                  </Link>
+                </Button>
+              )}
               {session && isAdmin(session.user.email) && (
                 <Button variant="ghost" asChild className="justify-start">
                   <Link href="/admin" onClick={() => setMobileMenuOpen(false)}>
