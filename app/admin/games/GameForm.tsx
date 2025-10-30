@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { GameType, Game } from "@/lib/types/Game";
+import { GAME_TYPE_OPTIONS } from "@/lib/constants/game-types";
 import { createGame, updateGame } from "./actions";
 import {
   Dialog,
@@ -144,8 +145,11 @@ export function GameForm({
               }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="TCG">TCG</option>
-              <option value="BoardGame">Jeu de plateau</option>
+              {GAME_TYPE_OPTIONS.map(({ value, label }) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
             </select>
           </div>
 
