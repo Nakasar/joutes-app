@@ -120,23 +120,30 @@ export default function EventsCalendar({
   });
 
   // Grouper les événements par jour pour la vue liste (mobile)
+  // Ne montrer que les événements à partir du jour actuel
   const eventsByDayForList = useMemo(() => {
     const grouped = new Map<string, Event[]>();
+    const todayStart = today.startOf('day');
+    
     eventsInMonth.forEach((event) => {
       const eventDate = DateTime.fromISO(event.startDateTime);
-      const dayKey = eventDate.setLocale('fr').toLocaleString({
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      });
-      if (!grouped.has(dayKey)) {
-        grouped.set(dayKey, []);
+      
+      // Ne garder que les événements à partir d'aujourd'hui
+      if (eventDate >= todayStart) {
+        const dayKey = eventDate.setLocale('fr').toLocaleString({
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        });
+        if (!grouped.has(dayKey)) {
+          grouped.set(dayKey, []);
+        }
+        grouped.get(dayKey)?.push(event);
       }
-      grouped.get(dayKey)?.push(event);
     });
     return grouped;
-  }, [eventsInMonth]);
+  }, [eventsInMonth, today]);
 
   // Noms des mois en français
   const monthNames = [
