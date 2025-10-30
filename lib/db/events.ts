@@ -17,7 +17,11 @@ export async function getEventsByLairId(lairId: string): Promise<Event[]> {
     })
     .toArray();
   
-  return events;
+  return events.map(event => ({
+    ...event,
+    id: event._id.toString(),
+    _id: undefined,
+  }));
 }
 
 // Get all events across all lairs
@@ -28,7 +32,11 @@ export async function getAllEvents(): Promise<Event[]> {
     .find({})
     .toArray();
 
-  return events;
+  return events.map(event => ({
+    ...event,
+    id: event._id.toString(),
+    _id: undefined,
+  }))
 }
 
 // Get events for multiple lairs
@@ -42,7 +50,11 @@ export async function getEventsByLairIds(lairIds: string[]): Promise<Event[]> {
     })
     .toArray();
 
-  return events;
+  return events.map(event => ({
+    ...event,
+    id: event._id.toString(),
+    _id: undefined,
+  }))
 }
 
 // Create a single event
