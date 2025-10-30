@@ -1,10 +1,12 @@
+import { GameTypeKey } from "@/lib/constants/game-types";
+
 export type Game = {
   id: string;
   name: string;
   icon?: string;
   banner?: string;
   description: string;
-  type: GameType;
+  type: GameTypeKey;
 };
 
-export type GameType = 'TCG' | 'BoardGame';
+export type GameType = GameTypeKey;

@@ -48,11 +48,10 @@ export default async function LairsPage() {
                 <Card className="h-full overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
                   {lair.banner ? (
                     <div className="relative w-full h-48 overflow-hidden">
-                      <Image
+                      <img
                         src={lair.banner}
                         alt={lair.name}
-                        fill
-                        className="object-cover group-hover:scale-110 transition-transform duration-300"
+                        className="absolute inset-0 w-full h-full object-cover object-center"
                       />
                     </div>
                   ) : (

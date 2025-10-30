@@ -53,18 +53,39 @@ export async function createLair(lair: Omit<Lair, "id">): Promise<Lair> {
   };
 }
 
-export async function updateLair(id: string, lair: Partial<Omit<Lair, "id">>): Promise<boolean> {
+export async function updateLair(id: string, lair: Partial<Omit<Lair, "id">>): Promise<Lair | null> {
   const db = await getDb();
-  const result = await db.collection(COLLECTION_NAME).updateOne(
+  const result = await db.collection(COLLECTION_NAME).findOneAndUpdate(
     { _id: new ObjectId(id) },
-    { $set: lair }
+    { $set: lair },
+    { returnDocument: 'after' }
   );
   
-  return result.modifiedCount > 0;
+  return result ? toLair(result) : null;
 }
 
 export async function deleteLair(id: string): Promise<boolean> {
   const db = await getDb();
   const result = await db.collection(COLLECTION_NAME).deleteOne({ _id: new ObjectId(id) });
   return result.deletedCount > 0;
+}
+
+export async function addOwnerToLair(lairId: string, userId: string): Promise<boolean> {
+  const db = await getDb();
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(lairId) },
+    { $addToSet: { owners: userId } }
+  );
+  
+  return result.modifiedCount > 0 || result.matchedCount > 0;
+}
+
+export async function removeOwnerFromLair(lairId: string, userId: string): Promise<boolean> {
+  const db = await getDb();
+  const result = await db.collection<LairDocument>(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(lairId) },
+    { $pull: { owners: userId } }
+  );
+  
+  return result.modifiedCount > 0;
 }

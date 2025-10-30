@@ -23,6 +23,12 @@ export async function getUserById(id: string): Promise<User | null> {
   return user ? toUser(user) : null;
 }
 
+export async function getUserByEmail(email: string): Promise<User | null> {
+  const db = await getDb();
+  const user = await db.collection(COLLECTION_NAME).findOne({ email: email.toLowerCase() });
+  return user ? toUser(user) : null;
+}
+
 export async function updateUserGames(userId: string, games: string[]): Promise<boolean> {
   const db = await getDb();
   const result = await db.collection(COLLECTION_NAME).updateOne(

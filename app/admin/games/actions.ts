@@ -45,6 +45,47 @@ export async function createGame(data: {
   }
 }
 
+export async function updateGame(
+  id: string,
+  data: {
+    name: string;
+    icon?: string;
+    banner?: string;
+    description: string;
+    type: string;
+  }
+) {
+  try {
+    await requireAdmin();
+
+    // Valider l'ID
+    const validatedId = gameIdSchema.parse(id);
+    
+    // Valider les données avec Zod
+    const validatedData = gameSchema.parse(data);
+
+    const updated = await gamesDb.updateGame(validatedId, validatedData);
+    
+    if (!updated) {
+      return { success: false, error: "Jeu non trouvé" };
+    }
+    
+    revalidatePath("/admin/games");
+    revalidatePath("/admin/lairs");
+    
+    return { success: true };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { 
+        success: false, 
+        error: error.issues[0]?.message || "Données invalides" 
+      };
+    }
+    console.error("Erreur lors de la modification du jeu:", error);
+    return { success: false, error: "Erreur lors de la modification du jeu" };
+  }
+}
+
 export async function deleteGame(id: string) {
   try {
     await requireAdmin();

@@ -1,86 +1,124 @@
 import { getDb } from "@/lib/mongodb";
 import { Event } from "@/lib/types/Event";
-import { ObjectId, WithId, Document } from "mongodb";
-import { LairDocument } from "./lairs";
-import { Lair } from "../types/Lair";
 
 const COLLECTION_NAME = "events";
 
-// Type pour un événement dans MongoDB (avec _id)
-export type EventDocument = Omit<Event, "id"> & { _id: ObjectId };
+// Type pour un événement dans MongoDB
+export type EventDocument = Event;
 
-// Convertir un document MongoDB en Event
-function toEvent(doc: WithId<Document>): Event {
-  return {
-    id: doc._id.toString(),
-    lairId: doc.lairId,
-    name: doc.name,
-    startDateTime: doc.startDateTime,
-    endDateTime: doc.endDateTime,
-    gameName: doc.gameName,
-    price: doc.price,
-    url: doc.url,
-    status: doc.status,
-  };
-}
-
-// Convertir un Event en document MongoDB (sans id)
-function toDocument(event: Omit<Event, "id">): Omit<EventDocument, "_id"> {
-  return {
-    lairId: event.lairId,
-    name: event.name,
-    startDateTime: event.startDateTime,
-    endDateTime: event.endDateTime,
-    gameName: event.gameName,
-    price: event.price,
-    status: event.status,
-    url: event.url,
-  };
-}
-
+// Get all events for a specific lair
 export async function getEventsByLairId(lairId: string): Promise<Event[]> {
   const db = await getDb();
   
-  const lair = await db
-    .collection<LairDocument>('lairs')
-    .findOne({ 
-      _id: new ObjectId(lairId),
-    });
-
-    if (!lair || !lair.events) {
-        return [];
-    }
+  const events = await db
+    .collection<EventDocument>(COLLECTION_NAME)
+    .find({ 
+      lairId,
+    })
+    .toArray();
   
-  return lair.events;
+  return events.map(event => ({
+    ...event,
+    id: event._id.toString(),
+    _id: undefined,
+  }));
 }
 
+// Get all events across all lairs
 export async function getAllEvents(): Promise<Event[]> {
   const db = await getDb();
-  const result = await db
-    .collection<Lair>('lairs')
-    .aggregate<Event>([
-      { $unwind: '$events' },
-      { $replaceRoot: { newRoot: '$events' } }
-    ])
+  const events = await db
+    .collection<EventDocument>(COLLECTION_NAME)
+    .find({})
     .toArray();
 
-  return result;
+  return events.map(event => ({
+    ...event,
+    id: event._id.toString(),
+    _id: undefined,
+  }))
 }
 
+// Get events for multiple lairs
 export async function getEventsByLairIds(lairIds: string[]): Promise<Event[]> {
   const db = await getDb();
   
-  // Convertir les IDs de string à ObjectId
-  const objectIds = lairIds.map(id => new ObjectId(id));
-  
-  const result = await db
-    .collection<Lair>('lairs')
-    .aggregate<Event>([
-      { $match: { _id: { $in: objectIds } } },
-      { $unwind: '$events' },
-      { $replaceRoot: { newRoot: '$events' } }
-    ])
+  const events = await db
+    .collection<EventDocument>(COLLECTION_NAME)
+    .find({ 
+      lairId: { $in: lairIds }
+    })
     .toArray();
 
-  return result;
+  return events.map(event => ({
+    ...event,
+    id: event._id.toString(),
+    _id: undefined,
+  }))
+}
+
+// Create a single event
+export async function createEvent(event: Event): Promise<Event> {
+  const db = await getDb();
+  await db.collection<EventDocument>(COLLECTION_NAME).insertOne(event);
+  return event;
+}
+
+// Create multiple events
+export async function createManyEvents(events: Event[]): Promise<void> {
+  if (events.length === 0) return;
+  
+  const db = await getDb();
+  await db.collection<EventDocument>(COLLECTION_NAME).insertMany(events);
+}
+
+// Update an event
+export async function updateEvent(id: string, event: Partial<Event>): Promise<boolean> {
+  const db = await getDb();
+  const result = await db.collection<EventDocument>(COLLECTION_NAME).updateOne(
+    { id },
+    { $set: event }
+  );
+  
+  return result.modifiedCount > 0;
+}
+
+// Delete an event
+export async function deleteEvent(id: string): Promise<boolean> {
+  const db = await getDb();
+  const result = await db.collection<EventDocument>(COLLECTION_NAME).deleteOne({ id });
+  return result.deletedCount > 0;
+}
+
+// Delete all events for a specific lair
+export async function deleteEventsByLairId(lairId: string): Promise<number> {
+  const db = await getDb();
+  const result = await db.collection<EventDocument>(COLLECTION_NAME).deleteMany({ lairId });
+  return result.deletedCount;
+}
+
+// Replace all AI-scrapped events for a lair (delete old AI-scrapped ones and insert new ones)
+// User-created events are preserved
+export async function replaceEventsForLair(lairId: string, events: Event[]): Promise<void> {
+  const db = await getDb();
+  
+  // Use a transaction for atomic operation
+  const session = db.client.startSession();
+  
+  try {
+    await session.withTransaction(async () => {
+      // Delete only AI-scrapped events for this lair
+      await db.collection<EventDocument>(COLLECTION_NAME).deleteMany({ 
+        lairId,
+        addedBy: "AI-SCRAPPING"
+      }, { session });
+      
+      // Insert new events if any
+      if (events.length > 0) {
+        await db.collection<EventDocument>(COLLECTION_NAME).insertMany(events, { session });
+      }
+    });
+  } finally {
+    await session.endSession();
+  }
 }

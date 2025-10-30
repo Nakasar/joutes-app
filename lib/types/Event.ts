@@ -8,4 +8,5 @@ export type Event = {
   url?: string;
   price?: number;
   status: 'available' | 'sold-out' | 'cancelled';
+  addedBy: string; // ID de l'utilisateur qui a créé l'événement ou "AI-SCRAPPING"
 };

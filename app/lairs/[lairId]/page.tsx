@@ -3,17 +3,18 @@ import { getEventsByLairId } from "@/lib/db/events";
 import { getGameById } from "@/lib/db/games";
 import { getUserById } from "@/lib/db/users";
 import { auth } from "@/lib/auth";
+import { checkAdminOrOwner } from "@/lib/middleware/admin";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Metadata } from "next";
 import FollowLairButton from "./FollowLairButton";
+import EventsCalendar from "@/app/events/EventsCalendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Gamepad2, Calendar, Clock, Euro, MapPin } from "lucide-react";
-import { DateTime } from "luxon";
+import { ArrowLeft, Gamepad2, Calendar, Settings } from "lucide-react";
 
 export async function generateMetadata({ 
   params 
@@ -63,6 +64,9 @@ export default async function LairDetailPage({
     isFollowing = user?.lairs?.includes(lairId) || false;
   }
 
+  // Vérifier si l'utilisateur est administrateur ou owner du lair
+  const canManageLair = await checkAdminOrOwner(lairId);
+
   const upcomingEvents = await getEventsByLairId(lairId);
   
   // Récupérer les détails des jeux
@@ -74,57 +78,22 @@ export default async function LairDetailPage({
   );
   const games = gamesDetails.filter((game): game is NonNullable<typeof game> => game !== null);
 
-  // Formater la date
-  const formatDate = (dateString: string) => {
-    const date = DateTime.fromISO(dateString);
-    return date.setLocale('fr').toLocaleString({
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
+  // Récupérer les préférences de jeux de l'utilisateur
+  const userGames = session?.user?.id ? (await getUserById(session.user.id))?.games || [] : [];
 
-  // Badge de statut
-  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
-    switch (status) {
-      case 'available':
-        return "default";
-      case 'sold-out':
-        return "destructive";
-      case 'cancelled':
-        return "secondary";
-      default:
-        return "outline";
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'available':
-        return 'Disponible';
-      case 'sold-out':
-        return 'Complet';
-      case 'cancelled':
-        return 'Annulé';
-      default:
-        return status;
-    }
-  };
+  // Créer une map avec le lair pour le composant EventsCalendar
+  const lairsMap = new Map();
+  lairsMap.set(lair.id, lair);
 
   return (
     <div className="min-h-screen">
       {/* Bannière */}
       <div className="relative w-full h-64 md:h-96 bg-gradient-to-br from-primary/80 to-purple-600/80">
         {lair.banner ? (
-          <Image
+          <img
             src={lair.banner}
             alt={lair.name}
-            fill
-            className="object-cover"
-            priority
+            className="absolute inset-0 w-full h-full object-cover object-center"
           />
         ) : (
           <div className="flex items-center justify-center h-full">
@@ -150,6 +119,14 @@ export default async function LairDetailPage({
                   isAuthenticated={!!session?.user}
                 />
               )}
+              {canManageLair && (
+                <Button variant="default" asChild size="sm">
+                  <Link href={`/lairs/${lairId}/manage`}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Gérer
+                  </Link>
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -158,60 +135,124 @@ export default async function LairDetailPage({
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Section Jeux disponibles */}
         {games.length > 0 && (
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="text-3xl flex items-center gap-2">
+          <div className="mb-12">
+            <div className="mb-6">
+              <h2 className="text-3xl font-bold flex items-center gap-3">
                 <Gamepad2 className="h-8 w-8" />
                 Jeux disponibles
-              </CardTitle>
-              <CardDescription>
+              </h2>
+              <p className="text-muted-foreground mt-2">
                 {games.length} jeu{games.length > 1 ? 'x' : ''} disponible{games.length > 1 ? 's' : ''} dans ce lieu
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              </p>
+            </div>
+            
+            <div className="relative">
+              <div className="flex gap-6 overflow-x-auto pb-6 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent hover:scrollbar-thumb-gray-500">
                 {games.map((game) => (
-                  <Card key={game.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-3 mb-3">
-                        {game.icon && (
-                          <div className="relative w-12 h-12 flex-shrink-0">
+                  <div
+                    key={game.id}
+                    className="relative flex-shrink-0 w-80 h-48 rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer snap-start group"
+                  >
+                    {/* Image de fond : bannière ou dégradé */}
+                    <div className="absolute inset-0">
+                      {game.banner ? (
+                        <Image
+                          src={game.banner}
+                          alt={game.name}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, 320px"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-linear-to-br from-blue-600 via-blue-500 to-amber-500" />
+                      )}
+                    </div>
+
+                    {/* Overlay sombre pour améliorer la lisibilité */}
+                    <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/40 to-transparent group-hover:from-black/90 transition-colors duration-300" />
+
+                    {/* Contenu */}
+                    <div className="relative h-full flex flex-col justify-between p-6">
+                      {/* Logo en haut si disponible */}
+                      {game.icon && (
+                        <div className="flex justify-start">
+                          <div className="relative w-20 h-20 bg-white/10 backdrop-blur-sm rounded-lg p-2 shadow-xl">
                             <Image
                               src={game.icon}
                               alt={game.name}
                               fill
-                              className="object-contain rounded"
+                              className="object-contain p-1"
                             />
                           </div>
-                        )}
-                        <div className="min-w-0">
-                          <h3 className="font-semibold text-lg truncate">{game.name}</h3>
-                          <Badge variant="secondary">{game.type}</Badge>
                         </div>
-                      </div>
-                      {game.description && (
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          {game.description}
-                        </p>
                       )}
-                    </CardContent>
-                  </Card>
+
+                      {/* Informations en bas */}
+                      <div className="space-y-2">
+                        <h3 className="font-bold text-2xl text-white drop-shadow-lg">
+                          {game.name}
+                        </h3>
+                        <Badge 
+                          variant="secondary" 
+                          className="bg-white/20 text-white backdrop-blur-sm border-white/30 hover:bg-white/30"
+                        >
+                          {game.type}
+                        </Badge>
+                        {game.description && (
+                          <p className="text-sm text-white/90 line-clamp-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            {game.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Indicateur hover subtil */}
+                    <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                        <Gamepad2 className="h-4 w-4 text-white" />
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
+
+              {/* Gradient fade sur les bords pour l'effet carousel */}
+              {games.length > 3 && (
+                <>
+                  <div className="absolute left-0 top-0 bottom-6 w-12 bg-gradient-to-r from-background to-transparent pointer-events-none z-10" />
+                  <div className="absolute right-0 top-0 bottom-6 w-12 bg-gradient-to-l from-background to-transparent pointer-events-none z-10" />
+                </>
+              )}
+            </div>
+          </div>
         )}
 
         {/* Section Événements à venir */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-3xl flex items-center gap-2">
-              <Calendar className="h-8 w-8" />
-              Événements à venir
-            </CardTitle>
-            <CardDescription>
-              Tous les événements prévus dans ce lieu
-            </CardDescription>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="text-3xl flex items-center gap-2">
+                  <Calendar className="h-8 w-8" />
+                  Événements à venir
+                </CardTitle>
+                <CardDescription>
+                  {upcomingEvents.length === 0 
+                    ? "Aucun événement à venir pour le moment"
+                    : userGames.length > 0
+                      ? "Tous les événements de ce lieu (filtrables par vos préférences)"
+                      : "Tous les événements prévus dans ce lieu"}
+                </CardDescription>
+              </div>
+              {canManageLair && (
+                <Button asChild>
+                  <Link href={`/lairs/${lairId}/events/new`}>
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Ajouter un événement
+                  </Link>
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {upcomingEvents.length === 0 ? (
@@ -222,53 +263,13 @@ export default async function LairDetailPage({
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {upcomingEvents.map((event) => (
-                  <Card 
-                    key={event.id} 
-                    className="hover:shadow-lg transition-all hover:-translate-y-0.5"
-                  >
-                    <CardContent className="p-6">
-                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                        <div className="flex-1 space-y-3">
-                          <div className="flex flex-wrap items-center gap-3">
-                            <h3 className="text-xl font-semibold">{event.name}</h3>
-                            <Badge variant={getStatusVariant(event.status)}>
-                              {getStatusLabel(event.status)}
-                            </Badge>
-                          </div>
-                          
-                          <div className="space-y-2 text-sm">
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <Calendar className="h-4 w-4" />
-                              <span className="capitalize">{formatDate(event.startDateTime)}</span>
-                            </div>
-                            
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <Clock className="h-4 w-4" />
-                              <span>Fin : {formatDate(event.endDateTime)}</span>
-                            </div>
-                            
-                            <div className="flex items-center gap-2">
-                              <Gamepad2 className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium">{event.gameName}</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {event.price !== undefined && (
-                          <div className="flex items-center gap-2 md:flex-col md:text-right">
-                            <Euro className="h-5 w-5 text-primary" />
-                            <div className="text-3xl font-bold text-primary">
-                              {event.price === 0 ? 'Gratuit' : `${event.price}€`}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              <EventsCalendar
+                events={upcomingEvents}
+                lairsMap={lairsMap}
+                userGames={userGames}
+                allGames={games}
+                showViewToggle={true}
+              />
             )}
           </CardContent>
         </Card>
