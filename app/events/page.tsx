@@ -14,7 +14,14 @@ import { Calendar, MapPin, Gamepad2, AlertCircle, Info } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-export default async function EventsPage() {
+export default async function EventsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ showAll?: string }>;
+}) {
+  const params = await searchParams;
+  const showAllGames = params.showAll === "true";
+
   // Récupérer la session utilisateur
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -158,10 +165,10 @@ export default async function EventsPage() {
   // Récupérer les événements des lairs suivis
   const allEvents = await getEventsByLairIds(user.lairs);
 
-  // Filtrer les événements par les jeux suivis
-  const events = allEvents.filter(event => 
-    followedGameNames.includes(event.gameName)
-  );
+  // Filtrer les événements par les jeux suivis (ou afficher tous si showAllGames est true)
+  const events = showAllGames 
+    ? allEvents 
+    : allEvents.filter(event => followedGameNames.includes(event.gameName));
 
   // Récupérer les détails des lairs suivis
   const lairsDetails = await Promise.all(
@@ -178,13 +185,28 @@ export default async function EventsPage() {
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="space-y-6">
-        <div>
-          <h1 className="text-4xl font-bold tracking-tight mb-2">
-            Calendrier des Événements
-          </h1>
-          <p className="text-muted-foreground">
-            Événements des lieux que vous suivez pour les jeux qui vous intéressent
-          </p>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight mb-2">
+              Calendrier des Événements
+            </h1>
+            <p className="text-muted-foreground">
+              {showAllGames 
+                ? "Tous les événements des lieux que vous suivez"
+                : "Événements des lieux que vous suivez pour les jeux qui vous intéressent"
+              }
+            </p>
+          </div>
+          
+          <Button 
+            variant={showAllGames ? "default" : "outline"} 
+            asChild
+          >
+            <Link href={showAllGames ? "/events" : "/events?showAll=true"}>
+              <Gamepad2 className="mr-2 h-4 w-4" />
+              {showAllGames ? "Mes jeux uniquement" : "Tous les jeux"}
+            </Link>
+          </Button>
         </div>
         
         {events.length === 0 ? (
@@ -193,22 +215,35 @@ export default async function EventsPage() {
               <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <CardTitle>Aucun événement prévu</CardTitle>
               <CardDescription>
-                Aucun événement n&apos;est prévu dans les lieux que vous suivez pour les jeux qui vous intéressent.
+                {showAllGames 
+                  ? "Aucun événement n'est prévu dans les lieux que vous suivez."
+                  : "Aucun événement n'est prévu dans les lieux que vous suivez pour les jeux qui vous intéressent."
+                }
               </CardDescription>
             </CardHeader>
             <CardContent className="flex gap-4 justify-center flex-wrap pb-6">
+              {!showAllGames && (
+                <Button variant="outline" asChild>
+                  <Link href="/events?showAll=true">
+                    <Gamepad2 className="mr-2 h-4 w-4" />
+                    Voir tous les jeux
+                  </Link>
+                </Button>
+              )}
               <Button variant="outline" asChild>
                 <Link href="/lairs">
                   <MapPin className="mr-2 h-4 w-4" />
                   Gérer mes lieux
                 </Link>
               </Button>
-              <Button variant="outline" asChild>
-                <Link href="/account">
-                  <Gamepad2 className="mr-2 h-4 w-4" />
-                  Gérer mes jeux
-                </Link>
-              </Button>
+              {!showAllGames && (
+                <Button variant="outline" asChild>
+                  <Link href="/account">
+                    <Gamepad2 className="mr-2 h-4 w-4" />
+                    Gérer mes jeux
+                  </Link>
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
