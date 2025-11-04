@@ -28,6 +28,7 @@ export async function updateLairDetails(
       return { success: false, error: "Lieu non trouvé" };
     }
 
+    revalidatePath(`/lairs`);
     revalidatePath(`/lairs/${lairId}`);
     revalidatePath(`/lairs/${lairId}/manage`);
 

@@ -30,6 +30,7 @@ export async function createLair(data: { name: string; banner?: string; games: s
     });
 
     revalidatePath("/admin/lairs");
+    revalidatePath("/lairs");
     
     return { success: true, lair: newLair };
   } catch (error) {
@@ -61,6 +62,8 @@ export async function updateLair(id: string, data: { name: string; banner?: stri
     }
 
     revalidatePath("/admin/lairs");
+    revalidatePath("/lairs");
+    revalidatePath(`/lairs/${validatedId}`);
     
     return { success: true, lair: updatedLair };
   } catch (error) {
@@ -89,6 +92,7 @@ export async function deleteLair(id: string) {
     }
     
     revalidatePath("/admin/lairs");
+    revalidatePath("/lairs");
     
     return { success: true };
   } catch (error) {
