@@ -14,7 +14,8 @@ export type GameMatch = {
   gameId: Game['id'];
   playedAt: Date;
   lairId?: Lair['id'];
-  players: GameMatchPlayer[];
+  playerIds: string[]; // IDs des joueurs stockés en DB
+  players: GameMatchPlayer[]; // Contient les détails des joueurs (récupérés via aggregate)
   createdBy: User['id'];
   createdAt: Date;
 };

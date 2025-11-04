@@ -39,18 +39,13 @@ export async function createGameMatchAction(
     }
 
     // Résoudre les IDs des joueurs
-    const resolvedPlayers = await Promise.all(
+    const resolvedPlayerIds = await Promise.all(
       data.players.map(async (player) => {
         // Si l'ID n'est pas fourni ou est vide, essayer de le résoudre
         if (!player.userId || player.userId === session.user.id) {
           // Si c'est le joueur courant, utiliser son ID
           if (!player.discriminator && !player.displayName) {
-            return {
-              userId: session.user.id,
-              username: player.username,
-              displayName: player.displayName,
-              discriminator: player.discriminator,
-            };
+            return session.user.id;
           }
           
           // Essayer de résoudre par username et discriminator
@@ -60,34 +55,28 @@ export async function createGameMatchAction(
               player.discriminator
             );
             if (user) {
-              return {
-                userId: user.id,
-                username: player.username,
-                displayName: player.displayName,
-                discriminator: player.discriminator,
-              };
+              return user.id;
             }
           }
         } else {
           // Vérifier que l'utilisateur existe
           const user = await getUserById(player.userId);
           if (user) {
-            return player;
+            return player.userId;
           }
         }
         
         // Si non résolu, utiliser l'ID du créateur (pour éviter les erreurs)
-        return {
-          ...player,
-          userId: session.user.id,
-        };
+        return session.user.id;
       })
     );
 
     // Valider les données
     const validationResult = gameMatchSchema.safeParse({
-      ...data,
-      players: resolvedPlayers,
+      gameId: data.gameId,
+      playedAt: data.playedAt,
+      lairId: data.lairId,
+      playerIds: resolvedPlayerIds,
     });
     
     if (!validationResult.success) {
@@ -266,12 +255,7 @@ export async function addPlayerToMatchAction(
     }
 
     // Ajouter le joueur
-    const result = await addPlayerToGameMatch(matchId, {
-      userId: user.id,
-      username: `${displayName}#${discriminator}`,
-      displayName,
-      discriminator,
-    });
+    const result = await addPlayerToGameMatch(matchId, user.id);
 
     if (!result) {
       return { success: false, error: "Le joueur est déjà dans la partie" };
