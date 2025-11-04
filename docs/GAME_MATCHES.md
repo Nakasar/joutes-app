@@ -148,7 +148,7 @@ Le lien "Parties" a été ajouté dans le header principal pour les utilisateurs
 #### Ajouter un joueur (créateur)
 1. Aller sur la page "Parties"
 2. Sur une partie que vous avez créée, cliquer sur "Ajouter un joueur"
-3. Entrer le nom d'utilisateur et le discriminant (ex: username#1234)
+3. Entrer le tag du joueur au format username#1234
 4. Valider
 
 #### Quitter une partie (joueur)

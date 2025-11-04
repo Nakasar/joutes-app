@@ -25,19 +25,35 @@ export default function AddPlayerToMatch({ matchId }: AddPlayerToMatchProps) {
   const [isPending, startTransition] = useTransition();
   const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [displayName, setDisplayName] = useState("");
-  const [discriminator, setDiscriminator] = useState("");
+  const [playerTag, setPlayerTag] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!displayName.trim()) {
-      setError("Veuillez entrer un nom d'utilisateur");
+    const trimmedTag = playerTag.trim();
+
+    if (!trimmedTag) {
+      setError("Veuillez entrer le tag du joueur");
       return;
     }
 
-    if (!discriminator.trim() || discriminator.length !== 4) {
+    // Découper le tag sur le #
+    const parts = trimmedTag.split("#");
+    
+    if (parts.length !== 2) {
+      setError("Le tag doit être au format username#1234");
+      return;
+    }
+
+    const [displayName, discriminator] = parts;
+
+    if (!displayName.trim()) {
+      setError("Le nom d'utilisateur ne peut pas être vide");
+      return;
+    }
+
+    if (!discriminator.trim() || discriminator.length !== 4 || !/^\d{4}$/.test(discriminator)) {
       setError("Le discriminant doit être un nombre à 4 chiffres");
       return;
     }
@@ -47,8 +63,7 @@ export default function AddPlayerToMatch({ matchId }: AddPlayerToMatchProps) {
 
       if (result.success) {
         setIsOpen(false);
-        setDisplayName("");
-        setDiscriminator("");
+        setPlayerTag("");
         router.refresh();
       } else {
         setError(result.error || "Erreur lors de l'ajout du joueur");
@@ -69,7 +84,7 @@ export default function AddPlayerToMatch({ matchId }: AddPlayerToMatchProps) {
           <DialogHeader>
             <DialogTitle>Ajouter un joueur</DialogTitle>
             <DialogDescription>
-              Entrez le nom d'utilisateur et le discriminant du joueur à ajouter (format: username#1234)
+              Entrez le tag complet du joueur au format username#1234
             </DialogDescription>
           </DialogHeader>
 
@@ -81,37 +96,20 @@ export default function AddPlayerToMatch({ matchId }: AddPlayerToMatchProps) {
             )}
 
             <div className="space-y-2">
-              <label htmlFor="displayName" className="text-sm font-medium">
-                Nom d'utilisateur <span className="text-destructive">*</span>
+              <label htmlFor="playerTag" className="text-sm font-medium">
+                Tag Joueur <span className="text-destructive">*</span>
               </label>
               <Input
-                id="displayName"
+                id="playerTag"
                 type="text"
-                placeholder="username"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                disabled={isPending}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="discriminator" className="text-sm font-medium">
-                Discriminant <span className="text-destructive">*</span>
-              </label>
-              <Input
-                id="discriminator"
-                type="text"
-                placeholder="1234"
-                value={discriminator}
-                onChange={(e) => setDiscriminator(e.target.value)}
-                maxLength={4}
-                pattern="\d{4}"
+                placeholder="username#1234"
+                value={playerTag}
+                onChange={(e) => setPlayerTag(e.target.value)}
                 disabled={isPending}
                 required
               />
               <p className="text-xs text-muted-foreground">
-                Le discriminant est le nombre à 4 chiffres après le # (ex: username#1234)
+                Format attendu : username#1234 (nom d'utilisateur suivi du # et d'un nombre à 4 chiffres)
               </p>
             </div>
           </div>
