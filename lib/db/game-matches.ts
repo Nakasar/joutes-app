@@ -52,7 +52,7 @@ export async function createGameMatch(gameMatch: Omit<GameMatch, "id" | "created
 
 export async function getGameMatchById(id: string): Promise<GameMatch | null> {
   const db = await getDb();
-  const match = await db.collection(COLLECTION_NAME).findOne({ _id: new ObjectId(id) });
+  const match = await db.collection<GameMatchDocument>(COLLECTION_NAME).findOne({ _id: new ObjectId(id) });
   return match ? toGameMatch(match) : null;
 }
 
@@ -88,7 +88,7 @@ export async function getGameMatches(filters: GetGameMatchesFilters = {}): Promi
   }
   
   const matches = await db
-    .collection(COLLECTION_NAME)
+    .collection<GameMatchDocument>(COLLECTION_NAME)
     .find(query)
     .sort({ playedAt: -1 }) // Trier par date de partie décroissante
     .toArray();
@@ -102,7 +102,7 @@ export async function getGameMatchesByUser(userId: string): Promise<GameMatch[]>
 
 export async function updateGameMatch(id: string, gameMatch: Partial<Omit<GameMatch, "id" | "createdAt" | "createdBy">>): Promise<boolean> {
   const db = await getDb();
-  const result = await db.collection(COLLECTION_NAME).updateOne(
+  const result = await db.collection<GameMatchDocument>(COLLECTION_NAME).updateOne(
     { _id: new ObjectId(id) },
     { $set: gameMatch }
   );
@@ -112,6 +112,6 @@ export async function updateGameMatch(id: string, gameMatch: Partial<Omit<GameMa
 
 export async function deleteGameMatch(id: string): Promise<boolean> {
   const db = await getDb();
-  const result = await db.collection(COLLECTION_NAME).deleteOne({ _id: new ObjectId(id) });
+  const result = await db.collection<GameMatchDocument>(COLLECTION_NAME).deleteOne({ _id: new ObjectId(id) });
   return result.deletedCount > 0;
 }
