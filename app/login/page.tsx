@@ -2,7 +2,7 @@
 
 import { authClient } from "@/lib/auth-client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -11,6 +11,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl");
 
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,9 +44,13 @@ export default function LoginPage() {
         otp,
       });
       
-      // Rediriger vers la page d'accueil ou admin
-      router.push("/");
-      router.refresh();
+      // Rediriger vers l'URL de callback ou vers la page d'accueil
+      if (callbackUrl) {
+        window.location.href = callbackUrl;
+      } else {
+        router.push("/");
+        router.refresh();
+      }
     } catch (err) {
       setError("Code invalide. Veuillez réessayer.");
       console.error(err);

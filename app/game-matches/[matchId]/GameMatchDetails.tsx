@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useTransition, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { GameMatch } from "@/lib/types/GameMatch";
 import { Game } from "@/lib/types/Game";
 import { Lair } from "@/lib/types/Lair";
@@ -25,7 +25,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { DateTime } from "luxon";
-import { Calendar, MapPin, Users, Edit, Trash2, X, ArrowLeft, UserMinus, UserPlus } from "lucide-react";
+import { Calendar, MapPin, Users, Edit, Trash2, X, ArrowLeft, UserMinus, UserPlus, QrCode } from "lucide-react";
+import QRCode from "qrcode";
 import {
   removePlayerFromMatchAction,
   deleteGameMatchAction,
@@ -47,12 +48,38 @@ export default function GameMatchDetails({
   currentUserId,
 }: GameMatchDetailsProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddPlayerDialogOpen, setIsAddPlayerDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isQRCodeDialogOpen, setIsQRCodeDialogOpen] = useState(false);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>("");
   const [newPlayerTag, setNewPlayerTag] = useState("");
+
+  // Récupérer les messages de l'URL
+  useEffect(() => {
+    const errorParam = searchParams.get("error");
+    const messageParam = searchParams.get("message");
+    
+    if (errorParam) {
+      setError(decodeURIComponent(errorParam));
+      // Nettoyer l'URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete("error");
+      window.history.replaceState({}, "", url.toString());
+    }
+    
+    if (messageParam) {
+      setSuccessMessage(decodeURIComponent(messageParam));
+      // Nettoyer l'URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete("message");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [searchParams]);
 
   const isCreator = match.createdBy === currentUserId;
   const isPlayer = match.players.some((p) => p.userId === currentUserId);
@@ -73,6 +100,16 @@ export default function GameMatchDetails({
     playedAt: defaultDateTime,
     lairId: match.lairId || "",
   });
+
+  // Générer le QR code lorsque le dialog est ouvert
+  useEffect(() => {
+    if (isQRCodeDialogOpen && !qrCodeDataUrl) {
+      const inviteUrl = `${window.location.origin}/api/game-matches/${match.id}/join`;
+      QRCode.toDataURL(inviteUrl, { width: 300 })
+        .then((url) => setQrCodeDataUrl(url))
+        .catch((error) => console.error("Erreur lors de la génération du QR code:", error));
+    }
+  }, [isQRCodeDialogOpen, qrCodeDataUrl, match.id]);
 
   const handleRemovePlayer = (playerUserId: string) => {
     setError(null);
@@ -185,6 +222,12 @@ export default function GameMatchDetails({
       {error && (
         <div className="p-4 bg-destructive/10 border border-destructive rounded-lg text-destructive text-sm">
           {error}
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">
+          {successMessage}
         </div>
       )}
 
@@ -403,59 +446,97 @@ export default function GameMatchDetails({
                 </h2>
               </div>
               {isCreator && (
-                <Dialog
-                  open={isAddPlayerDialogOpen}
-                  onOpenChange={setIsAddPlayerDialogOpen}
-                >
-                  <DialogTrigger asChild>
-                    <Button size="sm" className="gap-2">
-                      <UserPlus className="h-4 w-4" />
-                      Ajouter un joueur
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Ajouter un joueur</DialogTitle>
-                      <DialogDescription>
-                        Entrez le tag du joueur à ajouter
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 pt-4">
-                      <div className="space-y-2">
-                        <Input
-                          type="text"
-                          placeholder="username#1234"
-                          value={newPlayerTag}
-                          onChange={(e) => setNewPlayerTag(e.target.value)}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Format : username#1234
+                <div className="flex gap-2">
+                  <Dialog
+                    open={isQRCodeDialogOpen}
+                    onOpenChange={setIsQRCodeDialogOpen}
+                  >
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="outline" className="gap-2">
+                        <QrCode className="h-4 w-4" />
+                        QR Code d&apos;invitation
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>QR Code d&apos;invitation</DialogTitle>
+                        <DialogDescription>
+                          Scannez ce QR code pour rejoindre la partie automatiquement
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="flex flex-col items-center gap-4 pt-4">
+                        {qrCodeDataUrl ? (
+                          <img
+                            src={qrCodeDataUrl}
+                            alt="QR Code d&apos;invitation"
+                            className="border rounded-lg"
+                          />
+                        ) : (
+                          <div className="w-[300px] h-[300px] flex items-center justify-center border rounded-lg">
+                            <span className="text-muted-foreground">Génération du QR code...</span>
+                          </div>
+                        )}
+                        <p className="text-sm text-muted-foreground text-center">
+                          Les joueurs qui scannent ce code rejoindront automatiquement la partie
                         </p>
                       </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            setIsAddPlayerDialogOpen(false);
-                            setNewPlayerTag("");
-                            setError(null);
-                          }}
-                          disabled={isPending}
-                          className="flex-1"
-                        >
-                          Annuler
-                        </Button>
-                        <Button
-                          onClick={handleAddPlayer}
-                          disabled={isPending || !newPlayerTag.trim()}
-                          className="flex-1"
-                        >
-                          {isPending ? "Ajout..." : "Ajouter"}
-                        </Button>
+                    </DialogContent>
+                  </Dialog>
+
+                  <Dialog
+                    open={isAddPlayerDialogOpen}
+                    onOpenChange={setIsAddPlayerDialogOpen}
+                  >
+                    <DialogTrigger asChild>
+                      <Button size="sm" className="gap-2">
+                        <UserPlus className="h-4 w-4" />
+                        Ajouter un joueur
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Ajouter un joueur</DialogTitle>
+                        <DialogDescription>
+                          Entrez le tag du joueur à ajouter
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 pt-4">
+                        <div className="space-y-2">
+                          <Input
+                            type="text"
+                            placeholder="username#1234"
+                            value={newPlayerTag}
+                            onChange={(e) => setNewPlayerTag(e.target.value)}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Format : username#1234
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setIsAddPlayerDialogOpen(false);
+                              setNewPlayerTag("");
+                              setError(null);
+                            }}
+                            disabled={isPending}
+                            className="flex-1"
+                          >
+                            Annuler
+                          </Button>
+                          <Button
+                            onClick={handleAddPlayer}
+                            disabled={isPending || !newPlayerTag.trim()}
+                            className="flex-1"
+                          >
+                            {isPending ? "Ajout..." : "Ajouter"}
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               )}
             </div>
 
