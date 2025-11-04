@@ -265,9 +265,6 @@ export default async function LairDetailPage({
             ) : (
               <EventsCalendar
                 events={upcomingEvents}
-                lairsMap={lairsMap}
-                userGames={userGames}
-                allGames={games}
                 showViewToggle={true}
               />
             )}

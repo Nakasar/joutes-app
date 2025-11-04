@@ -13,3 +13,12 @@ podman run -d -it --rm \
   --name mongo \
   mongo
 ```
+
+## Fonctionnalités
+
+### Historique des Parties
+
+Les utilisateurs peuvent enregistrer et consulter l'historique de leurs parties jouées.
+
+Pour plus de détails, voir [docs/GAME_MATCHES.md](docs/GAME_MATCHES.md).
+

@@ -6,6 +6,7 @@ import { getAllGames } from "@/lib/db/games";
 import { getLairById } from "@/lib/db/lairs";
 import GamesManager from "./GamesManager";
 import LairsManager from "./LairsManager";
+import UsernameManager from "./UsernameManager";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { User as UserIcon, Mail, Gamepad2, MapPin } from "lucide-react";
 
@@ -68,7 +69,7 @@ export default async function AccountPage() {
                 Vos informations personnelles
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <div className="flex items-start gap-4">
                 {user.avatar && (
                   <img 
@@ -80,13 +81,6 @@ export default async function AccountPage() {
                 <div className="flex-1 space-y-3">
                   <div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                      <UserIcon className="h-4 w-4" />
-                      <span>Nom d&apos;utilisateur</span>
-                    </div>
-                    <p className="text-lg font-semibold">{user.username || "Non défini"}</p>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                       <Mail className="h-4 w-4" />
                       <span>Email</span>
                     </div>
@@ -96,6 +90,18 @@ export default async function AccountPage() {
                     </p>
                   </div>
                 </div>
+              </div>
+              
+              {/* Gestionnaire de nom d'utilisateur */}
+              <div className="pt-4 border-t">
+                <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                  <UserIcon className="h-4 w-4" />
+                  Nom d&apos;utilisateur
+                </h3>
+                <UsernameManager
+                  currentDisplayName={user.displayName}
+                  currentDiscriminator={user.discriminator}
+                />
               </div>
             </CardContent>
           </Card>
