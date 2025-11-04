@@ -2,6 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 import {
   addGameToUser,
   removeGameFromUser,
@@ -143,6 +144,9 @@ export async function updateUserDisplayNameAction(
     if (!result) {
       return { success: false, error: "Erreur lors de la mise à jour du nom d'utilisateur" };
     }
+
+    // Invalider le cache de la page compte pour forcer le rafraîchissement
+    revalidatePath("/account");
 
     return {
       success: true,
