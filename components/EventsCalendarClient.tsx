@@ -11,6 +11,7 @@ type EventsCalendarClientProps = {
   initialYear: number;
   initialShowAllGames: boolean;
   basePath: string;
+  lairId?: string;
 };
 
 export default function EventsCalendarClient({
@@ -19,6 +20,7 @@ export default function EventsCalendarClient({
   initialYear,
   initialShowAllGames,
   basePath,
+  lairId,
 }: EventsCalendarClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -45,6 +47,7 @@ export default function EventsCalendarClient({
         month: month.toString(),
         year: year.toString(),
         allGames: allGames.toString(),
+        lairId: lairId ?? "",
       });
 
       const response = await fetch(`/api/events?${params.toString()}`);

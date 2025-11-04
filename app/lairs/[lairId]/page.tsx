@@ -264,10 +264,11 @@ export default async function LairDetailPage({
             ) : (
               <EventsCalendarClient
                 initialEvents={upcomingEvents}
-                initialMonth={+(month ?? new Date().getFullYear())}
+                initialMonth={+(month ?? new Date().getMonth() + 1)}
                 initialYear={+(year ?? new Date().getFullYear())}
                 initialShowAllGames={allGames === "true"}
                 basePath={`/lairs/${lairId}`}
+                lairId={lairId}
               />
             )}
           </CardContent>
