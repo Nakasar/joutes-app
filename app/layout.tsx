@@ -21,6 +21,22 @@ export const metadata: Metadata = {
   keywords: ["tcg", "board games", "events", "organized play", "local gaming community", "local game stores"],
   creator: "Nakasar",
   publisher: "Nakasar",
+  openGraph: {
+    url: "https://joutes.app",
+    title: "Joutes - Ligues et rencontres multi-jeux à proximité",
+    description: "Ligues et rencontres multi-jeux à proximité pour les passionnés de jeux de cartes à collectionner et de jeux de société. Trouvez des événements organisés près de chez vous, connectez-vous avec votre communauté locale de joueurs, et découvrez des boutiques de jeux locales.",
+    images: [
+      {
+        url: "https://joutes.app/joutes.png",
+        width: 720,
+        height: 404,
+        alt: "Joutes App",
+      },
+    ],
+    siteName: "Joutes",
+    locale: "fr_FR",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
