@@ -257,7 +257,7 @@ export async function getEventsForUser(
     .toArray();
   
   // Map results to Event type
-  return events.map((event: any) => ({
+  return events.map((event) => ({
     id: event._id.toString(),
     lairId: event.lairId,
     name: event.name,
