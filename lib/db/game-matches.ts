@@ -65,7 +65,7 @@ export async function getGameMatchById(id: string): Promise<GameMatch | null> {
     { $match: { _id: new ObjectId(id) } },
     {
       $lookup: {
-        from: "users",
+        from: "user",
         let: { playerIds: { $map: { input: "$playerIds", as: "pid", in: { $toObjectId: "$$pid" } } } },
         pipeline: [
           { $match: { $expr: { $in: ["$_id", "$$playerIds"] } } },
