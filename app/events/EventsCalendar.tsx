@@ -17,6 +17,11 @@ type EventsCalendarProps = {
   userGames?: Game["id"][];
   allGames?: Game[];
   showViewToggle?: boolean;
+  currentMonth?: number;
+  currentYear?: number;
+  showAllGames?: boolean;
+  onMonthChange?: (month: number, year: number) => void;
+  onToggleAllGames?: () => void;
 };
 
 export default function EventsCalendar({ 
@@ -25,12 +30,22 @@ export default function EventsCalendar({
   userGames = [],
   allGames = [],
   showViewToggle = true,
+  currentMonth: controlledMonth,
+  currentYear: controlledYear,
+  showAllGames: controlledShowAllGames,
+  onMonthChange,
+  onToggleAllGames,
 }: EventsCalendarProps) {
   const today = DateTime.now();
-  const [currentMonth, setCurrentMonth] = useState<number>(today.month);
-  const [currentYear, setCurrentYear] = useState<number>(today.year);
-  const [showAllGames, setShowAllGames] = useState(userGames.length === 0);
+  const [internalMonth, setInternalMonth] = useState<number>(today.month);
+  const [internalYear, setInternalYear] = useState<number>(today.year);
+  const [internalShowAllGames, setInternalShowAllGames] = useState(userGames.length === 0);
   const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
+
+  // Use controlled values if provided, otherwise use internal state
+  const currentMonth = controlledMonth !== undefined ? controlledMonth : internalMonth;
+  const currentYear = controlledYear !== undefined ? controlledYear : internalYear;
+  const showAllGames = controlledShowAllGames !== undefined ? controlledShowAllGames : internalShowAllGames;
 
   // Créer une map des jeux pour accéder facilement au gameId par nom
   const gameNameToIdMap = useMemo(() => {
@@ -43,6 +58,11 @@ export default function EventsCalendar({
 
   // Filtrer les événements selon les préférences
   const filteredEventsByGame = useMemo(() => {
+    // Si on utilise le mode contrôlé, on suppose que le filtrage est déjà fait côté serveur
+    if (onMonthChange && onToggleAllGames) {
+      return events;
+    }
+    
     if (showAllGames || userGames.length === 0 || allGames.length === 0) {
       return events;
     }
@@ -51,30 +71,62 @@ export default function EventsCalendar({
       const gameId = gameNameToIdMap.get(event.gameName);
       return gameId && userGames.includes(gameId);
     });
-  }, [events, showAllGames, userGames, gameNameToIdMap, allGames]);
+  }, [events, showAllGames, userGames, gameNameToIdMap, allGames, onMonthChange, onToggleAllGames]);
 
   // Navigation entre les mois
   const goToPreviousMonth = () => {
+    let newMonth = currentMonth;
+    let newYear = currentYear;
+    
     if (currentMonth === 1) {
-      setCurrentMonth(12);
-      setCurrentYear(currentYear - 1);
+      newMonth = 12;
+      newYear = currentYear - 1;
     } else {
-      setCurrentMonth(currentMonth - 1);
+      newMonth = currentMonth - 1;
+    }
+    
+    if (onMonthChange) {
+      onMonthChange(newMonth, newYear);
+    } else {
+      setInternalMonth(newMonth);
+      setInternalYear(newYear);
     }
   };
 
   const goToNextMonth = () => {
+    let newMonth = currentMonth;
+    let newYear = currentYear;
+    
     if (currentMonth === 12) {
-      setCurrentMonth(1);
-      setCurrentYear(currentYear + 1);
+      newMonth = 1;
+      newYear = currentYear + 1;
     } else {
-      setCurrentMonth(currentMonth + 1);
+      newMonth = currentMonth + 1;
+    }
+    
+    if (onMonthChange) {
+      onMonthChange(newMonth, newYear);
+    } else {
+      setInternalMonth(newMonth);
+      setInternalYear(newYear);
     }
   };
 
   const goToCurrentMonth = () => {
-    setCurrentMonth(today.month);
-    setCurrentYear(today.year);
+    if (onMonthChange) {
+      onMonthChange(today.month, today.year);
+    } else {
+      setInternalMonth(today.month);
+      setInternalYear(today.year);
+    }
+  };
+  
+  const handleToggleAllGames = () => {
+    if (onToggleAllGames) {
+      onToggleAllGames();
+    } else {
+      setInternalShowAllGames(!showAllGames);
+    }
   };
 
   // Obtenir le nombre de jours dans le mois
@@ -93,21 +145,26 @@ export default function EventsCalendar({
   const daysInMonth = getDaysInMonth(currentMonth, currentYear);
   const firstDayOfWeek = getFirstDayOfMonth(currentMonth, currentYear);
 
-  // Filtrer les événements pour le mois actuel
+  // Si on utilise le mode contrôlé, les événements sont déjà filtrés par mois côté serveur
+  // Sinon, on filtre localement
   const eventsInMonth = useMemo(() => {
-    return filteredEventsByGame.filter((event) => {
-      const eventDate = DateTime.fromISO(event.startDateTime);
-      return (
-        eventDate.month === currentMonth &&
-        eventDate.year === currentYear
-      );
-    }).sort((a, b) => {
+    const eventsToSort = (onMonthChange && onToggleAllGames) 
+      ? filteredEventsByGame  // Déjà filtré par le serveur
+      : filteredEventsByGame.filter((event) => {
+          const eventDate = DateTime.fromISO(event.startDateTime);
+          return (
+            eventDate.month === currentMonth &&
+            eventDate.year === currentYear
+          );
+        });
+    
+    return eventsToSort.sort((a, b) => {
       // Trier par date de début
       const dateA = DateTime.fromISO(a.startDateTime);
       const dateB = DateTime.fromISO(b.startDateTime);
       return dateA.toMillis() - dateB.toMillis();
     });
-  }, [filteredEventsByGame, currentMonth, currentYear]);
+  }, [filteredEventsByGame, currentMonth, currentYear, onMonthChange, onToggleAllGames]);
 
   // Organiser les événements par jour
   const eventsByDay = new Map<number, Event[]>();
@@ -277,7 +334,7 @@ export default function EventsCalendar({
                 {userGames.length > 0 && allGames.length > 0 && (
                   <Button
                     variant={showAllGames ? "outline" : "default"}
-                    onClick={() => setShowAllGames(!showAllGames)}
+                    onClick={handleToggleAllGames}
                     className="w-full sm:w-auto"
                   >
                     <Filter className="mr-2 h-4 w-4" />
