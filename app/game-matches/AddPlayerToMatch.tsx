@@ -109,7 +109,7 @@ export default function AddPlayerToMatch({ matchId }: AddPlayerToMatchProps) {
                 required
               />
               <p className="text-xs text-muted-foreground">
-                Format attendu : username#1234 (nom d'utilisateur suivi du # et d'un nombre à 4 chiffres)
+                Format attendu : username#1234
               </p>
             </div>
           </div>

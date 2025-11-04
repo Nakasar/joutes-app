@@ -260,7 +260,7 @@ export default function GameMatchForm({ games, lairs, currentUser }: GameMatchFo
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Format : username#1234 (nom d'utilisateur suivi du # et d'un nombre à 4 chiffres)
+            Format : username#1234
           </p>
         </div>
       </div>
