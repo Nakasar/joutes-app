@@ -5,7 +5,7 @@ import { Lair } from "@/lib/types/Lair";
 import { Game } from "@/lib/types/Game";
 import EventsCalendar from "@/app/events/EventsCalendar";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useTransition } from "react";
 
 type EventsCalendarClientProps = {
   initialEvents: Event[];
@@ -30,6 +30,7 @@ export default function EventsCalendarClient({
 }: EventsCalendarClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
   
   const [events, setEvents] = useState<Event[]>(initialEvents);
   const [lairsMap, setLairsMap] = useState<Map<string, Lair>>(
@@ -50,6 +51,7 @@ export default function EventsCalendarClient({
 
   // Fonction pour récupérer les événements
   const fetchEvents = useCallback(async (month: number, year: number, allGames: boolean) => {
+    setEvents([]);
     try {
       const params = new URLSearchParams({
         month: month.toString(),
@@ -64,8 +66,10 @@ export default function EventsCalendarClient({
       }
 
       const data = await response.json();
-      setEvents(data.events);
-      setLairsMap(new Map(Object.entries(data.lairsMap)));
+      startTransition(() => {
+        setEvents(data.events);
+        setLairsMap(new Map(Object.entries(data.lairsMap)));
+      });
     } catch (error) {
       console.error("Error fetching events:", error);
     }
@@ -73,21 +77,16 @@ export default function EventsCalendarClient({
 
   // Gérer le changement de mois
   const handleMonthChange = useCallback((newMonth: number, newYear: number) => {
-    setCurrentMonth(newMonth);
-    setCurrentYear(newYear);
-    setEvents([]); // Vider les événements immédiatement
+    // Simplement mettre à jour l'URL, le useEffect se chargera du fetch
     updateURL(newMonth, newYear, showAllGames);
-    fetchEvents(newMonth, newYear, showAllGames);
-  }, [showAllGames, updateURL, fetchEvents]);
+  }, [showAllGames, updateURL]);
 
   // Gérer le changement du filtre de jeux
   const handleToggleAllGames = useCallback(() => {
     const newShowAllGames = !showAllGames;
-    setShowAllGames(newShowAllGames);
-    setEvents([]); // Vider les événements immédiatement
+    // Simplement mettre à jour l'URL, le useEffect se chargera du fetch
     updateURL(currentMonth, currentYear, newShowAllGames);
-    fetchEvents(currentMonth, currentYear, newShowAllGames);
-  }, [showAllGames, currentMonth, currentYear, updateURL, fetchEvents]);
+  }, [showAllGames, currentMonth, currentYear, updateURL]);
 
   // Synchroniser avec les paramètres d'URL
   useEffect(() => {
