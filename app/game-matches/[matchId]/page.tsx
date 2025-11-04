@@ -4,7 +4,7 @@ import { getGameMatchById } from "@/lib/db/game-matches";
 import { getAllGames } from "@/lib/db/games";
 import { getAllLairs } from "@/lib/db/lairs";
 import { notFound, redirect } from "next/navigation";
-import GameMatchDetails from "./GameMatchDetails";
+import GameMatchDetailsWrapper from "./GameMatchDetailsWrapper";
 
 type PageProps = {
   params: Promise<{
@@ -55,7 +55,7 @@ export default async function GameMatchDetailPage({ params }: PageProps) {
 
   return (
     <div className="container max-w-4xl mx-auto px-4 py-8">
-      <GameMatchDetails
+      <GameMatchDetailsWrapper
         match={match}
         games={games}
         lairs={lairs}
