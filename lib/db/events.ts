@@ -186,6 +186,17 @@ export async function getEventsForUser(
       return [];
     }
     
+    // Convert user.games string IDs to ObjectIds for comparison
+    const { ObjectId } = await import("mongodb");
+    const gameObjectIds = user.games.map(id => {
+      try {
+        return new ObjectId(id);
+      } catch (e) {
+        console.error(`Invalid game ID: ${id}`);
+        return null;
+      }
+    }).filter((id): id is import("mongodb").ObjectId => id !== null);
+    
     // Add lookup stage to join with games collection
     pipeline.push(
       // Lookup games to get game names from game IDs
@@ -199,7 +210,7 @@ export async function getEventsForUser(
                 $expr: {
                   $and: [
                     { $eq: ["$name", "$$eventGameName"] },
-                    { $in: ["$id", user.games] }
+                    { $in: ["$_id", gameObjectIds] }
                   ]
                 }
               }
@@ -228,8 +239,6 @@ export async function getEventsForUser(
     .collection<EventDocument>(COLLECTION_NAME)
     .aggregate(pipeline)
     .toArray();
-
-    console.log(events);
   
   // Map results to Event type
   return events.map((event: any) => ({
