@@ -9,4 +9,8 @@ export type Event = {
   price?: number;
   status: 'available' | 'sold-out' | 'cancelled';
   addedBy: string; // ID de l'utilisateur qui a créé l'événement ou "AI-SCRAPPING"
+  lair?: {
+    id: string;
+    name: string;
+  };
 };

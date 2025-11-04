@@ -234,6 +234,22 @@ export async function getEventsForUser(
     );
   }
   
+  // Add lookup to get lair details
+  pipeline.push({
+    $lookup: {
+      from: "lairs",
+      let: { lairId: "$lairId" },
+      pipeline: [
+        {
+          $match: {
+            $expr: { $eq: ["$id", "$$lairId"] }
+          }
+        }
+      ],
+      as: "lairDetails"
+    }
+  });
+  
   // Execute aggregation
   const events = await db
     .collection<EventDocument>(COLLECTION_NAME)
@@ -252,5 +268,9 @@ export async function getEventsForUser(
     price: event.price,
     status: event.status,
     addedBy: event.addedBy,
+    lair: event.lairDetails && event.lairDetails.length > 0 ? {
+      id: event.lairDetails[0].id,
+      name: event.lairDetails[0].name,
+    } : undefined,
   }));
 }

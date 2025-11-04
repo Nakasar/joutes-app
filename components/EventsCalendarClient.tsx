@@ -1,31 +1,23 @@
 "use client";
 
 import { Event } from "@/lib/types/Event";
-import { Lair } from "@/lib/types/Lair";
-import { Game } from "@/lib/types/Game";
 import EventsCalendar from "@/app/events/EventsCalendar";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useCallback, useTransition } from "react";
 
 type EventsCalendarClientProps = {
   initialEvents: Event[];
-  initialLairsMap: Record<string, Lair>;
   initialMonth: number;
   initialYear: number;
   initialShowAllGames: boolean;
-  userGames: Game["id"][];
-  allGames: Game[];
   basePath: string;
 };
 
 export default function EventsCalendarClient({
   initialEvents,
-  initialLairsMap,
   initialMonth,
   initialYear,
   initialShowAllGames,
-  userGames,
-  allGames,
   basePath,
 }: EventsCalendarClientProps) {
   const router = useRouter();
@@ -33,9 +25,6 @@ export default function EventsCalendarClient({
   const [isPending, startTransition] = useTransition();
   
   const [events, setEvents] = useState<Event[]>(initialEvents);
-  const [lairsMap, setLairsMap] = useState<Map<string, Lair>>(
-    new Map(Object.entries(initialLairsMap))
-  );
   const [currentMonth, setCurrentMonth] = useState(initialMonth);
   const [currentYear, setCurrentYear] = useState(initialYear);
   const [showAllGames, setShowAllGames] = useState(initialShowAllGames);
@@ -51,7 +40,6 @@ export default function EventsCalendarClient({
 
   // Fonction pour récupérer les événements
   const fetchEvents = useCallback(async (month: number, year: number, allGames: boolean) => {
-    setEvents([]);
     try {
       const params = new URLSearchParams({
         month: month.toString(),
@@ -68,7 +56,6 @@ export default function EventsCalendarClient({
       const data = await response.json();
       startTransition(() => {
         setEvents(data.events);
-        setLairsMap(new Map(Object.entries(data.lairsMap)));
       });
     } catch (error) {
       console.error("Error fetching events:", error);
@@ -106,6 +93,7 @@ export default function EventsCalendarClient({
       setCurrentMonth(month);
       setCurrentYear(year);
       setShowAllGames(allGames);
+      setEvents([]);
       fetchEvents(month, year, allGames);
     }
   }, [searchParams, initialMonth, initialYear, currentMonth, currentYear, showAllGames, fetchEvents]);
@@ -123,9 +111,6 @@ export default function EventsCalendarClient({
         
         <EventsCalendar 
           events={events} 
-          lairsMap={lairsMap} 
-          userGames={userGames}
-          allGames={allGames}
           showViewToggle={true}
           currentMonth={currentMonth}
           currentYear={currentYear}

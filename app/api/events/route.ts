@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getEventsForUser } from "@/lib/db/events";
-import { getLairById } from "@/lib/db/lairs";
-import { getUserById } from "@/lib/db/users";
-import { Lair } from "@/lib/types/Lair";
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,17 +36,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user to check lairs and games
-    const user = await getUserById(session.user.id);
-    
-    if (!user) {
-      return NextResponse.json(
-        { error: "Utilisateur introuvable" },
-        { status: 404 }
-      );
-    }
-
-    // Get events for the user
+    // Get events for the user (with lair details included)
     const events = await getEventsForUser(
       session.user.id,
       allGames,
@@ -57,22 +44,7 @@ export async function GET(request: NextRequest) {
       yearNum
     );
 
-    // Get lairs details
-    const lairsDetails = await Promise.all(
-      user.lairs.map(lairId => getLairById(lairId))
-    );
-    const lairs = lairsDetails.filter((lair): lair is Lair => lair !== null);
-
-    // Create a map of lairs
-    const lairsMap: Record<string, Lair> = {};
-    lairs.forEach((lair) => {
-      lairsMap[lair.id] = lair;
-    });
-
-    return NextResponse.json({
-      events,
-      lairsMap,
-    });
+    return NextResponse.json({ events });
   } catch (error) {
     console.error("Error fetching events:", error);
     return NextResponse.json(

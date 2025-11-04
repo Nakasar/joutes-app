@@ -1,7 +1,4 @@
 import { getEventsForUser } from "@/lib/db/events";
-import { getLairById } from "@/lib/db/lairs";
-import { getAllGames } from "@/lib/db/games";
-import { Lair } from "@/lib/types/Lair";
 import EventsCalendarClient from "@/components/EventsCalendarClient";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -170,33 +167,16 @@ export default async function EventsCalendarWrapper({
     );
   }
 
-  // Récupérer tous les jeux
-  const allGames = await getAllGames();
-
   // Récupérer les événements pour l'utilisateur avec le mois/année
+  // Les détails des lairs sont maintenant inclus directement dans les événements
   const events = await getEventsForUser(session.user.id, showAllGames, month, year);
-
-  // Récupérer les détails des lairs suivis
-  const lairsDetails = await Promise.all(
-    user.lairs.map(lairId => getLairById(lairId))
-  );
-  const lairs = lairsDetails.filter((lair): lair is Lair => lair !== null);
-
-  // Créer un map des lairs pour faciliter la recherche
-  const lairsMapObject: Record<string, Lair> = {};
-  lairs.forEach((lair) => {
-    lairsMapObject[lair.id] = lair;
-  });
 
   return (
     <EventsCalendarClient
       initialEvents={events}
-      initialLairsMap={lairsMapObject}
       initialMonth={month}
       initialYear={year}
       initialShowAllGames={showAllGames}
-      userGames={user.games}
-      allGames={allGames}
       basePath={basePath}
     />
   );
