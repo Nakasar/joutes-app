@@ -151,7 +151,7 @@ export async function getGameMatches(filters: GetGameMatchesFilters = {}): Promi
       { $sort: { playedAt: -1 } }, // Trier par date de partie décroissante
       {
         $lookup: {
-          from: "users",
+          from: "user",
           let: { playerIds: { $map: { input: "$playerIds", as: "pid", in: { $toObjectId: "$$pid" } } } },
           pipeline: [
             { $match: { $expr: { $in: ["$_id", "$$playerIds"] } } },
@@ -214,7 +214,7 @@ export async function getGameMatchesByUser(userId: string): Promise<GameMatch[]>
       { $sort: { playedAt: -1 } },
       {
         $lookup: {
-          from: "users",
+          from: "user",
           let: { playerIds: { $map: { input: "$playerIds", as: "pid", in: { $toObjectId: "$$pid" } } } },
           pipeline: [
             { $match: { $expr: { $in: ["$_id", "$$playerIds"] } } },
@@ -252,7 +252,6 @@ export async function getGameMatchesByUser(userId: string): Promise<GameMatch[]>
           }
         }
       },
-      { $project: { playerDetails: 0 } }
     ])
     .toArray();
   
