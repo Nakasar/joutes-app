@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useSession, signOut } from "@/lib/auth-client";
-import { Menu, Calendar, MapPin, User, LogOut, Sparkles, Shield, GamepadIcon } from "lucide-react";
+import Image from "next/image";
+import { Menu, Calendar, MapPin, User, LogOut, Shield, GamepadIcon } from "lucide-react";
 import { isAdmin } from "@/lib/config/admins";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,7 +39,7 @@ export default function Header() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 font-bold text-2xl">
-            <Sparkles className="h-6 w-6 text-primary" />
+            <Image src="/logo/joutes_logo_full.png" alt="Joutes Logo" width={120} height={120} className="rounded-full size-6" />
             <span className="bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
               Joutes
             </span>
