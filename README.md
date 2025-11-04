@@ -1,4 +1,3 @@
-````markdown
 # Developers
 
 ## Setup
@@ -23,4 +22,3 @@ Les utilisateurs peuvent enregistrer et consulter l'historique de leurs parties 
 
 Pour plus de détails, voir [docs/GAME_MATCHES.md](docs/GAME_MATCHES.md).
 
-````

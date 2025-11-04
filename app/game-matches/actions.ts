@@ -343,3 +343,135 @@ export async function updateGameMatchAction(
     return { success: false, error: "Erreur serveur" };
   }
 }
+
+export async function rateGameMatchAction(
+  matchId: string,
+  rating: 1 | 2 | 3 | 4 | 5
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    // Récupérer la partie
+    const match = await getGameMatchById(matchId);
+    
+    if (!match) {
+      return { success: false, error: "Partie non trouvée" };
+    }
+
+    // Vérifier que l'utilisateur est un joueur de la partie
+    if (!match.playerIds.includes(session.user.id)) {
+      return { success: false, error: "Vous devez être joueur de la partie pour l'évaluer" };
+    }
+
+    const { rateGameMatch } = await import("@/lib/db/game-matches");
+    const result = await rateGameMatch(matchId, session.user.id, rating);
+
+    if (!result) {
+      return { success: false, error: "Erreur lors de l'évaluation de la partie" };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de l'évaluation de la partie:", error);
+    return { success: false, error: "Erreur serveur" };
+  }
+}
+
+export async function voteMVPAction(
+  matchId: string,
+  votedForId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    // Récupérer la partie
+    const match = await getGameMatchById(matchId);
+    
+    if (!match) {
+      return { success: false, error: "Partie non trouvée" };
+    }
+
+    // Vérifier que l'utilisateur est un joueur de la partie
+    if (!match.playerIds.includes(session.user.id)) {
+      return { success: false, error: "Vous devez être joueur de la partie pour voter MVP" };
+    }
+
+    // Vérifier que le joueur voté est dans la partie
+    if (!match.playerIds.includes(votedForId)) {
+      return { success: false, error: "Le joueur voté doit être dans la partie" };
+    }
+
+    // Vérifier qu'on ne vote pas pour soi-même
+    if (votedForId === session.user.id) {
+      return { success: false, error: "Vous ne pouvez pas voter pour vous-même" };
+    }
+
+    const { voteMVP } = await import("@/lib/db/game-matches");
+    const result = await voteMVP(matchId, session.user.id, votedForId);
+
+    if (!result) {
+      return { success: false, error: "Erreur lors du vote MVP" };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors du vote MVP:", error);
+    return { success: false, error: "Erreur serveur" };
+  }
+}
+
+export async function toggleWinnerAction(
+  matchId: string,
+  userId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    // Récupérer la partie
+    const match = await getGameMatchById(matchId);
+    
+    if (!match) {
+      return { success: false, error: "Partie non trouvée" };
+    }
+
+    // Vérifier que l'utilisateur est le créateur
+    if (match.createdBy !== session.user.id) {
+      return { success: false, error: "Seul le créateur peut désigner les gagnants" };
+    }
+
+    // Vérifier que le joueur est dans la partie
+    if (!match.playerIds.includes(userId)) {
+      return { success: false, error: "Le joueur doit être dans la partie" };
+    }
+
+    const { toggleWinner } = await import("@/lib/db/game-matches");
+    const result = await toggleWinner(matchId, userId);
+
+    if (!result) {
+      return { success: false, error: "Erreur lors de la désignation du gagnant" };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la désignation du gagnant:", error);
+    return { success: false, error: "Erreur serveur" };
+  }
+}

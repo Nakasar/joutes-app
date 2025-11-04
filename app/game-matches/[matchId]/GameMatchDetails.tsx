@@ -25,14 +25,18 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { DateTime } from "luxon";
-import { Calendar, MapPin, Users, Edit, Trash2, X, ArrowLeft, UserMinus, UserPlus, QrCode } from "lucide-react";
+import { Calendar, MapPin, Users, Edit, Trash2, X, ArrowLeft, UserMinus, UserPlus, QrCode, Medal, Trophy } from "lucide-react";
 import QRCode from "qrcode";
 import {
   removePlayerFromMatchAction,
   deleteGameMatchAction,
   addPlayerToMatchAction,
   updateGameMatchAction,
+  rateGameMatchAction,
+  voteMVPAction,
+  toggleWinnerAction,
 } from "../actions";
+import RatingSelector from "./RatingSelector";
 
 type GameMatchDetailsProps = {
   match: GameMatch;
@@ -58,6 +62,31 @@ export default function GameMatchDetails({
   const [isQRCodeDialogOpen, setIsQRCodeDialogOpen] = useState(false);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>("");
   const [newPlayerTag, setNewPlayerTag] = useState("");
+
+  // États pour les nouvelles fonctionnalités
+  const [userRating, setUserRating] = useState<1 | 2 | 3 | 4 | 5 | undefined>(
+    match.ratings?.find(r => r.userId === currentUserId)?.rating
+  );
+  const [userMVPVote, setUserMVPVote] = useState<string | undefined>(
+    match.mvpVotes?.find(v => v.voterId === currentUserId)?.votedForId
+  );
+
+  // Calculer le MVP (joueur avec le plus de votes)
+  const mvpCounts = match.players.reduce((acc, player) => {
+    const votes = match.mvpVotes?.filter(v => v.votedForId === player.userId).length || 0;
+    acc[player.userId] = votes;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  const maxVotes = Math.max(...Object.values(mvpCounts), 0);
+  const mvpPlayerIds = maxVotes > 0 
+    ? Object.keys(mvpCounts).filter(playerId => mvpCounts[playerId] === maxVotes)
+    : [];
+
+  // Calculer la note moyenne
+  const averageRating = match.ratings && match.ratings.length > 0
+    ? match.ratings.reduce((sum, r) => sum + r.rating, 0) / match.ratings.length
+    : undefined;
 
   // Récupérer les messages de l'URL
   useEffect(() => {
@@ -203,6 +232,44 @@ export default function GameMatchDetails({
       } else {
         setError(result.error || "Erreur lors de la suppression de la partie");
         setIsDeleteDialogOpen(false);
+      }
+    });
+  };
+
+  const handleRating = (rating: 1 | 2 | 3 | 4 | 5) => {
+    setError(null);
+    startTransition(async () => {
+      const result = await rateGameMatchAction(match.id, rating);
+      if (result.success) {
+        setUserRating(rating);
+        router.refresh();
+      } else {
+        setError(result.error || "Erreur lors de l&apos;évaluation");
+      }
+    });
+  };
+
+  const handleVoteMVP = (votedForId: string) => {
+    setError(null);
+    startTransition(async () => {
+      const result = await voteMVPAction(match.id, votedForId);
+      if (result.success) {
+        setUserMVPVote(votedForId);
+        router.refresh();
+      } else {
+        setError(result.error || "Erreur lors du vote MVP");
+      }
+    });
+  };
+
+  const handleToggleWinner = (userId: string) => {
+    setError(null);
+    startTransition(async () => {
+      const result = await toggleWinnerAction(match.id, userId);
+      if (result.success) {
+        router.refresh();
+      } else {
+        setError(result.error || "Erreur lors de la désignation du gagnant");
       }
     });
   };
@@ -436,6 +503,25 @@ export default function GameMatchDetails({
             </div>
           )}
 
+          {/* Évaluation de la partie */}
+          {isPlayer && (
+            <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold">Évaluez cette partie</h3>
+                <RatingSelector
+                  value={userRating}
+                  onChange={handleRating}
+                  disabled={isPending}
+                />
+              </div>
+              {averageRating && (
+                <p className="text-xs text-muted-foreground">
+                  Note moyenne : {averageRating.toFixed(1)} / 5
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Liste des joueurs */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -541,47 +627,104 @@ export default function GameMatchDetails({
             </div>
 
             <div className="space-y-2">
-              {match.players.map((player) => (
-                <div
-                  key={player.userId}
-                  className="flex items-center justify-between p-3 border rounded-lg bg-muted/50"
-                >
-                  <Badge variant="secondary" className="text-sm">
-                    {player.username}
-                  </Badge>
-                  {isCreator && (
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <X className="h-4 w-4" />
+              {match.players.map((player) => {
+                const isMVP = mvpPlayerIds.includes(player.userId);
+                const isWinner = match.winners?.includes(player.userId);
+                const isCurrentUserPlayer = player.userId !== currentUserId && isPlayer;
+                const hasVotedForThisPlayer = userMVPVote === player.userId;
+                
+                return (
+                  <div
+                    key={player.userId}
+                    className="flex items-center justify-between p-3 border rounded-lg bg-muted/50"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-sm">
+                        {player.username}
+                      </Badge>
+                      
+                      {/* Médaille MVP */}
+                      {isMVP && (
+                        <span title="Most Valuable Player">
+                          <Medal className="h-5 w-5 text-yellow-500" />
+                        </span>
+                      )}
+                      
+                      {/* Trophée gagnant */}
+                      {isWinner && (
+                        <span title="Vainqueur">
+                          <Trophy className="h-5 w-5 text-amber-600" />
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {/* Vote MVP pour les joueurs */}
+                      {isCurrentUserPlayer && (
+                        <Button
+                          variant={hasVotedForThisPlayer ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handleVoteMVP(player.userId)}
+                          disabled={isPending}
+                          className="gap-2"
+                          title="Voter pour le MVP"
+                        >
+                          <Medal className="h-4 w-4" />
+                          {hasVotedForThisPlayer ? "MVP voté" : "Voter MVP"}
                         </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Retirer le joueur</DialogTitle>
-                          <DialogDescription>
-                            Êtes-vous sûr de vouloir retirer {player.username} de la
-                            partie ?
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="flex gap-2 pt-4">
-                          <Button variant="outline" className="flex-1">
-                            Annuler
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            onClick={() => handleRemovePlayer(player.userId)}
-                            disabled={isPending}
-                            className="flex-1"
-                          >
-                            {isPending ? "En cours..." : "Retirer"}
-                          </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  )}
-                </div>
-              ))}
+                      )}
+                      
+                      {/* Désignation gagnant pour le créateur */}
+                      {isCreator && (
+                        <Button
+                          variant={isWinner ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handleToggleWinner(player.userId)}
+                          disabled={isPending}
+                          className="gap-2"
+                          title={isWinner ? "Retirer le trophée" : "Désigner comme vainqueur"}
+                        >
+                          <Trophy className="h-4 w-4" />
+                          Vainqueur
+                        </Button>
+                      )}
+                      
+                      {/* Bouton retirer joueur */}
+                      {isCreator && (
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Retirer le joueur</DialogTitle>
+                              <DialogDescription>
+                                Êtes-vous sûr de vouloir retirer {player.username} de la
+                                partie ?
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="flex gap-2 pt-4">
+                              <Button variant="outline" className="flex-1">
+                                Annuler
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                onClick={() => handleRemovePlayer(player.userId)}
+                                disabled={isPending}
+                                className="flex-1"
+                              >
+                                {isPending ? "En cours..." : "Retirer"}
+                              </Button>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

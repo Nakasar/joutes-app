@@ -26,6 +26,9 @@ function toGameMatch(doc: WithId<Document>): GameMatch {
     players: doc.players || [], // Rempli par aggregate
     createdBy: doc.createdBy,
     createdAt: doc.createdAt,
+    ratings: doc.ratings || [],
+    mvpVotes: doc.mvpVotes || [],
+    winners: doc.winners || [],
   };
 }
 
@@ -306,6 +309,80 @@ export async function addPlayerToGameMatch(
     { _id: new ObjectId(matchId) },
     { $push: { playerIds: userId } }
   );
+  
+  return result.modifiedCount > 0;
+}
+
+export async function rateGameMatch(
+  matchId: string,
+  userId: string,
+  rating: 1 | 2 | 3 | 4 | 5
+): Promise<boolean> {
+  const db = await getDb();
+  
+  // Supprimer l'évaluation existante de l'utilisateur s'il y en a une
+  await db.collection<GameMatchDocument>(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(matchId) },
+    { $pull: { ratings: { userId } } }
+  );
+  
+  // Ajouter la nouvelle évaluation
+  const result = await db.collection<GameMatchDocument>(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(matchId) },
+    { $push: { ratings: { userId, rating } } }
+  );
+  
+  return result.modifiedCount > 0;
+}
+
+export async function voteMVP(
+  matchId: string,
+  voterId: string,
+  votedForId: string
+): Promise<boolean> {
+  const db = await getDb();
+  
+  // Supprimer le vote existant de l'utilisateur s'il y en a un
+  await db.collection<GameMatchDocument>(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(matchId) },
+    { $pull: { mvpVotes: { voterId } } }
+  );
+  
+  // Ajouter le nouveau vote
+  const result = await db.collection<GameMatchDocument>(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(matchId) },
+    { $push: { mvpVotes: { voterId, votedForId } } }
+  );
+  
+  return result.modifiedCount > 0;
+}
+
+export async function toggleWinner(
+  matchId: string,
+  userId: string
+): Promise<boolean> {
+  const db = await getDb();
+  
+  // Vérifier si l'utilisateur est déjà gagnant
+  const match = await db.collection<GameMatchDocument>(COLLECTION_NAME).findOne({
+    _id: new ObjectId(matchId),
+    winners: userId,
+  });
+  
+  let result;
+  if (match) {
+    // Retirer l'utilisateur des gagnants
+    result = await db.collection<GameMatchDocument>(COLLECTION_NAME).updateOne(
+      { _id: new ObjectId(matchId) },
+      { $pull: { winners: userId } }
+    );
+  } else {
+    // Ajouter l'utilisateur aux gagnants
+    result = await db.collection<GameMatchDocument>(COLLECTION_NAME).updateOne(
+      { _id: new ObjectId(matchId) },
+      { $push: { winners: userId } }
+    );
+  }
   
   return result.modifiedCount > 0;
 }
