@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { DateTime } from "luxon";
 import { Calendar, MapPin, Users } from "lucide-react";
 import GameMatchActions from "./GameMatchActions";
+import AddPlayerToMatch from "./AddPlayerToMatch";
 
 type GameMatchListProps = {
   matches: GameMatch[];
@@ -96,9 +97,14 @@ export default function GameMatchList({ matches, games, lairs, currentUserId }: 
 
               {/* Liste des joueurs */}
               <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Users className="h-4 w-4" />
-                  <span>Joueurs ({match.players.length})</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Users className="h-4 w-4" />
+                    <span>Joueurs ({match.players.length})</span>
+                  </div>
+                  {isCreator && (
+                    <AddPlayerToMatch matchId={match.id} />
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {match.players.map((player, index) => (

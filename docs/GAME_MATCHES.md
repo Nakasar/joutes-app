@@ -30,6 +30,7 @@ Le créateur de la partie est automatiquement ajouté comme joueur.
 - **Quitter une partie** : Un joueur peut se retirer de la liste des participants d'une partie
 
 #### Pour le créateur :
+- **Ajouter un joueur** : Le créateur peut ajouter des joueurs à la partie en entrant leur username#discriminant
 - **Retirer un joueur** : Le créateur peut retirer n'importe quel joueur de la partie (y compris lui-même)
 - **Supprimer la partie** : Le créateur peut supprimer complètement une partie
 
@@ -82,6 +83,7 @@ type GameMatchPlayer = {
 - `updateGameMatch()` - Mettre à jour une partie
 - `deleteGameMatch()` - Supprimer une partie
 - `removePlayerFromGameMatch()` - Retirer un joueur d'une partie
+- `addPlayerToGameMatch()` - Ajouter un joueur à une partie
 
 #### Filtres disponibles
 ```typescript
@@ -102,6 +104,7 @@ Fichier : `app/game-matches/actions.ts`
 - `getUserGameMatchesAction()` - Récupérer les parties de l'utilisateur connecté
 - `deleteGameMatchAction()` - Supprimer une partie (créateur uniquement)
 - `removePlayerFromMatchAction()` - Retirer un joueur (créateur ou soi-même)
+- `addPlayerToMatchAction()` - Ajouter un joueur à une partie (créateur uniquement)
 
 ### Pages et composants
 
@@ -115,6 +118,7 @@ Fichier : `app/game-matches/actions.ts`
 - `GameMatchFilters` - Filtres pour l'historique
 - `GameMatchesClient` - Composant client avec gestion d'état
 - `GameMatchActions` - Actions de suppression avec confirmations
+- `AddPlayerToMatch` - Formulaire d'ajout d'un joueur à une partie existante
 
 ### Navigation
 
@@ -140,6 +144,12 @@ Le lien "Parties" a été ajouté dans le header principal pour les utilisateurs
 3. Utiliser le filtre pour afficher uniquement certains jeux
 
 ### Gérer les parties
+
+#### Ajouter un joueur (créateur)
+1. Aller sur la page "Parties"
+2. Sur une partie que vous avez créée, cliquer sur "Ajouter un joueur"
+3. Entrer le nom d'utilisateur et le discriminant (ex: username#1234)
+4. Valider
 
 #### Quitter une partie (joueur)
 1. Aller sur la page "Parties"

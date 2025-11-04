@@ -10,6 +10,7 @@ import {
   deleteGameMatch,
   removePlayerFromGameMatch,
   getGameMatchById,
+  addPlayerToGameMatch,
 } from "@/lib/db/game-matches";
 import { gameMatchSchema } from "@/lib/schemas/game-match.schema";
 import { GameMatch } from "@/lib/types/GameMatch";
@@ -227,6 +228,58 @@ export async function removePlayerFromMatchAction(
     return { success: true };
   } catch (error) {
     console.error("Erreur lors du retrait du joueur:", error);
+    return { success: false, error: "Erreur serveur" };
+  }
+}
+
+export async function addPlayerToMatchAction(
+  matchId: string,
+  displayName: string,
+  discriminator: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    // Récupérer la partie
+    const match = await getGameMatchById(matchId);
+    
+    if (!match) {
+      return { success: false, error: "Partie non trouvée" };
+    }
+
+    // Vérifier que l'utilisateur est le créateur
+    if (match.createdBy !== session.user.id) {
+      return { success: false, error: "Vous n'êtes pas autorisé à ajouter des joueurs" };
+    }
+
+    // Résoudre l'utilisateur par username et discriminator
+    const user = await getUserByUsernameAndDiscriminator(displayName, discriminator);
+
+    if (!user) {
+      return { success: false, error: "Utilisateur non trouvé" };
+    }
+
+    // Ajouter le joueur
+    const result = await addPlayerToGameMatch(matchId, {
+      userId: user.id,
+      username: `${displayName}#${discriminator}`,
+      displayName,
+      discriminator,
+    });
+
+    if (!result) {
+      return { success: false, error: "Le joueur est déjà dans la partie" };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de l'ajout du joueur:", error);
     return { success: false, error: "Erreur serveur" };
   }
 }

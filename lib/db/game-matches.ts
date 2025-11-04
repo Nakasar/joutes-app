@@ -143,3 +143,34 @@ export async function removePlayerFromGameMatch(matchId: string, userId: string)
   
   return result.modifiedCount > 0;
 }
+
+export async function addPlayerToGameMatch(
+  matchId: string,
+  player: {
+    userId: string;
+    username: string;
+    displayName?: string;
+    discriminator?: string;
+  }
+): Promise<boolean> {
+  const db = await getDb();
+  
+  // Vérifier que le joueur n'est pas déjà dans la partie
+  const match = await db.collection<GameMatchDocument>(COLLECTION_NAME).findOne({
+    _id: new ObjectId(matchId),
+    "players.userId": player.userId,
+  });
+  
+  if (match) {
+    // Le joueur est déjà dans la partie
+    return false;
+  }
+  
+  // Ajouter le joueur
+  const result = await db.collection<GameMatchDocument>(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(matchId) },
+    { $push: { players: player } }
+  );
+  
+  return result.modifiedCount > 0;
+}
