@@ -51,12 +51,7 @@ export async function GET(
     }
 
     // Ajouter le joueur à la partie
-    const result = await addPlayerToGameMatch(matchId, {
-      userId: user.id,
-      username: `${user.displayName}#${user.discriminator}`,
-      displayName: user.displayName,
-      discriminator: user.discriminator,
-    });
+    const result = await addPlayerToGameMatch(matchId, user.id);
 
     if (!result) {
       return NextResponse.redirect(
