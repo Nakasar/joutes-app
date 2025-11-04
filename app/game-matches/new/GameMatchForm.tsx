@@ -58,20 +58,41 @@ export default function GameMatchForm({ games, lairs, currentUser }: GameMatchFo
     },
   ]);
 
-  const [newPlayerUsername, setNewPlayerUsername] = useState("");
-  const [newPlayerDiscriminator, setNewPlayerDiscriminator] = useState("");
+  const [newPlayerTag, setNewPlayerTag] = useState("");
 
   const addPlayer = () => {
-    if (!newPlayerUsername.trim()) {
-      setError("Veuillez entrer un nom d'utilisateur");
+    const trimmedTag = newPlayerTag.trim();
+
+    if (!trimmedTag) {
+      setError("Veuillez entrer le tag du joueur");
+      return;
+    }
+
+    // Découper le tag sur le #
+    const parts = trimmedTag.split("#");
+    
+    if (parts.length !== 2) {
+      setError("Le tag doit être au format username#1234");
+      return;
+    }
+
+    const [displayName, discriminator] = parts;
+
+    if (!displayName.trim()) {
+      setError("Le nom d'utilisateur ne peut pas être vide");
+      return;
+    }
+
+    if (!discriminator.trim() || discriminator.length !== 4 || !/^\d{4}$/.test(discriminator)) {
+      setError("Le discriminant doit être un nombre à 4 chiffres");
       return;
     }
 
     // Vérifier si le joueur n'est pas déjà dans la liste
     const existingPlayer = players.find(
       (p) =>
-        p.displayName === newPlayerUsername &&
-        p.discriminator === newPlayerDiscriminator
+        p.displayName === displayName.trim() &&
+        p.discriminator === discriminator.trim()
     );
 
     if (existingPlayer) {
@@ -82,16 +103,13 @@ export default function GameMatchForm({ games, lairs, currentUser }: GameMatchFo
     // Ajouter le joueur (l'ID sera résolu côté serveur si possible)
     const newPlayer: PlayerInput = {
       id: "", // Sera résolu côté serveur ou laissé vide
-      username: newPlayerDiscriminator
-        ? `${newPlayerUsername}#${newPlayerDiscriminator}`
-        : newPlayerUsername,
-      displayName: newPlayerUsername,
-      discriminator: newPlayerDiscriminator || undefined,
+      username: trimmedTag,
+      displayName: displayName.trim(),
+      discriminator: discriminator.trim(),
     };
 
     setPlayers([...players, newPlayer]);
-    setNewPlayerUsername("");
-    setNewPlayerDiscriminator("");
+    setNewPlayerTag("");
     setError(null);
   };
 
@@ -232,26 +250,17 @@ export default function GameMatchForm({ games, lairs, currentUser }: GameMatchFo
           <div className="flex gap-2">
             <Input
               type="text"
-              placeholder="Nom d'utilisateur"
-              value={newPlayerUsername}
-              onChange={(e) => setNewPlayerUsername(e.target.value)}
+              placeholder="username#1234"
+              value={newPlayerTag}
+              onChange={(e) => setNewPlayerTag(e.target.value)}
               className="flex-1"
-            />
-            <Input
-              type="text"
-              placeholder="Discriminant (####)"
-              value={newPlayerDiscriminator}
-              onChange={(e) => setNewPlayerDiscriminator(e.target.value)}
-              maxLength={4}
-              pattern="\d{4}"
-              className="w-32"
             />
             <Button type="button" onClick={addPlayer} variant="outline">
               Ajouter
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Format: username#1234 (le discriminant est optionnel)
+            Format : username#1234 (nom d'utilisateur suivi du # et d'un nombre à 4 chiffres)
           </p>
         </div>
       </div>
