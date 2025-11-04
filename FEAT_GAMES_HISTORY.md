@@ -14,19 +14,21 @@ Cette branche implémente une nouvelle fonctionnalité majeure permettant aux ut
 - ✅ `lib/db/game-matches.ts` - Fonctions CRUD pour les parties (collection MongoDB `gameMatches`)
 
 ### Actions Serveur
-- ✅ `app/game-matches/actions.ts` - Actions serveur pour créer et récupérer les parties
+- ✅ `app/game-matches/actions.ts` - Actions serveur pour créer, récupérer et supprimer les parties
 - ✅ `app/account/user-actions.ts` - Actions pour rechercher des utilisateurs
 
 ### Pages et Composants
 - ✅ `app/game-matches/page.tsx` - Page principale de l'historique des parties
 - ✅ `app/game-matches/GameMatchesClient.tsx` - Composant client avec gestion des filtres
-- ✅ `app/game-matches/GameMatchList.tsx` - Affichage de la liste des parties
+- ✅ `app/game-matches/GameMatchList.tsx` - Affichage de la liste des parties avec actions
 - ✅ `app/game-matches/GameMatchFilters.tsx` - Filtres pour les parties
+- ✅ `app/game-matches/GameMatchActions.tsx` - Boutons d'action (supprimer, quitter, retirer)
 - ✅ `app/game-matches/new/page.tsx` - Page du formulaire de création
 - ✅ `app/game-matches/new/GameMatchForm.tsx` - Formulaire d'ajout de partie
 
 ### Documentation
 - ✅ `docs/GAME_MATCHES.md` - Documentation complète de la fonctionnalité
+- ✅ `FEAT_GAMES_HISTORY.md` - Récapitulatif de la branche
 
 ## Fichiers modifiés
 
@@ -56,8 +58,17 @@ Cette branche implémente une nouvelle fonctionnalité majeure permettant aux ut
 - Affichage des informations : jeu, date, lieu, joueurs
 - Filtre par jeu
 - Parties visibles pour tous les participants
+- Badge "Créateur" sur les parties créées par l'utilisateur
+- Affichage des parties créées par l'utilisateur même s'il n'y a pas participé
 
-### 3. Navigation
+### 3. Gestion des parties
+- **Joueur** : Peut quitter une partie (se retirer de la liste des joueurs)
+- **Créateur** : Peut retirer n'importe quel joueur d'une partie
+- **Créateur** : Peut supprimer complètement une partie
+- Confirmations via boîtes de dialogue pour toutes les actions de suppression
+- Vérification des permissions côté serveur
+
+### 4. Navigation
 - Lien "Parties" dans le header (accessible uniquement aux utilisateurs connectés)
 - Bouton "Nouvelle partie" sur la page de l'historique
 
@@ -93,7 +104,9 @@ Cette branche implémente une nouvelle fonctionnalité majeure permettant aux ut
 
 - `createGameMatchAction()` - Créer une partie
 - `getGameMatchesAction()` - Récupérer des parties avec filtres
-- `getUserGameMatchesAction()` - Récupérer les parties de l'utilisateur connecté
+- `getUserGameMatchesAction()` - Récupérer les parties de l'utilisateur connecté (joueur ou créateur)
+- `deleteGameMatchAction()` - Supprimer une partie (créateur uniquement)
+- `removePlayerFromMatchAction()` - Retirer un joueur (créateur ou soi-même)
 - `searchUsersAction()` - Rechercher des utilisateurs
 - `getUserByUsernameAction()` - Récupérer un utilisateur par username#discriminator
 

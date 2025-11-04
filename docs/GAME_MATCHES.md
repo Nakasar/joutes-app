@@ -100,6 +100,8 @@ Fichier : `app/game-matches/actions.ts`
 - `createGameMatchAction()` - Créer une nouvelle partie (avec validation)
 - `getGameMatchesAction()` - Récupérer des parties avec filtres
 - `getUserGameMatchesAction()` - Récupérer les parties de l'utilisateur connecté
+- `deleteGameMatchAction()` - Supprimer une partie (créateur uniquement)
+- `removePlayerFromMatchAction()` - Retirer un joueur (créateur ou soi-même)
 
 ### Pages et composants
 
@@ -110,6 +112,9 @@ Fichier : `app/game-matches/actions.ts`
 #### Composants
 - `GameMatchForm` - Formulaire d'ajout d'une partie
 - `GameMatchList` - Affichage de la liste des parties
+- `GameMatchFilters` - Filtres pour l'historique
+- `GameMatchesClient` - Composant client avec gestion d'état
+- `GameMatchActions` - Actions de suppression avec confirmations
 
 ### Navigation
 
@@ -131,14 +136,34 @@ Le lien "Parties" a été ajouté dans le header principal pour les utilisateurs
 ### Consulter l'historique
 
 1. Cliquer sur "Parties" dans la navigation
-2. Voir toutes les parties où vous avez participé
+2. Voir toutes les parties où vous avez participé ou que vous avez créées
+3. Utiliser le filtre pour afficher uniquement certains jeux
+
+### Gérer les parties
+
+#### Quitter une partie (joueur)
+1. Aller sur la page "Parties"
+2. Cliquer sur "Quitter la partie" sur une partie où vous participez
+3. Confirmer dans la boîte de dialogue
+
+#### Retirer un joueur (créateur)
+1. Aller sur la page "Parties"
+2. Sur une partie que vous avez créée, cliquer sur l'icône de suppression à côté d'un joueur
+3. Confirmer dans la boîte de dialogue
+
+#### Supprimer une partie (créateur)
+1. Aller sur la page "Parties"
+2. Sur une partie que vous avez créée, cliquer sur "Supprimer la partie"
+3. Confirmer dans la boîte de dialogue
 
 ## Évolutions futures possibles
 
-- Filtres avancés (par jeu, par joueur, par date)
+- Filtres avancés (par joueur, par date)
 - Statistiques (nombre de parties par jeu, joueurs les plus fréquents)
 - Ajout de résultats/scores
 - Ajout de notes ou commentaires sur les parties
+- Modification des informations d'une partie (créateur uniquement)
 - Export de l'historique
 - Partage de parties sur les réseaux sociaux
 - Recherche dans l'historique
+- Notifications aux joueurs quand ils sont ajoutés à une partie
