@@ -238,11 +238,11 @@ export async function getEventsForUser(
   pipeline.push({
     $lookup: {
       from: "lairs",
-      let: { lairId: "$lairId" },
+      let: { lairId: { $toObjectId: "$lairId" } },
       pipeline: [
         {
           $match: {
-            $expr: { $eq: ["$id", "$$lairId"] }
+            $expr: { $eq: ["$_id", "$$lairId"] }
           }
         }
       ],
@@ -255,7 +255,8 @@ export async function getEventsForUser(
     .collection<EventDocument>(COLLECTION_NAME)
     .aggregate(pipeline)
     .toArray();
-  
+
+  console.log(events[0]); 
   // Map results to Event type
   return events.map((event) => ({
     id: event._id.toString(),
