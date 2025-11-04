@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Gamepad2, Calendar, Settings } from "lucide-react";
+import EventsCalendarClient from "@/components/EventsCalendarClient";
 
 export async function generateMetadata({ 
   params 
@@ -42,11 +43,18 @@ export async function generateMetadata({
 }
 
 export default async function LairDetailPage({ 
-  params 
+  params,
+  searchParams,
 }: { 
-  params: Promise<{ lairId: string }> 
+  params: Promise<{ lairId: string }>;
+  searchParams: Promise<{
+    month?: string;
+    year?: string;
+    allGames?: string;
+  }>;
 }) {
   const { lairId } = await params;
+  const { month, year, allGames } = await searchParams;
   const lair = await getLairById(lairId);
 
   if (!lair) {
@@ -67,7 +75,12 @@ export default async function LairDetailPage({
   // Vérifier si l'utilisateur est administrateur ou owner du lair
   const canManageLair = await checkAdminOrOwner(lairId);
 
-  const upcomingEvents = await getEventsByLairId(lairId);
+  const upcomingEvents = await getEventsByLairId(lairId, {
+    year: new Date().getFullYear(),
+    month: new Date().getMonth() + 1,
+    userId: session?.user?.id,
+    allGames: false,
+  });
   
   // Récupérer les détails des jeux
   const gamesDetails = await Promise.all(
@@ -77,13 +90,6 @@ export default async function LairDetailPage({
     })
   );
   const games = gamesDetails.filter((game): game is NonNullable<typeof game> => game !== null);
-
-  // Récupérer les préférences de jeux de l'utilisateur
-  const userGames = session?.user?.id ? (await getUserById(session.user.id))?.games || [] : [];
-
-  // Créer une map avec le lair pour le composant EventsCalendar
-  const lairsMap = new Map();
-  lairsMap.set(lair.id, lair);
 
   return (
     <div className="min-h-screen">
@@ -236,13 +242,6 @@ export default async function LairDetailPage({
                   <Calendar className="h-8 w-8" />
                   Événements à venir
                 </CardTitle>
-                <CardDescription>
-                  {upcomingEvents.length === 0 
-                    ? "Aucun événement à venir pour le moment"
-                    : userGames.length > 0
-                      ? "Tous les événements de ce lieu (filtrables par vos préférences)"
-                      : "Tous les événements prévus dans ce lieu"}
-                </CardDescription>
               </div>
               {canManageLair && (
                 <Button asChild>
@@ -263,9 +262,12 @@ export default async function LairDetailPage({
                 </p>
               </div>
             ) : (
-              <EventsCalendar
-                events={upcomingEvents}
-                showViewToggle={true}
+              <EventsCalendarClient
+                initialEvents={upcomingEvents}
+                initialMonth={+(month ?? new Date().getFullYear())}
+                initialYear={+(year ?? new Date().getFullYear())}
+                initialShowAllGames={allGames === "true"}
+                basePath={`/lairs/${lairId}`}
               />
             )}
           </CardContent>

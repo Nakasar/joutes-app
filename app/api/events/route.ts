@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { getEventsForUser } from "@/lib/db/events";
+import { getEventsByLairId, getEventsForUser } from "@/lib/db/events";
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
     const month = searchParams.get("month");
     const year = searchParams.get("year");
     const allGames = searchParams.get("allGames") === "true";
+    const lairId = searchParams.get("lairId");
 
     // Validate month and year
     const monthNum = month ? parseInt(month, 10) : undefined;
@@ -37,7 +38,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Get events for the user (with lair details included)
-    const events = await getEventsForUser(
+    const events = lairId ? await getEventsByLairId(lairId, {
+      year: yearNum,
+      month: monthNum,
+      userId: session.user.id,
+      allGames
+    }) : await getEventsForUser(
       session.user.id,
       allGames,
       monthNum,
