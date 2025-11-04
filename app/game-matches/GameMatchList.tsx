@@ -5,8 +5,10 @@ import { Game } from "@/lib/types/Game";
 import { Lair } from "@/lib/types/Lair";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { DateTime } from "luxon";
-import { Calendar, MapPin, Users } from "lucide-react";
+import { Calendar, MapPin, Users, Eye } from "lucide-react";
+import { useRouter } from "next/navigation";
 import GameMatchActions from "./GameMatchActions";
 import AddPlayerToMatch from "./AddPlayerToMatch";
 
@@ -18,6 +20,8 @@ type GameMatchListProps = {
 };
 
 export default function GameMatchList({ matches, games, lairs, currentUserId }: GameMatchListProps) {
+  const router = useRouter();
+
   if (matches.length === 0) {
     return (
       <div className="text-center py-12">
@@ -68,6 +72,15 @@ export default function GameMatchList({ matches, games, lairs, currentUserId }: 
 
                 {/* Actions */}
                 <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => router.push(`/game-matches/${match.id}`)}
+                  >
+                    <Eye className="h-4 w-4" />
+                    Détails
+                  </Button>
                   {isPlayer && !isCreator && (
                     <GameMatchActions
                       matchId={match.id}

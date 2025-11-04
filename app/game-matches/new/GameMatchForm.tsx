@@ -203,12 +203,13 @@ export default function GameMatchForm({ games, lairs, currentUser }: GameMatchFo
         </label>
         <Select
           value={formData.lairId}
-          onValueChange={(value) => setFormData({ ...formData, lairId: value })}
+          onValueChange={(value) => setFormData({ ...formData, lairId: value === "OTHER" ? "" : value })}
         >
           <SelectTrigger id="lairId">
             <SelectValue placeholder="Sélectionner un lieu (optionnel)" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="OTHER">Autre lieu</SelectItem>
             {lairs.map((lair) => (
               <SelectItem key={lair.id} value={lair.id}>
                 {lair.name}

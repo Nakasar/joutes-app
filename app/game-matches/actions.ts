@@ -283,3 +283,79 @@ export async function addPlayerToMatchAction(
     return { success: false, error: "Erreur serveur" };
   }
 }
+
+export async function updateGameMatchAction(
+  matchId: string,
+  data: {
+    gameId?: string;
+    playedAt?: Date;
+    lairId?: string | null;
+  }
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    // Récupérer la partie
+    const match = await getGameMatchById(matchId);
+    
+    if (!match) {
+      return { success: false, error: "Partie non trouvée" };
+    }
+
+    // Vérifier que l'utilisateur est le créateur
+    if (match.createdBy !== session.user.id) {
+      return { success: false, error: "Vous n'êtes pas autorisé à modifier cette partie" };
+    }
+
+    // Préparer les données à mettre à jour
+    const updateData: {
+      gameId?: string;
+      playedAt?: Date;
+      lairId?: string;
+    } = {};
+
+    if (data.gameId) {
+      updateData.gameId = data.gameId;
+    }
+
+    if (data.playedAt) {
+      updateData.playedAt = data.playedAt;
+    }
+
+    if (data.lairId !== undefined) {
+      if (data.lairId === null || data.lairId === "") {
+        // Supprimer le champ lairId en utilisant $unset
+        const { getDb } = await import("@/lib/mongodb");
+        const { ObjectId } = await import("mongodb");
+        const db = await getDb();
+        await db.collection("gameMatches").updateOne(
+          { _id: new ObjectId(matchId) },
+          { $unset: { lairId: "" } }
+        );
+      } else {
+        updateData.lairId = data.lairId;
+      }
+    }
+
+    // Si on a d'autres données à mettre à jour
+    if (Object.keys(updateData).length > 0) {
+      const { updateGameMatch } = await import("@/lib/db/game-matches");
+      const result = await updateGameMatch(matchId, updateData);
+
+      if (!result) {
+        return { success: false, error: "Erreur lors de la mise à jour de la partie" };
+      }
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour de la partie:", error);
+    return { success: false, error: "Erreur serveur" };
+  }
+}
