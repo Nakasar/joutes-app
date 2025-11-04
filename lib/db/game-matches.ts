@@ -65,7 +65,11 @@ export interface GetGameMatchesFilters {
 
 export async function getGameMatches(filters: GetGameMatchesFilters = {}): Promise<GameMatch[]> {
   const db = await getDb();
-  const query: any = {};
+  const query: {
+    "players.userId"?: string | { $in: string[] };
+    gameId?: string;
+    lairId?: string;
+  } = {};
   
   // Filtrer par joueur participant
   if (filters.userId) {
