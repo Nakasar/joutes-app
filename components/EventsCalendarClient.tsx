@@ -75,6 +75,7 @@ export default function EventsCalendarClient({
   const handleMonthChange = useCallback((newMonth: number, newYear: number) => {
     setCurrentMonth(newMonth);
     setCurrentYear(newYear);
+    setEvents([]); // Vider les événements immédiatement
     updateURL(newMonth, newYear, showAllGames);
     fetchEvents(newMonth, newYear, showAllGames);
   }, [showAllGames, updateURL, fetchEvents]);
@@ -83,6 +84,7 @@ export default function EventsCalendarClient({
   const handleToggleAllGames = useCallback(() => {
     const newShowAllGames = !showAllGames;
     setShowAllGames(newShowAllGames);
+    setEvents([]); // Vider les événements immédiatement
     updateURL(currentMonth, currentYear, newShowAllGames);
     fetchEvents(currentMonth, currentYear, newShowAllGames);
   }, [showAllGames, currentMonth, currentYear, updateURL, fetchEvents]);
