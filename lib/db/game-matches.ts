@@ -101,7 +101,21 @@ export async function getGameMatches(filters: GetGameMatchesFilters = {}): Promi
 }
 
 export async function getGameMatchesByUser(userId: string): Promise<GameMatch[]> {
-  return getGameMatches({ userId });
+  const db = await getDb();
+  
+  // Récupérer les parties où l'utilisateur est joueur OU créateur
+  const matches = await db
+    .collection<GameMatchDocument>(COLLECTION_NAME)
+    .find({
+      $or: [
+        { "players.userId": userId },
+        { createdBy: userId }
+      ]
+    })
+    .sort({ playedAt: -1 })
+    .toArray();
+  
+  return matches.map(toGameMatch);
 }
 
 export async function updateGameMatch(id: string, gameMatch: Partial<Omit<GameMatch, "id" | "createdAt" | "createdBy">>): Promise<boolean> {
@@ -118,4 +132,14 @@ export async function deleteGameMatch(id: string): Promise<boolean> {
   const db = await getDb();
   const result = await db.collection<GameMatchDocument>(COLLECTION_NAME).deleteOne({ _id: new ObjectId(id) });
   return result.deletedCount > 0;
+}
+
+export async function removePlayerFromGameMatch(matchId: string, userId: string): Promise<boolean> {
+  const db = await getDb();
+  const result = await db.collection<GameMatchDocument>(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(matchId) },
+    { $pull: { players: { userId } } }
+  );
+  
+  return result.modifiedCount > 0;
 }

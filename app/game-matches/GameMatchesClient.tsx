@@ -11,12 +11,14 @@ type GameMatchesClientProps = {
   matches: GameMatch[];
   games: Game[];
   lairs: Lair[];
+  currentUserId: string;
 };
 
 export default function GameMatchesClient({
   matches,
   games,
   lairs,
+  currentUserId,
 }: GameMatchesClientProps) {
   const [selectedGameId, setSelectedGameId] = useState<string>("all");
 
@@ -31,7 +33,7 @@ export default function GameMatchesClient({
         selectedGameId={selectedGameId}
         onGameChange={setSelectedGameId}
       />
-      <GameMatchList matches={filteredMatches} games={games} lairs={lairs} />
+      <GameMatchList matches={filteredMatches} games={games} lairs={lairs} currentUserId={currentUserId} />
     </div>
   );
 }

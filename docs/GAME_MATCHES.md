@@ -19,10 +19,27 @@ Le créateur de la partie est automatiquement ajouté comme joueur.
 ### 2. Consultation de l'historique
 
 - Affichage de toutes les parties où l'utilisateur connecté a participé
+- Affichage également des parties créées par l'utilisateur (même s'il n'y a pas participé)
 - Vue chronologique (les parties les plus récentes en premier)
 - Affichage des informations clés : jeu, date, lieu, liste des joueurs
+- Badge "Créateur" sur les parties créées par l'utilisateur
 
-### 3. Partage de l'historique
+### 3. Gestion des parties
+
+#### Pour un joueur participant :
+- **Quitter une partie** : Un joueur peut se retirer de la liste des participants d'une partie
+
+#### Pour le créateur :
+- **Retirer un joueur** : Le créateur peut retirer n'importe quel joueur de la partie (y compris lui-même)
+- **Supprimer la partie** : Le créateur peut supprimer complètement une partie
+
+Toutes les actions de suppression nécessitent une confirmation via une boîte de dialogue.
+
+### 4. Filtres
+
+- Filtre par jeu pour affiner la liste des parties affichées
+
+### 5. Partage de l'historique
 
 Les parties sont partagées : quand un utilisateur enregistre une partie avec d'autres joueurs, tous les participants voient cette partie dans leur propre historique.
 
@@ -57,13 +74,14 @@ type GameMatchPlayer = {
 
 #### Collection MongoDB : `gameMatches`
 
-Fonctions disponibles (`lib/db/game-matches.ts`) :
+#### Fonctions disponibles (`lib/db/game-matches.ts`) :
 - `createGameMatch()` - Créer une nouvelle partie
 - `getGameMatchById()` - Récupérer une partie par ID
 - `getGameMatches(filters)` - Récupérer des parties avec filtres
-- `getGameMatchesByUser(userId)` - Récupérer toutes les parties d'un utilisateur
+- `getGameMatchesByUser(userId)` - Récupérer toutes les parties d'un utilisateur (joueur ou créateur)
 - `updateGameMatch()` - Mettre à jour une partie
 - `deleteGameMatch()` - Supprimer une partie
+- `removePlayerFromGameMatch()` - Retirer un joueur d'une partie
 
 #### Filtres disponibles
 ```typescript

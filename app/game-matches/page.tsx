@@ -4,8 +4,6 @@ import { redirect } from "next/navigation";
 import { getGameMatchesByUser } from "@/lib/db/game-matches";
 import { getAllGames } from "@/lib/db/games";
 import { getAllLairs } from "@/lib/db/lairs";
-import GameMatchList from "./GameMatchList";
-import GameMatchFilters from "./GameMatchFilters";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Plus } from "lucide-react";
@@ -43,7 +41,7 @@ export default async function GameMatchesPage() {
         </Button>
       </div>
 
-      <GameMatchesClient matches={matches} games={games} lairs={lairs} />
+      <GameMatchesClient matches={matches} games={games} lairs={lairs} currentUserId={session.user.id} />
     </div>
   );
 }

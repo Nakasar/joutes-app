@@ -7,6 +7,9 @@ import {
   getGameMatches,
   getGameMatchesByUser,
   GetGameMatchesFilters,
+  deleteGameMatch,
+  removePlayerFromGameMatch,
+  getGameMatchById,
 } from "@/lib/db/game-matches";
 import { gameMatchSchema } from "@/lib/schemas/game-match.schema";
 import { GameMatch } from "@/lib/types/GameMatch";
@@ -145,6 +148,85 @@ export async function getUserGameMatchesAction(): Promise<{
     return { success: true, matches };
   } catch (error) {
     console.error("Erreur lors de la récupération des parties de l'utilisateur:", error);
+    return { success: false, error: "Erreur serveur" };
+  }
+}
+
+export async function deleteGameMatchAction(
+  matchId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    // Vérifier que l'utilisateur est le créateur de la partie
+    const match = await getGameMatchById(matchId);
+    
+    if (!match) {
+      return { success: false, error: "Partie non trouvée" };
+    }
+
+    if (match.createdBy !== session.user.id) {
+      return { success: false, error: "Vous n'êtes pas autorisé à supprimer cette partie" };
+    }
+
+    const result = await deleteGameMatch(matchId);
+
+    if (!result) {
+      return { success: false, error: "Erreur lors de la suppression de la partie" };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la suppression de la partie:", error);
+    return { success: false, error: "Erreur serveur" };
+  }
+}
+
+export async function removePlayerFromMatchAction(
+  matchId: string,
+  playerUserId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    // Récupérer la partie
+    const match = await getGameMatchById(matchId);
+    
+    if (!match) {
+      return { success: false, error: "Partie non trouvée" };
+    }
+
+    // Vérifier les permissions :
+    // - L'utilisateur peut se retirer lui-même
+    // - Le créateur peut retirer n'importe quel joueur
+    const isCreator = match.createdBy === session.user.id;
+    const isSelf = playerUserId === session.user.id;
+
+    if (!isCreator && !isSelf) {
+      return { success: false, error: "Vous n'êtes pas autorisé à retirer ce joueur" };
+    }
+
+    const result = await removePlayerFromGameMatch(matchId, playerUserId);
+
+    if (!result) {
+      return { success: false, error: "Erreur lors du retrait du joueur" };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors du retrait du joueur:", error);
     return { success: false, error: "Erreur serveur" };
   }
 }
