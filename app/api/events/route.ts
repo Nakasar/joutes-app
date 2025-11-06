@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getEventsByLairId, getEventsForUser } from "@/lib/db/events";
+import { Event } from "@/lib/types/Event";
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,13 +9,6 @@ export async function GET(request: NextRequest) {
     const session = await auth.api.getSession({
       headers: request.headers,
     });
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Non authentifié" },
-        { status: 401 }
-      );
-    }
 
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
@@ -37,18 +31,29 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get events for the user (with lair details included)
-    const events = lairId ? await getEventsByLairId(lairId, {
-      year: yearNum,
-      month: monthNum,
-      userId: session.user.id,
-      allGames
-    }) : await getEventsForUser(
-      session.user.id,
-      allGames,
-      monthNum,
-      yearNum
-    );
+    let events: Event[];
+    if (lairId) {
+      events = await getEventsByLairId(lairId, {
+        year: yearNum,
+        month: monthNum,
+        userId: session?.user?.id,
+        allGames
+      });
+    } else {
+      if (!session?.user) {
+        return NextResponse.json(
+          { error: "Non authentifié" },
+          { status: 401 }
+        );
+      }
+
+      events = await getEventsForUser(
+        session?.user?.id,
+        allGames,
+        monthNum,
+        yearNum
+      );
+    }
 
     return NextResponse.json({ events });
   } catch (error) {
