@@ -140,7 +140,7 @@ export default async function LairDetailPage({
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Informations du lieu */}
-        {(lair.address || lair.website || lair.coordinates) && (
+        {(lair.address || lair.website || lair.location) && (
           <div className="mb-8 p-6 bg-card rounded-lg border">
             <h2 className="text-xl font-semibold mb-4">Informations pratiques</h2>
             <div className="space-y-3">
@@ -163,16 +163,16 @@ export default async function LairDetailPage({
                   </a>
                 </div>
               )}
-              {lair.coordinates && (
+              {lair.location && (
                 <div className="flex items-start gap-3">
                   <span className="text-sm font-medium text-muted-foreground min-w-[100px]">Coordonnées :</span>
                   <a
-                    href={`https://www.google.com/maps?q=${lair.coordinates.latitude},${lair.coordinates.longitude}`}
+                    href={`https://www.google.com/maps?q=${lair.location.coordinates[1]},${lair.location.coordinates[0]}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-primary hover:underline"
                   >
-                    {lair.coordinates.latitude}, {lair.coordinates.longitude} (voir sur la carte)
+                    {lair.location.coordinates[1]}, {lair.location.coordinates[0]} (voir sur la carte)
                   </a>
                 </div>
               )}

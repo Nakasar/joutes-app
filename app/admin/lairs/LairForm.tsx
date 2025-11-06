@@ -46,8 +46,8 @@ export function LairForm({
           banner: lair.banner || "",
           games: lair.games || [],
           eventsSourceUrls: lair.eventsSourceUrls || [],
-          coordinates: lair.coordinates 
-            ? `${lair.coordinates.latitude}, ${lair.coordinates.longitude}` 
+          coordinates: lair.location 
+            ? `${lair.location.coordinates[1]}, ${lair.location.coordinates[0]}` 
             : "",
           address: lair.address || "",
           website: lair.website || "",
@@ -77,7 +77,7 @@ export function LairForm({
         banner?: string;
         games: string[];
         eventsSourceUrls: string[];
-        coordinates?: { latitude: number; longitude: number };
+        location?: { type: "Point"; coordinates: [number, number] };
         address?: string;
         website?: string;
       } = {
@@ -94,7 +94,11 @@ export function LairForm({
           const lat = parseFloat(parts[0]);
           const lon = parseFloat(parts[1]);
           if (!isNaN(lat) && !isNaN(lon)) {
-            data.coordinates = { latitude: lat, longitude: lon };
+            // Format GeoJSON : [longitude, latitude]
+            data.location = {
+              type: "Point",
+              coordinates: [lon, lat]
+            };
           }
         }
       }

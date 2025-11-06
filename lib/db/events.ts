@@ -250,13 +250,17 @@ export async function replaceEventsForLair(lairId: string, events: Event[]): Pro
  * @param allGames - If true, return events for all games. If false, only return events for games followed by the user
  * @param month - Optional month to filter (1-12)
  * @param year - Optional year to filter
+ * @param userLocation - Optional user GPS location for distance filtering
+ * @param maxDistanceKm - Optional maximum distance in kilometers
  * @returns Array of events matching the user's preferences
  */
 export async function getEventsForUser(
   userId: string,
   allGames: boolean,
   month?: number,
-  year?: number
+  year?: number,
+  userLocation?: { latitude: number; longitude: number },
+  maxDistanceKm?: number
 ): Promise<Event[]> {
   // Get user data
   const user = await getUserById(userId);
@@ -271,6 +275,29 @@ export async function getEventsForUser(
   }
 
   const db = await getDb();
+  
+  // Si userLocation et maxDistanceKm sont fournis, utiliser la recherche géospatiale
+  if (userLocation && maxDistanceKm !== undefined && maxDistanceKm > 0) {
+    const { getLairIdsNearLocation } = await import("@/lib/db/lairs");
+    
+    // Obtenir les IDs des lairs à proximité
+    const nearbyLairIds = await getLairIdsNearLocation(
+      userLocation.longitude,
+      userLocation.latitude,
+      maxDistanceKm * 1000 // Convertir km en mètres
+    );
+    
+    // Filtrer pour ne garder que les lairs suivis par l'utilisateur ET à proximité
+    const filteredLairIds = user.lairs.filter(lairId => nearbyLairIds.includes(lairId));
+    
+    // Si aucun lair à proximité n'est suivi, retourner un tableau vide
+    if (filteredLairIds.length === 0) {
+      return [];
+    }
+    
+    // Utiliser les lairs filtrés
+    user.lairs = filteredLairIds;
+  }
 
   // Build aggregation pipeline
   const pipeline: Array<Record<string, unknown>> = [
@@ -376,7 +403,7 @@ export async function getEventsForUser(
     .toArray();
 
   // Map results to Event type
-  return events.map((event) => ({
+  const mappedEvents = events.map((event) => ({
     id: event._id.toString(),
     lairId: event.lairId,
     name: event.name,
@@ -388,8 +415,12 @@ export async function getEventsForUser(
     status: event.status,
     addedBy: event.addedBy,
     lair: event.lairDetails && event.lairDetails.length > 0 ? {
-      id: event.lairDetails[0].id,
+      id: event.lairDetails[0]._id.toString(),
       name: event.lairDetails[0].name,
+      location: event.lairDetails[0].location,
+      address: event.lairDetails[0].address,
     } : undefined,
   }));
+
+  return mappedEvents;
 }

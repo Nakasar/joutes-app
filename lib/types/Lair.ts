@@ -1,6 +1,12 @@
 import {Game} from "@/lib/types/Game";
 import {User} from "@/lib/types/User";
 
+// Type GeoJSON Point pour MongoDB
+export type GeoJSONPoint = {
+  type: "Point";
+  coordinates: [number, number]; // [longitude, latitude]
+};
+
 export type Lair = {
   id: string;
   name: string;
@@ -12,10 +18,7 @@ export type Lair = {
   
   eventsSourceUrls?: string[];
   
-  coordinates?: {
-    latitude: number;
-    longitude: number;
-  };
+  location?: GeoJSONPoint;
   
   address?: string;
   

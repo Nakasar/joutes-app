@@ -15,7 +15,7 @@ export async function updateLairDetails(
     name: string; 
     banner?: string; 
     games: string[];
-    coordinates?: { latitude: number; longitude: number };
+    location?: { type: "Point"; coordinates: [number, number] };
     address?: string;
     website?: string;
   }

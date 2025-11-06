@@ -1,3 +1,5 @@
+import { GeoJSONPoint } from "./Lair";
+
 export type Event = {
   id: string;
   lairId: string;
@@ -12,5 +14,7 @@ export type Event = {
   lair?: {
     id: string;
     name: string;
+    location?: GeoJSONPoint;
+    address?: string;
   };
 };

@@ -18,6 +18,11 @@ type EventsCalendarProps = {
   showAllGames?: boolean;
   onMonthChange?: (month: number, year: number) => void;
   onToggleAllGames?: () => void;
+  userLocation?: { latitude: number; longitude: number } | null;
+  maxDistance?: number;
+  onDistanceChange?: (distance: number) => void;
+  onRequestLocation?: () => void;
+  isLocationLoading?: boolean;
 };
 
 export default function EventsCalendar({
@@ -28,6 +33,11 @@ export default function EventsCalendar({
   showAllGames: controlledShowAllGames,
   onMonthChange,
   onToggleAllGames,
+  userLocation,
+  maxDistance = 0,
+  onDistanceChange,
+  onRequestLocation,
+  isLocationLoading = false,
 }: EventsCalendarProps) {
   const today = DateTime.now();
   const [internalMonth, setInternalMonth] = useState<number>(today.month);

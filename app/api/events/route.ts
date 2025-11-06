@@ -16,10 +16,32 @@ export async function GET(request: NextRequest) {
     const year = searchParams.get("year");
     const allGames = searchParams.get("allGames") === "true";
     const lairId = searchParams.get("lairId");
+    const userLat = searchParams.get("userLat");
+    const userLon = searchParams.get("userLon");
+    const maxDistance = searchParams.get("maxDistance");
 
     // Validate month and year
     const monthNum = month ? parseInt(month, 10) : undefined;
     const yearNum = year ? parseInt(year, 10) : undefined;
+
+    // Parse geolocation parameters
+    let userLocation: { latitude: number; longitude: number } | undefined;
+    let maxDistanceNum: number | undefined;
+
+    if (userLat && userLon) {
+      const lat = parseFloat(userLat);
+      const lon = parseFloat(userLon);
+      if (!isNaN(lat) && !isNaN(lon)) {
+        userLocation = { latitude: lat, longitude: lon };
+      }
+    }
+
+    if (maxDistance) {
+      const dist = parseFloat(maxDistance);
+      if (!isNaN(dist) && dist > 0) {
+        maxDistanceNum = dist;
+      }
+    }
 
     if (
       (monthNum && (monthNum < 1 || monthNum > 12)) ||
@@ -51,7 +73,9 @@ export async function GET(request: NextRequest) {
         session?.user?.id,
         allGames,
         monthNum,
-        yearNum
+        yearNum,
+        userLocation,
+        maxDistanceNum
       );
     }
 
