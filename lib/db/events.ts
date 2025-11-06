@@ -2,6 +2,7 @@ import { getDb } from "@/lib/mongodb";
 import { Event } from "@/lib/types/Event";
 import { getUserById } from "@/lib/db/users";
 import { ObjectId } from "mongodb";
+import { getLairIdsNearLocation } from "./lairs";
 
 const COLLECTION_NAME = "events";
 
@@ -278,8 +279,6 @@ export async function getEventsForUser(
   
   // Si userLocation et maxDistanceKm sont fournis, utiliser la recherche géospatiale
   if (userLocation && maxDistanceKm !== undefined && maxDistanceKm > 0) {
-    const { getLairIdsNearLocation } = await import("@/lib/db/lairs");
-    
     // Obtenir les IDs des lairs à proximité
     const nearbyLairIds = await getLairIdsNearLocation(
       userLocation.longitude,

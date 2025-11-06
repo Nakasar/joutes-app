@@ -38,7 +38,7 @@ export default async function EventsCalendarWrapper({
     headers: await headers(),
   });
 
-  // Si l'utilisateur n'est pas connecté, afficher un message
+  // Si l'utilisateur n'est pas connecté, afficher le calendrier avec uniquement la fonction de localisation
   if (!session?.user) {
     return (
       <div className="container mx-auto p-6 max-w-4xl">
@@ -54,27 +54,20 @@ export default async function EventsCalendarWrapper({
           </div>
           
           <Alert>
-            <AlertCircle className="h-4 w-4" />
+            <Info className="h-4 w-4" />
             <AlertDescription>
-              Vous devez être connecté pour voir les événements.
+              Utilisez la fonction &quot;Proches de moi&quot; pour découvrir les événements à proximité de votre position.
+              Connectez-vous pour personnaliser votre expérience et suivre vos lieux et jeux favoris.
             </AlertDescription>
           </Alert>
 
-          <Card className="border-primary/50">
-            <CardHeader className="text-center">
-              <CardTitle>Connectez-vous pour commencer</CardTitle>
-              <CardDescription>
-                Accédez à votre calendrier personnalisé d&apos;événements
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex justify-center pb-6">
-              <Button size="lg" asChild>
-                <Link href="/login">
-                  Se connecter
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
+          <EventsCalendarClient
+            initialEvents={[]}
+            initialMonth={month}
+            initialYear={year}
+            initialShowAllGames={showAllGames}
+            basePath={basePath}
+          />
         </div>
       </div>
     );

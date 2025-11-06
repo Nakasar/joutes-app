@@ -374,37 +374,21 @@ export default function EventsCalendar({
                     )}
                   </Button>
 
-                  {/* Bouton de filtre par jeux */}
-                  {!session.isPending && (
+                  {/* Boutons spécifiques aux utilisateurs connectés */}
+                  {!session.isPending && session.data?.user && (
                     <>
-                      {session.data?.user ? (
-                        <Button
-                          variant={showAllGames ? "outline" : "default"}
-                          onClick={handleToggleAllGames}
-                          className="w-full sm:w-auto"
-                        >
-                          <Filter className="mr-2 h-4 w-4" />
-                          {showAllGames ? "Afficher mes jeux uniquement" : "Afficher tous les jeux"}
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          className="w-full sm:w-auto"
-                          asChild
-                        >
-                          <Link href="/login">
-                            <Filter className="mr-2 h-4 w-4" />
-                            Connectez-vous pour filtrer par vos jeux
-                          </Link>
-                        </Button>
-                      )}
-                    </>
-                  )}
+                      {/* Bouton de filtre par jeux */}
+                      <Button
+                        variant={showAllGames ? "outline" : "default"}
+                        onClick={handleToggleAllGames}
+                        className="w-full sm:w-auto"
+                      >
+                        <Filter className="mr-2 h-4 w-4" />
+                        {showAllGames ? "Afficher mes jeux uniquement" : "Afficher tous les jeux"}
+                      </Button>
 
-                  {/* Bouton Proches de moi / Mes lieux */}
-                  {session.data?.user && (
-                    <>
-                      {isLocationMode ? (
+                      {/* Bouton Mes lieux (mode normal) */}
+                      {isLocationMode && (
                         <Button
                           variant="default"
                           onClick={handleResetLocation}
@@ -413,22 +397,39 @@ export default function EventsCalendar({
                           <MapPin className="mr-2 h-4 w-4" />
                           Mes lieux
                         </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          onClick={() => setShowLocationForm(!showLocationForm)}
-                          className="w-full sm:w-auto"
-                        >
-                          <Navigation className="mr-2 h-4 w-4" />
-                          Proches de moi
-                        </Button>
                       )}
                     </>
+                  )}
+
+                  {/* Bouton Proches de moi - disponible pour tous */}
+                  {!isLocationMode && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowLocationForm(!showLocationForm)}
+                      className="w-full sm:w-auto"
+                    >
+                      <Navigation className="mr-2 h-4 w-4" />
+                      Proches de moi
+                    </Button>
+                  )}
+
+                  {/* Bouton Se connecter pour personnaliser - uniquement pour non connectés */}
+                  {!session.isPending && !session.data?.user && (
+                    <Button
+                      variant="default"
+                      className="w-full sm:w-auto"
+                      asChild
+                    >
+                      <Link href="/login">
+                        <Filter className="mr-2 h-4 w-4" />
+                        Se connecter pour personnaliser
+                      </Link>
+                    </Button>
                   )}
                 </div>
 
                 {/* Formulaire de recherche par localisation */}
-                {showLocationForm && !isLocationMode && session.data?.user && (
+                {showLocationForm && !isLocationMode && (
                   <Card className="border-2 border-primary">
                     <CardContent className="pt-6">
                       <div className="space-y-4">

@@ -159,10 +159,14 @@ export default function EventsCalendarClient({
       setShowAllGames(allGames);
       setLocationParams(locParams);
       setIsLocationMode(locParams !== null);
-      setEvents([]);
-      fetchEvents(month, year, allGames, locParams);
+      
+      // Ne faire le fetch que si on a des paramètres de localisation ou qu'on revient au mode normal avec des événements initiaux
+      if (locParams !== null || initialEvents.length > 0) {
+        setEvents([]);
+        fetchEvents(month, year, allGames, locParams);
+      }
     }
-  }, [searchParams, initialMonth, initialYear, currentMonth, currentYear, showAllGames, locationParams, fetchEvents]);
+  }, [searchParams, initialMonth, initialYear, currentMonth, currentYear, showAllGames, locationParams, fetchEvents, initialEvents.length]);
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
