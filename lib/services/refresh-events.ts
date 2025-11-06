@@ -77,7 +77,7 @@ Pour chaque événement unique, extrait:
 - startDateTime: La date et heure de début au format datetime ISO 8601
 - endDateTime: La date et heure de fin au format datetime ISO 8601
 - gameName: Le nom du jeu de l'événement (parmi la liste ci-dessous si possible)
-- price: Le prix (optionnel, en nombre, undefined si non trouvé)
+- price: Le prix (optionnel, en nombre, undefined si non trouvé, ne pas utiliser null)
 - status: Le statut ('available' si disponible, 'sold-out' si complet, 'cancelled' si annulé)
 - url: Le lien vers la page détaillée de l'événement (si disponible, en général dans une balise <a href="..."> ou <https://example.com/some/link>)
 
