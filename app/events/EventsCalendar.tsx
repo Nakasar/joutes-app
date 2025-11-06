@@ -1,7 +1,7 @@
 "use client";
 
 import { Event } from "@/lib/types/Event";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,25 @@ export default function EventsCalendar({
   const [internalYear, setInternalYear] = useState<number>(today.year);
   const [internalShowAllGames, setInternalShowAllGames] = useState(true);
   const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
+
+  // Détecter la taille de l'écran et initialiser la vue en conséquence
+  useEffect(() => {
+    const checkScreenSize = () => {
+      // Sur les petits écrans (< 768px, équivalent à sm breakpoint de Tailwind), utiliser la vue liste
+      if (window.innerWidth < 768) {
+        setViewMode("list");
+      }
+    };
+
+    // Vérifier au montage du composant
+    checkScreenSize();
+
+    // Écouter les changements de taille d'écran
+    window.addEventListener("resize", checkScreenSize);
+
+    // Nettoyer l'écouteur
+    return () => window.removeEventListener("resize", checkScreenSize);
+  }, []);
 
   // Use controlled values if provided, otherwise use internal state
   const currentMonth = controlledMonth !== undefined ? controlledMonth : internalMonth;
