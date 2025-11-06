@@ -31,8 +31,7 @@ export function LairForm({
     banner: "",
     games: [] as string[],
     eventsSourceUrls: [] as string[],
-    latitude: "",
-    longitude: "",
+    coordinates: "",
     address: "",
     website: "",
   });
@@ -47,8 +46,9 @@ export function LairForm({
           banner: lair.banner || "",
           games: lair.games || [],
           eventsSourceUrls: lair.eventsSourceUrls || [],
-          latitude: lair.coordinates?.latitude?.toString() || "",
-          longitude: lair.coordinates?.longitude?.toString() || "",
+          coordinates: lair.coordinates 
+            ? `${lair.coordinates.latitude}, ${lair.coordinates.longitude}` 
+            : "",
           address: lair.address || "",
           website: lair.website || "",
         });
@@ -58,8 +58,7 @@ export function LairForm({
           banner: "",
           games: [],
           eventsSourceUrls: [],
-          latitude: "",
-          longitude: "",
+          coordinates: "",
           address: "",
           website: "",
         });
@@ -88,12 +87,15 @@ export function LairForm({
         eventsSourceUrls: formData.eventsSourceUrls.filter(url => url.trim() !== ""),
       };
 
-      // Ajouter les coordonnées si les deux champs sont remplis
-      if (formData.latitude && formData.longitude) {
-        const lat = parseFloat(formData.latitude);
-        const lon = parseFloat(formData.longitude);
-        if (!isNaN(lat) && !isNaN(lon)) {
-          data.coordinates = { latitude: lat, longitude: lon };
+      // Ajouter les coordonnées si le champ est rempli
+      if (formData.coordinates.trim().length > 0) {
+        const parts = formData.coordinates.split(',').map(s => s.trim());
+        if (parts.length === 2) {
+          const lat = parseFloat(parts[0]);
+          const lon = parseFloat(parts[1]);
+          if (!isNaN(lat) && !isNaN(lon)) {
+            data.coordinates = { latitude: lat, longitude: lon };
+          }
         }
       }
 
@@ -117,8 +119,7 @@ export function LairForm({
           banner: "",
           games: [],
           eventsSourceUrls: [],
-          latitude: "",
-          longitude: "",
+          coordinates: "",
           address: "",
           website: "",
         });
@@ -285,44 +286,17 @@ export function LairForm({
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Coordonnées GPS (optionnel)
             </label>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">
-                  Latitude
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  value={formData.latitude}
-                  onChange={(e) =>
-                    setFormData({ ...formData, latitude: e.target.value })
-                  }
-                  placeholder="48.8566"
-                  min="-90"
-                  max="90"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">
-                  Longitude
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  value={formData.longitude}
-                  onChange={(e) =>
-                    setFormData({ ...formData, longitude: e.target.value })
-                  }
-                  placeholder="2.3522"
-                  min="-180"
-                  max="180"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
+            <input
+              type="text"
+              value={formData.coordinates}
+              onChange={(e) =>
+                setFormData({ ...formData, coordinates: e.target.value })
+              }
+              placeholder="48.8566, 2.3522"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
             <p className="text-xs text-gray-500 mt-1">
-              Exemple : Paris = 48.8566, 2.3522
+              Format : latitude, longitude (exemple : 48.8566, 2.3522 pour Paris)
             </p>
           </div>
 

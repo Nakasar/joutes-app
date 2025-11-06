@@ -22,8 +22,9 @@ export default function LairDetailsForm({
     name: lair.name,
     banner: lair.banner || "",
     games: lair.games || [],
-    latitude: lair.coordinates?.latitude?.toString() || "",
-    longitude: lair.coordinates?.longitude?.toString() || "",
+    coordinates: lair.coordinates 
+      ? `${lair.coordinates.latitude}, ${lair.coordinates.longitude}` 
+      : "",
     address: lair.address || "",
     website: lair.website || "",
   });
@@ -47,12 +48,15 @@ export default function LairDetailsForm({
         games: formData.games,
       };
 
-      // Ajouter les coordonnées si les deux champs sont remplis
-      if (formData.latitude && formData.longitude) {
-        const lat = parseFloat(formData.latitude);
-        const lon = parseFloat(formData.longitude);
-        if (!isNaN(lat) && !isNaN(lon)) {
-          data.coordinates = { latitude: lat, longitude: lon };
+      // Ajouter les coordonnées si le champ est rempli
+      if (formData.coordinates.trim().length > 0) {
+        const parts = formData.coordinates.split(',').map(s => s.trim());
+        if (parts.length === 2) {
+          const lat = parseFloat(parts[0]);
+          const lon = parseFloat(parts[1]);
+          if (!isNaN(lat) && !isNaN(lon)) {
+            data.coordinates = { latitude: lat, longitude: lon };
+          }
         }
       }
 
@@ -142,34 +146,14 @@ export default function LairDetailsForm({
 
       <div>
         <label className="block text-sm font-medium mb-2">Coordonnées GPS (optionnel)</label>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs text-muted-foreground mb-1">Latitude</label>
-            <Input
-              type="number"
-              step="any"
-              value={formData.latitude}
-              onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
-              placeholder="48.8566"
-              min="-90"
-              max="90"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-muted-foreground mb-1">Longitude</label>
-            <Input
-              type="number"
-              step="any"
-              value={formData.longitude}
-              onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
-              placeholder="2.3522"
-              min="-180"
-              max="180"
-            />
-          </div>
-        </div>
+        <Input
+          type="text"
+          value={formData.coordinates}
+          onChange={(e) => setFormData({ ...formData, coordinates: e.target.value })}
+          placeholder="48.8566, 2.3522"
+        />
         <p className="text-xs text-muted-foreground mt-1">
-          Exemple : Paris = 48.8566, 2.3522
+          Format : latitude, longitude (exemple : 48.8566, 2.3522 pour Paris)
         </p>
       </div>
 
