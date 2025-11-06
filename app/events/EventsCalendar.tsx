@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Gamepad2, Euro, Filter, List, CalendarDays, Clock } from "lucide-react";
 import Link from "next/link";
 import { DateTime } from "luxon";
+import { signIn, useSession } from "@/lib/auth-client";
 
 type EventsCalendarProps = {
   events: Event[];
@@ -33,6 +34,7 @@ export default function EventsCalendar({
   const [internalYear, setInternalYear] = useState<number>(today.year);
   const [internalShowAllGames, setInternalShowAllGames] = useState(true);
   const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
+  const session = useSession();
 
   // Détecter la taille de l'écran et initialiser la vue en conséquence
   useEffect(() => {
@@ -305,14 +307,31 @@ export default function EventsCalendar({
                 )}
 
                 {/* Bouton de filtre par jeux */}
-                <Button
-                  variant={showAllGames ? "outline" : "default"}
-                  onClick={handleToggleAllGames}
-                  className="w-full sm:w-auto"
-                >
-                  <Filter className="mr-2 h-4 w-4" />
-                  {showAllGames ? "Afficher mes jeux uniquement" : "Afficher tous les jeux"}
-                </Button>
+                {!session.isPending && (
+                  <>
+                    {session.data?.user ? (
+                      <Button
+                        variant={showAllGames ? "outline" : "default"}
+                        onClick={handleToggleAllGames}
+                        className="w-full sm:w-auto"
+                      >
+                        <Filter className="mr-2 h-4 w-4" />
+                        {showAllGames ? "Afficher mes jeux uniquement" : "Afficher tous les jeux"}
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        className="w-full sm:w-auto"
+                        asChild
+                      >
+                        <Link href="/login">
+                          <Filter className="mr-2 h-4 w-4" />
+                          Connectez-vous pour filtrer par vos jeux
+                        </Link>
+                      </Button>
+                    )}
+                  </>
+                )}
               </div>
             )}
           </div>
