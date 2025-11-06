@@ -14,9 +14,9 @@ const eventSchema = z.object({
     startDateTime: z.string().describe("ISO 8601 date format"),
     endDateTime: z.string().describe("ISO 8601 date format"),
     gameName: z.string(),
-    price: z.number().optional(),
+    price: z.number().optional().nullable(),
     status: z.enum(['available', 'sold-out', 'cancelled']),
-    url: z.string().optional(),
+    url: z.string().optional().nullable(),
   }))
 });
 
@@ -77,7 +77,7 @@ Pour chaque événement unique, extrait:
 - startDateTime: La date et heure de début au format datetime ISO 8601
 - endDateTime: La date et heure de fin au format datetime ISO 8601
 - gameName: Le nom du jeu de l'événement (parmi la liste ci-dessous si possible)
-- price: Le prix (optionnel, en nombre)
+- price: Le prix (optionnel, en nombre, undefined si non trouvé)
 - status: Le statut ('available' si disponible, 'sold-out' si complet, 'cancelled' si annulé)
 - url: Le lien vers la page détaillée de l'événement (si disponible, en général dans une balise <a href="..."> ou <https://example.com/some/link>)
 
