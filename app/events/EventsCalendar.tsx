@@ -5,7 +5,9 @@ import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Gamepad2, Euro, Filter, List, CalendarDays, Clock } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Gamepad2, Euro, Filter, List, CalendarDays, Clock, Navigation, X } from "lucide-react";
 import Link from "next/link";
 import { DateTime } from "luxon";
 import { signIn, useSession } from "@/lib/auth-client";
@@ -18,11 +20,9 @@ type EventsCalendarProps = {
   showAllGames?: boolean;
   onMonthChange?: (month: number, year: number) => void;
   onToggleAllGames?: () => void;
-  userLocation?: { latitude: number; longitude: number } | null;
-  maxDistance?: number;
-  onDistanceChange?: (distance: number) => void;
-  onRequestLocation?: () => void;
-  isLocationLoading?: boolean;
+  onLocationSearch?: (latitude: number, longitude: number, distance: number) => void;
+  onResetLocation?: () => void;
+  isLocationMode?: boolean;
 };
 
 export default function EventsCalendar({
@@ -33,17 +33,19 @@ export default function EventsCalendar({
   showAllGames: controlledShowAllGames,
   onMonthChange,
   onToggleAllGames,
-  userLocation,
-  maxDistance = 0,
-  onDistanceChange,
-  onRequestLocation,
-  isLocationLoading = false,
+  onLocationSearch,
+  onResetLocation,
+  isLocationMode = false,
 }: EventsCalendarProps) {
   const today = DateTime.now();
   const [internalMonth, setInternalMonth] = useState<number>(today.month);
   const [internalYear, setInternalYear] = useState<number>(today.year);
   const [internalShowAllGames, setInternalShowAllGames] = useState(true);
   const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
+  const [showLocationForm, setShowLocationForm] = useState(false);
+  const [coordinates, setCoordinates] = useState("");
+  const [distance, setDistance] = useState("15");
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
   const session = useSession();
 
   // Détecter la taille de l'écran et initialiser la vue en conséquence
@@ -123,6 +125,63 @@ export default function EventsCalendar({
       onToggleAllGames();
     } else {
       setInternalShowAllGames(!showAllGames);
+    }
+  };
+
+  const handleGetCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert("La géolocalisation n&apos;est pas supportée par votre navigateur");
+      return;
+    }
+
+    setIsGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        setCoordinates(`${lat}, ${lon}`);
+        setIsGettingLocation(false);
+      },
+      (error) => {
+        console.error("Erreur de géolocalisation:", error);
+        alert("Impossible d&apos;obtenir votre position. Veuillez entrer vos coordonnées manuellement.");
+        setIsGettingLocation(false);
+      }
+    );
+  };
+
+  const handleLocationSearch = () => {
+    if (!coordinates.trim()) {
+      alert("Veuillez entrer des coordonnées GPS ou utiliser la localisation automatique");
+      return;
+    }
+
+    const parts = coordinates.split(',').map(s => s.trim());
+    if (parts.length !== 2) {
+      alert("Format invalide. Utilisez le format: latitude, longitude (ex: 48.8566, 2.3522)");
+      return;
+    }
+
+    const lat = parseFloat(parts[0]);
+    const lon = parseFloat(parts[1]);
+
+    if (isNaN(lat) || isNaN(lon)) {
+      alert("Coordonnées invalides. Veuillez entrer des nombres valides.");
+      return;
+    }
+
+    if (onLocationSearch) {
+      onLocationSearch(lat, lon, parseInt(distance));
+      setShowLocationForm(false);
+    }
+  };
+
+  const handleResetLocation = () => {
+    setCoordinates("");
+    setDistance("15");
+    setShowLocationForm(false);
+    if (onResetLocation) {
+      onResetLocation();
     }
   };
 
@@ -294,9 +353,9 @@ export default function EventsCalendar({
 
             {/* Boutons de contrôle */}
             {showViewToggle && (
-              <div className="flex flex-wrap gap-2 justify-center">
-                {/* Bouton de toggle vue calendrier/liste */}
-                {showViewToggle && (
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {/* Bouton de toggle vue calendrier/liste */}
                   <Button
                     variant="outline"
                     onClick={() => setViewMode(viewMode === "calendar" ? "list" : "calendar")}
@@ -314,33 +373,133 @@ export default function EventsCalendar({
                       </>
                     )}
                   </Button>
-                )}
 
-                {/* Bouton de filtre par jeux */}
-                {!session.isPending && (
-                  <>
-                    {session.data?.user ? (
-                      <Button
-                        variant={showAllGames ? "outline" : "default"}
-                        onClick={handleToggleAllGames}
-                        className="w-full sm:w-auto"
-                      >
-                        <Filter className="mr-2 h-4 w-4" />
-                        {showAllGames ? "Afficher mes jeux uniquement" : "Afficher tous les jeux"}
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        className="w-full sm:w-auto"
-                        asChild
-                      >
-                        <Link href="/login">
+                  {/* Bouton de filtre par jeux */}
+                  {!session.isPending && (
+                    <>
+                      {session.data?.user ? (
+                        <Button
+                          variant={showAllGames ? "outline" : "default"}
+                          onClick={handleToggleAllGames}
+                          className="w-full sm:w-auto"
+                        >
                           <Filter className="mr-2 h-4 w-4" />
-                          Connectez-vous pour filtrer par vos jeux
-                        </Link>
-                      </Button>
-                    )}
-                  </>
+                          {showAllGames ? "Afficher mes jeux uniquement" : "Afficher tous les jeux"}
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          className="w-full sm:w-auto"
+                          asChild
+                        >
+                          <Link href="/login">
+                            <Filter className="mr-2 h-4 w-4" />
+                            Connectez-vous pour filtrer par vos jeux
+                          </Link>
+                        </Button>
+                      )}
+                    </>
+                  )}
+
+                  {/* Bouton Proches de moi / Mes lieux */}
+                  {session.data?.user && (
+                    <>
+                      {isLocationMode ? (
+                        <Button
+                          variant="default"
+                          onClick={handleResetLocation}
+                          className="w-full sm:w-auto"
+                        >
+                          <MapPin className="mr-2 h-4 w-4" />
+                          Mes lieux
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          onClick={() => setShowLocationForm(!showLocationForm)}
+                          className="w-full sm:w-auto"
+                        >
+                          <Navigation className="mr-2 h-4 w-4" />
+                          Proches de moi
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Formulaire de recherche par localisation */}
+                {showLocationForm && !isLocationMode && session.data?.user && (
+                  <Card className="border-2 border-primary">
+                    <CardContent className="pt-6">
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">
+                            Coordonnées GPS
+                          </label>
+                          <div className="flex gap-2">
+                            <Input
+                              type="text"
+                              value={coordinates}
+                              onChange={(e) => setCoordinates(e.target.value)}
+                              placeholder="48.8566, 2.3522"
+                              className="flex-1"
+                            />
+                            <Button
+                              variant="outline"
+                              onClick={handleGetCurrentLocation}
+                              disabled={isGettingLocation}
+                              className="flex-shrink-0"
+                            >
+                              {isGettingLocation ? (
+                                <>Localisation...</>
+                              ) : (
+                                <>
+                                  <Navigation className="h-4 w-4" />
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Format : latitude, longitude ou cliquez sur le bouton pour obtenir votre position
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium mb-2">
+                            Distance maximale
+                          </label>
+                          <Select value={distance} onValueChange={setDistance}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1">1 km</SelectItem>
+                              <SelectItem value="5">5 km</SelectItem>
+                              <SelectItem value="15">15 km</SelectItem>
+                              <SelectItem value="50">50 km</SelectItem>
+                              <SelectItem value="150">150 km</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Button
+                            onClick={handleLocationSearch}
+                            className="flex-1"
+                          >
+                            <Navigation className="mr-2 h-4 w-4" />
+                            Rechercher
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => setShowLocationForm(false)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 )}
               </div>
             )}

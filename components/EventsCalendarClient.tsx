@@ -4,7 +4,6 @@ import { Event } from "@/lib/types/Event";
 import EventsCalendar from "@/app/events/EventsCalendar";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useCallback, useTransition } from "react";
-import { getUserLocation } from "@/lib/utils/geolocation";
 
 type EventsCalendarClientProps = {
   initialEvents: Event[];
@@ -31,24 +30,37 @@ export default function EventsCalendarClient({
   const [currentMonth, setCurrentMonth] = useState(initialMonth);
   const [currentYear, setCurrentYear] = useState(initialYear);
   const [showAllGames, setShowAllGames] = useState(initialShowAllGames);
-  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [maxDistance, setMaxDistance] = useState<number>(0); // 0 = pas de filtre
-  const [isLocationLoading, setIsLocationLoading] = useState(false);
+  const [isLocationMode, setIsLocationMode] = useState(false);
+  const [locationParams, setLocationParams] = useState<{ latitude: number; longitude: number; distance: number } | null>(null);
 
   // Fonction pour mettre à jour l'URL
-  const updateURL = useCallback((month: number, year: number, allGames: boolean, distance?: number) => {
+  const updateURL = useCallback((
+    month: number,
+    year: number,
+    allGames: boolean,
+    locParams?: { latitude: number; longitude: number; distance: number } | null
+  ) => {
     const params = new URLSearchParams();
     params.set("month", month.toString());
     params.set("year", year.toString());
     params.set("allGames", allGames.toString());
-    if (distance !== undefined && distance > 0) {
-      params.set("maxDistance", distance.toString());
+    
+    if (locParams) {
+      params.set("lat", locParams.latitude.toString());
+      params.set("lon", locParams.longitude.toString());
+      params.set("distance", locParams.distance.toString());
     }
+    
     router.push(`${basePath}?${params.toString()}`, { scroll: false });
   }, [router, basePath]);
 
   // Fonction pour récupérer les événements
-  const fetchEvents = useCallback(async (month: number, year: number, allGames: boolean, distance?: number) => {
+  const fetchEvents = useCallback(async (
+    month: number,
+    year: number,
+    allGames: boolean,
+    locParams?: { latitude: number; longitude: number; distance: number } | null
+  ) => {
     try {
       const params = new URLSearchParams({
         month: month.toString(),
@@ -58,10 +70,10 @@ export default function EventsCalendarClient({
       });
 
       // Add geolocation parameters if available
-      if (userLocation && distance && distance > 0) {
-        params.set("userLat", userLocation.latitude.toString());
-        params.set("userLon", userLocation.longitude.toString());
-        params.set("maxDistance", distance.toString());
+      if (locParams) {
+        params.set("userLat", locParams.latitude.toString());
+        params.set("userLon", locParams.longitude.toString());
+        params.set("maxDistance", locParams.distance.toString());
       }
 
       const response = await fetch(`/api/events?${params.toString()}`);
@@ -77,66 +89,80 @@ export default function EventsCalendarClient({
     } catch (error) {
       console.error("Error fetching events:", error);
     }
-  }, [userLocation, lairId]);
+  }, [lairId]);
 
   // Gérer le changement de mois
   const handleMonthChange = useCallback((newMonth: number, newYear: number) => {
-    // Simplement mettre à jour l'URL, le useEffect se chargera du fetch
-    updateURL(newMonth, newYear, showAllGames, maxDistance);
-  }, [showAllGames, maxDistance, updateURL]);
+    updateURL(newMonth, newYear, showAllGames, locationParams);
+  }, [showAllGames, locationParams, updateURL]);
 
   // Gérer le changement du filtre de jeux
   const handleToggleAllGames = useCallback(() => {
     const newShowAllGames = !showAllGames;
-    // Simplement mettre à jour l'URL, le useEffect se chargera du fetch
-    updateURL(currentMonth, currentYear, newShowAllGames, maxDistance);
-  }, [showAllGames, currentMonth, currentYear, maxDistance, updateURL]);
+    updateURL(currentMonth, currentYear, newShowAllGames, locationParams);
+  }, [showAllGames, currentMonth, currentYear, locationParams, updateURL]);
 
-  // Gérer le changement de distance
-  const handleDistanceChange = useCallback((distance: number) => {
-    setMaxDistance(distance);
-    updateURL(currentMonth, currentYear, showAllGames, distance);
+  // Gérer la recherche par localisation
+  const handleLocationSearch = useCallback((latitude: number, longitude: number, distance: number) => {
+    const locParams = { latitude, longitude, distance };
+    setLocationParams(locParams);
+    setIsLocationMode(true);
+    updateURL(currentMonth, currentYear, showAllGames, locParams);
   }, [currentMonth, currentYear, showAllGames, updateURL]);
 
-  // Fonction pour demander la localisation de l'utilisateur
-  const requestLocation = useCallback(async () => {
-    setIsLocationLoading(true);
-    const location = await getUserLocation();
-    setUserLocation(location);
-    setIsLocationLoading(false);
-    
-    if (location) {
-      // Par défaut, utiliser un rayon de 50km
-      handleDistanceChange(50);
-    }
-  }, [handleDistanceChange]);
+  // Réinitialiser la recherche par localisation
+  const handleResetLocation = useCallback(() => {
+    setLocationParams(null);
+    setIsLocationMode(false);
+    updateURL(currentMonth, currentYear, showAllGames, null);
+  }, [currentMonth, currentYear, showAllGames, updateURL]);
 
   // Synchroniser avec les paramètres d'URL
   useEffect(() => {
     const monthParam = searchParams.get("month");
     const yearParam = searchParams.get("year");
     const allGamesParam = searchParams.get("allGames");
-    const maxDistanceParam = searchParams.get("maxDistance");
+    const latParam = searchParams.get("lat");
+    const lonParam = searchParams.get("lon");
+    const distanceParam = searchParams.get("distance");
 
     const month = monthParam ? parseInt(monthParam, 10) : initialMonth;
     const year = yearParam ? parseInt(yearParam, 10) : initialYear;
     const allGames = allGamesParam === "true";
-    const distance = maxDistanceParam ? parseInt(maxDistanceParam, 10) : 0;
+    
+    let locParams: { latitude: number; longitude: number; distance: number } | null = null;
+    if (latParam && lonParam && distanceParam) {
+      locParams = {
+        latitude: parseFloat(latParam),
+        longitude: parseFloat(lonParam),
+        distance: parseInt(distanceParam, 10),
+      };
+    }
+
+    const hasLocationChanged = 
+      (locParams === null && locationParams !== null) ||
+      (locParams !== null && locationParams === null) ||
+      (locParams !== null && locationParams !== null && (
+        locParams.latitude !== locationParams.latitude ||
+        locParams.longitude !== locationParams.longitude ||
+        locParams.distance !== locationParams.distance
+      ));
 
     if (
       month !== currentMonth ||
       year !== currentYear ||
       allGames !== showAllGames ||
-      distance !== maxDistance
+      hasLocationChanged
     ) {
       setCurrentMonth(month);
       setCurrentYear(year);
       setShowAllGames(allGames);
-      setMaxDistance(distance);
+      setLocationParams(locParams);
+      setIsLocationMode(locParams !== null);
       setEvents([]);
-      fetchEvents(month, year, allGames, distance);
+      fetchEvents(month, year, allGames, locParams);
     }
-  }, [searchParams, initialMonth, initialYear, currentMonth, currentYear, showAllGames, maxDistance, fetchEvents]);
+  }, [searchParams, initialMonth, initialYear, currentMonth, currentYear, showAllGames, locationParams, fetchEvents]);
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
@@ -146,6 +172,11 @@ export default function EventsCalendarClient({
             <h1 className="text-4xl font-bold tracking-tight mb-2">
               Calendrier des Événements
             </h1>
+            {isLocationMode && locationParams && (
+              <p className="text-sm text-muted-foreground">
+                Événements dans un rayon de {locationParams.distance} km
+              </p>
+            )}
           </div>
         </div>
         
@@ -157,11 +188,9 @@ export default function EventsCalendarClient({
           showAllGames={showAllGames}
           onMonthChange={handleMonthChange}
           onToggleAllGames={handleToggleAllGames}
-          userLocation={userLocation}
-          maxDistance={maxDistance}
-          onDistanceChange={handleDistanceChange}
-          onRequestLocation={requestLocation}
-          isLocationLoading={isLocationLoading}
+          onLocationSearch={handleLocationSearch}
+          onResetLocation={handleResetLocation}
+          isLocationMode={isLocationMode}
         />
       </div>
     </div>
