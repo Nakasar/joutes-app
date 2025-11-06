@@ -14,9 +14,9 @@ const eventSchema = z.object({
     startDateTime: z.string().describe("ISO 8601 date format"),
     endDateTime: z.string().describe("ISO 8601 date format"),
     gameName: z.string(),
-    price: z.number().optional().nullable(),
+    price: z.number().optional(),
     status: z.enum(['available', 'sold-out', 'cancelled']),
-    url: z.string().optional().nullable(),
+    url: z.string().optional(),
   }))
 });
 
