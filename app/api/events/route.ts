@@ -73,7 +73,10 @@ export async function GET(request: NextRequest) {
         );
         
         // Récupérer les événements pour ces lairs
-        const allEvents = await getEventsByLairIds(nearbyLairIds);
+        const allEvents = await getEventsByLairIds(nearbyLairIds, {
+          year: yearNum,
+          month: monthNum,
+        });
         
         // Filtrer par mois/année si spécifié
         events = allEvents.filter(event => {

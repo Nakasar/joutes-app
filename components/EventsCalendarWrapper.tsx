@@ -31,7 +31,7 @@ export default async function EventsCalendarWrapper({
   // Par défaut, afficher tous les jeux si le paramètre n'est pas défini
   const showAllGames = searchParams.allGames !== undefined 
     ? searchParams.allGames === "true" 
-    : true;
+    : false;
   
   // Récupérer la session utilisateur
   const session = await auth.api.getSession({
