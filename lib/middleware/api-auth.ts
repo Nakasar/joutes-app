@@ -79,7 +79,7 @@ export async function validateApiKeyFromRequest(
   request: NextRequest
 ): Promise<{ userId: string; apiKeyId: string } | { error: string; status: number }> {
   // D'abord essayer l'en-tête Authorization
-  let authResult = await validateApiKeyMiddleware(request);
+  const authResult = await validateApiKeyMiddleware(request);
   
   // Si pas d'en-tête Authorization, essayer le paramètre de requête
   if ("error" in authResult && authResult.status === 401) {

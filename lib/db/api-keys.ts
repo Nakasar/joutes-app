@@ -157,7 +157,7 @@ export async function updateApiKey(
 ): Promise<boolean> {
   const db = await getDb();
   
-  const updateDoc: any = {
+  const updateDoc: Partial<ApiKey> = {
     updatedAt: new Date(),
     ...updates
   };
