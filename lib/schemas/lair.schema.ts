@@ -17,6 +17,7 @@ export const lairSchema = z.object({
   banner: z.url("L'URL de la bannière doit être valide").optional(),
   games: z.array(objectIdSchema).default([]),
   eventsSourceUrls: z.array(z.url("Chaque URL doit être valide")).default([]),
+  eventsSourceInstructions: z.string().max(2000, "Les consignes sont trop longues").optional(),
   location: geoJSONPointSchema,
   address: z.string().max(500, "L'adresse est trop longue").optional(),
   website: z.url("L'URL du site web doit être valide").optional().or(z.literal("")),

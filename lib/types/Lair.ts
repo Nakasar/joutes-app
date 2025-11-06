@@ -18,6 +18,8 @@ export type Lair = {
   
   eventsSourceUrls?: string[];
   
+  eventsSourceInstructions?: string;
+  
   location?: GeoJSONPoint;
   
   address?: string;

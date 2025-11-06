@@ -31,6 +31,7 @@ export function LairForm({
     banner: "",
     games: [] as string[],
     eventsSourceUrls: [] as string[],
+    eventsSourceInstructions: "",
     coordinates: "",
     address: "",
     website: "",
@@ -46,6 +47,7 @@ export function LairForm({
           banner: lair.banner || "",
           games: lair.games || [],
           eventsSourceUrls: lair.eventsSourceUrls || [],
+          eventsSourceInstructions: lair.eventsSourceInstructions || "",
           coordinates: lair.location 
             ? `${lair.location.coordinates[1]}, ${lair.location.coordinates[0]}` 
             : "",
@@ -58,6 +60,7 @@ export function LairForm({
           banner: "",
           games: [],
           eventsSourceUrls: [],
+          eventsSourceInstructions: "",
           coordinates: "",
           address: "",
           website: "",
@@ -77,6 +80,7 @@ export function LairForm({
         banner?: string;
         games: string[];
         eventsSourceUrls: string[];
+        eventsSourceInstructions?: string;
         location?: { type: "Point"; coordinates: [number, number] };
         address?: string;
         website?: string;
@@ -86,6 +90,11 @@ export function LairForm({
         games: formData.games,
         eventsSourceUrls: formData.eventsSourceUrls.filter(url => url.trim() !== ""),
       };
+
+      // Ajouter les consignes pour l'IA si elles sont remplies
+      if (formData.eventsSourceInstructions.trim().length > 0) {
+        data.eventsSourceInstructions = formData.eventsSourceInstructions.trim();
+      }
 
       // Ajouter les coordonnées si le champ est rempli
       if (formData.coordinates.trim().length > 0) {
@@ -123,6 +132,7 @@ export function LairForm({
           banner: "",
           games: [],
           eventsSourceUrls: [],
+          eventsSourceInstructions: "",
           coordinates: "",
           address: "",
           website: "",
@@ -378,6 +388,24 @@ export function LairForm({
                 + Ajouter une URL
               </button>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Consignes pour l&apos;IA (optionnel)
+            </label>
+            <textarea
+              value={formData.eventsSourceInstructions}
+              onChange={(e) =>
+                setFormData({ ...formData, eventsSourceInstructions: e.target.value })
+              }
+              placeholder="Ajoutez ici des instructions pour aider l&apos;IA à extraire les événements des sources (ex: format spécifique, éléments à ignorer, etc.)"
+              rows={4}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Ces consignes aideront l&apos;IA à mieux comprendre et extraire les événements depuis les sources configurées.
+            </p>
           </div>
 
           <div className="flex gap-2 pt-4">

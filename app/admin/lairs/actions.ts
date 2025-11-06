@@ -22,6 +22,7 @@ export async function createLair(data: {
   banner?: string; 
   games: string[]; 
   eventsSourceUrls: string[];
+  eventsSourceInstructions?: string;
   location?: { type: "Point"; coordinates: [number, number] };
   address?: string;
   website?: string;
@@ -58,6 +59,7 @@ export async function updateLair(id: string, data: {
   banner?: string; 
   games: string[]; 
   eventsSourceUrls: string[];
+  eventsSourceInstructions?: string;
   location?: { type: "Point"; coordinates: [number, number] };
   address?: string;
   website?: string;
