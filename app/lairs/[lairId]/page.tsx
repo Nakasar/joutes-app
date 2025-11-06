@@ -139,6 +139,47 @@ export default async function LairDetailPage({
       </div>
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Informations du lieu */}
+        {(lair.address || lair.website || lair.location) && (
+          <div className="mb-8 p-6 bg-card rounded-lg border">
+            <h2 className="text-xl font-semibold mb-4">Informations pratiques</h2>
+            <div className="space-y-3">
+              {lair.address && (
+                <div className="flex items-start gap-3">
+                  <span className="text-sm font-medium text-muted-foreground min-w-[100px]">Adresse :</span>
+                  <span className="text-sm">{lair.address}</span>
+                </div>
+              )}
+              {lair.website && (
+                <div className="flex items-start gap-3">
+                  <span className="text-sm font-medium text-muted-foreground min-w-[100px]">Site web :</span>
+                  <a 
+                    href={lair.website} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline"
+                  >
+                    {lair.website}
+                  </a>
+                </div>
+              )}
+              {lair.location && (
+                <div className="flex items-start gap-3">
+                  <span className="text-sm font-medium text-muted-foreground min-w-[100px]">Coordonnées :</span>
+                  <a
+                    href={`https://www.google.com/maps?q=${lair.location.coordinates[1]},${lair.location.coordinates[0]}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:underline"
+                  >
+                    {lair.location.coordinates[1]}, {lair.location.coordinates[0]} (voir sur la carte)
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Section Jeux disponibles */}
         {games.length > 0 && (
           <div className="mb-12">

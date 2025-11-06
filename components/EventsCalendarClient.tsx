@@ -30,18 +30,37 @@ export default function EventsCalendarClient({
   const [currentMonth, setCurrentMonth] = useState(initialMonth);
   const [currentYear, setCurrentYear] = useState(initialYear);
   const [showAllGames, setShowAllGames] = useState(initialShowAllGames);
+  const [isLocationMode, setIsLocationMode] = useState(false);
+  const [locationParams, setLocationParams] = useState<{ latitude: number; longitude: number; distance: number } | null>(null);
 
   // Fonction pour mettre à jour l'URL
-  const updateURL = useCallback((month: number, year: number, allGames: boolean) => {
+  const updateURL = useCallback((
+    month: number,
+    year: number,
+    allGames: boolean,
+    locParams?: { latitude: number; longitude: number; distance: number } | null
+  ) => {
     const params = new URLSearchParams();
     params.set("month", month.toString());
     params.set("year", year.toString());
     params.set("allGames", allGames.toString());
+    
+    if (locParams) {
+      params.set("lat", locParams.latitude.toString());
+      params.set("lon", locParams.longitude.toString());
+      params.set("distance", locParams.distance.toString());
+    }
+    
     router.push(`${basePath}?${params.toString()}`, { scroll: false });
   }, [router, basePath]);
 
   // Fonction pour récupérer les événements
-  const fetchEvents = useCallback(async (month: number, year: number, allGames: boolean) => {
+  const fetchEvents = useCallback(async (
+    month: number,
+    year: number,
+    allGames: boolean,
+    locParams?: { latitude: number; longitude: number; distance: number } | null
+  ) => {
     try {
       const params = new URLSearchParams({
         month: month.toString(),
@@ -49,6 +68,13 @@ export default function EventsCalendarClient({
         allGames: allGames.toString(),
         lairId: lairId ?? "",
       });
+
+      // Add geolocation parameters if available
+      if (locParams) {
+        params.set("userLat", locParams.latitude.toString());
+        params.set("userLon", locParams.longitude.toString());
+        params.set("maxDistance", locParams.distance.toString());
+      }
 
       const response = await fetch(`/api/events?${params.toString()}`);
       
@@ -63,43 +89,84 @@ export default function EventsCalendarClient({
     } catch (error) {
       console.error("Error fetching events:", error);
     }
-  }, []);
+  }, [lairId]);
 
   // Gérer le changement de mois
   const handleMonthChange = useCallback((newMonth: number, newYear: number) => {
-    // Simplement mettre à jour l'URL, le useEffect se chargera du fetch
-    updateURL(newMonth, newYear, showAllGames);
-  }, [showAllGames, updateURL]);
+    updateURL(newMonth, newYear, showAllGames, locationParams);
+  }, [showAllGames, locationParams, updateURL]);
 
   // Gérer le changement du filtre de jeux
   const handleToggleAllGames = useCallback(() => {
     const newShowAllGames = !showAllGames;
-    // Simplement mettre à jour l'URL, le useEffect se chargera du fetch
-    updateURL(currentMonth, currentYear, newShowAllGames);
-  }, [showAllGames, currentMonth, currentYear, updateURL]);
+    updateURL(currentMonth, currentYear, newShowAllGames, locationParams);
+  }, [showAllGames, currentMonth, currentYear, locationParams, updateURL]);
+
+  // Gérer la recherche par localisation
+  const handleLocationSearch = useCallback((latitude: number, longitude: number, distance: number) => {
+    const locParams = { latitude, longitude, distance };
+    setLocationParams(locParams);
+    setIsLocationMode(true);
+    updateURL(currentMonth, currentYear, showAllGames, locParams);
+  }, [currentMonth, currentYear, showAllGames, updateURL]);
+
+  // Réinitialiser la recherche par localisation
+  const handleResetLocation = useCallback(() => {
+    setLocationParams(null);
+    setIsLocationMode(false);
+    updateURL(currentMonth, currentYear, showAllGames, null);
+  }, [currentMonth, currentYear, showAllGames, updateURL]);
 
   // Synchroniser avec les paramètres d'URL
   useEffect(() => {
     const monthParam = searchParams.get("month");
     const yearParam = searchParams.get("year");
     const allGamesParam = searchParams.get("allGames");
+    const latParam = searchParams.get("lat");
+    const lonParam = searchParams.get("lon");
+    const distanceParam = searchParams.get("distance");
 
     const month = monthParam ? parseInt(monthParam, 10) : initialMonth;
     const year = yearParam ? parseInt(yearParam, 10) : initialYear;
     const allGames = allGamesParam === "true";
+    
+    let locParams: { latitude: number; longitude: number; distance: number } | null = null;
+    if (latParam && lonParam && distanceParam) {
+      locParams = {
+        latitude: parseFloat(latParam),
+        longitude: parseFloat(lonParam),
+        distance: parseInt(distanceParam, 10),
+      };
+    }
+
+    const hasLocationChanged = 
+      (locParams === null && locationParams !== null) ||
+      (locParams !== null && locationParams === null) ||
+      (locParams !== null && locationParams !== null && (
+        locParams.latitude !== locationParams.latitude ||
+        locParams.longitude !== locationParams.longitude ||
+        locParams.distance !== locationParams.distance
+      ));
 
     if (
       month !== currentMonth ||
       year !== currentYear ||
-      allGames !== showAllGames
+      allGames !== showAllGames ||
+      hasLocationChanged
     ) {
       setCurrentMonth(month);
       setCurrentYear(year);
       setShowAllGames(allGames);
-      setEvents([]);
-      fetchEvents(month, year, allGames);
+      setLocationParams(locParams);
+      setIsLocationMode(locParams !== null);
+      
+      // Ne faire le fetch que si on a des paramètres de localisation ou qu'on revient au mode normal avec des événements initiaux
+      if (locParams !== null || initialEvents.length > 0) {
+        setEvents([]);
+        fetchEvents(month, year, allGames, locParams);
+      }
     }
-  }, [searchParams, initialMonth, initialYear, currentMonth, currentYear, showAllGames, fetchEvents]);
+  }, [searchParams, initialMonth, initialYear, currentMonth, currentYear, showAllGames, locationParams, fetchEvents, initialEvents.length]);
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
@@ -109,6 +176,11 @@ export default function EventsCalendarClient({
             <h1 className="text-4xl font-bold tracking-tight mb-2">
               Calendrier des Événements
             </h1>
+            {isLocationMode && locationParams && (
+              <p className="text-sm text-muted-foreground">
+                Événements dans un rayon de {locationParams.distance} km
+              </p>
+            )}
           </div>
         </div>
         
@@ -120,6 +192,9 @@ export default function EventsCalendarClient({
           showAllGames={showAllGames}
           onMonthChange={handleMonthChange}
           onToggleAllGames={handleToggleAllGames}
+          onLocationSearch={handleLocationSearch}
+          onResetLocation={handleResetLocation}
+          isLocationMode={isLocationMode}
         />
       </div>
     </div>

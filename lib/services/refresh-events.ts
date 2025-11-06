@@ -87,6 +87,12 @@ ${existingGames.map(game => `- ${game.name}`).join('\n')}
 Concernant le titre, par exemple:  
 - Si le titre est "Soirée Jeu de Rôle - Donjons & Dragons - 15 Mars 2024 20:00", le nom de l'événement est "Soirée Jeu de Rôle".
 
+${lair.eventsSourceInstructions ? `
+# Consignes spécifiques pour ce lieu
+
+${lair.eventsSourceInstructions}
+` : ''}
+
 # Contenu des pages :
 
 ${pagesContent.map((page, index) => `

@@ -31,6 +31,10 @@ export function LairForm({
     banner: "",
     games: [] as string[],
     eventsSourceUrls: [] as string[],
+    eventsSourceInstructions: "",
+    coordinates: "",
+    address: "",
+    website: "",
   });
   const [uploading, setUploading] = useState(false);
 
@@ -43,6 +47,12 @@ export function LairForm({
           banner: lair.banner || "",
           games: lair.games || [],
           eventsSourceUrls: lair.eventsSourceUrls || [],
+          eventsSourceInstructions: lair.eventsSourceInstructions || "",
+          coordinates: lair.location 
+            ? `${lair.location.coordinates[1]}, ${lair.location.coordinates[0]}` 
+            : "",
+          address: lair.address || "",
+          website: lair.website || "",
         });
       } else {
         setFormData({
@@ -50,6 +60,10 @@ export function LairForm({
           banner: "",
           games: [],
           eventsSourceUrls: [],
+          eventsSourceInstructions: "",
+          coordinates: "",
+          address: "",
+          website: "",
         });
       }
       setError(null);
@@ -61,12 +75,52 @@ export function LairForm({
     setError(null);
 
     startTransition(async () => {
-      const data = {
+      const data: {
+        name: string;
+        banner?: string;
+        games: string[];
+        eventsSourceUrls: string[];
+        eventsSourceInstructions?: string;
+        location?: { type: "Point"; coordinates: [number, number] };
+        address?: string;
+        website?: string;
+      } = {
         name: formData.name,
         banner: formData.banner.length > 0 ? formData.banner : undefined,
         games: formData.games,
         eventsSourceUrls: formData.eventsSourceUrls.filter(url => url.trim() !== ""),
       };
+
+      // Ajouter les consignes pour l'IA si elles sont remplies
+      if (formData.eventsSourceInstructions.trim().length > 0) {
+        data.eventsSourceInstructions = formData.eventsSourceInstructions.trim();
+      }
+
+      // Ajouter les coordonnées si le champ est rempli
+      if (formData.coordinates.trim().length > 0) {
+        const parts = formData.coordinates.split(',').map(s => s.trim());
+        if (parts.length === 2) {
+          const lat = parseFloat(parts[0]);
+          const lon = parseFloat(parts[1]);
+          if (!isNaN(lat) && !isNaN(lon)) {
+            // Format GeoJSON : [longitude, latitude]
+            data.location = {
+              type: "Point",
+              coordinates: [lon, lat]
+            };
+          }
+        }
+      }
+
+      // Ajouter l'adresse si elle est remplie
+      if (formData.address.trim().length > 0) {
+        data.address = formData.address.trim();
+      }
+
+      // Ajouter le site web s'il est rempli
+      if (formData.website.trim().length > 0) {
+        data.website = formData.website.trim();
+      }
 
       const result = lair
         ? await updateLair(lair.id, data)
@@ -78,6 +132,10 @@ export function LairForm({
           banner: "",
           games: [],
           eventsSourceUrls: [],
+          eventsSourceInstructions: "",
+          coordinates: "",
+          address: "",
+          website: "",
         });
         setOpen(false);
       } else {
@@ -209,6 +267,54 @@ export function LairForm({
           </div>
 
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Adresse (optionnel)
+            </label>
+            <input
+              type="text"
+              value={formData.address}
+              onChange={(e) =>
+                setFormData({ ...formData, address: e.target.value })
+              }
+              placeholder="123 rue de la Joute, 75001 Paris"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Site web (optionnel)
+            </label>
+            <input
+              type="url"
+              value={formData.website}
+              onChange={(e) =>
+                setFormData({ ...formData, website: e.target.value })
+              }
+              placeholder="https://exemple.com"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Coordonnées GPS (optionnel)
+            </label>
+            <input
+              type="text"
+              value={formData.coordinates}
+              onChange={(e) =>
+                setFormData({ ...formData, coordinates: e.target.value })
+              }
+              placeholder="48.8566, 2.3522"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Format : latitude, longitude (exemple : 48.8566, 2.3522 pour Paris)
+            </p>
+          </div>
+
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Jeux supportés
             </label>
@@ -282,6 +388,24 @@ export function LairForm({
                 + Ajouter une URL
               </button>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Consignes pour l&apos;IA (optionnel)
+            </label>
+            <textarea
+              value={formData.eventsSourceInstructions}
+              onChange={(e) =>
+                setFormData({ ...formData, eventsSourceInstructions: e.target.value })
+              }
+              placeholder="Ajoutez ici des instructions pour aider l&apos;IA à extraire les événements des sources (ex: format spécifique, éléments à ignorer, etc.)"
+              rows={4}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Ces consignes aideront l&apos;IA à mieux comprendre et extraire les événements depuis les sources configurées.
+            </p>
           </div>
 
           <div className="flex gap-2 pt-4">

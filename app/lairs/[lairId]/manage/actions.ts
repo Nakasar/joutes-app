@@ -11,7 +11,14 @@ const emailSchema = z.string().email("Email invalide");
 
 export async function updateLairDetails(
   lairId: string,
-  data: { name: string; banner?: string; games: string[] }
+  data: { 
+    name: string; 
+    banner?: string; 
+    games: string[];
+    location?: { type: "Point"; coordinates: [number, number] };
+    address?: string;
+    website?: string;
+  }
 ) {
   try {
     await requireAdminOrOwner(lairId);

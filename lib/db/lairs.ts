@@ -16,6 +16,10 @@ function toLair(doc: WithId<Document>): Lair {
     games: doc.games || [],
     owners: doc.owners || [],
     eventsSourceUrls: doc.eventsSourceUrls || [],
+    eventsSourceInstructions: doc.eventsSourceInstructions,
+    location: doc.location,
+    address: doc.address,
+    website: doc.website,
   };
 }
 
@@ -27,6 +31,10 @@ function toDocument(lair: Omit<Lair, "id">): Omit<LairDocument, "_id"> {
     games: lair.games,
     owners: lair.owners,
     eventsSourceUrls: lair.eventsSourceUrls || [],
+    eventsSourceInstructions: lair.eventsSourceInstructions,
+    location: lair.location,
+    address: lair.address,
+    website: lair.website,
   };
 }
 
@@ -88,4 +96,36 @@ export async function removeOwnerFromLair(lairId: string, userId: string): Promi
   );
   
   return result.modifiedCount > 0;
+}
+
+// Créer l'index géospatial sur le champ location
+export async function ensureGeospatialIndex(): Promise<void> {
+  const db = await getDb();
+  await db.collection(COLLECTION_NAME).createIndex({ location: "2dsphere" });
+}
+
+// Obtenir les IDs des lairs à proximité d'une position
+export async function getLairIdsNearLocation(
+  longitude: number,
+  latitude: number,
+  maxDistanceMeters: number = 50000 // Par défaut 50km
+): Promise<string[]> {
+  const db = await getDb();
+  
+  // S'assurer que l'index géospatial existe
+  await ensureGeospatialIndex();
+  
+  const lairs = await db.collection(COLLECTION_NAME).find({
+    location: {
+      $near: {
+        $geometry: {
+          type: "Point",
+          coordinates: [longitude, latitude]
+        },
+        $maxDistance: maxDistanceMeters
+      }
+    }
+  }).toArray();
+  
+  return lairs.map(lair => lair._id.toString());
 }

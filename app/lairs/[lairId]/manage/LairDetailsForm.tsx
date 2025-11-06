@@ -22,6 +22,11 @@ export default function LairDetailsForm({
     name: lair.name,
     banner: lair.banner || "",
     games: lair.games || [],
+    coordinates: lair.location 
+      ? `${lair.location.coordinates[1]}, ${lair.location.coordinates[0]}` 
+      : "",
+    address: lair.address || "",
+    website: lair.website || "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,11 +35,44 @@ export default function LairDetailsForm({
     setSuccess(false);
 
     startTransition(async () => {
-      const data = {
+      const data: {
+        name: string;
+        banner?: string;
+        games: string[];
+        location?: { type: "Point"; coordinates: [number, number] };
+        address?: string;
+        website?: string;
+      } = {
         name: formData.name,
         banner: formData.banner.length > 0 ? formData.banner : undefined,
         games: formData.games,
       };
+
+      // Ajouter les coordonnées si le champ est rempli
+      if (formData.coordinates.trim().length > 0) {
+        const parts = formData.coordinates.split(',').map(s => s.trim());
+        if (parts.length === 2) {
+          const lat = parseFloat(parts[0]);
+          const lon = parseFloat(parts[1]);
+          if (!isNaN(lat) && !isNaN(lon)) {
+            // Format GeoJSON : [longitude, latitude]
+            data.location = {
+              type: "Point",
+              coordinates: [lon, lat]
+            };
+          }
+        }
+      }
+
+      // Ajouter l'adresse si elle est remplie
+      if (formData.address.trim().length > 0) {
+        data.address = formData.address.trim();
+      }
+
+      // Ajouter le site web s'il est rempli
+      if (formData.website.trim().length > 0) {
+        data.website = formData.website.trim();
+      }
 
       const result = await updateLairDetails(lair.id, data);
 
@@ -88,6 +126,39 @@ export default function LairDetailsForm({
           onChange={(e) => setFormData({ ...formData, banner: e.target.value })}
           placeholder="https://exemple.com/banniere.jpg"
         />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-2">Adresse (optionnel)</label>
+        <Input
+          type="text"
+          value={formData.address}
+          onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+          placeholder="123 rue de la Joute, 75001 Paris"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-2">Site web (optionnel)</label>
+        <Input
+          type="url"
+          value={formData.website}
+          onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+          placeholder="https://exemple.com"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-2">Coordonnées GPS (optionnel)</label>
+        <Input
+          type="text"
+          value={formData.coordinates}
+          onChange={(e) => setFormData({ ...formData, coordinates: e.target.value })}
+          placeholder="48.8566, 2.3522"
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          Format : latitude, longitude (exemple : 48.8566, 2.3522 pour Paris)
+        </p>
       </div>
 
       <div>
