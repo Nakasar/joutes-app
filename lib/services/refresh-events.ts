@@ -79,13 +79,16 @@ Pour chaque événement unique, extrait:
 - gameName: Le nom du jeu de l'événement (parmi la liste ci-dessous si possible)
 - price: Le prix (optionnel, en nombre, undefined si non trouvé, ne pas utiliser null)
 - status: Le statut ('available' si disponible, 'sold-out' si complet, 'cancelled' si annulé)
-- url: Le lien vers la page détaillée de l'événement (si disponible, en général dans une balise <a href="..."> ou <https://example.com/some/link>)
+- url: Le lien vers la page détaillée de l'événement (si disponible, en général dans une balise <a href="..."> ou <https://example.com/some/link>). Doit contenir le hostname (depuis la racine de la page extraite si non fourni).
 
 Pour le champ gameName utilise en priorité les noms des jeux de la liste fournie ci-dessous (le nom du jeu peut varier entre les évènements et lieux de jeu). Si aucun nom ne correspond, utilise le nom trouvé dans la page des évènements.
 ${existingGames.map(game => `- ${game.name}`).join('\n')}
 
 Concernant le titre, par exemple:  
 - Si le titre est "Soirée Jeu de Rôle - Donjons & Dragons - 15 Mars 2024 20:00", le nom de l'événement est "Soirée Jeu de Rôle".
+
+Concernant l'url, par exemple:
+- Si sur la page https://my-site.com/events un événement a un lien relatif "/details/123", l'url complète est "https://my-site.com/details/123".
 
 ${lair.eventsSourceInstructions ? `
 # Consignes spécifiques pour ce lieu
