@@ -31,6 +31,10 @@ export function LairForm({
     banner: "",
     games: [] as string[],
     eventsSourceUrls: [] as string[],
+    latitude: "",
+    longitude: "",
+    address: "",
+    website: "",
   });
   const [uploading, setUploading] = useState(false);
 
@@ -43,6 +47,10 @@ export function LairForm({
           banner: lair.banner || "",
           games: lair.games || [],
           eventsSourceUrls: lair.eventsSourceUrls || [],
+          latitude: lair.coordinates?.latitude?.toString() || "",
+          longitude: lair.coordinates?.longitude?.toString() || "",
+          address: lair.address || "",
+          website: lair.website || "",
         });
       } else {
         setFormData({
@@ -50,6 +58,10 @@ export function LairForm({
           banner: "",
           games: [],
           eventsSourceUrls: [],
+          latitude: "",
+          longitude: "",
+          address: "",
+          website: "",
         });
       }
       setError(null);
@@ -61,12 +73,39 @@ export function LairForm({
     setError(null);
 
     startTransition(async () => {
-      const data = {
+      const data: {
+        name: string;
+        banner?: string;
+        games: string[];
+        eventsSourceUrls: string[];
+        coordinates?: { latitude: number; longitude: number };
+        address?: string;
+        website?: string;
+      } = {
         name: formData.name,
         banner: formData.banner.length > 0 ? formData.banner : undefined,
         games: formData.games,
         eventsSourceUrls: formData.eventsSourceUrls.filter(url => url.trim() !== ""),
       };
+
+      // Ajouter les coordonnées si les deux champs sont remplis
+      if (formData.latitude && formData.longitude) {
+        const lat = parseFloat(formData.latitude);
+        const lon = parseFloat(formData.longitude);
+        if (!isNaN(lat) && !isNaN(lon)) {
+          data.coordinates = { latitude: lat, longitude: lon };
+        }
+      }
+
+      // Ajouter l'adresse si elle est remplie
+      if (formData.address.trim().length > 0) {
+        data.address = formData.address.trim();
+      }
+
+      // Ajouter le site web s'il est rempli
+      if (formData.website.trim().length > 0) {
+        data.website = formData.website.trim();
+      }
 
       const result = lair
         ? await updateLair(lair.id, data)
@@ -78,6 +117,10 @@ export function LairForm({
           banner: "",
           games: [],
           eventsSourceUrls: [],
+          latitude: "",
+          longitude: "",
+          address: "",
+          website: "",
         });
         setOpen(false);
       } else {
@@ -206,6 +249,81 @@ export function LairForm({
                 </div>
               )}
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Adresse (optionnel)
+            </label>
+            <input
+              type="text"
+              value={formData.address}
+              onChange={(e) =>
+                setFormData({ ...formData, address: e.target.value })
+              }
+              placeholder="123 rue de la Joute, 75001 Paris"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Site web (optionnel)
+            </label>
+            <input
+              type="url"
+              value={formData.website}
+              onChange={(e) =>
+                setFormData({ ...formData, website: e.target.value })
+              }
+              placeholder="https://exemple.com"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Coordonnées GPS (optionnel)
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">
+                  Latitude
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={formData.latitude}
+                  onChange={(e) =>
+                    setFormData({ ...formData, latitude: e.target.value })
+                  }
+                  placeholder="48.8566"
+                  min="-90"
+                  max="90"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">
+                  Longitude
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={formData.longitude}
+                  onChange={(e) =>
+                    setFormData({ ...formData, longitude: e.target.value })
+                  }
+                  placeholder="2.3522"
+                  min="-180"
+                  max="180"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Exemple : Paris = 48.8566, 2.3522
+            </p>
           </div>
 
           <div>

@@ -11,4 +11,13 @@ export type Lair = {
   owners: User['id'][];
   
   eventsSourceUrls?: string[];
+  
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
+  
+  address?: string;
+  
+  website?: string;
 };

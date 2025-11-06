@@ -16,6 +16,9 @@ function toLair(doc: WithId<Document>): Lair {
     games: doc.games || [],
     owners: doc.owners || [],
     eventsSourceUrls: doc.eventsSourceUrls || [],
+    coordinates: doc.coordinates,
+    address: doc.address,
+    website: doc.website,
   };
 }
 
@@ -27,6 +30,9 @@ function toDocument(lair: Omit<Lair, "id">): Omit<LairDocument, "_id"> {
     games: lair.games,
     owners: lair.owners,
     eventsSourceUrls: lair.eventsSourceUrls || [],
+    coordinates: lair.coordinates,
+    address: lair.address,
+    website: lair.website,
   };
 }
 

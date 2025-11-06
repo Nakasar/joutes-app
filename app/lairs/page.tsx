@@ -67,14 +67,22 @@ export default async function LairsPage() {
                   </CardHeader>
 
                   <CardContent>
-                    {lair.games.length > 0 && (
-                      <div className="flex items-center gap-2">
-                        <Gamepad2 className="h-4 w-4 text-muted-foreground" />
-                        <Badge variant="secondary">
-                          {lair.games.length} jeu{lair.games.length > 1 ? 'x' : ''}
-                        </Badge>
-                      </div>
-                    )}
+                    <div className="space-y-2">
+                      {lair.games.length > 0 && (
+                        <div className="flex items-center gap-2">
+                          <Gamepad2 className="h-4 w-4 text-muted-foreground" />
+                          <Badge variant="secondary">
+                            {lair.games.length} jeu{lair.games.length > 1 ? 'x' : ''}
+                          </Badge>
+                        </div>
+                      )}
+                      {lair.address && (
+                        <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                          <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                          <span className="line-clamp-2">{lair.address}</span>
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                   
                   <CardFooter>

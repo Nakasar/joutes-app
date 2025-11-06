@@ -8,6 +8,12 @@ export const lairSchema = z.object({
   banner: z.url("L'URL de la bannière doit être valide").optional(),
   games: z.array(objectIdSchema).default([]),
   eventsSourceUrls: z.array(z.url("Chaque URL doit être valide")).default([]),
+  coordinates: z.object({
+    latitude: z.number().min(-90, "La latitude doit être entre -90 et 90").max(90, "La latitude doit être entre -90 et 90"),
+    longitude: z.number().min(-180, "La longitude doit être entre -180 et 180").max(180, "La longitude doit être entre -180 et 180"),
+  }).optional(),
+  address: z.string().max(500, "L'adresse est trop longue").optional(),
+  website: z.url("L'URL du site web doit être valide").optional().or(z.literal("")),
 });
 
 export const lairIdSchema = objectIdSchema;
