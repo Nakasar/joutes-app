@@ -220,6 +220,38 @@ export async function getApiKeyUsageStats(id: string): Promise<{
 }
 
 /**
+ * Récupérer toutes les clés API d'un utilisateur (alias pour getApiKeysByUserId)
+ */
+export async function getUserApiKeys(userId: string): Promise<ApiKey[]> {
+  return getApiKeysByUserId(userId);
+}
+
+/**
+ * Révoquer (supprimer) une clé API si l'utilisateur en est propriétaire
+ */
+export async function revokeApiKey(keyId: string, userId: string): Promise<boolean> {
+  const db = await getDb();
+  
+  // Vérifier que la clé appartient à l'utilisateur
+  const existingKey = await db.collection(COLLECTION_NAME).findOne({
+    _id: ObjectId.createFromHexString(keyId),
+    userId: userId
+  });
+  
+  if (!existingKey) {
+    return false;
+  }
+  
+  // Supprimer la clé
+  const result = await db.collection(COLLECTION_NAME).deleteOne({
+    _id: ObjectId.createFromHexString(keyId),
+    userId: userId
+  });
+  
+  return result.deletedCount > 0;
+}
+
+/**
  * Supprimer toutes les clés API d'un utilisateur
  */
 export async function deleteAllApiKeysForUser(userId: string): Promise<number> {

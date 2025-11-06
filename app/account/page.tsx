@@ -7,6 +7,7 @@ import { getLairById } from "@/lib/db/lairs";
 import GamesManager from "./GamesManager";
 import LairsManager from "./LairsManager";
 import UsernameManager from "./UsernameManager";
+import ApiKeysManager from "./ApiKeysManager";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { User as UserIcon, Mail, Gamepad2, MapPin } from "lucide-react";
 
@@ -140,6 +141,15 @@ export default async function AccountPage() {
               <LairsManager userLairs={userLairs} />
             </CardContent>
           </Card>
+
+          {/* Section Intégrations / API Keys */}
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold tracking-tight">Intégrations</h2>
+            <p className="text-muted-foreground">
+              Configurez vos intégrations et accès API
+            </p>
+          </div>
+          <ApiKeysManager />
         </div>
       </div>
     </div>
