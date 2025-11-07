@@ -530,6 +530,26 @@ export async function POST(request: NextRequest) {
     try {
         const body: MCPRequest = await request.json();
 
+        // Gestion de l'initialisation MCP
+        if (body.method === "initialize") {
+            return NextResponse.json({
+                protocolVersion: "2024-11-05",
+                capabilities: {
+                    tools: {}
+                },
+                serverInfo: {
+                    name: "Joutes MCP Server",
+                    version: "1.0.0"
+                }
+            });
+        }
+
+        // Gestion de la notification d'initialisation terminée
+        if (body.method === "notifications/initialized") {
+            // Pas de réponse nécessaire pour les notifications
+            return new NextResponse(null, { status: 204 });
+        }
+
         // Gestion des méthodes MCP standard
         if (body.method === "tools/list") {
             return NextResponse.json({
