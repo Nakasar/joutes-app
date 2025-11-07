@@ -1,4 +1,3 @@
-import { NextRequest, NextResponse } from "next/server";
 import {
     ServerNotification,
     ServerRequest,
@@ -17,136 +16,10 @@ import { Event } from "@/lib/types/Event";
 import z from "zod";
 import { DateTime } from "luxon";
 import { validateApiKey } from "@/lib/db/api-keys";
-import { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
-
-
-// Définition des outils MCP
-const TOOLS: Tool[] = [
-    {
-        name: "search_events",
-        description: "Rechercher des évènements sur la plateforme Joutes. Supporte la personnalisation pour l'utilisateur authentifié et le filtrage par jeux.",
-        inputSchema: {
-            type: "object",
-            properties: {
-                personalized: {
-                    type: "boolean",
-                    description: "Si true, personnalise les résultats pour l'utilisateur authentifié (ses lieux et jeux suivis)"
-                },
-                gameNames: {
-                    type: "array",
-                    items: { type: "string" },
-                    description: "Liste des noms de jeux pour filtrer les évènements"
-                },
-                lairName: {
-                    type: "string",
-                    description: "Nom du lieu pour filtrer les évènements"
-                },
-                month: {
-                    type: "number",
-                    description: "Mois pour filtrer (1-12)"
-                },
-                year: {
-                    type: "number",
-                    description: "Année pour filtrer"
-                },
-                maxDistanceKm: {
-                    type: "number",
-                    description: "Distance maximale en kilomètres (uniquement si personalized=true et utilisateur a une localisation)"
-                }
-            }
-        }
-    },
-    {
-        name: "search_lairs",
-        description: "Rechercher des lieux (lairs) sur la plateforme Joutes.",
-        inputSchema: {
-            type: "object",
-            properties: {
-                name: {
-                    type: "string",
-                    description: "Nom du lieu à rechercher (optionnel)"
-                }
-            }
-        }
-    },
-    {
-        name: "create_event",
-        description: "Créer un nouvel évènement dans un lieu. Nécessite d'être propriétaire du lieu.",
-        inputSchema: {
-            type: "object",
-            properties: {
-                lairId: {
-                    type: "string",
-                    description: "ID du lieu où créer l'évènement"
-                },
-                name: {
-                    type: "string",
-                    description: "Nom de l'évènement"
-                },
-                gameName: {
-                    type: "string",
-                    description: "Nom du jeu"
-                },
-                startDateTime: {
-                    type: "string",
-                    description: "Date et heure de début (format ISO)"
-                },
-                endDateTime: {
-                    type: "string",
-                    description: "Date et heure de fin (format ISO)"
-                },
-                url: {
-                    type: "string",
-                    description: "URL de l'évènement (optionnel)"
-                },
-                price: {
-                    type: "string",
-                    description: "Prix de l'évènement (optionnel)"
-                }
-            },
-            required: ["lairId", "name", "gameName", "startDateTime", "endDateTime"]
-        }
-    },
-    {
-        name: "follow_lair",
-        description: "Suivre un lieu pour recevoir ses évènements.",
-        inputSchema: {
-            type: "object",
-            properties: {
-                lairId: {
-                    type: "string",
-                    description: "ID du lieu à suivre"
-                }
-            },
-            required: ["lairId"]
-        }
-    },
-    {
-        name: "add_game",
-        description: "Ajouter un jeu à la liste des jeux suivis par l'utilisateur.",
-        inputSchema: {
-            type: "object",
-            properties: {
-                gameId: {
-                    type: "string",
-                    description: "ID du jeu à ajouter"
-                }
-            },
-            required: ["gameId"]
-        }
-    },
-    {
-        name: "list_games",
-        description: "Lister tous les jeux disponibles sur la plateforme.",
-        inputSchema: {
-            type: "object",
-            properties: {}
-        }
-    }
-];
+import { RequestHandlerExtra} from "@modelcontextprotocol/sdk/shared/protocol.js";
 
 // Gestionnaires pour chaque outil
-async function handleSearchEvents(argsRaw: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>) {
+async function handleSearchEvents(argsRaw: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>): Promise<{ content: TextContent[]; isError?: boolean }> {
     try {
         const userId: string = extra.authInfo?.extra?.userId as string;
 
@@ -219,7 +92,7 @@ ${event.url ? `- URL: ${event.url}` : ''}`
             content: [{
                 type: "text",
                 text: `Trouvé ${events.length} évènement(s):\n\n${eventsText || 'Aucun évènement trouvé.'}`
-            } as TextContent]
+            }]
         };
     } catch (error) {
         console.error("Erreur lors de la recherche d'évènements:", error);
@@ -233,7 +106,7 @@ ${event.url ? `- URL: ${event.url}` : ''}`
     }
 }
 
-async function handleSearchLairs(argsRaw: Record<string, unknown>) {
+async function handleSearchLairs(argsRaw: Record<string, unknown>): Promise<{ content: TextContent[]; isError?: boolean }> {
     try {
         const schema = z.object({
             name: z.string().optional()
@@ -285,9 +158,19 @@ async function handleSearchLairs(argsRaw: Record<string, unknown>) {
     }
 }
 
-async function handleCreateEvent(argsRaw: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>) {
+async function handleCreateEvent(argsRaw: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>): Promise<{ content: TextContent[]; isError?: boolean }> {
     try {
         const userId: string = extra.authInfo?.extra?.userId as string;
+
+        if (!userId) {
+            return {
+                content: [{
+                    type: "text",
+                    text: "Authentification requise pour créer un évènement."
+                }],
+                isError: true
+            };
+        }
 
         const schema = z.object({
             lairId: z.string(),
@@ -367,9 +250,19 @@ async function handleCreateEvent(argsRaw: Record<string, unknown>, extra: Reques
     }
 }
 
-async function handleFollowLair(argsRaw: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>) {
+async function handleFollowLair(argsRaw: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>): Promise<{ content: TextContent[]; isError?: boolean }> {
     try {
         const userId: string = extra.authInfo?.extra?.userId as string;
+
+        if (!userId) {
+            return {
+                content: [{
+                    type: "text",
+                    text: "Authentification requise pour suivre un lieu."
+                }],
+                isError: true
+            };
+        }
 
         const schema = z.object({
             lairId: z.string()
@@ -428,9 +321,19 @@ async function handleFollowLair(argsRaw: Record<string, unknown>, extra: Request
     }
 }
 
-async function handleAddGame(argsRaw: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>) {
+async function handleAddGame(argsRaw: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>): Promise<{ content: TextContent[]; isError?: boolean }> {
     try {
         const userId: string = extra.authInfo?.extra?.userId as string;
+
+        if (!userId) {
+            return {
+                content: [{
+                    type: "text",
+                    text: "Authentification requise pour suivre un jeu"
+                }],
+                isError: true
+            };
+        }
 
         const schema = z.object({
             gameId: z.string()
@@ -489,7 +392,7 @@ async function handleAddGame(argsRaw: Record<string, unknown>, extra: RequestHan
     }
 }
 
-async function handleListGames() {
+async function handleListGames(): Promise<{ content: TextContent[]; isError?: boolean }> {
     try {
         const games = await getAllGames();
 
@@ -575,6 +478,25 @@ const handler = createMcpHandler(server => {
         }).optional(),
         maxDistanceKm: z.number().min(0).optional()
     }, handleSearchEvents);
+    server.tool("search_lairs", "Rechercher des lieux (lairs) sur la plateforme Joutes.", {
+        name: z.string().optional()
+    }, handleSearchLairs);
+    server.tool("create_event", "Créer un nouvel évènement dans un lieu. Nécessite d'être propriétaire du lieu.", {
+        lairId: z.string(),
+        name: z.string(),
+        gameName: z.string(),
+        startDateTime: z.string(),
+        endDateTime: z.string(),
+        url: z.string().optional(),
+        price: z.string().transform((val) => parseFloat(val)).optional()
+    }, handleCreateEvent);
+    server.tool("follow_lair", "Suivre un lieu pour recevoir ses évènements.", {
+        lairId: z.string()
+    }, handleFollowLair);
+    server.tool("add_game", "Ajouter un jeu à la liste des jeux suivis par l'utilisateur.", {
+        gameId: z.string()
+    }, handleAddGame);
+    server.tool("list_games", "Lister tous les jeux disponibles sur la plateforme.", {}, handleListGames);
 }, {}, {
 });
 
