@@ -498,6 +498,9 @@ const handler = createMcpHandler(server => {
     }, handleAddGame);
     server.tool("list_games", "Lister tous les jeux disponibles sur la plateforme.", {}, handleListGames);
 }, {}, {
+    basePath: '/',
+    verboseLogs: true,
+    maxDuration: 60,
 });
 
 const authHandler = withMcpAuth(handler, verifyAuth, {
