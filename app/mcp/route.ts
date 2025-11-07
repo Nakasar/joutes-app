@@ -11,7 +11,7 @@ import { getAllGames, getGameById } from "@/lib/db/games";
 import { addGameToUser, addLairToUser } from "@/lib/db/users";
 import { createEvent } from "@/lib/db/events";
 import { Event } from "@/lib/types/Event";
-import { z } from "zod/v3";
+import z from "zod/v3";
 import { DateTime } from "luxon";
 import { validateApiKey } from "@/lib/db/api-keys";
 import { RequestHandlerExtra} from "@modelcontextprotocol/sdk/shared/protocol.js";
