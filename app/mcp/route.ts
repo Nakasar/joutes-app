@@ -1,46 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+    ServerNotification,
+    ServerRequest,
+    TextContent,
+    Tool,
+} from "@modelcontextprotocol/sdk/types.js";
+import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import { validateApiKeyFromRequest } from "@/lib/middleware/api-auth";
+import { createMcpHandler, withMcpAuth } from 'mcp-handler';
 import { getEventsForUser, getAllEvents } from "@/lib/db/events";
 import { getAllLairs, getLairById } from "@/lib/db/lairs";
 import { getAllGames, getGameById } from "@/lib/db/games";
-import { addGameToUser, addLairToUser, getUserById } from "@/lib/db/users";
+import { addGameToUser, addLairToUser } from "@/lib/db/users";
 import { createEvent } from "@/lib/db/events";
 import { Event } from "@/lib/types/Event";
 import z from "zod";
 import { DateTime } from "luxon";
+import { validateApiKey } from "@/lib/db/api-keys";
+import { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 
-// Types pour le protocole MCP
-type MCPRequest = {
-    method: string;
-    params?: {
-        name?: string;
-        arguments?: Record<string, unknown>;
-    };
-};
 
-type MCPResponse = {
-    content?: Array<{
-        type: string;
-        text: string;
-    }>;
-    isError?: boolean;
-};
-
-type MCPTool = {
-    name: string;
-    description: string;
-    inputSchema: {
-        type: string;
-        properties: Record<string, unknown>;
-        required?: string[];
-    };
-};
-
-// Définition des outils MCP disponibles
-const MCP_TOOLS: MCPTool[] = [
+// Définition des outils MCP
+const TOOLS: Tool[] = [
     {
         name: "search_events",
-        description: "Rechercher des évènements sur la plateforme Joutes. Supporte la personalisation pour l'utilisateur authentifié et le filtrage par jeux.",
+        description: "Rechercher des évènements sur la plateforme Joutes. Supporte la personnalisation pour l'utilisateur authentifié et le filtrage par jeux.",
         inputSchema: {
             type: "object",
             properties: {
@@ -161,9 +145,11 @@ const MCP_TOOLS: MCPTool[] = [
     }
 ];
 
-// Gestionnaires pour chaque outil MCP
-async function handleSearchEvents(argsRaw: Record<string, unknown>, userId?: string): Promise<MCPResponse> {
+// Gestionnaires pour chaque outil
+async function handleSearchEvents(argsRaw: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>) {
     try {
+        const userId: string = extra.authInfo?.extra?.userId as string;
+
         let events: Event[];
 
         const schema = z.object({
@@ -184,7 +170,7 @@ async function handleSearchEvents(argsRaw: Record<string, unknown>, userId?: str
                 content: [{
                     type: "text",
                     text: "Arguments invalides."
-                }],
+                } as TextContent],
                 isError: true
             };
         }
@@ -200,7 +186,7 @@ async function handleSearchEvents(argsRaw: Record<string, unknown>, userId?: str
             events = await getEventsForUser(
                 userId,
                 true, // allGames pour l'instant
-                args.month ,
+                args.month,
                 args.year,
                 userLocation,
                 args.maxDistanceKm
@@ -233,7 +219,7 @@ ${event.url ? `- URL: ${event.url}` : ''}`
             content: [{
                 type: "text",
                 text: `Trouvé ${events.length} évènement(s):\n\n${eventsText || 'Aucun évènement trouvé.'}`
-            }]
+            } as TextContent]
         };
     } catch (error) {
         console.error("Erreur lors de la recherche d'évènements:", error);
@@ -241,13 +227,13 @@ ${event.url ? `- URL: ${event.url}` : ''}`
             content: [{
                 type: "text",
                 text: "Erreur lors de la recherche d'évènements."
-            }],
+            } as TextContent],
             isError: true
         };
     }
 }
 
-async function handleSearchLairs(argsRaw: Record<string, unknown>): Promise<MCPResponse> {
+async function handleSearchLairs(argsRaw: Record<string, unknown>) {
     try {
         const schema = z.object({
             name: z.string().optional()
@@ -299,8 +285,10 @@ async function handleSearchLairs(argsRaw: Record<string, unknown>): Promise<MCPR
     }
 }
 
-async function handleCreateEvent(argsRaw: Record<string, unknown>, userId: string): Promise<MCPResponse> {
+async function handleCreateEvent(argsRaw: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>) {
     try {
+        const userId: string = extra.authInfo?.extra?.userId as string;
+
         const schema = z.object({
             lairId: z.string(),
             name: z.string(),
@@ -379,8 +367,10 @@ async function handleCreateEvent(argsRaw: Record<string, unknown>, userId: strin
     }
 }
 
-async function handleFollowLair(argsRaw: Record<string, unknown>, userId: string): Promise<MCPResponse> {
+async function handleFollowLair(argsRaw: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>) {
     try {
+        const userId: string = extra.authInfo?.extra?.userId as string;
+
         const schema = z.object({
             lairId: z.string()
         });
@@ -402,7 +392,7 @@ async function handleFollowLair(argsRaw: Record<string, unknown>, userId: string
             return {
                 content: [{
                     type: "text",
-                text: "Lieu non trouvé."
+                    text: "Lieu non trouvé."
                 }],
                 isError: true
             };
@@ -438,8 +428,10 @@ async function handleFollowLair(argsRaw: Record<string, unknown>, userId: string
     }
 }
 
-async function handleAddGame(argsRaw: Record<string, unknown>, userId: string): Promise<MCPResponse> {
+async function handleAddGame(argsRaw: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>) {
     try {
+        const userId: string = extra.authInfo?.extra?.userId as string;
+
         const schema = z.object({
             gameId: z.string()
         });
@@ -497,7 +489,7 @@ async function handleAddGame(argsRaw: Record<string, unknown>, userId: string): 
     }
 }
 
-async function handleListGames(): Promise<MCPResponse> {
+async function handleListGames() {
     try {
         const games = await getAllGames();
 
@@ -525,152 +517,69 @@ async function handleListGames(): Promise<MCPResponse> {
     }
 }
 
-// Route principale MCP
-export async function POST(request: NextRequest) {
+async function verifyAuth(
+    request: Request,
+    bearerToken?: string
+): Promise<AuthInfo | undefined> {
+    const authHeader = request.headers.get("authorization");
+
+    if (!authHeader) {
+        return undefined;
+    }
+
+    // Vérifier le format Bearer token
+    const parts = authHeader.split(" ");
+    if (parts.length !== 2 || parts[0] !== "Bearer") {
+        return undefined;
+    }
+
+    const apiKey = parts[1];
+
+    if (!apiKey) {
+        return undefined;
+    }
+
+    // Valider la clé API
     try {
-        const body: MCPRequest = await request.json();
+        const validation = await validateApiKey(apiKey);
 
-        // Gestion de l'initialisation MCP
-        if (body.method === "initialize") {
-            return NextResponse.json({
-                protocolVersion: "2024-11-05",
-                capabilities: {
-                    tools: {}
-                },
-                serverInfo: {
-                    name: "Joutes MCP Server",
-                    version: "1.0.0"
-                }
-            });
+        if (!validation) {
+            return undefined;
         }
 
-        // Gestion de la notification d'initialisation terminée
-        if (body.method === "notifications/initialized") {
-            // Pas de réponse nécessaire pour les notifications
-            return new NextResponse(null, { status: 204 });
-        }
-
-        // Gestion des méthodes MCP standard
-        if (body.method === "tools/list") {
-            return NextResponse.json({
-                tools: MCP_TOOLS
-            });
-        }
-
-        if (body.method === "tools/call") {
-            const toolName = body.params?.name;
-            const args = body.params?.arguments || {};
-
-            if (!toolName) {
-                return NextResponse.json({
-                    content: [{
-                        type: "text",
-                        text: "Nom de l'outil manquant."
-                    }],
-                    isError: true
-                });
+        return {
+            token: validation.apiKeyId,
+            scopes: [],
+            clientId: validation.apiKeyId,
+            extra: {
+                userId: validation.userId,
+                apiKeyId: validation.apiKeyId
             }
-
-            // Vérifier l'authentification pour les outils qui en ont besoin
-            const authRequiredTools = ["create_event", "follow_lair", "add_game"];
-            const personalizedTools = ["search_events"];
-
-            let userId: string | undefined;
-
-            if (authRequiredTools.includes(toolName) ||
-                (personalizedTools.includes(toolName) && args.personalized)) {
-                const auth = await validateApiKeyFromRequest(request);
-
-                if ("error" in auth) {
-                    return NextResponse.json({
-                        content: [{
-                            type: "text",
-                            text: auth.error
-                        }],
-                        isError: true
-                    }, { status: auth.status });
-                }
-
-                userId = auth.userId;
-
-                // Vérifier que l'utilisateur existe encore
-                const user = await getUserById(userId);
-                if (!user) {
-                    return NextResponse.json({
-                        content: [{
-                            type: "text",
-                            text: "Utilisateur non trouvé."
-                        }],
-                        isError: true
-                    }, { status: 401 });
-                }
-            }
-
-            // Router vers le bon gestionnaire
-            let response: MCPResponse;
-
-            switch (toolName) {
-                case "search_events":
-                    response = await handleSearchEvents(args, userId);
-                    break;
-                case "search_lairs":
-                    response = await handleSearchLairs(args);
-                    break;
-                case "create_event":
-                    response = await handleCreateEvent(args, userId!);
-                    break;
-                case "follow_lair":
-                    response = await handleFollowLair(args, userId!);
-                    break;
-                case "add_game":
-                    response = await handleAddGame(args, userId!);
-                    break;
-                case "list_games":
-                    response = await handleListGames();
-                    break;
-                default:
-                    response = {
-                        content: [{
-                            type: "text",
-                            text: `Outil inconnu: ${toolName}`
-                        }],
-                        isError: true
-                    };
-            }
-
-            return NextResponse.json(response);
-        }
-
-        // Méthode non supportée
-        return NextResponse.json({
-            content: [{
-                type: "text",
-                text: `Méthode non supportée: ${body.method}`
-            }],
-            isError: true
-        }, { status: 400 });
-
+        };
     } catch (error) {
-        console.error("Erreur serveur MCP:", error);
-        return NextResponse.json({
-            content: [{
-                type: "text",
-                text: "Erreur interne du serveur MCP"
-            }],
-            isError: true
-        }, { status: 500 });
+        console.error("Erreur lors de la validation de la clé API:", error);
+        return undefined;
     }
 }
 
-// Supporter également GET pour des informations basiques
-export async function GET() {
-    return NextResponse.json({
-        name: "Joutes MCP Server",
-        version: "1.0.0",
-        description: "Serveur MCP pour accéder aux fonctionnalités de la plateforme Joutes",
-        tools: MCP_TOOLS.map(tool => ({
-            name: tool.name,
-            description: tool.description
-        }))
-    });
-}
+// Route principale MCP
+const handler = createMcpHandler(server => {
+    server.tool("search_events", "Rechercher des évènements sur la plateforme Joutes. Supporte la personnalisation pour l'utilisateur authentifié et le filtrage par jeux.", {
+        month: z.number().min(1).max(12).optional(),
+        year: z.number().min(2020).optional(),
+        gameNames: z.array(z.string()).optional(),
+        personalized: z.boolean().optional(),
+        userLocation: z.object({
+            latitude: z.number().min(-90).max(90),
+            longitude: z.number().min(-180).max(180)
+        }).optional(),
+        maxDistanceKm: z.number().min(0).optional()
+    }, handleSearchEvents);
+}, {}, {
+});
+
+const authHandler = withMcpAuth(handler, verifyAuth, {
+    required: false,
+});
+
+export { authHandler as GET, authHandler as POST, authHandler as DELETE };
