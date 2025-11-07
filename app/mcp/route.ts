@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateApiKeyFromRequest } from "@/lib/middleware/api-auth";
 import { getEventsForUser, getAllEvents } from "@/lib/db/events";
-import { getAllLairs, getLairById, addOwnerToLair } from "@/lib/db/lairs";
+import { getAllLairs, getLairById } from "@/lib/db/lairs";
 import { getAllGames, getGameById } from "@/lib/db/games";
 import { addGameToUser, addLairToUser, getUserById } from "@/lib/db/users";
 import { createEvent } from "@/lib/db/events";
