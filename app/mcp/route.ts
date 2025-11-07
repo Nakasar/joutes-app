@@ -6,13 +6,15 @@ import { getAllGames, getGameById } from "@/lib/db/games";
 import { addGameToUser, addLairToUser, getUserById } from "@/lib/db/users";
 import { createEvent } from "@/lib/db/events";
 import { Event } from "@/lib/types/Event";
+import z from "zod";
+import { DateTime } from "luxon";
 
 // Types pour le protocole MCP
 type MCPRequest = {
     method: string;
     params?: {
         name?: string;
-        arguments?: Record<string, any>;
+        arguments?: Record<string, unknown>;
     };
 };
 
@@ -29,7 +31,7 @@ type MCPTool = {
     description: string;
     inputSchema: {
         type: string;
-        properties: Record<string, any>;
+        properties: Record<string, unknown>;
         required?: string[];
     };
 };
@@ -160,9 +162,33 @@ const MCP_TOOLS: MCPTool[] = [
 ];
 
 // Gestionnaires pour chaque outil MCP
-async function handleSearchEvents(args: any, userId?: string): Promise<MCPResponse> {
+async function handleSearchEvents(argsRaw: Record<string, unknown>, userId?: string): Promise<MCPResponse> {
     try {
         let events: Event[];
+
+        const schema = z.object({
+            month: z.number().min(1).max(12).optional(),
+            year: z.number().min(2020).optional(),
+            gameNames: z.array(z.string()).optional(),
+            personalized: z.boolean().optional(),
+            userLocation: z.object({
+                latitude: z.number().min(-90).max(90),
+                longitude: z.number().min(-180).max(180)
+            }).optional(),
+            maxDistanceKm: z.number().min(0).optional()
+        });
+
+        const validation = schema.safeParse(argsRaw);
+        if (!validation.success) {
+            return {
+                content: [{
+                    type: "text",
+                    text: "Arguments invalides."
+                }],
+                isError: true
+            };
+        }
+        const args = validation.data;
 
         if (args.personalized && userId) {
             // Recherche personnalisée pour l'utilisateur
@@ -174,7 +200,7 @@ async function handleSearchEvents(args: any, userId?: string): Promise<MCPRespon
             events = await getEventsForUser(
                 userId,
                 true, // allGames pour l'instant
-                args.month,
+                args.month ,
                 args.year,
                 userLocation,
                 args.maxDistanceKm
@@ -182,16 +208,12 @@ async function handleSearchEvents(args: any, userId?: string): Promise<MCPRespon
         } else {
             // Recherche générale
             const query: { year?: number; month?: number; games?: string[] } = {};
+            const now = DateTime.now();
 
-            if (args.year) {
-                query.year = args.year;
-            }
+            query.year = args.year || now.year;
+            query.month = args.month || now.month;
 
-            if (args.month) {
-                query.month = args.month;
-            }
-            
-            if (args.gameNames && Array.isArray(args.gameNames)) {
+            if (args.gameNames) {
                 query.games = args.gameNames;
             }
 
@@ -225,14 +247,30 @@ ${event.url ? `- URL: ${event.url}` : ''}`
     }
 }
 
-async function handleSearchLairs(args: any): Promise<MCPResponse> {
+async function handleSearchLairs(argsRaw: Record<string, unknown>): Promise<MCPResponse> {
     try {
+        const schema = z.object({
+            name: z.string().optional()
+        });
+
+        const validation = schema.safeParse(argsRaw);
+        if (!validation.success) {
+            return {
+                content: [{
+                    type: "text",
+                    text: "Arguments invalides pour la recherche de lieux."
+                }],
+                isError: true
+            };
+        }
+        const args = validation.data;
+
         const lairs = await getAllLairs();
 
         let filteredLairs = lairs;
         if (args.name) {
             filteredLairs = lairs.filter(lair =>
-                lair.name.toLowerCase().includes(args.name.toLowerCase())
+                lair.name.toLowerCase().includes(args.name!.toLowerCase())
             );
         }
 
@@ -261,8 +299,30 @@ async function handleSearchLairs(args: any): Promise<MCPResponse> {
     }
 }
 
-async function handleCreateEvent(args: any, userId: string): Promise<MCPResponse> {
+async function handleCreateEvent(argsRaw: Record<string, unknown>, userId: string): Promise<MCPResponse> {
     try {
+        const schema = z.object({
+            lairId: z.string(),
+            name: z.string(),
+            gameName: z.string(),
+            startDateTime: z.string(),
+            endDateTime: z.string(),
+            url: z.string().optional(),
+            price: z.string().transform((val) => parseFloat(val)).optional()
+        });
+
+        const validation = schema.safeParse(argsRaw);
+        if (!validation.success) {
+            return {
+                content: [{
+                    type: "text",
+                    text: "Arguments invalides pour la création d'évènement."
+                }],
+                isError: true
+            };
+        }
+        const args = validation.data;
+
         // Vérifier que l'utilisateur est propriétaire du lieu
         const lair = await getLairById(args.lairId);
         if (!lair) {
@@ -319,14 +379,30 @@ async function handleCreateEvent(args: any, userId: string): Promise<MCPResponse
     }
 }
 
-async function handleFollowLair(args: any, userId: string): Promise<MCPResponse> {
+async function handleFollowLair(argsRaw: Record<string, unknown>, userId: string): Promise<MCPResponse> {
     try {
+        const schema = z.object({
+            lairId: z.string()
+        });
+
+        const validation = schema.safeParse(argsRaw);
+        if (!validation.success) {
+            return {
+                content: [{
+                    type: "text",
+                    text: "Arguments invalides pour suivre un lieu."
+                }],
+                isError: true
+            };
+        }
+        const args = validation.data;
+
         const lair = await getLairById(args.lairId);
         if (!lair) {
             return {
                 content: [{
                     type: "text",
-                    text: "Lieu non trouvé."
+                text: "Lieu non trouvé."
                 }],
                 isError: true
             };
@@ -362,8 +438,24 @@ async function handleFollowLair(args: any, userId: string): Promise<MCPResponse>
     }
 }
 
-async function handleAddGame(args: any, userId: string): Promise<MCPResponse> {
+async function handleAddGame(argsRaw: Record<string, unknown>, userId: string): Promise<MCPResponse> {
     try {
+        const schema = z.object({
+            gameId: z.string()
+        });
+
+        const validation = schema.safeParse(argsRaw);
+        if (!validation.success) {
+            return {
+                content: [{
+                    type: "text",
+                    text: "Arguments invalides pour ajouter un jeu."
+                }],
+                isError: true
+            };
+        }
+        const args = validation.data;
+
         const game = await getGameById(args.gameId);
         if (!game) {
             return {
