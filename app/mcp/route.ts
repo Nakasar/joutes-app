@@ -2,10 +2,8 @@ import {
     ServerNotification,
     ServerRequest,
     TextContent,
-    Tool,
 } from "@modelcontextprotocol/sdk/types.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
-import { validateApiKeyFromRequest } from "@/lib/middleware/api-auth";
 import { createMcpHandler, withMcpAuth } from 'mcp-handler';
 import { getEventsForUser, getAllEvents } from "@/lib/db/events";
 import { getAllLairs, getLairById } from "@/lib/db/lairs";
@@ -13,7 +11,7 @@ import { getAllGames, getGameById } from "@/lib/db/games";
 import { addGameToUser, addLairToUser } from "@/lib/db/users";
 import { createEvent } from "@/lib/db/events";
 import { Event } from "@/lib/types/Event";
-import z from "zod";
+import { z } from "zod/v3";
 import { DateTime } from "luxon";
 import { validateApiKey } from "@/lib/db/api-keys";
 import { RequestHandlerExtra} from "@modelcontextprotocol/sdk/shared/protocol.js";
