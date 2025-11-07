@@ -1,4 +1,4 @@
-import { getDb } from "@/lib/mongodb";
+import db from "@/lib/mongodb";
 import { Lair } from "@/lib/types/Lair";
 import { ObjectId, WithId, Document } from "mongodb";
 
@@ -39,19 +39,19 @@ function toDocument(lair: Omit<Lair, "id">): Omit<LairDocument, "_id"> {
 }
 
 export async function getAllLairs(): Promise<Lair[]> {
-  const db = await getDb();
+  
   const lairs = await db.collection(COLLECTION_NAME).find({}).toArray();
   return lairs.map(toLair);
 }
 
 export async function getLairById(id: string): Promise<Lair | null> {
-  const db = await getDb();
+  
   const lair = await db.collection(COLLECTION_NAME).findOne({ _id: new ObjectId(id) });
   return lair ? toLair(lair) : null;
 }
 
 export async function createLair(lair: Omit<Lair, "id">): Promise<Lair> {
-  const db = await getDb();
+  
   const doc = toDocument(lair);
   const result = await db.collection(COLLECTION_NAME).insertOne(doc);
   
@@ -62,7 +62,7 @@ export async function createLair(lair: Omit<Lair, "id">): Promise<Lair> {
 }
 
 export async function updateLair(id: string, lair: Partial<Omit<Lair, "id">>): Promise<Lair | null> {
-  const db = await getDb();
+  
   const result = await db.collection(COLLECTION_NAME).findOneAndUpdate(
     { _id: new ObjectId(id) },
     { $set: lair },
@@ -73,13 +73,13 @@ export async function updateLair(id: string, lair: Partial<Omit<Lair, "id">>): P
 }
 
 export async function deleteLair(id: string): Promise<boolean> {
-  const db = await getDb();
+  
   const result = await db.collection(COLLECTION_NAME).deleteOne({ _id: new ObjectId(id) });
   return result.deletedCount > 0;
 }
 
 export async function addOwnerToLair(lairId: string, userId: string): Promise<boolean> {
-  const db = await getDb();
+  
   const result = await db.collection(COLLECTION_NAME).updateOne(
     { _id: new ObjectId(lairId) },
     { $addToSet: { owners: userId } }
@@ -89,7 +89,7 @@ export async function addOwnerToLair(lairId: string, userId: string): Promise<bo
 }
 
 export async function removeOwnerFromLair(lairId: string, userId: string): Promise<boolean> {
-  const db = await getDb();
+  
   const result = await db.collection<LairDocument>(COLLECTION_NAME).updateOne(
     { _id: new ObjectId(lairId) },
     { $pull: { owners: userId } }
@@ -100,7 +100,7 @@ export async function removeOwnerFromLair(lairId: string, userId: string): Promi
 
 // Créer l'index géospatial sur le champ location
 export async function ensureGeospatialIndex(): Promise<void> {
-  const db = await getDb();
+  
   await db.collection(COLLECTION_NAME).createIndex({ location: "2dsphere" });
 }
 
@@ -110,7 +110,7 @@ export async function getLairIdsNearLocation(
   latitude: number,
   maxDistanceMeters: number = 50000 // Par défaut 50km
 ): Promise<string[]> {
-  const db = await getDb();
+  
   
   // S'assurer que l'index géospatial existe
   await ensureGeospatialIndex();

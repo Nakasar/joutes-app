@@ -1,4 +1,4 @@
-import { getDb } from "@/lib/mongodb";
+import db from "@/lib/mongodb";
 import { User } from "@/lib/types/User";
 import { WithId, Document, ObjectId } from "mongodb";
 
@@ -20,19 +20,19 @@ function toUser(doc: WithId<Document>): User {
 }
 
 export async function getUserById(id: string): Promise<User | null> {
-  const db = await getDb();
+  
   const user = await db.collection(COLLECTION_NAME).findOne({ _id: ObjectId.createFromHexString(id) });
   return user ? toUser(user) : null;
 }
 
 export async function getUserByEmail(email: string): Promise<User | null> {
-  const db = await getDb();
+  
   const user = await db.collection(COLLECTION_NAME).findOne({ email: email.toLowerCase() });
   return user ? toUser(user) : null;
 }
 
 export async function searchUsersByUsername(searchTerm: string): Promise<User[]> {
-  const db = await getDb();
+  
   const users = await db
     .collection(COLLECTION_NAME)
     .find({
@@ -50,7 +50,7 @@ export async function getUserByUsernameAndDiscriminator(
   displayName: string,
   discriminator: string
 ): Promise<User | null> {
-  const db = await getDb();
+  
   const user = await db.collection(COLLECTION_NAME).findOne({
     displayName,
     discriminator,
@@ -59,7 +59,7 @@ export async function getUserByUsernameAndDiscriminator(
 }
 
 export async function updateUserGames(userId: string, games: string[]): Promise<boolean> {
-  const db = await getDb();
+  
   const result = await db.collection(COLLECTION_NAME).updateOne(
     { _id: ObjectId.createFromHexString(userId) },
     { $set: { games } }
@@ -69,7 +69,7 @@ export async function updateUserGames(userId: string, games: string[]): Promise<
 }
 
 export async function addGameToUser(userId: string, gameId: string): Promise<boolean> {
-  const db = await getDb();
+  
   const result = await db.collection(COLLECTION_NAME).updateOne(
     { _id: ObjectId.createFromHexString(userId) },
     { $addToSet: { games: gameId } }
@@ -79,7 +79,7 @@ export async function addGameToUser(userId: string, gameId: string): Promise<boo
 }
 
 export async function removeGameFromUser(userId: string, gameId: string): Promise<boolean> {
-  const db = await getDb();
+  
   const result = await db.collection<User>(COLLECTION_NAME).updateOne(
     { _id: ObjectId.createFromHexString(userId) },
     { $pull: { games: gameId } }
@@ -89,7 +89,7 @@ export async function removeGameFromUser(userId: string, gameId: string): Promis
 }
 
 export async function updateUserLairs(userId: string, lairs: string[]): Promise<boolean> {
-  const db = await getDb();
+  
   const result = await db.collection(COLLECTION_NAME).updateOne(
     { _id: ObjectId.createFromHexString(userId) },
     { $set: { lairs } }
@@ -99,7 +99,7 @@ export async function updateUserLairs(userId: string, lairs: string[]): Promise<
 }
 
 export async function addLairToUser(userId: string, lairId: string): Promise<boolean> {
-  const db = await getDb();
+  
   const result = await db.collection(COLLECTION_NAME).updateOne(
     { _id: ObjectId.createFromHexString(userId) },
     { $addToSet: { lairs: lairId } }
@@ -109,7 +109,7 @@ export async function addLairToUser(userId: string, lairId: string): Promise<boo
 }
 
 export async function removeLairFromUser(userId: string, lairId: string): Promise<boolean> {
-  const db = await getDb();
+  
   const result = await db.collection<User>(COLLECTION_NAME).updateOne(
     { _id: ObjectId.createFromHexString(userId) },
     { $pull: { lairs: lairId } }
@@ -130,7 +130,7 @@ export async function updateUserDisplayName(
   displayName: string,
   discriminator?: string
 ): Promise<boolean> {
-  const db = await getDb();
+  
   
   const updateData: { displayName: string; discriminator?: string } = {
     displayName,
@@ -155,7 +155,7 @@ export async function updateUserDisplayName(
  * @returns Le discriminateur ou null si non trouvé
  */
 export async function getUserDiscriminator(userId: string): Promise<string | null> {
-  const db = await getDb();
+  
   const user = await db.collection(COLLECTION_NAME).findOne(
     { _id: ObjectId.createFromHexString(userId) },
     { projection: { discriminator: 1 } }

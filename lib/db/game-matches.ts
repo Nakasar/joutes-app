@@ -1,4 +1,4 @@
-import { getDb } from "@/lib/mongodb";
+import db from "@/lib/mongodb";
 import { GameMatch, GameMatchPlayer } from "@/lib/types/GameMatch";
 import { ObjectId, WithId, Document } from "mongodb";
 
@@ -44,7 +44,7 @@ function toDocument(gameMatch: Omit<GameMatch, "id" | "createdAt" | "players">):
 }
 
 export async function createGameMatch(gameMatch: Omit<GameMatch, "id" | "createdAt" | "players">): Promise<GameMatch> {
-  const db = await getDb();
+  
   const doc = {
     ...toDocument(gameMatch),
     createdAt: new Date(),
@@ -62,7 +62,7 @@ export async function createGameMatch(gameMatch: Omit<GameMatch, "id" | "created
 }
 
 export async function getGameMatchById(id: string): Promise<GameMatch | null> {
-  const db = await getDb();
+  
   
   const matches = await db.collection<GameMatchDocument>(COLLECTION_NAME).aggregate([
     { $match: { _id: new ObjectId(id) } },
@@ -120,7 +120,7 @@ export interface GetGameMatchesFilters {
 }
 
 export async function getGameMatches(filters: GetGameMatchesFilters = {}): Promise<GameMatch[]> {
-  const db = await getDb();
+  
   const matchQuery: {
     playerIds?: string | { $in: string[] };
     gameId?: string;
@@ -200,7 +200,7 @@ export async function getGameMatches(filters: GetGameMatchesFilters = {}): Promi
 }
 
 export async function getGameMatchesByUser(userId: string): Promise<GameMatch[]> {
-  const db = await getDb();
+  
   
   // Récupérer les parties où l'utilisateur est joueur OU créateur
   const matches = await db
@@ -262,7 +262,7 @@ export async function getGameMatchesByUser(userId: string): Promise<GameMatch[]>
 }
 
 export async function updateGameMatch(id: string, gameMatch: Partial<Omit<GameMatch, "id" | "createdAt" | "createdBy" | "players">>): Promise<boolean> {
-  const db = await getDb();
+  
   const result = await db.collection<GameMatchDocument>(COLLECTION_NAME).updateOne(
     { _id: new ObjectId(id) },
     { $set: gameMatch }
@@ -272,13 +272,13 @@ export async function updateGameMatch(id: string, gameMatch: Partial<Omit<GameMa
 }
 
 export async function deleteGameMatch(id: string): Promise<boolean> {
-  const db = await getDb();
+  
   const result = await db.collection<GameMatchDocument>(COLLECTION_NAME).deleteOne({ _id: new ObjectId(id) });
   return result.deletedCount > 0;
 }
 
 export async function removePlayerFromGameMatch(matchId: string, userId: string): Promise<boolean> {
-  const db = await getDb();
+  
   const result = await db.collection<GameMatchDocument>(COLLECTION_NAME).updateOne(
     { _id: new ObjectId(matchId) },
     { $pull: { playerIds: userId } }
@@ -291,7 +291,7 @@ export async function addPlayerToGameMatch(
   matchId: string,
   userId: string
 ): Promise<boolean> {
-  const db = await getDb();
+  
   
   // Vérifier que le joueur n'est pas déjà dans la partie
   const match = await db.collection<GameMatchDocument>(COLLECTION_NAME).findOne({
@@ -318,7 +318,7 @@ export async function rateGameMatch(
   userId: string,
   rating: 1 | 2 | 3 | 4 | 5
 ): Promise<boolean> {
-  const db = await getDb();
+  
   
   // Supprimer l'évaluation existante de l'utilisateur s'il y en a une
   await db.collection<GameMatchDocument>(COLLECTION_NAME).updateOne(
@@ -340,7 +340,7 @@ export async function voteMVP(
   voterId: string,
   votedForId: string
 ): Promise<boolean> {
-  const db = await getDb();
+  
   
   // Supprimer le vote existant de l'utilisateur s'il y en a un
   await db.collection<GameMatchDocument>(COLLECTION_NAME).updateOne(
@@ -361,7 +361,7 @@ export async function toggleWinner(
   matchId: string,
   userId: string
 ): Promise<boolean> {
-  const db = await getDb();
+  
   
   // Vérifier si l'utilisateur est déjà gagnant
   const match = await db.collection<GameMatchDocument>(COLLECTION_NAME).findOne({

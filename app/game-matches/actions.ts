@@ -15,6 +15,8 @@ import {
 import { gameMatchSchema } from "@/lib/schemas/game-match.schema";
 import { GameMatch } from "@/lib/types/GameMatch";
 import { getUserByUsernameAndDiscriminator, getUserById } from "@/lib/db/users";
+import { ObjectId } from "mongodb";
+import db from "@/lib/mongodb";
 
 export async function createGameMatchAction(
   data: {
@@ -315,9 +317,6 @@ export async function updateGameMatchAction(
     if (data.lairId !== undefined) {
       if (data.lairId === null || data.lairId === "") {
         // Supprimer le champ lairId en utilisant $unset
-        const { getDb } = await import("@/lib/mongodb");
-        const { ObjectId } = await import("mongodb");
-        const db = await getDb();
         await db.collection("gameMatches").updateOne(
           { _id: new ObjectId(matchId) },
           { $unset: { lairId: "" } }

@@ -5,13 +5,13 @@
  * Exécutez ce script avec: npx ts-node scripts/migrate-coordinates-to-geojson.ts
  */
 
-import { getDb } from "../lib/mongodb";
+import db from "../lib/mongodb";
 
 async function migrateCoordinatesToGeoJSON() {
   console.log("🚀 Début de la migration des coordonnées vers GeoJSON...");
   
   try {
-    const db = await getDb();
+    
     const lairsCollection = db.collection("lairs");
     
     // Trouver tous les lairs avec l'ancien format coordinates

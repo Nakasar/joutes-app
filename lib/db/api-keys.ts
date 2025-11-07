@@ -1,4 +1,4 @@
-import { getDb } from "@/lib/mongodb";
+import db from "@/lib/mongodb";
 import { ApiKey } from "@/lib/types/ApiKey";
 import { WithId, Document, ObjectId } from "mongodb";
 import crypto from "crypto";
@@ -52,7 +52,7 @@ export async function createApiKey(
   name: string,
   description?: string
 ): Promise<{ apiKey: ApiKey; plainKey: string }> {
-  const db = await getDb();
+  
   
   const { key, keyPrefix, hashedKey } = generateApiKey();
   const now = new Date();
@@ -91,7 +91,7 @@ export async function createApiKey(
  * Récupérer toutes les clés API d'un utilisateur
  */
 export async function getApiKeysByUserId(userId: string): Promise<ApiKey[]> {
-  const db = await getDb();
+  
   const docs = await db
     .collection(COLLECTION_NAME)
     .find({ userId })
@@ -105,7 +105,7 @@ export async function getApiKeysByUserId(userId: string): Promise<ApiKey[]> {
  * Récupérer une clé API par son ID
  */
 export async function getApiKeyById(id: string): Promise<ApiKey | null> {
-  const db = await getDb();
+  
   const doc = await db.collection(COLLECTION_NAME).findOne({
     _id: ObjectId.createFromHexString(id)
   });
@@ -117,7 +117,7 @@ export async function getApiKeyById(id: string): Promise<ApiKey | null> {
  * Valider une clé API et récupérer l'utilisateur associé
  */
 export async function validateApiKey(key: string): Promise<{ userId: string; apiKeyId: string } | null> {
-  const db = await getDb();
+  
   const hashedKey = hashApiKey(key);
   
   const doc = await db.collection(COLLECTION_NAME).findOne({
@@ -155,7 +155,7 @@ export async function updateApiKey(
     isActive?: boolean;
   }
 ): Promise<boolean> {
-  const db = await getDb();
+  
   
   const updateDoc: Partial<ApiKey> = {
     updatedAt: new Date(),
@@ -174,7 +174,7 @@ export async function updateApiKey(
  * Supprimer une clé API
  */
 export async function deleteApiKey(id: string): Promise<boolean> {
-  const db = await getDb();
+  
   const result = await db.collection(COLLECTION_NAME).deleteOne({
     _id: ObjectId.createFromHexString(id)
   });
@@ -203,7 +203,7 @@ export async function getApiKeyUsageStats(id: string): Promise<{
   usageCount: number;
   lastUsedAt?: Date;
 } | null> {
-  const db = await getDb();
+  
   const doc = await db.collection(COLLECTION_NAME).findOne(
     { _id: ObjectId.createFromHexString(id) },
     { projection: { usageCount: 1, lastUsedAt: 1 } }
@@ -230,7 +230,7 @@ export async function getUserApiKeys(userId: string): Promise<ApiKey[]> {
  * Révoquer (supprimer) une clé API si l'utilisateur en est propriétaire
  */
 export async function revokeApiKey(keyId: string, userId: string): Promise<boolean> {
-  const db = await getDb();
+  
   
   // Vérifier que la clé appartient à l'utilisateur
   const existingKey = await db.collection(COLLECTION_NAME).findOne({
@@ -255,7 +255,7 @@ export async function revokeApiKey(keyId: string, userId: string): Promise<boole
  * Supprimer toutes les clés API d'un utilisateur
  */
 export async function deleteAllApiKeysForUser(userId: string): Promise<number> {
-  const db = await getDb();
+  
   const result = await db.collection(COLLECTION_NAME).deleteMany({ userId });
   return result.deletedCount;
 }

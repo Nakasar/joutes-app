@@ -1,4 +1,4 @@
-import { getDb } from "@/lib/mongodb";
+import db from "@/lib/mongodb";
 import { Event } from "@/lib/types/Event";
 import { getUserById } from "@/lib/db/users";
 import { ObjectId } from "mongodb";
@@ -19,7 +19,7 @@ export type EventDocument = Event;
  * @returns Array of events for the lair
  */
 export async function getEventsByLairId(lairId: string, { year, month, allGames, userId }: { userId?: string; year?: number; month?: number; allGames?: boolean } = {}): Promise<Event[]> {
-  const db = await getDb();
+  
   
   const user = userId && await getUserById(userId);
 
@@ -147,7 +147,7 @@ export async function getEventsByLairId(lairId: string, { year, month, allGames,
 
 // Get all events across all lairs
 export async function getAllEvents({ year, month, games }: { year?: number; month?: number; games?: string[] } = {}): Promise<Event[]> {
-  const db = await getDb();
+  
 
   // Build aggregation pipeline
   const pipeline: Array<Record<string, unknown>> = [];
@@ -215,7 +215,7 @@ export async function getEventsByLairIds(lairIds: string[], {
   year?: number;
   month?: number;
 } = {}): Promise<Event[]> {
-  const db = await getDb();
+  
 
   // Build aggregation pipeline
   const pipeline: Array<Record<string, unknown>> = [
@@ -285,7 +285,7 @@ export async function getEventsByLairIds(lairIds: string[], {
 
 // Create a single event
 export async function createEvent(event: Event): Promise<Event> {
-  const db = await getDb();
+  
   await db.collection<EventDocument>(COLLECTION_NAME).insertOne(event);
   return event;
 }
@@ -294,13 +294,13 @@ export async function createEvent(event: Event): Promise<Event> {
 export async function createManyEvents(events: Event[]): Promise<void> {
   if (events.length === 0) return;
 
-  const db = await getDb();
+  
   await db.collection<EventDocument>(COLLECTION_NAME).insertMany(events);
 }
 
 // Update an event
 export async function updateEvent(id: string, event: Partial<Event>): Promise<boolean> {
-  const db = await getDb();
+  
   const result = await db.collection<EventDocument>(COLLECTION_NAME).updateOne(
     { id },
     { $set: event }
@@ -311,14 +311,14 @@ export async function updateEvent(id: string, event: Partial<Event>): Promise<bo
 
 // Delete an event
 export async function deleteEvent(id: string): Promise<boolean> {
-  const db = await getDb();
+  
   const result = await db.collection<EventDocument>(COLLECTION_NAME).deleteOne({ id });
   return result.deletedCount > 0;
 }
 
 // Delete all events for a specific lair
 export async function deleteEventsByLairId(lairId: string): Promise<number> {
-  const db = await getDb();
+  
   const result = await db.collection<EventDocument>(COLLECTION_NAME).deleteMany({ lairId });
   return result.deletedCount;
 }
@@ -326,7 +326,7 @@ export async function deleteEventsByLairId(lairId: string): Promise<number> {
 // Replace all AI-scrapped events for a lair (delete old AI-scrapped ones and insert new ones)
 // User-created events are preserved
 export async function replaceEventsForLair(lairId: string, events: Event[]): Promise<void> {
-  const db = await getDb();
+  
 
   // Use a transaction for atomic operation
   const session = db.client.startSession();
@@ -380,7 +380,7 @@ export async function getEventsForUser(
     return [];
   }
 
-  const db = await getDb();
+  
   
   // Si userLocation et maxDistanceKm sont fournis, utiliser la recherche géospatiale
   if (userLocation && maxDistanceKm !== undefined && maxDistanceKm > 0) {

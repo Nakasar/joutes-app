@@ -1,4 +1,4 @@
-import { getDb } from "@/lib/mongodb";
+import db from "@/lib/mongodb";
 import { Game } from "@/lib/types/Game";
 import { ObjectId, WithId, Document } from "mongodb";
 
@@ -31,19 +31,19 @@ function toDocument(game: Omit<Game, "id">): Omit<GameDocument, "_id"> {
 }
 
 export async function getAllGames(): Promise<Game[]> {
-  const db = await getDb();
+  
   const games = await db.collection(COLLECTION_NAME).find({}).toArray();
   return games.map(toGame);
 }
 
 export async function getGameById(id: string): Promise<Game | null> {
-  const db = await getDb();
+  
   const game = await db.collection(COLLECTION_NAME).findOne({ _id: new ObjectId(id) });
   return game ? toGame(game) : null;
 }
 
 export async function createGame(game: Omit<Game, "id">): Promise<Game> {
-  const db = await getDb();
+  
   const doc = toDocument(game);
   const result = await db.collection(COLLECTION_NAME).insertOne(doc);
   
@@ -54,7 +54,7 @@ export async function createGame(game: Omit<Game, "id">): Promise<Game> {
 }
 
 export async function updateGame(id: string, game: Partial<Omit<Game, "id">>): Promise<boolean> {
-  const db = await getDb();
+  
   const result = await db.collection(COLLECTION_NAME).updateOne(
     { _id: new ObjectId(id) },
     { $set: game }
@@ -64,7 +64,7 @@ export async function updateGame(id: string, game: Partial<Omit<Game, "id">>): P
 }
 
 export async function deleteGame(id: string): Promise<boolean> {
-  const db = await getDb();
+  
   const result = await db.collection(COLLECTION_NAME).deleteOne({ _id: new ObjectId(id) });
   return result.deletedCount > 0;
 }
