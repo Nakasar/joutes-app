@@ -146,18 +146,66 @@ export async function getEventsByLairId(lairId: string, { year, month, allGames,
 }
 
 // Get all events across all lairs
-export async function getAllEvents(): Promise<Event[]> {
+export async function getAllEvents({ year, month, games }: { year?: number; month?: number; games?: string[] } = {}): Promise<Event[]> {
   const db = await getDb();
+
+  // Build aggregation pipeline
+  const pipeline: Array<Record<string, unknown>> = [];
+
+  // Add date range filter if month and year are provided
+  if (month && year) {
+    // Create date range for the month
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+
+    pipeline.push({
+      $match: {
+        startDateTime: {
+          $gte: startDate.toISOString(),
+          $lte: endDate.toISOString()
+        }
+      }
+    });
+  }
+
+  pipeline.push({
+    $lookup: {
+      from: "lairs",
+      let: { lairId: { $toObjectId: "$lairId" } },
+      pipeline: [
+        {
+          $match: {
+            $expr: { $eq: ["$_id", "$$lairId"] }
+          }
+        }
+      ],
+      as: "lairDetails"
+    }
+  });
+
+  // Execute aggregation
   const events = await db
     .collection<EventDocument>(COLLECTION_NAME)
-    .find({})
+    .aggregate(pipeline)
     .toArray();
 
-  return events.map(event => ({
-    ...event,
+  // Map results to Event type
+  return events.map((event) => ({
     id: event._id.toString(),
-    _id: undefined,
-  }))
+    lairId: event.lairId,
+    name: event.name,
+    startDateTime: event.startDateTime,
+    endDateTime: event.endDateTime,
+    gameName: event.gameName,
+    url: event.url,
+    price: event.price,
+    status: event.status,
+    addedBy: event.addedBy,
+    lair: event.lairDetails && event.lairDetails.length > 0 ? {
+      id: event.lairDetails[0].id,
+      name: event.lairDetails[0].name,
+    } : undefined,
+  }));
 }
 
 // Get events for multiple lairs
