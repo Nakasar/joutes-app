@@ -3,6 +3,7 @@ import { Event } from "@/lib/types/Event";
 import { getUserById } from "@/lib/db/users";
 import { ObjectId } from "mongodb";
 import { getLairIdsNearLocation } from "./lairs";
+import { DateTime } from "luxon";
 
 const COLLECTION_NAME = "events";
 
@@ -326,22 +327,31 @@ export async function deleteEventsByLairId(lairId: string): Promise<number> {
 // Replace all AI-scrapped events for a lair (delete old AI-scrapped ones and insert new ones)
 // User-created events are preserved
 export async function replaceEventsForLair(lairId: string, events: Event[]): Promise<void> {
-  
-
   // Use a transaction for atomic operation
   const session = db.client.startSession();
 
   try {
+    const today = DateTime.now().setZone('Europe/Paris');
+    if (!today.isValid) {
+      throw new Error("Invalid date");
+    }
+
     await session.withTransaction(async () => {
-      // Delete only AI-scrapped events for this lair
+      // Delete only AI-scrapped events for this lair that are upcoming
       await db.collection<EventDocument>(COLLECTION_NAME).deleteMany({
         lairId,
-        addedBy: "AI-SCRAPPING"
+        addedBy: "AI-SCRAPPING",
+        endDateTime: { $gte: today.toISO() },
       }, { session });
 
+      const upcomingEvents = events.filter(event => {
+        const eventEnd = DateTime.fromISO(event.endDateTime, { zone: 'Europe/Paris' });
+        return eventEnd.isValid && eventEnd >= today;
+      });
+
       // Insert new events if any
-      if (events.length > 0) {
-        await db.collection<EventDocument>(COLLECTION_NAME).insertMany(events, { session });
+      if (upcomingEvents.length > 0) {
+        await db.collection<EventDocument>(COLLECTION_NAME).insertMany(upcomingEvents, { session });
       }
     });
   } finally {
