@@ -14,9 +14,9 @@ const eventSchema = z.object({
     startDateTime: z.string().describe("ISO 8601 date format"),
     endDateTime: z.string().describe("ISO 8601 date format"),
     gameName: z.string(),
-    price: z.number().optional(),
+    price: z.number().optional().nullable(),
     status: z.enum(['available', 'sold-out', 'cancelled']),
-    url: z.string().optional(),
+    url: z.string().optional().nullable(),
   }))
 });
 
@@ -116,6 +116,8 @@ ${page.content}
       
       const events: Event[] = object.events.map(event => ({
         ...event,
+        price: event.price ?? undefined,
+        url: event.url ?? undefined,
         id: crypto.randomUUID(),
         lairId: lair.id,
         startDateTime: DateTime.fromISO(event.startDateTime, { zone: 'Europe/Paris' }).toISO() ?? event.startDateTime,
