@@ -693,8 +693,8 @@ function ListView({
               {dayEvents.map((event) => {
                 const eventDate = DateTime.fromISO(event.startDateTime);
                 const endDate = DateTime.fromISO(event.endDateTime);
-                const timeStr = eventDate.toLocaleString(DateTime.TIME_24_SIMPLE);
-                const endTimeStr = endDate.toLocaleString(DateTime.TIME_24_SIMPLE);
+                const timeStr = eventDate.setZone('Europe/Paris').toLocaleString(DateTime.TIME_24_SIMPLE);
+                const endTimeStr = endDate.setZone('Europe/Paris').toLocaleString(DateTime.TIME_24_SIMPLE);
 
                 const cardContent = (
                   <Card
