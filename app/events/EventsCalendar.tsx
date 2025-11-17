@@ -551,7 +551,7 @@ export default function EventsCalendar({
                           {eventsByDay.get(day)?.map((event) => {
                             const startTime = DateTime.fromISO(
                               event.startDateTime
-                            ).toLocaleString(DateTime.TIME_24_SIMPLE);
+                            ).setZone('Europe/Paris').toLocaleString(DateTime.TIME_24_SIMPLE);
 
                             const eventContent = (
                               <div className="text-xs p-2 rounded-md bg-background border hover:bg-accent hover:border-accent-foreground transition-colors cursor-pointer">
