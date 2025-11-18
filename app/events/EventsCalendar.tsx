@@ -699,7 +699,7 @@ function ListView({
             </div>
 
             {/* Événements du jour */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               {dayEvents.map((event) => {
                 const eventDate = DateTime.fromISO(event.startDateTime);
                 const endDate = DateTime.fromISO(event.endDateTime);
@@ -708,7 +708,7 @@ function ListView({
 
                 const cardContent = (
                   <Card
-                    className={`hover:shadow-lg transition-shadow ${event.status === "available"
+                    className={`my-2 hover:shadow-lg transition-shadow ${event.status === "available"
                       ? "border-l-4 border-l-green-500"
                       : event.status === "sold-out"
                         ? "border-l-4 border-l-red-500"
