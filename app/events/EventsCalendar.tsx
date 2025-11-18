@@ -590,7 +590,7 @@ export default function EventsCalendar({
                                     </span>
                                   )}
                                 </div>
-                                {isUserEvent && 
+                                {isUserEvent &&
                                   <Badge variant="default" className="text-xs bg-yellow-500 text-foreground mt-1">
                                     Inscrit
                                   </Badge>
@@ -646,6 +646,7 @@ export default function EventsCalendar({
           eventsInMonth={eventsInMonth}
           eventsByDayForList={eventsByDayForList}
           today={today}
+          userId={session.data?.user?.id}
           getStatusVariant={getStatusVariant}
           getStatusLabel={getStatusLabel}
         />
@@ -659,6 +660,7 @@ type ListViewProps = {
   eventsInMonth: Event[];
   eventsByDayForList: Map<string, Event[]>;
   today: DateTime;
+  userId?: string;
   getStatusVariant: (status: Event["status"]) => "default" | "secondary" | "destructive" | "outline";
   getStatusLabel: (status: Event["status"]) => string;
 };
@@ -667,6 +669,7 @@ function ListView({
   eventsInMonth,
   eventsByDayForList,
   today,
+  userId,
   getStatusVariant,
   getStatusLabel
 }: ListViewProps) {
@@ -712,15 +715,16 @@ function ListView({
                 const endDate = DateTime.fromISO(event.endDateTime);
                 const timeStr = eventDate.setZone('Europe/Paris').toLocaleString(DateTime.TIME_24_SIMPLE);
                 const endTimeStr = endDate.setZone('Europe/Paris').toLocaleString(DateTime.TIME_24_SIMPLE);
+                const isUserEvent = userId && (event.creatorId === userId || event.participants?.includes(userId || ""));
 
                 const cardContent = (
                   <Card
-                    className={`my-2 hover:shadow-lg transition-shadow ${event.status === "available"
+                    className={cn(`my-2 hover:shadow-lg transition-shadow ${event.url ? "cursor-pointer hover:bg-accent" : ""}`, event.status === "available"
                       ? "border-l-4 border-l-green-500"
                       : event.status === "sold-out"
                         ? "border-l-4 border-l-red-500"
                         : "border-l-4 border-l-gray-400"
-                      } ${event.url ? "cursor-pointer hover:bg-accent" : ""}`}
+                    , isUserEvent && "border-yellow-500")}
                   >
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between gap-2">
@@ -772,6 +776,11 @@ function ListView({
                           </span>
                         </div>
                       )}
+                      {isUserEvent &&
+                        <Badge variant="default" className="text-xs bg-yellow-500 text-foreground mt-1">
+                          Inscrit
+                        </Badge>
+                      }
                     </CardContent>
                   </Card>
                 );
