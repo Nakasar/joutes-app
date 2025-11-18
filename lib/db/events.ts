@@ -1,7 +1,6 @@
 import db from "@/lib/mongodb";
 import { Event } from "@/lib/types/Event";
 import { getUserById } from "@/lib/db/users";
-import { ObjectId } from "mongodb";
 import { getLairIdsNearLocation } from "./lairs";
 
 const COLLECTION_NAME = "events";
@@ -138,6 +137,8 @@ export async function getEventsByLairId(lairId: string, { year, month, allGames,
     price: event.price,
     status: event.status,
     addedBy: event.addedBy,
+    participants: event.participants,
+    maxParticipants: event.maxParticipants,
     lair: event.lairDetails && event.lairDetails.length > 0 ? {
       id: event.lairDetails[0].id,
       name: event.lairDetails[0].name,
@@ -201,6 +202,8 @@ export async function getAllEvents({ year, month, games }: { year?: number; mont
     price: event.price,
     status: event.status,
     addedBy: event.addedBy,
+    participants: event.participants,
+    maxParticipants: event.maxParticipants,
     lair: event.lairDetails && event.lairDetails.length > 0 ? {
       id: event.lairDetails[0].id,
       name: event.lairDetails[0].name,
@@ -276,6 +279,8 @@ export async function getEventsByLairIds(lairIds: string[], {
     price: event.price,
     status: event.status,
     addedBy: event.addedBy,
+    participants: event.participants,
+    maxParticipants: event.maxParticipants,
     lair: event.lairDetails && event.lairDetails.length > 0 ? {
       id: event.lairDetails[0].id,
       name: event.lairDetails[0].name,
@@ -352,6 +357,7 @@ export async function replaceEventsForLair(lairId: string, events: Event[]): Pro
 /**
  * Get events for a specific user based on their followed lairs and games
  * Uses MongoDB aggregation for optimal performance
+ * Includes private events where the user is the creator or a participant
  * @param userId - The user's ID
  * @param allGames - If true, return events for all games. If false, only return events for games followed by the user
  * @param month - Optional month to filter (1-12)
@@ -375,15 +381,10 @@ export async function getEventsForUser(
     return [];
   }
 
-  // If user doesn't follow any lairs, return empty array
-  if (!user.lairs || user.lairs.length === 0) {
-    return [];
-  }
-
   
   
   // Si userLocation et maxDistanceKm sont fournis, utiliser la recherche géospatiale
-  if (userLocation && maxDistanceKm !== undefined && maxDistanceKm > 0) {
+  if (userLocation && maxDistanceKm !== undefined && maxDistanceKm > 0 && user.lairs && user.lairs.length > 0) {
     // Obtenir les IDs des lairs à proximité
     const nearbyLairIds = await getLairIdsNearLocation(
       userLocation.longitude,
@@ -394,21 +395,25 @@ export async function getEventsForUser(
     // Filtrer pour ne garder que les lairs suivis par l'utilisateur ET à proximité
     const filteredLairIds = user.lairs.filter(lairId => nearbyLairIds.includes(lairId));
     
-    // Si aucun lair à proximité n'est suivi, retourner un tableau vide
-    if (filteredLairIds.length === 0) {
-      return [];
+    // Utiliser les lairs filtrés s'il y en a
+    if (filteredLairIds.length > 0) {
+      user.lairs = filteredLairIds;
     }
-    
-    // Utiliser les lairs filtrés
-    user.lairs = filteredLairIds;
   }
 
   // Build aggregation pipeline
   const pipeline: Array<Record<string, unknown>> = [
-    // Match events from user's followed lairs
+    // Match events from user's followed lairs OR private events where user is creator/participant
     {
       $match: {
-        lairId: { $in: user.lairs }
+        $or: [
+          // Events from followed lairs (if user follows any)
+          ...(user.lairs && user.lairs.length > 0 ? [{ lairId: { $in: user.lairs } }] : []),
+          // Private events where user is the creator
+          { lairId: { $exists: false }, addedBy: userId },
+          // Private events where user is a participant
+          { lairId: { $exists: false }, participants: userId }
+        ]
       }
     }
   ];
@@ -518,6 +523,8 @@ export async function getEventsForUser(
     price: event.price,
     status: event.status,
     addedBy: event.addedBy,
+    participants: event.participants,
+    maxParticipants: event.maxParticipants,
     lair: event.lairDetails && event.lairDetails.length > 0 ? {
       id: event.lairDetails[0]._id.toString(),
       name: event.lairDetails[0].name,
@@ -527,4 +534,100 @@ export async function getEventsForUser(
   }));
 
   return mappedEvents;
+}
+
+/**
+ * Get a single event by its ID
+ * @param eventId - The event's UUID
+ * @returns The event or null if not found
+ */
+export async function getEventById(eventId: string): Promise<Event | null> {
+  
+  
+  const pipeline: Array<Record<string, unknown>> = [
+    {
+      $match: { id: eventId }
+    },
+    {
+      $lookup: {
+        from: "lairs",
+        let: { lairId: { $toObjectId: "$lairId" } },
+        pipeline: [
+          {
+            $match: {
+              $expr: { $eq: ["$_id", "$$lairId"] }
+            }
+          }
+        ],
+        as: "lairDetails"
+      }
+    }
+  ];
+
+  const events = await db
+    .collection<EventDocument>(COLLECTION_NAME)
+    .aggregate(pipeline)
+    .toArray();
+
+  if (events.length === 0) {
+    return null;
+  }
+
+  const event = events[0];
+  return {
+    id: event._id.toString(),
+    lairId: event.lairId,
+    name: event.name,
+    startDateTime: event.startDateTime,
+    endDateTime: event.endDateTime,
+    gameName: event.gameName,
+    url: event.url,
+    price: event.price,
+    status: event.status,
+    addedBy: event.addedBy,
+    participants: event.participants,
+    maxParticipants: event.maxParticipants,
+    lair: event.lairDetails && event.lairDetails.length > 0 ? {
+      id: event.lairDetails[0]._id.toString(),
+      name: event.lairDetails[0].name,
+      location: event.lairDetails[0].location,
+      address: event.lairDetails[0].address,
+    } : undefined,
+  };
+}
+
+/**
+ * Add a participant to an event
+ * @param eventId - The event's UUID
+ * @param userId - The user's ID
+ * @returns True if the participant was added, false otherwise
+ */
+export async function addParticipantToEvent(eventId: string, userId: string): Promise<boolean> {
+  const result = await db.collection<EventDocument>(COLLECTION_NAME).updateOne(
+    { id: eventId },
+    { 
+      $addToSet: { participants: userId }
+    }
+  );
+
+  return result.modifiedCount > 0;
+}
+
+/**
+ * Remove a participant from an event
+ * @param eventId - The event's UUID
+ * @param userId - The user's ID
+ * @returns True if the participant was removed, false otherwise
+ */
+export async function removeParticipantFromEvent(eventId: string, userId: string): Promise<boolean> {
+  
+  
+  const result = await db.collection<EventDocument>(COLLECTION_NAME).updateOne(
+    { id: eventId },
+    { 
+      $pull: { participants: userId }
+    }
+  );
+
+  return result.modifiedCount > 0;
 }

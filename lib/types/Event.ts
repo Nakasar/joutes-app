@@ -2,7 +2,7 @@ import { GeoJSONPoint } from "./Lair";
 
 export type Event = {
   id: string;
-  lairId: string;
+  lairId?: string;
   name: string;
   startDateTime: string;
   endDateTime: string;
@@ -11,6 +11,8 @@ export type Event = {
   price?: number;
   status: 'available' | 'sold-out' | 'cancelled';
   addedBy: string; // ID de l'utilisateur qui a créé l'événement ou "AI-SCRAPPING"
+  participants?: string[]; // IDs des utilisateurs inscrits à l'événement
+  maxParticipants?: number; // Nombre maximum de participants (optionnel)
   lair?: {
     id: string;
     name: string;
