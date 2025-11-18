@@ -203,7 +203,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
           </div>
 
           <div className="space-y-6">
-            {event.price !== undefined && (
+            {event.price && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
