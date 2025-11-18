@@ -39,7 +39,7 @@ export default function ProfileVisibilityToggle({
   };
 
   const profileUrl = userTag 
-    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/users/${userTag}`
+    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/users/${userTag.replace('#', '')}`
     : null;
 
   return (
