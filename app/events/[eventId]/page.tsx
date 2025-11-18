@@ -6,20 +6,26 @@ import { getUserById } from "@/lib/db/users";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Calendar, MapPin, Users, ExternalLink, Euro, Clock, Gamepad2, Info, Lock } from "lucide-react";
+import { Calendar, MapPin, Users, ExternalLink, Euro, Clock, Gamepad2, Info, Lock, CheckCircle, AlertCircle as AlertCircleIcon } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import EventActions from "./EventActions";
+import QRCodeButton from "./QRCodeButton";
 import { DateTime } from "luxon";
 
 type EventPageProps = {
   params: Promise<{
     eventId: string;
   }>;
+  searchParams: Promise<{
+    joined?: string;
+    error?: string;
+  }>;
 };
 
-export default async function EventPage({ params }: EventPageProps) {
+export default async function EventPage({ params, searchParams }: EventPageProps) {
   const { eventId } = await params;
+  const search = await searchParams;
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -66,6 +72,23 @@ export default async function EventPage({ params }: EventPageProps) {
   return (
     <div className="container mx-auto p-6 max-w-4xl">
       <div className="space-y-6">
+        {search.joined && (
+          <Alert className="border-green-500 bg-green-50">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800">
+              Vous êtes maintenant inscrit à cet événement !
+            </AlertDescription>
+          </Alert>
+        )}
+        {search.error && (
+          <Alert variant="destructive">
+            <AlertCircleIcon className="h-4 w-4" />
+            <AlertDescription>
+              {decodeURIComponent(search.error)}
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="flex items-start justify-between">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
@@ -232,12 +255,17 @@ export default async function EventPage({ params }: EventPageProps) {
                 )}
 
                 {session?.user && (
-                  <EventActions
-                    eventId={event.id}
-                    isParticipant={isParticipant || false}
-                    isCreator={isCreator || false}
-                    isFull={isFull}
-                  />
+                  <div className="space-y-2">
+                    <EventActions
+                      eventId={event.id}
+                      isParticipant={isParticipant || false}
+                      isCreator={isCreator || false}
+                      isFull={isFull}
+                    />
+                    {isCreator && (
+                      <QRCodeButton eventId={event.id} />
+                    )}
+                  </div>
                 )}
 
                 {!session?.user && (
