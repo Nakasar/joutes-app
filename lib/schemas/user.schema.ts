@@ -23,3 +23,10 @@ export const updateDisplayNameSchema = z.object({
 });
 
 export type UpdateDisplayNameInput = z.infer<typeof updateDisplayNameSchema>;
+
+// Schéma pour la mise à jour de la visibilité du profil
+export const updateProfileVisibilitySchema = z.object({
+  isPublicProfile: z.boolean(),
+});
+
+export type UpdateProfileVisibilityInput = z.infer<typeof updateProfileVisibilitySchema>;

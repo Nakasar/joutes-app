@@ -8,6 +8,7 @@ import GamesManager from "./GamesManager";
 import LairsManager from "./LairsManager";
 import UsernameManager from "./UsernameManager";
 import ApiKeysManager from "./ApiKeysManager";
+import ProfileVisibilityToggle from "./ProfileVisibilityToggle";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { User as UserIcon, Mail, Gamepad2, MapPin } from "lucide-react";
 
@@ -104,6 +105,25 @@ export default async function AccountPage() {
                   currentDiscriminator={user.discriminator}
                 />
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Section Visibilité du profil */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserIcon className="h-5 w-5" />
+                Visibilité du profil
+              </CardTitle>
+              <CardDescription>
+                Contrôlez la visibilité de votre profil public
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ProfileVisibilityToggle 
+                initialIsPublic={user.isPublicProfile || false}
+                userTag={user.displayName && user.discriminator ? `${user.displayName}#${user.discriminator}` : undefined}
+              />
             </CardContent>
           </Card>
 

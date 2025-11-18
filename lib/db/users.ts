@@ -16,6 +16,7 @@ function toUser(doc: WithId<Document>): User {
     avatar: doc.image || doc.avatar || "",
     lairs: doc.lairs || [],
     games: doc.games || [],
+    isPublicProfile: doc.isPublicProfile || false,
   };
 }
 
@@ -54,7 +55,7 @@ export async function getUserByUsernameAndDiscriminator(
   const user = await db.collection(COLLECTION_NAME).findOne({
     displayName,
     discriminator,
-  });
+  }, { collation: { locale: 'en', strength: 2 } });
   return user ? toUser(user) : null;
 }
 
@@ -164,3 +165,43 @@ export async function getUserDiscriminator(userId: string): Promise<string | nul
   return user?.discriminator || null;
 }
 
+/**
+ * Met à jour la visibilité du profil de l'utilisateur
+ * @param userId L'ID de l'utilisateur
+ * @param isPublicProfile true pour rendre le profil public, false pour privé
+ * @returns true si la mise à jour a réussi, false sinon
+ */
+export async function updateUserProfileVisibility(
+  userId: string,
+  isPublicProfile: boolean
+): Promise<boolean> {
+  
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: ObjectId.createFromHexString(userId) },
+    { $set: { isPublicProfile } }
+  );
+  
+  return result.modifiedCount > 0 || result.matchedCount > 0;
+}
+
+/**
+ * Récupère un utilisateur par son userTag (displayName#discriminator) ou son ID
+ * @param userTagOrId Le userTag ou l'ID de l'utilisateur
+ * @returns L'utilisateur ou null si non trouvé
+ */
+export async function getUserByTagOrId(userTagOrId: string): Promise<User | null> {
+  
+  // Vérifier si c'est un ID MongoDB valide
+  if (ObjectId.isValid(userTagOrId) && userTagOrId.length === 24) {
+    return getUserById(userTagOrId);
+  }
+  
+  // Sinon, considérer que c'est un userTag (displayName#discriminator)
+  const parts = userTagOrId.split('#');
+  if (parts.length === 2) {
+    const [displayName, discriminator] = parts;
+    return getUserByUsernameAndDiscriminator(displayName, discriminator);
+  }
+  
+  return null;
+}

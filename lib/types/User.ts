@@ -13,4 +13,6 @@ export type User = {
 
   lairs: Lair['id'][];
   games: Game['id'][];
+  
+  isPublicProfile?: boolean; // Si true, le profil affiche les jeux et lieux de l'utilisateur
 };
