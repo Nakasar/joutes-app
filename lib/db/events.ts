@@ -102,7 +102,7 @@ export async function getEventsByLairId(lairId: string, { year, month, allGames,
     );
   }
 
-   // Add lookup to get lair details
+  // Add lookup to get lair details
   pipeline.push({
     $lookup: {
       from: "lairs",
@@ -142,7 +142,7 @@ export async function getEventsByLairId(lairId: string, { year, month, allGames,
       id: event.lairDetails[0].id,
       name: event.lairDetails[0].name,
     } : undefined,
-  }));  
+  }));
 }
 
 // Get all events across all lairs
@@ -280,7 +280,7 @@ export async function getEventsByLairIds(lairIds: string[], {
       id: event.lairDetails[0].id,
       name: event.lairDetails[0].name,
     } : undefined,
-  }));  
+  }));
 }
 
 // Create a single event
@@ -298,7 +298,7 @@ export async function createManyEvents(events: Event[]): Promise<void> {
 
 // Update an event
 export async function updateEvent(id: string, event: Partial<Event>): Promise<boolean> {
-  
+
   const result = await db.collection<EventDocument>(COLLECTION_NAME).updateOne(
     { id },
     { $set: event }
@@ -309,14 +309,14 @@ export async function updateEvent(id: string, event: Partial<Event>): Promise<bo
 
 // Delete an event
 export async function deleteEvent(id: string): Promise<boolean> {
-  
+
   const result = await db.collection<EventDocument>(COLLECTION_NAME).deleteOne({ id });
   return result.deletedCount > 0;
 }
 
 // Delete all events for a specific lair
 export async function deleteEventsByLairId(lairId: string): Promise<number> {
-  
+
   const result = await db.collection<EventDocument>(COLLECTION_NAME).deleteMany({ lairId });
   return result.deletedCount;
 }
@@ -324,7 +324,7 @@ export async function deleteEventsByLairId(lairId: string): Promise<number> {
 // Replace all AI-scrapped events for a lair (delete old AI-scrapped ones and insert new ones)
 // User-created events are preserved
 export async function replaceEventsForLair(lairId: string, events: Event[]): Promise<void> {
-  
+
 
   // Use a transaction for atomic operation
   const session = db.client.startSession();
@@ -373,7 +373,7 @@ export async function getEventsForUser(
   if (!user) {
     return [];
   }
-  
+
   // Si userLocation et maxDistanceKm sont fournis, utiliser la recherche géospatiale
   if (userLocation && maxDistanceKm !== undefined && maxDistanceKm > 0 && user.lairs && user.lairs.length > 0) {
     // Obtenir les IDs des lairs à proximité
@@ -382,10 +382,10 @@ export async function getEventsForUser(
       userLocation.latitude,
       maxDistanceKm * 1000 // Convertir km en mètres
     );
-    
+
     // Filtrer pour ne garder que les lairs suivis par l'utilisateur ET à proximité
     const filteredLairIds = user.lairs.filter(lairId => nearbyLairIds.includes(lairId));
-    
+
     // Utiliser les lairs filtrés s'il y en a
     if (filteredLairIds.length > 0) {
       user.lairs = filteredLairIds;
@@ -401,9 +401,9 @@ export async function getEventsForUser(
           // Events from followed lairs (if user follows any)
           ...(user.lairs && user.lairs.length > 0 ? [{ lairId: { $in: user.lairs } }] : []),
           // Private events where user is the creator
-          { lairId: { $exists: false }, addedBy: userId },
+          { lairId: null, addedBy: userId },
           // Private events where user is a participant
-          { lairId: { $exists: false }, participants: userId }
+          { lairId: null, participants: userId }
         ]
       }
     }
@@ -427,11 +427,6 @@ export async function getEventsForUser(
 
   // If not showing all games, filter by user's followed games
   if (!allGames) {
-    // If user doesn't follow any games, return empty array
-    if (!user.games || user.games.length === 0) {
-      return [];
-    }
-
     // Convert user.games string IDs to ObjectIds for comparison
     const gameObjectIds = user.games.map(id => {
       try {
@@ -467,7 +462,14 @@ export async function getEventsForUser(
       // Only keep events that have a matching game
       {
         $match: {
-          matchedGame: { $ne: [] }
+          $or: [
+            // Events from followed lairs (if user follows any)
+            { matchedGame: { $ne: [] } },
+            // Private events where user is the creator
+            { lairId: null, addedBy: userId },
+            // Private events where user is a participant
+            { lairId: null, participants: userId }
+          ]
         }
       },
       // Remove the matchedGame field from results
@@ -500,6 +502,8 @@ export async function getEventsForUser(
     .collection<EventDocument>(COLLECTION_NAME)
     .aggregate(pipeline)
     .toArray();
+
+  console.debug(events);
 
   // Map results to Event type
   const mappedEvents = events.map((event) => ({
@@ -593,7 +597,7 @@ export async function getEventById(eventId: string): Promise<Event | null> {
 export async function addParticipantToEvent(eventId: string, userId: string): Promise<boolean> {
   const result = await db.collection<EventDocument>(COLLECTION_NAME).updateOne(
     { id: eventId },
-    { 
+    {
       $addToSet: { participants: userId }
     }
   );
@@ -608,11 +612,11 @@ export async function addParticipantToEvent(eventId: string, userId: string): Pr
  * @returns True if the participant was removed, false otherwise
  */
 export async function removeParticipantFromEvent(eventId: string, userId: string): Promise<boolean> {
-  
-  
+
+
   const result = await db.collection<EventDocument>(COLLECTION_NAME).updateOne(
     { id: eventId },
-    { 
+    {
       $pull: { participants: userId }
     }
   );

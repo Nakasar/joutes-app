@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useCallback, useTransition } from "react";
 
 type EventsCalendarClientProps = {
-  initialEvents: Event[];
+  initialEvents?: Event[];
   initialMonth: number;
   initialYear: number;
   initialShowAllGames: boolean;
@@ -25,8 +25,8 @@ export default function EventsCalendarClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
-  
-  const [events, setEvents] = useState<Event[]>(initialEvents);
+
+  const [events, setEvents] = useState<Event[]>(initialEvents ?? []);
   const [currentMonth, setCurrentMonth] = useState(initialMonth);
   const [currentYear, setCurrentYear] = useState(initialYear);
   const [showAllGames, setShowAllGames] = useState(initialShowAllGames);
@@ -152,7 +152,8 @@ export default function EventsCalendarClient({
       month !== currentMonth ||
       year !== currentYear ||
       allGames !== showAllGames ||
-      hasLocationChanged
+      hasLocationChanged ||
+      (!initialEvents && events.length === 0)
     ) {
       setCurrentMonth(month);
       setCurrentYear(year);
@@ -161,12 +162,12 @@ export default function EventsCalendarClient({
       setIsLocationMode(locParams !== null);
       
       // Ne faire le fetch que si on a des paramètres de localisation ou qu'on revient au mode normal avec des événements initiaux
-      if (locParams !== null || initialEvents.length > 0) {
+      if (locParams !== null || !initialEvents || initialEvents.length > 0) {
         setEvents([]);
         fetchEvents(month, year, allGames, locParams);
       }
     }
-  }, [searchParams, initialMonth, initialYear, currentMonth, currentYear, showAllGames, locationParams, fetchEvents, initialEvents.length]);
+  }, [searchParams, initialMonth, initialYear, currentMonth, currentYear, showAllGames, locationParams, fetchEvents, initialEvents?.length]);
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">

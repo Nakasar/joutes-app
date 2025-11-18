@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Calendar, MapPin, Gamepad2, AlertCircle, Info, Plus } from "lucide-react";
 import { DateTime } from "luxon";
+import { Event } from "@/lib/types/Event";
 
 type EventsCalendarWrapperProps = {
   basePath?: string;
@@ -96,7 +97,7 @@ export default async function EventsCalendarWrapper({
 
   // Récupérer les événements pour l'utilisateur avec le mois/année
   // Les détails des lairs sont maintenant inclus directement dans les événements
-  const events = await getEventsForUser(session.user.id, showAllGames, month, year);
+  const events: Event[] = [];
 
   return (
     <div className="space-y-6">
@@ -145,7 +146,6 @@ export default async function EventsCalendarWrapper({
       </div>
 
       <EventsCalendarClient
-        initialEvents={events}
         initialMonth={month}
         initialYear={year}
         initialShowAllGames={showAllGames}
