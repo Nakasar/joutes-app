@@ -26,9 +26,9 @@ export default function ProfileImageUploader({
 
     try {
       // Vérifier la taille du fichier côté client
-      const maxSize = 1 * 1024 * 1024; // 1 MB
+      const maxSize = 1.5 * 1024 * 1024; // 1.5 Mo
       if (file.size > maxSize) {
-        throw new Error("Le fichier est trop volumineux (max 1 MB)");
+        throw new Error("Le fichier est trop volumineux (max 1.5 Mo)");
       }
 
       const formData = new FormData();
@@ -113,7 +113,7 @@ export default function ProfileImageUploader({
             <input
               id="profile-image-input"
               type="file"
-              accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+              accept="image/jpeg,image/jpg,image/png,image/webp"
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
