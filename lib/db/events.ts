@@ -377,8 +377,7 @@ export async function getEventsForUser(
   if (!user) {
     return [];
   }
-
-  console.log('Params', { userId, allGames, month, year, userLocation, maxDistanceKm });
+  
   let lairs = user.lairs ?? [];
   // Si userLocation et maxDistanceKm sont fournis, utiliser la recherche géospatiale
   if (userLocation && maxDistanceKm !== undefined && maxDistanceKm > 0) {

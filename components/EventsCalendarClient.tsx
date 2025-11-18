@@ -4,6 +4,7 @@ import { Event } from "@/lib/types/Event";
 import EventsCalendar from "@/app/events/EventsCalendar";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useCallback, useTransition } from "react";
+import { cosineSimilarity } from "ai";
 
 type EventsCalendarClientProps = {
   initialEvents?: Event[];
@@ -112,6 +113,7 @@ export default function EventsCalendarClient({
 
   // Réinitialiser la recherche par localisation
   const handleResetLocation = useCallback(() => {
+    console.log("Resetting location search");
     setLocationParams(null);
     setIsLocationMode(false);
     updateURL(currentMonth, currentYear, showAllGames, null);
@@ -161,11 +163,8 @@ export default function EventsCalendarClient({
       setLocationParams(locParams);
       setIsLocationMode(locParams !== null);
       
-      // Ne faire le fetch que si on a des paramètres de localisation ou qu'on revient au mode normal avec des événements initiaux
-      if (locParams !== null || !events) {
-        setEvents([]);
-        fetchEvents(month, year, allGames, locParams);
-      }
+      setEvents([]);
+      fetchEvents(month, year, allGames, locParams);
     }
   }, [searchParams, initialMonth, initialYear, currentMonth, currentYear, showAllGames, locationParams, fetchEvents, initialEvents?.length]);
 
