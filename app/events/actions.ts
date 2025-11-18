@@ -59,7 +59,8 @@ export async function createEventAction(input: CreateEventInput) {
       url: input.url,
       price: input.price,
       status: "available",
-      addedBy: session.user.id,
+      addedBy: "USER",
+      creatorId: session.user.id,
       participants: [],
       maxParticipants: input.maxParticipants,
     };
@@ -165,7 +166,7 @@ export async function removeParticipantAction(eventId: string, userId: string) {
     }
 
     // Vérifier que l'utilisateur connecté est le créateur de l'événement
-    if (event.addedBy !== session.user.id) {
+    if (event.creatorId !== session.user.id) {
       return { success: false, error: "Seul le créateur de l'événement peut retirer des participants" };
     }
 
@@ -204,7 +205,7 @@ export async function addParticipantByTagAction(eventId: string, userTag: string
     }
 
     // Vérifier que l'utilisateur connecté est le créateur de l'événement
-    if (event.addedBy !== session.user.id) {
+    if (event.creatorId !== session.user.id) {
       return { success: false, error: "Seul le créateur de l'événement peut ajouter des participants" };
     }
 

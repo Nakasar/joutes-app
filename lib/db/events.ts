@@ -3,6 +3,7 @@ import { Event } from "@/lib/types/Event";
 import { getUserById } from "@/lib/db/users";
 import { getLairIdsNearLocation } from "./lairs";
 import { ObjectId } from "mongodb";
+import { inspect } from "util";
 
 const COLLECTION_NAME = "events";
 
@@ -136,6 +137,7 @@ export async function getEventsByLairId(lairId: string, { year, month, allGames,
     price: event.price,
     status: event.status,
     addedBy: event.addedBy,
+    creatorId: event.creatorId,
     participants: event.participants,
     maxParticipants: event.maxParticipants,
     lair: event.lairDetails && event.lairDetails.length > 0 ? {
@@ -199,6 +201,7 @@ export async function getAllEvents({ year, month, games }: { year?: number; mont
     price: event.price,
     status: event.status,
     addedBy: event.addedBy,
+    creatorId: event.creatorId,
     participants: event.participants,
     maxParticipants: event.maxParticipants,
     lair: event.lairDetails && event.lairDetails.length > 0 ? {
@@ -274,6 +277,7 @@ export async function getEventsByLairIds(lairIds: string[], {
     price: event.price,
     status: event.status,
     addedBy: event.addedBy,
+    creatorId: event.creatorId,
     participants: event.participants,
     maxParticipants: event.maxParticipants,
     lair: event.lairDetails && event.lairDetails.length > 0 ? {
@@ -374,22 +378,16 @@ export async function getEventsForUser(
     return [];
   }
 
+  console.log('Params', { userId, allGames, month, year, userLocation, maxDistanceKm });
+  let lairs = user.lairs ?? [];
   // Si userLocation et maxDistanceKm sont fournis, utiliser la recherche géospatiale
-  if (userLocation && maxDistanceKm !== undefined && maxDistanceKm > 0 && user.lairs && user.lairs.length > 0) {
+  if (userLocation && maxDistanceKm !== undefined && maxDistanceKm > 0) {
     // Obtenir les IDs des lairs à proximité
-    const nearbyLairIds = await getLairIdsNearLocation(
+    lairs = await getLairIdsNearLocation(
       userLocation.longitude,
       userLocation.latitude,
       maxDistanceKm * 1000 // Convertir km en mètres
     );
-
-    // Filtrer pour ne garder que les lairs suivis par l'utilisateur ET à proximité
-    const filteredLairIds = user.lairs.filter(lairId => nearbyLairIds.includes(lairId));
-
-    // Utiliser les lairs filtrés s'il y en a
-    if (filteredLairIds.length > 0) {
-      user.lairs = filteredLairIds;
-    }
   }
 
   // Build aggregation pipeline
@@ -399,9 +397,9 @@ export async function getEventsForUser(
       $match: {
         $or: [
           // Events from followed lairs (if user follows any)
-          ...(user.lairs && user.lairs.length > 0 ? [{ lairId: { $in: user.lairs } }] : []),
+          ...(lairs && lairs.length > 0 ? [{ lairId: { $in: lairs } }] : []),
           // Private events where user is the creator
-          { lairId: null, addedBy: userId },
+          { lairId: null, creatorId: userId },
           // Private events where user is a participant
           { lairId: null, participants: userId }
         ]
@@ -466,7 +464,7 @@ export async function getEventsForUser(
             // Events from followed lairs (if user follows any)
             { matchedGame: { $ne: [] } },
             // Private events where user is the creator
-            { lairId: null, addedBy: userId },
+            { lairId: null, creatorId: userId },
             // Private events where user is a participant
             { lairId: null, participants: userId }
           ]
@@ -500,11 +498,15 @@ export async function getEventsForUser(
   pipeline.push({
     $lookup: {
       from: "user",
-      let: { addedById: "$addedBy" },
+      let: { creatorId: "$creatorId" },
       pipeline: [
         {
           $match: {
-            $expr: { $eq: ["$_id", { $toObjectId: "$$addedById" }] }
+            $expr: { 
+              $and: [
+                { $eq: ["$_id", { $toObjectId: "$$creatorId" }] }
+              ]
+            }
           }
         },
         {
@@ -515,7 +517,7 @@ export async function getEventsForUser(
           }
         }
       ],
-      as: "addedByDetails",
+      as: "creator",
     },
   });
 
@@ -539,7 +541,8 @@ export async function getEventsForUser(
     addedBy: event.addedBy,
     participants: event.participants,
     maxParticipants: event.maxParticipants,
-    addedByDetails: event.addedByDetails && event.addedByDetails.length > 0 ? event.addedByDetails[0] : undefined,
+    creatorId: event.creatorId,
+    creator: event.creator && event.creator.length > 0 ? event.creator[0] : undefined,
     lair: event.lairDetails && event.lairDetails.length > 0 ? {
       id: event.lairDetails[0]._id.toString(),
       name: event.lairDetails[0].name,

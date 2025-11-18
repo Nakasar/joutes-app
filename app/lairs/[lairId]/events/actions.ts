@@ -86,7 +86,8 @@ export async function createEventAction(
       url: validatedData.url && validatedData.url.length > 0 ? validatedData.url : undefined,
       price: validatedData.price,
       status: validatedData.status,
-      addedBy: session.user.id,
+      addedBy: "USER",
+      creatorId: session.user.id,
     };
 
     await createEventDb(newEvent);

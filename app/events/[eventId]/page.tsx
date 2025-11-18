@@ -40,7 +40,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
 
   // Vérifier si l'événement est privé et si l'utilisateur a accès
   const isPrivateEvent = !event.lairId;
-  const isCreator = session?.user && event.addedBy === session.user.id;
+  const isCreator = session?.user && event.creatorId === session.user.id;
   const isParticipant = session?.user && event.participants?.includes(session.user.id);
   const hasAccess = !isPrivateEvent || isCreator || isParticipant;
 

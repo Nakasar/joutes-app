@@ -10,8 +10,9 @@ export type Event = {
   url?: string;
   price?: number;
   status: 'available' | 'sold-out' | 'cancelled';
-  addedBy: string; // ID de l'utilisateur qui a créé l'événement ou "AI-SCRAPPING"
-  addedByDetails?: {
+  addedBy: string; // "AI-SCRAPPING" or "USER"
+  creatorId?: string;
+  creator?: {
     id: string;
     displayName?: string;
     discriminator?: string;

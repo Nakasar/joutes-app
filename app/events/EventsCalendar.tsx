@@ -562,10 +562,10 @@ export default function EventsCalendar({
                                   <CalendarIcon className="h-3 w-3" />
                                   {startTime}
                                 </div>
-                                {event.addedByDetails ? (
+                                {event.creator ? (
                                   <div className="text-xs text-muted-foreground truncate flex items-center gap-1" title={event.lair?.name}>
                                     <User2Icon className="h-3 w-3" />
-                                    {event.addedByDetails.displayName ? `${event.addedByDetails.displayName}#${event.addedByDetails.discriminator}` : "Utilisateur inconnu"}
+                                    {event.creator.displayName ? `${event.creator.displayName}#${event.creator.discriminator}` : "Utilisateur inconnu"}
                                   </div>
                                 ) : (
                                   <div className="text-xs text-muted-foreground truncate flex items-center gap-1" title={event.lair?.name}>
