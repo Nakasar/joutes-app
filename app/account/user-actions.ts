@@ -179,8 +179,8 @@ export async function updateProfileInfoAction(
  * Met à jour l'image de profil de l'utilisateur connecté
  */
 export async function updateProfileImageAction(
-  profileImage: string
-): Promise<{ success: boolean; error?: string }> {
+  formData: FormData
+): Promise<{ success: boolean; error?: string; imageUrl?: string }> {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -190,24 +190,72 @@ export async function updateProfileImageAction(
       return { success: false, error: "Non authentifié" };
     }
 
-    // Validation avec Zod
-    const validation = updateProfileImageSchema.safeParse({ profileImage });
-    if (!validation.success) {
-      return { 
-        success: false, 
-        error: validation.error.issues[0]?.message || "URL invalide" 
+    const file = formData.get("file") as File | null;
+
+    if (!file) {
+      return { success: false, error: "Aucun fichier fourni" };
+    }
+
+    // Vérifier le type de fichier
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(file.type)) {
+      return {
+        success: false,
+        error: "Type de fichier non autorisé. Utilisez JPG, PNG, WebP ou GIF.",
       };
     }
 
-    const updated = await updateUserProfileImage(session.user.id, profileImage);
+    // Limiter la taille du fichier à 1 MB
+    const maxSize = 1 * 1024 * 1024; // 1 MB
+    if (file.size > maxSize) {
+      return {
+        success: false,
+        error: "Le fichier est trop volumineux (max 1 MB)",
+      };
+    }
+
+    // Upload vers Vercel Blob
+    const { put } = await import("@vercel/blob");
+    const blob = await put(file.name, file, {
+      access: "public",
+    });
+
+    // Mettre à jour la base de données
+    const updated = await updateUserProfileImage(session.user.id, blob.url);
 
     if (!updated) {
       return { success: false, error: "Erreur lors de la mise à jour" };
     }
 
-    return { success: true };
+    return { success: true, imageUrl: blob.url };
   } catch (error) {
     console.error("Erreur lors de la mise à jour de l'image de profil:", error);
+    return { success: false, error: "Erreur serveur" };
+  }
+}
+
+/**
+ * Supprime l'image de profil personnalisée de l'utilisateur connecté
+ */
+export async function removeProfileImageAction(): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    const updated = await updateUserProfileImage(session.user.id, "");
+
+    if (!updated) {
+      return { success: false, error: "Erreur lors de la suppression" };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la suppression de l'image de profil:", error);
     return { success: false, error: "Erreur serveur" };
   }
 }

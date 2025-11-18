@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { updateProfileImageAction } from "./user-actions";
+import { updateProfileImageAction, removeProfileImageAction } from "./user-actions";
 import { Button } from "@/components/ui/button";
 import { Upload, Trash2, Image as ImageIcon } from "lucide-react";
 
@@ -25,26 +25,19 @@ export default function ProfileImageUploader({
     setSuccess(false);
 
     try {
+      // Vérifier la taille du fichier côté client
+      const maxSize = 1 * 1024 * 1024; // 1 MB
+      if (file.size > maxSize) {
+        throw new Error("Le fichier est trop volumineux (max 1 MB)");
+      }
+
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch("/api/upload?type=profile", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Erreur lors de l&apos;upload");
-      }
-
-      const data = await response.json();
-      setProfileImage(data.url);
-
-      // Enregistrer l'URL dans la base de données
-      const result = await updateProfileImageAction(data.url);
+      const result = await updateProfileImageAction(formData);
       
-      if (result.success) {
+      if (result.success && result.imageUrl) {
+        setProfileImage(result.imageUrl);
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
       } else {
@@ -66,12 +59,10 @@ export default function ProfileImageUploader({
     setError(null);
     setSuccess(false);
     
-    // On remet l'image par défaut (avatar Discord)
-    setProfileImage(undefined);
-    
-    const result = await updateProfileImageAction("");
+    const result = await removeProfileImageAction();
     
     if (result.success) {
+      setProfileImage(undefined);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } else {
@@ -104,7 +95,7 @@ export default function ProfileImageUploader({
           <div>
             <h4 className="text-sm font-medium mb-1">Image de profil</h4>
             <p className="text-xs text-muted-foreground">
-              Téléchargez une image personnalisée pour votre profil. Format JPG, PNG, WebP ou GIF (max 5 MB).
+              Téléchargez une image personnalisée pour votre profil. Format JPG, PNG, WebP ou GIF (max 1 MB).
             </p>
           </div>
 
