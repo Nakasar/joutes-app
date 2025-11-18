@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Gamepad2, Euro, Filter, List, CalendarDays, Clock, Navigation, X, User2Icon } from "lucide-react";
 import Link from "next/link";
 import { DateTime } from "luxon";
-import { signIn, useSession } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth-client";
+import { cn } from "@/lib/utils";
 
 type EventsCalendarProps = {
   events: Event[];
@@ -547,14 +548,15 @@ export default function EventsCalendar({
                         >
                           {day}
                         </div>
-                        <div className="space-y-1">
+                        <div className="flex gap-1 flex-col">
                           {eventsByDay.get(day)?.map((event) => {
                             const startTime = DateTime.fromISO(
                               event.startDateTime
                             ).setZone('Europe/Paris').toLocaleString(DateTime.TIME_24_SIMPLE);
+                            const isUserEvent = event.creatorId === session.data?.user?.id || event.participants?.includes(session.data?.user?.id || "");
 
                             const eventContent = (
-                              <div className="text-xs p-2 rounded-md bg-background border hover:bg-accent hover:border-accent-foreground transition-colors cursor-pointer">
+                              <div className={cn("text-xs p-2 rounded-md bg-background border hover:bg-accent hover:border-accent-foreground transition-colors cursor-pointer", isUserEvent && "border-yellow-500")}>
                                 <div className="font-semibold truncate mb-1" title={event.name}>
                                   {event.name}
                                 </div>
@@ -588,6 +590,11 @@ export default function EventsCalendar({
                                     </span>
                                   )}
                                 </div>
+                                {isUserEvent && 
+                                  <Badge variant="default" className="text-xs bg-yellow-500 text-foreground mt-1">
+                                    Inscrit
+                                  </Badge>
+                                }
                               </div>
                             );
 
