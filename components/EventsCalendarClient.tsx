@@ -26,7 +26,7 @@ export default function EventsCalendarClient({
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  const [events, setEvents] = useState<Event[]>(initialEvents ?? []);
+  const [events, setEvents] = useState<Event[] | undefined>(initialEvents);
   const [currentMonth, setCurrentMonth] = useState(initialMonth);
   const [currentYear, setCurrentYear] = useState(initialYear);
   const [showAllGames, setShowAllGames] = useState(initialShowAllGames);
@@ -153,7 +153,7 @@ export default function EventsCalendarClient({
       year !== currentYear ||
       allGames !== showAllGames ||
       hasLocationChanged ||
-      (!initialEvents && events.length === 0)
+      !events
     ) {
       setCurrentMonth(month);
       setCurrentYear(year);
@@ -162,7 +162,7 @@ export default function EventsCalendarClient({
       setIsLocationMode(locParams !== null);
       
       // Ne faire le fetch que si on a des paramètres de localisation ou qu'on revient au mode normal avec des événements initiaux
-      if (locParams !== null || !initialEvents || initialEvents.length > 0) {
+      if (locParams !== null || !events) {
         setEvents([]);
         fetchEvents(month, year, allGames, locParams);
       }
@@ -173,7 +173,7 @@ export default function EventsCalendarClient({
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="space-y-6">
         <EventsCalendar 
-          events={events} 
+          events={events ?? []} 
           showViewToggle={true}
           currentMonth={currentMonth}
           currentYear={currentYear}

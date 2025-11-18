@@ -525,8 +525,6 @@ export async function getEventsForUser(
     .aggregate(pipeline)
     .toArray();
 
-  console.debug(events);
-
   // Map results to Event type
   const mappedEvents = events.map((event) => ({
     id: event.id,
