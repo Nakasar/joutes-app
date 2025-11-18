@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { getEventById } from "@/lib/db/events";
 import { getUserById } from "@/lib/db/users";
+import { User } from "@/lib/types/User";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -11,6 +12,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import EventActions from "./EventActions";
 import QRCodeButton from "./QRCodeButton";
+import ParticipantManager from "./ParticipantManager";
 import { DateTime } from "luxon";
 
 type EventPageProps = {
@@ -231,7 +233,12 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {participantUsers.length > 0 && (
+                {isCreator ? (
+                  <ParticipantManager
+                    eventId={event.id}
+                    participants={participantUsers.filter(Boolean) as User[]}
+                  />
+                ) : participantUsers.length > 0 ? (
                   <div className="space-y-2">
                     {participantUsers.filter(Boolean).map((user) => (
                       <div key={user!.id} className="flex items-center gap-2">
@@ -252,7 +259,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                       </div>
                     ))}
                   </div>
-                )}
+                ) : null}
 
                 {session?.user && (
                   <div className="space-y-2">

@@ -4,7 +4,7 @@ import { z } from "zod";
 const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID doit être un ObjectId MongoDB valide");
 
 export const eventSchema = z.object({
-  id: z.string().uuid("L'ID doit être un UUID valide"),
+  id: z.string().min(1, "L'ID est requis"),
   lairId: objectIdSchema.optional(),
   name: z.string().min(1, "Le nom de l'événement est requis").max(500, "Le nom est trop long"),
   startDateTime: z.string().datetime("La date de début doit être au format ISO 8601"),
@@ -18,6 +18,6 @@ export const eventSchema = z.object({
   maxParticipants: z.number().min(1, "Le nombre maximum de participants doit être positif").optional(),
 });
 
-export const eventIdSchema = z.string().uuid("L'ID de l'événement doit être un UUID valide");
+export const eventIdSchema = z.string().min(1, "L'ID de l'événement est requis");
 
 export type EventInput = z.infer<typeof eventSchema>;

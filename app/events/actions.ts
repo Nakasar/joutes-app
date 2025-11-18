@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { createEvent, getEventById, addParticipantToEvent, removeParticipantFromEvent } from "@/lib/db/events";
 import { getLairsOwnedByUser } from "@/lib/db/lairs";
+import { getUserByTagOrId } from "@/lib/db/users";
 import { nanoid } from 'nanoid';
 import { Event } from "@/lib/types/Event";
 import { revalidatePath } from "next/cache";
@@ -143,5 +144,100 @@ export async function leaveEventAction(eventId: string) {
   } catch (error) {
     console.error("Erreur lors de la désinscription de l'événement:", error);
     return { success: false, error: "Une erreur est survenue lors de la désinscription" };
+  }
+}
+
+export async function removeParticipantAction(eventId: string, userId: string) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      return { success: false, error: "Vous devez être connecté" };
+    }
+
+    // Récupérer l'événement
+    const event = await getEventById(eventId);
+
+    if (!event) {
+      return { success: false, error: "Événement introuvable" };
+    }
+
+    // Vérifier que l'utilisateur connecté est le créateur de l'événement
+    if (event.addedBy !== session.user.id) {
+      return { success: false, error: "Seul le créateur de l'événement peut retirer des participants" };
+    }
+
+    // Retirer le participant
+    const removed = await removeParticipantFromEvent(eventId, userId);
+
+    if (!removed) {
+      return { success: false, error: "Impossible de retirer ce participant" };
+    }
+
+    revalidatePath(`/events/${eventId}`);
+    revalidatePath("/events");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors du retrait du participant:", error);
+    return { success: false, error: "Une erreur est survenue lors du retrait du participant" };
+  }
+}
+
+export async function addParticipantByTagAction(eventId: string, userTag: string) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      return { success: false, error: "Vous devez être connecté" };
+    }
+
+    // Récupérer l'événement
+    const event = await getEventById(eventId);
+
+    if (!event) {
+      return { success: false, error: "Événement introuvable" };
+    }
+
+    // Vérifier que l'utilisateur connecté est le créateur de l'événement
+    if (event.addedBy !== session.user.id) {
+      return { success: false, error: "Seul le créateur de l'événement peut ajouter des participants" };
+    }
+
+    // Rechercher l'utilisateur par son tag
+    const user = await getUserByTagOrId(userTag);
+
+    if (!user) {
+      return { success: false, error: "Utilisateur introuvable" };
+    }
+
+    // Vérifier si l'événement est complet
+    if (event.maxParticipants && event.participants && event.participants.length >= event.maxParticipants) {
+      return { success: false, error: "Cet événement est complet" };
+    }
+
+    // Vérifier si l'utilisateur est déjà inscrit
+    if (event.participants?.includes(user.id)) {
+      return { success: false, error: "Cet utilisateur est déjà inscrit à l'événement" };
+    }
+
+    // Ajouter le participant
+    const added = await addParticipantToEvent(eventId, user.id);
+
+    if (!added) {
+      return { success: false, error: "Impossible d'ajouter ce participant" };
+    }
+
+    revalidatePath(`/events/${eventId}`);
+    revalidatePath("/events");
+
+    return { success: true, userName: user.displayName || user.username };
+  } catch (error) {
+    console.error("Erreur lors de l'ajout du participant:", error);
+    return { success: false, error: "Une erreur est survenue lors de l'ajout du participant" };
   }
 }
