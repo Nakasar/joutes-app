@@ -11,7 +11,12 @@ const nextConfig: NextConfig = {
         pathname: "/**",
       }
     ]
-  }
+  },
+  experimental: {
+    serverActions: {
+      allowedOrigins: process.env.NODE_ENV === "development" ? ["localhost:3000", process.env.DEV_URL!] : undefined,
+    }
+  },
 };
 
 export default nextConfig;

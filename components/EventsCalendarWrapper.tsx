@@ -7,8 +7,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Calendar, MapPin, Gamepad2, AlertCircle, Info } from "lucide-react";
+import { Calendar, MapPin, Gamepad2, AlertCircle, Info, Plus } from "lucide-react";
 import { DateTime } from "luxon";
+import { Event } from "@/lib/types/Event";
 
 type EventsCalendarWrapperProps = {
   basePath?: string;
@@ -94,28 +95,14 @@ export default async function EventsCalendarWrapper({
   const hasLairs = user.lairs && user.lairs.length > 0;
   const hasGames = user.games && user.games.length > 0;
 
-  if (!hasLairs || !hasGames) {
-    return (
+  // Récupérer les événements pour l'utilisateur avec le mois/année
+  // Les détails des lairs sont maintenant inclus directement dans les événements
+  const events: Event[] = [];
+
+  return (
+    <div className="space-y-6">
       <div className="container mx-auto p-6 max-w-4xl">
         <div className="space-y-6">
-          <div className="text-center space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight">
-              Calendrier des Événements
-            </h1>
-            <p className="text-muted-foreground">
-              Personnalisez votre expérience en suivant des lieux et des jeux
-            </p>
-          </div>
-
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription>
-              {!hasLairs && !hasGames && "Vous ne suivez aucun lieu ni aucun jeu pour le moment."}
-              {!hasLairs && hasGames && "Vous ne suivez aucun lieu pour le moment."}
-              {hasLairs && !hasGames && "Vous ne suivez aucun jeu pour le moment."}
-            </AlertDescription>
-          </Alert>
-
           <div className="grid gap-4 md:grid-cols-2">
             {!hasLairs && (
               <Card className="hover:shadow-lg transition-shadow">
@@ -157,20 +144,13 @@ export default async function EventsCalendarWrapper({
           </div>
         </div>
       </div>
-    );
-  }
 
-  // Récupérer les événements pour l'utilisateur avec le mois/année
-  // Les détails des lairs sont maintenant inclus directement dans les événements
-  const events = await getEventsForUser(session.user.id, showAllGames, month, year);
-
-  return (
-    <EventsCalendarClient
-      initialEvents={events}
-      initialMonth={month}
-      initialYear={year}
-      initialShowAllGames={showAllGames}
-      basePath={basePath}
-    />
+      <EventsCalendarClient
+        initialMonth={month}
+        initialYear={year}
+        initialShowAllGames={showAllGames}
+        basePath={basePath}
+      />
+    </div>
   );
 }

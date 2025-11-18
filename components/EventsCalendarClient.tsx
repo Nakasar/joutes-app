@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useCallback, useTransition } from "react";
 
 type EventsCalendarClientProps = {
-  initialEvents: Event[];
+  initialEvents?: Event[];
   initialMonth: number;
   initialYear: number;
   initialShowAllGames: boolean;
@@ -25,8 +25,8 @@ export default function EventsCalendarClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
-  
-  const [events, setEvents] = useState<Event[]>(initialEvents);
+
+  const [events, setEvents] = useState<Event[] | undefined>(initialEvents);
   const [currentMonth, setCurrentMonth] = useState(initialMonth);
   const [currentYear, setCurrentYear] = useState(initialYear);
   const [showAllGames, setShowAllGames] = useState(initialShowAllGames);
@@ -112,6 +112,7 @@ export default function EventsCalendarClient({
 
   // Réinitialiser la recherche par localisation
   const handleResetLocation = useCallback(() => {
+    console.log("Resetting location search");
     setLocationParams(null);
     setIsLocationMode(false);
     updateURL(currentMonth, currentYear, showAllGames, null);
@@ -152,7 +153,8 @@ export default function EventsCalendarClient({
       month !== currentMonth ||
       year !== currentYear ||
       allGames !== showAllGames ||
-      hasLocationChanged
+      hasLocationChanged ||
+      !events
     ) {
       setCurrentMonth(month);
       setCurrentYear(year);
@@ -160,32 +162,16 @@ export default function EventsCalendarClient({
       setLocationParams(locParams);
       setIsLocationMode(locParams !== null);
       
-      // Ne faire le fetch que si on a des paramètres de localisation ou qu'on revient au mode normal avec des événements initiaux
-      if (locParams !== null || initialEvents.length > 0) {
-        setEvents([]);
-        fetchEvents(month, year, allGames, locParams);
-      }
+      setEvents([]);
+      fetchEvents(month, year, allGames, locParams);
     }
-  }, [searchParams, initialMonth, initialYear, currentMonth, currentYear, showAllGames, locationParams, fetchEvents, initialEvents.length]);
+  }, [searchParams, initialMonth, initialYear, currentMonth, currentYear, showAllGames, locationParams, fetchEvents, initialEvents?.length]);
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight mb-2">
-              Calendrier des Événements
-            </h1>
-            {isLocationMode && locationParams && (
-              <p className="text-sm text-muted-foreground">
-                Événements dans un rayon de {locationParams.distance} km
-              </p>
-            )}
-          </div>
-        </div>
-        
         <EventsCalendar 
-          events={events} 
+          events={events ?? []} 
           showViewToggle={true}
           currentMonth={currentMonth}
           currentYear={currentYear}

@@ -6,6 +6,12 @@ import { deleteGame } from "./actions";
 import { GameForm } from "./GameForm";
 import { Button } from "@/components/ui/button";
 
+const gameTypes = {
+  TCG: "TCG",
+  BoardGame: "Jeu de plateau",
+  Other: 'Autre',
+};
+
 export function GameList({ games }: { games: Game[] }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -82,7 +88,7 @@ export function GameList({ games }: { games: Game[] }) {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                    {game.type === "TCG" ? "TCG" : "Jeu de plateau"}
+                    {gameTypes[game.type] ?? 'Autre'}
                   </span>
                 </td>
                 <td className="px-6 py-4">

@@ -129,3 +129,14 @@ export async function getLairIdsNearLocation(
   
   return lairs.map(lair => lair._id.toString());
 }
+
+/**
+ * Get all lairs owned by a user
+ * @param userId - The user's ID
+ * @returns Array of lairs owned by the user
+ */
+export async function getLairsOwnedByUser(userId: string): Promise<Lair[]> {
+  
+  const lairs = await db.collection(COLLECTION_NAME).find({ owners: userId }).toArray();
+  return lairs.map(toLair);
+}

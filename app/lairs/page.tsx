@@ -1,6 +1,5 @@
 import { getAllLairs } from "@/lib/db/lairs";
 import Link from "next/link";
-import Image from "next/image";
 import { Metadata } from "next";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

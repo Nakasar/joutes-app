@@ -7,10 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Gamepad2, Euro, Filter, List, CalendarDays, Clock, Navigation, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Gamepad2, Euro, Filter, List, CalendarDays, Clock, Navigation, X, User2Icon } from "lucide-react";
 import Link from "next/link";
 import { DateTime } from "luxon";
-import { signIn, useSession } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth-client";
+import { cn } from "@/lib/utils";
 
 type EventsCalendarProps = {
   events: Event[];
@@ -547,14 +548,15 @@ export default function EventsCalendar({
                         >
                           {day}
                         </div>
-                        <div className="space-y-1">
+                        <div className="flex gap-1 flex-col">
                           {eventsByDay.get(day)?.map((event) => {
                             const startTime = DateTime.fromISO(
                               event.startDateTime
                             ).setZone('Europe/Paris').toLocaleString(DateTime.TIME_24_SIMPLE);
+                            const isUserEvent = event.creatorId === session.data?.user?.id || event.participants?.includes(session.data?.user?.id || "");
 
                             const eventContent = (
-                              <div className="text-xs p-2 rounded-md bg-background border hover:bg-accent hover:border-accent-foreground transition-colors cursor-pointer">
+                              <div className={cn("text-xs p-2 rounded-md bg-background border hover:bg-accent hover:border-accent-foreground transition-colors cursor-pointer", isUserEvent && "border-yellow-500")}>
                                 <div className="font-semibold truncate mb-1" title={event.name}>
                                   {event.name}
                                 </div>
@@ -562,10 +564,17 @@ export default function EventsCalendar({
                                   <CalendarIcon className="h-3 w-3" />
                                   {startTime}
                                 </div>
-                                <div className="text-xs text-muted-foreground truncate flex items-center gap-1" title={event.lair?.name}>
-                                  <MapPin className="h-3 w-3" />
-                                  {event.lair?.name || "Lieu inconnu"}
-                                </div>
+                                {event.creator ? (
+                                  <div className="text-xs text-muted-foreground truncate flex items-center gap-1" title={event.lair?.name}>
+                                    <User2Icon className="h-3 w-3" />
+                                    {event.creator.displayName ? `${event.creator.displayName}#${event.creator.discriminator}` : "Utilisateur inconnu"}
+                                  </div>
+                                ) : (
+                                  <div className="text-xs text-muted-foreground truncate flex items-center gap-1" title={event.lair?.name}>
+                                    <MapPin className="h-3 w-3" />
+                                    {event.lair?.name || "Lieu inconnu"}
+                                  </div>
+                                )}
                                 <div className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
                                   <Gamepad2 className="h-3 w-3" />
                                   {event.gameName}
@@ -581,6 +590,11 @@ export default function EventsCalendar({
                                     </span>
                                   )}
                                 </div>
+                                {isUserEvent &&
+                                  <Badge variant="default" className="text-xs bg-yellow-500 text-foreground mt-1">
+                                    Inscrit
+                                  </Badge>
+                                }
                               </div>
                             );
 
@@ -594,9 +608,12 @@ export default function EventsCalendar({
                                 {eventContent}
                               </Link>
                             ) : (
-                              <div key={event.id}>
+                              <Link
+                                key={event.id}
+                                href={`/events/${event.id}`}
+                              >
                                 {eventContent}
-                              </div>
+                              </Link>
                             );
                           })}
                         </div>
@@ -629,6 +646,7 @@ export default function EventsCalendar({
           eventsInMonth={eventsInMonth}
           eventsByDayForList={eventsByDayForList}
           today={today}
+          userId={session.data?.user?.id}
           getStatusVariant={getStatusVariant}
           getStatusLabel={getStatusLabel}
         />
@@ -642,6 +660,7 @@ type ListViewProps = {
   eventsInMonth: Event[];
   eventsByDayForList: Map<string, Event[]>;
   today: DateTime;
+  userId?: string;
   getStatusVariant: (status: Event["status"]) => "default" | "secondary" | "destructive" | "outline";
   getStatusLabel: (status: Event["status"]) => string;
 };
@@ -650,6 +669,7 @@ function ListView({
   eventsInMonth,
   eventsByDayForList,
   today,
+  userId,
   getStatusVariant,
   getStatusLabel
 }: ListViewProps) {
@@ -689,21 +709,22 @@ function ListView({
             </div>
 
             {/* Événements du jour */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               {dayEvents.map((event) => {
                 const eventDate = DateTime.fromISO(event.startDateTime);
                 const endDate = DateTime.fromISO(event.endDateTime);
                 const timeStr = eventDate.setZone('Europe/Paris').toLocaleString(DateTime.TIME_24_SIMPLE);
                 const endTimeStr = endDate.setZone('Europe/Paris').toLocaleString(DateTime.TIME_24_SIMPLE);
+                const isUserEvent = userId && (event.creatorId === userId || event.participants?.includes(userId || ""));
 
                 const cardContent = (
                   <Card
-                    className={`hover:shadow-lg transition-shadow ${event.status === "available"
+                    className={cn(`my-2 hover:shadow-lg transition-shadow ${event.url ? "cursor-pointer hover:bg-accent" : ""}`, event.status === "available"
                       ? "border-l-4 border-l-green-500"
                       : event.status === "sold-out"
                         ? "border-l-4 border-l-red-500"
                         : "border-l-4 border-l-gray-400"
-                      } ${event.url ? "cursor-pointer hover:bg-accent" : ""}`}
+                    , isUserEvent && "border-yellow-500")}
                   >
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between gap-2">
@@ -727,17 +748,27 @@ function ListView({
                           Durée : {endDate.diff(eventDate, 'hours').hours.toFixed(1)}h
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">
-                          {event.lair?.name || "Lieu inconnu"}
-                        </span>
-                      </div>
+                      {event.creator ? (
+                        <div className="flex items-center gap-2 text-sm">
+                          <User2Icon className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">
+                            {event.creator.displayName ? `${event.creator.displayName}#${event.creator.discriminator}` : "Utilisateur inconnu"}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-sm">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">
+                            {event.lair?.name || "Lieu inconnu"}
+                          </span>
+                        </div>
+                      )}
+
                       <div className="flex items-center gap-2 text-sm">
                         <Gamepad2 className="h-4 w-4 text-muted-foreground" />
                         <span>{event.gameName}</span>
                       </div>
-                      {event.price !== undefined && (
+                      {event.price && (
                         <div className="flex items-center gap-2 text-sm">
                           <Euro className="h-4 w-4 text-muted-foreground" />
                           <span className="font-semibold">
@@ -745,6 +776,11 @@ function ListView({
                           </span>
                         </div>
                       )}
+                      {isUserEvent &&
+                        <Badge variant="default" className="text-xs bg-yellow-500 text-foreground mt-1">
+                          Inscrit
+                        </Badge>
+                      }
                     </CardContent>
                   </Card>
                 );
@@ -759,9 +795,12 @@ function ListView({
                     {cardContent}
                   </Link>
                 ) : (
-                  <div key={event.id}>
+                  <Link
+                    key={event.id}
+                    href={`/events/${event.id}`}
+                  >
                     {cardContent}
-                  </div>
+                  </Link>
                 );
               })}
             </div>
