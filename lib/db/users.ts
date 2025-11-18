@@ -16,6 +16,11 @@ function toUser(doc: WithId<Document>): User {
     avatar: doc.image || doc.avatar || "",
     lairs: doc.lairs || [],
     games: doc.games || [],
+    isPublicProfile: doc.isPublicProfile || false,
+    description: doc.description || undefined,
+    website: doc.website || undefined,
+    socialLinks: doc.socialLinks || [],
+    profileImage: doc.profileImage || undefined,
   };
 }
 
@@ -54,7 +59,7 @@ export async function getUserByUsernameAndDiscriminator(
   const user = await db.collection(COLLECTION_NAME).findOne({
     displayName,
     discriminator,
-  });
+  }, { collation: { locale: 'en', strength: 2 } });
   return user ? toUser(user) : null;
 }
 
@@ -164,3 +169,99 @@ export async function getUserDiscriminator(userId: string): Promise<string | nul
   return user?.discriminator || null;
 }
 
+/**
+ * Met à jour la visibilité du profil de l'utilisateur
+ * @param userId L'ID de l'utilisateur
+ * @param isPublicProfile true pour rendre le profil public, false pour privé
+ * @returns true si la mise à jour a réussi, false sinon
+ */
+export async function updateUserProfileVisibility(
+  userId: string,
+  isPublicProfile: boolean
+): Promise<boolean> {
+  
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: ObjectId.createFromHexString(userId) },
+    { $set: { isPublicProfile } }
+  );
+  
+  return result.modifiedCount > 0 || result.matchedCount > 0;
+}
+
+/**
+ * Récupère un utilisateur par son userTag (displayName#discriminator) ou son ID
+ * @param userTagOrId Le userTag ou l'ID de l'utilisateur
+ * @returns L'utilisateur ou null si non trouvé
+ */
+export async function getUserByTagOrId(userTagOrId: string): Promise<User | null> {
+  
+  // Vérifier si c'est un ID MongoDB valide
+  if (ObjectId.isValid(userTagOrId) && userTagOrId.length === 24) {
+    return getUserById(userTagOrId);
+  }
+  
+  // Sinon, considérer que c'est un userTag (displayName#discriminator)
+  const parts = userTagOrId.split('#');
+  if (parts.length === 2) {
+    const [displayName, discriminator] = parts;
+    return getUserByUsernameAndDiscriminator(displayName, discriminator);
+  }
+  
+  return null;
+}
+
+/**
+ * Met à jour les informations publiques du profil
+ * @param userId L'ID de l'utilisateur
+ * @param description La description du profil
+ * @param website Le site web
+ * @param socialLinks Les liens vers les réseaux sociaux
+ * @returns true si la mise à jour a réussi, false sinon
+ */
+export async function updateUserProfileInfo(
+  userId: string,
+  data: {
+    description?: string;
+    website?: string;
+    socialLinks?: string[];
+  }
+): Promise<boolean> {
+  
+  const updateData: Record<string, unknown> = {};
+  
+  if (data.description !== undefined) {
+    updateData.description = data.description || null;
+  }
+  if (data.website !== undefined) {
+    updateData.website = data.website || null;
+  }
+  if (data.socialLinks !== undefined) {
+    updateData.socialLinks = data.socialLinks;
+  }
+  
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: ObjectId.createFromHexString(userId) },
+    { $set: updateData }
+  );
+  
+  return result.modifiedCount > 0 || result.matchedCount > 0;
+}
+
+/**
+ * Met à jour l'image de profil de l'utilisateur
+ * @param userId L'ID de l'utilisateur
+ * @param profileImage L'URL de l'image de profil
+ * @returns true si la mise à jour a réussi, false sinon
+ */
+export async function updateUserProfileImage(
+  userId: string,
+  profileImage: string
+): Promise<boolean> {
+  
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: ObjectId.createFromHexString(userId) },
+    { $set: { profileImage } }
+  );
+  
+  return result.modifiedCount > 0 || result.matchedCount > 0;
+}
