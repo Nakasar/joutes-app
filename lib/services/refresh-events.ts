@@ -71,6 +71,7 @@ Analyse le contenu HTML suivant provenant de ${pagesContent.length} page(s) diff
 
 IMPORTANT: Si un même événement apparaît plusieurs fois (même nom et même date et heure et même lieu), ne le retourne qu'UNE SEULE FOIS.
 Un évènement avec le même nom peut apparaître à des dates ou heures différentes, dans ce cas, garde chaque occurence distincte.
+Un URL ne peut être associée qu'à UN SEUL événement. Si plusieurs événements partagent le même URL, considère que c'est le même événement et ne le retourne qu'une seule fois dans ton JSON.
 
 Pour chaque événement unique, extrait:
 - name: Le nom de l'événement (retire le nom du jeu et la date et l'heure du nom de l'évènement)
