@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Gamepad2, Euro, Filter, List, CalendarDays, Clock, Navigation, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Gamepad2, Euro, Filter, List, CalendarDays, Clock, Navigation, X, User2Icon } from "lucide-react";
 import Link from "next/link";
 import { DateTime } from "luxon";
 import { signIn, useSession } from "@/lib/auth-client";
@@ -562,10 +562,17 @@ export default function EventsCalendar({
                                   <CalendarIcon className="h-3 w-3" />
                                   {startTime}
                                 </div>
-                                <div className="text-xs text-muted-foreground truncate flex items-center gap-1" title={event.lair?.name}>
-                                  <MapPin className="h-3 w-3" />
-                                  {event.lair?.name || "Lieu inconnu"}
-                                </div>
+                                {event.addedByDetails ? (
+                                  <div className="text-xs text-muted-foreground truncate flex items-center gap-1" title={event.lair?.name}>
+                                    <User2Icon className="h-3 w-3" />
+                                    {event.addedByDetails.displayName ? `${event.addedByDetails.displayName}#${event.addedByDetails.discriminator}` : "Utilisateur inconnu"}
+                                  </div>
+                                ) : (
+                                  <div className="text-xs text-muted-foreground truncate flex items-center gap-1" title={event.lair?.name}>
+                                    <MapPin className="h-3 w-3" />
+                                    {event.lair?.name || "Lieu inconnu"}
+                                  </div>
+                                )}
                                 <div className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
                                   <Gamepad2 className="h-3 w-3" />
                                   {event.gameName}

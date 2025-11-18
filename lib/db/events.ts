@@ -496,6 +496,28 @@ export async function getEventsForUser(
       as: "lairDetails"
     }
   });
+  // Add lookup for addeBy user details
+  pipeline.push({
+    $lookup: {
+      from: "user",
+      let: { addedById: "$addedBy" },
+      pipeline: [
+        {
+          $match: {
+            $expr: { $eq: ["$_id", { $toObjectId: "$$addedById" }] }
+          }
+        },
+        {
+          $project: {
+            id: 1,
+            discriminator: 1,
+            displayName: 1,
+          }
+        }
+      ],
+      as: "addedByDetails",
+    },
+  });
 
   // Execute aggregation
   const events = await db
@@ -519,6 +541,7 @@ export async function getEventsForUser(
     addedBy: event.addedBy,
     participants: event.participants,
     maxParticipants: event.maxParticipants,
+    addedByDetails: event.addedByDetails && event.addedByDetails.length > 0 ? event.addedByDetails[0] : undefined,
     lair: event.lairDetails && event.lairDetails.length > 0 ? {
       id: event.lairDetails[0]._id.toString(),
       name: event.lairDetails[0].name,

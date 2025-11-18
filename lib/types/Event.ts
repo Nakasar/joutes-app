@@ -11,6 +11,11 @@ export type Event = {
   price?: number;
   status: 'available' | 'sold-out' | 'cancelled';
   addedBy: string; // ID de l'utilisateur qui a créé l'événement ou "AI-SCRAPPING"
+  addedByDetails?: {
+    id: string;
+    displayName?: string;
+    discriminator?: string;
+  };
   participants?: string[]; // IDs des utilisateurs inscrits à l'événement
   maxParticipants?: number; // Nombre maximum de participants (optionnel)
   lair?: {
