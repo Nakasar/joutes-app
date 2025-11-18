@@ -17,6 +17,7 @@ export type Event = {
     displayName?: string;
     discriminator?: string;
   };
+  allowJoin?: boolean;
   participants?: string[]; // IDs des utilisateurs inscrits à l'événement
   maxParticipants?: number; // Nombre maximum de participants (optionnel)
   lair?: {

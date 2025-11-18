@@ -61,6 +61,7 @@ export async function createEventAction(input: CreateEventInput) {
       status: "available",
       addedBy: "USER",
       creatorId: session.user.id,
+      allowJoin: true,
       participants: [],
       maxParticipants: input.maxParticipants,
     };
@@ -92,6 +93,10 @@ export async function joinEventAction(eventId: string) {
 
     if (!event) {
       return { success: false, error: "Événement introuvable" };
+    }
+
+    if (!event.allowJoin) {
+      return { success: false, error: "Les inscriptions à cet événement sont fermées" };
     }
 
     // Vérifier si l'événement est complet
