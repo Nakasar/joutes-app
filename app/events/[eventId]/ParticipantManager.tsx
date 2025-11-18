@@ -24,6 +24,9 @@ export default function ParticipantManager({ eventId, participants }: Participan
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [removingUserId, setRemovingUserId] = useState<string | null>(null);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [userToRemove, setUserToRemove] = useState<User | null>(null);
+  const [removeError, setRemoveError] = useState<string | null>(null);
 
   const handleAddParticipant = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,26 +57,31 @@ export default function ParticipantManager({ eventId, participants }: Participan
   };
 
   const handleRemoveParticipant = async (userId: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir retirer ce participant ?")) {
-      return;
-    }
-
     setRemovingUserId(userId);
+    setRemoveError(null);
 
     try {
       const result = await removeParticipantAction(eventId, userId);
 
       if (result.success) {
         router.refresh();
+        setConfirmDeleteOpen(false);
+        setUserToRemove(null);
       } else {
-        alert(result.error || "Une erreur est survenue");
+        setRemoveError(result.error || "Une erreur est survenue");
       }
     } catch (err) {
       console.error(err);
-      alert("Une erreur est survenue");
+      setRemoveError("Une erreur est survenue");
     } finally {
       setRemovingUserId(null);
     }
+  };
+
+  const openRemoveConfirmation = (user: User) => {
+    setUserToRemove(user);
+    setRemoveError(null);
+    setConfirmDeleteOpen(true);
   };
 
   return (
@@ -101,7 +109,7 @@ export default function ParticipantManager({ eventId, participants }: Participan
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => handleRemoveParticipant(user.id)}
+                onClick={() => openRemoveConfirmation(user)}
                 disabled={removingUserId === user.id}
                 className="h-7 w-7 p-0"
               >
@@ -174,6 +182,46 @@ export default function ParticipantManager({ eventId, participants }: Participan
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation dialog for removing participant */}
+      <Dialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Retirer le participant</DialogTitle>
+            <DialogDescription>
+              Êtes-vous sûr de vouloir retirer {userToRemove?.displayName || userToRemove?.username} de cet événement ?
+            </DialogDescription>
+          </DialogHeader>
+
+          {removeError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{removeError}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="flex gap-2 justify-end">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setConfirmDeleteOpen(false);
+                setUserToRemove(null);
+                setRemoveError(null);
+              }}
+              disabled={removingUserId !== null}
+            >
+              Annuler
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => userToRemove && handleRemoveParticipant(userToRemove.id)}
+              disabled={removingUserId !== null}
+            >
+              {removingUserId !== null ? "Suppression..." : "Retirer"}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
