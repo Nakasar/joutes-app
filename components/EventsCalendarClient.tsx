@@ -171,19 +171,6 @@ export default function EventsCalendarClient({
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight mb-2">
-              Calendrier des Événements
-            </h1>
-            {isLocationMode && locationParams && (
-              <p className="text-sm text-muted-foreground">
-                Événements dans un rayon de {locationParams.distance} km
-              </p>
-            )}
-          </div>
-        </div>
-        
         <EventsCalendar 
           events={events} 
           showViewToggle={true}

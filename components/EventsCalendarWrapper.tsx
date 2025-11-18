@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Calendar, MapPin, Gamepad2, AlertCircle, Info } from "lucide-react";
+import { Calendar, MapPin, Gamepad2, AlertCircle, Info, Plus } from "lucide-react";
 import { DateTime } from "luxon";
 
 type EventsCalendarWrapperProps = {
@@ -98,13 +98,21 @@ export default async function EventsCalendarWrapper({
     return (
       <div className="container mx-auto p-6 max-w-4xl">
         <div className="space-y-6">
-          <div className="text-center space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight">
-              Calendrier des Événements
-            </h1>
-            <p className="text-muted-foreground">
-              Personnalisez votre expérience en suivant des lieux et des jeux
-            </p>
+          <div className="flex justify-between items-center">
+            <div className="text-center flex-1 space-y-2">
+              <h1 className="text-4xl font-bold tracking-tight">
+                Calendrier des Événements
+              </h1>
+              <p className="text-muted-foreground">
+                Personnalisez votre expérience en suivant des lieux et des jeux
+              </p>
+            </div>
+            <Button asChild>
+              <Link href="/events/new">
+                <Plus className="h-4 w-4 mr-2" />
+                Créer un événement
+              </Link>
+            </Button>
           </div>
 
           <Alert>
@@ -165,12 +173,14 @@ export default async function EventsCalendarWrapper({
   const events = await getEventsForUser(session.user.id, showAllGames, month, year);
 
   return (
-    <EventsCalendarClient
-      initialEvents={events}
-      initialMonth={month}
-      initialYear={year}
-      initialShowAllGames={showAllGames}
-      basePath={basePath}
-    />
+    <div className="space-y-6">
+      <EventsCalendarClient
+        initialEvents={events}
+        initialMonth={month}
+        initialYear={year}
+        initialShowAllGames={showAllGames}
+        basePath={basePath}
+      />
+    </div>
   );
 }
