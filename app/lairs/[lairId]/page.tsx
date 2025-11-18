@@ -10,7 +10,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Metadata } from "next";
 import FollowLairButton from "./FollowLairButton";
-import EventsCalendar from "@/app/events/EventsCalendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -66,11 +65,9 @@ export default async function LairDetailPage({
     headers: await headers(),
   });
   
-  let isFollowing = false;
-  if (session?.user?.id) {
-    const user = await getUserById(session.user.id);
-    isFollowing = user?.lairs?.includes(lairId) || false;
-  }
+  const user = session?.user?.id ? await getUserById(session.user.id) : null;
+  const isFollowing = user?.lairs?.includes(lairId) || false;
+  const hasGames = user?.games && user.games.length > 0;
 
   // Vérifier si l'utilisateur est administrateur ou owner du lair
   const canManageLair = await checkAdminOrOwner(lairId);
@@ -79,7 +76,6 @@ export default async function LairDetailPage({
     year: new Date().getFullYear(),
     month: new Date().getMonth() + 1,
     userId: session?.user?.id,
-    allGames: false,
   });
   
   // Récupérer les détails des jeux
@@ -303,14 +299,36 @@ export default async function LairDetailPage({
                 </p>
               </div>
             ) : (
-              <EventsCalendarClient
-                initialEvents={upcomingEvents}
-                initialMonth={+(month ?? new Date().getMonth() + 1)}
-                initialYear={+(year ?? new Date().getFullYear())}
-                initialShowAllGames={allGames === "true"}
-                basePath={`/lairs/${lairId}`}
-                lairId={lairId}
-              />
+              <div>
+                {!hasGames && (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Card className="hover:shadow-lg transition-shadow">
+                      <CardHeader>
+                        <Gamepad2 className="h-8 w-8 text-primary mb-2" />
+                        <CardTitle>Suivez des jeux</CardTitle>
+                        <CardDescription>
+                          Sélectionnez les jeux qui vous intéressent pour voir leurs événements
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Button asChild className="w-full">
+                          <Link href="/account">
+                            Gérer mes jeux
+                          </Link>
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+                <EventsCalendarClient
+                  initialEvents={upcomingEvents}
+                  initialMonth={+(month ?? new Date().getMonth() + 1)}
+                  initialYear={+(year ?? new Date().getFullYear())}
+                  initialShowAllGames={allGames === "true"}
+                  basePath={`/lairs/${lairId}`}
+                  lairId={lairId}
+                />
+              </div>
             )}
           </CardContent>
         </Card>

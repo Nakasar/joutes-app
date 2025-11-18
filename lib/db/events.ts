@@ -2,6 +2,7 @@ import db from "@/lib/mongodb";
 import { Event } from "@/lib/types/Event";
 import { getUserById } from "@/lib/db/users";
 import { getLairIdsNearLocation } from "./lairs";
+import { ObjectId } from "mongodb";
 
 const COLLECTION_NAME = "events";
 
@@ -18,8 +19,6 @@ export type EventDocument = Event;
  * @returns Array of events for the lair
  */
 export async function getEventsByLairId(lairId: string, { year, month, allGames, userId }: { userId?: string; year?: number; month?: number; allGames?: boolean } = {}): Promise<Event[]> {
-  
-  
   const user = userId && await getUserById(userId);
 
   // Build aggregation pipeline
@@ -49,7 +48,7 @@ export async function getEventsByLairId(lairId: string, { year, month, allGames,
   }
 
   // If not showing all games, filter by user's followed games
-  if (!allGames && user) {
+  if (allGames !== undefined && !allGames && user) {
     // If user doesn't follow any games, return empty array
     if (!user.games || user.games.length === 0) {
       return [];
@@ -127,7 +126,7 @@ export async function getEventsByLairId(lairId: string, { year, month, allGames,
 
   // Map results to Event type
   return events.map((event) => ({
-    id: event._id.toString(),
+    id: event.id,
     lairId: event.lairId,
     name: event.name,
     startDateTime: event.startDateTime,
@@ -148,8 +147,6 @@ export async function getEventsByLairId(lairId: string, { year, month, allGames,
 
 // Get all events across all lairs
 export async function getAllEvents({ year, month, games }: { year?: number; month?: number; games?: string[] } = {}): Promise<Event[]> {
-  
-
   // Build aggregation pipeline
   const pipeline: Array<Record<string, unknown>> = [];
 
@@ -192,7 +189,7 @@ export async function getAllEvents({ year, month, games }: { year?: number; mont
 
   // Map results to Event type
   return events.map((event) => ({
-    id: event._id.toString(),
+    id: event.id,
     lairId: event.lairId,
     name: event.name,
     startDateTime: event.startDateTime,
@@ -218,8 +215,6 @@ export async function getEventsByLairIds(lairIds: string[], {
   year?: number;
   month?: number;
 } = {}): Promise<Event[]> {
-  
-
   // Build aggregation pipeline
   const pipeline: Array<Record<string, unknown>> = [
     // Match events from user's followed lairs
@@ -269,7 +264,7 @@ export async function getEventsByLairIds(lairIds: string[], {
 
   // Map results to Event type
   return events.map((event) => ({
-    id: event._id.toString(),
+    id: event.id,
     lairId: event.lairId,
     name: event.name,
     startDateTime: event.startDateTime,
@@ -290,7 +285,6 @@ export async function getEventsByLairIds(lairIds: string[], {
 
 // Create a single event
 export async function createEvent(event: Event): Promise<Event> {
-  
   await db.collection<EventDocument>(COLLECTION_NAME).insertOne(event);
   return event;
 }
@@ -299,7 +293,6 @@ export async function createEvent(event: Event): Promise<Event> {
 export async function createManyEvents(events: Event[]): Promise<void> {
   if (events.length === 0) return;
 
-  
   await db.collection<EventDocument>(COLLECTION_NAME).insertMany(events);
 }
 
@@ -380,8 +373,6 @@ export async function getEventsForUser(
   if (!user) {
     return [];
   }
-
-  
   
   // Si userLocation et maxDistanceKm sont fournis, utiliser la recherche géospatiale
   if (userLocation && maxDistanceKm !== undefined && maxDistanceKm > 0 && user.lairs && user.lairs.length > 0) {
@@ -442,7 +433,6 @@ export async function getEventsForUser(
     }
 
     // Convert user.games string IDs to ObjectIds for comparison
-    const { ObjectId } = await import("mongodb");
     const gameObjectIds = user.games.map(id => {
       try {
         return new ObjectId(id);
@@ -450,7 +440,7 @@ export async function getEventsForUser(
         console.error(`Invalid game ID: ${id}`);
         return null;
       }
-    }).filter((id): id is import("mongodb").ObjectId => id !== null);
+    }).filter((id) => id !== null);
 
     // Add lookup stage to join with games collection
     pipeline.push(
@@ -513,7 +503,7 @@ export async function getEventsForUser(
 
   // Map results to Event type
   const mappedEvents = events.map((event) => ({
-    id: event._id.toString(),
+    id: event.id,
     lairId: event.lairId,
     name: event.name,
     startDateTime: event.startDateTime,
@@ -542,8 +532,6 @@ export async function getEventsForUser(
  * @returns The event or null if not found
  */
 export async function getEventById(eventId: string): Promise<Event | null> {
-  
-  
   const pipeline: Array<Record<string, unknown>> = [
     {
       $match: { id: eventId }
@@ -575,7 +563,7 @@ export async function getEventById(eventId: string): Promise<Event | null> {
 
   const event = events[0];
   return {
-    id: event._id.toString(),
+    id: event.id,
     lairId: event.lairId,
     name: event.name,
     startDateTime: event.startDateTime,
