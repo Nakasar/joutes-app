@@ -72,7 +72,7 @@ export default function EventForm({ ownedLairs, games }: EventFormProps) {
         </CardTitle>
         <CardDescription>
           {ownedLairs.length > 0
-            ? "Créez un événement public rattaché à l&apos;un de vos lieux, ou un événement privé"
+            ? "Créez un événement public rattaché à l'un de vos lieux, ou un événement privé"
             : "Créez un événement privé (vous ne possédez aucun lieu)"}
         </CardDescription>
       </CardHeader>
@@ -134,7 +134,6 @@ export default function EventForm({ ownedLairs, games }: EventFormProps) {
                   <SelectValue placeholder="Événement privé (sans lieu)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Événement privé (sans lieu)</SelectItem>
                   {ownedLairs.map((lair) => (
                     <SelectItem key={lair.id} value={lair.id}>
                       {lair.name}
@@ -143,7 +142,7 @@ export default function EventForm({ ownedLairs, games }: EventFormProps) {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Si aucun lieu n&apos;est sélectionné, l&apos;événement sera privé et visible uniquement par vous et les participants
+                Si aucun lieu n&apos;est sélectionné, l&apos;événement sera privé et visible uniquement par vous et les participants.
               </p>
             </div>
           )}
@@ -222,7 +221,7 @@ export default function EventForm({ ownedLairs, games }: EventFormProps) {
 
           <div className="flex gap-2 pt-4">
             <Button type="submit" disabled={loading}>
-              {loading ? "Création..." : "Créer l&apos;événement"}
+              {loading ? "Création..." : "Créer l'événement"}
             </Button>
             <Button
               type="button"
