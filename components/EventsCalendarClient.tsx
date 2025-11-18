@@ -4,7 +4,6 @@ import { Event } from "@/lib/types/Event";
 import EventsCalendar from "@/app/events/EventsCalendar";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useCallback, useTransition } from "react";
-import { cosineSimilarity } from "ai";
 
 type EventsCalendarClientProps = {
   initialEvents?: Event[];
