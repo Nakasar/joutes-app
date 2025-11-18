@@ -1,40 +1,31 @@
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { getEventById } from "@/lib/db/events";
+'use client';
+
+import { useParams, useRouter } from "next/navigation";
 import { joinEventAction } from "../../actions";
+import { useEffect } from "react";
+import { useSession } from "@/lib/auth-client";
 
-type JoinPageProps = {
-  params: Promise<{
-    eventId: string;
-  }>;
-};
+export default function JoinPage() {
+    const { eventId } = useParams<{ eventId: string }>();
+    const router = useRouter();
+    const session = useSession();
 
-export default async function JoinPage({ params }: JoinPageProps) {
-  const { eventId } = await params;
-  
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+    useEffect(() => {
+        if (!session?.data?.user) {
+            router.push(`/login?redirect=/events/${eventId}/join`);
+            return;
+        }
 
-  // Si l'utilisateur n'est pas connecté, rediriger vers la page de login
-  if (!session?.user) {
-    redirect(`/login?redirect=/events/${eventId}/join`);
-  }
+        joinEventAction(eventId).then((result) => {
+            if (result.success) {
+                router.push(`/events/${eventId}?joined=true`);
+            } else {
+                router.push(`/events/${eventId}?error=${encodeURIComponent(result.error || "Erreur")}`);
+            }
+        }).catch(() => {
+            router.push(`/events/${eventId}?error=${encodeURIComponent("Erreur")}`);
+        });
+    }, [eventId, session]);
 
-  // Vérifier que l'événement existe
-  const event = await getEventById(eventId);
-  if (!event) {
-    redirect("/events");
-  }
-
-  // Tenter d'inscrire l'utilisateur
-  const result = await joinEventAction(eventId);
-
-  // Rediriger vers la page de l'événement avec un message
-  if (result.success) {
-    redirect(`/events/${eventId}?joined=true`);
-  } else {
-    redirect(`/events/${eventId}?error=${encodeURIComponent(result.error || "Erreur")}`);
-  }
+    return (<div></div>);
 }
