@@ -17,6 +17,10 @@ function toUser(doc: WithId<Document>): User {
     lairs: doc.lairs || [],
     games: doc.games || [],
     isPublicProfile: doc.isPublicProfile || false,
+    description: doc.description || undefined,
+    website: doc.website || undefined,
+    socialLinks: doc.socialLinks || [],
+    profileImage: doc.profileImage || undefined,
   };
 }
 
@@ -204,4 +208,60 @@ export async function getUserByTagOrId(userTagOrId: string): Promise<User | null
   }
   
   return null;
+}
+
+/**
+ * Met à jour les informations publiques du profil
+ * @param userId L'ID de l'utilisateur
+ * @param description La description du profil
+ * @param website Le site web
+ * @param socialLinks Les liens vers les réseaux sociaux
+ * @returns true si la mise à jour a réussi, false sinon
+ */
+export async function updateUserProfileInfo(
+  userId: string,
+  data: {
+    description?: string;
+    website?: string;
+    socialLinks?: string[];
+  }
+): Promise<boolean> {
+  
+  const updateData: Record<string, unknown> = {};
+  
+  if (data.description !== undefined) {
+    updateData.description = data.description || null;
+  }
+  if (data.website !== undefined) {
+    updateData.website = data.website || null;
+  }
+  if (data.socialLinks !== undefined) {
+    updateData.socialLinks = data.socialLinks;
+  }
+  
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: ObjectId.createFromHexString(userId) },
+    { $set: updateData }
+  );
+  
+  return result.modifiedCount > 0 || result.matchedCount > 0;
+}
+
+/**
+ * Met à jour l'image de profil de l'utilisateur
+ * @param userId L'ID de l'utilisateur
+ * @param profileImage L'URL de l'image de profil
+ * @returns true si la mise à jour a réussi, false sinon
+ */
+export async function updateUserProfileImage(
+  userId: string,
+  profileImage: string
+): Promise<boolean> {
+  
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: ObjectId.createFromHexString(userId) },
+    { $set: { profileImage } }
+  );
+  
+  return result.modifiedCount > 0 || result.matchedCount > 0;
 }

@@ -30,3 +30,37 @@ export const updateProfileVisibilitySchema = z.object({
 });
 
 export type UpdateProfileVisibilityInput = z.infer<typeof updateProfileVisibilitySchema>;
+
+// Schéma pour la description du profil
+export const descriptionSchema = z
+  .string()
+  .max(500, "La description ne peut pas dépasser 500 caractères")
+  .optional();
+
+// Schéma pour le site web
+export const websiteSchema = z
+  .string()
+  .url("L'URL du site web n'est pas valide")
+  .optional()
+  .or(z.literal(""));
+
+// Schéma pour un lien de réseau social
+export const socialLinkSchema = z
+  .string()
+  .url("L'URL n'est pas valide");
+
+// Schéma pour la mise à jour des informations du profil
+export const updateProfileInfoSchema = z.object({
+  description: descriptionSchema,
+  website: websiteSchema,
+  socialLinks: z.array(socialLinkSchema).max(10, "Vous ne pouvez pas ajouter plus de 10 liens").optional(),
+});
+
+export type UpdateProfileInfoInput = z.infer<typeof updateProfileInfoSchema>;
+
+// Schéma pour la mise à jour de l'image de profil
+export const updateProfileImageSchema = z.object({
+  profileImage: z.string().url("L'URL de l'image n'est pas valide"),
+});
+
+export type UpdateProfileImageInput = z.infer<typeof updateProfileImageSchema>;

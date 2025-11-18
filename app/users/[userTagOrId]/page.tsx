@@ -3,7 +3,7 @@ import { getPublicUserProfileAction } from "@/app/account/user-actions";
 import { getAllGames } from "@/lib/db/games";
 import { getLairById } from "@/lib/db/lairs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { User as UserIcon, Gamepad2, MapPin, Lock } from "lucide-react";
+import { User as UserIcon, Gamepad2, MapPin, Lock, Globe, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Game } from "@/lib/types/Game";
 import { Lair } from "@/lib/types/Lair";
@@ -49,6 +49,8 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
     ? `${user.displayName}#${user.discriminator}`
     : user.username;
 
+  const displayImage = user.profileImage || user.avatar;
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8">
       <div className="container mx-auto px-4 max-w-5xl">
@@ -57,11 +59,11 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-start gap-4">
-                {user.avatar && (
+                {displayImage && (
                   <img 
-                    src={user.avatar} 
+                    src={displayImage} 
                     alt={`Avatar de ${userTag}`}
-                    className="w-20 h-20 rounded-full ring-4 ring-primary/20"
+                    className="w-20 h-20 rounded-full ring-4 ring-primary/20 object-cover"
                   />
                 )}
                 <div className="flex-1">
@@ -71,8 +73,51 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
                       <Lock className="h-5 w-5 text-muted-foreground" />
                     )}
                   </h1>
+                  
+                  {/* Description */}
+                  {user.description && (
+                    <p className="text-muted-foreground mt-3 whitespace-pre-wrap">
+                      {user.description}
+                    </p>
+                  )}
+                  
+                  {/* Site web et réseaux sociaux */}
+                  {(user.website || (user.socialLinks && user.socialLinks.length > 0)) && (
+                    <div className="mt-4 space-y-2">
+                      {user.website && (
+                        <a 
+                          href={user.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                        >
+                          <Globe className="h-4 w-4" />
+                          {new URL(user.website).hostname}
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                      
+                      {user.socialLinks && user.socialLinks.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {user.socialLinks.map((link, index) => (
+                            <a
+                              key={index}
+                              href={link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              {new URL(link).hostname}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
                   {!isPublic && (
-                    <p className="text-sm text-muted-foreground mt-2">
+                    <p className="text-sm text-muted-foreground mt-4">
                       Ce profil est privé. Seules les informations publiques sont affichées.
                     </p>
                   )}

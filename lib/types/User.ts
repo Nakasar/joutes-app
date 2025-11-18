@@ -15,4 +15,10 @@ export type User = {
   games: Game['id'][];
   
   isPublicProfile?: boolean; // Si true, le profil affiche les jeux et lieux de l'utilisateur
+  
+  // Informations publiques du profil
+  description?: string; // Description du profil
+  website?: string; // Site web personnel
+  socialLinks?: string[]; // Liens vers les réseaux sociaux
+  profileImage?: string; // Image de profil personnalisée (URL Vercel Blob)
 };
