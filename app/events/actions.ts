@@ -159,6 +159,8 @@ export async function removeParticipantAction(eventId: string, userId: string) {
 
     // Récupérer l'événement
     const event = await getEventById(eventId);
+    console.log(event);
+    console.log(eventId);
 
     if (!event) {
       return { success: false, error: "Événement introuvable" };
