@@ -46,7 +46,7 @@ export default function QRCodeButton({ eventId }: QRCodeButtonProps) {
         onClick={() => setOpen(true)}
       >
         <QrCode className="h-4 w-4 mr-2" />
-        Afficher code de participation
+        Code de participation
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>

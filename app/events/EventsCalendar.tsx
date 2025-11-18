@@ -601,9 +601,12 @@ export default function EventsCalendar({
                                 {eventContent}
                               </Link>
                             ) : (
-                              <div key={event.id}>
+                              <Link
+                                key={event.id}
+                                href={`/events/${event.id}`}
+                              >
                                 {eventContent}
-                              </div>
+                              </Link>
                             );
                           })}
                         </div>
@@ -734,17 +737,27 @@ function ListView({
                           Durée : {endDate.diff(eventDate, 'hours').hours.toFixed(1)}h
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">
-                          {event.lair?.name || "Lieu inconnu"}
-                        </span>
-                      </div>
+                      {event.creator ? (
+                        <div className="flex items-center gap-2 text-sm">
+                          <User2Icon className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">
+                            {event.creator.displayName ? `${event.creator.displayName}#${event.creator.discriminator}` : "Utilisateur inconnu"}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-sm">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">
+                            {event.lair?.name || "Lieu inconnu"}
+                          </span>
+                        </div>
+                      )}
+
                       <div className="flex items-center gap-2 text-sm">
                         <Gamepad2 className="h-4 w-4 text-muted-foreground" />
                         <span>{event.gameName}</span>
                       </div>
-                      {event.price !== undefined && (
+                      {event.price && (
                         <div className="flex items-center gap-2 text-sm">
                           <Euro className="h-4 w-4 text-muted-foreground" />
                           <span className="font-semibold">
@@ -766,9 +779,12 @@ function ListView({
                     {cardContent}
                   </Link>
                 ) : (
-                  <div key={event.id}>
+                  <Link
+                    key={event.id}
+                    href={`/events/${event.id}`}
+                  >
                     {cardContent}
-                  </div>
+                  </Link>
                 );
               })}
             </div>

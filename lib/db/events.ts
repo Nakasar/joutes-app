@@ -377,7 +377,7 @@ export async function getEventsForUser(
   if (!user) {
     return [];
   }
-  
+
   let lairs = user.lairs ?? [];
   // Si userLocation et maxDistanceKm sont fournis, utiliser la recherche géospatiale
   if (userLocation && maxDistanceKm !== undefined && maxDistanceKm > 0) {
@@ -501,7 +501,7 @@ export async function getEventsForUser(
       pipeline: [
         {
           $match: {
-            $expr: { 
+            $expr: {
               $and: [
                 { $eq: ["$_id", { $toObjectId: "$$creatorId" }] }
               ]
@@ -576,6 +576,31 @@ export async function getEventById(eventId: string): Promise<Event | null> {
         ],
         as: "lairDetails"
       }
+    },
+    {
+      $lookup: {
+        from: "user",
+        let: { creatorId: "$creatorId" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$_id", { $toObjectId: "$$creatorId" }] }
+                ]
+              }
+            }
+          },
+          {
+            $project: {
+              id: 1,
+              discriminator: 1,
+              displayName: 1,
+            }
+          }
+        ],
+        as: "creator",
+      },
     }
   ];
 
@@ -600,6 +625,8 @@ export async function getEventById(eventId: string): Promise<Event | null> {
     price: event.price,
     status: event.status,
     addedBy: event.addedBy,
+    creatorId: event.creatorId,
+    creator: event.creator && event.creator.length > 0 ? event.creator[0] : undefined,
     participants: event.participants,
     maxParticipants: event.maxParticipants,
     lair: event.lairDetails && event.lairDetails.length > 0 ? {
