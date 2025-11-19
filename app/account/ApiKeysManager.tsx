@@ -322,7 +322,7 @@ export default function ApiKeysManager() {
           <div>
             <h4 className="font-medium mb-2">Endpoint MCP</h4>
             <code className="block p-2 bg-gray-50 rounded border text-sm">
-              {process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/mcp
+              {process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/mcp
             </code>
           </div>
           
