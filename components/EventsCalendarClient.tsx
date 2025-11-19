@@ -110,18 +110,28 @@ export default function EventsCalendarClient({
   // Gérer la recherche par localisation
   const handleLocationSearch = useCallback((latitude: number, longitude: number, distance: number) => {
     const locParams = { latitude, longitude, distance };
+    // Mettre à jour les états d'abord pour éviter le double fetch dans useEffect
     setLocationParams(locParams);
     setIsLocationMode(true);
+    //setFetchable(true);
+    // Lancer le fetch immédiatement
+    //fetchEvents(currentMonth, currentYear, showAllGames, locParams);
+    // Mettre à jour l'URL sans déclencher un nouveau fetch
     updateURL(currentMonth, currentYear, showAllGames, locParams);
-  }, [currentMonth, currentYear, showAllGames, updateURL]);
+  }, [currentMonth, currentYear, showAllGames, updateURL, fetchEvents]);
 
   // Réinitialiser la recherche par localisation
   const handleResetLocation = useCallback(() => {
     console.log("Resetting location search");
+    // Mettre à jour les états d'abord
     setLocationParams(null);
     setIsLocationMode(false);
+    //setFetchable(true);
+    // Lancer le fetch immédiatement
+    //fetchEvents(currentMonth, currentYear, showAllGames, null);
+    // Mettre à jour l'URL sans déclencher un nouveau fetch
     updateURL(currentMonth, currentYear, showAllGames, null);
-  }, [currentMonth, currentYear, showAllGames, updateURL]);
+  }, [currentMonth, currentYear, showAllGames, updateURL, fetchEvents]);
 
   // Synchroniser avec les paramètres d'URL
   useEffect(() => {
@@ -166,8 +176,7 @@ export default function EventsCalendarClient({
       setShowAllGames(allGames);
       setLocationParams(locParams);
       setIsLocationMode(locParams !== null);
-      
-      setEvents([]);
+
       fetchEvents(month, year, allGames, locParams);
     }
   }, [searchParams, initialMonth, initialYear, currentMonth, currentYear, showAllGames, locationParams, fetchEvents, initialEvents?.length]);

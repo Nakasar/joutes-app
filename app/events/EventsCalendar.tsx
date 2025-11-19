@@ -232,6 +232,18 @@ export default function EventsCalendar({
     }
   };
 
+  const handleNearMeClick = () => {
+    // Si l'utilisateur a une localisation enregistrée, l'appliquer directement
+    if (userLocation?.latitude && userLocation?.longitude) {
+      if (onLocationSearch) {
+        onLocationSearch(userLocation.latitude, userLocation.longitude, parseInt(distance));
+      }
+    } else {
+      // Sinon, afficher le formulaire
+      setShowLocationForm(true);
+    }
+  };
+
   const handleSaveLocation = async () => {
     if (!session.data?.user) {
       setDialogState({
@@ -556,11 +568,23 @@ export default function EventsCalendar({
                   {!isLocationMode && (
                     <Button
                       variant="outline"
-                      onClick={() => setShowLocationForm(!showLocationForm)}
+                      onClick={handleNearMeClick}
                       className="w-full sm:w-auto"
                     >
                       <Navigation className="mr-2 h-4 w-4" />
                       Proches de moi
+                    </Button>
+                  )}
+
+                  {/* Bouton Modifier la localisation - en mode localisation avec userLocation */}
+                  {isLocationMode && userLocation && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowLocationForm(!showLocationForm)}
+                      className="w-full sm:w-auto"
+                    >
+                      <MapPin className="mr-2 h-4 w-4" />
+                      Modifier la localisation
                     </Button>
                   )}
 
@@ -580,7 +604,7 @@ export default function EventsCalendar({
                 </div>
 
                 {/* Formulaire de recherche par localisation */}
-                {showLocationForm && !isLocationMode && (
+                {showLocationForm && (
                   <Card className="border-2 border-primary">
                     <CardContent className="pt-6">
                       <div className="space-y-4">
