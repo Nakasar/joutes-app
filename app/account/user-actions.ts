@@ -205,12 +205,12 @@ export async function updateProfileImageAction(
       };
     }
 
-    // Limiter la taille du fichier à 1.5 MB
-    const maxSize = 1.5 * 1024 * 1024; // 1.5 MB
+    // Limiter la taille du fichier à 1 MB
+    const maxSize = 1 * 1024 * 1024; // 1 MB
     if (file.size > maxSize) {
       return {
         success: false,
-        error: "Le fichier est trop volumineux (max 1.5 MB)",
+        error: "Le fichier est trop volumineux (max 1 MB)",
       };
     }
 

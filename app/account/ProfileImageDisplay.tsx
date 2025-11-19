@@ -29,9 +29,9 @@ export default function ProfileImageDisplay({
     setSuccess(false);
 
     try {
-      const maxSize = 1.5 * 1024 * 1024; // 1.5 Mo
+      const maxSize = 1 * 1024 * 1024; // 1.5 Mo
       if (file.size > maxSize) {
-        throw new Error("Le fichier est trop volumineux (max 1.5 Mo)");
+        throw new Error("Le fichier est trop volumineux (max 1 Mo)");
       }
 
       const formData = new FormData();
@@ -53,7 +53,7 @@ export default function ProfileImageDisplay({
       setError(
         err instanceof Error
           ? err.message
-          : "Erreur lors de l&apos;upload du fichier"
+          : "Erreur lors de l'upload du fichier"
       );
       setProfileImage(currentImage);
     } finally {
@@ -109,7 +109,7 @@ export default function ProfileImageDisplay({
           <DialogHeader>
             <DialogTitle>Modifier l&apos;image de profil</DialogTitle>
             <DialogDescription>
-              Téléchargez une image personnalisée pour votre profil public. Format JPG, PNG, WebP ou GIF (max 1.5 Mo).
+              Téléchargez une image personnalisée pour votre profil public. Format JPG, PNG, WebP ou GIF (max 1 Mo).
             </DialogDescription>
           </DialogHeader>
 

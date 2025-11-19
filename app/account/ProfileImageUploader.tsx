@@ -26,9 +26,9 @@ export default function ProfileImageUploader({
 
     try {
       // Vérifier la taille du fichier côté client
-      const maxSize = 1.5 * 1024 * 1024; // 1.5 Mo
+      const maxSize = 1 * 1024 * 1024; // 1 Mo
       if (file.size > maxSize) {
-        throw new Error("Le fichier est trop volumineux (max 1.5 Mo)");
+        throw new Error("Le fichier est trop volumineux (max 1 Mo)");
       }
 
       const formData = new FormData();
