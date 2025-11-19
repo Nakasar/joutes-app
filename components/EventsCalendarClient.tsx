@@ -12,6 +12,10 @@ type EventsCalendarClientProps = {
   initialShowAllGames: boolean;
   basePath: string;
   lairId?: string;
+  userLocation?: {
+    latitude: number;
+    longitude: number;
+  };
 };
 
 export default function EventsCalendarClient({
@@ -21,6 +25,7 @@ export default function EventsCalendarClient({
   initialShowAllGames,
   basePath,
   lairId,
+  userLocation,
 }: EventsCalendarClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -181,6 +186,7 @@ export default function EventsCalendarClient({
           onLocationSearch={handleLocationSearch}
           onResetLocation={handleResetLocation}
           isLocationMode={isLocationMode}
+          userLocation={userLocation}
         />
       </div>
     </div>

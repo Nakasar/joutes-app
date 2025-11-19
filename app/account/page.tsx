@@ -11,6 +11,7 @@ import ApiKeysManager from "./ApiKeysManager";
 import ProfileVisibilityToggle from "./ProfileVisibilityToggle";
 import ProfileEditor from "./ProfileEditor";
 import ProfileImageUploader from "./ProfileImageUploader";
+import LocationManager from "./LocationManager";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { User as UserIcon, Mail, Gamepad2, MapPin, FileText, Image } from "lucide-react";
 
@@ -164,6 +165,25 @@ export default async function AccountPage() {
                 initialDescription={user.description}
                 initialWebsite={user.website}
                 initialSocialLinks={user.socialLinks}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Section Ma localisation */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Ma localisation
+              </CardTitle>
+              <CardDescription>
+                Définissez votre localisation par défaut pour le calendrier d&apos;événements
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LocationManager 
+                currentLatitude={user.location?.latitude}
+                currentLongitude={user.location?.longitude}
               />
             </CardContent>
           </Card>

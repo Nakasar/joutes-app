@@ -158,3 +158,44 @@ export async function updateUserDisplayNameAction(
   }
 }
 
+export async function updateUserLocation(
+  latitude: number | null,
+  longitude: number | null
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    // Validation des coordonnées
+    if (latitude !== null && longitude !== null) {
+      if (isNaN(latitude) || isNaN(longitude)) {
+        return { success: false, error: "Coordonnées invalides" };
+      }
+      if (latitude < -90 || latitude > 90) {
+        return { success: false, error: "La latitude doit être comprise entre -90 et 90" };
+      }
+      if (longitude < -180 || longitude > 180) {
+        return { success: false, error: "La longitude doit être comprise entre -180 et 180" };
+      }
+    }
+
+    const { updateUserLocation: updateLocation } = await import("@/lib/db/users");
+    const result = await updateLocation(session.user.id, latitude, longitude);
+
+    if (!result) {
+      return { success: false, error: "Erreur lors de la mise à jour de la localisation" };
+    }
+
+    revalidatePath("/account");
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour de la localisation:", error);
+    return { success: false, error: "Erreur serveur" };
+  }
+}
+

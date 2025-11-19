@@ -21,6 +21,10 @@ function toUser(doc: WithId<Document>): User {
     website: doc.website || undefined,
     socialLinks: doc.socialLinks || [],
     profileImage: doc.profileImage || undefined,
+    location: doc.location ? {
+      latitude: doc.location.latitude,
+      longitude: doc.location.longitude,
+    } : undefined,
   };
 }
 
@@ -265,3 +269,35 @@ export async function updateUserProfileImage(
   
   return result.modifiedCount > 0 || result.matchedCount > 0;
 }
+
+export async function updateUserLocation(
+  userId: string,
+  latitude: number | null,
+  longitude: number | null
+): Promise<boolean> {
+  
+  let updateOperation;
+  
+  if (latitude === null || longitude === null) {
+    // Supprimer la localisation
+    updateOperation = { $unset: { location: "" } };
+  } else {
+    // Mettre à jour ou créer la localisation
+    updateOperation = { 
+      $set: { 
+        location: {
+          latitude,
+          longitude,
+        }
+      } 
+    };
+  }
+  
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: ObjectId.createFromHexString(userId) },
+    updateOperation
+  );
+  
+  return result.modifiedCount > 0 || result.matchedCount > 0;
+}
+

@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Gamepad2, Euro, Filter, List, CalendarDays, Clock, Navigation, X, User2Icon } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Gamepad2, Euro, Filter, List, CalendarDays, Clock, Navigation, X, User2Icon, AlertCircle, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { DateTime } from "luxon";
 import { useSession } from "@/lib/auth-client";
@@ -24,6 +25,10 @@ type EventsCalendarProps = {
   onLocationSearch?: (latitude: number, longitude: number, distance: number) => void;
   onResetLocation?: () => void;
   isLocationMode?: boolean;
+  userLocation?: {
+    latitude: number;
+    longitude: number;
+  };
 };
 
 export default function EventsCalendar({
@@ -37,6 +42,7 @@ export default function EventsCalendar({
   onLocationSearch,
   onResetLocation,
   isLocationMode = false,
+  userLocation,
 }: EventsCalendarProps) {
   const today = DateTime.now();
   const [internalMonth, setInternalMonth] = useState<number>(today.month);
@@ -47,6 +53,13 @@ export default function EventsCalendar({
   const [coordinates, setCoordinates] = useState("");
   const [distance, setDistance] = useState("15");
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [isSavingLocation, setIsSavingLocation] = useState(false);
+  const [dialogState, setDialogState] = useState<{
+    open: boolean;
+    type: "error" | "success";
+    title: string;
+    message: string;
+  }>({ open: false, type: "error", title: "", message: "" });
   const session = useSession();
 
   // Détecter la taille de l'écran et initialiser la vue en conséquence
@@ -130,8 +143,21 @@ export default function EventsCalendar({
   };
 
   const handleGetCurrentLocation = () => {
+    // Si l'utilisateur a une localisation sauvegardée, l'utiliser en priorité
+    if (userLocation?.latitude && userLocation?.longitude) {
+      setCoordinates(`${userLocation.latitude}, ${userLocation.longitude}`);
+      setIsGettingLocation(false);
+      return;
+    }
+
+    // Sinon, utiliser la géolocalisation du navigateur
     if (!navigator.geolocation) {
-      alert("La géolocalisation n&apos;est pas supportée par votre navigateur");
+      setDialogState({
+        open: true,
+        type: "error",
+        title: "Géolocalisation non supportée",
+        message: "La géolocalisation n'est pas supportée par votre navigateur"
+      });
       return;
     }
 
@@ -145,7 +171,12 @@ export default function EventsCalendar({
       },
       (error) => {
         console.error("Erreur de géolocalisation:", error);
-        alert("Impossible d&apos;obtenir votre position. Veuillez entrer vos coordonnées manuellement.");
+        setDialogState({
+          open: true,
+          type: "error",
+          title: "Erreur de géolocalisation",
+          message: "Impossible d'obtenir votre position. Veuillez entrer vos coordonnées manuellement."
+        });
         setIsGettingLocation(false);
       }
     );
@@ -153,13 +184,23 @@ export default function EventsCalendar({
 
   const handleLocationSearch = () => {
     if (!coordinates.trim()) {
-      alert("Veuillez entrer des coordonnées GPS ou utiliser la localisation automatique");
+      setDialogState({
+        open: true,
+        type: "error",
+        title: "Coordonnées manquantes",
+        message: "Veuillez entrer des coordonnées GPS ou utiliser la localisation automatique"
+      });
       return;
     }
 
     const parts = coordinates.split(',').map(s => s.trim());
     if (parts.length !== 2) {
-      alert("Format invalide. Utilisez le format: latitude, longitude (ex: 48.8566, 2.3522)");
+      setDialogState({
+        open: true,
+        type: "error",
+        title: "Format invalide",
+        message: "Utilisez le format: latitude, longitude (ex: 48.8566, 2.3522)"
+      });
       return;
     }
 
@@ -167,7 +208,12 @@ export default function EventsCalendar({
     const lon = parseFloat(parts[1]);
 
     if (isNaN(lat) || isNaN(lon)) {
-      alert("Coordonnées invalides. Veuillez entrer des nombres valides.");
+      setDialogState({
+        open: true,
+        type: "error",
+        title: "Coordonnées invalides",
+        message: "Veuillez entrer des nombres valides."
+      });
       return;
     }
 
@@ -183,6 +229,109 @@ export default function EventsCalendar({
     setShowLocationForm(false);
     if (onResetLocation) {
       onResetLocation();
+    }
+  };
+
+  const handleSaveLocation = async () => {
+    if (!session.data?.user) {
+      setDialogState({
+        open: true,
+        type: "error",
+        title: "Authentification requise",
+        message: "Vous devez être connecté pour sauvegarder votre localisation"
+      });
+      return;
+    }
+
+    if (!coordinates.trim()) {
+      setDialogState({
+        open: true,
+        type: "error",
+        title: "Coordonnées manquantes",
+        message: "Veuillez entrer des coordonnées GPS ou utiliser la localisation automatique"
+      });
+      return;
+    }
+
+    const parts = coordinates.split(',').map(s => s.trim());
+    if (parts.length !== 2) {
+      setDialogState({
+        open: true,
+        type: "error",
+        title: "Format invalide",
+        message: "Utilisez le format: latitude, longitude (ex: 48.8566, 2.3522)"
+      });
+      return;
+    }
+
+    const lat = parseFloat(parts[0]);
+    const lon = parseFloat(parts[1]);
+
+    if (isNaN(lat) || isNaN(lon)) {
+      setDialogState({
+        open: true,
+        type: "error",
+        title: "Coordonnées invalides",
+        message: "Veuillez entrer des nombres valides."
+      });
+      return;
+    }
+
+    if (lat < -90 || lat > 90) {
+      setDialogState({
+        open: true,
+        type: "error",
+        title: "Latitude invalide",
+        message: "La latitude doit être comprise entre -90 et 90."
+      });
+      return;
+    }
+
+    if (lon < -180 || lon > 180) {
+      setDialogState({
+        open: true,
+        type: "error",
+        title: "Longitude invalide",
+        message: "La longitude doit être comprise entre -180 et 180."
+      });
+      return;
+    }
+
+    setIsSavingLocation(true);
+
+    try {
+      const { updateUserLocation } = await import("@/app/account/actions");
+      const result = await updateUserLocation(lat, lon);
+
+      if (result.success) {
+        setDialogState({
+          open: true,
+          type: "success",
+          title: "Localisation sauvegardée",
+          message: "Localisation sauvegardée avec succès sur votre compte !"
+        });
+        // Recharger la page après 2 secondes pour mettre à jour les données utilisateur
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        setDialogState({
+          open: true,
+          type: "error",
+          title: "Erreur de sauvegarde",
+          message: result.error || "Erreur lors de la sauvegarde de la localisation"
+        });
+      }
+    } catch (error) {
+      console.error("Erreur lors de la sauvegarde:", error);
+      setDialogState({
+        open: true,
+        type: "error",
+        title: "Erreur de sauvegarde",
+        message: "Erreur lors de la sauvegarde de la localisation"
+      });
+    } finally {
+      setIsSavingLocation(false);
     }
   };
 
@@ -312,6 +461,7 @@ export default function EventsCalendar({
   };
 
   return (
+    <>
     <div className="space-y-6">
       {/* En-tête avec navigation */}
       <Card>
@@ -434,6 +584,15 @@ export default function EventsCalendar({
                   <Card className="border-2 border-primary">
                     <CardContent className="pt-6">
                       <div className="space-y-4">
+                        {userLocation && (
+                          <div className="p-3 bg-muted/50 rounded-lg text-sm">
+                            <p className="font-medium mb-1">Localisation enregistrée</p>
+                            <p className="text-muted-foreground">
+                              Votre localisation par défaut sera utilisée : {userLocation.latitude.toFixed(4)}, {userLocation.longitude.toFixed(4)}
+                            </p>
+                          </div>
+                        )}
+                        
                         <div>
                           <label className="block text-sm font-medium mb-2">
                             Coordonnées GPS
@@ -462,7 +621,10 @@ export default function EventsCalendar({
                             </Button>
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
-                            Format : latitude, longitude ou cliquez sur le bouton pour obtenir votre position
+                            {userLocation 
+                              ? "Cliquez sur le bouton pour utiliser votre localisation enregistrée ou entrez d&apos;autres coordonnées"
+                              : "Format : latitude, longitude ou cliquez sur le bouton pour obtenir votre position"
+                            }
                           </p>
                         </div>
 
@@ -484,7 +646,7 @@ export default function EventsCalendar({
                           </Select>
                         </div>
 
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
                           <Button
                             onClick={handleLocationSearch}
                             className="flex-1"
@@ -492,6 +654,19 @@ export default function EventsCalendar({
                             <Navigation className="mr-2 h-4 w-4" />
                             Rechercher
                           </Button>
+                          
+                          {session.data?.user && (
+                            <Button
+                              variant="secondary"
+                              onClick={handleSaveLocation}
+                              disabled={isSavingLocation || !coordinates.trim()}
+                              className="flex-1"
+                            >
+                              <MapPin className="mr-2 h-4 w-4" />
+                              {isSavingLocation ? "Sauvegarde..." : "Sauvegarder sur mon compte"}
+                            </Button>
+                          )}
+                          
                           <Button
                             variant="outline"
                             onClick={() => setShowLocationForm(false)}
@@ -652,6 +827,31 @@ export default function EventsCalendar({
         />
       )}
     </div>
+
+    {/* Dialog pour les messages d'erreur et de succès */}
+    <Dialog open={dialogState.open} onOpenChange={(open) => setDialogState({ ...dialogState, open })}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            {dialogState.type === "error" ? (
+              <AlertCircle className="h-5 w-5 text-red-500" />
+            ) : (
+              <CheckCircle className="h-5 w-5 text-green-500" />
+            )}
+            {dialogState.title}
+          </DialogTitle>
+          <DialogDescription>
+            {dialogState.message}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button onClick={() => setDialogState({ ...dialogState, open: false })}>
+            OK
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 

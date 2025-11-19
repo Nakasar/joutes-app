@@ -21,4 +21,10 @@ export type User = {
   website?: string; // Site web personnel
   socialLinks?: string[]; // Liens vers les réseaux sociaux
   profileImage?: string; // Image de profil personnalisée (URL Vercel Blob)
+  
+  // Localisation par défaut de l'utilisateur
+  location?: {
+    latitude: number;
+    longitude: number;
+  };
 };

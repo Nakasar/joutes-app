@@ -150,6 +150,7 @@ export default async function EventsCalendarWrapper({
         initialYear={year}
         initialShowAllGames={showAllGames}
         basePath={basePath}
+        userLocation={user.location}
       />
     </div>
   );
