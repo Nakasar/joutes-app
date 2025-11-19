@@ -752,7 +752,7 @@ export default function EventsCalendar({
                             const startTime = DateTime.fromISO(
                               event.startDateTime
                             ).setZone('Europe/Paris').toLocaleString(DateTime.TIME_24_SIMPLE);
-                            const isUserEvent = event.creatorId === session.data?.user?.id || event.participants?.includes(session.data?.user?.id || "");
+                            const isUserEvent = session.data?.user?.id && (event.creatorId === session.data?.user?.id || event.participants?.includes(session.data?.user?.id || ""));
 
                             const eventContent = (
                               <div className={cn("text-xs p-2 rounded-md bg-background border hover:bg-accent hover:border-accent-foreground transition-colors cursor-pointer", isUserEvent && "border-yellow-500")}>
