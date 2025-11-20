@@ -25,13 +25,19 @@ Cette page inclut :
 - 📋 Badge "Privé" dans le titre
 - 🔐 **Section "Code d'invitation"** (uniquement pour les lairs privés) :
   - Affichage de l'URL d'invitation
-  - QR Code généré dynamiquement
+  - QR Code généré dynamiquement avec la bibliothèque `qrcode`
   - Bouton pour copier l'URL
   - Bouton pour régénérer le code
+- 👥 **Section "Abonnés"** (uniquement pour les lairs privés) :
+  - Liste des utilisateurs qui suivent le lieu (hors propriétaires)
+  - Bouton pour retirer un utilisateur
+  - Compteur d'abonnés
+  - Message si aucun abonné
 
 #### Actions disponibles pour le propriétaire :
 - 📋 **Copier l'URL d'invitation**
 - 🔄 **Régénérer le code** (invalide l'ancien code)
+- 👤 **Retirer des abonnés** (empêche l'accès aux événements)
 - 🗑️ **Supprimer le lair** (via les actions du lair)
 - ✏️ **Modifier le nom et l'adresse** (via le formulaire du lair)
 
@@ -159,10 +165,16 @@ lairSchema.superRefine((data, ctx) => {
 
 4. **`app/lairs/[lairId]/manage/PrivateLairInvitationManager.tsx`**
    - Composant client pour gérer les invitations d'un lair privé
-   - Affichage et copie du QR code
+   - Affichage et copie du QR code (généré avec la bibliothèque `qrcode`)
    - Régénération du code d'invitation
 
-5. **`app/lairs/invite/[code]/page.tsx`**
+5. **`app/lairs/[lairId]/manage/PrivateLairFollowersManager.tsx`**
+   - Composant client pour gérer les abonnés d'un lair privé
+   - Liste des utilisateurs qui suivent le lieu
+   - Bouton pour retirer un utilisateur
+   - Affichage conditionnel si aucun abonné
+
+6. **`app/lairs/invite/[code]/page.tsx`**
    - Page de traitement des invitations
    - Validation du code et ajout automatique du lair
    - Affichage de confirmation avec lien vers le lair
@@ -182,24 +194,34 @@ lairSchema.superRefine((data, ctx) => {
    - `regenerateInvitationCode()` : Nouvelle fonction pour régénérer le code
    - Mise à jour de `toLair()` et `toDocument()` pour inclure les nouveaux champs
 
-4. **`lib/db/events.ts`**
+4. **`lib/db/users.ts`**
+   - `getUsersFollowingLair()` : Nouvelle fonction pour récupérer tous les utilisateurs qui suivent un lair
+   - Utilisée pour afficher la liste des abonnés dans la page de gestion
+
+5. **`lib/db/events.ts`**
    - `getAllEvents()` : Filtrage des événements des lairs privés
    - `getEventsByLairIds()` : Ajout du paramètre `userId` pour filtrer selon les lairs suivis
 
-5. **`app/account/page.tsx`**
+6. **`app/account/private-lairs-actions.ts`**
+   - `removeFollowerFromPrivateLair()` : Nouvelle action pour retirer un utilisateur d'un lair privé
+   - Vérifications de sécurité (propriétaire, lair privé, pas de retrait de propriétaire)
+
+7. **`app/account/page.tsx`**
    - Retrait de la section "Mes lieux privés"
    - Retrait de l'import `PrivateLairsManager` et `getLairsOwnedByUser`
 
-6. **`app/lairs/page.tsx`**
+8. **`app/lairs/page.tsx`**
    - Ajout du bouton "Créer un lieu privé" dans le header (visible uniquement si connecté)
    - Passage de l'ID utilisateur à `getAllLairs()`
    - Ajout du badge "Privé" avec icône cadenas
    - Import du composant `CreatePrivateLairButton`
 
-7. **`app/lairs/[lairId]/manage/page.tsx`**
+9. **`app/lairs/[lairId]/manage/page.tsx`**
    - Ajout du badge "Privé" dans le titre de la page
    - Intégration du composant `PrivateLairInvitationManager`
-   - Affichage conditionnel de la section d'invitation pour les lairs privés
+   - Intégration du composant `PrivateLairFollowersManager`
+   - Récupération des abonnés via `getUsersFollowingLair()`
+   - Affichage conditionnel des sections pour les lairs privés
 
 ## Sécurité
 

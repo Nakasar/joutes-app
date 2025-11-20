@@ -48,7 +48,7 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 7, // 7 jours
     updateAge: 60 * 60 * 24, // 1 jour
   },
-  trustedOrigins: [process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"],
+  trustedOrigins: process.env.NEXT_PUBLIC_BASE_URL ? [process.env.NEXT_PUBLIC_BASE_URL] : ["http://localhost:3000", "https://localhost:3000"],
 });
 
 export type Session = typeof auth.$Infer.Session.session;
