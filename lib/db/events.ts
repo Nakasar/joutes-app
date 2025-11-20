@@ -3,7 +3,6 @@ import { Event } from "@/lib/types/Event";
 import { getUserById } from "@/lib/db/users";
 import { getLairIdsNearLocation } from "./lairs";
 import { ObjectId } from "mongodb";
-import { inspect } from "util";
 
 const COLLECTION_NAME = "events";
 
@@ -148,7 +147,7 @@ export async function getEventsByLairId(lairId: string, { year, month, allGames,
 }
 
 // Get all events across all lairs
-export async function getAllEvents({ year, month, games }: { year?: number; month?: number; games?: string[] } = {}): Promise<Event[]> {
+export async function getAllEvents({ year, month, games, userId }: { year?: number; month?: number; games?: string[]; userId?: string } = {}): Promise<Event[]> {
   // Build aggregation pipeline
   const pipeline: Array<Record<string, unknown>> = [];
 
@@ -182,6 +181,13 @@ export async function getAllEvents({ year, month, games }: { year?: number; mont
       as: "lairDetails"
     }
   });
+  
+  // Filtrer les lairs privés
+  pipeline.push({
+    $match: {
+      "lairDetails.isPrivate": { $ne: true }
+    }
+  });
 
   // Execute aggregation
   const events = await db
@@ -213,10 +219,11 @@ export async function getAllEvents({ year, month, games }: { year?: number; mont
 
 // Get events for multiple lairs
 export async function getEventsByLairIds(lairIds: string[], {
-  year, month
+  year, month, userId
 }: {
   year?: number;
   month?: number;
+  userId?: string;
 } = {}): Promise<Event[]> {
   // Build aggregation pipeline
   const pipeline: Array<Record<string, unknown>> = [

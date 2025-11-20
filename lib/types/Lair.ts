@@ -25,4 +25,8 @@ export type Lair = {
   address?: string;
   
   website?: string;
+  
+  isPrivate?: boolean;
+  
+  invitationCode?: string;
 };

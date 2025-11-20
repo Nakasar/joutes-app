@@ -3,16 +3,17 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getUserById } from "@/lib/db/users";
 import { getAllGames } from "@/lib/db/games";
-import { getLairById } from "@/lib/db/lairs";
+import { getLairById, getLairsOwnedByUser } from "@/lib/db/lairs";
 import GamesManager from "./GamesManager";
 import LairsManager from "./LairsManager";
+import PrivateLairsManager from "./PrivateLairsManager";
 import UsernameDisplay from "./UsernameDisplay";
 import ProfileEditor from "./ProfileEditor";
 import ProfileImageDisplay from "./ProfileImageDisplay";
 import LocationDisplay from "./LocationDisplay";
 import ProfileVisibilitySwitch from "./ProfileVisibilitySwitch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { User as UserIcon, Mail, Gamepad2, MapPin, FileText, Settings } from "lucide-react";
+import { User as UserIcon, Mail, Gamepad2, MapPin, FileText, Settings, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -52,6 +53,9 @@ export default async function AccountPage() {
     })
   );
   const userLairs = followedLairs.filter(lair => lair !== null);
+
+  // Récupérer les lairs possédés par l'utilisateur
+  const ownedLairs = await getLairsOwnedByUser(session.user.id);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8">
@@ -200,6 +204,26 @@ export default async function AccountPage() {
             </CardHeader>
             <CardContent>
               <LairsManager userLairs={userLairs} />
+            </CardContent>
+          </Card>
+
+          {/* Section Lieux privés */}
+          <Card className="border-2 shadow-lg">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Lock className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl">Mes lieux privés</CardTitle>
+                  <CardDescription className="mt-1">
+                    Créez et gérez vos lieux privés avec codes d&apos;invitation
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <PrivateLairsManager userOwnedLairs={ownedLairs} />
             </CardContent>
           </Card>
         </div>

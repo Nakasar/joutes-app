@@ -21,6 +21,25 @@ export const lairSchema = z.object({
   location: geoJSONPointSchema,
   address: z.string().max(500, "L'adresse est trop longue").optional(),
   website: z.url("L'URL du site web doit être valide").optional().or(z.literal("")),
+  isPrivate: z.boolean().default(false),
+  invitationCode: z.string().optional(),
+}).superRefine((data, ctx) => {
+  // Les lairs privés ne peuvent pas avoir d'URL de scraping
+  if (data.isPrivate && data.eventsSourceUrls && data.eventsSourceUrls.length > 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Les lieux privés ne peuvent pas avoir d'URL de scraping d'événements",
+      path: ["eventsSourceUrls"],
+    });
+  }
+  // Les lairs privés ne peuvent pas avoir de bannière
+  if (data.isPrivate && data.banner) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Les lieux privés ne peuvent pas avoir de bannière",
+      path: ["banner"],
+    });
+  }
 });
 
 export const lairIdSchema = objectIdSchema;
