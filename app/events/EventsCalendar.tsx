@@ -869,12 +869,12 @@ export default function EventsCalendar({
                                     </span>
                                   )}
                                 </div>
-                                {event.creatorId === session.data?.user?.id && (
+                                {session.data?.user?.id && (event.creatorId === session.data?.user?.id) && (
                                   <Badge variant="default" className="text-xs bg-blue-500 text-white mt-1">
                                     Créateur
                                   </Badge>
                                 )}
-                                {event.participants?.includes(session.data?.user?.id || "") && (
+                                {session.data?.user?.id && (event.participants?.includes(session.data?.user?.id)) && (
                                   <Badge variant="default" className="text-xs bg-green-500 text-white mt-1">
                                     Inscrit
                                   </Badge>
@@ -1075,7 +1075,7 @@ function ListView({
                   : event.favoritedBy?.includes(userId || "");
                 const isUserEvent = userId && (
                   event.creatorId === userId || 
-                  event.participants?.includes(userId || "") ||
+                  event.participants?.includes(userId) ||
                   isFavorited
                 );
 
@@ -1130,21 +1130,19 @@ function ListView({
                         <Gamepad2 className="h-4 w-4 text-muted-foreground" />
                         <span>{event.gameName}</span>
                       </div>
-                      {event.price && (
-                        <div className="flex items-center gap-2 text-sm">
+                      <div className="flex items-center gap-2 text-sm">
                           <Euro className="h-4 w-4 text-muted-foreground" />
                           <span className="font-semibold">
-                            {event.price === 0 ? "Gratuit" : `${event.price}€`}
+                            {(!event.price || event.price === 0) ? "Gratuit" : `${event.price}€`}
                           </span>
                         </div>
-                      )}
                       <div className="flex flex-wrap gap-1 mt-2">
-                        {event.creatorId === userId && (
+                        {userId && (event.creatorId === userId) && (
                           <Badge variant="default" className="text-xs bg-blue-500 text-white">
                             Créateur
                           </Badge>
                         )}
-                        {event.participants?.includes(userId || "") && (
+                        {userId && event.participants?.includes(userId) && (
                           <Badge variant="default" className="text-xs bg-green-500 text-white">
                             Inscrit
                           </Badge>
