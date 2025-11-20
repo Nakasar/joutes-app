@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, ArrowRight, Gamepad2, Lock } from "lucide-react";
+import CreatePrivateLairButton from "./CreatePrivateLairButton";
 
 export const metadata: Metadata = {
   title: 'Lieux de jeu',
@@ -24,14 +25,17 @@ export default async function LairsPage() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="space-y-6">
-        <div className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight flex items-center gap-2">
-            <MapPin className="h-8 w-8 text-primary" />
-            Lieux de jeu
-          </h1>
-          <p className="text-xl text-muted-foreground">
-            Découvrez tous les lieux de jeu et leurs événements à venir
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-2">
+            <h1 className="text-4xl font-bold tracking-tight flex items-center gap-2">
+              <MapPin className="h-8 w-8 text-primary" />
+              Lieux de jeu
+            </h1>
+            <p className="text-xl text-muted-foreground">
+              Découvrez tous les lieux de jeu et leurs événements à venir
+            </p>
+          </div>
+          {session?.user && <CreatePrivateLairButton />}
         </div>
         
         {lairs.length === 0 ? (

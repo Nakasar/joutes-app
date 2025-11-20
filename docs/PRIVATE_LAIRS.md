@@ -6,12 +6,34 @@ Les utilisateurs peuvent maintenant créer leurs propres lairs privés avec des 
 
 ## Fonctionnalités implémentées
 
-### 1. Création de lairs privés
+## Interface utilisateur
 
-Les utilisateurs peuvent créer des lairs privés depuis leur page de compte avec les caractéristiques suivantes :
+### Création de lairs privés
+
+Les utilisateurs peuvent créer des lairs privés depuis **la page `/lairs`** via le bouton "Créer un lieu privé" visible uniquement pour les utilisateurs connectés.
+
+#### Caractéristiques de création :
 - **Nom du lieu** (requis)
 - **Adresse** (optionnel)
-- **Localisation GPS** (optionnel, pour une implémentation future)
+- Après création, l'utilisateur est redirigé vers la page du lair créé
+
+### Gestion des lairs privés
+
+La gestion des lairs privés se fait depuis **la page de gestion du lair** (`/lairs/[lairId]/manage`), accessible uniquement par les propriétaires et administrateurs.
+
+Cette page inclut :
+- 📋 Badge "Privé" dans le titre
+- 🔐 **Section "Code d'invitation"** (uniquement pour les lairs privés) :
+  - Affichage de l'URL d'invitation
+  - QR Code généré dynamiquement
+  - Bouton pour copier l'URL
+  - Bouton pour régénérer le code
+
+#### Actions disponibles pour le propriétaire :
+- 📋 **Copier l'URL d'invitation**
+- 🔄 **Régénérer le code** (invalide l'ancien code)
+- 🗑️ **Supprimer le lair** (via les actions du lair)
+- ✏️ **Modifier le nom et l'adresse** (via le formulaire du lair)
 
 #### Restrictions des lairs privés
 
@@ -130,13 +152,17 @@ lairSchema.superRefine((data, ctx) => {
    - `regenerateInvitationCodeAction()` : Régénérer le code d'invitation
    - `acceptInvitationAction()` : Accepter une invitation
 
-3. **`app/account/PrivateLairsManager.tsx`**
-   - Composant client pour gérer les lairs privés
-   - Interface de création/édition/suppression
+3. **`app/lairs/CreatePrivateLairButton.tsx`**
+   - Composant client pour le bouton et dialogue de création
+   - Interface de création avec formulaire
+   - Redirection vers le lair créé après succès
+
+4. **`app/lairs/[lairId]/manage/PrivateLairInvitationManager.tsx`**
+   - Composant client pour gérer les invitations d'un lair privé
    - Affichage et copie du QR code
    - Régénération du code d'invitation
 
-4. **`app/lairs/invite/[code]/page.tsx`**
+5. **`app/lairs/invite/[code]/page.tsx`**
    - Page de traitement des invitations
    - Validation du code et ajout automatique du lair
    - Affichage de confirmation avec lien vers le lair
@@ -161,14 +187,19 @@ lairSchema.superRefine((data, ctx) => {
    - `getEventsByLairIds()` : Ajout du paramètre `userId` pour filtrer selon les lairs suivis
 
 5. **`app/account/page.tsx`**
-   - Ajout de la section "Mes lieux privés"
-   - Intégration du composant `PrivateLairsManager`
-   - Récupération des lairs possédés via `getLairsOwnedByUser()`
+   - Retrait de la section "Mes lieux privés"
+   - Retrait de l'import `PrivateLairsManager` et `getLairsOwnedByUser`
 
 6. **`app/lairs/page.tsx`**
+   - Ajout du bouton "Créer un lieu privé" dans le header (visible uniquement si connecté)
    - Passage de l'ID utilisateur à `getAllLairs()`
    - Ajout du badge "Privé" avec icône cadenas
-   - Import de l'icône `Lock` de lucide-react
+   - Import du composant `CreatePrivateLairButton`
+
+7. **`app/lairs/[lairId]/manage/page.tsx`**
+   - Ajout du badge "Privé" dans le titre de la page
+   - Intégration du composant `PrivateLairInvitationManager`
+   - Affichage conditionnel de la section d'invitation pour les lairs privés
 
 ## Sécurité
 
