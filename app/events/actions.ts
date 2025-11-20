@@ -266,9 +266,11 @@ export async function toggleEventFavoriteAction(eventId: string) {
     }
 
     // Vérifier si l'événement est déjà en favori
+    console.log(event);
     const isFavorited = event.favoritedBy?.includes(session.user.id);
 
     let result: boolean;
+    console.log(isFavorited);
     if (isFavorited) {
       // Retirer des favoris
       result = await removeEventFromFavorites(eventId, session.user.id);

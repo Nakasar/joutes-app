@@ -634,6 +634,7 @@ export async function getEventById(eventId: string): Promise<Event | null> {
     creator: event.creator && event.creator.length > 0 ? event.creator[0] : undefined,
     participants: event.participants,
     maxParticipants: event.maxParticipants,
+    favoritedBy: event.favoritedBy,
     lair: event.lairDetails && event.lairDetails.length > 0 ? {
       id: event.lairDetails[0]._id.toString(),
       name: event.lairDetails[0].name,
