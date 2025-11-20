@@ -20,6 +20,8 @@ function toLair(doc: WithId<Document>): Lair {
     location: doc.location,
     address: doc.address,
     website: doc.website,
+    isPrivate: doc.isPrivate || false,
+    invitationCode: doc.invitationCode,
   };
 }
 
@@ -35,12 +37,29 @@ function toDocument(lair: Omit<Lair, "id">): Omit<LairDocument, "_id"> {
     location: lair.location,
     address: lair.address,
     website: lair.website,
+    isPrivate: lair.isPrivate || false,
+    invitationCode: lair.invitationCode,
   };
 }
 
-export async function getAllLairs(): Promise<Lair[]> {
+export async function getAllLairs(userId?: string): Promise<Lair[]> {
   
-  const lairs = await db.collection(COLLECTION_NAME).find({}).toArray();
+  let query: Record<string, unknown> = {};
+  
+  if (userId) {
+    // Si un utilisateur est connecté, afficher les lairs publics + les lairs privés qu'il suit
+    query = {
+      $or: [
+        { isPrivate: { $ne: true } },
+        { isPrivate: true, owners: userId },
+      ]
+    };
+  } else {
+    // Si pas d'utilisateur, afficher uniquement les lairs publics
+    query = { isPrivate: { $ne: true } };
+  }
+  
+  const lairs = await db.collection(COLLECTION_NAME).find(query).toArray();
   return lairs.map(toLair);
 }
 
@@ -139,4 +158,35 @@ export async function getLairsOwnedByUser(userId: string): Promise<Lair[]> {
   
   const lairs = await db.collection(COLLECTION_NAME).find({ owners: userId }).toArray();
   return lairs.map(toLair);
+}
+
+/**
+ * Get a lair by its invitation code
+ * @param invitationCode - The invitation code
+ * @returns The lair or null if not found
+ */
+export async function getLairByInvitationCode(invitationCode: string): Promise<Lair | null> {
+  
+  const lair = await db.collection(COLLECTION_NAME).findOne({ 
+    invitationCode,
+    isPrivate: true 
+  });
+  return lair ? toLair(lair) : null;
+}
+
+/**
+ * Regenerate the invitation code for a private lair
+ * @param lairId - The lair's ID
+ * @param newCode - The new invitation code
+ * @returns The updated lair or null if not found
+ */
+export async function regenerateInvitationCode(lairId: string, newCode: string): Promise<Lair | null> {
+  
+  const result = await db.collection(COLLECTION_NAME).findOneAndUpdate(
+    { _id: new ObjectId(lairId), isPrivate: true },
+    { $set: { invitationCode: newCode } },
+    { returnDocument: 'after' }
+  );
+  
+  return result ? toLair(result) : null;
 }

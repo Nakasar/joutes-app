@@ -1,10 +1,13 @@
 import { getAllLairs } from "@/lib/db/lairs";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { Metadata } from "next";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, ArrowRight, Gamepad2 } from "lucide-react";
+import { MapPin, ArrowRight, Gamepad2, Lock } from "lucide-react";
+import CreatePrivateLairButton from "./CreatePrivateLairButton";
 
 export const metadata: Metadata = {
   title: 'Lieux de jeu',
@@ -12,19 +15,27 @@ export const metadata: Metadata = {
 };
 
 export default async function LairsPage() {
-  const lairs = await getAllLairs();
+  // Récupérer l'utilisateur connecté pour afficher ses lairs privés
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  const lairs = await getAllLairs(session?.user?.id);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="space-y-6">
-        <div className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight flex items-center gap-2">
-            <MapPin className="h-8 w-8 text-primary" />
-            Lieux de jeu
-          </h1>
-          <p className="text-xl text-muted-foreground">
-            Découvrez tous les lieux de jeu et leurs événements à venir
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-2">
+            <h1 className="text-4xl font-bold tracking-tight flex items-center gap-2">
+              <MapPin className="h-8 w-8 text-primary" />
+              Lieux de jeu
+            </h1>
+            <p className="text-xl text-muted-foreground">
+              Découvrez tous les lieux de jeu et leurs événements à venir
+            </p>
+          </div>
+          {session?.user && <CreatePrivateLairButton />}
         </div>
         
         {lairs.length === 0 ? (
@@ -60,13 +71,20 @@ export default async function LairsPage() {
                   )}
                   
                   <CardHeader>
-                    <CardTitle className="text-2xl group-hover:text-primary transition-colors line-clamp-2">
+                    <CardTitle className="text-2xl group-hover:text-primary transition-colors line-clamp-2 flex items-center gap-2">
+                      {lair.isPrivate && <Lock className="h-5 w-5 text-muted-foreground" />}
                       {lair.name}
                     </CardTitle>
                   </CardHeader>
 
                   <CardContent>
                     <div className="space-y-2">
+                      {lair.isPrivate && (
+                        <Badge variant="secondary" className="bg-muted">
+                          <Lock className="h-3 w-3 mr-1" />
+                          Privé
+                        </Badge>
+                      )}
                       {lair.games.length > 0 && (
                         <div className="flex items-center gap-2">
                           <Gamepad2 className="h-4 w-4 text-muted-foreground" />

@@ -1,14 +1,18 @@
 import { requireAdminOrOwner } from "@/lib/middleware/admin";
 import { getLairById } from "@/lib/db/lairs";
 import { getAllGames } from "@/lib/db/games";
-import { getUserById } from "@/lib/db/users";
+import { getUserById, getUsersFollowingLair } from "@/lib/db/users";
+import { User } from "@/lib/types/User";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import LairDetailsForm from "./LairDetailsForm";
 import OwnersManager from "./OwnersManager";
+import PrivateLairInvitationManager from "./PrivateLairInvitationManager";
+import PrivateLairFollowersManager from "./PrivateLairFollowersManager";
 
 export default async function ManageLairPage({
   params,
@@ -37,6 +41,13 @@ export default async function ManageLairPage({
   );
   const owners = ownersDetails.filter((owner): owner is NonNullable<typeof owner> => owner !== null);
 
+  // Récupérer les abonnés pour les lairs privés
+  let followers: User[] = [];
+  if (lair.isPrivate) {
+    const allFollowers = await getUsersFollowingLair(lairId);
+    followers = allFollowers;
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
       <div className="mb-6">
@@ -48,9 +59,35 @@ export default async function ManageLairPage({
         </Button>
       </div>
 
-      <h1 className="text-4xl font-bold mb-8">Gérer {lair.name}</h1>
+      <div className="flex items-center gap-3 mb-8">
+        <h1 className="text-4xl font-bold">Gérer {lair.name}</h1>
+        {lair.isPrivate && (
+          <Badge variant="secondary" className="bg-muted">
+            <Lock className="h-3 w-3 mr-1" />
+            Privé
+          </Badge>
+        )}
+      </div>
 
       <div className="space-y-6">
+        {/* Gestion des invitations pour les lairs privés */}
+        {lair.isPrivate && lair.invitationCode && (
+          <PrivateLairInvitationManager
+            lairId={lairId}
+            lairName={lair.name}
+            initialInvitationCode={lair.invitationCode}
+          />
+        )}
+
+        {/* Gestion des abonnés pour les lairs privés */}
+        {lair.isPrivate && (
+          <PrivateLairFollowersManager
+            lairId={lairId}
+            followers={followers}
+            owners={owners}
+          />
+        )}
+
         {/* Formulaire de modification des détails */}
         <Card>
           <CardHeader>

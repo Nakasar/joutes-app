@@ -301,3 +301,17 @@ export async function updateUserLocation(
   return result.modifiedCount > 0 || result.matchedCount > 0;
 }
 
+/**
+ * Get all users who follow a specific lair
+ * @param lairId - The lair's ID
+ * @returns Array of users following the lair
+ */
+export async function getUsersFollowingLair(lairId: string): Promise<User[]> {
+  
+  const users = await db.collection(COLLECTION_NAME).find({
+    lairs: lairId
+  }).toArray();
+  
+  return users.map(toUser);
+}
+
