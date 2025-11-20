@@ -862,7 +862,7 @@ export default function EventsCalendar({
                                   <Badge variant={getStatusVariant(event.status)} className="text-xs">
                                     {getStatusLabel(event.status)}
                                   </Badge>
-                                  {event.price && (
+                                  {(event.price && event.price !== 0) && (
                                     <span className="text-xs font-semibold flex items-center">
                                       <Euro className="h-3 w-3" />
                                       {event.price}
