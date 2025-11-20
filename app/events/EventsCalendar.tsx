@@ -835,31 +835,8 @@ export default function EventsCalendar({
                             );
 
                             const eventContent = (
-                              <div className={cn("text-xs p-2 rounded-md bg-background border hover:bg-accent hover:border-accent-foreground transition-colors cursor-pointer relative", isUserEvent && "border-yellow-500")}>
-                                {/* Boutons d'action */}
-                                <div className="absolute top-1 right-1 flex gap-1 z-10">
-                                  {/* Bouton info */}
-                                  <button
-                                    onClick={(e) => handleOpenEventDetails(event, e)}
-                                    className="p-1 hover:bg-accent rounded-sm transition-colors"
-                                    title="Voir les détails"
-                                  >
-                                    <HelpCircle className="h-3 w-3" />
-                                  </button>
-                                  {/* Bouton favori */}
-                                  {session.data?.user && (
-                                    <button
-                                      onClick={(e) => handleToggleFavorite(event.id, !!isFavorited, e)}
-                                      className="p-1 hover:bg-accent rounded-sm transition-colors"
-                                      title={isFavorited ? "Retirer des favoris" : "Ajouter aux favoris"}
-                                    >
-                                      <Star 
-                                        className={cn("h-3 w-3", isFavorited && "fill-yellow-500 text-yellow-500")} 
-                                      />
-                                    </button>
-                                  )}
-                                </div>
-                                <div className="font-semibold truncate mb-1 pr-12" title={event.name}>
+                              <div className={cn("text-xs p-2 rounded-md bg-background border hover:bg-accent hover:border-accent-foreground transition-colors cursor-pointer", isUserEvent && "border-yellow-500")}>
+                                <div className="font-semibold truncate mb-1" title={event.name}>
                                   {event.name}
                                 </div>
                                 <div className="text-xs text-muted-foreground flex items-center gap-1 mb-1" suppressHydrationWarning>
@@ -902,11 +879,29 @@ export default function EventsCalendar({
                                     Inscrit
                                   </Badge>
                                 )}
-                                {isFavorited && (
-                                  <Badge variant="default" className="text-xs bg-yellow-500 text-foreground mt-1">
-                                    Favori
-                                  </Badge>
-                                )}
+                                {/* Boutons d'action en bas */}
+                                <div className="flex gap-1 mt-2 pt-2 border-t">
+                                  {/* Bouton info */}
+                                  <button
+                                    onClick={(e) => handleOpenEventDetails(event, e)}
+                                    className="flex-1 p-1 hover:bg-accent rounded-sm transition-colors flex items-center justify-center"
+                                    title="Voir les détails"
+                                  >
+                                    <HelpCircle className="h-3 w-3" />
+                                  </button>
+                                  {/* Bouton favori */}
+                                  {session.data?.user && (
+                                    <button
+                                      onClick={(e) => handleToggleFavorite(event.id, !!isFavorited, e)}
+                                      className="flex-1 p-1 hover:bg-accent rounded-sm transition-colors flex items-center justify-center"
+                                      title={isFavorited ? "Retirer des favoris" : "Ajouter aux favoris"}
+                                    >
+                                      <Star 
+                                        className={cn("h-3 w-3", isFavorited && "fill-yellow-500 text-yellow-500")} 
+                                      />
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             );
 
@@ -1095,31 +1090,9 @@ function ListView({
                         <CardTitle className="text-xl">
                           {event.name}
                         </CardTitle>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={getStatusVariant(event.status)}>
-                            {getStatusLabel(event.status)}
-                          </Badge>
-                          {/* Bouton info */}
-                          <button
-                            onClick={(e) => onOpenEventDetails(event, e)}
-                            className="p-2 hover:bg-accent rounded-md transition-colors"
-                            title="Voir les détails"
-                          >
-                            <HelpCircle className="h-5 w-5" />
-                          </button>
-                          {/* Bouton favori */}
-                          {userId && (
-                            <button
-                              onClick={(e) => onToggleFavorite(event.id, !!isFavorited, e)}
-                              className="p-2 hover:bg-accent rounded-md transition-colors"
-                              title={isFavorited ? "Retirer des favoris" : "Ajouter aux favoris"}
-                            >
-                              <Star 
-                                className={cn("h-5 w-5", isFavorited && "fill-yellow-500 text-yellow-500")} 
-                              />
-                            </button>
-                          )}
-                        </div>
+                        <Badge variant={getStatusVariant(event.status)}>
+                          {getStatusLabel(event.status)}
+                        </Badge>
                       </div>
                     </CardHeader>
 
@@ -1173,10 +1146,30 @@ function ListView({
                             Inscrit
                           </Badge>
                         )}
-                        {isFavorited && (
-                          <Badge variant="default" className="text-xs bg-yellow-500 text-foreground">
-                            Favori
-                          </Badge>
+                      </div>
+                      {/* Boutons d'action en bas */}
+                      <div className="flex gap-2 mt-3 pt-3 border-t">
+                        {/* Bouton info */}
+                        <button
+                          onClick={(e) => onOpenEventDetails(event, e)}
+                          className="flex-1 py-2 px-3 hover:bg-accent rounded-md transition-colors flex items-center justify-center gap-2"
+                          title="Voir les détails"
+                        >
+                          <HelpCircle className="h-4 w-4" />
+                          <span className="text-sm">Détails</span>
+                        </button>
+                        {/* Bouton favori */}
+                        {userId && (
+                          <button
+                            onClick={(e) => onToggleFavorite(event.id, !!isFavorited, e)}
+                            className="flex-1 py-2 px-3 hover:bg-accent rounded-md transition-colors flex items-center justify-center gap-2"
+                            title={isFavorited ? "Retirer des favoris" : "Ajouter aux favoris"}
+                          >
+                            <Star 
+                              className={cn("h-4 w-4", isFavorited && "fill-yellow-500 text-yellow-500")} 
+                            />
+                            <span className="text-sm">{isFavorited ? "Favori" : "Favoris"}</span>
+                          </button>
                         )}
                       </div>
                     </CardContent>
