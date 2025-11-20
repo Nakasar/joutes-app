@@ -26,5 +26,6 @@ export type Event = {
     name: string;
     location?: GeoJSONPoint;
     address?: string;
+    owners?: string[];
   };
 };

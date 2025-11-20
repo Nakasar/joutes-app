@@ -552,6 +552,7 @@ export async function getEventsForUser(
       name: event.lairDetails[0].name,
       location: event.lairDetails[0].location,
       address: event.lairDetails[0].address,
+      owners: event.lairDetails[0].owners,
     } : undefined,
   }));
 
