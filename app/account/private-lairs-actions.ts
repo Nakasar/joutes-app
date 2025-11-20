@@ -215,7 +215,7 @@ export async function regenerateInvitationCodeAction(
       return { success: false, error: "Erreur lors de la régénération du code d'invitation" };
     }
 
-    revalidatePath("/account");
+    revalidatePath(`/lairs/${lairId}/manage`);
 
     return { success: true, invitationCode: newCode };
   } catch (error) {

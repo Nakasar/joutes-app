@@ -111,9 +111,7 @@ export default function PrivateLairInvitationManager({
 
           <div className="flex justify-center bg-white p-4 rounded-lg border">
             <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-                getInvitationUrl()
-              )}`}
+              src={''}
               alt="QR Code"
               className="w-48 h-48"
             />

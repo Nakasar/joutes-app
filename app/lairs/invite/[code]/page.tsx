@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { acceptInvitationAction } from "@/app/account/private-lairs-actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,12 +10,13 @@ import { Loader2, CheckCircle, XCircle, Lock, MapPin } from "lucide-react";
 import Link from "next/link";
 
 interface InvitePageProps {
-  params: {
+  params: Promise<{
     code: string;
-  };
+  }>;
 }
 
 export default function InvitePage({ params }: InvitePageProps) {
+  const { code } = use(params);
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,9 +25,10 @@ export default function InvitePage({ params }: InvitePageProps) {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
+    if (!code) return;
     const acceptInvitation = async () => {
       try {
-        const result = await acceptInvitationAction(params.code);
+        const result = await acceptInvitationAction(code);
 
         if (result.success && result.lairId && result.lairName) {
           setSuccess(true);
@@ -47,7 +49,7 @@ export default function InvitePage({ params }: InvitePageProps) {
     };
 
     acceptInvitation();
-  }, [params.code]);
+  }, [code]);
 
   if (isLoading) {
     return (
