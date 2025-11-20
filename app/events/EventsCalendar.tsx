@@ -893,12 +893,15 @@ export default function EventsCalendar({
                                   {session.data?.user && (
                                     <button
                                       onClick={(e) => handleToggleFavorite(event.id, !!isFavorited, e)}
-                                      className="flex-1 p-1 hover:bg-accent rounded-sm transition-colors flex items-center justify-center"
+                                      className="flex-1 p-1 hover:bg-accent rounded-sm transition-colors flex items-center justify-center gap-1"
                                       title={isFavorited ? "Retirer des favoris" : "Ajouter aux favoris"}
                                     >
                                       <Star 
                                         className={cn("h-3 w-3", isFavorited && "fill-yellow-500 text-yellow-500")} 
                                       />
+                                      {event.favoritedBy && event.favoritedBy.length > 0 && (
+                                        <span className="text-[10px] font-medium">{event.favoritedBy.length}</span>
+                                      )}
                                     </button>
                                   )}
                                 </div>
@@ -1168,7 +1171,12 @@ function ListView({
                             <Star 
                               className={cn("h-4 w-4", isFavorited && "fill-yellow-500 text-yellow-500")} 
                             />
-                            <span className="text-sm">{isFavorited ? "Favori" : "Favoris"}</span>
+                            <span className="text-sm">
+                              {isFavorited ? "Favori" : "Favoris"}
+                              {event.favoritedBy && event.favoritedBy.length > 0 && (
+                                <span className="ml-1 font-medium">({event.favoritedBy.length})</span>
+                              )}
+                            </span>
                           </button>
                         )}
                       </div>
