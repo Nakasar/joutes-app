@@ -72,6 +72,10 @@ export default async function LairDetailPage({
   // Vérifier si l'utilisateur est administrateur ou owner du lair
   const canManageLair = await checkAdminOrOwner(lairId);
 
+  if (lair.isPrivate && !isFollowing && !canManageLair) {
+    notFound();
+  }
+
   const upcomingEvents = await getEventsByLairId(lairId, {
     year: new Date().getFullYear(),
     month: new Date().getMonth() + 1,
