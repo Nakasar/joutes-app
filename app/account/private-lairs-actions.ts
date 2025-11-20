@@ -12,7 +12,7 @@ import {
   getLairByInvitationCode,
   addOwnerToLair,
 } from "@/lib/db/lairs";
-import { addLairToUser } from "@/lib/db/users";
+import { addLairToUser, removeLairFromUser } from "@/lib/db/users";
 import { lairSchema } from "@/lib/schemas/lair.schema";
 import { generateInvitationCode, isValidInvitationCode } from "@/lib/utils/invitation-codes";
 
@@ -261,6 +261,54 @@ export async function acceptInvitationAction(
     };
   } catch (error) {
     console.error("Erreur lors de l'acceptation de l'invitation:", error);
+    return { success: false, error: "Erreur serveur" };
+  }
+}
+
+export async function removeFollowerFromPrivateLair(
+  lairId: string,
+  userId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    // Vérifier que le lair existe et que l'utilisateur en est propriétaire
+    const lair = await getLairById(lairId);
+    if (!lair) {
+      return { success: false, error: "Lair introuvable" };
+    }
+
+    if (!lair.owners.includes(session.user.id)) {
+      return { success: false, error: "Vous n'êtes pas propriétaire de ce lieu" };
+    }
+
+    if (!lair.isPrivate) {
+      return { success: false, error: "Ce lieu n'est pas privé" };
+    }
+
+    // Empêcher de retirer un propriétaire
+    if (lair.owners.includes(userId)) {
+      return { success: false, error: "Vous ne pouvez pas retirer un propriétaire" };
+    }
+
+    // Retirer le lair de la liste des lairs suivis par l'utilisateur
+    const result = await removeLairFromUser(userId, lairId);
+
+    if (!result) {
+      return { success: false, error: "Erreur lors du retrait de l'utilisateur" };
+    }
+
+    revalidatePath(`/lairs/${lairId}/manage`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors du retrait de l'utilisateur:", error);
     return { success: false, error: "Erreur serveur" };
   }
 }

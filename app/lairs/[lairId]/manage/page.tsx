@@ -1,7 +1,8 @@
 import { requireAdminOrOwner } from "@/lib/middleware/admin";
 import { getLairById } from "@/lib/db/lairs";
 import { getAllGames } from "@/lib/db/games";
-import { getUserById } from "@/lib/db/users";
+import { getUserById, getUsersFollowingLair } from "@/lib/db/users";
+import { User } from "@/lib/types/User";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Lock } from "lucide-react";
@@ -11,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import LairDetailsForm from "./LairDetailsForm";
 import OwnersManager from "./OwnersManager";
 import PrivateLairInvitationManager from "./PrivateLairInvitationManager";
+import PrivateLairFollowersManager from "./PrivateLairFollowersManager";
 
 export default async function ManageLairPage({
   params,
@@ -38,6 +40,13 @@ export default async function ManageLairPage({
     })
   );
   const owners = ownersDetails.filter((owner): owner is NonNullable<typeof owner> => owner !== null);
+
+  // Récupérer les abonnés pour les lairs privés
+  let followers: User[] = [];
+  if (lair.isPrivate) {
+    const allFollowers = await getUsersFollowingLair(lairId);
+    followers = allFollowers;
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
@@ -69,6 +78,16 @@ export default async function ManageLairPage({
             initialInvitationCode={lair.invitationCode}
           />
         )}
+
+        {/* Gestion des abonnés pour les lairs privés */}
+        {lair.isPrivate && (
+          <PrivateLairFollowersManager
+            lairId={lairId}
+            followers={followers}
+            owners={owners}
+          />
+        )}
+
         {/* Formulaire de modification des détails */}
         <Card>
           <CardHeader>
