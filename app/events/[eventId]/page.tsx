@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import EventActions from "./EventActions";
 import QRCodeButton from "./QRCodeButton";
 import ParticipantManager from "./ParticipantManager";
+import FavoriteButton from "./FavoriteButton";
 import { DateTime } from "luxon";
 
 type EventPageProps = {
@@ -60,6 +61,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
   const startDate = DateTime.fromISO(event.startDateTime);
   const endDate = DateTime.fromISO(event.endDateTime);
   const isFull = event.maxParticipants ? (event.participants?.length || 0) >= event.maxParticipants : false;
+  const isFavorited = session?.user && event.favoritedBy?.includes(session.user.id);
 
   // Récupérer les informations des participants
   const participantUsers = event.participants
@@ -268,6 +270,10 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                       isParticipant={isParticipant || false}
                       isCreator={isCreator || false}
                       isFull={isFull}
+                    />
+                    <FavoriteButton
+                      eventId={event.id}
+                      initialIsFavorited={isFavorited || false}
                     />
                     {isCreator && (
                       <QRCodeButton eventId={event.id} />

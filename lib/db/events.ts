@@ -352,6 +352,70 @@ export async function replaceEventsForLair(lairId: string, events: Event[]): Pro
 }
 
 /**
+ * Upsert AI-scrapped events for a lair
+ * - Updates existing events if they have the same URL + lairId
+ * - Inserts new events if they don't exist yet
+ * - Preserves user-created events
+ * @param lairId - The lair's ID
+ * @param events - The events to upsert
+ * @returns Object with counts of inserted and updated events
+ */
+export async function upsertEventsForLair(lairId: string, events: Event[]): Promise<{ inserted: number; updated: number }> {
+  if (events.length === 0) {
+    return { inserted: 0, updated: 0 };
+  }
+
+  // Use a transaction for atomic operation
+  const session = db.client.startSession();
+  let inserted = 0;
+  let updated = 0;
+
+  try {
+    await session.withTransaction(async () => {
+      for (const event of events) {
+        // Si l'événement a une URL, on utilise URL + lairId comme discriminant
+        if (event.url) {
+          const result = await db.collection<EventDocument>(COLLECTION_NAME).updateOne(
+            {
+              lairId,
+              url: event.url,
+              addedBy: "AI-SCRAPPING"
+            },
+            {
+              $set: {
+                name: event.name,
+                startDateTime: event.startDateTime,
+                endDateTime: event.endDateTime,
+                gameName: event.gameName,
+                price: event.price,
+                status: event.status,
+              }
+            },
+            { session }
+          );
+
+          if (result.matchedCount > 0) {
+            updated++;
+          } else {
+            // L'événement n'existe pas, on l'insère
+            await db.collection<EventDocument>(COLLECTION_NAME).insertOne(event, { session });
+            inserted++;
+          }
+        } else {
+          // Si pas d'URL, on insère toujours (impossible de détecter les doublons)
+          await db.collection<EventDocument>(COLLECTION_NAME).insertOne(event, { session });
+          inserted++;
+        }
+      }
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  return { inserted, updated };
+}
+
+/**
  * Get events for a specific user based on their followed lairs and games
  * Uses MongoDB aggregation for optimal performance
  * Includes private events where the user is the creator or a participant
@@ -391,7 +455,7 @@ export async function getEventsForUser(
 
   // Build aggregation pipeline
   const pipeline: Array<Record<string, unknown>> = [
-    // Match events from user's followed lairs OR private events where user is creator/participant
+    // Match events from user's followed lairs OR private events where user is creator/participant OR favorited events
     {
       $match: {
         $or: [
@@ -400,7 +464,9 @@ export async function getEventsForUser(
           // Private events where user is the creator
           { lairId: null, creatorId: userId },
           // Private events where user is a participant
-          { lairId: null, participants: userId }
+          { lairId: null, participants: userId },
+          // Events favorited by the user
+          { favoritedBy: userId }
         ]
       }
     }
@@ -460,12 +526,14 @@ export async function getEventsForUser(
       {
         $match: {
           $or: [
-            // Events from followed lairs (if user follows any)
+            // Events from followed lairs with matching games
             { matchedGame: { $ne: [] } },
             // Private events where user is the creator
             { lairId: null, creatorId: userId },
             // Private events where user is a participant
-            { lairId: null, participants: userId }
+            { lairId: null, participants: userId },
+            // Favorited events (always shown regardless of game filter)
+            { favoritedBy: userId }
           ]
         }
       },
@@ -542,11 +610,13 @@ export async function getEventsForUser(
     maxParticipants: event.maxParticipants,
     creatorId: event.creatorId,
     creator: event.creator && event.creator.length > 0 ? event.creator[0] : undefined,
+    favoritedBy: event.favoritedBy,
     lair: event.lairDetails && event.lairDetails.length > 0 ? {
       id: event.lairDetails[0]._id.toString(),
       name: event.lairDetails[0].name,
       location: event.lairDetails[0].location,
       address: event.lairDetails[0].address,
+      owners: event.lairDetails[0].owners,
     } : undefined,
   }));
 
@@ -629,6 +699,7 @@ export async function getEventById(eventId: string): Promise<Event | null> {
     creator: event.creator && event.creator.length > 0 ? event.creator[0] : undefined,
     participants: event.participants,
     maxParticipants: event.maxParticipants,
+    favoritedBy: event.favoritedBy,
     lair: event.lairDetails && event.lairDetails.length > 0 ? {
       id: event.lairDetails[0]._id.toString(),
       name: event.lairDetails[0].name,
@@ -668,6 +739,40 @@ export async function removeParticipantFromEvent(eventId: string, userId: string
     { id: eventId },
     {
       $pull: { participants: userId }
+    }
+  );
+
+  return result.modifiedCount > 0;
+}
+
+/**
+ * Add an event to a user's favorites
+ * @param eventId - The event's UUID
+ * @param userId - The user's ID
+ * @returns True if the event was favorited, false otherwise
+ */
+export async function addEventToFavorites(eventId: string, userId: string): Promise<boolean> {
+  const result = await db.collection<EventDocument>(COLLECTION_NAME).updateOne(
+    { id: eventId },
+    {
+      $addToSet: { favoritedBy: userId }
+    }
+  );
+
+  return result.modifiedCount > 0;
+}
+
+/**
+ * Remove an event from a user's favorites
+ * @param eventId - The event's UUID
+ * @param userId - The user's ID
+ * @returns True if the event was unfavorited, false otherwise
+ */
+export async function removeEventFromFavorites(eventId: string, userId: string): Promise<boolean> {
+  const result = await db.collection<EventDocument>(COLLECTION_NAME).updateOne(
+    { id: eventId },
+    {
+      $pull: { favoritedBy: userId }
     }
   );
 

@@ -16,6 +16,7 @@ export const eventSchema = z.object({
   addedBy: z.string().min(1, "L'auteur de l'événement est requis"),
   participants: z.array(z.string()).optional(),
   maxParticipants: z.number().min(1, "Le nombre maximum de participants doit être positif").optional(),
+  favoritedBy: z.array(z.string()).optional(),
 });
 
 export const eventIdSchema = z.string().min(1, "L'ID de l'événement est requis");

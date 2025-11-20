@@ -20,10 +20,12 @@ export type Event = {
   allowJoin?: boolean;
   participants?: string[]; // IDs des utilisateurs inscrits à l'événement
   maxParticipants?: number; // Nombre maximum de participants (optionnel)
+  favoritedBy?: string[]; // IDs des utilisateurs qui ont mis cet événement en favori
   lair?: {
     id: string;
     name: string;
     location?: GeoJSONPoint;
     address?: string;
+    owners?: string[];
   };
 };
