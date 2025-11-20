@@ -391,7 +391,7 @@ export async function getEventsForUser(
 
   // Build aggregation pipeline
   const pipeline: Array<Record<string, unknown>> = [
-    // Match events from user's followed lairs OR private events where user is creator/participant
+    // Match events from user's followed lairs OR private events where user is creator/participant OR favorited events
     {
       $match: {
         $or: [
@@ -400,7 +400,9 @@ export async function getEventsForUser(
           // Private events where user is the creator
           { lairId: null, creatorId: userId },
           // Private events where user is a participant
-          { lairId: null, participants: userId }
+          { lairId: null, participants: userId },
+          // Events favorited by the user
+          { favoritedBy: userId }
         ]
       }
     }
@@ -460,12 +462,14 @@ export async function getEventsForUser(
       {
         $match: {
           $or: [
-            // Events from followed lairs (if user follows any)
+            // Events from followed lairs with matching games
             { matchedGame: { $ne: [] } },
             // Private events where user is the creator
             { lairId: null, creatorId: userId },
             // Private events where user is a participant
-            { lairId: null, participants: userId }
+            { lairId: null, participants: userId },
+            // Favorited events (always shown regardless of game filter)
+            { favoritedBy: userId }
           ]
         }
       },
@@ -542,6 +546,7 @@ export async function getEventsForUser(
     maxParticipants: event.maxParticipants,
     creatorId: event.creatorId,
     creator: event.creator && event.creator.length > 0 ? event.creator[0] : undefined,
+    favoritedBy: event.favoritedBy,
     lair: event.lairDetails && event.lairDetails.length > 0 ? {
       id: event.lairDetails[0]._id.toString(),
       name: event.lairDetails[0].name,
@@ -668,6 +673,40 @@ export async function removeParticipantFromEvent(eventId: string, userId: string
     { id: eventId },
     {
       $pull: { participants: userId }
+    }
+  );
+
+  return result.modifiedCount > 0;
+}
+
+/**
+ * Add an event to a user's favorites
+ * @param eventId - The event's UUID
+ * @param userId - The user's ID
+ * @returns True if the event was favorited, false otherwise
+ */
+export async function addEventToFavorites(eventId: string, userId: string): Promise<boolean> {
+  const result = await db.collection<EventDocument>(COLLECTION_NAME).updateOne(
+    { id: eventId },
+    {
+      $addToSet: { favoritedBy: userId }
+    }
+  );
+
+  return result.modifiedCount > 0;
+}
+
+/**
+ * Remove an event from a user's favorites
+ * @param eventId - The event's UUID
+ * @param userId - The user's ID
+ * @returns True if the event was unfavorited, false otherwise
+ */
+export async function removeEventFromFavorites(eventId: string, userId: string): Promise<boolean> {
+  const result = await db.collection<EventDocument>(COLLECTION_NAME).updateOne(
+    { id: eventId },
+    {
+      $pull: { favoritedBy: userId }
     }
   );
 

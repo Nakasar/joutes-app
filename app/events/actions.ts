@@ -2,7 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { createEvent, getEventById, addParticipantToEvent, removeParticipantFromEvent } from "@/lib/db/events";
+import { createEvent, getEventById, addParticipantToEvent, removeParticipantFromEvent, addEventToFavorites, removeEventFromFavorites } from "@/lib/db/events";
 import { getLairsOwnedByUser } from "@/lib/db/lairs";
 import { getUserByTagOrId } from "@/lib/db/users";
 import { nanoid } from 'nanoid';
@@ -245,5 +245,49 @@ export async function addParticipantByTagAction(eventId: string, userTag: string
   } catch (error) {
     console.error("Erreur lors de l'ajout du participant:", error);
     return { success: false, error: "Une erreur est survenue lors de l'ajout du participant" };
+  }
+}
+
+export async function toggleEventFavoriteAction(eventId: string) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      return { success: false, error: "Vous devez être connecté pour mettre un événement en favori" };
+    }
+
+    // Récupérer l'événement
+    const event = await getEventById(eventId);
+
+    if (!event) {
+      return { success: false, error: "Événement introuvable" };
+    }
+
+    // Vérifier si l'événement est déjà en favori
+    const isFavorited = event.favoritedBy?.includes(session.user.id);
+
+    let result: boolean;
+    if (isFavorited) {
+      // Retirer des favoris
+      result = await removeEventFromFavorites(eventId, session.user.id);
+    } else {
+      // Ajouter aux favoris
+      result = await addEventToFavorites(eventId, session.user.id);
+    }
+
+    if (!result) {
+      return { success: false, error: "Impossible de modifier les favoris" };
+    }
+
+    revalidatePath(`/events/${eventId}`);
+    revalidatePath("/events");
+    revalidatePath("/account");
+
+    return { success: true, isFavorited: !isFavorited };
+  } catch (error) {
+    console.error("Erreur lors de la modification des favoris:", error);
+    return { success: false, error: "Une erreur est survenue lors de la modification des favoris" };
   }
 }

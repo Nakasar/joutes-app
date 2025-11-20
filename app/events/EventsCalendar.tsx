@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Gamepad2, Euro, Filter, List, CalendarDays, Clock, Navigation, X, User2Icon, AlertCircle, CheckCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Gamepad2, Euro, Filter, List, CalendarDays, Clock, Navigation, X, User2Icon, AlertCircle, CheckCircle, Star } from "lucide-react";
 import Link from "next/link";
 import { DateTime } from "luxon";
 import { useSession } from "@/lib/auth-client";
@@ -61,6 +61,9 @@ export default function EventsCalendar({
     message: string;
   }>({ open: false, type: "error", title: "", message: "" });
   const session = useSession();
+  
+  // État pour gérer les favoris localement (optimistic updates)
+  const [localFavorites, setLocalFavorites] = useState<Record<string, boolean>>({});
 
   // Détecter la taille de l'écran et initialiser la vue en conséquence
   useEffect(() => {
@@ -229,6 +232,50 @@ export default function EventsCalendar({
     setShowLocationForm(false);
     if (onResetLocation) {
       onResetLocation();
+    }
+  };
+
+  const handleToggleFavorite = async (eventId: string, currentlyFavorited: boolean, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!session.data?.user) {
+      setDialogState({
+        open: true,
+        type: "error",
+        title: "Authentification requise",
+        message: "Vous devez être connecté pour mettre un événement en favori"
+      });
+      return;
+    }
+
+    // Optimistic update
+    setLocalFavorites(prev => ({ ...prev, [eventId]: !currentlyFavorited }));
+
+    try {
+      const { toggleEventFavoriteAction } = await import("@/app/events/actions");
+      const result = await toggleEventFavoriteAction(eventId);
+
+      if (!result.success) {
+        // Rollback on error
+        setLocalFavorites(prev => ({ ...prev, [eventId]: currentlyFavorited }));
+        setDialogState({
+          open: true,
+          type: "error",
+          title: "Erreur",
+          message: result.error || "Impossible de modifier les favoris"
+        });
+      }
+    } catch (error) {
+      // Rollback on error
+      setLocalFavorites(prev => ({ ...prev, [eventId]: currentlyFavorited }));
+      console.error("Erreur lors du toggle favori:", error);
+      setDialogState({
+        open: true,
+        type: "error",
+        title: "Erreur",
+        message: "Une erreur est survenue"
+      });
     }
   };
 
@@ -752,11 +799,30 @@ export default function EventsCalendar({
                             const startTime = DateTime.fromISO(
                               event.startDateTime
                             ).setZone('Europe/Paris').toLocaleString(DateTime.TIME_24_SIMPLE);
-                            const isUserEvent = session.data?.user?.id && (event.creatorId === session.data?.user?.id || event.participants?.includes(session.data?.user?.id || ""));
+                            const isFavorited = localFavorites[event.id] !== undefined 
+                              ? localFavorites[event.id] 
+                              : event.favoritedBy?.includes(session.data?.user?.id || "");
+                            const isUserEvent = session.data?.user?.id && (
+                              event.creatorId === session.data?.user?.id || 
+                              event.participants?.includes(session.data?.user?.id || "") ||
+                              isFavorited
+                            );
 
                             const eventContent = (
-                              <div className={cn("text-xs p-2 rounded-md bg-background border hover:bg-accent hover:border-accent-foreground transition-colors cursor-pointer", isUserEvent && "border-yellow-500")}>
-                                <div className="font-semibold truncate mb-1" title={event.name}>
+                              <div className={cn("text-xs p-2 rounded-md bg-background border hover:bg-accent hover:border-accent-foreground transition-colors cursor-pointer relative", isUserEvent && "border-yellow-500")}>
+                                {/* Bouton favori */}
+                                {session.data?.user && (
+                                  <button
+                                    onClick={(e) => handleToggleFavorite(event.id, !!isFavorited, e)}
+                                    className="absolute top-1 right-1 p-1 hover:bg-accent rounded-sm transition-colors z-10"
+                                    title={isFavorited ? "Retirer des favoris" : "Ajouter aux favoris"}
+                                  >
+                                    <Star 
+                                      className={cn("h-3 w-3", isFavorited && "fill-yellow-500 text-yellow-500")} 
+                                    />
+                                  </button>
+                                )}
+                                <div className="font-semibold truncate mb-1 pr-6" title={event.name}>
                                   {event.name}
                                 </div>
                                 <div className="text-xs text-muted-foreground flex items-center gap-1 mb-1" suppressHydrationWarning>
@@ -778,7 +844,7 @@ export default function EventsCalendar({
                                   <Gamepad2 className="h-3 w-3" />
                                   {event.gameName}
                                 </div>
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1 flex-wrap">
                                   <Badge variant={getStatusVariant(event.status)} className="text-xs">
                                     {getStatusLabel(event.status)}
                                   </Badge>
@@ -789,11 +855,21 @@ export default function EventsCalendar({
                                     </span>
                                   )}
                                 </div>
-                                {isUserEvent &&
-                                  <Badge variant="default" className="text-xs bg-yellow-500 text-foreground mt-1">
+                                {event.creatorId === session.data?.user?.id && (
+                                  <Badge variant="default" className="text-xs bg-blue-500 text-white mt-1">
+                                    Créateur
+                                  </Badge>
+                                )}
+                                {event.participants?.includes(session.data?.user?.id || "") && (
+                                  <Badge variant="default" className="text-xs bg-green-500 text-white mt-1">
                                     Inscrit
                                   </Badge>
-                                }
+                                )}
+                                {isFavorited && (
+                                  <Badge variant="default" className="text-xs bg-yellow-500 text-foreground mt-1">
+                                    Favori
+                                  </Badge>
+                                )}
                               </div>
                             );
 
@@ -848,6 +924,8 @@ export default function EventsCalendar({
           userId={session.data?.user?.id}
           getStatusVariant={getStatusVariant}
           getStatusLabel={getStatusLabel}
+          localFavorites={localFavorites}
+          onToggleFavorite={handleToggleFavorite}
         />
       )}
     </div>
@@ -887,6 +965,8 @@ type ListViewProps = {
   userId?: string;
   getStatusVariant: (status: Event["status"]) => "default" | "secondary" | "destructive" | "outline";
   getStatusLabel: (status: Event["status"]) => string;
+  localFavorites: Record<string, boolean>;
+  onToggleFavorite: (eventId: string, currentlyFavorited: boolean, e: React.MouseEvent) => void;
 };
 
 function ListView({
@@ -895,7 +975,9 @@ function ListView({
   today,
   userId,
   getStatusVariant,
-  getStatusLabel
+  getStatusLabel,
+  localFavorites,
+  onToggleFavorite
 }: ListViewProps) {
   if (eventsInMonth.length === 0) {
     return (
@@ -939,7 +1021,14 @@ function ListView({
                 const endDate = DateTime.fromISO(event.endDateTime);
                 const timeStr = eventDate.setZone('Europe/Paris').toLocaleString(DateTime.TIME_24_SIMPLE);
                 const endTimeStr = endDate.setZone('Europe/Paris').toLocaleString(DateTime.TIME_24_SIMPLE);
-                const isUserEvent = userId && (event.creatorId === userId || event.participants?.includes(userId || ""));
+                const isFavorited = localFavorites[event.id] !== undefined 
+                  ? localFavorites[event.id] 
+                  : event.favoritedBy?.includes(userId || "");
+                const isUserEvent = userId && (
+                  event.creatorId === userId || 
+                  event.participants?.includes(userId || "") ||
+                  isFavorited
+                );
 
                 const cardContent = (
                   <Card
@@ -955,9 +1044,23 @@ function ListView({
                         <CardTitle className="text-xl">
                           {event.name}
                         </CardTitle>
-                        <Badge variant={getStatusVariant(event.status)}>
-                          {getStatusLabel(event.status)}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={getStatusVariant(event.status)}>
+                            {getStatusLabel(event.status)}
+                          </Badge>
+                          {/* Bouton favori */}
+                          {userId && (
+                            <button
+                              onClick={(e) => onToggleFavorite(event.id, !!isFavorited, e)}
+                              className="p-2 hover:bg-accent rounded-md transition-colors"
+                              title={isFavorited ? "Retirer des favoris" : "Ajouter aux favoris"}
+                            >
+                              <Star 
+                                className={cn("h-5 w-5", isFavorited && "fill-yellow-500 text-yellow-500")} 
+                              />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </CardHeader>
 
@@ -1000,11 +1103,23 @@ function ListView({
                           </span>
                         </div>
                       )}
-                      {isUserEvent &&
-                        <Badge variant="default" className="text-xs bg-yellow-500 text-foreground mt-1">
-                          Inscrit
-                        </Badge>
-                      }
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {event.creatorId === userId && (
+                          <Badge variant="default" className="text-xs bg-blue-500 text-white">
+                            Créateur
+                          </Badge>
+                        )}
+                        {event.participants?.includes(userId || "") && (
+                          <Badge variant="default" className="text-xs bg-green-500 text-white">
+                            Inscrit
+                          </Badge>
+                        )}
+                        {isFavorited && (
+                          <Badge variant="default" className="text-xs bg-yellow-500 text-foreground">
+                            Favori
+                          </Badge>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 );
