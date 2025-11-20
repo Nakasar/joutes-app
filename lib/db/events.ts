@@ -352,6 +352,70 @@ export async function replaceEventsForLair(lairId: string, events: Event[]): Pro
 }
 
 /**
+ * Upsert AI-scrapped events for a lair
+ * - Updates existing events if they have the same URL + lairId
+ * - Inserts new events if they don't exist yet
+ * - Preserves user-created events
+ * @param lairId - The lair's ID
+ * @param events - The events to upsert
+ * @returns Object with counts of inserted and updated events
+ */
+export async function upsertEventsForLair(lairId: string, events: Event[]): Promise<{ inserted: number; updated: number }> {
+  if (events.length === 0) {
+    return { inserted: 0, updated: 0 };
+  }
+
+  // Use a transaction for atomic operation
+  const session = db.client.startSession();
+  let inserted = 0;
+  let updated = 0;
+
+  try {
+    await session.withTransaction(async () => {
+      for (const event of events) {
+        // Si l'événement a une URL, on utilise URL + lairId comme discriminant
+        if (event.url) {
+          const result = await db.collection<EventDocument>(COLLECTION_NAME).updateOne(
+            {
+              lairId,
+              url: event.url,
+              addedBy: "AI-SCRAPPING"
+            },
+            {
+              $set: {
+                name: event.name,
+                startDateTime: event.startDateTime,
+                endDateTime: event.endDateTime,
+                gameName: event.gameName,
+                price: event.price,
+                status: event.status,
+              }
+            },
+            { session }
+          );
+
+          if (result.matchedCount > 0) {
+            updated++;
+          } else {
+            // L'événement n'existe pas, on l'insère
+            await db.collection<EventDocument>(COLLECTION_NAME).insertOne(event, { session });
+            inserted++;
+          }
+        } else {
+          // Si pas d'URL, on insère toujours (impossible de détecter les doublons)
+          await db.collection<EventDocument>(COLLECTION_NAME).insertOne(event, { session });
+          inserted++;
+        }
+      }
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  return { inserted, updated };
+}
+
+/**
  * Get events for a specific user based on their followed lairs and games
  * Uses MongoDB aggregation for optimal performance
  * Includes private events where the user is the creator or a participant

@@ -126,12 +126,12 @@ ${page.content}
         addedBy: "AI-SCRAPPING",
       }));
       
-      // Replace all events for this lair in the events collection
-      await eventsDb.replaceEventsForLair(lair.id, events);
+      // Upsert events for this lair (update existing ones based on URL + lairId, insert new ones)
+      const { inserted, updated } = await eventsDb.upsertEventsForLair(lair.id, events);
       
       return { 
         success: true, 
-        message: `${object.events.length} événements uniques extraits avec succès`,
+        message: `${inserted} nouveaux événements créés, ${updated} événements mis à jour`,
       };
     } catch (error) {
       console.error("Erreur lors de l'extraction des événements:", error);
