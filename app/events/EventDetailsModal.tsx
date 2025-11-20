@@ -92,8 +92,8 @@ export default function EventDetailsModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
               <DialogTitle className="text-2xl flex items-center gap-2 flex-wrap">
@@ -138,7 +138,8 @@ export default function EventDetailsModal({
           )}
         </DialogHeader>
 
-        <div className="space-y-4 mt-4">
+        <div className="overflow-y-auto flex-1 px-6 py-4">
+          <div className="space-y-4">
           {/* Date et heure */}
           <Card>
             <CardHeader className="pb-3">
@@ -293,6 +294,7 @@ export default function EventDetailsModal({
               Voir la page complète de l&apos;événement →
             </Link>
           </div>
+        </div>
         </div>
       </DialogContent>
     </Dialog>
