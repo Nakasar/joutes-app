@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { regenerateInvitationCodeAction } from "@/app/account/private-lairs-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Copy, RefreshCw, Loader2, AlertCircle } from "lucide-react";
+import QRCode from "qrcode";
 
 interface PrivateLairInvitationManagerProps {
   lairId: string;
@@ -24,6 +25,28 @@ export default function PrivateLairInvitationManager({
   const [success, setSuccess] = useState<string | null>(null);
   const [invitationCode, setInvitationCode] = useState(initialInvitationCode);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
+
+  useEffect(() => {
+    if (invitationCode) {
+      const invitationUrl = `${window.location.origin}/lairs/invite/${invitationCode}`;
+      
+      QRCode.toDataURL(invitationUrl, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: "#000000",
+          light: "#FFFFFF",
+        },
+      })
+        .then((url) => {
+          setQrCodeUrl(url);
+        })
+        .catch((err) => {
+          console.error("Erreur lors de la génération du QR code:", err);
+        });
+    }
+  }, [invitationCode]);
 
   const getInvitationUrl = () => {
     if (typeof window === "undefined" || !invitationCode) return "";
@@ -110,11 +133,17 @@ export default function PrivateLairInvitationManager({
           </div>
 
           <div className="flex justify-center bg-white p-4 rounded-lg border">
-            <img
-              src={''}
-              alt="QR Code"
-              className="w-48 h-48"
-            />
+            {qrCodeUrl ? (
+              <img
+                src={qrCodeUrl}
+                alt="QR Code d'invitation"
+                className="w-48 h-48 border-4 border-gray-200 rounded-lg"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-48 w-48">
+                <p className="text-muted-foreground text-sm">Génération du QR code...</p>
+              </div>
+            )}
           </div>
 
           <Button
