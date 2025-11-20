@@ -72,7 +72,7 @@ export async function GET(
     // Filtrer les null values
     const validUsers = favoritedUsers.filter((user) => user !== null);
 
-    return NextResponse.json({ users: validUsers });
+    return NextResponse.json({ users: validUsers ?? [] });
   } catch (error) {
     console.error("Erreur lors de la récupération des favoris:", error);
     return NextResponse.json(
