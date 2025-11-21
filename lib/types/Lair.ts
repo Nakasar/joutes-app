@@ -29,4 +29,11 @@ export type Lair = {
   isPrivate?: boolean;
   
   invitationCode?: string;
+
+  
+  options?: {
+    calendar?: {
+      mode?: 'CALENDAR' | 'AGENDA';
+    };
+  };
 };

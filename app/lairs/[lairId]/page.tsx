@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Gamepad2, Calendar, Settings } from "lucide-react";
 import EventsCalendarClient from "@/components/EventsCalendarClient";
+import EventsAgendaList from "./EventsAgendaList";
 
 export async function generateMetadata({
   params
@@ -76,9 +77,14 @@ export default async function LairDetailPage({
     notFound();
   }
 
+  // Déterminer le mode d'affichage du calendrier
+  const calendarMode = lair.options?.calendar?.mode || 'CALENDAR';
+
+  // Si le mode est AGENDA, récupérer tous les événements de l'année
+  // Sinon, récupérer uniquement les événements du mois actuel
   const upcomingEvents = await getEventsByLairId(lairId, {
     year: new Date().getFullYear(),
-    month: new Date().getMonth() + 1,
+    month: calendarMode === 'AGENDA' ? undefined : new Date().getMonth() + 1,
     userId: session?.user?.id,
   });
 
@@ -316,14 +322,18 @@ export default async function LairDetailPage({
                   </Card>
                 </div>
               )}
-              <EventsCalendarClient
-                initialEvents={upcomingEvents}
-                initialMonth={+(month ?? new Date().getMonth() + 1)}
-                initialYear={+(year ?? new Date().getFullYear())}
-                initialShowAllGames={allGames === "true"}
-                basePath={`/lairs/${lairId}`}
-                lairId={lairId}
-              />
+              {calendarMode === 'AGENDA' ? (
+                <EventsAgendaList events={upcomingEvents} />
+              ) : (
+                <EventsCalendarClient
+                  initialEvents={upcomingEvents}
+                  initialMonth={+(month ?? new Date().getMonth() + 1)}
+                  initialYear={+(year ?? new Date().getFullYear())}
+                  initialShowAllGames={allGames === "true"}
+                  basePath={`/lairs/${lairId}`}
+                  lairId={lairId}
+                />
+              )}
             </div>
           </CardContent>
         </Card>
