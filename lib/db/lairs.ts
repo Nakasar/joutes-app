@@ -22,6 +22,7 @@ function toLair(doc: WithId<Document>): Lair {
     website: doc.website,
     isPrivate: doc.isPrivate || false,
     invitationCode: doc.invitationCode,
+    options: doc.options,
   };
 }
 
@@ -39,6 +40,7 @@ function toDocument(lair: Omit<Lair, "id">): Omit<LairDocument, "_id"> {
     website: lair.website,
     isPrivate: lair.isPrivate || false,
     invitationCode: lair.invitationCode,
+    options: lair.options,
   };
 }
 

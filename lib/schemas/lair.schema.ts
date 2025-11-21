@@ -23,6 +23,11 @@ export const lairSchema = z.object({
   website: z.url("L'URL du site web doit être valide").optional().or(z.literal("")),
   isPrivate: z.boolean().default(false),
   invitationCode: z.string().optional(),
+  options: z.object({
+    calendar: z.object({
+      mode: z.enum(['CALENDAR', 'AGENDA']).optional(),
+    }).optional(),
+  }).optional(),
 }).superRefine((data, ctx) => {
   // Les lairs privés ne peuvent pas avoir d'URL de scraping
   if (data.isPrivate && data.eventsSourceUrls && data.eventsSourceUrls.length > 0) {

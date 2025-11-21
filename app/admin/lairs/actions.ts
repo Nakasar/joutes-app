@@ -145,3 +145,40 @@ export async function refreshEvents(lairId: string) {
     return { success: false, error: "Erreur lors du rafraîchissement des événements" };
   }
 }
+
+export async function updateCalendarMode(lairId: string, mode: 'CALENDAR' | 'AGENDA') {
+  try {
+    await requireAdmin();
+    
+    // Valider l'ID
+    const validatedId = lairIdSchema.parse(lairId);
+    
+    // Mettre à jour le mode du calendrier
+    const updatedLair = await lairsDb.updateLair(validatedId, {
+      options: {
+        calendar: {
+          mode
+        }
+      }
+    });
+
+    if (!updatedLair) {
+      return { success: false, error: "Lieu non trouvé" };
+    }
+
+    revalidatePath("/admin/lairs");
+    revalidatePath("/lairs");
+    revalidatePath(`/lairs/${validatedId}`);
+    
+    return { success: true, lair: updatedLair };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { 
+        success: false, 
+        error: error.issues[0]?.message || "ID invalide" 
+      };
+    }
+    console.error("Erreur lors de la mise à jour du mode du calendrier:", error);
+    return { success: false, error: "Erreur lors de la mise à jour du mode du calendrier" };
+  }
+}

@@ -13,6 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { CalendarModeSwitch } from "./CalendarModeSwitch";
 
 export function LairForm({
   games,
@@ -313,6 +314,12 @@ export function LairForm({
               Format : latitude, longitude (exemple : 48.8566, 2.3522 pour Paris)
             </p>
           </div>
+
+          {lair && (
+            <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+              <CalendarModeSwitch lair={lair} />
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
