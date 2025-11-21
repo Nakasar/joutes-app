@@ -97,7 +97,7 @@ export default function EventActions({ eventId, isParticipant, isCreator, isFull
           disabled={loading || isFull}
           className="w-full"
         >
-          {loading ? "Chargement..." : isFull ? "Événement complet" : "S&apos;inscrire"}
+          {loading ? "Chargement..." : isFull ? "Événement complet" : "S'inscrire"}
         </Button>
       )}
     </div>
