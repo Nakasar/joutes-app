@@ -139,6 +139,7 @@ export async function getEventsByLairId(lairId: string, { year, month, allGames,
     creatorId: event.creatorId,
     participants: event.participants,
     maxParticipants: event.maxParticipants,
+    favoritedBy: event.favoritedBy,
     lair: event.lairDetails && event.lairDetails.length > 0 ? {
       id: event.lairDetails[0].id,
       name: event.lairDetails[0].name,

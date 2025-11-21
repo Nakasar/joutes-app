@@ -170,7 +170,7 @@ export default function EventsCalendarClient({
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="space-y-6">
         <EventsCalendar 
-          events={events} 
+          events={events}
           showViewToggle={true}
           currentMonth={params.month}
           currentYear={params.year}

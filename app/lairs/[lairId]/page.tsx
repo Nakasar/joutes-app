@@ -16,10 +16,10 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Gamepad2, Calendar, Settings } from "lucide-react";
 import EventsCalendarClient from "@/components/EventsCalendarClient";
 
-export async function generateMetadata({ 
-  params 
-}: { 
-  params: Promise<{ lairId: string }> 
+export async function generateMetadata({
+  params
+}: {
+  params: Promise<{ lairId: string }>
 }): Promise<Metadata> {
   const { lairId } = await params;
   const lair = await getLairById(lairId);
@@ -41,10 +41,10 @@ export async function generateMetadata({
   };
 }
 
-export default async function LairDetailPage({ 
+export default async function LairDetailPage({
   params,
   searchParams,
-}: { 
+}: {
   params: Promise<{ lairId: string }>;
   searchParams: Promise<{
     month?: string;
@@ -64,7 +64,7 @@ export default async function LairDetailPage({
   const session = await auth.api.getSession({
     headers: await headers(),
   });
-  
+
   const user = session?.user?.id ? await getUserById(session.user.id) : null;
   const isFollowing = user?.lairs?.includes(lairId) || false;
   const hasGames = user?.games && user.games.length > 0;
@@ -81,7 +81,7 @@ export default async function LairDetailPage({
     month: new Date().getMonth() + 1,
     userId: session?.user?.id,
   });
-  
+
   // Récupérer les détails des jeux
   const gamesDetails = await Promise.all(
     lair.games.map(async (gameId) => {
@@ -153,9 +153,9 @@ export default async function LairDetailPage({
               {lair.website && (
                 <div className="flex items-start gap-3">
                   <span className="text-sm font-medium text-muted-foreground min-w-[100px]">Site web :</span>
-                  <a 
-                    href={lair.website} 
-                    target="_blank" 
+                  <a
+                    href={lair.website}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-primary hover:underline"
                   >
@@ -192,7 +192,7 @@ export default async function LairDetailPage({
                 {games.length} jeu{games.length > 1 ? 'x' : ''} disponible{games.length > 1 ? 's' : ''} dans ce lieu
               </p>
             </div>
-            
+
             <div className="relative">
               <div className="flex gap-6 overflow-x-auto pb-6 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent hover:scrollbar-thumb-gray-500">
                 {games.map((game) => (
@@ -239,8 +239,8 @@ export default async function LairDetailPage({
                         <h3 className="font-bold text-2xl text-white drop-shadow-lg">
                           {game.name}
                         </h3>
-                        <Badge 
-                          variant="secondary" 
+                        <Badge
+                          variant="secondary"
                           className="bg-white/20 text-white backdrop-blur-sm border-white/30 hover:bg-white/30"
                         >
                           {game.type}
@@ -295,45 +295,36 @@ export default async function LairDetailPage({
             </div>
           </CardHeader>
           <CardContent>
-            {upcomingEvents.length === 0 ? (
-              <div className="text-center py-12">
-                <Calendar className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground text-lg">
-                  Aucun événement à venir pour le moment
-                </p>
-              </div>
-            ) : (
-              <div>
-                {!hasGames && (
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <Card className="hover:shadow-lg transition-shadow">
-                      <CardHeader>
-                        <Gamepad2 className="h-8 w-8 text-primary mb-2" />
-                        <CardTitle>Suivez des jeux</CardTitle>
-                        <CardDescription>
-                          Sélectionnez les jeux qui vous intéressent pour voir leurs événements
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <Button asChild className="w-full">
-                          <Link href="/account">
-                            Gérer mes jeux
-                          </Link>
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </div>
-                )}
-                <EventsCalendarClient
-                  initialEvents={upcomingEvents}
-                  initialMonth={+(month ?? new Date().getMonth() + 1)}
-                  initialYear={+(year ?? new Date().getFullYear())}
-                  initialShowAllGames={allGames === "true"}
-                  basePath={`/lairs/${lairId}`}
-                  lairId={lairId}
-                />
-              </div>
-            )}
+            <div>
+              {!hasGames && (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Card className="hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      <Gamepad2 className="h-8 w-8 text-primary mb-2" />
+                      <CardTitle>Suivez des jeux</CardTitle>
+                      <CardDescription>
+                        Sélectionnez les jeux qui vous intéressent pour voir leurs événements
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Button asChild className="w-full">
+                        <Link href="/account">
+                          Gérer mes jeux
+                        </Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+              <EventsCalendarClient
+                initialEvents={upcomingEvents}
+                initialMonth={+(month ?? new Date().getMonth() + 1)}
+                initialYear={+(year ?? new Date().getFullYear())}
+                initialShowAllGames={allGames === "true"}
+                basePath={`/lairs/${lairId}`}
+                lairId={lairId}
+              />
+            </div>
           </CardContent>
         </Card>
       </div>
