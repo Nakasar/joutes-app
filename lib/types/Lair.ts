@@ -33,7 +33,7 @@ export type Lair = {
   
   options?: {
     calendar?: {
-      mode?: 'CALENDAR' | 'AGENDA';
+      mode?: 'CALENDAR' | 'AGENDA' | 'CONFERENCE';
     };
   };
 };

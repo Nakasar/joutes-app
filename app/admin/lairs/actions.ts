@@ -146,7 +146,7 @@ export async function refreshEvents(lairId: string) {
   }
 }
 
-export async function updateCalendarMode(lairId: string, mode: 'CALENDAR' | 'AGENDA') {
+export async function updateCalendarMode(lairId: string, mode: 'CALENDAR' | 'AGENDA' | 'CONFERENCE') {
   try {
     await requireAdmin();
     

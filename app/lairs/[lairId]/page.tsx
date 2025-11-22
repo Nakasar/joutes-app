@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Gamepad2, Calendar, Settings } from "lucide-react";
 import EventsCalendarClient from "@/components/EventsCalendarClient";
 import EventsAgendaList from "./EventsAgendaList";
+import EventsConferenceView from "./EventsConferenceView";
 
 export async function generateMetadata({
   params
@@ -324,6 +325,8 @@ export default async function LairDetailPage({
               )}
               {calendarMode === 'AGENDA' ? (
                 <EventsAgendaList events={upcomingEvents} />
+              ) : calendarMode === 'CONFERENCE' ? (
+                <EventsConferenceView events={upcomingEvents} />
               ) : (
                 <EventsCalendarClient
                   initialEvents={upcomingEvents}

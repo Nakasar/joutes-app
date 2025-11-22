@@ -12,11 +12,11 @@ interface CalendarModeSwitchProps {
 
 export function CalendarModeSwitch({ lair }: CalendarModeSwitchProps) {
   const currentMode = lair.options?.calendar?.mode || 'CALENDAR';
-  const [mode, setMode] = useState<'CALENDAR' | 'AGENDA'>(currentMode);
+  const [mode, setMode] = useState<'CALENDAR' | 'AGENDA' | 'CONFERENCE'>(currentMode);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const handleModeChange = (newMode: 'CALENDAR' | 'AGENDA') => {
+  const handleModeChange = (newMode: 'CALENDAR' | 'AGENDA' | 'CONFERENCE') => {
     setMode(newMode);
     setError(null);
 
@@ -60,6 +60,16 @@ export function CalendarModeSwitch({ lair }: CalendarModeSwitchProps) {
           className="flex-1"
         >
           Agenda
+        </Button>
+        <Button
+          type="button"
+          variant={mode === 'CONFERENCE' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => handleModeChange('CONFERENCE')}
+          disabled={isPending}
+          className="flex-1"
+        >
+          Conférence
         </Button>
       </div>
 

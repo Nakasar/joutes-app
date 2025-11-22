@@ -25,7 +25,7 @@ export const lairSchema = z.object({
   invitationCode: z.string().optional(),
   options: z.object({
     calendar: z.object({
-      mode: z.enum(['CALENDAR', 'AGENDA']).optional(),
+      mode: z.enum(['CALENDAR', 'AGENDA', 'CONFERENCE']).optional(),
     }).optional(),
   }).optional(),
 }).superRefine((data, ctx) => {
