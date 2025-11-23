@@ -357,14 +357,25 @@ export async function reportMatchResult(eventId: string, data: unknown) {
       return { success: false, error: "Vous ne faites pas partie de ce match" };
     }
 
+    // Récupérer les paramètres du portail pour vérifier requireConfirmation
+    const settingsCollection = db.collection<EventPortalSettings>(PORTAL_SETTINGS_COLLECTION);
+    const settings = await settingsCollection.findOne({ eventId });
+
+    const requireConfirmation = settings?.requireConfirmation ?? false;
+
     const updateData: Partial<MatchResult> = {
       player1Score: validated.player1Score,
       player2Score: validated.player2Score,
       winnerId: validated.winnerId,
       reportedBy: session.user.id,
-      status: 'in-progress',
+      status: requireConfirmation ? 'in-progress' : 'completed',
       updatedAt: new Date().toISOString(),
     };
+
+    // Si pas de confirmation requise, marquer comme confirmé directement
+    if (!requireConfirmation) {
+      updateData.confirmedBy = session.user.id;
+    }
 
     await collection.updateOne(
       { matchId: validated.matchId, eventId },

@@ -181,6 +181,7 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
 
       if (result.success) {
         // Mise à jour optimiste
+        const requireConfirmation = settings?.requireConfirmation ?? false;
         setMatches(matches.map(m => 
           m.matchId === reportForm.matchId 
             ? {
@@ -189,12 +190,16 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
                 player2Score: reportForm.player2Score,
                 winnerId: winnerId || undefined,
                 reportedBy: userId,
-                status: 'in-progress' as const,
+                confirmedBy: requireConfirmation ? undefined : userId,
+                status: requireConfirmation ? 'in-progress' as const : 'completed' as const,
                 updatedAt: new Date().toISOString(),
               }
             : m
         ));
-        setSuccess("Résultat rapporté avec succès");
+        setSuccess(requireConfirmation 
+          ? "Résultat rapporté avec succès. En attente de confirmation."
+          : "Résultat enregistré avec succès."
+        );
         setReportForm(null);
       } else {
         setError(result.error || "Erreur lors du rapport du résultat");
@@ -413,7 +418,7 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
                   </div>
                 )}
 
-                {currentMatch.status === "in-progress" && currentMatch.reportedBy && (
+                {currentMatch.status === "in-progress" && currentMatch.reportedBy && settings?.requireConfirmation && (
                   <Alert>
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
