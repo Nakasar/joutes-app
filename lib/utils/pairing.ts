@@ -303,3 +303,57 @@ export function generateBracketPosition(
 export function calculateBracketRounds(numPlayers: number): number {
   return Math.ceil(Math.log2(numPlayers));
 }
+
+/**
+ * Génère les pairings pour la ronde suivante d'un bracket en utilisant les vainqueurs
+ * @param previousRoundMatches - Matchs de la ronde précédente
+ * @returns Les pairings pour la ronde suivante
+ */
+export function generateNextBracketRound(
+  previousRoundMatches: MatchResult[]
+): PairingResult[] {
+  // Récupérer les vainqueurs de la ronde précédente dans l'ordre
+  const winners = previousRoundMatches
+    .sort((a, b) => {
+      // Trier par bracketPosition ou matchId pour maintenir l'ordre
+      const posA = a.bracketPosition || a.matchId;
+      const posB = b.bracketPosition || b.matchId;
+      return posA.localeCompare(posB);
+    })
+    .map(match => {
+      // Si le match a un vainqueur, le retourner
+      if (match.winnerId) {
+        return match.winnerId;
+      }
+      // Si c'est un BYE, le joueur 1 passe automatiquement
+      if (!match.player2Id) {
+        return match.player1Id;
+      }
+      // Si le match n'est pas terminé, on ne peut pas générer la ronde suivante
+      return null;
+    });
+
+  // Vérifier que tous les matchs sont terminés
+  if (winners.some(w => w === null)) {
+    throw new Error("Tous les matchs de la ronde précédente doivent être terminés");
+  }
+
+  // Créer les pairings en associant les vainqueurs deux par deux
+  const pairings: PairingResult[] = [];
+  for (let i = 0; i < winners.length; i += 2) {
+    if (i + 1 < winners.length) {
+      pairings.push({
+        player1Id: winners[i]!,
+        player2Id: winners[i + 1]!,
+      });
+    } else {
+      // Si nombre impair de vainqueurs, le dernier a un BYE
+      pairings.push({
+        player1Id: winners[i]!,
+        player2Id: null,
+      });
+    }
+  }
+
+  return pairings;
+}

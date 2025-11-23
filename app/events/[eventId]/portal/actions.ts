@@ -700,34 +700,64 @@ export async function generateMatchesForPhase(eventId: string, phaseId: string) 
 
       pairings = generateSwissPairings(playerIds, existingMatches, roundNumber);
     } else if (phase.type === "bracket") {
-      const existingMatch = await matchesCollection.findOne<MatchResult>({ eventId, phaseId });
-      // Pour le bracket, générer seulement le premier tour
-      if (existingMatch) {
-        return {
-          success: false,
-          error: "La génération automatique de tours suivants pour les brackets n'est pas encore implémentée"
-        };
-      }
+      const existingMatches = await matchesCollection.find<MatchResult>({ eventId, phaseId }).toArray();
+      
+      // Si des matchs existent déjà, générer la ronde suivante
+      if (existingMatches.length > 0) {
+        const maxRound = Math.max(...existingMatches.map(m => m.round || 1));
+        // Vérifier si tous les matchs de la dernière ronde sont terminés
+        const lastRoundMatches = existingMatches.filter(m => (m.round || 1) === maxRound);
+        const allCompleted = lastRoundMatches.every(m => m.status === "completed");
 
-      const currentPhaseIndex = settings.phases.findIndex(p => p.id === phaseId);
-      if (currentPhaseIndex === -1) {
-        return { success: false, error: "Phase non trouvée dans les paramètres" };
-      }
-      const previousPhase = settings.phases[currentPhaseIndex - 1];
-      if (!previousPhase) {
-        return { success: false, error: "Phase précédente non trouvée pour générer le bracket" };
-      }
+        if (!allCompleted) {
+          return {
+            success: false,
+            error: `Tous les matchs de la ronde ${maxRound} doivent être terminés avant de générer la ronde suivante`
+          };
+        }
 
-      roundNumber = 1;
-      const existingMatches = await matchesCollection.find<MatchResult>({
-        eventId,
-        phaseId: previousPhase.id,
-      }).toArray();
+        // Vérifier si c'est déjà la finale (1 seul match dans la dernière ronde)
+        if (lastRoundMatches.length === 1) {
+          return {
+            success: false,
+            error: "La finale a déjà été générée, le bracket est complet"
+          };
+        }
 
-      // Passer le paramètre topCut pour limiter aux N premiers du classement
-      pairings = generateEliminationBracket(playerIds, existingMatches, phase.topCut);
+        roundNumber = maxRound + 1;
+        
+        // Importer la fonction de génération de la ronde suivante
+        const { generateNextBracketRound } = await import("@/lib/utils/pairing");
+        
+        try {
+          pairings = generateNextBracketRound(lastRoundMatches);
+        } catch (error) {
+          return {
+            success: false,
+            error: error instanceof Error ? error.message : "Erreur lors de la génération de la ronde suivante"
+          };
+        }
+      } else {
+        // Première ronde : utiliser le classement de la phase précédente
+        const currentPhaseIndex = settings.phases.findIndex(p => p.id === phaseId);
+        if (currentPhaseIndex === -1) {
+          return { success: false, error: "Phase non trouvée dans les paramètres" };
+        }
+        const previousPhase = settings.phases[currentPhaseIndex - 1];
+        if (!previousPhase) {
+          return { success: false, error: "Phase précédente non trouvée pour générer le bracket" };
+        }
+
+        roundNumber = 1;
+        const previousPhaseMatches = await matchesCollection.find<MatchResult>({
+          eventId,
+          phaseId: previousPhase.id,
+        }).toArray();
+
+        // Passer le paramètre topCut pour limiter aux N premiers du classement
+        pairings = generateEliminationBracket(playerIds, previousPhaseMatches, phase.topCut);
+      }
     }
-
     // Créer les matchs
     const newMatches: Array<MatchResult & { eventId: string }> = [];
     const now = new Date().toISOString();
