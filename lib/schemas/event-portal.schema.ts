@@ -93,6 +93,7 @@ export const confirmMatchResultSchema = z.object({
 
 // Schéma pour créer une annonce
 export const createAnnouncementSchema = announcementSchema.omit({
+  eventId: true,
   id: true,
   createdAt: true,
   createdBy: true,
