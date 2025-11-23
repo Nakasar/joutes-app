@@ -17,6 +17,8 @@ import {
   Announcement,
 } from "@/lib/schemas/event-portal.schema";
 import { getEventById } from "@/lib/db/events";
+import { calculateStandings, generateBracketPosition, generateEliminationBracket, generateSwissPairings } from "@/lib/utils/pairing";
+import { getEventParticipants } from "./participant-actions";
 
 const PORTAL_SETTINGS_COLLECTION = "event-portal-settings";
 const MATCH_RESULTS_COLLECTION = "event-match-results";
@@ -46,9 +48,9 @@ export async function getPortalSettings(eventId: string) {
     }
 
     const collection = db.collection<EventPortalSettings>(PORTAL_SETTINGS_COLLECTION);
-    
+
     const settings = await collection.findOne({ eventId });
-    
+
     if (!settings) {
       return { success: true, data: null };
     }
@@ -249,20 +251,20 @@ export async function getMatchResults(eventId: string, phaseId?: string) {
     // Vérifier que l'utilisateur a accès à l'événement
     const isCreator = await isEventCreator(eventId, session.user.id);
     const isParticipant = await isEventParticipant(eventId, session.user.id);
-    
+
     if (!isCreator && !isParticipant) {
       return { success: false, error: "Accès non autorisé" };
     }
 
     const collection = db.collection<MatchResult & { eventId: string }>(MATCH_RESULTS_COLLECTION);
-    
+
     const query: Record<string, unknown> = { eventId };
     if (phaseId) {
       query.phaseId = phaseId;
     }
 
     const results = await collection.find(query).toArray();
-    
+
     return {
       success: true,
       data: results.map((r: typeof results[0]) => ({
@@ -335,7 +337,7 @@ export async function reportMatchResult(eventId: string, data: unknown) {
     // Vérifier que l'utilisateur est participant
     const isParticipant = await isEventParticipant(eventId, session.user.id);
     const isCreator = await isEventCreator(eventId, session.user.id);
-    
+
     if (!isParticipant && !isCreator) {
       return { success: false, error: "Vous devez être participant pour rapporter un résultat" };
     }
@@ -527,15 +529,15 @@ export async function getAnnouncements(eventId: string) {
     // Vérifier que l'utilisateur a accès à l'événement
     const isCreator = await isEventCreator(eventId, session.user.id);
     const isParticipant = await isEventParticipant(eventId, session.user.id);
-    
+
     if (!isCreator && !isParticipant) {
       return { success: false, error: "Accès non autorisé" };
     }
 
     const collection = db.collection<Announcement & { eventId: string }>(ANNOUNCEMENTS_COLLECTION);
-    
+
     const announcements = await collection.find({ eventId }).sort({ createdAt: -1 }).toArray();
-    
+
     return {
       success: true,
       data: announcements.map((a: typeof announcements[0]) => ({
@@ -648,9 +650,8 @@ export async function generateMatchesForPhase(eventId: string, phaseId: string) 
     }
 
     // Récupérer tous les participants (incluant les invités)
-    const { getEventParticipants } = await import("./participant-actions");
     const participantsResult = await getEventParticipants(eventId);
-    
+
     if (!participantsResult.success || !participantsResult.data) {
       return { success: false, error: "Impossible de récupérer les participants" };
     }
@@ -664,53 +665,67 @@ export async function generateMatchesForPhase(eventId: string, phaseId: string) 
 
     // Récupérer les matchs existants pour cette phase
     const matchesCollection = db.collection<MatchResult & { eventId: string }>(MATCH_RESULTS_COLLECTION);
-    const existingMatches = await matchesCollection.find({ eventId, phaseId }).toArray();
-
-    // Déterminer le numéro de ronde
-    let roundNumber = 1;
-    if (existingMatches.length > 0) {
-      const maxRound = Math.max(...existingMatches.map(m => m.round || 1));
-      // Vérifier si tous les matchs de la dernière ronde sont terminés
-      const lastRoundMatches = existingMatches.filter(m => (m.round || 1) === maxRound);
-      const allCompleted = lastRoundMatches.every(m => m.status === "completed");
-      
-      if (!allCompleted) {
-        return { 
-          success: false, 
-          error: `Tous les matchs de la ronde ${maxRound} doivent être terminés avant de générer la ronde suivante` 
-        };
-      }
-      
-      roundNumber = maxRound + 1;
-    }
 
     // Générer les pairings selon le type de phase
-    const { generateSwissPairings, generateEliminationBracket, generateBracketPosition } = 
-      await import("@/lib/utils/pairing");
-    
     let pairings: Array<{ player1Id: string; player2Id: string | null }> = [];
-    
+    let roundNumber = 1;
+
     if (phase.type === "swiss") {
+      const existingMatches = await matchesCollection.find<MatchResult>({ eventId, phaseId }).toArray();
+
+      // Déterminer le numéro de ronde
+      if (existingMatches.length > 0) {
+        const maxRound = Math.max(...existingMatches.map(m => m.round || 1));
+        // Vérifier si tous les matchs de la dernière ronde sont terminés
+        const lastRoundMatches = existingMatches.filter(m => (m.round || 1) === maxRound);
+        const allCompleted = lastRoundMatches.every(m => m.status === "completed");
+
+        if (!allCompleted) {
+          return {
+            success: false,
+            error: `Tous les matchs de la ronde ${maxRound} doivent être terminés avant de générer la ronde suivante`
+          };
+        }
+
+        roundNumber = maxRound + 1;
+      }
+
       // Vérifier que nous ne dépassons pas le nombre de rondes
       if (phase.rounds && roundNumber > phase.rounds) {
-        return { 
-          success: false, 
-          error: `Toutes les rondes (${phase.rounds}) ont déjà été générées` 
+        return {
+          success: false,
+          error: `Toutes les rondes (${phase.rounds}) ont déjà été générées`
         };
       }
-      
-      pairings = generateSwissPairings(playerIds, existingMatches as any, roundNumber);
+
+      pairings = generateSwissPairings(playerIds, existingMatches, roundNumber);
     } else if (phase.type === "bracket") {
+      const existingMatch = await matchesCollection.findOne<MatchResult>({ eventId, phaseId });
       // Pour le bracket, générer seulement le premier tour
-      if (roundNumber > 1) {
-        return { 
-          success: false, 
-          error: "La génération automatique de tours suivants pour les brackets n&apos;est pas encore implémentée" 
+      if (existingMatch) {
+        return {
+          success: false,
+          error: "La génération automatique de tours suivants pour les brackets n'est pas encore implémentée"
         };
       }
-      
+
+      const currentPhaseIndex = settings.phases.findIndex(p => p.id === phaseId);
+      if (currentPhaseIndex === -1) {
+        return { success: false, error: "Phase non trouvée dans les paramètres" };
+      }
+      const previousPhase = settings.phases[currentPhaseIndex - 1];
+      if (!previousPhase) {
+        return { success: false, error: "Phase précédente non trouvée pour générer le bracket" };
+      }
+
+      roundNumber = 1;
+      const existingMatches = await matchesCollection.find<MatchResult>({
+        eventId,
+        phaseId: previousPhase.id,
+      }).toArray();
+
       // Passer le paramètre topCut pour limiter aux N premiers du classement
-      pairings = generateEliminationBracket(playerIds, existingMatches as any, phase.topCut);
+      pairings = generateEliminationBracket(playerIds, existingMatches, phase.topCut);
     }
 
     // Créer les matchs
@@ -720,7 +735,7 @@ export async function generateMatchesForPhase(eventId: string, phaseId: string) 
     for (let i = 0; i < pairings.length; i++) {
       const pairing = pairings[i];
       const matchId = `match-${eventId}-${phaseId}-r${roundNumber}-${i}`;
-      
+
       // Déterminer si c'est un BYE et calculer le score automatique
       const isBye = pairing.player2Id === null;
       let player1Score = 0;
@@ -751,7 +766,7 @@ export async function generateMatchesForPhase(eventId: string, phaseId: string) 
         reportedBy = session.user.id; // L'organisateur
         confirmedBy = session.user.id;
       }
-      
+
       const match = {
         matchId,
         eventId,
@@ -762,8 +777,8 @@ export async function generateMatchesForPhase(eventId: string, phaseId: string) 
         player2Score,
         winnerId,
         round: roundNumber,
-        bracketPosition: phase.type === "bracket" 
-          ? generateBracketPosition(i, pairings.length) 
+        bracketPosition: phase.type === "bracket"
+          ? generateBracketPosition(i, pairings.length)
           : undefined,
         status,
         reportedBy,
@@ -780,8 +795,8 @@ export async function generateMatchesForPhase(eventId: string, phaseId: string) 
       await matchesCollection.insertMany(newMatches as any);
     }
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       data: {
         matchesCreated: newMatches.length,
         roundNumber,
@@ -814,7 +829,7 @@ export async function getPhaseStandings(eventId: string, phaseId: string) {
     // Vérifier que l'utilisateur a accès à l'événement
     const isCreator = await isEventCreator(eventId, session.user.id);
     const isParticipant = await isEventParticipant(eventId, session.user.id);
-    
+
     if (!isCreator && !isParticipant) {
       return { success: false, error: "Accès non autorisé" };
     }
@@ -825,9 +840,8 @@ export async function getPhaseStandings(eventId: string, phaseId: string) {
     }
 
     // Récupérer tous les participants
-    const { getEventParticipants } = await import("./participant-actions");
     const participantsResult = await getEventParticipants(eventId);
-    
+
     if (!participantsResult.success || !participantsResult.data) {
       return { success: false, error: "Impossible de récupérer les participants" };
     }
@@ -840,7 +854,6 @@ export async function getPhaseStandings(eventId: string, phaseId: string) {
     const matches = await matchesCollection.find({ eventId, phaseId }).toArray();
 
     // Calculer le classement
-    const { calculateStandings } = await import("@/lib/utils/pairing");
     const standings = calculateStandings(playerIds, matches as any);
 
     // Enrichir avec les informations des participants
