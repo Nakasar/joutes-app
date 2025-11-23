@@ -709,7 +709,8 @@ export async function generateMatchesForPhase(eventId: string, phaseId: string) 
         };
       }
       
-      pairings = generateEliminationBracket(playerIds, existingMatches as any);
+      // Passer le paramètre topCut pour limiter aux N premiers du classement
+      pairings = generateEliminationBracket(playerIds, existingMatches as any, phase.topCut);
     }
 
     // Créer les matchs

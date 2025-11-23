@@ -13,6 +13,7 @@ export const tournamentPhaseSchema = z.object({
   type: phaseTypeSchema,
   matchType: matchTypeSchema,
   rounds: z.number().min(1).optional(), // Nombre de rondes pour les rondes suisses
+  topCut: z.number().min(2).optional(), // Nombre de joueurs pour le bracket (ex: 8 pour un top 8)
   order: z.number().min(0), // Ordre de la phase dans le tournoi
   status: z.enum(['not-started', 'in-progress', 'completed']).default('not-started'),
 });

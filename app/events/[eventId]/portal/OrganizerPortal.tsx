@@ -85,6 +85,7 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
     type: "swiss" as "swiss" | "bracket",
     matchType: "BO3" as "BO1" | "BO2" | "BO3" | "BO5",
     rounds: 3,
+    topCut: 8,
     order: 0,
   });
 
@@ -187,6 +188,7 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
             type: "swiss",
             matchType: "BO3",
             rounds: 3,
+            topCut: 8,
             order: settings.phases.length,
           });
         }
@@ -554,6 +556,22 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
                             value={phaseForm.rounds}
                             onChange={(e) => setPhaseForm({ ...phaseForm, rounds: parseInt(e.target.value) })}
                           />
+                        </div>
+                      )}
+                      {phaseForm.type === "bracket" && (
+                        <div>
+                          <label className="text-sm font-medium">Nombre de joueurs (Top Cut)</label>
+                          <Input
+                            type="number"
+                            min="2"
+                            step="1"
+                            value={phaseForm.topCut}
+                            onChange={(e) => setPhaseForm({ ...phaseForm, topCut: parseInt(e.target.value) })}
+                            placeholder="Ex: 8 pour un top 8"
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Nombre de joueurs à prendre du classement (4, 8, 16, 32, etc.)
+                          </p>
                         </div>
                       )}
                       <div className="flex gap-2">

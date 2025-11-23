@@ -231,40 +231,47 @@ export function generateSwissPairings(
 
 /**
  * Génère un bracket d'élimination simple
+ * @param playerIds - Liste des IDs des joueurs participants
+ * @param matches - Matchs existants (pour calculer le classement)
+ * @param topCut - Nombre de joueurs à prendre du top du classement (ex: 8 pour un top 8). Si non spécifié, prend tous les joueurs.
  */
 export function generateEliminationBracket(
   playerIds: string[],
-  matches: MatchResult[]
+  matches: MatchResult[],
+  topCut?: number
 ): PairingResult[] {
   // Calculer le classement pour seeder les joueurs
   const standings = calculateStandings(playerIds, matches);
   
+  // Si un top cut est spécifié, prendre seulement les N premiers du classement
+  let selectedPlayers = standings.map(s => s.playerId);
+  if (topCut && topCut > 0 && topCut < selectedPlayers.length) {
+    selectedPlayers = selectedPlayers.slice(0, topCut);
+  }
+  
+  const numPlayers = selectedPlayers.length;
+  
   // Arrondir à la prochaine puissance de 2 pour le nombre de joueurs
-  const bracketSize = Math.pow(2, Math.ceil(Math.log2(playerIds.length)));
+  const bracketSize = Math.pow(2, Math.ceil(Math.log2(numPlayers)));
   const pairings: PairingResult[] = [];
 
-  // Seeding classique: 1 vs dernier, 2 vs avant-dernier, etc.
-  const seededPlayers = standings.map(s => s.playerId);
-  
-  // Si le nombre de joueurs n'est pas une puissance de 2, certains auront un "bye"
-  const numByes = bracketSize - playerIds.length;
-  
-  // Créer les pairings pour le premier tour
+  // Créer les pairings pour le premier tour avec seeding classique
+  // 1 vs 8, 2 vs 7, 3 vs 6, 4 vs 5 pour un top 8
   const halfSize = bracketSize / 2;
   for (let i = 0; i < halfSize; i++) {
     const topSeed = i;
     const bottomSeed = bracketSize - 1 - i;
     
     // Vérifier que les deux joueurs existent
-    if (topSeed < seededPlayers.length && bottomSeed < seededPlayers.length) {
+    if (topSeed < selectedPlayers.length && bottomSeed < selectedPlayers.length) {
       pairings.push({
-        player1Id: seededPlayers[topSeed],
-        player2Id: seededPlayers[bottomSeed],
+        player1Id: selectedPlayers[topSeed],
+        player2Id: selectedPlayers[bottomSeed],
       });
-    } else if (topSeed < seededPlayers.length) {
+    } else if (topSeed < selectedPlayers.length) {
       // Si seulement le top seed existe, il a un BYE
       pairings.push({
-        player1Id: seededPlayers[topSeed],
+        player1Id: selectedPlayers[topSeed],
         player2Id: null,
       });
     }
