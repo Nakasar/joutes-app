@@ -944,44 +944,54 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
                 <div className="space-y-4">
                   {/* Filtrer les matchs selon la sélection */}
                   {(() => {
-                    // Si une phase et une ronde sont sélectionnées, filtrer
-                    if (selectedPhaseId && selectedRound) {
-                      const roundNum = parseInt(selectedRound);
-                      const filteredMatches = matches.filter(
-                        m => m.phaseId === selectedPhaseId && (m.round || 1) === roundNum
+                    // Si aucune phase ou ronde n'est sélectionnée, afficher un message
+                    if (!selectedPhaseId || !selectedRound) {
+                      return (
+                        <div className="text-center py-8">
+                          <p className="text-muted-foreground">
+                            Sélectionnez une phase et une ronde pour afficher les matchs
+                          </p>
+                        </div>
                       );
-                      
-                      if (filteredMatches.length === 0) {
-                        return <p className="text-muted-foreground text-sm">Aucun match pour cette ronde</p>;
-                      }
+                    }
 
-                      const phase = settings?.phases.find(p => p.id === selectedPhaseId);
-                      
-                      // Pour les phases bracket, afficher en mode bracket (toutes les rondes)
-                      if (phase?.type === "bracket") {
-                        const allPhaseMatches = matches.filter(m => m.phaseId === selectedPhaseId);
-                        return (
-                          <div className="space-y-2">
-                            <h3 className="font-semibold mb-4">
-                              {phase.name} - Vue Bracket
-                            </h3>
-                            <BracketView
-                              matches={allPhaseMatches}
-                              getParticipantName={getParticipantName}
-                              onEditMatch={handleEditMatch}
-                              onDeleteMatch={handleDeleteMatch}
-                            />
-                          </div>
-                        );
-                      }
-                      
-                      // Pour les phases suisses, afficher la liste de la ronde
+                    // Si une phase et une ronde sont sélectionnées, filtrer
+                    const roundNum = parseInt(selectedRound);
+                    const filteredMatches = matches.filter(
+                      m => m.phaseId === selectedPhaseId && (m.round || 1) === roundNum
+                    );
+                    
+                    if (filteredMatches.length === 0) {
+                      return <p className="text-muted-foreground text-sm">Aucun match pour cette ronde</p>;
+                    }
+
+                    const phase = settings?.phases.find(p => p.id === selectedPhaseId);
+                    
+                    // Pour les phases bracket, afficher en mode bracket (toutes les rondes)
+                    if (phase?.type === "bracket") {
+                      const allPhaseMatches = matches.filter(m => m.phaseId === selectedPhaseId);
                       return (
                         <div className="space-y-2">
-                          <h3 className="font-semibold">
-                            {phase?.name} - Ronde {roundNum}
+                          <h3 className="font-semibold mb-4">
+                            {phase.name} - Vue Bracket
                           </h3>
-                          {filteredMatches.map((match) => (
+                          <BracketView
+                            matches={allPhaseMatches}
+                            getParticipantName={getParticipantName}
+                            onEditMatch={handleEditMatch}
+                            onDeleteMatch={handleDeleteMatch}
+                          />
+                        </div>
+                      );
+                    }
+                    
+                    // Pour les phases suisses, afficher la liste de la ronde
+                    return (
+                      <div className="space-y-2">
+                        <h3 className="font-semibold">
+                          {phase?.name} - Ronde {roundNum}
+                        </h3>
+                        {filteredMatches.map((match) => (
                             <div key={match.matchId} className="border rounded-lg p-4">
                               {editingMatch?.matchId === match.matchId ? (
                                 // Mode édition
@@ -1076,103 +1086,6 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
                           ))}
                         </div>
                       );
-                    }
-
-                    // Sinon, afficher tous les matchs groupés par ronde
-                    return Array.from(new Set(matches.map(m => m.round || 1))).sort((a, b) => a - b).map(round => (
-                      <div key={round} className="space-y-2">
-                        <h3 className="font-semibold text-sm">Ronde {round}</h3>
-                        {matches.filter(m => (m.round || 1) === round).map((match) => (
-                        <div key={match.matchId} className="border rounded-lg p-4">
-                          {editingMatch?.matchId === match.matchId ? (
-                            // Mode édition
-                            <div className="space-y-4">
-                              <div className="font-medium">
-                                {getParticipantName(match.player1Id)} vs {getParticipantName(match.player2Id)}
-                              </div>
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <label className="text-sm font-medium">
-                                    Score {getParticipantName(match.player1Id)}
-                                  </label>
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    value={editingMatch.player1Score}
-                                    onChange={(e) => setEditingMatch({
-                                      ...editingMatch,
-                                      player1Score: parseInt(e.target.value) || 0
-                                    })}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-sm font-medium">
-                                    Score {getParticipantName(match.player2Id)}
-                                  </label>
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    value={editingMatch.player2Score}
-                                    onChange={(e) => setEditingMatch({
-                                      ...editingMatch,
-                                      player2Score: parseInt(e.target.value) || 0
-                                    })}
-                                  />
-                                </div>
-                              </div>
-                              <div className="flex gap-2">
-                                <Button size="sm" onClick={handleSaveMatchEdit} disabled={isPending}>
-                                  <Check className="h-4 w-4 mr-2" />
-                                  Sauvegarder
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={() => setEditingMatch(null)}>
-                                  Annuler
-                                </Button>
-                              </div>
-                            </div>
-                          ) : (
-                            // Mode affichage
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="font-medium">
-                                  {getParticipantName(match.player1Id)} vs {getParticipantName(match.player2Id)}
-                                </div>
-                                <div className="text-sm text-muted-foreground">
-                                  Score: {match.player1Score} - {match.player2Score}
-                                  {match.bracketPosition && ` • ${match.bracketPosition}`}
-                                </div>
-                                <Badge variant={
-                                  match.status === "completed" ? "default" : 
-                                  match.status === "in-progress" ? "secondary" : 
-                                  match.status === "disputed" ? "destructive" : "outline"
-                                }>
-                                  {match.status === "pending" ? "En attente" : 
-                                   match.status === "in-progress" ? "En cours" : 
-                                   match.status === "completed" ? "Terminé" : "Contesté"}
-                                </Badge>
-                              </div>
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleEditMatch(match)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  onClick={() => handleDeleteMatch(match.matchId)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ));
                   })()}
                 </div>
               )}
