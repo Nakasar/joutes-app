@@ -17,7 +17,7 @@ import {
   Announcement,
 } from "@/lib/schemas/event-portal.schema";
 import { getEventById } from "@/lib/db/events";
-import { calculateStandings, generateBracketPosition, generateEliminationBracket, generateSwissPairings } from "@/lib/utils/pairing";
+import { calculateStandings, generateBracketPosition, generateEliminationBracket, generateNextBracketRound, generateSwissPairings } from "@/lib/utils/pairing";
 import { getEventParticipants } from "./participant-actions";
 
 const PORTAL_SETTINGS_COLLECTION = "event-portal-settings";
@@ -725,9 +725,6 @@ export async function generateMatchesForPhase(eventId: string, phaseId: string) 
         }
 
         roundNumber = maxRound + 1;
-        
-        // Importer la fonction de génération de la ronde suivante
-        const { generateNextBracketRound } = await import("@/lib/utils/pairing");
         
         try {
           pairings = generateNextBracketRound(lastRoundMatches);
