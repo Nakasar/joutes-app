@@ -143,7 +143,7 @@ L'interface joueur comprend 4 onglets :
   currentPhaseId?: string;
   matchesPerRound?: number;
   allowSelfReporting: boolean; // Défaut: true
-  requireConfirmation: boolean; // Défaut: true
+  requireConfirmation: boolean; // Défaut: false
   createdAt: string;
   updatedAt: string;
 }

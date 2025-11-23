@@ -677,7 +677,7 @@ export async function generateMatchesForPhase(eventId: string, phaseId: string) 
     const { generateSwissPairings, generateEliminationBracket, generateBracketPosition } = 
       await import("@/lib/utils/pairing");
     
-    let pairings: Array<{ player1Id: string; player2Id: string }> = [];
+    let pairings: Array<{ player1Id: string; player2Id: string | null }> = [];
     
     if (phase.type === "swiss") {
       // Vérifier que nous ne dépassons pas le nombre de rondes
@@ -709,19 +709,53 @@ export async function generateMatchesForPhase(eventId: string, phaseId: string) 
       const pairing = pairings[i];
       const matchId = `match-${eventId}-${phaseId}-r${roundNumber}-${i}`;
       
+      // Déterminer si c'est un BYE et calculer le score automatique
+      const isBye = pairing.player2Id === null;
+      let player1Score = 0;
+      let player2Score = 0;
+      let status: "pending" | "completed" = "pending";
+      let winnerId: string | undefined = undefined;
+      let reportedBy: string | undefined = undefined;
+      let confirmedBy: string | undefined = undefined;
+
+      if (isBye) {
+        // Pour un BYE, le joueur gagne automatiquement avec le score maximal
+        switch (phase.matchType) {
+          case "BO1":
+            player1Score = 1;
+            break;
+          case "BO2":
+            player1Score = 2;
+            break;
+          case "BO3":
+            player1Score = 2;
+            break;
+          case "BO5":
+            player1Score = 3;
+            break;
+        }
+        status = "completed";
+        winnerId = pairing.player1Id;
+        reportedBy = session.user.id; // L'organisateur
+        confirmedBy = session.user.id;
+      }
+      
       const match = {
         matchId,
         eventId,
         phaseId,
         player1Id: pairing.player1Id,
         player2Id: pairing.player2Id,
-        player1Score: 0,
-        player2Score: 0,
+        player1Score,
+        player2Score,
+        winnerId,
         round: roundNumber,
         bracketPosition: phase.type === "bracket" 
           ? generateBracketPosition(i, pairings.length) 
           : undefined,
-        status: "pending" as const,
+        status,
+        reportedBy,
+        confirmedBy,
         createdAt: now,
         updatedAt: now,
       };

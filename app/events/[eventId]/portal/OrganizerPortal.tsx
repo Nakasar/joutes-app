@@ -238,6 +238,19 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
           ? matchForm.player2Id
           : undefined;
 
+      // Mise à jour optimiste
+      const optimisticMatch: MatchResult = {
+        ...matchForm,
+        matchId,
+        winnerId,
+        status: 'completed',
+        reportedBy: userId,
+        confirmedBy: userId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setMatches([...matches, optimisticMatch]);
+
       const result = await createMatchResult(event.id, {
         ...matchForm,
         matchId,
@@ -245,7 +258,8 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
       });
 
       if (result.success && result.data) {
-        setMatches([...matches, result.data as MatchResult]);
+        // Remplacer le match optimiste par le vrai
+        setMatches(prev => prev.map(m => m.matchId === matchId ? result.data as MatchResult : m));
         setSuccess("Match créé avec succès");
         setShowMatchForm(false);
         setMatchForm({
@@ -266,10 +280,13 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
   const handleDeleteMatch = (matchId: string) => {
     startTransition(async () => {
       setError(null);
+      
+      // Mise à jour optimiste
+      setMatches(matches.filter(m => m.matchId !== matchId));
+      
       const result = await deleteMatchResult(event.id, matchId);
 
       if (result.success) {
-        setMatches(matches.filter(m => m.matchId !== matchId));
         setSuccess("Match supprimé avec succès");
       } else {
         setError(result.error || "Erreur lors de la suppression du match");
@@ -294,6 +311,18 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
           ? editingMatch.player2Id
           : undefined;
 
+      // Mise à jour optimiste
+      const updatedMatch: MatchResult = {
+        ...editingMatch,
+        winnerId: winnerId || undefined,
+        status: 'completed' as const,
+        reportedBy: userId,
+        confirmedBy: userId,
+        updatedAt: new Date().toISOString(),
+      };
+      setMatches(matches.map(m => m.matchId === editingMatch.matchId ? updatedMatch : m));
+      setEditingMatch(null);
+
       const result = await updateMatchResult(event.id, editingMatch.matchId, {
         matchId: editingMatch.matchId,
         player1Score: editingMatch.player1Score,
@@ -303,11 +332,7 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
       });
 
       if (result.success) {
-        // Recharger les matchs pour avoir les données à jour
-        setMatchesLoaded(false);
-        loadMatches();
         setSuccess("Résultat du match mis à jour");
-        setEditingMatch(null);
       } else {
         setError(result.error || "Erreur lors de la mise à jour du match");
       }
@@ -321,10 +346,10 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
       const result = await generateMatchesForPhase(event.id, phaseId);
 
       if (result.success && result.data) {
+        // Mise à jour optimiste : ajouter les nouveaux matchs
+        const newMatches = result.data.matches || [];
+        setMatches([...matches, ...newMatches as MatchResult[]]);
         setSuccess(`${result.data.matchesCreated} match(s) généré(s) pour la ronde ${result.data.roundNumber}`);
-        // Recharger les matchs
-        setMatchesLoaded(false);
-        loadMatches();
       } else {
         setError(result.error || "Erreur lors de la génération des matchs");
       }
@@ -367,7 +392,8 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
   };
 
   // Obtenir le nom d'un participant
-  const getParticipantName = (playerId: string) => {
+  const getParticipantName = (playerId: string | null) => {
+    if (playerId === null) return "BYE";
     const participant = participants.find(p => p.id === playerId);
     if (!participant) return playerId.slice(-6);
     return participant.discriminator 

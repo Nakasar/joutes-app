@@ -180,11 +180,22 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
       });
 
       if (result.success) {
+        // Mise à jour optimiste
+        setMatches(matches.map(m => 
+          m.matchId === reportForm.matchId 
+            ? {
+                ...m,
+                player1Score: reportForm.player1Score,
+                player2Score: reportForm.player2Score,
+                winnerId: winnerId || undefined,
+                reportedBy: userId,
+                status: 'in-progress' as const,
+                updatedAt: new Date().toISOString(),
+              }
+            : m
+        ));
         setSuccess("Résultat rapporté avec succès");
         setReportForm(null);
-        // Recharger les matchs
-        setMatchesLoaded(false);
-        loadMatches();
       } else {
         setError(result.error || "Erreur lors du rapport du résultat");
       }
@@ -198,10 +209,18 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
       const result = await confirmMatchResult(event.id, { matchId });
 
       if (result.success) {
+        // Mise à jour optimiste
+        setMatches(matches.map(m => 
+          m.matchId === matchId
+            ? {
+                ...m,
+                confirmedBy: userId,
+                status: 'completed' as const,
+                updatedAt: new Date().toISOString(),
+              }
+            : m
+        ));
         setSuccess("Résultat confirmé avec succès");
-        // Recharger les matchs
-        setMatchesLoaded(false);
-        loadMatches();
       } else {
         setError(result.error || "Erreur lors de la confirmation du résultat");
       }
@@ -209,7 +228,8 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
   };
 
   // Obtenir le nom du joueur (simplifié, on affiche juste l&apos;ID)
-  const getPlayerName = (playerId: string) => {
+  const getPlayerName = (playerId: string | null) => {
+    if (playerId === null) return "BYE";
     if (playerId === userId) return "Vous";
     const participant = participants.find(p => p.id === playerId);
     if (!participant) return `Joueur ${playerId.slice(-4)}`;
@@ -540,7 +560,9 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
                             >
                               <td className="p-2 font-medium">{index + 1}</td>
                               <td className="p-2">
-                                {standing.playerName || `Joueur ${standing.playerId.slice(-4)}`}
+                                {standing.username 
+                                  ? `${standing.username}${standing.discriminator ? `#${standing.discriminator}` : ''}`
+                                  : `Joueur ${standing.playerId.slice(-4)}`}
                                 {isCurrentUser && (
                                   <Badge variant="outline" className="ml-2 text-xs">Vous</Badge>
                                 )}

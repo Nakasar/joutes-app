@@ -22,7 +22,7 @@ export const matchResultSchema = z.object({
   matchId: z.string(),
   phaseId: z.string(),
   player1Id: z.string(),
-  player2Id: z.string(),
+  player2Id: z.string().nullable(), // null pour un BYE
   player1Score: z.number().min(0),
   player2Score: z.number().min(0),
   winnerId: z.string().optional(), // ID du gagnant
@@ -52,7 +52,7 @@ export const eventPortalSettingsSchema = z.object({
   currentPhaseId: z.string().optional(), // ID de la phase en cours
   matchesPerRound: z.number().min(1).optional(), // Nombre de matchs par ronde
   allowSelfReporting: z.boolean().default(true), // Les joueurs peuvent-ils rapporter leurs résultats ?
-  requireConfirmation: z.boolean().default(true), // Les résultats doivent-ils être confirmés par l&apos;adversaire ?
+  requireConfirmation: z.boolean().default(false), // Les résultats doivent-ils être confirmés par l'adversaire ?
   createdAt: z.string().datetime().optional(),
   updatedAt: z.string().datetime().optional(),
 });

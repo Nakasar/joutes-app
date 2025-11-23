@@ -14,7 +14,7 @@ export type PlayerStanding = {
 
 export type PairingResult = {
   player1Id: string;
-  player2Id: string;
+  player2Id: string | null; // null indique un BYE
 };
 
 /**
@@ -45,9 +45,21 @@ export function calculateStandings(
     .filter((m) => m.status === "completed")
     .forEach((match) => {
       const p1 = standings.get(match.player1Id);
-      const p2 = standings.get(match.player2Id);
+      
+      if (!p1) return;
 
-      if (!p1 || !p2) return;
+      // Cas spécial : BYE (player2Id est null)
+      if (match.player2Id === null) {
+        // Le joueur en BYE gagne automatiquement
+        p1.wins++;
+        p1.matchPoints += 3;
+        p1.gamesWon += match.player1Score;
+        p1.gamesLost += match.player2Score;
+        return;
+      }
+
+      const p2 = standings.get(match.player2Id);
+      if (!p2) return;
 
       // Mettre à jour les scores de jeux
       p1.gamesWon += match.player1Score;
@@ -88,11 +100,12 @@ export function calculateStandings(
       )
       .map((m) =>
         m.player1Id === standing.playerId ? m.player2Id : m.player1Id
-      );
+      )
+      .filter((oppId) => oppId !== null); // Exclure les BYEs
 
     if (opponentIds.length > 0) {
       const totalOpponentWinPercentage = opponentIds.reduce((sum, oppId) => {
-        const opp = standings.get(oppId);
+        const opp = standings.get(oppId as string);
         if (!opp) return sum;
         const totalMatches = opp.wins + opp.losses + opp.draws;
         return sum + (totalMatches > 0 ? opp.wins / totalMatches : 0);
@@ -163,6 +176,13 @@ export function generateSwissPairings(
         player2Id: shuffled[i + 1],
       });
     }
+    // Si nombre impair de joueurs, le dernier a un BYE
+    if (shuffled.length % 2 === 1) {
+      pairings.push({
+        player1Id: shuffled[shuffled.length - 1],
+        player2Id: null,
+      });
+    }
     return pairings;
   }
 
@@ -198,8 +218,13 @@ export function generateSwissPairings(
     }
   }
 
-  // S'il reste un joueur impair, il a un "bye" (ne joue pas cette ronde)
-  // On ne crée pas de match pour lui dans cette implémentation
+  // S'il reste un joueur impair, il a un "bye"
+  if (availablePlayers.length === 1) {
+    pairings.push({
+      player1Id: availablePlayers[0].playerId,
+      player2Id: null,
+    });
+  }
 
   return pairings;
 }
@@ -236,8 +261,13 @@ export function generateEliminationBracket(
         player1Id: seededPlayers[topSeed],
         player2Id: seededPlayers[bottomSeed],
       });
+    } else if (topSeed < seededPlayers.length) {
+      // Si seulement le top seed existe, il a un BYE
+      pairings.push({
+        player1Id: seededPlayers[topSeed],
+        player2Id: null,
+      });
     }
-    // Si seulement le top seed existe, il passe automatiquement (bye)
   }
 
   return pairings;
