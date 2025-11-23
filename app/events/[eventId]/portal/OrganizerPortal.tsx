@@ -33,6 +33,8 @@ import {
   getAnnouncements,
   createAnnouncement,
   deleteAnnouncement,
+  generateMatchesForPhase,
+  getPhaseStandings,
 } from "./actions";
 import { getEventParticipants } from "./participant-actions";
 import AddParticipantForm from "../AddParticipantForm";
@@ -258,6 +260,23 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
         setSuccess("Match supprimé avec succès");
       } else {
         setError(result.error || "Erreur lors de la suppression du match");
+      }
+    });
+  };
+
+  // Générer les matchs pour une phase
+  const handleGenerateMatches = (phaseId: string) => {
+    startTransition(async () => {
+      setError(null);
+      const result = await generateMatchesForPhase(event.id, phaseId);
+
+      if (result.success && result.data) {
+        setSuccess(`${result.data.matchesCreated} match(s) généré(s) pour la ronde ${result.data.roundNumber}`);
+        // Recharger les matchs
+        setMatchesLoaded(false);
+        loadMatches();
+      } else {
+        setError(result.error || "Erreur lors de la génération des matchs");
       }
     });
   };
@@ -565,6 +584,32 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
 
       {activeTab === "matches" && settings && (
         <div className="space-y-6">
+          {/* Sélection de phase et génération */}
+          {settings.currentPhaseId && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Génération automatique</CardTitle>
+                <CardDescription>
+                  Générer automatiquement les matchs pour la phase courante
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    onClick={() => handleGenerateMatches(settings.currentPhaseId!)}
+                    disabled={isPending}
+                  >
+                    <PlayCircle className="h-4 w-4 mr-2" />
+                    Générer les matchs
+                  </Button>
+                  <p className="text-sm text-muted-foreground">
+                    Phase: {settings.phases.find(p => p.id === settings.currentPhaseId)?.name}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -576,7 +621,7 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
                 </div>
                 <Button onClick={() => setShowMatchForm(!showMatchForm)} size="sm">
                   <Plus className="h-4 w-4 mr-2" />
-                  Créer un match
+                  Créer un match manuellement
                 </Button>
               </div>
             </CardHeader>
@@ -660,36 +705,43 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
               {matches.length === 0 ? (
                 <p className="text-muted-foreground text-sm">Aucun match créé</p>
               ) : (
-                <div className="space-y-2">
-                  {matches.map((match) => (
-                    <div key={match.matchId} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium">
-                            {match.player1Id} vs {match.player2Id}
+                <div className="space-y-4">
+                  {/* Grouper les matchs par ronde */}
+                  {Array.from(new Set(matches.map(m => m.round || 1))).sort((a, b) => a - b).map(round => (
+                    <div key={round} className="space-y-2">
+                      <h3 className="font-semibold text-sm">Ronde {round}</h3>
+                      {matches.filter(m => (m.round || 1) === round).map((match) => (
+                        <div key={match.matchId} className="border rounded-lg p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-medium">
+                                {participants.find(p => p.id === match.player1Id)?.username || match.player1Id} vs{" "}
+                                {participants.find(p => p.id === match.player2Id)?.username || match.player2Id}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                Score: {match.player1Score} - {match.player2Score}
+                                {match.bracketPosition && ` • ${match.bracketPosition}`}
+                              </div>
+                              <Badge variant={
+                                match.status === "completed" ? "default" : 
+                                match.status === "in-progress" ? "secondary" : 
+                                match.status === "disputed" ? "destructive" : "outline"
+                              }>
+                                {match.status === "pending" ? "En attente" : 
+                                 match.status === "in-progress" ? "En cours" : 
+                                 match.status === "completed" ? "Terminé" : "Contesté"}
+                              </Badge>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDeleteMatch(match.matchId)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
-                          <div className="text-sm text-muted-foreground">
-                            Score: {match.player1Score} - {match.player2Score}
-                            {match.round && ` • Ronde ${match.round}`}
-                          </div>
-                          <Badge variant={
-                            match.status === "completed" ? "default" : 
-                            match.status === "in-progress" ? "secondary" : 
-                            match.status === "disputed" ? "destructive" : "outline"
-                          }>
-                            {match.status === "pending" ? "En attente" : 
-                             match.status === "in-progress" ? "En cours" : 
-                             match.status === "completed" ? "Terminé" : "Contesté"}
-                          </Badge>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDeleteMatch(match.matchId)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      ))}
                     </div>
                   ))}
                 </div>

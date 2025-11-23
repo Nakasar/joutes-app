@@ -594,3 +594,220 @@ export async function deleteAnnouncement(eventId: string, announcementId: string
     return { success: false, error: "Erreur lors de la suppression de l&apos;annonce" };
   }
 }
+
+// =====================
+// GÉNÉRATION DE MATCHS
+// =====================
+
+export async function generateMatchesForPhase(eventId: string, phaseId: string) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    // Vérifier que l'utilisateur est le créateur de l'événement
+    const isCreator = await isEventCreator(eventId, session.user.id);
+    if (!isCreator) {
+      return { success: false, error: "Seul le créateur de l&apos;événement peut générer des matchs" };
+    }
+
+    const event = await getEventById(eventId);
+    if (!event) {
+      return { success: false, error: "Événement non trouvé" };
+    }
+
+    // Récupérer les paramètres du portail
+    const settingsCollection = db.collection<EventPortalSettings>(PORTAL_SETTINGS_COLLECTION);
+    const settings = await settingsCollection.findOne({ eventId });
+
+    if (!settings) {
+      return { success: false, error: "Paramètres du portail non trouvés" };
+    }
+
+    // Trouver la phase
+    const phase = settings.phases.find(p => p.id === phaseId);
+    if (!phase) {
+      return { success: false, error: "Phase non trouvée" };
+    }
+
+    // Récupérer tous les participants (incluant les invités)
+    const { getEventParticipants } = await import("./participant-actions");
+    const participantsResult = await getEventParticipants(eventId);
+    
+    if (!participantsResult.success || !participantsResult.data) {
+      return { success: false, error: "Impossible de récupérer les participants" };
+    }
+
+    const participants = participantsResult.data;
+    if (participants.length < 2) {
+      return { success: false, error: "Au moins 2 participants sont requis pour générer des matchs" };
+    }
+
+    const playerIds = participants.map(p => p.id);
+
+    // Récupérer les matchs existants pour cette phase
+    const matchesCollection = db.collection<MatchResult & { eventId: string }>(MATCH_RESULTS_COLLECTION);
+    const existingMatches = await matchesCollection.find({ eventId, phaseId }).toArray();
+
+    // Déterminer le numéro de ronde
+    let roundNumber = 1;
+    if (existingMatches.length > 0) {
+      const maxRound = Math.max(...existingMatches.map(m => m.round || 1));
+      // Vérifier si tous les matchs de la dernière ronde sont terminés
+      const lastRoundMatches = existingMatches.filter(m => (m.round || 1) === maxRound);
+      const allCompleted = lastRoundMatches.every(m => m.status === "completed");
+      
+      if (!allCompleted) {
+        return { 
+          success: false, 
+          error: `Tous les matchs de la ronde ${maxRound} doivent être terminés avant de générer la ronde suivante` 
+        };
+      }
+      
+      roundNumber = maxRound + 1;
+    }
+
+    // Générer les pairings selon le type de phase
+    const { generateSwissPairings, generateEliminationBracket, generateBracketPosition } = 
+      await import("@/lib/utils/pairing");
+    
+    let pairings: Array<{ player1Id: string; player2Id: string }> = [];
+    
+    if (phase.type === "swiss") {
+      // Vérifier que nous ne dépassons pas le nombre de rondes
+      if (phase.rounds && roundNumber > phase.rounds) {
+        return { 
+          success: false, 
+          error: `Toutes les rondes (${phase.rounds}) ont déjà été générées` 
+        };
+      }
+      
+      pairings = generateSwissPairings(playerIds, existingMatches as any, roundNumber);
+    } else if (phase.type === "bracket") {
+      // Pour le bracket, générer seulement le premier tour
+      if (roundNumber > 1) {
+        return { 
+          success: false, 
+          error: "La génération automatique de tours suivants pour les brackets n&apos;est pas encore implémentée" 
+        };
+      }
+      
+      pairings = generateEliminationBracket(playerIds, existingMatches as any);
+    }
+
+    // Créer les matchs
+    const newMatches: Array<MatchResult & { eventId: string }> = [];
+    const now = new Date().toISOString();
+
+    for (let i = 0; i < pairings.length; i++) {
+      const pairing = pairings[i];
+      const matchId = `match-${eventId}-${phaseId}-r${roundNumber}-${i}`;
+      
+      const match = {
+        matchId,
+        eventId,
+        phaseId,
+        player1Id: pairing.player1Id,
+        player2Id: pairing.player2Id,
+        player1Score: 0,
+        player2Score: 0,
+        round: roundNumber,
+        bracketPosition: phase.type === "bracket" 
+          ? generateBracketPosition(i, pairings.length) 
+          : undefined,
+        status: "pending" as const,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      newMatches.push(match);
+    }
+
+    // Insérer tous les matchs
+    if (newMatches.length > 0) {
+      await matchesCollection.insertMany(newMatches as any);
+    }
+
+    return { 
+      success: true, 
+      data: {
+        matchesCreated: newMatches.length,
+        roundNumber,
+        matches: newMatches.map(m => ({
+          ...m,
+          id: m.matchId,
+        })),
+      }
+    };
+  } catch (error) {
+    console.error("Erreur lors de la génération des matchs:", error);
+    if (error instanceof Error) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: "Erreur lors de la génération des matchs" };
+  }
+}
+
+// =====================
+// CLASSEMENT
+// =====================
+
+export async function getPhaseStandings(eventId: string, phaseId: string) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    // Vérifier que l'utilisateur a accès à l'événement
+    const isCreator = await isEventCreator(eventId, session.user.id);
+    const isParticipant = await isEventParticipant(eventId, session.user.id);
+    
+    if (!isCreator && !isParticipant) {
+      return { success: false, error: "Accès non autorisé" };
+    }
+
+    const event = await getEventById(eventId);
+    if (!event) {
+      return { success: false, error: "Événement non trouvé" };
+    }
+
+    // Récupérer tous les participants
+    const { getEventParticipants } = await import("./participant-actions");
+    const participantsResult = await getEventParticipants(eventId);
+    
+    if (!participantsResult.success || !participantsResult.data) {
+      return { success: false, error: "Impossible de récupérer les participants" };
+    }
+
+    const participants = participantsResult.data;
+    const playerIds = participants.map(p => p.id);
+
+    // Récupérer les matchs de la phase
+    const matchesCollection = db.collection<MatchResult & { eventId: string }>(MATCH_RESULTS_COLLECTION);
+    const matches = await matchesCollection.find({ eventId, phaseId }).toArray();
+
+    // Calculer le classement
+    const { calculateStandings } = await import("@/lib/utils/pairing");
+    const standings = calculateStandings(playerIds, matches as any);
+
+    // Enrichir avec les informations des participants
+    const enrichedStandings = standings.map(standing => {
+      const participant = participants.find(p => p.id === standing.playerId);
+      return {
+        ...standing,
+        username: participant?.username || "Inconnu",
+        discriminator: participant?.discriminator,
+      };
+    });
+
+    return {
+      success: true,
+      data: enrichedStandings,
+    };
+  } catch (error) {
+    console.error("Erreur lors de la récupération du classement:", error);
+    return { success: false, error: "Erreur lors de la récupération du classement" };
+  }
+}

@@ -21,6 +21,7 @@ import {
   reportMatchResult,
   confirmMatchResult,
   getAnnouncements,
+  getPhaseStandings,
 } from "./actions";
 
 type PlayerPortalProps = {
@@ -37,8 +38,10 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
 
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [standings, setStandings] = useState<any[]>([]);
   const [matchesLoaded, setMatchesLoaded] = useState(false);
   const [announcementsLoaded, setAnnouncementsLoaded] = useState(false);
+  const [standingsLoaded, setStandingsLoaded] = useState(false);
 
   // Formulaire de rapport de résultat
   const [reportForm, setReportForm] = useState<{
@@ -71,11 +74,32 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
     });
   };
 
+  // Charger le classement
+  const loadStandings = async () => {
+    if (standingsLoaded || !settings?.currentPhaseId) return;
+    startTransition(async () => {
+      const phaseId = settings.currentPhaseId;
+      if (!phaseId) return;
+      const result = await getPhaseStandings(event.id, phaseId);
+      if (result.success && result.data) {
+        setStandings(result.data);
+        setStandingsLoaded(true);
+      }
+    });
+  };
+
   // Charger les données au montage
   useEffect(() => {
     loadMatches();
     loadAnnouncements();
   }, []);
+
+  // Charger les standings quand on change d'onglet
+  useEffect(() => {
+    if (activeTab === "standings") {
+      loadStandings();
+    }
+  }, [activeTab]);
 
   // Filtrer les matchs du joueur
   const myMatches = matches.filter(
@@ -398,11 +422,12 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
 
       {activeTab === "standings" && (
         <div className="space-y-6">
+          {/* Statistiques personnelles */}
           <Card>
             <CardHeader>
-              <CardTitle>Votre classement</CardTitle>
+              <CardTitle>Vos statistiques</CardTitle>
               <CardDescription>
-                Statistiques de vos performances
+                Votre performance personnelle
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -436,6 +461,71 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
               </div>
             </CardContent>
           </Card>
+
+          {/* Classement complet de la phase */}
+          {currentPhase && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Classement - {currentPhase.name}</CardTitle>
+                <CardDescription>
+                  Classement actuel de la phase en cours
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {standings.length === 0 ? (
+                  <p className="text-center text-muted-foreground">
+                    Chargement du classement...
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="border-b">
+                        <tr className="text-left">
+                          <th className="p-2 font-medium">#</th>
+                          <th className="p-2 font-medium">Joueur</th>
+                          <th className="p-2 font-medium text-center">Points</th>
+                          <th className="p-2 font-medium text-center">V-N-D</th>
+                          <th className="p-2 font-medium text-center">GW-GL</th>
+                          <th className="p-2 font-medium text-center">OMW%</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {standings.map((standing, index) => {
+                          const isCurrentUser = standing.playerId === userId;
+                          return (
+                            <tr 
+                              key={standing.playerId} 
+                              className={`border-b ${isCurrentUser ? 'bg-blue-50' : ''}`}
+                            >
+                              <td className="p-2 font-medium">{index + 1}</td>
+                              <td className="p-2">
+                                {standing.playerName || `Joueur ${standing.playerId.slice(-4)}`}
+                                {isCurrentUser && (
+                                  <Badge variant="outline" className="ml-2 text-xs">Vous</Badge>
+                                )}
+                              </td>
+                              <td className="p-2 text-center font-bold">{standing.matchPoints}</td>
+                              <td className="p-2 text-center">
+                                <span className="text-green-600">{standing.wins}</span>-
+                                <span className="text-gray-600">{standing.draws}</span>-
+                                <span className="text-red-600">{standing.losses}</span>
+                              </td>
+                              <td className="p-2 text-center">
+                                {standing.gamesWon}-{standing.gamesLost}
+                              </td>
+                              <td className="p-2 text-center">
+                                {(standing.opponentMatchWinPercentage * 100).toFixed(1)}%
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
