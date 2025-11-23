@@ -446,7 +446,7 @@ export async function updateMatchResult(eventId: string, matchId: string, data: 
     // Vérifier que l'utilisateur est le créateur de l'événement
     const isCreator = await isEventCreator(eventId, session.user.id);
     if (!isCreator) {
-      return { success: false, error: "Seul le créateur de l&apos;événement peut modifier un résultat" };
+      return { success: false, error: "Seul le créateur de l'événement peut modifier un résultat" };
     }
 
     const collection = db.collection<MatchResult & { eventId: string }>(MATCH_RESULTS_COLLECTION);

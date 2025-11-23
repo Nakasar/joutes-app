@@ -283,6 +283,7 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
           : undefined;
 
       const result = await updateMatchResult(event.id, editingMatch.matchId, {
+        matchId: editingMatch.matchId,
         player1Score: editingMatch.player1Score,
         player2Score: editingMatch.player2Score,
         winnerId,
