@@ -3,7 +3,8 @@ import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events";
 import { getPortalSettings } from "../../actions";
-import PlayerPortal from "../../PlayerPortal";
+import PlayerLayout from "../components/PlayerLayout";
+import PlayerStandings from "../components/PlayerStandings";
 
 type PlayerStandingsPageProps = {
   params: Promise<{
@@ -37,5 +38,17 @@ export default async function PlayerStandingsPage({ params }: PlayerStandingsPag
   const settingsResult = await getPortalSettings(eventId);
   const settings = settingsResult.success ? settingsResult.data : null;
 
-  return <PlayerPortal event={event} settings={settings} userId={session.user.id} />;
+  return (
+    <PlayerLayout event={event} settings={settings} userId={session.user.id}>
+      {({ matches, participants, standings }) => (
+        <PlayerStandings
+          event={event}
+          settings={settings}
+          userId={session.user.id}
+          matches={matches}
+          standings={standings}
+        />
+      )}
+    </PlayerLayout>
+  );
 }
