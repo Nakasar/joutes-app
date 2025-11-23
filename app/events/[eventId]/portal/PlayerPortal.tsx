@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Event } from "@/lib/types/Event";
 import { EventPortalSettings, MatchResult, Announcement } from "@/lib/schemas/event-portal.schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,7 +34,17 @@ type PlayerPortalProps = {
 };
 
 export default function PlayerPortal({ event, settings, userId }: PlayerPortalProps) {
-  const [activeTab, setActiveTab] = useState<"current" | "history" | "standings" | "announcements">("current");
+  const pathname = usePathname();
+  
+  // Déterminer l'onglet actif depuis l'URL
+  const getActiveTab = (): "current" | "history" | "standings" | "announcements" => {
+    if (pathname?.includes("/history")) return "history";
+    if (pathname?.includes("/standings")) return "standings";
+    if (pathname?.includes("/announcements")) return "announcements";
+    return "current";
+  };
+
+  const activeTab = getActiveTab();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -108,6 +120,10 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
     loadMatches();
     loadAnnouncements();
     loadParticipants();
+    // Charger les standings si c'est l'onglet initial
+    if (activeTab === "standings") {
+      loadStandings();
+    }
   }, []);
 
   // Charger les standings quand on change d'onglet
@@ -240,40 +256,44 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
         </Alert>
       )}
 
-      {/* Tabs */}
+      {/* Navigation */}
       <div className="flex gap-2 mb-6 border-b">
-        <Button
-          variant={activeTab === "current" ? "default" : "ghost"}
-          onClick={() => setActiveTab("current")}
-          className="rounded-b-none"
-        >
-          <Clock className="h-4 w-4 mr-2" />
-          Match actuel
-        </Button>
-        <Button
-          variant={activeTab === "history" ? "default" : "ghost"}
-          onClick={() => setActiveTab("history")}
-          className="rounded-b-none"
-        >
-          <History className="h-4 w-4 mr-2" />
-          Historique
-        </Button>
-        <Button
-          variant={activeTab === "standings" ? "default" : "ghost"}
-          onClick={() => setActiveTab("standings")}
-          className="rounded-b-none"
-        >
-          <Trophy className="h-4 w-4 mr-2" />
-          Classement
-        </Button>
-        <Button
-          variant={activeTab === "announcements" ? "default" : "ghost"}
-          onClick={() => setActiveTab("announcements")}
-          className="rounded-b-none"
-        >
-          <Megaphone className="h-4 w-4 mr-2" />
-          Annonces
-        </Button>
+        <Link href={`/events/${event.id}/portal/player`}>
+          <Button
+            variant={activeTab === "current" ? "default" : "ghost"}
+            className="rounded-b-none"
+          >
+            <Clock className="h-4 w-4 mr-2" />
+            Match actuel
+          </Button>
+        </Link>
+        <Link href={`/events/${event.id}/portal/player/history`}>
+          <Button
+            variant={activeTab === "history" ? "default" : "ghost"}
+            className="rounded-b-none"
+          >
+            <History className="h-4 w-4 mr-2" />
+            Historique
+          </Button>
+        </Link>
+        <Link href={`/events/${event.id}/portal/player/standings`}>
+          <Button
+            variant={activeTab === "standings" ? "default" : "ghost"}
+            className="rounded-b-none"
+          >
+            <Trophy className="h-4 w-4 mr-2" />
+            Classement
+          </Button>
+        </Link>
+        <Link href={`/events/${event.id}/portal/player/announcements`}>
+          <Button
+            variant={activeTab === "announcements" ? "default" : "ghost"}
+            className="rounded-b-none"
+          >
+            <Megaphone className="h-4 w-4 mr-2" />
+            Annonces
+          </Button>
+        </Link>
       </div>
 
       {/* Contenu des tabs */}

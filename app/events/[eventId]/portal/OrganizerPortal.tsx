@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Event } from "@/lib/types/Event";
 import { EventPortalSettings, TournamentPhase, MatchResult, Announcement } from "@/lib/schemas/event-portal.schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,8 +48,18 @@ type OrganizerPortalProps = {
 };
 
 export default function OrganizerPortal({ event, settings: initialSettings, userId }: OrganizerPortalProps) {
+  const pathname = usePathname();
+  
+  // Déterminer l'onglet actif depuis l'URL
+  const getActiveTab = (): "settings" | "participants" | "matches" | "announcements" => {
+    if (pathname?.includes("/participants")) return "participants";
+    if (pathname?.includes("/matches")) return "matches";
+    if (pathname?.includes("/announcements")) return "announcements";
+    return "settings";
+  };
+
   const [settings, setSettings] = useState<EventPortalSettings | null>(initialSettings);
-  const [activeTab, setActiveTab] = useState<"settings" | "participants" | "matches" | "announcements">("settings");
+  const activeTab = getActiveTab();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -363,16 +375,15 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
       : participant.username;
   };
 
-  // Charger les matchs/annonces/participants selon l&apos;onglet actif
-  const handleTabChange = (tab: "settings" | "participants" | "matches" | "announcements") => {
-    setActiveTab(tab);
-    if (tab === "participants") loadParticipants();
-    if (tab === "matches") {
+  // Charger les données au montage selon l'onglet actif
+  useEffect(() => {
+    if (activeTab === "participants") loadParticipants();
+    if (activeTab === "matches") {
       loadMatches();
       loadParticipants();
     }
-    if (tab === "announcements") loadAnnouncements();
-  };
+    if (activeTab === "announcements") loadAnnouncements();
+  }, [activeTab]);
 
   return (
     <div className="container mx-auto p-6 max-w-6xl">
@@ -395,41 +406,45 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
         </Alert>
       )}
 
-      {/* Tabs */}
+      {/* Navigation */}
       <div className="flex gap-2 mb-6 border-b">
-        <Button
-          variant={activeTab === "settings" ? "default" : "ghost"}
-          onClick={() => handleTabChange("settings")}
-          className="rounded-b-none"
-        >
-          <Settings className="h-4 w-4 mr-2" />
-          Paramètres
-        </Button>
-        <Button
-          variant={activeTab === "participants" ? "default" : "ghost"}
-          onClick={() => handleTabChange("participants")}
-          className="rounded-b-none"
-        >
-          <UserPlus className="h-4 w-4 mr-2" />
-          Participants
-        </Button>
-        <Button
-          variant={activeTab === "matches" ? "default" : "ghost"}
-          onClick={() => handleTabChange("matches")}
-          className="rounded-b-none"
-          disabled={!settings}
-        >
-          <Trophy className="h-4 w-4 mr-2" />
-          Matchs
-        </Button>
-        <Button
-          variant={activeTab === "announcements" ? "default" : "ghost"}
-          onClick={() => handleTabChange("announcements")}
-          className="rounded-b-none"
-        >
-          <Megaphone className="h-4 w-4 mr-2" />
-          Annonces
-        </Button>
+        <Link href={`/events/${event.id}/portal/organizer`}>
+          <Button
+            variant={activeTab === "settings" ? "default" : "ghost"}
+            className="rounded-b-none"
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Paramètres
+          </Button>
+        </Link>
+        <Link href={`/events/${event.id}/portal/organizer/participants`}>
+          <Button
+            variant={activeTab === "participants" ? "default" : "ghost"}
+            className="rounded-b-none"
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            Participants
+          </Button>
+        </Link>
+        <Link href={`/events/${event.id}/portal/organizer/matches`}>
+          <Button
+            variant={activeTab === "matches" ? "default" : "ghost"}
+            className="rounded-b-none"
+            disabled={!settings}
+          >
+            <Trophy className="h-4 w-4 mr-2" />
+            Matchs
+          </Button>
+        </Link>
+        <Link href={`/events/${event.id}/portal/organizer/announcements`}>
+          <Button
+            variant={activeTab === "announcements" ? "default" : "ghost"}
+            className="rounded-b-none"
+          >
+            <Megaphone className="h-4 w-4 mr-2" />
+            Annonces
+          </Button>
+        </Link>
       </div>
 
       {/* Contenu des tabs */}
