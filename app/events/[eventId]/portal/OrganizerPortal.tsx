@@ -1,0 +1,745 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { Event } from "@/lib/types/Event";
+import { EventPortalSettings, TournamentPhase, MatchResult, Announcement } from "@/lib/schemas/event-portal.schema";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { 
+  Settings, 
+  Users, 
+  Trophy, 
+  PlayCircle, 
+  Megaphone, 
+  Plus,
+  Edit,
+  Trash2,
+  Check,
+  AlertCircle
+} from "lucide-react";
+import {
+  createOrUpdatePortalSettings,
+  addPhase,
+  updatePhaseStatus,
+  setCurrentPhase,
+  getMatchResults,
+  createMatchResult,
+  updateMatchResult,
+  deleteMatchResult,
+  getAnnouncements,
+  createAnnouncement,
+  deleteAnnouncement,
+} from "./actions";
+
+type OrganizerPortalProps = {
+  event: Event;
+  settings: EventPortalSettings | null;
+  userId: string;
+};
+
+export default function OrganizerPortal({ event, settings: initialSettings, userId }: OrganizerPortalProps) {
+  const [settings, setSettings] = useState<EventPortalSettings | null>(initialSettings);
+  const [activeTab, setActiveTab] = useState<"settings" | "matches" | "announcements">("settings");
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  // États pour les formulaires
+  const [showPhaseForm, setShowPhaseForm] = useState(false);
+  const [showMatchForm, setShowMatchForm] = useState(false);
+  const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
+
+  const [matches, setMatches] = useState<MatchResult[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [matchesLoaded, setMatchesLoaded] = useState(false);
+  const [announcementsLoaded, setAnnouncementsLoaded] = useState(false);
+
+  // Formulaire de phase
+  const [phaseForm, setPhaseForm] = useState({
+    name: "",
+    type: "swiss" as "swiss" | "bracket",
+    matchType: "BO3" as "BO1" | "BO2" | "BO3" | "BO5",
+    rounds: 3,
+    order: 0,
+  });
+
+  // Formulaire de match
+  const [matchForm, setMatchForm] = useState({
+    phaseId: "",
+    player1Id: "",
+    player2Id: "",
+    player1Score: 0,
+    player2Score: 0,
+    round: 1,
+  });
+
+  // Formulaire d&apos;annonce
+  const [announcementForm, setAnnouncementForm] = useState({
+    message: "",
+    priority: "normal" as "normal" | "important" | "urgent",
+  });
+
+  // Charger les matchs si pas encore fait
+  const loadMatches = async () => {
+    if (matchesLoaded) return;
+    startTransition(async () => {
+      const result = await getMatchResults(event.id);
+      if (result.success && result.data) {
+        setMatches(result.data as MatchResult[]);
+        setMatchesLoaded(true);
+      }
+    });
+  };
+
+  // Charger les annonces si pas encore fait
+  const loadAnnouncements = async () => {
+    if (announcementsLoaded) return;
+    startTransition(async () => {
+      const result = await getAnnouncements(event.id);
+      if (result.success && result.data) {
+        setAnnouncements(result.data as Announcement[]);
+        setAnnouncementsLoaded(true);
+      }
+    });
+  };
+
+  // Initialiser les paramètres du portail
+  const handleInitializeSettings = () => {
+    startTransition(async () => {
+      setError(null);
+      const result = await createOrUpdatePortalSettings({
+        eventId: event.id,
+        phases: [],
+        allowSelfReporting: true,
+        requireConfirmation: true,
+      });
+
+      if (result.success && result.data) {
+        setSettings(result.data as EventPortalSettings);
+        setSuccess("Paramètres initialisés avec succès");
+      } else {
+        setError(result.error || "Erreur lors de l&apos;initialisation");
+      }
+    });
+  };
+
+  // Ajouter une phase
+  const handleAddPhase = () => {
+    if (!settings) return;
+    
+    startTransition(async () => {
+      setError(null);
+      const result = await addPhase(event.id, phaseForm);
+
+      if (result.success) {
+        // Recharger les paramètres
+        const settingsResult = await createOrUpdatePortalSettings({
+          eventId: event.id,
+          phases: [...settings.phases, result.data as TournamentPhase],
+          currentPhaseId: settings.currentPhaseId,
+          allowSelfReporting: settings.allowSelfReporting,
+          requireConfirmation: settings.requireConfirmation,
+        });
+        
+        if (settingsResult.success && settingsResult.data) {
+          setSettings(settingsResult.data as EventPortalSettings);
+          setSuccess("Phase ajoutée avec succès");
+          setShowPhaseForm(false);
+          setPhaseForm({
+            name: "",
+            type: "swiss",
+            matchType: "BO3",
+            rounds: 3,
+            order: settings.phases.length,
+          });
+        }
+      } else {
+        setError(result.error || "Erreur lors de l&apos;ajout de la phase");
+      }
+    });
+  };
+
+  // Changer le statut d&apos;une phase
+  const handleUpdatePhaseStatus = (phaseId: string, status: "not-started" | "in-progress" | "completed") => {
+    startTransition(async () => {
+      setError(null);
+      const result = await updatePhaseStatus(event.id, phaseId, status);
+
+      if (result.success && settings) {
+        const updatedPhases = settings.phases.map(p =>
+          p.id === phaseId ? { ...p, status } : p
+        );
+        setSettings({ ...settings, phases: updatedPhases });
+        setSuccess("Statut de la phase mis à jour");
+      } else {
+        setError(result.error || "Erreur lors de la mise à jour");
+      }
+    });
+  };
+
+  // Définir la phase courante
+  const handleSetCurrentPhase = (phaseId: string) => {
+    startTransition(async () => {
+      setError(null);
+      const result = await setCurrentPhase(event.id, phaseId);
+
+      if (result.success && settings) {
+        setSettings({ ...settings, currentPhaseId: phaseId });
+        setSuccess("Phase courante définie");
+      } else {
+        setError(result.error || "Erreur lors de la définition de la phase courante");
+      }
+    });
+  };
+
+  // Créer un match
+  const handleCreateMatch = () => {
+    startTransition(async () => {
+      setError(null);
+      const matchId = `match-${Date.now()}`;
+      const winnerId = matchForm.player1Score > matchForm.player2Score 
+        ? matchForm.player1Id 
+        : matchForm.player2Score > matchForm.player1Score
+          ? matchForm.player2Id
+          : undefined;
+
+      const result = await createMatchResult(event.id, {
+        ...matchForm,
+        matchId,
+        winnerId,
+      });
+
+      if (result.success && result.data) {
+        setMatches([...matches, result.data as MatchResult]);
+        setSuccess("Match créé avec succès");
+        setShowMatchForm(false);
+        setMatchForm({
+          phaseId: "",
+          player1Id: "",
+          player2Id: "",
+          player1Score: 0,
+          player2Score: 0,
+          round: 1,
+        });
+      } else {
+        setError(result.error || "Erreur lors de la création du match");
+      }
+    });
+  };
+
+  // Supprimer un match
+  const handleDeleteMatch = (matchId: string) => {
+    startTransition(async () => {
+      setError(null);
+      const result = await deleteMatchResult(event.id, matchId);
+
+      if (result.success) {
+        setMatches(matches.filter(m => m.matchId !== matchId));
+        setSuccess("Match supprimé avec succès");
+      } else {
+        setError(result.error || "Erreur lors de la suppression du match");
+      }
+    });
+  };
+
+  // Créer une annonce
+  const handleCreateAnnouncement = () => {
+    startTransition(async () => {
+      setError(null);
+      const result = await createAnnouncement(event.id, announcementForm);
+
+      if (result.success && result.data) {
+        setAnnouncements([result.data as Announcement, ...announcements]);
+        setSuccess("Annonce créée avec succès");
+        setShowAnnouncementForm(false);
+        setAnnouncementForm({
+          message: "",
+          priority: "normal",
+        });
+      } else {
+        setError(result.error || "Erreur lors de la création de l'annonce");
+      }
+    });
+  };
+
+  // Supprimer une annonce
+  const handleDeleteAnnouncement = (announcementId: string) => {
+    startTransition(async () => {
+      setError(null);
+      const result = await deleteAnnouncement(event.id, announcementId);
+
+      if (result.success) {
+        setAnnouncements(announcements.filter(a => a.id !== announcementId));
+        setSuccess("Annonce supprimée avec succès");
+      } else {
+        setError(result.error || "Erreur lors de la suppression de l'annonce");
+      }
+    });
+  };
+
+  // Charger les matchs/annonces selon l&apos;onglet actif
+  const handleTabChange = (tab: "settings" | "matches" | "announcements") => {
+    setActiveTab(tab);
+    if (tab === "matches") loadMatches();
+    if (tab === "announcements") loadAnnouncements();
+  };
+
+  return (
+    <div className="container mx-auto p-6 max-w-6xl">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2">Portail Organisateur</h1>
+        <p className="text-muted-foreground">{event.name}</p>
+      </div>
+
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {success && (
+        <Alert className="mb-4">
+          <Check className="h-4 w-4" />
+          <AlertDescription>{success}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Tabs */}
+      <div className="flex gap-2 mb-6 border-b">
+        <Button
+          variant={activeTab === "settings" ? "default" : "ghost"}
+          onClick={() => handleTabChange("settings")}
+          className="rounded-b-none"
+        >
+          <Settings className="h-4 w-4 mr-2" />
+          Paramètres
+        </Button>
+        <Button
+          variant={activeTab === "matches" ? "default" : "ghost"}
+          onClick={() => handleTabChange("matches")}
+          className="rounded-b-none"
+          disabled={!settings}
+        >
+          <Trophy className="h-4 w-4 mr-2" />
+          Matchs
+        </Button>
+        <Button
+          variant={activeTab === "announcements" ? "default" : "ghost"}
+          onClick={() => handleTabChange("announcements")}
+          className="rounded-b-none"
+        >
+          <Megaphone className="h-4 w-4 mr-2" />
+          Annonces
+        </Button>
+      </div>
+
+      {/* Contenu des tabs */}
+      {activeTab === "settings" && (
+        <div className="space-y-6">
+          {!settings ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Initialiser le portail</CardTitle>
+                <CardDescription>
+                  Commencez par initialiser les paramètres du portail pour votre événement
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={handleInitializeSettings} disabled={isPending}>
+                  <PlayCircle className="h-4 w-4 mr-2" />
+                  Initialiser le portail
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Phases du tournoi</CardTitle>
+                      <CardDescription>
+                        Gérez les différentes phases de votre tournoi
+                      </CardDescription>
+                    </div>
+                    <Button onClick={() => setShowPhaseForm(!showPhaseForm)} size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Ajouter une phase
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {showPhaseForm && (
+                    <div className="border rounded-lg p-4 space-y-4">
+                      <div>
+                        <label className="text-sm font-medium">Nom de la phase</label>
+                        <Input
+                          value={phaseForm.name}
+                          onChange={(e) => setPhaseForm({ ...phaseForm, name: e.target.value })}
+                          placeholder="Ex: Rondes suisses"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Type</label>
+                        <select
+                          className="w-full border rounded-md p-2"
+                          value={phaseForm.type}
+                          onChange={(e) => setPhaseForm({ ...phaseForm, type: e.target.value as "swiss" | "bracket" })}
+                        >
+                          <option value="swiss">Rondes suisses</option>
+                          <option value="bracket">Élimination directe</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Format de match</label>
+                        <select
+                          className="w-full border rounded-md p-2"
+                          value={phaseForm.matchType}
+                          onChange={(e) => setPhaseForm({ ...phaseForm, matchType: e.target.value as any })}
+                        >
+                          <option value="BO1">BO1</option>
+                          <option value="BO2">BO2</option>
+                          <option value="BO3">BO3</option>
+                          <option value="BO5">BO5</option>
+                        </select>
+                      </div>
+                      {phaseForm.type === "swiss" && (
+                        <div>
+                          <label className="text-sm font-medium">Nombre de rondes</label>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={phaseForm.rounds}
+                            onChange={(e) => setPhaseForm({ ...phaseForm, rounds: parseInt(e.target.value) })}
+                          />
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <Button onClick={handleAddPhase} disabled={isPending || !phaseForm.name}>
+                          Ajouter
+                        </Button>
+                        <Button variant="outline" onClick={() => setShowPhaseForm(false)}>
+                          Annuler
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {settings.phases.length === 0 ? (
+                    <p className="text-muted-foreground text-sm">Aucune phase définie</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {settings.phases.map((phase) => (
+                        <div key={phase.id} className="border rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold">{phase.name}</h3>
+                              <Badge variant={phase.status === "completed" ? "default" : phase.status === "in-progress" ? "secondary" : "outline"}>
+                                {phase.status === "not-started" ? "Non démarrée" : phase.status === "in-progress" ? "En cours" : "Terminée"}
+                              </Badge>
+                              {settings.currentPhaseId === phase.id && (
+                                <Badge variant="default">Phase courante</Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-sm text-muted-foreground mb-2">
+                            Type: {phase.type === "swiss" ? "Rondes suisses" : "Élimination directe"} • 
+                            Format: {phase.matchType}
+                            {phase.rounds && ` • ${phase.rounds} rondes`}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleSetCurrentPhase(phase.id)}
+                              disabled={settings.currentPhaseId === phase.id}
+                            >
+                              Définir comme courante
+                            </Button>
+                            {phase.status === "not-started" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleUpdatePhaseStatus(phase.id, "in-progress")}
+                              >
+                                Démarrer
+                              </Button>
+                            )}
+                            {phase.status === "in-progress" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleUpdatePhaseStatus(phase.id, "completed")}
+                              >
+                                Terminer
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Paramètres du portail</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Auto-rapport des résultats</span>
+                    <Badge variant={settings.allowSelfReporting ? "default" : "secondary"}>
+                      {settings.allowSelfReporting ? "Activé" : "Désactivé"}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Confirmation requise</span>
+                    <Badge variant={settings.requireConfirmation ? "default" : "secondary"}>
+                      {settings.requireConfirmation ? "Oui" : "Non"}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </div>
+      )}
+
+      {activeTab === "matches" && settings && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Gestion des matchs</CardTitle>
+                  <CardDescription>
+                    Créez et gérez les matchs de votre tournoi
+                  </CardDescription>
+                </div>
+                <Button onClick={() => setShowMatchForm(!showMatchForm)} size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Créer un match
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {showMatchForm && (
+                <div className="border rounded-lg p-4 space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">Phase</label>
+                    <select
+                      className="w-full border rounded-md p-2"
+                      value={matchForm.phaseId}
+                      onChange={(e) => setMatchForm({ ...matchForm, phaseId: e.target.value })}
+                    >
+                      <option value="">Sélectionner une phase</option>
+                      {settings.phases.map((phase) => (
+                        <option key={phase.id} value={phase.id}>
+                          {phase.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Joueur 1 (ID)</label>
+                    <Input
+                      value={matchForm.player1Id}
+                      onChange={(e) => setMatchForm({ ...matchForm, player1Id: e.target.value })}
+                      placeholder="ID du joueur 1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Joueur 2 (ID)</label>
+                    <Input
+                      value={matchForm.player2Id}
+                      onChange={(e) => setMatchForm({ ...matchForm, player2Id: e.target.value })}
+                      placeholder="ID du joueur 2"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium">Score Joueur 1</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={matchForm.player1Score}
+                        onChange={(e) => setMatchForm({ ...matchForm, player1Score: parseInt(e.target.value) })}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Score Joueur 2</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={matchForm.player2Score}
+                        onChange={(e) => setMatchForm({ ...matchForm, player2Score: parseInt(e.target.value) })}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Ronde</label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={matchForm.round}
+                      onChange={(e) => setMatchForm({ ...matchForm, round: parseInt(e.target.value) })}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={handleCreateMatch} 
+                      disabled={isPending || !matchForm.phaseId || !matchForm.player1Id || !matchForm.player2Id}
+                    >
+                      Créer le match
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowMatchForm(false)}>
+                      Annuler
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {matches.length === 0 ? (
+                <p className="text-muted-foreground text-sm">Aucun match créé</p>
+              ) : (
+                <div className="space-y-2">
+                  {matches.map((match) => (
+                    <div key={match.matchId} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">
+                            {match.player1Id} vs {match.player2Id}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            Score: {match.player1Score} - {match.player2Score}
+                            {match.round && ` • Ronde ${match.round}`}
+                          </div>
+                          <Badge variant={
+                            match.status === "completed" ? "default" : 
+                            match.status === "in-progress" ? "secondary" : 
+                            match.status === "disputed" ? "destructive" : "outline"
+                          }>
+                            {match.status === "pending" ? "En attente" : 
+                             match.status === "in-progress" ? "En cours" : 
+                             match.status === "completed" ? "Terminé" : "Contesté"}
+                          </Badge>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteMatch(match.matchId)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {activeTab === "announcements" && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Annonces</CardTitle>
+                  <CardDescription>
+                    Communiquez avec les participants
+                  </CardDescription>
+                </div>
+                <Button onClick={() => setShowAnnouncementForm(!showAnnouncementForm)} size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nouvelle annonce
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {showAnnouncementForm && (
+                <div className="border rounded-lg p-4 space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">Message</label>
+                    <textarea
+                      className="w-full border rounded-md p-2 min-h-[100px]"
+                      value={announcementForm.message}
+                      onChange={(e) => setAnnouncementForm({ ...announcementForm, message: e.target.value })}
+                      placeholder="Votre annonce..."
+                      maxLength={1000}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Priorité</label>
+                    <select
+                      className="w-full border rounded-md p-2"
+                      value={announcementForm.priority}
+                      onChange={(e) => setAnnouncementForm({ ...announcementForm, priority: e.target.value as any })}
+                    >
+                      <option value="normal">Normale</option>
+                      <option value="important">Importante</option>
+                      <option value="urgent">Urgente</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={handleCreateAnnouncement} 
+                      disabled={isPending || !announcementForm.message}
+                    >
+                      Publier
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowAnnouncementForm(false)}>
+                      Annuler
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {announcements.length === 0 ? (
+                <p className="text-muted-foreground text-sm">Aucune annonce publiée</p>
+              ) : (
+                <div className="space-y-2">
+                  {announcements.map((announcement) => (
+                    <div key={announcement.id} className="border rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge variant={
+                              announcement.priority === "urgent" ? "destructive" : 
+                              announcement.priority === "important" ? "secondary" : "outline"
+                            }>
+                              {announcement.priority === "urgent" ? "Urgent" : 
+                               announcement.priority === "important" ? "Important" : "Normal"}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(announcement.createdAt).toLocaleString("fr-FR")}
+                            </span>
+                          </div>
+                          <p className="text-sm">{announcement.message}</p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDeleteAnnouncement(announcement.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+}

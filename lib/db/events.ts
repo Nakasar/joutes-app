@@ -685,6 +685,7 @@ export async function getEventById(eventId: string): Promise<Event | null> {
   const events = await db
     .collection<EventDocument>(COLLECTION_NAME)
     .aggregate(pipeline)
+    .project({ _id: 0 })
     .toArray();
 
   if (events.length === 0) {
