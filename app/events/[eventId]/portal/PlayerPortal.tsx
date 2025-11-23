@@ -138,10 +138,31 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
     m => m.player1Id === userId || m.player2Id === userId
   );
 
-  // Match actuel (le premier match en attente ou en cours)
-  const currentMatch = myMatches.find(
+  // Obtenir la phase actuelle
+  const currentPhase = settings?.phases.find(p => p.id === settings?.currentPhaseId);
+
+  // Match actuel : priorité aux matchs en attente/en cours, sinon le dernier match de la ronde actuelle
+  let currentMatch = myMatches.find(
     m => m.status === "pending" || m.status === "in-progress"
   );
+
+  // Si aucun match en cours et qu'on a une phase actuelle, chercher le dernier match de cette phase
+  if (!currentMatch && currentPhase) {
+    const currentPhaseMatches = myMatches.filter(m => m.phaseId === currentPhase.id);
+    
+    if (currentPhaseMatches.length > 0) {
+      // Pour les rondes suisses, prendre le match de la ronde la plus élevée
+      if (currentPhase.type === "swiss") {
+        const maxRound = Math.max(...currentPhaseMatches.map(m => m.round || 0));
+        currentMatch = currentPhaseMatches.find(m => m.round === maxRound);
+      } else {
+        // Pour les brackets, prendre le dernier match créé
+        currentMatch = currentPhaseMatches.sort((a, b) => 
+          new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+        )[0];
+      }
+    }
+  }
 
   // Historique des matchs
   const pastMatches = myMatches.filter(m => m.status === "completed");
@@ -243,9 +264,6 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
       : participant.username;
   };
 
-  // Obtenir la phase actuelle
-  const currentPhase = settings?.phases.find(p => p.id === settings?.currentPhaseId);
-
   return (
     <div className="container mx-auto p-6 max-w-4xl">
       <div className="mb-6">
@@ -335,7 +353,9 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
           ) : (
             <Card>
               <CardHeader>
-                <CardTitle>Votre match actuel</CardTitle>
+                <CardTitle>
+                  {currentMatch.status === "completed" ? "Votre dernier match" : "Votre match actuel"}
+                </CardTitle>
                 <CardDescription>
                   {currentPhase && `${currentPhase.name} - ${currentPhase.matchType}`}
                   {currentMatch.round && ` - Ronde ${currentMatch.round}`}
@@ -350,13 +370,25 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
                     {currentMatch.player1Score || 0} - {currentMatch.player2Score || 0}
                   </div>
                   <Badge variant={
-                    currentMatch.status === "in-progress" ? "secondary" : "outline"
+                    currentMatch.status === "completed" 
+                      ? (currentMatch.winnerId === userId ? "default" : currentMatch.winnerId ? "destructive" : "secondary")
+                      : currentMatch.status === "in-progress" 
+                        ? "secondary" 
+                        : "outline"
                   }>
-                    {currentMatch.status === "pending" ? "En attente" : "En cours"}
+                    {currentMatch.status === "pending" 
+                      ? "En attente" 
+                      : currentMatch.status === "in-progress"
+                        ? "En cours"
+                        : currentMatch.winnerId === userId
+                          ? "Victoire"
+                          : currentMatch.winnerId
+                            ? "Défaite"
+                            : "Égalité"}
                   </Badge>
                 </div>
 
-                {settings?.allowSelfReporting && !reportForm && (
+                {settings?.allowSelfReporting && !reportForm && currentMatch.status !== "completed" && (
                   <div className="flex justify-center gap-2">
                     {currentMatch.status === "pending" && (
                       <Button onClick={() => handleReportResult(currentMatch)}>

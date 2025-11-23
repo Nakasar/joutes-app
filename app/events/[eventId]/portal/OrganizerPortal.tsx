@@ -45,9 +45,11 @@ type OrganizerPortalProps = {
   event: Event;
   settings: EventPortalSettings | null;
   userId: string;
+  selectedPhaseId?: string;
+  selectedRound?: string;
 };
 
-export default function OrganizerPortal({ event, settings: initialSettings, userId }: OrganizerPortalProps) {
+export default function OrganizerPortal({ event, settings: initialSettings, userId, selectedPhaseId, selectedRound }: OrganizerPortalProps) {
   const pathname = usePathname();
   
   // Déterminer l'onglet actif depuis l'URL
@@ -675,6 +677,55 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
 
       {activeTab === "matches" && settings && (
         <div className="space-y-6">
+          {/* Navigation par ronde/phase */}
+          {matches.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Navigation par ronde</CardTitle>
+                <CardDescription>
+                  Sélectionnez une phase et une ronde
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {settings.phases
+                    .sort((a, b) => a.order - b.order)
+                    .map((phase) => {
+                      const phaseMatches = matches.filter(m => m.phaseId === phase.id);
+                      const rounds = Array.from(new Set(phaseMatches.map(m => m.round || 1))).sort((a, b) => a - b);
+                      
+                      if (rounds.length === 0) return null;
+
+                      return (
+                        <div key={phase.id} className="flex items-center gap-1">
+                          <span className="text-sm font-medium text-muted-foreground px-2">
+                            {phase.name}:
+                          </span>
+                          {rounds.map((round) => {
+                            const isActive = selectedPhaseId === phase.id && selectedRound === round.toString();
+                            return (
+                              <Link 
+                                key={`${phase.id}-${round}`}
+                                href={`/events/${event.id}/portal/organizer/matches/${phase.id}/${round}`}
+                              >
+                                <Button
+                                  variant={isActive ? "default" : "outline"}
+                                  size="sm"
+                                  className="h-8"
+                                >
+                                  R{round}
+                                </Button>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Sélection de phase et génération */}
           {settings.currentPhaseId && (
             <Card>
@@ -811,11 +862,127 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
                 <p className="text-muted-foreground text-sm">Aucun match créé</p>
               ) : (
                 <div className="space-y-4">
-                  {/* Grouper les matchs par ronde */}
-                  {Array.from(new Set(matches.map(m => m.round || 1))).sort((a, b) => a - b).map(round => (
-                    <div key={round} className="space-y-2">
-                      <h3 className="font-semibold text-sm">Ronde {round}</h3>
-                      {matches.filter(m => (m.round || 1) === round).map((match) => (
+                  {/* Filtrer les matchs selon la sélection */}
+                  {(() => {
+                    // Si une phase et une ronde sont sélectionnées, filtrer
+                    if (selectedPhaseId && selectedRound) {
+                      const roundNum = parseInt(selectedRound);
+                      const filteredMatches = matches.filter(
+                        m => m.phaseId === selectedPhaseId && (m.round || 1) === roundNum
+                      );
+                      
+                      if (filteredMatches.length === 0) {
+                        return <p className="text-muted-foreground text-sm">Aucun match pour cette ronde</p>;
+                      }
+
+                      const phase = settings?.phases.find(p => p.id === selectedPhaseId);
+                      return (
+                        <div className="space-y-2">
+                          <h3 className="font-semibold">
+                            {phase?.name} - Ronde {roundNum}
+                          </h3>
+                          {filteredMatches.map((match) => (
+                            <div key={match.matchId} className="border rounded-lg p-4">
+                              {editingMatch?.matchId === match.matchId ? (
+                                // Mode édition
+                                <div className="space-y-4">
+                                  <div className="font-medium">
+                                    {getParticipantName(match.player1Id)} vs {getParticipantName(match.player2Id)}
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <label className="text-sm font-medium">
+                                        Score {getParticipantName(match.player1Id)}
+                                      </label>
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        value={editingMatch.player1Score}
+                                        onChange={(e) => setEditingMatch({
+                                          ...editingMatch,
+                                          player1Score: parseInt(e.target.value) || 0
+                                        })}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-sm font-medium">
+                                        Score {getParticipantName(match.player2Id)}
+                                      </label>
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        value={editingMatch.player2Score}
+                                        onChange={(e) => setEditingMatch({
+                                          ...editingMatch,
+                                          player2Score: parseInt(e.target.value) || 0
+                                        })}
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button size="sm" onClick={handleSaveMatchEdit} disabled={isPending}>
+                                      <Check className="h-4 w-4 mr-2" />
+                                      Sauvegarder
+                                    </Button>
+                                    <Button size="sm" variant="outline" onClick={() => setEditingMatch(null)}>
+                                      Annuler
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                // Mode affichage
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <div className="font-medium mb-1">
+                                      {getParticipantName(match.player1Id)} vs {getParticipantName(match.player2Id)}
+                                    </div>
+                                    <div className="text-2xl font-bold mb-2">
+                                      {match.player1Score} - {match.player2Score}
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <Badge variant={
+                                        match.status === "completed" ? "default" : 
+                                        match.status === "in-progress" ? "secondary" : "outline"
+                                      }>
+                                        {match.status === "completed" ? "Terminé" : 
+                                         match.status === "in-progress" ? "En cours" : "En attente"}
+                                      </Badge>
+                                      {match.winnerId && (
+                                        <Badge variant="outline">
+                                          Vainqueur: {getParticipantName(match.winnerId)}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => setEditingMatch(match)}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => handleDeleteMatch(match.matchId)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }
+
+                    // Sinon, afficher tous les matchs groupés par ronde
+                    return Array.from(new Set(matches.map(m => m.round || 1))).sort((a, b) => a - b).map(round => (
+                      <div key={round} className="space-y-2">
+                        <h3 className="font-semibold text-sm">Ronde {round}</h3>
+                        {matches.filter(m => (m.round || 1) === round).map((match) => (
                         <div key={match.matchId} className="border rounded-lg p-4">
                           {editingMatch?.matchId === match.matchId ? (
                             // Mode édition
@@ -905,7 +1072,8 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
                         </div>
                       ))}
                     </div>
-                  ))}
+                  ));
+                  })()}
                 </div>
               )}
             </CardContent>
