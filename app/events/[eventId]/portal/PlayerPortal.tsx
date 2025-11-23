@@ -23,6 +23,7 @@ import {
   getAnnouncements,
   getPhaseStandings,
 } from "./actions";
+import { getEventParticipants } from "./participant-actions";
 
 type PlayerPortalProps = {
   event: Event;
@@ -39,9 +40,11 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [standings, setStandings] = useState<any[]>([]);
+  const [participants, setParticipants] = useState<any[]>([]);
   const [matchesLoaded, setMatchesLoaded] = useState(false);
   const [announcementsLoaded, setAnnouncementsLoaded] = useState(false);
   const [standingsLoaded, setStandingsLoaded] = useState(false);
+  const [participantsLoaded, setParticipantsLoaded] = useState(false);
 
   // Formulaire de rapport de résultat
   const [reportForm, setReportForm] = useState<{
@@ -74,6 +77,18 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
     });
   };
 
+  // Charger les participants
+  const loadParticipants = async () => {
+    if (participantsLoaded) return;
+    startTransition(async () => {
+      const result = await getEventParticipants(event.id);
+      if (result.success && result.data) {
+        setParticipants(result.data);
+        setParticipantsLoaded(true);
+      }
+    });
+  };
+
   // Charger le classement
   const loadStandings = async () => {
     if (standingsLoaded || !settings?.currentPhaseId) return;
@@ -92,6 +107,7 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
   useEffect(() => {
     loadMatches();
     loadAnnouncements();
+    loadParticipants();
   }, []);
 
   // Charger les standings quand on change d'onglet
@@ -178,7 +194,12 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
 
   // Obtenir le nom du joueur (simplifié, on affiche juste l&apos;ID)
   const getPlayerName = (playerId: string) => {
-    return playerId === userId ? "Vous" : `Joueur ${playerId.slice(-4)}`;
+    if (playerId === userId) return "Vous";
+    const participant = participants.find(p => p.id === playerId);
+    if (!participant) return `Joueur ${playerId.slice(-4)}`;
+    return participant.discriminator
+      ? `${participant.username}#${participant.discriminator}`
+      : participant.username;
   };
 
   // Obtenir la phase actuelle

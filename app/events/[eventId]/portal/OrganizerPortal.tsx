@@ -56,6 +56,7 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
   const [showPhaseForm, setShowPhaseForm] = useState(false);
   const [showMatchForm, setShowMatchForm] = useState(false);
   const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
+  const [editingMatch, setEditingMatch] = useState<MatchResult | null>(null);
 
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -264,6 +265,42 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
     });
   };
 
+  // Éditer un match existant
+  const handleEditMatch = (match: MatchResult) => {
+    setEditingMatch(match);
+  };
+
+  // Sauvegarder les modifications d'un match
+  const handleSaveMatchEdit = () => {
+    if (!editingMatch) return;
+
+    startTransition(async () => {
+      setError(null);
+      const winnerId = editingMatch.player1Score > editingMatch.player2Score
+        ? editingMatch.player1Id
+        : editingMatch.player2Score > editingMatch.player1Score
+          ? editingMatch.player2Id
+          : undefined;
+
+      const result = await updateMatchResult(event.id, editingMatch.matchId, {
+        player1Score: editingMatch.player1Score,
+        player2Score: editingMatch.player2Score,
+        winnerId,
+        status: "completed",
+      });
+
+      if (result.success) {
+        // Recharger les matchs pour avoir les données à jour
+        setMatchesLoaded(false);
+        loadMatches();
+        setSuccess("Résultat du match mis à jour");
+        setEditingMatch(null);
+      } else {
+        setError(result.error || "Erreur lors de la mise à jour du match");
+      }
+    });
+  };
+
   // Générer les matchs pour une phase
   const handleGenerateMatches = (phaseId: string) => {
     startTransition(async () => {
@@ -316,11 +353,23 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
     });
   };
 
+  // Obtenir le nom d'un participant
+  const getParticipantName = (playerId: string) => {
+    const participant = participants.find(p => p.id === playerId);
+    if (!participant) return playerId.slice(-6);
+    return participant.discriminator 
+      ? `${participant.username}#${participant.discriminator}`
+      : participant.username;
+  };
+
   // Charger les matchs/annonces/participants selon l&apos;onglet actif
   const handleTabChange = (tab: "settings" | "participants" | "matches" | "announcements") => {
     setActiveTab(tab);
     if (tab === "participants") loadParticipants();
-    if (tab === "matches") loadMatches();
+    if (tab === "matches") {
+      loadMatches();
+      loadParticipants();
+    }
     if (tab === "announcements") loadAnnouncements();
   };
 
@@ -644,20 +693,34 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Joueur 1 (ID)</label>
-                    <Input
+                    <label className="text-sm font-medium">Joueur 1</label>
+                    <select
+                      className="w-full border rounded-md p-2"
                       value={matchForm.player1Id}
                       onChange={(e) => setMatchForm({ ...matchForm, player1Id: e.target.value })}
-                      placeholder="ID du joueur 1"
-                    />
+                    >
+                      <option value="">Sélectionner un joueur</option>
+                      {participants.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {getParticipantName(p.id)}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Joueur 2 (ID)</label>
-                    <Input
+                    <label className="text-sm font-medium">Joueur 2</label>
+                    <select
+                      className="w-full border rounded-md p-2"
                       value={matchForm.player2Id}
                       onChange={(e) => setMatchForm({ ...matchForm, player2Id: e.target.value })}
-                      placeholder="ID du joueur 2"
-                    />
+                    >
+                      <option value="">Sélectionner un joueur</option>
+                      {participants.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {getParticipantName(p.id)}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -712,34 +775,91 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
                       <h3 className="font-semibold text-sm">Ronde {round}</h3>
                       {matches.filter(m => (m.round || 1) === round).map((match) => (
                         <div key={match.matchId} className="border rounded-lg p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
+                          {editingMatch?.matchId === match.matchId ? (
+                            // Mode édition
+                            <div className="space-y-4">
                               <div className="font-medium">
-                                {participants.find(p => p.id === match.player1Id)?.username || match.player1Id} vs{" "}
-                                {participants.find(p => p.id === match.player2Id)?.username || match.player2Id}
+                                {getParticipantName(match.player1Id)} vs {getParticipantName(match.player2Id)}
                               </div>
-                              <div className="text-sm text-muted-foreground">
-                                Score: {match.player1Score} - {match.player2Score}
-                                {match.bracketPosition && ` • ${match.bracketPosition}`}
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <label className="text-sm font-medium">
+                                    Score {getParticipantName(match.player1Id)}
+                                  </label>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    value={editingMatch.player1Score}
+                                    onChange={(e) => setEditingMatch({
+                                      ...editingMatch,
+                                      player1Score: parseInt(e.target.value) || 0
+                                    })}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-sm font-medium">
+                                    Score {getParticipantName(match.player2Id)}
+                                  </label>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    value={editingMatch.player2Score}
+                                    onChange={(e) => setEditingMatch({
+                                      ...editingMatch,
+                                      player2Score: parseInt(e.target.value) || 0
+                                    })}
+                                  />
+                                </div>
                               </div>
-                              <Badge variant={
-                                match.status === "completed" ? "default" : 
-                                match.status === "in-progress" ? "secondary" : 
-                                match.status === "disputed" ? "destructive" : "outline"
-                              }>
-                                {match.status === "pending" ? "En attente" : 
-                                 match.status === "in-progress" ? "En cours" : 
-                                 match.status === "completed" ? "Terminé" : "Contesté"}
-                              </Badge>
+                              <div className="flex gap-2">
+                                <Button size="sm" onClick={handleSaveMatchEdit} disabled={isPending}>
+                                  <Check className="h-4 w-4 mr-2" />
+                                  Sauvegarder
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => setEditingMatch(null)}>
+                                  Annuler
+                                </Button>
+                              </div>
                             </div>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDeleteMatch(match.matchId)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          ) : (
+                            // Mode affichage
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="font-medium">
+                                  {getParticipantName(match.player1Id)} vs {getParticipantName(match.player2Id)}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  Score: {match.player1Score} - {match.player2Score}
+                                  {match.bracketPosition && ` • ${match.bracketPosition}`}
+                                </div>
+                                <Badge variant={
+                                  match.status === "completed" ? "default" : 
+                                  match.status === "in-progress" ? "secondary" : 
+                                  match.status === "disputed" ? "destructive" : "outline"
+                                }>
+                                  {match.status === "pending" ? "En attente" : 
+                                   match.status === "in-progress" ? "En cours" : 
+                                   match.status === "completed" ? "Terminé" : "Contesté"}
+                                </Badge>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleEditMatch(match)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handleDeleteMatch(match.matchId)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
