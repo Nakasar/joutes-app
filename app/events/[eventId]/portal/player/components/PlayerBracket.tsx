@@ -19,11 +19,18 @@ export default function PlayerBracket({ event, settings, userId, matches, partic
   const getPlayerName = (playerId: string | null): string => {
     if (playerId === null) return "BYE";
     if (playerId === userId) return "Vous";
-    const participant = participants.find(p => p.id === playerId);
-    if (!participant) return `Joueur ${playerId.slice(-4)}`;
-    return participant.discriminator
-      ? `${participant.username}#${participant.discriminator}`
-      : participant.username;
+    
+    // Chercher dans les matchs pour obtenir le nom pré-chargé
+    for (const match of matches) {
+      if (match.player1Id === playerId && match.player1Name) {
+        return match.player1Name;
+      }
+      if (match.player2Id === playerId && match.player2Name) {
+        return match.player2Name;
+      }
+    }
+    
+    return `Joueur ${playerId.slice(-4)}`;
   };
 
   if (!currentPhase || currentPhase.type !== "bracket") {

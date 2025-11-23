@@ -258,16 +258,167 @@ export async function getMatchResults(eventId: string, phaseId?: string) {
 
     const collection = db.collection<MatchResult & { eventId: string }>(MATCH_RESULTS_COLLECTION);
 
-    const query: Record<string, unknown> = { eventId };
+    const matchQuery: Record<string, unknown> = { eventId };
     if (phaseId) {
-      query.phaseId = phaseId;
+      matchQuery.phaseId = phaseId;
     }
 
-    const results = await collection.find(query).toArray();
+    // Agrégation pour joindre les informations des joueurs
+    const pipeline = [
+      { $match: matchQuery },
+      // Lookup pour player1 dans la collection users
+      {
+        $lookup: {
+          from: "user",
+          let: { player1Id: { $cond: [{ $eq: ["$player1Id", null] }, null, { $toObjectId: "$player1Id" }] } },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$player1Id"] } } },
+            { $project: { displayName: 1, username: 1, discriminator: 1, profileImage: 1 } }
+          ],
+          as: "player1Info"
+        }
+      },
+      // Lookup pour player2 dans la collection users
+      {
+        $lookup: {
+          from: "user",
+          let: { player2Id: { $cond: [{ $eq: ["$player2Id", null] }, null, { $toObjectId: "$player2Id" }] } },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$player2Id"] } } },
+            { $project: { displayName: 1, username: 1, discriminator: 1, profileImage: 1 } }
+          ],
+          as: "player2Info"
+        }
+      },
+      // Lookup pour player1 dans la collection guest-participants
+      {
+        $lookup: {
+          from: "event-guest-participants",
+          localField: "player1Id",
+          foreignField: "id",
+          as: "player1GuestInfo"
+        }
+      },
+      // Lookup pour player2 dans la collection guest-participants
+      {
+        $lookup: {
+          from: "event-guest-participants",
+          localField: "player2Id",
+          foreignField: "id",
+          as: "player2GuestInfo"
+        }
+      },
+      // Ajouter les champs player1Name et player2Name
+      {
+        $addFields: {
+          player1Name: {
+            $cond: [
+              { $eq: ["$player1Id", null] },
+              "BYE",
+              {
+                $cond: [
+                  { $gt: [{ $size: "$player1Info" }, 0] },
+                  {
+                    $let: {
+                      vars: {
+                        user: { $arrayElemAt: ["$player1Info", 0] }
+                      },
+                      in: {
+                        $concat: [
+                          { $ifNull: ["$$user.displayName", "$$user.username"] },
+                          "#",
+                          "$$user.discriminator"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    $cond: [
+                      { $gt: [{ $size: "$player1GuestInfo" }, 0] },
+                      {
+                        $let: {
+                          vars: {
+                            guest: { $arrayElemAt: ["$player1GuestInfo", 0] }
+                          },
+                          in: {
+                            $concat: [
+                              "$$guest.username",
+                              "#",
+                              "$$guest.discriminator"
+                            ]
+                          }
+                        }
+                      },
+                      "Joueur inconnu"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          player2Name: {
+            $cond: [
+              { $eq: ["$player2Id", null] },
+              "BYE",
+              {
+                $cond: [
+                  { $gt: [{ $size: "$player2Info" }, 0] },
+                  {
+                    $let: {
+                      vars: {
+                        user: { $arrayElemAt: ["$player2Info", 0] }
+                      },
+                      in: {
+                        $concat: [
+                          { $ifNull: ["$$user.displayName", "$$user.username"] },
+                          "#",
+                          "$$user.discriminator"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    $cond: [
+                      { $gt: [{ $size: "$player2GuestInfo" }, 0] },
+                      {
+                        $let: {
+                          vars: {
+                            guest: { $arrayElemAt: ["$player2GuestInfo", 0] }
+                          },
+                          in: {
+                            $concat: [
+                              "$$guest.username",
+                              "#",
+                              "$$guest.discriminator"
+                            ]
+                          }
+                        }
+                      },
+                      "Joueur inconnu"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      // Supprimer les champs temporaires
+      {
+        $project: {
+          player1Info: 0,
+          player2Info: 0,
+          player1GuestInfo: 0,
+          player2GuestInfo: 0
+        }
+      }
+    ];
+
+    const results = await collection.aggregate(pipeline).toArray();
 
     return {
       success: true,
-      data: results.map((r: typeof results[0]) => ({
+      data: results.map((r: any) => ({
         ...r,
         id: r._id?.toString(),
         _id: undefined,
@@ -866,15 +1017,49 @@ export async function getPhaseStandings(eventId: string, phaseId: string) {
       return { success: false, error: "Événement non trouvé" };
     }
 
-    // Récupérer tous les participants
-    const participantsResult = await getEventParticipants(eventId);
+    // Récupérer les participants avec leurs noms via agrégation
+    const usersCollection = db.collection("user");
+    const guestsCollection = db.collection("event-guest-participants");
+    
+    // Construire la liste des IDs de participants
+    const participantIds = event.participants || [];
+    
+    // Récupérer les utilisateurs via agrégation
+    const userParticipants = await usersCollection.find({
+      _id: { $in: participantIds.map(id => ObjectId.createFromHexString(id)) }
+    }).project({
+      _id: 1,
+      displayName: 1,
+      username: 1,
+      discriminator: 1
+    }).toArray();
 
-    if (!participantsResult.success || !participantsResult.data) {
-      return { success: false, error: "Impossible de récupérer les participants" };
-    }
+    // Récupérer les invités
+    const guestParticipants = await guestsCollection.find({ eventId }).project({
+      id: 1,
+      username: 1,
+      discriminator: 1
+    }).toArray();
 
-    const participants = participantsResult.data;
-    const playerIds = participants.map(p => p.id);
+    // Créer une map des participants pour un accès rapide
+    const participantsMap = new Map();
+    userParticipants.forEach((user: any) => {
+      const id = user._id.toString();
+      participantsMap.set(id, {
+        id,
+        username: user.displayName || user.username,
+        discriminator: user.discriminator
+      });
+    });
+    guestParticipants.forEach((guest: any) => {
+      participantsMap.set(guest.id, {
+        id: guest.id,
+        username: guest.username,
+        discriminator: guest.discriminator
+      });
+    });
+
+    const playerIds = Array.from(participantsMap.keys());
 
     // Récupérer les matchs de la phase
     const matchesCollection = db.collection<MatchResult & { eventId: string }>(MATCH_RESULTS_COLLECTION);
@@ -885,7 +1070,7 @@ export async function getPhaseStandings(eventId: string, phaseId: string) {
 
     // Enrichir avec les informations des participants
     const enrichedStandings = standings.map(standing => {
-      const participant = participants.find(p => p.id === standing.playerId);
+      const participant = participantsMap.get(standing.playerId);
       return {
         ...standing,
         username: participant?.username || "Inconnu",

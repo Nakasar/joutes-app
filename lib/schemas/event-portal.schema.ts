@@ -24,6 +24,8 @@ export const matchResultSchema = z.object({
   phaseId: z.string(),
   player1Id: z.string(),
   player2Id: z.string().nullable(), // null pour un BYE
+  player1Name: z.string().optional(), // Nom du joueur 1 (ajouté par agrégation)
+  player2Name: z.string().optional(), // Nom du joueur 2 (ajouté par agrégation)
   player1Score: z.number().min(0),
   player2Score: z.number().min(0),
   winnerId: z.string().optional(), // ID du gagnant

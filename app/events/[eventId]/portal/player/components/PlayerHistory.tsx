@@ -6,24 +6,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 
 type PlayerHistoryProps = {
-  event: Event;
   userId: string;
   matches: MatchResult[];
   participants: any[];
 };
 
-export default function PlayerHistory({ event, userId, matches, participants }: PlayerHistoryProps) {
+export default function PlayerHistory({ userId, matches, participants }: PlayerHistoryProps) {
   const myMatches = matches.filter(m => m.player1Id === userId || m.player2Id === userId);
   const pastMatches = myMatches.filter(m => m.status === "completed");
 
-  const getPlayerName = (playerId: string | null): string => {
+  const getPlayerName = (match: MatchResult, isPlayer1: boolean): string => {
+    const playerId = isPlayer1 ? match.player1Id : match.player2Id;
+    const playerName = isPlayer1 ? match.player1Name : match.player2Name;
+    
     if (playerId === null) return "BYE";
     if (playerId === userId) return "Vous";
-    const participant = participants.find(p => p.id === playerId);
-    if (!participant) return `Joueur ${playerId.slice(-4)}`;
-    return participant.discriminator
-      ? `${participant.username}#${participant.discriminator}`
-      : participant.username;
+    if (playerName) return playerName;
+    return `Joueur ${playerId.slice(-4)}`;
   };
 
   return (
@@ -51,7 +50,7 @@ export default function PlayerHistory({ event, userId, matches, participants }: 
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="font-medium mb-1">
-                          {getPlayerName(match.player1Id)} vs {getPlayerName(match.player2Id)}
+                          {getPlayerName(match, true)} vs {getPlayerName(match, false)}
                         </div>
                         <div className="text-2xl font-bold mb-2">
                           {match.player1Score} - {match.player2Score}

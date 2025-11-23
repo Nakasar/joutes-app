@@ -58,14 +58,14 @@ export default function PlayerCurrentMatch({
     }
   }
 
-  const getPlayerName = (playerId: string | null): string => {
+  const getPlayerName = (match: MatchResult, isPlayer1: boolean): string => {
+    const playerId = isPlayer1 ? match.player1Id : match.player2Id;
+    const playerName = isPlayer1 ? match.player1Name : match.player2Name;
+    
     if (playerId === null) return "BYE";
     if (playerId === userId) return "Vous";
-    const participant = participants.find(p => p.id === playerId);
-    if (!participant) return `Joueur ${playerId.slice(-4)}`;
-    return participant.discriminator
-      ? `${participant.username}#${participant.discriminator}`
-      : participant.username;
+    if (playerName) return playerName;
+    return `Joueur ${playerId.slice(-4)}`;
   };
 
   const handleReportResult = (match: MatchResult) => {
@@ -145,7 +145,7 @@ export default function PlayerCurrentMatch({
           <CardContent className="space-y-4">
             <div className="text-center py-6">
               <div className="text-2xl font-bold mb-4">
-                {getPlayerName(currentMatch.player1Id)} vs {getPlayerName(currentMatch.player2Id)}
+                {getPlayerName(currentMatch, true)} vs {getPlayerName(currentMatch, false)}
               </div>
               <div className="text-4xl font-bold mb-4">
                 {currentMatch.player1Score || 0} - {currentMatch.player2Score || 0}
@@ -177,7 +177,7 @@ export default function PlayerCurrentMatch({
                     <h4 className="font-medium">Rapporter le résultat</h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm">Score {getPlayerName(currentMatch.player1Id)}</label>
+                        <label className="text-sm">Score {getPlayerName(currentMatch, true)}</label>
                         <Input
                           type="number"
                           min="0"
@@ -186,7 +186,7 @@ export default function PlayerCurrentMatch({
                         />
                       </div>
                       <div>
-                        <label className="text-sm">Score {getPlayerName(currentMatch.player2Id)}</label>
+                        <label className="text-sm">Score {getPlayerName(currentMatch, false)}</label>
                         <Input
                           type="number"
                           min="0"

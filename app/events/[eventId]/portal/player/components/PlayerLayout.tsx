@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Trophy, Clock, History, Megaphone, AlertCircle } from "lucide-react";
 import { getMatchResults, getAnnouncements, getPhaseStandings } from "../../actions";
-import { getEventParticipants } from "../../participant-actions";
 
 type PlayerLayoutProps = {
   event: Event;
@@ -31,11 +30,9 @@ export default function PlayerLayout({ event, settings, userId, children }: Play
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [standings, setStandings] = useState<any[]>([]);
-  const [participants, setParticipants] = useState<any[]>([]);
   const [matchesLoaded, setMatchesLoaded] = useState(false);
   const [announcementsLoaded, setAnnouncementsLoaded] = useState(false);
   const [standingsLoaded, setStandingsLoaded] = useState(false);
-  const [participantsLoaded, setParticipantsLoaded] = useState(false);
 
   const currentPhase = settings?.phases.find(p => p.id === settings?.currentPhaseId);
 
@@ -61,17 +58,6 @@ export default function PlayerLayout({ event, settings, userId, children }: Play
     });
   };
 
-  const loadParticipants = async () => {
-    if (participantsLoaded) return;
-    startTransition(async () => {
-      const result = await getEventParticipants(event.id);
-      if (result.success && result.data) {
-        setParticipants(result.data);
-        setParticipantsLoaded(true);
-      }
-    });
-  };
-
   const loadStandings = async () => {
     if (standingsLoaded || !settings?.currentPhaseId) return;
     startTransition(async () => {
@@ -89,7 +75,6 @@ export default function PlayerLayout({ event, settings, userId, children }: Play
   useEffect(() => {
     loadMatches();
     loadAnnouncements();
-    loadParticipants();
     if (pathname?.includes("/standings") || pathname?.includes("/bracket")) {
       loadStandings();
     }
@@ -178,7 +163,7 @@ export default function PlayerLayout({ event, settings, userId, children }: Play
         matches,
         announcements,
         standings,
-        participants,
+        participants: [], // Plus utilisé, les noms sont maintenant dans les matchs
         onMatchUpdate: handleMatchUpdate,
       })}
     </div>
