@@ -787,6 +787,67 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Modal d'édition de match */}
+              {editingMatch && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setEditingMatch(null)}>
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+                    <h3 className="text-lg font-semibold mb-4">Modifier le résultat</h3>
+                    <div className="space-y-4">
+                      <div className="font-medium text-center mb-2">
+                        {getParticipantName(editingMatch.player1Id)} vs {getParticipantName(editingMatch.player2Id)}
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">
+                            Score {getParticipantName(editingMatch.player1Id)}
+                          </label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={editingMatch.player1Score}
+                            onChange={(e) => setEditingMatch({
+                              ...editingMatch,
+                              player1Score: parseInt(e.target.value) || 0
+                            })}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">
+                            Score {getParticipantName(editingMatch.player2Id)}
+                          </label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={editingMatch.player2Score}
+                            onChange={(e) => setEditingMatch({
+                              ...editingMatch,
+                              player2Score: parseInt(e.target.value) || 0
+                            })}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2 pt-4">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setEditingMatch(null)}
+                          className="flex-1"
+                        >
+                          Annuler
+                        </Button>
+                        <Button 
+                          onClick={handleSaveMatchEdit} 
+                          disabled={isPending}
+                          className="flex-1"
+                        >
+                          <Check className="h-4 w-4 mr-2" />
+                          Sauvegarder
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {showMatchForm && (
                 <div className="border rounded-lg p-4 space-y-4">
                   <div>
