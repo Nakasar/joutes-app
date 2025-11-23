@@ -3,7 +3,8 @@ import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events";
 import { getPortalSettings } from "../../actions";
-import OrganizerPortal from "../../OrganizerPortal";
+import OrganizerLayout from "../components/OrganizerLayout";
+import OrganizerAnnouncements from "../components/OrganizerAnnouncements";
 
 type OrganizerAnnouncementsPageProps = {
   params: Promise<{
@@ -36,5 +37,10 @@ export default async function OrganizerAnnouncementsPage({ params }: OrganizerAn
   const settingsResult = await getPortalSettings(eventId);
   const settings = settingsResult.success ? settingsResult.data : null;
 
-  return <OrganizerPortal event={event} settings={settings} userId={session.user.id} />;
+  return (
+    <OrganizerLayout event={event} settings={settings} userId={session.user.id}>
+      <OrganizerAnnouncements event={event} />
+    </OrganizerLayout>
+  );
 }
+

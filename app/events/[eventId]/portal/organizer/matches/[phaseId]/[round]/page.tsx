@@ -3,7 +3,8 @@ import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events";
 import { getPortalSettings } from "../../../../actions";
-import OrganizerPortal from "../../../../OrganizerPortal";
+import OrganizerLayout from "../../../components/OrganizerLayout";
+import OrganizerMatches from "../../../components/OrganizerMatches";
 
 type OrganizerMatchesRoundPageProps = {
   params: Promise<{
@@ -39,12 +40,18 @@ export default async function OrganizerMatchesRoundPage({ params }: OrganizerMat
   const settings = settingsResult.success && settingsResult.data ? settingsResult.data : null;
 
   return (
-    <OrganizerPortal 
-      event={event} 
-      settings={settings} 
-      userId={session.user.id}
-      selectedPhaseId={phaseId}
-      selectedRound={round}
-    />
+    <OrganizerLayout event={event} settings={settings} userId={session.user.id}>
+      {settings ? (
+        <OrganizerMatches
+          event={event}
+          selectedPhaseId={phaseId}
+          selectedRound={round}
+          userId={session.user.id}
+        />
+      ) : (
+        <p>Veuillez initialiser le portail dans les paramètres</p>
+      )}
+    </OrganizerLayout>
   );
 }
+

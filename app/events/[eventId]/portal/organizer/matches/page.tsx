@@ -3,7 +3,8 @@ import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events";
 import { getPortalSettings } from "../../actions";
-import OrganizerPortal from "../../OrganizerPortal";
+import OrganizerLayout from "../components/OrganizerLayout";
+import OrganizerMatches from "../components/OrganizerMatches";
 
 type OrganizerMatchesPageProps = {
   params: Promise<{
@@ -36,5 +37,14 @@ export default async function OrganizerMatchesPage({ params }: OrganizerMatchesP
   const settingsResult = await getPortalSettings(eventId);
   const settings = settingsResult.success ? settingsResult.data : null;
 
-  return <OrganizerPortal event={event} settings={settings} userId={session.user.id} />;
+  return (
+    <OrganizerLayout event={event} settings={settings} userId={session.user.id}>
+      {settings ? (
+        <OrganizerMatches event={event} userId={session.user.id} />
+      ) : (
+        <p>Veuillez initialiser le portail dans les paramètres</p>
+      )}
+    </OrganizerLayout>
+  );
 }
+
