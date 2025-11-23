@@ -298,7 +298,9 @@ export async function createMatchResult(eventId: string, data: unknown) {
     const matchResult = {
       ...validated,
       eventId,
-      status: 'pending' as const,
+      status: 'completed' as const,
+      reportedBy: session.user.id,
+      confirmedBy: session.user.id,
       createdAt: now,
       updatedAt: now,
     };
@@ -458,6 +460,9 @@ export async function updateMatchResult(eventId: string, matchId: string, data: 
           player1Score: validated.player1Score,
           player2Score: validated.player2Score,
           winnerId: validated.winnerId,
+          status: 'completed',
+          reportedBy: session.user.id,
+          confirmedBy: session.user.id,
           updatedAt: new Date().toISOString(),
         },
       }
