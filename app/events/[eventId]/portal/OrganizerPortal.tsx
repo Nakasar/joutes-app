@@ -18,7 +18,8 @@ import {
   Edit,
   Trash2,
   Check,
-  AlertCircle
+  AlertCircle,
+  UserPlus
 } from "lucide-react";
 import {
   createOrUpdatePortalSettings,
@@ -33,6 +34,8 @@ import {
   createAnnouncement,
   deleteAnnouncement,
 } from "./actions";
+import { getEventParticipants } from "./participant-actions";
+import AddParticipantForm from "../AddParticipantForm";
 
 type OrganizerPortalProps = {
   event: Event;
@@ -42,7 +45,7 @@ type OrganizerPortalProps = {
 
 export default function OrganizerPortal({ event, settings: initialSettings, userId }: OrganizerPortalProps) {
   const [settings, setSettings] = useState<EventPortalSettings | null>(initialSettings);
-  const [activeTab, setActiveTab] = useState<"settings" | "matches" | "announcements">("settings");
+  const [activeTab, setActiveTab] = useState<"settings" | "participants" | "matches" | "announcements">("settings");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -54,8 +57,10 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
 
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [participants, setParticipants] = useState<any[]>([]);
   const [matchesLoaded, setMatchesLoaded] = useState(false);
   const [announcementsLoaded, setAnnouncementsLoaded] = useState(false);
+  const [participantsLoaded, setParticipantsLoaded] = useState(false);
 
   // Formulaire de phase
   const [phaseForm, setPhaseForm] = useState({
@@ -102,6 +107,18 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
       if (result.success && result.data) {
         setAnnouncements(result.data as Announcement[]);
         setAnnouncementsLoaded(true);
+      }
+    });
+  };
+
+  // Charger les participants si pas encore fait
+  const loadParticipants = async () => {
+    if (participantsLoaded) return;
+    startTransition(async () => {
+      const result = await getEventParticipants(event.id);
+      if (result.success && result.data) {
+        setParticipants(result.data);
+        setParticipantsLoaded(true);
       }
     });
   };
@@ -280,9 +297,10 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
     });
   };
 
-  // Charger les matchs/annonces selon l&apos;onglet actif
-  const handleTabChange = (tab: "settings" | "matches" | "announcements") => {
+  // Charger les matchs/annonces/participants selon l&apos;onglet actif
+  const handleTabChange = (tab: "settings" | "participants" | "matches" | "announcements") => {
     setActiveTab(tab);
+    if (tab === "participants") loadParticipants();
     if (tab === "matches") loadMatches();
     if (tab === "announcements") loadAnnouncements();
   };
@@ -317,6 +335,14 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
         >
           <Settings className="h-4 w-4 mr-2" />
           Paramètres
+        </Button>
+        <Button
+          variant={activeTab === "participants" ? "default" : "ghost"}
+          onClick={() => handleTabChange("participants")}
+          className="rounded-b-none"
+        >
+          <UserPlus className="h-4 w-4 mr-2" />
+          Participants
         </Button>
         <Button
           variant={activeTab === "matches" ? "default" : "ghost"}
@@ -507,6 +533,33 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
               </Card>
             </>
           )}
+        </div>
+      )}
+
+      {activeTab === "participants" && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Gestion des participants</CardTitle>
+              <CardDescription>
+                Ajoutez des participants par user tag, email ou comme invités
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AddParticipantForm
+                eventId={event.id}
+                participants={participants}
+                onParticipantAdded={() => {
+                  setParticipantsLoaded(false);
+                  loadParticipants();
+                }}
+                onParticipantRemoved={() => {
+                  setParticipantsLoaded(false);
+                  loadParticipants();
+                }}
+              />
+            </CardContent>
+          </Card>
         </div>
       )}
 

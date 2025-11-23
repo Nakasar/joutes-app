@@ -98,6 +98,36 @@ export const createAnnouncementSchema = announcementSchema.omit({
   createdBy: true,
 });
 
+// Schéma pour un participant invité (sans compte)
+export const guestParticipantSchema = z.object({
+  id: z.string(), // ID unique généré pour ce participant invité
+  eventId: z.string(),
+  type: z.enum(['guest', 'email']), // 'guest' = username seul, 'email' = compte créé par email
+  username: z.string().min(1, "Le nom d'utilisateur est requis"),
+  discriminator: z.string().optional(), // Pour les participants par email
+  email: z.string().email().optional(), // Pour les participants par email
+  userId: z.string().optional(), // ID utilisateur si un compte a été créé
+  addedBy: z.string(), // ID du créateur qui a ajouté ce participant
+  addedAt: z.string().datetime(),
+});
+
+// Schéma pour ajouter un participant
+export const addParticipantSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('userTag'),
+    userTag: z.string().min(1, "Le user tag est requis"), // Format: username#1234
+  }),
+  z.object({
+    type: z.literal('email'),
+    email: z.string().email("Email invalide"),
+    username: z.string().min(1, "Le nom d'utilisateur est requis"),
+  }),
+  z.object({
+    type: z.literal('guest'),
+    username: z.string().min(1, "Le nom d'utilisateur est requis"),
+  }),
+]);
+
 // Types TypeScript
 export type PhaseType = z.infer<typeof phaseTypeSchema>;
 export type MatchType = z.infer<typeof matchTypeSchema>;
@@ -111,3 +141,5 @@ export type CreateMatchResult = z.infer<typeof createMatchResultSchema>;
 export type ReportMatchResult = z.infer<typeof reportMatchResultSchema>;
 export type ConfirmMatchResult = z.infer<typeof confirmMatchResultSchema>;
 export type CreateAnnouncement = z.infer<typeof createAnnouncementSchema>;
+export type GuestParticipant = z.infer<typeof guestParticipantSchema>;
+export type AddParticipant = z.infer<typeof addParticipantSchema>;

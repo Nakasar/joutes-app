@@ -12,9 +12,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import EventActions from "./EventActions";
 import QRCodeButton from "./QRCodeButton";
-import ParticipantManager from "./ParticipantManager";
+import ParticipantManagerWrapper from "./ParticipantManagerWrapper";
 import FavoriteButton from "./FavoriteButton";
 import { DateTime } from "luxon";
+import { getEventParticipants } from "./portal/participant-actions";
 
 type EventPageProps = {
   params: Promise<{
@@ -63,8 +64,17 @@ export default async function EventPage({ params, searchParams }: EventPageProps
   const isFull = event.maxParticipants ? (event.participants?.length || 0) >= event.maxParticipants : false;
   const isFavorited = session?.user && event.favoritedBy?.includes(session.user.id);
 
-  // Récupérer les informations des participants
-  const participantUsers = event.participants
+  // Récupérer les participants (utilisateurs et invités)
+  const participantsResult = isCreator 
+    ? await getEventParticipants(event.id)
+    : { success: true, data: [] };
+  
+  const allParticipants = participantsResult.success && participantsResult.data 
+    ? participantsResult.data 
+    : [];
+
+  // Pour les non-créateurs, récupérer seulement les utilisateurs participants
+  const participantUsers = !isCreator && event.participants
     ? await Promise.all(
         event.participants.map(async (userId) => {
           const user = await getUserById(userId);
@@ -236,9 +246,9 @@ export default async function EventPage({ params, searchParams }: EventPageProps
               </CardHeader>
               <CardContent className="space-y-4">
                 {isCreator ? (
-                  <ParticipantManager
+                  <ParticipantManagerWrapper
                     eventId={event.id}
-                    participants={participantUsers.filter(Boolean) as User[]}
+                    participants={allParticipants as any}
                   />
                 ) : participantUsers.length > 0 ? (
                   <div className="space-y-2">
