@@ -26,6 +26,7 @@ import {
   getPhaseStandings,
 } from "./actions";
 import { getEventParticipants } from "./participant-actions";
+import BracketView from "./BracketView";
 
 type PlayerPortalProps = {
   event: Event;
@@ -37,9 +38,10 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
   const pathname = usePathname();
   
   // Déterminer l'onglet actif depuis l'URL
-  const getActiveTab = (): "current" | "history" | "standings" | "announcements" => {
+  const getActiveTab = (): "current" | "history" | "standings" | "bracket" | "announcements" => {
     if (pathname?.includes("/history")) return "history";
     if (pathname?.includes("/standings")) return "standings";
+    if (pathname?.includes("/bracket")) return "bracket";
     if (pathname?.includes("/announcements")) return "announcements";
     return "current";
   };
@@ -328,6 +330,17 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
             Classement
           </Button>
         </Link>
+        {currentPhase?.type === "bracket" && (
+          <Link href={`/events/${event.id}/portal/player/bracket`}>
+            <Button
+              variant={activeTab === "bracket" ? "default" : "ghost"}
+              className="rounded-b-none"
+            >
+              <Trophy className="h-4 w-4 mr-2" />
+              Bracket
+            </Button>
+          </Link>
+        )}
         <Link href={`/events/${event.id}/portal/player/announcements`}>
           <Button
             variant={activeTab === "announcements" ? "default" : "ghost"}
@@ -626,6 +639,40 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
               </CardContent>
             </Card>
           )}
+        </div>
+      )}
+
+      {activeTab === "bracket" && currentPhase?.type === "bracket" && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Bracket - {currentPhase.name}</CardTitle>
+              <CardDescription>
+                Visualisez l&apos;arbre d&apos;élimination directe
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const phaseMatches = matches.filter(m => m.phaseId === currentPhase.id);
+                
+                if (phaseMatches.length === 0) {
+                  return (
+                    <p className="text-center text-muted-foreground">
+                      Aucun match généré pour le bracket
+                    </p>
+                  );
+                }
+                
+                return (
+                  <BracketView
+                    matches={phaseMatches}
+                    getParticipantName={getPlayerName}
+                    readonly={true}
+                  />
+                );
+              })()}
+            </CardContent>
+          </Card>
         </div>
       )}
 

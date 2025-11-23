@@ -40,6 +40,7 @@ import {
 } from "./actions";
 import { getEventParticipants } from "./participant-actions";
 import AddParticipantForm from "../AddParticipantForm";
+import BracketView from "./BracketView";
 
 type OrganizerPortalProps = {
   event: Event;
@@ -894,6 +895,26 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
                       }
 
                       const phase = settings?.phases.find(p => p.id === selectedPhaseId);
+                      
+                      // Pour les phases bracket, afficher en mode bracket (toutes les rondes)
+                      if (phase?.type === "bracket") {
+                        const allPhaseMatches = matches.filter(m => m.phaseId === selectedPhaseId);
+                        return (
+                          <div className="space-y-2">
+                            <h3 className="font-semibold mb-4">
+                              {phase.name} - Vue Bracket
+                            </h3>
+                            <BracketView
+                              matches={allPhaseMatches}
+                              getParticipantName={getParticipantName}
+                              onEditMatch={handleEditMatch}
+                              onDeleteMatch={handleDeleteMatch}
+                            />
+                          </div>
+                        );
+                      }
+                      
+                      // Pour les phases suisses, afficher la liste de la ronde
                       return (
                         <div className="space-y-2">
                           <h3 className="font-semibold">
