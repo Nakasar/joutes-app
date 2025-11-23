@@ -16,7 +16,7 @@ type BracketViewProps = {
 
 type BracketRound = {
   round: number;
-  matches: MatchResult[];
+  matches: (MatchResult | null)[];
   label: string;
 };
 
@@ -27,29 +27,63 @@ export default function BracketView({
   onDeleteMatch,
   readonly = false,
 }: BracketViewProps) {
-  // Organiser les matchs par ronde
-  const rounds = new Map<number, MatchResult[]>();
+  // Calculer le nombre total de rondes nécessaires basé sur les matchs de la première ronde
+  const firstRoundMatches = matches.filter(m => (m.round || 1) === 1);
+  const numFirstRoundMatches = firstRoundMatches.length;
+  
+  // Si pas de matchs, ne rien afficher
+  if (numFirstRoundMatches === 0) {
+    return (
+      <div className="text-center text-muted-foreground py-8">
+        Aucun match dans cette phase
+      </div>
+    );
+  }
+  
+  // Calculer le nombre total de rondes (log2 du nombre de matchs de R1)
+  const totalRounds = Math.ceil(Math.log2(numFirstRoundMatches)) + 1;
+  
+  // Organiser les matchs existants par ronde
+  const matchesByRound = new Map<number, MatchResult[]>();
   matches.forEach((match) => {
     const round = match.round || 1;
-    if (!rounds.has(round)) {
-      rounds.set(round, []);
+    if (!matchesByRound.has(round)) {
+      matchesByRound.set(round, []);
     }
-    rounds.get(round)!.push(match);
+    matchesByRound.get(round)!.push(match);
   });
 
-  // Convertir en tableau et trier par ronde (ordre décroissant pour afficher de droite à gauche)
-  const sortedRounds: BracketRound[] = Array.from(rounds.entries())
-    .sort(([a], [b]) => b - a) // Inverser l'ordre pour afficher finale à droite
-    .map(([round, roundMatches]) => ({
-      round,
-      matches: roundMatches.sort((a, b) => {
-        // Trier par bracketPosition si disponible, sinon par matchId
-        const posA = a.bracketPosition || a.matchId;
-        const posB = b.bracketPosition || b.matchId;
-        return posA.localeCompare(posB);
-      }),
-      label: getRoundLabel(round, rounds.size),
-    }));
+  // Construire toutes les rondes avec cases vides pour matchs futurs
+  const allRounds: BracketRound[] = [];
+  for (let roundNum = 1; roundNum <= totalRounds; roundNum++) {
+    // Calculer le nombre de matchs attendus pour cette ronde
+    const expectedMatches = Math.ceil(numFirstRoundMatches / Math.pow(2, roundNum - 1));
+    
+    const existingMatches = matchesByRound.get(roundNum) || [];
+    const roundMatches: (MatchResult | null)[] = [];
+    
+    // Ajouter les matchs existants et remplir avec null pour les matchs futurs
+    for (let i = 0; i < expectedMatches; i++) {
+      roundMatches.push(existingMatches[i] || null);
+    }
+    
+    // Trier les matchs non-null par bracketPosition
+    const sortedMatches = roundMatches.map(m => m).sort((a, b) => {
+      if (!a) return 1;
+      if (!b) return -1;
+      const posA = a.bracketPosition || a.matchId;
+      const posB = b.bracketPosition || b.matchId;
+      return posA.localeCompare(posB);
+    });
+    
+    allRounds.push({
+      round: roundNum,
+      matches: sortedMatches,
+      label: getRoundLabel(roundNum, totalRounds),
+    });
+  }
+  
+  const sortedRounds = allRounds;
 
   function getRoundLabel(round: number, totalRounds: number): string {
     const roundsFromEnd = totalRounds - round + 1;
@@ -60,14 +94,6 @@ export default function BracketView({
     if (roundsFromEnd === 4) return "Huitièmes de finale";
     
     return `Ronde ${round}`;
-  }
-
-  if (matches.length === 0) {
-    return (
-      <div className="text-center text-muted-foreground py-8">
-        Aucun match dans cette phase
-      </div>
-    );
   }
 
   return (
@@ -84,99 +110,123 @@ export default function BracketView({
                 justifyContent: "center",
               }}
             >
-              {bracketRound.matches.map((match) => (
-                <Card key={match.matchId} className="p-4 hover:shadow-lg transition-shadow">
-                  <div className="space-y-3">
-                    {/* En-tête avec position et statut */}
-                    <div className="flex items-center justify-between">
-                      {match.bracketPosition && (
-                        <Badge variant="outline" className="text-xs">
-                          {match.bracketPosition}
+              {bracketRound.matches.map((match, idx) => {
+                // Si le match n'existe pas encore, afficher une case vide
+                if (!match) {
+                  return (
+                    <Card key={`empty-${bracketRound.round}-${idx}`} className="p-4 bg-muted/30">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Badge variant="outline" className="text-xs">
+                            À venir
+                          </Badge>
+                        </div>
+                        <div className="flex items-center justify-center p-2 rounded bg-muted/50 text-muted-foreground">
+                          <span className="text-sm">Vainqueur du match précédent</span>
+                        </div>
+                        <div className="flex items-center justify-center p-2 rounded bg-muted/50 text-muted-foreground">
+                          <span className="text-sm">Vainqueur du match précédent</span>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                }
+
+                // Afficher le match normal
+                return (
+                  <Card key={match.matchId} className="p-4 hover:shadow-lg transition-shadow">
+                    <div className="space-y-3">
+                      {/* En-tête avec position et statut */}
+                      <div className="flex items-center justify-between">
+                        {match.bracketPosition && (
+                          <Badge variant="outline" className="text-xs">
+                            {match.bracketPosition}
+                          </Badge>
+                        )}
+                        <Badge
+                          variant={
+                            match.status === "completed"
+                              ? "default"
+                              : match.status === "in-progress"
+                              ? "secondary"
+                              : "outline"
+                          }
+                          className="ml-auto"
+                        >
+                          {match.status === "pending" && "En attente"}
+                          {match.status === "in-progress" && "En cours"}
+                          {match.status === "completed" && "Terminé"}
+                          {match.status === "disputed" && "Contesté"}
                         </Badge>
-                      )}
-                      <Badge
-                        variant={
-                          match.status === "completed"
-                            ? "default"
-                            : match.status === "in-progress"
-                            ? "secondary"
-                            : "outline"
-                        }
-                        className="ml-auto"
-                      >
-                        {match.status === "pending" && "En attente"}
-                        {match.status === "in-progress" && "En cours"}
-                        {match.status === "completed" && "Terminé"}
-                        {match.status === "disputed" && "Contesté"}
-                      </Badge>
-                    </div>
+                      </div>
 
-                    {/* Joueur 1 */}
-                    <div
-                      className={`flex items-center justify-between p-2 rounded ${
-                        match.winnerId === match.player1Id
-                          ? "bg-green-100 dark:bg-green-900/30 font-semibold"
-                          : "bg-muted/50"
-                      }`}
-                    >
-                      <span className="truncate flex-1">
-                        {getParticipantName(match.player1Id)}
-                      </span>
-                      <span className="ml-2 font-bold text-lg">
-                        {match.player1Score}
-                      </span>
-                    </div>
-
-                    {/* Joueur 2 ou BYE */}
-                    {match.player2Id ? (
+                      {/* Joueur 1 */}
                       <div
                         className={`flex items-center justify-between p-2 rounded ${
-                          match.winnerId === match.player2Id
+                          match.winnerId === match.player1Id
                             ? "bg-green-100 dark:bg-green-900/30 font-semibold"
                             : "bg-muted/50"
                         }`}
                       >
                         <span className="truncate flex-1">
-                          {getParticipantName(match.player2Id)}
+                          {getParticipantName(match.player1Id)}
                         </span>
                         <span className="ml-2 font-bold text-lg">
-                          {match.player2Score}
+                          {match.player1Score}
                         </span>
                       </div>
-                    ) : (
-                      <div className="flex items-center justify-center p-2 rounded bg-muted/30 text-muted-foreground italic">
-                        BYE
-                      </div>
-                    )}
 
-                    {/* Actions (si pas readonly) */}
-                    {!readonly && (onEditMatch || onDeleteMatch) && (
-                      <div className="flex gap-2 pt-2 border-t">
-                        {onEditMatch && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => onEditMatch(match)}
-                            className="flex-1"
-                          >
-                            <Edit className="h-4 w-4 mr-1" />
-                            Modifier
-                          </Button>
-                        )}
-                        {onDeleteMatch && (
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => onDeleteMatch(match.matchId)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </Card>
-              ))}
+                      {/* Joueur 2 ou BYE */}
+                      {match.player2Id ? (
+                        <div
+                          className={`flex items-center justify-between p-2 rounded ${
+                            match.winnerId === match.player2Id
+                              ? "bg-green-100 dark:bg-green-900/30 font-semibold"
+                              : "bg-muted/50"
+                          }`}
+                        >
+                          <span className="truncate flex-1">
+                            {getParticipantName(match.player2Id)}
+                          </span>
+                          <span className="ml-2 font-bold text-lg">
+                            {match.player2Score}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center p-2 rounded bg-muted/30 text-muted-foreground italic">
+                          BYE
+                        </div>
+                      )}
+
+                      {/* Actions (si pas readonly) */}
+                      {!readonly && (onEditMatch || onDeleteMatch) && (
+                        <div className="flex gap-2 pt-2 border-t">
+                          {onEditMatch && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => onEditMatch(match)}
+                              className="flex-1"
+                            >
+                              <Edit className="h-4 w-4 mr-1" />
+                              Modifier
+                            </Button>
+                          )}
+                          {onDeleteMatch && (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => onDeleteMatch(match.matchId)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                );
+              })}
             </div>
           </div>
         ))}
