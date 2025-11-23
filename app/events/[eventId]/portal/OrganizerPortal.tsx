@@ -21,7 +21,8 @@ import {
   Trash2,
   Check,
   AlertCircle,
-  UserPlus
+  UserPlus,
+  MoreVertical
 } from "lucide-react";
 import {
   createOrUpdatePortalSettings,
@@ -32,6 +33,7 @@ import {
   createMatchResult,
   updateMatchResult,
   deleteMatchResult,
+  deleteRoundMatches,
   getAnnouncements,
   createAnnouncement,
   deleteAnnouncement,
@@ -41,6 +43,20 @@ import {
 import { getEventParticipants } from "./participant-actions";
 import AddParticipantForm from "../AddParticipantForm";
 import BracketView from "./BracketView";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type OrganizerPortalProps = {
   event: Event;
@@ -72,6 +88,7 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
   const [showMatchForm, setShowMatchForm] = useState(false);
   const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
   const [editingMatch, setEditingMatch] = useState<MatchResult | null>(null);
+  const [showDeleteRoundDialog, setShowDeleteRoundDialog] = useState(false);
 
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -359,6 +376,85 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
         setError(result.error || "Erreur lors de la génération des matchs");
       }
     });
+  };
+
+  // Vérifier si on peut supprimer les matchs de la ronde sélectionnée
+  const canDeleteRoundMatches = () => {
+    if (!selectedPhaseId || !selectedRound || !settings) return false;
+
+    const selectedRoundNum = parseInt(selectedRound);
+    const selectedPhase = settings.phases.find(p => p.id === selectedPhaseId);
+    const selectedPhaseIndex = settings.phases.findIndex(p => p.id === selectedPhaseId);
+    if (!selectedPhase) return false;
+
+    // Pour chaque phase, vérifier s'il existe des rondes qui viennent après la ronde sélectionnée
+    for (const [index, phase] of settings.phases.entries()) {
+      const phaseMatches = matches.filter(m => m.phaseId === phase.id);
+      
+      if (phase.id === selectedPhaseId) {
+        // Même phase : vérifier s'il existe des rondes ultérieures
+        const hasLaterRounds = phaseMatches.some(m => (m.round || 1) > selectedRoundNum);
+        if (hasLaterRounds) return false;
+      } else if (index > selectedPhaseIndex) {
+        // Phase ultérieure : si elle a des matchs, on ne peut pas supprimer
+        if (phaseMatches.length > 0) return false;
+      }
+    }
+
+    return true;
+  };
+
+  // Supprimer tous les matchs d'une ronde
+  const handleDeleteRoundMatches = () => {
+    if (!selectedPhaseId || !selectedRound) return;
+
+    startTransition(async () => {
+      setError(null);
+      const result = await deleteRoundMatches(event.id, selectedPhaseId, parseInt(selectedRound));
+
+      if (result.success) {
+        // Mettre à jour la liste des matchs
+        setMatches(matches.filter(m => !(m.phaseId === selectedPhaseId && (m.round || 1) === parseInt(selectedRound))));
+        setSuccess(`Tous les matchs de la ronde ${selectedRound} ont été supprimés`);
+        setShowDeleteRoundDialog(false);
+      } else {
+        setError(result.error || "Erreur lors de la suppression des matchs");
+      }
+    });
+  };
+
+  // Vérifier si on peut générer les matchs
+  const canGenerateMatches = () => {
+    if (!settings?.currentPhaseId) return false;
+
+    const currentPhase = settings.phases.find(p => p.id === settings.currentPhaseId);
+    if (!currentPhase) return false;
+
+    const phaseMatches = matches.filter(m => m.phaseId === settings.currentPhaseId);
+    
+    // Si pas de matchs, on peut générer la première ronde
+    if (phaseMatches.length === 0) return true;
+
+    // Obtenir la ronde maximale
+    const maxRound = Math.max(...phaseMatches.map(m => m.round || 1));
+    
+    // Vérifier que tous les matchs de la dernière ronde ont un score renseigné
+    const lastRoundMatches = phaseMatches.filter(m => (m.round || 1) === maxRound);
+    const allMatchesHaveScores = lastRoundMatches.every(m => 
+      m.player1Score !== undefined && 
+      m.player2Score !== undefined && 
+      m.status === 'completed'
+    );
+
+    if (!allMatchesHaveScores) return false;
+
+    // Pour les rondes suisses, vérifier qu'il reste des rondes à jouer
+    if (currentPhase.type === 'swiss') {
+      return currentPhase.rounds ? maxRound < currentPhase.rounds : false;
+    }
+
+    // Pour les brackets, on peut toujours générer la ronde suivante
+    return true;
   };
 
   // Créer une annonce
@@ -746,7 +842,7 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
           )}
 
           {/* Sélection de phase et génération */}
-          {settings.currentPhaseId && (
+          {settings.currentPhaseId && canGenerateMatches() && (
             <Card>
               <CardHeader>
                 <CardTitle>Génération automatique</CardTitle>
@@ -780,10 +876,32 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
                     Créez et gérez les matchs de votre tournoi
                   </CardDescription>
                 </div>
-                <Button onClick={() => setShowMatchForm(!showMatchForm)} size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Créer un match manuellement
-                </Button>
+                <div className="flex gap-2">
+                  {selectedPhaseId && selectedRound && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <MoreVertical className="h-4 w-4 mr-2" />
+                          Actions
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem 
+                          onClick={() => canDeleteRoundMatches() && setShowDeleteRoundDialog(true)}
+                          className="text-destructive"
+                          disabled={!canDeleteRoundMatches()}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Supprimer tous les matchs de la ronde
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                  <Button onClick={() => setShowMatchForm(!showMatchForm)} size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Créer un match manuellement
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1091,6 +1209,35 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
               )}
             </CardContent>
           </Card>
+
+          {/* Dialog de confirmation de suppression de ronde */}
+          <Dialog open={showDeleteRoundDialog} onOpenChange={setShowDeleteRoundDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Supprimer tous les matchs de la ronde</DialogTitle>
+                <DialogDescription>
+                  Êtes-vous sûr de vouloir supprimer tous les matchs de la ronde {selectedRound} ?
+                  Cette action est irréversible.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDeleteRoundDialog(false)}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteRoundMatches}
+                  disabled={isPending}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Supprimer
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       )}
 

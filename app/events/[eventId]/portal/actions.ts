@@ -666,6 +666,37 @@ export async function deleteMatchResult(eventId: string, matchId: string) {
   }
 }
 
+export async function deleteRoundMatches(eventId: string, phaseId: string, round: number) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    // Vérifier que l'utilisateur est le créateur de l'événement
+    const isCreator = await isEventCreator(eventId, session.user.id);
+    if (!isCreator) {
+      return { success: false, error: "Seul le créateur de l&apos;événement peut supprimer des matchs" };
+    }
+
+    const collection = db.collection<MatchResult & { eventId: string }>(MATCH_RESULTS_COLLECTION);
+
+    const result = await collection.deleteMany({ 
+      eventId, 
+      phaseId, 
+      round 
+    });
+
+    return { 
+      success: true,
+      data: { deletedCount: result.deletedCount }
+    };
+  } catch (error) {
+    console.error("Erreur lors de la suppression des matchs de la ronde:", error);
+    return { success: false, error: "Erreur lors de la suppression des matchs de la ronde" };
+  }
+}
+
 // =====================
 // ANNONCES
 // =====================
