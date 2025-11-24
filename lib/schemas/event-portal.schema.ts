@@ -28,7 +28,7 @@ export const matchResultSchema = z.object({
   player2Name: z.string().optional(), // Nom du joueur 2 (ajouté par agrégation)
   player1Score: z.number().min(0),
   player2Score: z.number().min(0),
-  winnerId: z.string().optional(), // ID du gagnant
+  winnerId: z.string().optional().nullable(), // ID du gagnant
   round: z.number().min(1).optional(), // Numéro de ronde (pour les rondes suisses)
   bracketPosition: z.string().optional(), // Position dans le bracket (ex: "QF1", "SF1", "F")
   status: z.enum(['pending', 'in-progress', 'completed', 'disputed']).default('pending'),
@@ -86,7 +86,6 @@ export const reportMatchResultSchema = z.object({
   matchId: z.string(),
   player1Score: z.number().min(0),
   player2Score: z.number().min(0),
-  winnerId: z.string().optional(),
 });
 
 // Schéma pour confirmer un résultat
