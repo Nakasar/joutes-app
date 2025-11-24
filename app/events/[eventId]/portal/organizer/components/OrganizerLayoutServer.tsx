@@ -1,5 +1,4 @@
 import { ReactNode } from "react";
-import Link from "next/link";
 import { Event } from "@/lib/types/Event";
 import { EventPortalSettings } from "@/lib/schemas/event-portal.schema";
 import { Alert, AlertDescription } from "@/components/ui/alert";

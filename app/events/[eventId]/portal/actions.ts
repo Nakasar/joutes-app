@@ -20,6 +20,7 @@ import {
 import { getEventById } from "@/lib/db/events";
 import { calculateStandings, generateBracketPosition, generateEliminationBracket, generateNextBracketRound, generateSwissPairings } from "@/lib/utils/pairing";
 import { getEventParticipants } from "./participant-actions";
+import { inspect } from "util";
 
 const PORTAL_SETTINGS_COLLECTION = "event-portal-settings";
 const MATCH_RESULTS_COLLECTION = "event-match-results";
@@ -344,10 +345,16 @@ export async function getMatchResults(eventId: string, phaseId?: string) {
                             guest: { $arrayElemAt: ["$player1GuestInfo", 0] }
                           },
                           in: {
-                            $concat: [
-                              "$$guest.username",
-                              "#",
-                              "$$guest.discriminator"
+                            $cond: [
+                              { $ne: [{ $ifNull: ["$$guest.discriminator", null] }, null] },
+                              {
+                                $concat: [
+                                  "$$guest.username",
+                                  "#",
+                                  "$$guest.discriminator"
+                                ]
+                              },
+                              "$$guest.username"
                             ]
                           }
                         }
@@ -389,10 +396,16 @@ export async function getMatchResults(eventId: string, phaseId?: string) {
                             guest: { $arrayElemAt: ["$player2GuestInfo", 0] }
                           },
                           in: {
-                            $concat: [
-                              "$$guest.username",
-                              "#",
-                              "$$guest.discriminator"
+                            $cond: [
+                              { $ne: [{ $ifNull: ["$$guest.discriminator", null] }, null] },
+                              {
+                                $concat: [
+                                  "$$guest.username",
+                                  "#",
+                                  "$$guest.discriminator"
+                                ]
+                              },
+                              "$$guest.username"
                             ]
                           }
                         }
@@ -1029,6 +1042,7 @@ export async function generateMatchesForPhase(eventId: string, phaseId: string) 
         matches: newMatches.map(m => ({
           ...m,
           id: m.matchId,
+          _id: undefined,
         })),
       }
     };

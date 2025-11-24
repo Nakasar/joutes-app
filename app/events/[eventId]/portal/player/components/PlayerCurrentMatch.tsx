@@ -17,15 +17,13 @@ type PlayerCurrentMatchProps = {
   settings: EventPortalSettings | null | undefined;
   userId: string;
   matches: MatchResult[];
-  participants: any[];
 };
 
 export default function PlayerCurrentMatch({ 
   event, 
   settings, 
   userId, 
-  matches, 
-  participants
+  matches,
 }: PlayerCurrentMatchProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();

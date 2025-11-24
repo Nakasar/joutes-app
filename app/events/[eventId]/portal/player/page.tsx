@@ -3,7 +3,6 @@ import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events";
 import { getPortalSettings, getMatchResults } from "../actions";
-import { getEventParticipants } from "../participant-actions";
 import PlayerLayoutServer from "./components/PlayerLayoutServer";
 import PlayerCurrentMatch from "./components/PlayerCurrentMatch";
 
@@ -51,9 +50,6 @@ export default async function PlayerPortalPage({ params }: PlayerPortalPageProps
   const matchesResult = await getMatchResults(eventId);
   const matches = matchesResult.success ? matchesResult.data || [] : [];
 
-  const participantsResult = await getEventParticipants(eventId);
-  const participants = participantsResult.success ? participantsResult.data || [] : [];
-
   return (
     <PlayerLayoutServer event={event} settings={settings}>
       <PlayerCurrentMatch
@@ -61,7 +57,6 @@ export default async function PlayerPortalPage({ params }: PlayerPortalPageProps
         settings={settings}
         userId={session.user.id}
         matches={matches}
-        participants={participants}
       />
     </PlayerLayoutServer>
   );
