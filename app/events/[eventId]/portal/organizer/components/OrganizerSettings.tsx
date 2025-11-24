@@ -18,7 +18,7 @@ import { useRouter } from "next/navigation";
 
 type OrganizerSettingsProps = {
   event: Event;
-  settings: EventPortalSettings | null;
+  settings?: EventPortalSettings | null;
 };
 
 export default function OrganizerSettings({ event, settings }: OrganizerSettingsProps) {
