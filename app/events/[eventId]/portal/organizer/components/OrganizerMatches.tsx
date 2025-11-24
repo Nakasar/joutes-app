@@ -547,6 +547,71 @@ export default function OrganizerMatches({
         </CardContent>
       </Card>
 
+      {/* Dialog de modification de match */}
+      <Dialog open={!!editingMatch} onOpenChange={(open) => !open && setEditingMatch(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier le match</DialogTitle>
+            <DialogDescription>
+              {editingMatch && (
+                <>
+                  {getParticipantName(editingMatch.player1Id)} vs {getParticipantName(editingMatch.player2Id)}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {editingMatch && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">
+                    Score {getParticipantName(editingMatch.player1Id)}
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={editingMatch.player1Score}
+                    onChange={(e) => setEditingMatch({
+                      ...editingMatch,
+                      player1Score: parseInt(e.target.value) || 0,
+                    })}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">
+                    Score {getParticipantName(editingMatch.player2Id)}
+                  </label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={editingMatch.player2Score}
+                    onChange={(e) => setEditingMatch({
+                      ...editingMatch,
+                      player2Score: parseInt(e.target.value) || 0,
+                    })}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditingMatch(null)}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={handleSaveMatchEdit}
+              disabled={isPending}
+            >
+              <Check className="h-4 w-4 mr-2" />
+              Enregistrer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={showDeleteRoundDialog} onOpenChange={setShowDeleteRoundDialog}>
         <DialogContent>
           <DialogHeader>
