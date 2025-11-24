@@ -519,10 +519,14 @@ export async function reportMatchResult(eventId: string, data: unknown) {
 
     const requireConfirmation = settings?.requireConfirmation ?? false;
 
+    const winnerId = validated.player1Score > validated.player2Score ? match.player1Id
+      : validated.player2Score > validated.player1Score ? match.player2Id
+      : undefined;
+
     const updateData: Partial<MatchResult> = {
       player1Score: validated.player1Score,
       player2Score: validated.player2Score,
-      winnerId: validated.winnerId,
+      winnerId,
       reportedBy: session.user.id,
       status: requireConfirmation ? 'in-progress' : 'completed',
       updatedAt: new Date().toISOString(),
@@ -618,6 +622,16 @@ export async function updateMatchResult(eventId: string, matchId: string, data: 
       return { success: false, error: "Seul le créateur de l'événement peut modifier un résultat" };
     }
 
+    const match = await db.collection<MatchResult & { eventId: string }>(MATCH_RESULTS_COLLECTION).findOne({ matchId, eventId });
+
+    if (!match) {
+      return { success: false, error: "Match non trouvé" };
+    }
+
+    const winnerId = validated.player1Score > validated.player2Score ? match.player1Id
+      : validated.player2Score > validated.player1Score ? match.player2Id
+      : null;
+
     const collection = db.collection<MatchResult & { eventId: string }>(MATCH_RESULTS_COLLECTION);
 
     await collection.updateOne(
@@ -626,7 +640,7 @@ export async function updateMatchResult(eventId: string, matchId: string, data: 
         $set: {
           player1Score: validated.player1Score,
           player2Score: validated.player2Score,
-          winnerId: validated.winnerId,
+          winnerId,
           status: 'completed',
           reportedBy: session.user.id,
           confirmedBy: session.user.id,
@@ -764,7 +778,7 @@ export async function createAnnouncement(eventId: string, data: unknown) {
 
     await collection.insertOne(announcement as Announcement & { _id?: ObjectId });
 
-    return { success: true, data: announcement };
+    return { success: true, data: { ... announcement, _id: undefined, id: announcement.id.toString(), createdBy: announcement.createdBy.toString() } };
   } catch (error) {
     console.error("Erreur lors de la création de l&apos;annonce:", error);
     if (error instanceof Error) {
@@ -789,7 +803,7 @@ export async function deleteAnnouncement(eventId: string, announcementId: string
 
     const collection = db.collection<Announcement & { eventId: string }>(ANNOUNCEMENTS_COLLECTION);
 
-    await collection.deleteOne({ id: announcementId, eventId });
+    await collection.deleteOne({ _id: new ObjectId(announcementId), eventId });
 
     return { success: true };
   } catch (error) {
