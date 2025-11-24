@@ -1,5 +1,3 @@
-"use client";
-
 import { Event } from "@/lib/types/Event";
 import { EventPortalSettings, MatchResult } from "@/lib/schemas/event-portal.schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

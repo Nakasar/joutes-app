@@ -1,5 +1,3 @@
-"use client";
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AddParticipantForm from "../../../AddParticipantForm";
 
@@ -22,8 +20,6 @@ export default function OrganizerParticipants({ eventId, participants }: Organiz
           <AddParticipantForm
             eventId={eventId}
             participants={participants}
-            onParticipantAdded={() => {}}
-            onParticipantRemoved={() => {}}
           />
         </CardContent>
       </Card>

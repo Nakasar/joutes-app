@@ -1,16 +1,12 @@
-"use client";
-
-import { Event } from "@/lib/types/Event";
 import { Announcement } from "@/lib/schemas/event-portal.schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 type PlayerAnnouncementsProps = {
-  event: Event;
   announcements: Announcement[];
 };
 
-export default function PlayerAnnouncements({ event, announcements }: PlayerAnnouncementsProps) {
+export default function PlayerAnnouncements({ announcements }: PlayerAnnouncementsProps) {
   return (
     <div className="space-y-6">
       <Card>
