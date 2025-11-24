@@ -82,12 +82,16 @@ export default function PlayerDetailsModal({
     (m) => m.player1Id === playerId || m.player2Id === playerId
   );
 
+  // Pour les statistiques, ne compter que les matchs terminés
   const completedMatches = playerMatches.filter((m) => m.status === "completed");
   const wins = completedMatches.filter((m) => m.winnerId === playerId).length;
   const losses = completedMatches.filter(
     (m) => m.winnerId && m.winnerId !== playerId
   ).length;
   const draws = completedMatches.filter((m) => !m.winnerId).length;
+
+  // Pour l'historique, afficher tous les matchs (y compris en cours)
+  const allMatches = playerMatches;
 
   const getOpponentName = (match: MatchResult): string => {
     const opponentId =
@@ -189,18 +193,18 @@ export default function PlayerDetailsModal({
             <CardHeader>
               <CardTitle>Historique des matchs</CardTitle>
               <CardDescription>
-                {completedMatches.length} match{completedMatches.length > 1 ? "s" : ""}{" "}
-                terminé{completedMatches.length > 1 ? "s" : ""}
+                {allMatches.length} match{allMatches.length > 1 ? "s" : ""}{" "}
+                ({completedMatches.length} terminé{completedMatches.length > 1 ? "s" : ""})
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {completedMatches.length === 0 ? (
+              {allMatches.length === 0 ? (
                 <p className="text-center text-muted-foreground py-4">
-                  Aucun match terminé
+                  Aucun match
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {completedMatches
+                  {allMatches
                     .sort((a, b) => {
                       const aDate = new Date(a.createdAt || 0).getTime();
                       const bDate = new Date(b.createdAt || 0).getTime();
@@ -210,12 +214,16 @@ export default function PlayerDetailsModal({
                       const { result, playerScore, opponentScore } =
                         getMatchResult(match);
                       const opponentName = getOpponentName(match);
+                      const isCompleted = match.status === "completed";
+                      const isInProgress = match.status === "in-progress";
 
                       return (
                         <div
                           key={match.matchId}
                           className={`border rounded-lg p-3 ${
-                            result === "win"
+                            !isCompleted
+                              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/10"
+                              : result === "win"
                               ? "border-green-500 bg-green-50 dark:bg-green-900/10"
                               : result === "loss"
                               ? "border-red-500 bg-red-50 dark:bg-red-900/10"
@@ -237,24 +245,32 @@ export default function PlayerDetailsModal({
                               <div className="text-2xl font-bold">
                                 {playerScore} - {opponentScore}
                               </div>
-                              <Badge
-                                variant={
-                                  result === "win"
-                                    ? "default"
-                                    : result === "loss"
-                                    ? "destructive"
-                                    : "secondary"
-                                }
-                              >
-                                {result === "win" && (
-                                  <>
-                                    <Trophy className="h-3 w-3 mr-1" />
-                                    Victoire
-                                  </>
-                                )}
-                                {result === "loss" && "Défaite"}
-                                {result === "draw" && "Égalité"}
-                              </Badge>
+                              {isCompleted ? (
+                                <Badge
+                                  variant={
+                                    result === "win"
+                                      ? "default"
+                                      : result === "loss"
+                                      ? "destructive"
+                                      : "secondary"
+                                  }
+                                >
+                                  {result === "win" && (
+                                    <>
+                                      <Trophy className="h-3 w-3 mr-1" />
+                                      Victoire
+                                    </>
+                                  )}
+                                  {result === "loss" && "Défaite"}
+                                  {result === "draw" && "Égalité"}
+                                </Badge>
+                              ) : (
+                                <Badge
+                                  variant={isInProgress ? "default" : "outline"}
+                                >
+                                  {isInProgress ? "En cours" : "En attente"}
+                                </Badge>
+                              )}
                             </div>
                           </div>
                         </div>

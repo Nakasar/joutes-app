@@ -1126,10 +1126,32 @@ export async function getPhaseStandings(eventId: string, phaseId: string) {
 
     // Récupérer les matchs de la phase
     const matchesCollection = db.collection<MatchResult & { eventId: string }>(MATCH_RESULTS_COLLECTION);
-    const matches = await matchesCollection.find({ eventId, phaseId }).toArray();
+    const allMatches = await matchesCollection.find({ eventId, phaseId }).toArray();
 
-    // Calculer le classement
-    const standings = calculateStandings(playerIds, matches as any);
+    // Déterminer la dernière ronde complète
+    let maxCompletedRound = 0;
+    if (allMatches.length > 0) {
+      const rounds = [...new Set(allMatches.map(m => m.round || 1))].sort((a, b) => a - b);
+      
+      // Trouver la dernière ronde où tous les matchs sont terminés
+      for (const round of rounds) {
+        const roundMatches = allMatches.filter(m => (m.round || 1) === round);
+        const allCompleted = roundMatches.every(m => m.status === "completed");
+        
+        if (allCompleted) {
+          maxCompletedRound = round;
+        } else {
+          // Dès qu'une ronde n'est pas complète, on arrête
+          break;
+        }
+      }
+    }
+
+    // Ne garder que les matchs des rondes terminées pour le classement
+    const completedMatches = allMatches.filter(m => (m.round || 1) <= maxCompletedRound);
+
+    // Calculer le classement uniquement avec les matchs des rondes terminées
+    const standings = calculateStandings(playerIds, completedMatches as any);
 
     // Enrichir avec les informations des participants
     const enrichedStandings = standings.map(standing => {
