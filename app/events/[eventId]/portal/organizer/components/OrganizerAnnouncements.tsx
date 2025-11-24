@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Event } from "@/lib/types/Event";
+import { Announcement } from "@/lib/schemas/event-portal.schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,16 +12,17 @@ import {
   createAnnouncement,
   deleteAnnouncement,
 } from "../../actions";
-import { useOrganizerContext } from "./OrganizerContext";
 
 type OrganizerAnnouncementsProps = {
   event: Event;
+  announcements: Announcement[];
 };
 
 export default function OrganizerAnnouncements({
   event,
+  announcements,
 }: OrganizerAnnouncementsProps) {
-  const { announcements, onDataUpdate } = useOrganizerContext();
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [showAnnouncementForm, setShowAnnouncementForm] = useState(false);
   const [announcementForm, setAnnouncementForm] = useState({
@@ -39,14 +42,14 @@ export default function OrganizerAnnouncements({
         priority: "normal",
       });
       setShowAnnouncementForm(false);
-      onDataUpdate();
+      router.refresh();
     });
   };
 
   const handleDeleteAnnouncement = (announcementId: string) => {
     startTransition(async () => {
       await deleteAnnouncement(event.id, announcementId);
-      onDataUpdate();
+      router.refresh();
     });
   };
 

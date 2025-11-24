@@ -2,6 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 import db from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import {
@@ -105,6 +106,8 @@ export async function createOrUpdatePortalSettings(data: unknown) {
         createdAt: now,
       } as EventPortalSettings);
     }
+
+    revalidatePath(`/events/${validated.eventId}/portal/organizer`);
 
     return { success: true, data: settings };
   } catch (error) {

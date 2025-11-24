@@ -2,8 +2,8 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events";
-import { getPortalSettings } from "../../actions";
-import OrganizerLayout from "../components/OrganizerLayout";
+import { getPortalSettings, getAnnouncements } from "../../actions";
+import OrganizerLayoutServer from "../components/OrganizerLayoutServer";
 import OrganizerAnnouncements from "../components/OrganizerAnnouncements";
 
 type OrganizerAnnouncementsPageProps = {
@@ -37,10 +37,13 @@ export default async function OrganizerAnnouncementsPage({ params }: OrganizerAn
   const settingsResult = await getPortalSettings(eventId);
   const settings = settingsResult.success ? settingsResult.data : null;
 
+  const announcementsResult = await getAnnouncements(eventId);
+  const announcements = announcementsResult.success ? announcementsResult.data || [] : [];
+
   return (
-    <OrganizerLayout event={event} settings={settings} userId={session.user.id}>
-      <OrganizerAnnouncements event={event} />
-    </OrganizerLayout>
+    <OrganizerLayoutServer event={event} settings={settings}>
+      <OrganizerAnnouncements event={event} announcements={announcements} />
+    </OrganizerLayoutServer>
   );
 }
 

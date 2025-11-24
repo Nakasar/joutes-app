@@ -2,15 +2,13 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import AddParticipantForm from "../../../AddParticipantForm";
-import { useOrganizerContext } from "./OrganizerContext";
 
 type OrganizerParticipantsProps = {
   eventId: string;
+  participants: any[];
 };
 
-export default function OrganizerParticipants({ eventId }: OrganizerParticipantsProps) {
-  const { participants, onDataUpdate } = useOrganizerContext();
-
+export default function OrganizerParticipants({ eventId, participants }: OrganizerParticipantsProps) {
   return (
     <div className="space-y-6">
       <Card>
@@ -24,8 +22,8 @@ export default function OrganizerParticipants({ eventId }: OrganizerParticipants
           <AddParticipantForm
             eventId={eventId}
             participants={participants}
-            onParticipantAdded={onDataUpdate}
-            onParticipantRemoved={onDataUpdate}
+            onParticipantAdded={() => {}}
+            onParticipantRemoved={() => {}}
           />
         </CardContent>
       </Card>

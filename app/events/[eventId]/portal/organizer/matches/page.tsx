@@ -2,8 +2,9 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events";
-import { getPortalSettings } from "../../actions";
-import OrganizerLayout from "../components/OrganizerLayout";
+import { getPortalSettings, getMatchResults } from "../../actions";
+import { getEventParticipants } from "../../participant-actions";
+import OrganizerLayoutServer from "../components/OrganizerLayoutServer";
 import OrganizerMatches from "../components/OrganizerMatches";
 
 type OrganizerMatchesPageProps = {
@@ -37,14 +38,30 @@ export default async function OrganizerMatchesPage({ params }: OrganizerMatchesP
   const settingsResult = await getPortalSettings(eventId);
   const settings = settingsResult.success ? settingsResult.data : null;
 
-  return (
-    <OrganizerLayout event={event} settings={settings} userId={session.user.id}>
-      {settings ? (
-        <OrganizerMatches event={event} userId={session.user.id} />
-      ) : (
+  if (!settings) {
+    return (
+      <OrganizerLayoutServer event={event} settings={null}>
         <p>Veuillez initialiser le portail dans les paramètres</p>
-      )}
-    </OrganizerLayout>
+      </OrganizerLayoutServer>
+    );
+  }
+
+  const matchesResult = await getMatchResults(eventId);
+  const matches = matchesResult.success ? matchesResult.data || [] : [];
+
+  const participantsResult = await getEventParticipants(eventId);
+  const participants = participantsResult.success ? participantsResult.data || [] : [];
+
+  return (
+    <OrganizerLayoutServer event={event} settings={settings}>
+      <OrganizerMatches
+        event={event}
+        settings={settings}
+        matches={matches}
+        participants={participants}
+        userId={session.user.id}
+      />
+    </OrganizerLayoutServer>
   );
 }
 

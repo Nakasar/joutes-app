@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Event } from "@/lib/types/Event";
+import { EventPortalSettings } from "@/lib/schemas/event-portal.schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,14 +14,15 @@ import {
   updatePhaseStatus,
   setCurrentPhase,
 } from "../../actions";
-import { useOrganizerContext } from "./OrganizerContext";
+import { useRouter } from "next/navigation";
 
 type OrganizerSettingsProps = {
   event: Event;
+  settings: EventPortalSettings | null;
 };
 
-export default function OrganizerSettings({ event }: OrganizerSettingsProps) {
-  const { settings, onDataUpdate } = useOrganizerContext();
+export default function OrganizerSettings({ event, settings }: OrganizerSettingsProps) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [showPhaseForm, setShowPhaseForm] = useState(false);
   const [phaseForm, setPhaseForm] = useState({
@@ -38,7 +40,7 @@ export default function OrganizerSettings({ event }: OrganizerSettingsProps) {
         allowSelfReporting: false,
         requireConfirmation: true,
       });
-      onDataUpdate();
+      router.refresh();
     });
   };
 
@@ -59,21 +61,21 @@ export default function OrganizerSettings({ event }: OrganizerSettingsProps) {
         topCut: 8,
       });
       setShowPhaseForm(false);
-      onDataUpdate();
+      router.refresh();
     });
   };
 
   const handleUpdatePhaseStatus = (phaseId: string, status: "not-started" | "in-progress" | "completed") => {
     startTransition(async () => {
       await updatePhaseStatus(event.id, phaseId, status);
-      onDataUpdate();
+      router.refresh();
     });
   };
 
   const handleSetCurrentPhase = (phaseId: string) => {
     startTransition(async () => {
       await setCurrentPhase(event.id, phaseId);
-      onDataUpdate();
+      router.refresh();
     });
   };
 

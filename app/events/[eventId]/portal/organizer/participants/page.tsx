@@ -3,7 +3,8 @@ import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events";
 import { getPortalSettings } from "../../actions";
-import OrganizerLayout from "../components/OrganizerLayout";
+import { getEventParticipants } from "../../participant-actions";
+import OrganizerLayoutServer from "../components/OrganizerLayoutServer";
 import OrganizerParticipants from "../components/OrganizerParticipants";
 
 type OrganizerParticipantsPageProps = {
@@ -37,9 +38,12 @@ export default async function OrganizerParticipantsPage({ params }: OrganizerPar
   const settingsResult = await getPortalSettings(eventId);
   const settings = settingsResult.success ? settingsResult.data : null;
 
+  const participantsResult = await getEventParticipants(eventId);
+  const participants = participantsResult.success ? participantsResult.data || [] : [];
+
   return (
-    <OrganizerLayout event={event} settings={settings} userId={session.user.id}>
-      <OrganizerParticipants eventId={event.id} />
-    </OrganizerLayout>
+    <OrganizerLayoutServer event={event} settings={settings}>
+      <OrganizerParticipants eventId={event.id} participants={participants} />
+    </OrganizerLayoutServer>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -37,6 +38,7 @@ export default function AddParticipantForm({
   onParticipantAdded,
   onParticipantRemoved,
 }: AddParticipantFormProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -103,6 +105,7 @@ export default function AddParticipantForm({
         }
         resetForm();
         onParticipantAdded?.();
+        router.refresh();
         setTimeout(() => {
           setSuccess(null);
           setOpen(false);
@@ -126,6 +129,7 @@ export default function AddParticipantForm({
 
       if (result.success) {
         onParticipantRemoved?.();
+        router.refresh();
         setConfirmRemoveOpen(false);
         setParticipantToRemove(null);
       } else {

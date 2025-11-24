@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events";
 import { getPortalSettings } from "../actions";
-import OrganizerLayout from "./components/OrganizerLayout";
+import OrganizerLayoutServer from "./components/OrganizerLayoutServer";
 import OrganizerSettings from "./components/OrganizerSettings";
 
 type OrganizerPortalPageProps = {
@@ -38,9 +38,9 @@ export default async function OrganizerPortalPage({ params }: OrganizerPortalPag
   const settings = settingsResult.success ? settingsResult.data : null;
 
   return (
-    <OrganizerLayout event={event} settings={settings} userId={session.user.id}>
-      <OrganizerSettings event={event} />
-    </OrganizerLayout>
+    <OrganizerLayoutServer event={event} settings={settings}>
+      <OrganizerSettings event={event} settings={settings} />
+    </OrganizerLayoutServer>
   );
 }
 

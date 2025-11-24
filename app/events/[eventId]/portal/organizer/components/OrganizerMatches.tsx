@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Event } from "@/lib/types/Event";
-import { MatchResult } from "@/lib/schemas/event-portal.schema";
+import { EventPortalSettings, MatchResult } from "@/lib/schemas/event-portal.schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,10 +32,12 @@ import {
   generateMatchesForPhase,
 } from "../../actions";
 import BracketView from "../../BracketView";
-import { useOrganizerContext } from "./OrganizerContext";
 
 type OrganizerMatchesProps = {
   event: Event;
+  settings: EventPortalSettings;
+  matches: MatchResult[];
+  participants: any[];
   selectedPhaseId?: string;
   selectedRound?: string;
   userId: string;
@@ -42,11 +45,14 @@ type OrganizerMatchesProps = {
 
 export default function OrganizerMatches({
   event,
+  settings,
+  matches,
+  participants,
   selectedPhaseId,
   selectedRound,
   userId,
 }: OrganizerMatchesProps) {
-  const { settings, matches, participants, onDataUpdate } = useOrganizerContext();
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [showMatchForm, setShowMatchForm] = useState(false);
   const [editingMatch, setEditingMatch] = useState<MatchResult | null>(null);
@@ -62,7 +68,7 @@ export default function OrganizerMatches({
   });
 
   const getParticipantName = (participantId: string | null) => {
-    if (!participantId) return "Joueur inconnu";
+    if (!participantId) return "BYE";
     const participant = participants.find(p => p.id === participantId);
     if (!participant) return "Joueur inconnu";
     if (participant.type === "guest") return participant.username;
@@ -119,7 +125,7 @@ export default function OrganizerMatches({
   const handleGenerateMatches = (phaseId: string) => {
     startTransition(async () => {
       await generateMatchesForPhase(event.id, phaseId);
-      onDataUpdate();
+      router.refresh();
     });
   };
 
@@ -147,7 +153,7 @@ export default function OrganizerMatches({
         player2Score: 0,
         round: 1,
       });
-      onDataUpdate();
+      router.refresh();
     });
   };
 
@@ -170,14 +176,14 @@ export default function OrganizerMatches({
       });
 
       setEditingMatch(null);
-      onDataUpdate();
+      router.refresh();
     });
   };
 
   const handleDeleteMatch = (matchId: string) => {
     startTransition(async () => {
       await deleteMatchResult(event.id, matchId);
-      onDataUpdate();
+      router.refresh();
     });
   };
 
@@ -187,7 +193,7 @@ export default function OrganizerMatches({
     startTransition(async () => {
       await deleteRoundMatches(event.id, selectedPhaseId, parseInt(selectedRound));
       setShowDeleteRoundDialog(false);
-      onDataUpdate();
+      router.refresh();
     });
   };
 
