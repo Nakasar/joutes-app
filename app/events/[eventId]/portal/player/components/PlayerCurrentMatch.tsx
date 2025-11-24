@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Event } from "@/lib/types/Event";
 import { EventPortalSettings, MatchResult } from "@/lib/schemas/event-portal.schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +18,6 @@ type PlayerCurrentMatchProps = {
   userId: string;
   matches: MatchResult[];
   participants: any[];
-  onMatchUpdate: () => void;
 };
 
 export default function PlayerCurrentMatch({ 
@@ -25,9 +25,9 @@ export default function PlayerCurrentMatch({
   settings, 
   userId, 
   matches, 
-  participants,
-  onMatchUpdate 
+  participants
 }: PlayerCurrentMatchProps) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -86,7 +86,7 @@ export default function PlayerCurrentMatch({
       if (result.success) {
         setSuccess("Résultat rapporté avec succès");
         setReportForm(null);
-        onMatchUpdate();
+        router.refresh();
       } else {
         setError(result.error || "Erreur lors du rapport");
       }
@@ -100,7 +100,7 @@ export default function PlayerCurrentMatch({
 
       if (result.success) {
         setSuccess("Résultat confirmé");
-        onMatchUpdate();
+        router.refresh();
       } else {
         setError(result.error || "Erreur lors de la confirmation");
       }

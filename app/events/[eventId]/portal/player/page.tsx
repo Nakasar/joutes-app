@@ -2,8 +2,9 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events";
-import { getPortalSettings } from "../actions";
-import PlayerLayout from "./components/PlayerLayout";
+import { getPortalSettings, getMatchResults } from "../actions";
+import { getEventParticipants } from "../participant-actions";
+import PlayerLayoutServer from "./components/PlayerLayoutServer";
 import PlayerCurrentMatch from "./components/PlayerCurrentMatch";
 
 type PlayerPortalPageProps = {
@@ -47,18 +48,21 @@ export default async function PlayerPortalPage({ params }: PlayerPortalPageProps
   const settingsResult = await getPortalSettings(eventId);
   const settings = settingsResult.success && settingsResult.data ? settingsResult.data : null;
 
+  const matchesResult = await getMatchResults(eventId);
+  const matches = matchesResult.success ? matchesResult.data || [] : [];
+
+  const participantsResult = await getEventParticipants(eventId);
+  const participants = participantsResult.success ? participantsResult.data || [] : [];
+
   return (
-    <PlayerLayout event={event} settings={settings} userId={session.user.id}>
-      {({ matches, participants, onMatchUpdate }) => (
-        <PlayerCurrentMatch
-          event={event}
-          settings={settings}
-          userId={session.user.id}
-          matches={matches}
-          participants={participants}
-          onMatchUpdate={onMatchUpdate}
-        />
-      )}
-    </PlayerLayout>
+    <PlayerLayoutServer event={event} settings={settings}>
+      <PlayerCurrentMatch
+        event={event}
+        settings={settings}
+        userId={session.user.id}
+        matches={matches}
+        participants={participants}
+      />
+    </PlayerLayoutServer>
   );
 }

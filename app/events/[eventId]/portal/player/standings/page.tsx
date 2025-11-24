@@ -2,8 +2,8 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events";
-import { getPortalSettings } from "../../actions";
-import PlayerLayout from "../components/PlayerLayout";
+import { getPortalSettings, getMatchResults, getPhaseStandings } from "../../actions";
+import PlayerLayoutServer from "../components/PlayerLayoutServer";
 import PlayerStandings from "../components/PlayerStandings";
 
 type PlayerStandingsPageProps = {
@@ -38,17 +38,24 @@ export default async function PlayerStandingsPage({ params }: PlayerStandingsPag
   const settingsResult = await getPortalSettings(eventId);
   const settings = settingsResult.success ? settingsResult.data : null;
 
+  const matchesResult = await getMatchResults(eventId);
+  const matches = matchesResult.success ? matchesResult.data || [] : [];
+
+  let standings: any[] = [];
+  if (settings?.currentPhaseId) {
+    const standingsResult = await getPhaseStandings(eventId, settings.currentPhaseId);
+    standings = standingsResult.success ? standingsResult.data || [] : [];
+  }
+
   return (
-    <PlayerLayout event={event} settings={settings} userId={session.user.id}>
-      {({ matches, participants, standings }) => (
-        <PlayerStandings
-          event={event}
-          settings={settings}
-          userId={session.user.id}
-          matches={matches}
-          standings={standings}
-        />
-      )}
-    </PlayerLayout>
+    <PlayerLayoutServer event={event} settings={settings}>
+      <PlayerStandings
+        event={event}
+        settings={settings}
+        userId={session.user.id}
+        matches={matches}
+        standings={standings}
+      />
+    </PlayerLayoutServer>
   );
 }

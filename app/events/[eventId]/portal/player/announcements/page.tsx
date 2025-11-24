@@ -2,8 +2,8 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events";
-import { getPortalSettings } from "../../actions";
-import PlayerLayout from "../components/PlayerLayout";
+import { getPortalSettings, getAnnouncements } from "../../actions";
+import PlayerLayoutServer from "../components/PlayerLayoutServer";
 import PlayerAnnouncements from "../components/PlayerAnnouncements";
 
 type PlayerAnnouncementsPageProps = {
@@ -38,11 +38,12 @@ export default async function PlayerAnnouncementsPage({ params }: PlayerAnnounce
   const settingsResult = await getPortalSettings(eventId);
   const settings = settingsResult.success ? settingsResult.data : null;
 
+  const announcementsResult = await getAnnouncements(eventId);
+  const announcements = announcementsResult.success ? announcementsResult.data || [] : [];
+
   return (
-    <PlayerLayout event={event} settings={settings} userId={session.user.id}>
-      {({ announcements }) => (
-        <PlayerAnnouncements announcements={announcements} />
-      )}
-    </PlayerLayout>
+    <PlayerLayoutServer event={event} settings={settings}>
+      <PlayerAnnouncements announcements={announcements} />
+    </PlayerLayoutServer>
   );
 }
