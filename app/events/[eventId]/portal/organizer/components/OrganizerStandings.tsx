@@ -14,10 +14,9 @@ type OrganizerStandingsProps = {
   settings: EventPortalSettings;
   standings: any[];
   participants: any[];
-  matches: MatchResult[];
 };
 
-export default function OrganizerStandings({ event, settings, standings, participants, matches }: OrganizerStandingsProps) {
+export default function OrganizerStandings({ event, settings, standings, participants }: OrganizerStandingsProps) {
   const [selectedPlayer, setSelectedPlayer] = useState<{
     playerId: string;
     playerName: string;
@@ -202,7 +201,6 @@ export default function OrganizerStandings({ event, settings, standings, partici
           playerId={selectedPlayer.playerId}
           playerName={selectedPlayer.playerName}
           eventId={event.id}
-          matches={matches}
           participants={participants}
         />
       )}

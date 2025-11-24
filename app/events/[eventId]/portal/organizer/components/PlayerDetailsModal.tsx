@@ -15,8 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Trophy, Save, AlertCircle, CheckCircle } from "lucide-react";
-import { getPlayerNote, updatePlayerNote } from "../../actions";
+import { Trophy, Save, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
+import { getPlayerNote, updatePlayerNote, getMatchResults } from "../../actions";
 
 type PlayerDetailsModalProps = {
   open: boolean;
@@ -24,7 +24,6 @@ type PlayerDetailsModalProps = {
   playerId: string;
   playerName: string;
   eventId: string;
-  matches: MatchResult[];
   participants: any[];
 };
 
@@ -34,26 +33,48 @@ export default function PlayerDetailsModal({
   playerId,
   playerName,
   eventId,
-  matches,
   participants,
 }: PlayerDetailsModalProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [isLoading, setIsLoading] = useState(false);
   const [notes, setNotes] = useState("");
   const [originalNotes, setOriginalNotes] = useState("");
+  const [matches, setMatches] = useState<MatchResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Charger les notes au chargement
+  // Charger les notes et matchs au chargement
   useEffect(() => {
     if (open) {
+      setIsLoading(true);
       startTransition(async () => {
-        const result = await getPlayerNote(eventId, playerId);
-        if (result.success) {
-          setNotes(result.data || "");
-          setOriginalNotes(result.data || "");
+        try {
+          // Charger les notes
+          const notesResult = await getPlayerNote(eventId, playerId);
+          if (notesResult.success) {
+            setNotes(notesResult.data || "");
+            setOriginalNotes(notesResult.data || "");
+          }
+
+          // Charger les matchs
+          const matchesResult = await getMatchResults(eventId);
+          if (matchesResult.success && matchesResult.data) {
+            setMatches(matchesResult.data as MatchResult[]);
+          }
+        } catch (err) {
+          console.error("Erreur lors du chargement des données:", err);
+        } finally {
+          setIsLoading(false);
         }
       });
+    } else {
+      // Reset lors de la fermeture
+      setMatches([]);
+      setNotes("");
+      setOriginalNotes("");
+      setError(null);
+      setSuccess(null);
     }
   }, [open, eventId, playerId]);
 
@@ -134,6 +155,12 @@ export default function PlayerDetailsModal({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <>
           {/* Statistiques */}
           <Card>
             <CardHeader>
@@ -287,6 +314,8 @@ export default function PlayerDetailsModal({
               </div>
             </CardContent>
           </Card>
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>
