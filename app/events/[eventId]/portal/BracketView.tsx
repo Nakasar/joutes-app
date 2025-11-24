@@ -8,7 +8,7 @@ import type { MatchResult } from "@/lib/schemas/event-portal.schema";
 
 type BracketViewProps = {
   matches: MatchResult[];
-  getParticipantName: (id: string | null) => string;
+  getParticipantName?: (id: string | null) => string;
   onEditMatch?: (match: MatchResult) => void;
   onDeleteMatch?: (matchId: string) => void;
   readonly?: boolean;
@@ -27,6 +27,26 @@ export default function BracketView({
   onDeleteMatch,
   readonly = false,
 }: BracketViewProps) {
+  // Fonction helper pour obtenir le nom d'un joueur
+  const getPlayerName = (match: MatchResult, playerId: string | null): string => {
+    if (playerId === null) return "BYE";
+    
+    // Si une fonction getParticipantName est fournie, l'utiliser (mode organisateur)
+    if (getParticipantName) {
+      return getParticipantName(playerId);
+    }
+    
+    // Sinon, utiliser les noms pré-chargés dans le match (mode joueur)
+    if (playerId === match.player1Id && match.player1Name) {
+      return match.player1Name;
+    }
+    if (playerId === match.player2Id && match.player2Name) {
+      return match.player2Name;
+    }
+    
+    return `Joueur ${playerId.slice(-4)}`;
+  };
+  
   // Calculer le nombre total de rondes nécessaires basé sur les matchs de la première ronde
   const firstRoundMatches = matches.filter(m => (m.round || 1) === 1);
   const numFirstRoundMatches = firstRoundMatches.length;
@@ -169,7 +189,7 @@ export default function BracketView({
                         }`}
                       >
                         <span className="truncate flex-1">
-                          {getParticipantName(match.player1Id)}
+                          {getPlayerName(match, match.player1Id)}
                         </span>
                         <span className="ml-2 font-bold text-lg">
                           {match.player1Score}
@@ -186,7 +206,7 @@ export default function BracketView({
                           }`}
                         >
                           <span className="truncate flex-1">
-                            {getParticipantName(match.player2Id)}
+                            {getPlayerName(match, match.player2Id)}
                           </span>
                           <span className="ml-2 font-bold text-lg">
                             {match.player2Score}

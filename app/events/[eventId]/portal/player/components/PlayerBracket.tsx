@@ -14,23 +14,6 @@ type PlayerBracketProps = {
 export default function PlayerBracket({ event, settings, userId, matches, participants }: PlayerBracketProps) {
   const currentPhase = settings?.phases.find(p => p.id === settings?.currentPhaseId);
 
-  const getPlayerName = (playerId: string | null): string => {
-    if (playerId === null) return "BYE";
-    if (playerId === userId) return "Vous";
-    
-    // Chercher dans les matchs pour obtenir le nom pré-chargé
-    for (const match of matches) {
-      if (match.player1Id === playerId && match.player1Name) {
-        return match.player1Name;
-      }
-      if (match.player2Id === playerId && match.player2Name) {
-        return match.player2Name;
-      }
-    }
-    
-    return `Joueur ${playerId.slice(-4)}`;
-  };
-
   if (!currentPhase || currentPhase.type !== "bracket") {
     return (
       <Card>
@@ -45,6 +28,21 @@ export default function PlayerBracket({ event, settings, userId, matches, partic
 
   const phaseMatches = matches.filter(m => m.phaseId === currentPhase.id);
 
+  // Enrichir les matchs avec les noms des joueurs
+  const enrichedMatches = phaseMatches.map(match => ({
+    ...match,
+    player1Name: match.player1Id === null 
+      ? "BYE" 
+      : match.player1Id === userId 
+        ? "Vous"
+        : match.player1Name || `Joueur ${match.player1Id.slice(-4)}`,
+    player2Name: match.player2Id === null 
+      ? "BYE" 
+      : match.player2Id === userId 
+        ? "Vous"
+        : match.player2Name || `Joueur ${match.player2Id.slice(-4)}`,
+  }));
+
   return (
     <div className="space-y-6">
       <Card>
@@ -55,14 +53,13 @@ export default function PlayerBracket({ event, settings, userId, matches, partic
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {phaseMatches.length === 0 ? (
+          {enrichedMatches.length === 0 ? (
             <p className="text-center text-muted-foreground">
               Aucun match généré pour le bracket
             </p>
           ) : (
             <BracketView
-              matches={phaseMatches}
-              getParticipantName={getPlayerName}
+              matches={enrichedMatches}
               readonly={true}
             />
           )}
