@@ -1,16 +1,28 @@
+"use client";
+
+import { useState } from "react";
 import { Event } from "@/lib/types/Event";
-import { EventPortalSettings } from "@/lib/schemas/event-portal.schema";
+import { EventPortalSettings, MatchResult } from "@/lib/schemas/event-portal.schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Eye } from "lucide-react";
+import PlayerDetailsModal from "./PlayerDetailsModal";
 
 type OrganizerStandingsProps = {
   event: Event;
   settings: EventPortalSettings;
   standings: any[];
   participants: any[];
+  matches: MatchResult[];
 };
 
-export default function OrganizerStandings({ event, settings, standings, participants }: OrganizerStandingsProps) {
+export default function OrganizerStandings({ event, settings, standings, participants, matches }: OrganizerStandingsProps) {
+  const [selectedPlayer, setSelectedPlayer] = useState<{
+    playerId: string;
+    playerName: string;
+  } | null>(null);
+
   const currentPhase = settings.phases.find(p => p.id === settings.currentPhaseId);
 
   const getParticipantName = (playerId: string): string => {
@@ -116,6 +128,19 @@ export default function OrganizerStandings({ event, settings, standings, partici
                           {winRate}%
                         </Badge>
                       </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setSelectedPlayer({
+                            playerId: standing.playerId,
+                            playerName: getParticipantName(standing.playerId),
+                          })
+                        }
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Détails
+                      </Button>
                     </div>
                   </div>
                   
@@ -168,6 +193,19 @@ export default function OrganizerStandings({ event, settings, standings, partici
           </div>
         </CardContent>
       </Card>
+
+      {/* Modal des détails du joueur */}
+      {selectedPlayer && (
+        <PlayerDetailsModal
+          open={!!selectedPlayer}
+          onOpenChange={(open) => !open && setSelectedPlayer(null)}
+          playerId={selectedPlayer.playerId}
+          playerName={selectedPlayer.playerName}
+          eventId={event.id}
+          matches={matches}
+          participants={participants}
+        />
+      )}
     </div>
   );
 }

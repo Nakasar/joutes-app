@@ -25,6 +25,7 @@ import { inspect } from "util";
 const PORTAL_SETTINGS_COLLECTION = "event-portal-settings";
 const MATCH_RESULTS_COLLECTION = "event-match-results";
 const ANNOUNCEMENTS_COLLECTION = "event-announcements";
+const PLAYER_NOTES_COLLECTION = "event-player-notes";
 
 // Vérifier si l'utilisateur est le créateur de l'événement
 async function isEventCreator(eventId: string, userId: string): Promise<boolean> {
@@ -1147,5 +1148,76 @@ export async function getPhaseStandings(eventId: string, phaseId: string) {
   } catch (error) {
     console.error("Erreur lors de la récupération du classement:", error);
     return { success: false, error: "Erreur lors de la récupération du classement" };
+  }
+}
+
+// =====================
+// NOTES SUR LES JOUEURS
+// =====================
+
+export async function getPlayerNote(eventId: string, playerId: string) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    // Vérifier que l'utilisateur est le créateur de l'événement
+    const isCreator = await isEventCreator(eventId, session.user.id);
+    if (!isCreator) {
+      return { success: false, error: "Seul le créateur peut voir les notes" };
+    }
+
+    const collection = db.collection(PLAYER_NOTES_COLLECTION);
+    const note = await collection.findOne({ eventId, playerId });
+
+    return {
+      success: true,
+      data: note?.notes || "",
+    };
+  } catch (error) {
+    console.error("Erreur lors de la récupération de la note:", error);
+    return { success: false, error: "Erreur lors de la récupération de la note" };
+  }
+}
+
+export async function updatePlayerNote(eventId: string, playerId: string, notes: string) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    // Vérifier que l'utilisateur est le créateur de l'événement
+    const isCreator = await isEventCreator(eventId, session.user.id);
+    if (!isCreator) {
+      return { success: false, error: "Seul le créateur peut modifier les notes" };
+    }
+
+    const collection = db.collection(PLAYER_NOTES_COLLECTION);
+    
+    await collection.updateOne(
+      { eventId, playerId },
+      { 
+        $set: { 
+          notes,
+          updatedAt: new Date().toISOString(),
+          updatedBy: session.user.id,
+        },
+        $setOnInsert: {
+          eventId,
+          playerId,
+          createdAt: new Date().toISOString(),
+        }
+      },
+      { upsert: true }
+    );
+
+    revalidatePath(`/events/${eventId}/portal/organizer/standings`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour de la note:", error);
+    return { success: false, error: "Erreur lors de la mise à jour de la note" };
   }
 }

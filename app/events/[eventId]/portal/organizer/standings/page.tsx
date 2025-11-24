@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events";
-import { getPortalSettings, getPhaseStandings } from "../../actions";
+import { getPortalSettings, getPhaseStandings, getMatchResults } from "../../actions";
 import { getEventParticipants } from "../../participant-actions";
 import OrganizerLayoutServer from "../components/OrganizerLayoutServer";
 import OrganizerStandings from "../components/OrganizerStandings";
@@ -52,6 +52,10 @@ export default async function OrganizerStandingsPage({ params }: OrganizerStandi
   const participantsResult = await getEventParticipants(eventId);
   const participants = participantsResult.success ? participantsResult.data || [] : [];
 
+  // Charger les matchs
+  const matchesResult = await getMatchResults(eventId);
+  const matches = matchesResult.success ? matchesResult.data || [] : [];
+
   return (
     <OrganizerLayoutServer event={event} settings={settings}>
       <OrganizerStandings
@@ -59,6 +63,7 @@ export default async function OrganizerStandingsPage({ params }: OrganizerStandi
         settings={settings}
         standings={standings}
         participants={participants}
+        matches={matches}
       />
     </OrganizerLayoutServer>
   );
