@@ -8,6 +8,7 @@ import {
   LeagueParticipant,
   LeagueMatch,
   CreateLeagueMatchInput,
+  MatchFeatAward,
 } from "@/lib/types/League";
 import { ObjectId, WithId, Document, Filter } from "mongodb";
 import { nanoid } from "nanoid";
@@ -499,17 +500,9 @@ export async function addLeagueMatch(
 
   // Créer le match
   const matchId = nanoid(12);
-  const newMatch: LeagueMatch = {
-    id: matchId,
-    gameId: matchInput.gameId,
-    playedAt: matchInput.playedAt,
-    playerIds: matchInput.playerIds,
-    winnerIds: matchInput.winnerIds,
-    featAwards: matchInput.featAwards,
-    createdBy,
-    createdAt: new Date(),
-    notes: matchInput.notes,
-  };
+  
+  // Préparer les featAwards avec l'information de comptabilisation
+  const processedFeatAwards: MatchFeatAward[] = [];
 
   // Préparer les mises à jour de points pour chaque participant du match
   const pointsUpdates: Array<{
@@ -570,38 +563,108 @@ export async function addLeagueMatch(
         const participantIndex = league.participants.findIndex(
           (p) => p.userId === featAward.playerId
         );
-        if (participantIndex === -1) continue;
+        if (participantIndex === -1) {
+          // Joueur non trouvé, on ajoute quand même le feat mais sans points
+          processedFeatAwards.push({
+            ...featAward,
+            pointsCounted: false,
+          });
+          continue;
+        }
 
         const feat = pointsRules.feats.find((f) => f.id === featAward.featId);
-        if (!feat) continue;
+        if (!feat) {
+          // Haut fait non trouvé, on l'ajoute sans points
+          processedFeatAwards.push({
+            ...featAward,
+            pointsCounted: false,
+          });
+          continue;
+        }
 
-        const participantFeat = {
-          featId: featAward.featId,
-          earnedAt: matchDate,
-          matchId,
-        };
+        const participant = league.participants[participantIndex];
+        
+        // Compter combien de fois ce joueur a déjà obtenu ce haut fait dans la ligue
+        const existingFeatCount = participant.feats.filter(
+          (f) => f.featId === featAward.featId
+        ).length;
 
-        const featHistoryEntry = {
-          date: matchDate,
-          points: feat.points,
-          reason: `Haut fait: ${feat.title}`,
-          featId: featAward.featId,
-          matchId,
-        };
+        // Compter combien de fois ce haut fait est attribué dans CE match pour ce joueur
+        // (pour gérer les doublons dans le même match)
+        const featCountInThisMatch = processedFeatAwards.filter(
+          (fa) => fa.playerId === featAward.playerId && 
+                  fa.featId === featAward.featId &&
+                  fa.pointsCounted === true
+        ).length;
 
-        await db.collection(COLLECTION_NAME).updateOne(
-          { _id: new ObjectId(leagueId) },
-          {
-            $inc: { [`participants.${participantIndex}.points`]: feat.points },
-            $push: {
-              [`participants.${participantIndex}.feats`]: participantFeat,
-              [`participants.${participantIndex}.pointsHistory`]: featHistoryEntry,
-            },
-          } as Document
-        );
+        const totalFeatCount = existingFeatCount + featCountInThisMatch;
+
+        // Vérifier la limite par ligue
+        const limitReached = feat.maxPerLeague !== undefined && 
+                             totalFeatCount >= feat.maxPerLeague;
+
+        if (limitReached) {
+          // Limite atteinte, on enregistre le haut fait mais sans points
+          processedFeatAwards.push({
+            ...featAward,
+            pointsCounted: false,
+          });
+        } else {
+          // On peut attribuer les points
+          processedFeatAwards.push({
+            ...featAward,
+            pointsCounted: true,
+          });
+
+          const participantFeat = {
+            featId: featAward.featId,
+            earnedAt: matchDate,
+            matchId,
+          };
+
+          const featHistoryEntry = {
+            date: matchDate,
+            points: feat.points,
+            reason: `Haut fait: ${feat.title}`,
+            featId: featAward.featId,
+            matchId,
+          };
+
+          await db.collection(COLLECTION_NAME).updateOne(
+            { _id: new ObjectId(leagueId) },
+            {
+              $inc: { [`participants.${participantIndex}.points`]: feat.points },
+              $push: {
+                [`participants.${participantIndex}.feats`]: participantFeat,
+                [`participants.${participantIndex}.pointsHistory`]: featHistoryEntry,
+              },
+            } as Document
+          );
+        }
       }
     }
+  } else if (matchInput.featAwards) {
+    // Si pas en mode POINTS, on ajoute tous les feats sans comptabilisation
+    for (const featAward of matchInput.featAwards) {
+      processedFeatAwards.push({
+        ...featAward,
+        pointsCounted: false,
+      });
+    }
   }
+
+  // Créer le match avec les featAwards traités
+  const newMatch: LeagueMatch = {
+    id: matchId,
+    gameId: matchInput.gameId,
+    playedAt: matchInput.playedAt,
+    playerIds: matchInput.playerIds,
+    winnerIds: matchInput.winnerIds,
+    featAwards: processedFeatAwards.length > 0 ? processedFeatAwards : undefined,
+    createdBy,
+    createdAt: new Date(),
+    notes: matchInput.notes,
+  };
 
   // Ajouter le match à la ligue
   const result = await db.collection(COLLECTION_NAME).findOneAndUpdate(
