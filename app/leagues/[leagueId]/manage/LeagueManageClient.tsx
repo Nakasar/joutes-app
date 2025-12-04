@@ -403,6 +403,32 @@ export default function LeagueManageClient({
     });
   };
 
+  // Supprimer un match
+  const handleDeleteMatch = async (matchId: string) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce match ? Les points et hauts faits attribués seront annulés.")) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const result = await deleteLeagueMatchAction(league.id, matchId);
+      if (result.success) {
+        setSuccess("Match supprimé avec succès");
+        router.refresh();
+      } else {
+        setError(result.error || "Erreur lors de la suppression du match");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Une erreur est survenue");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const toggleGame = (gameId: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -1626,18 +1652,30 @@ export default function LeagueManageClient({
                         className="border rounded-lg p-3 space-y-2"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">
-                            Match #{league.matches!.length - index}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(match.playedAt).toLocaleDateString("fr-FR", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">
+                              Match #{league.matches!.length - index}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(match.playedAt).toLocaleDateString("fr-FR", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                            onClick={() => handleDeleteMatch(match.id)}
+                            disabled={loading}
+                            title="Supprimer ce match"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                         <div className="text-sm">
                           <span className="text-muted-foreground">Joueurs: </span>
