@@ -24,6 +24,11 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { MultiSelect } from "@/components/ui/multi-select";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   AlertCircle,
   Loader2,
   Users,
@@ -40,6 +45,7 @@ import {
   Calendar,
   Gamepad2,
   X,
+  Crown,
 } from "lucide-react";
 import {
   updateLeagueAction,
@@ -1274,141 +1280,201 @@ export default function LeagueManageClient({
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Joueurs</label>
-                <MultiSelect
-                  options={playerOptions}
-                  selected={matchForm.playerIds}
-                  onChange={(selected) => {
-                    // Filtrer les gagnants et featAwards pour ne garder que ceux encore dans les joueurs
-                    setMatchForm({
-                      ...matchForm,
-                      playerIds: selected,
-                      winnerIds: matchForm.winnerIds.filter((id) =>
-                        selected.includes(id)
-                      ),
-                      featAwards: matchForm.featAwards.filter((fa) =>
-                        selected.includes(fa.playerId)
-                      ),
-                    });
-                  }}
-                  placeholder="Sélectionner les joueurs..."
-                  searchPlaceholder="Rechercher par nom..."
-                  emptyMessage="Aucun participant trouvé."
-                />
-              </div>
-
-              {matchForm.playerIds.length >= 2 && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Gagnant(s) <span className="text-muted-foreground">(optionnel)</span>
-                  </label>
-                  <MultiSelect
-                    options={playerOptions.filter((p) =>
-                      matchForm.playerIds.includes(p.value)
-                    )}
-                    selected={matchForm.winnerIds}
-                    onChange={(selected) =>
-                      setMatchForm({ ...matchForm, winnerIds: selected })
+                <Select
+                  onValueChange={(playerId) => {
+                    if (!matchForm.playerIds.includes(playerId)) {
+                      setMatchForm({
+                        ...matchForm,
+                        playerIds: [...matchForm.playerIds, playerId],
+                      });
                     }
-                    placeholder="Sélectionner les gagnants..."
-                    searchPlaceholder="Rechercher..."
-                    emptyMessage="Aucun joueur sélectionné."
-                  />
-                </div>
-              )}
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Ajouter un joueur..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {participantsWithUsers
+                      .filter((p) => !matchForm.playerIds.includes(p.userId))
+                      .map((p) => (
+                        <SelectItem key={p.userId} value={p.userId}>
+                          {p.user?.displayName || p.user?.username || p.userId}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
 
-              {/* Attribution des hauts faits */}
-              {matchForm.playerIds.length >= 1 && feats.length > 0 && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    Hauts faits <span className="text-muted-foreground">(optionnel)</span>
-                  </label>
-                  <div className="border rounded-md p-3 space-y-3">
-                    {/* Hauts faits déjà attribués */}
-                    {matchForm.featAwards.length > 0 && (
-                      <div className="space-y-2">
-                        {matchForm.featAwards.map((fa, idx) => {
-                          const player = participantsWithUsers.find(
-                            (p) => p.userId === fa.playerId
-                          );
-                          const feat = feats.find((f) => f.id === fa.featId);
-                          return (
-                            <div
-                              key={`${fa.playerId}-${fa.featId}-${idx}`}
-                              className="flex items-center justify-between bg-muted/50 rounded px-2 py-1"
-                            >
-                              <div className="flex items-center gap-2">
-                                <Trophy className="h-4 w-4 text-amber-500" />
-                                <span className="text-sm">
-                                  {player?.user?.displayName ||
-                                    player?.user?.username ||
-                                    fa.playerId}
-                                </span>
-                                <span className="text-muted-foreground">→</span>
-                                <span className="text-sm font-medium">
-                                  {feat?.title || fa.featId}
-                                </span>
-                                <Badge variant="secondary" className="text-xs">
-                                  +{feat?.points || 0} pts
-                                </Badge>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() =>
-                                  removeFeatAwardFromMatch(fa.playerId, fa.featId)
-                                }
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                {/* Liste des joueurs sélectionnés */}
+                {matchForm.playerIds.length > 0 && (
+                  <div className="space-y-2 border rounded-md p-2">
+                    {matchForm.playerIds.map((playerId) => {
+                      const player = participantsWithUsers.find(
+                        (p) => p.userId === playerId
+                      );
+                      const isWinner = matchForm.winnerIds.includes(playerId);
+                      const playerFeats = matchForm.featAwards.filter(
+                        (fa) => fa.playerId === playerId
+                      );
 
-                    {/* Formulaire pour ajouter un haut fait */}
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <Select
-                        onValueChange={(value) => {
-                          const [playerId, featId] = value.split("|");
-                          if (playerId && featId) {
-                            addFeatAwardToMatch(playerId, featId);
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Attribuer un haut fait..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {matchForm.playerIds.map((playerId) => {
-                            const player = participantsWithUsers.find(
-                              (p) => p.userId === playerId
-                            );
-                            return feats.map((feat) => {
-                              const alreadyAwarded = matchForm.featAwards.some(
-                                (fa) =>
-                                  fa.playerId === playerId && fa.featId === feat.id
-                              );
-                              if (alreadyAwarded) return null;
+                      return (
+                        <div
+                          key={playerId}
+                          className="flex items-center justify-between border rounded-lg p-2 bg-muted/30"
+                        >
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <span className="font-medium truncate">
+                              {player?.user?.displayName ||
+                                player?.user?.username ||
+                                playerId}
+                            </span>
+                            {isWinner && (
+                              <Badge variant="default" className="bg-amber-500 text-white shrink-0">
+                                <Crown className="h-3 w-3 mr-1" />
+                                Vainqueur
+                              </Badge>
+                            )}
+                            {/* Afficher les hauts faits du joueur */}
+                            {playerFeats.map((fa, idx) => {
+                              const feat = feats.find((f) => f.id === fa.featId);
                               return (
-                                <SelectItem
-                                  key={`${playerId}-${feat.id}`}
-                                  value={`${playerId}|${feat.id}`}
+                                <Badge
+                                  key={`${fa.featId}-${idx}`}
+                                  variant="outline"
+                                  className="shrink-0 gap-1"
                                 >
-                                  {player?.user?.displayName ||
-                                    player?.user?.username ||
-                                    playerId}{" "}
-                                  → {feat.title} (+{feat.points} pts)
-                                </SelectItem>
+                                  <Trophy className="h-3 w-3 text-amber-500" />
+                                  {feat?.title || fa.featId}
+                                  <button
+                                    onClick={() =>
+                                      removeFeatAwardFromMatch(playerId, fa.featId)
+                                    }
+                                    className="ml-1 hover:text-destructive"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </Badge>
                               );
-                            });
-                          })}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                            })}
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {/* Bouton couronne pour déclarer vainqueur */}
+                            <Button
+                              variant={isWinner ? "default" : "ghost"}
+                              size="icon"
+                              className={isWinner ? "bg-amber-500 hover:bg-amber-600" : ""}
+                              onClick={() => {
+                                if (isWinner) {
+                                  setMatchForm({
+                                    ...matchForm,
+                                    winnerIds: matchForm.winnerIds.filter(
+                                      (id) => id !== playerId
+                                    ),
+                                  });
+                                } else {
+                                  setMatchForm({
+                                    ...matchForm,
+                                    winnerIds: [...matchForm.winnerIds, playerId],
+                                  });
+                                }
+                              }}
+                              title={isWinner ? "Retirer le statut de vainqueur" : "Déclarer vainqueur"}
+                            >
+                              <Crown className="h-4 w-4" />
+                            </Button>
+
+                            {/* Bouton trophée pour ajouter un haut fait */}
+                            {feats.length > 0 && (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    title="Attribuer un haut fait"
+                                  >
+                                    <Trophy className="h-4 w-4" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-56 p-2" align="end">
+                                  <div className="space-y-1">
+                                    <p className="text-sm font-medium mb-2">
+                                      Attribuer un haut fait
+                                    </p>
+                                    {feats.map((feat) => {
+                                      const alreadyAwarded = matchForm.featAwards.some(
+                                        (fa) =>
+                                          fa.playerId === playerId &&
+                                          fa.featId === feat.id
+                                      );
+                                      return (
+                                        <Button
+                                          key={feat.id}
+                                          variant={alreadyAwarded ? "secondary" : "ghost"}
+                                          size="sm"
+                                          className="w-full justify-start text-left"
+                                          onClick={() => {
+                                            if (alreadyAwarded) {
+                                              removeFeatAwardFromMatch(
+                                                playerId,
+                                                feat.id
+                                              );
+                                            } else {
+                                              addFeatAwardToMatch(playerId, feat.id);
+                                            }
+                                          }}
+                                        >
+                                          <Trophy
+                                            className={`h-4 w-4 mr-2 ${
+                                              alreadyAwarded
+                                                ? "text-amber-500"
+                                                : "text-muted-foreground"
+                                            }`}
+                                          />
+                                          <span className="truncate flex-1">
+                                            {feat.title}
+                                          </span>
+                                          <span className="text-xs text-muted-foreground ml-1">
+                                            +{feat.points}
+                                          </span>
+                                          {alreadyAwarded && (
+                                            <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
+                                          )}
+                                        </Button>
+                                      );
+                                    })}
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            )}
+
+                            {/* Bouton supprimer le joueur */}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setMatchForm({
+                                  ...matchForm,
+                                  playerIds: matchForm.playerIds.filter(
+                                    (id) => id !== playerId
+                                  ),
+                                  winnerIds: matchForm.winnerIds.filter(
+                                    (id) => id !== playerId
+                                  ),
+                                  featAwards: matchForm.featAwards.filter(
+                                    (fa) => fa.playerId !== playerId
+                                  ),
+                                });
+                              }}
+                              title="Retirer du match"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
               <div className="space-y-2">
                 <label htmlFor="matchNotes" className="text-sm font-medium">
