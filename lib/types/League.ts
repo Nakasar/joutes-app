@@ -51,6 +51,12 @@ export type ParticipantFeat = {
   matchId?: string; // ID du match de ligue associé
 };
 
+// Haut fait attribué lors d'un match
+export type MatchFeatAward = {
+  playerId: string; // Joueur qui a obtenu le haut fait
+  featId: string;
+};
+
 // Match joué dans le cadre d'une ligue
 export type LeagueMatch = {
   id: string;
@@ -58,6 +64,7 @@ export type LeagueMatch = {
   playedAt: Date;
   playerIds: User["id"][]; // Tous les joueurs du match
   winnerIds: User["id"][]; // Les gagnants du match
+  featAwards?: MatchFeatAward[]; // Hauts faits attribués lors du match
   createdBy: User["id"];
   createdAt: Date;
   notes?: string; // Notes optionnelles sur le match
