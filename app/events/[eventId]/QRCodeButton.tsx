@@ -60,6 +60,17 @@ export default function QRCodeButton({ eventId }: QRCodeButtonProps) {
           <div className="flex flex-col items-center gap-4 py-4">
             {qrCodeUrl ? (
               <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const participationUrl = `${window.location.origin}/events/${eventId}/join`;
+                    navigator.clipboard.writeText(participationUrl);
+                  }}
+                  className="mb-2"
+                >
+                  Copier l&apos;URL
+                </Button>
                 <img
                   src={qrCodeUrl}
                   alt="QR Code de participation"
