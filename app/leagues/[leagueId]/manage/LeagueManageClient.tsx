@@ -29,6 +29,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
   AlertCircle,
   Loader2,
   Users,
@@ -1280,29 +1288,55 @@ export default function LeagueManageClient({
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Joueurs</label>
-                <Select
-                  onValueChange={(playerId) => {
-                    if (!matchForm.playerIds.includes(playerId)) {
-                      setMatchForm({
-                        ...matchForm,
-                        playerIds: [...matchForm.playerIds, playerId],
-                      });
-                    }
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Ajouter un joueur..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {participantsWithUsers
-                      .filter((p) => !matchForm.playerIds.includes(p.userId))
-                      .map((p) => (
-                        <SelectItem key={p.userId} value={p.userId}>
-                          {p.user?.displayName || p.user?.username || p.userId}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between"
+                    >
+                      <span className="text-muted-foreground">
+                        Ajouter un joueur...
+                      </span>
+                      <Users className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Rechercher par nom ou username..." />
+                      <CommandList>
+                        <CommandEmpty>Aucun participant trouvé.</CommandEmpty>
+                        <CommandGroup>
+                          {participantsWithUsers
+                            .filter((p) => !matchForm.playerIds.includes(p.userId))
+                            .map((p) => (
+                              <CommandItem
+                                key={p.userId}
+                                value={`${p.user?.username || ""} ${p.user?.displayName || ""} ${p.userId}`}
+                                onSelect={() => {
+                                  setMatchForm({
+                                    ...matchForm,
+                                    playerIds: [...matchForm.playerIds, p.userId],
+                                  });
+                                }}
+                              >
+                                <div className="flex flex-col">
+                                  <span>
+                                    {p.user?.displayName || p.user?.username || p.userId}
+                                  </span>
+                                  {p.user?.username && p.user?.displayName && (
+                                    <span className="text-xs text-muted-foreground">
+                                      @{p.user.username}
+                                    </span>
+                                  )}
+                                </div>
+                              </CommandItem>
+                            ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
 
                 {/* Liste des joueurs sélectionnés */}
                 {matchForm.playerIds.length > 0 && (
