@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useSession, signOut } from "@/lib/auth-client";
 import Image from "next/image";
-import { Menu, Calendar, MapPin, User, LogOut, Shield, GamepadIcon, Dices } from "lucide-react";
+import { Menu, Calendar, MapPin, User, LogOut, Shield, GamepadIcon, Trophy, Dices } from "lucide-react";
 import { isAdmin } from "@/lib/config/admins";
 import { Button } from "@/components/ui/button";
 import {
@@ -69,6 +69,14 @@ export default function Header() {
                   <Link href="/lairs">
                     <MapPin className="mr-2 h-4 w-4" />
                     Lieux
+                  </Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                  <Link href="/leagues">
+                    <Trophy className="mr-2 h-4 w-4" />
+                    Ligues
                   </Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
@@ -206,6 +214,12 @@ export default function Header() {
                 <Link href="/lairs" onClick={() => setMobileMenuOpen(false)}>
                   <MapPin className="mr-2 h-4 w-4" />
                   Lieux
+                </Link>
+              </Button>
+              <Button variant="ghost" asChild className="justify-start">
+                <Link href="/leagues" onClick={() => setMobileMenuOpen(false)}>
+                  <Trophy className="mr-2 h-4 w-4" />
+                  Ligues
                 </Link>
               </Button>
               {session && (
