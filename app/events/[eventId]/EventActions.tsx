@@ -12,9 +12,10 @@ type EventActionsProps = {
   isParticipant: boolean;
   isCreator: boolean;
   isFull: boolean;
+  allowJoin?: boolean;
 };
 
-export default function EventActions({ eventId, isParticipant, isCreator, isFull }: EventActionsProps) {
+export default function EventActions({ eventId, isParticipant, isCreator, isFull, allowJoin }: EventActionsProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,7 +92,7 @@ export default function EventActions({ eventId, isParticipant, isCreator, isFull
         >
           {loading ? "Chargement..." : "Se désinscrire"}
         </Button>
-      ) : (
+      ) : allowJoin ? (
         <Button
           onClick={handleJoin}
           disabled={loading || isFull}
@@ -99,7 +100,7 @@ export default function EventActions({ eventId, isParticipant, isCreator, isFull
         >
           {loading ? "Chargement..." : isFull ? "Événement complet" : "S'inscrire"}
         </Button>
-      )}
+      ) : null}
     </div>
   );
 }

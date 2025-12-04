@@ -251,27 +251,6 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                     eventId={event.id}
                     participants={allParticipants as any}
                   />
-                ) : participantUsers.length > 0 ? (
-                  <div className="space-y-2">
-                    {participantUsers.filter(Boolean).map((user) => (
-                      <div key={user!.id} className="flex items-center gap-2">
-                        {user!.profileImage && (
-                          <img
-                            src={user!.profileImage}
-                            alt={user!.displayName || user!.username}
-                            className="h-6 w-6 rounded-full"
-                          />
-                        )}
-                        <Link
-                          href={`/users/${user!.displayName}${user!.discriminator}`}
-                          className="text-sm hover:underline"
-                        >
-                          {user!.displayName || user!.username}
-                          {user!.discriminator && `#${user!.discriminator}`}
-                        </Link>
-                      </div>
-                    ))}
-                  </div>
                 ) : null}
 
                 {isCreator && (
@@ -288,6 +267,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                       isParticipant={isParticipant || false}
                       isCreator={isCreator || false}
                       isFull={isFull}
+                      allowJoin={event.allowJoin}
                     />
                     <FavoriteButton
                       eventId={event.id}

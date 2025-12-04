@@ -250,6 +250,12 @@ export default function EventsAgendaList({ events }: EventsAgendaListProps) {
                               <Info className="h-4 w-4" />
                               Détails
                             </Button>
+                            <Button asChild variant="outline" size="sm" className="gap-2">
+                              <Link href={`/events/${event.id}`}>
+                                <ExternalLink className="h-4 w-4" />
+                                Voir la page
+                              </Link>
+                            </Button>
                             {event.url && (
                               <Button asChild variant="outline" size="sm">
                                 <a
