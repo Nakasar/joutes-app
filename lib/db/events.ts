@@ -709,6 +709,7 @@ export async function getEventById(eventId: string): Promise<Event | null> {
     participants: event.participants,
     maxParticipants: event.maxParticipants,
     favoritedBy: event.favoritedBy,
+    allowJoin: event.allowJoin,
     lair: event.lairDetails && event.lairDetails.length > 0 ? {
       id: event.lairDetails[0]._id.toString(),
       name: event.lairDetails[0].name,

@@ -291,3 +291,43 @@ export async function toggleEventFavoriteAction(eventId: string) {
     return { success: false, error: "Une erreur est survenue lors de la modification des favoris" };
   }
 }
+
+export async function toggleAllowJoinAction(eventId: string, allowJoin: boolean) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      return { success: false, error: "Vous devez être connecté" };
+    }
+
+    // Récupérer l'événement
+    const event = await getEventById(eventId);
+
+    if (!event) {
+      return { success: false, error: "Événement introuvable" };
+    }
+
+    // Vérifier que l'utilisateur est le créateur de l'événement
+    if (event.creatorId !== session.user.id) {
+      return { success: false, error: "Seul le créateur de l'événement peut modifier ce paramètre" };
+    }
+
+    // Mettre à jour allowJoin
+    const { updateEvent } = await import("@/lib/db/events");
+    const updated = await updateEvent(eventId, { allowJoin });
+
+    if (!updated) {
+      return { success: false, error: "Impossible de mettre à jour l'événement" };
+    }
+
+    revalidatePath(`/events/${eventId}`);
+    revalidatePath("/events");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la modification de allowJoin:", error);
+    return { success: false, error: "Une erreur est survenue lors de la modification" };
+  }
+}

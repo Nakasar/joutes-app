@@ -14,6 +14,7 @@ export const eventSchema = z.object({
   price: z.number().min(0, "Le prix doit être positif").optional(),
   status: z.enum(['available', 'sold-out', 'cancelled']),
   addedBy: z.string().min(1, "L'auteur de l'événement est requis"),
+  allowJoin: z.boolean().optional(),
   participants: z.array(z.string()).optional(),
   maxParticipants: z.number().min(1, "Le nombre maximum de participants doit être positif").optional(),
   favoritedBy: z.array(z.string()).optional(),

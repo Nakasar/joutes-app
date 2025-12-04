@@ -14,6 +14,7 @@ import EventActions from "./EventActions";
 import QRCodeButton from "./QRCodeButton";
 import ParticipantManagerWrapper from "./ParticipantManagerWrapper";
 import FavoriteButton from "./FavoriteButton";
+import AllowJoinSwitch from "./AllowJoinSwitch";
 import { DateTime } from "luxon";
 import { getEventParticipants } from "./portal/participant-actions";
 
@@ -273,6 +274,13 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                   </div>
                 ) : null}
 
+                {isCreator && (
+                  <AllowJoinSwitch
+                    eventId={event.id}
+                    initialAllowJoin={event.allowJoin ?? true}
+                  />
+                )}
+
                 {session?.user && (
                   <div className="space-y-2">
                     <EventActions
@@ -285,6 +293,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                       eventId={event.id}
                       initialIsFavorited={isFavorited || false}
                     />
+                    
                     {isCreator && (
                       <QRCodeButton eventId={event.id} />
                     )}
