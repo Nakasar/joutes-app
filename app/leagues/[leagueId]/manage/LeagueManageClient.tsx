@@ -1428,7 +1428,7 @@ export default function LeagueManageClient({
                                     <Trophy className="h-4 w-4" />
                                   </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-56 p-2" align="end">
+                                <PopoverContent className="w-64 p-2" align="end">
                                   <div className="space-y-1">
                                     <p className="text-sm font-medium mb-2">
                                       Attribuer un haut fait
@@ -1439,12 +1439,32 @@ export default function LeagueManageClient({
                                           fa.playerId === playerId &&
                                           fa.featId === feat.id
                                       );
+                                      
+                                      // Calculer combien de fois ce joueur a déjà ce haut fait dans la ligue
+                                      const participant = participantsWithUsers.find(
+                                        (p) => p.userId === playerId
+                                      );
+                                      const existingCount = participant?.feats.filter(
+                                        (f) => f.featId === feat.id
+                                      ).length || 0;
+                                      
+                                      // Compter dans le formulaire actuel
+                                      const pendingCount = matchForm.featAwards.filter(
+                                        (fa) => fa.playerId === playerId && fa.featId === feat.id
+                                      ).length;
+                                      
+                                      const totalCount = existingCount + pendingCount;
+                                      const limitReached = feat.maxPerLeague !== undefined && 
+                                                          totalCount >= feat.maxPerLeague;
+                                      const willExceedLimit = feat.maxPerLeague !== undefined && 
+                                                              (existingCount + (alreadyAwarded ? 0 : 1)) > feat.maxPerLeague;
+                                      
                                       return (
                                         <Button
                                           key={feat.id}
                                           variant={alreadyAwarded ? "secondary" : "ghost"}
                                           size="sm"
-                                          className="w-full justify-start text-left"
+                                          className={`w-full justify-start text-left ${limitReached && !alreadyAwarded ? "opacity-50" : ""}`}
                                           onClick={() => {
                                             if (alreadyAwarded) {
                                               removeFeatAwardFromMatch(
@@ -1457,20 +1477,30 @@ export default function LeagueManageClient({
                                           }}
                                         >
                                           <Trophy
-                                            className={`h-4 w-4 mr-2 ${
+                                            className={`h-4 w-4 mr-2 shrink-0 ${
                                               alreadyAwarded
                                                 ? "text-amber-500"
+                                                : limitReached
+                                                ? "text-gray-400"
                                                 : "text-muted-foreground"
                                             }`}
                                           />
-                                          <span className="truncate flex-1">
-                                            {feat.title}
-                                          </span>
-                                          <span className="text-xs text-muted-foreground ml-1">
+                                          <div className="flex flex-col flex-1 min-w-0">
+                                            <span className="truncate">
+                                              {feat.title}
+                                            </span>
+                                            {feat.maxPerLeague && (
+                                              <span className={`text-xs ${limitReached ? "text-orange-500" : "text-muted-foreground"}`}>
+                                                {existingCount}/{feat.maxPerLeague} obtenu{existingCount > 1 ? "s" : ""}
+                                                {limitReached && " (limite)"}
+                                              </span>
+                                            )}
+                                          </div>
+                                          <span className={`text-xs ml-1 shrink-0 ${limitReached && !alreadyAwarded ? "line-through text-muted-foreground" : "text-muted-foreground"}`}>
                                             +{feat.points}
                                           </span>
                                           {alreadyAwarded && (
-                                            <CheckCircle className="h-3 w-3 ml-1 text-green-500" />
+                                            <CheckCircle className="h-3 w-3 ml-1 shrink-0 text-green-500" />
                                           )}
                                         </Button>
                                       );
@@ -1564,7 +1594,7 @@ export default function LeagueManageClient({
                       .filter(Boolean);
 
                     // Calculer les points totaux par joueur pour ce match
-                    const playerPoints: Record<string, { base: number; feats: Array<{ title: string; points: number }> }> = {};
+                    const playerPoints: Record<string, { base: number; feats: Array<{ title: string; points: number; counted: boolean }> }> = {};
                     for (const playerId of match.playerIds) {
                       const isWinner = match.winnerIds.includes(playerId);
                       const basePoints =
@@ -1575,14 +1605,16 @@ export default function LeagueManageClient({
                       playerPoints[playerId] = { base: basePoints, feats: [] };
                     }
 
-                    // Ajouter les points des hauts faits
+                    // Ajouter les points des hauts faits (seulement si comptabilisés)
                     if (match.featAwards) {
                       for (const fa of match.featAwards) {
                         const feat = feats.find((f) => f.id === fa.featId);
                         if (feat && playerPoints[fa.playerId]) {
+                          const isCounted = fa.pointsCounted !== false;
                           playerPoints[fa.playerId].feats.push({
                             title: feat.title,
-                            points: feat.points,
+                            points: isCounted ? feat.points : 0,
+                            counted: isCounted,
                           });
                         }
                       }
@@ -1646,17 +1678,19 @@ export default function LeagueManageClient({
                                   (p) => p.userId === fa.playerId
                                 );
                                 const feat = feats.find((f) => f.id === fa.featId);
+                                const isCounted = fa.pointsCounted !== false;
                                 return (
                                   <Badge
                                     key={`${fa.playerId}-${fa.featId}-${faIdx}`}
                                     variant="outline"
-                                    className="text-xs"
+                                    className={`text-xs ${!isCounted ? "opacity-50 line-through" : ""}`}
+                                    title={!isCounted ? "Limite atteinte - points non comptabilisés" : undefined}
                                   >
-                                    <Trophy className="h-3 w-3 mr-1 text-amber-500" />
+                                    <Trophy className={`h-3 w-3 mr-1 ${isCounted ? "text-amber-500" : "text-gray-400"}`} />
                                     {player?.user?.displayName ||
                                       player?.user?.username ||
                                       fa.playerId}
-                                    : {feat?.title || fa.featId} (+{feat?.points || 0})
+                                    : {feat?.title || fa.featId} {isCounted ? `(+${feat?.points || 0})` : "(limite atteinte)"}
                                   </Badge>
                                 );
                               })}

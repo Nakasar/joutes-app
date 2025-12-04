@@ -55,6 +55,7 @@ export type ParticipantFeat = {
 export type MatchFeatAward = {
   playerId: string; // Joueur qui a obtenu le haut fait
   featId: string;
+  pointsCounted?: boolean; // Indique si les points ont été comptabilisés (false si limite atteinte)
 };
 
 // Match joué dans le cadre d'une ligue
