@@ -122,6 +122,25 @@ export default function LeagueManageClient({
     featId: "",
   });
 
+  // État pour l'édition des règles de points
+  const [pointsRulesForm, setPointsRulesForm] = useState({
+    participation: league.pointsConfig?.pointsRules.participation ?? 0,
+    victory: league.pointsConfig?.pointsRules.victory ?? 2,
+    defeat: league.pointsConfig?.pointsRules.defeat ?? 1,
+  });
+
+  // État pour l'édition des hauts faits
+  const [featsForm, setFeatsForm] = useState<Feat[]>(
+    league.pointsConfig?.pointsRules.feats || []
+  );
+  const [newFeat, setNewFeat] = useState<Omit<Feat, "id">>({
+    title: "",
+    description: "",
+    points: 1,
+    maxPerEvent: undefined,
+    maxPerLeague: undefined,
+  });
+
   // État pour le formulaire de nouveau match
   const [showMatchForm, setShowMatchForm] = useState(false);
   const [matchForm, setMatchForm] = useState({
@@ -352,6 +371,65 @@ export default function LeagueManageClient({
         ? prev.lairIds.filter((id) => id !== lairId)
         : [...prev.lairIds, lairId],
     }));
+  };
+
+  // Ajouter un nouveau haut fait
+  const handleAddFeat = () => {
+    if (!newFeat.title.trim()) {
+      setError("Le titre du haut fait est requis");
+      return;
+    }
+    const feat: Feat = {
+      id: `feat-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      title: newFeat.title.trim(),
+      description: newFeat.description?.trim() || undefined,
+      points: newFeat.points,
+      maxPerEvent: newFeat.maxPerEvent,
+      maxPerLeague: newFeat.maxPerLeague,
+    };
+    setFeatsForm([...featsForm, feat]);
+    setNewFeat({
+      title: "",
+      description: "",
+      points: 1,
+      maxPerEvent: undefined,
+      maxPerLeague: undefined,
+    });
+  };
+
+  // Supprimer un haut fait
+  const handleRemoveFeat = (featId: string) => {
+    setFeatsForm(featsForm.filter((f) => f.id !== featId));
+  };
+
+  // Sauvegarder les règles de points
+  const handleSavePointsRules = async () => {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const result = await updateLeagueAction(league.id, {
+        format: "POINTS",
+        pointsRules: {
+          participation: pointsRulesForm.participation,
+          victory: pointsRulesForm.victory,
+          defeat: pointsRulesForm.defeat,
+          feats: featsForm,
+        },
+      });
+      if (result.success) {
+        setSuccess("Règles de points sauvegardées");
+        router.refresh();
+      } else {
+        setError(result.error || "Erreur lors de la sauvegarde");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Une erreur est survenue");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const feats = league.pointsConfig?.pointsRules.feats || [];
@@ -895,6 +973,217 @@ export default function LeagueManageClient({
               </CardContent>
             </Card>
           )}
+
+          {/* Configuration des règles de points */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Configuration des règles de points</CardTitle>
+              <CardDescription>
+                Définissez les points attribués pour chaque action
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Points de participation
+                  </label>
+                  <Input
+                    type="number"
+                    value={pointsRulesForm.participation}
+                    onChange={(e) =>
+                      setPointsRulesForm({
+                        ...pointsRulesForm,
+                        participation: parseInt(e.target.value, 10) || 0,
+                      })
+                    }
+                    min={0}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Points pour chaque participation à un match
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Points de victoire
+                  </label>
+                  <Input
+                    type="number"
+                    value={pointsRulesForm.victory}
+                    onChange={(e) =>
+                      setPointsRulesForm({
+                        ...pointsRulesForm,
+                        victory: parseInt(e.target.value, 10) || 0,
+                      })
+                    }
+                    min={0}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Points bonus pour une victoire
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Points de défaite
+                  </label>
+                  <Input
+                    type="number"
+                    value={pointsRulesForm.defeat}
+                    onChange={(e) =>
+                      setPointsRulesForm({
+                        ...pointsRulesForm,
+                        defeat: parseInt(e.target.value, 10) || 0,
+                      })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Points pour une défaite (généralement 0)
+                  </p>
+                </div>
+              </div>
+
+              {/* Liste des hauts faits */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium">Hauts faits</h4>
+                
+                {featsForm.length > 0 && (
+                  <div className="space-y-2">
+                    {featsForm.map((feat) => (
+                      <div
+                        key={feat.id}
+                        className="flex items-center justify-between border rounded-lg p-3"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <Trophy className="h-4 w-4 text-amber-500" />
+                            <span className="font-medium">{feat.title}</span>
+                            <Badge variant="secondary">+{feat.points} pts</Badge>
+                          </div>
+                          {feat.description && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {feat.description}
+                            </p>
+                          )}
+                          <div className="flex gap-4 text-xs text-muted-foreground mt-1">
+                            {feat.maxPerEvent && (
+                              <span>Max par match: {feat.maxPerEvent}</span>
+                            )}
+                            {feat.maxPerLeague && (
+                              <span>Max par ligue: {feat.maxPerLeague}</span>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveFeat(feat.id)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Formulaire d&apos;ajout de haut fait */}
+                <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
+                  <h5 className="text-sm font-medium">Ajouter un haut fait</h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Titre *</label>
+                      <Input
+                        value={newFeat.title}
+                        onChange={(e) =>
+                          setNewFeat({ ...newFeat, title: e.target.value })
+                        }
+                        placeholder="Ex: Premier sang"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Points</label>
+                      <Input
+                        type="number"
+                        value={newFeat.points}
+                        onChange={(e) =>
+                          setNewFeat({
+                            ...newFeat,
+                            points: parseInt(e.target.value, 10) || 1,
+                          })
+                        }
+                        min={1}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Description</label>
+                    <Input
+                      value={newFeat.description || ""}
+                      onChange={(e) =>
+                        setNewFeat({ ...newFeat, description: e.target.value })
+                      }
+                      placeholder="Description du haut fait"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">
+                        Max par match <span className="text-muted-foreground">(optionnel)</span>
+                      </label>
+                      <Input
+                        type="number"
+                        value={newFeat.maxPerEvent || ""}
+                        onChange={(e) =>
+                          setNewFeat({
+                            ...newFeat,
+                            maxPerEvent: e.target.value
+                              ? parseInt(e.target.value, 10)
+                              : undefined,
+                          })
+                        }
+                        min={1}
+                        placeholder="Illimité"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">
+                        Max par ligue <span className="text-muted-foreground">(optionnel)</span>
+                      </label>
+                      <Input
+                        type="number"
+                        value={newFeat.maxPerLeague || ""}
+                        onChange={(e) =>
+                          setNewFeat({
+                            ...newFeat,
+                            maxPerLeague: e.target.value
+                              ? parseInt(e.target.value, 10)
+                              : undefined,
+                          })
+                        }
+                        min={1}
+                        placeholder="Illimité"
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={handleAddFeat}
+                    disabled={!newFeat.title.trim()}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter le haut fait
+                  </Button>
+                </div>
+              </div>
+
+              <Button onClick={handleSavePointsRules} disabled={loading}>
+                {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Sauvegarder les règles
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       )}
 
