@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { MultiSelect } from "@/components/ui/multi-select";
 import {
   AlertCircle,
   Loader2,
@@ -50,7 +51,7 @@ import {
   addLeagueMatchAction,
   deleteLeagueMatchAction,
 } from "../../actions";
-import { League, LeagueStatus, LeagueParticipant, Feat, LeagueMatch } from "@/lib/types/League";
+import { League, LeagueStatus, LeagueParticipant, Feat, LeagueMatch, MatchFeatAward } from "@/lib/types/League";
 import { Game } from "@/lib/types/Game";
 import { Lair } from "@/lib/types/Lair";
 import { User } from "@/lib/types/User";
@@ -148,8 +149,16 @@ export default function LeagueManageClient({
     playedAt: new Date().toISOString().slice(0, 16),
     playerIds: [] as string[],
     winnerIds: [] as string[],
+    featAwards: [] as MatchFeatAward[],
     notes: "",
   });
+
+  // Options pour le multi-select des joueurs
+  const playerOptions = participantsWithUsers.map((p) => ({
+    value: p.userId,
+    label: p.user?.displayName || p.user?.username || p.userId,
+    searchTerms: `${p.user?.username || ""} ${p.user?.displayName || ""}`.trim(),
+  }));
 
   const handleSaveSettings = async () => {
     setLoading(true);
@@ -338,11 +347,12 @@ export default function LeagueManageClient({
         playedAt: matchForm.playedAt,
         playerIds: matchForm.playerIds,
         winnerIds: matchForm.winnerIds,
+        featAwards: matchForm.featAwards.length > 0 ? matchForm.featAwards : undefined,
         notes: matchForm.notes || undefined,
       });
       if (result.success) {
         setSuccess("Match enregistré avec succès");
-        setMatchForm({ gameId: league.gameIds[0] || "", playedAt: new Date().toISOString().slice(0, 16), playerIds: [], winnerIds: [], notes: "" });
+        setMatchForm({ gameId: league.gameIds[0] || "", playedAt: new Date().toISOString().slice(0, 16), playerIds: [], winnerIds: [], featAwards: [], notes: "" });
         router.refresh();
       } else {
         setError(result.error || "Erreur lors de l'enregistrement du match");
@@ -353,6 +363,30 @@ export default function LeagueManageClient({
     } finally {
       setLoading(false);
     }
+  };
+
+  // Ajouter un haut fait au formulaire de match
+  const addFeatAwardToMatch = (playerId: string, featId: string) => {
+    // Vérifier si ce haut fait n'est pas déjà attribué à ce joueur
+    const exists = matchForm.featAwards.some(
+      (fa) => fa.playerId === playerId && fa.featId === featId
+    );
+    if (!exists) {
+      setMatchForm({
+        ...matchForm,
+        featAwards: [...matchForm.featAwards, { playerId, featId }],
+      });
+    }
+  };
+
+  // Retirer un haut fait du formulaire de match
+  const removeFeatAwardFromMatch = (playerId: string, featId: string) => {
+    setMatchForm({
+      ...matchForm,
+      featAwards: matchForm.featAwards.filter(
+        (fa) => !(fa.playerId === playerId && fa.featId === featId)
+      ),
+    });
   };
 
   const toggleGame = (gameId: string) => {
@@ -1240,39 +1274,26 @@ export default function LeagueManageClient({
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Joueurs</label>
-                <div className="space-y-2 max-h-40 overflow-y-auto border rounded-md p-2">
-                  {participantsWithUsers.map((p) => (
-                    <div key={p.userId} className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id={`player-${p.userId}`}
-                        checked={matchForm.playerIds.includes(p.userId)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setMatchForm({
-                              ...matchForm,
-                              playerIds: [...matchForm.playerIds, p.userId],
-                            });
-                          } else {
-                            setMatchForm({
-                              ...matchForm,
-                              playerIds: matchForm.playerIds.filter(
-                                (id) => id !== p.userId
-                              ),
-                              winnerIds: matchForm.winnerIds.filter(
-                                (id) => id !== p.userId
-                              ),
-                            });
-                          }
-                        }}
-                        className="rounded border-gray-300"
-                      />
-                      <label htmlFor={`player-${p.userId}`} className="text-sm">
-                        {p.user?.displayName || p.user?.username || p.userId}
-                      </label>
-                    </div>
-                  ))}
-                </div>
+                <MultiSelect
+                  options={playerOptions}
+                  selected={matchForm.playerIds}
+                  onChange={(selected) => {
+                    // Filtrer les gagnants et featAwards pour ne garder que ceux encore dans les joueurs
+                    setMatchForm({
+                      ...matchForm,
+                      playerIds: selected,
+                      winnerIds: matchForm.winnerIds.filter((id) =>
+                        selected.includes(id)
+                      ),
+                      featAwards: matchForm.featAwards.filter((fa) =>
+                        selected.includes(fa.playerId)
+                      ),
+                    });
+                  }}
+                  placeholder="Sélectionner les joueurs..."
+                  searchPlaceholder="Rechercher par nom..."
+                  emptyMessage="Aucun participant trouvé."
+                />
               </div>
 
               {matchForm.playerIds.length >= 2 && (
@@ -1280,42 +1301,111 @@ export default function LeagueManageClient({
                   <label className="text-sm font-medium">
                     Gagnant(s) <span className="text-muted-foreground">(optionnel)</span>
                   </label>
-                  <div className="space-y-2 max-h-40 overflow-y-auto border rounded-md p-2">
-                    {matchForm.playerIds.map((playerId) => {
-                      const player = participantsWithUsers.find(
-                        (p) => p.userId === playerId
-                      );
-                      return (
-                        <div key={playerId} className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            id={`winner-${playerId}`}
-                            checked={matchForm.winnerIds.includes(playerId)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setMatchForm({
-                                  ...matchForm,
-                                  winnerIds: [...matchForm.winnerIds, playerId],
-                                });
-                              } else {
-                                setMatchForm({
-                                  ...matchForm,
-                                  winnerIds: matchForm.winnerIds.filter(
-                                    (id) => id !== playerId
-                                  ),
-                                });
-                              }
-                            }}
-                            className="rounded border-gray-300"
-                          />
-                          <label htmlFor={`winner-${playerId}`} className="text-sm">
-                            {player?.user?.displayName ||
-                              player?.user?.username ||
-                              playerId}
-                          </label>
-                        </div>
-                      );
-                    })}
+                  <MultiSelect
+                    options={playerOptions.filter((p) =>
+                      matchForm.playerIds.includes(p.value)
+                    )}
+                    selected={matchForm.winnerIds}
+                    onChange={(selected) =>
+                      setMatchForm({ ...matchForm, winnerIds: selected })
+                    }
+                    placeholder="Sélectionner les gagnants..."
+                    searchPlaceholder="Rechercher..."
+                    emptyMessage="Aucun joueur sélectionné."
+                  />
+                </div>
+              )}
+
+              {/* Attribution des hauts faits */}
+              {matchForm.playerIds.length >= 1 && feats.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Hauts faits <span className="text-muted-foreground">(optionnel)</span>
+                  </label>
+                  <div className="border rounded-md p-3 space-y-3">
+                    {/* Hauts faits déjà attribués */}
+                    {matchForm.featAwards.length > 0 && (
+                      <div className="space-y-2">
+                        {matchForm.featAwards.map((fa, idx) => {
+                          const player = participantsWithUsers.find(
+                            (p) => p.userId === fa.playerId
+                          );
+                          const feat = feats.find((f) => f.id === fa.featId);
+                          return (
+                            <div
+                              key={`${fa.playerId}-${fa.featId}-${idx}`}
+                              className="flex items-center justify-between bg-muted/50 rounded px-2 py-1"
+                            >
+                              <div className="flex items-center gap-2">
+                                <Trophy className="h-4 w-4 text-amber-500" />
+                                <span className="text-sm">
+                                  {player?.user?.displayName ||
+                                    player?.user?.username ||
+                                    fa.playerId}
+                                </span>
+                                <span className="text-muted-foreground">→</span>
+                                <span className="text-sm font-medium">
+                                  {feat?.title || fa.featId}
+                                </span>
+                                <Badge variant="secondary" className="text-xs">
+                                  +{feat?.points || 0} pts
+                                </Badge>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  removeFeatAwardFromMatch(fa.playerId, fa.featId)
+                                }
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Formulaire pour ajouter un haut fait */}
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Select
+                        onValueChange={(value) => {
+                          const [playerId, featId] = value.split("|");
+                          if (playerId && featId) {
+                            addFeatAwardToMatch(playerId, featId);
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Attribuer un haut fait..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {matchForm.playerIds.map((playerId) => {
+                            const player = participantsWithUsers.find(
+                              (p) => p.userId === playerId
+                            );
+                            return feats.map((feat) => {
+                              const alreadyAwarded = matchForm.featAwards.some(
+                                (fa) =>
+                                  fa.playerId === playerId && fa.featId === feat.id
+                              );
+                              if (alreadyAwarded) return null;
+                              return (
+                                <SelectItem
+                                  key={`${playerId}-${feat.id}`}
+                                  value={`${playerId}|${feat.id}`}
+                                >
+                                  {player?.user?.displayName ||
+                                    player?.user?.username ||
+                                    playerId}{" "}
+                                  → {feat.title} (+{feat.points} pts)
+                                </SelectItem>
+                              );
+                            });
+                          })}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1373,6 +1463,31 @@ export default function LeagueManageClient({
                       )
                       .filter(Boolean);
 
+                    // Calculer les points totaux par joueur pour ce match
+                    const playerPoints: Record<string, { base: number; feats: Array<{ title: string; points: number }> }> = {};
+                    for (const playerId of match.playerIds) {
+                      const isWinner = match.winnerIds.includes(playerId);
+                      const basePoints =
+                        (league.pointsConfig?.pointsRules.participation || 0) +
+                        (isWinner
+                          ? league.pointsConfig?.pointsRules.victory || 0
+                          : league.pointsConfig?.pointsRules.defeat || 0);
+                      playerPoints[playerId] = { base: basePoints, feats: [] };
+                    }
+
+                    // Ajouter les points des hauts faits
+                    if (match.featAwards) {
+                      for (const fa of match.featAwards) {
+                        const feat = feats.find((f) => f.id === fa.featId);
+                        if (feat && playerPoints[fa.playerId]) {
+                          playerPoints[fa.playerId].feats.push({
+                            title: feat.title,
+                            points: feat.points,
+                          });
+                        }
+                      }
+                    }
+
                     return (
                       <div
                         key={match.id || index}
@@ -1417,16 +1532,72 @@ export default function LeagueManageClient({
                           </div>
                         )}
                         {match.notes && (
-                          <div className="text-sm text-muted-foreground">
+                          <div className="text-sm text-muted-foreground italic">
                             {match.notes}
                           </div>
                         )}
+                        {/* Hauts faits du match */}
+                        {match.featAwards && match.featAwards.length > 0 && (
+                          <div className="space-y-1">
+                            <span className="text-xs text-muted-foreground">Hauts faits:</span>
+                            <div className="flex flex-wrap gap-1">
+                              {match.featAwards.map((fa, faIdx) => {
+                                const player = participantsWithUsers.find(
+                                  (p) => p.userId === fa.playerId
+                                );
+                                const feat = feats.find((f) => f.id === fa.featId);
+                                return (
+                                  <Badge
+                                    key={`${fa.playerId}-${fa.featId}-${faIdx}`}
+                                    variant="outline"
+                                    className="text-xs"
+                                  >
+                                    <Trophy className="h-3 w-3 mr-1 text-amber-500" />
+                                    {player?.user?.displayName ||
+                                      player?.user?.username ||
+                                      fa.playerId}
+                                    : {feat?.title || fa.featId} (+{feat?.points || 0})
+                                  </Badge>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        {/* Résumé des points */}
                         {league.format === "POINTS" && (
-                          <div className="text-xs text-muted-foreground">
-                            Points attribués:{" "}
-                            {match.winnerIds.length > 0
-                              ? `+${league.pointsConfig?.pointsRules.victory || 3} victoire, +${league.pointsConfig?.pointsRules.participation || 1} participation`
-                              : `+${league.pointsConfig?.pointsRules.participation || 1} participation`}
+                          <div className="border-t pt-2 mt-2">
+                            <span className="text-xs text-muted-foreground block mb-1">Points gagnés:</span>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                              {match.playerIds.map((playerId) => {
+                                const player = participantsWithUsers.find(
+                                  (p) => p.userId === playerId
+                                );
+                                const points = playerPoints[playerId];
+                                const totalPoints =
+                                  points.base +
+                                  points.feats.reduce((sum, f) => sum + f.points, 0);
+                                return (
+                                  <div
+                                    key={playerId}
+                                    className="text-xs flex items-center gap-1"
+                                  >
+                                    <span className="truncate">
+                                      {player?.user?.displayName ||
+                                        player?.user?.username ||
+                                        playerId}
+                                    </span>
+                                    <span className="font-medium text-green-600">
+                                      +{totalPoints} pts
+                                    </span>
+                                    {points.feats.length > 0 && (
+                                      <span className="text-muted-foreground">
+                                        ({points.base} + {points.feats.reduce((sum, f) => sum + f.points, 0)} hauts faits)
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         )}
                       </div>

@@ -488,6 +488,7 @@ export type AddLeagueMatchParams = {
   playedAt: string;
   playerIds: string[];
   winnerIds: string[];
+  featAwards?: Array<{ playerId: string; featId: string }>;
   notes?: string;
 };
 
@@ -523,6 +524,7 @@ export async function addLeagueMatchAction(
       playedAt: new Date(params.playedAt),
       playerIds: params.playerIds,
       winnerIds: params.winnerIds,
+      featAwards: params.featAwards,
       notes: params.notes,
     };
 

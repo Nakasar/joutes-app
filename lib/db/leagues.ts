@@ -505,6 +505,7 @@ export async function addLeagueMatch(
     playedAt: matchInput.playedAt,
     playerIds: matchInput.playerIds,
     winnerIds: matchInput.winnerIds,
+    featAwards: matchInput.featAwards,
     createdBy,
     createdAt: new Date(),
     notes: matchInput.notes,
@@ -561,6 +562,44 @@ export async function addLeagueMatch(
           },
         } as Document
       );
+    }
+
+    // Attribuer les hauts faits du match
+    if (matchInput.featAwards && matchInput.featAwards.length > 0) {
+      for (const featAward of matchInput.featAwards) {
+        const participantIndex = league.participants.findIndex(
+          (p) => p.userId === featAward.playerId
+        );
+        if (participantIndex === -1) continue;
+
+        const feat = pointsRules.feats.find((f) => f.id === featAward.featId);
+        if (!feat) continue;
+
+        const participantFeat = {
+          featId: featAward.featId,
+          earnedAt: matchDate,
+          matchId,
+        };
+
+        const featHistoryEntry = {
+          date: matchDate,
+          points: feat.points,
+          reason: `Haut fait: ${feat.title}`,
+          featId: featAward.featId,
+          matchId,
+        };
+
+        await db.collection(COLLECTION_NAME).updateOne(
+          { _id: new ObjectId(leagueId) },
+          {
+            $inc: { [`participants.${participantIndex}.points`]: feat.points },
+            $push: {
+              [`participants.${participantIndex}.feats`]: participantFeat,
+              [`participants.${participantIndex}.pointsHistory`]: featHistoryEntry,
+            },
+          } as Document
+        );
+      }
     }
   }
 
