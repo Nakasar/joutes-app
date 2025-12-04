@@ -12,6 +12,8 @@ import {
   isLeagueOrganizer,
   addPointsToParticipant,
   awardFeatToParticipant,
+  addLeagueMatch,
+  deleteLeagueMatch,
 } from "@/lib/db/leagues";
 import {
   League,
@@ -21,6 +23,7 @@ import {
   LeagueFormat,
   LeagueStatus,
   PaginatedLeaguesResult,
+  CreateLeagueMatchInput,
 } from "@/lib/types/League";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -475,6 +478,93 @@ export async function removeParticipantAction(
       success: false,
       error:
         error instanceof Error ? error.message : "Erreur lors du retrait du participant",
+    };
+  }
+}
+
+// Ajouter un match à la ligue
+export type AddLeagueMatchParams = {
+  gameId: string;
+  playedAt: string;
+  playerIds: string[];
+  winnerIds: string[];
+  notes?: string;
+};
+
+export async function addLeagueMatchAction(
+  leagueId: string,
+  params: AddLeagueMatchParams
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await requireAuth();
+
+    const canManage = await isLeagueOrganizer(leagueId, user.id);
+    if (!canManage) {
+      throw new Error("Vous n'êtes pas autorisé à gérer cette ligue");
+    }
+
+    const league = await getLeagueById(leagueId);
+    if (!league) {
+      throw new Error("Ligue non trouvée");
+    }
+
+    // Vérifier que le jeu fait partie des jeux de la ligue
+    if (!league.gameIds.includes(params.gameId)) {
+      throw new Error("Ce jeu ne fait pas partie des jeux de la ligue");
+    }
+
+    // Vérifier qu'il y a au moins un joueur
+    if (params.playerIds.length === 0) {
+      throw new Error("Le match doit avoir au moins un joueur");
+    }
+
+    const matchInput: CreateLeagueMatchInput = {
+      gameId: params.gameId,
+      playedAt: new Date(params.playedAt),
+      playerIds: params.playerIds,
+      winnerIds: params.winnerIds,
+      notes: params.notes,
+    };
+
+    await addLeagueMatch(leagueId, matchInput, user.id);
+    revalidatePath(`/leagues/${leagueId}`);
+    revalidatePath(`/leagues/${leagueId}/manage`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error adding league match:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Erreur lors de l'ajout du match",
+    };
+  }
+}
+
+// Supprimer un match de la ligue
+export async function deleteLeagueMatchAction(
+  leagueId: string,
+  matchId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await requireAuth();
+
+    const canManage = await isLeagueOrganizer(leagueId, user.id);
+    if (!canManage) {
+      throw new Error("Vous n'êtes pas autorisé à gérer cette ligue");
+    }
+
+    await deleteLeagueMatch(leagueId, matchId);
+    revalidatePath(`/leagues/${leagueId}`);
+    revalidatePath(`/leagues/${leagueId}/manage`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting league match:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Erreur lors de la suppression du match",
     };
   }
 }
