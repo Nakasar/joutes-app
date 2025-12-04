@@ -698,7 +698,7 @@ export async function deleteLeagueMatch(
   const match = league.matches?.find((m) => m.id === matchId);
   if (!match) return null;
 
-  // Annuler les points attribués pour ce match
+  // Annuler les points et hauts faits attribués pour ce match
   if (league.format === "POINTS" && league.pointsConfig) {
     for (const playerId of match.playerIds) {
       const participantIndex = league.participants.findIndex(
@@ -707,22 +707,24 @@ export async function deleteLeagueMatch(
       if (participantIndex === -1) continue;
 
       const participant = league.participants[participantIndex];
+      
+      // Calculer les points à retirer (depuis l'historique)
       const matchHistoryEntries = participant.pointsHistory.filter(
         (h) => h.matchId === matchId
       );
-
-      // Soustraire les points de ce match
       const pointsToRemove = matchHistoryEntries.reduce(
         (sum, entry) => sum + entry.points,
         0
       );
 
+      // Retirer les points et l'historique
       await db.collection(COLLECTION_NAME).updateOne(
         { _id: new ObjectId(leagueId) },
         {
           $inc: { [`participants.${participantIndex}.points`]: -pointsToRemove },
           $pull: {
             [`participants.${participantIndex}.pointsHistory`]: { matchId },
+            [`participants.${participantIndex}.feats`]: { matchId },
           },
         } as Document
       );
