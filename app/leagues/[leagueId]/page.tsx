@@ -132,7 +132,8 @@ export default async function LeagueDetailPage({
   const canJoin =
     session?.user?.id &&
     !isParticipant &&
-    (league.status === "OPEN" || league.status === "DRAFT") &&
+    league.status !== "COMPLETED" &&
+    league.status !== "CANCELLED" &&
     (!league.registrationDeadline || new Date() <= league.registrationDeadline) &&
     (!league.maxParticipants || league.participants.length < league.maxParticipants);
 
