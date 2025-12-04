@@ -291,7 +291,7 @@ export async function joinLeagueAction(
     }
 
     // Vérifier que la ligue accepte les inscriptions
-    if (league.status !== "OPEN" && league.status !== "DRAFT") {
+    if (league.status === "COMPLETED" || league.status === "CANCELLED") {
       throw new Error("Les inscriptions à cette ligue sont fermées");
     }
 
@@ -326,8 +326,13 @@ export async function joinLeagueByCodeAction(
     }
 
     // Vérifier que la ligue accepte les inscriptions
-    if (league.status !== "OPEN" && league.status !== "DRAFT") {
+    if (league.status === "COMPLETED" || league.status === "CANCELLED") {
       throw new Error("Les inscriptions à cette ligue sont fermées");
+    }
+
+    // Vérifier la deadline d'inscription
+    if (league.registrationDeadline && new Date() > league.registrationDeadline) {
+      throw new Error("La date limite d'inscription est dépassée");
     }
 
     await addParticipant(league.id, user.id);
