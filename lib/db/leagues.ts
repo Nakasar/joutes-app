@@ -6,6 +6,8 @@ import {
   SearchLeaguesOptions,
   PaginatedLeaguesResult,
   LeagueParticipant,
+  LeagueMatch,
+  CreateLeagueMatchInput,
 } from "@/lib/types/League";
 import { ObjectId, WithId, Document, Filter } from "mongodb";
 import { nanoid } from "nanoid";
@@ -52,6 +54,11 @@ function toLeague(doc: WithId<Document>): League {
     invitationCode: doc.invitationCode,
     gameIds: doc.gameIds || [],
     lairIds: doc.lairIds || [],
+    matches: (doc.matches || []).map((m: LeagueMatch) => ({
+      ...m,
+      playedAt: new Date(m.playedAt),
+      createdAt: new Date(m.createdAt),
+    })),
     createdAt: new Date(doc.createdAt),
     updatedAt: new Date(doc.updatedAt),
   };
@@ -81,6 +88,7 @@ function toDocument(
     invitationCode: league.invitationCode,
     gameIds: league.gameIds,
     lairIds: league.lairIds,
+    matches: league.matches || [],
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -103,6 +111,7 @@ export async function createLeague(
     id: result.insertedId.toString(),
     ...input,
     participants: input.participants || [],
+    matches: input.matches || [],
     invitationCode: doc.invitationCode,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
@@ -460,4 +469,173 @@ export async function getUserLeagues(
     limit,
     totalPages: Math.ceil(total / limit),
   };
+}
+
+// Ajouter un match à une ligue et mettre à jour les points des participants
+export async function addLeagueMatch(
+  leagueId: string,
+  matchInput: CreateLeagueMatchInput,
+  createdBy: string
+): Promise<League | null> {
+  const league = await getLeagueById(leagueId);
+  if (!league) return null;
+
+  // Vérifier que tous les joueurs sont des participants de la ligue
+  const participantIds = league.participants.map((p) => p.userId);
+  const allPlayersAreParticipants = matchInput.playerIds.every((playerId) =>
+    participantIds.includes(playerId)
+  );
+  if (!allPlayersAreParticipants) {
+    throw new Error("Tous les joueurs doivent être des participants de la ligue");
+  }
+
+  // Vérifier que tous les gagnants font partie des joueurs du match
+  const allWinnersArePlayers = matchInput.winnerIds.every((winnerId) =>
+    matchInput.playerIds.includes(winnerId)
+  );
+  if (!allWinnersArePlayers) {
+    throw new Error("Les gagnants doivent faire partie des joueurs du match");
+  }
+
+  // Créer le match
+  const matchId = nanoid(12);
+  const newMatch: LeagueMatch = {
+    id: matchId,
+    gameId: matchInput.gameId,
+    playedAt: matchInput.playedAt,
+    playerIds: matchInput.playerIds,
+    winnerIds: matchInput.winnerIds,
+    createdBy,
+    createdAt: new Date(),
+    notes: matchInput.notes,
+  };
+
+  // Préparer les mises à jour de points pour chaque participant du match
+  const pointsUpdates: Array<{
+    userId: string;
+    points: number;
+    reason: string;
+  }> = [];
+
+  if (league.format === "POINTS" && league.pointsConfig) {
+    const { pointsRules } = league.pointsConfig;
+    const matchDate = new Date();
+
+    for (const playerId of matchInput.playerIds) {
+      const isWinner = matchInput.winnerIds.includes(playerId);
+      let points = pointsRules.participation;
+
+      if (isWinner) {
+        points += pointsRules.victory;
+      } else {
+        points += pointsRules.defeat;
+      }
+
+      pointsUpdates.push({
+        userId: playerId,
+        points,
+        reason: isWinner ? "Victoire" : "Défaite",
+      });
+    }
+
+    // Mettre à jour les points de chaque participant
+    for (const update of pointsUpdates) {
+      const participantIndex = league.participants.findIndex(
+        (p) => p.userId === update.userId
+      );
+      if (participantIndex === -1) continue;
+
+      const historyEntry = {
+        date: matchDate,
+        points: update.points,
+        reason: update.reason,
+        matchId,
+      };
+
+      await db.collection(COLLECTION_NAME).updateOne(
+        { _id: new ObjectId(leagueId) },
+        {
+          $inc: { [`participants.${participantIndex}.points`]: update.points },
+          $push: {
+            [`participants.${participantIndex}.pointsHistory`]: historyEntry,
+          },
+        } as Document
+      );
+    }
+  }
+
+  // Ajouter le match à la ligue
+  const result = await db.collection(COLLECTION_NAME).findOneAndUpdate(
+    { _id: new ObjectId(leagueId) },
+    {
+      $push: { matches: newMatch as unknown as Document },
+      $set: { updatedAt: new Date() },
+    } as Document,
+    { returnDocument: "after" }
+  );
+
+  return result ? toLeague(result) : null;
+}
+
+// Récupérer les matchs d'une ligue
+export async function getLeagueMatches(leagueId: string): Promise<LeagueMatch[]> {
+  const league = await getLeagueById(leagueId);
+  if (!league) return [];
+
+  return league.matches || [];
+}
+
+// Supprimer un match d'une ligue (annule aussi les points attribués)
+export async function deleteLeagueMatch(
+  leagueId: string,
+  matchId: string
+): Promise<League | null> {
+  const league = await getLeagueById(leagueId);
+  if (!league) return null;
+
+  const match = league.matches?.find((m) => m.id === matchId);
+  if (!match) return null;
+
+  // Annuler les points attribués pour ce match
+  if (league.format === "POINTS" && league.pointsConfig) {
+    for (const playerId of match.playerIds) {
+      const participantIndex = league.participants.findIndex(
+        (p) => p.userId === playerId
+      );
+      if (participantIndex === -1) continue;
+
+      const participant = league.participants[participantIndex];
+      const matchHistoryEntries = participant.pointsHistory.filter(
+        (h) => h.matchId === matchId
+      );
+
+      // Soustraire les points de ce match
+      const pointsToRemove = matchHistoryEntries.reduce(
+        (sum, entry) => sum + entry.points,
+        0
+      );
+
+      await db.collection(COLLECTION_NAME).updateOne(
+        { _id: new ObjectId(leagueId) },
+        {
+          $inc: { [`participants.${participantIndex}.points`]: -pointsToRemove },
+          $pull: {
+            [`participants.${participantIndex}.pointsHistory`]: { matchId },
+          },
+        } as Document
+      );
+    }
+  }
+
+  // Supprimer le match
+  const result = await db.collection(COLLECTION_NAME).findOneAndUpdate(
+    { _id: new ObjectId(leagueId) },
+    {
+      $pull: { matches: { id: matchId } },
+      $set: { updatedAt: new Date() },
+    } as Document,
+    { returnDocument: "after" }
+  );
+
+  return result ? toLeague(result) : null;
 }

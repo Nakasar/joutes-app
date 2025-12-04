@@ -40,6 +40,7 @@ export type PointHistoryEntry = {
   reason: string;
   eventId?: string;
   featId?: string;
+  matchId?: string; // ID du match de ligue associé
 };
 
 // Hauts faits obtenus par un participant
@@ -47,6 +48,19 @@ export type ParticipantFeat = {
   featId: string;
   earnedAt: Date;
   eventId?: string;
+  matchId?: string; // ID du match de ligue associé
+};
+
+// Match joué dans le cadre d'une ligue
+export type LeagueMatch = {
+  id: string;
+  gameId: Game["id"];
+  playedAt: Date;
+  playerIds: User["id"][]; // Tous les joueurs du match
+  winnerIds: User["id"][]; // Les gagnants du match
+  createdBy: User["id"];
+  createdAt: Date;
+  notes?: string; // Notes optionnelles sur le match
 };
 
 // Participant à une ligue
@@ -101,15 +115,22 @@ export type League = {
   gameIds: Game["id"][];
   lairIds: Lair["id"][];
   
+  // Matchs de la ligue
+  matches: LeagueMatch[];
+  
   // Métadonnées
   createdAt: Date;
   updatedAt: Date;
 };
 
 // Type pour la création d'une ligue
-export type CreateLeagueInput = Omit<League, "id" | "createdAt" | "updatedAt" | "participants"> & {
+export type CreateLeagueInput = Omit<League, "id" | "createdAt" | "updatedAt" | "participants" | "matches"> & {
   participants?: LeagueParticipant[];
+  matches?: LeagueMatch[];
 };
+
+// Type pour la création d'un match de ligue
+export type CreateLeagueMatchInput = Omit<LeagueMatch, "id" | "createdAt" | "createdBy">;
 
 // Type pour la mise à jour d'une ligue
 export type UpdateLeagueInput = Partial<Omit<League, "id" | "createdAt" | "creatorId">>;

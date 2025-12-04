@@ -34,6 +34,11 @@ import {
   Plus,
   UserMinus,
   Award,
+  Swords,
+  Trophy,
+  Calendar,
+  Gamepad2,
+  X,
 } from "lucide-react";
 import {
   updateLeagueAction,
@@ -42,8 +47,10 @@ import {
   removeParticipantAction,
   addPointsAction,
   awardFeatAction,
+  addLeagueMatchAction,
+  deleteLeagueMatchAction,
 } from "../../actions";
-import { League, LeagueStatus, LeagueParticipant, Feat } from "@/lib/types/League";
+import { League, LeagueStatus, LeagueParticipant, Feat, LeagueMatch } from "@/lib/types/League";
 import { Game } from "@/lib/types/Game";
 import { Lair } from "@/lib/types/Lair";
 import { User } from "@/lib/types/User";
@@ -76,7 +83,7 @@ export default function LeagueManageClient({
   allLairs,
 }: LeagueManageClientProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"settings" | "participants" | "points">(
+  const [activeTab, setActiveTab] = useState<"settings" | "participants" | "points" | "matches">(
     "settings"
   );
   const [loading, setLoading] = useState(false);
@@ -113,6 +120,16 @@ export default function LeagueManageClient({
   const [featForm, setFeatForm] = useState({
     userId: "",
     featId: "",
+  });
+
+  // État pour le formulaire de nouveau match
+  const [showMatchForm, setShowMatchForm] = useState(false);
+  const [matchForm, setMatchForm] = useState({
+    gameId: league.gameIds[0] || "",
+    playedAt: new Date().toISOString().slice(0, 16),
+    playerIds: [] as string[],
+    winnerIds: [] as string[],
+    notes: "",
   });
 
   const handleSaveSettings = async () => {
@@ -286,6 +303,39 @@ export default function LeagueManageClient({
     }
   };
 
+  const handleAddMatch = async () => {
+    if (matchForm.playerIds.length < 2) {
+      setError("Un match doit avoir au moins 2 joueurs");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const result = await addLeagueMatchAction(league.id, {
+        gameId: matchForm.gameId,
+        playedAt: matchForm.playedAt,
+        playerIds: matchForm.playerIds,
+        winnerIds: matchForm.winnerIds,
+        notes: matchForm.notes || undefined,
+      });
+      if (result.success) {
+        setSuccess("Match enregistré avec succès");
+        setMatchForm({ gameId: league.gameIds[0] || "", playedAt: new Date().toISOString().slice(0, 16), playerIds: [], winnerIds: [], notes: "" });
+        router.refresh();
+      } else {
+        setError(result.error || "Erreur lors de l'enregistrement du match");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Une erreur est survenue");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const toggleGame = (gameId: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -347,6 +397,13 @@ export default function LeagueManageClient({
             Points & Hauts faits
           </Button>
         )}
+        <Button
+          variant={activeTab === "matches" ? "default" : "ghost"}
+          onClick={() => setActiveTab("matches")}
+        >
+          <Swords className="h-4 w-4 mr-2" />
+          Matchs ({league.matches?.length || 0})
+        </Button>
       </div>
 
       {/* Tab: Settings */}
@@ -838,6 +895,258 @@ export default function LeagueManageClient({
               </CardContent>
             </Card>
           )}
+        </div>
+      )}
+
+      {/* Tab: Matches */}
+      {activeTab === "matches" && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Ajouter un match */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Ajouter un match</CardTitle>
+              <CardDescription>
+                Enregistrez un match entre participants de la ligue
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Sélection du jeu */}
+              {leagueGames.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Jeu</label>
+                  <Select
+                    value={matchForm.gameId}
+                    onValueChange={(value) =>
+                      setMatchForm({ ...matchForm, gameId: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un jeu" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {leagueGames.map((game) => (
+                        <SelectItem key={game.id} value={game.id}>
+                          {game.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Date et heure du match */}
+              <div className="space-y-2">
+                <label htmlFor="matchPlayedAt" className="text-sm font-medium">
+                  Date et heure
+                </label>
+                <Input
+                  id="matchPlayedAt"
+                  type="datetime-local"
+                  value={matchForm.playedAt}
+                  onChange={(e) =>
+                    setMatchForm({ ...matchForm, playedAt: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Joueurs</label>
+                <div className="space-y-2 max-h-40 overflow-y-auto border rounded-md p-2">
+                  {participantsWithUsers.map((p) => (
+                    <div key={p.userId} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id={`player-${p.userId}`}
+                        checked={matchForm.playerIds.includes(p.userId)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setMatchForm({
+                              ...matchForm,
+                              playerIds: [...matchForm.playerIds, p.userId],
+                            });
+                          } else {
+                            setMatchForm({
+                              ...matchForm,
+                              playerIds: matchForm.playerIds.filter(
+                                (id) => id !== p.userId
+                              ),
+                              winnerIds: matchForm.winnerIds.filter(
+                                (id) => id !== p.userId
+                              ),
+                            });
+                          }
+                        }}
+                        className="rounded border-gray-300"
+                      />
+                      <label htmlFor={`player-${p.userId}`} className="text-sm">
+                        {p.user?.displayName || p.user?.username || p.userId}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {matchForm.playerIds.length >= 2 && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Gagnant(s) <span className="text-muted-foreground">(optionnel)</span>
+                  </label>
+                  <div className="space-y-2 max-h-40 overflow-y-auto border rounded-md p-2">
+                    {matchForm.playerIds.map((playerId) => {
+                      const player = participantsWithUsers.find(
+                        (p) => p.userId === playerId
+                      );
+                      return (
+                        <div key={playerId} className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id={`winner-${playerId}`}
+                            checked={matchForm.winnerIds.includes(playerId)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setMatchForm({
+                                  ...matchForm,
+                                  winnerIds: [...matchForm.winnerIds, playerId],
+                                });
+                              } else {
+                                setMatchForm({
+                                  ...matchForm,
+                                  winnerIds: matchForm.winnerIds.filter(
+                                    (id) => id !== playerId
+                                  ),
+                                });
+                              }
+                            }}
+                            className="rounded border-gray-300"
+                          />
+                          <label htmlFor={`winner-${playerId}`} className="text-sm">
+                            {player?.user?.displayName ||
+                              player?.user?.username ||
+                              playerId}
+                          </label>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <label htmlFor="matchNotes" className="text-sm font-medium">
+                  Notes <span className="text-muted-foreground">(optionnel)</span>
+                </label>
+                <Textarea
+                  id="matchNotes"
+                  value={matchForm.notes}
+                  onChange={(e) =>
+                    setMatchForm({ ...matchForm, notes: e.target.value })
+                  }
+                  placeholder="Détails du match, score, etc."
+                  rows={2}
+                />
+              </div>
+
+              <Button
+                onClick={handleAddMatch}
+                disabled={loading || matchForm.playerIds.length < 2}
+              >
+                {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                <Swords className="h-4 w-4 mr-2" />
+                Enregistrer le match
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Historique des matchs */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Historique des matchs</CardTitle>
+              <CardDescription>
+                {league.matches?.length || 0} match(s) enregistré(s)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!league.matches || league.matches.length === 0 ? (
+                <p className="text-muted-foreground text-sm">
+                  Aucun match enregistré pour cette ligue.
+                </p>
+              ) : (
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {[...league.matches].reverse().map((match, index) => {
+                    const matchPlayers = match.playerIds
+                      .map((id) =>
+                        participantsWithUsers.find((p) => p.userId === id)
+                      )
+                      .filter(Boolean);
+                    const matchWinners = match.winnerIds
+                      .map((id) =>
+                        participantsWithUsers.find((p) => p.userId === id)
+                      )
+                      .filter(Boolean);
+
+                    return (
+                      <div
+                        key={match.id || index}
+                        className="border rounded-lg p-3 space-y-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">
+                            Match #{league.matches!.length - index}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(match.playedAt).toLocaleDateString("fr-FR", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">Joueurs: </span>
+                          {matchPlayers
+                            .map(
+                              (p) =>
+                                p?.user?.displayName || p?.user?.username || p?.userId
+                            )
+                            .join(", ")}
+                        </div>
+                        {matchWinners.length > 0 && (
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">Gagnant(s): </span>
+                            <span className="text-green-600 font-medium">
+                              {matchWinners
+                                .map(
+                                  (p) =>
+                                    p?.user?.displayName ||
+                                    p?.user?.username ||
+                                    p?.userId
+                                )
+                                .join(", ")}
+                            </span>
+                          </div>
+                        )}
+                        {match.notes && (
+                          <div className="text-sm text-muted-foreground">
+                            {match.notes}
+                          </div>
+                        )}
+                        {league.format === "POINTS" && (
+                          <div className="text-xs text-muted-foreground">
+                            Points attribués:{" "}
+                            {match.winnerIds.length > 0
+                              ? `+${league.pointsConfig?.pointsRules.victory || 3} victoire, +${league.pointsConfig?.pointsRules.participation || 1} participation`
+                              : `+${league.pointsConfig?.pointsRules.participation || 1} participation`}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>
