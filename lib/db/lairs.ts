@@ -1,8 +1,31 @@
 import db from "@/lib/mongodb";
 import { Lair } from "@/lib/types/Lair";
-import { ObjectId, WithId, Document } from "mongodb";
+import { ObjectId, WithId, Document, Filter } from "mongodb";
 
 const COLLECTION_NAME = "lairs";
+
+// Type pour les options de recherche des lairs
+export type SearchLairsOptions = {
+  userId?: string;
+  search?: string;
+  gameIds?: string[];
+  nearLocation?: {
+    longitude: number;
+    latitude: number;
+    maxDistanceMeters?: number;
+  };
+  page?: number;
+  limit?: number;
+};
+
+// Type pour le résultat de recherche paginé
+export type PaginatedLairsResult = {
+  lairs: Lair[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};
 
 // Type pour un lieu dans MongoDB (avec _id)
 export type LairDocument = Omit<Lair, "id"> & { _id: ObjectId };
@@ -63,6 +86,103 @@ export async function getAllLairs(userId?: string): Promise<Lair[]> {
   
   const lairs = await db.collection(COLLECTION_NAME).find(query).toArray();
   return lairs.map(toLair);
+}
+
+export async function searchLairs(options: SearchLairsOptions): Promise<PaginatedLairsResult> {
+  const {
+    userId,
+    search,
+    gameIds,
+    nearLocation,
+    page = 1,
+    limit = 10,
+  } = options;
+
+  // Build the base visibility query
+  let visibilityQuery: Filter<Document>;
+  if (userId) {
+    visibilityQuery = {
+      $or: [
+        { isPrivate: { $ne: true } },
+        { isPrivate: true, owners: userId },
+      ]
+    };
+  } else {
+    visibilityQuery = { isPrivate: { $ne: true } };
+  }
+
+  // Build additional filters
+  const filters: Filter<Document>[] = [visibilityQuery];
+
+  // Search by name
+  if (search && search.trim()) {
+    filters.push({
+      name: { $regex: search.trim(), $options: "i" }
+    });
+  }
+
+  // Filter by games
+  if (gameIds && gameIds.length > 0) {
+    filters.push({
+      games: { $in: gameIds }
+    });
+  }
+
+  // Combine all filters
+  const query: Filter<Document> = filters.length > 1 ? { $and: filters } : filters[0];
+
+  // If nearLocation is specified, use geo query
+  if (nearLocation) {
+    await ensureGeospatialIndex();
+    
+    const geoQuery: Filter<Document> = {
+      $and: [
+        query,
+        {
+          location: {
+            $near: {
+              $geometry: {
+                type: "Point",
+                coordinates: [nearLocation.longitude, nearLocation.latitude]
+              },
+              $maxDistance: nearLocation.maxDistanceMeters || 50000
+            }
+          }
+        }
+      ]
+    };
+
+    // For geo queries, we can't use skip/limit directly with $near in the same way
+    // So we need to handle it differently
+    const allLairs = await db.collection(COLLECTION_NAME).find(geoQuery).toArray();
+    const total = allLairs.length;
+    const skip = (page - 1) * limit;
+    const paginatedLairs = allLairs.slice(skip, skip + limit);
+
+    return {
+      lairs: paginatedLairs.map(toLair),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  // Standard query with pagination
+  const skip = (page - 1) * limit;
+  
+  const [lairs, total] = await Promise.all([
+    db.collection(COLLECTION_NAME).find(query).skip(skip).limit(limit).toArray(),
+    db.collection(COLLECTION_NAME).countDocuments(query),
+  ]);
+
+  return {
+    lairs: lairs.map(toLair),
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
 }
 
 export async function getLairById(id: string): Promise<Lair | null> {
