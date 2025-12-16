@@ -89,11 +89,13 @@ export default function ProfileImageDisplay({
   return (
     <>
       <div className="flex items-center gap-4">
-        <img
-          src={displayImage}
-          alt="Image de profil"
-          className="w-20 h-20 rounded-full object-cover ring-2 ring-primary/20"
-        />
+        {displayImage && (
+          <img
+            src={displayImage}
+            alt="Image de profil"
+            className="w-20 h-20 rounded-full object-cover ring-2 ring-primary/20"
+          />
+        )}
         <Button
           variant="outline"
           size="sm"

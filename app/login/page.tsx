@@ -3,6 +3,8 @@
 import { authClient } from "@/lib/auth-client";
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import {Button} from "@/components/ui/button";
+import {Key} from "lucide-react";
 
 function LoginForm() {
   const [email, setEmail] = useState("");
@@ -69,7 +71,8 @@ function LoginForm() {
         </div>
 
         {step === "email" ? (
-          <form className="mt-8 space-y-6" onSubmit={handleSendOTP}>
+          <div>
+            <form className="mt-8 space-y-6" onSubmit={handleSendOTP}>
             <div>
               <label htmlFor="email" className="sr-only">
                 Adresse email
@@ -101,6 +104,23 @@ function LoginForm() {
               </button>
             </div>
           </form>
+            <Button className="w-full mt-8" onClick={async () => {
+              const { data, error } = await authClient.signIn.passkey({
+                fetchOptions: {
+                  onSuccess(context) {
+                    router.push('/');
+                  },
+                  onError(context) {
+                    // Handle authentication errors
+                    console.error("Authentication failed:", context.error.message);
+                  }
+                }
+              });
+            }}>
+              <Key />
+              PassKey/WebAuthN
+            </Button>
+          </div>
         ) : (
           <form className="mt-8 space-y-6" onSubmit={handleVerifyOTP}>
             <div>

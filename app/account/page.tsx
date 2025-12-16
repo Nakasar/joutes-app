@@ -12,7 +12,7 @@ import ProfileImageDisplay from "./ProfileImageDisplay";
 import LocationDisplay from "./LocationDisplay";
 import ProfileVisibilitySwitch from "./ProfileVisibilitySwitch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { User as UserIcon, Mail, Gamepad2, MapPin, FileText, Settings } from "lucide-react";
+import {User as UserIcon, Mail, Gamepad2, MapPin, FileText, Settings, Shield} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -67,12 +67,20 @@ export default async function AccountPage() {
                 Gérez votre profil et vos préférences
               </p>
             </div>
-            <Link href="/account/integrations">
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-2" />
-                Intégrations
-              </Button>
-            </Link>
+            <div className="flex gap-4">
+              <Link href="/account/security">
+                <Button variant="outline" size="sm">
+                  <Shield className="h-4 w-4 mr-2" />
+                  Sécurité
+                </Button>
+              </Link>
+              <Link href="/account/integrations">
+                <Button variant="outline" size="sm">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Intégrations
+                </Button>
+              </Link>
+            </div>
           </div>
 
           {/* Section Informations du profil - Carte principale */}

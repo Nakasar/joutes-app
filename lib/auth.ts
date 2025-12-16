@@ -3,6 +3,7 @@ import { emailOTP } from "better-auth/plugins";
 import { Resend } from "resend";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import db from "@/lib/mongodb";
+import {passkey} from "@better-auth/passkey";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -43,6 +44,7 @@ export const auth = betterAuth({
       },
       expiresIn: 600, // 10 minutes
     }),
+    passkey(),
   ],
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 jours
