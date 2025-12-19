@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useSession, signOut } from "@/lib/auth-client";
 import Image from "next/image";
-import { Menu, Calendar, MapPin, User, LogOut, Shield, GamepadIcon } from "lucide-react";
+import { Menu, Calendar, MapPin, User, LogOut, Shield, GamepadIcon, Dices } from "lucide-react";
 import { isAdmin } from "@/lib/config/admins";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,6 +48,14 @@ export default function Header() {
           {/* Desktop Navigation */}
           <NavigationMenu className="hidden md:flex">
             <NavigationMenuList>
+              <NavigationMenuItem>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                  <Link href="/games">
+                    <Dices className="mr-2 h-4 w-4" />
+                    Jeux
+                  </Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
                   <Link href="/events">
@@ -182,6 +190,12 @@ export default function Header() {
         {mobileMenuOpen && (
           <div className="border-t py-4 md:hidden">
             <div className="flex flex-col gap-2">
+              <Button variant="ghost" asChild className="justify-start">
+                <Link href="/games" onClick={() => setMobileMenuOpen(false)}>
+                  <Dices className="mr-2 h-4 w-4" />
+                  Jeux
+                </Link>
+              </Button>
               <Button variant="ghost" asChild className="justify-start">
                 <Link href="/events" onClick={() => setMobileMenuOpen(false)}>
                   <Calendar className="mr-2 h-4 w-4" />

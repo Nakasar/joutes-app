@@ -44,6 +44,18 @@ export async function getGameById(id: string): Promise<Game | null> {
   return game ? toGame(game) : null;
 }
 
+export async function getGameBySlugOrId(slugOrId: string): Promise<Game | null> {
+  // Try to find by slug first
+  let game = await db.collection(COLLECTION_NAME).findOne({ slug: slugOrId });
+
+  // If not found and slugOrId is a valid ObjectId, try by ID
+  if (!game && ObjectId.isValid(slugOrId)) {
+    game = await db.collection(COLLECTION_NAME).findOne({ _id: new ObjectId(slugOrId) });
+  }
+
+  return game ? toGame(game) : null;
+}
+
 export async function createGame(game: Omit<Game, "id">): Promise<Game> {
   
   const doc = toDocument(game);
