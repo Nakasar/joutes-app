@@ -26,6 +26,7 @@ export function GameForm({
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
+    slug: "",
     icon: "",
     banner: "",
     description: "",
@@ -44,6 +45,7 @@ export function GameForm({
     if (open) {
       if (game) {
         setFormData({
+          slug: game.slug || "",
           name: game.name,
           icon: game.icon || "",
           banner: game.banner || "",
@@ -52,6 +54,7 @@ export function GameForm({
         });
       } else {
         setFormData({
+          slug: "",
           name: "",
           icon: "",
           banner: "",
@@ -69,6 +72,7 @@ export function GameForm({
 
     startTransition(async () => {
       const data = {
+        slug: formData.slug.length > 0 ? formData.slug : undefined,
         name: formData.name,
         icon: formData.icon.length > 0 ? formData.icon : undefined,
         banner: formData.banner.length > 0 ? formData.banner : undefined,
@@ -82,6 +86,7 @@ export function GameForm({
 
       if (result.success) {
         setFormData({
+          slug: "",
           name: "",
           icon: "",
           banner: "",
@@ -167,6 +172,20 @@ export function GameForm({
               value={formData.name}
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
+              }
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              ID du jeu
+            </label>
+            <input
+              type="text"
+              value={formData.slug}
+              onChange={(e) =>
+                setFormData({ ...formData, slug: e.target.value })
               }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />

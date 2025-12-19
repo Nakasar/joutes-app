@@ -18,6 +18,7 @@ export async function getGames(): Promise<Game[]> {
 
 export async function createGame(data: {
   name: string;
+  slug?: string;
   icon?: string;
   banner?: string;
   description: string;
@@ -49,6 +50,7 @@ export async function updateGame(
   id: string,
   data: {
     name: string;
+    slug?: string;
     icon?: string;
     banner?: string;
     description: string;
