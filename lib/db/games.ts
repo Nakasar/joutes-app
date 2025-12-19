@@ -12,6 +12,7 @@ function toGame(doc: WithId<Document>): Game {
   return {
     id: doc._id.toString(),
     name: doc.name,
+    slug: doc.slug,
     icon: doc.icon,
     banner: doc.banner,
     description: doc.description,
@@ -23,6 +24,7 @@ function toGame(doc: WithId<Document>): Game {
 function toDocument(game: Omit<Game, "id">): Omit<GameDocument, "_id"> {
   return {
     name: game.name,
+    slug: game.slug,
     icon: game.icon,
     banner: game.banner,
     description: game.description,
