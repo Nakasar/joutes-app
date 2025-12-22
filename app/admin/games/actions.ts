@@ -32,6 +32,8 @@ export async function createGame(data: {
 
     const newGame = await gamesDb.createGame(validatedData);
     revalidatePath("/admin/games");
+    revalidatePath(`/games`);
+    revalidatePath(`/games/${newGame.slug ?? newGame.id}`);
     
     return { success: true, game: newGame };
   } catch (error) {
@@ -66,6 +68,12 @@ export async function updateGame(
     // Valider les données avec Zod
     const validatedData = gameSchema.parse(data);
 
+    const game = await gamesDb.getGameById(id);
+
+    if (!game) {
+      return { success: false, error: "Jeu non trouvé" };
+    }
+
     const updated = await gamesDb.updateGame(validatedId, validatedData);
     
     if (!updated) {
@@ -74,6 +82,9 @@ export async function updateGame(
     
     revalidatePath("/admin/games");
     revalidatePath("/admin/lairs");
+    revalidatePath(`/games`);
+    revalidatePath(`/games/${game.slug ?? game.id}`);
+    revalidatePath(`/games/${validatedData.slug ?? game.id}`);
     
     return { success: true };
   } catch (error) {
@@ -94,6 +105,12 @@ export async function deleteGame(id: string) {
     
     // Valider l'ID
     const validatedId = gameIdSchema.parse(id);
+
+    const game = await gamesDb.getGameById(id);
+
+    if (!game) {
+      return { success: false, error: "Jeu non trouvé" };
+    }
     
     const deleted = await gamesDb.deleteGame(validatedId);
     
@@ -103,6 +120,8 @@ export async function deleteGame(id: string) {
     
     revalidatePath("/admin/games");
     revalidatePath("/admin/lairs");
+    revalidatePath(`/games`);
+    revalidatePath(`/games/${game.slug ?? game.id}`);
     
     return { success: true };
   } catch (error) {
@@ -114,5 +133,46 @@ export async function deleteGame(id: string) {
     }
     console.error("Erreur lors de la suppression du jeu:", error);
     return { success: false, error: "Erreur lors de la suppression du jeu" };
+  }
+}
+
+export async function updateGameFeaturedLairs(
+  id: string,
+  featuredLairs: string[]
+) {
+  try {
+    await requireAdmin();
+
+    // Valider l'ID
+    const validatedId = gameIdSchema.parse(id);
+
+    const game = await gamesDb.getGameById(id);
+
+    if (!game) {
+      return { success: false, error: "Jeu non trouvé" };
+    }
+
+    // Valider les IDs des lairs
+    const validatedLairIds = z.array(z.string().regex(/^[0-9a-fA-F]{24}$/)).parse(featuredLairs);
+
+    const updated = await gamesDb.updateGame(validatedId, { featuredLairs: validatedLairIds });
+
+    if (!updated) {
+      return { success: false, error: "Jeu non trouvé" };
+    }
+
+    revalidatePath("/admin/games");
+    revalidatePath(`/games/${game.slug ?? game.id}`);
+
+    return { success: true };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message || "Données invalides"
+      };
+    }
+    console.error("Erreur lors de la mise à jour des lieux mis en avant:", error);
+    return { success: false, error: "Erreur lors de la mise à jour des lieux mis en avant" };
   }
 }

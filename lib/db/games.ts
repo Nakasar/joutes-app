@@ -17,6 +17,7 @@ function toGame(doc: WithId<Document>): Game {
     banner: doc.banner,
     description: doc.description,
     type: doc.type,
+    featuredLairs: doc.featuredLairs || [],
   };
 }
 
@@ -29,6 +30,7 @@ function toDocument(game: Omit<Game, "id">): Omit<GameDocument, "_id"> {
     banner: game.banner,
     description: game.description,
     type: game.type,
+    featuredLairs: game.featuredLairs || [],
   };
 }
 
