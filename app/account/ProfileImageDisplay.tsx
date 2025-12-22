@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 
 interface ProfileImageDisplayProps {
   currentImage?: string;
-  currentAvatar: string;
+  currentAvatar?: string;
 }
 
 export default function ProfileImageDisplay({ 

@@ -60,8 +60,6 @@ export default async function LeagueManagePage({
   // Récupérer les détails des participants
   const participantsWithUsers = await getLeagueRanking(league.id);
   const leagueGames = league.games;
-  const leagueLairs = league.lairs;
-
   // Récupérer tous les jeux et lairs disponibles pour l'édition
   const [allGames, allLairs] = await Promise.all([
     getAllGames(),
