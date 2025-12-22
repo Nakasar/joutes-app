@@ -12,15 +12,19 @@ export const metadata: Metadata = {
   description: 'Découvrez tous les lieux de jeu et leurs événements à venir',
 };
 
-export default async function LairsPage() {
+export default async function LairsPage({ searchParams }: { searchParams: Promise<{ gameId?: string }> }) {
   // Récupérer l'utilisateur connecté pour afficher ses lairs privés
   const session = await auth.api.getSession({
     headers: await headers(),
   });
+  const { gameId } = await searchParams;
+
+  console.log(gameId);
 
   // Fetch initial data with pagination
   const [initialLairsData, games] = await Promise.all([
     searchLairs({
+      gameIds: gameId ? [gameId] : undefined,
       userId: session?.user?.id,
       page: 1,
       limit: 10,
@@ -44,7 +48,7 @@ export default async function LairsPage() {
           {session?.user && <CreatePrivateLairButton />}
         </div>
         
-        <LairsClient initialData={initialLairsData} games={games} />
+        <LairsClient initialData={initialLairsData} games={games} initialFilters={{ gameId }} />
       </div>
     </div>
   );

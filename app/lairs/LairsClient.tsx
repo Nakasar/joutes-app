@@ -11,18 +11,24 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, ArrowRight, Gamepad2, Lock, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import {usePathname, useRouter, useSearchParams} from "next/navigation";
 
 type LairsClientProps = {
   initialData: PaginatedLairsResult;
   games: Game[];
+  initialFilters: {
+    gameId?: string;
+  };
 };
 
-export default function LairsClient({ initialData, games }: LairsClientProps) {
+export default function LairsClient({ initialData, games, initialFilters }: LairsClientProps) {
+  const pathname = usePathname();
+  const router = useRouter();
   const [data, setData] = useState<PaginatedLairsResult>(initialData);
   const [isLoading, setIsLoading] = useState(false);
   const [filters, setFilters] = useState<LairsFiltersValues>({
     search: "",
-    gameId: "all",
+    gameId: initialFilters.gameId ? initialFilters.gameId : "all",
     nearLocation: undefined,
   });
 
@@ -60,6 +66,11 @@ export default function LairsClient({ initialData, games }: LairsClientProps) {
 
   const handleFiltersChange = (newFilters: LairsFiltersValues) => {
     setFilters(newFilters);
+    if (newFilters.gameId === 'all') {
+      router.push(pathname)
+    } else {
+      router.push(pathname + `?gameId=${newFilters.gameId}`);
+    }
   };
 
   const handlePageChange = (newPage: number) => {
