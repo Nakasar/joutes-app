@@ -29,7 +29,10 @@ function toUser(doc: WithId<Document>): User {
 }
 
 export async function getUserById(id: string): Promise<User | null> {
-  
+  if (!id) {
+    return null;
+  }
+
   const user = await db.collection(COLLECTION_NAME).findOne({ _id: ObjectId.createFromHexString(id) });
   return user ? toUser(user) : null;
 }

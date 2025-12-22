@@ -118,14 +118,6 @@ export default async function LeagueDetailPage({
   // Récupérer le classement
   const ranking = await getLeagueRanking(leagueId);
 
-  // Récupérer les infos des participants pour le classement
-  const participantsWithUsers = await Promise.all(
-    ranking.slice(0, 10).map(async (participant) => {
-      const user = await getUserById(participant.userId);
-      return { ...participant, user };
-    })
-  );
-
   // Récupérer les infos du créateur
   const creator = await getUserById(league.creatorId);
 
@@ -198,13 +190,13 @@ export default async function LeagueDetailPage({
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {participantsWithUsers.length === 0 ? (
+                {ranking.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">
                     Aucun participant pour le moment
                   </p>
                 ) : (
                   <div className="space-y-2">
-                    {participantsWithUsers.map((participant, index) => (
+                    {ranking.map((participant, index) => (
                       <div
                         key={participant.userId}
                         className={`flex items-center justify-between p-3 rounded-lg ${

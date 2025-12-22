@@ -10,8 +10,8 @@ import {
   CreateLeagueMatchInput,
   MatchFeatAward,
 } from "@/lib/types/League";
-import { ObjectId, WithId, Document, Filter } from "mongodb";
-import { nanoid } from "nanoid";
+import {ObjectId, WithId, Document, Filter} from "mongodb";
+import {nanoid} from "nanoid";
 
 const COLLECTION_NAME = "leagues";
 
@@ -124,7 +124,11 @@ export async function getLeagueById(id: string): Promise<League | null> {
   try {
     const doc = await db
       .collection(COLLECTION_NAME)
-      .findOne({ _id: new ObjectId(id) });
+      .findOne({_id: new ObjectId(id)}, {
+        projection: {
+          participants: 0,
+        }
+      });
     return doc ? toLeague(doc) : null;
   } catch {
     return null;
@@ -137,7 +141,7 @@ export async function getLeagueByInvitationCode(
 ): Promise<League | null> {
   const doc = await db
     .collection(COLLECTION_NAME)
-    .findOne({ invitationCode: code });
+    .findOne({invitationCode: code});
   return doc ? toLeague(doc) : null;
 }
 
@@ -152,9 +156,9 @@ export async function updateLeague(
   };
 
   const result = await db.collection(COLLECTION_NAME).findOneAndUpdate(
-    { _id: new ObjectId(id) },
-    { $set: updateData },
-    { returnDocument: "after" }
+    {_id: new ObjectId(id)},
+    {$set: updateData},
+    {returnDocument: "after"}
   );
 
   return result ? toLeague(result) : null;
@@ -164,7 +168,7 @@ export async function updateLeague(
 export async function deleteLeague(id: string): Promise<boolean> {
   const result = await db
     .collection(COLLECTION_NAME)
-    .deleteOne({ _id: new ObjectId(id) });
+    .deleteOne({_id: new ObjectId(id)});
   return result.deletedCount === 1;
 }
 
@@ -194,15 +198,15 @@ export async function searchLeagues(
   // Recherche textuelle
   if (search) {
     filter.$or = [
-      { name: { $regex: search, $options: "i" } },
-      { description: { $regex: search, $options: "i" } },
+      {name: {$regex: search, $options: "i"}},
+      {description: {$regex: search, $options: "i"}},
     ];
   }
 
   // Filtrer par statut
   if (status) {
     if (Array.isArray(status)) {
-      filter.status = { $in: status };
+      filter.status = {$in: status};
     } else {
       filter.status = status;
     }
@@ -215,7 +219,7 @@ export async function searchLeagues(
 
   // Filtrer par jeux
   if (gameIds && gameIds.length > 0) {
-    filter.gameIds = { $in: gameIds };
+    filter.gameIds = {$in: gameIds};
   }
 
   // Filtrer par créateur
@@ -234,7 +238,7 @@ export async function searchLeagues(
     db
       .collection(COLLECTION_NAME)
       .find(filter)
-      .sort({ createdAt: -1 })
+      .sort({createdAt: -1})
       .skip(skip)
       .limit(limit)
       .toArray(),
@@ -280,12 +284,12 @@ export async function addParticipant(
   };
 
   const result = await db.collection(COLLECTION_NAME).findOneAndUpdate(
-    { _id: new ObjectId(leagueId) },
+    {_id: new ObjectId(leagueId)},
     {
-      $push: { participants: newParticipant as unknown as Document },
-      $set: { updatedAt: new Date() },
+      $push: {participants: newParticipant as unknown as Document},
+      $set: {updatedAt: new Date()},
     } as Document,
-    { returnDocument: "after" }
+    {returnDocument: "after"}
   );
 
   return result ? toLeague(result) : null;
@@ -297,12 +301,12 @@ export async function removeParticipant(
   userId: string
 ): Promise<League | null> {
   const result = await db.collection(COLLECTION_NAME).findOneAndUpdate(
-    { _id: new ObjectId(leagueId) },
+    {_id: new ObjectId(leagueId)},
     {
-      $pull: { participants: { userId } },
-      $set: { updatedAt: new Date() },
+      $pull: {participants: {userId}},
+      $set: {updatedAt: new Date()},
     } as Document,
-    { returnDocument: "after" }
+    {returnDocument: "after"}
   );
 
   return result ? toLeague(result) : null;
@@ -334,13 +338,13 @@ export async function addPointsToParticipant(
   };
 
   const result = await db.collection(COLLECTION_NAME).findOneAndUpdate(
-    { _id: new ObjectId(leagueId), "participants.userId": userId },
+    {_id: new ObjectId(leagueId), "participants.userId": userId},
     {
-      $inc: { [`participants.${participantIndex}.points`]: points },
-      $push: { [`participants.${participantIndex}.pointsHistory`]: historyEntry },
-      $set: { updatedAt: new Date() },
+      $inc: {[`participants.${participantIndex}.points`]: points},
+      $push: {[`participants.${participantIndex}.pointsHistory`]: historyEntry},
+      $set: {updatedAt: new Date()},
     } as Document,
-    { returnDocument: "after" }
+    {returnDocument: "after"}
   );
 
   return result ? toLeague(result) : null;
@@ -383,9 +387,9 @@ export async function awardFeatToParticipant(
 
   // Ajouter le haut fait et les points associés
   const result = await db.collection(COLLECTION_NAME).findOneAndUpdate(
-    { _id: new ObjectId(leagueId), "participants.userId": userId },
+    {_id: new ObjectId(leagueId), "participants.userId": userId},
     {
-      $inc: { [`participants.${participantIndex}.points`]: feat.points },
+      $inc: {[`participants.${participantIndex}.points`]: feat.points},
       $push: {
         [`participants.${participantIndex}.feats`]: participantFeat,
         [`participants.${participantIndex}.pointsHistory`]: {
@@ -396,9 +400,9 @@ export async function awardFeatToParticipant(
           featId,
         },
       },
-      $set: { updatedAt: new Date() },
+      $set: {updatedAt: new Date()},
     } as Document,
-    { returnDocument: "after" }
+    {returnDocument: "after"}
   );
 
   return result ? toLeague(result) : null;
@@ -407,14 +411,83 @@ export async function awardFeatToParticipant(
 // Obtenir le classement d'une ligue
 export async function getLeagueRanking(
   leagueId: string
-): Promise<(LeagueParticipant & { rank: number })[]> {
+): Promise<(LeagueParticipant & { rank: number; user?: { id: string; discriminator?: string; displayName?: string; avatar?: string; username?: string } })[]> {
   const league = await getLeagueById(leagueId);
   if (!league) return [];
 
-  // Trier par points décroissants
-  const sortedParticipants = [...league.participants]
-    .filter((p) => !p.isEliminated)
-    .sort((a, b) => b.points - a.points);
+  const sortedParticipants = await db.collection(COLLECTION_NAME).aggregate<{
+    userId: string;
+    points: number;
+    pointsHistory: Array<{
+      date: Date;
+      points: number;
+      reason: string;
+      eventId?: string;
+      featId?: string;
+      matchId?: string;
+    }>;
+    feats: Array<{
+      featId: string;
+      earnedAt: Date;
+      eventId?: string;
+      matchId?: string;
+    }>;
+    joinedAt: Date;
+    eliminatedAt?: Date;
+  }>([
+    {$match: {_id: new ObjectId(leagueId)}},
+    {$unwind: "$participants"},
+    {$sort: {"participants.points": -1, "participants.joinedAt": 1}},
+    {
+      $project: {
+        _id: 0,
+        userId: "$participants.userId",
+        points: "$participants.points",
+        pointsHistory: "$participants.pointsHistory",
+        feats: "$participants.feats",
+        joinedAt: "$participants.joinedAt",
+        eliminatedAt: "$participants.eliminatedAt",
+      },
+    },
+    {
+      $addFields: {
+        userId: {$toObjectId: "$userId"},
+      },
+    },
+    {
+      $lookup: {
+        from: "user",
+        localField: "userId",
+        foreignField: "_id",
+        as: "user",
+        pipeline: [
+          {
+            $project: {
+              _id: 1,
+              username: 1,
+              displayName: 1,
+              discriminator: 1,
+              avatar: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $unwind: "$user",
+    },
+    {
+      $addFields: {
+        'userId': {$toString: "$userId"},
+        'user.id': {$toString: "$user._id"},
+      },
+    },
+    {
+      $project: {
+        "user._id": 0,
+      },
+    }
+  ]).limit(100).toArray();
 
   return sortedParticipants.map((participant, index) => ({
     ...participant,
@@ -440,13 +513,13 @@ export async function getUserLeagues(
   userId: string,
   options: { page?: number; limit?: number } = {}
 ): Promise<PaginatedLeaguesResult> {
-  const { page = 1, limit = 10 } = options;
+  const {page = 1, limit = 10} = options;
 
   const filter: Filter<Document> = {
     $or: [
-      { creatorId: userId },
-      { organizerIds: userId },
-      { "participants.userId": userId },
+      {creatorId: userId},
+      {organizerIds: userId},
+      {"participants.userId": userId},
     ],
   };
 
@@ -456,7 +529,7 @@ export async function getUserLeagues(
     db
       .collection(COLLECTION_NAME)
       .find(filter)
-      .sort({ updatedAt: -1 })
+      .sort({updatedAt: -1})
       .skip(skip)
       .limit(limit)
       .toArray(),
@@ -500,7 +573,7 @@ export async function addLeagueMatch(
 
   // Créer le match
   const matchId = nanoid(12);
-  
+
   // Préparer les featAwards avec l'information de comptabilisation
   const processedFeatAwards: MatchFeatAward[] = [];
 
@@ -512,7 +585,7 @@ export async function addLeagueMatch(
   }> = [];
 
   if (league.format === "POINTS" && league.pointsConfig) {
-    const { pointsRules } = league.pointsConfig;
+    const {pointsRules} = league.pointsConfig;
     const matchDate = new Date();
 
     for (const playerId of matchInput.playerIds) {
@@ -547,9 +620,9 @@ export async function addLeagueMatch(
       };
 
       await db.collection(COLLECTION_NAME).updateOne(
-        { _id: new ObjectId(leagueId) },
+        {_id: new ObjectId(leagueId)},
         {
-          $inc: { [`participants.${participantIndex}.points`]: update.points },
+          $inc: {[`participants.${participantIndex}.points`]: update.points},
           $push: {
             [`participants.${participantIndex}.pointsHistory`]: historyEntry,
           },
@@ -583,7 +656,7 @@ export async function addLeagueMatch(
         }
 
         const participant = league.participants[participantIndex];
-        
+
         // Compter combien de fois ce joueur a déjà obtenu ce haut fait dans la ligue
         const existingFeatCount = participant.feats.filter(
           (f) => f.featId === featAward.featId
@@ -592,16 +665,16 @@ export async function addLeagueMatch(
         // Compter combien de fois ce haut fait est attribué dans CE match pour ce joueur
         // (pour gérer les doublons dans le même match)
         const featCountInThisMatch = processedFeatAwards.filter(
-          (fa) => fa.playerId === featAward.playerId && 
-                  fa.featId === featAward.featId &&
-                  fa.pointsCounted === true
+          (fa) => fa.playerId === featAward.playerId &&
+            fa.featId === featAward.featId &&
+            fa.pointsCounted === true
         ).length;
 
         const totalFeatCount = existingFeatCount + featCountInThisMatch;
 
         // Vérifier la limite par ligue
-        const limitReached = feat.maxPerLeague !== undefined && 
-                             totalFeatCount >= feat.maxPerLeague;
+        const limitReached = feat.maxPerLeague !== undefined &&
+          totalFeatCount >= feat.maxPerLeague;
 
         if (limitReached) {
           // Limite atteinte, on enregistre le haut fait mais sans points
@@ -631,9 +704,9 @@ export async function addLeagueMatch(
           };
 
           await db.collection(COLLECTION_NAME).updateOne(
-            { _id: new ObjectId(leagueId) },
+            {_id: new ObjectId(leagueId)},
             {
-              $inc: { [`participants.${participantIndex}.points`]: feat.points },
+              $inc: {[`participants.${participantIndex}.points`]: feat.points},
               $push: {
                 [`participants.${participantIndex}.feats`]: participantFeat,
                 [`participants.${participantIndex}.pointsHistory`]: featHistoryEntry,
@@ -668,12 +741,12 @@ export async function addLeagueMatch(
 
   // Ajouter le match à la ligue
   const result = await db.collection(COLLECTION_NAME).findOneAndUpdate(
-    { _id: new ObjectId(leagueId) },
+    {_id: new ObjectId(leagueId)},
     {
-      $push: { matches: newMatch as unknown as Document },
-      $set: { updatedAt: new Date() },
+      $push: {matches: newMatch as unknown as Document},
+      $set: {updatedAt: new Date()},
     } as Document,
-    { returnDocument: "after" }
+    {returnDocument: "after"}
   );
 
   return result ? toLeague(result) : null;
@@ -707,7 +780,7 @@ export async function deleteLeagueMatch(
       if (participantIndex === -1) continue;
 
       const participant = league.participants[participantIndex];
-      
+
       // Calculer les points à retirer (depuis l'historique)
       const matchHistoryEntries = participant.pointsHistory.filter(
         (h) => h.matchId === matchId
@@ -719,12 +792,12 @@ export async function deleteLeagueMatch(
 
       // Retirer les points et l'historique
       await db.collection(COLLECTION_NAME).updateOne(
-        { _id: new ObjectId(leagueId) },
+        {_id: new ObjectId(leagueId)},
         {
-          $inc: { [`participants.${participantIndex}.points`]: -pointsToRemove },
+          $inc: {[`participants.${participantIndex}.points`]: -pointsToRemove},
           $pull: {
-            [`participants.${participantIndex}.pointsHistory`]: { matchId },
-            [`participants.${participantIndex}.feats`]: { matchId },
+            [`participants.${participantIndex}.pointsHistory`]: {matchId},
+            [`participants.${participantIndex}.feats`]: {matchId},
           },
         } as Document
       );
@@ -733,12 +806,12 @@ export async function deleteLeagueMatch(
 
   // Supprimer le match
   const result = await db.collection(COLLECTION_NAME).findOneAndUpdate(
-    { _id: new ObjectId(leagueId) },
+    {_id: new ObjectId(leagueId)},
     {
-      $pull: { matches: { id: matchId } },
-      $set: { updatedAt: new Date() },
+      $pull: {matches: {id: matchId}},
+      $set: {updatedAt: new Date()},
     } as Document,
-    { returnDocument: "after" }
+    {returnDocument: "after"}
   );
 
   return result ? toLeague(result) : null;
