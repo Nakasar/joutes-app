@@ -1,7 +1,4 @@
-import {getLeagueById, isLeagueOrganizer, getLeagueRanking, getLeagueParticipant} from "@/lib/db/leagues";
-import { getGameById } from "@/lib/db/games";
-import { getLairById } from "@/lib/db/lairs";
-import { getUserById } from "@/lib/db/users";
+import { getLeagueById, isLeagueOrganizer, getLeagueRanking, getLeagueParticipant } from "@/lib/db/leagues";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
