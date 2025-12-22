@@ -46,7 +46,7 @@ export default function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <NavigationMenu className="hidden md:flex">
+          <NavigationMenu className="hidden lg:flex">
             <NavigationMenuList>
               <NavigationMenuItem>
                 <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
@@ -104,7 +104,7 @@ export default function Header() {
           </NavigationMenu>
 
           {/* User Menu (Desktop) */}
-          <div className="hidden md:flex md:items-center">
+          <div className="hidden lg:flex md:items-center">
             {isPending ? (
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             ) : session ? (
@@ -141,7 +141,7 @@ export default function Header() {
           </div>
 
           {/* Mobile menu button */}
-          <div className="flex items-center gap-2 md:hidden">
+          <div className="flex items-center gap-2 lg:hidden">
             {!isPending && session && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -196,7 +196,7 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div className="border-t py-4 md:hidden">
+          <div className="border-t py-4 lg:hidden">
             <div className="flex flex-col gap-2">
               <Button variant="ghost" asChild className="justify-start">
                 <Link href="/games" onClick={() => setMobileMenuOpen(false)}>
