@@ -6,6 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Users, MapPin } from "lucide-react";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { getUserById } from "@/lib/db/users";
+import FollowGameButton from "./FollowGameButton";
 
 interface GameDetailPageProps {
   params: Promise<{
@@ -35,6 +39,17 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
 
   if (!game) {
     notFound();
+  }
+
+  // Vérifier l'authentification et les jeux suivis
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  let isFollowing = false;
+  if (session?.user?.id) {
+    const user = await getUserById(session.user.id);
+    isFollowing = user?.games?.includes(game.id) ?? false;
   }
 
   return (
@@ -100,12 +115,11 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
 
             {/* Action Buttons */}
             <div className="flex gap-4 pt-4 animate-fade-in animate-delay-300">
-              <Link href={`/game-matches/new?gameId=${game.id}`}>
-                <Button size="lg" className="bg-white text-black hover:bg-gray-200 font-bold px-8">
-                  <Users className="h-5 w-5 mr-2" />
-                  Créer une partie
-                </Button>
-              </Link>
+              <FollowGameButton
+                gameId={game.id}
+                isFollowing={isFollowing}
+                isAuthenticated={!!session?.user?.id}
+              />
               <Link href={`/events?gameId=${game.id}`}>
                 <Button size="lg" variant="secondary" className="bg-black/50 backdrop-blur-sm border-white/20 text-white hover:bg-black/70 px-8">
                   <Calendar className="h-5 w-5 mr-2" />
