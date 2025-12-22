@@ -233,9 +233,9 @@ export default async function LeagueDetailPage({
                               />
                             )}
                             <span className="font-medium">
-                              {participant.user?.displayName ||
-                                participant.user?.username ||
-                                "Utilisateur inconnu"}
+                              {
+                                (participant.user?.discriminator ? `${participant.user?.displayName}#${participant.user?.discriminator}` : participant.user?.username) || "Anonyme"
+                              }
                             </span>
                           </div>
                         </div>
