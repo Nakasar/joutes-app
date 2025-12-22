@@ -120,6 +120,8 @@ export async function createLeague(
     invitationCode: doc.invitationCode,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
+    games: [],
+    lairs: [],
   };
 }
 

@@ -135,7 +135,7 @@ export type League = {
 };
 
 // Type pour la création d'une ligue
-export type CreateLeagueInput = Omit<League, "id" | "createdAt" | "updatedAt" | "participants" | "matches"> & {
+export type CreateLeagueInput = Omit<League, "id" | "createdAt" | "updatedAt" | "participants" | "matches" | "games" | "lairs"> & {
   participants?: LeagueParticipant[];
   matches?: LeagueMatch[];
 };
