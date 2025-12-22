@@ -403,7 +403,7 @@ export default async function LeagueDetailPage({
                       Créée par
                     </span>
                     <Link
-                      href={`/users/${creator.id}`}
+                      href={`/users/${creator.displayName}${creator.discriminator}`}
                       className="flex items-center gap-2 hover:underline"
                     >
                       {creator.avatar && (
