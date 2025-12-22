@@ -110,6 +110,7 @@ export type League = {
   
   // Organisateurs et participants
   creatorId: User["id"];
+  creator?: Pick<User, 'id' | 'username' | 'displayName' | 'discriminator' | 'avatar'>;
   organizerIds: User["id"][];
   participants: LeagueParticipant[];
   
@@ -121,7 +122,9 @@ export type League = {
   
   // Associations
   gameIds: Game["id"][];
+  games: Pick<Game, 'id' | 'name' | 'slug' | 'icon'>[];
   lairIds: Lair["id"][];
+  lairs: Pick<Lair, 'id' | 'name'>[];
   
   // Matchs de la ligue
   matches: LeagueMatch[];

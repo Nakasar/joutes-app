@@ -12,11 +12,12 @@ import {
 } from "@/lib/types/League";
 import {ObjectId, WithId, Document, Filter} from "mongodb";
 import {nanoid} from "nanoid";
+import {User} from "@/lib/types/User";
 
 const COLLECTION_NAME = "leagues";
 
 // Type pour une ligue dans MongoDB (avec _id)
-export type LeagueDocument = Omit<League, "id"> & { _id: ObjectId };
+export type LeagueDocument = Omit<League, "id" | "lairs" | "games" | "creator"> & { _id: ObjectId };
 
 // Convertir un document MongoDB en League
 function toLeague(doc: WithId<Document>): League {
@@ -35,6 +36,7 @@ function toLeague(doc: WithId<Document>): League {
       : undefined,
     status: doc.status,
     creatorId: doc.creatorId,
+    creator: doc.creator,
     organizerIds: doc.organizerIds || [],
     participants: (doc.participants || []).map((p: LeagueParticipant) => ({
       ...p,
@@ -54,7 +56,9 @@ function toLeague(doc: WithId<Document>): League {
     isPublic: doc.isPublic,
     invitationCode: doc.invitationCode,
     gameIds: doc.gameIds || [],
+    games: doc.games || [],
     lairIds: doc.lairIds || [],
+    lairs: doc.lairs || [],
     matches: (doc.matches || []).map((m: LeagueMatch) => ({
       ...m,
       playedAt: new Date(m.playedAt),
@@ -124,11 +128,107 @@ export async function getLeagueById(id: string): Promise<League | null> {
   try {
     const doc = await db
       .collection(COLLECTION_NAME)
-      .findOne({_id: new ObjectId(id)}, {
-        projection: {
-          participants: 0,
+      .aggregate<LeagueDocument>([
+        {
+          $match: { _id: new ObjectId(id) }
+        },
+        {
+          $project: {
+            participants: 0,
+          },
+        },
+        {
+          $addFields: {
+            creatorId: { $toObjectId: "$creatorId" },
+          }
+        },
+        {
+          $lookup: {
+            from: "user",
+            localField: "creatorId",
+            foreignField: "_id",
+            as: "creator",
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  username: 1,
+                  displayName: 1,
+                  discriminator: 1,
+                  avatar: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $unwind: '$creator',
+        },
+        {
+          $addFields: {
+            creatorId: {$toString: "$creatorId"},
+            gameIds: {
+              $map: {
+                input: "$gameIds",
+                as: "gid",
+                in: {$toObjectId: "$$gid"}
+              }
+            },
+            lairIds: {
+              $map: {
+                input: "$lairIds",
+                as: "lid",
+                in: {$toObjectId: "$$lid"}
+              }
+            }
+          }
+        },
+        {
+          $lookup: {
+            from: 'games',
+            localField: 'gameIds',
+            foreignField: '_id',
+            as: 'games',
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  slug: 1,
+                  icon: 1,
+                },
+              },
+              {
+                $addFields: {
+                  id: { $toString: "$_id" }
+                }
+              }
+            ],
+          }
+        },
+        {
+          $lookup: {
+            from: 'lairs',
+            localField: 'lairIds',
+            foreignField: '_id',
+            as: 'lairs',
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                },
+              },
+              {
+                $addFields: {
+                  id: { $toString: "$_id" }
+                }
+              }
+            ],
+          }
         }
-      });
+      ]).next();
+
     return doc ? toLeague(doc) : null;
   } catch {
     return null;
@@ -252,6 +352,32 @@ export async function searchLeagues(
     limit,
     totalPages: Math.ceil(total / limit),
   };
+}
+
+export async function getLeagueParticipant(leagueId: League['id'], userId: User['id']): Promise<{} | null> {
+  const leagueParticipant = await db.collection(COLLECTION_NAME).aggregate([
+    {
+      $match: {
+        _id: new ObjectId(leagueId),
+        "participants.userId": userId,
+      }
+    },
+    {
+      $project: {
+        'participants.pointsHistory': 0,
+        'participants.feats': 0,
+      },
+    },
+    {
+      $unwind: "$participants",
+    }
+  ]).next();
+
+  if (!leagueParticipant) {
+    return null;
+  }
+
+  return leagueParticipant.participants;
 }
 
 // Ajouter un participant à une ligue
@@ -411,7 +537,10 @@ export async function awardFeatToParticipant(
 // Obtenir le classement d'une ligue
 export async function getLeagueRanking(
   leagueId: string
-): Promise<(LeagueParticipant & { rank: number; user?: { id: string; discriminator?: string; displayName?: string; avatar?: string; username?: string } })[]> {
+): Promise<(LeagueParticipant & {
+  rank: number;
+  user?: { id: string; discriminator?: string; displayName?: string; avatar?: string; username?: string }
+})[]> {
   const league = await getLeagueById(leagueId);
   if (!league) return [];
 

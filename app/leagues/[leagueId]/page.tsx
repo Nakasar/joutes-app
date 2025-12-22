@@ -1,4 +1,4 @@
-import { getLeagueById, isLeagueOrganizer, getLeagueRanking } from "@/lib/db/leagues";
+import {getLeagueById, isLeagueOrganizer, getLeagueRanking, getLeagueParticipant} from "@/lib/db/leagues";
 import { getGameById } from "@/lib/db/games";
 import { getLairById } from "@/lib/db/lairs";
 import { getUserById } from "@/lib/db/users";
@@ -84,42 +84,27 @@ export default async function LeagueDetailPage({
     headers: await headers(),
   });
 
+  const leagueParticipant = session?.user?.id ? await getLeagueParticipant(league.id, session.user.id) : null;
+
   const canManage = session?.user?.id
     ? await isLeagueOrganizer(leagueId, session.user.id)
     : false;
 
-  const isParticipant = league.participants.some(
-    (p) => p.userId === session?.user?.id
-  );
+  const isParticipant = !!leagueParticipant;
 
   // Vérifier l'accès aux ligues privées
   if (!league.isPublic && !isParticipant && !canManage) {
     notFound();
   }
 
-  // Récupérer les détails des jeux
-  const gamesDetails = await Promise.all(
-    league.gameIds.map(async (gameId) => {
-      const game = await getGameById(gameId);
-      return game;
-    })
-  );
-  const games = gamesDetails.filter((game) => game !== null);
-
-  // Récupérer les détails des lieux
-  const lairsDetails = await Promise.all(
-    league.lairIds.map(async (lairId) => {
-      const lair = await getLairById(lairId);
-      return lair;
-    })
-  );
-  const lairs = lairsDetails.filter((lair) => lair !== null);
+  const games = league.games;
+  const lairs = league.lairs;
 
   // Récupérer le classement
   const ranking = await getLeagueRanking(leagueId);
 
   // Récupérer les infos du créateur
-  const creator = await getUserById(league.creatorId);
+  const creator = league.creator;
 
   const canJoin =
     session?.user?.id &&
