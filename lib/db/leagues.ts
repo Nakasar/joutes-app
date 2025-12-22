@@ -55,9 +55,9 @@ function toLeague(doc: WithId<Document>): League {
     minParticipants: doc.minParticipants,
     isPublic: doc.isPublic,
     invitationCode: doc.invitationCode,
-    gameIds: doc.gameIds || [],
+    gameIds: doc.gameIds.map((g: ObjectId) => g.toString()) || [],
     games: doc.games || [],
-    lairIds: doc.lairIds || [],
+    lairIds: doc.lairIds.map((g: ObjectId) => g.toString()) || [],
     lairs: doc.lairs || [],
     matches: (doc.matches || []).map((m: LeagueMatch) => ({
       ...m,
@@ -152,8 +152,15 @@ export async function getLeagueById(id: string): Promise<League | null> {
             as: "creator",
             pipeline: [
               {
+                $addFields: {
+                  _id: { $toString: "$_id" },
+                  id: { $toString: "$_id" },
+                },
+              },
+              {
                 $project: {
                   _id: 1,
+                  id: 1,
                   username: 1,
                   displayName: 1,
                   discriminator: 1,
@@ -194,12 +201,14 @@ export async function getLeagueById(id: string): Promise<League | null> {
             pipeline: [
               {
                 $addFields: {
-                  _id: { $toString: "$_id" }
+                  _id: { $toString: "$_id" },
+                  id: { $toString: "$_id" },
                 }
               },
               {
                 $project: {
                   _id: 1,
+                  id: 1,
                   name: 1,
                   slug: 1,
                   icon: 1,
@@ -217,11 +226,13 @@ export async function getLeagueById(id: string): Promise<League | null> {
             pipeline: [
               {
                 $addFields: {
-                  _id: { $toString: "$_id" }
+                  _id: { $toString: "$_id" },
+                  id: { $toString: "$_id" },
                 }
               },
               {
                 $project: {
+                  id: 1,
                   _id: 1,
                   name: 1,
                 },
