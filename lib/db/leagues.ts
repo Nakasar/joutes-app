@@ -191,6 +191,11 @@ export async function getLeagueById(id: string): Promise<League | null> {
             as: 'games',
             pipeline: [
               {
+                $addFields: {
+                  _id: { $toString: "$_id" }
+                }
+              },
+              {
                 $project: {
                   _id: 1,
                   name: 1,
@@ -198,11 +203,6 @@ export async function getLeagueById(id: string): Promise<League | null> {
                   icon: 1,
                 },
               },
-              {
-                $addFields: {
-                  id: { $toString: "$_id" }
-                }
-              }
             ],
           }
         },
@@ -214,16 +214,16 @@ export async function getLeagueById(id: string): Promise<League | null> {
             as: 'lairs',
             pipeline: [
               {
+                $addFields: {
+                  _id: { $toString: "$_id" }
+                }
+              },
+              {
                 $project: {
                   _id: 1,
                   name: 1,
                 },
               },
-              {
-                $addFields: {
-                  id: { $toString: "$_id" }
-                }
-              }
             ],
           }
         }
@@ -370,7 +370,7 @@ export async function getLeagueParticipant(leagueId: League['id'], userId: User[
     },
     {
       $unwind: "$participants",
-    }
+    },
   ]).next();
 
   if (!leagueParticipant) {
@@ -539,7 +539,7 @@ export async function getLeagueRanking(
   leagueId: string
 ): Promise<(LeagueParticipant & {
   rank: number;
-  user?: { id: string; discriminator?: string; displayName?: string; avatar?: string; username?: string }
+  user?: { id: string; discriminator?: string; displayName?: string; avatar?: string; username: string }
 })[]> {
   const league = await getLeagueById(leagueId);
   if (!league) return [];

@@ -114,8 +114,7 @@ export default async function LeagueDetailPage({
   const canLeave =
     session?.user?.id &&
     isParticipant &&
-    league.status !== "IN_PROGRESS" &&
-    league.creatorId !== session.user.id;
+    league.status !== "IN_PROGRESS";
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">

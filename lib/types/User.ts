@@ -9,7 +9,7 @@ export type User = {
   email: string;
   discordId: string;
 
-  avatar: string;
+  avatar?: string;
 
   lairs: Lair['id'][];
   games: Game['id'][];

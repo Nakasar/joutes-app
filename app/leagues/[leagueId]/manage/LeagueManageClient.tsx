@@ -70,15 +70,14 @@ import { Game } from "@/lib/types/Game";
 import { Lair } from "@/lib/types/Lair";
 import { User } from "@/lib/types/User";
 
-type ParticipantWithUser = LeagueParticipant & { user: User | null };
+type ParticipantWithUser = LeagueParticipant & { user?: Pick<User, 'id' | 'displayName' | 'discriminator' | 'username' | 'avatar'> | null };
 
 type LeagueManageClientProps = {
   league: League;
   participantsWithUsers: ParticipantWithUser[];
-  leagueGames: Game[];
-  leagueLairs: Lair[];
-  allGames: Game[];
-  allLairs: Lair[];
+  leagueGames: Pick<Game, 'id' | 'name' | 'slug' | 'icon'>[];
+  allGames: Pick<Game, 'id' | 'name' | 'slug' | 'icon'>[];
+  allLairs: Pick<Lair, 'id' | 'name'>[];
 };
 
 const STATUS_LABELS: Record<LeagueStatus, string> = {
@@ -93,7 +92,6 @@ export default function LeagueManageClient({
   league,
   participantsWithUsers,
   leagueGames,
-  leagueLairs,
   allGames,
   allLairs,
 }: LeagueManageClientProps) {

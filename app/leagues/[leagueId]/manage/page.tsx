@@ -1,7 +1,4 @@
-import { getLeagueById, isLeagueOrganizer } from "@/lib/db/leagues";
-import { getGameById } from "@/lib/db/games";
-import { getLairById } from "@/lib/db/lairs";
-import { getUserById } from "@/lib/db/users";
+import {getLeagueById, getLeagueRanking, isLeagueOrganizer} from "@/lib/db/leagues";
 import { getAllGames } from "@/lib/db/games";
 import { getAllLairs } from "@/lib/db/lairs";
 import { auth } from "@/lib/auth";
@@ -61,30 +58,9 @@ export default async function LeagueManagePage({
   }
 
   // Récupérer les détails des participants
-  const participantsWithUsers = await Promise.all(
-    league.participants.map(async (participant) => {
-      const user = await getUserById(participant.userId);
-      return { ...participant, user };
-    })
-  );
-
-  // Récupérer les détails des jeux
-  const gamesDetails = await Promise.all(
-    league.gameIds.map(async (gameId) => {
-      const game = await getGameById(gameId);
-      return game;
-    })
-  );
-  const leagueGames = gamesDetails.filter((game) => game !== null);
-
-  // Récupérer les détails des lieux
-  const lairsDetails = await Promise.all(
-    league.lairIds.map(async (lairId) => {
-      const lair = await getLairById(lairId);
-      return lair;
-    })
-  );
-  const leagueLairs = lairsDetails.filter((lair) => lair !== null);
+  const participantsWithUsers = await getLeagueRanking(league.id);
+  const leagueGames = league.games;
+  const leagueLairs = league.lairs;
 
   // Récupérer tous les jeux et lairs disponibles pour l'édition
   const [allGames, allLairs] = await Promise.all([
@@ -112,7 +88,6 @@ export default async function LeagueManagePage({
           league={league}
           participantsWithUsers={participantsWithUsers}
           leagueGames={leagueGames}
-          leagueLairs={leagueLairs}
           allGames={allGames}
           allLairs={ownedLairs}
         />
