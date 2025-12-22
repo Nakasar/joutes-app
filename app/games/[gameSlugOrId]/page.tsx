@@ -1,4 +1,5 @@
 import { getGameBySlugOrId } from "@/lib/db/games";
+import { getLairsByIds } from "@/lib/db/lairs";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { GAME_TYPES } from "@/lib/constants/game-types";
@@ -10,6 +11,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { getUserById } from "@/lib/db/users";
 import FollowGameButton from "./FollowGameButton";
+import { FeaturedEventsAgenda } from "./FeaturedEventsAgenda";
 
 interface GameDetailPageProps {
   params: Promise<{
@@ -51,6 +53,11 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     const user = await getUserById(session.user.id);
     isFollowing = user?.games?.includes(game.id) ?? false;
   }
+
+  // Récupérer les lieux mis en avant pour ce jeu
+  const featuredLairs = game.featuredLairs && game.featuredLairs.length > 0
+    ? await getLairsByIds(game.featuredLairs)
+    : [];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-gray-900 to-black">
@@ -155,6 +162,14 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             </div>
           </div>
         </section>
+
+        {/* Événements des lieux mis en avant */}
+        {featuredLairs.length > 0 && (
+          <FeaturedEventsAgenda
+            featuredLairs={featuredLairs}
+            gameName={game.name}
+          />
+        )}
 
         {/* Communauté - Placeholder pour futurs contenus */}
         <section className="space-y-6">

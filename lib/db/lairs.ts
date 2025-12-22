@@ -191,6 +191,14 @@ export async function getLairById(id: string): Promise<Lair | null> {
   return lair ? toLair(lair) : null;
 }
 
+export async function getLairsByIds(ids: string[]): Promise<Lair[]> {
+  const objectIds = ids.map(id => new ObjectId(id));
+  const lairs = await db.collection(COLLECTION_NAME).find({
+    _id: { $in: objectIds }
+  }).toArray();
+  return lairs.map(toLair);
+}
+
 export async function createLair(lair: Omit<Lair, "id">): Promise<Lair> {
   
   const doc = toDocument(lair);
