@@ -14,7 +14,7 @@ export const gameSchema = z.object({
   icon: z.string().url("L'URL de l'icône doit être valide"),
   banner: z.string().url("L'URL de la bannière doit être valide"),
   description: z.string().min(10, "La description doit contenir au moins 10 caractères").max(500, "La description est trop longue"),
-  type: z.enum(["TCG", "BoardGame"]),
+  type: z.enum(["TCG", "BoardGame", "VideoGame", "Other"]),
 });
 ```
 
@@ -23,7 +23,7 @@ export const gameSchema = z.object({
 - ✅ Icône : URL valide obligatoire
 - ✅ Bannière : URL valide obligatoire
 - ✅ Description : 10-500 caractères
-- ✅ Type : "TCG" ou "BoardGame" uniquement
+- ✅ Type : "TCG", "VideoGame", "BoardGame" ou "Other" uniquement
 
 ### 2. Schéma des lieux (`lib/schemas/lair.schema.ts`)
 

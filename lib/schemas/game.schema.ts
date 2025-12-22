@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const gameTypeSchema = z.enum(["TCG", "BoardGame", "Other"]);
+export const gameTypeSchema = z.enum(["TCG", "BoardGame", "VideoGame", "Other"]);
 
 export const gameSchema = z.object({
   name: z.string().min(1, "Le nom du jeu est requis").max(100, "Le nom est trop long"),

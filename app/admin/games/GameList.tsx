@@ -10,6 +10,7 @@ const gameTypes = {
   TCG: "TCG",
   BoardGame: "Jeu de plateau",
   Other: 'Autre',
+  VideoGame: "Jeu Vidéo",
 };
 
 export function GameList({ games }: { games: Game[] }) {

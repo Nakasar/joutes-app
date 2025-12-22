@@ -196,7 +196,7 @@ const newGame = await createGame({
   id: string;           // Généré automatiquement
   name: string;         // REQUIS
   description: string;  // REQUIS
-  type: "TCG" | "BoardGame" | "Other"; // REQUIS
+  type: "TCG" | "BoardGame" | "VideoGame" | "Other"; // REQUIS
   slug?: string;        // Optionnel mais recommandé pour SEO
   icon?: string;        // Optionnel (URL de l'icône)
   banner?: string;      // Optionnel (URL de la bannière)

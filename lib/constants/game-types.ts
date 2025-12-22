@@ -1,6 +1,7 @@
 export const GAME_TYPES = {
   TCG: "TCG",
   BoardGame: "Jeu de Plateau",
+  VideoGame: "Jeu Vidéo",
   Other: "Autre",
 } as const;
 
