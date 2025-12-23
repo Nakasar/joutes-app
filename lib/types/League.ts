@@ -112,6 +112,7 @@ export type League = {
   creatorId: User["id"];
   creator?: Pick<User, 'id' | 'username' | 'displayName' | 'discriminator' | 'avatar'>;
   organizerIds: User["id"][];
+  participantsCount?: number;
   participants: LeagueParticipant[];
   
   // Paramètres

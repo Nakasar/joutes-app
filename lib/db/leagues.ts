@@ -17,7 +17,7 @@ import {User} from "@/lib/types/User";
 const COLLECTION_NAME = "leagues";
 
 // Type pour une ligue dans MongoDB (avec _id)
-export type LeagueDocument = Omit<League, "id" | "lairs" | "games" | "creator"> & { _id: ObjectId };
+export type LeagueDocument = Omit<League, "id" | "lairs" | "games" | "creator" | "participantsCount"> & { _id: ObjectId };
 
 // Convertir un document MongoDB en League
 function toLeague(doc: WithId<Document>): League {
@@ -38,6 +38,7 @@ function toLeague(doc: WithId<Document>): League {
     creatorId: doc.creatorId,
     creator: doc.creator,
     organizerIds: doc.organizerIds || [],
+    participantsCount: doc.participantsCount,
     participants: (doc.participants || []).map((p: LeagueParticipant) => ({
       ...p,
       joinedAt: new Date(p.joinedAt),
@@ -133,6 +134,11 @@ export async function getLeagueById(id: string): Promise<League | null> {
       .aggregate<LeagueDocument>([
         {
           $match: { _id: new ObjectId(id) }
+        },
+        {
+          $addFields: {
+            participantsCount: { $size: "$participants" },
+          }
         },
         {
           $project: {

@@ -536,7 +536,7 @@ export default function LeagueManageClient({
           onClick={() => setActiveTab("participants")}
         >
           <Users className="h-4 w-4 mr-2" />
-          Participants ({participantsWithUsers.length})
+          Participants ({league.participantsCount})
         </Button>
         {league.format === "POINTS" && (
           <Button

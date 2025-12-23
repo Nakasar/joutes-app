@@ -339,8 +339,8 @@ export default async function LeagueDetailPage({
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4 text-muted-foreground" />
                   <span>
-                    {league.participants.length} participant
-                    {league.participants.length > 1 ? "s" : ""}
+                    {league.participantsCount} participant
+                    {(league.participantsCount ?? 0) > 1 ? "s" : ""}
                     {league.maxParticipants && ` / ${league.maxParticipants}`}
                   </span>
                 </div>
