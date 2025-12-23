@@ -754,6 +754,7 @@ export async function getLeagueRanking(
     },
     {
       $project: {
+        _id: 0,
         "user._id": 0,
         leagueId: 0,
       },
