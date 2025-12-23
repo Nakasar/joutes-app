@@ -1066,7 +1066,7 @@ export default function LeagueManageClient({
                     onChange={(e) =>
                       setPointsRulesForm({
                         ...pointsRulesForm,
-                        participation: parseInt(e.target.value, 10) || 0,
+                        participation: parseInt(e.target.value, 10) ?? 0,
                       })
                     }
                     min={0}
@@ -1086,7 +1086,7 @@ export default function LeagueManageClient({
                     onChange={(e) =>
                       setPointsRulesForm({
                         ...pointsRulesForm,
-                        victory: parseInt(e.target.value, 10) || 0,
+                        victory: parseInt(e.target.value, 10) ?? 0,
                       })
                     }
                     min={0}
@@ -1106,7 +1106,7 @@ export default function LeagueManageClient({
                     onChange={(e) =>
                       setPointsRulesForm({
                         ...pointsRulesForm,
-                        defeat: parseInt(e.target.value, 10) || 0,
+                        defeat: parseInt(e.target.value, 10) ?? 0,
                       })
                     }
                   />

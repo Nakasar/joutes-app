@@ -198,9 +198,9 @@ export async function updateLeagueAction(
     if (params.format === "POINTS" && params.pointsRules !== undefined) {
       input.pointsConfig = {
         pointsRules: {
-          participation: params.pointsRules.participation || 0,
-          victory: params.pointsRules.victory || 2,
-          defeat: params.pointsRules.defeat || 1,
+          participation: params.pointsRules.participation ?? 0,
+          victory: params.pointsRules.victory ?? 2,
+          defeat: params.pointsRules.defeat ?? 1,
           feats: params.pointsRules.feats || [],
         },
       };

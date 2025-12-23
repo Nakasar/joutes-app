@@ -787,7 +787,7 @@ export async function getUserLeagues(
 ): Promise<PaginatedLeaguesResult> {
   const {page = 1, limit = 10} = options;
 
-  // Récupérer les IDs des ligues où l'utilisateur est participant
+  // Récupérer les IDs des ligues avec lesquelles l'utilisateur est participant
   const participantLeagueIds = await db.collection(PARTICIPANTS_COLLECTION)
     .find({ userId: userId })
     .project({ leagueId: 1 })
