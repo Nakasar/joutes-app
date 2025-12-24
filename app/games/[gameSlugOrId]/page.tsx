@@ -32,6 +32,11 @@ export async function generateMetadata({ params }: GameDetailPageProps): Promise
   return {
     title: `${game.name} - Joutes`,
     description: game.description,
+    openGraph: {
+      title: game.name,
+      description: `Suivez les évènements ${game.name} autour de vous !`,
+      images: game.banner ? [game.banner] : [],
+    },
   };
 }
 
