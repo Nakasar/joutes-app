@@ -32,7 +32,6 @@ export default async function AdminAchievementsPage() {
                 <div className="text-2xl">{achievement.icon}</div>
               </CardHeader>
               <CardContent>
-                <div className="text-xs text-muted-foreground mb-2">{achievement.slug}</div>
                 <p className="text-sm mb-4 h-10 overflow-hidden">{achievement.description}</p>
                 <div className="flex items-center justify-between">
                   <div className="flex gap-2">

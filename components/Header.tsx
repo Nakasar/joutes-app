@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useSession, signOut } from "@/lib/auth-client";
 import Image from "next/image";
-import { Menu, Calendar, MapPin, User, LogOut, Shield, GamepadIcon, Trophy, Dices } from "lucide-react";
+import {Menu, Calendar, MapPin, User, LogOut, Shield, GamepadIcon, Trophy, Dices, TrophyIcon} from "lucide-react";
 import { isAdmin } from "@/lib/config/admins";
 import { Button } from "@/components/ui/button";
 import {
@@ -124,6 +124,13 @@ export default function Header() {
                     <Link href="/account" className="flex w-full cursor-pointer">
                       <User className="mr-2 h-4 w-4" />
                       <span>Mon Profil</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/account/achievements" className="flex w-full cursor-pointer">
+                      <TrophyIcon className="mr-2 h-4 w-4" />
+                      <span>Succès</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />

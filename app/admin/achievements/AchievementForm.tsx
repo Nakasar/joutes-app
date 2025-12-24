@@ -20,7 +20,6 @@ export function AchievementForm({ initialData }: { initialData?: Achievement }) 
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    slug: initialData?.slug || "",
     name: initialData?.name || "",
     description: initialData?.description || "",
     icon: initialData?.icon || "🏆",
@@ -45,7 +44,7 @@ export function AchievementForm({ initialData }: { initialData?: Achievement }) 
 
     try {
       // Basic validation
-      if (!formData.slug || !formData.name || !formData.description) {
+      if (!formData.name || !formData.description) {
         throw new Error("Veuillez remplir tous les champs obligatoires.");
       }
 
@@ -81,22 +80,6 @@ export function AchievementForm({ initialData }: { initialData?: Achievement }) 
           {error}
         </div>
       )}
-
-      <div className="space-y-2">
-        <SimpleLabel htmlFor="slug">Slug</SimpleLabel>
-        <Input
-          id="slug"
-          name="slug"
-          placeholder="first-login"
-          value={formData.slug}
-          onChange={handleChange}
-          disabled={!!initialData}
-          required
-        />
-        <p className="text-sm text-muted-foreground">
-          Identifiant unique du succès (ne peut pas être modifié après création).
-        </p>
-      </div>
 
       <div className="space-y-2">
         <SimpleLabel htmlFor="name">Nom</SimpleLabel>
