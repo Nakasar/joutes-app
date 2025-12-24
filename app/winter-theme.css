@@ -123,3 +123,27 @@
   box-shadow: 0 0 20px rgba(200, 230, 255, 0.4);
   transition: box-shadow 0.3s ease;
 }
+
+/* Light Garland Glows */
+.light-glow-yellow {
+  filter: drop-shadow(0 0 5px #ffeb3b);
+  animation: light-twinkle 2s infinite alternate;
+}
+.light-glow-red {
+  filter: drop-shadow(0 0 5px #f44336);
+  animation: light-twinkle 2.5s infinite alternate-reverse;
+}
+.light-glow-blue {
+  filter: drop-shadow(0 0 5px #2196f3);
+  animation: light-twinkle 3s infinite alternate;
+}
+.light-glow-green {
+  filter: drop-shadow(0 0 5px #4caf50);
+  animation: light-twinkle 2.2s infinite alternate-reverse;
+}
+
+@keyframes light-twinkle {
+  0% { opacity: 0.6; filter: drop-shadow(0 0 2px currentColor); }
+  100% { opacity: 1; filter: drop-shadow(0 0 8px currentColor); }
+}
+

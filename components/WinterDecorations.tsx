@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import "@/app/winter-theme.css";
+import { IcyStalagmites, SnowPile, LightGarland, Garland } from './WinterSVGs';
 
 interface Snowflake {
   id: number;
@@ -51,6 +52,26 @@ export default function WinterDecorations() {
 
   return (
     <>
+      {/* Icy Stalagmites at the top */}
+      <div className="fixed top-0 left-0 right-0 pointer-events-none z-30 opacity-80 text-blue-300/80">
+        <IcyStalagmites className="w-full h-24 md:h-32 lg:h-40" />
+      </div>
+
+      {/* Light Garland at the top */}
+      <div className="fixed top-0 left-0 right-0 pointer-events-none z-40">
+        <LightGarland className="w-full h-20 md:h-24" />
+      </div>
+
+      {/* Regular Garland slightly lower */}
+      <div className="fixed top-12 left-0 right-0 pointer-events-none z-30 opacity-90 hidden lg:block">
+        <Garland className="w-full h-16 md:h-20 text-green-800" />
+      </div>
+
+      {/* Snow Piles at the bottom */}
+      <div className="fixed bottom-0 left-0 right-0 pointer-events-none z-30 text-white/80">
+        <SnowPile className="w-full h-16 md:h-24 lg:h-32" />
+      </div>
+
       {/* Flocons de neige tombants */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-50">
         {snowflakes.map((flake) => (
@@ -72,34 +93,20 @@ export default function WinterDecorations() {
       </div>
 
       {/* Décorations de Noël dans les coins */}
-      <div className="fixed top-4 left-4 pointer-events-none z-40 hidden md:block">
+      <div className="fixed top-24 left-4 pointer-events-none z-40 hidden md:block">
         <div className="text-4xl winter-sparkle">🎄</div>
       </div>
 
-      <div className="fixed top-4 right-4 pointer-events-none z-40 hidden md:block">
+      <div className="fixed top-24 right-4 pointer-events-none z-40 hidden md:block">
         <div className="text-4xl winter-sparkle" style={{ animationDelay: '0.5s' }}>⭐</div>
       </div>
 
-      <div className="fixed bottom-20 left-4 pointer-events-none z-40 hidden md:block">
+      <div className="fixed bottom-24 left-4 pointer-events-none z-40 hidden md:block">
         <div className="text-3xl winter-sparkle" style={{ animationDelay: '1s' }}>🎁</div>
       </div>
 
-      <div className="fixed bottom-20 right-4 pointer-events-none z-40 hidden md:block">
+      <div className="fixed bottom-24 right-4 pointer-events-none z-40 hidden md:block">
         <div className="text-3xl winter-sparkle" style={{ animationDelay: '1.5s' }}>🔔</div>
-      </div>
-
-      {/* Guirlande en haut de la page */}
-      <div className="fixed top-0 left-0 right-0 pointer-events-none z-40 hidden lg:block">
-        <div className="flex justify-around text-2xl py-2 bg-gradient-to-b from-background/80 to-transparent">
-          <span className="winter-sparkle">🎄</span>
-          <span className="winter-sparkle" style={{ animationDelay: '0.3s' }}>⭐</span>
-          <span className="winter-sparkle" style={{ animationDelay: '0.6s' }}>🎁</span>
-          <span className="winter-sparkle" style={{ animationDelay: '0.9s' }}>🔔</span>
-          <span className="winter-sparkle" style={{ animationDelay: '1.2s' }}>❄️</span>
-          <span className="winter-sparkle" style={{ animationDelay: '1.5s' }}>🎅</span>
-          <span className="winter-sparkle" style={{ animationDelay: '1.8s' }}>⛄</span>
-          <span className="winter-sparkle" style={{ animationDelay: '2.1s' }}>🎄</span>
-        </div>
       </div>
 
       {/* Styles pour l'animation de chute de neige */}
