@@ -190,6 +190,43 @@ export async function getAllEvents({ year, month, games, userId }: { year?: numb
     }
   });
 
+  pipeline.push(
+    {
+      $lookup: {
+        from: "games",
+        let: { eventGameName: "$gameName" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$name", "$$eventGameName"] },
+                ]
+              }
+            }
+          },
+          {
+            $project: {
+              _id: 1,
+              name: 1,
+              icon: 1,
+              banner: 1,
+              slug: 1,
+              type: 1,
+            }
+          }
+        ],
+        as: "game"
+      }
+    },
+    {
+      $unwind: {
+        path: "$game",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+  );
+
   // Execute aggregation
   const events = await db
     .collection<EventDocument>(COLLECTION_NAME)
@@ -204,6 +241,7 @@ export async function getAllEvents({ year, month, games, userId }: { year?: numb
     startDateTime: event.startDateTime,
     endDateTime: event.endDateTime,
     gameName: event.gameName,
+    game: event.game,
     url: event.url,
     price: event.price,
     status: event.status,
@@ -266,6 +304,42 @@ export async function getEventsByLairIds(lairIds: string[], {
       as: "lairDetails"
     }
   });
+  pipeline.push(
+    {
+      $lookup: {
+        from: "games",
+        let: { eventGameName: "$gameName" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$name", "$$eventGameName"] },
+                ]
+              }
+            }
+          },
+          {
+            $project: {
+              _id: 1,
+              name: 1,
+              icon: 1,
+              banner: 1,
+              slug: 1,
+              type: 1,
+            }
+          }
+        ],
+        as: "game"
+      }
+    },
+    {
+      $unwind: {
+        path: "$game",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+  );
 
   // Execute aggregation
   const events = await db
@@ -281,6 +355,7 @@ export async function getEventsByLairIds(lairIds: string[], {
     startDateTime: event.startDateTime,
     endDateTime: event.endDateTime,
     gameName: event.gameName,
+    game: event.game,
     url: event.url,
     price: event.price,
     status: event.status,
