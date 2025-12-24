@@ -277,11 +277,12 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
                       className="flex items-center gap-3 p-3 border rounded-lg bg-muted"
                     >
                       {achievement.icon && (
-                        <img
-                          src={achievement.icon}
-                          alt={achievement.name}
-                          className="w-10 h-10 rounded object-cover"
-                        />
+                        <span
+                          className="flex items-center justify-center w-10 h-10 rounded bg-background text-2xl"
+                          aria-hidden="true"
+                        >
+                          {achievement.icon}
+                        </span>
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold truncate">{achievement.name}</p>
