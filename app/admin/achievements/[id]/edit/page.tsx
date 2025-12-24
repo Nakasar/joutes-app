@@ -17,7 +17,7 @@ export default async function EditAchievementPage({ params }: EditAchievementPag
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-8 max-w-6xl mx-auto space-y-6">
       <h1 className="text-3xl font-bold">Modifier le Succès</h1>
       <AchievementForm initialData={achievement} />
     </div>
