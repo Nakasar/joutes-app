@@ -1,5 +1,5 @@
 import { betterAuth } from "better-auth";
-import { emailOTP } from "better-auth/plugins";
+import {customSession, emailOTP} from "better-auth/plugins";
 import { Resend } from "resend";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import db from "@/lib/mongodb";

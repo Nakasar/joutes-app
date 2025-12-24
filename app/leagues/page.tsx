@@ -7,6 +7,7 @@ import { Trophy } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import LeaguesClient from "./LeaguesClient";
+import {isAdmin} from "@/lib/config/admins";
 
 export const metadata: Metadata = {
   title: "Ligues",
@@ -42,7 +43,7 @@ export default async function LeaguesPage() {
               Participez à des ligues et tournois de jeux de société
             </p>
           </div>
-          {session?.user && (
+          {session?.user && isAdmin(session.user.email) && (
             <Button asChild>
               <Link href="/leagues/new">Créer une ligue</Link>
             </Button>

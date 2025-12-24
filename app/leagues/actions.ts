@@ -28,6 +28,7 @@ import {
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import {requireAdmin} from "@/lib/middleware/admin";
 
 // Helper pour récupérer la session utilisateur
 async function getSession() {
@@ -108,6 +109,7 @@ export async function createLeagueAction(
   params: CreateLeagueParams
 ): Promise<{ success: boolean; league?: League; error?: string }> {
   try {
+    await requireAdmin();
     const user = await requireAuth();
 
     const input: CreateLeagueInput = {
