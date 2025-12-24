@@ -2,13 +2,15 @@ import { notFound } from "next/navigation";
 import { getPublicUserProfileAction } from "@/app/account/user-actions";
 import { getAllGames } from "@/lib/db/games";
 import { getLairById } from "@/lib/db/lairs";
-import { getAchievementsForUser } from "@/lib/db/achievements";
+import { getAchievementsForUser, getAllAchievements } from "@/lib/db/achievements";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { User as UserIcon, Gamepad2, MapPin, Lock, Globe, ExternalLink, Trophy } from "lucide-react";
+import { Gamepad2, MapPin, Lock, Globe, ExternalLink, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Game } from "@/lib/types/Game";
 import { Lair } from "@/lib/types/Lair";
 import { AchievementWithUnlockInfo } from "@/lib/types/Achievement";
+import { checkAdmin } from "@/lib/middleware/admin";
+import { UnlockAchievementButton } from "@/app/users/UnlockAchievementButton";
 
 interface UserProfilePageProps {
   params: Promise<{
@@ -55,7 +57,26 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
     userAchievements = allAchievements.filter(a => a.unlockedAt);
   }
 
-  const userTag = user.displayName && user.discriminator 
+  // Vérifier si l'utilisateur connecté est admin
+  const isAdmin = await checkAdmin();
+
+  // Récupérer tous les succès disponibles pour les admins
+  let allAvailableAchievements = [];
+  let unlockedAchievements = [];
+  if (isAdmin) {
+    allAvailableAchievements = await getAllAchievements();
+    const userAllAchievements = await getAchievementsForUser(user.id);
+    unlockedAchievements = userAllAchievements
+      .filter(a => a.unlockedAt)
+      .map(a => a.id);
+  }
+
+  // Filtrer les succès non encore débloqués pour l'admin
+  const availableToUnlock = isAdmin
+    ? allAvailableAchievements.filter(a => !unlockedAchievements.includes(a.id))
+    : [];
+
+  const userTag = user.displayName && user.discriminator
     ? `${user.displayName}#${user.discriminator}`
     : user.username;
 
@@ -77,13 +98,24 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
                   />
                 )}
                 <div className="flex-1">
-                  <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-                    {userTag}
-                    {!isPublic && (
-                      <Lock className="h-5 w-5 text-muted-foreground" />
+                  <div className="flex items-start justify-between gap-4">
+                    <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+                      {userTag}
+                      {!isPublic && (
+                        <Lock className="h-5 w-5 text-muted-foreground" />
+                      )}
+                    </h1>
+
+                    {/* Bouton admin pour débloquer un succès */}
+                    {isAdmin && (
+                      <UnlockAchievementButton
+                        userId={user.id}
+                        userTag={userTag}
+                        availableAchievements={availableToUnlock}
+                      />
                     )}
-                  </h1>
-                  
+                  </div>
+
                   {/* Description */}
                   {user.description && (
                     <p className="text-muted-foreground mt-3 whitespace-pre-wrap">
