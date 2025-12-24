@@ -39,7 +39,7 @@ export default function Header() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 font-bold text-2xl">
-            <Image src="/logo/joutes_logo_full.png" alt="Joutes Logo" width={120} height={120} className="rounded-full size-6" />
+            <Image src={`/logo/joutes_logo${process.env.NEXT_PUBLIC_THEME === 'default' ? '' : process.env.NEXT_PUBLIC_THEME}.png`} alt="Joutes Logo" width={120} height={120} className="rounded-full size-6" />
             <span className="bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
               Joutes
             </span>

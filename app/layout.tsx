@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     description: "Ligues et rencontres multi-jeux à proximité pour les passionnés de jeux de cartes à collectionner et de jeux de société. Trouvez des événements organisés près de chez vous, connectez-vous avec votre communauté locale de joueurs, et découvrez des boutiques de jeux locales.",
     images: [
       {
-        url: "https://joutes.app/joutes.png",
+        url: `https://joutes.app/joutes${process.env.NEXT_PUBLIC_THEME === 'default' ? '' : process.env.NEXT_PUBLIC_THEME}.png`,
         width: 720,
         height: 404,
         alt: "Joutes App",
