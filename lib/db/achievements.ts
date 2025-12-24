@@ -56,33 +56,6 @@ export async function getAchievementsForUser(userId: string): Promise<Achievemen
   }));
 }
 
-export async function unlockAchievement(userId: string, achievementSlug: string): Promise<boolean> {
-  const achievement = await db.collection(ACHIEVEMENTS_COLLECTION).findOne({ slug: achievementSlug });
-  if (!achievement) {
-    console.error(`Achievement not found: ${achievementSlug}`);
-    return false;
-  }
-
-  const achievementId = achievement._id.toString();
-
-  const existing = await db.collection(USER_ACHIEVEMENTS_COLLECTION).findOne({
-    userId,
-    achievementId
-  });
-
-  if (existing) {
-    return false; // Déjà débloqué
-  }
-
-  await db.collection(USER_ACHIEVEMENTS_COLLECTION).insertOne({
-    userId,
-    achievementId,
-    unlockedAt: new Date(),
-  });
-
-  return true;
-}
-
 export async function unlockAchievementById(userId: string, achievementId: string): Promise<boolean> {
   // Vérifier que l'achievement existe
   try {
