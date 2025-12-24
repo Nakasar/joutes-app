@@ -525,9 +525,19 @@ export async function getEventsForUser(
                   ]
                 }
               }
+            },
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+                icon: 1,
+                banner: 1,
+                slug: 1,
+                type: 1,
+              }
             }
           ],
-          as: "matchedGame"
+          as: "game"
         }
       },
       // Only keep events that have a matching game
@@ -535,7 +545,7 @@ export async function getEventsForUser(
         $match: {
           $or: [
             // Events from followed lairs with matching games
-            { matchedGame: { $ne: [] } },
+            { game: { $ne: [] } },
             // Private events where user is the creator
             { lairId: null, creatorId: userId },
             // Private events where user is a participant
@@ -545,12 +555,12 @@ export async function getEventsForUser(
           ]
         }
       },
-      // Remove the matchedGame field from results
       {
-        $project: {
-          matchedGame: 0
-        }
-      }
+        $unwind: {
+          path: "$game",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
     );
   }
 
@@ -610,6 +620,7 @@ export async function getEventsForUser(
     startDateTime: event.startDateTime,
     endDateTime: event.endDateTime,
     gameName: event.gameName,
+    game: event.game,
     url: event.url,
     price: event.price,
     status: event.status,
