@@ -1,6 +1,6 @@
 import db from "@/lib/mongodb";
 import { Achievement, UserAchievement, AchievementWithUnlockInfo } from "@/lib/types/Achievement";
-import { WithId, Document } from "mongodb";
+import { WithId, Document, ObjectId } from "mongodb";
 
 const ACHIEVEMENTS_COLLECTION = "achievements";
 const USER_ACHIEVEMENTS_COLLECTION = "user-achievements";
@@ -21,6 +21,15 @@ function toAchievement(doc: WithId<Document>): Achievement {
 export async function getAllAchievements(): Promise<Achievement[]> {
   const docs = await db.collection(ACHIEVEMENTS_COLLECTION).find({}).toArray();
   return docs.map(toAchievement);
+}
+
+export async function getAchievementById(id: string): Promise<Achievement | null> {
+  try {
+    const doc = await db.collection(ACHIEVEMENTS_COLLECTION).findOne({ _id: new ObjectId(id) });
+    return doc ? toAchievement(doc) : null;
+  } catch (e) {
+    return null;
+  }
 }
 
 export async function getUserAchievements(userId: string): Promise<UserAchievement[]> {
@@ -75,6 +84,27 @@ export async function unlockAchievement(userId: string, achievementSlug: string)
   return true;
 }
 
+export async function createAchievement(achievement: Omit<Achievement, "id">): Promise<Achievement> {
+  const result = await db.collection(ACHIEVEMENTS_COLLECTION).insertOne(achievement);
+  return {
+    ...achievement,
+    id: result.insertedId.toString(),
+  };
+}
+
+export async function updateAchievement(id: string, achievement: Partial<Omit<Achievement, "id">>): Promise<boolean> {
+  const result = await db.collection(ACHIEVEMENTS_COLLECTION).updateOne(
+    { _id: new ObjectId(id) },
+    { $set: achievement }
+  );
+  return result.modifiedCount > 0;
+}
+
+export async function deleteAchievement(id: string): Promise<boolean> {
+  const result = await db.collection(ACHIEVEMENTS_COLLECTION).deleteOne({ _id: new ObjectId(id) });
+  return result.deletedCount > 0;
+}
+
 // Fonction utilitaire pour initialiser les succès (seed)
 export async function seedAchievements() {
   const achievements = [
@@ -112,4 +142,3 @@ export async function seedAchievements() {
     );
   }
 }
-
