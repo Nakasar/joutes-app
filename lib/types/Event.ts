@@ -7,6 +7,13 @@ export type Event = {
   startDateTime: string;
   endDateTime: string;
   gameName: string;
+  game?: {
+    name: string;
+    icon?: string;
+    banner?: string;
+    type: 'TCG' | 'BoardGame' | 'VideoGame' | 'Other';
+    slug?: string;
+  };
   url?: string;
   price?: number;
   status: 'available' | 'sold-out' | 'cancelled';
