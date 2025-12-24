@@ -10,10 +10,6 @@ import WinterDecorations from "@/components/WinterDecorations";
 
 // Charger le thème hivernal si activé
 const isWinterTheme = process.env.NEXT_PUBLIC_THEME === "winter";
-if (isWinterTheme) {
-  require("./winter-theme.css");
-}
-
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import "@/app/winter-theme.css";
 
 interface Snowflake {
   id: number;

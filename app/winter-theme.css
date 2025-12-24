@@ -1,126 +1,125 @@
 /* Thème hivernal pour Joutes App */
-}
-  transition: box-shadow 0.3s ease;
-  box-shadow: 0 0 20px rgba(200, 230, 255, 0.4);
-.winter-hover:hover {
-/* Effets de neige au survol */
 
-}
-  animation: sparkle 2s ease-in-out infinite;
-.winter-sparkle {
-
-}
-  }
-    filter: brightness(1.3);
-    opacity: 0.8;
-  50% {
-  }
-    filter: brightness(1);
-    opacity: 1;
-  0%, 100% {
-@keyframes sparkle {
-/* Animation de scintillement pour éléments festifs */
-
-}
-    rgba(180, 220, 255, 0.3));
-    rgba(255, 255, 255, 0.2),
-    rgba(200, 230, 255, 0.3),
-  --frost-border: linear-gradient(135deg,
-.winter-theme {
-/* Bordures givrées */
-
-}
-  backdrop-filter: blur(8px);
-    rgba(255, 255, 255, 0.1) 100%);
-    rgba(200, 230, 255, 0.05) 50%,
-    rgba(255, 255, 255, 0.1) 0%,
-  background: linear-gradient(135deg,
-.winter-theme .frost-effect {
-/* Effet de givre sur les cartes */
-
-}
-  --ice-blue: oklch(0.65 0.1 220);
-  --snow-white: oklch(0.98 0.01 220);
-  --christmas-gold: oklch(0.78 0.12 85);
-  --christmas-green: oklch(0.55 0.14 145);
-  --christmas-red: oklch(0.6 0.2 25);
-  /* Couleurs festives ajustées pour le mode sombre */
-
-  --sidebar-ring: oklch(0.65 0.1 220);
-  --sidebar-border: oklch(0.3 0.03 240);
-  --sidebar-accent-foreground: oklch(0.95 0.01 220);
-  --sidebar-accent: oklch(0.25 0.03 240);
-  --sidebar-primary-foreground: oklch(0.15 0.02 240);
-  --sidebar-primary: oklch(0.7 0.12 220);
-  --sidebar-foreground: oklch(0.95 0.01 220);
-  --sidebar: oklch(0.18 0.02 240);
-  --chart-5: oklch(0.6 0.16 260);
-  --chart-4: oklch(0.55 0.14 240);
-  --chart-3: oklch(0.7 0.1 180);
-  --chart-2: oklch(0.65 0.12 200);
-  --chart-1: oklch(0.6 0.15 220);
-  --ring: oklch(0.65 0.1 220);
-  --input: oklch(0.28 0.03 240);
-  --border: oklch(0.3 0.03 240);
-  --destructive: oklch(0.65 0.2 25);
-  --accent-foreground: oklch(0.95 0.01 220);
-  --accent: oklch(0.35 0.08 200);
-  --muted-foreground: oklch(0.65 0.04 220);
-  --muted: oklch(0.25 0.03 240);
-  --secondary-foreground: oklch(0.95 0.01 220);
-  --secondary: oklch(0.3 0.05 230);
-  --primary-foreground: oklch(0.15 0.02 240);
-  --primary: oklch(0.7 0.12 220); /* Bleu glacé lumineux */
-  --popover-foreground: oklch(0.95 0.01 220);
-  --popover: oklch(0.2 0.02 240);
-  --card-foreground: oklch(0.95 0.01 220);
-  --card: oklch(0.2 0.02 240);
-  --foreground: oklch(0.95 0.01 220);
-  --background: oklch(0.15 0.02 240); /* Nuit hivernale */
-  /* Mode sombre hivernal */
-.dark {
-
-}
-  --ice-blue: oklch(0.8 0.08 240);
-  --snow-white: oklch(0.99 0 0);
-  --christmas-gold: oklch(0.75 0.12 85);
-  --christmas-green: oklch(0.5 0.15 145);
-  --christmas-red: oklch(0.55 0.22 25);
-  /* Couleurs festives de Noël pour accents */
-
-  --sidebar-ring: oklch(0.6 0.12 240);
-  --sidebar-border: oklch(0.85 0.03 230);
-  --sidebar-accent-foreground: oklch(0.2 0.03 240);
-  --sidebar-accent: oklch(0.92 0.02 230);
-  --sidebar-primary-foreground: oklch(0.99 0.01 220);
-  --sidebar-primary: oklch(0.55 0.15 240);
-  --sidebar-foreground: oklch(0.2 0.03 240);
-  --sidebar: oklch(0.96 0.02 230);
-  --chart-5: oklch(0.55 0.14 260);
-  --chart-4: oklch(0.7 0.08 220);
-  --chart-3: oklch(0.5 0.1 180);
-  --chart-2: oklch(0.6 0.12 200);
-  --chart-1: oklch(0.646 0.15 240); /* Tons bleus/hivernaux pour les graphiques */
-  --ring: oklch(0.6 0.12 240);
-  --input: oklch(0.88 0.03 230);
-  --border: oklch(0.85 0.03 230);
-  --destructive: oklch(0.577 0.245 27.325); /* Rouge pour contraste */
-  --accent-foreground: oklch(0.99 0.01 220);
-  --accent: oklch(0.65 0.12 180); /* Bleu cyan glacé */
-  --muted-foreground: oklch(0.5 0.03 240);
-  --muted: oklch(0.92 0.02 230);
-  --secondary-foreground: oklch(0.2 0.03 240);
-  --secondary: oklch(0.75 0.08 200); /* Bleu ciel hivernal */
-  --primary-foreground: oklch(0.99 0.01 220);
-  --primary: oklch(0.55 0.15 240); /* Bleu glacé */
-  --popover-foreground: oklch(0.2 0.03 240);
-  --popover: oklch(0.99 0.01 220);
-  --card-foreground: oklch(0.2 0.03 240);
-  --card: oklch(0.99 0.01 220); /* Blanc glacé */
-  --foreground: oklch(0.2 0.03 240); /* Bleu marine foncé */
-  --background: oklch(0.98 0.01 240); /* Blanc neige légèrement bleuté */
-  /* Couleurs hivernales - tons bleus glacés et blanc neige */
-  --radius: 0.625rem;
 :root {
+  --radius: 0.625rem;
+  /* Couleurs hivernales - tons bleus glacés et blanc neige */
+  --background: oklch(0.98 0.01 240); /* Blanc neige légèrement bleuté */
+  --foreground: oklch(0.2 0.03 240); /* Bleu marine foncé */
+  --card: oklch(0.99 0.01 220); /* Blanc glacé */
+  --card-foreground: oklch(0.2 0.03 240);
+  --popover: oklch(0.99 0.01 220);
+  --popover-foreground: oklch(0.2 0.03 240);
+  --primary: oklch(0.55 0.15 240); /* Bleu glacé */
+  --primary-foreground: oklch(0.99 0.01 220);
+  --secondary: oklch(0.75 0.08 200); /* Bleu ciel hivernal */
+  --secondary-foreground: oklch(0.2 0.03 240);
+  --muted: oklch(0.92 0.02 230);
+  --muted-foreground: oklch(0.5 0.03 240);
+  --accent: oklch(0.65 0.12 180); /* Bleu cyan glacé */
+  --accent-foreground: oklch(0.99 0.01 220);
+  --destructive: oklch(0.577 0.245 27.325); /* Rouge pour contraste */
+  --border: oklch(0.85 0.03 230);
+  --input: oklch(0.88 0.03 230);
+  --ring: oklch(0.6 0.12 240);
+  --chart-1: oklch(0.646 0.15 240); /* Tons bleus/hivernaux pour les graphiques */
+  --chart-2: oklch(0.6 0.12 200);
+  --chart-3: oklch(0.5 0.1 180);
+  --chart-4: oklch(0.7 0.08 220);
+  --chart-5: oklch(0.55 0.14 260);
+  --sidebar: oklch(0.96 0.02 230);
+  --sidebar-foreground: oklch(0.2 0.03 240);
+  --sidebar-primary: oklch(0.55 0.15 240);
+  --sidebar-primary-foreground: oklch(0.99 0.01 220);
+  --sidebar-accent: oklch(0.92 0.02 230);
+  --sidebar-accent-foreground: oklch(0.2 0.03 240);
+  --sidebar-border: oklch(0.85 0.03 230);
+  --sidebar-ring: oklch(0.6 0.12 240);
 
+  /* Couleurs festives de Noël pour accents */
+  --christmas-red: oklch(0.55 0.22 25);
+  --christmas-green: oklch(0.5 0.15 145);
+  --christmas-gold: oklch(0.75 0.12 85);
+  --snow-white: oklch(0.99 0 0);
+  --ice-blue: oklch(0.8 0.08 240);
+}
 
+.dark {
+  /* Mode sombre hivernal */
+  --background: oklch(0.15 0.02 240); /* Nuit hivernale */
+  --foreground: oklch(0.95 0.01 220);
+  --card: oklch(0.2 0.02 240);
+  --card-foreground: oklch(0.95 0.01 220);
+  --popover: oklch(0.2 0.02 240);
+  --popover-foreground: oklch(0.95 0.01 220);
+  --primary: oklch(0.7 0.12 220); /* Bleu glacé lumineux */
+  --primary-foreground: oklch(0.15 0.02 240);
+  --secondary: oklch(0.3 0.05 230);
+  --secondary-foreground: oklch(0.95 0.01 220);
+  --muted: oklch(0.25 0.03 240);
+  --muted-foreground: oklch(0.65 0.04 220);
+  --accent: oklch(0.35 0.08 200);
+  --accent-foreground: oklch(0.95 0.01 220);
+  --destructive: oklch(0.65 0.2 25);
+  --border: oklch(0.3 0.03 240);
+  --input: oklch(0.28 0.03 240);
+  --ring: oklch(0.65 0.1 220);
+  --chart-1: oklch(0.6 0.15 220);
+  --chart-2: oklch(0.65 0.12 200);
+  --chart-3: oklch(0.7 0.1 180);
+  --chart-4: oklch(0.55 0.14 240);
+  --chart-5: oklch(0.6 0.16 260);
+  --sidebar: oklch(0.18 0.02 240);
+  --sidebar-foreground: oklch(0.95 0.01 220);
+  --sidebar-primary: oklch(0.7 0.12 220);
+  --sidebar-primary-foreground: oklch(0.15 0.02 240);
+  --sidebar-accent: oklch(0.25 0.03 240);
+  --sidebar-accent-foreground: oklch(0.95 0.01 220);
+  --sidebar-border: oklch(0.3 0.03 240);
+  --sidebar-ring: oklch(0.65 0.1 220);
+
+  /* Couleurs festives ajustées pour le mode sombre */
+  --christmas-red: oklch(0.6 0.2 25);
+  --christmas-green: oklch(0.55 0.14 145);
+  --christmas-gold: oklch(0.78 0.12 85);
+  --snow-white: oklch(0.98 0.01 220);
+  --ice-blue: oklch(0.65 0.1 220);
+}
+
+/* Effet de givre sur les cartes */
+.winter-theme .frost-effect {
+  background: linear-gradient(135deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(200, 230, 255, 0.05) 50%,
+    rgba(255, 255, 255, 0.1) 100%);
+  backdrop-filter: blur(8px);
+}
+
+/* Bordures givrées */
+.winter-theme {
+  --frost-border: linear-gradient(135deg,
+    rgba(200, 230, 255, 0.3),
+    rgba(255, 255, 255, 0.2),
+    rgba(180, 220, 255, 0.3));
+}
+
+/* Animation de scintillement pour éléments festifs */
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 1;
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 0.8;
+    filter: brightness(1.3);
+  }
+}
+
+.winter-sparkle {
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+/* Effets de neige au survol */
+.winter-hover:hover {
+  box-shadow: 0 0 20px rgba(200, 230, 255, 0.4);
+  transition: box-shadow 0.3s ease;
+}
