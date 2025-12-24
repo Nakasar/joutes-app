@@ -132,5 +132,12 @@ export async function updateAchievement(id: string, achievement: Partial<Omit<Ac
 
 export async function deleteAchievement(id: string): Promise<boolean> {
   const result = await db.collection(ACHIEVEMENTS_COLLECTION).deleteOne({ _id: new ObjectId(id) });
-  return result.deletedCount > 0;
+
+  if (result.deletedCount && result.deletedCount > 0) {
+    // Cascade delete: remove all user achievement records linked to this achievement
+    await db.collection(USER_ACHIEVEMENTS_COLLECTION).deleteMany({ achievementId: id });
+    return true;
+  }
+
+  return false;
 }
