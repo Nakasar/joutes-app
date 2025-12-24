@@ -33,6 +33,8 @@ export async function generateMetadata({ params }: GameDetailPageProps): Promise
     title: `${game.name} - Joutes`,
     description: game.description,
     openGraph: {
+      url: `https://joutes.app/games/${gameSlugOrId}`,
+      siteName: 'Joutes - Star Wars Unlimited',
       title: game.name,
       description: `Suivez les évènements ${game.name} autour de vous !`,
       images: game.banner ? [game.banner] : [],
