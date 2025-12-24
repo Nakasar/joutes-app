@@ -8,7 +8,7 @@ import { Gamepad2, MapPin, Lock, Globe, ExternalLink, Trophy } from "lucide-reac
 import { Badge } from "@/components/ui/badge";
 import { Game } from "@/lib/types/Game";
 import { Lair } from "@/lib/types/Lair";
-import { AchievementWithUnlockInfo } from "@/lib/types/Achievement";
+import {Achievement, AchievementWithUnlockInfo} from "@/lib/types/Achievement";
 import { checkAdmin } from "@/lib/middleware/admin";
 import { UnlockAchievementButton } from "@/app/users/UnlockAchievementButton";
 
@@ -61,8 +61,8 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
   const isAdmin = await checkAdmin();
 
   // Récupérer tous les succès disponibles pour les admins
-  let allAvailableAchievements = [];
-  let unlockedAchievements = [];
+  let allAvailableAchievements: Achievement[] = [];
+  let unlockedAchievements: string[] = [];
   if (isAdmin) {
     allAvailableAchievements = await getAllAchievements();
     const userAllAchievements = await getAchievementsForUser(user.id);
