@@ -6,6 +6,10 @@ import Header from "@/components/Header";
 import { DateTime } from "luxon";
 import Link from "next/link";
 import { Github } from "lucide-react";
+import WinterDecorations from "@/components/WinterDecorations";
+
+// Charger le thème hivernal si activé
+const isWinterTheme = process.env.NEXT_PUBLIC_THEME === "winter";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -50,8 +54,9 @@ export default function RootLayout({
   return (
     <html lang="fr" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen${isWinterTheme ? ' winter-theme' : ''}`}
       >
+        {isWinterTheme && <WinterDecorations />}
         <div className="relative min-h-screen flex flex-col">
           <Header />
           <main className="flex-1">
