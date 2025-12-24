@@ -835,75 +835,120 @@ export default function EventsCalendar({
                             );
 
                             const eventContent = (
-                              <div className={cn("text-xs p-2 rounded-md bg-background border hover:bg-accent hover:border-accent-foreground transition-colors cursor-pointer", isUserEvent && "border-yellow-500")}>
-                                <div className="font-semibold truncate mb-1" title={event.name}>
-                                  {event.name}
-                                </div>
-                                <div className="text-xs text-muted-foreground flex items-center gap-1 mb-1" suppressHydrationWarning>
-                                  <CalendarIcon className="h-3 w-3" />
-                                  {startTime}
-                                </div>
-                                {event.creator ? (
-                                  <div className="text-xs text-muted-foreground truncate flex items-center gap-1" title={event.lair?.name}>
-                                    <User2Icon className="h-3 w-3" />
-                                    {event.creator.displayName ? `${event.creator.displayName}#${event.creator.discriminator}` : "Utilisateur inconnu"}
-                                  </div>
-                                ) : (
-                                  <div className="text-xs text-muted-foreground truncate flex items-center gap-1" title={event.lair?.name}>
-                                    <MapPin className="h-3 w-3" />
-                                    {event.lair?.name || "Lieu inconnu"}
-                                  </div>
-                                )}
-                                <div className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
-                                  <Gamepad2 className="h-3 w-3" />
-                                  {event.gameName}
-                                </div>
-                                <div className="flex items-center gap-1 flex-wrap">
-                                  <Badge variant={getStatusVariant(event.status)} className="text-xs">
-                                    {getStatusLabel(event.status)}
-                                  </Badge>
-                                  {(event.price && event.price !== 0) && (
-                                    <span className="text-xs font-semibold flex items-center">
-                                      <Euro className="h-3 w-3" />
-                                      {event.price}
-                                    </span>
-                                  )}
-                                </div>
-                                {session.data?.user?.id && (event.creatorId === session.data?.user?.id) && (
-                                  <Badge variant="default" className="text-xs bg-blue-500 text-white mt-1">
-                                    Créateur
-                                  </Badge>
-                                )}
-                                {session.data?.user?.id && (event.participants?.includes(session.data?.user?.id)) && (
-                                  <Badge variant="default" className="text-xs bg-green-500 text-white mt-1">
-                                    Inscrit
-                                  </Badge>
-                                )}
-                                {/* Boutons d'action en bas */}
-                                <div className="flex gap-1 mt-2 pt-2 border-t">
-                                  {/* Bouton info */}
-                                  <button
-                                    onClick={(e) => handleOpenEventDetails(event, e)}
-                                    className="flex-1 p-1 hover:bg-accent rounded-sm transition-colors flex items-center justify-center"
-                                    title="Voir les détails"
-                                  >
-                                    <HelpCircle className="h-3 w-3" />
-                                  </button>
-                                  {/* Bouton favori */}
-                                  {session.data?.user && (
-                                    <button
-                                      onClick={(e) => handleToggleFavorite(event.id, !!isFavorited, e)}
-                                      className="flex-1 p-1 hover:bg-accent rounded-sm transition-colors flex items-center justify-center gap-1"
-                                      title={isFavorited ? "Retirer des favoris" : "Ajouter aux favoris"}
-                                    >
-                                      <Star 
-                                        className={cn("h-3 w-3", isFavorited && "fill-yellow-500 text-yellow-500")} 
-                                      />
-                                      {event.favoritedBy && event.favoritedBy.length > 0 && (
-                                        <span className="text-[10px] font-medium">{event.favoritedBy.length}</span>
+                              <div className={cn("text-xs rounded-md bg-background border hover:bg-accent hover:border-accent-foreground transition-colors cursor-pointer overflow-hidden", isUserEvent && "border-yellow-500")}>
+                                {/* Bannière du jeu en haut avec bordure épaisse */}
+                                {event.game?.banner && (
+                                  <div className="relative h-12 border-primary overflow-hidden">
+                                    <img
+                                      src={event.game.banner}
+                                      alt={event.game.name}
+                                      className="w-full h-full object-cover opacity-80"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80" />
+
+                                    <div className="absolute bottom-1 left-1 right-1 flex items-center gap-1.5">
+                                      {event.game.icon && (
+                                        <img
+                                          src={event.game.icon}
+                                          alt={event.game.name}
+                                          className="w-4 h-4 rounded object-cover shadow-md"
+                                        />
                                       )}
-                                    </button>
+                                      <span className="text-[10px] font-bold text-black drop-shadow-md truncate">
+                                          {event.game.name}
+                                        </span>
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="p-2">
+                                  {/* Afficher l'icône et le nom du jeu uniquement si pas de bannière */}
+                                  {event.game && !event.game.banner && (
+                                    <div className="flex items-center gap-1.5 mb-2 pb-1.5 border-b">
+                                      {event.game.icon && (
+                                        <img
+                                          src={event.game.icon}
+                                          alt={event.game.name}
+                                          className="w-4 h-4 rounded object-cover"
+                                        />
+                                      )}
+                                      <span className="text-[10px] font-bold text-primary truncate">
+                                        {event.game.name}
+                                      </span>
+                                    </div>
                                   )}
+
+                                  <div className="font-semibold truncate mb-1" title={event.name}>
+                                    {event.name}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground flex items-center gap-1 mb-1" suppressHydrationWarning>
+                                    <CalendarIcon className="h-3 w-3" />
+                                    {startTime}
+                                  </div>
+                                  {event.creator ? (
+                                    <div className="text-xs text-muted-foreground truncate flex items-center gap-1" title={event.lair?.name}>
+                                      <User2Icon className="h-3 w-3" />
+                                      {event.creator.displayName ? `${event.creator.displayName}#${event.creator.discriminator}` : "Utilisateur inconnu"}
+                                    </div>
+                                  ) : (
+                                    <div className="text-xs text-muted-foreground truncate flex items-center gap-1" title={event.lair?.name}>
+                                      <MapPin className="h-3 w-3" />
+                                      {event.lair?.name || "Lieu inconnu"}
+                                    </div>
+                                  )}
+                                  {!event.game && event.gameName && (
+                                    <div className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
+                                      <Gamepad2 className="h-3 w-3" />
+                                      {event.gameName}
+                                    </div>
+                                  )}
+                                  <div className="flex items-center gap-1 flex-wrap mt-1">
+                                    <Badge variant={getStatusVariant(event.status)} className="text-xs">
+                                      {getStatusLabel(event.status)}
+                                    </Badge>
+                                    {(event.price && event.price !== 0) && (
+                                      <span className="text-xs font-semibold flex items-center">
+                                        <Euro className="h-3 w-3" />
+                                        {event.price}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {session.data?.user?.id && (event.creatorId === session.data?.user?.id) && (
+                                    <Badge variant="default" className="text-xs bg-blue-500 text-white mt-1">
+                                      Créateur
+                                    </Badge>
+                                  )}
+                                  {session.data?.user?.id && (event.participants?.includes(session.data?.user?.id)) && (
+                                    <Badge variant="default" className="text-xs bg-green-500 text-white mt-1">
+                                      Inscrit
+                                    </Badge>
+                                  )}
+                                  {/* Boutons d'action en bas */}
+                                  <div className="flex gap-1 mt-2 pt-2 border-t">
+                                    {/* Bouton info */}
+                                    <button
+                                      onClick={(e) => handleOpenEventDetails(event, e)}
+                                      className="flex-1 p-1 hover:bg-accent rounded-sm transition-colors flex items-center justify-center"
+                                      title="Voir les détails"
+                                    >
+                                      <HelpCircle className="h-3 w-3" />
+                                    </button>
+                                    {/* Bouton favori */}
+                                    {session.data?.user && (
+                                      <button
+                                        onClick={(e) => handleToggleFavorite(event.id, !!isFavorited, e)}
+                                        className="flex-1 p-1 hover:bg-accent rounded-sm transition-colors flex items-center justify-center gap-1"
+                                        title={isFavorited ? "Retirer des favoris" : "Ajouter aux favoris"}
+                                      >
+                                        <Star
+                                          className={cn("h-3 w-3", isFavorited && "fill-yellow-500 text-yellow-500")}
+                                        />
+                                        {event.favoritedBy && event.favoritedBy.length > 0 && (
+                                          <span className="text-[10px] font-medium">{event.favoritedBy.length}</span>
+                                        )}
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             );
@@ -1081,14 +1126,58 @@ function ListView({
 
                 const cardContent = (
                   <Card
-                    className={cn(`my-2 hover:shadow-lg transition-shadow ${event.url ? "cursor-pointer hover:bg-accent" : ""}`, event.status === "available"
+                    className={cn(`my-2 hover:shadow-lg transition-shadow overflow-hidden ${event.url ? "cursor-pointer hover:bg-accent" : ""}`, event.status === "available"
                       ? "border-l-4 border-l-green-500"
                       : event.status === "sold-out"
                         ? "border-l-4 border-l-red-500"
                         : "border-l-4 border-l-gray-400"
                     , isUserEvent && "border-yellow-500")}
                   >
+                    {/* Bannière du jeu en haut avec bordure épaisse */}
+                    {event.game?.banner && (
+                      <div className="relative h-24 border-b-4 border-primary overflow-hidden">
+                        <img
+                          src={event.game.banner}
+                          alt={event.game.name}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80" />
+
+                        {/* Icône et nom du jeu par-dessus la bannière */}
+                        {event.game && (
+                          <div className="absolute bottom-2 left-2 right-2 flex items-center gap-2">
+                            {event.game.icon && (
+                              <img
+                                src={event.game.icon}
+                                alt={event.game.name}
+                                className="w-8 h-8 rounded object-cover shadow-lg"
+                              />
+                            )}
+                            <span className="text-sm font-bold text-white drop-shadow-lg truncate">
+                              {event.game.name}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <CardHeader className="pb-3">
+                      {/* Icône et nom du jeu uniquement si pas de bannière */}
+                      {event.game && !event.game.banner && (
+                        <div className="flex items-center gap-2 mb-2 pb-2 border-b">
+                          {event.game.icon && (
+                            <img
+                              src={event.game.icon}
+                              alt={event.game.name}
+                              className="w-8 h-8 rounded object-cover shadow-sm"
+                            />
+                          )}
+                          <span className="text-sm font-bold text-primary">
+                            {event.game.name}
+                          </span>
+                        </div>
+                      )}
+
                       <div className="flex items-start justify-between gap-2">
                         <CardTitle className="text-xl">
                           {event.name}
@@ -1126,10 +1215,12 @@ function ListView({
                         </div>
                       )}
 
-                      <div className="flex items-center gap-2 text-sm">
-                        <Gamepad2 className="h-4 w-4 text-muted-foreground" />
-                        <span>{event.gameName}</span>
-                      </div>
+                      {!event.game && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Gamepad2 className="h-4 w-4 text-muted-foreground" />
+                          <span>{event.gameName}</span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-2 text-sm">
                           <Euro className="h-4 w-4 text-muted-foreground" />
                           <span className="font-semibold">
