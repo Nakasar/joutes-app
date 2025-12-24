@@ -37,6 +37,12 @@ export default async function AdminLayout({
               >
                 Lieux
               </Link>
+              <Link
+                href="/admin/achievements"
+                className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 border-b-2 border-transparent hover:border-blue-500"
+              >
+                Succès
+              </Link>
             </div>
             <div className="flex items-center">
               <span className="text-sm text-gray-500">Espace Admin</span>

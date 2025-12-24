@@ -12,7 +12,7 @@ import ProfileImageDisplay from "./ProfileImageDisplay";
 import LocationDisplay from "./LocationDisplay";
 import ProfileVisibilitySwitch from "./ProfileVisibilitySwitch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {User as UserIcon, Mail, Gamepad2, MapPin, FileText, Settings, Shield} from "lucide-react";
+import {User as UserIcon, Mail, Gamepad2, MapPin, FileText, Settings, Shield, Trophy} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -38,8 +38,7 @@ export default async function AccountPage() {
   // Récupérer les détails des jeux suivis par l'utilisateur
   const followedGames = await Promise.all(
     (user.games || []).map(async (gameId) => {
-      const game = allGames.find(g => g.id === gameId);
-      return game;
+      return allGames.find(g => g.id === gameId);
     })
   );
   const userGames = followedGames.filter(game => game !== undefined);
@@ -47,8 +46,7 @@ export default async function AccountPage() {
   // Récupérer les détails des lairs suivis par l'utilisateur
   const followedLairs = await Promise.all(
     (user.lairs || []).map(async (lairId) => {
-      const lair = await getLairById(lairId);
-      return lair;
+      return await getLairById(lairId);
     })
   );
   const userLairs = followedLairs.filter(lair => lair !== null);
@@ -68,6 +66,12 @@ export default async function AccountPage() {
               </p>
             </div>
             <div className="flex gap-4">
+              <Link href="/account/achievements">
+                <Button variant="outline" size="sm">
+                  <Trophy className="h-4 w-4 mr-2" />
+                  Succès
+                </Button>
+              </Link>
               <Link href="/account/security">
                 <Button variant="outline" size="sm">
                   <Shield className="h-4 w-4 mr-2" />
