@@ -2,11 +2,13 @@ import { notFound } from "next/navigation";
 import { getPublicUserProfileAction } from "@/app/account/user-actions";
 import { getAllGames } from "@/lib/db/games";
 import { getLairById } from "@/lib/db/lairs";
+import { getAchievementsForUser } from "@/lib/db/achievements";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { User as UserIcon, Gamepad2, MapPin, Lock, Globe, ExternalLink } from "lucide-react";
+import { User as UserIcon, Gamepad2, MapPin, Lock, Globe, ExternalLink, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Game } from "@/lib/types/Game";
 import { Lair } from "@/lib/types/Lair";
+import { AchievementWithUnlockInfo } from "@/lib/types/Achievement";
 
 interface UserProfilePageProps {
   params: Promise<{
@@ -44,7 +46,15 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
     const lairsResults = await Promise.all(lairsPromises);
     userLairs = lairsResults.filter((lair): lair is Lair => lair !== null);
   }
-  
+
+  // Récupérer les succès si le profil est public
+  let userAchievements: AchievementWithUnlockInfo[] = [];
+  if (isPublic) {
+    const allAchievements = await getAchievementsForUser(user.id);
+    // On ne garde que les succès débloqués pour l'affichage public
+    userAchievements = allAchievements.filter(a => a.unlockedAt);
+  }
+
   const userTag = user.displayName && user.discriminator 
     ? `${user.displayName}#${user.discriminator}`
     : user.username;
@@ -211,6 +221,55 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
                     ))}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Succès (si profil public) */}
+          {isPublic && userAchievements.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Trophy className="h-5 w-5" />
+                  Succès
+                </CardTitle>
+                <CardDescription>
+                  Les succès débloqués par {user.displayName || user.username}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {userAchievements.map(achievement => (
+                    <div
+                      key={achievement.id}
+                      className="flex items-center gap-3 p-3 border rounded-lg bg-muted"
+                    >
+                      {achievement.icon && (
+                        <img
+                          src={achievement.icon}
+                          alt={achievement.name}
+                          className="w-10 h-10 rounded object-cover"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold truncate">{achievement.name}</p>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {achievement.description}
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <Badge variant="secondary" className="text-xs">
+                            {achievement.points} points
+                          </Badge>
+                          {achievement.unlockedAt && (
+                            <Badge variant="outline" className="text-xs">
+                              Débloqué le {new Date(achievement.unlockedAt).toLocaleDateString()}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           )}

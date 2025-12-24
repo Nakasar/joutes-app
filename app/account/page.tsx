@@ -12,7 +12,7 @@ import ProfileImageDisplay from "./ProfileImageDisplay";
 import LocationDisplay from "./LocationDisplay";
 import ProfileVisibilitySwitch from "./ProfileVisibilitySwitch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {User as UserIcon, Mail, Gamepad2, MapPin, FileText, Settings, Shield} from "lucide-react";
+import {User as UserIcon, Mail, Gamepad2, MapPin, FileText, Settings, Shield, Trophy} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -38,8 +38,7 @@ export default async function AccountPage() {
   // Récupérer les détails des jeux suivis par l'utilisateur
   const followedGames = await Promise.all(
     (user.games || []).map(async (gameId) => {
-      const game = allGames.find(g => g.id === gameId);
-      return game;
+      return allGames.find(g => g.id === gameId);
     })
   );
   const userGames = followedGames.filter(game => game !== undefined);
@@ -47,8 +46,7 @@ export default async function AccountPage() {
   // Récupérer les détails des lairs suivis par l'utilisateur
   const followedLairs = await Promise.all(
     (user.lairs || []).map(async (lairId) => {
-      const lair = await getLairById(lairId);
-      return lair;
+      return await getLairById(lairId);
     })
   );
   const userLairs = followedLairs.filter(lair => lair !== null);
@@ -165,6 +163,35 @@ export default async function AccountPage() {
                 initialWebsite={user.website}
                 initialSocialLinks={user.socialLinks}
               />
+            </CardContent>
+          </Card>
+
+          {/* Section Succès */}
+          <Card className="border-2 shadow-lg">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Trophy className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl">Mes succès</CardTitle>
+                  <CardDescription className="mt-1">
+                    Consultez vos trophées et votre progression
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <p className="text-muted-foreground">
+                  Découvrez les succès que vous avez débloqués et ceux qu'il vous reste à accomplir.
+                </p>
+                <Button asChild>
+                  <Link href="/account/achievements">
+                    Voir mes succès
+                  </Link>
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
