@@ -3,7 +3,7 @@ import { Lair } from "@/lib/types/Lair";
 import { User } from "@/lib/types/User";
 
 // Types de formats de ligue
-export type LeagueFormat = "KILLER" | "POINTS";
+export type LeagueFormat = "KILLER" | "POINTS" | "TARGETS";
 
 // Configuration des hauts faits pour le format POINTS
 export type Feat = {
@@ -31,6 +31,14 @@ export type KillerConfig = {
 // Configuration spécifique au format POINTS
 export type PointsConfig = {
   pointsRules: PointsRules;
+};
+
+// Configuration spécifique au format TARGETS
+export type TargetsConfig = {
+  targets: number; // Nombre de cibles en parallèle
+  victoryPoints?: number; // Points pour une victoire contre une cible
+  defeatPoints?: number; // Points pour une défaite contre une cible
+  drawPoints?: number; // Points pour un match nul contre une cible
 };
 
 // Historique des points d'un participant
@@ -78,11 +86,9 @@ export type LeagueParticipant = {
   pointsHistory: PointHistoryEntry[];
   feats: ParticipantFeat[];
   joinedAt: Date;
-  // Pour le format KILLER
-  targets?: User["id"][];
-  eliminatedBy?: User["id"];
-  eliminatedAt?: Date;
-  isEliminated?: boolean;
+  targets?: User["id"][]; // Cibles assignées au participant (KILLER et TARGETS)
+  eliminatedBy?: User["id"]; // Joueur qui a éliminé ce participant (KILLER)
+  eliminatedAt?: Date; // Date d'élimination (KILLER)
 };
 
 // Statut de la ligue
@@ -99,6 +105,7 @@ export type League = {
   format: LeagueFormat;
   killerConfig?: KillerConfig;
   pointsConfig?: PointsConfig;
+  targetsConfig?: TargetsConfig;
   
   // Dates
   startDate?: Date;

@@ -43,6 +43,7 @@ const STATUS_COLORS: Record<LeagueStatus, string> = {
 const FORMAT_LABELS: Record<LeagueFormat, string> = {
   KILLER: "Killer",
   POINTS: "Points",
+  TARGETS: "Cibles",
 };
 
 export async function generateMetadata({
@@ -135,7 +136,7 @@ export default async function LeagueDetailPage({
                 </Badge>
               </div>
               {league.description && (
-                <p className="text-xl text-muted-foreground">{league.description}</p>
+                <p className="text-xl text-muted-foreground whitespace-pre-line">{league.description}</p>
               )}
             </div>
           </div>
@@ -312,6 +313,69 @@ export default async function LeagueDetailPage({
                     affronter. Éliminez vos cibles en les battant dans une partie
                     pour progresser dans la compétition.
                   </p>
+
+                  {leagueParticipant?.targets && leagueParticipant.targets.length > 0 ? (
+                    <div className="mt-4">
+                      <h4 className="font-medium mb-2">Vos cibles actuelles :</h4>
+                      <ul className="list-disc list-inside space-y-1">
+                      </ul>
+                    </div>
+                  ) : (
+                    <p className="mt-4 text-muted-foreground">
+                      Vous n&apos;avez pas encore de cibles assignées.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Règles (format TARGETS) */}
+            {league.format === 'TARGETS' && league.targetsConfig && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Target className="h-5 w-5" />
+                    Règles du Targets
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    Chaque joueur a <strong>{league.targetsConfig.targets} cible(s)</strong> à affronter.
+                    Gagnez des points en battant vos cibles :
+                  </p>
+                  <ul className="list-disc list-inside mt-4 space-y-1">
+                    {league.targetsConfig.victoryPoints !== undefined && (
+                      <li>
+                        Victoire contre une cible : <strong>{league.targetsConfig.victoryPoints} pts</strong>
+                      </li>
+                    )}
+                    {league.targetsConfig.defeatPoints !== undefined && (
+                      <li>
+                        Défaite contre une cible : <strong>{league.targetsConfig.defeatPoints} pts</strong>
+                      </li>
+                    )}
+                    {league.targetsConfig.drawPoints !== undefined && (
+                      <li>
+                        Match nul contre une cible : <strong>{league.targetsConfig.drawPoints} pts</strong>
+                      </li>
+                    )}
+                  </ul>
+                  <div>
+                    {leagueParticipant?.targets && leagueParticipant.targets.length > 0 ? (
+                      <div className="mt-4">
+                        <h4 className="font-medium mb-2">Vos cibles actuelles :</h4>
+                        <ul className="list-disc list-inside space-y-1">
+                        </ul>
+                      </div>
+                    ) : (
+                      <div className="mt-4">
+                        <p className="text-muted-foreground">
+                          Vous n&apos;avez pas encore de cibles assignées.
+                        </p>
+                        <Button>Obtenir mes cibles</Button>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             )}

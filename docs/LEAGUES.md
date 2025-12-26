@@ -58,7 +58,7 @@ type League = {
 
 ### Formats de leagues :
 
-## Killer
+#### Killer
 
 `format: 'KILLER'`
 
@@ -66,8 +66,10 @@ Les ligues de format "KILLER" fonctionnent par cibles à affronter.
 
 Paramètres :
 - `targets: number` (default: 1) : Le nombre de cibles en parallèle attributées aux participants.
+- `victoryPoints: number` (default: 1) : Points attribués pour une victoire contre une cible.
+- `defeatPoints: number` (default: 0) : Points attribués pour une défaite contre une cible.
 
-## Points
+#### Points
 
 `format: 'POINTS'`
 

@@ -91,6 +91,7 @@ async function toLeague(doc: WithId<Document>, includeParticipants: boolean = tr
     format: doc.format,
     killerConfig: doc.killerConfig,
     pointsConfig: doc.pointsConfig,
+    targetsConfig: doc.targetsConfig,
     startDate: doc.startDate ? new Date(doc.startDate) : undefined,
     endDate: doc.endDate ? new Date(doc.endDate) : undefined,
     registrationDeadline: doc.registrationDeadline
@@ -131,6 +132,7 @@ function toDocument(
     format: league.format,
     killerConfig: league.killerConfig,
     pointsConfig: league.pointsConfig,
+    targetsConfig: league.targetsConfig,
     startDate: league.startDate,
     endDate: league.endDate,
     registrationDeadline: league.registrationDeadline,
@@ -479,9 +481,8 @@ export async function getLeagueParticipant(leagueId: League['id'], userId: User[
     })),
     joinedAt: new Date(participantDoc.joinedAt),
     eliminatedAt: participantDoc.eliminatedAt ? new Date(participantDoc.eliminatedAt) : undefined,
-    targets: participantDoc.targets,
     eliminatedBy: participantDoc.eliminatedBy,
-    isEliminated: participantDoc.isEliminated,
+    targets: participantDoc.targets,
   };
 }
 
