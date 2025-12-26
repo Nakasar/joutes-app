@@ -572,3 +572,7 @@ export async function deleteLeagueMatchAction(
     };
   }
 }
+
+export async function assignTargetsToPlayerAction(): Promise<{ success: boolean; error?: string }> {
+  return { success: false, error: "Not implemented yet" };
+}

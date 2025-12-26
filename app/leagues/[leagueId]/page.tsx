@@ -23,6 +23,7 @@ import {
 import { LeagueStatus, LeagueFormat } from "@/lib/types/League";
 import JoinLeagueButton from "./JoinLeagueButton";
 import LeaveLeagueButton from "./LeaveLeagueButton";
+import GetTargetsButton from "@/app/leagues/[leagueId]/GetTargetsButton";
 
 const STATUS_LABELS: Record<LeagueStatus, string> = {
   DRAFT: "Brouillon",
@@ -372,7 +373,7 @@ export default async function LeagueDetailPage({
                         <p className="text-muted-foreground">
                           Vous n&apos;avez pas encore de cibles assignées.
                         </p>
-                        <Button>Obtenir mes cibles</Button>
+                        <GetTargetsButton leagueId={league.id} />
                       </div>
                     )}
                   </div>
