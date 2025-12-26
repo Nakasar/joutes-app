@@ -11,7 +11,13 @@ import {isAdmin} from "@/lib/config/admins";
 
 export const metadata: Metadata = {
   title: "Ligues",
-  description: "Découvrez les ligues et tournois de jeux de société",
+  description: "Découvrez les ligues et tournois de jeux",
+  openGraph: {
+    url: `https://joutes.app/leagues`,
+    siteName: 'Joutes - Participez aux ligues',
+    title: 'Ligues - Joutes',
+    description: "Découvrez les ligues et tournois de jeux",
+  },
 };
 
 export default async function LeaguesPage() {
