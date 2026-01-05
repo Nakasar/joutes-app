@@ -113,18 +113,34 @@ ${page.content}
       });
       
       console.log(`${object.events.length} événements uniques extraits pour le lieu ${lair.name}`);
+
+      // Set start and end date year to current year, unless the event month is december and current month is january (then set to last year)
+      const currentYear = DateTime.now().year;
+      const currentMonth = DateTime.now().month;
       
-      
-      const events: Event[] = object.events.map(event => ({
-        ...event,
-        price: event.price ?? undefined,
-        url: event.url ?? undefined,
-        id: crypto.randomUUID(),
-        lairId: lair.id,
-        startDateTime: DateTime.fromISO(event.startDateTime, { zone: 'Europe/Paris' }).toISO() ?? event.startDateTime,
-        endDateTime: DateTime.fromISO(event.endDateTime, { zone: 'Europe/Paris' }).toISO() ?? event.endDateTime,
-        addedBy: "AI-SCRAPPING",
-      }));
+      const events: Event[] = object.events.map(event => {
+        const startDate = DateTime.fromISO(event.startDateTime, { zone: 'Europe/Paris' });
+        const endDate = DateTime.fromISO(event.endDateTime, { zone: 'Europe/Paris' });
+
+        let adjustedYear = currentYear;
+        if (startDate.month === 12 && currentMonth === 1) {
+          adjustedYear = currentYear - 1;
+        }
+
+        const startDateTime = startDate.set({ year: adjustedYear }).toISO() ?? event.startDateTime;
+        const endDateTime = endDate.set({ year: adjustedYear }).toISO() ?? event.endDateTime;
+
+        return {
+          ...event,
+          price: event.price ?? undefined,
+          url: event.url ?? undefined,
+          id: crypto.randomUUID(),
+          lairId: lair.id,
+          startDateTime: DateTime.fromISO(startDateTime, { zone: 'Europe/Paris' }).toISO() ?? event.startDateTime,
+          endDateTime: DateTime.fromISO(endDateTime, { zone: 'Europe/Paris' }).toISO() ?? event.endDateTime,
+          addedBy: "AI-SCRAPPING",
+        };
+      });
       
       // Upsert events for this lair (update existing ones based on URL + lairId, insert new ones)
       const { inserted, updated } = await eventsDb.upsertEventsForLair(lair.id, events);
