@@ -14,6 +14,7 @@ import {
   awardFeatToParticipant,
   addLeagueMatch,
   deleteLeagueMatch,
+  assignTargetsToPlayer,
 } from "@/lib/db/leagues";
 import {
   League,
@@ -28,7 +29,7 @@ import {
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
-import {requireAdmin} from "@/lib/middleware/admin";
+import {requireAdmin, checkAdmin} from "@/lib/middleware/admin";
 
 // Helper pour récupérer la session utilisateur
 async function getSession() {
@@ -573,6 +574,41 @@ export async function deleteLeagueMatchAction(
   }
 }
 
-export async function assignTargetsToPlayerAction(): Promise<{ success: boolean; error?: string }> {
-  return { success: false, error: "Not implemented yet" };
+export async function assignTargetsToPlayerAction(leagueId: string, playerId?: string): Promise<{ success: boolean; targets?: string[]; error?: string }> {
+  try {
+    const user = await requireAuth();
+
+    // Déterminer le joueur concerné
+    let targetPlayerId: string;
+
+    // Si un playerId est fourni, vérifier que l'utilisateur est admin
+    if (playerId) {
+      const isAdmin = await checkAdmin();
+      if (!isAdmin) {
+        throw new Error("Seul un administrateur peut assigner des cibles à un autre joueur");
+      }
+      targetPlayerId = playerId;
+    } else {
+      // Sinon, c'est le joueur connecté
+      targetPlayerId = user.id;
+    }
+
+    // Appeler la fonction pour assigner les cibles
+    const targets = await assignTargetsToPlayer(leagueId, targetPlayerId);
+
+    // Revalider le cache
+    revalidatePath(`/leagues/${leagueId}`);
+
+    return { success: true, targets };
+  } catch (error) {
+    console.error("Error assigning targets:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erreur lors de l'attribution des cibles",
+    };
+  }
 }
+
+
+
+

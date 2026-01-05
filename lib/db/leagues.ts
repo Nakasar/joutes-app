@@ -9,7 +9,7 @@ import {
   LeagueMatch,
   CreateLeagueMatchInput,
   MatchFeatAward,
-  PointHistoryEntry,
+  PointHistoryEntry, LeagueFormat, TargetsConfig,
 } from "@/lib/types/League";
 import {ObjectId, WithId, Document, Filter} from "mongodb";
 import {nanoid} from "nanoid";
@@ -20,7 +20,9 @@ const PARTICIPANTS_COLLECTION = "league-participants";
 const FEATS_COLLECTION = "league-participant-feats";
 
 // Type pour une ligue dans MongoDB (avec _id, sans participants)
-export type LeagueDocument = Omit<League, "id" | "lairs" | "games" | "creator" | "participantsCount" | "participants"> & { _id: ObjectId };
+export type LeagueDocument =
+  Omit<League, "id" | "lairs" | "games" | "creator" | "participantsCount" | "participants">
+  & { _id: ObjectId };
 
 // Type pour un participant dans MongoDB
 export type LeagueParticipantDocument = Omit<LeagueParticipant, "feats"> & {
@@ -49,7 +51,7 @@ async function toLeague(doc: WithId<Document>, includeParticipants: boolean = tr
   if (includeParticipants) {
     // Récupérer les participants avec leurs hauts faits depuis les nouvelles collections
     const participantDocs = await db.collection(PARTICIPANTS_COLLECTION)
-      .find({ leagueId: new ObjectId(leagueId) })
+      .find({leagueId: new ObjectId(leagueId)})
       .toArray();
 
     participants = await Promise.all(participantDocs.map(async (p) => {
@@ -184,7 +186,7 @@ export async function getLeagueById(id: string): Promise<League | null> {
       .collection(COLLECTION_NAME)
       .aggregate<LeagueDocument>([
         {
-          $match: { _id: new ObjectId(id) }
+          $match: {_id: new ObjectId(id)}
         },
         {
           $lookup: {
@@ -196,7 +198,7 @@ export async function getLeagueById(id: string): Promise<League | null> {
         },
         {
           $addFields: {
-            participantsCount: { $size: "$participantsTemp" },
+            participantsCount: {$size: "$participantsTemp"},
           }
         },
         {
@@ -206,7 +208,7 @@ export async function getLeagueById(id: string): Promise<League | null> {
         },
         {
           $addFields: {
-            creatorId: { $toObjectId: "$creatorId" },
+            creatorId: {$toObjectId: "$creatorId"},
           }
         },
         {
@@ -218,8 +220,8 @@ export async function getLeagueById(id: string): Promise<League | null> {
             pipeline: [
               {
                 $addFields: {
-                  _id: { $toString: "$_id" },
-                  id: { $toString: "$_id" },
+                  _id: {$toString: "$_id"},
+                  id: {$toString: "$_id"},
                 },
               },
               {
@@ -266,8 +268,8 @@ export async function getLeagueById(id: string): Promise<League | null> {
             pipeline: [
               {
                 $addFields: {
-                  _id: { $toString: "$_id" },
-                  id: { $toString: "$_id" },
+                  _id: {$toString: "$_id"},
+                  id: {$toString: "$_id"},
                 }
               },
               {
@@ -291,8 +293,8 @@ export async function getLeagueById(id: string): Promise<League | null> {
             pipeline: [
               {
                 $addFields: {
-                  _id: { $toString: "$_id" },
-                  id: { $toString: "$_id" },
+                  _id: {$toString: "$_id"},
+                  id: {$toString: "$_id"},
                 }
               },
               {
@@ -409,12 +411,12 @@ export async function searchLeagues(
   if (participantId) {
     // On doit chercher dans la collection participants
     const participantLeagueIds = await db.collection(PARTICIPANTS_COLLECTION)
-      .find({ userId: participantId })
-      .project({ leagueId: 1 })
+      .find({userId: participantId})
+      .project({leagueId: 1})
       .toArray();
 
     const leagueIds = participantLeagueIds.map(p => p.leagueId);
-    filter._id = { $in: leagueIds };
+    filter._id = {$in: leagueIds};
   }
 
   const skip = (page - 1) * limit;
@@ -434,8 +436,8 @@ export async function searchLeagues(
   const leaguesWithCounts = await Promise.all(
     leagueDocs.map(async (doc) => {
       const participantsCount = await db.collection(PARTICIPANTS_COLLECTION)
-        .countDocuments({ leagueId: doc._id });
-      return { ...doc, participantsCount };
+        .countDocuments({leagueId: doc._id});
+      return {...doc, participantsCount};
     })
   );
 
@@ -523,8 +525,8 @@ export async function addParticipant(
 
   await db.collection(PARTICIPANTS_COLLECTION).insertOne(newParticipant as Document);
   await db.collection(COLLECTION_NAME).updateOne(
-    { _id: new ObjectId(leagueId) },
-    { $set: { updatedAt: new Date() } }
+    {_id: new ObjectId(leagueId)},
+    {$set: {updatedAt: new Date()}}
   );
 
   return getLeagueById(leagueId);
@@ -549,8 +551,8 @@ export async function removeParticipant(
 
   // Mettre à jour la ligue
   await db.collection(COLLECTION_NAME).updateOne(
-    { _id: new ObjectId(leagueId) },
-    { $set: { updatedAt: new Date() } }
+    {_id: new ObjectId(leagueId)},
+    {$set: {updatedAt: new Date()}}
   );
 
   return getLeagueById(leagueId);
@@ -577,16 +579,16 @@ export async function addPointsToParticipant(
   };
 
   await db.collection(PARTICIPANTS_COLLECTION).updateOne(
-    { leagueId: new ObjectId(leagueId), userId: userId },
+    {leagueId: new ObjectId(leagueId), userId: userId},
     {
-      $inc: { points: points },
-      $push: { pointsHistory: historyEntry },
+      $inc: {points: points},
+      $push: {pointsHistory: historyEntry},
     } as Document
   );
 
   await db.collection(COLLECTION_NAME).updateOne(
-    { _id: new ObjectId(leagueId) },
-    { $set: { updatedAt: new Date() } }
+    {_id: new ObjectId(leagueId)},
+    {$set: {updatedAt: new Date()}}
   );
 
   return getLeagueById(leagueId);
@@ -642,16 +644,16 @@ export async function awardFeatToParticipant(
   };
 
   await db.collection(PARTICIPANTS_COLLECTION).updateOne(
-    { leagueId: new ObjectId(leagueId), userId: userId },
+    {leagueId: new ObjectId(leagueId), userId: userId},
     {
-      $inc: { points: feat.points },
-      $push: { pointsHistory: historyEntry },
+      $inc: {points: feat.points},
+      $push: {pointsHistory: historyEntry},
     } as Document
   );
 
   await db.collection(COLLECTION_NAME).updateOne(
-    { _id: new ObjectId(leagueId) },
-    { $set: { updatedAt: new Date() } }
+    {_id: new ObjectId(leagueId)},
+    {$set: {updatedAt: new Date()}}
   );
 
   return getLeagueById(leagueId);
@@ -687,11 +689,11 @@ export async function getLeagueRanking(
     joinedAt: Date;
     eliminatedAt?: Date;
   }>([
-    { $match: { leagueId: new ObjectId(leagueId) } },
-    { $sort: { points: -1, joinedAt: 1 } },
+    {$match: {leagueId: new ObjectId(leagueId)}},
+    {$sort: {points: -1, joinedAt: 1}},
     {
       $addFields: {
-        userId: { $toObjectId: "$userId" },
+        userId: {$toObjectId: "$userId"},
       },
     },
     {
@@ -719,14 +721,14 @@ export async function getLeagueRanking(
     {
       $lookup: {
         from: FEATS_COLLECTION,
-        let: { userId: { $toString: "$userId" }, leagueId: "$leagueId" },
+        let: {userId: {$toString: "$userId"}, leagueId: "$leagueId"},
         pipeline: [
           {
             $match: {
               $expr: {
                 $and: [
-                  { $eq: ["$userId", "$$userId"] },
-                  { $eq: ["$leagueId", "$$leagueId"] }
+                  {$eq: ["$userId", "$$userId"]},
+                  {$eq: ["$leagueId", "$$leagueId"]}
                 ]
               }
             }
@@ -737,8 +739,8 @@ export async function getLeagueRanking(
     },
     {
       $addFields: {
-        'userId': { $toString: "$userId" },
-        'user.id': { $toString: "$user._id" },
+        'userId': {$toString: "$userId"},
+        'user.id': {$toString: "$user._id"},
         'feats': {
           $map: {
             input: "$feats",
@@ -790,15 +792,15 @@ export async function getUserLeagues(
 
   // Récupérer les IDs des ligues avec lesquelles l'utilisateur est participant
   const participantLeagueIds = await db.collection(PARTICIPANTS_COLLECTION)
-    .find({ userId: userId })
-    .project({ leagueId: 1 })
+    .find({userId: userId})
+    .project({leagueId: 1})
     .toArray();
 
   const filter: Filter<Document> = {
     $or: [
       {creatorId: userId},
       {organizerIds: userId},
-      { _id: { $in: participantLeagueIds.map(p => p.leagueId) } },
+      {_id: {$in: participantLeagueIds.map(p => p.leagueId)}},
     ],
   };
 
@@ -894,10 +896,10 @@ export async function addLeagueMatch(
       };
 
       await db.collection(PARTICIPANTS_COLLECTION).updateOne(
-        { leagueId: new ObjectId(leagueId), userId: update.userId },
+        {leagueId: new ObjectId(leagueId), userId: update.userId},
         {
-          $inc: { points: update.points },
-          $push: { pointsHistory: historyEntry },
+          $inc: {points: update.points},
+          $push: {pointsHistory: historyEntry},
         } as Document
       );
     }
@@ -979,10 +981,10 @@ export async function addLeagueMatch(
           };
 
           await db.collection(PARTICIPANTS_COLLECTION).updateOne(
-            { leagueId: new ObjectId(leagueId), userId: featAward.playerId },
+            {leagueId: new ObjectId(leagueId), userId: featAward.playerId},
             {
-              $inc: { points: feat.points },
-              $push: { pointsHistory: featHistoryEntry },
+              $inc: {points: feat.points},
+              $push: {pointsHistory: featHistoryEntry},
             } as Document
           );
         }
@@ -1013,10 +1015,10 @@ export async function addLeagueMatch(
 
   // Ajouter le match à la ligue
   await db.collection(COLLECTION_NAME).updateOne(
-    { _id: new ObjectId(leagueId) },
+    {_id: new ObjectId(leagueId)},
     {
-      $push: { matches: newMatch as unknown as Document },
-      $set: { updatedAt: new Date() },
+      $push: {matches: newMatch as unknown as Document},
+      $set: {updatedAt: new Date()},
     } as Document
   );
 
@@ -1059,10 +1061,10 @@ export async function deleteLeagueMatch(
 
       // Retirer les points et l'historique du participant
       await db.collection(PARTICIPANTS_COLLECTION).updateOne(
-        { leagueId: new ObjectId(leagueId), userId: playerId },
+        {leagueId: new ObjectId(leagueId), userId: playerId},
         {
-          $inc: { points: -pointsToRemove },
-          $pull: { pointsHistory: { matchId } },
+          $inc: {points: -pointsToRemove},
+          $pull: {pointsHistory: {matchId}},
         } as Document
       );
 
@@ -1077,12 +1079,50 @@ export async function deleteLeagueMatch(
 
   // Supprimer le match
   await db.collection(COLLECTION_NAME).updateOne(
-    { _id: new ObjectId(leagueId) },
+    {_id: new ObjectId(leagueId)},
     {
-      $pull: { matches: { id: matchId } },
-      $set: { updatedAt: new Date() },
+      $pull: {matches: {id: matchId}},
+      $set: {updatedAt: new Date()},
     } as Document
   );
 
   return getLeagueById(leagueId);
 }
+
+// Assigner des cibles aléatoires à un joueur (format TARGETS)
+export async function assignTargetsToPlayer(
+  leagueId: string,
+  playerId: string
+): Promise<string[]> {
+  const league = await db.collection<{
+    format: LeagueFormat;
+    targetsConfig?: TargetsConfig;
+  }>(COLLECTION_NAME).findOne({
+    _id: new ObjectId(leagueId)
+  }, {
+    projection: {
+      format: 1,
+      targetsConfig: 1,
+    }
+  });
+  if (!league) {
+    throw new Error("Ligue non trouvée");
+  }
+
+  if (league.format !== "TARGETS") {
+    throw new Error("Cette action n'est disponible que pour les ligues de type TARGETS");
+  }
+
+  if (!league.targetsConfig) {
+    throw new Error("Configuration TARGETS manquante");
+  }
+
+  // Récupérer le participant
+  const participant = await getLeagueParticipant(leagueId, playerId);
+  if (!participant) {
+    throw new Error("Vous n'êtes pas inscrit à cette ligue");
+  }
+
+  return [];
+}
+

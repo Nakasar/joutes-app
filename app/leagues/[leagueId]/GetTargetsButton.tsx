@@ -20,7 +20,9 @@ export default function GetTargetsButton({ leagueId }: GetTargetsButtonProps) {
     setError(null);
 
     try {
-      const result = await assignTargetsToPlayerAction();
+      const result = await assignTargetsToPlayerAction(
+        leagueId
+      );
       if (result.success) {
         router.refresh();
       } else {
