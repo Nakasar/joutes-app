@@ -1,7 +1,7 @@
 "use server";
 
 import { requireAdmin } from "@/lib/middleware/admin";
-import { Lair } from "@/lib/types/Lair";
+import { Lair, EventSource } from "@/lib/types/Lair";
 import { revalidatePath } from "next/cache";
 import { lairSchema, lairIdSchema } from "@/lib/schemas/lair.schema";
 import { z } from "zod";
@@ -21,7 +21,7 @@ export async function createLair(data: {
   name: string; 
   banner?: string; 
   games: string[]; 
-  eventsSourceUrls: string[];
+  eventsSourceUrls: EventSource[];
   eventsSourceInstructions?: string;
   location?: { type: "Point"; coordinates: [number, number] };
   address?: string;
@@ -58,7 +58,7 @@ export async function updateLair(id: string, data: {
   name: string; 
   banner?: string; 
   games: string[]; 
-  eventsSourceUrls: string[];
+  eventsSourceUrls: EventSource[];
   eventsSourceInstructions?: string;
   location?: { type: "Point"; coordinates: [number, number] };
   address?: string;
