@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { Game } from "@/lib/types/Game";
-import { Lair } from "@/lib/types/Lair";
+import { Lair, EventSource } from "@/lib/types/Lair";
 import { createLair, updateLair } from "./actions";
 import {
   Dialog,
@@ -31,8 +31,7 @@ export function LairForm({
     name: "",
     banner: "",
     games: [] as string[],
-    eventsSourceUrls: [] as string[],
-    eventsSourceInstructions: "",
+    eventsSourceUrls: [] as EventSource[],
     coordinates: "",
     address: "",
     website: "",
@@ -48,7 +47,6 @@ export function LairForm({
           banner: lair.banner || "",
           games: lair.games || [],
           eventsSourceUrls: lair.eventsSourceUrls || [],
-          eventsSourceInstructions: lair.eventsSourceInstructions || "",
           coordinates: lair.location 
             ? `${lair.location.coordinates[1]}, ${lair.location.coordinates[0]}` 
             : "",
@@ -61,7 +59,6 @@ export function LairForm({
           banner: "",
           games: [],
           eventsSourceUrls: [],
-          eventsSourceInstructions: "",
           coordinates: "",
           address: "",
           website: "",
@@ -80,8 +77,7 @@ export function LairForm({
         name: string;
         banner?: string;
         games: string[];
-        eventsSourceUrls: string[];
-        eventsSourceInstructions?: string;
+        eventsSourceUrls: EventSource[];
         location?: { type: "Point"; coordinates: [number, number] };
         address?: string;
         website?: string;
@@ -89,13 +85,8 @@ export function LairForm({
         name: formData.name,
         banner: formData.banner.length > 0 ? formData.banner : undefined,
         games: formData.games,
-        eventsSourceUrls: formData.eventsSourceUrls.filter(url => url.trim() !== ""),
+        eventsSourceUrls: formData.eventsSourceUrls.filter(source => source.url.trim() !== ""),
       };
-
-      // Ajouter les consignes pour l'IA si elles sont remplies
-      if (formData.eventsSourceInstructions.trim().length > 0) {
-        data.eventsSourceInstructions = formData.eventsSourceInstructions.trim();
-      }
 
       // Ajouter les coordonnées si le champ est rempli
       if (formData.coordinates.trim().length > 0) {
@@ -133,7 +124,6 @@ export function LairForm({
           banner: "",
           games: [],
           eventsSourceUrls: [],
-          eventsSourceInstructions: "",
           coordinates: "",
           address: "",
           website: "",
@@ -353,33 +343,368 @@ export function LairForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              URLs des sources d&apos;événements
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Sources d&apos;événements
             </label>
-            <div className="space-y-2">
-              {formData.eventsSourceUrls.map((url, index) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    type="url"
-                    value={url}
-                    onChange={(e) => {
-                      const newUrls = [...formData.eventsSourceUrls];
-                      newUrls[index] = e.target.value;
-                      setFormData({ ...formData, eventsSourceUrls: newUrls });
-                    }}
-                    placeholder="https://exemple.com/evenements"
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newUrls = formData.eventsSourceUrls.filter((_, i) => i !== index);
-                      setFormData({ ...formData, eventsSourceUrls: newUrls });
-                    }}
-                    className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
-                  >
-                    Retirer
-                  </button>
+            <div className="space-y-4">
+              {formData.eventsSourceUrls.map((source, index) => (
+                <div key={index} className="p-4 border border-gray-300 rounded-lg space-y-3">
+                  <div className="flex justify-between items-start">
+                    <span className="text-sm font-medium text-gray-700">Source #{index + 1}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newSources = formData.eventsSourceUrls.filter((_, i) => i !== index);
+                        setFormData({ ...formData, eventsSourceUrls: newSources });
+                      }}
+                      className="text-sm text-red-600 hover:text-red-700"
+                    >
+                      Retirer
+                    </button>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      URL de la source
+                    </label>
+                    <input
+                      type="url"
+                      value={source.url}
+                      onChange={(e) => {
+                        const newSources = [...formData.eventsSourceUrls];
+                        newSources[index] = { ...newSources[index], url: e.target.value };
+                        setFormData({ ...formData, eventsSourceUrls: newSources });
+                      }}
+                      placeholder="https://exemple.com/evenements"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Type de source
+                    </label>
+                    <select
+                      value={source.type}
+                      onChange={(e) => {
+                        const newSources = [...formData.eventsSourceUrls];
+                        const newType = e.target.value as 'IA' | 'MAPPING';
+                        newSources[index] = { 
+                          url: source.url, 
+                          type: newType,
+                          ...(newType === 'IA' ? { instructions: source.instructions || '' } : {}),
+                          ...(newType === 'MAPPING' ? { mappingConfig: source.mappingConfig || { eventsPath: '', eventsFieldsMapping: {} } } : {})
+                        };
+                        setFormData({ ...formData, eventsSourceUrls: newSources });
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    >
+                      <option value="IA">IA (extraction intelligente)</option>
+                      <option value="MAPPING">MAPPING (configuration JSON)</option>
+                    </select>
+                  </div>
+
+                  {source.type === 'IA' && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Consignes pour l&apos;IA (optionnel)
+                      </label>
+                      <textarea
+                        value={source.instructions || ''}
+                        onChange={(e) => {
+                          const newSources = [...formData.eventsSourceUrls];
+                          newSources[index] = { ...newSources[index], instructions: e.target.value };
+                          setFormData({ ...formData, eventsSourceUrls: newSources });
+                        }}
+                        placeholder="Instructions pour aider l&apos;IA à extraire les événements..."
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-vertical"
+                      />
+                    </div>
+                  )}
+
+                  {source.type === 'MAPPING' && (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          Chemin vers les événements (JSONPath)
+                        </label>
+                        <input
+                          type="text"
+                          value={source.mappingConfig?.eventsPath || ''}
+                          onChange={(e) => {
+                            const newSources = [...formData.eventsSourceUrls];
+                            newSources[index] = {
+                              ...newSources[index],
+                              mappingConfig: {
+                                ...newSources[index].mappingConfig,
+                                eventsPath: e.target.value,
+                                eventsFieldsMapping: newSources[index].mappingConfig?.eventsFieldsMapping || {},
+                              },
+                            };
+                            setFormData({ ...formData, eventsSourceUrls: newSources });
+                          }}
+                          placeholder="events.data"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          Préfixe de base d&apos;URL (optionnel)
+                        </label>
+                        <input
+                          type="text"
+                          value={source.mappingConfig?.eventsBaseUrl || ''}
+                          onChange={(e) => {
+                            const newSources = [...formData.eventsSourceUrls];
+                            newSources[index] = {
+                              ...newSources[index],
+                              mappingConfig: {
+                                ...(newSources[index].mappingConfig ?? { eventsPath: '', eventsFieldsMapping: {} }),
+                                eventsBaseUrl: e.target.value,
+                              },
+                            };
+                            setFormData({ ...formData, eventsSourceUrls: newSources });
+                          }}
+                          placeholder="https://joutes.app/events/"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        />
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        <p className="mb-1 font-medium">Configuration du mapping des champs :</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {['id', 'name', 'startDateTime', 'endDateTime', 'gameName', 'price', 'status', 'url'].map((field) => (
+                            <div key={field}>
+                              <label className="block text-xs text-gray-600 mb-1">
+                                {field}
+                              </label>
+                              <input
+                                type="text"
+                                value={source.mappingConfig?.eventsFieldsMapping?.[field as keyof typeof source.mappingConfig.eventsFieldsMapping] || ''}
+                                onChange={(e) => {
+                                  const newSources = [...formData.eventsSourceUrls];
+                                  newSources[index] = {
+                                    ...newSources[index],
+                                    mappingConfig: {
+                                      eventsPath: newSources[index].mappingConfig?.eventsPath || '',
+                                      eventsFieldsMapping: {
+                                        ...newSources[index].mappingConfig?.eventsFieldsMapping,
+                                        [field]: e.target.value,
+                                      },
+                                      eventsFieldsValues: newSources[index].mappingConfig?.eventsFieldsValues,
+                                    },
+                                  };
+                                  setFormData({ ...formData, eventsSourceUrls: newSources });
+                                }}
+                                placeholder={field}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="pt-2 border-t border-gray-200">
+                        <p className="mb-2 text-xs font-medium text-gray-700">Valeurs par défaut (override) :</p>
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-xs text-gray-600 mb-1">
+                                name
+                              </label>
+                              <input
+                                type="text"
+                                value={source.mappingConfig?.eventsFieldsValues?.name || ''}
+                                onChange={(e) => {
+                                  const newSources = [...formData.eventsSourceUrls];
+                                  newSources[index] = {
+                                    ...newSources[index],
+                                    mappingConfig: {
+                                      eventsPath: newSources[index].mappingConfig?.eventsPath || '',
+                                      eventsFieldsMapping: newSources[index].mappingConfig?.eventsFieldsMapping || {},
+                                      eventsFieldsValues: {
+                                        ...newSources[index].mappingConfig?.eventsFieldsValues,
+                                        name: e.target.value || undefined,
+                                      },
+                                    },
+                                  };
+                                  setFormData({ ...formData, eventsSourceUrls: newSources });
+                                }}
+                                placeholder="Nom par défaut"
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-600 mb-1">
+                                gameName
+                              </label>
+                              <input
+                                type="text"
+                                value={source.mappingConfig?.eventsFieldsValues?.gameName || ''}
+                                onChange={(e) => {
+                                  const newSources = [...formData.eventsSourceUrls];
+                                  newSources[index] = {
+                                    ...newSources[index],
+                                    mappingConfig: {
+                                      eventsPath: newSources[index].mappingConfig?.eventsPath || '',
+                                      eventsFieldsMapping: newSources[index].mappingConfig?.eventsFieldsMapping || {},
+                                      eventsFieldsValues: {
+                                        ...newSources[index].mappingConfig?.eventsFieldsValues,
+                                        gameName: e.target.value || undefined,
+                                      },
+                                    },
+                                  };
+                                  setFormData({ ...formData, eventsSourceUrls: newSources });
+                                }}
+                                placeholder="Jeu par défaut"
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-xs text-gray-600 mb-1">
+                                startDateTime
+                              </label>
+                              <input
+                                type="text"
+                                value={source.mappingConfig?.eventsFieldsValues?.startDateTime || ''}
+                                onChange={(e) => {
+                                  const newSources = [...formData.eventsSourceUrls];
+                                  newSources[index] = {
+                                    ...newSources[index],
+                                    mappingConfig: {
+                                      eventsPath: newSources[index].mappingConfig?.eventsPath || '',
+                                      eventsFieldsMapping: newSources[index].mappingConfig?.eventsFieldsMapping || {},
+                                      eventsFieldsValues: {
+                                        ...newSources[index].mappingConfig?.eventsFieldsValues,
+                                        startDateTime: e.target.value || undefined,
+                                      },
+                                    },
+                                  };
+                                  setFormData({ ...formData, eventsSourceUrls: newSources });
+                                }}
+                                placeholder="Date/heure début"
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-600 mb-1">
+                                endDateTime
+                              </label>
+                              <input
+                                type="text"
+                                value={source.mappingConfig?.eventsFieldsValues?.endDateTime || ''}
+                                onChange={(e) => {
+                                  const newSources = [...formData.eventsSourceUrls];
+                                  newSources[index] = {
+                                    ...newSources[index],
+                                    mappingConfig: {
+                                      eventsPath: newSources[index].mappingConfig?.eventsPath || '',
+                                      eventsFieldsMapping: newSources[index].mappingConfig?.eventsFieldsMapping || {},
+                                      eventsFieldsValues: {
+                                        ...newSources[index].mappingConfig?.eventsFieldsValues,
+                                        endDateTime: e.target.value || undefined,
+                                      },
+                                    },
+                                  };
+                                  setFormData({ ...formData, eventsSourceUrls: newSources });
+                                }}
+                                placeholder="Date/heure fin"
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-xs text-gray-600 mb-1">
+                                price
+                              </label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={source.mappingConfig?.eventsFieldsValues?.price || ''}
+                                onChange={(e) => {
+                                  const newSources = [...formData.eventsSourceUrls];
+                                  newSources[index] = {
+                                    ...newSources[index],
+                                    mappingConfig: {
+                                      eventsPath: newSources[index].mappingConfig?.eventsPath || '',
+                                      eventsFieldsMapping: newSources[index].mappingConfig?.eventsFieldsMapping || {},
+                                      eventsFieldsValues: {
+                                        ...newSources[index].mappingConfig?.eventsFieldsValues,
+                                        price: e.target.value ? parseFloat(e.target.value) : undefined,
+                                      },
+                                    },
+                                  };
+                                  setFormData({ ...formData, eventsSourceUrls: newSources });
+                                }}
+                                placeholder="Prix par défaut"
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-600 mb-1">
+                                status
+                              </label>
+                              <select
+                                value={source.mappingConfig?.eventsFieldsValues?.status || ''}
+                                onChange={(e) => {
+                                  const newSources = [...formData.eventsSourceUrls];
+                                  newSources[index] = {
+                                    ...newSources[index],
+                                    mappingConfig: {
+                                      eventsPath: newSources[index].mappingConfig?.eventsPath || '',
+                                      eventsFieldsMapping: newSources[index].mappingConfig?.eventsFieldsMapping || {},
+                                      eventsFieldsValues: {
+                                        ...newSources[index].mappingConfig?.eventsFieldsValues,
+                                        status: e.target.value ? e.target.value as 'available' | 'sold-out' | 'cancelled' : undefined,
+                                      },
+                                    },
+                                  };
+                                  setFormData({ ...formData, eventsSourceUrls: newSources });
+                                }}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              >
+                                <option value="">-- Aucun --</option>
+                                <option value="available">available</option>
+                                <option value="sold-out">sold-out</option>
+                                <option value="cancelled">cancelled</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1">
+                              url
+                            </label>
+                            <input
+                              type="text"
+                              value={source.mappingConfig?.eventsFieldsValues?.url || ''}
+                              onChange={(e) => {
+                                const newSources = [...formData.eventsSourceUrls];
+                                newSources[index] = {
+                                  ...newSources[index],
+                                  mappingConfig: {
+                                    eventsPath: newSources[index].mappingConfig?.eventsPath || '',
+                                    eventsFieldsMapping: newSources[index].mappingConfig?.eventsFieldsMapping || {},
+                                    eventsFieldsValues: {
+                                      ...newSources[index].mappingConfig?.eventsFieldsValues,
+                                      url: e.target.value || undefined,
+                                    },
+                                  },
+                                };
+                                setFormData({ ...formData, eventsSourceUrls: newSources });
+                              }}
+                              placeholder="URL par défaut"
+                              className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                            />
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2 italic">
+                          Ces valeurs remplaceront celles issues du mapping JSON
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
               <button
@@ -387,32 +712,17 @@ export function LairForm({
                 onClick={() => {
                   setFormData({
                     ...formData,
-                    eventsSourceUrls: [...formData.eventsSourceUrls, ""],
+                    eventsSourceUrls: [
+                      ...formData.eventsSourceUrls, 
+                      { url: '', type: 'IA', instructions: '' }
+                    ],
                   });
                 }}
                 className="text-sm text-blue-600 hover:text-blue-700"
               >
-                + Ajouter une URL
+                + Ajouter une source
               </button>
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Consignes pour l&apos;IA (optionnel)
-            </label>
-            <textarea
-              value={formData.eventsSourceInstructions}
-              onChange={(e) =>
-                setFormData({ ...formData, eventsSourceInstructions: e.target.value })
-              }
-              placeholder="Ajoutez ici des instructions pour aider l&apos;IA à extraire les événements des sources (ex: format spécifique, éléments à ignorer, etc.)"
-              rows={4}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Ces consignes aideront l&apos;IA à mieux comprendre et extraire les événements depuis les sources configurées.
-            </p>
           </div>
 
           <div className="flex gap-2 pt-4">

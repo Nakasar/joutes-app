@@ -462,7 +462,7 @@ export async function upsertEventsForLair(lairId: string, events: Event[]): Prom
             {
               lairId,
               url: event.url,
-              addedBy: "AI-SCRAPPING"
+              addedBy: { $in: ["AI-SCRAPPING", "JSON-MAPPING"] } // Ne pas écraser les événements créés par les utilisateurs
             },
             {
               $set: {
