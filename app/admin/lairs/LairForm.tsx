@@ -448,10 +448,32 @@ export function LairForm({
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                         />
                       </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          Préfixe de base d&apos;URL (optionnel)
+                        </label>
+                        <input
+                          type="text"
+                          value={source.mappingConfig?.eventsBaseUrl || ''}
+                          onChange={(e) => {
+                            const newSources = [...formData.eventsSourceUrls];
+                            newSources[index] = {
+                              ...newSources[index],
+                              mappingConfig: {
+                                ...(newSources[index].mappingConfig ?? { eventsPath: '', eventsFieldsMapping: {} }),
+                                eventsBaseUrl: e.target.value,
+                              },
+                            };
+                            setFormData({ ...formData, eventsSourceUrls: newSources });
+                          }}
+                          placeholder="https://joutes.app/events/"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        />
+                      </div>
                       <div className="text-xs text-gray-500">
                         <p className="mb-1 font-medium">Configuration du mapping des champs :</p>
                         <div className="grid grid-cols-2 gap-2">
-                          {['name', 'startDateTime', 'endDateTime', 'gameName', 'price', 'status', 'url'].map((field) => (
+                          {['id', 'name', 'startDateTime', 'endDateTime', 'gameName', 'price', 'status', 'url'].map((field) => (
                             <div key={field}>
                               <label className="block text-xs text-gray-600 mb-1">
                                 {field}

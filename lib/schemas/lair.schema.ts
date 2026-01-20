@@ -14,6 +14,7 @@ const geoJSONPointSchema = z.object({
 
 // Schéma pour le mapping des champs d'événements
 const eventFieldsMappingSchema = z.object({
+  id: z.string().optional(),
   name: z.string().optional(),
   startDateTime: z.string().optional(),
   endDateTime: z.string().optional(),
@@ -37,6 +38,7 @@ const eventFieldsValuesSchema = z.object({
 // Schéma pour la configuration de mapping JSON
 const eventMappingConfigSchema = z.object({
   eventsPath: z.string().min(1, "Le chemin vers les événements est requis"),
+  eventsBaseUrl: z.string().url("L'URL de base des événements doit être valide").optional(),
   eventsFieldsMapping: eventFieldsMappingSchema,
   eventsFieldsValues: eventFieldsValuesSchema.optional(),
 });

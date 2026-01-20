@@ -9,6 +9,7 @@ export type GeoJSONPoint = {
 
 // Type pour le mapping des champs depuis un JSON externe
 export type EventFieldsMapping = {
+  id?: string;
   name?: string;
   startDateTime?: string;
   endDateTime?: string;
@@ -32,6 +33,7 @@ export type EventFieldsValues = {
 // Type pour la configuration de mapping JSON
 export type EventMappingConfig = {
   eventsPath: string;
+  eventsBaseUrl?: string;
   eventsFieldsMapping: EventFieldsMapping;
   eventsFieldsValues?: EventFieldsValues;
 };
