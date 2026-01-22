@@ -39,6 +39,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
         eventId: event.id,
         allowSelfReporting: false,
         requireConfirmation: true,
+        phases: []
       });
       router.refresh();
     });
@@ -52,6 +53,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
         matchType: phaseForm.matchType,
         rounds: phaseForm.type === "swiss" ? phaseForm.rounds : undefined,
         topCut: phaseForm.type === "bracket" ? phaseForm.topCut : undefined,
+        order: settings ? settings.phases.length : 0,
       });
       setPhaseForm({
         name: "",

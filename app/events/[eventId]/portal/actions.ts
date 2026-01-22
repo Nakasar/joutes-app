@@ -84,7 +84,7 @@ export async function createOrUpdatePortalSettings(data: unknown) {
     // Vérifier que l'utilisateur est le créateur de l'événement
     const isCreator = await isEventCreator(validated.eventId, session.user.id);
     if (!isCreator) {
-      return { success: false, error: "Seul le créateur de l&apos;événement peut modifier les paramètres" };
+      return { success: false, error: "Seul le créateur de l'événement peut modifier les paramètres" };
     }
 
     const collection = db.collection<EventPortalSettings>(PORTAL_SETTINGS_COLLECTION);
