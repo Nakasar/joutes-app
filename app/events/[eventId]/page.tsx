@@ -16,6 +16,7 @@ import ParticipantManagerWrapper from "./ParticipantManagerWrapper";
 import FavoriteButton from "./FavoriteButton";
 import AllowJoinSwitch from "./AllowJoinSwitch";
 import RunningStateManager from "./RunningStateManager";
+import CancelEventButton from "./CancelEventButton";
 import DeleteEventButton from "./DeleteEventButton";
 import { DateTime } from "luxon";
 import { getEventParticipants } from "./portal/participant-actions";
@@ -324,7 +325,14 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                 )}
 
                 {isCreator && (
-                  <div className="pt-4 border-t">
+                  <div className="pt-4 border-t space-y-2">
+                    {event.status !== 'cancelled' && (
+                      <CancelEventButton 
+                        eventId={event.id}
+                        eventName={event.name}
+                        disabled={event.runningState === 'completed'}
+                      />
+                    )}
                     <DeleteEventButton 
                       eventId={event.id}
                       eventName={event.name}

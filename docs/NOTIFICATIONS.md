@@ -287,6 +287,26 @@ La priorité de l'annonce est reflétée dans le titre de la notification :
 - ⚠️ Pour les annonces importantes
 - Pas d'emoji pour les annonces normales
 
+#### Annulation d'événement
+
+Lorsqu'un événement est annulé par son créateur, une notification est automatiquement envoyée à tous les participants et au créateur.
+
+```typescript
+// Dans app/events/actions.ts
+// Lors de l'annulation d'un événement
+await notifyEventAll(
+  eventId,
+  "🚫 Événement annulé",
+  notificationMessage
+);
+```
+
+Le créateur peut optionnellement fournir une raison pour l'annulation :
+```typescript
+await cancelEventAction(eventId, "Problème avec le lieu");
+// → Notification: "L'événement 'Tournoi Pokémon' a été annulé. Raison : Problème avec le lieu"
+```
+
 ## Composants
 
 ### `NotificationDropdown`
