@@ -8,6 +8,7 @@ import { ObjectId } from "mongodb";
 import {
   createPortalSettingsSchema,
   createPhaseSchema,
+  updatePhaseSchema,
   createMatchResultSchema,
   reportMatchResultSchema,
   confirmMatchResultSchema,
@@ -140,6 +141,12 @@ export async function addPhase(eventId: string, phaseData: unknown) {
       return { success: false, error: "Seul le créateur de l&apos;événement peut ajouter une phase" };
     }
 
+    // Vérifier que l'événement n'est pas terminé
+    const event = await getEventById(eventId);
+    if (event?.runningState === 'completed') {
+      return { success: false, error: "Impossible de modifier les phases d'un événement terminé" };
+    }
+
     const collection = db.collection<EventPortalSettings>(PORTAL_SETTINGS_COLLECTION);
 
     const newPhase: TournamentPhase = {
@@ -239,6 +246,153 @@ export async function setCurrentPhase(eventId: string, phaseId: string) {
   } catch (error) {
     console.error("Erreur lors de la mise à jour de la phase courante:", error);
     return { success: false, error: "Erreur lors de la mise à jour de la phase courante" };
+  }
+}
+
+export async function updatePhase(eventId: string, phaseId: string, phaseData: unknown) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    const validated = updatePhaseSchema.parse(phaseData);
+
+    // Vérifier que l'utilisateur est le créateur de l'événement
+    const isCreator = await isEventCreator(eventId, session.user.id);
+    if (!isCreator) {
+      return { success: false, error: "Seul le créateur de l&apos;événement peut modifier une phase" };
+    }
+
+    // Vérifier que l'événement n'est pas terminé
+    const event = await getEventById(eventId);
+    if (event?.runningState === 'completed') {
+      return { success: false, error: "Impossible de modifier les phases d'un événement terminé" };
+    }
+
+    const collection = db.collection<EventPortalSettings>(PORTAL_SETTINGS_COLLECTION);
+
+    // Récupérer la phase actuelle pour vérifier son statut
+    const settings = await collection.findOne({ eventId });
+    if (!settings) {
+      return { success: false, error: "Paramètres du portail non trouvés" };
+    }
+
+    const phase = settings.phases.find(p => p.id === phaseId);
+    if (!phase) {
+      return { success: false, error: "Phase non trouvée" };
+    }
+
+    // Si la phase est démarrée ou terminée, on ne peut pas modifier le type
+    if (phase.status !== 'not-started' && validated.type) {
+      return { success: false, error: "Le type de phase ne peut pas être modifié une fois la phase démarrée" };
+    }
+
+    // Construire l'objet de mise à jour
+    const updateFields: Record<string, unknown> = {};
+    if (validated.name !== undefined) {
+      updateFields["phases.$.name"] = validated.name;
+    }
+    if (validated.type !== undefined) {
+      updateFields["phases.$.type"] = validated.type;
+    }
+    if (validated.matchType !== undefined) {
+      updateFields["phases.$.matchType"] = validated.matchType;
+    }
+    if (validated.rounds !== undefined) {
+      updateFields["phases.$.rounds"] = validated.rounds;
+    }
+    if (validated.topCut !== undefined) {
+      updateFields["phases.$.topCut"] = validated.topCut;
+    }
+    if (validated.order !== undefined) {
+      updateFields["phases.$.order"] = validated.order;
+    }
+    updateFields.updatedAt = new Date().toISOString();
+
+    const result = await collection.updateOne(
+      { eventId, "phases.id": phaseId },
+      { $set: updateFields }
+    );
+
+    if (result.matchedCount === 0) {
+      return { success: false, error: "Phase non trouvée" };
+    }
+
+    revalidatePath(`/events/${eventId}/portal/organizer`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour de la phase:", error);
+    if (error instanceof Error) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: "Erreur lors de la mise à jour de la phase" };
+  }
+}
+
+export async function deletePhase(eventId: string, phaseId: string) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    // Vérifier que l'utilisateur est le créateur de l'événement
+    const isCreator = await isEventCreator(eventId, session.user.id);
+    if (!isCreator) {
+      return { success: false, error: "Seul le créateur de l&apos;événement peut supprimer une phase" };
+    }
+
+    // Vérifier que l'événement n'est pas terminé
+    const event = await getEventById(eventId);
+    if (event?.runningState === 'completed') {
+      return { success: false, error: "Impossible de supprimer les phases d'un événement terminé" };
+    }
+
+    const collection = db.collection<EventPortalSettings>(PORTAL_SETTINGS_COLLECTION);
+
+    // Vérifier si c'est la phase courante
+    const settings = await collection.findOne({ eventId });
+    if (!settings) {
+      return { success: false, error: "Paramètres du portail non trouvés" };
+    }
+
+    const phase = settings.phases.find(p => p.id === phaseId);
+    if (!phase) {
+      return { success: false, error: "Phase non trouvée" };
+    }
+
+    // Optionnel: empêcher la suppression d'une phase démarrée ou terminée
+    if (phase.status !== 'not-started') {
+      return { success: false, error: "Impossible de supprimer une phase déjà démarrée ou terminée" };
+    }
+
+    // Si c'est la phase courante, on retire la référence
+    const updateData: Record<string, unknown> = {
+      $pull: { phases: { id: phaseId } },
+      $set: { updatedAt: new Date().toISOString() }
+    };
+
+    if (settings.currentPhaseId === phaseId) {
+      updateData.$unset = { currentPhaseId: "" };
+    }
+
+    const result = await collection.updateOne(
+      { eventId },
+      updateData
+    );
+
+    if (result.matchedCount === 0) {
+      return { success: false, error: "Paramètres du portail non trouvés" };
+    }
+
+    revalidatePath(`/events/${eventId}/portal/organizer`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la suppression de la phase:", error);
+    return { success: false, error: "Erreur lors de la suppression de la phase" };
   }
 }
 

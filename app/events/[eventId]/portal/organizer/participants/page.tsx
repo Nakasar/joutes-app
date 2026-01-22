@@ -43,7 +43,11 @@ export default async function OrganizerParticipantsPage({ params }: OrganizerPar
 
   return (
     <OrganizerLayoutServer event={event} settings={settings}>
-      <OrganizerParticipants eventId={event.id} participants={participants} />
+      <OrganizerParticipants 
+        eventId={event.id} 
+        participants={participants} 
+        runningState={event.runningState}
+      />
     </OrganizerLayoutServer>
   );
 }

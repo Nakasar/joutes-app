@@ -7,7 +7,7 @@ import { User } from "@/lib/types/User";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Calendar, MapPin, Users, ExternalLink, Euro, Clock, Gamepad2, Info, Lock, CheckCircle, AlertCircle as AlertCircleIcon } from "lucide-react";
+import { Calendar, MapPin, Users, ExternalLink, Euro, Clock, Gamepad2, Info, Lock, CheckCircle, AlertCircle as AlertCircleIcon, Settings } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import EventActions from "./EventActions";
@@ -15,6 +15,8 @@ import QRCodeButton from "./QRCodeButton";
 import ParticipantManagerWrapper from "./ParticipantManagerWrapper";
 import FavoriteButton from "./FavoriteButton";
 import AllowJoinSwitch from "./AllowJoinSwitch";
+import RunningStateManager from "./RunningStateManager";
+import DeleteEventButton from "./DeleteEventButton";
 import { DateTime } from "luxon";
 import { getEventParticipants } from "./portal/participant-actions";
 
@@ -114,6 +116,16 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                   Privé
                 </Badge>
               )}
+              {event.runningState === 'ongoing' && (
+                <Badge variant="default" className="bg-green-600">
+                  En cours
+                </Badge>
+              )}
+              {event.runningState === 'completed' && (
+                <Badge variant="secondary">
+                  Terminé
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-2 text-muted-foreground">
               <Gamepad2 className="h-4 w-4" />
@@ -142,6 +154,28 @@ export default async function EventPage({ params, searchParams }: EventPageProps
               Cet événement est privé et n&apos;est pas rattaché à un lieu. Il est visible uniquement par le créateur et les participants.
             </AlertDescription>
           </Alert>
+        )}
+
+        {/* Boutons d'accès aux portails */}
+        {(isCreator || isParticipant) && (
+          <div className="flex gap-4">
+            {isCreator && (
+              <Button asChild className="flex-1">
+                <Link href={`/events/${event.id}/portal/organizer`}>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Portail Organisateur
+                </Link>
+              </Button>
+            )}
+            {isParticipant && (
+              <Button asChild variant="outline" className="flex-1">
+                <Link href={`/events/${event.id}/portal/player`}>
+                  <Users className="h-4 w-4 mr-2" />
+                  Portail Joueur
+                </Link>
+              </Button>
+            )}
+          </div>
         )}
 
         <div className="grid gap-6 md:grid-cols-3">
@@ -250,6 +284,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                   <ParticipantManagerWrapper
                     eventId={event.id}
                     participants={allParticipants as any}
+                    runningState={event.runningState}
                   />
                 ) : null}
 
@@ -257,6 +292,13 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                   <AllowJoinSwitch
                     eventId={event.id}
                     initialAllowJoin={event.allowJoin ?? true}
+                  />
+                )}
+
+                {isCreator && (
+                  <RunningStateManager
+                    eventId={event.id}
+                    runningState={event.runningState}
                   />
                 )}
 
@@ -268,6 +310,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                       isCreator={isCreator || false}
                       isFull={isFull}
                       allowJoin={event.allowJoin}
+                      runningState={event.runningState}
                     />
                     <FavoriteButton
                       eventId={event.id}
@@ -277,6 +320,15 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                     {isCreator && (
                       <QRCodeButton eventId={event.id} />
                     )}
+                  </div>
+                )}
+
+                {isCreator && (
+                  <div className="pt-4 border-t">
+                    <DeleteEventButton 
+                      eventId={event.id}
+                      eventName={event.name}
+                    />
                   </div>
                 )}
 

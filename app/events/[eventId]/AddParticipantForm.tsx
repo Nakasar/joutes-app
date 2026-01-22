@@ -30,6 +30,7 @@ type AddParticipantFormProps = {
   participants: Participant[];
   onParticipantAdded?: () => void;
   onParticipantRemoved?: () => void;
+  runningState?: 'not-started' | 'ongoing' | 'completed';
 };
 
 export default function AddParticipantForm({
@@ -37,6 +38,7 @@ export default function AddParticipantForm({
   participants,
   onParticipantAdded,
   onParticipantRemoved,
+  runningState = 'not-started',
 }: AddParticipantFormProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -191,13 +193,21 @@ export default function AddParticipantForm({
       )}
 
       {/* Bouton d'ajout */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <Button variant="outline" className="w-full">
-            <UserPlus className="h-4 w-4 mr-2" />
-            Ajouter un participant
-          </Button>
-        </DialogTrigger>
+      {runningState !== 'not-started' ? (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Impossible d&apos;ajouter des participants : l&apos;événement est {runningState === 'ongoing' ? 'en cours' : 'terminé'}
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="w-full">
+              <UserPlus className="h-4 w-4 mr-2" />
+              Ajouter un participant
+            </Button>
+          </DialogTrigger>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Ajouter un participant</DialogTitle>
@@ -316,6 +326,7 @@ export default function AddParticipantForm({
           </div>
         </DialogContent>
       </Dialog>
+      )}
 
       {/* Dialog de confirmation de suppression */}
       <Dialog open={confirmRemoveOpen} onOpenChange={setConfirmRemoveOpen}>

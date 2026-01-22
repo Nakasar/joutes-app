@@ -4,6 +4,7 @@ import { EventPortalSettings } from "@/lib/schemas/event-portal.schema";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import OrganizerNavigation from "./OrganizerNavigation";
+import RunningStateManager from "../../../RunningStateManager";
 
 type OrganizerLayoutServerProps = {
   event: Event;
@@ -19,6 +20,13 @@ export default function OrganizerLayoutServer({ event, settings, children }: Org
         <p className="text-muted-foreground">
           Gérez votre événement et suivez les résultats en temps réel
         </p>
+      </div>
+
+      <div className="mb-4">
+        <RunningStateManager
+          eventId={event.id}
+          runningState={event.runningState}
+        />
       </div>
 
       <OrganizerNavigation eventId={event.id} />

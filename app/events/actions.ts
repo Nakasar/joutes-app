@@ -2,7 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { createEvent, getEventById, addParticipantToEvent, removeParticipantFromEvent, addEventToFavorites, removeEventFromFavorites } from "@/lib/db/events";
+import { createEvent, getEventById, addParticipantToEvent, removeParticipantFromEvent, addEventToFavorites, removeEventFromFavorites, deleteEvent, updateEvent } from "@/lib/db/events";
 import { getLairsOwnedByUser } from "@/lib/db/lairs";
 import { getUserByTagOrId } from "@/lib/db/users";
 import { nanoid } from 'nanoid';
@@ -61,6 +61,7 @@ export async function createEventAction(input: CreateEventInput) {
       status: "available",
       addedBy: "USER",
       creatorId: session.user.id,
+      runningState: "not-started",
       allowJoin: true,
       participants: [],
       maxParticipants: input.maxParticipants,
@@ -97,6 +98,11 @@ export async function joinEventAction(eventId: string) {
 
     if (!event.allowJoin) {
       return { success: false, error: "Les inscriptions à cet événement sont fermées" };
+    }
+
+    // Vérifier si l'événement est commencé ou terminé
+    if (event.runningState && event.runningState !== 'not-started') {
+      return { success: false, error: "Impossible de rejoindre un événement déjà commencé ou terminé" };
     }
 
     // Vérifier si l'événement est complet
@@ -214,6 +220,11 @@ export async function addParticipantByTagAction(eventId: string, userTag: string
       return { success: false, error: "Seul le créateur de l'événement peut ajouter des participants" };
     }
 
+    // Vérifier si l'événement est commencé ou terminé
+    if (event.runningState && event.runningState !== 'not-started') {
+      return { success: false, error: "Impossible d'ajouter des participants à un événement déjà commencé ou terminé" };
+    }
+
     // Rechercher l'utilisateur par son tag
     const user = await getUserByTagOrId(userTag);
 
@@ -315,7 +326,7 @@ export async function toggleAllowJoinAction(eventId: string, allowJoin: boolean)
     }
 
     // Mettre à jour allowJoin
-    const { updateEvent } = await import("@/lib/db/events");
+
     const updated = await updateEvent(eventId, { allowJoin });
 
     if (!updated) {
@@ -329,5 +340,136 @@ export async function toggleAllowJoinAction(eventId: string, allowJoin: boolean)
   } catch (error) {
     console.error("Erreur lors de la modification de allowJoin:", error);
     return { success: false, error: "Une erreur est survenue lors de la modification" };
+  }
+}
+
+export async function startEventAction(eventId: string) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      return { success: false, error: "Vous devez être connecté" };
+    }
+
+    // Récupérer l'événement
+    const event = await getEventById(eventId);
+
+    if (!event) {
+      return { success: false, error: "Événement introuvable" };
+    }
+
+    // Vérifier que l'utilisateur est le créateur de l'événement
+    if (event.creatorId !== session.user.id) {
+      return { success: false, error: "Seul le créateur de l'événement peut démarrer l'événement" };
+    }
+
+    // Vérifier que l'événement n'est pas déjà commencé ou terminé
+    if (event.runningState === 'ongoing') {
+      return { success: false, error: "L'événement est déjà en cours" };
+    }
+
+    if (event.runningState === 'completed') {
+      return { success: false, error: "L'événement est déjà terminé" };
+    }
+
+    // Mettre à jour le runningState
+    const updated = await updateEvent(eventId, { runningState: 'ongoing' });
+
+    if (!updated) {
+      return { success: false, error: "Impossible de démarrer l'événement" };
+    }
+
+    revalidatePath(`/events/${eventId}`);
+    revalidatePath("/events");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors du démarrage de l'événement:", error);
+    return { success: false, error: "Une erreur est survenue lors du démarrage de l'événement" };
+  }
+}
+
+export async function completeEventAction(eventId: string) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      return { success: false, error: "Vous devez être connecté" };
+    }
+
+    // Récupérer l'événement
+    const event = await getEventById(eventId);
+
+    if (!event) {
+      return { success: false, error: "Événement introuvable" };
+    }
+
+    // Vérifier que l'utilisateur est le créateur de l'événement
+    if (event.creatorId !== session.user.id) {
+      return { success: false, error: "Seul le créateur de l'événement peut terminer l'événement" };
+    }
+
+    // Vérifier que l'événement n'est pas déjà terminé
+    if (event.runningState === 'completed') {
+      return { success: false, error: "L'événement est déjà terminé" };
+    }
+
+    // Mettre à jour le runningState
+    const updated = await updateEvent(eventId, { runningState: 'completed' });
+
+    if (!updated) {
+      return { success: false, error: "Impossible de terminer l'événement" };
+    }
+
+    revalidatePath(`/events/${eventId}`);
+    revalidatePath("/events");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la terminaison de l'événement:", error);
+    return { success: false, error: "Une erreur est survenue lors de la terminaison de l'événement" };
+  }
+}
+
+export async function deleteEventAction(eventId: string) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      return { success: false, error: "Vous devez être connecté" };
+    }
+
+    // Récupérer l'événement
+    const event = await getEventById(eventId);
+
+    if (!event) {
+      return { success: false, error: "Événement introuvable" };
+    }
+
+    // Vérifier que l'utilisateur est le créateur de l'événement
+    if (event.creatorId !== session.user.id) {
+      return { success: false, error: "Seul le créateur de l'événement peut supprimer l'événement" };
+    }
+
+    // Supprimer l'événement et toutes les données associées
+    const deleted = await deleteEvent(eventId);
+
+    if (!deleted) {
+      return { success: false, error: "Impossible de supprimer l'événement" };
+    }
+
+    revalidatePath("/events");
+    revalidatePath("/account");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la suppression de l'événement:", error);
+    return { success: false, error: "Une erreur est survenue lors de la suppression de l'événement" };
   }
 }
