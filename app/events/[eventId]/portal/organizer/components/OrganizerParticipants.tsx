@@ -4,9 +4,10 @@ import AddParticipantForm from "../../../AddParticipantForm";
 type OrganizerParticipantsProps = {
   eventId: string;
   participants: any[];
+  runningState?: 'not-started' | 'ongoing' | 'completed';
 };
 
-export default function OrganizerParticipants({ eventId, participants }: OrganizerParticipantsProps) {
+export default function OrganizerParticipants({ eventId, participants, runningState }: OrganizerParticipantsProps) {
   return (
     <div className="space-y-6">
       <Card>
@@ -20,6 +21,7 @@ export default function OrganizerParticipants({ eventId, participants }: Organiz
           <AddParticipantForm
             eventId={eventId}
             participants={participants}
+            runningState={runningState}
           />
         </CardContent>
       </Card>

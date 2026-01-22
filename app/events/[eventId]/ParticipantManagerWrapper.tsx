@@ -15,11 +15,13 @@ type Participant = {
 type ParticipantManagerWrapperProps = {
   eventId: string;
   participants: Participant[];
+  runningState?: 'not-started' | 'ongoing' | 'completed';
 };
 
 export default function ParticipantManagerWrapper({
   eventId,
   participants,
+  runningState = 'not-started',
 }: ParticipantManagerWrapperProps) {
   const router = useRouter();
 
@@ -33,6 +35,7 @@ export default function ParticipantManagerWrapper({
       participants={participants}
       onParticipantAdded={handleParticipantChange}
       onParticipantRemoved={handleParticipantChange}
+      runningState={runningState}
     />
   );
 }

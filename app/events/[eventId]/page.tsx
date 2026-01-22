@@ -7,7 +7,7 @@ import { User } from "@/lib/types/User";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Calendar, MapPin, Users, ExternalLink, Euro, Clock, Gamepad2, Info, Lock, CheckCircle, AlertCircle as AlertCircleIcon } from "lucide-react";
+import { Calendar, MapPin, Users, ExternalLink, Euro, Clock, Gamepad2, Info, Lock, CheckCircle, AlertCircle as AlertCircleIcon, Settings } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import EventActions from "./EventActions";
@@ -155,6 +155,28 @@ export default async function EventPage({ params, searchParams }: EventPageProps
           </Alert>
         )}
 
+        {/* Boutons d'accès aux portails */}
+        {(isCreator || isParticipant) && (
+          <div className="flex gap-4">
+            {isCreator && (
+              <Button asChild className="flex-1">
+                <Link href={`/events/${event.id}/portal/organizer`}>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Portail Organisateur
+                </Link>
+              </Button>
+            )}
+            {isParticipant && (
+              <Button asChild variant="outline" className="flex-1">
+                <Link href={`/events/${event.id}/portal/player`}>
+                  <Users className="h-4 w-4 mr-2" />
+                  Portail Joueur
+                </Link>
+              </Button>
+            )}
+          </div>
+        )}
+
         <div className="grid gap-6 md:grid-cols-3">
           <div className="md:col-span-2 space-y-6">
             <Card>
@@ -261,6 +283,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                   <ParticipantManagerWrapper
                     eventId={event.id}
                     participants={allParticipants as any}
+                    runningState={event.runningState}
                   />
                 ) : null}
 
