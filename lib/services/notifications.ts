@@ -10,7 +10,7 @@ export async function notifyUser(userId: string, title: string, description: str
     userId,
     title,
     description,
-  });
+  } as any);
 }
 
 /**
@@ -23,7 +23,7 @@ export async function notifyLairOwners(lairId: string, title: string, descriptio
     target: 'owners',
     title,
     description,
-  });
+  } as any);
 }
 
 /**
@@ -36,7 +36,7 @@ export async function notifyLairFollowers(lairId: string, title: string, descrip
     target: 'followers',
     title,
     description,
-  });
+  } as any);
 }
 
 /**
@@ -49,7 +49,7 @@ export async function notifyLairAll(lairId: string, title: string, description: 
     target: 'all',
     title,
     description,
-  });
+  } as any);
 }
 
 /**
@@ -62,7 +62,7 @@ export async function notifyEventParticipants(eventId: string, title: string, de
     target: 'participants',
     title,
     description,
-  });
+  } as any);
 }
 
 /**
@@ -75,7 +75,7 @@ export async function notifyEventCreator(eventId: string, title: string, descrip
     target: 'creator',
     title,
     description,
-  });
+  } as any);
 }
 
 /**
@@ -88,5 +88,5 @@ export async function notifyEventAll(eventId: string, title: string, description
     target: 'all',
     title,
     description,
-  });
+  } as any);
 }

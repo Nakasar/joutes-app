@@ -113,6 +113,8 @@ await createNotification({
 
 Les utilisateurs peuvent consulter leurs notifications sur la page `/notifications`.
 
+Un dropdown de notifications est également disponible dans le header de l'application pour un accès rapide aux 5 dernières notifications.
+
 ### Fonctionnalités
 
 - **Liste des notifications** : Affichage de toutes les notifications pertinentes pour l'utilisateur
@@ -227,6 +229,21 @@ await notifyEventCreator(
 ```
 
 ## Composants
+
+### `NotificationDropdown`
+
+Composant dropdown dans le header pour afficher les notifications récentes.
+
+```tsx
+<NotificationDropdown userId={currentUserId} />
+```
+
+**Fonctionnalités** :
+- Affiche les 5 notifications les plus récentes
+- Pastille rouge avec le nombre de notifications non lues
+- Clic sur une notification la marque comme lue
+- Lien "Tout voir" vers la page `/notifications`
+- Chargement automatique des notifications au montage du composant
 
 ### `NotificationItem`
 

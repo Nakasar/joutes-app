@@ -23,6 +23,27 @@ export async function getNotificationsAction() {
   }
 }
 
+export async function getRecentNotificationsAction(limit: number = 5) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      return { success: false, error: "Vous devez être connecté pour voir les notifications", notifications: [] };
+    }
+
+    const notifications = await getUserNotifications(session.user.id);
+    const recentNotifications = notifications.slice(0, limit);
+    const unreadCount = notifications.filter(n => !n.readBy?.includes(session.user.id)).length;
+
+    return { success: true, notifications: recentNotifications, unreadCount };
+  } catch (error) {
+    console.error("Error fetching recent notifications:", error);
+    return { success: false, error: "Erreur lors de la récupération des notifications", notifications: [], unreadCount: 0 };
+  }
+}
+
 export async function markNotificationAsReadAction(notificationId: string) {
   try {
     const session = await auth.api.getSession({

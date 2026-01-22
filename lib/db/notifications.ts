@@ -90,7 +90,7 @@ export async function getUserNotifications(userId: string): Promise<Notification
  * @param notification - Les données de la notification
  * @returns La notification créée
  */
-export async function createNotification(notification: Omit<Notification, 'id'>): Promise<Notification> {
+export async function createNotification(notification: Omit<Notification, 'id' | 'createdAt' | 'readBy'>): Promise<Notification> {
   try {
     const collection = (await db).collection<NotificationDocument>(COLLECTION_NAME);
 
