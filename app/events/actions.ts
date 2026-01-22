@@ -2,7 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { createEvent, getEventById, addParticipantToEvent, removeParticipantFromEvent, addEventToFavorites, removeEventFromFavorites } from "@/lib/db/events";
+import { createEvent, getEventById, addParticipantToEvent, removeParticipantFromEvent, addEventToFavorites, removeEventFromFavorites, deleteEvent, updateEvent } from "@/lib/db/events";
 import { getLairsOwnedByUser } from "@/lib/db/lairs";
 import { getUserByTagOrId } from "@/lib/db/users";
 import { nanoid } from 'nanoid';
@@ -326,7 +326,7 @@ export async function toggleAllowJoinAction(eventId: string, allowJoin: boolean)
     }
 
     // Mettre à jour allowJoin
-    const { updateEvent } = await import("@/lib/db/events");
+
     const updated = await updateEvent(eventId, { allowJoin });
 
     if (!updated) {
@@ -375,7 +375,6 @@ export async function startEventAction(eventId: string) {
     }
 
     // Mettre à jour le runningState
-    const { updateEvent } = await import("@/lib/db/events");
     const updated = await updateEvent(eventId, { runningState: 'ongoing' });
 
     if (!updated) {
@@ -420,7 +419,6 @@ export async function completeEventAction(eventId: string) {
     }
 
     // Mettre à jour le runningState
-    const { updateEvent } = await import("@/lib/db/events");
     const updated = await updateEvent(eventId, { runningState: 'completed' });
 
     if (!updated) {
@@ -434,5 +432,44 @@ export async function completeEventAction(eventId: string) {
   } catch (error) {
     console.error("Erreur lors de la terminaison de l'événement:", error);
     return { success: false, error: "Une erreur est survenue lors de la terminaison de l'événement" };
+  }
+}
+
+export async function deleteEventAction(eventId: string) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      return { success: false, error: "Vous devez être connecté" };
+    }
+
+    // Récupérer l'événement
+    const event = await getEventById(eventId);
+
+    if (!event) {
+      return { success: false, error: "Événement introuvable" };
+    }
+
+    // Vérifier que l'utilisateur est le créateur de l'événement
+    if (event.creatorId !== session.user.id) {
+      return { success: false, error: "Seul le créateur de l'événement peut supprimer l'événement" };
+    }
+
+    // Supprimer l'événement et toutes les données associées
+    const deleted = await deleteEvent(eventId);
+
+    if (!deleted) {
+      return { success: false, error: "Impossible de supprimer l'événement" };
+    }
+
+    revalidatePath("/events");
+    revalidatePath("/account");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la suppression de l'événement:", error);
+    return { success: false, error: "Une erreur est survenue lors de la suppression de l'événement" };
   }
 }

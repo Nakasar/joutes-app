@@ -16,6 +16,7 @@ import ParticipantManagerWrapper from "./ParticipantManagerWrapper";
 import FavoriteButton from "./FavoriteButton";
 import AllowJoinSwitch from "./AllowJoinSwitch";
 import RunningStateManager from "./RunningStateManager";
+import DeleteEventButton from "./DeleteEventButton";
 import { DateTime } from "luxon";
 import { getEventParticipants } from "./portal/participant-actions";
 
@@ -319,6 +320,15 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                     {isCreator && (
                       <QRCodeButton eventId={event.id} />
                     )}
+                  </div>
+                )}
+
+                {isCreator && (
+                  <div className="pt-4 border-t">
+                    <DeleteEventButton 
+                      eventId={event.id}
+                      eventName={event.name}
+                    />
                   </div>
                 )}
 

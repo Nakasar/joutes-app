@@ -394,11 +394,38 @@ export async function updateEvent(id: string, event: Partial<Event>): Promise<bo
   return result.modifiedCount > 0;
 }
 
-// Delete an event
+// Delete an event and all related data (portal settings, matches, announcements, etc.)
 export async function deleteEvent(id: string): Promise<boolean> {
+  const session = db.client.startSession();
 
-  const result = await db.collection<EventDocument>(COLLECTION_NAME).deleteOne({ id });
-  return result.deletedCount > 0;
+  try {
+    let deletedEvent = false;
+    
+    await session.withTransaction(async () => {
+      // Delete the event itself
+      const eventResult = await db.collection<EventDocument>(COLLECTION_NAME).deleteOne({ id });
+      deletedEvent = eventResult.deletedCount > 0;
+
+      // Delete portal settings
+      await db.collection("event-portal-settings").deleteMany({ eventId: id });
+
+      // Delete match results
+      await db.collection("event-match-results").deleteMany({ eventId: id });
+
+      // Delete announcements
+      await db.collection("event-announcements").deleteMany({ eventId: id });
+
+      // Delete player notes
+      await db.collection("event-player-notes").deleteMany({ eventId: id });
+    });
+
+    await session.endSession();
+    return deletedEvent;
+  } catch (error) {
+    await session.endSession();
+    console.error("Error deleting event and related data:", error);
+    return false;
+  }
 }
 
 // Delete all events for a specific lair
