@@ -23,4 +23,5 @@ export type Notification = {
   description: string;
   createdAt: string;
   readBy?: string[];
+  hiddenBy?: string[];
 } & NotificationTarget;

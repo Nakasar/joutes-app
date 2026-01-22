@@ -3,19 +3,38 @@
 import { Notification } from "@/lib/types/Notification";
 import { NotificationItem } from "./NotificationItem";
 import { useState } from "react";
-import { markAllNotificationsAsReadAction } from "./actions";
-import { CheckCheck } from "lucide-react";
+import { markAllNotificationsAsReadAction, getNotificationsAction } from "./actions";
+import { CheckCheck, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type NotificationsListProps = {
-  initialNotifications: Notification[];
+  initialNotifications: any[];
   userId: string;
+  initialPage: number;
+  initialTotal: number;
+  limit: number;
 };
 
-export function NotificationsList({ initialNotifications, userId }: NotificationsListProps) {
+export function NotificationsList({ initialNotifications, userId, initialPage, initialTotal, limit }: NotificationsListProps) {
   const [notifications, setNotifications] = useState(initialNotifications);
   const [isMarkingAll, setIsMarkingAll] = useState(false);
+  const [page, setPage] = useState(initialPage);
+  const [total, setTotal] = useState(initialTotal);
+  const [isLoading, setIsLoading] = useState(false);
 
+  const totalPages = Math.ceil(total / limit);
   const unreadCount = notifications.filter(n => !n.readBy?.includes(userId)).length;
+
+  const loadPage = async (newPage: number) => {
+    setIsLoading(true);
+    const result = await getNotificationsAction(newPage, limit);
+    if (result.success && result.notifications) {
+      setNotifications(result.notifications);
+      setPage(newPage);
+      setTotal(result.total || 0);
+    }
+    setIsLoading(false);
+  };
 
   const handleMarkAllAsRead = async () => {
     setIsMarkingAll(true);
@@ -31,8 +50,12 @@ export function NotificationsList({ initialNotifications, userId }: Notification
   };
 
   const handleNotificationRead = () => {
-    // Forcer le rafraîchissement de la liste pour mettre à jour les compteurs
     setNotifications([...notifications]);
+  };
+
+  const handleNotificationHide = (notificationId: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    setTotal(prev => prev - 1);
   };
 
   if (notifications.length === 0) {
@@ -54,6 +77,7 @@ export function NotificationsList({ initialNotifications, userId }: Notification
           ) : (
             <span>Toutes les notifications sont lues</span>
           )}
+          <span className="text-gray-400 ml-2">• {total} au total</span>
         </div>
         
         {unreadCount > 0 && (
@@ -75,9 +99,38 @@ export function NotificationsList({ initialNotifications, userId }: Notification
             notification={notification}
             userId={userId}
             onMarkAsRead={handleNotificationRead}
+            onHide={() => handleNotificationHide(notification.id)}
           />
         ))}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => loadPage(page - 1)}
+            disabled={page <= 1 || isLoading}
+          >
+            <ChevronLeft className="w-4 h-4 mr-1" />
+            Précédent
+          </Button>
+          
+          <span className="text-sm text-gray-600">
+            Page {page} sur {totalPages}
+          </span>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => loadPage(page + 1)}
+            disabled={page >= totalPages || isLoading}
+          >
+            Suivant
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

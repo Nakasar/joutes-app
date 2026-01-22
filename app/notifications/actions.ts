@@ -2,9 +2,9 @@
 
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { getUserNotifications, markAllNotificationsAsRead, markNotificationAsRead } from "@/lib/db/notifications";
+import { getUserNotifications, markAllNotificationsAsRead, markNotificationAsRead, hideNotification } from "@/lib/db/notifications";
 
-export async function getNotificationsAction() {
+export async function getNotificationsAction(page: number = 1, limit: number = 20) {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -14,9 +14,9 @@ export async function getNotificationsAction() {
       return { success: false, error: "Vous devez être connecté pour voir les notifications" };
     }
 
-    const notifications = await getUserNotifications(session.user.id);
+    const result = await getUserNotifications(session.user.id, { page, limit });
 
-    return { success: true, notifications };
+    return { success: true, notifications: result.notifications, total: result.total, page, limit };
   } catch (error) {
     console.error("Error fetching notifications:", error);
     return { success: false, error: "Erreur lors de la récupération des notifications" };
@@ -33,11 +33,10 @@ export async function getRecentNotificationsAction(limit: number = 5) {
       return { success: false, error: "Vous devez être connecté pour voir les notifications", notifications: [] };
     }
 
-    const notifications = await getUserNotifications(session.user.id);
-    const recentNotifications = notifications.slice(0, limit);
-    const unreadCount = notifications.filter(n => !n.readBy?.includes(session.user.id)).length;
+    const result = await getUserNotifications(session.user.id, { limit });
+    const unreadCount = result.notifications.filter(n => !n.readBy?.includes(session.user.id)).length;
 
-    return { success: true, notifications: recentNotifications, unreadCount };
+    return { success: true, notifications: result.notifications, unreadCount };
   } catch (error) {
     console.error("Error fetching recent notifications:", error);
     return { success: false, error: "Erreur lors de la récupération des notifications", notifications: [], unreadCount: 0 };
@@ -79,5 +78,24 @@ export async function markAllNotificationsAsReadAction() {
   } catch (error) {
     console.error("Error marking all notifications as read:", error);
     return { success: false, error: "Erreur lors du marquage des notifications" };
+  }
+}
+
+export async function hideNotificationAction(notificationId: string) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      return { success: false, error: "Vous devez être connecté pour masquer une notification" };
+    }
+
+    await hideNotification(notificationId, session.user.id);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error hiding notification:", error);
+    return { success: false, error: "Erreur lors du masquage de la notification" };
   }
 }

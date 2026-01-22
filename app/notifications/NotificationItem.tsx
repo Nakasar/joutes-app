@@ -2,8 +2,8 @@
 
 import { Notification } from "@/lib/types/Notification";
 import { DateTime } from "luxon";
-import { Bell, Check, CheckCheck, MapPin, Calendar } from "lucide-react";
-import { markNotificationAsReadAction } from "./actions";
+import { Bell, Check, CheckCheck, MapPin, Calendar, X } from "lucide-react";
+import { markNotificationAsReadAction, hideNotificationAction } from "./actions";
 import { useState } from "react";
 import Link from "next/link";
 
@@ -11,11 +11,13 @@ type NotificationItemProps = {
   notification: any; // Utiliser any pour accepter les champs additionnels lair/event
   userId: string;
   onMarkAsRead?: () => void;
+  onHide?: () => void;
 };
 
-export function NotificationItem({ notification, userId, onMarkAsRead }: NotificationItemProps) {
+export function NotificationItem({ notification, userId, onMarkAsRead, onHide }: NotificationItemProps) {
   const [isRead, setIsRead] = useState(notification.readBy?.includes(userId) || false);
   const [isMarking, setIsMarking] = useState(false);
+  const [isHiding, setIsHiding] = useState(false);
 
   const handleMarkAsRead = async () => {
     if (isRead) return;
@@ -28,6 +30,16 @@ export function NotificationItem({ notification, userId, onMarkAsRead }: Notific
       onMarkAsRead?.();
     }
     setIsMarking(false);
+  };
+
+  const handleHide = async () => {
+    setIsHiding(true);
+    const result = await hideNotificationAction(notification.id);
+    
+    if (result.success) {
+      onHide?.();
+    }
+    setIsHiding(false);
   };
 
   const timeAgo = DateTime.fromISO(notification.createdAt).setLocale('fr').toRelative() || 'à l&apos;instant';
@@ -56,16 +68,26 @@ export function NotificationItem({ notification, userId, onMarkAsRead }: Notific
               {notification.title}
             </h3>
             
-            {!isRead && (
+            <div className="flex items-center gap-1">
+              {!isRead && (
+                <button
+                  onClick={handleMarkAsRead}
+                  disabled={isMarking}
+                  className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                  title="Marquer comme lu"
+                >
+                  <Check className="w-4 h-4" />
+                </button>
+              )}
               <button
-                onClick={handleMarkAsRead}
-                disabled={isMarking}
-                className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50"
-                title="Marquer comme lu"
+                onClick={handleHide}
+                disabled={isHiding}
+                className="flex items-center gap-1 text-sm text-gray-500 hover:text-red-600 disabled:opacity-50"
+                title="Masquer cette notification"
               >
-                <Check className="w-4 h-4" />
+                <X className="w-4 h-4" />
               </button>
-            )}
+            </div>
           </div>
           
           {contextLink && (

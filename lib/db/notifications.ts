@@ -11,9 +11,13 @@ export type NotificationDocument = Notification;
 /**
  * Récupère toutes les notifications visibles par un utilisateur
  * @param userId - L'ID de l'utilisateur
- * @returns Array de notifications avec informations de contexte (lair/event)
+ * @param options - Options de pagination
+ * @returns Array de notifications avec informations de contexte (lair/event) et le total
  */
-export async function getUserNotifications(userId: string): Promise<any[]> {
+export async function getUserNotifications(
+  userId: string, 
+  options?: { page?: number; limit?: number }
+): Promise<{ notifications: any[]; total: number }> {
   try {
     const collection = db.collection<NotificationDocument>(COLLECTION_NAME);
     const user = await getUserById(userId);
@@ -35,19 +39,23 @@ export async function getUserNotifications(userId: string): Promise<any[]> {
     }
 
     // Construire l'aggregation avec lookups
+    const matchStage = {
+      $match: {
+        // Exclure les notifications masquées par l'utilisateur
+        hiddenBy: { $ne: userId },
+        $or: [
+          { type: 'user', userId },
+          { type: 'lair', lairId: { $in: ownedLairIds }, target: { $in: ['owners', 'all'] } },
+          { type: 'lair', lairId: { $in: followedLairIds }, target: { $in: ['followers', 'all'] } },
+          { type: 'event', eventId: { $exists: true }, target: { $in: ['participants', 'all'] } },
+          { type: 'event', eventId: { $exists: true }, target: { $in: ['creator', 'all'] } },
+        ]
+      }
+    };
+
     const pipeline: any[] = [
       // Match des notifications pertinentes
-      {
-        $match: {
-          $or: [
-            { type: 'user', userId },
-            { type: 'lair', lairId: { $in: ownedLairIds }, target: { $in: ['owners', 'all'] } },
-            { type: 'lair', lairId: { $in: followedLairIds }, target: { $in: ['followers', 'all'] } },
-            { type: 'event', eventId: { $exists: true }, target: { $in: ['participants', 'all'] } },
-            { type: 'event', eventId: { $exists: true }, target: { $in: ['creator', 'all'] } },
-          ]
-        }
-      },
+      matchStage,
       // Lookup pour les lairs
       {
         $lookup: {
@@ -112,6 +120,21 @@ export async function getUserNotifications(userId: string): Promise<any[]> {
       }
     ];
 
+    // Compter le total avant pagination
+    const countPipeline = [...pipeline, { $count: 'total' }];
+    const countResult = await collection.aggregate(countPipeline).toArray();
+    const totalBeforeFiltering = countResult.length > 0 ? countResult[0].total : 0;
+
+    // Ajouter pagination si demandée
+    const page = options?.page || 1;
+    const limit = options?.limit || 20;
+    const skip = (page - 1) * limit;
+
+    if (options?.page || options?.limit) {
+      pipeline.push({ $skip: skip });
+      pipeline.push({ $limit: limit });
+    }
+
     const notifications = await collection.aggregate(pipeline).toArray();
 
     // Filtrer les notifications d'événements selon la participation réelle
@@ -130,10 +153,15 @@ export async function getUserNotifications(userId: string): Promise<any[]> {
       return true;
     });
 
-    return filteredNotifications.map(doc => ({
+    const formattedNotifications = filteredNotifications.map(doc => ({
       ...doc,
       id: doc.id || doc._id?.toString() || '',
     }));
+
+    return {
+      notifications: formattedNotifications,
+      total: totalBeforeFiltering
+    };
   } catch (error) {
     console.error("Error fetching user notifications:", error);
     throw error;
@@ -190,16 +218,35 @@ export async function markNotificationAsRead(notificationId: string, userId: str
  */
 export async function markAllNotificationsAsRead(userId: string): Promise<void> {
   try {
-    const notifications = await getUserNotifications(userId);
+    const result = await getUserNotifications(userId);
     const collection = db.collection<NotificationDocument>(COLLECTION_NAME);
 
     // Marquer toutes les notifications comme lues
     await collection.updateMany(
-      { id: { $in: notifications.map(n => n.id) } },
+      { id: { $in: result.notifications.map(n => n.id) } },
       { $addToSet: { readBy: userId } }
     );
   } catch (error) {
     console.error("Error marking all notifications as read:", error);
+    throw error;
+  }
+}
+
+/**
+ * Masque une notification pour un utilisateur
+ * @param notificationId - L'ID de la notification
+ * @param userId - L'ID de l'utilisateur
+ */
+export async function hideNotification(notificationId: string, userId: string): Promise<void> {
+  try {
+    const collection = db.collection<NotificationDocument>(COLLECTION_NAME);
+
+    await collection.updateOne(
+      { id: notificationId },
+      { $addToSet: { hiddenBy: userId } }
+    );
+  } catch (error) {
+    console.error("Error hiding notification:", error);
     throw error;
   }
 }

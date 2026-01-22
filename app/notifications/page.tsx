@@ -5,7 +5,13 @@ import { getNotificationsAction } from "./actions";
 import { NotificationsList } from "./NotificationsList";
 import { Bell } from "lucide-react";
 
-export default async function NotificationsPage() {
+type NotificationsPageProps = {
+  searchParams: Promise<{
+    page?: string;
+  }>;
+};
+
+export default async function NotificationsPage({ searchParams }: NotificationsPageProps) {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -14,7 +20,11 @@ export default async function NotificationsPage() {
     redirect("/login");
   }
 
-  const result = await getNotificationsAction();
+  const params = await searchParams;
+  const page = parseInt(params.page || '1', 10);
+  const limit = 20;
+
+  const result = await getNotificationsAction(page, limit);
 
   if (!result.success || !result.notifications) {
     return (
@@ -47,6 +57,9 @@ export default async function NotificationsPage() {
           <NotificationsList
             initialNotifications={result.notifications}
             userId={session.user.id}
+            initialPage={page}
+            initialTotal={result.total || 0}
+            limit={limit}
           />
         </div>
       </div>
