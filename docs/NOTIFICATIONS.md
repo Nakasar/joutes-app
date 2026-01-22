@@ -228,6 +228,29 @@ await notifyEventCreator(
 );
 ```
 
+### Notifications automatiques
+
+Certaines actions déclenchent automatiquement l'envoi de notifications :
+
+#### Annonces d'événement
+
+Lorsqu'une annonce est créée sur un événement (via le portail organisateur), une notification est automatiquement envoyée à tous les participants et au créateur de l'événement.
+
+```typescript
+// Dans app/events/[eventId]/portal/actions.ts
+// Lors de la création d'une annonce
+await notifyEventAll(
+  eventId,
+  `${priorityText}Nouvelle annonce`,
+  announcement.message
+);
+```
+
+La priorité de l'annonce est reflétée dans le titre de la notification :
+- 🚨 Pour les annonces urgentes
+- ⚠️ Pour les annonces importantes
+- Pas d'emoji pour les annonces normales
+
 ## Composants
 
 ### `NotificationDropdown`

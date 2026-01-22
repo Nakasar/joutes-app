@@ -946,6 +946,20 @@ export async function createAnnouncement(eventId: string, data: unknown) {
 
     await collection.insertOne(announcement as Announcement & { _id?: ObjectId });
 
+    // Envoyer une notification à tous les participants et créateur de l'événement
+    try {
+      const { notifyEventAll } = await import("@/lib/services/notifications");
+      const priorityText = announcement.priority === 'urgent' ? '🚨 ' : announcement.priority === 'important' ? '⚠️ ' : '';
+      await notifyEventAll(
+        eventId,
+        `${priorityText}Nouvelle annonce`,
+        announcement.message
+      );
+    } catch (notifError) {
+      console.error("Erreur lors de l'envoi de la notification:", notifError);
+      // On ne fait pas échouer la création de l'annonce si la notification échoue
+    }
+
     return { success: true, data: { ... announcement, _id: undefined, id: announcement.id.toString(), createdBy: announcement.createdBy.toString() } };
   } catch (error) {
     console.error("Erreur lors de la création de l&apos;annonce:", error);
