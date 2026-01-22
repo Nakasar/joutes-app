@@ -523,6 +523,19 @@ export async function deleteEventAction(eventId: string) {
       return { success: false, error: "Seul le créateur de l'événement peut supprimer l'événement" };
     }
 
+    // Envoyer une notification à tous les participants et au créateur AVANT de supprimer
+    try {
+      const { notifyEventAll } = await import("@/lib/services/notifications");
+      await notifyEventAll(
+        eventId,
+        "🗑️ Événement supprimé",
+        `L'événement "${event.name}" a été supprimé.`
+      );
+    } catch (notifError) {
+      console.error("Erreur lors de l'envoi de la notification:", notifError);
+      // On continue quand même la suppression même si la notification échoue
+    }
+
     // Supprimer l'événement et toutes les données associées
     const deleted = await deleteEvent(eventId);
 

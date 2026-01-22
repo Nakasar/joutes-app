@@ -307,6 +307,22 @@ await cancelEventAction(eventId, "Problème avec le lieu");
 // → Notification: "L'événement 'Tournoi Pokémon' a été annulé. Raison : Problème avec le lieu"
 ```
 
+#### Suppression d'événement
+
+Lorsqu'un événement est supprimé par son créateur, une notification est automatiquement envoyée à tous les participants et au créateur juste avant la suppression.
+
+```typescript
+// Dans app/events/actions.ts
+// Lors de la suppression d'un événement
+await notifyEventAll(
+  eventId,
+  "🗑️ Événement supprimé",
+  `L'événement "${event.name}" a été supprimé.`
+);
+```
+
+**Note importante** : La notification est envoyée AVANT la suppression effective de l'événement pour permettre la récupération des informations des participants.
+
 ## Composants
 
 ### `NotificationDropdown`
