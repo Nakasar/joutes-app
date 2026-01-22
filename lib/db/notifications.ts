@@ -3,7 +3,6 @@ import { Notification } from "@/lib/types/Notification";
 import { ObjectId } from "mongodb";
 import { getUserById } from "./users";
 import { getLairById } from "./lairs";
-import { getEventById } from "./events";
 
 const COLLECTION_NAME = "notifications";
 
@@ -16,7 +15,7 @@ export type NotificationDocument = Notification;
  */
 export async function getUserNotifications(userId: string): Promise<any[]> {
   try {
-    const collection = (await db).collection<NotificationDocument>(COLLECTION_NAME);
+    const collection = db.collection<NotificationDocument>(COLLECTION_NAME);
     const user = await getUserById(userId);
 
     if (!user) {
@@ -148,7 +147,7 @@ export async function getUserNotifications(userId: string): Promise<any[]> {
  */
 export async function createNotification(notification: Omit<Notification, 'id' | 'createdAt' | 'readBy'>): Promise<Notification> {
   try {
-    const collection = (await db).collection<NotificationDocument>(COLLECTION_NAME);
+    const collection = db.collection<NotificationDocument>(COLLECTION_NAME);
 
     const notificationDoc: any = {
       ...notification,
@@ -173,7 +172,7 @@ export async function createNotification(notification: Omit<Notification, 'id' |
  */
 export async function markNotificationAsRead(notificationId: string, userId: string): Promise<void> {
   try {
-    const collection = (await db).collection<NotificationDocument>(COLLECTION_NAME);
+    const collection = db.collection<NotificationDocument>(COLLECTION_NAME);
 
     await collection.updateOne(
       { id: notificationId },
@@ -192,7 +191,7 @@ export async function markNotificationAsRead(notificationId: string, userId: str
 export async function markAllNotificationsAsRead(userId: string): Promise<void> {
   try {
     const notifications = await getUserNotifications(userId);
-    const collection = (await db).collection<NotificationDocument>(COLLECTION_NAME);
+    const collection = db.collection<NotificationDocument>(COLLECTION_NAME);
 
     // Marquer toutes les notifications comme lues
     await collection.updateMany(
@@ -211,7 +210,7 @@ export async function markAllNotificationsAsRead(userId: string): Promise<void> 
  */
 export async function deleteNotification(notificationId: string): Promise<void> {
   try {
-    const collection = (await db).collection<NotificationDocument>(COLLECTION_NAME);
+    const collection = db.collection<NotificationDocument>(COLLECTION_NAME);
 
     await collection.deleteOne({ id: notificationId });
   } catch (error) {
