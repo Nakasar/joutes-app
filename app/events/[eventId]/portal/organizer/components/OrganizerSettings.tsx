@@ -7,10 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { PlayCircle, Plus } from "lucide-react";
+import { PlayCircle, Plus, Edit, Trash2, Save, X } from "lucide-react";
 import {
   createOrUpdatePortalSettings,
   addPhase,
+  updatePhase,
+  deletePhase,
   updatePhaseStatus,
   setCurrentPhase,
 } from "../../actions";
@@ -25,6 +27,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [showPhaseForm, setShowPhaseForm] = useState(false);
+  const [editingPhaseId, setEditingPhaseId] = useState<string | null>(null);
   const [phaseForm, setPhaseForm] = useState({
     name: "",
     type: "swiss" as "swiss" | "bracket",
@@ -77,6 +80,62 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
   const handleSetCurrentPhase = (phaseId: string) => {
     startTransition(async () => {
       await setCurrentPhase(event.id, phaseId);
+      router.refresh();
+    });
+  };
+
+  const handleEditPhase = (phase: any) => {
+    setEditingPhaseId(phase.id);
+    setPhaseForm({
+      name: phase.name,
+      type: phase.type,
+      matchType: phase.matchType,
+      rounds: phase.rounds || 3,
+      topCut: phase.topCut || 8,
+    });
+  };
+
+  const handleUpdatePhase = () => {
+    if (!editingPhaseId) return;
+
+    startTransition(async () => {
+      await updatePhase(event.id, editingPhaseId, {
+        name: phaseForm.name,
+        type: phaseForm.type,
+        matchType: phaseForm.matchType,
+        rounds: phaseForm.type === "swiss" ? phaseForm.rounds : undefined,
+        topCut: phaseForm.type === "bracket" ? phaseForm.topCut : undefined,
+      });
+      setEditingPhaseId(null);
+      setPhaseForm({
+        name: "",
+        type: "swiss",
+        matchType: "BO1",
+        rounds: 3,
+        topCut: 8,
+      });
+      router.refresh();
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingPhaseId(null);
+    setPhaseForm({
+      name: "",
+      type: "swiss",
+      matchType: "BO1",
+      rounds: 3,
+      topCut: 8,
+    });
+  };
+
+  const handleDeletePhase = (phaseId: string) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cette phase ?")) {
+      return;
+    }
+
+    startTransition(async () => {
+      await deletePhase(event.id, phaseId);
       router.refresh();
     });
   };
@@ -194,50 +253,152 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
                 <div className="space-y-2">
                   {settings.phases.map((phase) => (
                     <div key={phase.id} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">{phase.name}</h3>
-                          <Badge variant={phase.status === "completed" ? "default" : phase.status === "in-progress" ? "secondary" : "outline"}>
-                            {phase.status === "not-started" ? "Non démarrée" : phase.status === "in-progress" ? "En cours" : "Terminée"}
-                          </Badge>
-                          {settings.currentPhaseId === phase.id && (
-                            <Badge variant="default">Phase courante</Badge>
+                      {editingPhaseId === phase.id ? (
+                        // Mode édition
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-sm font-medium">Nom de la phase</label>
+                            <Input
+                              value={phaseForm.name}
+                              onChange={(e) => setPhaseForm({ ...phaseForm, name: e.target.value })}
+                              placeholder="Ex: Rondes suisses"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Type</label>
+                            <select
+                              className="w-full border rounded-md p-2"
+                              value={phaseForm.type}
+                              onChange={(e) => setPhaseForm({ ...phaseForm, type: e.target.value as "swiss" | "bracket" })}
+                              disabled={phase.status !== 'not-started'}
+                            >
+                              <option value="swiss">Rondes suisses</option>
+                              <option value="bracket">Élimination directe</option>
+                            </select>
+                            {phase.status !== 'not-started' && (
+                              <p className="text-xs text-amber-600 mt-1">
+                                Le type ne peut pas être modifié une fois la phase démarrée
+                              </p>
+                            )}
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Format de match</label>
+                            <select
+                              className="w-full border rounded-md p-2"
+                              value={phaseForm.matchType}
+                              onChange={(e) => setPhaseForm({ ...phaseForm, matchType: e.target.value as any })}
+                            >
+                              <option value="BO1">BO1</option>
+                              <option value="BO2">BO2</option>
+                              <option value="BO3">BO3</option>
+                              <option value="BO5">BO5</option>
+                            </select>
+                          </div>
+                          {phaseForm.type === "swiss" && (
+                            <div>
+                              <label className="text-sm font-medium">Nombre de rondes</label>
+                              <Input
+                                type="number"
+                                min="1"
+                                value={phaseForm.rounds}
+                                onChange={(e) => setPhaseForm({ ...phaseForm, rounds: parseInt(e.target.value) })}
+                              />
+                            </div>
                           )}
+                          {phaseForm.type === "bracket" && (
+                            <div>
+                              <label className="text-sm font-medium">Nombre de joueurs (Top Cut)</label>
+                              <Input
+                                type="number"
+                                min="2"
+                                step="1"
+                                value={phaseForm.topCut}
+                                onChange={(e) => setPhaseForm({ ...phaseForm, topCut: parseInt(e.target.value) })}
+                                placeholder="Ex: 8 pour un top 8"
+                              />
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Nombre de joueurs à prendre du classement (4, 8, 16, 32, etc.)
+                              </p>
+                            </div>
+                          )}
+                          <div className="flex gap-2">
+                            <Button onClick={handleUpdatePhase} disabled={isPending || !phaseForm.name} size="sm">
+                              <Save className="h-4 w-4 mr-2" />
+                              Enregistrer
+                            </Button>
+                            <Button variant="outline" onClick={handleCancelEdit} size="sm">
+                              <X className="h-4 w-4 mr-2" />
+                              Annuler
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-sm text-muted-foreground mb-2">
-                        Type: {phase.type === "swiss" ? "Rondes suisses" : "Élimination directe"} • 
-                        Format: {phase.matchType}
-                        {phase.rounds && ` • ${phase.rounds} rondes`}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleSetCurrentPhase(phase.id)}
-                          disabled={settings.currentPhaseId === phase.id}
-                        >
-                          Définir comme courante
-                        </Button>
-                        {phase.status === "not-started" && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleUpdatePhaseStatus(phase.id, "in-progress")}
-                          >
-                            Démarrer
-                          </Button>
-                        )}
-                        {phase.status === "in-progress" && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleUpdatePhaseStatus(phase.id, "completed")}
-                          >
-                            Terminer
-                          </Button>
-                        )}
-                      </div>
+                      ) : (
+                        // Mode affichage
+                        <>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold">{phase.name}</h3>
+                              <Badge variant={phase.status === "completed" ? "default" : phase.status === "in-progress" ? "secondary" : "outline"}>
+                                {phase.status === "not-started" ? "Non démarrée" : phase.status === "in-progress" ? "En cours" : "Terminée"}
+                              </Badge>
+                              {settings.currentPhaseId === phase.id && (
+                                <Badge variant="default">Phase courante</Badge>
+                              )}
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleEditPhase(phase)}
+                                disabled={isPending}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleDeletePhase(phase.id)}
+                                disabled={isPending || phase.status !== 'not-started'}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="text-sm text-muted-foreground mb-2">
+                            Type: {phase.type === "swiss" ? "Rondes suisses" : "Élimination directe"} • 
+                            Format: {phase.matchType}
+                            {phase.rounds && ` • ${phase.rounds} rondes`}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleSetCurrentPhase(phase.id)}
+                              disabled={settings.currentPhaseId === phase.id}
+                            >
+                              Définir comme courante
+                            </Button>
+                            {phase.status === "not-started" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleUpdatePhaseStatus(phase.id, "in-progress")}
+                              >
+                                Démarrer
+                              </Button>
+                            )}
+                            {phase.status === "in-progress" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleUpdatePhaseStatus(phase.id, "completed")}
+                              >
+                                Terminer
+                              </Button>
+                            )}
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>

@@ -72,6 +72,16 @@ export const createPhaseSchema = tournamentPhaseSchema.omit({
   status: true,
 });
 
+// Schéma pour mettre à jour une phase
+export const updatePhaseSchema = z.object({
+  name: z.string().min(1, "Le nom de la phase est requis").optional(),
+  type: phaseTypeSchema.optional(), // Peut être modifié seulement si status = 'not-started'
+  matchType: matchTypeSchema.optional(),
+  rounds: z.number().min(1).optional(),
+  topCut: z.number().min(2).optional(),
+  order: z.number().min(0).optional(),
+});
+
 // Schéma pour créer/modifier un résultat de match
 export const createMatchResultSchema = matchResultSchema.omit({
   createdAt: true,
@@ -140,6 +150,7 @@ export type Announcement = z.infer<typeof announcementSchema>;
 export type EventPortalSettings = z.infer<typeof eventPortalSettingsSchema>;
 export type CreatePortalSettings = z.infer<typeof createPortalSettingsSchema>;
 export type CreatePhase = z.infer<typeof createPhaseSchema>;
+export type UpdatePhase = z.infer<typeof updatePhaseSchema>;
 export type CreateMatchResult = z.infer<typeof createMatchResultSchema>;
 export type ReportMatchResult = z.infer<typeof reportMatchResultSchema>;
 export type ConfirmMatchResult = z.infer<typeof confirmMatchResultSchema>;
