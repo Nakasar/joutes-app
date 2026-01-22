@@ -9,6 +9,16 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { PlayCircle, Plus, Edit, Trash2, Save, X } from "lucide-react";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   createOrUpdatePortalSettings,
   addPhase,
   updatePhase,
@@ -28,6 +38,8 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
   const [isPending, startTransition] = useTransition();
   const [showPhaseForm, setShowPhaseForm] = useState(false);
   const [editingPhaseId, setEditingPhaseId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [phaseToDelete, setPhaseToDelete] = useState<string | null>(null);
   const [phaseForm, setPhaseForm] = useState({
     name: "",
     type: "swiss" as "swiss" | "bracket",
@@ -35,6 +47,8 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
     rounds: 3,
     topCut: 8,
   });
+
+  const isEventCompleted = event.runningState === 'completed';
 
   const handleInitializeSettings = () => {
     startTransition(async () => {
@@ -130,12 +144,17 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
   };
 
   const handleDeletePhase = (phaseId: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer cette phase ?")) {
-      return;
-    }
+    setPhaseToDelete(phaseId);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeletePhase = () => {
+    if (!phaseToDelete) return;
 
     startTransition(async () => {
-      await deletePhase(event.id, phaseId);
+      await deletePhase(event.id, phaseToDelete);
+      setDeleteDialogOpen(false);
+      setPhaseToDelete(null);
       router.refresh();
     });
   };
@@ -168,7 +187,11 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
                     Gérez les différentes phases de votre tournoi
                   </CardDescription>
                 </div>
-                <Button onClick={() => setShowPhaseForm(!showPhaseForm)} size="sm">
+                <Button 
+                  onClick={() => setShowPhaseForm(!showPhaseForm)} 
+                  size="sm"
+                  disabled={isEventCompleted}
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Ajouter une phase
                 </Button>
@@ -350,7 +373,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => handleEditPhase(phase)}
-                                disabled={isPending}
+                                disabled={isPending || isEventCompleted}
                               >
                                 <Edit className="h-4 w-4" />
                               </Button>
@@ -358,7 +381,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => handleDeletePhase(phase.id)}
-                                disabled={isPending || phase.status !== 'not-started'}
+                                disabled={isPending || phase.status !== 'not-started' || isEventCompleted}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -427,6 +450,24 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
           </Card>
         </>
       )}
+
+      {/* Dialog de confirmation de suppression */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer cette phase ? Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeletePhase} disabled={isPending}>
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -141,6 +141,12 @@ export async function addPhase(eventId: string, phaseData: unknown) {
       return { success: false, error: "Seul le créateur de l&apos;événement peut ajouter une phase" };
     }
 
+    // Vérifier que l'événement n'est pas terminé
+    const event = await getEventById(eventId);
+    if (event?.runningState === 'completed') {
+      return { success: false, error: "Impossible de modifier les phases d'un événement terminé" };
+    }
+
     const collection = db.collection<EventPortalSettings>(PORTAL_SETTINGS_COLLECTION);
 
     const newPhase: TournamentPhase = {
@@ -258,6 +264,12 @@ export async function updatePhase(eventId: string, phaseId: string, phaseData: u
       return { success: false, error: "Seul le créateur de l&apos;événement peut modifier une phase" };
     }
 
+    // Vérifier que l'événement n'est pas terminé
+    const event = await getEventById(eventId);
+    if (event?.runningState === 'completed') {
+      return { success: false, error: "Impossible de modifier les phases d'un événement terminé" };
+    }
+
     const collection = db.collection<EventPortalSettings>(PORTAL_SETTINGS_COLLECTION);
 
     // Récupérer la phase actuelle pour vérifier son statut
@@ -330,6 +342,12 @@ export async function deletePhase(eventId: string, phaseId: string) {
     const isCreator = await isEventCreator(eventId, session.user.id);
     if (!isCreator) {
       return { success: false, error: "Seul le créateur de l&apos;événement peut supprimer une phase" };
+    }
+
+    // Vérifier que l'événement n'est pas terminé
+    const event = await getEventById(eventId);
+    if (event?.runningState === 'completed') {
+      return { success: false, error: "Impossible de supprimer les phases d'un événement terminé" };
     }
 
     const collection = db.collection<EventPortalSettings>(PORTAL_SETTINGS_COLLECTION);
