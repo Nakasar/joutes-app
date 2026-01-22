@@ -69,7 +69,7 @@ export async function getUserNotifications(
             },
             {
               $project: {
-                id: 1,
+                _id: 1,
                 name: 1
               }
             }
@@ -107,11 +107,11 @@ export async function getUserNotifications(
           event: { $arrayElemAt: ['$eventDetails', 0] }
         }
       },
-      // Suppression des champs temporaires
+      // Suppression des champs temporaires et filtrage du champ readBy
       {
         $project: {
           lairDetails: 0,
-          eventDetails: 0
+          eventDetails: 0,
         }
       },
       // Tri par date décroissante
@@ -157,9 +157,11 @@ export async function getUserNotifications(
       ...doc,
       _id: undefined,
       id: doc.id || doc._id?.toString() || '',
-      lair: doc.lair ? { _id: undefined, id: doc.lair.id, name: doc.lair.name } : undefined,
+      lair: doc.lair ? { _id: undefined, id: doc.lair._id.toString(), name: doc.lair.name } : undefined,
       event: doc.event ? { _id: undefined, id: doc.event.id, name: doc.event.name } : undefined,
     }));
+
+    console.log(formattedNotifications[0]);
 
     return {
       notifications: formattedNotifications,
