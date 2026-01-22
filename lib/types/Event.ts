@@ -17,13 +17,14 @@ export type Event = {
   url?: string;
   price?: number;
   status: 'available' | 'sold-out' | 'cancelled';
-  addedBy: string; // "AI-SCRAPPING" or "USER"
+  addedBy: string; // "AI-SCRAPPING", "JSON-MAPPING" or "USER"
   creatorId?: string;
   creator?: {
     id: string;
     displayName?: string;
     discriminator?: string;
   };
+  runningState?: 'not-started' | 'ongoing' | 'completed';
   allowJoin?: boolean;
   participants?: string[]; // IDs des utilisateurs inscrits à l'événement
   maxParticipants?: number; // Nombre maximum de participants (optionnel)

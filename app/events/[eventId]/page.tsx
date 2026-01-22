@@ -15,6 +15,7 @@ import QRCodeButton from "./QRCodeButton";
 import ParticipantManagerWrapper from "./ParticipantManagerWrapper";
 import FavoriteButton from "./FavoriteButton";
 import AllowJoinSwitch from "./AllowJoinSwitch";
+import RunningStateManager from "./RunningStateManager";
 import { DateTime } from "luxon";
 import { getEventParticipants } from "./portal/participant-actions";
 
@@ -112,6 +113,16 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                 <Badge variant="secondary">
                   <Lock className="h-3 w-3 mr-1" />
                   Privé
+                </Badge>
+              )}
+              {event.runningState === 'ongoing' && (
+                <Badge variant="default" className="bg-green-600">
+                  En cours
+                </Badge>
+              )}
+              {event.runningState === 'completed' && (
+                <Badge variant="secondary">
+                  Terminé
                 </Badge>
               )}
             </div>
@@ -260,6 +271,13 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                   />
                 )}
 
+                {isCreator && (
+                  <RunningStateManager
+                    eventId={event.id}
+                    runningState={event.runningState}
+                  />
+                )}
+
                 {session?.user && (
                   <div className="space-y-2">
                     <EventActions
@@ -268,6 +286,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                       isCreator={isCreator || false}
                       isFull={isFull}
                       allowJoin={event.allowJoin}
+                      runningState={event.runningState}
                     />
                     <FavoriteButton
                       eventId={event.id}

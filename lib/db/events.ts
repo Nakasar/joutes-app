@@ -792,6 +792,7 @@ export async function getEventById(eventId: string): Promise<Event | null> {
     addedBy: event.addedBy,
     creatorId: event.creatorId,
     creator: event.creator && event.creator.length > 0 ? { ...event.creator[0], id:event.creator[0]._id.toString(), _id: undefined } : undefined,
+    runningState: event.runningState,
     participants: event.participants,
     maxParticipants: event.maxParticipants,
     favoritedBy: event.favoritedBy,

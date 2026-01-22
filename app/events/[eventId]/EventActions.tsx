@@ -13,12 +13,15 @@ type EventActionsProps = {
   isCreator: boolean;
   isFull: boolean;
   allowJoin?: boolean;
+  runningState?: 'not-started' | 'ongoing' | 'completed';
 };
 
-export default function EventActions({ eventId, isParticipant, isCreator, isFull, allowJoin }: EventActionsProps) {
+export default function EventActions({ eventId, isParticipant, isCreator, isFull, allowJoin, runningState = 'not-started' }: EventActionsProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isEventStartedOrCompleted = runningState !== 'not-started';
 
   const handleJoin = async () => {
     setLoading(true);
@@ -92,7 +95,7 @@ export default function EventActions({ eventId, isParticipant, isCreator, isFull
         >
           {loading ? "Chargement..." : "Se désinscrire"}
         </Button>
-      ) : allowJoin ? (
+      ) : allowJoin && !isEventStartedOrCompleted ? (
         <Button
           onClick={handleJoin}
           disabled={loading || isFull}
@@ -100,6 +103,13 @@ export default function EventActions({ eventId, isParticipant, isCreator, isFull
         >
           {loading ? "Chargement..." : isFull ? "Événement complet" : "S'inscrire"}
         </Button>
+      ) : isEventStartedOrCompleted ? (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Les inscriptions sont fermées car l&apos;événement est {runningState === 'ongoing' ? 'en cours' : 'terminé'}
+          </AlertDescription>
+        </Alert>
       ) : null}
     </div>
   );
