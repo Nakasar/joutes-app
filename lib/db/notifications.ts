@@ -155,7 +155,10 @@ export async function getUserNotifications(
 
     const formattedNotifications = filteredNotifications.map(doc => ({
       ...doc,
+      _id: undefined,
       id: doc.id || doc._id?.toString() || '',
+      lair: doc.lair ? { _id: undefined, id: doc.lair.id, name: doc.lair.name } : undefined,
+      event: doc.event ? { _id: undefined, id: doc.event.id, name: doc.event.name } : undefined,
     }));
 
     return {
