@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell } from "lucide-react";
+import { Bell, MapPin, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -86,9 +86,16 @@ export function NotificationDropdown({ userId }: NotificationDropdownProps) {
           </div>
         ) : (
           <div className="max-h-[400px] overflow-y-auto">
-            {notifications.map((notification) => {
+            {notifications.map((notification: any) => {
               const isRead = notification.readBy?.includes(userId);
               const timeAgo = DateTime.fromISO(notification.createdAt).setLocale('fr').toRelative() || 'à l&apos;instant';
+              
+              // Déterminer le contexte (lair ou event)
+              const contextLink = notification.type === 'lair' && notification.lair 
+                ? { href: `/lairs/${notification.lair.id}`, label: notification.lair.name, icon: MapPin }
+                : notification.type === 'event' && notification.event
+                ? { href: `/events/${notification.event.id}`, label: notification.event.name, icon: Calendar }
+                : null;
               
               return (
                 <DropdownMenuItem
@@ -102,6 +109,16 @@ export function NotificationDropdown({ userId }: NotificationDropdownProps) {
                       <p className={`text-sm font-medium ${isRead ? 'text-muted-foreground' : 'text-foreground'}`}>
                         {notification.title}
                       </p>
+                      {contextLink && (
+                        <Link 
+                          href={contextLink.href}
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-0.5"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <contextLink.icon className="w-3 h-3" />
+                          {contextLink.label}
+                        </Link>
+                      )}
                       <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
                         {notification.description}
                       </p>

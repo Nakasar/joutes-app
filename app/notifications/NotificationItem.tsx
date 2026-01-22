@@ -2,12 +2,13 @@
 
 import { Notification } from "@/lib/types/Notification";
 import { DateTime } from "luxon";
-import { Bell, Check, CheckCheck } from "lucide-react";
+import { Bell, Check, CheckCheck, MapPin, Calendar } from "lucide-react";
 import { markNotificationAsReadAction } from "./actions";
 import { useState } from "react";
+import Link from "next/link";
 
 type NotificationItemProps = {
-  notification: Notification;
+  notification: any; // Utiliser any pour accepter les champs additionnels lair/event
   userId: string;
   onMarkAsRead?: () => void;
 };
@@ -30,6 +31,13 @@ export function NotificationItem({ notification, userId, onMarkAsRead }: Notific
   };
 
   const timeAgo = DateTime.fromISO(notification.createdAt).setLocale('fr').toRelative() || 'à l&apos;instant';
+
+  // Déterminer le contexte (lair ou event)
+  const contextLink = notification.type === 'lair' && notification.lair 
+    ? { href: `/lairs/${notification.lair.id}`, label: notification.lair.name, icon: MapPin }
+    : notification.type === 'event' && notification.event
+    ? { href: `/events/${notification.event.id}`, label: notification.event.name, icon: Calendar }
+    : null;
 
   return (
     <div 
@@ -59,6 +67,16 @@ export function NotificationItem({ notification, userId, onMarkAsRead }: Notific
               </button>
             )}
           </div>
+          
+          {contextLink && (
+            <Link 
+              href={contextLink.href}
+              className="inline-flex items-center gap-1 mt-1 text-xs text-blue-600 hover:text-blue-700 hover:underline"
+            >
+              <contextLink.icon className="w-3 h-3" />
+              {contextLink.label}
+            </Link>
+          )}
           
           <p className={`mt-1 text-sm ${isRead ? 'text-gray-600' : 'text-gray-700'}`}>
             {notification.description}

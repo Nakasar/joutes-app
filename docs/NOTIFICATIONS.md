@@ -171,6 +171,42 @@ Collection : `notifications`
 }
 ```
 
+### Enrichissement avec MongoDB Aggregation
+
+Lors de la récupération des notifications, la fonction `getUserNotifications` utilise des aggregations MongoDB avec `$lookup` pour enrichir les données :
+
+```typescript
+// Lookup pour les lairs
+{
+  $lookup: {
+    from: 'lairs',
+    let: { lairId: '$lairId' },
+    pipeline: [
+      { $match: { $expr: { $eq: ['$id', '$$lairId'] } } },
+      { $project: { id: 1, name: 1 } }
+    ],
+    as: 'lairDetails'
+  }
+}
+
+// Lookup pour les événements
+{
+  $lookup: {
+    from: 'events',
+    let: { eventId: '$eventId' },
+    pipeline: [
+      { $match: { $expr: { $eq: ['$id', '$$eventId'] } } },
+      { $project: { id: 1, name: 1, participants: 1, creatorId: 1 } }
+    ],
+    as: 'eventDetails'
+  }
+}
+```
+
+Les notifications retournées contiennent donc des champs additionnels :
+- `lair?: { id: string, name: string }` pour les notifications de type `lair`
+- `event?: { id: string, name: string, participants: string[], creatorId: string }` pour les notifications de type `event`
+
 ## Exemples d'utilisation
 
 ### Notifier lors de la création d'un événement
@@ -279,6 +315,18 @@ Composant pour afficher une notification individuelle.
   onMarkAsRead={() => console.log('Notification lue')}
 />
 ```
+
+**Fonctionnalités** :
+- Affiche le titre et la description
+- Affiche un lien vers le lieu ou l'événement concerné (si applicable)
+- Marquage comme lu au clic sur le bouton
+- Indicateur visuel de lecture
+- Formatage de la date avec Luxon
+
+**Affichage du contexte** :
+- Pour les notifications de type `lair` : affiche le nom du lieu avec une icône 📍 et un lien vers `/lairs/[lairId]`
+- Pour les notifications de type `event` : affiche le nom de l'événement avec une icône 📅 et un lien vers `/events/[eventId]`
+- Les informations sont récupérées via des aggregations MongoDB avec `$lookup`
 
 ### `NotificationsList`
 

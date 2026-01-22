@@ -12,9 +12,9 @@ export type NotificationDocument = Notification;
 /**
  * Récupère toutes les notifications visibles par un utilisateur
  * @param userId - L'ID de l'utilisateur
- * @returns Array de notifications
+ * @returns Array de notifications avec informations de contexte (lair/event)
  */
-export async function getUserNotifications(userId: string): Promise<Notification[]> {
+export async function getUserNotifications(userId: string): Promise<any[]> {
   try {
     const collection = (await db).collection<NotificationDocument>(COLLECTION_NAME);
     const user = await getUserById(userId);
@@ -35,45 +35,101 @@ export async function getUserNotifications(userId: string): Promise<Notification
       }
     }
 
-    // Construire la requête pour récupérer les notifications
-    const query: any = {
-      $or: [
-        // Notifications destinées à l'utilisateur directement
-        { type: 'user', userId },
-        // Notifications destinées aux owners des lairs que l'utilisateur possède
-        { type: 'lair', lairId: { $in: ownedLairIds }, target: { $in: ['owners', 'all'] } },
-        // Notifications destinées aux followers des lairs que l'utilisateur suit
-        { type: 'lair', lairId: { $in: followedLairIds }, target: { $in: ['followers', 'all'] } },
-        // Notifications destinées aux participants des événements où l'utilisateur participe
-        { type: 'event', eventId: { $exists: true }, target: { $in: ['participants', 'all'] } },
-        // Notifications destinées au créateur des événements créés par l'utilisateur
-        { type: 'event', eventId: { $exists: true }, target: { $in: ['creator', 'all'] } },
-      ]
-    };
+    // Construire l'aggregation avec lookups
+    const pipeline: any[] = [
+      // Match des notifications pertinentes
+      {
+        $match: {
+          $or: [
+            { type: 'user', userId },
+            { type: 'lair', lairId: { $in: ownedLairIds }, target: { $in: ['owners', 'all'] } },
+            { type: 'lair', lairId: { $in: followedLairIds }, target: { $in: ['followers', 'all'] } },
+            { type: 'event', eventId: { $exists: true }, target: { $in: ['participants', 'all'] } },
+            { type: 'event', eventId: { $exists: true }, target: { $in: ['creator', 'all'] } },
+          ]
+        }
+      },
+      // Lookup pour les lairs
+      {
+        $lookup: {
+          from: 'lairs',
+          let: { lairId: '$lairId' },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ['$id', '$$lairId'] }
+              }
+            },
+            {
+              $project: {
+                id: 1,
+                name: 1
+              }
+            }
+          ],
+          as: 'lairDetails'
+        }
+      },
+      // Lookup pour les événements
+      {
+        $lookup: {
+          from: 'events',
+          let: { eventId: '$eventId' },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ['$id', '$$eventId'] }
+              }
+            },
+            {
+              $project: {
+                id: 1,
+                name: 1,
+                participants: 1,
+                creatorId: 1
+              }
+            }
+          ],
+          as: 'eventDetails'
+        }
+      },
+      // Unwind optionnel pour lairDetails et eventDetails
+      {
+        $addFields: {
+          lair: { $arrayElemAt: ['$lairDetails', 0] },
+          event: { $arrayElemAt: ['$eventDetails', 0] }
+        }
+      },
+      // Suppression des champs temporaires
+      {
+        $project: {
+          lairDetails: 0,
+          eventDetails: 0
+        }
+      },
+      // Tri par date décroissante
+      {
+        $sort: { createdAt: -1 }
+      }
+    ];
 
-    const notifications = await collection
-      .find(query)
-      .sort({ createdAt: -1 })
-      .toArray();
+    const notifications = await collection.aggregate(pipeline).toArray();
 
     // Filtrer les notifications d'événements selon la participation réelle
-    const filteredNotifications = [];
-    for (const notification of notifications) {
-      if (notification.type === 'event') {
-        const event = await getEventById(notification.eventId);
-        if (!event) continue;
-
+    const filteredNotifications = notifications.filter((notification: any) => {
+      if (notification.type === 'event' && notification.event) {
+        const event = notification.event;
         if (notification.target === 'participants' && event.participants?.includes(userId)) {
-          filteredNotifications.push(notification);
+          return true;
         } else if (notification.target === 'creator' && event.creatorId === userId) {
-          filteredNotifications.push(notification);
+          return true;
         } else if (notification.target === 'all' && (event.participants?.includes(userId) || event.creatorId === userId)) {
-          filteredNotifications.push(notification);
+          return true;
         }
-      } else {
-        filteredNotifications.push(notification);
+        return false;
       }
-    }
+      return true;
+    });
 
     return filteredNotifications.map(doc => ({
       ...doc,
