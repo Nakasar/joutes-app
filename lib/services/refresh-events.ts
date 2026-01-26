@@ -133,7 +133,7 @@ Concernant l'url, par exemple:
 - Si sur la page https://my-site.com/events un événement a un lien relatif "/details/123", l'url complète est "https://my-site.com/details/123".
 
 ${lair.eventsSourceInstructions ? `
-# Consignes spécifiques globales pour ce lieu (obsolète, voir consignes par page)
+# Consignes spécifiques globales pour ce lieu
 
 ${lair.eventsSourceInstructions}
 ` : ''}
