@@ -3,9 +3,7 @@ import {
     ServerRequest,
     TextContent,
 } from "@modelcontextprotocol/sdk/types.js";
-import { serverClient } from "@/lib/server-client";
-import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
-import { createMcpHandler, withMcpAuth } from 'mcp-handler';
+import { createMcpHandler } from 'mcp-handler';
 import { getEventsForUser, getAllEvents } from "@/lib/db/events";
 import { getAllLairs, getLairById } from "@/lib/db/lairs";
 import { getAllGames, getGameById } from "@/lib/db/games";
@@ -14,7 +12,6 @@ import { createEvent } from "@/lib/db/events";
 import { Event } from "@/lib/types/Event";
 import { z } from "zod/v3";
 import { DateTime } from "luxon";
-import { validateApiKey } from "@/lib/db/api-keys";
 import { RequestHandlerExtra} from "@modelcontextprotocol/sdk/shared/protocol.js";
 import { mcpHandler } from "@better-auth/oauth-provider";
 
@@ -420,73 +417,6 @@ async function handleListGames(): Promise<{ content: TextContent[]; isError?: bo
     }
 }
 
-async function verifyAuth(
-    request: Request,
-): Promise<AuthInfo | undefined> {
-    const authHeader = request.headers.get("authorization");
-
-    if (!authHeader) {
-        return undefined;
-    }
-
-    // Vérifier le format Bearer token
-    const parts = authHeader.split(" ");
-    if (parts.length !== 2 || parts[0] !== "Bearer") {
-        return undefined;
-    }
-
-    const apiKeyOrToken = parts[1];
-
-    if (!apiKeyOrToken) {
-        return undefined;
-    }
-
-    if (apiKeyOrToken.includes('.')) {
-        const payload = await serverClient.verifyAccessToken(
-            apiKeyOrToken, {
-            verifyOptions: {
-                audience: "https://joutes.app",
-            },
-        });
-
-        if (!payload) {
-            console.warn("Échec de la vérification du token d'accès.");
-            return undefined;
-        }
-
-        return {
-            token: apiKeyOrToken,
-            scopes: [],
-            clientId: "",
-            extra: {
-                userId: payload.sub,
-            }
-        };
-    } else {
-        // Valider la clé API
-        try {
-            const validation = await validateApiKey(apiKeyOrToken);
-
-            if (!validation) {
-                return undefined;
-            }
-
-            return {
-                token: validation.apiKeyId,
-                scopes: [],
-                clientId: validation.apiKeyId,
-                extra: {
-                    userId: validation.userId,
-                }
-            };
-        } catch (error) {
-            console.error("Erreur lors de la validation de la clé API:", error);
-            return undefined;
-        }
-    }
-}
-
-
 // Route principale MCP
 const handler = createMcpHandler(server => {
     server.tool("search_events", "Rechercher des évènements sur la plateforme Joutes. Supporte la personnalisation pour l'utilisateur authentifié et le filtrage par jeux.", {
@@ -530,14 +460,13 @@ const handler = createMcpHandler(server => {
     maxDuration: 60,
 });
 
-const authHandlerOld = withMcpAuth(handler, verifyAuth, {
-    required: false,
-});
 const authHandler = mcpHandler({
     verifyOptions: {
-        audience: "https://www.joutes.app/mcp",
+        audience: "https://www.joutes.app",
         issuer: "https://www.joutes.app",
     },
-}, handler);
+}, handler, {
+    resourceMetadataMappings: {},
+});
 
 export { authHandler as GET, authHandler as POST, authHandler as DELETE };

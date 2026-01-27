@@ -2,7 +2,7 @@ import { serverClient } from "../../../../lib/server-client";
 
 export const GET = async () => {
   const metadata = await serverClient.getProtectedResourceMetadata({
-    resource: "https://www.joutes.app/mcp", // `aud` claim
+    resource: "https://www.joutes.app", // `aud` claim
     authorization_servers: ["https://www.joutes.app"],
   });
 
