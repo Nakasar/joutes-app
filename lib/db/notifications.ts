@@ -2,7 +2,6 @@ import db from "@/lib/mongodb";
 import { NewNotification, Notification } from "@/lib/types/Notification";
 import { ObjectId } from "mongodb";
 import { getUserById } from "./users";
-import { getLairById } from "./lairs";
 
 const COLLECTION_NAME = "notifications";
 
@@ -43,7 +42,7 @@ export async function getUserNotifications(
           pipeline: [
             {
               $match: {
-                $expr: { $eq: ['$id', '$$lairId'] }
+                $expr: { $eq: ['$_id', '$$lairId'] }
               }
             }
           ],
