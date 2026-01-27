@@ -461,6 +461,7 @@ const handler = createMcpHandler(server => {
 });
 
 const authHandler = mcpHandler({
+    jwksUrl: "https://www.joutes.app/api/auth/jwks",
     verifyOptions: {
         audience: "https://www.joutes.app/",
         issuer: "https://www.joutes.app/api/auth",
