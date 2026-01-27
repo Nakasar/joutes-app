@@ -50,7 +50,7 @@ export const auth = betterAuth({
     }),
     passkey(),
     oauthProvider({
-      loginPage: "/oauth/login",
+      loginPage: "/login",
       consentPage: "/oauth/consent",
       allowDynamicClientRegistration: true,
       allowUnauthenticatedClientRegistration: true,
