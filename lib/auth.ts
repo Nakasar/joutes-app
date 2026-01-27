@@ -1,18 +1,21 @@
 import { betterAuth } from "better-auth";
-import { emailOTP } from "better-auth/plugins";
+import { emailOTP, jwt } from "better-auth/plugins";
 import { Resend } from "resend";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import db from "@/lib/mongodb";
 import {passkey} from "@better-auth/passkey";
+import { oauthProvider } from "@better-auth/oauth-provider";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const auth = betterAuth({
+  disabledPaths: ["/token"],
   database: mongodbAdapter(db),
   emailAndPassword: {
     enabled: false, // Désactivé car on utilise uniquement emailOTP
   },
   plugins: [
+    jwt(),
     emailOTP({
       async sendVerificationOTP({ email, otp }: { email: string; otp: string }) {
         if (process.env.RESEND_API_KEY === "CONSOLE") {
@@ -45,10 +48,15 @@ export const auth = betterAuth({
       expiresIn: 600, // 10 minutes
     }),
     passkey(),
+    oauthProvider({
+      loginPage: "/oauth/login",
+      consentPage: "/oauth/consent",
+    }),
   ],
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 jours
     updateAge: 60 * 60 * 24, // 1 jour
+    storeSessionInDatabase: true,
   },
   trustedOrigins: process.env.NEXT_PUBLIC_BASE_URL ? [process.env.NEXT_PUBLIC_BASE_URL] : ["http://localhost:3000", "https://localhost:3000"],
 });
