@@ -519,7 +519,12 @@ const handler = createMcpHandler(server => {
         gameId: z.string()
     }, handleAddGame);
     server.tool("list_games", "Lister tous les jeux disponibles sur la plateforme.", {}, handleListGames);
-}, {}, {
+}, {
+    serverInfo: {
+        name: "Joutes APP",
+        version: "1.0.0",
+    }
+}, {
     basePath: '',
     verboseLogs: true,
     maxDuration: 60,
@@ -530,7 +535,7 @@ const authHandlerOld = withMcpAuth(handler, verifyAuth, {
 });
 const authHandler = mcpHandler({
     verifyOptions: {
-        audience: "https://www.joutes.app",
+        audience: "https://www.joutes.app/",
         issuer: "https://www.joutes.app",
     },
 }, handler);
