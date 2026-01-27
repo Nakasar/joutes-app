@@ -3,6 +3,7 @@ import {
     ServerRequest,
     TextContent,
 } from "@modelcontextprotocol/sdk/types.js";
+import { serverClient } from "@/lib/server-client";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import { createMcpHandler, withMcpAuth } from 'mcp-handler';
 import { getEventsForUser, getAllEvents } from "@/lib/db/events";
@@ -434,32 +435,56 @@ async function verifyAuth(
         return undefined;
     }
 
-    const apiKey = parts[1];
+    const apiKeyOrToken = parts[1];
 
-    if (!apiKey) {
+    if (!apiKeyOrToken) {
         return undefined;
     }
 
-    // Valider la clé API
-    try {
-        const validation = await validateApiKey(apiKey);
+    if (apiKeyOrToken.includes('.')) {
+        const payload = await serverClient.verifyAccessToken(
+            apiKeyOrToken, {
+            verifyOptions: {
+                audience: "https://joutes.app",
+            },
+        });
 
-        if (!validation) {
+        if (!payload) {
+            console.warn("Échec de la vérification du token d'accès.");
             return undefined;
         }
 
         return {
-            token: validation.apiKeyId,
+            token: apiKeyOrToken,
             scopes: [],
-            clientId: validation.apiKeyId,
+            clientId: "",
             extra: {
-                userId: validation.userId,
-                apiKeyId: validation.apiKeyId
+                userId: payload.sub,
+                apiKeyId: payload.api_key_id
             }
         };
-    } catch (error) {
-        console.error("Erreur lors de la validation de la clé API:", error);
-        return undefined;
+    } else {
+        // Valider la clé API
+        try {
+            const validation = await validateApiKey(apiKeyOrToken);
+
+            if (!validation) {
+                return undefined;
+            }
+
+            return {
+                token: validation.apiKeyId,
+                scopes: [],
+                clientId: validation.apiKeyId,
+                extra: {
+                    userId: validation.userId,
+                    apiKeyId: validation.apiKeyId
+                }
+            };
+        } catch (error) {
+            console.error("Erreur lors de la validation de la clé API:", error);
+            return undefined;
+        }
     }
 }
 
