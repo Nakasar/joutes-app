@@ -1,5 +1,5 @@
 import { createNotification } from "@/lib/db/notifications";
-import { Notification, UserNotification } from "@/lib/types/Notification";
+import { Notification } from "@/lib/types/Notification";
 
 /**
  * Crée une notification pour un utilisateur spécifique

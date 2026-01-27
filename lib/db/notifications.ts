@@ -1,5 +1,5 @@
 import db from "@/lib/mongodb";
-import { EventNotification, LairNotification, NewNotification, Notification, NotificationTarget, UserNotification } from "@/lib/types/Notification";
+import { NewNotification, Notification } from "@/lib/types/Notification";
 import { ObjectId } from "mongodb";
 import { getUserById } from "./users";
 import { getLairById } from "./lairs";
@@ -26,37 +26,16 @@ export async function getUserNotifications(
       throw new Error("Utilisateur non trouvé");
     }
 
-    // Récupérer les lairs suivis et possédés par l'utilisateur
     const followedLairIds = user.lairs || [];
-    const ownedLairIds: string[] = [];
-
-    // Récupérer les lairs possédés par l'utilisateur
-    for (const lairId of followedLairIds) {
-      const lair = await getLairById(lairId);
-      if (lair && lair.owners?.includes(userId)) {
-        ownedLairIds.push(lairId);
-      }
-    }
-
-    // Construire l'aggregation avec lookups
-    const matchStage = {
-      $match: {
-        // Exclure les notifications masquées par l'utilisateur
-        hiddenBy: { $ne: userId },
-        $or: [
-          { type: 'user', userId },
-          { type: 'lair', lairId: { $in: ownedLairIds }, target: { $in: ['owners', 'all'] } },
-          { type: 'lair', lairId: { $in: followedLairIds }, target: { $in: ['followers', 'all'] } },
-          { type: 'event', eventId: { $exists: true }, target: { $in: ['participants', 'all'] } },
-          { type: 'event', eventId: { $exists: true }, target: { $in: ['creator', 'all'] } },
-        ]
-      }
-    };
 
     const pipeline: any[] = [
-      // Match des notifications pertinentes
-      matchStage,
-      // Lookup pour les lairs
+      // Exclure les notifications masquées par l'utilisateur
+      {
+        $match: {
+          hiddenBy: { $ne: userId }
+        }
+      },
+      // Lookup pour les lairs avec vérification des permissions
       {
         $lookup: {
           from: 'lairs',
@@ -66,18 +45,12 @@ export async function getUserNotifications(
               $match: {
                 $expr: { $eq: ['$id', '$$lairId'] }
               }
-            },
-            {
-              $project: {
-                _id: 1,
-                name: 1
-              }
             }
           ],
           as: 'lairDetails'
         }
       },
-      // Lookup pour les événements
+      // Lookup pour les événements avec vérification des permissions
       {
         $lookup: {
           from: 'events',
@@ -87,31 +60,56 @@ export async function getUserNotifications(
               $match: {
                 $expr: { $eq: ['$id', '$$eventId'] }
               }
-            },
-            {
-              $project: {
-                id: 1,
-                name: 1,
-                participants: 1,
-                creatorId: 1
-              }
             }
           ],
           as: 'eventDetails'
         }
       },
-      // Unwind optionnel pour lairDetails et eventDetails
+      // Ajouter les champs lair et event
       {
         $addFields: {
           lair: { $arrayElemAt: ['$lairDetails', 0] },
           event: { $arrayElemAt: ['$eventDetails', 0] }
         }
       },
-      // Suppression des champs temporaires et filtrage du champ readBy
+      // Filtrer selon le type de notification et les permissions
+      {
+        $match: {
+          $or: [
+            // Notifications user
+            { type: 'user', userId },
+            // Notifications lair pour les owners
+            { 
+              type: 'lair', 
+              target: { $in: ['owners', 'all'] },
+              'lair.owners': userId
+            },
+            // Notifications lair pour les followers
+            { 
+              type: 'lair', 
+              target: { $in: ['followers', 'all'] },
+              lairId: { $in: followedLairIds }
+            },
+            // Notifications event pour les participants
+            { 
+              type: 'event', 
+              target: { $in: ['participants', 'all'] },
+              'event.participants': userId
+            },
+            // Notifications event pour le creator
+            { 
+              type: 'event', 
+              target: { $in: ['creator', 'all'] },
+              'event.creatorId': userId
+            }
+          ]
+        }
+      },
+      // Projeter uniquement les champs nécessaires
       {
         $project: {
           lairDetails: 0,
-          eventDetails: 0,
+          eventDetails: 0
         }
       },
       // Tri par date décroissante
@@ -120,51 +118,42 @@ export async function getUserNotifications(
       }
     ];
 
-    // Compter le total avant pagination
+    // Compter le total après filtrage
     const countPipeline = [...pipeline, { $count: 'total' }];
     const countResult = await collection.aggregate(countPipeline).toArray();
-    const totalBeforeFiltering = countResult.length > 0 ? countResult[0].total : 0;
+    const total = countResult.length > 0 ? countResult[0].total : 0;
 
-    // Ajouter pagination si demandée
+    // Ajouter la pagination
     const page = options?.page || 1;
     const limit = options?.limit || 20;
     const skip = (page - 1) * limit;
 
-    if (options?.page || options?.limit) {
-      pipeline.push({ $skip: skip });
-      pipeline.push({ $limit: limit });
-    }
+    pipeline.push({ $skip: skip });
+    pipeline.push({ $limit: limit });
 
     const notifications = await collection.aggregate(pipeline).toArray();
 
-    // Filtrer les notifications d'événements selon la participation réelle
-    const filteredNotifications = notifications.filter((notification: any) => {
-      if (notification.type === 'event' && notification.event) {
-        const event = notification.event;
-        if (notification.target === 'participants' && event.participants?.includes(userId)) {
-          return true;
-        } else if (notification.target === 'creator' && event.creatorId === userId) {
-          return true;
-        } else if (notification.target === 'all' && (event.participants?.includes(userId) || event.creatorId === userId)) {
-          return true;
-        }
-        return false;
-      }
-      return true;
-    });
-
-    const formattedNotifications = filteredNotifications.map(doc => ({
+    // Formater les notifications
+    const formattedNotifications = notifications.map(doc => ({
       ...doc,
       _id: undefined,
       id: doc.id || doc._id?.toString() || '',
-      lair: doc.lair ? { _id: undefined, id: doc.lair._id.toString(), name: doc.lair.name } : undefined,
-      event: doc.event ? { _id: undefined, id: doc.event.id, name: doc.event.name } : undefined,
+      lair: doc.lair ? { 
+        _id: undefined, 
+        id: doc.lair._id?.toString() || doc.lair.id, 
+        name: doc.lair.name 
+      } : undefined,
+      event: doc.event ? { 
+        _id: undefined, 
+        id: doc.event.id, 
+        name: doc.event.name 
+      } : undefined,
       readBy: doc.readBy?.includes(userId) ? [userId] : [],
     }));
 
     return {
       notifications: formattedNotifications,
-      total: totalBeforeFiltering
+      total
     };
   } catch (error) {
     console.error("Error fetching user notifications:", error);
