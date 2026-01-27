@@ -198,4 +198,3 @@ export async function updateUserLocation(
     return { success: false, error: "Erreur serveur" };
   }
 }
-

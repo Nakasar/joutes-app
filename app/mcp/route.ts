@@ -421,7 +421,6 @@ async function handleListGames(): Promise<{ content: TextContent[]; isError?: bo
 
 async function verifyAuth(
     request: Request,
-    bearerToken?: string
 ): Promise<AuthInfo | undefined> {
     const authHeader = request.headers.get("authorization");
 
@@ -460,7 +459,6 @@ async function verifyAuth(
             clientId: "",
             extra: {
                 userId: payload.sub,
-                apiKeyId: payload.api_key_id
             }
         };
     } else {
@@ -478,7 +476,6 @@ async function verifyAuth(
                 clientId: validation.apiKeyId,
                 extra: {
                     userId: validation.userId,
-                    apiKeyId: validation.apiKeyId
                 }
             };
         } catch (error) {
