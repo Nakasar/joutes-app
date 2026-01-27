@@ -1,10 +1,11 @@
 import { betterAuth } from "better-auth";
-import { emailOTP, jwt } from "better-auth/plugins";
+import { createAuthMiddleware, emailOTP, jwt } from "better-auth/plugins";
 import { Resend } from "resend";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import db from "@/lib/mongodb";
 import {passkey} from "@better-auth/passkey";
 import { oauthProvider } from "@better-auth/oauth-provider";
+import { inspect } from "util";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -59,6 +60,16 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 7, // 7 jours
     updateAge: 60 * 60 * 24, // 1 jour
     storeSessionInDatabase: true,
+  },
+  hooks: {
+    before: createAuthMiddleware(async ctx => {
+      if (ctx.path === "/api/auth/oauth2/register") {
+        console.log(inspect({
+          body: ctx.body,
+          headers: ctx.headers,
+        }, { depth: null }));
+      }
+    }),
   },
   trustedOrigins: process.env.NEXT_PUBLIC_BASE_URL ? [process.env.NEXT_PUBLIC_BASE_URL] : ["http://localhost:3000", "https://localhost:3000"],
   baseURL: process.env.NEXT_PUBLIC_BASE_URL || process.env.BETTER_AUTH_URL || "http://localhost:3000",
