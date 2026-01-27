@@ -16,6 +16,7 @@ import { z } from "zod/v3";
 import { DateTime } from "luxon";
 import { validateApiKey } from "@/lib/db/api-keys";
 import { RequestHandlerExtra} from "@modelcontextprotocol/sdk/shared/protocol.js";
+import { mcpHandler } from "@better-auth/oauth-provider";
 
 // Gestionnaires pour chaque outil
 async function handleSearchEvents(argsRaw: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>): Promise<{ content: TextContent[]; isError?: boolean }> {
@@ -524,8 +525,14 @@ const handler = createMcpHandler(server => {
     maxDuration: 60,
 });
 
-const authHandler = withMcpAuth(handler, verifyAuth, {
+const authHandlerOld = withMcpAuth(handler, verifyAuth, {
     required: false,
 });
+const authHandler = mcpHandler({
+    verifyOptions: {
+        audience: "https://joutes.app",
+        issuer: "https://joutes.app",
+    },
+}, handler);
 
 export { authHandler as GET, authHandler as POST, authHandler as DELETE };
