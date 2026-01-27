@@ -63,8 +63,8 @@ export const auth = betterAuth({
   },
   hooks: {
     before: createAuthMiddleware(async ctx => {
-      if (ctx.path === "/api/auth/oauth2/register") {
-        console.log(inspect({
+      if (ctx.path === "/oauth2/register") {
+        console.info(inspect({
           body: ctx.body,
           headers: ctx.headers,
         }, { depth: null }));
