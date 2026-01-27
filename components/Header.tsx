@@ -7,6 +7,7 @@ import Image from "next/image";
 import {Menu, Calendar, MapPin, User, LogOut, Shield, GamepadIcon, Trophy, Dices} from "lucide-react";
 import { isAdmin } from "@/lib/config/admins";
 import { Button } from "@/components/ui/button";
+import { NotificationDropdown } from "@/components/NotificationDropdown";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -104,11 +105,13 @@ export default function Header() {
           </NavigationMenu>
 
           {/* User Menu (Desktop) */}
-          <div className="hidden lg:flex md:items-center">
+          <div className="hidden lg:flex md:items-center md:gap-2">
             {isPending ? (
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             ) : session ? (
-              <DropdownMenu>
+              <>
+                <NotificationDropdown userId={session.user.id} />
+                <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="gap-2">
                     <User className="h-4 w-4" />
@@ -140,6 +143,7 @@ export default function Header() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              </>
             ) : (
               <Button asChild>
                 <Link href="/login">Se connecter</Link>
@@ -150,7 +154,9 @@ export default function Header() {
           {/* Mobile menu button */}
           <div className="flex items-center gap-2 lg:hidden">
             {!isPending && session && (
-              <DropdownMenu>
+              <>
+                <NotificationDropdown userId={session.user.id} />
+                <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon">
                     <User className="h-5 w-5" />
@@ -185,6 +191,7 @@ export default function Header() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              </>
             )}
 
             {!isPending && !session && (

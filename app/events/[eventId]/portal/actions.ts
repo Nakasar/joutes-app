@@ -22,6 +22,7 @@ import { getEventById } from "@/lib/db/events";
 import { calculateStandings, generateBracketPosition, generateEliminationBracket, generateNextBracketRound, generateSwissPairings } from "@/lib/utils/pairing";
 import { getEventParticipants } from "./participant-actions";
 import { inspect } from "util";
+import { notifyEventAll } from "@/lib/services/notifications";
 
 const PORTAL_SETTINGS_COLLECTION = "event-portal-settings";
 const MATCH_RESULTS_COLLECTION = "event-match-results";
@@ -945,6 +946,19 @@ export async function createAnnouncement(eventId: string, data: unknown) {
     };
 
     await collection.insertOne(announcement as Announcement & { _id?: ObjectId });
+
+    // Envoyer une notification à tous les participants et créateur de l'événement
+    try {
+      const priorityText = announcement.priority === 'urgent' ? '🚨 ' : announcement.priority === 'important' ? '⚠️ ' : '';
+      await notifyEventAll(
+        eventId,
+        `${priorityText}Nouvelle annonce`,
+        announcement.message
+      );
+    } catch (notifError) {
+      console.error("Erreur lors de l'envoi de la notification:", notifError);
+      // On ne fait pas échouer la création de l'annonce si la notification échoue
+    }
 
     return { success: true, data: { ... announcement, _id: undefined, id: announcement.id.toString(), createdBy: announcement.createdBy.toString() } };
   } catch (error) {

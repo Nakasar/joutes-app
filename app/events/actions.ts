@@ -8,6 +8,7 @@ import { getUserByTagOrId } from "@/lib/db/users";
 import { nanoid } from 'nanoid';
 import { Event } from "@/lib/types/Event";
 import { revalidatePath } from "next/cache";
+import { notifyEventAll } from "@/lib/services/notifications";
 
 type CreateEventInput = {
   name: string;
@@ -435,6 +436,71 @@ export async function completeEventAction(eventId: string) {
   }
 }
 
+export async function cancelEventAction(eventId: string, reason?: string) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      return { success: false, error: "Vous devez être connecté" };
+    }
+
+    // Récupérer l'événement
+    const event = await getEventById(eventId);
+
+    if (!event) {
+      return { success: false, error: "Événement introuvable" };
+    }
+
+    // Vérifier que l'utilisateur est le créateur de l'événement
+    if (event.creatorId !== session.user.id) {
+      return { success: false, error: "Seul le créateur de l'événement peut annuler l'événement" };
+    }
+
+    // Vérifier que l'événement n'est pas déjà annulé ou terminé
+    if (event.status === 'cancelled') {
+      return { success: false, error: "L'événement est déjà annulé" };
+    }
+
+    if (event.runningState === 'completed') {
+      return { success: false, error: "Impossible d'annuler un événement terminé" };
+    }
+
+    // Mettre à jour le statut
+    const updated = await updateEvent(eventId, { status: 'cancelled' });
+
+    if (!updated) {
+      return { success: false, error: "Impossible d'annuler l'événement" };
+    }
+
+    // Envoyer une notification à tous les participants et au créateur
+    try {
+      const notificationMessage = reason 
+        ? `L'événement "${event.name}" a été annulé. Raison : ${reason}`
+        : `L'événement "${event.name}" a été annulé.`;
+      
+      await notifyEventAll(
+        eventId,
+        "🚫 Événement annulé",
+        notificationMessage
+      );
+    } catch (notifError) {
+      console.error("Erreur lors de l'envoi de la notification:", notifError);
+      // On ne fait pas échouer l'annulation si la notification échoue
+    }
+
+    revalidatePath(`/events/${eventId}`);
+    revalidatePath("/events");
+    revalidatePath("/account");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de l'annulation de l'événement:", error);
+    return { success: false, error: "Une erreur est survenue lors de l'annulation de l'événement" };
+  }
+}
+
 export async function deleteEventAction(eventId: string) {
   try {
     const session = await auth.api.getSession({
@@ -455,6 +521,18 @@ export async function deleteEventAction(eventId: string) {
     // Vérifier que l'utilisateur est le créateur de l'événement
     if (event.creatorId !== session.user.id) {
       return { success: false, error: "Seul le créateur de l'événement peut supprimer l'événement" };
+    }
+
+    // Envoyer une notification à tous les participants et au créateur AVANT de supprimer
+    try {
+      await notifyEventAll(
+        eventId,
+        "🗑️ Événement supprimé",
+        `L'événement "${event.name}" a été supprimé.`
+      );
+    } catch (notifError) {
+      console.error("Erreur lors de l'envoi de la notification:", notifError);
+      // On continue quand même la suppression même si la notification échoue
     }
 
     // Supprimer l'événement et toutes les données associées
