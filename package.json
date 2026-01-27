@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.52",
+    "@better-auth/oauth-provider": "^1.4.17",
     "@better-auth/passkey": "^1.4.7",
     "@modelcontextprotocol/sdk": "^1.21.0",
     "@radix-ui/react-alert-dialog": "^1.1.15",
