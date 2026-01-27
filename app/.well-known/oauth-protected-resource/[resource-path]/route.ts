@@ -1,4 +1,4 @@
-import { serverClient } from "@/lib/server-client";
+import { serverClient } from "../../../../lib/server-client";
 
 export const GET = async () => {
   const metadata = await serverClient.getProtectedResourceMetadata({

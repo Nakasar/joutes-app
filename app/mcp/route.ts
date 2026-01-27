@@ -520,7 +520,7 @@ const handler = createMcpHandler(server => {
     }, handleAddGame);
     server.tool("list_games", "Lister tous les jeux disponibles sur la plateforme.", {}, handleListGames);
 }, {}, {
-    basePath: '/',
+    basePath: '',
     verboseLogs: true,
     maxDuration: 60,
 });
