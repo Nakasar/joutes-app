@@ -65,6 +65,7 @@ export const auth = betterAuth({
     before: createAuthMiddleware(async ctx => {
       if (ctx.path.startsWith('/oauth2/')) {
         console.info({
+          baseURL: ctx.context.baseURL,
           body: ctx.body,
           headers: ctx.headers,
         });
