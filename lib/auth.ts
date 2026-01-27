@@ -1,16 +1,15 @@
 import { betterAuth } from "better-auth";
-import { createAuthMiddleware, emailOTP, jwt } from "better-auth/plugins";
+import { emailOTP, jwt } from "better-auth/plugins";
 import { Resend } from "resend";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
-import db from "@/lib/mongodb";
-import {passkey} from "@better-auth/passkey";
+import { passkey } from "@better-auth/passkey";
 import { oauthProvider } from "@better-auth/oauth-provider";
-import { inspect } from "util";
+import db from "@/lib/mongodb";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const auth = betterAuth({
-  disabledPaths: ["/token"],
+  disabledPaths: [],
   database: mongodbAdapter(db),
   emailAndPassword: {
     enabled: false, // Désactivé car on utilise uniquement emailOTP

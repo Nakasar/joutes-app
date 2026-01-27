@@ -1,27 +1,34 @@
-'use client';
+import OAuthConsentComponent from "@/app/oauth/consent/ConsentComponent";
+import {auth} from "@/lib/auth";
+import {headers} from "next/headers";
 
-import {authClient} from "@/lib/auth-client";
-import {Button} from "@/components/ui/button";
+export default async function OAuthConsentPage({ searchParams }: { searchParams: Promise<{ client_id?: string }> }) {
+  const headersRes = await headers();
+  const session = await auth.api.getSession({
+    headers: headersRes,
+  });
+  const { client_id } = await searchParams;
 
-export default function OAuthConsentPage() {
-  const session = authClient.useSession();
+  if (!client_id) {
+    return <div>Invalid authorization request.</div>;
+  }
 
-  if (!session?.data) {
+  if (!session) {
     return <div>Loading...</div>;
   }
 
-  async function consent() {
-    await authClient.oauth2.consent({
-      accept: true,
-    });
+  const client = await auth.api.getOAuthClientPublic({
+    query: {
+      client_id: client_id,
+    },
+    headers: headersRes,
+  });
+
+  if (!client) {
+    return <div>Invalid authorization request.</div>;
   }
 
   return (
-    <div>
-      <h1>Connect application</h1>
-      <p>Welcome, {session.data.user?.name}</p>
-
-      <Button onClick={consent}>Authorize application</Button>
-    </div>
+    <OAuthConsentComponent client={client} />
   );
 }
