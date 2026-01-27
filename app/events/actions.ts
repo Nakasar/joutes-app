@@ -8,6 +8,7 @@ import { getUserByTagOrId } from "@/lib/db/users";
 import { nanoid } from 'nanoid';
 import { Event } from "@/lib/types/Event";
 import { revalidatePath } from "next/cache";
+import { notifyEventAll } from "@/lib/services/notifications";
 
 type CreateEventInput = {
   name: string;
@@ -475,7 +476,6 @@ export async function cancelEventAction(eventId: string, reason?: string) {
 
     // Envoyer une notification à tous les participants et au créateur
     try {
-      const { notifyEventAll } = await import("@/lib/services/notifications");
       const notificationMessage = reason 
         ? `L'événement "${event.name}" a été annulé. Raison : ${reason}`
         : `L'événement "${event.name}" a été annulé.`;
@@ -525,7 +525,6 @@ export async function deleteEventAction(eventId: string) {
 
     // Envoyer une notification à tous les participants et au créateur AVANT de supprimer
     try {
-      const { notifyEventAll } = await import("@/lib/services/notifications");
       await notifyEventAll(
         eventId,
         "🗑️ Événement supprimé",

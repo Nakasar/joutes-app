@@ -22,6 +22,7 @@ import { getEventById } from "@/lib/db/events";
 import { calculateStandings, generateBracketPosition, generateEliminationBracket, generateNextBracketRound, generateSwissPairings } from "@/lib/utils/pairing";
 import { getEventParticipants } from "./participant-actions";
 import { inspect } from "util";
+import { notifyEventAll } from "@/lib/services/notifications";
 
 const PORTAL_SETTINGS_COLLECTION = "event-portal-settings";
 const MATCH_RESULTS_COLLECTION = "event-match-results";
@@ -948,7 +949,6 @@ export async function createAnnouncement(eventId: string, data: unknown) {
 
     // Envoyer une notification à tous les participants et créateur de l'événement
     try {
-      const { notifyEventAll } = await import("@/lib/services/notifications");
       const priorityText = announcement.priority === 'urgent' ? '🚨 ' : announcement.priority === 'important' ? '⚠️ ' : '';
       await notifyEventAll(
         eventId,

@@ -88,7 +88,7 @@ export function NotificationDropdown({ userId }: NotificationDropdownProps) {
           <div className="max-h-[400px] overflow-y-auto">
             {notifications.map((notification: any) => {
               const isRead = notification.readBy?.includes(userId);
-              const timeAgo = DateTime.fromISO(notification.createdAt).setLocale('fr').toRelative() || 'à l&apos;instant';
+              const timeAgo = DateTime.fromISO(notification.createdAt).setLocale('fr').toRelative() || "à l'instant";
               
               // Déterminer le contexte (lair ou event)
               const contextLink = notification.type === 'lair' && notification.lair 

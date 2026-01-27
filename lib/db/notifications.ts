@@ -1,5 +1,5 @@
 import db from "@/lib/mongodb";
-import { Notification } from "@/lib/types/Notification";
+import { EventNotification, LairNotification, NewNotification, Notification, NotificationTarget, UserNotification } from "@/lib/types/Notification";
 import { ObjectId } from "mongodb";
 import { getUserById } from "./users";
 import { getLairById } from "./lairs";
@@ -159,10 +159,8 @@ export async function getUserNotifications(
       id: doc.id || doc._id?.toString() || '',
       lair: doc.lair ? { _id: undefined, id: doc.lair._id.toString(), name: doc.lair.name } : undefined,
       event: doc.event ? { _id: undefined, id: doc.event.id, name: doc.event.name } : undefined,
-      readBy: doc.readBy.includes(userId) ? [userId] : [],
+      readBy: doc.readBy?.includes(userId) ? [userId] : [],
     }));
-
-    console.log(formattedNotifications[0]);
 
     return {
       notifications: formattedNotifications,
@@ -179,7 +177,7 @@ export async function getUserNotifications(
  * @param notification - Les données de la notification
  * @returns La notification créée
  */
-export async function createNotification(notification: Omit<Notification, 'id' | 'createdAt' | 'readBy'>): Promise<Notification> {
+export async function createNotification(notification: NewNotification): Promise<Notification> {
   try {
     const collection = db.collection<NotificationDocument>(COLLECTION_NAME);
 
