@@ -62,17 +62,6 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24, // 1 jour
     storeSessionInDatabase: true,
   },
-  hooks: {
-    before: createAuthMiddleware(async ctx => {
-      if (ctx.path.startsWith('/oauth2/')) {
-        console.info({
-          baseURL: ctx.context.baseURL,
-          body: ctx.body,
-          headers: ctx.headers,
-        });
-      }
-    }),
-  },
   trustedOrigins: process.env.NEXT_PUBLIC_BASE_URL ? [process.env.NEXT_PUBLIC_BASE_URL] : ["http://localhost:3000", "https://localhost:3000"],
   baseURL: process.env.NEXT_PUBLIC_BASE_URL || process.env.BETTER_AUTH_URL || "http://localhost:3000",
 });

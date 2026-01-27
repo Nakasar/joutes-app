@@ -470,12 +470,4 @@ const authHandler = mcpHandler({
     resourceMetadataMappings: {},
 });
 
-const handlerWithLogging = async (request: Request) => {
-    console.log(`Received ${request.method} request at ${request.url}`);
-    console.log(request.headers);
-    const response = await authHandler(request);
-    console.log(`Responding with status ${response.status}`);
-    return response;
-}
-
-export { handlerWithLogging as GET, handlerWithLogging as POST, handlerWithLogging as DELETE };
+export { authHandler as GET, authHandler as POST, authHandler as DELETE };
