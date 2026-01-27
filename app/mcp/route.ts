@@ -535,7 +535,7 @@ const authHandlerOld = withMcpAuth(handler, verifyAuth, {
 });
 const authHandler = mcpHandler({
     verifyOptions: {
-        audience: "https://www.joutes.app/",
+        audience: "https://www.joutes.app/mcp",
         issuer: "https://www.joutes.app",
     },
 }, handler);
