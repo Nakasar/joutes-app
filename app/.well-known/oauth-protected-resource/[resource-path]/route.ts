@@ -4,7 +4,7 @@ export const GET = async () => {
   const metadata = await serverClient.getProtectedResourceMetadata({
     resource: "https://joutes.app", // `aud` claim
     authorization_servers: ["https://joutes.app"],
-  })
+  });
 
   return new Response(JSON.stringify(metadata), {
     headers: {
