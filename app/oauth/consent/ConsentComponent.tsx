@@ -21,8 +21,7 @@ export default function OAuthConsentComponent({ client }: { client: OAuthClient 
     }
 
     if (res.data.redirect && res.data.uri) {
-      console.log(res.data.uri);
-      //window.location.href = res.data.uri;
+      window.location.href = res.data.uri;
     }
   }
 
