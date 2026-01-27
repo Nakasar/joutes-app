@@ -61,6 +61,7 @@ export const auth = betterAuth({
     storeSessionInDatabase: true,
   },
   trustedOrigins: process.env.NEXT_PUBLIC_BASE_URL ? [process.env.NEXT_PUBLIC_BASE_URL] : ["http://localhost:3000", "https://localhost:3000"],
+  baseURL: process.env.NEXT_PUBLIC_BASE_URL || process.env.BETTER_AUTH_URL || "http://localhost:3000",
 });
 
 export type Session = typeof auth.$Infer.Session.session;
