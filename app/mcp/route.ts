@@ -462,8 +462,8 @@ const handler = createMcpHandler(server => {
 
 const authHandler = mcpHandler({
     verifyOptions: {
-        audience: "https://www.joutes.app",
-        issuer: "https://www.joutes.app",
+        audience: "https://www.joutes.app/",
+        issuer: "https://www.joutes.app/api/auth",
     },
 }, handler, {
     resourceMetadataMappings: {},
