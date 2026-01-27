@@ -159,6 +159,7 @@ export async function getUserNotifications(
       id: doc.id || doc._id?.toString() || '',
       lair: doc.lair ? { _id: undefined, id: doc.lair._id.toString(), name: doc.lair.name } : undefined,
       event: doc.event ? { _id: undefined, id: doc.event.id, name: doc.event.name } : undefined,
+      readBy: doc.readBy.includes(userId) ? [userId] : [],
     }));
 
     console.log(formattedNotifications[0]);
