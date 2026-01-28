@@ -249,6 +249,7 @@ async function handleCreateEvent(argsRaw: Record<string, unknown>, extra: Reques
 
 async function handleFollowLair(argsRaw: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>): Promise<{ content: TextContent[]; isError?: boolean }> {
     try {
+        console.info(extra.authInfo);
         const userId: string = extra.authInfo?.extra?.userId as string;
 
         if (!userId) {
@@ -466,7 +467,9 @@ const authHandler = mcpHandler({
         audience: "https://www.joutes.app/",
         issuer: "https://www.joutes.app/api/auth",
     },
-}, handler, {
+}, (req, jwt) => {
+    return handler(req);
+}, {
     resourceMetadataMappings: {},
 });
 
