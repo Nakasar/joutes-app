@@ -468,6 +468,22 @@ const authHandler = mcpHandler({
         issuer: "https://www.joutes.app/api/auth",
     },
 }, (req, jwt) => {
+    req.auth = req.auth ? {
+        ...req.auth,
+        clientId: '',
+        scopes: [],
+        extra: {
+            ...req.auth.extra,
+            userId: jwt.sub,
+        },
+    } : {
+        token: '',
+        clientId: '',
+        scopes: [],
+        extra: {
+            userId: jwt.sub,
+        },
+    };
     return handler(req);
 }, {
     resourceMetadataMappings: {},
