@@ -1456,7 +1456,7 @@ export async function reportKillerMatch(
   await notifyUser(
     targetId,
     "Résultat de match à confirmer",
-    `Un résultat a été rapporté dans la ligue ${league.name}. Confirmez-le pour valider le match.`
+    `Le résultat de votre match a été rapporté  dans la ligue ${league.name}. Confirmez-le pour valider le match.`
   );
 
   const requireLair = league.killerConfig.requireLair ?? true;
@@ -1464,7 +1464,7 @@ export async function reportKillerMatch(
     await notifyLairOwners(
       matchDoc.lairId,
       "Match à confirmer",
-      `Un match de ligue est en attente de confirmation dans ${league.name}.`
+      `Un match de ligue est en attente de confirmation pour votre lieu dans ${league.name}.`
     );
   }
 
