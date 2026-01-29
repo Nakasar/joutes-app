@@ -1116,35 +1116,10 @@ export async function getLeagueMatches(leagueId: string): Promise<LeagueMatch[]>
     .sort({ playedAt: -1 })
     .toArray();
 
-  if (docs.length === 0) {
-    const legacyLeague = await db.collection(COLLECTION_NAME).findOne(
-      { _id: new ObjectId(leagueId) },
-      { projection: { matches: 1 } }
-    );
-
-    const legacyMatches = (legacyLeague?.matches || []) as LeagueMatch[];
-    if (legacyMatches.length > 0) {
-      const legacyDocs: Array<Omit<LeagueMatchDocument, "_id">> = legacyMatches.map(
-        (match) => ({
-          ...match,
-          leagueId: new ObjectId(leagueId),
-        })
-      );
-
-      await db.collection(MATCHES_COLLECTION).insertMany(legacyDocs as Document[]);
-
-      return legacyMatches.map((match) => ({
-        ...match,
-        playedAt: new Date(match.playedAt),
-        createdAt: new Date(match.createdAt),
-        reportedAt: match.reportedAt ? new Date(match.reportedAt) : undefined,
-        confirmedAt: match.confirmedAt ? new Date(match.confirmedAt) : undefined,
-      }));
-    }
-  }
-
   return docs.map((doc) => ({
     ...doc,
+    _id: doc._id.toString(),
+    leagueId: doc.leagueId.toString(),
     playedAt: new Date(doc.playedAt),
     createdAt: new Date(doc.createdAt),
     reportedAt: doc.reportedAt ? new Date(doc.reportedAt) : undefined,
