@@ -808,15 +808,9 @@ export async function getLeagueRanking(
       {
         $addFields: {
           ratio: {
-            $cond: [
-              { $eq: [{ $add: ["$wins", "$losses"] }, 0] },
-              0,
-              {
-                $divide: [
-                  "$wins",
-                  { $add: ["$wins", "$losses"] },
-                ],
-              },
+            $add: [
+              { $multiply: ["$wins", 1] },
+              { $multiply: ["$losses", -1] },
             ],
           },
         },
