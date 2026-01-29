@@ -54,7 +54,7 @@ export async function getUserNotifications(
           pipeline: [
             {
               $match: {
-                $expr: { $eq: ['$_id', '$$lairId'] }
+                $expr: { $eq: ['$_id', { $toObjectId: '$$lairId' }] }
               }
             }
           ],
