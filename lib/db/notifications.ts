@@ -34,6 +34,18 @@ export async function getUserNotifications(
           hiddenBy: { $ne: userId }
         }
       },
+      {
+        $addFields: {
+          leagueObjectId: {
+            $convert: {
+              input: "$leagueId",
+              to: "objectId",
+              onError: null,
+              onNull: null,
+            },
+          },
+        }
+      },
       // Lookup pour les lairs avec vérification des permissions
       {
         $lookup: {
@@ -64,11 +76,89 @@ export async function getUserNotifications(
           as: 'eventDetails'
         }
       },
+      {
+        $lookup: {
+          from: 'leagues',
+          localField: 'leagueObjectId',
+          foreignField: '_id',
+          as: 'leagueDetails',
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+              },
+            },
+          ],
+        }
+      },
+      {
+        $lookup: {
+          from: 'league-matches',
+          let: { matchId: '$matchId', leagueId: '$leagueObjectId' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$id", "$$matchId"] },
+                    { $eq: ["$leagueId", "$$leagueId"] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: 'matchDetails',
+        }
+      },
       // Ajouter les champs lair et event
       {
         $addFields: {
           lair: { $arrayElemAt: ['$lairDetails', 0] },
-          event: { $arrayElemAt: ['$eventDetails', 0] }
+          event: { $arrayElemAt: ['$eventDetails', 0] },
+          league: { $arrayElemAt: ['$leagueDetails', 0] },
+          match: { $arrayElemAt: ['$matchDetails', 0] }
+        }
+      },
+      {
+        $lookup: {
+          from: 'user',
+          let: { playerIds: '$match.playerIds' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $in: [
+                    '$_id',
+                    {
+                      $map: {
+                        input: { $ifNull: ['$$playerIds', []] },
+                        as: 'pid',
+                        in: {
+                          $convert: {
+                            input: '$$pid',
+                            to: 'objectId',
+                            onError: null,
+                            onNull: null,
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              $project: {
+                _id: 1,
+                username: 1,
+                displayName: 1,
+                discriminator: 1,
+                avatar: 1,
+              }
+            }
+          ],
+          as: 'matchPlayers'
         }
       },
       // Filtrer selon le type de notification et les permissions
@@ -108,7 +198,10 @@ export async function getUserNotifications(
       {
         $project: {
           lairDetails: 0,
-          eventDetails: 0
+          eventDetails: 0,
+          leagueDetails: 0,
+          matchDetails: 0,
+          leagueObjectId: 0,
         }
       },
       // Tri par date décroissante
@@ -147,6 +240,32 @@ export async function getUserNotifications(
         id: doc.event.id, 
         name: doc.event.name 
       } : undefined,
+      league: doc.league ? {
+        _id: undefined,
+        id: doc.league._id?.toString() || doc.league.id,
+        name: doc.league.name,
+      } : undefined,
+      match: doc.match ? {
+        id: doc.match.id,
+        gameId: doc.match.gameId,
+        lairId: doc.match.lairId,
+        playedAt: doc.match.playedAt,
+        playerIds: doc.match.playerIds,
+        winnerIds: doc.match.winnerIds,
+        status: doc.match.status,
+        reportedBy: doc.match.reportedBy,
+        reportedAt: doc.match.reportedAt,
+        confirmedBy: doc.match.confirmedBy,
+        lairConfirmedBy: doc.match.lairConfirmedBy,
+        confirmedAt: doc.match.confirmedAt,
+      } : undefined,
+      matchPlayers: doc.matchPlayers?.map((player: any) => ({
+        id: player._id?.toString() || player.id,
+        username: player.username,
+        displayName: player.displayName,
+        discriminator: player.discriminator,
+        avatar: player.avatar,
+      })) || [],
       readBy: doc.readBy?.includes(userId) ? [userId] : [],
     }));
 

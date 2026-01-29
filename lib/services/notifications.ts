@@ -13,6 +13,25 @@ export async function notifyUser(userId: string, title: string, description: str
   });
 }
 
+export async function notifyUserWithTemplate(
+  userId: string,
+  title: string,
+  description: string,
+  template: "league-match-result-confirmation-request" | "league-match-assigned",
+  leagueId: string,
+  matchId: string
+): Promise<Notification> {
+  return createNotification({
+    type: 'user',
+    userId,
+    title,
+    description,
+    template,
+    leagueId,
+    matchId,
+  });
+}
+
 /**
  * Crée une notification pour les owners d'un lair
  */

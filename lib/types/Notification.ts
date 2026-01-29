@@ -17,12 +17,19 @@ export type EventNotificationTarget = {
 
 export type NotificationTarget = UserNotificationTarget | LairNotificationTarget | EventNotificationTarget;
 
+export type NotificationTemplate =
+  | "league-match-result-confirmation-request"
+  | "league-match-assigned";
+
 export type Notification = {
   type: string;
   id: string;
   title: string;
   description: string;
   createdAt: string;
+  template?: NotificationTemplate;
+  leagueId?: string;
+  matchId?: string;
   readBy?: string[];
   hiddenBy?: string[];
 } & NotificationTarget;

@@ -15,6 +15,7 @@ import { DateTime } from "luxon";
 import Link from "next/link";
 import { markNotificationAsReadAction, getRecentNotificationsAction } from "@/app/notifications/actions";
 import { useState, useEffect } from "react";
+import { NotificationTemplate } from "@/components/notifications/NotificationTemplate";
 
 type NotificationDropdownProps = {
   userId: string;
@@ -119,9 +120,15 @@ export function NotificationDropdown({ userId }: NotificationDropdownProps) {
                           {contextLink.label}
                         </Link>
                       )}
-                      <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                        {notification.description}
-                      </p>
+                      {notification.template ? (
+                        <div className="mt-2">
+                          <NotificationTemplate notification={notification} />
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                          {notification.description}
+                        </p>
+                      )}
                       <p className="text-xs text-muted-foreground mt-1">
                         {timeAgo}
                       </p>

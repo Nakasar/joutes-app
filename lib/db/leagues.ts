@@ -16,7 +16,7 @@ import {ObjectId, WithId, Document, Filter} from "mongodb";
 import {nanoid} from "nanoid";
 import {User} from "@/lib/types/User";
 import { getUserById, getUsersByIds } from "@/lib/db/users";
-import { notifyLairOwners, notifyUser } from "@/lib/services/notifications";
+import { notifyLairOwners, notifyUserWithTemplate } from "@/lib/services/notifications";
 import { getLairById } from "@/lib/db/lairs";
 
 const COLLECTION_NAME = "leagues";
@@ -1364,6 +1364,24 @@ export async function assignKillerTargets(
       matchId: match.id,
     });
 
+    await notifyUserWithTemplate(
+      userId,
+      "Match de ligue assigné",
+      `Un nouveau match a été assigné dans la ligue ${league.name}.`,
+      "league-match-assigned",
+      leagueId,
+      match.id
+    );
+
+    await notifyUserWithTemplate(
+      target.targetId,
+      "Match de ligue assigné",
+      `Un nouveau match a été assigné dans la ligue ${league.name}.`,
+      "league-match-assigned",
+      leagueId,
+      match.id
+    );
+
     activeCounts.set(target.targetId, opponentActiveCount + 1);
     activeOpponents.add(target.targetId);
   }
@@ -1453,10 +1471,13 @@ export async function reportKillerMatch(
     }
   );
 
-  await notifyUser(
+  await notifyUserWithTemplate(
     targetId,
     "Résultat de match à confirmer",
-    `Le résultat de votre match a été rapporté  dans la ligue ${league.name}. Confirmez-le pour valider le match.`
+    `Le résultat de votre match a été rapporté  dans la ligue ${league.name}. Confirmez-le pour valider le match.`,
+    "league-match-result-confirmation-request",
+    leagueId,
+    matchDoc.id
   );
 
   const requireLair = league.killerConfig.requireLair ?? true;
