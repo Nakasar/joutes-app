@@ -23,6 +23,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { MultiSelect } from "@/components/ui/multi-select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Popover,
   PopoverContent,
@@ -120,6 +121,9 @@ export default function LeagueManageClient({
     minParticipants: league.minParticipants?.toString() || "",
     gameIds: league.gameIds,
     lairIds: league.lairIds,
+    killerTargets: league.killerConfig?.targets?.toString() || "1",
+    killerRequireLair: league.killerConfig?.requireLair ?? true,
+    killerEliminateOnDefeat: league.killerConfig?.eliminateOnDefeat ?? false,
   });
 
   // État pour l'ajout de points
@@ -193,6 +197,17 @@ export default function LeagueManageClient({
           : undefined,
         gameIds: formData.gameIds,
         lairIds: formData.lairIds,
+        format: league.format,
+        killerTargets:
+          league.format === "KILLER"
+            ? parseInt(formData.killerTargets, 10)
+            : undefined,
+        killerRequireLair:
+          league.format === "KILLER" ? formData.killerRequireLair : undefined,
+        killerEliminateOnDefeat:
+          league.format === "KILLER"
+            ? formData.killerEliminateOnDefeat
+            : undefined,
       });
 
       if (result.success) {
@@ -782,6 +797,80 @@ export default function LeagueManageClient({
               </Button>
             </CardContent>
           </Card>
+
+          {league.format === "KILLER" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Configuration KILLER</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="killerTargets" className="text-sm font-medium">
+                    Nombre de cibles par joueur
+                  </label>
+                  <Input
+                    id="killerTargets"
+                    type="number"
+                    min="1"
+                    max="5"
+                    value={formData.killerTargets}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        killerTargets: e.target.value,
+                      })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Chaque joueur aura ce nombre de cibles à affronter en parallèle.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="killerRequireLair"
+                    checked={formData.killerRequireLair}
+                    onCheckedChange={(checked) =>
+                      setFormData({
+                        ...formData,
+                        killerRequireLair: checked === true,
+                      })
+                    }
+                  />
+                  <label htmlFor="killerRequireLair" className="text-sm font-medium">
+                    Confirmation du lieu requise
+                  </label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Le résultat devra être confirmé par un owner du lieu.
+                </p>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="killerEliminateOnDefeat"
+                    checked={formData.killerEliminateOnDefeat}
+                    onCheckedChange={(checked) =>
+                      setFormData({
+                        ...formData,
+                        killerEliminateOnDefeat: checked === true,
+                      })
+                    }
+                  />
+                  <label
+                    htmlFor="killerEliminateOnDefeat"
+                    className="text-sm font-medium"
+                  >
+                    Élimination après défaite
+                  </label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Si désactivé, le joueur vaincu n&apos;est pas éliminé.
+                </p>
+                <Button onClick={handleSaveSettings} disabled={loading}>
+                  {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Sauvegarder
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Jeux et Lieux */}
           <Card>
