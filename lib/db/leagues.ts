@@ -694,10 +694,182 @@ export async function getLeagueRanking(
   leagueId: string
 ): Promise<(LeagueParticipant & {
   rank: number;
+  wins?: number;
+  losses?: number;
+  ratio?: number;
   user?: { id: string; discriminator?: string; displayName?: string; avatar?: string; username: string }
 })[]> {
   const league = await getLeagueById(leagueId);
   if (!league) return [];
+
+  if (league.format === "KILLER") {
+    const sortedParticipants = await db.collection(PARTICIPANTS_COLLECTION).aggregate<{
+      userId: string;
+      points: number;
+      pointsHistory: Array<{
+        date: Date;
+        points: number;
+        reason: string;
+        eventId?: string;
+        featId?: string;
+        matchId?: string;
+      }>;
+      feats: Array<{
+        featId: string;
+        earnedAt: Date;
+        eventId?: string;
+        matchId?: string;
+      }>;
+      joinedAt: Date;
+      eliminatedAt?: Date;
+      wins: number;
+      losses: number;
+      ratio: number;
+    }>([
+      { $match: { leagueId: new ObjectId(leagueId) } },
+      {
+        $addFields: {
+          userObjectId: { $toObjectId: "$userId" },
+        },
+      },
+      {
+        $lookup: {
+          from: "user",
+          localField: "userObjectId",
+          foreignField: "_id",
+          as: "user",
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                username: 1,
+                displayName: 1,
+                discriminator: 1,
+                avatar: 1,
+              },
+            },
+          ],
+        },
+      },
+      { $unwind: "$user" },
+      {
+        $lookup: {
+          from: MATCHES_COLLECTION,
+          let: { participantId: "$userId", leagueId: "$leagueId" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$leagueId", "$$leagueId"] },
+                    { $eq: ["$status", "CONFIRMED"] },
+                    { $in: ["$$participantId", "$playerIds"] },
+                  ],
+                },
+              },
+            },
+            {
+              $project: {
+                playerIds: 1,
+                winnerIds: 1,
+              },
+            },
+          ],
+          as: "killerMatches",
+        },
+      },
+      {
+        $addFields: {
+          wins: {
+            $size: {
+              $filter: {
+                input: "$killerMatches",
+                as: "match",
+                cond: { $in: ["$userId", "$$match.winnerIds"] },
+              },
+            },
+          },
+          losses: {
+            $size: {
+              $filter: {
+                input: "$killerMatches",
+                as: "match",
+                cond: {
+                  $and: [
+                    { $gt: [{ $size: "$$match.winnerIds" }, 0] },
+                    { $not: { $in: ["$userId", "$$match.winnerIds"] } },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+      {
+        $addFields: {
+          ratio: {
+            $cond: [
+              { $eq: ["$losses", 0] },
+              "$wins",
+              { $divide: ["$wins", "$losses"] },
+            ],
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: FEATS_COLLECTION,
+          let: { userId: { $toString: "$userObjectId" }, leagueId: "$leagueId" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$userId", "$$userId"] },
+                    { $eq: ["$leagueId", "$$leagueId"] },
+                  ],
+                },
+              },
+            },
+          ],
+          as: "feats",
+        },
+      },
+      {
+        $addFields: {
+          userId: { $toString: "$userObjectId" },
+          "user.id": { $toString: "$user._id" },
+          feats: {
+            $map: {
+              input: "$feats",
+              as: "feat",
+              in: {
+                featId: "$$feat.featId",
+                earnedAt: "$$feat.earnedAt",
+                eventId: "$$feat.eventId",
+                matchId: "$$feat.matchId",
+              },
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          "user._id": 0,
+          leagueId: 0,
+          userObjectId: 0,
+          killerMatches: 0,
+        },
+      },
+      { $sort: { ratio: -1, wins: -1, joinedAt: 1 } },
+    ]).limit(100).toArray();
+
+    return sortedParticipants.map((participant, index) => ({
+      ...participant,
+      rank: index + 1,
+    }));
+  }
 
   const sortedParticipants = await db.collection(PARTICIPANTS_COLLECTION).aggregate<{
     userId: string;

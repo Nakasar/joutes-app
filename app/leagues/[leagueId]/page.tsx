@@ -178,7 +178,7 @@ export default async function LeagueDetailPage({
                 <CardDescription>
                   {league.format === "POINTS"
                     ? "Classement par points accumulés"
-                    : "Participants encore en lice"}
+                    : "Classement par ratio victoires / défaites"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -224,16 +224,38 @@ export default async function LeagueDetailPage({
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
-                          {participant.feats.length > 0 && (
-                            <Badge variant="secondary">
-                              {participant.feats.length} haut
-                              {participant.feats.length > 1 ? "s" : ""} fait
-                              {participant.feats.length > 1 ? "s" : ""}
-                            </Badge>
+                          {league.format === "POINTS" && (
+                            <>
+                              {participant.feats.length > 0 && (
+                                <Badge variant="secondary">
+                                  {participant.feats.length} haut
+                                  {participant.feats.length > 1 ? "s" : ""} fait
+                                  {participant.feats.length > 1 ? "s" : ""}
+                                </Badge>
+                              )}
+                              <span className="font-bold text-lg">
+                                {participant.points} pts
+                              </span>
+                            </>
                           )}
-                          <span className="font-bold text-lg">
-                            {participant.points} pts
-                          </span>
+                          {league.format === "KILLER" && (
+                            <div className="text-sm text-right">
+                              <div>
+                                <span className="text-muted-foreground">Victoires :</span>{" "}
+                                <span className="font-medium">{participant.wins ?? 0}</span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Défaites :</span>{" "}
+                                <span className="font-medium">{participant.losses ?? 0}</span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Ratio :</span>{" "}
+                                <span className="font-medium">
+                                  {(participant.ratio ?? 0).toFixed(2)}
+                                </span>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
