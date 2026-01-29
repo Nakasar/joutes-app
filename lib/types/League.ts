@@ -81,6 +81,7 @@ export type LeagueMatch = {
   id: string;
   gameId: Game["id"];
   lairId?: Lair["id"];
+  lairName?: string;
   playedAt: Date;
   playerIds: User["id"][]; // Tous les joueurs du match
   winnerIds: User["id"][]; // Les gagnants du match

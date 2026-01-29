@@ -1764,6 +1764,9 @@ export default function LeagueManageClient({
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
+                        <div className="text-xs text-muted-foreground">
+                          Lieu : {match.lairName || "Lieu non renseigné"}
+                        </div>
                         <div className="text-sm">
                           <span className="text-muted-foreground">Joueurs: </span>
                           {matchPlayers

@@ -1062,8 +1062,62 @@ export async function addLeagueMatch(
 export async function getLeagueMatches(leagueId: string): Promise<LeagueMatch[]> {
   const docs = await db
     .collection<LeagueMatchDocument>(MATCHES_COLLECTION)
-    .find({ leagueId: new ObjectId(leagueId) })
-    .sort({ playedAt: -1 })
+    .aggregate([
+      {
+        $match: {
+          leagueId: new ObjectId(leagueId),
+        },
+      },
+      {
+        $addFields: {
+          lairObjectId: {
+            $cond: [
+              {
+                $and: [
+                  { $ne: ["$lairId", null] },
+                  { $ne: ["$lairId", ""] },
+                ],
+              },
+              { $toObjectId: "$lairId" },
+              null,
+            ],
+          },
+        },
+      },
+      {
+        $lookup: {
+          from: "lairs",
+          localField: "lairObjectId",
+          foreignField: "_id",
+          as: "lair",
+          pipeline: [
+            {
+              $project: {
+                name: 1,
+              },
+            },
+          ],
+        },
+      },
+      {
+        $addFields: {
+          lairName: {
+            $ifNull: [{ $first: "$lair.name" }, null],
+          },
+        },
+      },
+      {
+        $sort: {
+          playedAt: -1,
+        },
+      },
+      {
+        $project: {
+          lair: 0,
+          lairObjectId: 0,
+        },
+      },
+    ])
     .toArray();
 
   return docs.map((doc) => ({
