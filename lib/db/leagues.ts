@@ -1239,7 +1239,7 @@ export async function addLeagueMatch(
 export async function getLeagueMatches(leagueId: string): Promise<LeagueMatch[]> {
   const docs = await db
     .collection<LeagueMatchDocument>(MATCHES_COLLECTION)
-    .aggregate([
+    .aggregate<LeagueMatchDocument>([
       {
         $match: {
           leagueId: new ObjectId(leagueId),
