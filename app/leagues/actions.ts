@@ -623,7 +623,7 @@ export async function generateKillerTargetsAction(
 
 export type ReportKillerMatchParams = {
   matchId?: string;
-  targetId: string;
+  targetId?: string;
   winnerId: string;
   playedAt: string;
 };

@@ -323,7 +323,7 @@ export default function KillerTargetsClient({
                     </Badge>
                   </div>
 
-                  {target.status === "PENDING" && (
+                  {target.status !== "CONFIRMED" && (
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button
@@ -333,17 +333,27 @@ export default function KillerTargetsClient({
                             setReportForm({
                               targetId: target.targetId,
                               matchId: target.matchId,
-                              winnerId: currentUserId,
-                              playedAt: DateTime.now().toFormat("yyyy-LL-dd'T'HH:mm"),
+                              winnerId: match?.winnerIds?.[0] || currentUserId,
+                              playedAt: match?.playedAt
+                                ? DateTime.fromJSDate(new Date(match.playedAt)).toFormat(
+                                    "yyyy-LL-dd'T'HH:mm"
+                                  )
+                                : DateTime.now().toFormat("yyyy-LL-dd'T'HH:mm"),
                             })
                           }
                         >
-                          Rapporter un résultat
+                          {target.status === "PENDING"
+                            ? "Rapporter un résultat"
+                            : "Modifier le résultat"}
                         </Button>
                       </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
-                          <DialogTitle>Rapporter un résultat</DialogTitle>
+                          <DialogTitle>
+                            {target.status === "PENDING"
+                              ? "Rapporter un résultat"
+                              : "Modifier le résultat"}
+                          </DialogTitle>
                           <DialogDescription>
                             Indiquez le vainqueur et la date du match.
                           </DialogDescription>

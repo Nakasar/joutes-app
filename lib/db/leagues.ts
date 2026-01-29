@@ -1459,7 +1459,7 @@ export async function assignKillerTargets(
 export async function reportKillerMatch(
   leagueId: string,
   userId: string,
-  targetId: string,
+  targetId: string | undefined,
   winnerId: string,
   playedAt: Date,
   matchId?: string
@@ -1475,6 +1475,10 @@ export async function reportKillerMatch(
 
   if (!league.participants.some((p) => p.userId === userId)) {
     throw new Error("Vous n&apos;êtes pas inscrit à cette ligue");
+  }
+
+  if (!matchId && !targetId) {
+    throw new Error("Cible introuvable");
   }
 
   const matchQuery = matchId
@@ -1494,11 +1498,24 @@ export async function reportKillerMatch(
     throw new Error("Cible introuvable");
   }
 
-  if (matchDoc.status && matchDoc.status !== "PENDING") {
-    throw new Error("Ce résultat est déjà en attente de confirmation");
+  if (matchDoc.status === "CONFIRMED") {
+    throw new Error("Ce match est déjà finalisé");
   }
 
-  if (![userId, targetId].includes(winnerId)) {
+  const isPlayer = matchDoc.playerIds.includes(userId);
+  let isLairOwner = false;
+  let lair = null;
+
+  if (!isPlayer && matchDoc.lairId) {
+    lair = await getLairById(matchDoc.lairId);
+    isLairOwner = !!lair && lair.owners.includes(userId);
+  }
+
+  if (!isPlayer && !isLairOwner) {
+    throw new Error("Vous n&apos;êtes pas autorisé à modifier ce match");
+  }
+
+  if (!matchDoc.playerIds.includes(winnerId)) {
     throw new Error("Le gagnant doit être un joueur du match");
   }
 
@@ -1512,37 +1529,73 @@ export async function reportKillerMatch(
 
   const now = new Date();
 
+  const updatePayload: { $set: Record<string, unknown>; $unset?: Record<string, ""> } = {
+    $set: {
+      playedAt,
+      winnerIds: [winnerId],
+      status: "REPORTED",
+      reportedBy: userId,
+      reportedAt: now,
+    },
+  };
+
+  if (isPlayer) {
+    updatePayload.$unset = {
+      confirmedBy: "",
+      confirmedAt: "",
+    };
+  }
+
+  if (isLairOwner) {
+    updatePayload.$set.lairConfirmedBy = userId;
+  }
+
   await db.collection(MATCHES_COLLECTION).updateOne(
     { leagueId: new ObjectId(leagueId), id: matchDoc.id },
-    {
-      $set: {
-        playedAt,
-        winnerIds: [winnerId],
-        status: "REPORTED",
-        reportedBy: userId,
-        reportedAt: now,
-      },
+    updatePayload
+  );
+
+  if (isPlayer) {
+    const opponentId = matchDoc.playerIds.find((id) => id !== userId);
+    if (opponentId) {
+      await notifyUserWithTemplate(
+        opponentId,
+        "Résultat de match à confirmer",
+        `Le résultat de votre match a été rapporté dans la ligue ${league.name}. Confirmez-le pour valider le match.`,
+        "league-match-result-confirmation-request",
+        leagueId,
+        matchDoc.id
+      );
     }
-  );
 
-  await notifyUserWithTemplate(
-    targetId,
-    "Résultat de match à confirmer",
-    `Le résultat de votre match a été rapporté  dans la ligue ${league.name}. Confirmez-le pour valider le match.`,
-    "league-match-result-confirmation-request",
-    leagueId,
-    matchDoc.id
-  );
+    const requireLair = league.killerConfig.requireLair ?? true;
+    if (requireLair && matchDoc.lairId) {
+      await notifyLairOwnersWithTemplate(
+        matchDoc.lairId,
+        "Match à confirmer",
+        `Un match de ligue est en attente de confirmation pour votre lieu dans ${league.name}.`,
+        "league-match-lair-confirmation-request",
+        leagueId,
+        matchDoc.id
+      );
+    }
+  }
 
-  const requireLair = league.killerConfig.requireLair ?? true;
-  if (requireLair && matchDoc.lairId) {
-    await notifyLairOwnersWithTemplate(
-      matchDoc.lairId,
-      "Match à confirmer",
-      `Un match de ligue est en attente de confirmation pour votre lieu dans ${league.name}.`,
-      "league-match-lair-confirmation-request",
+  if (isLairOwner && matchDoc.confirmedBy) {
+    const updatedMatch: LeagueMatch = {
+      ...matchDoc,
+      playedAt,
+      winnerIds: [winnerId],
+      reportedBy: userId,
+      reportedAt: now,
+      lairConfirmedBy: userId,
+      status: "REPORTED",
+    };
+
+    await finalizeKillerMatch(
       leagueId,
-      matchDoc.id
+      updatedMatch,
+      league.killerConfig?.eliminateOnDefeat ?? false
     );
   }
 
