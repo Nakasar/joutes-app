@@ -123,14 +123,16 @@ export function NotificationTemplate({ notification }: TemplateNotificationProps
           Résultat en attente de confirmation.
         </div>
       )}
-      <Button
-        onClick={handleConfirm}
-        disabled={isPending || !canConfirm || isAlreadyConfirmed}
-        size="sm"
-      >
-        {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-        {isLairConfirmation ? "Confirmer le lieu" : "Confirmer"}
-      </Button>
+      {notification.template !== 'league-match-assigned' && (
+        <Button
+            onClick={handleConfirm}
+            disabled={isPending || !canConfirm || isAlreadyConfirmed}
+            size="sm"
+        >
+            {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {isLairConfirmation ? "Valider le résultat" : "Confirmer le résultat"}
+        </Button>
+      )}
     </div>
   );
 }
