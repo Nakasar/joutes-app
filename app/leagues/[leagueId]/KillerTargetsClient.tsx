@@ -286,6 +286,20 @@ export default function KillerTargetsClient({
               const gameName = gameNames.get(target.gameId) || target.gameId;
               const lairName = lairNames.get(target.lairId) || target.lairId;
               const assignedDate = parseDate(target.assignedAt).setLocale("fr");
+                const match = league.matches.find((m) => m.id === target.matchId);
+                const winnerId = match?.winnerIds?.[0];
+                const winnerName = winnerId
+                  ? participantMap.get(winnerId) || winnerId
+                  : undefined;
+                const needsOpponent = !!match?.reportedBy && !match?.confirmedBy;
+                const needsLair = requireLair && !match?.lairConfirmedBy;
+                const pendingMessage = needsOpponent && needsLair
+                  ? "Résultat en attente de confirmation par le lieu et l'adversaire."
+                  : needsOpponent
+                  ? "Résultat en attente de confirmation par l'adversaire."
+                  : needsLair
+                  ? "Résultat en attente de confirmation par le lieu."
+                  : "Résultat en attente de confirmation.";
 
               return (
                 <div
@@ -403,7 +417,7 @@ export default function KillerTargetsClient({
 
                   {target.status === "REPORTED" && (
                     <p className="text-sm text-muted-foreground">
-                      Résultat en attente de confirmation{requireLair ? " par le lieu" : ""}.
+                      {pendingMessage}
                     </p>
                   )}
                 </div>
@@ -422,6 +436,10 @@ export default function KillerTargetsClient({
               const opponentName = opponentId
                 ? participantMap.get(opponentId) || opponentId
                 : "Adversaire";
+              const winnerId = match.winnerIds?.[0];
+              const winnerName = winnerId
+                ? participantMap.get(winnerId) || winnerId
+                : undefined;
               const matchDate = parseDate(match.playedAt).setLocale("fr");
               const gameName = gameNames.get(match.gameId) || match.gameId;
               const lairName = match.lairId
@@ -438,6 +456,11 @@ export default function KillerTargetsClient({
                     <p className="text-sm text-muted-foreground">
                       {gameName} · {lairName}
                     </p>
+                    {winnerName && (
+                      <p className="text-sm text-muted-foreground">
+                        Résultat : victoire de {winnerName}
+                      </p>
+                    )}
                     {matchDate.isValid && (
                       <p className="text-xs text-muted-foreground">
                         Joué {matchDate.toRelative()}
@@ -455,6 +478,10 @@ export default function KillerTargetsClient({
             })}
 
             {matchesNeedingLairConfirmation.map((match) => {
+              const winnerId = match.winnerIds?.[0];
+              const winnerName = winnerId
+                ? participantMap.get(winnerId) || winnerId
+                : undefined;
               const matchDate = parseDate(match.playedAt).setLocale("fr");
               const gameName = gameNames.get(match.gameId) || match.gameId;
               const lairName = match.lairId
@@ -471,6 +498,11 @@ export default function KillerTargetsClient({
                     <p className="text-sm text-muted-foreground">
                       {gameName} · {lairName}
                     </p>
+                    {winnerName && (
+                      <p className="text-sm text-muted-foreground">
+                        Résultat : victoire de {winnerName}
+                      </p>
+                    )}
                     {matchDate.isValid && (
                       <p className="text-xs text-muted-foreground">
                         Joué {matchDate.toRelative()}
