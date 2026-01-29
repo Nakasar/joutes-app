@@ -627,6 +627,7 @@ export type ReportKillerMatchParams = {
   matchId?: string;
   targetId?: string;
   winnerId: string;
+  playerScores?: Record<string, number>;
   playedAt: string;
 };
 
@@ -641,6 +642,7 @@ export async function reportKillerMatchAction(
       user.id,
       params.targetId,
       params.winnerId,
+      params.playerScores,
       new Date(params.playedAt),
       params.matchId
     );

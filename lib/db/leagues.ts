@@ -1655,6 +1655,7 @@ export async function reportKillerMatch(
   userId: string,
   targetId: string | undefined,
   winnerId: string,
+  playerScores: Record<string, number> | undefined,
   playedAt: Date,
   matchId?: string
 ): Promise<string> {
@@ -1709,7 +1710,34 @@ export async function reportKillerMatch(
     throw new Error("Vous n&apos;êtes pas autorisé à modifier ce match");
   }
 
-  if (!matchDoc.playerIds.includes(winnerId)) {
+  const normalizedScores = playerScores
+    ? matchDoc.playerIds.reduce<Record<string, number>>((acc, playerId) => {
+        const rawScore = playerScores?.[playerId];
+        const safeScore = Number.isFinite(rawScore)
+          ? Math.max(0, Math.floor(rawScore as number))
+          : 0;
+        acc[playerId] = safeScore;
+        return acc;
+      }, {})
+    : undefined;
+
+  const computedWinnerId = normalizedScores
+    ? (() => {
+        const scores = Object.values(normalizedScores);
+        if (scores.length === 0) return undefined;
+        const maxScore = Math.max(...scores);
+        const winners = matchDoc.playerIds.filter(
+          (playerId) => normalizedScores[playerId] === maxScore
+        );
+        return winners.length === 1 ? winners[0] : undefined;
+      })()
+    : winnerId;
+
+  if (!computedWinnerId) {
+    throw new Error("Impossible de déterminer un vainqueur");
+  }
+
+  if (!matchDoc.playerIds.includes(computedWinnerId)) {
     throw new Error("Le gagnant doit être un joueur du match");
   }
 
@@ -1726,7 +1754,8 @@ export async function reportKillerMatch(
   const updatePayload: { $set: Record<string, unknown>; $unset?: Record<string, ""> } = {
     $set: {
       playedAt,
-      winnerIds: [winnerId],
+      playerScores: normalizedScores,
+      winnerIds: [computedWinnerId],
       status: "REPORTED",
       reportedBy: userId,
       reportedAt: now,
@@ -1779,7 +1808,8 @@ export async function reportKillerMatch(
     const updatedMatch: LeagueMatch = {
       ...matchDoc,
       playedAt,
-      winnerIds: [winnerId],
+      playerScores: normalizedScores,
+      winnerIds: [computedWinnerId],
       reportedBy: userId,
       reportedAt: now,
       lairConfirmedBy: userId,

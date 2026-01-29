@@ -16,13 +16,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { AlertCircle, CheckCircle, Loader2, Target } from "lucide-react";
 import { League, LeagueParticipant } from "@/lib/types/League";
 import {
@@ -96,9 +89,46 @@ export default function KillerTargetsClient({
   const [reportForm, setReportForm] = useState<{
     targetId: string;
     matchId?: string;
-    winnerId: string;
+    playerScores: Record<string, number>;
     playedAt: string;
   } | null>(null);
+
+  const normalizeScores = (
+    playerIds: string[],
+    playerScores: Record<string, number>
+  ) =>
+    playerIds.reduce<Record<string, number>>((acc, playerId) => {
+      const rawScore = playerScores[playerId];
+      const safeScore = Number.isFinite(rawScore) ? Math.max(0, Math.floor(rawScore)) : 0;
+      acc[playerId] = safeScore;
+      return acc;
+    }, {});
+
+  const getWinnerIdFromScores = (
+    playerIds: string[],
+    playerScores: Record<string, number>
+  ) => {
+    if (playerIds.length === 0) return undefined;
+    const scores = Object.values(playerScores);
+    if (scores.length === 0) return undefined;
+    const maxScore = Math.max(...scores);
+    const winners = playerIds.filter((playerId) => playerScores[playerId] === maxScore);
+    return winners.length === 1 ? winners[0] : undefined;
+  };
+
+  const getMatchScoreLine = (
+    matchScores: Record<string, number> | undefined,
+    primaryId: string,
+    secondaryId: string,
+    primaryLabel: string,
+    secondaryLabel: string
+  ) => {
+    if (!matchScores) return null;
+    const primaryScore = matchScores[primaryId];
+    const secondaryScore = matchScores[secondaryId];
+    if (primaryScore === undefined && secondaryScore === undefined) return null;
+    return `${primaryLabel} ${primaryScore ?? 0} - ${secondaryScore ?? 0} ${secondaryLabel}`;
+  };
 
   const requireLair = league.killerConfig?.requireLair ?? true;
 
@@ -184,11 +214,23 @@ export default function KillerTargetsClient({
       return;
     }
 
+    const playerIds = [currentUserId, reportForm.targetId];
+    const normalizedScores = normalizeScores(playerIds, reportForm.playerScores);
+    const computedWinnerId = getWinnerIdFromScores(playerIds, normalizedScores);
+    if (!computedWinnerId) {
+      setError("Le score doit désigner un vainqueur");
+      return;
+    }
+
     setError(null);
     setSuccess(null);
 
     startTransition(async () => {
-      const result = await reportKillerMatchAction(leagueId, reportForm);
+      const result = await reportKillerMatchAction(leagueId, {
+        ...reportForm,
+        winnerId: computedWinnerId,
+        playerScores: normalizedScores,
+      });
       if (result.success) {
         setSuccess("Résultat envoyé");
         setReportForm(null);
@@ -291,6 +333,15 @@ export default function KillerTargetsClient({
               const winnerName = winnerId
                 ? participantMap.get(winnerId) || winnerId
                 : undefined;
+              const scoreLine = match
+                ? getMatchScoreLine(
+                    match.playerScores,
+                    currentUserId,
+                    target.targetId,
+                    "Vous",
+                    targetName
+                  )
+                : null;
               const needsOpponent = !!match?.reportedBy && !match?.confirmedBy;
               const needsLair = requireLair && !match?.lairConfirmedBy;
               const pendingMessage = needsOpponent && needsLair
@@ -312,6 +363,11 @@ export default function KillerTargetsClient({
                       <p className="text-sm text-muted-foreground">
                         {gameName} · {lairName}
                       </p>
+                      {scoreLine && (
+                        <p className="text-sm text-muted-foreground">
+                          Score : {scoreLine}
+                        </p>
+                      )}
                       {assignedDate.isValid && (
                         <p className="text-xs text-muted-foreground">
                           Assigné {assignedDate.toRelative()}
@@ -333,7 +389,10 @@ export default function KillerTargetsClient({
                             setReportForm({
                               targetId: target.targetId,
                               matchId: target.matchId,
-                              winnerId: match?.winnerIds?.[0] || currentUserId,
+                              playerScores: {
+                                [currentUserId]: match?.playerScores?.[currentUserId] ?? 0,
+                                [target.targetId]: match?.playerScores?.[target.targetId] ?? 0,
+                              },
                               playedAt: match?.playedAt
                                 ? DateTime.fromJSDate(new Date(match.playedAt)).toFormat(
                                     "yyyy-LL-dd'T'HH:mm"
@@ -355,43 +414,100 @@ export default function KillerTargetsClient({
                               : "Modifier le résultat"}
                           </DialogTitle>
                           <DialogDescription>
-                            Indiquez le vainqueur et la date du match.
+                            Indiquez le score exact et la date du match.
                           </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Vainqueur</label>
-                            <Select
-                              value={
-                                reportForm?.targetId === target.targetId
-                                  ? reportForm.winnerId
-                                  : currentUserId
-                              }
-                              onValueChange={(value) =>
-                                setReportForm({
-                                  targetId: target.targetId,
-                                  matchId: target.matchId,
-                                  winnerId: value,
-                                  playedAt:
-                                    reportForm?.targetId === target.targetId
-                                      ? reportForm.playedAt
-                                      : DateTime.now().toFormat("yyyy-LL-dd'T'HH:mm"),
-                                })
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Sélectionner" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value={currentUserId}>
-                                  Vous
-                                </SelectItem>
-                                <SelectItem value={target.targetId}>
-                                  {targetName}
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">Score Vous</label>
+                              <Input
+                                type="number"
+                                min="0"
+                                value={
+                                  reportForm?.targetId === target.targetId
+                                    ? reportForm.playerScores[currentUserId] ?? 0
+                                    : 0
+                                }
+                                onChange={(event) => {
+                                  const score = Number.parseInt(event.target.value, 10);
+                                  setReportForm({
+                                    targetId: target.targetId,
+                                    matchId: target.matchId,
+                                    playerScores: {
+                                      ...(reportForm?.targetId === target.targetId
+                                        ? reportForm.playerScores
+                                        : {}),
+                                      [currentUserId]: Number.isNaN(score) ? 0 : score,
+                                      [target.targetId]:
+                                        reportForm?.targetId === target.targetId
+                                          ? reportForm.playerScores[target.targetId] ?? 0
+                                          : 0,
+                                    },
+                                    playedAt:
+                                      reportForm?.targetId === target.targetId
+                                        ? reportForm.playedAt
+                                        : DateTime.now().toFormat("yyyy-LL-dd'T'HH:mm"),
+                                  });
+                                }}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium">
+                                Score {targetName}
+                              </label>
+                              <Input
+                                type="number"
+                                min="0"
+                                value={
+                                  reportForm?.targetId === target.targetId
+                                    ? reportForm.playerScores[target.targetId] ?? 0
+                                    : 0
+                                }
+                                onChange={(event) => {
+                                  const score = Number.parseInt(event.target.value, 10);
+                                  setReportForm({
+                                    targetId: target.targetId,
+                                    matchId: target.matchId,
+                                    playerScores: {
+                                      ...(reportForm?.targetId === target.targetId
+                                        ? reportForm.playerScores
+                                        : {}),
+                                      [currentUserId]:
+                                        reportForm?.targetId === target.targetId
+                                          ? reportForm.playerScores[currentUserId] ?? 0
+                                          : 0,
+                                      [target.targetId]: Number.isNaN(score) ? 0 : score,
+                                    },
+                                    playedAt:
+                                      reportForm?.targetId === target.targetId
+                                        ? reportForm.playedAt
+                                        : DateTime.now().toFormat("yyyy-LL-dd'T'HH:mm"),
+                                  });
+                                }}
+                              />
+                            </div>
                           </div>
+                          {reportForm?.targetId === target.targetId && (() => {
+                            const normalizedScores = normalizeScores(
+                              [currentUserId, target.targetId],
+                              reportForm.playerScores
+                            );
+                            const winnerId = getWinnerIdFromScores(
+                              [currentUserId, target.targetId],
+                              normalizedScores
+                            );
+                            const winnerLabel = winnerId
+                              ? winnerId === currentUserId
+                                ? "Vous"
+                                : targetName
+                              : "Egalite";
+                            return (
+                              <p className="text-sm text-muted-foreground">
+                                Vainqueur : {winnerLabel}
+                              </p>
+                            );
+                          })()}
                           <div className="space-y-2">
                             <label className="text-sm font-medium">Date du match</label>
                             <Input
@@ -405,10 +521,13 @@ export default function KillerTargetsClient({
                                 setReportForm({
                                   targetId: target.targetId,
                                   matchId: target.matchId,
-                                  winnerId:
+                                  playerScores:
                                     reportForm?.targetId === target.targetId
-                                      ? reportForm.winnerId
-                                      : currentUserId,
+                                      ? reportForm.playerScores
+                                      : {
+                                          [currentUserId]: 0,
+                                          [target.targetId]: 0,
+                                        },
                                   playedAt: event.target.value,
                                 })
                               }
@@ -432,6 +551,11 @@ export default function KillerTargetsClient({
                           Résultat : victoire de {winnerName}
                         </p>
                       )}
+                      {scoreLine && (
+                        <p className="text-sm text-muted-foreground">
+                          Score : {scoreLine}
+                        </p>
+                      )}
                       <p className="text-sm text-muted-foreground">
                         {pendingMessage}
                       </p>
@@ -439,9 +563,16 @@ export default function KillerTargetsClient({
                   )}
 
                   {target.status === "CONFIRMED" && winnerName && (
-                    <p className="text-sm text-muted-foreground">
-                      Résultat confirmé : victoire de {winnerName}
-                    </p>
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground">
+                        Résultat confirmé : victoire de {winnerName}
+                      </p>
+                      {scoreLine && (
+                        <p className="text-sm text-muted-foreground">
+                          Score : {scoreLine}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
               );
@@ -463,6 +594,13 @@ export default function KillerTargetsClient({
               const winnerName = winnerId
                 ? participantMap.get(winnerId) || winnerId
                 : undefined;
+              const scoreLine = getMatchScoreLine(
+                match.playerScores,
+                currentUserId,
+                opponentId || "",
+                "Vous",
+                opponentName
+              );
               const matchDate = parseDate(match.playedAt).setLocale("fr");
               const gameName = gameNames.get(match.gameId) || match.gameId;
               const lairName = match.lairId
@@ -482,6 +620,11 @@ export default function KillerTargetsClient({
                     {winnerName && (
                       <p className="text-sm text-muted-foreground">
                         Résultat : victoire de {winnerName}
+                      </p>
+                    )}
+                    {scoreLine && (
+                      <p className="text-sm text-muted-foreground">
+                        Score : {scoreLine}
                       </p>
                     )}
                     {matchDate.isValid && (
@@ -505,6 +648,17 @@ export default function KillerTargetsClient({
               const winnerName = winnerId
                 ? participantMap.get(winnerId) || winnerId
                 : undefined;
+              const matchPlayers = match.playerIds;
+              const scoreLine =
+                matchPlayers.length === 2
+                  ? getMatchScoreLine(
+                      match.playerScores,
+                      matchPlayers[0],
+                      matchPlayers[1],
+                      participantMap.get(matchPlayers[0]) || matchPlayers[0],
+                      participantMap.get(matchPlayers[1]) || matchPlayers[1]
+                    )
+                  : null;
               const matchDate = parseDate(match.playedAt).setLocale("fr");
               const gameName = gameNames.get(match.gameId) || match.gameId;
               const lairName = match.lairId
@@ -524,6 +678,11 @@ export default function KillerTargetsClient({
                     {winnerName && (
                       <p className="text-sm text-muted-foreground">
                         Résultat : victoire de {winnerName}
+                      </p>
+                    )}
+                    {scoreLine && (
+                      <p className="text-sm text-muted-foreground">
+                        Score : {scoreLine}
                       </p>
                     )}
                     {matchDate.isValid && (
