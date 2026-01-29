@@ -286,20 +286,20 @@ export default function KillerTargetsClient({
               const gameName = gameNames.get(target.gameId) || target.gameId;
               const lairName = lairNames.get(target.lairId) || target.lairId;
               const assignedDate = parseDate(target.assignedAt).setLocale("fr");
-                const match = league.matches.find((m) => m.id === target.matchId);
-                const winnerId = match?.winnerIds?.[0];
-                const winnerName = winnerId
-                  ? participantMap.get(winnerId) || winnerId
-                  : undefined;
-                const needsOpponent = !!match?.reportedBy && !match?.confirmedBy;
-                const needsLair = requireLair && !match?.lairConfirmedBy;
-                const pendingMessage = needsOpponent && needsLair
-                  ? "Résultat en attente de confirmation par le lieu et l'adversaire."
-                  : needsOpponent
-                  ? "Résultat en attente de confirmation par l'adversaire."
-                  : needsLair
-                  ? "Résultat en attente de confirmation par le lieu."
-                  : "Résultat en attente de confirmation.";
+              const match = league.matches.find((m) => m.id === target.matchId);
+              const winnerId = match?.winnerIds?.[0];
+              const winnerName = winnerId
+                ? participantMap.get(winnerId) || winnerId
+                : undefined;
+              const needsOpponent = !!match?.reportedBy && !match?.confirmedBy;
+              const needsLair = requireLair && !match?.lairConfirmedBy;
+              const pendingMessage = needsOpponent && needsLair
+                ? "Résultat en attente de confirmation par le lieu et l&apos;adversaire."
+                : needsOpponent
+                ? "Résultat en attente de confirmation par l&apos;adversaire."
+                : needsLair
+                ? "Résultat en attente de confirmation par le lieu."
+                : "Résultat en attente de confirmation.";
 
               return (
                 <div
@@ -416,8 +416,21 @@ export default function KillerTargetsClient({
                   )}
 
                   {target.status === "REPORTED" && (
+                    <div className="space-y-1">
+                      {winnerName && (
+                        <p className="text-sm text-muted-foreground">
+                          Résultat : victoire de {winnerName}
+                        </p>
+                      )}
+                      <p className="text-sm text-muted-foreground">
+                        {pendingMessage}
+                      </p>
+                    </div>
+                  )}
+
+                  {target.status === "CONFIRMED" && winnerName && (
                     <p className="text-sm text-muted-foreground">
-                      {pendingMessage}
+                      Résultat confirmé : victoire de {winnerName}
                     </p>
                   )}
                 </div>
