@@ -165,6 +165,16 @@ export default async function LeagueDetailPage({
           </div>
         </div>
 
+        {league.banner && (
+          <div className="overflow-hidden rounded-lg border bg-muted/30">
+            <img
+              src={league.banner}
+              alt={`Bannière de ${league.name}`}
+              className="h-48 w-full object-cover"
+            />
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Colonne principale */}
           <div className="lg:col-span-2 space-y-6">

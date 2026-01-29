@@ -107,6 +107,7 @@ export default function LeagueManageClient({
   const [formData, setFormData] = useState({
     name: league.name,
     description: league.description || "",
+    banner: league.banner || "",
     isPublic: league.isPublic,
     startDate: league.startDate
       ? new Date(league.startDate).toISOString().split("T")[0]
@@ -125,6 +126,8 @@ export default function LeagueManageClient({
     killerRequireLair: league.killerConfig?.requireLair ?? true,
     killerEliminateOnDefeat: league.killerConfig?.eliminateOnDefeat ?? false,
   });
+
+  const [uploading, setUploading] = useState(false);
 
   // État pour l'ajout de points
   const [pointsForm, setPointsForm] = useState({
@@ -216,6 +219,7 @@ export default function LeagueManageClient({
       const result = await updateLeagueAction(league.id, {
         name: formData.name,
         description: formData.description || undefined,
+        banner: formData.banner || undefined,
         isPublic: formData.isPublic,
         startDate: formData.startDate || undefined,
         endDate: formData.endDate || undefined,
@@ -562,6 +566,37 @@ export default function LeagueManageClient({
 
   const feats = league.pointsConfig?.pointsRules.feats || [];
 
+  const handleFileUpload = async (file: File) => {
+    setUploading(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Erreur lors de l'upload");
+      }
+
+      const data = await response.json();
+      setFormData((prev) => ({ ...prev, banner: data.url }));
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Erreur lors de l'upload du fichier"
+      );
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Messages */}
@@ -648,6 +683,48 @@ export default function LeagueManageClient({
                 />
               </div>
 
+              <div className="space-y-2">
+                <label htmlFor="banner" className="text-sm font-medium">
+                  Bannière (optionnelle)
+                </label>
+                <div className="space-y-2">
+                  <Input
+                    id="banner"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileUpload(file);
+                    }}
+                    disabled={uploading}
+                  />
+                  {uploading && (
+                    <p className="text-sm text-muted-foreground">
+                      Upload en cours...
+                    </p>
+                  )}
+                  {formData.banner && !uploading && (
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={formData.banner}
+                        alt="Bannière de la ligue"
+                        className="w-32 h-16 object-cover rounded"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          setFormData({ ...formData, banner: "" })
+                        }
+                      >
+                        Supprimer
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <label htmlFor="isPublic" className="text-sm font-medium">
@@ -666,7 +743,7 @@ export default function LeagueManageClient({
                 />
               </div>
 
-              <Button onClick={handleSaveSettings} disabled={loading}>
+              <Button onClick={handleSaveSettings} disabled={loading || uploading}>
                 {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 Sauvegarder
               </Button>
@@ -832,7 +909,7 @@ export default function LeagueManageClient({
                   />
                 </div>
               </div>
-              <Button onClick={handleSaveSettings} disabled={loading}>
+              <Button onClick={handleSaveSettings} disabled={loading || uploading}>
                 {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 Sauvegarder
               </Button>
@@ -905,7 +982,7 @@ export default function LeagueManageClient({
                 <p className="text-xs text-muted-foreground">
                   Si désactivé, le joueur vaincu n&apos;est pas éliminé.
                 </p>
-                <Button onClick={handleSaveSettings} disabled={loading}>
+                <Button onClick={handleSaveSettings} disabled={loading || uploading}>
                   {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   Sauvegarder
                 </Button>
@@ -959,7 +1036,7 @@ export default function LeagueManageClient({
                 </div>
               )}
 
-              <Button onClick={handleSaveSettings} disabled={loading}>
+              <Button onClick={handleSaveSettings} disabled={loading || uploading}>
                 {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 Sauvegarder
               </Button>
