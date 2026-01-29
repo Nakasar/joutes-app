@@ -29,9 +29,7 @@ export default async function NewLeaguePage() {
   ]);
 
   // Filtrer les lairs pour ne garder que ceux dont l'utilisateur est owner
-  const ownedLairs = lairs.filter((lair) =>
-    lair.owners.includes(session.user.id)
-  );
+  const ownedLairs = lairs;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">

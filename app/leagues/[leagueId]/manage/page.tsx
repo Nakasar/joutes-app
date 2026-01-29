@@ -66,9 +66,7 @@ export default async function LeagueManagePage({
     getAllLairs(session.user.id),
   ]);
 
-  const ownedLairs = allLairs.filter((lair) =>
-    lair.owners.includes(session.user.id)
-  );
+  const ownedLairs = allLairs;
 
 
   return (
