@@ -622,6 +622,7 @@ export async function generateKillerTargetsAction(
 }
 
 export type ReportKillerMatchParams = {
+  matchId?: string;
   targetId: string;
   winnerId: string;
   playedAt: string;
@@ -638,7 +639,8 @@ export async function reportKillerMatchAction(
       user.id,
       params.targetId,
       params.winnerId,
-      new Date(params.playedAt)
+      new Date(params.playedAt),
+      params.matchId
     );
 
     revalidatePath(`/leagues/${leagueId}`);

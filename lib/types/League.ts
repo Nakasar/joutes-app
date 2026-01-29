@@ -88,7 +88,7 @@ export type LeagueMatch = {
   createdBy: User["id"];
   createdAt: Date;
   notes?: string; // Notes optionnelles sur le match
-  status?: "REPORTED" | "CONFIRMED";
+  status?: "PENDING" | "REPORTED" | "CONFIRMED";
   reportedBy?: User["id"];
   reportedAt?: Date;
   confirmedBy?: User["id"];

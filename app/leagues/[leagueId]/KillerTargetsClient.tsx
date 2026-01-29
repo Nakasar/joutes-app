@@ -95,6 +95,7 @@ export default function KillerTargetsClient({
   const [success, setSuccess] = useState<string | null>(null);
   const [reportForm, setReportForm] = useState<{
     targetId: string;
+    matchId?: string;
     winnerId: string;
     playedAt: string;
   } | null>(null);
@@ -119,7 +120,30 @@ export default function KillerTargetsClient({
     [participantsWithUsers]
   );
 
-  const targets = participant?.targets || [];
+  const targets = useMemo(() => {
+    return (league.matches || [])
+      .filter(
+        (match) =>
+          match.isKillerMatch && match.playerIds.includes(currentUserId)
+      )
+      .map((match) => {
+        const opponentId = match.playerIds.find((id) => id !== currentUserId) || currentUserId;
+        return {
+          targetId: opponentId,
+          gameId: match.gameId,
+          lairId: match.lairId || "",
+          assignedAt: match.createdAt,
+          status: match.status || "PENDING",
+          matchId: match.id,
+          reportedBy: match.reportedBy,
+          reportedAt: match.reportedAt,
+          confirmedBy: match.confirmedBy,
+          lairConfirmedBy: match.lairConfirmedBy,
+          confirmedAt: match.confirmedAt,
+        };
+      });
+  }, [league.matches, currentUserId]);
+
   const activeTargets = targets.filter((target) => target.status !== "CONFIRMED");
 
   const matchesNeedingOpponentConfirmation = league.matches.filter(
@@ -294,6 +318,7 @@ export default function KillerTargetsClient({
                           onClick={() =>
                             setReportForm({
                               targetId: target.targetId,
+                              matchId: target.matchId,
                               winnerId: currentUserId,
                               playedAt: DateTime.now().toFormat("yyyy-LL-dd'T'HH:mm"),
                             })
@@ -321,6 +346,7 @@ export default function KillerTargetsClient({
                               onValueChange={(value) =>
                                 setReportForm({
                                   targetId: target.targetId,
+                                  matchId: target.matchId,
                                   winnerId: value,
                                   playedAt:
                                     reportForm?.targetId === target.targetId
@@ -354,6 +380,7 @@ export default function KillerTargetsClient({
                               onChange={(event) =>
                                 setReportForm({
                                   targetId: target.targetId,
+                                  matchId: target.matchId,
                                   winnerId:
                                     reportForm?.targetId === target.targetId
                                       ? reportForm.winnerId
