@@ -1254,8 +1254,14 @@ export async function assignKillerTargets(
     throw new Error("Utilisateur non trouvé");
   }
 
-  const candidateIds = league.participants
-    .filter((p) => p.userId !== userId && !p.isEliminated)
+  const eligibleParticipants = league.participants.filter(
+    (p) => p.userId !== userId && !p.isEliminated
+  );
+  const eligibleParticipantMap = new Map(
+    eligibleParticipants.map((p) => [p.userId, p])
+  );
+
+  const candidateIds = eligibleParticipants
     .map((p) => p.userId)
     .filter((candidateId) =>
       !activeTargets.some((target) => target.targetId === candidateId)
@@ -1292,6 +1298,21 @@ export async function assignKillerTargets(
 
   const potentialTargets = candidateUsers
     .map((opponent) => {
+      const opponentParticipant = eligibleParticipantMap.get(opponent.id);
+      if (!opponentParticipant) {
+        return null;
+      }
+
+      const opponentTargets = normalizeTargets(opponentParticipant.targets) || [];
+      const opponentActiveTargets = getActiveTargets(opponentTargets);
+      if (opponentActiveTargets.length >= targetLimit) {
+        return null;
+      }
+
+      if (opponentActiveTargets.some((target) => target.targetId === userId)) {
+        return null;
+      }
+
       const commonLairs = (opponent.lairs || []).filter(
         (lairId) => userLairSet.has(lairId) && league.lairIds.includes(lairId)
       );
@@ -1318,20 +1339,65 @@ export async function assignKillerTargets(
     );
 
   if (potentialTargets.length === 0) {
-    return currentTargets;
+    throw new Error(
+      "Tous les matchs sont actuellement générés et vous obtiendrez vos cibles plus tard."
+    );
   }
 
   const neededTargets = targetLimit - activeTargets.length;
   const selectedTargets = shuffleArray(potentialTargets).slice(0, neededTargets);
   const now = new Date();
 
-  const newTargets: KillerTarget[] = selectedTargets.map((target) => ({
-    targetId: target.targetId,
-    lairId: target.lairId,
-    gameId: target.gameId,
-    assignedAt: now,
-    status: "PENDING",
-  }));
+  const newTargets: KillerTarget[] = [];
+  for (const target of selectedTargets) {
+    if (newTargets.length + activeTargets.length >= targetLimit) {
+      break;
+    }
+
+    const opponentParticipant = eligibleParticipantMap.get(target.targetId);
+    if (!opponentParticipant) {
+      continue;
+    }
+
+    const opponentTargets = normalizeTargets(opponentParticipant.targets) || [];
+    const opponentActiveTargets = getActiveTargets(opponentTargets);
+    if (opponentActiveTargets.length >= targetLimit) {
+      continue;
+    }
+
+    if (opponentActiveTargets.some((entry) => entry.targetId === userId)) {
+      continue;
+    }
+
+    const requesterTarget: KillerTarget = {
+      targetId: target.targetId,
+      lairId: target.lairId,
+      gameId: target.gameId,
+      assignedAt: now,
+      status: "PENDING",
+    };
+
+    const opponentTarget: KillerTarget = {
+      targetId: userId,
+      lairId: target.lairId,
+      gameId: target.gameId,
+      assignedAt: now,
+      status: "PENDING",
+    };
+
+    newTargets.push(requesterTarget);
+
+    await db.collection(PARTICIPANTS_COLLECTION).updateOne(
+      { leagueId: new ObjectId(leagueId), userId: target.targetId },
+      { $set: { targets: [...opponentTargets, opponentTarget] } }
+    );
+  }
+
+  if (newTargets.length === 0) {
+    throw new Error(
+      "Tous les matchs sont actuellement générés et vous obtiendrez vos cibles plus tard."
+    );
+  }
 
   const updatedTargets = [...currentTargets, ...newTargets];
 
