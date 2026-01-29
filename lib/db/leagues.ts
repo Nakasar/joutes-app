@@ -16,7 +16,7 @@ import {ObjectId, WithId, Document, Filter} from "mongodb";
 import {nanoid} from "nanoid";
 import {User} from "@/lib/types/User";
 import { getUserById, getUsersByIds } from "@/lib/db/users";
-import { notifyLairOwners, notifyUserWithTemplate } from "@/lib/services/notifications";
+import { notifyLairOwnersWithTemplate, notifyUserWithTemplate } from "@/lib/services/notifications";
 import { getLairById } from "@/lib/db/lairs";
 
 const COLLECTION_NAME = "leagues";
@@ -1536,10 +1536,13 @@ export async function reportKillerMatch(
 
   const requireLair = league.killerConfig.requireLair ?? true;
   if (requireLair && matchDoc.lairId) {
-    await notifyLairOwners(
+    await notifyLairOwnersWithTemplate(
       matchDoc.lairId,
       "Match à confirmer",
-      `Un match de ligue est en attente de confirmation pour votre lieu dans ${league.name}.`
+      `Un match de ligue est en attente de confirmation pour votre lieu dans ${league.name}.`,
+      "league-match-lair-confirmation-request",
+      leagueId,
+      matchDoc.id
     );
   }
 

@@ -17,7 +17,7 @@ export async function notifyUserWithTemplate(
   userId: string,
   title: string,
   description: string,
-  template: "league-match-result-confirmation-request" | "league-match-assigned",
+  template: "league-match-result-confirmation-request" | "league-match-lair-confirmation-request" | "league-match-assigned",
   leagueId: string,
   matchId: string
 ): Promise<Notification> {
@@ -42,6 +42,26 @@ export async function notifyLairOwners(lairId: string, title: string, descriptio
     target: 'owners',
     title,
     description,
+  });
+}
+
+export async function notifyLairOwnersWithTemplate(
+  lairId: string,
+  title: string,
+  description: string,
+  template: "league-match-lair-confirmation-request",
+  leagueId: string,
+  matchId: string
+): Promise<Notification> {
+  return createNotification({
+    type: 'lair',
+    lairId,
+    target: 'owners',
+    title,
+    description,
+    template,
+    leagueId,
+    matchId,
   });
 }
 

@@ -19,6 +19,7 @@ export type NotificationTarget = UserNotificationTarget | LairNotificationTarget
 
 export type NotificationTemplate =
   | "league-match-result-confirmation-request"
+  | "league-match-lair-confirmation-request"
   | "league-match-assigned";
 
 export type Notification = {

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
-import { confirmKillerMatchAction } from "@/app/leagues/actions";
+import { confirmKillerMatchAction, confirmKillerMatchLairAction } from "@/app/leagues/actions";
 
 type MatchPlayer = {
   id: string;
@@ -48,7 +48,11 @@ export function NotificationTemplate({ notification }: TemplateNotificationProps
     ? matchPlayers.find((player) => player.id !== winnerId)
     : undefined;
 
+  const isLairConfirmation = notification.template === "league-match-lair-confirmation-request";
   const canConfirm = !!leagueId && !!matchId;
+  const isAlreadyConfirmed = isLairConfirmation
+    ? !!notification.match?.lairConfirmedBy
+    : !!notification.match?.confirmedBy;
 
   const handleConfirm = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
@@ -60,9 +64,11 @@ export function NotificationTemplate({ notification }: TemplateNotificationProps
     setSuccess(null);
 
     startTransition(async () => {
-      const result = await confirmKillerMatchAction(leagueId, matchId);
+      const result = isLairConfirmation
+        ? await confirmKillerMatchLairAction(leagueId, matchId)
+        : await confirmKillerMatchAction(leagueId, matchId);
       if (result.success) {
-        setSuccess("Résultat confirmé");
+        setSuccess(isLairConfirmation ? "Lieu confirmé" : "Résultat confirmé");
       } else {
         setError(result.error || "Erreur lors de la confirmation");
       }
@@ -93,6 +99,11 @@ export function NotificationTemplate({ notification }: TemplateNotificationProps
           <span>{leagueName}</span>
         )}
       </div>
+      {isLairConfirmation && (
+        <div className="text-sm text-muted-foreground">
+          Lieu : {notification.lair?.name || "Lieu non renseigné"}
+        </div>
+      )}
       <div className="text-sm text-muted-foreground">
         {matchPlayers.length >= 2 ? (
           <span>
@@ -112,9 +123,13 @@ export function NotificationTemplate({ notification }: TemplateNotificationProps
           Résultat en attente de confirmation.
         </div>
       )}
-      <Button onClick={handleConfirm} disabled={isPending || !canConfirm} size="sm">
+      <Button
+        onClick={handleConfirm}
+        disabled={isPending || !canConfirm || isAlreadyConfirmed}
+        size="sm"
+      >
         {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-        Confirmer
+        {isLairConfirmation ? "Confirmer le lieu" : "Confirmer"}
       </Button>
     </div>
   );
