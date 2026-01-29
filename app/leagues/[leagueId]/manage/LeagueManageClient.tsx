@@ -164,10 +164,32 @@ export default function LeagueManageClient({
     gameId: league.gameIds[0] || "",
     playedAt: new Date().toISOString().slice(0, 16),
     playerIds: [] as string[],
-    winnerIds: [] as string[],
+    playerScores: {} as Record<string, number>,
     featAwards: [] as MatchFeatAward[],
     notes: "",
   });
+
+  const normalizeMatchScores = (
+    playerIds: string[],
+    playerScores: Record<string, number>
+  ) =>
+    playerIds.reduce<Record<string, number>>((acc, playerId) => {
+      const rawScore = playerScores[playerId];
+      const safeScore = Number.isFinite(rawScore) ? Math.max(0, Math.floor(rawScore)) : 0;
+      acc[playerId] = safeScore;
+      return acc;
+    }, {});
+
+  const computeWinnerIds = (
+    playerIds: string[],
+    playerScores: Record<string, number>
+  ) => {
+    if (playerIds.length === 0) return [] as string[];
+    const scores = Object.values(playerScores);
+    if (scores.length === 0) return [] as string[];
+    const maxScore = Math.max(...scores);
+    return playerIds.filter((playerId) => playerScores[playerId] === maxScore);
+  };
 
   // Options pour le multi-select des joueurs
   const playerOptions = participantsWithUsers.map((p) => ({
@@ -175,6 +197,15 @@ export default function LeagueManageClient({
     label: p.user?.displayName || p.user?.username || p.userId,
     searchTerms: `${p.user?.username || ""} ${p.user?.displayName || ""}`.trim(),
   }));
+
+  const normalizedMatchScores = normalizeMatchScores(
+    matchForm.playerIds,
+    matchForm.playerScores
+  );
+  const computedWinnerIds = computeWinnerIds(
+    matchForm.playerIds,
+    normalizedMatchScores
+  );
 
   const handleSaveSettings = async () => {
     setLoading(true);
@@ -364,6 +395,15 @@ export default function LeagueManageClient({
       return;
     }
 
+    const normalizedScores = normalizeMatchScores(
+      matchForm.playerIds,
+      matchForm.playerScores
+    );
+    const computedWinnerIds = computeWinnerIds(
+      matchForm.playerIds,
+      normalizedScores
+    );
+
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -373,13 +413,14 @@ export default function LeagueManageClient({
         gameId: matchForm.gameId,
         playedAt: matchForm.playedAt,
         playerIds: matchForm.playerIds,
-        winnerIds: matchForm.winnerIds,
+        playerScores: normalizedScores,
+        winnerIds: computedWinnerIds,
         featAwards: matchForm.featAwards.length > 0 ? matchForm.featAwards : undefined,
         notes: matchForm.notes || undefined,
       });
       if (result.success) {
         setSuccess("Match enregistré avec succès");
-        setMatchForm({ gameId: league.gameIds[0] || "", playedAt: new Date().toISOString().slice(0, 16), playerIds: [], winnerIds: [], featAwards: [], notes: "" });
+        setMatchForm({ gameId: league.gameIds[0] || "", playedAt: new Date().toISOString().slice(0, 16), playerIds: [], playerScores: {}, featAwards: [], notes: "" });
         router.refresh();
       } else {
         setError(result.error || "Erreur lors de l'enregistrement du match");
@@ -1430,6 +1471,10 @@ export default function LeagueManageClient({
                                   setMatchForm({
                                     ...matchForm,
                                     playerIds: [...matchForm.playerIds, p.userId],
+                                    playerScores: {
+                                      ...matchForm.playerScores,
+                                      [p.userId]: matchForm.playerScores[p.userId] ?? 0,
+                                    },
                                   });
                                 }}
                               >
@@ -1458,7 +1503,7 @@ export default function LeagueManageClient({
                       const player = participantsWithUsers.find(
                         (p) => p.userId === playerId
                       );
-                      const isWinner = matchForm.winnerIds.includes(playerId);
+                      const isWinner = computedWinnerIds.includes(playerId);
                       const playerFeats = matchForm.featAwards.filter(
                         (fa) => fa.playerId === playerId
                       );
@@ -1503,32 +1548,28 @@ export default function LeagueManageClient({
                               );
                             })}
                           </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            {/* Bouton couronne pour déclarer vainqueur */}
-                            <Button
-                              variant={isWinner ? "default" : "ghost"}
-                              size="icon"
-                              className={isWinner ? "bg-amber-500 hover:bg-amber-600" : ""}
-                              onClick={() => {
-                                if (isWinner) {
-                                  setMatchForm({
-                                    ...matchForm,
-                                    winnerIds: matchForm.winnerIds.filter(
-                                      (id) => id !== playerId
-                                    ),
-                                  });
-                                } else {
-                                  setMatchForm({
-                                    ...matchForm,
-                                    winnerIds: [...matchForm.winnerIds, playerId],
-                                  });
-                                }
+                          <div className="flex items-center gap-2 shrink-0">
+                            <label className="text-xs text-muted-foreground">
+                              Parties gagnées
+                            </label>
+                            <Input
+                              type="number"
+                              min={0}
+                              className="h-8 w-20"
+                              value={matchForm.playerScores[playerId] ?? 0}
+                              onChange={(e) => {
+                                const score = Number.parseInt(e.target.value, 10);
+                                setMatchForm({
+                                  ...matchForm,
+                                  playerScores: {
+                                    ...matchForm.playerScores,
+                                    [playerId]: Number.isNaN(score) ? 0 : score,
+                                  },
+                                });
                               }}
-                              title={isWinner ? "Retirer le statut de vainqueur" : "Déclarer vainqueur"}
-                            >
-                              <Crown className="h-4 w-4" />
-                            </Button>
-
+                            />
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
                             {/* Bouton trophée pour ajouter un haut fait */}
                             {feats.length > 0 && (
                               <Popover>
@@ -1633,8 +1674,10 @@ export default function LeagueManageClient({
                                   playerIds: matchForm.playerIds.filter(
                                     (id) => id !== playerId
                                   ),
-                                  winnerIds: matchForm.winnerIds.filter(
-                                    (id) => id !== playerId
+                                  playerScores: Object.fromEntries(
+                                    Object.entries(matchForm.playerScores).filter(
+                                      ([id]) => id !== playerId
+                                    )
                                   ),
                                   featAwards: matchForm.featAwards.filter(
                                     (fa) => fa.playerId !== playerId
@@ -1705,6 +1748,16 @@ export default function LeagueManageClient({
                         participantsWithUsers.find((p) => p.userId === id)
                       )
                       .filter(Boolean);
+                    const matchScores = match.playerScores || {};
+                    const hasScores = Object.keys(matchScores).length > 0;
+                    const scoreEntries = match.playerIds.map((id) => {
+                      const player = participantsWithUsers.find((p) => p.userId === id);
+                      return {
+                        id,
+                        score: matchScores[id] ?? 0,
+                        name: player?.user?.displayName || player?.user?.username || id,
+                      };
+                    });
 
                     // Calculer les points totaux par joueur pour ce match
                     const playerPoints: Record<string, { base: number; feats: Array<{ title: string; points: number; counted: boolean }> }> = {};
@@ -1776,6 +1829,24 @@ export default function LeagueManageClient({
                             )
                             .join(", ")}
                         </div>
+                        {hasScores && match.playerIds.length === 2 && (
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">Score: </span>
+                            <span className="font-medium">
+                              {scoreEntries[0]?.name} {scoreEntries[0]?.score ?? 0} - {scoreEntries[1]?.score ?? 0} {scoreEntries[1]?.name}
+                            </span>
+                          </div>
+                        )}
+                        {hasScores && match.playerIds.length !== 2 && (
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">Scores: </span>
+                            <span className="font-medium">
+                              {scoreEntries
+                                .map((entry) => `${entry.name}: ${entry.score}`)
+                                .join(", ")}
+                            </span>
+                          </div>
+                        )}
                         {matchWinners.length > 0 && (
                           <div className="text-sm">
                             <span className="text-muted-foreground">Gagnant(s): </span>

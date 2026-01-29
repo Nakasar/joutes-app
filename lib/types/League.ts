@@ -84,6 +84,7 @@ export type LeagueMatch = {
   lairName?: string;
   playedAt: Date;
   playerIds: User["id"][]; // Tous les joueurs du match
+  playerScores?: Record<User["id"], number>; // Parties gagnées par joueur
   winnerIds: User["id"][]; // Les gagnants du match
   featAwards?: MatchFeatAward[]; // Hauts faits attribués lors du match
   createdBy: User["id"];

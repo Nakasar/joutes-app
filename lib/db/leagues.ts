@@ -1046,7 +1046,29 @@ export async function addLeagueMatch(
   }
 
   // Vérifier que tous les gagnants font partie des joueurs du match
-  const allWinnersArePlayers = matchInput.winnerIds.every((winnerId) =>
+  const normalizedScores = matchInput.playerScores
+    ? matchInput.playerIds.reduce<Record<string, number>>((acc, playerId) => {
+        const rawScore = matchInput.playerScores?.[playerId];
+        const safeScore = Number.isFinite(rawScore)
+          ? Math.max(0, Math.floor(rawScore as number))
+          : 0;
+        acc[playerId] = safeScore;
+        return acc;
+      }, {})
+    : undefined;
+
+  const computedWinnerIds = normalizedScores
+    ? (() => {
+        const scores = Object.values(normalizedScores);
+        if (scores.length === 0) return [];
+        const maxScore = Math.max(...scores);
+        return matchInput.playerIds.filter(
+          (playerId) => normalizedScores[playerId] === maxScore
+        );
+      })()
+    : matchInput.winnerIds;
+
+  const allWinnersArePlayers = computedWinnerIds.every((winnerId) =>
     matchInput.playerIds.includes(winnerId)
   );
   if (!allWinnersArePlayers) {
@@ -1071,7 +1093,7 @@ export async function addLeagueMatch(
     const matchDate = new Date();
 
     for (const playerId of matchInput.playerIds) {
-      const isWinner = matchInput.winnerIds.includes(playerId);
+      const isWinner = computedWinnerIds.includes(playerId);
       let points = pointsRules.participation;
 
       if (isWinner) {
@@ -1207,7 +1229,8 @@ export async function addLeagueMatch(
     gameId: matchInput.gameId,
     playedAt: matchInput.playedAt,
     playerIds: matchInput.playerIds,
-    winnerIds: matchInput.winnerIds,
+    playerScores: normalizedScores,
+    winnerIds: computedWinnerIds,
     featAwards: processedFeatAwards.length > 0 ? processedFeatAwards : undefined,
     createdBy,
     createdAt: new Date(),
