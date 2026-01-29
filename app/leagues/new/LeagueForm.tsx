@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertCircle,
   Trophy,
@@ -60,6 +61,7 @@ export default function LeagueForm({ games, lairs }: LeagueFormProps) {
     lairIds: [] as string[],
     // KILLER config
     killerTargets: "1",
+    killerRequireLair: true,
     // POINTS config
     pointsParticipation: "0",
     pointsVictory: "2",
@@ -100,6 +102,10 @@ export default function LeagueForm({ games, lairs }: LeagueFormProps) {
         killerTargets:
           formData.format === "KILLER"
             ? parseInt(formData.killerTargets, 10)
+            : undefined,
+        killerRequireLair:
+          formData.format === "KILLER"
+            ? formData.killerRequireLair
             : undefined,
         pointsRules:
           formData.format === "POINTS"
@@ -292,7 +298,7 @@ export default function LeagueForm({ games, lairs }: LeagueFormProps) {
             {formData.format === "KILLER" && (
               <Card className="bg-muted/50">
                 <CardContent className="pt-4">
-                  <div className="space-y-2">
+                  <div className="space-y-4">
                     <label
                       htmlFor="killerTargets"
                       className="text-sm font-medium"
@@ -315,6 +321,27 @@ export default function LeagueForm({ games, lairs }: LeagueFormProps) {
                     <p className="text-xs text-muted-foreground">
                       Chaque joueur aura ce nombre de cibles à affronter en
                       parallèle
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="killerRequireLair"
+                        checked={formData.killerRequireLair}
+                        onCheckedChange={(checked) =>
+                          setFormData({
+                            ...formData,
+                            killerRequireLair: checked === true,
+                          })
+                        }
+                      />
+                      <label
+                        htmlFor="killerRequireLair"
+                        className="text-sm font-medium"
+                      >
+                        Confirmation du lieu requise
+                      </label>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Le résultat devra être confirmé par un owner du lieu.
                     </p>
                   </div>
                 </CardContent>

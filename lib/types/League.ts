@@ -26,6 +26,23 @@ export type PointsRules = {
 // Configuration spécifique au format KILLER
 export type KillerConfig = {
   targets: number; // Nombre de cibles en parallèle
+  requireLair?: boolean; // Confirmation requise par le lieu
+};
+
+export type KillerTargetStatus = "PENDING" | "REPORTED" | "CONFIRMED";
+
+export type KillerTarget = {
+  targetId: User["id"];
+  gameId: Game["id"];
+  lairId: Lair["id"];
+  assignedAt: Date;
+  status: KillerTargetStatus;
+  matchId?: string;
+  reportedBy?: User["id"];
+  reportedAt?: Date;
+  confirmedBy?: User["id"];
+  lairConfirmedBy?: User["id"];
+  confirmedAt?: Date;
 };
 
 // Configuration spécifique au format POINTS
@@ -62,6 +79,7 @@ export type MatchFeatAward = {
 export type LeagueMatch = {
   id: string;
   gameId: Game["id"];
+  lairId?: Lair["id"];
   playedAt: Date;
   playerIds: User["id"][]; // Tous les joueurs du match
   winnerIds: User["id"][]; // Les gagnants du match
@@ -69,6 +87,14 @@ export type LeagueMatch = {
   createdBy: User["id"];
   createdAt: Date;
   notes?: string; // Notes optionnelles sur le match
+  status?: "REPORTED" | "CONFIRMED";
+  reportedBy?: User["id"];
+  reportedAt?: Date;
+  confirmedBy?: User["id"];
+  lairConfirmedBy?: User["id"];
+  confirmedAt?: Date;
+  targetId?: User["id"];
+  isKillerMatch?: boolean;
 };
 
 // Participant à une ligue
@@ -79,7 +105,7 @@ export type LeagueParticipant = {
   feats: ParticipantFeat[];
   joinedAt: Date;
   // Pour le format KILLER
-  targets?: User["id"][];
+  targets?: KillerTarget[];
   eliminatedBy?: User["id"];
   eliminatedAt?: Date;
   isEliminated?: boolean;

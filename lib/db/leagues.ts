@@ -10,14 +10,66 @@ import {
   CreateLeagueMatchInput,
   MatchFeatAward,
   PointHistoryEntry,
+  KillerTarget,
 } from "@/lib/types/League";
 import {ObjectId, WithId, Document, Filter} from "mongodb";
 import {nanoid} from "nanoid";
 import {User} from "@/lib/types/User";
+import { getUserById, getUsersByIds } from "@/lib/db/users";
+import { notifyLairOwners, notifyUser } from "@/lib/services/notifications";
+import { getLairById } from "@/lib/db/lairs";
 
 const COLLECTION_NAME = "leagues";
 const PARTICIPANTS_COLLECTION = "league-participants";
 const FEATS_COLLECTION = "league-participant-feats";
+
+function normalizeTargets(targets: unknown): KillerTarget[] | undefined {
+  if (!Array.isArray(targets) || targets.length === 0) {
+    return undefined;
+  }
+
+  const normalized = targets
+    .map((target) => {
+      if (typeof target === "string") {
+        return {
+          targetId: target,
+          gameId: "",
+          lairId: "",
+          assignedAt: new Date(),
+          status: "PENDING",
+        } as KillerTarget;
+      }
+
+      if (!target || typeof target !== "object") {
+        return null;
+      }
+
+      const typedTarget = target as Partial<KillerTarget>;
+
+      return {
+        targetId: typedTarget.targetId || "",
+        gameId: typedTarget.gameId || "",
+        lairId: typedTarget.lairId || "",
+        assignedAt: typedTarget.assignedAt
+          ? new Date(typedTarget.assignedAt)
+          : new Date(),
+        status: typedTarget.status || "PENDING",
+        matchId: typedTarget.matchId,
+        reportedBy: typedTarget.reportedBy,
+        reportedAt: typedTarget.reportedAt
+          ? new Date(typedTarget.reportedAt)
+          : undefined,
+        confirmedBy: typedTarget.confirmedBy,
+        lairConfirmedBy: typedTarget.lairConfirmedBy,
+        confirmedAt: typedTarget.confirmedAt
+          ? new Date(typedTarget.confirmedAt)
+          : undefined,
+      } as KillerTarget;
+    })
+    .filter((target): target is KillerTarget => !!target && !!target.targetId);
+
+  return normalized.length > 0 ? normalized : undefined;
+}
 
 // Type pour une ligue dans MongoDB (avec _id, sans participants)
 export type LeagueDocument = Omit<League, "id" | "lairs" | "games" | "creator" | "participantsCount" | "participants"> & { _id: ObjectId };
@@ -76,7 +128,7 @@ async function toLeague(doc: WithId<Document>, includeParticipants: boolean = tr
         })),
         joinedAt: new Date(p.joinedAt),
         eliminatedAt: p.eliminatedAt ? new Date(p.eliminatedAt) : undefined,
-        targets: p.targets,
+        targets: normalizeTargets(p.targets),
         eliminatedBy: p.eliminatedBy,
         isEliminated: p.isEliminated,
       };
@@ -114,6 +166,8 @@ async function toLeague(doc: WithId<Document>, includeParticipants: boolean = tr
       ...m,
       playedAt: new Date(m.playedAt),
       createdAt: new Date(m.createdAt),
+      reportedAt: m.reportedAt ? new Date(m.reportedAt) : undefined,
+      confirmedAt: m.confirmedAt ? new Date(m.confirmedAt) : undefined,
     })),
     createdAt: new Date(doc.createdAt),
     updatedAt: new Date(doc.updatedAt),
@@ -479,7 +533,7 @@ export async function getLeagueParticipant(leagueId: League['id'], userId: User[
     })),
     joinedAt: new Date(participantDoc.joinedAt),
     eliminatedAt: participantDoc.eliminatedAt ? new Date(participantDoc.eliminatedAt) : undefined,
-    targets: participantDoc.targets,
+    targets: normalizeTargets(participantDoc.targets),
     eliminatedBy: participantDoc.eliminatedBy,
     isEliminated: participantDoc.isEliminated,
   };
@@ -1084,4 +1138,402 @@ export async function deleteLeagueMatch(
   );
 
   return getLeagueById(leagueId);
+}
+
+function shuffleArray<T>(items: T[]): T[] {
+  return [...items].sort(() => Math.random() - 0.5);
+}
+
+function getActiveTargets(targets: KillerTarget[]): KillerTarget[] {
+  return targets.filter((target) => target.status !== "CONFIRMED");
+}
+
+export async function assignKillerTargets(
+  leagueId: string,
+  userId: string
+): Promise<KillerTarget[]> {
+  const league = await getLeagueById(leagueId);
+  if (!league) {
+    throw new Error("Ligue non trouvée");
+  }
+
+  if (league.format !== "KILLER" || !league.killerConfig) {
+    throw new Error("Cette ligue n&apos;est pas au format KILLER");
+  }
+
+  const participant = await getLeagueParticipant(leagueId, userId);
+  if (!participant) {
+    throw new Error("Vous n&apos;êtes pas inscrit à cette ligue");
+  }
+
+  if (participant.isEliminated) {
+    throw new Error("Vous avez été éliminé");
+  }
+
+  const currentTargets = normalizeTargets(participant.targets) || [];
+  const activeTargets = getActiveTargets(currentTargets);
+  const targetLimit = Math.max(1, league.killerConfig.targets || 1);
+
+  if (activeTargets.length >= targetLimit) {
+    return currentTargets;
+  }
+
+  const user = await getUserById(userId);
+  if (!user) {
+    throw new Error("Utilisateur non trouvé");
+  }
+
+  const candidateIds = league.participants
+    .filter((p) => p.userId !== userId && !p.isEliminated)
+    .map((p) => p.userId)
+    .filter((candidateId) =>
+      !activeTargets.some((target) => target.targetId === candidateId)
+    );
+
+  const candidateUsers = await getUsersByIds(candidateIds);
+  const userLairSet = new Set(
+    (user.lairs || []).filter((lairId) => league.lairIds.includes(lairId))
+  );
+  const userGameSet = new Set(
+    (user.games || []).filter((gameId) => league.gameIds.includes(gameId))
+  );
+
+  if (userLairSet.size === 0 || userGameSet.size === 0) {
+    throw new Error("Votre profil ne contient pas de lieux ou jeux compatibles");
+  }
+
+  const matchesByOpponent = new Map<string, Set<string>>();
+  for (const match of league.matches || []) {
+    if (!match.playerIds.includes(userId)) {
+      continue;
+    }
+
+    for (const opponentId of match.playerIds) {
+      if (opponentId === userId) {
+        continue;
+      }
+
+      const games = matchesByOpponent.get(opponentId) || new Set<string>();
+      games.add(match.gameId);
+      matchesByOpponent.set(opponentId, games);
+    }
+  }
+
+  const potentialTargets = candidateUsers
+    .map((opponent) => {
+      const commonLairs = (opponent.lairs || []).filter(
+        (lairId) => userLairSet.has(lairId) && league.lairIds.includes(lairId)
+      );
+      const commonGames = (opponent.games || []).filter(
+        (gameId) => userGameSet.has(gameId) && league.gameIds.includes(gameId)
+      );
+      const playedGames = matchesByOpponent.get(opponent.id) || new Set<string>();
+      const availableGames = commonGames.filter(
+        (gameId) => !playedGames.has(gameId)
+      );
+
+      if (commonLairs.length === 0 || availableGames.length === 0) {
+        return null;
+      }
+
+      return {
+        targetId: opponent.id,
+        lairId: commonLairs[Math.floor(Math.random() * commonLairs.length)],
+        gameId: availableGames[Math.floor(Math.random() * availableGames.length)],
+      };
+    })
+    .filter((target): target is { targetId: string; lairId: string; gameId: string } =>
+      !!target
+    );
+
+  if (potentialTargets.length === 0) {
+    return currentTargets;
+  }
+
+  const neededTargets = targetLimit - activeTargets.length;
+  const selectedTargets = shuffleArray(potentialTargets).slice(0, neededTargets);
+  const now = new Date();
+
+  const newTargets: KillerTarget[] = selectedTargets.map((target) => ({
+    targetId: target.targetId,
+    lairId: target.lairId,
+    gameId: target.gameId,
+    assignedAt: now,
+    status: "PENDING",
+  }));
+
+  const updatedTargets = [...currentTargets, ...newTargets];
+
+  await db.collection(PARTICIPANTS_COLLECTION).updateOne(
+    { leagueId: new ObjectId(leagueId), userId },
+    { $set: { targets: updatedTargets } }
+  );
+
+  await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(leagueId) },
+    { $set: { updatedAt: new Date() } }
+  );
+
+  return updatedTargets;
+}
+
+export async function reportKillerMatch(
+  leagueId: string,
+  userId: string,
+  targetId: string,
+  winnerId: string,
+  playedAt: Date
+): Promise<string> {
+  const league = await getLeagueById(leagueId);
+  if (!league) {
+    throw new Error("Ligue non trouvée");
+  }
+
+  if (league.format !== "KILLER" || !league.killerConfig) {
+    throw new Error("Cette ligue n&apos;est pas au format KILLER");
+  }
+
+  if (!league.participants.some((p) => p.userId === userId)) {
+    throw new Error("Vous n&apos;êtes pas inscrit à cette ligue");
+  }
+
+  const participant = await getLeagueParticipant(leagueId, userId);
+  const targets = normalizeTargets(participant?.targets) || [];
+  const target = targets.find(
+    (t) => t.targetId === targetId && t.status !== "CONFIRMED"
+  );
+
+  if (!target) {
+    throw new Error("Cible introuvable");
+  }
+
+  if (target.status === "REPORTED") {
+    throw new Error("Ce résultat est déjà en attente de confirmation");
+  }
+
+  if (![userId, targetId].includes(winnerId)) {
+    throw new Error("Le gagnant doit être un joueur du match");
+  }
+
+  if (!league.gameIds.includes(target.gameId)) {
+    throw new Error("Ce jeu ne fait pas partie de la ligue");
+  }
+
+  if (!league.lairIds.includes(target.lairId)) {
+    throw new Error("Ce lieu ne fait pas partie de la ligue");
+  }
+
+  const matchId = nanoid(12);
+  const now = new Date();
+  const match: LeagueMatch = {
+    id: matchId,
+    gameId: target.gameId,
+    lairId: target.lairId,
+    playedAt,
+    playerIds: [userId, targetId],
+    winnerIds: [winnerId],
+    createdBy: userId,
+    createdAt: now,
+    status: "REPORTED",
+    reportedBy: userId,
+    reportedAt: now,
+    targetId,
+    isKillerMatch: true,
+  };
+
+  await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(leagueId) },
+    {
+      $push: { matches: match as unknown as Document },
+      $set: { updatedAt: new Date() },
+    } as Document
+  );
+
+  await db.collection(PARTICIPANTS_COLLECTION).updateOne(
+    { leagueId: new ObjectId(leagueId), userId },
+    {
+      $set: {
+        "targets.$[target].status": "REPORTED",
+        "targets.$[target].matchId": matchId,
+        "targets.$[target].reportedBy": userId,
+        "targets.$[target].reportedAt": now,
+      },
+    },
+    {
+      arrayFilters: [{ "target.targetId": targetId, "target.status": { $ne: "CONFIRMED" } }],
+    }
+  );
+
+  await notifyUser(
+    targetId,
+    "Résultat de match à confirmer",
+    `Un résultat a été rapporté dans la ligue ${league.name}. Confirmez-le pour valider le match.`
+  );
+
+  const requireLair = league.killerConfig.requireLair ?? true;
+  if (requireLair) {
+    await notifyLairOwners(
+      target.lairId,
+      "Match à confirmer",
+      `Un match de ligue est en attente de confirmation dans ${league.name}.`
+    );
+  }
+
+  return matchId;
+}
+
+async function finalizeKillerMatch(
+  leagueId: string,
+  match: LeagueMatch
+): Promise<void> {
+  const now = new Date();
+
+  await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(leagueId) },
+    {
+      $set: {
+        "matches.$[match].status": "CONFIRMED",
+        "matches.$[match].confirmedAt": now,
+        updatedAt: now,
+      },
+    },
+    { arrayFilters: [{ "match.id": match.id }] }
+  );
+
+  await db.collection(PARTICIPANTS_COLLECTION).updateOne(
+    { leagueId: new ObjectId(leagueId), "targets.matchId": match.id },
+    {
+      $set: {
+        "targets.$[target].status": "CONFIRMED",
+        "targets.$[target].confirmedBy": match.confirmedBy,
+        "targets.$[target].lairConfirmedBy": match.lairConfirmedBy,
+        "targets.$[target].confirmedAt": now,
+      },
+    },
+    { arrayFilters: [{ "target.matchId": match.id }] }
+  );
+
+  const winnerId = match.winnerIds[0];
+  const loserId = match.playerIds.find((id) => id !== winnerId);
+
+  if (winnerId && loserId) {
+    await db.collection(PARTICIPANTS_COLLECTION).updateOne(
+      { leagueId: new ObjectId(leagueId), userId: loserId, isEliminated: { $ne: true } },
+      {
+        $set: {
+          isEliminated: true,
+          eliminatedBy: winnerId,
+          eliminatedAt: now,
+        },
+      }
+    );
+  }
+}
+
+export async function confirmKillerMatch(
+  leagueId: string,
+  matchId: string,
+  userId: string
+): Promise<void> {
+  const league = await getLeagueById(leagueId);
+  if (!league) {
+    throw new Error("Ligue non trouvée");
+  }
+
+  const match = league.matches.find((m) => m.id === matchId);
+  if (!match || !match.isKillerMatch) {
+    throw new Error("Match non trouvé");
+  }
+
+  if (!match.playerIds.includes(userId)) {
+    throw new Error("Vous ne faites pas partie de ce match");
+  }
+
+  if (match.reportedBy === userId) {
+    throw new Error("Vous ne pouvez pas confirmer votre propre rapport");
+  }
+
+  if (match.confirmedBy) {
+    throw new Error("Ce match a déjà été confirmé");
+  }
+
+  const requireLair = league.killerConfig?.requireLair ?? true;
+  const shouldFinalize = !requireLair || !!match.lairConfirmedBy;
+
+  await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(leagueId) },
+    {
+      $set: {
+        "matches.$[match].confirmedBy": userId,
+        "matches.$[match].status": shouldFinalize ? "CONFIRMED" : "REPORTED",
+        "matches.$[match].confirmedAt": shouldFinalize ? new Date() : undefined,
+      },
+    },
+    { arrayFilters: [{ "match.id": matchId }] }
+  );
+
+  const updatedMatch: LeagueMatch = {
+    ...match,
+    confirmedBy: userId,
+    status: shouldFinalize ? "CONFIRMED" : "REPORTED",
+    confirmedAt: shouldFinalize ? new Date() : undefined,
+  };
+
+  if (shouldFinalize) {
+    await finalizeKillerMatch(leagueId, updatedMatch);
+  }
+}
+
+export async function confirmKillerMatchLair(
+  leagueId: string,
+  matchId: string,
+  userId: string
+): Promise<void> {
+  const league = await getLeagueById(leagueId);
+  if (!league) {
+    throw new Error("Ligue non trouvée");
+  }
+
+  const match = league.matches.find((m) => m.id === matchId);
+  if (!match || !match.isKillerMatch) {
+    throw new Error("Match non trouvé");
+  }
+
+  if (!match.lairId) {
+    throw new Error("Ce match n&apos;a pas de lieu associé");
+  }
+
+  const lair = await getLairById(match.lairId);
+  if (!lair || !lair.owners.includes(userId)) {
+    throw new Error("Vous n&apos;êtes pas autorisé à confirmer pour ce lieu");
+  }
+
+  if (match.lairConfirmedBy) {
+    throw new Error("Ce match a déjà été confirmé par le lieu");
+  }
+
+  const shouldFinalize = !!match.confirmedBy;
+
+  await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(leagueId) },
+    {
+      $set: {
+        "matches.$[match].lairConfirmedBy": userId,
+        "matches.$[match].status": shouldFinalize ? "CONFIRMED" : "REPORTED",
+        "matches.$[match].confirmedAt": shouldFinalize ? new Date() : undefined,
+      },
+    },
+    { arrayFilters: [{ "match.id": matchId }] }
+  );
+
+  const updatedMatch: LeagueMatch = {
+    ...match,
+    lairConfirmedBy: userId,
+    status: shouldFinalize ? "CONFIRMED" : "REPORTED",
+    confirmedAt: shouldFinalize ? new Date() : undefined,
+  };
+
+  if (shouldFinalize) {
+    await finalizeKillerMatch(leagueId, updatedMatch);
+  }
 }

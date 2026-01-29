@@ -1,4 +1,5 @@
 import { getLeagueById, isLeagueOrganizer, getLeagueRanking, getLeagueParticipant } from "@/lib/db/leagues";
+import { getLairById } from "@/lib/db/lairs";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
@@ -23,6 +24,7 @@ import {
 import { LeagueStatus, LeagueFormat } from "@/lib/types/League";
 import JoinLeagueButton from "./JoinLeagueButton";
 import LeaveLeagueButton from "./LeaveLeagueButton";
+import KillerTargetsClient from "./KillerTargetsClient";
 
 const STATUS_LABELS: Record<LeagueStatus, string> = {
   DRAFT: "Brouillon",
@@ -96,6 +98,15 @@ export default async function LeagueDetailPage({
 
   const games = league.games;
   const lairs = league.lairs;
+
+  const lairDetails = session?.user?.id
+    ? await Promise.all(league.lairIds.map((lairId) => getLairById(lairId)))
+    : [];
+  const ownedLairIds = session?.user?.id
+    ? lairDetails
+        .filter((lair) => lair && lair.owners.includes(session.user.id))
+        .map((lair) => lair!.id)
+    : [];
 
   // Récupérer le classement
   const ranking = await getLeagueRanking(leagueId);
@@ -312,8 +323,24 @@ export default async function LeagueDetailPage({
                     affronter. Éliminez vos cibles en les battant dans une partie
                     pour progresser dans la compétition.
                   </p>
+                  <p className="text-muted-foreground mt-2">
+                    {league.killerConfig.requireLair ?? true
+                      ? "Le résultat doit être confirmé par le lieu du match et par votre adversaire."
+                      : "Le résultat doit être confirmé par votre adversaire."}
+                  </p>
                 </CardContent>
               </Card>
+            )}
+
+            {league.format === "KILLER" && session?.user?.id && (
+              <KillerTargetsClient
+                leagueId={league.id}
+                league={league}
+                participant={leagueParticipant}
+                participantsWithUsers={ranking}
+                currentUserId={session.user.id}
+                ownedLairIds={ownedLairIds}
+              />
             )}
           </div>
 
