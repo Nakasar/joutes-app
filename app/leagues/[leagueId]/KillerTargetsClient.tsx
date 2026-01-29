@@ -294,9 +294,9 @@ export default function KillerTargetsClient({
               const needsOpponent = !!match?.reportedBy && !match?.confirmedBy;
               const needsLair = requireLair && !match?.lairConfirmedBy;
               const pendingMessage = needsOpponent && needsLair
-                ? "Résultat en attente de confirmation par le lieu et l&apos;adversaire."
+                ? "Résultat en attente de confirmation par le lieu et l'adversaire."
                 : needsOpponent
-                ? "Résultat en attente de confirmation par l&apos;adversaire."
+                ? "Résultat en attente de confirmation par l'adversaire."
                 : needsLair
                 ? "Résultat en attente de confirmation par le lieu."
                 : "Résultat en attente de confirmation.";
