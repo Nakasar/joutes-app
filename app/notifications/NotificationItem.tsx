@@ -6,6 +6,7 @@ import { Bell, Check, CheckCheck, MapPin, Calendar, X } from "lucide-react";
 import { markNotificationAsReadAction, hideNotificationAction } from "./actions";
 import { useState } from "react";
 import Link from "next/link";
+import { NotificationTemplate } from "@/components/notifications/NotificationTemplate";
 
 type NotificationItemProps = {
   notification: any; // Utiliser any pour accepter les champs additionnels lair/event
@@ -100,9 +101,15 @@ export function NotificationItem({ notification, userId, onMarkAsRead, onHide }:
             </Link>
           )}
           
-          <p className={`mt-1 text-sm ${isRead ? 'text-gray-600' : 'text-gray-700'}`}>
-            {notification.description}
-          </p>
+          {notification.template ? (
+            <div className="mt-2">
+              <NotificationTemplate notification={notification} />
+            </div>
+          ) : (
+            <p className={`mt-1 text-sm ${isRead ? 'text-gray-600' : 'text-gray-700'}`}>
+              {notification.description}
+            </p>
+          )}
           
           <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
             <span>{timeAgo}</span>

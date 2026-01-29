@@ -58,7 +58,7 @@ type League = {
 
 ### Formats de leagues :
 
-## Killer
+#### Killer
 
 `format: 'KILLER'`
 
@@ -66,8 +66,19 @@ Les ligues de format "KILLER" fonctionnent par cibles à affronter.
 
 Paramètres :
 - `targets: number` (default: 1) : Le nombre de cibles en parallèle attributées aux participants.
+- `requireLair: boolean` (default: true) : les matchs doivent être confirmés par le lieu où ils se déroulent.
+- `eliminateOnDefeat: boolean` (default: false) : lors d'une défaite, le joueur est éliminé de la ligue.
 
-## Points
+
+Fonctionnement :
+- Un joueur peut s'inscrire à la ligue.
+- En cliquant sur un bouton "Obtenir mes matchs", le système détermine les cibles du joueur. Les règles pour les cibles sont les suivantes :
+  - L'adversaire est sélectionné parmis les utilisateurs qui suivent un lieu participant de la ligue qui est en commun pour les deux joueurs. Si plusieurs lieux sont éligibles, un lieu est tiré au sort.
+  - Idem pour le jeu, les deux joueurs doivent suivre le jeu faisant partie de la ligue.  Si plusieurs jeux sont éligibles, un jeu est tiré au sort.
+  - L'adversaire ne doit pas avoir déjà été affronté sur ce jeu (mais il peut être affronté sur d'autres jeux).
+- Les joueurs peuvent renseigner le résultat du match. Auquel cas le résultat doit être confirmé par l'adversaire et un owner du lieu où le match s'est déroulé (si requireLair est true). Utilise des notifications pour signaler qu'un match attend confirmation (auprès de l'adversaire et auprès des owners du lieu).
+
+#### Points
 
 `format: 'POINTS'`
 

@@ -37,6 +37,25 @@ export async function getUserById(id: string): Promise<User | null> {
   return user ? toUser(user) : null;
 }
 
+export async function getUsersByIds(userIds: string[]): Promise<User[]> {
+  if (!userIds || userIds.length === 0) {
+    return [];
+  }
+
+  const validIds = userIds.filter((id) => ObjectId.isValid(id));
+  if (validIds.length === 0) {
+    return [];
+  }
+
+  const objectIds = validIds.map((id) => ObjectId.createFromHexString(id));
+  const users = await db
+    .collection(COLLECTION_NAME)
+    .find({ _id: { $in: objectIds } })
+    .toArray();
+
+  return users.map(toUser);
+}
+
 export async function getUserByEmail(email: string): Promise<User | null> {
   
   const user = await db.collection(COLLECTION_NAME).findOne({ email: email.toLowerCase() });

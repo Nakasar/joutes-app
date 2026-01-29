@@ -14,6 +14,10 @@ import {
   awardFeatToParticipant,
   addLeagueMatch,
   deleteLeagueMatch,
+  assignKillerTargets,
+  reportKillerMatch,
+  confirmKillerMatch,
+  confirmKillerMatchLair,
 } from "@/lib/db/leagues";
 import {
   League,
@@ -24,6 +28,7 @@ import {
   LeagueStatus,
   PaginatedLeaguesResult,
   CreateLeagueMatchInput,
+  KillerTarget,
 } from "@/lib/types/League";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -82,6 +87,8 @@ export type CreateLeagueParams = {
   banner?: string;
   format: LeagueFormat;
   killerTargets?: number;
+  killerRequireLair?: boolean;
+  killerEliminateOnDefeat?: boolean;
   pointsRules?: {
     participation: number;
     victory: number;
@@ -136,6 +143,8 @@ export async function createLeagueAction(
     if (params.format === "KILLER") {
       input.killerConfig = {
         targets: params.killerTargets || 1,
+        requireLair: params.killerRequireLair ?? true,
+        eliminateOnDefeat: params.killerEliminateOnDefeat ?? false,
       };
     } else if (params.format === "POINTS") {
       input.pointsConfig = {
@@ -194,8 +203,27 @@ export async function updateLeagueAction(
       input.registrationDeadline = new Date(params.registrationDeadline);
 
     // Mise à jour de la configuration format
-    if (params.format === "KILLER" && params.killerTargets !== undefined) {
-      input.killerConfig = { targets: params.killerTargets };
+    if (
+      params.format === "KILLER" &&
+      (
+        params.killerTargets !== undefined ||
+        params.killerRequireLair !== undefined ||
+        params.killerEliminateOnDefeat !== undefined
+      )
+    ) {
+      const league = await getLeagueById(leagueId);
+      if (!league || !league.killerConfig) {
+        throw new Error("Ligue non trouvée");
+      }
+
+      input.killerConfig = {
+        targets: params.killerTargets ?? league.killerConfig.targets ?? 1,
+        requireLair: params.killerRequireLair ?? league.killerConfig.requireLair ?? true,
+        eliminateOnDefeat:
+          params.killerEliminateOnDefeat ??
+          league.killerConfig.eliminateOnDefeat ??
+          false,
+      };
     }
     if (params.format === "POINTS" && params.pointsRules !== undefined) {
       input.pointsConfig = {
@@ -569,6 +597,103 @@ export async function deleteLeagueMatchAction(
       success: false,
       error:
         error instanceof Error ? error.message : "Erreur lors de la suppression du match",
+    };
+  }
+}
+
+export async function generateKillerTargetsAction(
+  leagueId: string
+): Promise<{ success: boolean; targets?: KillerTarget[]; error?: string }> {
+  try {
+    const user = await requireAuth();
+    const targets = await assignKillerTargets(leagueId, user.id);
+
+    revalidatePath(`/leagues/${leagueId}`);
+
+    return { success: true, targets };
+  } catch (error) {
+    console.error("Error generating killer targets:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Erreur lors de la génération des cibles",
+    };
+  }
+}
+
+export type ReportKillerMatchParams = {
+  matchId?: string;
+  targetId?: string;
+  winnerId: string;
+  playedAt: string;
+};
+
+export async function reportKillerMatchAction(
+  leagueId: string,
+  params: ReportKillerMatchParams
+): Promise<{ success: boolean; matchId?: string; error?: string }> {
+  try {
+    const user = await requireAuth();
+    const matchId = await reportKillerMatch(
+      leagueId,
+      user.id,
+      params.targetId,
+      params.winnerId,
+      new Date(params.playedAt),
+      params.matchId
+    );
+
+    revalidatePath(`/leagues/${leagueId}`);
+
+    return { success: true, matchId };
+  } catch (error) {
+    console.error("Error reporting killer match:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Erreur lors du rapport du match",
+    };
+  }
+}
+
+export async function confirmKillerMatchAction(
+  leagueId: string,
+  matchId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await requireAuth();
+    await confirmKillerMatch(leagueId, matchId, user.id);
+
+    revalidatePath(`/leagues/${leagueId}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error confirming killer match:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Erreur lors de la confirmation",
+    };
+  }
+}
+
+export async function confirmKillerMatchLairAction(
+  leagueId: string,
+  matchId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await requireAuth();
+    await confirmKillerMatchLair(leagueId, matchId, user.id);
+
+    revalidatePath(`/leagues/${leagueId}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error confirming killer match lair:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Erreur lors de la confirmation du lieu",
     };
   }
 }
