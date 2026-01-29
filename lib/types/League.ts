@@ -27,6 +27,7 @@ export type PointsRules = {
 export type KillerConfig = {
   targets: number; // Nombre de cibles en parallèle
   requireLair?: boolean; // Confirmation requise par le lieu
+  eliminateOnDefeat?: boolean; // Élimination en cas de défaite
 };
 
 export type KillerTargetStatus = "PENDING" | "REPORTED" | "CONFIRMED";

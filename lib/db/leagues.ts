@@ -1384,7 +1384,8 @@ export async function reportKillerMatch(
 
 async function finalizeKillerMatch(
   leagueId: string,
-  match: LeagueMatch
+  match: LeagueMatch,
+  eliminateOnDefeat: boolean
 ): Promise<void> {
   const now = new Date();
 
@@ -1413,20 +1414,22 @@ async function finalizeKillerMatch(
     { arrayFilters: [{ "target.matchId": match.id }] }
   );
 
-  const winnerId = match.winnerIds[0];
-  const loserId = match.playerIds.find((id) => id !== winnerId);
+  if (eliminateOnDefeat) {
+    const winnerId = match.winnerIds[0];
+    const loserId = match.playerIds.find((id) => id !== winnerId);
 
-  if (winnerId && loserId) {
-    await db.collection(PARTICIPANTS_COLLECTION).updateOne(
-      { leagueId: new ObjectId(leagueId), userId: loserId, isEliminated: { $ne: true } },
-      {
-        $set: {
-          isEliminated: true,
-          eliminatedBy: winnerId,
-          eliminatedAt: now,
-        },
-      }
-    );
+    if (winnerId && loserId) {
+      await db.collection(PARTICIPANTS_COLLECTION).updateOne(
+        { leagueId: new ObjectId(leagueId), userId: loserId, isEliminated: { $ne: true } },
+        {
+          $set: {
+            isEliminated: true,
+            eliminatedBy: winnerId,
+            eliminatedAt: now,
+          },
+        }
+      );
+    }
   }
 }
 
@@ -1480,7 +1483,11 @@ export async function confirmKillerMatch(
   };
 
   if (shouldFinalize) {
-    await finalizeKillerMatch(leagueId, updatedMatch);
+    await finalizeKillerMatch(
+      leagueId,
+      updatedMatch,
+      league.killerConfig?.eliminateOnDefeat ?? false
+    );
   }
 }
 
@@ -1534,6 +1541,10 @@ export async function confirmKillerMatchLair(
   };
 
   if (shouldFinalize) {
-    await finalizeKillerMatch(leagueId, updatedMatch);
+    await finalizeKillerMatch(
+      leagueId,
+      updatedMatch,
+      league.killerConfig?.eliminateOnDefeat ?? false
+    );
   }
 }

@@ -62,6 +62,7 @@ export default function LeagueForm({ games, lairs }: LeagueFormProps) {
     // KILLER config
     killerTargets: "1",
     killerRequireLair: true,
+    killerEliminateOnDefeat: false,
     // POINTS config
     pointsParticipation: "0",
     pointsVictory: "2",
@@ -106,6 +107,10 @@ export default function LeagueForm({ games, lairs }: LeagueFormProps) {
         killerRequireLair:
           formData.format === "KILLER"
             ? formData.killerRequireLair
+            : undefined,
+        killerEliminateOnDefeat:
+          formData.format === "KILLER"
+            ? formData.killerEliminateOnDefeat
             : undefined,
         pointsRules:
           formData.format === "POINTS"
@@ -342,6 +347,27 @@ export default function LeagueForm({ games, lairs }: LeagueFormProps) {
                     </div>
                     <p className="text-xs text-muted-foreground">
                       Le résultat devra être confirmé par un owner du lieu.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="killerEliminateOnDefeat"
+                        checked={formData.killerEliminateOnDefeat}
+                        onCheckedChange={(checked) =>
+                          setFormData({
+                            ...formData,
+                            killerEliminateOnDefeat: checked === true,
+                          })
+                        }
+                      />
+                      <label
+                        htmlFor="killerEliminateOnDefeat"
+                        className="text-sm font-medium"
+                      >
+                        Élimination après défaite
+                      </label>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Le joueur vaincu est éliminé de la ligue.
                     </p>
                   </div>
                 </CardContent>

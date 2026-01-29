@@ -88,6 +88,7 @@ export type CreateLeagueParams = {
   format: LeagueFormat;
   killerTargets?: number;
   killerRequireLair?: boolean;
+  killerEliminateOnDefeat?: boolean;
   pointsRules?: {
     participation: number;
     victory: number;
@@ -143,6 +144,7 @@ export async function createLeagueAction(
       input.killerConfig = {
         targets: params.killerTargets || 1,
         requireLair: params.killerRequireLair ?? true,
+        eliminateOnDefeat: params.killerEliminateOnDefeat ?? false,
       };
     } else if (params.format === "POINTS") {
       input.pointsConfig = {
@@ -203,7 +205,11 @@ export async function updateLeagueAction(
     // Mise à jour de la configuration format
     if (
       params.format === "KILLER" &&
-      (params.killerTargets !== undefined || params.killerRequireLair !== undefined)
+      (
+        params.killerTargets !== undefined ||
+        params.killerRequireLair !== undefined ||
+        params.killerEliminateOnDefeat !== undefined
+      )
     ) {
       const league = await getLeagueById(leagueId);
       if (!league || !league.killerConfig) {
@@ -213,6 +219,10 @@ export async function updateLeagueAction(
       input.killerConfig = {
         targets: params.killerTargets ?? league.killerConfig.targets ?? 1,
         requireLair: params.killerRequireLair ?? league.killerConfig.requireLair ?? true,
+        eliminateOnDefeat:
+          params.killerEliminateOnDefeat ??
+          league.killerConfig.eliminateOnDefeat ??
+          false,
       };
     }
     if (params.format === "POINTS" && params.pointsRules !== undefined) {

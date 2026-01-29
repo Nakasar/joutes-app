@@ -67,6 +67,7 @@ Les ligues de format "KILLER" fonctionnent par cibles à affronter.
 Paramètres :
 - `targets: number` (default: 1) : Le nombre de cibles en parallèle attributées aux participants.
 - `requireLair: boolean` (default: true) : les matchs doivent être confirmés par le lieu où ils se déroulent.
+- `eliminateOnDefeat: boolean` (default: false) : lors d'une défaite, le joueur est éliminé de la ligue.
 
 
 Fonctionnement :
