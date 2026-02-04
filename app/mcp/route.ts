@@ -3,6 +3,7 @@ import {
     ServerRequest,
     TextContent,
 } from "@modelcontextprotocol/sdk/types.js";
+import { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import { createMcpHandler } from 'mcp-handler';
 import { getEventsForUser, getAllEvents } from "@/lib/db/events";
 import { getAllLairs, getLairById } from "@/lib/db/lairs";
@@ -12,7 +13,6 @@ import { createEvent } from "@/lib/db/events";
 import { Event } from "@/lib/types/Event";
 import { z } from "zod/v3";
 import { DateTime } from "luxon";
-import { RequestHandlerExtra} from "@modelcontextprotocol/sdk/shared/protocol.js";
 import { mcpHandler } from "@better-auth/oauth-provider";
 
 // Gestionnaires pour chaque outil
