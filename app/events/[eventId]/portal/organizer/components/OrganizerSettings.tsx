@@ -259,6 +259,133 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
 
   return (
     <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Détails de l&apos;événement</CardTitle>
+          <CardDescription>
+            Mettez à jour les informations principales de votre événement
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleUpdateEventDetails} className="space-y-4">
+            {eventFormError && (
+              <Alert variant="destructive">
+                <AlertDescription>{eventFormError}</AlertDescription>
+              </Alert>
+            )}
+            {eventFormSuccess && (
+              <Alert>
+                <AlertDescription>{eventFormSuccess}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-2">
+              <label htmlFor="event-name" className="text-sm font-medium">
+                Nom de l&apos;événement
+              </label>
+              <Input
+                id="event-name"
+                required
+                maxLength={500}
+                value={eventForm.name}
+                onChange={(e) => setEventForm({ ...eventForm, name: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="event-game" className="text-sm font-medium">
+                Jeu
+              </label>
+              <Input
+                id="event-game"
+                required
+                value={eventForm.gameName}
+                onChange={(e) => setEventForm({ ...eventForm, gameName: e.target.value })}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label htmlFor="event-start" className="text-sm font-medium">
+                  Date et heure de début
+                </label>
+                <Input
+                  id="event-start"
+                  type="datetime-local"
+                  required
+                  value={eventForm.startDateTime}
+                  onChange={(e) => setEventForm({ ...eventForm, startDateTime: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="event-end" className="text-sm font-medium">
+                  Date et heure de fin
+                </label>
+                <Input
+                  id="event-end"
+                  type="datetime-local"
+                  required
+                  value={eventForm.endDateTime}
+                  onChange={(e) => setEventForm({ ...eventForm, endDateTime: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="event-url" className="text-sm font-medium">
+                URL (optionnel)
+              </label>
+              <Input
+                id="event-url"
+                type="url"
+                value={eventForm.url}
+                onChange={(e) => setEventForm({ ...eventForm, url: e.target.value })}
+                placeholder="https://example.com/event"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label htmlFor="event-price" className="text-sm font-medium">
+                  Prix (€, optionnel)
+                </label>
+                <Input
+                  id="event-price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={eventForm.price}
+                  onChange={(e) => setEventForm({ ...eventForm, price: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="event-max" className="text-sm font-medium">
+                  Nombre max de participants (optionnel)
+                </label>
+                <Input
+                  id="event-max"
+                  type="number"
+                  min="1"
+                  value={eventForm.maxParticipants}
+                  onChange={(e) => setEventForm({ ...eventForm, maxParticipants: e.target.value })}
+                  placeholder="Illimité"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Valeur actuelle: {event.participants?.length || 0} inscrit(s)
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <Button type="submit" disabled={isPending}>
+                Mettre à jour l&apos;événement
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
       {!settings ? (
         <Card>
           <CardHeader>
@@ -276,133 +403,6 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
         </Card>
       ) : (
         <>
-          <Card>
-            <CardHeader>
-              <CardTitle>Détails de l&apos;événement</CardTitle>
-              <CardDescription>
-                Mettez à jour les informations principales de votre événement
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleUpdateEventDetails} className="space-y-4">
-                {eventFormError && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{eventFormError}</AlertDescription>
-                  </Alert>
-                )}
-                {eventFormSuccess && (
-                  <Alert>
-                    <AlertDescription>{eventFormSuccess}</AlertDescription>
-                  </Alert>
-                )}
-
-                <div className="space-y-2">
-                  <label htmlFor="event-name" className="text-sm font-medium">
-                    Nom de l&apos;événement
-                  </label>
-                  <Input
-                    id="event-name"
-                    required
-                    maxLength={500}
-                    value={eventForm.name}
-                    onChange={(e) => setEventForm({ ...eventForm, name: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="event-game" className="text-sm font-medium">
-                    Jeu
-                  </label>
-                  <Input
-                    id="event-game"
-                    required
-                    value={eventForm.gameName}
-                    onChange={(e) => setEventForm({ ...eventForm, gameName: e.target.value })}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label htmlFor="event-start" className="text-sm font-medium">
-                      Date et heure de début
-                    </label>
-                    <Input
-                      id="event-start"
-                      type="datetime-local"
-                      required
-                      value={eventForm.startDateTime}
-                      onChange={(e) => setEventForm({ ...eventForm, startDateTime: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="event-end" className="text-sm font-medium">
-                      Date et heure de fin
-                    </label>
-                    <Input
-                      id="event-end"
-                      type="datetime-local"
-                      required
-                      value={eventForm.endDateTime}
-                      onChange={(e) => setEventForm({ ...eventForm, endDateTime: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="event-url" className="text-sm font-medium">
-                    URL (optionnel)
-                  </label>
-                  <Input
-                    id="event-url"
-                    type="url"
-                    value={eventForm.url}
-                    onChange={(e) => setEventForm({ ...eventForm, url: e.target.value })}
-                    placeholder="https://example.com/event"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label htmlFor="event-price" className="text-sm font-medium">
-                      Prix (€, optionnel)
-                    </label>
-                    <Input
-                      id="event-price"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={eventForm.price}
-                      onChange={(e) => setEventForm({ ...eventForm, price: e.target.value })}
-                      placeholder="0.00"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="event-max" className="text-sm font-medium">
-                      Nombre max de participants (optionnel)
-                    </label>
-                    <Input
-                      id="event-max"
-                      type="number"
-                      min="1"
-                      value={eventForm.maxParticipants}
-                      onChange={(e) => setEventForm({ ...eventForm, maxParticipants: e.target.value })}
-                      placeholder="Illimité"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Valeur actuelle: {event.participants?.length || 0} inscrit(s)
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex justify-end">
-                  <Button type="submit" disabled={isPending}>
-                    Mettre à jour l&apos;événement
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
