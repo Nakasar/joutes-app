@@ -163,10 +163,6 @@ export default function AddParticipantForm({
         resetForm();
         onParticipantAdded?.();
         router.refresh();
-        setTimeout(() => {
-          setSuccess(null);
-          setOpen(false);
-        }, 2000);
       } else {
         setError(result.error || "Erreur lors de l&apos;ajout");
       }
