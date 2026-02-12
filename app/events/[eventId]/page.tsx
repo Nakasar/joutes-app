@@ -92,7 +92,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
     : [];
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <div className="container mx-auto p-6 max-w-6xl">
       <div className="space-y-6">
         {search.joined && (
           <Alert className="border-green-500 bg-green-50">
@@ -257,21 +257,19 @@ export default async function EventPage({ params, searchParams }: EventPageProps
           </div>
 
           <div className="space-y-6">
-            {event.price && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Euro className="h-5 w-5" />
-                    Prix
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold">
-                    {event.price === 0 ? "Gratuit" : `${event.price.toFixed(2)} €`}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Euro className="h-5 w-5" />
+                  Prix
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">
+                  {(event.price === 0 || !event.price) ? "Gratuit" : `${event.price.toFixed(2)} €`}
+                </p>
+              </CardContent>
+            </Card>
 
             <Card>
               <CardHeader>
@@ -324,8 +322,6 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                       isFull={isFull}
                       allowJoin={event.allowJoin}
                       runningState={event.runningState}
-                      registrationStatus={session?.user ? event.participantRegistrations?.[session.user.id] : undefined}
-                      preRegistration={event.preRegistration}
                     />
                     <FavoriteButton
                       eventId={event.id}

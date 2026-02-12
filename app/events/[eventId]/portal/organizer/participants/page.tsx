@@ -47,6 +47,7 @@ export default async function OrganizerParticipantsPage({ params }: OrganizerPar
         eventId={event.id} 
         participants={participants} 
         runningState={event.runningState}
+        preRegistration={event.preRegistration}
       />
     </OrganizerLayoutServer>
   );

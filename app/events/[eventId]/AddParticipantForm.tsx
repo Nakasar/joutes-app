@@ -43,6 +43,7 @@ type AddParticipantFormProps = {
   onParticipantRemoved?: () => void;
   runningState?: 'not-started' | 'ongoing' | 'completed';
   preRegistration?: boolean;
+  readOnly?: boolean;
 };
 
 export default function AddParticipantForm({
@@ -52,6 +53,7 @@ export default function AddParticipantForm({
   onParticipantRemoved,
   runningState = 'not-started',
   preRegistration = false,
+  readOnly = false,
 }: AddParticipantFormProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -235,32 +237,34 @@ export default function AddParticipantForm({
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-1">
-                {preRegistration && participant.type === "user" && (
-                  <Select
-                    value={participant.registrationStatus || 'REGISTERED'}
-                    onValueChange={(value) => handleStatusChange(participant, value as RegistrationStatus)}
+              {!readOnly && (
+                <div className="flex items-center gap-1">
+                  {preRegistration && participant.type === "user" && (
+                    <Select
+                      value={participant.registrationStatus || 'REGISTERED'}
+                      onValueChange={(value) => handleStatusChange(participant, value as RegistrationStatus)}
+                      disabled={isPending}
+                    >
+                      <SelectTrigger className="w-[140px] h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="PRE_REGISTERED">Pré-inscrit</SelectItem>
+                        <SelectItem value="REGISTERED">Inscrit</SelectItem>
+                        <SelectItem value="EXCLUDED">Exclu</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveParticipant(participant)}
                     disabled={isPending}
                   >
-                    <SelectTrigger className="w-[140px] h-8 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PRE_REGISTERED">Pré-inscrit</SelectItem>
-                      <SelectItem value="REGISTERED">Inscrit</SelectItem>
-                      <SelectItem value="EXCLUDED">Exclu</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleRemoveParticipant(participant)}
-                  disabled={isPending}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -403,7 +407,7 @@ export default function AddParticipantForm({
       )}
 
       {/* Dialog de confirmation de suppression */}
-      <Dialog open={confirmRemoveOpen} onOpenChange={setConfirmRemoveOpen}>
+      {!readOnly && <Dialog open={confirmRemoveOpen} onOpenChange={setConfirmRemoveOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirmer la suppression</DialogTitle>
@@ -429,7 +433,7 @@ export default function AddParticipantForm({
             </Button>
           </div>
         </DialogContent>
-      </Dialog>
+      </Dialog>}
     </div>
   );
 }
