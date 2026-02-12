@@ -8,6 +8,7 @@ import { getUserByTagOrId } from "@/lib/db/users";
 import { nanoid } from 'nanoid';
 import { Event } from "@/lib/types/Event";
 import { revalidatePath } from "next/cache";
+import { DateTime } from "luxon";
 import { notifyEventAll } from "@/lib/services/notifications";
 
 type CreateEventInput = {
@@ -16,6 +17,17 @@ type CreateEventInput = {
   endDateTime: string;
   gameName: string;
   lairId?: string;
+  url?: string;
+  price?: number;
+  maxParticipants?: number;
+};
+
+type UpdateEventDetailsInput = {
+  eventId: string;
+  name: string;
+  startDateTime: string;
+  endDateTime: string;
+  gameName: string;
   url?: string;
   price?: number;
   maxParticipants?: number;
@@ -77,6 +89,81 @@ export async function createEventAction(input: CreateEventInput) {
   } catch (error) {
     console.error("Erreur lors de la création de l'événement:", error);
     return { success: false, error: "Une erreur est survenue lors de la création de l'événement" };
+  }
+}
+
+export async function updateEventDetailsAction(input: UpdateEventDetailsInput) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      return { success: false, error: "Vous devez être connecté" };
+    }
+
+    const event = await getEventById(input.eventId);
+
+    if (!event) {
+      return { success: false, error: "Événement introuvable" };
+    }
+
+    if (event.creatorId !== session.user.id) {
+      return { success: false, error: "Seul le créateur de l&apos;événement peut modifier ces informations" };
+    }
+
+    const startDate = DateTime.fromISO(input.startDateTime);
+    const endDate = DateTime.fromISO(input.endDateTime);
+
+    if (!startDate.isValid || !endDate.isValid) {
+      return { success: false, error: "Les dates saisies ne sont pas valides" };
+    }
+
+    if (startDate >= endDate) {
+      return { success: false, error: "La date de fin doit être après la date de début" };
+    }
+
+    if (input.price !== undefined && input.price < 0) {
+      return { success: false, error: "Le prix doit être supérieur ou égal à 0" };
+    }
+
+    if (input.maxParticipants !== undefined && input.maxParticipants < 1) {
+      return { success: false, error: "Le nombre de participants doit être supérieur ou égal à 1" };
+    }
+
+    if (
+      input.maxParticipants !== undefined
+      && (event.participants?.length || 0) > input.maxParticipants
+    ) {
+      return {
+        success: false,
+        error: "Le nombre max ne peut pas être inférieur au nombre de participants déjà inscrits",
+      };
+    }
+
+    const updated = await updateEvent(input.eventId, {
+      name: input.name,
+      startDateTime: input.startDateTime,
+      endDateTime: input.endDateTime,
+      gameName: input.gameName,
+      url: input.url,
+      price: input.price,
+      maxParticipants: input.maxParticipants,
+    });
+
+    revalidatePath(`/events/${input.eventId}`);
+    revalidatePath(`/events/${input.eventId}/portal/organizer`);
+    revalidatePath("/events");
+    revalidatePath("/account");
+
+    if (!updated) {
+      return { success: true, unchanged: true };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour de l'événement:", error);
+    return { success: false, error: "Une erreur est survenue lors de la mise à jour" };
   }
 }
 

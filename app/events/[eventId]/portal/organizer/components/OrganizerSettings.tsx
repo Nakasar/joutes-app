@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition, type FormEvent } from "react";
 import { Event } from "@/lib/types/Event";
 import { EventPortalSettings } from "@/lib/schemas/event-portal.schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PlayCircle, Plus, Edit, Trash2, Save, X } from "lucide-react";
 import {
   AlertDialog,
@@ -27,6 +29,8 @@ import {
   setCurrentPhase,
 } from "../../actions";
 import { useRouter } from "next/navigation";
+import { DateTime } from "luxon";
+import { updateEventDetailsAction } from "@/app/events/actions";
 
 type OrganizerSettingsProps = {
   event: Event;
@@ -48,7 +52,50 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
     topCut: 8,
   });
 
+  const [portalSettingsForm, setPortalSettingsForm] = useState({
+    allowSelfReporting: settings?.allowSelfReporting ?? false,
+    requireConfirmation: settings?.requireConfirmation ?? true,
+  });
+  const [portalSettingsError, setPortalSettingsError] = useState<string | null>(null);
+  const [portalSettingsSuccess, setPortalSettingsSuccess] = useState<string | null>(null);
+
+  const [eventForm, setEventForm] = useState({
+    name: event.name,
+    gameName: event.gameName,
+    startDateTime: "",
+    endDateTime: "",
+    url: event.url ?? "",
+    price: event.price?.toString() ?? "",
+    maxParticipants: event.maxParticipants?.toString() ?? "",
+  });
+  const [eventFormError, setEventFormError] = useState<string | null>(null);
+  const [eventFormSuccess, setEventFormSuccess] = useState<string | null>(null);
+
   const isEventCompleted = event.runningState === 'completed';
+
+  const formatDateTimeInput = (value: string) => {
+    const parsed = DateTime.fromISO(value);
+    return parsed.isValid ? parsed.toFormat("yyyy-MM-dd'T'HH:mm") : "";
+  };
+
+  useEffect(() => {
+    setPortalSettingsForm({
+      allowSelfReporting: settings?.allowSelfReporting ?? false,
+      requireConfirmation: settings?.requireConfirmation ?? true,
+    });
+  }, [settings]);
+
+  useEffect(() => {
+    setEventForm({
+      name: event.name,
+      gameName: event.gameName,
+      startDateTime: formatDateTimeInput(event.startDateTime),
+      endDateTime: formatDateTimeInput(event.endDateTime),
+      url: event.url ?? "",
+      price: event.price !== undefined ? event.price.toString() : "",
+      maxParticipants: event.maxParticipants !== undefined ? event.maxParticipants.toString() : "",
+    });
+  }, [event]);
 
   const handleInitializeSettings = () => {
     startTransition(async () => {
@@ -148,6 +195,57 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
     setDeleteDialogOpen(true);
   };
 
+  const handleUpdatePortalSettings = () => {
+    if (!settings) return;
+
+    startTransition(async () => {
+      setPortalSettingsError(null);
+      setPortalSettingsSuccess(null);
+
+      const result = await createOrUpdatePortalSettings({
+        eventId: event.id,
+        phases: settings.phases,
+        currentPhaseId: settings.currentPhaseId,
+        allowSelfReporting: portalSettingsForm.allowSelfReporting,
+        requireConfirmation: portalSettingsForm.requireConfirmation,
+      });
+
+      if (result.success) {
+        setPortalSettingsSuccess("Paramètres du portail mis à jour");
+        router.refresh();
+      } else {
+        setPortalSettingsError(result.error || "Erreur lors de la mise à jour des paramètres");
+      }
+    });
+  };
+
+  const handleUpdateEventDetails = (eventToUpdate: FormEvent<HTMLFormElement>) => {
+    eventToUpdate.preventDefault();
+
+    startTransition(async () => {
+      setEventFormError(null);
+      setEventFormSuccess(null);
+
+      const result = await updateEventDetailsAction({
+        eventId: event.id,
+        name: eventForm.name,
+        gameName: eventForm.gameName,
+        startDateTime: eventForm.startDateTime,
+        endDateTime: eventForm.endDateTime,
+        url: eventForm.url.length > 0 ? eventForm.url : undefined,
+        price: eventForm.price.length > 0 ? parseFloat(eventForm.price) : undefined,
+        maxParticipants: eventForm.maxParticipants.length > 0 ? parseInt(eventForm.maxParticipants, 10) : undefined,
+      });
+
+      if (result.success) {
+        setEventFormSuccess(result.unchanged ? "Aucune modification à enregistrer" : "Événement mis à jour");
+        router.refresh();
+      } else {
+        setEventFormError(result.error || "Erreur lors de la mise à jour de l&apos;événement");
+      }
+    });
+  };
+
   const confirmDeletePhase = () => {
     if (!phaseToDelete) return;
 
@@ -178,6 +276,133 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
         </Card>
       ) : (
         <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Détails de l&apos;événement</CardTitle>
+              <CardDescription>
+                Mettez à jour les informations principales de votre événement
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleUpdateEventDetails} className="space-y-4">
+                {eventFormError && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{eventFormError}</AlertDescription>
+                  </Alert>
+                )}
+                {eventFormSuccess && (
+                  <Alert>
+                    <AlertDescription>{eventFormSuccess}</AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="space-y-2">
+                  <label htmlFor="event-name" className="text-sm font-medium">
+                    Nom de l&apos;événement
+                  </label>
+                  <Input
+                    id="event-name"
+                    required
+                    maxLength={500}
+                    value={eventForm.name}
+                    onChange={(e) => setEventForm({ ...eventForm, name: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="event-game" className="text-sm font-medium">
+                    Jeu
+                  </label>
+                  <Input
+                    id="event-game"
+                    required
+                    value={eventForm.gameName}
+                    onChange={(e) => setEventForm({ ...eventForm, gameName: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="event-start" className="text-sm font-medium">
+                      Date et heure de début
+                    </label>
+                    <Input
+                      id="event-start"
+                      type="datetime-local"
+                      required
+                      value={eventForm.startDateTime}
+                      onChange={(e) => setEventForm({ ...eventForm, startDateTime: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="event-end" className="text-sm font-medium">
+                      Date et heure de fin
+                    </label>
+                    <Input
+                      id="event-end"
+                      type="datetime-local"
+                      required
+                      value={eventForm.endDateTime}
+                      onChange={(e) => setEventForm({ ...eventForm, endDateTime: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="event-url" className="text-sm font-medium">
+                    URL (optionnel)
+                  </label>
+                  <Input
+                    id="event-url"
+                    type="url"
+                    value={eventForm.url}
+                    onChange={(e) => setEventForm({ ...eventForm, url: e.target.value })}
+                    placeholder="https://example.com/event"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="event-price" className="text-sm font-medium">
+                      Prix (€, optionnel)
+                    </label>
+                    <Input
+                      id="event-price"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={eventForm.price}
+                      onChange={(e) => setEventForm({ ...eventForm, price: e.target.value })}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="event-max" className="text-sm font-medium">
+                      Nombre max de participants (optionnel)
+                    </label>
+                    <Input
+                      id="event-max"
+                      type="number"
+                      min="1"
+                      value={eventForm.maxParticipants}
+                      onChange={(e) => setEventForm({ ...eventForm, maxParticipants: e.target.value })}
+                      placeholder="Illimité"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Valeur actuelle: {event.participants?.length || 0} inscrit(s)
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button type="submit" disabled={isPending}>
+                    Mettre à jour l&apos;événement
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -433,19 +658,74 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
             <CardHeader>
               <CardTitle>Paramètres du portail</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-4">
+              {portalSettingsError && (
+                <Alert variant="destructive">
+                  <AlertDescription>{portalSettingsError}</AlertDescription>
+                </Alert>
+              )}
+              {portalSettingsSuccess && (
+                <Alert>
+                  <AlertDescription>{portalSettingsSuccess}</AlertDescription>
+                </Alert>
+              )}
+
               <div className="flex items-center justify-between">
-                <span className="text-sm">Auto-rapport des résultats</span>
-                <Badge variant={settings.allowSelfReporting ? "default" : "secondary"}>
-                  {settings.allowSelfReporting ? "Activé" : "Désactivé"}
-                </Badge>
+                <div>
+                  <label htmlFor="allow-self-reporting" className="text-sm font-medium">
+                    Auto-rapport des résultats
+                  </label>
+                  <p className="text-xs text-muted-foreground">
+                    Autoriser les joueurs à saisir leurs scores
+                  </p>
+                </div>
+                <Switch
+                  id="allow-self-reporting"
+                  checked={portalSettingsForm.allowSelfReporting}
+                  onCheckedChange={(checked) =>
+                    setPortalSettingsForm({
+                      ...portalSettingsForm,
+                      allowSelfReporting: checked,
+                    })
+                  }
+                  disabled={isPending || isEventCompleted}
+                />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm">Confirmation requise</span>
-                <Badge variant={settings.requireConfirmation ? "default" : "secondary"}>
-                  {settings.requireConfirmation ? "Oui" : "Non"}
-                </Badge>
+                <div>
+                  <label htmlFor="require-confirmation" className="text-sm font-medium">
+                    Confirmation requise
+                  </label>
+                  <p className="text-xs text-muted-foreground">
+                    Exiger la validation du résultat par l&apos;adversaire
+                  </p>
+                </div>
+                <Switch
+                  id="require-confirmation"
+                  checked={portalSettingsForm.requireConfirmation}
+                  onCheckedChange={(checked) =>
+                    setPortalSettingsForm({
+                      ...portalSettingsForm,
+                      requireConfirmation: checked,
+                    })
+                  }
+                  disabled={isPending || isEventCompleted}
+                />
               </div>
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  onClick={handleUpdatePortalSettings}
+                  disabled={isPending || isEventCompleted}
+                >
+                  Enregistrer les paramètres
+                </Button>
+              </div>
+              {isEventCompleted && (
+                <p className="text-xs text-muted-foreground">
+                  Les paramètres du portail ne peuvent plus être modifiés une fois l&apos;événement terminé.
+                </p>
+              )}
             </CardContent>
           </Card>
         </>
