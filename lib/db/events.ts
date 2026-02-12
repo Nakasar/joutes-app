@@ -824,6 +824,7 @@ export async function getEventById(eventId: string): Promise<Event | null> {
     runningState: event.runningState,
     participants: event.participants,
     participantRegistrations: event.participantRegistrations,
+    registeredParticipantsCount: 0,
     preRegistration: event.preRegistration,
     maxParticipants: event.maxParticipants,
     favoritedBy: event.favoritedBy,

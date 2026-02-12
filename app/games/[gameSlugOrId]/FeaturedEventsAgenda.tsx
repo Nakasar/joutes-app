@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Event, getRegisteredParticipantCount } from "@/lib/types/Event";
+import { Event } from "@/lib/types/Event";
 import { Lair } from "@/lib/types/Lair";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -251,7 +251,7 @@ export function FeaturedEventsAgenda({
 
                           {event.maxParticipants && (
                             <div className="mt-2 text-sm text-gray-400">
-                              {getRegisteredParticipantCount(event)} /{" "}
+                              {event.registeredParticipantsCount ?? 0} /{" "}
                               {event.maxParticipants} participants
                             </div>
                           )}

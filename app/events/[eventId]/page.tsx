@@ -2,9 +2,6 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { getEventById } from "@/lib/db/events";
-import { getUserById } from "@/lib/db/users";
-import { User } from "@/lib/types/User";
-import { getRegisteredParticipantCount, getRegisteredParticipantIds } from "@/lib/types/Event";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -67,8 +64,6 @@ export default async function EventPage({ params, searchParams }: EventPageProps
 
   const startDate = DateTime.fromISO(event.startDateTime);
   const endDate = DateTime.fromISO(event.endDateTime);
-  const registeredCount = getRegisteredParticipantCount(event);
-  const isFull = event.maxParticipants ? registeredCount >= event.maxParticipants : false;
   const isFavorited = session?.user && event.favoritedBy?.includes(session.user.id);
 
   // Récupérer les participants (utilisateurs et invités)
@@ -80,16 +75,8 @@ export default async function EventPage({ params, searchParams }: EventPageProps
     ? participantsResult.data 
     : [];
 
-  // Pour les non-créateurs, récupérer seulement les utilisateurs participants REGISTERED
-  const registeredParticipantIds = getRegisteredParticipantIds(event);
-  const participantUsers = !isCreator && registeredParticipantIds.length > 0
-    ? await Promise.all(
-        registeredParticipantIds.map(async (userId) => {
-          const user = await getUserById(userId);
-          return user;
-        })
-      )
-    : [];
+  const registeredCount = allParticipants.filter(p => p.registrationStatus === "REGISTERED").length;
+  const isFull = event.maxParticipants ? registeredCount >= event.maxParticipants : false;
 
   return (
     <div className="container mx-auto p-6 max-w-6xl">

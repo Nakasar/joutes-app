@@ -31,6 +31,7 @@ export type Event = {
   preRegistration?: boolean; // Si true, les nouveaux inscrits ont le statut PRE_REGISTERED
   participants?: string[]; // IDs des utilisateurs inscrits à l'événement
   participantRegistrations?: { [userId: string]: RegistrationStatus }; // Statut d'inscription par participant
+  registeredParticipantsCount?: number; // Nombre de participants inscrits
   maxParticipants?: number; // Nombre maximum de participants (optionnel)
   favoritedBy?: string[]; // IDs des utilisateurs qui ont mis cet événement en favori
   lair?: {
@@ -42,30 +43,3 @@ export type Event = {
   };
 };
 
-/**
- * Retourne le nombre de participants avec le statut REGISTERED.
- * Si preRegistration n'est pas activé, tous les participants sont considérés comme REGISTERED.
- */
-export function getRegisteredParticipantCount(event: Event): number {
-  if (!event.participants) return 0;
-  if (!event.preRegistration || !event.participantRegistrations) {
-    return event.participants.length;
-  }
-  return event.participants.filter(
-    userId => event.participantRegistrations?.[userId] === 'REGISTERED'
-  ).length;
-}
-
-/**
- * Retourne les IDs des participants avec le statut REGISTERED.
- * Si preRegistration n'est pas activé, retourne tous les participants.
- */
-export function getRegisteredParticipantIds(event: Event): string[] {
-  if (!event.participants) return [];
-  if (!event.preRegistration || !event.participantRegistrations) {
-    return event.participants;
-  }
-  return event.participants.filter(
-    userId => event.participantRegistrations?.[userId] === 'REGISTERED'
-  );
-}

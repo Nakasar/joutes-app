@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition, type FormEvent } from "react";
-import { Event, getRegisteredParticipantCount } from "@/lib/types/Event";
+import { Event } from "@/lib/types/Event";
 import { EventPortalSettings } from "@/lib/schemas/event-portal.schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -372,7 +372,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
                   placeholder="Illimité"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Valeur actuelle: {getRegisteredParticipantCount(event)} inscrit(s)
+                  Valeur actuelle: {event.registeredParticipantsCount ?? 0} inscrit(s)
                 </p>
               </div>
             </div>

@@ -12,8 +12,6 @@ import {
 } from "@/lib/schemas/event-portal.schema";
 import { getEventById } from "@/lib/db/events";
 import { getUserByUsernameAndDiscriminator, getUserByEmail } from "@/lib/db/users";
-import { getRegisteredParticipantCount } from "@/lib/types/Event";
-import crypto from "crypto";
 
 const GUEST_PARTICIPANTS_COLLECTION = "event-guest-participants";
 const EVENTS_COLLECTION = "events";
@@ -72,7 +70,7 @@ export async function addParticipantToEvent(eventId: string, data: unknown) {
     }
 
     // Vérifier le nombre maximum de participants (ne compter que les REGISTERED)
-    if (event.maxParticipants && getRegisteredParticipantCount(event) >= event.maxParticipants) {
+    if (event.maxParticipants && (event.registeredParticipantsCount ?? 0) >= event.maxParticipants) {
       return { success: false, error: "L'événement est complet" };
     }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { Event, getRegisteredParticipantCount } from '@/lib/types/Event';
+import { Event } from '@/lib/types/Event';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -315,7 +315,7 @@ export default function EventsConferenceView({ events }: EventsConferenceViewPro
                               <div className="flex items-center gap-2">
                                 <Users className="h-3 w-3" />
                                 <span>
-                                  {getRegisteredParticipantCount(event)} / {event.maxParticipants}
+                                  {event.registeredParticipantsCount ?? 0} / {event.maxParticipants}
                                 </span>
                               </div>
                             )}

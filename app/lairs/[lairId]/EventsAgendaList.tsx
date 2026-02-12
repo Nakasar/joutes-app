@@ -1,6 +1,6 @@
 'use client';
 
-import { Event, getRegisteredParticipantCount } from '@/lib/types/Event';
+import { Event } from '@/lib/types/Event';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -219,7 +219,7 @@ export default function EventsAgendaList({ events }: EventsAgendaListProps) {
                               <div className="flex items-center gap-2">
                                 <Users className="h-4 w-4 text-muted-foreground" />
                                 <span>
-                                  {getRegisteredParticipantCount(event)} / {event.maxParticipants}
+                                  {event.registeredParticipantsCount ?? 0} / {event.maxParticipants}
                                 </span>
                               </div>
                             )}

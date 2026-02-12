@@ -6,7 +6,7 @@ import { createEvent, getEventById, addParticipantToEvent, removeParticipantFrom
 import { getLairsOwnedByUser } from "@/lib/db/lairs";
 import { getUserByTagOrId } from "@/lib/db/users";
 import { nanoid } from 'nanoid';
-import { Event, RegistrationStatus, getRegisteredParticipantCount } from "@/lib/types/Event";
+import { Event, RegistrationStatus } from "@/lib/types/Event";
 import { revalidatePath } from "next/cache";
 import { DateTime } from "luxon";
 import { notifyEventAll } from "@/lib/services/notifications";
@@ -136,7 +136,7 @@ export async function updateEventDetailsAction(input: UpdateEventDetailsInput) {
 
     if (
       input.maxParticipants !== undefined
-      && getRegisteredParticipantCount(event) > input.maxParticipants
+      && (event.registeredParticipantsCount ?? 0) > input.maxParticipants
     ) {
       return {
         success: false,
@@ -197,8 +197,7 @@ export async function joinEventAction(eventId: string) {
     }
 
     // Vérifier si l'événement est complet (ne compter que les REGISTERED)
-    const registeredCount = getRegisteredParticipantCount(event);
-    if (event.maxParticipants && registeredCount >= event.maxParticipants) {
+    if (event.maxParticipants && (event.registeredParticipantsCount ?? 0) >= event.maxParticipants) {
       return { success: false, error: "Cet événement est complet" };
     }
 
@@ -328,8 +327,7 @@ export async function addParticipantByTagAction(eventId: string, userTag: string
     }
 
     // Vérifier si l'événement est complet (ne compter que les REGISTERED)
-    const registeredCount = getRegisteredParticipantCount(event);
-    if (event.maxParticipants && registeredCount >= event.maxParticipants) {
+    if (event.maxParticipants && (event.registeredParticipantsCount ?? 0) >= event.maxParticipants) {
       return { success: false, error: "Cet événement est complet" };
     }
 
@@ -682,7 +680,7 @@ export async function updateParticipantRegistrationStatusAction(
 
     // Si on passe à REGISTERED, vérifier que le max n'est pas atteint
     if (status === 'REGISTERED' && event.maxParticipants) {
-      const registeredCount = getRegisteredParticipantCount(event);
+      const registeredCount = event.registeredParticipantsCount ?? 0;
       const currentStatus = event.participantRegistrations?.[userId];
       // Ne vérifier que si le participant n'est pas déjà REGISTERED
       if (currentStatus !== 'REGISTERED' && registeredCount >= event.maxParticipants) {
