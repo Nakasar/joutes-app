@@ -92,8 +92,8 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
       startDateTime: formatDateTimeInput(event.startDateTime),
       endDateTime: formatDateTimeInput(event.endDateTime),
       url: event.url ?? "",
-      price: event.price !== undefined ? event.price.toString() : "",
-      maxParticipants: event.maxParticipants !== undefined ? event.maxParticipants.toString() : "",
+      price: event.price?.toString() ?? "",
+      maxParticipants: event.maxParticipants?.toString() ?? "",
     });
   }, [event]);
 
