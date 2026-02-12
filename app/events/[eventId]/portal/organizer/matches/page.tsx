@@ -30,8 +30,11 @@ export default async function OrganizerMatchesPage({ params }: OrganizerMatchesP
   }
 
   const isCreator = event.creatorId === session.user.id;
+  const isOrganizerStaff = event.staff?.some(
+    (s) => s.userId === session.user.id && s.role === "organizer"
+  );
 
-  if (!isCreator) {
+  if (!isCreator && !isOrganizerStaff) {
     redirect(`/events/${eventId}/portal/player`);
   }
 

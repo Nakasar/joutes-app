@@ -32,8 +32,11 @@ export default async function OrganizerMatchesRoundPage({ params }: OrganizerMat
   }
 
   const isCreator = event.creatorId === session.user.id;
+  const isOrganizerStaff = event.staff?.some(
+    (s) => s.userId === session.user.id && s.role === "organizer"
+  );
 
-  if (!isCreator) {
+  if (!isCreator && !isOrganizerStaff) {
     redirect(`/events/${eventId}/portal/player`);
   }
 

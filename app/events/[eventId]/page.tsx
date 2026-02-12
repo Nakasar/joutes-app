@@ -46,6 +46,9 @@ export default async function EventPage({ params, searchParams }: EventPageProps
   // Vérifier si l'événement est privé et si l'utilisateur a accès
   const isPrivateEvent = !event.lairId;
   const isCreator = session?.user && event.creatorId === session.user.id;
+  const isOrganizerStaff = session?.user && event.staff?.some(
+    (s) => s.userId === session.user.id && s.role === "organizer"
+  );
   const isParticipant = session?.user && event.participants?.includes(session.user.id);
   const hasAccess = !isPrivateEvent || isCreator || isParticipant;
 
@@ -151,7 +154,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
         {/* Boutons d'accès aux portails */}
         {(isCreator || isParticipant) && (
           <div className="flex gap-4">
-            {isCreator && (
+            {(isCreator || isOrganizerStaff) && (
               <Button asChild className="flex-1">
                 <Link href={`/events/${event.id}/portal/organizer`}>
                   <Settings className="h-4 w-4 mr-2" />

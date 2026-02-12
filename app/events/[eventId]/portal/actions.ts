@@ -21,7 +21,6 @@ import {
 import { getEventById } from "@/lib/db/events";
 import { calculateStandings, generateBracketPosition, generateEliminationBracket, generateNextBracketRound, generateSwissPairings } from "@/lib/utils/pairing";
 import { getEventParticipants } from "./participant-actions";
-import { inspect } from "util";
 import { notifyEventAll } from "@/lib/services/notifications";
 
 const PORTAL_SETTINGS_COLLECTION = "event-portal-settings";
@@ -29,10 +28,12 @@ const MATCH_RESULTS_COLLECTION = "event-match-results";
 const ANNOUNCEMENTS_COLLECTION = "event-announcements";
 const PLAYER_NOTES_COLLECTION = "event-player-notes";
 
-// Vérifier si l'utilisateur est le créateur de l'événement
-async function isEventCreator(eventId: string, userId: string): Promise<boolean> {
+// Vérifier si l'utilisateur est le créateur de l'événement ou un organizer staff
+async function isEventOrganizer(eventId: string, userId: string): Promise<boolean> {
   const event = await getEventById(eventId);
-  return event?.creatorId === userId;
+  if (!event) return false;
+  if (event.creatorId === userId) return true;
+  return event.staff?.some(s => s.userId === userId && s.role === 'organizer') || false;
 }
 
 // Vérifier si l'utilisateur est participant de l'événement
@@ -84,7 +85,7 @@ export async function createOrUpdatePortalSettings(data: unknown) {
     const validated = createPortalSettingsSchema.parse(data);
 
     // Vérifier que l'utilisateur est le créateur de l'événement
-    const isCreator = await isEventCreator(validated.eventId, session.user.id);
+    const isCreator = await isEventOrganizer(validated.eventId, session.user.id);
     if (!isCreator) {
       return { success: false, error: "Seul le créateur de l'événement peut modifier les paramètres" };
     }
@@ -137,7 +138,7 @@ export async function addPhase(eventId: string, phaseData: unknown) {
     const validated = createPhaseSchema.parse(phaseData);
 
     // Vérifier que l'utilisateur est le créateur de l'événement
-    const isCreator = await isEventCreator(eventId, session.user.id);
+    const isCreator = await isEventOrganizer(eventId, session.user.id);
     if (!isCreator) {
       return { success: false, error: "Seul le créateur de l&apos;événement peut ajouter une phase" };
     }
@@ -186,7 +187,7 @@ export async function updatePhaseStatus(eventId: string, phaseId: string, status
     }
 
     // Vérifier que l'utilisateur est le créateur de l'événement
-    const isCreator = await isEventCreator(eventId, session.user.id);
+    const isCreator = await isEventOrganizer(eventId, session.user.id);
     if (!isCreator) {
       return { success: false, error: "Seul le créateur de l&apos;événement peut modifier le statut d&apos;une phase" };
     }
@@ -222,7 +223,7 @@ export async function setCurrentPhase(eventId: string, phaseId: string) {
     }
 
     // Vérifier que l'utilisateur est le créateur de l'événement
-    const isCreator = await isEventCreator(eventId, session.user.id);
+    const isCreator = await isEventOrganizer(eventId, session.user.id);
     if (!isCreator) {
       return { success: false, error: "Seul le créateur de l&apos;événement peut changer la phase courante" };
     }
@@ -260,7 +261,7 @@ export async function updatePhase(eventId: string, phaseId: string, phaseData: u
     const validated = updatePhaseSchema.parse(phaseData);
 
     // Vérifier que l'utilisateur est le créateur de l'événement
-    const isCreator = await isEventCreator(eventId, session.user.id);
+    const isCreator = await isEventOrganizer(eventId, session.user.id);
     if (!isCreator) {
       return { success: false, error: "Seul le créateur de l&apos;événement peut modifier une phase" };
     }
@@ -340,7 +341,7 @@ export async function deletePhase(eventId: string, phaseId: string) {
     }
 
     // Vérifier que l'utilisateur est le créateur de l'événement
-    const isCreator = await isEventCreator(eventId, session.user.id);
+    const isCreator = await isEventOrganizer(eventId, session.user.id);
     if (!isCreator) {
       return { success: false, error: "Seul le créateur de l&apos;événement peut supprimer une phase" };
     }
@@ -409,7 +410,7 @@ export async function getMatchResults(eventId: string, phaseId?: string) {
     }
 
     // Vérifier que l'utilisateur a accès à l'événement
-    const isCreator = await isEventCreator(eventId, session.user.id);
+    const isCreator = await isEventOrganizer(eventId, session.user.id);
     const isParticipant = await isEventParticipant(eventId, session.user.id);
 
     if (!isCreator && !isParticipant) {
@@ -612,7 +613,7 @@ export async function createMatchResult(eventId: string, data: unknown) {
     const validated = createMatchResultSchema.parse(data);
 
     // Vérifier que l'utilisateur est le créateur de l'événement
-    const isCreator = await isEventCreator(eventId, session.user.id);
+    const isCreator = await isEventOrganizer(eventId, session.user.id);
     if (!isCreator) {
       return { success: false, error: "Seul le créateur de l&apos;événement peut créer un match" };
     }
@@ -659,7 +660,7 @@ export async function reportMatchResult(eventId: string, data: unknown) {
 
     // Vérifier que l'utilisateur est participant
     const isParticipant = await isEventParticipant(eventId, session.user.id);
-    const isCreator = await isEventCreator(eventId, session.user.id);
+    const isCreator = await isEventOrganizer(eventId, session.user.id);
 
     if (!isParticipant && !isCreator) {
       return { success: false, error: "Vous devez être participant pour rapporter un résultat" };
@@ -749,7 +750,7 @@ export async function confirmMatchResult(eventId: string, data: unknown) {
 
     if (match.player1Id !== session.user.id && match.player2Id !== session.user.id) {
       // Vérifier si l'utilisateur est le créateur
-      const isCreator = await isEventCreator(eventId, session.user.id);
+      const isCreator = await isEventOrganizer(eventId, session.user.id);
       if (!isCreator) {
         return { success: false, error: "Vous ne faites pas partie de ce match" };
       }
@@ -786,7 +787,7 @@ export async function updateMatchResult(eventId: string, matchId: string, data: 
     const validated = reportMatchResultSchema.parse(data);
 
     // Vérifier que l'utilisateur est le créateur de l'événement
-    const isCreator = await isEventCreator(eventId, session.user.id);
+    const isCreator = await isEventOrganizer(eventId, session.user.id);
     if (!isCreator) {
       return { success: false, error: "Seul le créateur de l'événement peut modifier un résultat" };
     }
@@ -836,7 +837,7 @@ export async function deleteMatchResult(eventId: string, matchId: string) {
     }
 
     // Vérifier que l'utilisateur est le créateur de l'événement
-    const isCreator = await isEventCreator(eventId, session.user.id);
+    const isCreator = await isEventOrganizer(eventId, session.user.id);
     if (!isCreator) {
       return { success: false, error: "Seul le créateur de l&apos;événement peut supprimer un match" };
     }
@@ -860,7 +861,7 @@ export async function deleteRoundMatches(eventId: string, phaseId: string, round
     }
 
     // Vérifier que l'utilisateur est le créateur de l'événement
-    const isCreator = await isEventCreator(eventId, session.user.id);
+    const isCreator = await isEventOrganizer(eventId, session.user.id);
     if (!isCreator) {
       return { success: false, error: "Seul le créateur de l&apos;événement peut supprimer des matchs" };
     }
@@ -895,7 +896,7 @@ export async function getAnnouncements(eventId: string) {
     }
 
     // Vérifier que l'utilisateur a accès à l'événement
-    const isCreator = await isEventCreator(eventId, session.user.id);
+    const isCreator = await isEventOrganizer(eventId, session.user.id);
     const isParticipant = await isEventParticipant(eventId, session.user.id);
 
     if (!isCreator && !isParticipant) {
@@ -930,7 +931,7 @@ export async function createAnnouncement(eventId: string, data: unknown) {
     const validated = createAnnouncementSchema.parse(data);
 
     // Vérifier que l'utilisateur est le créateur de l'événement
-    const isCreator = await isEventCreator(eventId, session.user.id);
+    const isCreator = await isEventOrganizer(eventId, session.user.id);
     if (!isCreator) {
       return { success: false, error: "Seul le créateur de l&apos;événement peut créer une annonce" };
     }
@@ -978,7 +979,7 @@ export async function deleteAnnouncement(eventId: string, announcementId: string
     }
 
     // Vérifier que l'utilisateur est le créateur de l'événement
-    const isCreator = await isEventCreator(eventId, session.user.id);
+    const isCreator = await isEventOrganizer(eventId, session.user.id);
     if (!isCreator) {
       return { success: false, error: "Seul le créateur de l&apos;événement peut supprimer une annonce" };
     }
@@ -1006,7 +1007,7 @@ export async function generateMatchesForPhase(eventId: string, phaseId: string) 
     }
 
     // Vérifier que l'utilisateur est le créateur de l'événement
-    const isCreator = await isEventCreator(eventId, session.user.id);
+    const isCreator = await isEventOrganizer(eventId, session.user.id);
     if (!isCreator) {
       return { success: false, error: "Seul le créateur de l&apos;événement peut générer des matchs" };
     }
@@ -1236,7 +1237,7 @@ export async function getPhaseStandings(eventId: string, phaseId: string) {
     }
 
     // Vérifier que l'utilisateur a accès à l'événement
-    const isCreator = await isEventCreator(eventId, session.user.id);
+    const isCreator = await isEventOrganizer(eventId, session.user.id);
     const isParticipant = await isEventParticipant(eventId, session.user.id);
 
     if (!isCreator && !isParticipant) {
@@ -1356,7 +1357,7 @@ export async function getPlayerNote(eventId: string, playerId: string) {
     }
 
     // Vérifier que l'utilisateur est le créateur de l'événement
-    const isCreator = await isEventCreator(eventId, session.user.id);
+    const isCreator = await isEventOrganizer(eventId, session.user.id);
     if (!isCreator) {
       return { success: false, error: "Seul le créateur peut voir les notes" };
     }
@@ -1382,7 +1383,7 @@ export async function updatePlayerNote(eventId: string, playerId: string, notes:
     }
 
     // Vérifier que l'utilisateur est le créateur de l'événement
-    const isCreator = await isEventCreator(eventId, session.user.id);
+    const isCreator = await isEventOrganizer(eventId, session.user.id);
     if (!isCreator) {
       return { success: false, error: "Seul le créateur peut modifier les notes" };
     }

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Settings, Users, Trophy, Megaphone, BarChart3 } from "lucide-react";
+import { Settings, Users, Trophy, Megaphone, BarChart3, UserCog } from "lucide-react";
 
 type OrganizerNavigationProps = {
   eventId: string;
@@ -57,6 +57,15 @@ export default function OrganizerNavigation({ eventId }: OrganizerNavigationProp
         >
           <Megaphone className="h-4 w-4 mr-2" />
           Annonces
+        </Button>
+      </Link>
+      <Link href={`/events/${eventId}/portal/organizer/team`}>
+        <Button
+          variant={pathname?.includes("/team") ? "default" : "ghost"}
+          className="rounded-b-none"
+        >
+          <UserCog className="h-4 w-4 mr-2" />
+          Équipe
         </Button>
       </Link>
     </div>

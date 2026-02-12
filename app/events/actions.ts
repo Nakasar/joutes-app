@@ -10,6 +10,7 @@ import { Event, RegistrationStatus } from "@/lib/types/Event";
 import { revalidatePath } from "next/cache";
 import { DateTime } from "luxon";
 import { notifyEventAll } from "@/lib/services/notifications";
+import { isUserOrganizer } from "@/lib/utils/permissions";
 
 type CreateEventInput = {
   name: string;
@@ -111,8 +112,8 @@ export async function updateEventDetailsAction(input: UpdateEventDetailsInput) {
       return { success: false, error: "Événement introuvable" };
     }
 
-    if (event.creatorId !== session.user.id) {
-      return { success: false, error: "Seul le créateur de l&apos;événement peut modifier ces informations" };
+    if (!isUserOrganizer(event, session.user.id)) {
+      return { success: false, error: "Seuls les organisateurs de l'événement peuvent modifier ces informations" };
     }
 
     const startDate = DateTime.fromISO(input.startDateTime);
@@ -270,9 +271,9 @@ export async function removeParticipantAction(eventId: string, userId: string) {
       return { success: false, error: "Événement introuvable" };
     }
 
-    // Vérifier que l'utilisateur connecté est le créateur de l'événement
-    if (event.creatorId !== session.user.id) {
-      return { success: false, error: "Seul le créateur de l'événement peut retirer des participants" };
+    // Vérifier que l'utilisateur connecté est un organisateur de l'événement
+    if (!isUserOrganizer(event, session.user.id)) {
+      return { success: false, error: "Seuls les organisateurs de l'événement peuvent retirer des participants" };
     }
 
     // Retirer le participant
@@ -309,9 +310,9 @@ export async function addParticipantByTagAction(eventId: string, userTag: string
       return { success: false, error: "Événement introuvable" };
     }
 
-    // Vérifier que l'utilisateur connecté est le créateur de l'événement
-    if (event.creatorId !== session.user.id) {
-      return { success: false, error: "Seul le créateur de l'événement peut ajouter des participants" };
+    // Vérifier que l'utilisateur connecté est un organisateur de l'événement
+    if (!isUserOrganizer(event, session.user.id)) {
+      return { success: false, error: "Seuls les organisateurs de l'événement peuvent ajouter des participants" };
     }
 
     // Vérifier si l'événement est commencé ou terminé
@@ -417,9 +418,9 @@ export async function toggleAllowJoinAction(eventId: string, allowJoin: boolean)
       return { success: false, error: "Événement introuvable" };
     }
 
-    // Vérifier que l'utilisateur est le créateur de l'événement
-    if (event.creatorId !== session.user.id) {
-      return { success: false, error: "Seul le créateur de l'événement peut modifier ce paramètre" };
+    // Vérifier que l'utilisateur est un organisateur de l'événement
+    if (!isUserOrganizer(event, session.user.id)) {
+      return { success: false, error: "Seuls les organisateurs de l'événement peuvent modifier ce paramètre" };
     }
 
     // Mettre à jour allowJoin
@@ -458,8 +459,8 @@ export async function startEventAction(eventId: string) {
     }
 
     // Vérifier que l'utilisateur est le créateur de l'événement
-    if (event.creatorId !== session.user.id) {
-      return { success: false, error: "Seul le créateur de l'événement peut démarrer l'événement" };
+    if (!isUserOrganizer(event, session.user.id)) {
+      return { success: false, error: "Seuls les organisateurs de l'événement peuvent démarrer l'événement" };
     }
 
     // Vérifier que l'événement n'est pas déjà commencé ou terminé
@@ -506,8 +507,8 @@ export async function completeEventAction(eventId: string) {
     }
 
     // Vérifier que l'utilisateur est le créateur de l'événement
-    if (event.creatorId !== session.user.id) {
-      return { success: false, error: "Seul le créateur de l'événement peut terminer l'événement" };
+    if (!isUserOrganizer(event, session.user.id)) {
+      return { success: false, error: "Seuls les organisateurs de l'événement peuvent terminer l'événement" };
     }
 
     // Vérifier que l'événement n'est pas déjà terminé
@@ -550,8 +551,8 @@ export async function cancelEventAction(eventId: string, reason?: string) {
     }
 
     // Vérifier que l'utilisateur est le créateur de l'événement
-    if (event.creatorId !== session.user.id) {
-      return { success: false, error: "Seul le créateur de l'événement peut annuler l'événement" };
+    if (!isUserOrganizer(event, session.user.id)) {
+      return { success: false, error: "Seuls les organisateurs de l'événement peuvent annuler l'événement" };
     }
 
     // Vérifier que l'événement n'est pas déjà annulé ou terminé
@@ -615,8 +616,8 @@ export async function deleteEventAction(eventId: string) {
     }
 
     // Vérifier que l'utilisateur est le créateur de l'événement
-    if (event.creatorId !== session.user.id) {
-      return { success: false, error: "Seul le créateur de l'événement peut supprimer l'événement" };
+    if (!isUserOrganizer(event, session.user.id)) {
+      return { success: false, error: "Seuls les organisateurs de l'événement peuvent supprimer l'événement" };
     }
 
     // Envoyer une notification à tous les participants et au créateur AVANT de supprimer
@@ -668,9 +669,8 @@ export async function updateParticipantRegistrationStatusAction(
       return { success: false, error: "Événement introuvable" };
     }
 
-    // Seul le créateur peut modifier le statut d'inscription
-    if (event.creatorId !== session.user.id) {
-      return { success: false, error: "Seul le créateur de l'événement peut modifier le statut d'inscription" };
+    if (!isUserOrganizer(event, session.user.id)) {
+      return { success: false, error: "Seuls les organisateurs de l'événement peuvent modifier le statut d'inscription" };
     }
 
     // Vérifier que l'utilisateur est bien participant
@@ -720,8 +720,8 @@ export async function togglePreRegistrationAction(eventId: string, preRegistrati
       return { success: false, error: "Événement introuvable" };
     }
 
-    if (event.creatorId !== session.user.id) {
-      return { success: false, error: "Seul le créateur de l'événement peut modifier ce paramètre" };
+    if (!isUserOrganizer(event, session.user.id)) {
+      return { success: false, error: "Seuls les organisateurs de l'événement peuvent modifier la pré-inscription" };
     }
 
     const updated = await updateEvent(eventId, { preRegistration });

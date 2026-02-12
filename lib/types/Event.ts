@@ -26,6 +26,10 @@ export type Event = {
     displayName?: string;
     discriminator?: string;
   };
+  staff? : {
+    userId: string;
+    role: 'organizer' | 'judge';
+  }[];
   runningState?: 'not-started' | 'ongoing' | 'completed';
   allowJoin?: boolean;
   preRegistration?: boolean; // Si true, les nouveaux inscrits ont le statut PRE_REGISTERED

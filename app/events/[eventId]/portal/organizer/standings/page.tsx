@@ -29,8 +29,13 @@ export default async function OrganizerStandingsPage({ params }: OrganizerStandi
     notFound();
   }
 
-  // Vérifier que l'utilisateur est le créateur
-  if (event.creatorId !== session.user.id) {
+  // Vérifier que l'utilisateur est le créateur ou un organizer staff
+  const isCreator = event.creatorId === session.user.id;
+  const isOrganizerStaff = event.staff?.some(
+    (s) => s.userId === session.user.id && s.role === "organizer"
+  );
+
+  if (!isCreator && !isOrganizerStaff) {
     redirect(`/events/${eventId}`);
   }
 

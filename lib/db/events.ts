@@ -835,6 +835,7 @@ export async function getEventById(eventId: string): Promise<Event | null> {
       location: event.lairDetails[0].location,
       address: event.lairDetails[0].address,
     } : undefined,
+    staff: event.staff ?? [],
   };
 }
 
@@ -926,6 +927,63 @@ export async function removeEventFromFavorites(eventId: string, userId: string):
     {
       $pull: { favoritedBy: userId }
     }
+  );
+
+  return result.modifiedCount > 0;
+}
+
+// =====================
+// STAFF DE L'ÉVÉNEMENT
+// =====================
+
+/**
+ * Add a staff member to an event
+ * @param eventId - The event's UUID
+ * @param userId - The user's ID to add as staff
+ * @param role - The staff role ('organizer' or 'judge')
+ * @returns True if the staff was added, false otherwise
+ */
+export async function addStaffToEvent(eventId: string, userId: string, role: 'organizer' | 'judge'): Promise<boolean> {
+  // First remove any existing staff entry for this user (to avoid duplicates)
+  await db.collection<EventDocument>(COLLECTION_NAME).updateOne(
+    { id: eventId },
+    { $pull: { staff: { userId } } }
+  );
+
+  const result = await db.collection<EventDocument>(COLLECTION_NAME).updateOne(
+    { id: eventId },
+    { $push: { staff: { userId, role } } }
+  );
+
+  return result.modifiedCount > 0;
+}
+
+/**
+ * Remove a staff member from an event
+ * @param eventId - The event's UUID
+ * @param userId - The user's ID to remove from staff
+ * @returns True if the staff was removed, false otherwise
+ */
+export async function removeStaffFromEvent(eventId: string, userId: string): Promise<boolean> {
+  const result = await db.collection<EventDocument>(COLLECTION_NAME).updateOne(
+    { id: eventId },
+    { $pull: { staff: { userId } } }
+  );
+
+  return result.modifiedCount > 0;
+}
+
+/**
+ * Update a staff member's role on an event
+ * @param eventId - The event's UUID
+ * @param userId - The user's ID
+ * @param role - The new role
+ * @returns True if the role was updated, false otherwise
+ */
+export async function updateStaffRole(eventId: string, userId: string, role: 'organizer' | 'judge'): Promise<boolean> {
+  const result = await db.collection<EventDocument>(COLLECTION_NAME).updateOne(
+    { id: eventId, "staff.userId": userId },
+    { $set: { "staff.$.role": role } }
   );
 
   return result.modifiedCount > 0;

@@ -26,9 +26,12 @@ export default async function PortalPage({ params }: PortalPageProps) {
   }
 
   const isCreator = event.creatorId === session.user.id;
+  const isOrganizerStaff = event.staff?.some(
+    (s) => s.userId === session.user.id && s.role === "organizer"
+  );
   const isParticipant = event.participants?.includes(session.user.id);
 
-  if (!isCreator && !isParticipant) {
+  if (!isCreator && !isOrganizerStaff && !isParticipant) {
     return (
       <div className="container mx-auto p-6 max-w-4xl">
         <div className="text-center">
@@ -42,7 +45,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
   }
 
   // Rediriger vers le portail approprié
-  if (isCreator) {
+  if (isCreator || isOrganizerStaff) {
     redirect(`/events/${eventId}/portal/organizer`);
   }
 
