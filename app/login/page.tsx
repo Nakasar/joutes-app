@@ -15,6 +15,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl");
+  const redirect = searchParams.get("redirect");
 
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +50,9 @@ function LoginForm() {
       // Rediriger vers l'URL de callback ou vers la page d'accueil
       if (callbackUrl) {
         window.location.href = callbackUrl;
+      } else if (redirect) {
+        router.push(redirect);
+        router.refresh();
       } else {
         router.push("/");
         router.refresh();
