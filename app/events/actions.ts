@@ -2,11 +2,11 @@
 
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { createEvent, getEventById, addParticipantToEvent, removeParticipantFromEvent, addEventToFavorites, removeEventFromFavorites, deleteEvent, updateEvent } from "@/lib/db/events";
+import { createEvent, getEventById, addParticipantToEvent, removeParticipantFromEvent, addEventToFavorites, removeEventFromFavorites, deleteEvent, updateEvent, updateParticipantRegistrationStatus } from "@/lib/db/events";
 import { getLairsOwnedByUser } from "@/lib/db/lairs";
 import { getUserByTagOrId } from "@/lib/db/users";
 import { nanoid } from 'nanoid';
-import { Event } from "@/lib/types/Event";
+import { Event, RegistrationStatus, getRegisteredParticipantCount } from "@/lib/types/Event";
 import { revalidatePath } from "next/cache";
 import { DateTime } from "luxon";
 import { notifyEventAll } from "@/lib/services/notifications";
@@ -20,6 +20,7 @@ type CreateEventInput = {
   url?: string;
   price?: number;
   maxParticipants?: number;
+  preRegistration?: boolean;
 };
 
 type UpdateEventDetailsInput = {
@@ -77,6 +78,8 @@ export async function createEventAction(input: CreateEventInput) {
       runningState: "not-started",
       allowJoin: true,
       participants: [],
+      participantRegistrations: {},
+      preRegistration: input.preRegistration || false,
       maxParticipants: input.maxParticipants,
     };
 
@@ -133,7 +136,7 @@ export async function updateEventDetailsAction(input: UpdateEventDetailsInput) {
 
     if (
       input.maxParticipants !== undefined
-      && (event.participants?.length || 0) > input.maxParticipants
+      && getRegisteredParticipantCount(event) > input.maxParticipants
     ) {
       return {
         success: false,
@@ -193,8 +196,9 @@ export async function joinEventAction(eventId: string) {
       return { success: false, error: "Impossible de rejoindre un événement déjà commencé ou terminé" };
     }
 
-    // Vérifier si l'événement est complet
-    if (event.maxParticipants && event.participants && event.participants.length >= event.maxParticipants) {
+    // Vérifier si l'événement est complet (ne compter que les REGISTERED)
+    const registeredCount = getRegisteredParticipantCount(event);
+    if (event.maxParticipants && registeredCount >= event.maxParticipants) {
       return { success: false, error: "Cet événement est complet" };
     }
 
@@ -203,8 +207,11 @@ export async function joinEventAction(eventId: string) {
       return { success: false, error: "Vous êtes déjà inscrit à cet événement" };
     }
 
+    // Déterminer le statut d'inscription
+    const registrationStatus: RegistrationStatus = event.preRegistration ? 'PRE_REGISTERED' : 'REGISTERED';
+
     // Ajouter le participant
-    const added = await addParticipantToEvent(eventId, session.user.id);
+    const added = await addParticipantToEvent(eventId, session.user.id, registrationStatus);
 
     if (!added) {
       return { success: false, error: "Impossible de s'inscrire à l'événement" };
@@ -320,8 +327,9 @@ export async function addParticipantByTagAction(eventId: string, userTag: string
       return { success: false, error: "Utilisateur introuvable" };
     }
 
-    // Vérifier si l'événement est complet
-    if (event.maxParticipants && event.participants && event.participants.length >= event.maxParticipants) {
+    // Vérifier si l'événement est complet (ne compter que les REGISTERED)
+    const registeredCount = getRegisteredParticipantCount(event);
+    if (event.maxParticipants && registeredCount >= event.maxParticipants) {
       return { success: false, error: "Cet événement est complet" };
     }
 
@@ -330,8 +338,11 @@ export async function addParticipantByTagAction(eventId: string, userTag: string
       return { success: false, error: "Cet utilisateur est déjà inscrit à l'événement" };
     }
 
+    // Déterminer le statut d'inscription (le créateur ajoute directement en REGISTERED)
+    const registrationStatus: RegistrationStatus = 'REGISTERED';
+
     // Ajouter le participant
-    const added = await addParticipantToEvent(eventId, user.id);
+    const added = await addParticipantToEvent(eventId, user.id, registrationStatus);
 
     if (!added) {
       return { success: false, error: "Impossible d'ajouter ce participant" };
@@ -636,5 +647,97 @@ export async function deleteEventAction(eventId: string) {
   } catch (error) {
     console.error("Erreur lors de la suppression de l'événement:", error);
     return { success: false, error: "Une erreur est survenue lors de la suppression de l'événement" };
+  }
+}
+
+export async function updateParticipantRegistrationStatusAction(
+  eventId: string,
+  userId: string,
+  status: RegistrationStatus
+) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      return { success: false, error: "Vous devez être connecté" };
+    }
+
+    const event = await getEventById(eventId);
+
+    if (!event) {
+      return { success: false, error: "Événement introuvable" };
+    }
+
+    // Seul le créateur peut modifier le statut d'inscription
+    if (event.creatorId !== session.user.id) {
+      return { success: false, error: "Seul le créateur de l'événement peut modifier le statut d'inscription" };
+    }
+
+    // Vérifier que l'utilisateur est bien participant
+    if (!event.participants?.includes(userId)) {
+      return { success: false, error: "Cet utilisateur n'est pas participant à l'événement" };
+    }
+
+    // Si on passe à REGISTERED, vérifier que le max n'est pas atteint
+    if (status === 'REGISTERED' && event.maxParticipants) {
+      const registeredCount = getRegisteredParticipantCount(event);
+      const currentStatus = event.participantRegistrations?.[userId];
+      // Ne vérifier que si le participant n'est pas déjà REGISTERED
+      if (currentStatus !== 'REGISTERED' && registeredCount >= event.maxParticipants) {
+        return { success: false, error: "Le nombre maximum de participants inscrits est atteint" };
+      }
+    }
+
+    const updated = await updateParticipantRegistrationStatus(eventId, userId, status);
+
+    if (!updated) {
+      return { success: false, error: "Impossible de modifier le statut d'inscription" };
+    }
+
+    revalidatePath(`/events/${eventId}`);
+    revalidatePath("/events");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la modification du statut d'inscription:", error);
+    return { success: false, error: "Une erreur est survenue lors de la modification du statut" };
+  }
+}
+
+export async function togglePreRegistrationAction(eventId: string, preRegistration: boolean) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      return { success: false, error: "Vous devez être connecté" };
+    }
+
+    const event = await getEventById(eventId);
+
+    if (!event) {
+      return { success: false, error: "Événement introuvable" };
+    }
+
+    if (event.creatorId !== session.user.id) {
+      return { success: false, error: "Seul le créateur de l'événement peut modifier ce paramètre" };
+    }
+
+    const updated = await updateEvent(eventId, { preRegistration });
+
+    if (!updated) {
+      return { success: false, error: "Impossible de mettre à jour l'événement" };
+    }
+
+    revalidatePath(`/events/${eventId}`);
+    revalidatePath("/events");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la modification de la pré-inscription:", error);
+    return { success: false, error: "Une erreur est survenue lors de la modification" };
   }
 }

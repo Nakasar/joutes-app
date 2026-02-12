@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Clock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { joinEventAction, leaveEventAction } from "../actions";
 import { useRouter } from "next/navigation";
+import { RegistrationStatus } from "@/lib/types/Event";
 
 type EventActionsProps = {
   eventId: string;
@@ -14,9 +16,11 @@ type EventActionsProps = {
   isFull: boolean;
   allowJoin?: boolean;
   runningState?: 'not-started' | 'ongoing' | 'completed';
+  registrationStatus?: RegistrationStatus;
+  preRegistration?: boolean;
 };
 
-export default function EventActions({ eventId, isParticipant, isCreator, isFull, allowJoin, runningState = 'not-started' }: EventActionsProps) {
+export default function EventActions({ eventId, isParticipant, isCreator, isFull, allowJoin, runningState = 'not-started', registrationStatus, preRegistration }: EventActionsProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,21 +91,39 @@ export default function EventActions({ eventId, isParticipant, isCreator, isFull
       )}
 
       {isParticipant ? (
-        <Button
-          onClick={handleLeave}
-          disabled={loading}
-          variant="outline"
-          className="w-full"
-        >
-          {loading ? "Chargement..." : "Se désinscrire"}
-        </Button>
+        <div className="space-y-2">
+          {registrationStatus === 'PRE_REGISTERED' && (
+            <Alert className="border-yellow-400 bg-yellow-50">
+              <Clock className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-yellow-800">
+                Vous êtes pré-inscrit. L&apos;organisateur doit valider votre inscription.
+              </AlertDescription>
+            </Alert>
+          )}
+          {registrationStatus === 'EXCLUDED' && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Vous avez été exclu de cet événement par l&apos;organisateur.
+              </AlertDescription>
+            </Alert>
+          )}
+          <Button
+            onClick={handleLeave}
+            disabled={loading}
+            variant="outline"
+            className="w-full"
+          >
+            {loading ? "Chargement..." : "Se désinscrire"}
+          </Button>
+        </div>
       ) : allowJoin && !isEventStartedOrCompleted ? (
         <Button
           onClick={handleJoin}
           disabled={loading || isFull}
           className="w-full"
         >
-          {loading ? "Chargement..." : isFull ? "Événement complet" : "S'inscrire"}
+          {loading ? "Chargement..." : isFull ? "Événement complet" : preRegistration ? "Se pré-inscrire" : "S'inscrire"}
         </Button>
       ) : isEventStartedOrCompleted ? (
         <Alert>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Event } from "@/lib/types/Event";
+import { Event, getRegisteredParticipantCount } from "@/lib/types/Event";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin, Clock, Gamepad2, Euro, User2Icon, Users, Star, Lock } from "lucide-react";
@@ -241,7 +241,7 @@ export default function EventDetailsModal({
               </CardHeader>
               <CardContent className="text-sm">
                 <p className="text-muted-foreground">
-                  {event.participants?.length || 0}
+                  {getRegisteredParticipantCount(event)}
                   {event.maxParticipants && ` / ${event.maxParticipants}`} inscrit(s)
                 </p>
               </CardContent>

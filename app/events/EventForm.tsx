@@ -30,6 +30,7 @@ export default function EventForm({ ownedLairs, games }: EventFormProps) {
     url: "",
     price: "",
     maxParticipants: "",
+    preRegistration: false,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,6 +48,7 @@ export default function EventForm({ ownedLairs, games }: EventFormProps) {
         url: formData.url || undefined,
         price: formData.price ? parseFloat(formData.price) : undefined,
         maxParticipants: formData.maxParticipants ? parseInt(formData.maxParticipants, 10) : undefined,
+        preRegistration: formData.preRegistration,
       });
 
       if (result.success) {
@@ -218,6 +220,22 @@ export default function EventForm({ ownedLairs, games }: EventFormProps) {
               />
             </div>
           </div>
+
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="preRegistration"
+              checked={formData.preRegistration}
+              onChange={(e) => setFormData({ ...formData, preRegistration: e.target.checked })}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            <label htmlFor="preRegistration" className="text-sm font-medium">
+              Activer la pré-inscription
+            </label>
+          </div>
+          <p className="text-xs text-muted-foreground -mt-2">
+            Si activé, les participants qui s&apos;inscrivent auront le statut &quot;Pré-inscrit&quot; et devront être validés par l&apos;organisateur.
+          </p>
 
           <div className="flex gap-2 pt-4">
             <Button type="submit" disabled={loading}>
