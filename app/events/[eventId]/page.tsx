@@ -2,8 +2,6 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { getEventById } from "@/lib/db/events";
-import { getUserById } from "@/lib/db/users";
-import { User } from "@/lib/types/User";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -15,6 +13,7 @@ import QRCodeButton from "./QRCodeButton";
 import ParticipantManagerWrapper from "./ParticipantManagerWrapper";
 import FavoriteButton from "./FavoriteButton";
 import AllowJoinSwitch from "./AllowJoinSwitch";
+import PreRegistrationSwitch from "./PreRegistrationSwitch";
 import RunningStateManager from "./RunningStateManager";
 import CancelEventButton from "./CancelEventButton";
 import DeleteEventButton from "./DeleteEventButton";
@@ -65,7 +64,6 @@ export default async function EventPage({ params, searchParams }: EventPageProps
 
   const startDate = DateTime.fromISO(event.startDateTime);
   const endDate = DateTime.fromISO(event.endDateTime);
-  const isFull = event.maxParticipants ? (event.participants?.length || 0) >= event.maxParticipants : false;
   const isFavorited = session?.user && event.favoritedBy?.includes(session.user.id);
 
   // Récupérer les participants (utilisateurs et invités)
@@ -77,18 +75,11 @@ export default async function EventPage({ params, searchParams }: EventPageProps
     ? participantsResult.data 
     : [];
 
-  // Pour les non-créateurs, récupérer seulement les utilisateurs participants
-  const participantUsers = !isCreator && event.participants
-    ? await Promise.all(
-        event.participants.map(async (userId) => {
-          const user = await getUserById(userId);
-          return user;
-        })
-      )
-    : [];
+  const registeredCount = allParticipants.filter(p => p.registrationStatus === "REGISTERED").length;
+  const isFull = event.maxParticipants ? registeredCount >= event.maxParticipants : false;
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <div className="container mx-auto p-6 max-w-6xl">
       <div className="space-y-6">
         {search.joined && (
           <Alert className="border-green-500 bg-green-50">
@@ -253,21 +244,19 @@ export default async function EventPage({ params, searchParams }: EventPageProps
           </div>
 
           <div className="space-y-6">
-            {event.price && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Euro className="h-5 w-5" />
-                    Prix
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold">
-                    {event.price === 0 ? "Gratuit" : `${event.price.toFixed(2)} €`}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Euro className="h-5 w-5" />
+                  Prix
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold">
+                  {(event.price === 0 || !event.price) ? "Gratuit" : `${event.price.toFixed(2)} €`}
+                </p>
+              </CardContent>
+            </Card>
 
             <Card>
               <CardHeader>
@@ -276,7 +265,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                   Participants
                 </CardTitle>
                 <CardDescription>
-                  {event.participants?.length || 0}
+                  {registeredCount}
                   {event.maxParticipants && ` / ${event.maxParticipants}`} inscrit(s)
                 </CardDescription>
               </CardHeader>
@@ -286,6 +275,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                     eventId={event.id}
                     participants={allParticipants as any}
                     runningState={event.runningState}
+                    preRegistration={event.preRegistration}
                   />
                 ) : null}
 
@@ -293,6 +283,13 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                   <AllowJoinSwitch
                     eventId={event.id}
                     initialAllowJoin={event.allowJoin ?? true}
+                  />
+                )}
+
+                {isCreator && (
+                  <PreRegistrationSwitch
+                    eventId={event.id}
+                    initialPreRegistration={event.preRegistration ?? false}
                   />
                 )}
 

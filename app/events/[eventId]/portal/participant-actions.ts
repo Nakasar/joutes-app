@@ -12,7 +12,6 @@ import {
 } from "@/lib/schemas/event-portal.schema";
 import { getEventById } from "@/lib/db/events";
 import { getUserByUsernameAndDiscriminator, getUserByEmail } from "@/lib/db/users";
-import crypto from "crypto";
 
 const GUEST_PARTICIPANTS_COLLECTION = "event-guest-participants";
 const EVENTS_COLLECTION = "events";
@@ -70,8 +69,8 @@ export async function addParticipantToEvent(eventId: string, data: unknown) {
       return { success: false, error: "Événement non trouvé" };
     }
 
-    // Vérifier le nombre maximum de participants
-    if (event.maxParticipants && (event.participants?.length || 0) >= event.maxParticipants) {
+    // Vérifier le nombre maximum de participants (ne compter que les REGISTERED)
+    if (event.maxParticipants && (event.registeredParticipantsCount ?? 0) >= event.maxParticipants) {
       return { success: false, error: "L'événement est complet" };
     }
 
@@ -101,7 +100,10 @@ export async function addParticipantToEvent(eventId: string, data: unknown) {
       // Ajouter l'utilisateur aux participants
       await eventsCollection.updateOne(
         { id: eventId },
-        { $addToSet: { participants: user.id } }
+        {
+          $addToSet: { participants: user.id },
+          $set: { [`participantRegistrations.${user.id}`]: 'REGISTERED' },
+        }
       );
 
       return {
@@ -125,7 +127,10 @@ export async function addParticipantToEvent(eventId: string, data: unknown) {
 
         await eventsCollection.updateOne(
           { id: eventId },
-          { $addToSet: { participants: existingUser.id } }
+          {
+            $addToSet: { participants: existingUser.id },
+            $set: { [`participantRegistrations.${existingUser.id}`]: 'REGISTERED' },
+          }
         );
 
         return {
@@ -178,7 +183,10 @@ export async function addParticipantToEvent(eventId: string, data: unknown) {
       // Ajouter l'utilisateur aux participants
       await eventsCollection.updateOne(
         { id: eventId },
-        { $addToSet: { participants: userId } }
+        {
+          $addToSet: { participants: userId },
+          $set: { [`participantRegistrations.${userId}`]: 'REGISTERED' },
+        }
       );
 
       return {
@@ -257,14 +265,20 @@ export async function removeParticipantFromEvent(eventId: string, participantId:
       if (guestParticipant.userId) {
         await eventsCollection.updateOne(
           { id: eventId },
-          { $pull: { participants: guestParticipant.userId } as any }
+          {
+            $pull: { participants: guestParticipant.userId } as any,
+            $unset: { [`participantRegistrations.${guestParticipant.userId}`]: "" },
+          }
         );
       }
     } else {
       // Retirer l'utilisateur des participants
       await eventsCollection.updateOne(
         { id: eventId },
-        { $pull: { participants: participantId } as any }
+        {
+          $pull: { participants: participantId } as any,
+          $unset: { [`participantRegistrations.${participantId}`]: "" },
+        }
       );
     }
 
@@ -317,6 +331,7 @@ export async function getEventParticipants(eventId: string) {
         email: user.email,
         profileImage: user.profileImage,
         type: "user" as const,
+        registrationStatus: event.participantRegistrations?.[user._id.toString()] || 'REGISTERED',
       })),
       ...guestParticipants.map(guest => ({
         id: guest.id,
@@ -324,6 +339,7 @@ export async function getEventParticipants(eventId: string) {
         discriminator: guest.discriminator,
         email: guest.email,
         type: guest.type,
+        registrationStatus: 'REGISTERED' as const,
       })),
     ];
 

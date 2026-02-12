@@ -372,7 +372,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
                   placeholder="Illimité"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Valeur actuelle: {event.participants?.length || 0} inscrit(s)
+                  Valeur actuelle: {event.registeredParticipantsCount ?? 0} inscrit(s)
                 </p>
               </div>
             </div>

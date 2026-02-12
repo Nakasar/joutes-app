@@ -1,5 +1,7 @@
 import { GeoJSONPoint } from "./Lair";
 
+export type RegistrationStatus = 'PRE_REGISTERED' | 'REGISTERED' | 'EXCLUDED';
+
 export type Event = {
   id: string;
   lairId?: string;
@@ -26,7 +28,10 @@ export type Event = {
   };
   runningState?: 'not-started' | 'ongoing' | 'completed';
   allowJoin?: boolean;
+  preRegistration?: boolean; // Si true, les nouveaux inscrits ont le statut PRE_REGISTERED
   participants?: string[]; // IDs des utilisateurs inscrits à l'événement
+  participantRegistrations?: { [userId: string]: RegistrationStatus }; // Statut d'inscription par participant
+  registeredParticipantsCount?: number; // Nombre de participants inscrits
   maxParticipants?: number; // Nombre maximum de participants (optionnel)
   favoritedBy?: string[]; // IDs des utilisateurs qui ont mis cet événement en favori
   lair?: {
@@ -37,3 +42,4 @@ export type Event = {
     owners?: string[];
   };
 };
+

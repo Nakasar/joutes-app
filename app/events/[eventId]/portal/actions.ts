@@ -1037,7 +1037,7 @@ export async function generateMatchesForPhase(eventId: string, phaseId: string) 
       return { success: false, error: "Impossible de récupérer les participants" };
     }
 
-    const participants = participantsResult.data;
+    const participants = participantsResult.data?.filter(p => p.registrationStatus === 'REGISTERED');
     if (participants.length < 2) {
       return { success: false, error: "Au moins 2 participants sont requis pour générer des matchs" };
     }
@@ -1253,7 +1253,8 @@ export async function getPhaseStandings(eventId: string, phaseId: string) {
     const guestsCollection = db.collection("event-guest-participants");
     
     // Construire la liste des IDs de participants
-    const participantIds = event.participants || [];
+    const allParticipantIds = event.participants || [];
+    const participantIds = allParticipantIds.filter((id: string) => event.participantRegistrations?.[id] === 'REGISTERED');
     
     // Récupérer les utilisateurs via agrégation
     const userParticipants = await usersCollection.find({
@@ -1262,33 +1263,35 @@ export async function getPhaseStandings(eventId: string, phaseId: string) {
       _id: 1,
       displayName: 1,
       username: 1,
-      discriminator: 1
+      discriminator: 1,
     }).toArray();
 
     // Récupérer les invités
     const guestParticipants = await guestsCollection.find({ eventId }).project({
       id: 1,
       username: 1,
-      discriminator: 1
+      discriminator: 1,
     }).toArray();
 
     // Créer une map des participants pour un accès rapide
     const participantsMap = new Map();
-    userParticipants.forEach((user: any) => {
-      const id = user._id.toString();
-      participantsMap.set(id, {
-        id,
-        username: user.displayName || user.username,
-        discriminator: user.discriminator
+    userParticipants
+      .forEach((user: any) => {
+        const id = user._id.toString();
+        participantsMap.set(id, {
+          id,
+          username: user.displayName || user.username,
+          discriminator: user.discriminator
+        });
       });
-    });
-    guestParticipants.forEach((guest: any) => {
-      participantsMap.set(guest.id, {
-        id: guest.id,
-        username: guest.username,
-        discriminator: guest.discriminator
+    guestParticipants
+      .forEach((guest: any) => {
+        participantsMap.set(guest.id, {
+          id: guest.id,
+          username: guest.username,
+          discriminator: guest.discriminator
+        });
       });
-    });
 
     const playerIds = Array.from(participantsMap.keys());
 

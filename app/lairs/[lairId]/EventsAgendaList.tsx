@@ -219,7 +219,7 @@ export default function EventsAgendaList({ events }: EventsAgendaListProps) {
                               <div className="flex items-center gap-2">
                                 <Users className="h-4 w-4 text-muted-foreground" />
                                 <span>
-                                  {event.participants?.length || 0} / {event.maxParticipants}
+                                  {event.registeredParticipantsCount ?? 0} / {event.maxParticipants}
                                 </span>
                               </div>
                             )}

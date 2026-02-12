@@ -251,7 +251,7 @@ export function FeaturedEventsAgenda({
 
                           {event.maxParticipants && (
                             <div className="mt-2 text-sm text-gray-400">
-                              {event.participants?.length || 0} /{" "}
+                              {event.registeredParticipantsCount ?? 0} /{" "}
                               {event.maxParticipants} participants
                             </div>
                           )}

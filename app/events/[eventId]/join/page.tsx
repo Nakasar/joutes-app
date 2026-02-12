@@ -11,6 +11,9 @@ export default function JoinPage() {
     const session = useSession();
 
     useEffect(() => {
+        if (session.isPending) {
+            return;
+        }
         if (!session?.data?.user) {
             router.push(`/login?redirect=/events/${eventId}/join`);
             return;
@@ -27,5 +30,9 @@ export default function JoinPage() {
         });
     }, [eventId, session]);
 
-    return (<div></div>);
+    return (
+        <div>
+            <p>Les lutins de joutes sont en train de valider votre inscription, patientez un peu !</p>
+        </div>
+    );
 }

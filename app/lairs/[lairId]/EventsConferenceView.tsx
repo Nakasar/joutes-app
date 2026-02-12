@@ -315,7 +315,7 @@ export default function EventsConferenceView({ events }: EventsConferenceViewPro
                               <div className="flex items-center gap-2">
                                 <Users className="h-3 w-3" />
                                 <span>
-                                  {event.participants?.length || 0} / {event.maxParticipants}
+                                  {event.registeredParticipantsCount ?? 0} / {event.maxParticipants}
                                 </span>
                               </div>
                             )}

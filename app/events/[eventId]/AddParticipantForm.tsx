@@ -13,8 +13,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { UserPlus, CheckCircle, AlertCircle, X, Mail, User as UserIcon } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { UserPlus, CheckCircle, AlertCircle, X, Mail, User as UserIcon, ClipboardCheck, Clock, Ban } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { addParticipantToEvent, removeParticipantFromEvent } from "./portal/participant-actions";
+import { updateParticipantRegistrationStatusAction } from "../actions";
+import { RegistrationStatus } from "@/lib/types/Event";
 
 type Participant = {
   id: string;
@@ -23,6 +33,7 @@ type Participant = {
   email?: string;
   profileImage?: string;
   type: "user" | "email" | "guest";
+  registrationStatus?: RegistrationStatus;
 };
 
 type AddParticipantFormProps = {
@@ -31,6 +42,8 @@ type AddParticipantFormProps = {
   onParticipantAdded?: () => void;
   onParticipantRemoved?: () => void;
   runningState?: 'not-started' | 'ongoing' | 'completed';
+  preRegistration?: boolean;
+  readOnly?: boolean;
 };
 
 export default function AddParticipantForm({
@@ -39,6 +52,8 @@ export default function AddParticipantForm({
   onParticipantAdded,
   onParticipantRemoved,
   runningState = 'not-started',
+  preRegistration = false,
+  readOnly = false,
 }: AddParticipantFormProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -54,6 +69,46 @@ export default function AddParticipantForm({
 
   const [confirmRemoveOpen, setConfirmRemoveOpen] = useState(false);
   const [participantToRemove, setParticipantToRemove] = useState<Participant | null>(null);
+
+  const getStatusBadge = (status?: RegistrationStatus) => {
+    switch (status) {
+      case 'PRE_REGISTERED':
+        return (
+          <Badge variant="outline" className="text-yellow-600 border-yellow-400 bg-yellow-50">
+            <Clock className="h-3 w-3 mr-1" />
+            Pré-inscrit
+          </Badge>
+        );
+      case 'EXCLUDED':
+        return (
+          <Badge variant="outline" className="text-red-600 border-red-400 bg-red-50">
+            <Ban className="h-3 w-3 mr-1" />
+            Exclu
+          </Badge>
+        );
+      case 'REGISTERED':
+      default:
+        return (
+          <Badge variant="outline" className="text-green-600 border-green-400 bg-green-50">
+            <ClipboardCheck className="h-3 w-3 mr-1" />
+            Inscrit
+          </Badge>
+        );
+    }
+  };
+
+  const handleStatusChange = (participant: Participant, newStatus: RegistrationStatus) => {
+    startTransition(async () => {
+      setError(null);
+      const result = await updateParticipantRegistrationStatusAction(eventId, participant.id, newStatus);
+      if (result.success) {
+        onParticipantAdded?.();
+        router.refresh();
+      } else {
+        setError(result.error || "Erreur lors de la modification du statut");
+      }
+    });
+  };
 
   const resetForm = () => {
     setUserTag("");
@@ -164,9 +219,12 @@ export default function AddParticipantForm({
                   </div>
                 )}
                 <div className="flex-1">
-                  <div className="text-sm font-medium">
-                    {participant.username}
-                    {participant.discriminator && `#${participant.discriminator}`}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">
+                      {participant.username}
+                      {participant.discriminator && `#${participant.discriminator}`}
+                    </span>
+                    {preRegistration && participant.type === "user" && getStatusBadge(participant.registrationStatus)}
                   </div>
                   {participant.email && (
                     <div className="text-xs text-muted-foreground flex items-center gap-1">
@@ -179,14 +237,34 @@ export default function AddParticipantForm({
                   )}
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleRemoveParticipant(participant)}
-                disabled={isPending}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              {!readOnly && (
+                <div className="flex items-center gap-1">
+                  {preRegistration && participant.type === "user" && (
+                    <Select
+                      value={participant.registrationStatus || 'REGISTERED'}
+                      onValueChange={(value) => handleStatusChange(participant, value as RegistrationStatus)}
+                      disabled={isPending}
+                    >
+                      <SelectTrigger className="w-[140px] h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="PRE_REGISTERED">Pré-inscrit</SelectItem>
+                        <SelectItem value="REGISTERED">Inscrit</SelectItem>
+                        <SelectItem value="EXCLUDED">Exclu</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveParticipant(participant)}
+                    disabled={isPending}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -329,7 +407,7 @@ export default function AddParticipantForm({
       )}
 
       {/* Dialog de confirmation de suppression */}
-      <Dialog open={confirmRemoveOpen} onOpenChange={setConfirmRemoveOpen}>
+      {!readOnly && <Dialog open={confirmRemoveOpen} onOpenChange={setConfirmRemoveOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirmer la suppression</DialogTitle>
@@ -355,7 +433,7 @@ export default function AddParticipantForm({
             </Button>
           </div>
         </DialogContent>
-      </Dialog>
+      </Dialog>}
     </div>
   );
 }

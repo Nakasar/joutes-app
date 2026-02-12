@@ -5,9 +5,10 @@ type OrganizerParticipantsProps = {
   eventId: string;
   participants: any[];
   runningState?: 'not-started' | 'ongoing' | 'completed';
+  preRegistration?: boolean;
 };
 
-export default function OrganizerParticipants({ eventId, participants, runningState }: OrganizerParticipantsProps) {
+export default function OrganizerParticipants({ eventId, participants, runningState, preRegistration }: OrganizerParticipantsProps) {
   return (
     <div className="space-y-6">
       <Card>
@@ -22,6 +23,7 @@ export default function OrganizerParticipants({ eventId, participants, runningSt
             eventId={eventId}
             participants={participants}
             runningState={runningState}
+            preRegistration={preRegistration}
           />
         </CardContent>
       </Card>

@@ -1,5 +1,5 @@
 import db from "@/lib/mongodb";
-import { Event } from "@/lib/types/Event";
+import { Event, RegistrationStatus } from "@/lib/types/Event";
 import { getUserById } from "@/lib/db/users";
 import { getLairIdsNearLocation } from "./lairs";
 import { ObjectId } from "mongodb";
@@ -728,6 +728,8 @@ export async function getEventsForUser(
     status: event.status,
     addedBy: event.addedBy,
     participants: event.participants,
+    participantRegistrations: event.participantRegistrations,
+    preRegistration: event.preRegistration,
     maxParticipants: event.maxParticipants,
     creatorId: event.creatorId,
     creator: event.creator && event.creator.length > 0 ? event.creator[0] : undefined,
@@ -821,6 +823,9 @@ export async function getEventById(eventId: string): Promise<Event | null> {
     creator: event.creator && event.creator.length > 0 ? { ...event.creator[0], id:event.creator[0]._id.toString(), _id: undefined } : undefined,
     runningState: event.runningState,
     participants: event.participants,
+    participantRegistrations: event.participantRegistrations,
+    registeredParticipantsCount: 0,
+    preRegistration: event.preRegistration,
     maxParticipants: event.maxParticipants,
     favoritedBy: event.favoritedBy,
     allowJoin: event.allowJoin,
@@ -837,13 +842,15 @@ export async function getEventById(eventId: string): Promise<Event | null> {
  * Add a participant to an event
  * @param eventId - The event's UUID
  * @param userId - The user's ID
+ * @param registrationStatus - The registration status (defaults to REGISTERED)
  * @returns True if the participant was added, false otherwise
  */
-export async function addParticipantToEvent(eventId: string, userId: string): Promise<boolean> {
+export async function addParticipantToEvent(eventId: string, userId: string, registrationStatus: RegistrationStatus = 'REGISTERED'): Promise<boolean> {
   const result = await db.collection<EventDocument>(COLLECTION_NAME).updateOne(
     { id: eventId },
     {
-      $addToSet: { participants: userId }
+      $addToSet: { participants: userId },
+      $set: { [`participantRegistrations.${userId}`]: registrationStatus },
     }
   );
 
@@ -857,12 +864,33 @@ export async function addParticipantToEvent(eventId: string, userId: string): Pr
  * @returns True if the participant was removed, false otherwise
  */
 export async function removeParticipantFromEvent(eventId: string, userId: string): Promise<boolean> {
-
-
   const result = await db.collection<EventDocument>(COLLECTION_NAME).updateOne(
     { id: eventId },
     {
-      $pull: { participants: userId }
+      $pull: { participants: userId },
+      $unset: { [`participantRegistrations.${userId}`]: "" },
+    }
+  );
+
+  return result.modifiedCount > 0;
+}
+
+/**
+ * Update a participant's registration status
+ * @param eventId - The event's UUID
+ * @param userId - The user's ID
+ * @param status - The new registration status
+ * @returns True if the status was updated, false otherwise
+ */
+export async function updateParticipantRegistrationStatus(
+  eventId: string,
+  userId: string,
+  status: RegistrationStatus
+): Promise<boolean> {
+  const result = await db.collection<EventDocument>(COLLECTION_NAME).updateOne(
+    { id: eventId, participants: userId },
+    {
+      $set: { [`participantRegistrations.${userId}`]: status },
     }
   );
 
