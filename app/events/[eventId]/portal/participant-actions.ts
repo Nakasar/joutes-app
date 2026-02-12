@@ -18,9 +18,14 @@ const EVENTS_COLLECTION = "events";
 const USERS_COLLECTION = "user";
 
 // Vérifier si l'utilisateur est le créateur de l'événement
-async function isEventCreator(eventId: string, userId: string): Promise<boolean> {
+async function isEventOrganizer(eventId: string, userId: string): Promise<boolean> {
   const event = await getEventById(eventId);
-  return event?.creatorId === userId;
+  if (event?.creatorId === userId) { 
+    return true;
+  }
+  return event?.staff?.some(
+    (s) => s.userId === userId && s.role === "organizer"
+  ) ?? false;
 }
 
 // Générer un discriminant unique pour un username
@@ -59,7 +64,7 @@ export async function addParticipantToEvent(eventId: string, data: unknown) {
     const validated = addParticipantSchema.parse(data);
 
     // Vérifier que l'utilisateur est le créateur de l'événement
-    const isCreator = await isEventCreator(eventId, session.user.id);
+    const isCreator = await isEventOrganizer(eventId, session.user.id);
     if (!isCreator) {
       return { success: false, error: "Seul le créateur de l'événement peut ajouter des participants" };
     }
@@ -243,7 +248,7 @@ export async function removeParticipantFromEvent(eventId: string, participantId:
     }
 
     // Vérifier que l'utilisateur est le créateur de l'événement
-    const isCreator = await isEventCreator(eventId, session.user.id);
+    const isCreator = await isEventOrganizer(eventId, session.user.id);
     if (!isCreator) {
       return { success: false, error: "Seul le créateur de l'événement peut retirer des participants" };
     }
@@ -361,7 +366,7 @@ export async function getGuestParticipants(eventId: string) {
     }
 
     // Vérifier que l'utilisateur est le créateur de l'événement
-    const isCreator = await isEventCreator(eventId, session.user.id);
+    const isCreator = await isEventOrganizer(eventId, session.user.id);
     if (!isCreator) {
       return { success: false, error: "Seul le créateur peut voir les participants invités" };
     }
