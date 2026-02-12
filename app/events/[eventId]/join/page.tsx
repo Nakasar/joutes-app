@@ -32,7 +32,7 @@ export default function JoinPage() {
 
     return (
         <div>
-            
+            <p>Les lutins de joutes sont en train de valider votre inscription, patientez un peu !</p>
         </div>
     );
 }
