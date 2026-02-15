@@ -4,13 +4,14 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { createEvent, getEventById, addParticipantToEvent, removeParticipantFromEvent, addEventToFavorites, removeEventFromFavorites, deleteEvent, updateEvent, updateParticipantRegistrationStatus } from "@/lib/db/events";
 import { getLairsOwnedByUser } from "@/lib/db/lairs";
-import { getUserByTagOrId } from "@/lib/db/users";
+import {getUserById, getUserByTagOrId, updateUserDisplayName} from "@/lib/db/users";
 import { nanoid } from 'nanoid';
 import { Event, RegistrationStatus } from "@/lib/types/Event";
 import { revalidatePath } from "next/cache";
 import { DateTime } from "luxon";
 import { notifyEventAll } from "@/lib/services/notifications";
 import { isUserOrganizer } from "@/lib/utils/permissions";
+import {generateDiscriminator, generateUserNamme} from "@/lib/utils";
 
 type CreateEventInput = {
   name: string;
@@ -205,6 +206,14 @@ export async function joinEventAction(eventId: string) {
     // Vérifier si l'utilisateur est déjà inscrit
     if (event.participants?.includes(session.user.id)) {
       return { success: false, error: "Vous êtes déjà inscrit à cet événement" };
+    }
+
+    const user = await getUserById(session.user.id);
+    if (!user) {
+      return { success: false, error: "Utilisateur introuvable" };
+    }
+    if (!user.displayName && !user.discriminator) {
+      await updateUserDisplayName(session.user.id, generateUserNamme(), generateDiscriminator());
     }
 
     // Déterminer le statut d'inscription

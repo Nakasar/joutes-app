@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Clock } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { joinEventAction, leaveEventAction } from "../actions";
 import { useRouter } from "next/navigation";
 import { RegistrationStatus } from "@/lib/types/Event";

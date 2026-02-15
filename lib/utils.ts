@@ -5,6 +5,16 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export function generateUserNamme() {
+  const adjectives = ["Sombre", "Lumineux", "Rapide", "Furtif", "Puissant", "Mystérieux", "Élégant", "Féroce", "Agile", "Sage"];
+  const nouns = ["Dragon", "Phénix", "Loup", "Tigre", "Serpent", "Griffon", "Licorne", "Chimère", "Hydre", "Sphinx"];
+
+  const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+  const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+
+  return `${randomAdjective}${randomNoun}`;
+}
+
 /**
  * Génère un discriminateur aléatoire à 4 chiffres (0000-9999)
  * @returns Un string de 4 chiffres
