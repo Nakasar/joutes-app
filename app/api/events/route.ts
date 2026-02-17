@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const month = searchParams.get("month");
     const year = searchParams.get("year");
-    const allGames = searchParams.get("allGames") === "true";
+    const gameId = searchParams.get("gameId") || "followed"; // Par défaut: jeux suivis
     const lairId = searchParams.get("lairId");
     const userLat = searchParams.get("userLat");
     const userLon = searchParams.get("userLon");
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
         year: yearNum,
         month: monthNum, 
         userId: session?.user?.id,
-        allGames
+        gameId
       });
     } else {
       // Si pas d'utilisateur connecté mais des paramètres de localisation, rechercher par localisation
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
         // Utilisateur connecté, utiliser la fonction normale
         events = await getEventsForUser(
           session.user.id,
-          allGames,
+          gameId,
           monthNum,
           yearNum,
           userLocation,

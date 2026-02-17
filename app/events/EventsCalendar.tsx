@@ -14,15 +14,17 @@ import { DateTime } from "luxon";
 import { useSession } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import EventDetailsModal from "./EventDetailsModal";
+import { Game } from "@/lib/types/Game";
 
 type EventsCalendarProps = {
   events: Event[];
   showViewToggle?: boolean;
   currentMonth?: number;
   currentYear?: number;
-  showAllGames?: boolean;
+  gameId?: string;
+  availableGames?: Game[];
   onMonthChange?: (month: number, year: number) => void;
-  onToggleAllGames?: () => void;
+  onGameIdChange?: (gameId: string) => void;
   onLocationSearch?: (latitude: number, longitude: number, distance: number) => void;
   onResetLocation?: () => void;
   isLocationMode?: boolean;
@@ -37,9 +39,10 @@ export default function EventsCalendar({
   showViewToggle = true,
   currentMonth: controlledMonth,
   currentYear: controlledYear,
-  showAllGames: controlledShowAllGames,
+  gameId: controlledGameId,
+  availableGames = [],
   onMonthChange,
-  onToggleAllGames,
+  onGameIdChange,
   onLocationSearch,
   onResetLocation,
   isLocationMode = false,
@@ -48,7 +51,7 @@ export default function EventsCalendar({
   const today = DateTime.now();
   const [internalMonth, setInternalMonth] = useState<number>(today.month);
   const [internalYear, setInternalYear] = useState<number>(today.year);
-  const [internalShowAllGames, setInternalShowAllGames] = useState(true);
+  const [internalGameId, setInternalGameId] = useState<string>("followed");
   const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
   const [showLocationForm, setShowLocationForm] = useState(false);
   const [coordinates, setCoordinates] = useState("");
@@ -92,7 +95,7 @@ export default function EventsCalendar({
   // Use controlled values if provided, otherwise use internal state
   const currentMonth = controlledMonth !== undefined ? controlledMonth : internalMonth;
   const currentYear = controlledYear !== undefined ? controlledYear : internalYear;
-  const showAllGames = controlledShowAllGames !== undefined ? controlledShowAllGames : internalShowAllGames;
+  const gameId = controlledGameId !== undefined ? controlledGameId : internalGameId;
 
   // Navigation entre les mois
   const goToPreviousMonth = () => {
@@ -142,11 +145,11 @@ export default function EventsCalendar({
     }
   };
 
-  const handleToggleAllGames = () => {
-    if (onToggleAllGames) {
-      onToggleAllGames();
+  const handleGameIdChange = (newGameId: string) => {
+    if (onGameIdChange) {
+      onGameIdChange(newGameId);
     } else {
-      setInternalShowAllGames(!showAllGames);
+      setInternalGameId(newGameId);
     }
   };
 
@@ -613,15 +616,47 @@ export default function EventsCalendar({
                   {/* Boutons spécifiques aux utilisateurs connectés */}
                   {!session.isPending && session.data?.user && (
                     <>
-                      {/* Bouton de filtre par jeux */}
-                      <Button
-                        variant={showAllGames ? "outline" : "default"}
-                        onClick={handleToggleAllGames}
-                        className="w-full sm:w-auto"
-                      >
-                        <Filter className="mr-2 h-4 w-4" />
-                        {showAllGames ? "Afficher mes jeux uniquement" : "Afficher tous les jeux"}
-                      </Button>
+                      {/* Sélecteur de filtre par jeu */}
+                      <div className="w-full sm:w-auto min-w-[250px]">
+                        <Select value={gameId} onValueChange={handleGameIdChange}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Filtrer par jeu" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="followed">
+                              <div className="flex items-center gap-2">
+                                <Star className="h-4 w-4" />
+                                Mes jeux suivis
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="all">
+                              <div className="flex items-center gap-2">
+                                <Gamepad2 className="h-4 w-4" />
+                                Tous les jeux
+                              </div>
+                            </SelectItem>
+                            {availableGames.length > 0 && (
+                              <>
+                                <div className="border-t my-1"></div>
+                                {availableGames.map((game) => (
+                                  <SelectItem key={game.id} value={game.id}>
+                                    <div className="flex items-center gap-2">
+                                      {game.icon && (
+                                        <img 
+                                          src={game.icon} 
+                                          alt="" 
+                                          className="h-4 w-4 object-contain" 
+                                        />
+                                      )}
+                                      {game.name}
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
                       {/* Bouton Mes lieux (mode normal) */}
                       {isLocationMode && (

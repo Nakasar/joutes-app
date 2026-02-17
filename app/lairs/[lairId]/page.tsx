@@ -51,11 +51,11 @@ export default async function LairDetailPage({
   searchParams: Promise<{
     month?: string;
     year?: string;
-    allGames?: string;
+    gameId?: string;
   }>;
 }) {
   const { lairId } = await params;
-  const { month, year, allGames } = await searchParams;
+  const { month, year, gameId } = await searchParams;
   const lair = await getLairById(lairId);
 
   if (!lair) {
@@ -87,6 +87,7 @@ export default async function LairDetailPage({
     year: new Date().getFullYear(),
     month: calendarMode === 'AGENDA' ? undefined : new Date().getMonth() + 1,
     userId: session?.user?.id,
+    gameId: "all", // Afficher tous les jeux sur la page d'un lair
   });
 
   // Récupérer les détails des jeux
@@ -332,7 +333,7 @@ export default async function LairDetailPage({
                   initialEvents={upcomingEvents}
                   initialMonth={+(month ?? new Date().getMonth() + 1)}
                   initialYear={+(year ?? new Date().getFullYear())}
-                  initialShowAllGames={allGames === "true"}
+                  initialGameId={gameId || "all"}
                   basePath={`/lairs/${lairId}`}
                   lairId={lairId}
                 />

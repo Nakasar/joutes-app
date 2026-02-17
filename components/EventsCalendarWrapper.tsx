@@ -1,4 +1,5 @@
 import { getEventsForUser } from "@/lib/db/events";
+import { getAllGames } from "@/lib/db/games";
 import EventsCalendarClient from "@/components/EventsCalendarClient";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -16,7 +17,7 @@ type EventsCalendarWrapperProps = {
   searchParams?: {
     month?: string;
     year?: string;
-    allGames?: string;
+    gameId?: string;
   };
 };
 
@@ -29,10 +30,11 @@ export default async function EventsCalendarWrapper({
   // Parse search params
   const month = searchParams.month ? parseInt(searchParams.month, 10) : today.month;
   const year = searchParams.year ? parseInt(searchParams.year, 10) : today.year;
-  // Par défaut, afficher tous les jeux si le paramètre n'est pas défini
-  const showAllGames = searchParams.allGames !== undefined 
-    ? searchParams.allGames === "true" 
-    : false;
+  // Par défaut, afficher les jeux suivis
+  const gameId = searchParams.gameId || "followed";
+  
+  // Récupérer tous les jeux disponibles
+  const allGames = await getAllGames();
   
   // Récupérer la session utilisateur
   const session = await auth.api.getSession({
@@ -66,7 +68,8 @@ export default async function EventsCalendarWrapper({
             initialEvents={[]}
             initialMonth={month}
             initialYear={year}
-            initialShowAllGames={showAllGames}
+            initialGameId={gameId}
+            availableGames={allGames}
             basePath={basePath}
           />
         </div>
@@ -148,7 +151,8 @@ export default async function EventsCalendarWrapper({
       <EventsCalendarClient
         initialMonth={month}
         initialYear={year}
-        initialShowAllGames={showAllGames}
+        initialGameId={gameId}
+        availableGames={allGames}
         basePath={basePath}
         userLocation={user.location}
       />

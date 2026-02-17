@@ -55,7 +55,7 @@ async function handleSearchEvents(argsRaw: Record<string, unknown>, extra: Reque
 
             events = await getEventsForUser(
                 userId,
-                true, // allGames pour l'instant
+                "all", // tous les jeux
                 args.month,
                 args.year,
                 userLocation,

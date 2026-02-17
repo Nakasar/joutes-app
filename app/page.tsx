@@ -7,7 +7,7 @@ type HomeProps = {
   searchParams: Promise<{
     month?: string;
     year?: string;
-    allGames?: string;
+    gameId?: string;
   }>;
 };
 

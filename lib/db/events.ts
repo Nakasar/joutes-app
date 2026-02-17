@@ -10,15 +10,15 @@ const COLLECTION_NAME = "events";
 export type EventDocument = Event;
 
 /**
- * Get all events for a specific lair (optionally filtered by month/year and user's followed games)
+ * Get all events for a specific lair (optionally filtered by month/year and game)
  * @param lairId - The lair's ID
  * @param year - Optional year to filter (e.g., 2024)
  * @param month - Optional month to filter (1-12)
- * @param allGames - If true, return events for all games. If false, only return events for games followed by the user
+ * @param gameId - Optional game filter: "followed" (user's followed games), "all" (all games), or a specific game ID
  * @param userId - Optional user ID to filter by their followed games
  * @returns Array of events for the lair
  */
-export async function getEventsByLairId(lairId: string, { year, month, allGames, userId }: { userId?: string; year?: number; month?: number; allGames?: boolean } = {}): Promise<Event[]> {
+export async function getEventsByLairId(lairId: string, { year, month, gameId, userId }: { userId?: string; year?: number; month?: number; gameId?: string } = {}): Promise<Event[]> {
   const user = userId && await getUserById(userId);
 
   // Build aggregation pipeline
@@ -47,59 +47,104 @@ export async function getEventsByLairId(lairId: string, { year, month, allGames,
     });
   }
 
-  // If not showing all games, filter by user's followed games
-  if (allGames !== undefined && !allGames && user) {
-    // If user doesn't follow any games, return empty array
-    if (!user.games || user.games.length === 0) {
-      return [];
-    }
-
-    // Convert user.games string IDs to ObjectIds for comparison
-    const { ObjectId } = await import("mongodb");
-    const gameObjectIds = user.games.map(id => {
-      try {
-        return new ObjectId(id);
-      } catch (e) {
-        console.error(`Invalid game ID: ${id}`);
-        return null;
+  // Apply game filter if specified
+  if (gameId && gameId !== "all" && user) {
+    if (gameId === "followed") {
+      // Filter by user's followed games
+      if (!user.games || user.games.length === 0) {
+        return [];
       }
-    }).filter((id): id is import("mongodb").ObjectId => id !== null);
 
-    // Add lookup stage to join with games collection
-    pipeline.push(
-      // Lookup games to get game names from game IDs
-      {
-        $lookup: {
-          from: "games",
-          let: { eventGameName: "$gameName" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [
-                    { $eq: ["$name", "$$eventGameName"] },
-                    { $in: ["$_id", gameObjectIds] }
-                  ]
+      // Convert user.games string IDs to ObjectIds for comparison
+      const gameObjectIds = user.games.map(id => {
+        try {
+          return new ObjectId(id);
+        } catch (e) {
+          console.error(`Invalid game ID: ${id}`);
+          return null;
+        }
+      }).filter((id): id is import("mongodb").ObjectId => id !== null);
+
+      // Add lookup stage to join with games collection
+      pipeline.push(
+        // Lookup games to get game names from game IDs
+        {
+          $lookup: {
+            from: "games",
+            let: { eventGameName: "$gameName" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ["$name", "$$eventGameName"] },
+                      { $in: ["$_id", gameObjectIds] }
+                    ]
+                  }
                 }
               }
+            ],
+            as: "matchedGame"
+          }
+        },
+        // Only keep events that have a matching game
+        {
+          $match: {
+            matchedGame: { $ne: [] }
+          }
+        },
+        // Remove the matchedGame field from results
+        {
+          $project: {
+            matchedGame: 0
+          }
+        }
+      );
+    } else {
+      // Filter by specific game ID
+      try {
+        const gameObjectId = new ObjectId(gameId);
+        
+        // Add lookup stage to join with games collection
+        pipeline.push(
+          // Lookup games to get game names from game IDs
+          {
+            $lookup: {
+              from: "games",
+              let: { eventGameName: "$gameName" },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $and: [
+                        { $eq: ["$name", "$$eventGameName"] },
+                        { $eq: ["$_id", gameObjectId] }
+                      ]
+                    }
+                  }
+                }
+              ],
+              as: "matchedGame"
             }
-          ],
-          as: "matchedGame"
-        }
-      },
-      // Only keep events that have a matching game
-      {
-        $match: {
-          matchedGame: { $ne: [] }
-        }
-      },
-      // Remove the matchedGame field from results
-      {
-        $project: {
-          matchedGame: 0
-        }
+          },
+          // Only keep events that have a matching game
+          {
+            $match: {
+              matchedGame: { $ne: [] }
+            }
+          },
+          // Remove the matchedGame field from results
+          {
+            $project: {
+              matchedGame: 0
+            }
+          }
+        );
+      } catch (e) {
+        console.error(`Invalid game ID: ${gameId}`);
+        return [];
       }
-    );
+    }
   }
 
   // Add lookup to get lair details
@@ -539,7 +584,7 @@ export async function upsertEventsForLair(lairId: string, events: Event[]): Prom
  */
 export async function getEventsForUser(
   userId: string,
-  allGames: boolean,
+  gameId: string = "followed",
   month?: number,
   year?: number,
   userLocation?: { latitude: number; longitude: number },
@@ -598,72 +643,154 @@ export async function getEventsForUser(
     });
   }
 
-  // If not showing all games, filter by user's followed games
-  if (!allGames) {
-    // Convert user.games string IDs to ObjectIds for comparison
-    const gameObjectIds = user.games.map(id => {
-      try {
-        return new ObjectId(id);
-      } catch (e) {
-        console.error(`Invalid game ID: ${id}`);
-        return null;
-      }
-    }).filter((id) => id !== null);
+  // Apply game filter
+  if (gameId !== "all") {
+    if (gameId === "followed") {
+      // Filter by user's followed games
+      if (!user.games || user.games.length === 0) {
+        // Si l'utilisateur ne suit aucun jeu, on ne montre que les événements privés et favoris
+        pipeline.push({
+          $match: {
+            $or: [
+              // Private events where user is the creator
+              { lairId: null, creatorId: userId },
+              // Private events where user is a participant
+              { lairId: null, participants: userId },
+              // Favorited events
+              { favoritedBy: userId }
+            ]
+          }
+        });
+      } else {
+        // Convert user.games string IDs to ObjectIds for comparison
+        const gameObjectIds = user.games.map(id => {
+          try {
+            return new ObjectId(id);
+          } catch (e) {
+            console.error(`Invalid game ID: ${id}`);
+            return null;
+          }
+        }).filter((id) => id !== null);
 
-    // Add lookup stage to join with games collection
-    pipeline.push(
-      // Lookup games to get game names from game IDs
-      {
-        $lookup: {
-          from: "games",
-          let: { eventGameName: "$gameName" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [
-                    { $eq: ["$name", "$$eventGameName"] },
-                    { $in: ["$_id", gameObjectIds] }
-                  ]
+        // Add lookup stage to join with games collection
+        pipeline.push(
+          // Lookup games to get game names from game IDs
+          {
+            $lookup: {
+              from: "games",
+              let: { eventGameName: "$gameName" },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $and: [
+                        { $eq: ["$name", "$$eventGameName"] },
+                        { $in: ["$_id", gameObjectIds] }
+                      ]
+                    }
+                  }
+                },
+                {
+                  $project: {
+                    _id: 1,
+                    name: 1,
+                    icon: 1,
+                    banner: 1,
+                    slug: 1,
+                    type: 1,
+                  }
                 }
-              }
-            },
-            {
-              $project: {
-                _id: 1,
-                name: 1,
-                icon: 1,
-                banner: 1,
-                slug: 1,
-                type: 1,
-              }
+              ],
+              as: "game"
             }
-          ],
-          as: "game"
-        }
-      },
-      // Only keep events that have a matching game
-      {
-        $match: {
-          $or: [
-            // Events from followed lairs with matching games
-            { game: { $ne: [] } },
-            // Private events where user is the creator
-            { lairId: null, creatorId: userId },
-            // Private events where user is a participant
-            { lairId: null, participants: userId },
-            // Favorited events (always shown regardless of game filter)
-            { favoritedBy: userId }
-          ]
-        }
-      },
-      {
-        $unwind: {
-          path: "$game",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-    );
+          },
+          // Only keep events that have a matching game, or private/favorited events
+          {
+            $match: {
+              $or: [
+                // Events from followed lairs with matching games
+                { game: { $ne: [] } },
+                // Private events where user is the creator
+                { lairId: null, creatorId: userId },
+                // Private events where user is a participant
+                { lairId: null, participants: userId },
+                // Favorited events (always shown regardless of game filter)
+                { favoritedBy: userId }
+              ]
+            }
+          },
+          {
+            $unwind: {
+              path: "$game",
+              preserveNullAndEmptyArrays: true,
+            },
+          },
+        );
+      }
+    } else {
+      // Filter by specific game ID
+      try {
+        const gameObjectId = new ObjectId(gameId);
+        
+        // Add lookup stage to join with games collection
+        pipeline.push(
+          // Lookup games to get game by specific ID
+          {
+            $lookup: {
+              from: "games",
+              let: { eventGameName: "$gameName" },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $and: [
+                        { $eq: ["$name", "$$eventGameName"] },
+                        { $eq: ["$_id", gameObjectId] }
+                      ]
+                    }
+                  }
+                },
+                {
+                  $project: {
+                    _id: 1,
+                    name: 1,
+                    icon: 1,
+                    banner: 1,
+                    slug: 1,
+                    type: 1,
+                  }
+                }
+              ],
+              as: "game"
+            }
+          },
+          // Only keep events that have a matching game, or private/favorited events
+          {
+            $match: {
+              $or: [
+                // Events with the specific game
+                { game: { $ne: [] } },
+                // Private events where user is the creator
+                { lairId: null, creatorId: userId },
+                // Private events where user is a participant
+                { lairId: null, participants: userId },
+                // Favorited events
+                { favoritedBy: userId }
+              ]
+            }
+          },
+          {
+            $unwind: {
+              path: "$game",
+              preserveNullAndEmptyArrays: true,
+            },
+          },
+        );
+      } catch (e) {
+        console.error(`Invalid game ID: ${gameId}`);
+        return [];
+      }
+    }
   }
 
   // Add lookup to get lair details

@@ -9,7 +9,7 @@ type EventsPageProps = {
   searchParams: Promise<{
     month?: string;
     year?: string;
-    allGames?: string;
+    gameId?: string;
   }>;
 };
 
