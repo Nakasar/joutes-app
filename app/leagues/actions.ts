@@ -551,6 +551,8 @@ export async function addLeagueMatchAction(
     }
 
     const matchInput: CreateLeagueMatchInput = {
+      leagueId,
+      matchType: "league",
       gameId: params.gameId,
       playedAt: new Date(params.playedAt),
       playerIds: params.playerIds,
