@@ -629,7 +629,7 @@ export default function GameMatchDetails({
             <div className="space-y-2">
               {match.players.map((player) => {
                 const isMVP = mvpPlayerIds.includes(player.userId);
-                const isWinner = match.winners?.includes(player.userId);
+                const isWinner = match.winnerIds?.includes(player.userId);
                 const isCurrentUserPlayer = player.userId !== currentUserId && isPlayer;
                 const hasVotedForThisPlayer = userMVPVote === player.userId;
                 

@@ -16,6 +16,7 @@ import {
   updateProfileInfoSchema,
   updateProfileImageSchema
 } from "@/lib/schemas/user.schema";
+import { put } from "@vercel/blob";
 
 export async function searchUsersAction(
   searchTerm: string
@@ -215,7 +216,6 @@ export async function updateProfileImageAction(
     }
 
     // Upload vers Vercel Blob
-    const { put } = await import("@vercel/blob");
     const blob = await put(file.name, file, {
       access: "public",
     });

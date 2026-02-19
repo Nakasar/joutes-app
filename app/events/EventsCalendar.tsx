@@ -15,6 +15,8 @@ import { useSession } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import EventDetailsModal from "./EventDetailsModal";
 import { Game } from "@/lib/types/Game";
+import { toggleEventFavoriteAction } from "./actions";
+import { updateUserLocation } from "../account/actions";
 
 type EventsCalendarProps = {
   events: Event[];
@@ -261,7 +263,6 @@ export default function EventsCalendar({
     setLocalFavorites(prev => ({ ...prev, [eventId]: !currentlyFavorited }));
 
     try {
-      const { toggleEventFavoriteAction } = await import("@/app/events/actions");
       const result = await toggleEventFavoriteAction(eventId);
 
       if (!result.success) {
@@ -388,7 +389,6 @@ export default function EventsCalendar({
     setIsSavingLocation(true);
 
     try {
-      const { updateUserLocation } = await import("@/app/account/actions");
       const result = await updateUserLocation(lat, lon);
 
       if (result.success) {

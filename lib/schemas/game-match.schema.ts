@@ -17,7 +17,7 @@ export const gameMatchSchema = z.object({
   playerIds: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID du joueur doit être un ObjectId MongoDB valide")).min(1, "Au moins un joueur est requis"),
   ratings: z.array(gameMatchRatingSchema).optional(),
   mvpVotes: z.array(gameMatchMVPVoteSchema).optional(),
-  winners: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID du gagnant doit être un ObjectId MongoDB valide")).optional(),
+  winnerIds: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID du gagnant doit être un ObjectId MongoDB valide")).optional(),
 });
 
 export type GameMatchInput = z.infer<typeof gameMatchSchema>;
