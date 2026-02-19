@@ -169,7 +169,7 @@ export default function GameMatchList({ matches, games, lairs, currentUserId }: 
                 <div className="flex flex-wrap gap-2">
                   {match.players.map((player, index) => {
                     const isMVP = mvpPlayerIds.includes(player.userId);
-                    const isWinner = match.winners?.includes(player.userId);
+                    const isWinner = match.winnerIds?.includes(player.userId);
                     
                     return (
                       <div key={index} className="flex items-center gap-1">

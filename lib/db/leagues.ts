@@ -6,31 +6,30 @@ import {
   SearchLeaguesOptions,
   PaginatedLeaguesResult,
   LeagueParticipant,
-  LeagueMatch,
   CreateLeagueMatchInput,
-  MatchFeatAward,
   PointHistoryEntry,
   KillerTarget,
 } from "@/lib/types/League";
+import { LeagueMatch, LeagueTypeMatch, MatchFeatAward } from "@/lib/types/Match";
 import {ObjectId, WithId, Document, Filter} from "mongodb";
 import {nanoid} from "nanoid";
 import {User} from "@/lib/types/User";
 import { getUserById, getUsersByIds } from "@/lib/db/users";
 import { notifyLairOwnersWithTemplate, notifyUserWithTemplate } from "@/lib/services/notifications";
 import { getLairById } from "@/lib/db/lairs";
+import { 
+  createMatch,
+  getMatches,
+  updateMatch as updateMatchUnified,
+  deleteMatch,
+} from "@/lib/db/matches";
 
 const COLLECTION_NAME = "leagues";
-const MATCHES_COLLECTION = "league-matches";
 const PARTICIPANTS_COLLECTION = "league-participants";
 const FEATS_COLLECTION = "league-participant-feats";
 
 // Type pour une ligue dans MongoDB (avec _id, sans participants)
 export type LeagueDocument = Omit<League, "id" | "lairs" | "games" | "creator" | "participantsCount" | "participants"> & { _id: ObjectId };
-
-export type LeagueMatchDocument = LeagueMatch & {
-  leagueId: ObjectId;
-  _id: ObjectId;
-};
 
 // Type pour un participant dans MongoDB
 export type LeagueParticipantDocument = Omit<LeagueParticipant, "feats"> & {
@@ -372,8 +371,10 @@ export async function updateLeague(
 
 // Supprimer une ligue
 export async function deleteLeague(id: string): Promise<boolean> {
-  await db.collection(MATCHES_COLLECTION).deleteMany({
-    leagueId: new ObjectId(id),
+  // Supprimer tous les matchs de la ligue
+  await db.collection("matches").deleteMany({
+    matchType: 'league',
+    leagueId: id,
   });
 
   const result = await db
@@ -754,14 +755,15 @@ export async function getLeagueRanking(
       { $unwind: "$user" },
       {
         $lookup: {
-          from: MATCHES_COLLECTION,
+          from: "matches",
           let: { participantId: "$userId", leagueId: "$leagueId" },
           pipeline: [
             {
               $match: {
                 $expr: {
                   $and: [
-                    { $eq: ["$leagueId", "$$leagueId"] },
+                    { $eq: ["$matchType", "league"] },
+                    { $eq: ["$leagueId", { $toString: "$$leagueId" }] },
                     { $eq: ["$status", "CONFIRMED"] },
                     { $in: ["$$participantId", "$playerIds"] },
                   ],
@@ -1224,8 +1226,9 @@ export async function addLeagueMatch(
   }
 
   // Créer le match avec les featAwards traités
-  const newMatch: LeagueMatch = {
-    id: matchId,
+  const newMatch: Omit<LeagueTypeMatch, "id" | "createdAt"> = {
+    matchType: 'league',
+    leagueId,
     gameId: matchInput.gameId,
     playedAt: matchInput.playedAt,
     playerIds: matchInput.playerIds,
@@ -1233,16 +1236,10 @@ export async function addLeagueMatch(
     winnerIds: computedWinnerIds,
     featAwards: processedFeatAwards.length > 0 ? processedFeatAwards : undefined,
     createdBy,
-    createdAt: new Date(),
     notes: matchInput.notes,
   };
 
-  const matchDoc: Omit<LeagueMatchDocument, "_id"> = {
-    ...newMatch,
-    leagueId: new ObjectId(leagueId),
-  };
-
-  await db.collection(MATCHES_COLLECTION).insertOne(matchDoc as Document);
+  await createMatch(newMatch);
 
   await db.collection(COLLECTION_NAME).updateOne(
     { _id: new ObjectId(leagueId) },
@@ -1254,75 +1251,47 @@ export async function addLeagueMatch(
 
 // Récupérer les matchs d'une ligue
 export async function getLeagueMatches(leagueId: string): Promise<LeagueMatch[]> {
-  const docs = await db
-    .collection<LeagueMatchDocument>(MATCHES_COLLECTION)
-    .aggregate<LeagueMatchDocument>([
+  const matchesRaw = await db.collection('matches')
+    .aggregate<LeagueMatch>([
       {
         $match: {
-          leagueId: new ObjectId(leagueId),
-        },
-      },
-      {
-        $addFields: {
-          lairObjectId: {
-            $cond: [
-              {
-                $and: [
-                  { $ne: ["$lairId", null] },
-                  { $ne: ["$lairId", ""] },
-                ],
-              },
-              { $toObjectId: "$lairId" },
-              null,
-            ],
-          },
+          matchType: 'league',
+          leagueId,
         },
       },
       {
         $lookup: {
-          from: "lairs",
-          localField: "lairObjectId",
-          foreignField: "_id",
-          as: "lair",
+          from: 'lairs',
+          localField: 'lairId',
+          foreignField: '_id',
+          as: 'lair',
           pipeline: [
             {
               $project: {
+                _id: 1,
+                id: { $toString: "$_id" },
                 name: 1,
               },
             },
           ],
-        },
+        }
       },
       {
         $addFields: {
-          lairName: {
-            $ifNull: [{ $first: "$lair.name" }, null],
-          },
-        },
-      },
-      {
-        $sort: {
-          playedAt: -1,
-        },
+          lairName: { $arrayElemAt: ["$lair.name", 0] },
+          id: { $toString: "$_id" },
+        }
       },
       {
         $project: {
           lair: 0,
-          lairObjectId: 0,
+          _id: 0,
         },
       },
     ])
     .toArray();
-
-  return docs.map((doc) => ({
-    ...doc,
-    _id: doc._id.toString(),
-    leagueId: doc.leagueId.toString(),
-    playedAt: new Date(doc.playedAt),
-    createdAt: new Date(doc.createdAt),
-    reportedAt: doc.reportedAt ? new Date(doc.reportedAt) : undefined,
-    confirmedAt: doc.confirmedAt ? new Date(doc.confirmedAt) : undefined,
-  }));
+  
+  return matchesRaw;
 }
 
 // Supprimer un match d'une ligue (annule aussi les points attribués)
@@ -1333,10 +1302,9 @@ export async function deleteLeagueMatch(
   const league = await getLeagueById(leagueId);
   if (!league) return null;
 
-  const match = await db
-    .collection<LeagueMatchDocument>(MATCHES_COLLECTION)
-    .findOne({ leagueId: new ObjectId(leagueId), id: matchId });
-  if (!match) return null;
+  const matches = await getMatches({ matchType: 'league', leagueId });
+  const match = matches.find(m => m.id === matchId);
+  if (!match || match.matchType !== 'league') return null;
 
   // Annuler les points et hauts faits attribués pour ce match
   if (league.format === "POINTS" && league.pointsConfig) {
@@ -1371,10 +1339,7 @@ export async function deleteLeagueMatch(
     }
   }
 
-  await db.collection(MATCHES_COLLECTION).deleteOne({
-    leagueId: new ObjectId(leagueId),
-    id: matchId,
-  });
+  await deleteMatch(matchId);
 
   await db.collection(COLLECTION_NAME).updateOne(
     { _id: new ObjectId(leagueId) },
@@ -1583,25 +1548,20 @@ export async function assignKillerTargets(
       continue;
     }
 
-    const match: LeagueMatch = {
-      id: nanoid(12),
+    const match: Omit<LeagueTypeMatch, "id" | "createdAt"> = {
+      matchType: 'league',
+      leagueId,
       gameId: target.gameId,
       lairId: target.lairId,
       playedAt: now,
       playerIds: [userId, target.targetId],
       winnerIds: [],
       createdBy: userId,
-      createdAt: now,
       status: "PENDING",
       isKillerMatch: true,
     };
 
-    const matchDoc: Omit<LeagueMatchDocument, "_id"> = {
-      ...match,
-      leagueId: new ObjectId(leagueId),
-    };
-
-    await db.collection(MATCHES_COLLECTION).insertOne(matchDoc as Document);
+    const createdMatch = await createMatch(match);
 
     newTargets.push({
       targetId: target.targetId,
@@ -1609,7 +1569,7 @@ export async function assignKillerTargets(
       lairId: target.lairId,
       assignedAt: now,
       status: "PENDING",
-      matchId: match.id,
+      matchId: createdMatch.id,
     });
 
     await notifyUserWithTemplate(
@@ -1618,7 +1578,7 @@ export async function assignKillerTargets(
       `Un nouveau match a été assigné dans la ligue ${league.name}.`,
       "league-match-assigned",
       leagueId,
-      match.id
+      createdMatch.id
     );
 
     await notifyUserWithTemplate(
@@ -1627,7 +1587,7 @@ export async function assignKillerTargets(
       `Un nouveau match a été assigné dans la ligue ${league.name}.`,
       "league-match-assigned",
       leagueId,
-      match.id
+      createdMatch.id
     );
 
     activeCounts.set(target.targetId, opponentActiveCount + 1);
@@ -1669,25 +1629,30 @@ export async function reportKillerMatch(
   }
 
   if (!league.participants.some((p) => p.userId === userId)) {
-    throw new Error("Vous n&apos;êtes pas inscrit à cette ligue");
+    throw new Error("Vous n'êtes pas inscrit à cette ligue");
   }
 
   if (!matchId && !targetId) {
     throw new Error("Cible introuvable");
   }
 
-  const matchQuery = matchId
-    ? { leagueId: new ObjectId(leagueId), id: matchId }
-    : {
-        leagueId: new ObjectId(leagueId),
-        isKillerMatch: true,
-        status: { $ne: "CONFIRMED" },
-        playerIds: { $all: [userId, targetId] },
-      };
-
-  const matchDoc = await db
-    .collection<LeagueMatchDocument>(MATCHES_COLLECTION)
-    .findOne(matchQuery as Document);
+  const matches = await getMatches({
+    matchType: 'league',
+    leagueId,
+  });
+  
+  let matchDoc: LeagueMatch | undefined;
+  if (matchId) {
+    matchDoc = matches.find(m => m.id === matchId && m.matchType === 'league') as LeagueMatch;
+  } else if (targetId) {
+    matchDoc = matches.find(
+      m => m.matchType === 'league' &&
+      m.isKillerMatch &&
+      m.status !== "CONFIRMED" &&
+      m.playerIds.includes(userId) &&
+      m.playerIds.includes(targetId)
+    ) as LeagueMatch;
+  }
 
   if (!matchDoc) {
     throw new Error("Cible introuvable");
@@ -1773,8 +1738,8 @@ export async function reportKillerMatch(
     updatePayload.$set.lairConfirmedBy = userId;
   }
 
-  await db.collection(MATCHES_COLLECTION).updateOne(
-    { leagueId: new ObjectId(leagueId), id: matchDoc.id },
+  await db.collection("matches").updateOne(
+    { matchType: 'league', leagueId, _id: new ObjectId(matchDoc.id) },
     updatePayload
   );
 
@@ -1823,11 +1788,6 @@ export async function reportKillerMatch(
     );
   }
 
-  await db.collection(COLLECTION_NAME).updateOne(
-    { _id: new ObjectId(leagueId) },
-    { $set: { updatedAt: new Date() } }
-  );
-
   return matchDoc.id;
 }
 
@@ -1838,8 +1798,8 @@ async function finalizeKillerMatch(
 ): Promise<void> {
   const now = new Date();
 
-  await db.collection(MATCHES_COLLECTION).updateOne(
-    { leagueId: new ObjectId(leagueId), id: match.id },
+  await db.collection("matches").updateOne(
+    { matchType: 'league', leagueId, _id: new ObjectId(match.id) },
     {
       $set: {
         status: "CONFIRMED",
@@ -1904,8 +1864,8 @@ export async function confirmKillerMatch(
 
   const confirmedAt = shouldFinalize ? new Date() : undefined;
 
-  await db.collection(MATCHES_COLLECTION).updateOne(
-    { leagueId: new ObjectId(leagueId), id: matchId },
+  await db.collection("matches").updateOne(
+    { matchType: 'league', leagueId, _id: new ObjectId(matchId) },
     {
       $set: {
         confirmedBy: userId,
@@ -1963,8 +1923,8 @@ export async function confirmKillerMatchLair(
 
   const confirmedAt = shouldFinalize ? new Date() : undefined;
 
-  await db.collection(MATCHES_COLLECTION).updateOne(
-    { leagueId: new ObjectId(leagueId), id: matchId },
+  await db.collection("matches").updateOne(
+    { matchType: 'league', leagueId, _id: new ObjectId(matchId) },
     {
       $set: {
         lairConfirmedBy: userId,

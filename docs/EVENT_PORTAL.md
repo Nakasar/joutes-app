@@ -200,7 +200,6 @@ L'interface joueur comprend 4 onglets :
 ## Collections MongoDB
 
 - `event-portal-settings` : Paramètres du portail par événement
-- `event-match-results` : Résultats des matchs
 - `event-announcements` : Annonces
 
 ## Actions Serveur

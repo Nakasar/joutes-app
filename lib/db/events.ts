@@ -455,7 +455,7 @@ export async function deleteEvent(id: string): Promise<boolean> {
       await db.collection("event-portal-settings").deleteMany({ eventId: id });
 
       // Delete match results
-      await db.collection("event-match-results").deleteMany({ eventId: id });
+      await db.collection("matches").deleteMany({ eventId: id });
 
       // Delete announcements
       await db.collection("event-announcements").deleteMany({ eventId: id });

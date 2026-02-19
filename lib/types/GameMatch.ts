@@ -30,5 +30,6 @@ export type GameMatch = {
   createdAt: Date;
   ratings?: GameMatchRating[]; // Évaluations des joueurs
   mvpVotes?: GameMatchMVPVote[]; // Votes pour le MVP
-  winners?: User['id'][]; // IDs des gagnants désignés par le créateur
+  winnerIds?: User['id'][]; // IDs des gagnants désignés par le créateur
+  decks?: Record<User['id'], string>; // Decks utilisés par chaque joueur { playerId: deckId }
 };

@@ -79,6 +79,8 @@ export type MatchFeatAward = {
 // Match joué dans le cadre d'une ligue
 export type LeagueMatch = {
   id: string;
+  leagueId: League["id"];
+  matchType: "league";
   gameId: Game["id"];
   lairId?: Lair["id"];
   lairName?: string;

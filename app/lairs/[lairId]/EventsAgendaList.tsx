@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useSession } from '@/lib/auth-client';
 import EventDetailsModal from '@/app/events/EventDetailsModal';
+import { toggleEventFavoriteAction } from '@/app/events/actions';
 
 interface EventsAgendaListProps {
   events: Event[];
@@ -51,7 +52,6 @@ export default function EventsAgendaList({ events }: EventsAgendaListProps) {
     setLocalFavorites(prev => ({ ...prev, [eventId]: !currentlyFavorited }));
 
     try {
-      const { toggleEventFavoriteAction } = await import("@/app/events/actions");
       const result = await toggleEventFavoriteAction(eventId);
 
       if (!result.success) {

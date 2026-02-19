@@ -11,12 +11,15 @@ import {
   removePlayerFromGameMatch,
   getGameMatchById,
   addPlayerToGameMatch,
+  updateGameMatch,
+  rateGameMatch,
 } from "@/lib/db/game-matches";
 import { gameMatchSchema } from "@/lib/schemas/game-match.schema";
 import { GameMatch } from "@/lib/types/GameMatch";
 import { getUserByUsernameAndDiscriminator, getUserById } from "@/lib/db/users";
 import { ObjectId } from "mongodb";
 import db from "@/lib/mongodb";
+import { toggleWinner, voteMVP } from "@/lib/db/matches";
 
 export async function createGameMatchAction(
   data: {
@@ -29,6 +32,7 @@ export async function createGameMatchAction(
       displayName?: string;
       discriminator?: string;
     }>;
+    decks?: Record<string, string>;
   }
 ): Promise<{ success: boolean; error?: string; match?: GameMatch }> {
   try {
@@ -79,6 +83,7 @@ export async function createGameMatchAction(
       playedAt: data.playedAt,
       lairId: data.lairId,
       playerIds: resolvedPlayerIds,
+      decks: data.decks,
     });
     
     if (!validationResult.success) {
@@ -328,7 +333,6 @@ export async function updateGameMatchAction(
 
     // Si on a d'autres données à mettre à jour
     if (Object.keys(updateData).length > 0) {
-      const { updateGameMatch } = await import("@/lib/db/game-matches");
       const result = await updateGameMatch(matchId, updateData);
 
       if (!result) {
@@ -368,7 +372,6 @@ export async function rateGameMatchAction(
       return { success: false, error: "Vous devez être joueur de la partie pour l'évaluer" };
     }
 
-    const { rateGameMatch } = await import("@/lib/db/game-matches");
     const result = await rateGameMatch(matchId, session.user.id, rating);
 
     if (!result) {
@@ -417,7 +420,6 @@ export async function voteMVPAction(
       return { success: false, error: "Vous ne pouvez pas voter pour vous-même" };
     }
 
-    const { voteMVP } = await import("@/lib/db/game-matches");
     const result = await voteMVP(matchId, session.user.id, votedForId);
 
     if (!result) {
@@ -461,7 +463,6 @@ export async function toggleWinnerAction(
       return { success: false, error: "Le joueur doit être dans la partie" };
     }
 
-    const { toggleWinner } = await import("@/lib/db/game-matches");
     const result = await toggleWinner(matchId, userId);
 
     if (!result) {
@@ -471,6 +472,48 @@ export async function toggleWinnerAction(
     return { success: true };
   } catch (error) {
     console.error("Erreur lors de la désignation du gagnant:", error);
+    return { success: false, error: "Erreur serveur" };
+  }
+}
+
+export async function updatePlayerDeckAction(
+  matchId: string,
+  deckId: string | null
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    // Récupérer la partie
+    const match = await getGameMatchById(matchId);
+    
+    if (!match) {
+      return { success: false, error: "Partie non trouvée" };
+    }
+
+    // Vérifier que l'utilisateur est un joueur de la partie
+    if (!match.playerIds.includes(session.user.id)) {
+      return { success: false, error: "Vous devez être joueur de la partie pour modifier votre deck" };
+    }
+
+    // Mettre à jour le deck du joueur
+    const updateOperation = deckId 
+      ? { $set: { [`decks.${session.user.id}`]: deckId } }
+      : { $unset: { [`decks.${session.user.id}`]: "" } };
+
+    await db.collection("matches").updateOne(
+      { _id: new ObjectId(matchId) },
+      updateOperation
+    );
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour du deck:", error);
     return { success: false, error: "Erreur serveur" };
   }
 }

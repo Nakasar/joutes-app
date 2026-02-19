@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { DateTime } from "luxon";
 import { X } from "lucide-react";
+import DeckSelector from "@/components/DeckSelector";
 
 type GameMatchFormProps = {
   games: Game[];
@@ -57,6 +58,9 @@ export default function GameMatchForm({ games, lairs, currentUser }: GameMatchFo
       discriminator: currentUser.discriminator,
     },
   ]);
+
+  // État pour les decks sélectionnés { playerId: deckId }
+  const [playerDecks, setPlayerDecks] = useState<Record<string, string | undefined>>({});
 
   const [newPlayerTag, setNewPlayerTag] = useState("");
 
@@ -131,6 +135,14 @@ export default function GameMatchForm({ games, lairs, currentUser }: GameMatchFo
       return;
     }
 
+    // Filtrer les decks pour ne garder que ceux qui sont définis
+    const decksToSubmit: Record<string, string> = {};
+    Object.entries(playerDecks).forEach(([playerId, deckId]) => {
+      if (deckId) {
+        decksToSubmit[playerId] = deckId;
+      }
+    });
+
     startTransition(async () => {
       const result = await createGameMatchAction({
         gameId: formData.gameId,
@@ -142,6 +154,7 @@ export default function GameMatchForm({ games, lairs, currentUser }: GameMatchFo
           displayName: p.displayName,
           discriminator: p.discriminator,
         })),
+        decks: Object.keys(decksToSubmit).length > 0 ? decksToSubmit : undefined,
       });
 
       if (result.success) {
@@ -224,23 +237,47 @@ export default function GameMatchForm({ games, lairs, currentUser }: GameMatchFo
         <label className="text-sm font-medium">
           Joueurs <span className="text-destructive">*</span>
         </label>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {players.map((player, index) => (
             <div
               key={index}
-              className="flex items-center gap-2 p-2 border rounded-lg bg-muted/50"
+              className="p-3 border rounded-lg bg-muted/50 space-y-2"
             >
-              <span className="flex-1 text-sm">{player.username}</span>
-              {index > 0 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removePlayer(index)}
-                  className="h-8 w-8 p-0"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+              <div className="flex items-center gap-2">
+                <span className="flex-1 text-sm font-medium">{player.username}</span>
+                {index > 0 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removePlayer(index)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              
+              {/* Sélecteur de deck pour ce joueur */}
+              {player.id && (
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">
+                    Deck utilisé (optionnel)
+                  </label>
+                  <DeckSelector
+                    playerId={player.id}
+                    gameId={formData.gameId}
+                    value={playerDecks[player.id]}
+                    onChange={(deckId) => {
+                      setPlayerDecks({
+                        ...playerDecks,
+                        [player.id]: deckId,
+                      });
+                    }}
+                    playerName={player.displayName || player.username}
+                    disabled={isPending}
+                  />
+                </div>
               )}
             </div>
           ))}

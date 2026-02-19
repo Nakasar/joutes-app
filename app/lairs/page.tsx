@@ -19,8 +19,6 @@ export default async function LairsPage({ searchParams }: { searchParams: Promis
   });
   const { gameId } = await searchParams;
 
-  console.log(gameId);
-
   // Fetch initial data with pagination
   const [initialLairsData, games] = await Promise.all([
     searchLairs({

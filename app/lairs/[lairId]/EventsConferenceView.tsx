@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useState, useMemo } from 'react';
 import { useSession } from '@/lib/auth-client';
 import EventDetailsModal from '@/app/events/EventDetailsModal';
+import { toggleEventFavoriteAction } from '@/app/events/actions';
 
 interface EventsConferenceViewProps {
   events: Event[];
@@ -130,7 +131,6 @@ export default function EventsConferenceView({ events }: EventsConferenceViewPro
     setLocalFavorites(prev => ({ ...prev, [eventId]: !currentlyFavorited }));
 
     try {
-      const { toggleEventFavoriteAction } = await import("@/app/events/actions");
       const result = await toggleEventFavoriteAction(eventId);
 
       if (!result.success) {

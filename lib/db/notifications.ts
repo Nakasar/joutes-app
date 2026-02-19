@@ -44,6 +44,14 @@ export async function getUserNotifications(
               onNull: null,
             },
           },
+          matchObjectId: {
+            $convert: {
+              input: "$matchId",
+              to: "objectId",
+              onError: null,
+              onNull: null,
+            },
+          },
         }
       },
       // Lookup pour les lairs avec vérification des permissions
@@ -94,21 +102,28 @@ export async function getUserNotifications(
       },
       {
         $lookup: {
-          from: 'league-matches',
-          let: { matchId: '$matchId', leagueId: '$leagueObjectId' },
+          from: 'matches',
+          foreignField: '_id',
+          localField: 'matchObjectId',
+          as: 'matchDetails',
           pipeline: [
             {
-              $match: {
-                $expr: {
-                  $and: [
-                    { $eq: ["$id", "$$matchId"] },
-                    { $eq: ["$leagueId", "$$leagueId"] },
-                  ],
-                },
+              $project: {
+                _id: 1,
+                gameId: 1,
+                lairId: 1,
+                playedAt: 1,
+                playerIds: 1,
+                winnerIds: 1,
+                status: 1,
+                reportedBy: 1,
+                reportedAt: 1,
+                confirmedBy: 1,
+                confirmedAt: 1,
+                lairConfirmedBy: 1,
               },
             },
           ],
-          as: 'matchDetails',
         }
       },
       // Ajouter les champs lair et event
@@ -202,6 +217,7 @@ export async function getUserNotifications(
           leagueDetails: 0,
           matchDetails: 0,
           leagueObjectId: 0,
+          matchObjectId: 0,
         }
       },
       // Tri par date décroissante
@@ -246,7 +262,7 @@ export async function getUserNotifications(
         name: doc.league.name,
       } : undefined,
       match: doc.match ? {
-        id: doc.match.id,
+        id: doc.match._id?.toString(),
         gameId: doc.match.gameId,
         lairId: doc.match.lairId,
         playedAt: doc.match.playedAt,

@@ -7,6 +7,7 @@ import { DateTime } from "luxon";
 import Link from "next/link";
 import { Github } from "lucide-react";
 import WinterDecorations from "@/components/WinterDecorations";
+import { Toaster } from "@/components/ui/sonner";
 
 // Charger le thème hivernal si activé
 const isWinterTheme = process.env.NEXT_PUBLIC_THEME === "winter";
@@ -124,6 +125,7 @@ export default function RootLayout({
             </div>
           </footer>
         </div>
+        <Toaster />
         <Analytics />
       </body>
     </html>

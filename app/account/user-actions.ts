@@ -16,6 +16,7 @@ import {
   updateProfileInfoSchema,
   updateProfileImageSchema
 } from "@/lib/schemas/user.schema";
+import { put } from "@vercel/blob";
 
 export async function searchUsersAction(
   searchTerm: string
@@ -115,7 +116,6 @@ export async function getPublicUserProfileAction(
       const namePart = userTagOrId.slice(0, -4);
       formatted = `${namePart}#${lastFour}`;
     }
-    console.log(formatted);
     const user = await getUserByTagOrId(formatted);
 
     if (!user) {
@@ -215,7 +215,6 @@ export async function updateProfileImageAction(
     }
 
     // Upload vers Vercel Blob
-    const { put } = await import("@vercel/blob");
     const blob = await put(file.name, file, {
       access: "public",
     });
