@@ -65,7 +65,9 @@ import {
   awardFeatAction,
   addLeagueMatchAction,
   deleteLeagueMatchAction,
+  updateLeagueMatchDeckAction,
 } from "../../actions";
+import DeckSelector from "@/components/DeckSelector";
 import { League, LeagueStatus, LeagueParticipant, Feat, LeagueMatch, MatchFeatAward } from "@/lib/types/League";
 import { Game } from "@/lib/types/Game";
 import { Lair } from "@/lib/types/Lair";
@@ -171,6 +173,14 @@ export default function LeagueManageClient({
     featAwards: [] as MatchFeatAward[],
     notes: "",
   });
+  const [historyDeckSelections, setHistoryDeckSelections] = useState<Record<string, string | undefined>>(() =>
+    (league.matches || []).reduce<Record<string, string | undefined>>((acc, match) => {
+      Object.entries(match.decks || {}).forEach(([playerId, deckId]) => {
+        acc[`${match.id}:${playerId}`] = deckId;
+      });
+      return acc;
+    }, {})
+  );
 
   const normalizeMatchScores = (
     playerIds: string[],
@@ -478,6 +488,31 @@ export default function LeagueManageClient({
         router.refresh();
       } else {
         setError(result.error || "Erreur lors de la suppression du match");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Une erreur est survenue");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateMatchDeck = async (
+    matchId: string,
+    playerId: string,
+    deckId: string | null
+  ) => {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const result = await updateLeagueMatchDeckAction(league.id, matchId, playerId, deckId);
+      if (result.success) {
+        setSuccess("Deck mis à jour");
+        router.refresh();
+      } else {
+        setError(result.error || "Erreur lors de la mise à jour du deck");
       }
     } catch (err) {
       console.error(err);
@@ -1905,6 +1940,61 @@ export default function LeagueManageClient({
                                 p?.user?.displayName || p?.user?.username || p?.userId
                             )
                             .join(", ")}
+                        </div>
+                        <div className="space-y-2">
+                          <span className="text-xs text-muted-foreground">Decks utilisés:</span>
+                          <div className="space-y-2">
+                            {match.playerIds.map((playerId) => {
+                              const player = participantsWithUsers.find((p) => p.userId === playerId);
+                              const playerName =
+                                player?.user?.displayName ||
+                                player?.user?.username ||
+                                playerId;
+                              const historyDeckKey = `${match.id}:${playerId}`;
+                              const selectedDeckId =
+                                historyDeckSelections[historyDeckKey] ?? match.decks?.[playerId];
+
+                              return (
+                                <div
+                                  key={historyDeckKey}
+                                  className="flex flex-col gap-2 sm:flex-row sm:items-center"
+                                >
+                                  <span className="text-xs text-muted-foreground sm:min-w-40">
+                                    {playerName}
+                                  </span>
+                                  <div className="flex-1">
+                                    <DeckSelector
+                                      playerId={playerId}
+                                      gameId={match.gameId}
+                                      value={selectedDeckId}
+                                      onChange={(deckId) =>
+                                        setHistoryDeckSelections((prev) => ({
+                                          ...prev,
+                                          [historyDeckKey]: deckId,
+                                        }))
+                                      }
+                                      playerName={playerName}
+                                      disabled={loading}
+                                    />
+                                  </div>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                      handleUpdateMatchDeck(
+                                        match.id,
+                                        playerId,
+                                        selectedDeckId ?? null
+                                      )
+                                    }
+                                    disabled={loading}
+                                  >
+                                    Enregistrer
+                                  </Button>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                         {hasScores && match.playerIds.length === 2 && (
                           <div className="text-sm">

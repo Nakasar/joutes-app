@@ -18,6 +18,7 @@ import {
   reportKillerMatch,
   confirmKillerMatch,
   confirmKillerMatchLair,
+  updateLeagueMatchDeck,
 } from "@/lib/db/leagues";
 import {
   League,
@@ -631,6 +632,7 @@ export type ReportKillerMatchParams = {
   winnerId: string;
   playerScores?: Record<string, number>;
   playedAt: string;
+  reporterDeckId?: string | null;
 };
 
 export async function reportKillerMatchAction(
@@ -646,6 +648,7 @@ export async function reportKillerMatchAction(
       params.winnerId,
       params.playerScores,
       new Date(params.playedAt),
+      params.reporterDeckId,
       params.matchId
     );
 
@@ -664,11 +667,16 @@ export async function reportKillerMatchAction(
 
 export async function confirmKillerMatchAction(
   leagueId: string,
-  matchId: string
+  matchId: string,
+  confirmerDeckId?: string | null
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const user = await requireAuth();
     await confirmKillerMatch(leagueId, matchId, user.id);
+
+    if (confirmerDeckId !== undefined) {
+      await updateLeagueMatchDeck(leagueId, matchId, user.id, user.id, confirmerDeckId);
+    }
 
     revalidatePath(`/leagues/${leagueId}`);
 
@@ -679,6 +687,31 @@ export async function confirmKillerMatchAction(
       success: false,
       error:
         error instanceof Error ? error.message : "Erreur lors de la confirmation",
+    };
+  }
+}
+
+export async function updateLeagueMatchDeckAction(
+  leagueId: string,
+  matchId: string,
+  playerId: string,
+  deckId: string | null
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await requireAuth();
+
+    await updateLeagueMatchDeck(leagueId, matchId, user.id, playerId, deckId);
+
+    revalidatePath(`/leagues/${leagueId}`);
+    revalidatePath(`/leagues/${leagueId}/manage`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating league match deck:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Erreur lors de la mise à jour du deck",
     };
   }
 }

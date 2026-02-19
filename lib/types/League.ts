@@ -100,6 +100,7 @@ export type LeagueMatch = {
   confirmedAt?: Date;
   targetId?: User["id"];
   isKillerMatch?: boolean;
+  decks?: Record<User["id"], string>; // Decks utilisés par chaque joueur { playerId: deckId }
 };
 
 // Participant à une ligue

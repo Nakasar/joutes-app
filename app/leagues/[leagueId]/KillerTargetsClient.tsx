@@ -17,12 +17,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { AlertCircle, CheckCircle, Loader2, Target } from "lucide-react";
+import DeckSelector from "@/components/DeckSelector";
 import { League, LeagueParticipant } from "@/lib/types/League";
 import {
   generateKillerTargetsAction,
   reportKillerMatchAction,
   confirmKillerMatchAction,
   confirmKillerMatchLairAction,
+  updateLeagueMatchDeckAction,
 } from "../actions";
 
 type ParticipantWithUser = LeagueParticipant & {
@@ -91,7 +93,14 @@ export default function KillerTargetsClient({
     matchId?: string;
     playerScores: Record<string, number>;
     playedAt: string;
+    deckId?: string;
   } | null>(null);
+  const [deckByMatchId, setDeckByMatchId] = useState<Record<string, string | undefined>>(() =>
+    (league.matches || []).reduce<Record<string, string | undefined>>((acc, match) => {
+      acc[match.id] = match.decks?.[currentUserId];
+      return acc;
+    }, {})
+  );
 
   const normalizeScores = (
     playerIds: string[],
@@ -175,6 +184,7 @@ export default function KillerTargetsClient({
   }, [league.matches, currentUserId]);
 
   const activeTargets = targets.filter((target) => target.status !== "CONFIRMED");
+  const confirmedTargets = targets.filter((target) => target.status === "CONFIRMED");
 
   const matchesNeedingOpponentConfirmation = league.matches.filter(
     (match) =>
@@ -230,6 +240,7 @@ export default function KillerTargetsClient({
         ...reportForm,
         winnerId: computedWinnerId,
         playerScores: normalizedScores,
+        reporterDeckId: reportForm.deckId ?? null,
       });
       if (result.success) {
         setSuccess("Résultat envoyé");
@@ -246,7 +257,11 @@ export default function KillerTargetsClient({
     setSuccess(null);
 
     startTransition(async () => {
-      const result = await confirmKillerMatchAction(leagueId, matchId);
+      const result = await confirmKillerMatchAction(
+        leagueId,
+        matchId,
+        deckByMatchId[matchId] ?? null
+      );
       if (result.success) {
         setSuccess("Résultat confirmé");
         router.refresh();
@@ -267,6 +282,27 @@ export default function KillerTargetsClient({
         router.refresh();
       } else {
         setError(result.error || "Erreur lors de la confirmation du lieu");
+      }
+    });
+  };
+
+  const handleSaveDeck = (matchId: string) => {
+    setError(null);
+    setSuccess(null);
+
+    startTransition(async () => {
+      const result = await updateLeagueMatchDeckAction(
+        leagueId,
+        matchId,
+        currentUserId,
+        deckByMatchId[matchId] ?? null
+      );
+
+      if (result.success) {
+        setSuccess("Deck mis à jour");
+        router.refresh();
+      } else {
+        setError(result.error || "Erreur lors de la mise à jour du deck");
       }
     });
   };
@@ -398,6 +434,7 @@ export default function KillerTargetsClient({
                                     "yyyy-LL-dd'T'HH:mm"
                                   )
                                 : DateTime.now().toFormat("yyyy-LL-dd'T'HH:mm"),
+                              deckId: deckByMatchId[target.matchId] ?? match?.decks?.[currentUserId],
                             })
                           }
                         >
@@ -448,6 +485,11 @@ export default function KillerTargetsClient({
                                       reportForm?.targetId === target.targetId
                                         ? reportForm.playedAt
                                         : DateTime.now().toFormat("yyyy-LL-dd'T'HH:mm"),
+                                    deckId:
+                                      reportForm?.targetId === target.targetId
+                                        ? reportForm.deckId
+                                        : deckByMatchId[target.matchId] ??
+                                          match?.decks?.[currentUserId],
                                   });
                                 }}
                               />
@@ -483,6 +525,11 @@ export default function KillerTargetsClient({
                                       reportForm?.targetId === target.targetId
                                         ? reportForm.playedAt
                                         : DateTime.now().toFormat("yyyy-LL-dd'T'HH:mm"),
+                                    deckId:
+                                      reportForm?.targetId === target.targetId
+                                        ? reportForm.deckId
+                                        : deckByMatchId[target.matchId] ??
+                                          match?.decks?.[currentUserId],
                                   });
                                 }}
                               />
@@ -529,8 +576,48 @@ export default function KillerTargetsClient({
                                           [target.targetId]: 0,
                                         },
                                   playedAt: event.target.value,
+                                  deckId:
+                                    reportForm?.targetId === target.targetId
+                                      ? reportForm.deckId
+                                      : deckByMatchId[target.matchId] ??
+                                        match?.decks?.[currentUserId],
                                 })
                               }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">
+                              Votre deck <span className="text-muted-foreground">(optionnel)</span>
+                            </label>
+                            <DeckSelector
+                              playerId={currentUserId}
+                              gameId={target.gameId}
+                              value={
+                                reportForm?.targetId === target.targetId
+                                  ? reportForm.deckId
+                                  : deckByMatchId[target.matchId] ?? match?.decks?.[currentUserId]
+                              }
+                              onChange={(deckId) =>
+                                setReportForm((prev) =>
+                                  prev && prev.targetId === target.targetId
+                                    ? { ...prev, deckId }
+                                    : {
+                                        targetId: target.targetId,
+                                        matchId: target.matchId,
+                                        playerScores: {
+                                          [currentUserId]: match?.playerScores?.[currentUserId] ?? 0,
+                                          [target.targetId]: match?.playerScores?.[target.targetId] ?? 0,
+                                        },
+                                        playedAt: match?.playedAt
+                                          ? DateTime.fromJSDate(new Date(match.playedAt)).toFormat(
+                                              "yyyy-LL-dd'T'HH:mm"
+                                            )
+                                          : DateTime.now().toFormat("yyyy-LL-dd'T'HH:mm"),
+                                        deckId,
+                                      }
+                                )
+                              }
+                              disabled={isPending}
                             />
                           </div>
                           <Button onClick={handleReportMatch} disabled={isPending}>
@@ -572,6 +659,38 @@ export default function KillerTargetsClient({
                           Score : {scoreLine}
                         </p>
                       )}
+                    </div>
+                  )}
+
+                  {target.matchId && (
+                    <div className="space-y-2 border-t pt-3">
+                      <label className="text-sm font-medium">
+                        Votre deck <span className="text-muted-foreground">(optionnel)</span>
+                      </label>
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <div className="flex-1">
+                          <DeckSelector
+                            playerId={currentUserId}
+                            gameId={target.gameId}
+                            value={deckByMatchId[target.matchId]}
+                            onChange={(deckId) =>
+                              setDeckByMatchId((prev) => ({
+                                ...prev,
+                                [target.matchId]: deckId,
+                              }))
+                            }
+                            disabled={isPending}
+                          />
+                        </div>
+                        <Button
+                          variant="outline"
+                          onClick={() => handleSaveDeck(target.matchId!)}
+                          disabled={isPending}
+                        >
+                          {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                          Enregistrer le deck
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -632,6 +751,23 @@ export default function KillerTargetsClient({
                         Joué {matchDate.toRelative()}
                       </p>
                     )}
+                    <div className="mt-2 max-w-sm">
+                      <label className="text-xs text-muted-foreground block mb-1">
+                        Votre deck (optionnel)
+                      </label>
+                      <DeckSelector
+                        playerId={currentUserId}
+                        gameId={match.gameId}
+                        value={deckByMatchId[match.id]}
+                        onChange={(deckId) =>
+                          setDeckByMatchId((prev) => ({
+                            ...prev,
+                            [match.id]: deckId,
+                          }))
+                        }
+                        disabled={isPending}
+                      />
+                    </div>
                   </div>
                   <Button onClick={() => handleConfirmMatch(match.id)} disabled={isPending}>
                     {isPending && (
@@ -701,6 +837,67 @@ export default function KillerTargetsClient({
                     )}
                     Confirmer côté lieu
                   </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {participant && confirmedTargets.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold">Historique des matchs confirmés</h3>
+            {confirmedTargets.map((target) => {
+              if (!target.matchId) {
+                return null;
+              }
+
+              const targetName = participantMap.get(target.targetId) || target.targetId;
+              const gameName = gameNames.get(target.gameId) || target.gameId;
+              const lairName = lairNames.get(target.lairId) || target.lairId;
+              const confirmedDate = parseDate(target.confirmedAt).setLocale("fr");
+
+              return (
+                <div key={`history-${target.matchId}`} className="border rounded-lg p-4 space-y-3">
+                  <div>
+                    <p className="font-medium">{targetName}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {gameName} · {lairName}
+                    </p>
+                    {confirmedDate.isValid && (
+                      <p className="text-xs text-muted-foreground">
+                        Confirmé {confirmedDate.toRelative()}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      Votre deck <span className="text-muted-foreground">(optionnel)</span>
+                    </label>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <div className="flex-1">
+                        <DeckSelector
+                          playerId={currentUserId}
+                          gameId={target.gameId}
+                          value={deckByMatchId[target.matchId]}
+                          onChange={(deckId) =>
+                            setDeckByMatchId((prev) => ({
+                              ...prev,
+                              [target.matchId!]: deckId,
+                            }))
+                          }
+                          disabled={isPending}
+                        />
+                      </div>
+                      <Button
+                        variant="outline"
+                        onClick={() => handleSaveDeck(target.matchId!)}
+                        disabled={isPending}
+                      >
+                        {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        Enregistrer le deck
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               );
             })}

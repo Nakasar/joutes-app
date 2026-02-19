@@ -1237,6 +1237,7 @@ export async function addLeagueMatch(
     featAwards: processedFeatAwards.length > 0 ? processedFeatAwards : undefined,
     createdBy,
     notes: matchInput.notes,
+    decks: matchInput.decks,
   };
 
   await createMatch(newMatch);
@@ -1617,6 +1618,7 @@ export async function reportKillerMatch(
   winnerId: string,
   playerScores: Record<string, number> | undefined,
   playedAt: Date,
+  reporterDeckId?: string | null,
   matchId?: string
 ): Promise<string> {
   const league = await getLeagueById(leagueId);
@@ -1732,6 +1734,12 @@ export async function reportKillerMatch(
       confirmedBy: "",
       confirmedAt: "",
     };
+
+    if (reporterDeckId) {
+      updatePayload.$set[`decks.${userId}`] = reporterDeckId;
+    } else {
+      updatePayload.$unset[`decks.${userId}`] = "";
+    }
   }
 
   if (isLairOwner) {
@@ -1789,6 +1797,59 @@ export async function reportKillerMatch(
   }
 
   return matchDoc.id;
+}
+
+export async function updateLeagueMatchDeck(
+  leagueId: string,
+  matchId: string,
+  actorUserId: string,
+  playerId: string,
+  deckId: string | null
+): Promise<void> {
+  const league = await getLeagueById(leagueId);
+  if (!league) {
+    throw new Error("Ligue non trouvée");
+  }
+
+  const match = league.matches.find((m) => m.id === matchId);
+  if (!match || match.matchType !== "league") {
+    throw new Error("Match non trouvé");
+  }
+
+  if (!match.playerIds.includes(playerId)) {
+    throw new Error("Le joueur ne fait pas partie de ce match");
+  }
+
+  const isManager = await isLeagueOrganizer(leagueId, actorUserId);
+  if (!isManager && actorUserId !== playerId) {
+    throw new Error("Vous n&apos;êtes pas autorisé à modifier ce deck");
+  }
+
+  if (!isManager && !match.playerIds.includes(actorUserId)) {
+    throw new Error("Vous n&apos;êtes pas autorisé à modifier ce deck");
+  }
+
+  const updateOperation = deckId
+    ? {
+        $set: {
+          [`decks.${playerId}`]: deckId,
+          updatedAt: new Date(),
+        },
+      }
+    : {
+        $set: { updatedAt: new Date() },
+        $unset: { [`decks.${playerId}`]: "" },
+      };
+
+  await db.collection("matches").updateOne(
+    { matchType: 'league', leagueId, _id: new ObjectId(matchId) },
+    updateOperation
+  );
+
+  await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(leagueId) },
+    { $set: { updatedAt: new Date() } }
+  );
 }
 
 async function finalizeKillerMatch(
