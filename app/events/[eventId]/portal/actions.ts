@@ -24,7 +24,6 @@ import { getEventParticipants } from "./participant-actions";
 import { notifyEventAll } from "@/lib/services/notifications";
 
 const PORTAL_SETTINGS_COLLECTION = "event-portal-settings";
-const MATCH_RESULTS_COLLECTION = "event-match-results";
 const ANNOUNCEMENTS_COLLECTION = "event-announcements";
 const PLAYER_NOTES_COLLECTION = "event-player-notes";
 
@@ -417,7 +416,7 @@ export async function getMatchResults(eventId: string, phaseId?: string) {
       return { success: false, error: "Accès non autorisé" };
     }
 
-    const collection = db.collection<MatchResult & { eventId: string }>(MATCH_RESULTS_COLLECTION);
+    const collection = db.collection<MatchResult & { eventId: string }>("matches");
 
     const matchQuery: Record<string, unknown> = { eventId };
     if (phaseId) {
@@ -618,7 +617,7 @@ export async function createMatchResult(eventId: string, data: unknown) {
       return { success: false, error: "Seul le créateur de l&apos;événement peut créer un match" };
     }
 
-    const collection = db.collection<MatchResult & { eventId: string }>(MATCH_RESULTS_COLLECTION);
+    const collection = db.collection<MatchResult & { eventId: string }>("matches");
 
     const now = new Date().toISOString();
     const matchResult = {
@@ -666,7 +665,7 @@ export async function reportMatchResult(eventId: string, data: unknown) {
       return { success: false, error: "Vous devez être participant pour rapporter un résultat" };
     }
 
-    const collection = db.collection<MatchResult & { eventId: string }>(MATCH_RESULTS_COLLECTION);
+    const collection = db.collection<MatchResult & { eventId: string }>("matches");
 
     // Récupérer le match
     const match = await collection.findOne({
@@ -731,7 +730,7 @@ export async function confirmMatchResult(eventId: string, data: unknown) {
 
     const validated = confirmMatchResultSchema.parse(data);
 
-    const collection = db.collection<MatchResult & { eventId: string }>(MATCH_RESULTS_COLLECTION);
+    const collection = db.collection<MatchResult & { eventId: string }>("matches");
 
     // Récupérer le match
     const match = await collection.findOne({
@@ -792,7 +791,7 @@ export async function updateMatchResult(eventId: string, matchId: string, data: 
       return { success: false, error: "Seul le créateur de l'événement peut modifier un résultat" };
     }
 
-    const match = await db.collection<MatchResult & { eventId: string }>(MATCH_RESULTS_COLLECTION).findOne({ matchId, eventId });
+    const match = await db.collection<MatchResult & { eventId: string }>("matches").findOne({ matchId, eventId });
 
     if (!match) {
       return { success: false, error: "Match non trouvé" };
@@ -802,7 +801,7 @@ export async function updateMatchResult(eventId: string, matchId: string, data: 
       : validated.player2Score > validated.player1Score ? match.player2Id
       : null;
 
-    const collection = db.collection<MatchResult & { eventId: string }>(MATCH_RESULTS_COLLECTION);
+    const collection = db.collection<MatchResult & { eventId: string }>("matches");
 
     await collection.updateOne(
       { matchId, eventId },
@@ -842,7 +841,7 @@ export async function deleteMatchResult(eventId: string, matchId: string) {
       return { success: false, error: "Seul le créateur de l&apos;événement peut supprimer un match" };
     }
 
-    const collection = db.collection<MatchResult & { eventId: string }>(MATCH_RESULTS_COLLECTION);
+    const collection = db.collection<MatchResult & { eventId: string }>("matches");
 
     await collection.deleteOne({ matchId, eventId });
 
@@ -866,7 +865,7 @@ export async function deleteRoundMatches(eventId: string, phaseId: string, round
       return { success: false, error: "Seul le créateur de l&apos;événement peut supprimer des matchs" };
     }
 
-    const collection = db.collection<MatchResult & { eventId: string }>(MATCH_RESULTS_COLLECTION);
+    const collection = db.collection<MatchResult & { eventId: string }>("matches");
 
     const result = await collection.deleteMany({ 
       eventId, 
@@ -1046,7 +1045,7 @@ export async function generateMatchesForPhase(eventId: string, phaseId: string) 
     const playerIds = participants.map(p => p.id);
 
     // Récupérer les matchs existants pour cette phase
-    const matchesCollection = db.collection<MatchResult & { eventId: string }>(MATCH_RESULTS_COLLECTION);
+    const matchesCollection = db.collection<MatchResult & { eventId: string }>("matches");
 
     // Générer les pairings selon le type de phase
     let pairings: Array<{ player1Id: string; player2Id: string | null }> = [];
@@ -1297,7 +1296,7 @@ export async function getPhaseStandings(eventId: string, phaseId: string) {
     const playerIds = Array.from(participantsMap.keys());
 
     // Récupérer les matchs de la phase
-    const matchesCollection = db.collection<MatchResult & { eventId: string }>(MATCH_RESULTS_COLLECTION);
+    const matchesCollection = db.collection<MatchResult & { eventId: string }>("matches");
     const allMatches = await matchesCollection.find({ eventId, phaseId }).toArray();
 
     // Déterminer la dernière ronde complète
