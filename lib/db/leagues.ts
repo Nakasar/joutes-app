@@ -1611,7 +1611,7 @@ export async function reportKillerMatch(
   }
 
   if (!league.participants.some((p) => p.userId === userId)) {
-    throw new Error("Vous n&apos;êtes pas inscrit à cette ligue");
+    throw new Error("Vous n'êtes pas inscrit à cette ligue");
   }
 
   if (!matchId && !targetId) {
@@ -1721,7 +1721,7 @@ export async function reportKillerMatch(
   }
 
   await db.collection("matches").updateOne(
-    { matchType: 'league', leagueId, id: matchDoc.id },
+    { matchType: 'league', leagueId, _id: new ObjectId(matchDoc.id) },
     updatePayload
   );
 
@@ -1770,11 +1770,6 @@ export async function reportKillerMatch(
     );
   }
 
-  await db.collection(COLLECTION_NAME).updateOne(
-    { _id: new ObjectId(leagueId) },
-    { $set: { updatedAt: new Date() } }
-  );
-
   return matchDoc.id;
 }
 
@@ -1786,7 +1781,7 @@ async function finalizeKillerMatch(
   const now = new Date();
 
   await db.collection("matches").updateOne(
-    { matchType: 'league', leagueId, id: match.id },
+    { matchType: 'league', leagueId, _id: new ObjectId(match.id) },
     {
       $set: {
         status: "CONFIRMED",
@@ -1852,7 +1847,7 @@ export async function confirmKillerMatch(
   const confirmedAt = shouldFinalize ? new Date() : undefined;
 
   await db.collection("matches").updateOne(
-    { matchType: 'league', leagueId, id: matchId },
+    { matchType: 'league', leagueId, _id: new ObjectId(matchId) },
     {
       $set: {
         confirmedBy: userId,
@@ -1911,7 +1906,7 @@ export async function confirmKillerMatchLair(
   const confirmedAt = shouldFinalize ? new Date() : undefined;
 
   await db.collection("matches").updateOne(
-    { matchType: 'league', leagueId, id: matchId },
+    { matchType: 'league', leagueId, _id: new ObjectId(matchId) },
     {
       $set: {
         lairConfirmedBy: userId,

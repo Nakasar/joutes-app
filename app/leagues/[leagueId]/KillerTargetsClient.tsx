@@ -151,6 +151,7 @@ export default function KillerTargetsClient({
   );
 
   const targets = useMemo(() => {
+    console.log(league);
     return (league.matches || [])
       .filter(
         (match) =>
