@@ -116,7 +116,6 @@ export async function getPublicUserProfileAction(
       const namePart = userTagOrId.slice(0, -4);
       formatted = `${namePart}#${lastFour}`;
     }
-    console.log(formatted);
     const user = await getUserByTagOrId(formatted);
 
     if (!user) {

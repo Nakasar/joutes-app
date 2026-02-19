@@ -1251,29 +1251,47 @@ export async function addLeagueMatch(
 
 // Récupérer les matchs d'une ligue
 export async function getLeagueMatches(leagueId: string): Promise<LeagueMatch[]> {
-  const matches = await getMatches({
-    matchType: 'league',
-    leagueId,
-  });
-  
-  // Enrichir avec les noms des lairs
-  const enrichedMatches = await Promise.all(
-    matches.map(async (match) => {
-      if (match.matchType === 'league') {
-        if (match.lairId && !match.lairName) {
-          const lair = await getLairById(match.lairId);
-          return {
-            ...match,
-            lairName: lair?.name,
-          };
+  const matchesRaw = await db.collection('matches')
+    .aggregate<LeagueMatch>([
+      {
+        $match: {
+          matchType: 'league',
+          leagueId,
+        },
+      },
+      {
+        $lookup: {
+          from: 'lairs',
+          localField: 'lairId',
+          foreignField: '_id',
+          as: 'lair',
+          pipeline: [
+            {
+              $project: {
+                _id: 1,
+                id: { $toString: "$_id" },
+                name: 1,
+              },
+            },
+          ],
         }
-        return match;
-      }
-      return match;
-    })
-  );
+      },
+      {
+        $addFields: {
+          lairName: { $arrayElemAt: ["$lair.name", 0] },
+          id: { $toString: "$_id" },
+        }
+      },
+      {
+        $project: {
+          lair: 0,
+          _id: 0,
+        },
+      },
+    ])
+    .toArray();
   
-  return enrichedMatches.filter(m => m.matchType === 'league') as LeagueMatch[];
+  return matchesRaw;
 }
 
 // Supprimer un match d'une ligue (annule aussi les points attribués)
