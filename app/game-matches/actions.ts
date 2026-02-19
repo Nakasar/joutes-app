@@ -32,6 +32,7 @@ export async function createGameMatchAction(
       displayName?: string;
       discriminator?: string;
     }>;
+    decks?: Record<string, string>;
   }
 ): Promise<{ success: boolean; error?: string; match?: GameMatch }> {
   try {
@@ -82,6 +83,7 @@ export async function createGameMatchAction(
       playedAt: data.playedAt,
       lairId: data.lairId,
       playerIds: resolvedPlayerIds,
+      decks: data.decks,
     });
     
     if (!validationResult.success) {

@@ -31,4 +31,5 @@ export type GameMatch = {
   ratings?: GameMatchRating[]; // Évaluations des joueurs
   mvpVotes?: GameMatchMVPVote[]; // Votes pour le MVP
   winnerIds?: User['id'][]; // IDs des gagnants désignés par le créateur
+  decks?: Record<User['id'], string>; // Decks utilisés par chaque joueur { playerId: deckId }
 };

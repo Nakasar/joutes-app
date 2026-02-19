@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { GameMatch } from "@/lib/types/GameMatch";
 import { Game } from "@/lib/types/Game";
 import { Lair } from "@/lib/types/Lair";
+import { Deck } from "@/lib/types/Deck";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -70,6 +71,9 @@ export default function GameMatchDetails({
   const [userMVPVote, setUserMVPVote] = useState<string | undefined>(
     match.mvpVotes?.find(v => v.voterId === currentUserId)?.votedForId
   );
+  
+  // État pour les decks
+  const [decksInfo, setDecksInfo] = useState<Record<string, Deck>>({});
 
   // Calculer le MVP (joueur avec le plus de votes)
   const mvpCounts = match.players.reduce((acc, player) => {
@@ -109,6 +113,34 @@ export default function GameMatchDetails({
       window.history.replaceState({}, "", url.toString());
     }
   }, [searchParams]);
+
+  // Charger les informations des decks utilisés dans le match
+  useEffect(() => {
+    const loadDecks = async () => {
+      if (!match.decks || Object.keys(match.decks).length === 0) return;
+      
+      const deckIds = Object.values(match.decks);
+      const decksData: Record<string, Deck> = {};
+      
+      await Promise.all(
+        deckIds.map(async (deckId) => {
+          try {
+            const response = await fetch(`/api/decks/${deckId}`);
+            if (response.ok) {
+              const deck = await response.json();
+              decksData[deckId] = deck;
+            }
+          } catch (error) {
+            console.error(`Error loading deck ${deckId}:`, error);
+          }
+        })
+      );
+      
+      setDecksInfo(decksData);
+    };
+    
+    loadDecks();
+  }, [match.decks]);
 
   const isCreator = match.createdBy === currentUserId;
   const isPlayer = match.players.some((p) => p.userId === currentUserId);
@@ -632,96 +664,107 @@ export default function GameMatchDetails({
                 const isWinner = match.winnerIds?.includes(player.userId);
                 const isCurrentUserPlayer = player.userId !== currentUserId && isPlayer;
                 const hasVotedForThisPlayer = userMVPVote === player.userId;
+                const playerDeckId = match.decks?.[player.userId];
+                const playerDeck = playerDeckId ? decksInfo[playerDeckId] : undefined;
                 
                 return (
                   <div
                     key={player.userId}
-                    className="flex items-center justify-between p-3 border rounded-lg bg-muted/50"
+                    className="p-3 border rounded-lg bg-muted/50 space-y-2"
                   >
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-sm">
-                        {player.username}
-                      </Badge>
-                      
-                      {/* Médaille MVP */}
-                      {isMVP && (
-                        <span title="Most Valuable Player">
-                          <Medal className="h-5 w-5 text-yellow-500" />
-                        </span>
-                      )}
-                      
-                      {/* Trophée gagnant */}
-                      {isWinner && (
-                        <span title="Vainqueur">
-                          <Trophy className="h-5 w-5 text-amber-600" />
-                        </span>
-                      )}
-                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-sm">
+                          {player.username}
+                        </Badge>
+                        
+                        {/* Médaille MVP */}
+                        {isMVP && (
+                          <span title="Most Valuable Player">
+                            <Medal className="h-5 w-5 text-yellow-500" />
+                          </span>
+                        )}
+                        
+                        {/* Trophée gagnant */}
+                        {isWinner && (
+                          <span title="Vainqueur">
+                            <Trophy className="h-5 w-5 text-amber-600" />
+                          </span>
+                        )}
+                      </div>
 
-                    <div className="flex items-center gap-2">
-                      {/* Vote MVP pour les joueurs */}
-                      {isCurrentUserPlayer && (
-                        <Button
-                          variant={hasVotedForThisPlayer ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handleVoteMVP(player.userId)}
-                          disabled={isPending}
-                          className="gap-2"
-                          title="Voter pour le MVP"
-                        >
-                          <Medal className="h-4 w-4" />
-                          {hasVotedForThisPlayer ? "MVP voté" : "Voter MVP"}
-                        </Button>
-                      )}
-                      
-                      {/* Désignation gagnant pour le créateur */}
-                      {isCreator && (
-                        <Button
-                          variant={isWinner ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handleToggleWinner(player.userId)}
-                          disabled={isPending}
-                          className="gap-2"
-                          title={isWinner ? "Retirer le trophée" : "Désigner comme vainqueur"}
-                        >
-                          <Trophy className="h-4 w-4" />
-                          Vainqueur
-                        </Button>
-                      )}
-                      
-                      {/* Bouton retirer joueur */}
-                      {isCreator && (
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Retirer le joueur</DialogTitle>
-                              <DialogDescription>
-                                Êtes-vous sûr de vouloir retirer {player.username} de la
-                                partie ?
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="flex gap-2 pt-4">
-                              <Button variant="outline" className="flex-1">
-                                Annuler
+                      <div className="flex items-center gap-2">
+                        {/* Vote MVP pour les joueurs */}
+                        {isCurrentUserPlayer && (
+                          <Button
+                            variant={hasVotedForThisPlayer ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handleVoteMVP(player.userId)}
+                            disabled={isPending}
+                            className="gap-2"
+                            title="Voter pour le MVP"
+                          >
+                            <Medal className="h-4 w-4" />
+                            {hasVotedForThisPlayer ? "MVP voté" : "Voter MVP"}
+                          </Button>
+                        )}
+                        
+                        {/* Désignation gagnant pour le créateur */}
+                        {isCreator && (
+                          <Button
+                            variant={isWinner ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handleToggleWinner(player.userId)}
+                            disabled={isPending}
+                            className="gap-2"
+                            title={isWinner ? "Retirer le trophée" : "Désigner comme vainqueur"}
+                          >
+                            <Trophy className="h-4 w-4" />
+                            Vainqueur
+                          </Button>
+                        )}
+                        
+                        {/* Bouton retirer joueur */}
+                        {isCreator && (
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <X className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="destructive"
-                                onClick={() => handleRemovePlayer(player.userId)}
-                                disabled={isPending}
-                                className="flex-1"
-                              >
-                                {isPending ? "En cours..." : "Retirer"}
-                              </Button>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                      )}
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Retirer le joueur</DialogTitle>
+                                <DialogDescription>
+                                  Êtes-vous sûr de vouloir retirer {player.username} de la
+                                  partie ?
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="flex gap-2 pt-4">
+                                <Button variant="outline" className="flex-1">
+                                  Annuler
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  onClick={() => handleRemovePlayer(player.userId)}
+                                  disabled={isPending}
+                                  className="flex-1"
+                                >
+                                  {isPending ? "En cours..." : "Retirer"}
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        )}
+                      </div>
                     </div>
+                    
+                    {/* Deck utilisé */}
+                    {playerDeck && (
+                      <div className="text-xs text-muted-foreground pl-2 border-l-2 border-muted-foreground/30">
+                        Deck : <span className="font-medium text-foreground">{playerDeck.name}</span>
+                      </div>
+                    )}
                   </div>
                 );
               })}

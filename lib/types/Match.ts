@@ -50,6 +50,7 @@ export type GameTypeMatch = BaseMatch & {
   ratings?: GameMatchRating[]; // Évaluations des joueurs
   mvpVotes?: GameMatchMVPVote[]; // Votes pour le MVP
   winnerIds?: User['id'][]; // IDs des gagnants désignés par le créateur
+  decks?: Record<User['id'], string>; // Decks utilisés par chaque joueur { playerId: deckId }
 };
 
 // Match de ligue
@@ -67,6 +68,7 @@ export type LeagueTypeMatch = BaseMatch & {
   targetId?: User['id']; // Pour les matchs de mode KILLER
   isKillerMatch?: boolean;
   lairName?: string;
+  decks?: Record<User['id'], string>; // Decks utilisés par chaque joueur { playerId: deckId }
 };
 
 // Match d'événement (tournoi)
@@ -84,6 +86,7 @@ export type EventTypeMatch = BaseMatch & {
   round?: number; // Numéro de ronde (pour les rondes suisses)
   bracketPosition?: string; // Position dans le bracket (ex: "QF1", "SF1", "F")
   status: 'pending' | 'in-progress' | 'completed' | 'disputed';
+  decks?: Record<User['id'], string>; // Decks utilisés par chaque joueur { playerId: deckId }
 };
 
 // Type union pour tous les types de matchs

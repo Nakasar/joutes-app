@@ -36,6 +36,7 @@ export type MatchDocument = {
   playerIds?: string[];
   ratings?: GameMatchRating[];
   mvpVotes?: GameMatchMVPVote[];
+  decks?: Record<string, string>;
   
   // League match fields
   leagueId?: string;
@@ -88,6 +89,7 @@ function toMatch(doc: WithId<Document>): Match {
       ratings: doc.ratings || [],
       mvpVotes: doc.mvpVotes || [],
       winnerIds: doc.winnerIds || [],
+      decks: doc.decks,
     } as GameTypeMatch;
   } else if (doc.matchType === 'league') {
     return {
@@ -105,6 +107,7 @@ function toMatch(doc: WithId<Document>): Match {
       targetId: doc.targetId,
       isKillerMatch: doc.isKillerMatch,
       lairName: doc.lairName,
+      decks: doc.decks,
     } as LeagueTypeMatch;
   } else if (doc.matchType === 'event') {
     return {
@@ -122,6 +125,7 @@ function toMatch(doc: WithId<Document>): Match {
       round: doc.round,
       bracketPosition: doc.bracketPosition,
       status: doc.status || 'pending',
+      decks: doc.decks,
     } as EventTypeMatch;
   } else {
     throw new Error("Type de match inconnu");
@@ -150,6 +154,7 @@ function toDocument(match: Omit<Match, "id" | "createdAt">): Omit<MatchDocument,
       ratings: match.ratings,
       mvpVotes: match.mvpVotes,
       winnerIds: match.winnerIds,
+      decks: match.decks,
     };
   } else if (isLeagueMatch(match)) {
     return {
@@ -166,6 +171,7 @@ function toDocument(match: Omit<Match, "id" | "createdAt">): Omit<MatchDocument,
       targetId: match.targetId,
       isKillerMatch: match.isKillerMatch,
       lairName: match.lairName,
+      decks: match.decks,
     };
   } else if (isEventMatch(match)) {
     return {
@@ -182,6 +188,7 @@ function toDocument(match: Omit<Match, "id" | "createdAt">): Omit<MatchDocument,
       round: match.round,
       bracketPosition: match.bracketPosition,
       status: match.status,
+      decks: match.decks,
     };
   } else {
     throw new Error("Type de match inconnu");
