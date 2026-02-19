@@ -44,6 +44,7 @@ export default function CreateDeckDialog({
     gameId: "",
     url: "",
     description: "",
+    decklist: "",
     visibility: "private" as "private" | "public",
   });
 
@@ -63,6 +64,7 @@ export default function CreateDeckDialog({
           gameId: "",
           url: "",
           description: "",
+          decklist: "",
           visibility: "private",
         });
         onSuccess();
@@ -159,6 +161,23 @@ export default function CreateDeckDialog({
                 rows={4}
                 disabled={isLoading}
               />
+            </div>
+
+            {/* Decklist */}
+            <div className="space-y-2">
+              <Label htmlFor="decklist">Liste de cartes (optionnel)</Label>
+              <Textarea
+                id="decklist"
+                value={formData.decklist}
+                onChange={(e) => setFormData({ ...formData, decklist: e.target.value })}
+                placeholder="3x Carte A&#10;2x Carte B&#10;1x Carte C..."
+                rows={10}
+                disabled={isLoading}
+                className="font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                Notez la composition complète de votre deck
+              </p>
             </div>
 
             {/* Visibility */}

@@ -7,6 +7,7 @@ export const deckSchema = z.object({
   gameId: z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID du jeu doit être un ObjectId MongoDB valide"),
   url: z.string().url("L'URL doit être valide").optional().or(z.literal("")),
   description: z.string().max(2000, "La description est trop longue").optional(),
+  decklist: z.string().max(20000, "La liste de cartes est trop longue").optional(),
   visibility: deckVisibilitySchema.default("private"),
 });
 

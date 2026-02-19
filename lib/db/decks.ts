@@ -37,6 +37,7 @@ function toDeck(doc: WithId<Document>): Deck {
     name: doc.name,
     url: doc.url,
     description: doc.description,
+    decklist: doc.decklist,
     visibility: doc.visibility || "private",
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
@@ -51,6 +52,7 @@ function toDocument(deck: Omit<Deck, "id" | "createdAt" | "updatedAt">): Omit<De
     name: deck.name,
     url: deck.url,
     description: deck.description,
+    decklist: deck.decklist,
     visibility: deck.visibility || "private",
   };
 }

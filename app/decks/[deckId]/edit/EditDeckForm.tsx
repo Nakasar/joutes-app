@@ -34,6 +34,7 @@ export default function EditDeckForm({ deck, games }: EditDeckFormProps) {
     gameId: deck.gameId,
     url: deck.url || "",
     description: deck.description || "",
+    decklist: deck.decklist || "",
     visibility: deck.visibility,
   });
 
@@ -134,6 +135,23 @@ export default function EditDeckForm({ deck, games }: EditDeckFormProps) {
               rows={6}
               disabled={isLoading}
             />
+          </div>
+
+          {/* Decklist */}
+          <div className="space-y-2">
+            <Label htmlFor="decklist">Liste de cartes (optionnel)</Label>
+            <Textarea
+              id="decklist"
+              value={formData.decklist}
+              onChange={(e) => setFormData({ ...formData, decklist: e.target.value })}
+              placeholder="3x Carte A&#10;2x Carte B&#10;1x Carte C..."
+              rows={12}
+              disabled={isLoading}
+              className="font-mono text-sm"
+            />
+            <p className="text-xs text-muted-foreground">
+              Notez la composition complète de votre deck
+            </p>
           </div>
 
           {/* Visibility */}

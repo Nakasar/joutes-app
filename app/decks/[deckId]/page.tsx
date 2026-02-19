@@ -131,6 +131,13 @@ export default async function DeckPage({ params }: { params: Params }) {
               </div>
             )}
 
+            {deck.decklist && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">Liste de cartes</h3>
+                <pre className="text-sm whitespace-pre-wrap font-mono bg-muted/50 p-4 rounded-md">{deck.decklist}</pre>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4 pt-4 border-t">
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground mb-1">Créé le</h3>

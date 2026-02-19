@@ -7,6 +7,7 @@ export type Deck = {
   name: string;
   url?: string;
   description?: string;
+  decklist?: string;
   visibility: DeckVisibility;
   createdAt: Date;
   updatedAt: Date;
