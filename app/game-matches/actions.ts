@@ -475,3 +475,45 @@ export async function toggleWinnerAction(
     return { success: false, error: "Erreur serveur" };
   }
 }
+
+export async function updatePlayerDeckAction(
+  matchId: string,
+  deckId: string | null
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    // Récupérer la partie
+    const match = await getGameMatchById(matchId);
+    
+    if (!match) {
+      return { success: false, error: "Partie non trouvée" };
+    }
+
+    // Vérifier que l'utilisateur est un joueur de la partie
+    if (!match.playerIds.includes(session.user.id)) {
+      return { success: false, error: "Vous devez être joueur de la partie pour modifier votre deck" };
+    }
+
+    // Mettre à jour le deck du joueur
+    const updateOperation = deckId 
+      ? { $set: { [`decks.${session.user.id}`]: deckId } }
+      : { $unset: { [`decks.${session.user.id}`]: "" } };
+
+    await db.collection("matches").updateOne(
+      { _id: new ObjectId(matchId) },
+      updateOperation
+    );
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour du deck:", error);
+    return { success: false, error: "Erreur serveur" };
+  }
+}

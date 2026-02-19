@@ -36,8 +36,10 @@ import {
   rateGameMatchAction,
   voteMVPAction,
   toggleWinnerAction,
+  updatePlayerDeckAction,
 } from "../actions";
 import RatingSelector from "./RatingSelector";
+import DeckSelector from "@/components/DeckSelector";
 
 type GameMatchDetailsProps = {
   match: GameMatch;
@@ -74,6 +76,11 @@ export default function GameMatchDetails({
   
   // État pour les decks
   const [decksInfo, setDecksInfo] = useState<Record<string, Deck>>({});
+  
+  // État pour le deck du joueur courant
+  const [currentUserDeckId, setCurrentUserDeckId] = useState<string | undefined>(
+    match.decks?.[currentUserId]
+  );
 
   // Calculer le MVP (joueur avec le plus de votes)
   const mvpCounts = match.players.reduce((acc, player) => {
@@ -302,6 +309,21 @@ export default function GameMatchDetails({
         router.refresh();
       } else {
         setError(result.error || "Erreur lors de la désignation du gagnant");
+      }
+    });
+  };
+
+  const handleUpdatePlayerDeck = (deckId: string | undefined) => {
+    setError(null);
+    startTransition(async () => {
+      const result = await updatePlayerDeckAction(match.id, deckId || null);
+      if (result.success) {
+        setCurrentUserDeckId(deckId);
+        setSuccessMessage("Votre deck a été mis à jour");
+        setTimeout(() => setSuccessMessage(null), 3000);
+        router.refresh();
+      } else {
+        setError(result.error || "Erreur lors de la mise à jour du deck");
       }
     });
   };
@@ -551,6 +573,26 @@ export default function GameMatchDetails({
                   Note moyenne : {averageRating.toFixed(1)} / 5
                 </p>
               )}
+            </div>
+          )}
+
+          {/* Sélection du deck pour le joueur courant */}
+          {isPlayer && (
+            <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold">Votre deck utilisé</h3>
+                <DeckSelector
+                  playerId={currentUserId}
+                  gameId={match.gameId}
+                  value={currentUserDeckId}
+                  onChange={handleUpdatePlayerDeck}
+                  disabled={isPending}
+                  playerName="Vous"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Sélectionnez le deck que vous avez utilisé pour cette partie
+                </p>
+              </div>
             </div>
           )}
 
