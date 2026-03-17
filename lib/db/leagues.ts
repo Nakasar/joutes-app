@@ -13,6 +13,7 @@ import {
 import { LeagueMatch, LeagueTypeMatch, MatchFeatAward } from "@/lib/types/Match";
 import {ObjectId, WithId, Document, Filter} from "mongodb";
 import {nanoid} from "nanoid";
+import { DateTime } from "luxon";
 import {User} from "@/lib/types/User";
 import { getUserById, getUsersByIds } from "@/lib/db/users";
 import { notifyLairOwnersWithTemplate, notifyUserWithTemplate } from "@/lib/services/notifications";
@@ -703,6 +704,9 @@ export async function recalculateLeaguePoints(
   }
 
   const { pointsRules } = league.pointsConfig;
+  const featRulesById = new Map(
+    pointsRules.feats.map((feat) => [feat.id, feat] as const)
+  );
   const participantIds = new Set(
     league.participants.map((participant) => participant.userId)
   );
@@ -712,10 +716,20 @@ export async function recalculateLeaguePoints(
 
   for (const participant of league.participants) {
     const preservedEntries = participant.pointsHistory
-      .filter((entry) => !entry.matchId)
+      .filter((entry) => {
+        if (entry.matchId) {
+          return false;
+        }
+
+        if (!entry.featId) {
+          return true;
+        }
+
+        return featRulesById.has(entry.featId);
+      })
       .map((entry) => ({
         ...entry,
-        date: new Date(entry.date),
+        date: DateTime.fromJSDate(entry.date).toJSDate(),
       }));
 
     historiesByUser.set(participant.userId, preservedEntries);
@@ -723,6 +737,10 @@ export async function recalculateLeaguePoints(
     const manualFeatCounts = new Map<string, number>();
     for (const feat of participant.feats) {
       if (feat.matchId) {
+        continue;
+      }
+
+      if (!featRulesById.has(feat.featId)) {
         continue;
       }
 
@@ -741,11 +759,13 @@ export async function recalculateLeaguePoints(
         (match.status === "CONFIRMED" || typeof match.status === "undefined")
     )
     .sort(
-      (a, b) => new Date(a.playedAt).getTime() - new Date(b.playedAt).getTime()
+      (a, b) =>
+        DateTime.fromJSDate(a.playedAt).toMillis() -
+        DateTime.fromJSDate(b.playedAt).toMillis()
     );
 
   for (const match of pointsMatches) {
-    const matchDate = new Date(match.playedAt);
+    const matchDate = DateTime.fromJSDate(match.playedAt).toJSDate();
 
     for (const playerId of match.playerIds) {
       if (!participantIds.has(playerId)) {
@@ -782,7 +802,7 @@ export async function recalculateLeaguePoints(
         continue;
       }
 
-      const featRule = pointsRules.feats.find((feat) => feat.id === featAward.featId);
+      const featRule = featRulesById.get(featAward.featId);
       if (!featRule) {
         continue;
       }
@@ -822,7 +842,9 @@ export async function recalculateLeaguePoints(
   await Promise.all(
     league.participants.map(async (participant) => {
       const rebuiltHistory = (historiesByUser.get(participant.userId) || []).sort(
-        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        (a, b) =>
+          DateTime.fromJSDate(a.date).toMillis() -
+          DateTime.fromJSDate(b.date).toMillis()
       );
 
       const totalPoints = rebuiltHistory.reduce(
@@ -844,7 +866,7 @@ export async function recalculateLeaguePoints(
 
   await db.collection(COLLECTION_NAME).updateOne(
     { _id: new ObjectId(leagueId) },
-    { $set: { updatedAt: new Date() } }
+    { $set: { updatedAt: DateTime.now().toJSDate() } }
   );
 
   return getLeagueById(leagueId);

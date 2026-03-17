@@ -377,7 +377,7 @@ export default function LeagueManageClient({
   const handleRecalculatePoints = async () => {
     if (
       !confirm(
-        "Recalculer les points de tous les participants a partir des matchs et des regles actuelles ?"
+        "Recalculer les points de tous les participants à partir des matchs et des règles actuelles ?"
       )
     ) {
       return;
@@ -390,7 +390,7 @@ export default function LeagueManageClient({
     try {
       const result = await recalculateLeaguePointsAction(league.id);
       if (result.success) {
-        setSuccess("Points recalcules pour tous les participants");
+        setSuccess("Points recalculés pour tous les participants");
         router.refresh();
       } else {
         setError(result.error || "Erreur lors du recalcul des points");
@@ -1201,12 +1201,12 @@ export default function LeagueManageClient({
             <CardHeader>
               <CardTitle>Recalcul des points</CardTitle>
               <CardDescription>
-                Recalcule les points de chaque participant a partir des matchs valides et des regles actuelles.
+                Recalcule les points de chaque participant à partir des matchs validés et des règles actuelles.
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <p className="text-sm text-muted-foreground">
-                Les ajustements manuels sans match associe sont conserves.
+                Les ajustements manuels sans match associé sont conservés.
               </p>
               <Button
                 variant="outline"
