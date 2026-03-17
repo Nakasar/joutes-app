@@ -64,6 +64,7 @@ export type LeagueTypeMatch = BaseMatch & {
   featAwards?: MatchFeatAward[]; // Hauts faits attribués lors du match
   notes?: string; // Notes optionnelles sur le match
   status?: "PENDING" | "REPORTED" | "CONFIRMED";
+  confirmedPlayerIds?: User['id'][]; // Joueurs ayant confirmé le résultat
   lairConfirmedBy?: User['id'];
   targetId?: User['id']; // Pour les matchs de mode KILLER
   isKillerMatch?: boolean;

@@ -18,8 +18,12 @@ import {
   reportKillerMatch,
   confirmKillerMatch,
   confirmKillerMatchLair,
+  reportPointsLeagueMatch,
+  confirmLeagueMatch,
+  confirmLeagueMatchLair,
   updateLeagueMatchDeck,
 } from "@/lib/db/leagues";
+import { searchLairs } from "@/lib/db/lairs";
 import {
   League,
   CreateLeagueInput,
@@ -34,6 +38,7 @@ import {
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { DateTime } from "luxon";
 import {requireAdmin} from "@/lib/middleware/admin";
 
 // Helper pour récupérer la session utilisateur
@@ -578,6 +583,84 @@ export async function addLeagueMatchAction(
   }
 }
 
+export type ReportPointsLeagueMatchParams = {
+  gameId: string;
+  playedAt: string;
+  playerIds: string[];
+  winnerIds: string[];
+  lairId?: string;
+  lairName?: string;
+  notes?: string;
+};
+
+export async function reportPointsLeagueMatchAction(
+  leagueId: string,
+  params: ReportPointsLeagueMatchParams
+): Promise<{ success: boolean; matchId?: string; error?: string }> {
+  try {
+    const user = await requireAuth();
+
+    const playedAt = DateTime.fromISO(params.playedAt);
+    if (!playedAt.isValid) {
+      throw new Error("Date de match invalide");
+    }
+
+    const matchId = await reportPointsLeagueMatch(leagueId, user.id, {
+      gameId: params.gameId,
+      playedAt: playedAt.toJSDate(),
+      playerIds: params.playerIds,
+      winnerIds: params.winnerIds,
+      lairId: params.lairId,
+      lairName: params.lairName,
+      notes: params.notes,
+    });
+
+    revalidatePath(`/leagues/${leagueId}`);
+    revalidatePath("/notifications");
+
+    return { success: true, matchId };
+  } catch (error) {
+    console.error("Error reporting points league match:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Erreur lors du rapport du match",
+    };
+  }
+}
+
+export async function searchPlatformLairsAction(
+  query: string
+): Promise<{ success: boolean; lairs?: Array<{ id: string; name: string }>; error?: string }> {
+  try {
+    const user = await requireAuth();
+    const trimmedQuery = query.trim();
+
+    if (!trimmedQuery) {
+      return { success: true, lairs: [] };
+    }
+
+    const results = await searchLairs({
+      userId: user.id,
+      search: trimmedQuery,
+      page: 1,
+      limit: 20,
+    });
+
+    return {
+      success: true,
+      lairs: results.lairs.map((lair) => ({ id: lair.id, name: lair.name })),
+    };
+  } catch (error) {
+    console.error("Error searching platform lairs:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Erreur lors de la recherche de lieux",
+    };
+  }
+}
+
 // Supprimer un match de la ligue
 export async function deleteLeagueMatchAction(
   leagueId: string,
@@ -729,6 +812,50 @@ export async function confirmKillerMatchLairAction(
     return { success: true };
   } catch (error) {
     console.error("Error confirming killer match lair:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Erreur lors de la confirmation du lieu",
+    };
+  }
+}
+
+export async function confirmLeagueMatchAction(
+  leagueId: string,
+  matchId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await requireAuth();
+    await confirmLeagueMatch(leagueId, matchId, user.id);
+
+    revalidatePath(`/leagues/${leagueId}`);
+    revalidatePath("/notifications");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error confirming league match:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Erreur lors de la confirmation",
+    };
+  }
+}
+
+export async function confirmLeagueMatchLairAction(
+  leagueId: string,
+  matchId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await requireAuth();
+    await confirmLeagueMatchLair(leagueId, matchId, user.id);
+
+    revalidatePath(`/leagues/${leagueId}`);
+    revalidatePath("/notifications");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error confirming league match lair:", error);
     return {
       success: false,
       error:

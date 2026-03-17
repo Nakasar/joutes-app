@@ -44,6 +44,7 @@ export type MatchDocument = {
   featAwards?: MatchFeatAward[];
   notes?: string;
   status?: "PENDING" | "REPORTED" | "CONFIRMED" | 'pending' | 'in-progress' | 'completed' | 'disputed';
+  confirmedPlayerIds?: string[];
   lairConfirmedBy?: string;
   targetId?: string;
   isKillerMatch?: boolean;
@@ -103,6 +104,7 @@ function toMatch(doc: WithId<Document>): Match {
       featAwards: doc.featAwards,
       notes: doc.notes,
       status: doc.status,
+      confirmedPlayerIds: doc.confirmedPlayerIds,
       lairConfirmedBy: doc.lairConfirmedBy,
       targetId: doc.targetId,
       isKillerMatch: doc.isKillerMatch,
@@ -167,6 +169,7 @@ function toDocument(match: Omit<Match, "id" | "createdAt">): Omit<MatchDocument,
       featAwards: match.featAwards,
       notes: match.notes,
       status: match.status,
+      confirmedPlayerIds: match.confirmedPlayerIds,
       lairConfirmedBy: match.lairConfirmedBy,
       targetId: match.targetId,
       isKillerMatch: match.isKillerMatch,

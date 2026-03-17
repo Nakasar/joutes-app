@@ -96,6 +96,7 @@ export type LeagueMatch = {
   reportedBy?: User["id"];
   reportedAt?: Date;
   confirmedBy?: User["id"];
+  confirmedPlayerIds?: User["id"][];
   lairConfirmedBy?: User["id"];
   confirmedAt?: Date;
   targetId?: User["id"];

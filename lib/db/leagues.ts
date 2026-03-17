@@ -1029,6 +1029,118 @@ export async function getUserLeagues(
   };
 }
 
+export type ReportPointsLeagueMatchInput = {
+  gameId: string;
+  playedAt: Date;
+  playerIds: string[];
+  winnerIds: string[];
+  lairId?: string;
+  lairName?: string;
+  notes?: string;
+};
+
+function dedupeIds(ids: string[]): string[] {
+  return Array.from(new Set(ids.filter(Boolean)));
+}
+
+async function applyConfirmedPointsForMatch(
+  leagueId: string,
+  league: League,
+  match: LeagueMatch
+): Promise<void> {
+  if (league.format !== "POINTS" || !league.pointsConfig) {
+    return;
+  }
+
+  const matchDate = match.playedAt ? new Date(match.playedAt) : new Date();
+  const { pointsRules } = league.pointsConfig;
+
+  for (const playerId of match.playerIds) {
+    const isWinner = match.winnerIds.includes(playerId);
+    const points =
+      pointsRules.participation +
+      (isWinner ? pointsRules.victory : pointsRules.defeat);
+
+    const historyEntry = {
+      date: matchDate,
+      points,
+      reason: isWinner ? "Victoire" : "Défaite",
+      matchId: match.id,
+    };
+
+    await db.collection(PARTICIPANTS_COLLECTION).updateOne(
+      { leagueId: new ObjectId(leagueId), userId: playerId },
+      {
+        $inc: { points },
+        $push: { pointsHistory: historyEntry },
+      } as Document
+    );
+  }
+}
+
+async function tryFinalizePointsMatch(
+  leagueId: string,
+  matchId: string,
+  actorUserId?: string
+): Promise<void> {
+  const league = await getLeagueById(leagueId);
+  if (!league || league.format !== "POINTS") {
+    return;
+  }
+
+  const match = league.matches.find((item) => item.id === matchId);
+  if (!match || match.matchType !== "league" || match.isKillerMatch) {
+    return;
+  }
+
+  if (match.status === "CONFIRMED") {
+    return;
+  }
+
+  const confirmedPlayerIds = dedupeIds(match.confirmedPlayerIds || []);
+  const allPlayersConfirmed = match.playerIds.every((playerId) =>
+    confirmedPlayerIds.includes(playerId)
+  );
+
+  const requireLairConfirmation = league.lairIds.length > 0;
+  const lairConfirmed = !requireLairConfirmation || !!match.lairConfirmedBy;
+
+  if (!allPlayersConfirmed || !lairConfirmed) {
+    return;
+  }
+
+  const now = new Date();
+
+  const finalizeResult = await db.collection("matches").updateOne(
+    {
+      matchType: "league",
+      leagueId,
+      _id: new ObjectId(match.id),
+      status: { $ne: "CONFIRMED" },
+    },
+    {
+      $set: {
+        status: "CONFIRMED",
+        confirmedAt: now,
+        confirmedBy: actorUserId || match.confirmedBy || match.reportedBy || match.createdBy,
+        confirmedPlayerIds: dedupeIds(match.playerIds),
+      },
+    }
+  );
+
+  // Idempotence: seule la transition REPORTED -> CONFIRMED déclenche le calcul des points.
+  if (finalizeResult.modifiedCount === 0) {
+    return;
+  }
+
+  await applyConfirmedPointsForMatch(leagueId, league, match);
+
+  await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(leagueId) },
+    { $set: { updatedAt: now } }
+  );
+}
+
 // Ajouter un match à une ligue et mettre à jour les points des participants
 export async function addLeagueMatch(
   leagueId: string,
@@ -1348,6 +1460,246 @@ export async function deleteLeagueMatch(
   );
 
   return getLeagueById(leagueId);
+}
+
+export async function reportPointsLeagueMatch(
+  leagueId: string,
+  reporterId: string,
+  matchInput: ReportPointsLeagueMatchInput
+): Promise<string> {
+  const league = await getLeagueById(leagueId);
+  if (!league) {
+    throw new Error("Ligue non trouvée");
+  }
+
+  if (league.format !== "POINTS" || !league.pointsConfig) {
+    throw new Error("Cette ligue n'est pas au format POINTS");
+  }
+
+  if (league.status === "COMPLETED" || league.status === "CANCELLED") {
+    throw new Error("Cette ligue n'accepte plus de nouveaux résultats");
+  }
+
+  const playerIds = dedupeIds(matchInput.playerIds);
+  const winnerIds = dedupeIds(matchInput.winnerIds);
+
+  if (playerIds.length < 2) {
+    throw new Error("Un match doit contenir au moins 2 joueurs");
+  }
+
+  if (!playerIds.includes(reporterId)) {
+    throw new Error("Vous devez faire partie des joueurs du match");
+  }
+
+  if (winnerIds.length === 0) {
+    throw new Error("Veuillez sélectionner au moins un vainqueur");
+  }
+
+  const participantIds = new Set(league.participants.map((participant) => participant.userId));
+  const allPlayersAreParticipants = playerIds.every((playerId) => participantIds.has(playerId));
+  if (!allPlayersAreParticipants) {
+    throw new Error("Tous les joueurs doivent être inscrits dans la ligue");
+  }
+
+  const allWinnersArePlayers = winnerIds.every((winnerId) => playerIds.includes(winnerId));
+  if (!allWinnersArePlayers) {
+    throw new Error("Tous les vainqueurs doivent faire partie des joueurs du match");
+  }
+
+  if (!league.gameIds.includes(matchInput.gameId)) {
+    throw new Error("Ce jeu ne fait pas partie des jeux de la ligue");
+  }
+
+  const hasPartnerLairs = league.lairIds.length > 0;
+  if (hasPartnerLairs && !matchInput.lairId) {
+    throw new Error("Le lieu est obligatoire pour cette ligue");
+  }
+
+  let selectedLair = null;
+  if (matchInput.lairId) {
+    if (hasPartnerLairs && !league.lairIds.includes(matchInput.lairId)) {
+      throw new Error("Ce lieu ne fait pas partie des lieux partenaires de la ligue");
+    }
+
+    selectedLair = await getLairById(matchInput.lairId);
+    if (!selectedLair) {
+      throw new Error("Lieu introuvable");
+    }
+  }
+
+  const lairName = selectedLair?.name || matchInput.lairName?.trim() || undefined;
+  const now = new Date();
+
+  const newMatch: Omit<LeagueTypeMatch, "id" | "createdAt"> = {
+    matchType: "league",
+    leagueId,
+    gameId: matchInput.gameId,
+    playedAt: matchInput.playedAt,
+    playerIds,
+    winnerIds,
+    lairId: selectedLair?.id,
+    lairName,
+    status: "REPORTED",
+    reportedBy: reporterId,
+    reportedAt: now,
+    confirmedPlayerIds: [reporterId],
+    createdBy: reporterId,
+    notes: matchInput.notes?.trim() || undefined,
+  };
+
+  const createdMatch = await createMatch(newMatch);
+
+  await Promise.all(
+    playerIds.map((playerId) =>
+      notifyUserWithTemplate(
+        playerId,
+        "Résultat de match à confirmer",
+        `Un résultat de match a été rapporté dans la ligue ${league.name}. Merci de confirmer le résultat.`,
+        "league-match-result-confirmation-request",
+        leagueId,
+        createdMatch.id
+      )
+    )
+  );
+
+  if (hasPartnerLairs && selectedLair?.id) {
+    await notifyLairOwnersWithTemplate(
+      selectedLair.id,
+      "Match à valider",
+      `Un match de ligue dans ${league.name} attend une validation du lieu.`,
+      "league-match-lair-confirmation-request",
+      leagueId,
+      createdMatch.id
+    );
+  }
+
+  await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(leagueId) },
+    { $set: { updatedAt: now } }
+  );
+
+  await tryFinalizePointsMatch(leagueId, createdMatch.id, reporterId);
+
+  return createdMatch.id;
+}
+
+export async function confirmPointsLeagueMatch(
+  leagueId: string,
+  matchId: string,
+  userId: string
+): Promise<void> {
+  const league = await getLeagueById(leagueId);
+  if (!league) {
+    throw new Error("Ligue non trouvée");
+  }
+
+  if (league.format !== "POINTS") {
+    throw new Error("Cette ligue n'est pas au format POINTS");
+  }
+
+  const match = league.matches.find((item) => item.id === matchId);
+  if (!match || match.matchType !== "league" || match.isKillerMatch) {
+    throw new Error("Match non trouvé");
+  }
+
+  if (match.status === "CONFIRMED") {
+    throw new Error("Ce match est déjà confirmé");
+  }
+
+  if (match.status !== "REPORTED") {
+    throw new Error("Ce match n'est pas en attente de confirmation");
+  }
+
+  if (!match.playerIds.includes(userId)) {
+    throw new Error("Vous ne faites pas partie de ce match");
+  }
+
+  const alreadyConfirmed = (match.confirmedPlayerIds || []).includes(userId);
+  if (alreadyConfirmed) {
+    throw new Error("Vous avez déjà confirmé ce résultat");
+  }
+
+  await db.collection("matches").updateOne(
+    {
+      matchType: "league",
+      leagueId,
+      _id: new ObjectId(matchId),
+      status: { $ne: "CONFIRMED" },
+    },
+    {
+      $addToSet: { confirmedPlayerIds: userId },
+      $set: {
+        confirmedBy: userId,
+        status: "REPORTED",
+        updatedAt: new Date(),
+      },
+    }
+  );
+
+  await tryFinalizePointsMatch(leagueId, matchId, userId);
+}
+
+export async function confirmPointsLeagueMatchLair(
+  leagueId: string,
+  matchId: string,
+  userId: string
+): Promise<void> {
+  const league = await getLeagueById(leagueId);
+  if (!league) {
+    throw new Error("Ligue non trouvée");
+  }
+
+  if (league.format !== "POINTS") {
+    throw new Error("Cette ligue n'est pas au format POINTS");
+  }
+
+  if (league.lairIds.length === 0) {
+    throw new Error("Cette ligue ne nécessite pas de validation de lieu");
+  }
+
+  const match = league.matches.find((item) => item.id === matchId);
+  if (!match || match.matchType !== "league" || match.isKillerMatch) {
+    throw new Error("Match non trouvé");
+  }
+
+  if (match.status === "CONFIRMED") {
+    throw new Error("Ce match est déjà confirmé");
+  }
+
+  if (match.status !== "REPORTED") {
+    throw new Error("Ce match n'est pas en attente de validation");
+  }
+
+  if (!match.lairId) {
+    throw new Error("Ce match ne contient pas de lieu à valider");
+  }
+
+  if (match.lairConfirmedBy) {
+    throw new Error("Ce lieu a déjà validé le résultat");
+  }
+
+  const lair = await getLairById(match.lairId);
+  if (!lair || !lair.owners.includes(userId)) {
+    throw new Error("Vous n'êtes pas autorisé à valider ce match pour ce lieu");
+  }
+
+  await db.collection("matches").updateOne(
+    {
+      matchType: "league",
+      leagueId,
+      _id: new ObjectId(matchId),
+      status: { $ne: "CONFIRMED" },
+    },
+    {
+      $set: {
+        lairConfirmedBy: userId,
+        status: "REPORTED",
+        updatedAt: new Date(),
+      },
+    }
+  );
+
+  await tryFinalizePointsMatch(leagueId, matchId, userId);
 }
 
 function shuffleArray<T>(items: T[]): T[] {
@@ -2009,4 +2361,50 @@ export async function confirmKillerMatchLair(
       league.killerConfig?.eliminateOnDefeat ?? false
     );
   }
+}
+
+export async function confirmLeagueMatch(
+  leagueId: string,
+  matchId: string,
+  userId: string
+): Promise<void> {
+  const league = await getLeagueById(leagueId);
+  if (!league) {
+    throw new Error("Ligue non trouvée");
+  }
+
+  const match = league.matches.find((item) => item.id === matchId);
+  if (!match || match.matchType !== "league") {
+    throw new Error("Match non trouvé");
+  }
+
+  if (match.isKillerMatch || league.format === "KILLER") {
+    await confirmKillerMatch(leagueId, matchId, userId);
+    return;
+  }
+
+  await confirmPointsLeagueMatch(leagueId, matchId, userId);
+}
+
+export async function confirmLeagueMatchLair(
+  leagueId: string,
+  matchId: string,
+  userId: string
+): Promise<void> {
+  const league = await getLeagueById(leagueId);
+  if (!league) {
+    throw new Error("Ligue non trouvée");
+  }
+
+  const match = league.matches.find((item) => item.id === matchId);
+  if (!match || match.matchType !== "league") {
+    throw new Error("Match non trouvé");
+  }
+
+  if (match.isKillerMatch || league.format === "KILLER") {
+    await confirmKillerMatchLair(leagueId, matchId, userId);
+    return;
+  }
+
+  await confirmPointsLeagueMatchLair(leagueId, matchId, userId);
 }
