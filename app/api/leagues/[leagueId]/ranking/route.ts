@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import {
   getLeagueById,
+  getLeagueParticipantsCount,
   getLeagueParticipant,
   getLeagueRanking,
   isLeagueOrganizer,
@@ -57,14 +58,16 @@ export async function GET(
       }
     }
 
-    const ranking = await getLeagueRanking(leagueId);
-    const total = ranking.length;
+    const total = await getLeagueParticipantsCount(leagueId);
     const totalPages = Math.max(1, Math.ceil(total / limit));
     const currentPage = Math.min(page, totalPages);
-    const start = (currentPage - 1) * limit;
+    const participants = await getLeagueRanking(leagueId, {
+      page: currentPage,
+      limit,
+    });
 
     return NextResponse.json({
-      participants: ranking.slice(start, start + limit),
+      participants,
       total,
       page: currentPage,
       limit,

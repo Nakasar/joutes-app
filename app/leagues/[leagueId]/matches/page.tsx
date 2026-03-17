@@ -1,5 +1,6 @@
-import { getLeagueById, getLeagueParticipant, getLeagueRanking, isLeagueOrganizer } from "@/lib/db/leagues";
+import { getLeagueById, getLeagueParticipant, isLeagueOrganizer } from "@/lib/db/leagues";
 import { getMatches } from "@/lib/db/matches";
+import { getUsersByIds } from "@/lib/db/users";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
@@ -19,9 +20,18 @@ type LeagueMatchesPageProps = {
   searchParams: Promise<{ page?: string }>;
 };
 
-type RankingParticipant = Awaited<ReturnType<typeof getLeagueRanking>>[number];
+type MatchPagePlayer = {
+  userId: string;
+  user?: {
+    id: string;
+    username: string;
+    displayName?: string;
+    discriminator?: string;
+    avatar?: string;
+  };
+};
 
-function formatPlayerName(player?: RankingParticipant) {
+function formatPlayerName(player?: MatchPagePlayer) {
   if (!player?.user) {
     return player?.userId || "Joueur inconnu";
   }
@@ -128,8 +138,6 @@ export default async function LeagueMatchesPage({
     notFound();
   }
 
-  const ranking = await getLeagueRanking(leagueId);
-  const playerById = new Map(ranking.map((participant) => [participant.userId, participant]));
   const gameById = new Map(league.games.map((game) => [game.id, game]));
   const lairById = new Map(league.lairs.map((lair) => [lair.id, lair]));
 
@@ -146,6 +154,26 @@ export default async function LeagueMatchesPage({
 
   const pageMatches = pageMatchesRaw.filter(
     (match): match is LeagueTypeMatch => match.matchType === "league"
+  );
+
+  const playerIdsInPage = Array.from(
+    new Set(pageMatches.flatMap((match) => match.playerIds))
+  );
+  const users = await getUsersByIds(playerIdsInPage);
+  const playerById = new Map<string, MatchPagePlayer>(
+    users.map((user) => [
+      user.id,
+      {
+        userId: user.id,
+        user: {
+          id: user.id,
+          username: user.username,
+          displayName: user.displayName,
+          discriminator: user.discriminator,
+          avatar: user.avatar,
+        },
+      },
+    ])
   );
 
   const buildPageHref = (page: number) => `/leagues/${league.id}/matches?page=${page}`;
