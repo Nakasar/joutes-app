@@ -44,6 +44,7 @@ export type MatchDocument = {
   featAwards?: MatchFeatAward[];
   notes?: string;
   status?: "PENDING" | "REPORTED" | "CONFIRMED" | 'pending' | 'in-progress' | 'completed' | 'disputed';
+  confirmedPlayerIds?: string[];
   lairConfirmedBy?: string;
   targetId?: string;
   isKillerMatch?: boolean;
@@ -98,11 +99,13 @@ function toMatch(doc: WithId<Document>): Match {
       leagueId: doc.leagueId!,
       gameId: doc.gameId!,
       playerIds: doc.playerIds || [],
+      players: doc.players || [],
       playerScores: doc.playerScores,
       winnerIds: doc.winnerIds || [],
       featAwards: doc.featAwards,
       notes: doc.notes,
       status: doc.status,
+      confirmedPlayerIds: doc.confirmedPlayerIds,
       lairConfirmedBy: doc.lairConfirmedBy,
       targetId: doc.targetId,
       isKillerMatch: doc.isKillerMatch,
@@ -167,6 +170,7 @@ function toDocument(match: Omit<Match, "id" | "createdAt">): Omit<MatchDocument,
       featAwards: match.featAwards,
       notes: match.notes,
       status: match.status,
+      confirmedPlayerIds: match.confirmedPlayerIds,
       lairConfirmedBy: match.lairConfirmedBy,
       targetId: match.targetId,
       isKillerMatch: match.isKillerMatch,
@@ -289,9 +293,24 @@ export interface GetMatchesFilters {
   eventId?: string;
   phaseId?: string;
   playerUserIds?: string[];
+  page?: number;
+  limit?: number;
 }
 
 export async function getMatches(filters: GetMatchesFilters = {}): Promise<Match[]> {
+  const requestedLimit = filters.limit;
+  const requestedPage = filters.page;
+
+  const limit =
+    typeof requestedLimit === "number" && Number.isFinite(requestedLimit)
+      ? Math.max(1, Math.floor(requestedLimit))
+      : undefined;
+  const page =
+    typeof requestedPage === "number" && Number.isFinite(requestedPage)
+      ? Math.max(1, Math.floor(requestedPage))
+      : 1;
+  const skip = limit ? (page - 1) * limit : 0;
+
   const matchQuery: Record<string, unknown> = {};
   
   // Filtrer par type de match
@@ -348,6 +367,7 @@ export async function getMatches(filters: GetMatchesFilters = {}): Promise<Match
     .aggregate([
       { $match: matchQuery },
       { $sort: { playedAt: -1 } },
+      ...(limit ? [{ $skip: skip }, { $limit: limit }] : []),
       {
         $lookup: {
           from: "user",
@@ -378,7 +398,7 @@ export async function getMatches(filters: GetMatchesFilters = {}): Promise<Match
         $addFields: {
           players: {
             $cond: {
-              if: { $eq: ["$matchType", "game"] },
+              if: { $in: ["$matchType", ["game", "league"]] },
               then: {
                 $map: {
                   input: "$playerDetails",

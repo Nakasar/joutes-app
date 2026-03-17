@@ -11,6 +11,11 @@ import {
   getLeagueByInvitationCode,
   isLeagueOrganizer,
   addPointsToParticipant,
+  recalculateLeaguePoints,
+  recalculateLeagueParticipantPoints,
+  getLeagueParticipantManageDetails,
+  deleteLeagueParticipantFeat,
+  deleteLeagueParticipantManualPointsEntry,
   awardFeatToParticipant,
   addLeagueMatch,
   deleteLeagueMatch,
@@ -18,8 +23,12 @@ import {
   reportKillerMatch,
   confirmKillerMatch,
   confirmKillerMatchLair,
+  reportPointsLeagueMatch,
+  confirmLeagueMatch,
+  confirmLeagueMatchLair,
   updateLeagueMatchDeck,
 } from "@/lib/db/leagues";
+import { searchLairs } from "@/lib/db/lairs";
 import {
   League,
   CreateLeagueInput,
@@ -34,6 +43,7 @@ import {
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { DateTime } from "luxon";
 import {requireAdmin} from "@/lib/middleware/admin";
 
 // Helper pour récupérer la session utilisateur
@@ -446,6 +456,191 @@ export async function addPointsAction(
   }
 }
 
+// Recalculer les points de tous les participants (pour les organisateurs)
+export async function recalculateLeaguePointsAction(
+  leagueId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await requireAuth();
+
+    const canManage = await isLeagueOrganizer(leagueId, user.id);
+    if (!canManage) {
+      throw new Error("Vous n'êtes pas autorisé à gérer cette ligue");
+    }
+
+    await recalculateLeaguePoints(leagueId);
+    revalidatePath(`/leagues/${leagueId}`);
+    revalidatePath(`/leagues/${leagueId}/manage`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error recalculating league points:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Erreur lors du recalcul des points",
+    };
+  }
+}
+
+// Recalculer les points d'un participant (pour les organisateurs)
+export async function recalculateLeagueParticipantPointsAction(
+  leagueId: string,
+  userId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await requireAuth();
+
+    const canManage = await isLeagueOrganizer(leagueId, user.id);
+    if (!canManage) {
+      throw new Error("Vous n'êtes pas autorisé à gérer cette ligue");
+    }
+
+    await recalculateLeagueParticipantPoints(leagueId, userId);
+    revalidatePath(`/leagues/${leagueId}`);
+    revalidatePath(`/leagues/${leagueId}/manage`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error recalculating participant points:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Erreur lors du recalcul des points du participant",
+    };
+  }
+}
+
+export type ParticipantManageFeatView = {
+  id: string;
+  featId: string;
+  title: string;
+  points: number;
+  earnedAt: string;
+  eventId?: string;
+  matchId?: string;
+};
+
+export type ParticipantManageManualPointView = {
+  historyIndex: number;
+  date: string;
+  points: number;
+  reason: string;
+  eventId?: string;
+};
+
+export type ParticipantManageDetailsView = {
+  feats: ParticipantManageFeatView[];
+  manualPoints: ParticipantManageManualPointView[];
+};
+
+export async function getParticipantManageDetailsAction(
+  leagueId: string,
+  userId: string
+): Promise<{ success: boolean; details?: ParticipantManageDetailsView; error?: string }> {
+  try {
+    const user = await requireAuth();
+
+    const canManage = await isLeagueOrganizer(leagueId, user.id);
+    if (!canManage) {
+      throw new Error("Vous n'êtes pas autorisé à gérer cette ligue");
+    }
+
+    const details = await getLeagueParticipantManageDetails(leagueId, userId);
+
+    return {
+      success: true,
+      details: {
+        feats: details.feats.map((feat) => ({
+          id: feat.id,
+          featId: feat.featId,
+          title: feat.title,
+          points: feat.points,
+          earnedAt: DateTime.fromJSDate(feat.earnedAt).toISO() || new Date().toISOString(),
+          eventId: feat.eventId,
+          matchId: feat.matchId,
+        })),
+        manualPoints: details.manualPoints.map((entry) => ({
+          historyIndex: entry.historyIndex,
+          date: DateTime.fromJSDate(entry.date).toISO() || new Date().toISOString(),
+          points: entry.points,
+          reason: entry.reason,
+          eventId: entry.eventId,
+        })),
+      },
+    };
+  } catch (error) {
+    console.error("Error getting participant manage details:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Erreur lors du chargement des détails",
+    };
+  }
+}
+
+export async function deleteParticipantFeatAction(
+  leagueId: string,
+  userId: string,
+  participantFeatId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await requireAuth();
+
+    const canManage = await isLeagueOrganizer(leagueId, user.id);
+    if (!canManage) {
+      throw new Error("Vous n'êtes pas autorisé à gérer cette ligue");
+    }
+
+    await deleteLeagueParticipantFeat(leagueId, userId, participantFeatId);
+
+    revalidatePath(`/leagues/${leagueId}`);
+    revalidatePath(`/leagues/${leagueId}/manage`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting participant feat:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Erreur lors de la suppression du haut fait",
+    };
+  }
+}
+
+export async function deleteParticipantManualPointsEntryAction(
+  leagueId: string,
+  userId: string,
+  historyIndex: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await requireAuth();
+
+    const canManage = await isLeagueOrganizer(leagueId, user.id);
+    if (!canManage) {
+      throw new Error("Vous n'êtes pas autorisé à gérer cette ligue");
+    }
+
+    await deleteLeagueParticipantManualPointsEntry(leagueId, userId, historyIndex);
+
+    revalidatePath(`/leagues/${leagueId}`);
+    revalidatePath(`/leagues/${leagueId}/manage`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting participant manual points entry:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Erreur lors de la suppression des points manuels",
+    };
+  }
+}
+
 // Attribuer un haut fait à un participant
 export async function awardFeatAction(
   leagueId: string,
@@ -574,6 +769,84 @@ export async function addLeagueMatchAction(
       success: false,
       error:
         error instanceof Error ? error.message : "Erreur lors de l'ajout du match",
+    };
+  }
+}
+
+export type ReportPointsLeagueMatchParams = {
+  gameId: string;
+  playedAt: string;
+  playerIds: string[];
+  winnerIds: string[];
+  lairId?: string;
+  lairName?: string;
+  notes?: string;
+};
+
+export async function reportPointsLeagueMatchAction(
+  leagueId: string,
+  params: ReportPointsLeagueMatchParams
+): Promise<{ success: boolean; matchId?: string; error?: string }> {
+  try {
+    const user = await requireAuth();
+
+    const playedAt = DateTime.fromISO(params.playedAt);
+    if (!playedAt.isValid) {
+      throw new Error("Date de match invalide");
+    }
+
+    const matchId = await reportPointsLeagueMatch(leagueId, user.id, {
+      gameId: params.gameId,
+      playedAt: playedAt.toJSDate(),
+      playerIds: params.playerIds,
+      winnerIds: params.winnerIds,
+      lairId: params.lairId,
+      lairName: params.lairName,
+      notes: params.notes,
+    });
+
+    revalidatePath(`/leagues/${leagueId}`);
+    revalidatePath("/notifications");
+
+    return { success: true, matchId };
+  } catch (error) {
+    console.error("Error reporting points league match:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Erreur lors du rapport du match",
+    };
+  }
+}
+
+export async function searchPlatformLairsAction(
+  query: string
+): Promise<{ success: boolean; lairs?: Array<{ id: string; name: string }>; error?: string }> {
+  try {
+    const user = await requireAuth();
+    const trimmedQuery = query.trim();
+
+    if (!trimmedQuery) {
+      return { success: true, lairs: [] };
+    }
+
+    const results = await searchLairs({
+      userId: user.id,
+      search: trimmedQuery,
+      page: 1,
+      limit: 20,
+    });
+
+    return {
+      success: true,
+      lairs: results.lairs.map((lair) => ({ id: lair.id, name: lair.name })),
+    };
+  } catch (error) {
+    console.error("Error searching platform lairs:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Erreur lors de la recherche de lieux",
     };
   }
 }
@@ -729,6 +1002,50 @@ export async function confirmKillerMatchLairAction(
     return { success: true };
   } catch (error) {
     console.error("Error confirming killer match lair:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Erreur lors de la confirmation du lieu",
+    };
+  }
+}
+
+export async function confirmLeagueMatchAction(
+  leagueId: string,
+  matchId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await requireAuth();
+    await confirmLeagueMatch(leagueId, matchId, user.id);
+
+    revalidatePath(`/leagues/${leagueId}`);
+    revalidatePath("/notifications");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error confirming league match:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Erreur lors de la confirmation",
+    };
+  }
+}
+
+export async function confirmLeagueMatchLairAction(
+  leagueId: string,
+  matchId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await requireAuth();
+    await confirmLeagueMatchLair(leagueId, matchId, user.id);
+
+    revalidatePath(`/leagues/${leagueId}`);
+    revalidatePath("/notifications");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error confirming league match lair:", error);
     return {
       success: false,
       error:

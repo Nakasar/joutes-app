@@ -59,11 +59,13 @@ export type LeagueTypeMatch = BaseMatch & {
   leagueId: string;
   gameId: Game['id'];
   playerIds: User['id'][]; // Tous les joueurs du match
+  players?: GameMatchPlayer[]; // Détails des joueurs (récupérés via aggregate)
   playerScores?: Record<User['id'], number>; // Parties gagnées par joueur
   winnerIds: User['id'][]; // Les gagnants du match
   featAwards?: MatchFeatAward[]; // Hauts faits attribués lors du match
   notes?: string; // Notes optionnelles sur le match
   status?: "PENDING" | "REPORTED" | "CONFIRMED";
+  confirmedPlayerIds?: User['id'][]; // Joueurs ayant confirmé le résultat
   lairConfirmedBy?: User['id'];
   targetId?: User['id']; // Pour les matchs de mode KILLER
   isKillerMatch?: boolean;

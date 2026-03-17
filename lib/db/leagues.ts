@@ -13,6 +13,7 @@ import {
 import { LeagueMatch, LeagueTypeMatch, MatchFeatAward } from "@/lib/types/Match";
 import {ObjectId, WithId, Document, Filter} from "mongodb";
 import {nanoid} from "nanoid";
+import { DateTime } from "luxon";
 import {User} from "@/lib/types/User";
 import { getUserById, getUsersByIds } from "@/lib/db/users";
 import { notifyLairOwnersWithTemplate, notifyUserWithTemplate } from "@/lib/services/notifications";
@@ -20,7 +21,6 @@ import { getLairById } from "@/lib/db/lairs";
 import { 
   createMatch,
   getMatches,
-  updateMatch as updateMatchUnified,
   deleteMatch,
 } from "@/lib/db/matches";
 
@@ -49,10 +49,33 @@ export type LeagueParticipantFeatDocument = {
   createdAt: Date;
 };
 
+export type LeagueParticipantManageFeat = {
+  id: string;
+  featId: string;
+  title: string;
+  points: number;
+  earnedAt: Date;
+  eventId?: string;
+  matchId?: string;
+};
+
+export type LeagueParticipantManualPointEntry = {
+  historyIndex: number;
+  date: Date;
+  points: number;
+  reason: string;
+  eventId?: string;
+};
+
+export type LeagueParticipantManageDetails = {
+  feats: LeagueParticipantManageFeat[];
+  manualPoints: LeagueParticipantManualPointEntry[];
+};
+
 // Convertir un document MongoDB en League
 async function toLeague(
   doc: WithId<Document>,
-  includeParticipants: boolean = true,
+  includeParticipants: boolean = false,
   matchesOverride?: LeagueMatch[]
 ): Promise<League> {
   const leagueId = doc._id.toString();
@@ -190,7 +213,16 @@ export async function createLeague(
 }
 
 // Récupérer une ligue par son ID
-export async function getLeagueById(id: string): Promise<League | null> {
+type GetLeagueByIdOptions = {
+  includeParticipants?: boolean;
+};
+
+export async function getLeagueById(
+  id: string,
+  options: GetLeagueByIdOptions = {}
+): Promise<League | null> {
+  const { includeParticipants = false } = options;
+
   try {
     const doc = await db
       .collection(COLLECTION_NAME)
@@ -324,7 +356,7 @@ export async function getLeagueById(id: string): Promise<League | null> {
     }
 
     const matches = await getLeagueMatches(id);
-    return toLeague(doc, true, matches);
+    return toLeague(doc, includeParticipants, matches);
   } catch {
     return null;
   }
@@ -343,7 +375,7 @@ export async function getLeagueByInvitationCode(
   }
 
   const matches = await getLeagueMatches(doc._id.toString());
-  return toLeague(doc, true, matches);
+  return toLeague(doc, false, matches);
 }
 
 // Mettre à jour une ligue
@@ -366,7 +398,7 @@ export async function updateLeague(
   }
 
   const matches = await getLeagueMatches(id);
-  return toLeague(result, true, matches);
+  return toLeague(result, false, matches);
 }
 
 // Supprimer une ligue
@@ -519,6 +551,261 @@ export async function getLeagueParticipant(leagueId: League['id'], userId: User[
   };
 }
 
+export async function getLeagueParticipantManageDetails(
+  leagueId: League["id"],
+  userId: User["id"]
+): Promise<LeagueParticipantManageDetails> {
+  const league = await getLeagueById(leagueId);
+  if (!league) {
+    throw new Error("Ligue non trouvée");
+  }
+
+  const participantDoc = await db.collection(PARTICIPANTS_COLLECTION).findOne({
+    leagueId: new ObjectId(leagueId),
+    userId,
+  });
+
+  if (!participantDoc) {
+    throw new Error("Participant non trouvé");
+  }
+
+  const featRulesById = new Map(
+    (league.pointsConfig?.pointsRules.feats || []).map((feat) => [feat.id, feat] as const)
+  );
+
+  const featDocs = await db
+    .collection(FEATS_COLLECTION)
+    .find({
+      leagueId: new ObjectId(leagueId),
+      userId,
+    })
+    .sort({ earnedAt: -1 })
+    .toArray();
+
+  const feats: LeagueParticipantManageFeat[] = featDocs.map((featDoc) => {
+    const featRule = featRulesById.get(featDoc.featId);
+    return {
+      id: featDoc._id.toString(),
+      featId: featDoc.featId,
+      title: featRule?.title || featDoc.featId,
+      points: featRule?.points || 0,
+      earnedAt: new Date(featDoc.earnedAt),
+      eventId: featDoc.eventId,
+      matchId: featDoc.matchId,
+    };
+  });
+
+  type ManualPointCandidate = {
+    historyIndex: number;
+    date: Date;
+    points: number;
+    reason: string;
+    eventId?: string;
+    featId?: string;
+    matchId?: string;
+  };
+
+  const participantPointsHistory: PointHistoryEntry[] =
+    participantDoc.pointsHistory || [];
+
+  const manualPointCandidates: ManualPointCandidate[] =
+    participantPointsHistory.map(
+      (entry: PointHistoryEntry, historyIndex: number) => ({
+        historyIndex,
+        date: new Date(entry.date),
+        points: entry.points,
+        reason: entry.reason,
+        eventId: entry.eventId,
+        featId: entry.featId,
+        matchId: entry.matchId,
+      })
+    );
+
+  const manualPoints: LeagueParticipantManualPointEntry[] = manualPointCandidates
+    .filter((entry: ManualPointCandidate) => !entry.featId && !entry.matchId)
+    .map((entry: ManualPointCandidate) => ({
+      historyIndex: entry.historyIndex,
+      date: entry.date,
+      points: entry.points,
+      reason: entry.reason,
+      eventId: entry.eventId,
+    }))
+    .sort(
+      (a: LeagueParticipantManualPointEntry, b: LeagueParticipantManualPointEntry) =>
+        DateTime.fromJSDate(b.date).toMillis() -
+        DateTime.fromJSDate(a.date).toMillis()
+    );
+
+  return {
+    feats,
+    manualPoints,
+  };
+}
+
+export async function deleteLeagueParticipantFeat(
+  leagueId: League["id"],
+  userId: User["id"],
+  participantFeatId: string
+): Promise<void> {
+  let featObjectId: ObjectId;
+  try {
+    featObjectId = new ObjectId(participantFeatId);
+  } catch {
+    throw new Error("Identifiant de haut fait invalide");
+  }
+
+  const featDoc = await db.collection(FEATS_COLLECTION).findOne<LeagueParticipantFeatDocument>({
+    _id: featObjectId,
+    leagueId: new ObjectId(leagueId),
+    userId,
+  });
+
+  if (!featDoc) {
+    throw new Error("Haut fait non trouvé");
+  }
+
+  const participantDoc = await db.collection(PARTICIPANTS_COLLECTION).findOne({
+    leagueId: new ObjectId(leagueId),
+    userId,
+  });
+
+  if (!participantDoc) {
+    throw new Error("Participant non trouvé");
+  }
+
+  const pointsHistory: PointHistoryEntry[] = (participantDoc.pointsHistory || []).map(
+    (entry: PointHistoryEntry) => ({
+      ...entry,
+      date: new Date(entry.date),
+    })
+  );
+
+  const earnedAtMillis = DateTime.fromJSDate(new Date(featDoc.earnedAt)).toMillis();
+
+  let historyIndex = pointsHistory.findIndex((entry: PointHistoryEntry) => {
+    if (entry.featId !== featDoc.featId) {
+      return false;
+    }
+
+    if ((entry.matchId || undefined) !== (featDoc.matchId || undefined)) {
+      return false;
+    }
+
+    if ((entry.eventId || undefined) !== (featDoc.eventId || undefined)) {
+      return false;
+    }
+
+    return DateTime.fromJSDate(new Date(entry.date)).toMillis() === earnedAtMillis;
+  });
+
+  if (historyIndex < 0) {
+    historyIndex = pointsHistory.findIndex((entry: PointHistoryEntry) => {
+      if (entry.featId !== featDoc.featId) {
+        return false;
+      }
+
+      if ((entry.matchId || undefined) !== (featDoc.matchId || undefined)) {
+        return false;
+      }
+
+      if ((entry.eventId || undefined) !== (featDoc.eventId || undefined)) {
+        return false;
+      }
+
+      return true;
+    });
+  }
+
+  const updatedHistory =
+    historyIndex >= 0
+      ? pointsHistory.filter((_: PointHistoryEntry, index: number) => index !== historyIndex)
+      : pointsHistory;
+
+  const totalPoints = updatedHistory.reduce((sum: number, entry: PointHistoryEntry) => {
+    const safePoints = Number.isFinite(entry.points) ? entry.points : 0;
+    return sum + safePoints;
+  }, 0);
+
+  await db.collection(PARTICIPANTS_COLLECTION).updateOne(
+    { leagueId: new ObjectId(leagueId), userId },
+    {
+      $set: {
+        points: totalPoints,
+        pointsHistory: updatedHistory,
+      },
+    } as Document
+  );
+
+  await db.collection(FEATS_COLLECTION).deleteOne({
+    _id: featObjectId,
+    leagueId: new ObjectId(leagueId),
+    userId,
+  });
+
+  await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(leagueId) },
+    { $set: { updatedAt: DateTime.now().toJSDate() } }
+  );
+}
+
+export async function deleteLeagueParticipantManualPointsEntry(
+  leagueId: League["id"],
+  userId: User["id"],
+  historyIndex: number
+): Promise<void> {
+  if (!Number.isInteger(historyIndex) || historyIndex < 0) {
+    throw new Error("Index de points manuel invalide");
+  }
+
+  const participantDoc = await db.collection(PARTICIPANTS_COLLECTION).findOne({
+    leagueId: new ObjectId(leagueId),
+    userId,
+  });
+
+  if (!participantDoc) {
+    throw new Error("Participant non trouvé");
+  }
+
+  const pointsHistory: PointHistoryEntry[] = (participantDoc.pointsHistory || []).map(
+    (entry: PointHistoryEntry) => ({
+      ...entry,
+      date: new Date(entry.date),
+    })
+  );
+
+  if (historyIndex >= pointsHistory.length) {
+    throw new Error("Entrée de points manuelle introuvable");
+  }
+
+  const targetEntry = pointsHistory[historyIndex];
+  if (targetEntry.matchId || targetEntry.featId) {
+    throw new Error("Seuls les ajouts manuels de points peuvent être supprimés ici");
+  }
+
+  const updatedHistory = pointsHistory.filter(
+    (_: PointHistoryEntry, index: number) => index !== historyIndex
+  );
+  const totalPoints = updatedHistory.reduce((sum: number, entry: PointHistoryEntry) => {
+    const safePoints = Number.isFinite(entry.points) ? entry.points : 0;
+    return sum + safePoints;
+  }, 0);
+
+  await db.collection(PARTICIPANTS_COLLECTION).updateOne(
+    { leagueId: new ObjectId(leagueId), userId },
+    {
+      $set: {
+        points: totalPoints,
+        pointsHistory: updatedHistory,
+      },
+    } as Document
+  );
+
+  await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(leagueId) },
+    { $set: { updatedAt: DateTime.now().toJSDate() } }
+  );
+}
+
 // Ajouter un participant à une ligue
 export async function addParticipant(
   leagueId: string,
@@ -560,7 +847,7 @@ export async function addParticipant(
     { $set: { updatedAt: new Date() } }
   );
 
-  return getLeagueById(leagueId);
+  return getLeagueById(leagueId, { includeParticipants: true });
 }
 
 // Retirer un participant d'une ligue
@@ -586,7 +873,7 @@ export async function removeParticipant(
     { $set: { updatedAt: new Date() } }
   );
 
-  return getLeagueById(leagueId);
+  return getLeagueById(leagueId, { includeParticipants: true });
 }
 
 // Ajouter des points à un participant
@@ -622,7 +909,7 @@ export async function addPointsToParticipant(
     { $set: { updatedAt: new Date() } }
   );
 
-  return getLeagueById(leagueId);
+  return getLeagueById(leagueId, { includeParticipants: true });
 }
 
 // Attribuer un haut fait à un participant
@@ -687,47 +974,422 @@ export async function awardFeatToParticipant(
     { $set: { updatedAt: new Date() } }
   );
 
-  return getLeagueById(leagueId);
+  return getLeagueById(leagueId, { includeParticipants: true });
 }
 
-// Obtenir le classement d'une ligue
-export async function getLeagueRanking(
+// Recalculer tous les points des participants d'une ligue POINTS
+export async function recalculateLeaguePoints(
   leagueId: string
-): Promise<(LeagueParticipant & {
+): Promise<League | null> {
+  const league = await getLeagueById(leagueId, {
+    includeParticipants: true,
+  });
+  if (!league) {
+    return null;
+  }
+
+  if (league.format !== "POINTS" || !league.pointsConfig) {
+    throw new Error("Cette ligue n'est pas au format POINTS");
+  }
+
+  const { pointsRules } = league.pointsConfig;
+  const featRulesById = new Map(
+    pointsRules.feats.map((feat) => [feat.id, feat] as const)
+  );
+  const participantIds = new Set(
+    league.participants.map((participant) => participant.userId)
+  );
+
+  const historiesByUser = new Map<string, PointHistoryEntry[]>();
+  const featCountsByUser = new Map<string, Map<string, number>>();
+
+  for (const participant of league.participants) {
+    const preservedEntries = participant.pointsHistory
+      .filter((entry) => {
+        if (entry.matchId) {
+          return false;
+        }
+
+        if (!entry.featId) {
+          return true;
+        }
+
+        return featRulesById.has(entry.featId);
+      })
+      .map((entry) => ({
+        ...entry,
+        date: DateTime.fromJSDate(entry.date).toJSDate(),
+      }));
+
+    historiesByUser.set(participant.userId, preservedEntries);
+
+    const manualFeatCounts = new Map<string, number>();
+    for (const feat of participant.feats) {
+      if (feat.matchId) {
+        continue;
+      }
+
+      if (!featRulesById.has(feat.featId)) {
+        continue;
+      }
+
+      const currentCount = manualFeatCounts.get(feat.featId) || 0;
+      manualFeatCounts.set(feat.featId, currentCount + 1);
+    }
+
+    featCountsByUser.set(participant.userId, manualFeatCounts);
+  }
+
+  const pointsMatches = (league.matches || [])
+    .filter(
+      (match) =>
+        match.matchType === "league" &&
+        !match.isKillerMatch &&
+        (match.status === "CONFIRMED" || typeof match.status === "undefined")
+    )
+    .sort(
+      (a, b) =>
+        DateTime.fromJSDate(a.playedAt).toMillis() -
+        DateTime.fromJSDate(b.playedAt).toMillis()
+    );
+
+  for (const match of pointsMatches) {
+    const matchDate = DateTime.fromJSDate(match.playedAt).toJSDate();
+
+    for (const playerId of match.playerIds) {
+      if (!participantIds.has(playerId)) {
+        continue;
+      }
+
+      const isWinner = match.winnerIds.includes(playerId);
+      const points =
+        pointsRules.participation +
+        (isWinner ? pointsRules.victory : pointsRules.defeat);
+
+      const userHistory = historiesByUser.get(playerId) || [];
+      userHistory.push({
+        date: matchDate,
+        points,
+        reason: isWinner ? "Victoire" : "Défaite",
+        matchId: match.id,
+      });
+      historiesByUser.set(playerId, userHistory);
+    }
+
+    if (!match.featAwards || match.featAwards.length === 0) {
+      continue;
+    }
+
+    const perMatchFeatCounts = new Map<string, number>();
+
+    for (const featAward of match.featAwards) {
+      if (featAward.pointsCounted === false) {
+        continue;
+      }
+
+      if (!participantIds.has(featAward.playerId)) {
+        continue;
+      }
+
+      const featRule = featRulesById.get(featAward.featId);
+      if (!featRule) {
+        continue;
+      }
+
+      const perMatchKey = `${featAward.playerId}:${featAward.featId}`;
+      const countInCurrentMatch = perMatchFeatCounts.get(perMatchKey) || 0;
+      if (
+        featRule.maxPerEvent !== undefined &&
+        countInCurrentMatch >= featRule.maxPerEvent
+      ) {
+        continue;
+      }
+
+      const userFeatCounts =
+        featCountsByUser.get(featAward.playerId) || new Map<string, number>();
+      const countInLeague = userFeatCounts.get(featAward.featId) || 0;
+      if (featRule.maxPerLeague !== undefined && countInLeague >= featRule.maxPerLeague) {
+        continue;
+      }
+
+      const userHistory = historiesByUser.get(featAward.playerId) || [];
+      userHistory.push({
+        date: matchDate,
+        points: featRule.points,
+        reason: `Haut fait: ${featRule.title}`,
+        featId: featAward.featId,
+        matchId: match.id,
+      });
+      historiesByUser.set(featAward.playerId, userHistory);
+
+      userFeatCounts.set(featAward.featId, countInLeague + 1);
+      featCountsByUser.set(featAward.playerId, userFeatCounts);
+      perMatchFeatCounts.set(perMatchKey, countInCurrentMatch + 1);
+    }
+  }
+
+  await Promise.all(
+    league.participants.map(async (participant) => {
+      const rebuiltHistory = (historiesByUser.get(participant.userId) || []).sort(
+        (a, b) =>
+          DateTime.fromJSDate(a.date).toMillis() -
+          DateTime.fromJSDate(b.date).toMillis()
+      );
+
+      const totalPoints = rebuiltHistory.reduce(
+        (sum, entry) => sum + entry.points,
+        0
+      );
+
+      await db.collection(PARTICIPANTS_COLLECTION).updateOne(
+        { leagueId: new ObjectId(leagueId), userId: participant.userId },
+        {
+          $set: {
+            points: totalPoints,
+            pointsHistory: rebuiltHistory,
+          },
+        } as Document
+      );
+    })
+  );
+
+  await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(leagueId) },
+    { $set: { updatedAt: DateTime.now().toJSDate() } }
+  );
+
+  return getLeagueById(leagueId, { includeParticipants: true });
+}
+
+// Recalculer les points d'un participant d'une ligue POINTS
+export async function recalculateLeagueParticipantPoints(
+  leagueId: string,
+  userId: string
+): Promise<League | null> {
+  const league = await getLeagueById(leagueId, {
+    includeParticipants: true,
+  });
+  if (!league) {
+    return null;
+  }
+
+  if (league.format !== "POINTS" || !league.pointsConfig) {
+    throw new Error("Cette ligue n'est pas au format POINTS");
+  }
+
+  const participant = league.participants.find((item) => item.userId === userId);
+  if (!participant) {
+    throw new Error("Participant non trouvé dans cette ligue");
+  }
+
+  const { pointsRules } = league.pointsConfig;
+  const featRulesById = new Map(
+    pointsRules.feats.map((feat) => [feat.id, feat] as const)
+  );
+
+  const rebuiltHistory: PointHistoryEntry[] = participant.pointsHistory
+    .filter((entry) => {
+      if (entry.matchId) {
+        return false;
+      }
+
+      if (!entry.featId) {
+        return true;
+      }
+
+      return featRulesById.has(entry.featId);
+    })
+    .map((entry) => ({
+      ...entry,
+      date: DateTime.fromJSDate(entry.date).toJSDate(),
+    }));
+
+  const featCounts = new Map<string, number>();
+  for (const feat of participant.feats) {
+    if (feat.matchId) {
+      continue;
+    }
+
+    if (!featRulesById.has(feat.featId)) {
+      continue;
+    }
+
+    const currentCount = featCounts.get(feat.featId) || 0;
+    featCounts.set(feat.featId, currentCount + 1);
+  }
+
+  const pointsMatches = (league.matches || [])
+    .filter(
+      (match) =>
+        match.matchType === "league" &&
+        !match.isKillerMatch &&
+        (match.status === "CONFIRMED" || typeof match.status === "undefined")
+    )
+    .sort(
+      (a, b) =>
+        DateTime.fromJSDate(a.playedAt).toMillis() -
+        DateTime.fromJSDate(b.playedAt).toMillis()
+    );
+
+  for (const match of pointsMatches) {
+    const matchDate = DateTime.fromJSDate(match.playedAt).toJSDate();
+
+    if (match.playerIds.includes(userId)) {
+      const isWinner = match.winnerIds.includes(userId);
+      const points =
+        pointsRules.participation +
+        (isWinner ? pointsRules.victory : pointsRules.defeat);
+
+      rebuiltHistory.push({
+        date: matchDate,
+        points,
+        reason: isWinner ? "Victoire" : "Défaite",
+        matchId: match.id,
+      });
+    }
+
+    if (!match.featAwards || match.featAwards.length === 0) {
+      continue;
+    }
+
+    const perMatchFeatCounts = new Map<string, number>();
+
+    for (const featAward of match.featAwards) {
+      if (featAward.playerId !== userId || featAward.pointsCounted === false) {
+        continue;
+      }
+
+      const featRule = featRulesById.get(featAward.featId);
+      if (!featRule) {
+        continue;
+      }
+
+      const countInCurrentMatch = perMatchFeatCounts.get(featAward.featId) || 0;
+      if (
+        featRule.maxPerEvent !== undefined &&
+        countInCurrentMatch >= featRule.maxPerEvent
+      ) {
+        continue;
+      }
+
+      const countInLeague = featCounts.get(featAward.featId) || 0;
+      if (featRule.maxPerLeague !== undefined && countInLeague >= featRule.maxPerLeague) {
+        continue;
+      }
+
+      rebuiltHistory.push({
+        date: matchDate,
+        points: featRule.points,
+        reason: `Haut fait: ${featRule.title}`,
+        featId: featAward.featId,
+        matchId: match.id,
+      });
+
+      featCounts.set(featAward.featId, countInLeague + 1);
+      perMatchFeatCounts.set(featAward.featId, countInCurrentMatch + 1);
+    }
+  }
+
+  const sortedHistory = rebuiltHistory.sort(
+    (a, b) =>
+      DateTime.fromJSDate(a.date).toMillis() -
+      DateTime.fromJSDate(b.date).toMillis()
+  );
+
+  const totalPoints = sortedHistory.reduce(
+    (sum, entry) => sum + entry.points,
+    0
+  );
+
+  await db.collection(PARTICIPANTS_COLLECTION).updateOne(
+    { leagueId: new ObjectId(leagueId), userId },
+    {
+      $set: {
+        points: totalPoints,
+        pointsHistory: sortedHistory,
+      },
+    } as Document
+  );
+
+  await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(leagueId) },
+    { $set: { updatedAt: DateTime.now().toJSDate() } }
+  );
+
+  return getLeagueById(leagueId, { includeParticipants: true });
+}
+
+export type LeagueRankingParticipant = LeagueParticipant & {
   rank: number;
   wins?: number;
   losses?: number;
   ratio?: number;
-  user?: { id: string; discriminator?: string; displayName?: string; avatar?: string; username: string }
-})[]> {
-  const league = await getLeagueById(leagueId);
-  if (!league) return [];
+  user?: {
+    id: string;
+    discriminator?: string;
+    displayName?: string;
+    avatar?: string;
+    username: string;
+  };
+};
 
-  if (league.format === "KILLER") {
-    const sortedParticipants = await db.collection(PARTICIPANTS_COLLECTION).aggregate<{
-      userId: string;
-      points: number;
-      pointsHistory: Array<{
-        date: Date;
-        points: number;
-        reason: string;
-        eventId?: string;
-        featId?: string;
-        matchId?: string;
-      }>;
-      feats: Array<{
-        featId: string;
-        earnedAt: Date;
-        eventId?: string;
-        matchId?: string;
-      }>;
-      joinedAt: Date;
-      eliminatedAt?: Date;
-      wins: number;
-      losses: number;
-      ratio: number;
-    }>([
-      { $match: { leagueId: new ObjectId(leagueId) } },
+type GetLeagueRankingOptions = {
+  page?: number;
+  limit?: number;
+};
+
+export async function getLeagueParticipantsCount(
+  leagueId: string
+): Promise<number> {
+  if (!ObjectId.isValid(leagueId)) {
+    return 0;
+  }
+
+  return db.collection(PARTICIPANTS_COLLECTION).countDocuments({
+    leagueId: new ObjectId(leagueId),
+  });
+}
+
+// Obtenir le classement d'une ligue
+export async function getLeagueRanking(
+  leagueId: string,
+  options: GetLeagueRankingOptions = {}
+): Promise<LeagueRankingParticipant[]> {
+  if (!ObjectId.isValid(leagueId)) {
+    return [];
+  }
+
+  const leagueObjectId = new ObjectId(leagueId);
+  const leagueDoc = await db.collection(COLLECTION_NAME).findOne<{
+    format?: League["format"];
+  }>(
+    { _id: leagueObjectId },
+    {
+      projection: {
+        format: 1,
+      },
+    }
+  );
+
+  if (!leagueDoc?.format) {
+    return [];
+  }
+
+  const hasPagination =
+    Number.isFinite(options.limit) && (options.limit || 0) > 0;
+  const page =
+    hasPagination && Number.isFinite(options.page) && (options.page || 0) > 0
+      ? Math.floor(options.page as number)
+      : 1;
+  const limit = hasPagination
+    ? Math.floor(options.limit as number)
+    : 100;
+  const skip = hasPagination ? (page - 1) * limit : 0;
+  const rankOffset = skip;
+
+  if (leagueDoc.format === "KILLER") {
+    const pipeline: Document[] = [
+      { $match: { leagueId: leagueObjectId } },
       {
         $addFields: {
           userObjectId: { $toObjectId: "$userId" },
@@ -820,7 +1482,10 @@ export async function getLeagueRanking(
       {
         $lookup: {
           from: FEATS_COLLECTION,
-          let: { userId: { $toString: "$userObjectId" }, leagueId: "$leagueId" },
+          let: {
+            userId: { $toString: "$userObjectId" },
+            leagueId: "$leagueId",
+          },
           pipeline: [
             {
               $match: {
@@ -864,36 +1529,37 @@ export async function getLeagueRanking(
         },
       },
       { $sort: { ratio: -1, wins: -1, joinedAt: 1 } },
-    ]).limit(100).toArray();
+    ];
 
-    return sortedParticipants.map((participant, index) => ({
+    if (hasPagination) {
+      pipeline.push({ $skip: skip }, { $limit: limit });
+    } else {
+      pipeline.push({ $limit: limit });
+    }
+
+    const participants = await db
+      .collection(PARTICIPANTS_COLLECTION)
+      .aggregate<Omit<LeagueRankingParticipant, "rank">>(pipeline)
+      .toArray();
+
+    return participants.map((participant, index) => ({
       ...participant,
-      rank: index + 1,
+      rank: rankOffset + index + 1,
     }));
   }
 
-  const sortedParticipants = await db.collection(PARTICIPANTS_COLLECTION).aggregate<{
-    userId: string;
-    points: number;
-    pointsHistory: Array<{
-      date: Date;
-      points: number;
-      reason: string;
-      eventId?: string;
-      featId?: string;
-      matchId?: string;
-    }>;
-    feats: Array<{
-      featId: string;
-      earnedAt: Date;
-      eventId?: string;
-      matchId?: string;
-    }>;
-    joinedAt: Date;
-    eliminatedAt?: Date;
-  }>([
-    { $match: { leagueId: new ObjectId(leagueId) } },
+  const pipeline: Document[] = [
+    { $match: { leagueId: leagueObjectId } },
     { $sort: { points: -1, joinedAt: 1 } },
+  ];
+
+  if (hasPagination) {
+    pipeline.push({ $skip: skip }, { $limit: limit });
+  } else {
+    pipeline.push({ $limit: limit });
+  }
+
+  pipeline.push(
     {
       $addFields: {
         userId: { $toObjectId: "$userId" },
@@ -931,20 +1597,20 @@ export async function getLeagueRanking(
               $expr: {
                 $and: [
                   { $eq: ["$userId", "$$userId"] },
-                  { $eq: ["$leagueId", "$$leagueId"] }
-                ]
-              }
-            }
-          }
+                  { $eq: ["$leagueId", "$$leagueId"] },
+                ],
+              },
+            },
+          },
         ],
         as: "feats",
       },
     },
     {
       $addFields: {
-        'userId': { $toString: "$userId" },
-        'user.id': { $toString: "$user._id" },
-        'feats': {
+        userId: { $toString: "$userId" },
+        "user.id": { $toString: "$user._id" },
+        feats: {
           $map: {
             input: "$feats",
             as: "feat",
@@ -953,9 +1619,9 @@ export async function getLeagueRanking(
               earnedAt: "$$feat.earnedAt",
               eventId: "$$feat.eventId",
               matchId: "$$feat.matchId",
-            }
-          }
-        }
+            },
+          },
+        },
       },
     },
     {
@@ -965,11 +1631,16 @@ export async function getLeagueRanking(
         leagueId: 0,
       },
     }
-  ]).limit(100).toArray();
+  );
 
-  return sortedParticipants.map((participant, index) => ({
+  const participants = await db
+    .collection(PARTICIPANTS_COLLECTION)
+    .aggregate<Omit<LeagueRankingParticipant, "rank">>(pipeline)
+    .toArray();
+
+  return participants.map((participant, index) => ({
     ...participant,
-    rank: index + 1,
+    rank: rankOffset + index + 1,
   }));
 }
 
@@ -1021,12 +1692,124 @@ export async function getUserLeagues(
   ]);
 
   return {
-    leagues: await Promise.all(leagues.map(doc => toLeague(doc))),
+    leagues: await Promise.all(leagues.map((doc) => toLeague(doc, false))),
     total,
     page,
     limit,
     totalPages: Math.ceil(total / limit),
   };
+}
+
+export type ReportPointsLeagueMatchInput = {
+  gameId: string;
+  playedAt: Date;
+  playerIds: string[];
+  winnerIds: string[];
+  lairId?: string;
+  lairName?: string;
+  notes?: string;
+};
+
+function dedupeIds(ids: string[]): string[] {
+  return Array.from(new Set(ids.filter(Boolean)));
+}
+
+async function applyConfirmedPointsForMatch(
+  leagueId: string,
+  league: League,
+  match: LeagueMatch
+): Promise<void> {
+  if (league.format !== "POINTS" || !league.pointsConfig) {
+    return;
+  }
+
+  const matchDate = match.playedAt ? new Date(match.playedAt) : new Date();
+  const { pointsRules } = league.pointsConfig;
+
+  for (const playerId of match.playerIds) {
+    const isWinner = match.winnerIds.includes(playerId);
+    const points =
+      pointsRules.participation +
+      (isWinner ? pointsRules.victory : pointsRules.defeat);
+
+    const historyEntry = {
+      date: matchDate,
+      points,
+      reason: isWinner ? "Victoire" : "Défaite",
+      matchId: match.id,
+    };
+
+    await db.collection(PARTICIPANTS_COLLECTION).updateOne(
+      { leagueId: new ObjectId(leagueId), userId: playerId },
+      {
+        $inc: { points },
+        $push: { pointsHistory: historyEntry },
+      } as Document
+    );
+  }
+}
+
+async function tryFinalizePointsMatch(
+  leagueId: string,
+  matchId: string,
+  actorUserId?: string
+): Promise<void> {
+  const league = await getLeagueById(leagueId);
+  if (!league || league.format !== "POINTS") {
+    return;
+  }
+
+  const match = league.matches.find((item) => item.id === matchId);
+  if (!match || match.matchType !== "league" || match.isKillerMatch) {
+    return;
+  }
+
+  if (match.status === "CONFIRMED") {
+    return;
+  }
+
+  const confirmedPlayerIds = dedupeIds(match.confirmedPlayerIds || []);
+  const allPlayersConfirmed = match.playerIds.every((playerId) =>
+    confirmedPlayerIds.includes(playerId)
+  );
+
+  const requireLairConfirmation = league.lairIds.length > 0;
+  const lairConfirmed = !requireLairConfirmation || !!match.lairConfirmedBy;
+
+  if (!allPlayersConfirmed || !lairConfirmed) {
+    return;
+  }
+
+  const now = new Date();
+
+  const finalizeResult = await db.collection("matches").updateOne(
+    {
+      matchType: "league",
+      leagueId,
+      _id: new ObjectId(match.id),
+      status: { $ne: "CONFIRMED" },
+    },
+    {
+      $set: {
+        status: "CONFIRMED",
+        confirmedAt: now,
+        confirmedBy: actorUserId || match.confirmedBy || match.reportedBy || match.createdBy,
+        confirmedPlayerIds: dedupeIds(match.playerIds),
+      },
+    }
+  );
+
+  // Idempotence: seule la transition REPORTED -> CONFIRMED déclenche le calcul des points.
+  if (finalizeResult.modifiedCount === 0) {
+    return;
+  }
+
+  await applyConfirmedPointsForMatch(leagueId, league, match);
+
+  await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(leagueId) },
+    { $set: { updatedAt: now } }
+  );
 }
 
 // Ajouter un match à une ligue et mettre à jour les points des participants
@@ -1035,7 +1818,9 @@ export async function addLeagueMatch(
   matchInput: CreateLeagueMatchInput,
   createdBy: string
 ): Promise<League | null> {
-  const league = await getLeagueById(leagueId);
+  const league = await getLeagueById(leagueId, {
+    includeParticipants: true,
+  });
   if (!league) return null;
 
   // Vérifier que tous les joueurs sont des participants de la ligue
@@ -1247,7 +2032,7 @@ export async function addLeagueMatch(
     { $set: { updatedAt: new Date() } }
   );
 
-  return getLeagueById(leagueId);
+  return getLeagueById(leagueId, { includeParticipants: true });
 }
 
 // Récupérer les matchs d'une ligue
@@ -1347,7 +2132,249 @@ export async function deleteLeagueMatch(
     { $set: { updatedAt: new Date() } }
   );
 
-  return getLeagueById(leagueId);
+  return getLeagueById(leagueId, { includeParticipants: true });
+}
+
+export async function reportPointsLeagueMatch(
+  leagueId: string,
+  reporterId: string,
+  matchInput: ReportPointsLeagueMatchInput
+): Promise<string> {
+  const league = await getLeagueById(leagueId, {
+    includeParticipants: true,
+  });
+  if (!league) {
+    throw new Error("Ligue non trouvée");
+  }
+
+  if (league.format !== "POINTS" || !league.pointsConfig) {
+    throw new Error("Cette ligue n'est pas au format POINTS");
+  }
+
+  if (league.status === "COMPLETED" || league.status === "CANCELLED") {
+    throw new Error("Cette ligue n'accepte plus de nouveaux résultats");
+  }
+
+  const playerIds = dedupeIds(matchInput.playerIds);
+  const winnerIds = dedupeIds(matchInput.winnerIds);
+
+  if (playerIds.length < 2) {
+    throw new Error("Un match doit contenir au moins 2 joueurs");
+  }
+
+  if (!playerIds.includes(reporterId)) {
+    throw new Error("Vous devez faire partie des joueurs du match");
+  }
+
+  if (winnerIds.length === 0) {
+    throw new Error("Veuillez sélectionner au moins un vainqueur");
+  }
+
+  const participantIds = new Set(league.participants.map((participant) => participant.userId));
+  const allPlayersAreParticipants = playerIds.every((playerId) => participantIds.has(playerId));
+  if (!allPlayersAreParticipants) {
+    throw new Error("Tous les joueurs doivent être inscrits dans la ligue");
+  }
+
+  const allWinnersArePlayers = winnerIds.every((winnerId) => playerIds.includes(winnerId));
+  if (!allWinnersArePlayers) {
+    throw new Error("Tous les vainqueurs doivent faire partie des joueurs du match");
+  }
+
+  if (!league.gameIds.includes(matchInput.gameId)) {
+    throw new Error("Ce jeu ne fait pas partie des jeux de la ligue");
+  }
+
+  const hasPartnerLairs = league.lairIds.length > 0;
+  if (hasPartnerLairs && !matchInput.lairId) {
+    throw new Error("Le lieu est obligatoire pour cette ligue");
+  }
+
+  let selectedLair = null;
+  if (matchInput.lairId) {
+    if (hasPartnerLairs && !league.lairIds.includes(matchInput.lairId)) {
+      throw new Error("Ce lieu ne fait pas partie des lieux partenaires de la ligue");
+    }
+
+    selectedLair = await getLairById(matchInput.lairId);
+    if (!selectedLair) {
+      throw new Error("Lieu introuvable");
+    }
+  }
+
+  const lairName = selectedLair?.name || matchInput.lairName?.trim() || undefined;
+  const now = new Date();
+
+  const newMatch: Omit<LeagueTypeMatch, "id" | "createdAt"> = {
+    matchType: "league",
+    leagueId,
+    gameId: matchInput.gameId,
+    playedAt: matchInput.playedAt,
+    playerIds,
+    winnerIds,
+    lairId: selectedLair?.id,
+    lairName,
+    status: "REPORTED",
+    reportedBy: reporterId,
+    reportedAt: now,
+    confirmedPlayerIds: [reporterId],
+    createdBy: reporterId,
+    notes: matchInput.notes?.trim() || undefined,
+  };
+
+  const createdMatch = await createMatch(newMatch);
+
+  await Promise.all(
+    playerIds.map((playerId) =>
+      notifyUserWithTemplate(
+        playerId,
+        "Résultat de match à confirmer",
+        `Un résultat de match a été rapporté dans la ligue ${league.name}. Merci de confirmer le résultat.`,
+        "league-match-result-confirmation-request",
+        leagueId,
+        createdMatch.id
+      )
+    )
+  );
+
+  if (hasPartnerLairs && selectedLair?.id) {
+    await notifyLairOwnersWithTemplate(
+      selectedLair.id,
+      "Match à valider",
+      `Un match de ligue dans ${league.name} attend une validation du lieu.`,
+      "league-match-lair-confirmation-request",
+      leagueId,
+      createdMatch.id
+    );
+  }
+
+  await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(leagueId) },
+    { $set: { updatedAt: now } }
+  );
+
+  await tryFinalizePointsMatch(leagueId, createdMatch.id, reporterId);
+
+  return createdMatch.id;
+}
+
+export async function confirmPointsLeagueMatch(
+  leagueId: string,
+  matchId: string,
+  userId: string
+): Promise<void> {
+  const league = await getLeagueById(leagueId);
+  if (!league) {
+    throw new Error("Ligue non trouvée");
+  }
+
+  if (league.format !== "POINTS") {
+    throw new Error("Cette ligue n'est pas au format POINTS");
+  }
+
+  const match = league.matches.find((item) => item.id === matchId);
+  if (!match || match.matchType !== "league" || match.isKillerMatch) {
+    throw new Error("Match non trouvé");
+  }
+
+  if (match.status === "CONFIRMED") {
+    throw new Error("Ce match est déjà confirmé");
+  }
+
+  if (match.status !== "REPORTED") {
+    throw new Error("Ce match n'est pas en attente de confirmation");
+  }
+
+  if (!match.playerIds.includes(userId)) {
+    throw new Error("Vous ne faites pas partie de ce match");
+  }
+
+  const alreadyConfirmed = (match.confirmedPlayerIds || []).includes(userId);
+  if (alreadyConfirmed) {
+    throw new Error("Vous avez déjà confirmé ce résultat");
+  }
+
+  await db.collection("matches").updateOne(
+    {
+      matchType: "league",
+      leagueId,
+      _id: new ObjectId(matchId),
+      status: { $ne: "CONFIRMED" },
+    },
+    {
+      $addToSet: { confirmedPlayerIds: userId },
+      $set: {
+        confirmedBy: userId,
+        status: "REPORTED",
+        updatedAt: new Date(),
+      },
+    }
+  );
+
+  await tryFinalizePointsMatch(leagueId, matchId, userId);
+}
+
+export async function confirmPointsLeagueMatchLair(
+  leagueId: string,
+  matchId: string,
+  userId: string
+): Promise<void> {
+  const league = await getLeagueById(leagueId);
+  if (!league) {
+    throw new Error("Ligue non trouvée");
+  }
+
+  if (league.format !== "POINTS") {
+    throw new Error("Cette ligue n'est pas au format POINTS");
+  }
+
+  if (league.lairIds.length === 0) {
+    throw new Error("Cette ligue ne nécessite pas de validation de lieu");
+  }
+
+  const match = league.matches.find((item) => item.id === matchId);
+  if (!match || match.matchType !== "league" || match.isKillerMatch) {
+    throw new Error("Match non trouvé");
+  }
+
+  if (match.status === "CONFIRMED") {
+    throw new Error("Ce match est déjà confirmé");
+  }
+
+  if (match.status !== "REPORTED") {
+    throw new Error("Ce match n'est pas en attente de validation");
+  }
+
+  if (!match.lairId) {
+    throw new Error("Ce match ne contient pas de lieu à valider");
+  }
+
+  if (match.lairConfirmedBy) {
+    throw new Error("Ce lieu a déjà validé le résultat");
+  }
+
+  const lair = await getLairById(match.lairId);
+  if (!lair || !lair.owners.includes(userId)) {
+    throw new Error("Vous n'êtes pas autorisé à valider ce match pour ce lieu");
+  }
+
+  await db.collection("matches").updateOne(
+    {
+      matchType: "league",
+      leagueId,
+      _id: new ObjectId(matchId),
+      status: { $ne: "CONFIRMED" },
+    },
+    {
+      $set: {
+        lairConfirmedBy: userId,
+        status: "REPORTED",
+        updatedAt: new Date(),
+      },
+    }
+  );
+
+  await tryFinalizePointsMatch(leagueId, matchId, userId);
 }
 
 function shuffleArray<T>(items: T[]): T[] {
@@ -1398,7 +2425,9 @@ export async function assignKillerTargets(
   leagueId: string,
   userId: string
 ): Promise<KillerTarget[]> {
-  const league = await getLeagueById(leagueId);
+  const league = await getLeagueById(leagueId, {
+    includeParticipants: true,
+  });
   if (!league) {
     throw new Error("Ligue non trouvée");
   }
@@ -1621,7 +2650,9 @@ export async function reportKillerMatch(
   reporterDeckId?: string | null,
   matchId?: string
 ): Promise<string> {
-  const league = await getLeagueById(leagueId);
+  const league = await getLeagueById(leagueId, {
+    includeParticipants: true,
+  });
   if (!league) {
     throw new Error("Ligue non trouvée");
   }
@@ -2009,4 +3040,50 @@ export async function confirmKillerMatchLair(
       league.killerConfig?.eliminateOnDefeat ?? false
     );
   }
+}
+
+export async function confirmLeagueMatch(
+  leagueId: string,
+  matchId: string,
+  userId: string
+): Promise<void> {
+  const league = await getLeagueById(leagueId);
+  if (!league) {
+    throw new Error("Ligue non trouvée");
+  }
+
+  const match = league.matches.find((item) => item.id === matchId);
+  if (!match || match.matchType !== "league") {
+    throw new Error("Match non trouvé");
+  }
+
+  if (match.isKillerMatch || league.format === "KILLER") {
+    await confirmKillerMatch(leagueId, matchId, userId);
+    return;
+  }
+
+  await confirmPointsLeagueMatch(leagueId, matchId, userId);
+}
+
+export async function confirmLeagueMatchLair(
+  leagueId: string,
+  matchId: string,
+  userId: string
+): Promise<void> {
+  const league = await getLeagueById(leagueId);
+  if (!league) {
+    throw new Error("Ligue non trouvée");
+  }
+
+  const match = league.matches.find((item) => item.id === matchId);
+  if (!match || match.matchType !== "league") {
+    throw new Error("Match non trouvé");
+  }
+
+  if (match.isKillerMatch || league.format === "KILLER") {
+    await confirmKillerMatchLair(leagueId, matchId, userId);
+    return;
+  }
+
+  await confirmPointsLeagueMatchLair(leagueId, matchId, userId);
 }

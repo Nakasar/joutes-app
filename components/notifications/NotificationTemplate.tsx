@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
-import { confirmKillerMatchAction, confirmKillerMatchLairAction } from "@/app/leagues/actions";
+import { confirmLeagueMatchAction, confirmLeagueMatchLairAction } from "@/app/leagues/actions";
 
 type MatchPlayer = {
   id: string;
@@ -42,6 +42,8 @@ export function NotificationTemplate({ notification }: TemplateNotificationProps
   const leagueName = notification.league?.name || "Ligue";
   const matchId = notification.match?.id || notification.matchId;
   const matchPlayers: MatchPlayer[] = notification.matchPlayers || [];
+  const confirmedPlayerIds: string[] = notification.match?.confirmedPlayerIds || [];
+  const recipientUserId: string | undefined = notification.userId;
   const winnerId = notification.match?.winnerIds?.[0];
   const winner = matchPlayers.find((player) => player.id === winnerId);
   const loser = winnerId
@@ -52,7 +54,10 @@ export function NotificationTemplate({ notification }: TemplateNotificationProps
   const canConfirm = !!leagueId && !!matchId;
   const isAlreadyConfirmed = isLairConfirmation
     ? !!notification.match?.lairConfirmedBy
-    : !!notification.match?.confirmedBy;
+    : notification.match?.status === "CONFIRMED" ||
+      (recipientUserId
+        ? confirmedPlayerIds.includes(recipientUserId)
+        : !!notification.match?.confirmedBy);
 
   const handleConfirm = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
@@ -65,8 +70,8 @@ export function NotificationTemplate({ notification }: TemplateNotificationProps
 
     startTransition(async () => {
       const result = isLairConfirmation
-        ? await confirmKillerMatchLairAction(leagueId, matchId)
-        : await confirmKillerMatchAction(leagueId, matchId);
+        ? await confirmLeagueMatchLairAction(leagueId, matchId)
+        : await confirmLeagueMatchAction(leagueId, matchId);
       if (result.success) {
         setSuccess(isLairConfirmation ? "Lieu confirmé" : "Résultat confirmé");
       } else {

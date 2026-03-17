@@ -18,13 +18,13 @@ import {
   Award,
   MapPin,
   Gamepad2,
-  Crown,
-  Medal,
 } from "lucide-react";
 import { LeagueStatus, LeagueFormat } from "@/lib/types/League";
 import JoinLeagueButton from "./JoinLeagueButton";
 import LeaveLeagueButton from "./LeaveLeagueButton";
 import KillerTargetsClient from "./KillerTargetsClient";
+import PointsMatchReportingClient from "./PointsMatchReportingClient";
+import LeagueRankingClient from "./LeagueRankingClient";
 
 const STATUS_LABELS: Record<LeagueStatus, string> = {
   DRAFT: "Brouillon",
@@ -108,9 +108,6 @@ export default async function LeagueDetailPage({
         .map((lair) => lair!.id)
     : [];
 
-  // Récupérer le classement
-  const ranking = await getLeagueRanking(leagueId);
-
   // Récupérer les infos du créateur
   const creator = league.creator;
 
@@ -120,12 +117,27 @@ export default async function LeagueDetailPage({
     league.status !== "COMPLETED" &&
     league.status !== "CANCELLED" &&
     (!league.registrationDeadline || new Date() <= league.registrationDeadline) &&
-    (!league.maxParticipants || league.participants.length < league.maxParticipants);
+    (!league.maxParticipants ||
+      (league.participantsCount || 0) < league.maxParticipants);
 
   const canLeave =
     session?.user?.id &&
     isParticipant &&
     league.status !== "IN_PROGRESS";
+
+  const canReportPointsMatches =
+    league.format === "POINTS" &&
+    !!session?.user?.id &&
+    isParticipant &&
+    league.status !== "COMPLETED" &&
+    league.status !== "CANCELLED";
+
+  const shouldLoadParticipantsWithUsers =
+    canReportPointsMatches || (league.format === "KILLER" && !!session?.user?.id);
+
+  const participantsWithUsers = shouldLoadParticipantsWithUsers
+    ? await getLeagueRanking(leagueId)
+    : [];
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -154,6 +166,9 @@ export default async function LeagueDetailPage({
           <div className="flex gap-2">
             {canJoin && <JoinLeagueButton leagueId={leagueId} />}
             {canLeave && <LeaveLeagueButton leagueId={leagueId} />}
+            <Button variant="outline" asChild>
+              <Link href={`/leagues/${leagueId}/matches`}>Historique des matchs</Link>
+            </Button>
             {canManage && (
               <Button asChild>
                 <Link href={`/leagues/${leagueId}/manage`}>
@@ -192,90 +207,10 @@ export default async function LeagueDetailPage({
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {ranking.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    Aucun participant pour le moment
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {ranking.map((participant, index) => (
-                      <div
-                        key={participant.userId}
-                        className={`flex items-center justify-between p-3 rounded-lg ${
-                          index === 0
-                            ? "bg-yellow-500/10 border border-yellow-500/30"
-                            : index === 1
-                            ? "bg-gray-300/10 border border-gray-300/30"
-                            : index === 2
-                            ? "bg-orange-500/10 border border-orange-500/30"
-                            : "bg-muted/50"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="font-bold text-lg w-8 text-center">
-                            {index === 0 && <Crown className="h-5 w-5 text-yellow-500 inline" />}
-                            {index === 1 && <Medal className="h-5 w-5 text-gray-400 inline" />}
-                            {index === 2 && <Medal className="h-5 w-5 text-orange-500 inline" />}
-                            {index > 2 && `#${participant.rank}`}
-                          </span>
-                          <div className="flex items-center gap-2">
-                            {participant.user?.avatar && (
-                              <img
-                                src={participant.user.avatar}
-                                alt=""
-                                className="h-8 w-8 rounded-full"
-                              />
-                            )}
-                            <span className="font-medium">
-                              {
-                                (participant.user?.discriminator ? `${participant.user?.displayName}#${participant.user?.discriminator}` : participant.user?.username) || "Anonyme"
-                              }
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          {league.format === "POINTS" && (
-                            <>
-                              {participant.feats.length > 0 && (
-                                <Badge variant="secondary">
-                                  {participant.feats.length} haut
-                                  {participant.feats.length > 1 ? "s" : ""} fait
-                                  {participant.feats.length > 1 ? "s" : ""}
-                                </Badge>
-                              )}
-                              <span className="font-bold text-lg">
-                                {participant.points} pts
-                              </span>
-                            </>
-                          )}
-                          {league.format === "KILLER" && (
-                            <div className="text-sm text-right">
-                              <div>
-                                <span className="text-muted-foreground">Victoires :</span>{" "}
-                                <span className="font-medium">{participant.wins ?? 0}</span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">Défaites :</span>{" "}
-                                <span className="font-medium">{participant.losses ?? 0}</span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">Ratio :</span>{" "}
-                                <span className="font-medium">
-                                  {(participant.ratio ?? 0).toFixed(2)}
-                                </span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    {ranking.length > 10 && (
-                      <p className="text-center text-muted-foreground text-sm pt-2">
-                        Et {ranking.length - 10} autres participants...
-                      </p>
-                    )}
-                  </div>
-                )}
+                <LeagueRankingClient
+                  leagueId={leagueId}
+                  leagueFormat={league.format}
+                />
               </CardContent>
             </Card>
 
@@ -339,6 +274,15 @@ export default async function LeagueDetailPage({
               </Card>
             )}
 
+            {canReportPointsMatches && session?.user?.id && (
+              <PointsMatchReportingClient
+                leagueId={league.id}
+                league={league}
+                participantsWithUsers={participantsWithUsers}
+                currentUserId={session.user.id}
+              />
+            )}
+
             {/* Règles (format KILLER) */}
             {league.format === "KILLER" && league.killerConfig && (
               <Card>
@@ -369,7 +313,7 @@ export default async function LeagueDetailPage({
                 leagueId={league.id}
                 league={league}
                 participant={leagueParticipant}
-                participantsWithUsers={ranking}
+                participantsWithUsers={participantsWithUsers}
                 currentUserId={session.user.id}
                 ownedLairIds={ownedLairIds}
               />
