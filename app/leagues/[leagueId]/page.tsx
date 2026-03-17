@@ -352,6 +352,7 @@ export default async function LeagueDetailPage({
                 leagueId={league.id}
                 league={league}
                 participantsWithUsers={ranking}
+                currentUserId={session.user.id}
               />
             )}
 

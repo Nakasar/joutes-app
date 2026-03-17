@@ -20,7 +20,11 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { League, LeagueParticipant } from "@/lib/types/League";
-import { reportPointsLeagueMatchAction, searchPlatformLairsAction } from "../actions";
+import {
+  confirmLeagueMatchAction,
+  reportPointsLeagueMatchAction,
+  searchPlatformLairsAction,
+} from "../actions";
 
 type ParticipantWithUser = LeagueParticipant & {
   user?: {
@@ -36,7 +40,18 @@ type PointsMatchReportingClientProps = {
   leagueId: string;
   league: League;
   participantsWithUsers: ParticipantWithUser[];
+  currentUserId: string;
 };
+
+function parseDate(value?: string | Date) {
+  if (!value) {
+    return DateTime.invalid("missing");
+  }
+
+  return typeof value === "string"
+    ? DateTime.fromISO(value)
+    : DateTime.fromJSDate(value);
+}
 
 function formatPlayerName(participant?: ParticipantWithUser | null) {
   if (!participant?.user) {
@@ -56,6 +71,7 @@ export default function PointsMatchReportingClient({
   leagueId,
   league,
   participantsWithUsers,
+  currentUserId,
 }: PointsMatchReportingClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -90,9 +106,44 @@ export default function PointsMatchReportingClient({
     [participantsWithUsers]
   );
 
+  const participantNamesById = useMemo(
+    () =>
+      new Map(
+        participantsWithUsers.map((participant) => [
+          participant.userId,
+          formatPlayerName(participant),
+        ])
+      ),
+    [participantsWithUsers]
+  );
+
+  const gameNamesById = useMemo(
+    () => new Map(league.games.map((game) => [game.id, game.name])),
+    [league.games]
+  );
+
+  const partnerLairNamesById = useMemo(
+    () => new Map(league.lairs.map((lair) => [lair.id, lair.name])),
+    [league.lairs]
+  );
+
   const winnerOptions = useMemo(
     () => participantOptions.filter((option) => form.playerIds.includes(option.value)),
     [participantOptions, form.playerIds]
+  );
+
+  const pendingMatches = useMemo(
+    () =>
+      (league.matches || [])
+        .filter(
+          (match) =>
+            match.matchType === "league" &&
+            !match.isKillerMatch &&
+            match.playerIds.includes(currentUserId) &&
+            match.status !== "CONFIRMED"
+        )
+        .sort((a, b) => parseDate(b.playedAt).toMillis() - parseDate(a.playedAt).toMillis()),
+    [league.matches, currentUserId]
   );
 
   const partnerLairOptions = useMemo(
@@ -209,6 +260,22 @@ export default function PointsMatchReportingClient({
     });
   };
 
+  const handleConfirmMatch = (matchId: string) => {
+    setError(null);
+    setSuccess(null);
+
+    startTransition(async () => {
+      const result = await confirmLeagueMatchAction(leagueId, matchId);
+
+      if (result.success) {
+        setSuccess("Resultat confirme");
+        router.refresh();
+      } else {
+        setError(result.error || "Erreur lors de la confirmation");
+      }
+    });
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -234,6 +301,89 @@ export default function PointsMatchReportingClient({
             <AlertDescription>{success}</AlertDescription>
           </Alert>
         )}
+
+        <div className="space-y-3 border rounded-lg p-3 bg-muted/30">
+          <h3 className="text-sm font-semibold">Mes matchs en attente</h3>
+          {pendingMatches.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Aucun match en attente de confirmation ou de validation.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {pendingMatches.map((match) => {
+                const confirmedPlayerIds = match.confirmedPlayerIds || [];
+                const needsPlayerConfirmation =
+                  match.status === "REPORTED" &&
+                  !confirmedPlayerIds.includes(currentUserId);
+                const playersAwaitingConfirmation = match.playerIds.filter(
+                  (playerId) => !confirmedPlayerIds.includes(playerId)
+                );
+                const needsLairValidation =
+                  league.lairIds.length > 0 &&
+                  !!match.lairId &&
+                  !match.lairConfirmedBy;
+
+                const playerNames = match.playerIds.map(
+                  (playerId) => participantNamesById.get(playerId) || playerId
+                );
+                const winnerNames = (match.winnerIds || []).map(
+                  (winnerId) => participantNamesById.get(winnerId) || winnerId
+                );
+                const gameName = gameNamesById.get(match.gameId) || match.gameId;
+                const lairName =
+                  (match.lairId
+                    ? partnerLairNamesById.get(match.lairId)
+                    : undefined) ||
+                  match.lairName ||
+                  "Lieu non renseigne";
+                const matchDate = parseDate(match.playedAt).setLocale("fr");
+
+                return (
+                  <div key={match.id} className="border rounded-lg p-3 space-y-2 bg-background">
+                    <p className="text-sm font-medium">{playerNames.join(" vs ")}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {gameName} · {lairName}
+                    </p>
+                    {winnerNames.length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Vainqueur(s) : {winnerNames.join(", ")}
+                      </p>
+                    )}
+                    {matchDate.isValid && (
+                      <p className="text-xs text-muted-foreground">
+                        Joue {matchDate.toRelative()}
+                      </p>
+                    )}
+                    {playersAwaitingConfirmation.length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        En attente de confirmation joueur :{" "}
+                        {playersAwaitingConfirmation
+                          .map((playerId) => participantNamesById.get(playerId) || playerId)
+                          .join(", ")}
+                      </p>
+                    )}
+                    {needsLairValidation && (
+                      <p className="text-xs text-muted-foreground">
+                        En attente de validation du lieu
+                      </p>
+                    )}
+
+                    {needsPlayerConfirmation && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleConfirmMatch(match.id)}
+                        disabled={isPending}
+                      >
+                        {isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        Confirmer le résultat
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
         <div className="space-y-2">
           <label className="text-sm font-medium">Jeu</label>
