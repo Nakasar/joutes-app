@@ -1,6 +1,5 @@
 import { getLeagueById, getLeagueParticipant, isLeagueOrganizer } from "@/lib/db/leagues";
 import { getMatches } from "@/lib/db/matches";
-import { getUsersByIds } from "@/lib/db/users";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
@@ -156,24 +155,22 @@ export default async function LeagueMatchesPage({
     (match): match is LeagueTypeMatch => match.matchType === "league"
   );
 
-  const playerIdsInPage = Array.from(
-    new Set(pageMatches.flatMap((match) => match.playerIds))
-  );
-  const users = await getUsersByIds(playerIdsInPage);
   const playerById = new Map<string, MatchPagePlayer>(
-    users.map((user) => [
-      user.id,
-      {
-        userId: user.id,
-        user: {
-          id: user.id,
-          username: user.username,
-          displayName: user.displayName,
-          discriminator: user.discriminator,
-          avatar: user.avatar,
-        },
-      },
-    ])
+    pageMatches
+      .flatMap((match) =>
+        (match.players || []).map((player) => [
+          player.userId,
+          {
+            userId: player.userId,
+            user: {
+              id: player.userId,
+              username: player.username,
+              displayName: player.displayName,
+              discriminator: player.discriminator,
+            },
+          },
+        ] as const)
+      )
   );
 
   const buildPageHref = (page: number) => `/leagues/${league.id}/matches?page=${page}`;
