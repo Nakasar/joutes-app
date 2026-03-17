@@ -73,6 +73,7 @@ import {
   getParticipantManageDetailsAction,
   deleteParticipantFeatAction,
   deleteParticipantManualPointsEntryAction,
+  recalculateLeagueParticipantPointsAction,
 } from "../../actions";
 import DeckSelector from "@/components/DeckSelector";
 import { League, LeagueStatus, LeagueParticipant, Feat, LeagueMatch, MatchFeatAward } from "@/lib/types/League";
@@ -471,6 +472,42 @@ export default function LeagueManageClient({
         router.refresh();
       } else {
         setError(result.error || "Erreur lors de la suppression des points");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Une erreur est survenue");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRecalculateParticipantPoints = async (userId: string) => {
+    if (
+      !confirm(
+        "Recalculer les points de ce participant à partir des matchs et des règles actuelles ?"
+      )
+    ) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const result = await recalculateLeagueParticipantPointsAction(
+        league.id,
+        userId
+      );
+
+      if (result.success) {
+        setSuccess("Points recalculés pour ce participant");
+        await handleLoadParticipantManageDetails(userId, true);
+        router.refresh();
+      } else {
+        setError(
+          result.error || "Erreur lors du recalcul des points du participant"
+        );
       }
     } catch (err) {
       console.error(err);
@@ -1348,7 +1385,26 @@ export default function LeagueManageClient({
                           Chargement des détails...
                         </div>
                       ) : (
-                        <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-4">
+                          <div className="flex justify-end">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                handleRecalculateParticipantPoints(participant.userId)
+                              }
+                              disabled={loading}
+                            >
+                              {loading ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                              )}
+                              Recalculer les points
+                            </Button>
+                          </div>
+
+                          <div className="grid gap-4 md:grid-cols-2">
                           <div className="space-y-2">
                             <p className="text-sm font-medium">
                               Hauts faits remportés
@@ -1449,6 +1505,7 @@ export default function LeagueManageClient({
                                 ))}
                               </div>
                             )}
+                          </div>
                           </div>
                         </div>
                       )}
