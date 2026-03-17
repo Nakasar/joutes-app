@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { DateTime } from "luxon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -56,6 +57,7 @@ import {
   X,
   Crown,
   RefreshCw,
+  ChevronDown,
 } from "lucide-react";
 import {
   updateLeagueAction,
@@ -68,6 +70,9 @@ import {
   addLeagueMatchAction,
   deleteLeagueMatchAction,
   updateLeagueMatchDeckAction,
+  getParticipantManageDetailsAction,
+  deleteParticipantFeatAction,
+  deleteParticipantManualPointsEntryAction,
 } from "../../actions";
 import DeckSelector from "@/components/DeckSelector";
 import { League, LeagueStatus, LeagueParticipant, Feat, LeagueMatch, MatchFeatAward } from "@/lib/types/League";
@@ -76,6 +81,25 @@ import { Lair } from "@/lib/types/Lair";
 import { User } from "@/lib/types/User";
 
 type ParticipantWithUser = LeagueParticipant & { user?: Pick<User, 'id' | 'displayName' | 'discriminator' | 'username' | 'avatar'> | null };
+
+type ParticipantManageDetails = {
+  feats: Array<{
+    id: string;
+    featId: string;
+    title: string;
+    points: number;
+    earnedAt: string;
+    eventId?: string;
+    matchId?: string;
+  }>;
+  manualPoints: Array<{
+    historyIndex: number;
+    date: string;
+    points: number;
+    reason: string;
+    eventId?: string;
+  }>;
+};
 
 type LeagueManageClientProps = {
   league: League;
@@ -132,6 +156,11 @@ export default function LeagueManageClient({
   });
 
   const [uploading, setUploading] = useState(false);
+  const [participantManageDetails, setParticipantManageDetails] = useState<
+    Record<string, ParticipantManageDetails | undefined>
+  >({});
+  const [participantManageDetailsLoading, setParticipantManageDetailsLoading] =
+    useState<Record<string, boolean>>({});
 
   // État pour l'ajout de points
   const [pointsForm, setPointsForm] = useState({
@@ -333,6 +362,115 @@ export default function LeagueManageClient({
         router.refresh();
       } else {
         setError(result.error || "Erreur lors du retrait");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Une erreur est survenue");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatManageDateTime = (isoDate: string) => {
+    const dateTime = DateTime.fromISO(isoDate);
+    if (!dateTime.isValid) {
+      return isoDate;
+    }
+
+    return dateTime.setLocale("fr").toFormat("dd/MM/yyyy HH:mm");
+  };
+
+  const handleLoadParticipantManageDetails = async (
+    userId: string,
+    forceReload = false
+  ) => {
+    if (!forceReload && participantManageDetails[userId]) {
+      return;
+    }
+
+    if (participantManageDetailsLoading[userId]) {
+      return;
+    }
+
+    setParticipantManageDetailsLoading((prev) => ({ ...prev, [userId]: true }));
+
+    try {
+      const result = await getParticipantManageDetailsAction(league.id, userId);
+      if (result.success && result.details) {
+        setParticipantManageDetails((prev) => ({
+          ...prev,
+          [userId]: result.details,
+        }));
+      } else {
+        setError(result.error || "Erreur lors du chargement des détails du participant");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Une erreur est survenue");
+    } finally {
+      setParticipantManageDetailsLoading((prev) => ({ ...prev, [userId]: false }));
+    }
+  };
+
+  const handleDeleteParticipantFeat = async (
+    userId: string,
+    participantFeatId: string
+  ) => {
+    if (!confirm("Supprimer ce haut fait pour ce participant ?")) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const result = await deleteParticipantFeatAction(
+        league.id,
+        userId,
+        participantFeatId
+      );
+
+      if (result.success) {
+        setSuccess("Haut fait supprimé");
+        await handleLoadParticipantManageDetails(userId, true);
+        router.refresh();
+      } else {
+        setError(result.error || "Erreur lors de la suppression du haut fait");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Une erreur est survenue");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteParticipantManualPoints = async (
+    userId: string,
+    historyIndex: number
+  ) => {
+    if (!confirm("Supprimer cet ajout manuel de points ?")) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const result = await deleteParticipantManualPointsEntryAction(
+        league.id,
+        userId,
+        historyIndex
+      );
+
+      if (result.success) {
+        setSuccess("Ajout manuel de points supprimé");
+        await handleLoadParticipantManageDetails(userId, true);
+        router.refresh();
+      } else {
+        setError(result.error || "Erreur lors de la suppression des points");
       }
     } catch (err) {
       console.error(err);
@@ -1143,50 +1281,179 @@ export default function LeagueManageClient({
                 Aucun participant pour le moment
               </p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {participantsWithUsers.map((participant) => (
-                  <div
+                  <details
                     key={participant.userId}
-                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                    className="group rounded-lg border bg-muted/40"
+                    onToggle={(event) => {
+                      const element = event.currentTarget as HTMLDetailsElement;
+                      if (element.open) {
+                        void handleLoadParticipantManageDetails(participant.userId);
+                      }
+                    }}
                   >
-                    <div className="flex items-center gap-3">
-                      {participant.user?.avatar && (
-                        <img
-                          src={participant.user.avatar}
-                          alt=""
-                          className="h-10 w-10 rounded-full"
-                        />
-                      )}
-                      <div>
-                        <span className="font-medium">
-                          {participant.user?.displayName ||
-                            participant.user?.username ||
-                            "Utilisateur inconnu"}
-                        </span>
-                        <div className="text-sm text-muted-foreground">
-                          Inscrit le{" "}
-                          {new Date(participant.joinedAt).toLocaleDateString(
-                            "fr-FR"
+                    <summary className="cursor-pointer list-none p-3 [&::-webkit-details-marker]:hidden">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          {participant.user?.avatar && (
+                            <img
+                              src={participant.user.avatar}
+                              alt=""
+                              className="h-10 w-10 rounded-full"
+                            />
+                          )}
+                          <div>
+                            <span className="font-medium">
+                              {participant.user?.displayName ||
+                                participant.user?.username ||
+                                "Utilisateur inconnu"}
+                            </span>
+                            <div className="text-sm text-muted-foreground">
+                              Inscrit le{" "}
+                              {new Date(participant.joinedAt).toLocaleDateString(
+                                "fr-FR"
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold">{participant.points} pts</span>
+                          <span className="text-xs text-muted-foreground">
+                            Détails
+                          </span>
+                          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+                          {participant.userId !== league.creatorId && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                void handleRemoveParticipant(participant.userId);
+                              }}
+                              disabled={loading}
+                            >
+                              <UserMinus className="h-4 w-4" />
+                            </Button>
                           )}
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <span className="font-bold">{participant.points} pts</span>
-                      {participant.userId !== league.creatorId && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            handleRemoveParticipant(participant.userId)
-                          }
-                          disabled={loading}
-                        >
-                          <UserMinus className="h-4 w-4" />
-                        </Button>
+                    </summary>
+
+                    <div className="border-t px-3 pb-3 pt-3">
+                      {participantManageDetailsLoading[participant.userId] ? (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Chargement des détails...
+                        </div>
+                      ) : (
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium">
+                              Hauts faits remportés
+                            </p>
+                            {(participantManageDetails[participant.userId]?.feats || []).length === 0 ? (
+                              <p className="text-sm text-muted-foreground">
+                                Aucun haut fait enregistré.
+                              </p>
+                            ) : (
+                              <div className="space-y-2">
+                                {(participantManageDetails[participant.userId]?.feats || []).map((feat) => (
+                                  <div
+                                    key={feat.id}
+                                    className="flex items-start justify-between gap-3 rounded-md border p-2"
+                                  >
+                                    <div className="space-y-1">
+                                      <div className="flex items-center gap-2">
+                                        <Trophy className="h-4 w-4 text-amber-500" />
+                                        <span className="font-medium">{feat.title}</span>
+                                        <Badge variant="secondary">
+                                          +{feat.points} pts
+                                        </Badge>
+                                      </div>
+                                      <p className="text-xs text-muted-foreground">
+                                        {formatManageDateTime(feat.earnedAt)}
+                                      </p>
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() =>
+                                        handleDeleteParticipantFeat(
+                                          participant.userId,
+                                          feat.id
+                                        )
+                                      }
+                                      disabled={loading}
+                                      title="Supprimer ce haut fait"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium">
+                              Ajouts manuels de points
+                            </p>
+                            {(participantManageDetails[participant.userId]?.manualPoints || []).length === 0 ? (
+                              <p className="text-sm text-muted-foreground">
+                                Aucun ajout manuel de points.
+                              </p>
+                            ) : (
+                              <div className="space-y-2">
+                                {(participantManageDetails[participant.userId]?.manualPoints || []).map((entry) => (
+                                  <div
+                                    key={`${participant.userId}-${entry.historyIndex}`}
+                                    className="flex items-start justify-between gap-3 rounded-md border p-2"
+                                  >
+                                    <div className="space-y-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium">{entry.reason}</span>
+                                        <Badge
+                                          variant={
+                                            entry.points >= 0
+                                              ? "secondary"
+                                              : "destructive"
+                                          }
+                                        >
+                                          {entry.points > 0
+                                            ? `+${entry.points}`
+                                            : entry.points}{" "}
+                                          pts
+                                        </Badge>
+                                      </div>
+                                      <p className="text-xs text-muted-foreground">
+                                        {formatManageDateTime(entry.date)}
+                                      </p>
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() =>
+                                        handleDeleteParticipantManualPoints(
+                                          participant.userId,
+                                          entry.historyIndex
+                                        )
+                                      }
+                                      disabled={loading}
+                                      title="Supprimer cet ajout manuel"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       )}
                     </div>
-                  </div>
+                  </details>
                 ))}
               </div>
             )}

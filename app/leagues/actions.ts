@@ -12,6 +12,9 @@ import {
   isLeagueOrganizer,
   addPointsToParticipant,
   recalculateLeaguePoints,
+  getLeagueParticipantManageDetails,
+  deleteLeagueParticipantFeat,
+  deleteLeagueParticipantManualPointsEntry,
   awardFeatToParticipant,
   addLeagueMatch,
   deleteLeagueMatch,
@@ -475,6 +478,134 @@ export async function recalculateLeaguePointsAction(
       success: false,
       error:
         error instanceof Error ? error.message : "Erreur lors du recalcul des points",
+    };
+  }
+}
+
+export type ParticipantManageFeatView = {
+  id: string;
+  featId: string;
+  title: string;
+  points: number;
+  earnedAt: string;
+  eventId?: string;
+  matchId?: string;
+};
+
+export type ParticipantManageManualPointView = {
+  historyIndex: number;
+  date: string;
+  points: number;
+  reason: string;
+  eventId?: string;
+};
+
+export type ParticipantManageDetailsView = {
+  feats: ParticipantManageFeatView[];
+  manualPoints: ParticipantManageManualPointView[];
+};
+
+export async function getParticipantManageDetailsAction(
+  leagueId: string,
+  userId: string
+): Promise<{ success: boolean; details?: ParticipantManageDetailsView; error?: string }> {
+  try {
+    const user = await requireAuth();
+
+    const canManage = await isLeagueOrganizer(leagueId, user.id);
+    if (!canManage) {
+      throw new Error("Vous n'êtes pas autorisé à gérer cette ligue");
+    }
+
+    const details = await getLeagueParticipantManageDetails(leagueId, userId);
+
+    return {
+      success: true,
+      details: {
+        feats: details.feats.map((feat) => ({
+          id: feat.id,
+          featId: feat.featId,
+          title: feat.title,
+          points: feat.points,
+          earnedAt: DateTime.fromJSDate(feat.earnedAt).toISO() || new Date().toISOString(),
+          eventId: feat.eventId,
+          matchId: feat.matchId,
+        })),
+        manualPoints: details.manualPoints.map((entry) => ({
+          historyIndex: entry.historyIndex,
+          date: DateTime.fromJSDate(entry.date).toISO() || new Date().toISOString(),
+          points: entry.points,
+          reason: entry.reason,
+          eventId: entry.eventId,
+        })),
+      },
+    };
+  } catch (error) {
+    console.error("Error getting participant manage details:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Erreur lors du chargement des détails",
+    };
+  }
+}
+
+export async function deleteParticipantFeatAction(
+  leagueId: string,
+  userId: string,
+  participantFeatId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await requireAuth();
+
+    const canManage = await isLeagueOrganizer(leagueId, user.id);
+    if (!canManage) {
+      throw new Error("Vous n'êtes pas autorisé à gérer cette ligue");
+    }
+
+    await deleteLeagueParticipantFeat(leagueId, userId, participantFeatId);
+
+    revalidatePath(`/leagues/${leagueId}`);
+    revalidatePath(`/leagues/${leagueId}/manage`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting participant feat:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Erreur lors de la suppression du haut fait",
+    };
+  }
+}
+
+export async function deleteParticipantManualPointsEntryAction(
+  leagueId: string,
+  userId: string,
+  historyIndex: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await requireAuth();
+
+    const canManage = await isLeagueOrganizer(leagueId, user.id);
+    if (!canManage) {
+      throw new Error("Vous n'êtes pas autorisé à gérer cette ligue");
+    }
+
+    await deleteLeagueParticipantManualPointsEntry(leagueId, userId, historyIndex);
+
+    revalidatePath(`/leagues/${leagueId}`);
+    revalidatePath(`/leagues/${leagueId}/manage`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting participant manual points entry:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Erreur lors de la suppression des points manuels",
     };
   }
 }

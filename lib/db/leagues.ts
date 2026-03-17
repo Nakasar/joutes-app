@@ -49,6 +49,29 @@ export type LeagueParticipantFeatDocument = {
   createdAt: Date;
 };
 
+export type LeagueParticipantManageFeat = {
+  id: string;
+  featId: string;
+  title: string;
+  points: number;
+  earnedAt: Date;
+  eventId?: string;
+  matchId?: string;
+};
+
+export type LeagueParticipantManualPointEntry = {
+  historyIndex: number;
+  date: Date;
+  points: number;
+  reason: string;
+  eventId?: string;
+};
+
+export type LeagueParticipantManageDetails = {
+  feats: LeagueParticipantManageFeat[];
+  manualPoints: LeagueParticipantManualPointEntry[];
+};
+
 // Convertir un document MongoDB en League
 async function toLeague(
   doc: WithId<Document>,
@@ -517,6 +540,261 @@ export async function getLeagueParticipant(leagueId: League['id'], userId: User[
     eliminatedBy: participantDoc.eliminatedBy,
     isEliminated: participantDoc.isEliminated,
   };
+}
+
+export async function getLeagueParticipantManageDetails(
+  leagueId: League["id"],
+  userId: User["id"]
+): Promise<LeagueParticipantManageDetails> {
+  const league = await getLeagueById(leagueId);
+  if (!league) {
+    throw new Error("Ligue non trouvée");
+  }
+
+  const participantDoc = await db.collection(PARTICIPANTS_COLLECTION).findOne({
+    leagueId: new ObjectId(leagueId),
+    userId,
+  });
+
+  if (!participantDoc) {
+    throw new Error("Participant non trouvé");
+  }
+
+  const featRulesById = new Map(
+    (league.pointsConfig?.pointsRules.feats || []).map((feat) => [feat.id, feat] as const)
+  );
+
+  const featDocs = await db
+    .collection(FEATS_COLLECTION)
+    .find({
+      leagueId: new ObjectId(leagueId),
+      userId,
+    })
+    .sort({ earnedAt: -1 })
+    .toArray();
+
+  const feats: LeagueParticipantManageFeat[] = featDocs.map((featDoc) => {
+    const featRule = featRulesById.get(featDoc.featId);
+    return {
+      id: featDoc._id.toString(),
+      featId: featDoc.featId,
+      title: featRule?.title || featDoc.featId,
+      points: featRule?.points || 0,
+      earnedAt: new Date(featDoc.earnedAt),
+      eventId: featDoc.eventId,
+      matchId: featDoc.matchId,
+    };
+  });
+
+  type ManualPointCandidate = {
+    historyIndex: number;
+    date: Date;
+    points: number;
+    reason: string;
+    eventId?: string;
+    featId?: string;
+    matchId?: string;
+  };
+
+  const participantPointsHistory: PointHistoryEntry[] =
+    participantDoc.pointsHistory || [];
+
+  const manualPointCandidates: ManualPointCandidate[] =
+    participantPointsHistory.map(
+      (entry: PointHistoryEntry, historyIndex: number) => ({
+        historyIndex,
+        date: new Date(entry.date),
+        points: entry.points,
+        reason: entry.reason,
+        eventId: entry.eventId,
+        featId: entry.featId,
+        matchId: entry.matchId,
+      })
+    );
+
+  const manualPoints: LeagueParticipantManualPointEntry[] = manualPointCandidates
+    .filter((entry: ManualPointCandidate) => !entry.featId && !entry.matchId)
+    .map((entry: ManualPointCandidate) => ({
+      historyIndex: entry.historyIndex,
+      date: entry.date,
+      points: entry.points,
+      reason: entry.reason,
+      eventId: entry.eventId,
+    }))
+    .sort(
+      (a: LeagueParticipantManualPointEntry, b: LeagueParticipantManualPointEntry) =>
+        DateTime.fromJSDate(b.date).toMillis() -
+        DateTime.fromJSDate(a.date).toMillis()
+    );
+
+  return {
+    feats,
+    manualPoints,
+  };
+}
+
+export async function deleteLeagueParticipantFeat(
+  leagueId: League["id"],
+  userId: User["id"],
+  participantFeatId: string
+): Promise<void> {
+  let featObjectId: ObjectId;
+  try {
+    featObjectId = new ObjectId(participantFeatId);
+  } catch {
+    throw new Error("Identifiant de haut fait invalide");
+  }
+
+  const featDoc = await db.collection(FEATS_COLLECTION).findOne<LeagueParticipantFeatDocument>({
+    _id: featObjectId,
+    leagueId: new ObjectId(leagueId),
+    userId,
+  });
+
+  if (!featDoc) {
+    throw new Error("Haut fait non trouvé");
+  }
+
+  const participantDoc = await db.collection(PARTICIPANTS_COLLECTION).findOne({
+    leagueId: new ObjectId(leagueId),
+    userId,
+  });
+
+  if (!participantDoc) {
+    throw new Error("Participant non trouvé");
+  }
+
+  const pointsHistory: PointHistoryEntry[] = (participantDoc.pointsHistory || []).map(
+    (entry: PointHistoryEntry) => ({
+      ...entry,
+      date: new Date(entry.date),
+    })
+  );
+
+  const earnedAtMillis = DateTime.fromJSDate(new Date(featDoc.earnedAt)).toMillis();
+
+  let historyIndex = pointsHistory.findIndex((entry: PointHistoryEntry) => {
+    if (entry.featId !== featDoc.featId) {
+      return false;
+    }
+
+    if ((entry.matchId || undefined) !== (featDoc.matchId || undefined)) {
+      return false;
+    }
+
+    if ((entry.eventId || undefined) !== (featDoc.eventId || undefined)) {
+      return false;
+    }
+
+    return DateTime.fromJSDate(new Date(entry.date)).toMillis() === earnedAtMillis;
+  });
+
+  if (historyIndex < 0) {
+    historyIndex = pointsHistory.findIndex((entry: PointHistoryEntry) => {
+      if (entry.featId !== featDoc.featId) {
+        return false;
+      }
+
+      if ((entry.matchId || undefined) !== (featDoc.matchId || undefined)) {
+        return false;
+      }
+
+      if ((entry.eventId || undefined) !== (featDoc.eventId || undefined)) {
+        return false;
+      }
+
+      return true;
+    });
+  }
+
+  const updatedHistory =
+    historyIndex >= 0
+      ? pointsHistory.filter((_: PointHistoryEntry, index: number) => index !== historyIndex)
+      : pointsHistory;
+
+  const totalPoints = updatedHistory.reduce((sum: number, entry: PointHistoryEntry) => {
+    const safePoints = Number.isFinite(entry.points) ? entry.points : 0;
+    return sum + safePoints;
+  }, 0);
+
+  await db.collection(PARTICIPANTS_COLLECTION).updateOne(
+    { leagueId: new ObjectId(leagueId), userId },
+    {
+      $set: {
+        points: totalPoints,
+        pointsHistory: updatedHistory,
+      },
+    } as Document
+  );
+
+  await db.collection(FEATS_COLLECTION).deleteOne({
+    _id: featObjectId,
+    leagueId: new ObjectId(leagueId),
+    userId,
+  });
+
+  await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(leagueId) },
+    { $set: { updatedAt: DateTime.now().toJSDate() } }
+  );
+}
+
+export async function deleteLeagueParticipantManualPointsEntry(
+  leagueId: League["id"],
+  userId: User["id"],
+  historyIndex: number
+): Promise<void> {
+  if (!Number.isInteger(historyIndex) || historyIndex < 0) {
+    throw new Error("Index de points manuel invalide");
+  }
+
+  const participantDoc = await db.collection(PARTICIPANTS_COLLECTION).findOne({
+    leagueId: new ObjectId(leagueId),
+    userId,
+  });
+
+  if (!participantDoc) {
+    throw new Error("Participant non trouvé");
+  }
+
+  const pointsHistory: PointHistoryEntry[] = (participantDoc.pointsHistory || []).map(
+    (entry: PointHistoryEntry) => ({
+      ...entry,
+      date: new Date(entry.date),
+    })
+  );
+
+  if (historyIndex >= pointsHistory.length) {
+    throw new Error("Entrée de points manuelle introuvable");
+  }
+
+  const targetEntry = pointsHistory[historyIndex];
+  if (targetEntry.matchId || targetEntry.featId) {
+    throw new Error("Seuls les ajouts manuels de points peuvent être supprimés ici");
+  }
+
+  const updatedHistory = pointsHistory.filter(
+    (_: PointHistoryEntry, index: number) => index !== historyIndex
+  );
+  const totalPoints = updatedHistory.reduce((sum: number, entry: PointHistoryEntry) => {
+    const safePoints = Number.isFinite(entry.points) ? entry.points : 0;
+    return sum + safePoints;
+  }, 0);
+
+  await db.collection(PARTICIPANTS_COLLECTION).updateOne(
+    { leagueId: new ObjectId(leagueId), userId },
+    {
+      $set: {
+        points: totalPoints,
+        pointsHistory: updatedHistory,
+      },
+    } as Document
+  );
+
+  await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(leagueId) },
+    { $set: { updatedAt: DateTime.now().toJSDate() } }
+  );
 }
 
 // Ajouter un participant à une ligue
