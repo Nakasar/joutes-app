@@ -108,9 +108,6 @@ export default async function LeagueDetailPage({
         .map((lair) => lair!.id)
     : [];
 
-  // Récupérer le classement
-  const ranking = await getLeagueRanking(leagueId);
-
   // Récupérer les infos du créateur
   const creator = league.creator;
 
@@ -120,7 +117,8 @@ export default async function LeagueDetailPage({
     league.status !== "COMPLETED" &&
     league.status !== "CANCELLED" &&
     (!league.registrationDeadline || new Date() <= league.registrationDeadline) &&
-    (!league.maxParticipants || league.participants.length < league.maxParticipants);
+    (!league.maxParticipants ||
+      (league.participantsCount || 0) < league.maxParticipants);
 
   const canLeave =
     session?.user?.id &&
@@ -133,6 +131,13 @@ export default async function LeagueDetailPage({
     isParticipant &&
     league.status !== "COMPLETED" &&
     league.status !== "CANCELLED";
+
+  const shouldLoadParticipantsWithUsers =
+    canReportPointsMatches || (league.format === "KILLER" && !!session?.user?.id);
+
+  const participantsWithUsers = shouldLoadParticipantsWithUsers
+    ? await getLeagueRanking(leagueId)
+    : [];
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -273,7 +278,7 @@ export default async function LeagueDetailPage({
               <PointsMatchReportingClient
                 leagueId={league.id}
                 league={league}
-                participantsWithUsers={ranking}
+                participantsWithUsers={participantsWithUsers}
                 currentUserId={session.user.id}
               />
             )}
@@ -308,7 +313,7 @@ export default async function LeagueDetailPage({
                 leagueId={league.id}
                 league={league}
                 participant={leagueParticipant}
-                participantsWithUsers={ranking}
+                participantsWithUsers={participantsWithUsers}
                 currentUserId={session.user.id}
                 ownedLairIds={ownedLairIds}
               />

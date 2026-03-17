@@ -75,7 +75,7 @@ export type LeagueParticipantManageDetails = {
 // Convertir un document MongoDB en League
 async function toLeague(
   doc: WithId<Document>,
-  includeParticipants: boolean = true,
+  includeParticipants: boolean = false,
   matchesOverride?: LeagueMatch[]
 ): Promise<League> {
   const leagueId = doc._id.toString();
@@ -213,7 +213,16 @@ export async function createLeague(
 }
 
 // Récupérer une ligue par son ID
-export async function getLeagueById(id: string): Promise<League | null> {
+type GetLeagueByIdOptions = {
+  includeParticipants?: boolean;
+};
+
+export async function getLeagueById(
+  id: string,
+  options: GetLeagueByIdOptions = {}
+): Promise<League | null> {
+  const { includeParticipants = false } = options;
+
   try {
     const doc = await db
       .collection(COLLECTION_NAME)
@@ -347,7 +356,7 @@ export async function getLeagueById(id: string): Promise<League | null> {
     }
 
     const matches = await getLeagueMatches(id);
-    return toLeague(doc, true, matches);
+    return toLeague(doc, includeParticipants, matches);
   } catch {
     return null;
   }
@@ -366,7 +375,7 @@ export async function getLeagueByInvitationCode(
   }
 
   const matches = await getLeagueMatches(doc._id.toString());
-  return toLeague(doc, true, matches);
+  return toLeague(doc, false, matches);
 }
 
 // Mettre à jour une ligue
@@ -389,7 +398,7 @@ export async function updateLeague(
   }
 
   const matches = await getLeagueMatches(id);
-  return toLeague(result, true, matches);
+  return toLeague(result, false, matches);
 }
 
 // Supprimer une ligue
@@ -838,7 +847,7 @@ export async function addParticipant(
     { $set: { updatedAt: new Date() } }
   );
 
-  return getLeagueById(leagueId);
+  return getLeagueById(leagueId, { includeParticipants: true });
 }
 
 // Retirer un participant d'une ligue
@@ -864,7 +873,7 @@ export async function removeParticipant(
     { $set: { updatedAt: new Date() } }
   );
 
-  return getLeagueById(leagueId);
+  return getLeagueById(leagueId, { includeParticipants: true });
 }
 
 // Ajouter des points à un participant
@@ -900,7 +909,7 @@ export async function addPointsToParticipant(
     { $set: { updatedAt: new Date() } }
   );
 
-  return getLeagueById(leagueId);
+  return getLeagueById(leagueId, { includeParticipants: true });
 }
 
 // Attribuer un haut fait à un participant
@@ -965,14 +974,16 @@ export async function awardFeatToParticipant(
     { $set: { updatedAt: new Date() } }
   );
 
-  return getLeagueById(leagueId);
+  return getLeagueById(leagueId, { includeParticipants: true });
 }
 
 // Recalculer tous les points des participants d'une ligue POINTS
 export async function recalculateLeaguePoints(
   leagueId: string
 ): Promise<League | null> {
-  const league = await getLeagueById(leagueId);
+  const league = await getLeagueById(leagueId, {
+    includeParticipants: true,
+  });
   if (!league) {
     return null;
   }
@@ -1147,7 +1158,7 @@ export async function recalculateLeaguePoints(
     { $set: { updatedAt: DateTime.now().toJSDate() } }
   );
 
-  return getLeagueById(leagueId);
+  return getLeagueById(leagueId, { includeParticipants: true });
 }
 
 // Recalculer les points d'un participant d'une ligue POINTS
@@ -1155,7 +1166,9 @@ export async function recalculateLeagueParticipantPoints(
   leagueId: string,
   userId: string
 ): Promise<League | null> {
-  const league = await getLeagueById(leagueId);
+  const league = await getLeagueById(leagueId, {
+    includeParticipants: true,
+  });
   if (!league) {
     return null;
   }
@@ -1303,47 +1316,80 @@ export async function recalculateLeagueParticipantPoints(
     { $set: { updatedAt: DateTime.now().toJSDate() } }
   );
 
-  return getLeagueById(leagueId);
+  return getLeagueById(leagueId, { includeParticipants: true });
 }
 
-// Obtenir le classement d'une ligue
-export async function getLeagueRanking(
-  leagueId: string
-): Promise<(LeagueParticipant & {
+export type LeagueRankingParticipant = LeagueParticipant & {
   rank: number;
   wins?: number;
   losses?: number;
   ratio?: number;
-  user?: { id: string; discriminator?: string; displayName?: string; avatar?: string; username: string }
-})[]> {
-  const league = await getLeagueById(leagueId);
-  if (!league) return [];
+  user?: {
+    id: string;
+    discriminator?: string;
+    displayName?: string;
+    avatar?: string;
+    username: string;
+  };
+};
 
-  if (league.format === "KILLER") {
-    const sortedParticipants = await db.collection(PARTICIPANTS_COLLECTION).aggregate<{
-      userId: string;
-      points: number;
-      pointsHistory: Array<{
-        date: Date;
-        points: number;
-        reason: string;
-        eventId?: string;
-        featId?: string;
-        matchId?: string;
-      }>;
-      feats: Array<{
-        featId: string;
-        earnedAt: Date;
-        eventId?: string;
-        matchId?: string;
-      }>;
-      joinedAt: Date;
-      eliminatedAt?: Date;
-      wins: number;
-      losses: number;
-      ratio: number;
-    }>([
-      { $match: { leagueId: new ObjectId(leagueId) } },
+type GetLeagueRankingOptions = {
+  page?: number;
+  limit?: number;
+};
+
+export async function getLeagueParticipantsCount(
+  leagueId: string
+): Promise<number> {
+  if (!ObjectId.isValid(leagueId)) {
+    return 0;
+  }
+
+  return db.collection(PARTICIPANTS_COLLECTION).countDocuments({
+    leagueId: new ObjectId(leagueId),
+  });
+}
+
+// Obtenir le classement d'une ligue
+export async function getLeagueRanking(
+  leagueId: string,
+  options: GetLeagueRankingOptions = {}
+): Promise<LeagueRankingParticipant[]> {
+  if (!ObjectId.isValid(leagueId)) {
+    return [];
+  }
+
+  const leagueObjectId = new ObjectId(leagueId);
+  const leagueDoc = await db.collection(COLLECTION_NAME).findOne<{
+    format?: League["format"];
+  }>(
+    { _id: leagueObjectId },
+    {
+      projection: {
+        format: 1,
+      },
+    }
+  );
+
+  if (!leagueDoc?.format) {
+    return [];
+  }
+
+  const hasPagination =
+    Number.isFinite(options.limit) && (options.limit || 0) > 0;
+  const page =
+    hasPagination && Number.isFinite(options.page) && (options.page || 0) > 0
+      ? Math.floor(options.page as number)
+      : 1;
+  const limit = hasPagination
+    ? Math.floor(options.limit as number)
+    : 100;
+  const skip = hasPagination ? (page - 1) * limit : 0;
+  const rankOffset = skip;
+
+  if (leagueDoc.format === "KILLER") {
+    const pipeline: Document[] = [
+      { $match: { leagueId: leagueObjectId } },
       {
         $addFields: {
           userObjectId: { $toObjectId: "$userId" },
@@ -1436,7 +1482,10 @@ export async function getLeagueRanking(
       {
         $lookup: {
           from: FEATS_COLLECTION,
-          let: { userId: { $toString: "$userObjectId" }, leagueId: "$leagueId" },
+          let: {
+            userId: { $toString: "$userObjectId" },
+            leagueId: "$leagueId",
+          },
           pipeline: [
             {
               $match: {
@@ -1480,36 +1529,37 @@ export async function getLeagueRanking(
         },
       },
       { $sort: { ratio: -1, wins: -1, joinedAt: 1 } },
-    ]).limit(100).toArray();
+    ];
 
-    return sortedParticipants.map((participant, index) => ({
+    if (hasPagination) {
+      pipeline.push({ $skip: skip }, { $limit: limit });
+    } else {
+      pipeline.push({ $limit: limit });
+    }
+
+    const participants = await db
+      .collection(PARTICIPANTS_COLLECTION)
+      .aggregate<Omit<LeagueRankingParticipant, "rank">>(pipeline)
+      .toArray();
+
+    return participants.map((participant, index) => ({
       ...participant,
-      rank: index + 1,
+      rank: rankOffset + index + 1,
     }));
   }
 
-  const sortedParticipants = await db.collection(PARTICIPANTS_COLLECTION).aggregate<{
-    userId: string;
-    points: number;
-    pointsHistory: Array<{
-      date: Date;
-      points: number;
-      reason: string;
-      eventId?: string;
-      featId?: string;
-      matchId?: string;
-    }>;
-    feats: Array<{
-      featId: string;
-      earnedAt: Date;
-      eventId?: string;
-      matchId?: string;
-    }>;
-    joinedAt: Date;
-    eliminatedAt?: Date;
-  }>([
-    { $match: { leagueId: new ObjectId(leagueId) } },
+  const pipeline: Document[] = [
+    { $match: { leagueId: leagueObjectId } },
     { $sort: { points: -1, joinedAt: 1 } },
+  ];
+
+  if (hasPagination) {
+    pipeline.push({ $skip: skip }, { $limit: limit });
+  } else {
+    pipeline.push({ $limit: limit });
+  }
+
+  pipeline.push(
     {
       $addFields: {
         userId: { $toObjectId: "$userId" },
@@ -1547,20 +1597,20 @@ export async function getLeagueRanking(
               $expr: {
                 $and: [
                   { $eq: ["$userId", "$$userId"] },
-                  { $eq: ["$leagueId", "$$leagueId"] }
-                ]
-              }
-            }
-          }
+                  { $eq: ["$leagueId", "$$leagueId"] },
+                ],
+              },
+            },
+          },
         ],
         as: "feats",
       },
     },
     {
       $addFields: {
-        'userId': { $toString: "$userId" },
-        'user.id': { $toString: "$user._id" },
-        'feats': {
+        userId: { $toString: "$userId" },
+        "user.id": { $toString: "$user._id" },
+        feats: {
           $map: {
             input: "$feats",
             as: "feat",
@@ -1569,9 +1619,9 @@ export async function getLeagueRanking(
               earnedAt: "$$feat.earnedAt",
               eventId: "$$feat.eventId",
               matchId: "$$feat.matchId",
-            }
-          }
-        }
+            },
+          },
+        },
       },
     },
     {
@@ -1581,11 +1631,16 @@ export async function getLeagueRanking(
         leagueId: 0,
       },
     }
-  ]).limit(100).toArray();
+  );
 
-  return sortedParticipants.map((participant, index) => ({
+  const participants = await db
+    .collection(PARTICIPANTS_COLLECTION)
+    .aggregate<Omit<LeagueRankingParticipant, "rank">>(pipeline)
+    .toArray();
+
+  return participants.map((participant, index) => ({
     ...participant,
-    rank: index + 1,
+    rank: rankOffset + index + 1,
   }));
 }
 
@@ -1637,7 +1692,7 @@ export async function getUserLeagues(
   ]);
 
   return {
-    leagues: await Promise.all(leagues.map(doc => toLeague(doc))),
+    leagues: await Promise.all(leagues.map((doc) => toLeague(doc, false))),
     total,
     page,
     limit,
@@ -1763,7 +1818,9 @@ export async function addLeagueMatch(
   matchInput: CreateLeagueMatchInput,
   createdBy: string
 ): Promise<League | null> {
-  const league = await getLeagueById(leagueId);
+  const league = await getLeagueById(leagueId, {
+    includeParticipants: true,
+  });
   if (!league) return null;
 
   // Vérifier que tous les joueurs sont des participants de la ligue
@@ -1975,7 +2032,7 @@ export async function addLeagueMatch(
     { $set: { updatedAt: new Date() } }
   );
 
-  return getLeagueById(leagueId);
+  return getLeagueById(leagueId, { includeParticipants: true });
 }
 
 // Récupérer les matchs d'une ligue
@@ -2075,7 +2132,7 @@ export async function deleteLeagueMatch(
     { $set: { updatedAt: new Date() } }
   );
 
-  return getLeagueById(leagueId);
+  return getLeagueById(leagueId, { includeParticipants: true });
 }
 
 export async function reportPointsLeagueMatch(
@@ -2083,7 +2140,9 @@ export async function reportPointsLeagueMatch(
   reporterId: string,
   matchInput: ReportPointsLeagueMatchInput
 ): Promise<string> {
-  const league = await getLeagueById(leagueId);
+  const league = await getLeagueById(leagueId, {
+    includeParticipants: true,
+  });
   if (!league) {
     throw new Error("Ligue non trouvée");
   }
@@ -2366,7 +2425,9 @@ export async function assignKillerTargets(
   leagueId: string,
   userId: string
 ): Promise<KillerTarget[]> {
-  const league = await getLeagueById(leagueId);
+  const league = await getLeagueById(leagueId, {
+    includeParticipants: true,
+  });
   if (!league) {
     throw new Error("Ligue non trouvée");
   }
@@ -2589,7 +2650,9 @@ export async function reportKillerMatch(
   reporterDeckId?: string | null,
   matchId?: string
 ): Promise<string> {
-  const league = await getLeagueById(leagueId);
+  const league = await getLeagueById(leagueId, {
+    includeParticipants: true,
+  });
   if (!league) {
     throw new Error("Ligue non trouvée");
   }

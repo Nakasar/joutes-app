@@ -238,8 +238,8 @@ function LeagueCard({ league, games }: { league: League; games: Game[] }) {
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">
-                {league.participants.length} participant
-                {league.participants.length > 1 ? "s" : ""}
+                {league.participantsCount ?? 0} participant
+                {(league.participantsCount ?? 0) > 1 ? "s" : ""}
                 {league.maxParticipants && ` / ${league.maxParticipants} max`}
               </span>
             </div>

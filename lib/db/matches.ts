@@ -99,6 +99,7 @@ function toMatch(doc: WithId<Document>): Match {
       leagueId: doc.leagueId!,
       gameId: doc.gameId!,
       playerIds: doc.playerIds || [],
+      players: doc.players || [],
       playerScores: doc.playerScores,
       winnerIds: doc.winnerIds || [],
       featAwards: doc.featAwards,
@@ -397,7 +398,7 @@ export async function getMatches(filters: GetMatchesFilters = {}): Promise<Match
         $addFields: {
           players: {
             $cond: {
-              if: { $eq: ["$matchType", "game"] },
+              if: { $in: ["$matchType", ["game", "league"]] },
               then: {
                 $map: {
                   input: "$playerDetails",

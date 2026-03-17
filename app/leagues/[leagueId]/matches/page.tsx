@@ -1,4 +1,4 @@
-import { getLeagueById, getLeagueParticipant, getLeagueRanking, isLeagueOrganizer } from "@/lib/db/leagues";
+import { getLeagueById, getLeagueParticipant, isLeagueOrganizer } from "@/lib/db/leagues";
 import { getMatches } from "@/lib/db/matches";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -19,9 +19,18 @@ type LeagueMatchesPageProps = {
   searchParams: Promise<{ page?: string }>;
 };
 
-type RankingParticipant = Awaited<ReturnType<typeof getLeagueRanking>>[number];
+type MatchPagePlayer = {
+  userId: string;
+  user?: {
+    id: string;
+    username: string;
+    displayName?: string;
+    discriminator?: string;
+    avatar?: string;
+  };
+};
 
-function formatPlayerName(player?: RankingParticipant) {
+function formatPlayerName(player?: MatchPagePlayer) {
   if (!player?.user) {
     return player?.userId || "Joueur inconnu";
   }
@@ -128,8 +137,6 @@ export default async function LeagueMatchesPage({
     notFound();
   }
 
-  const ranking = await getLeagueRanking(leagueId);
-  const playerById = new Map(ranking.map((participant) => [participant.userId, participant]));
   const gameById = new Map(league.games.map((game) => [game.id, game]));
   const lairById = new Map(league.lairs.map((lair) => [lair.id, lair]));
 
@@ -146,6 +153,24 @@ export default async function LeagueMatchesPage({
 
   const pageMatches = pageMatchesRaw.filter(
     (match): match is LeagueTypeMatch => match.matchType === "league"
+  );
+
+  const playerById = new Map<string, MatchPagePlayer>(
+    pageMatches
+      .flatMap((match) =>
+        (match.players || []).map((player) => [
+          player.userId,
+          {
+            userId: player.userId,
+            user: {
+              id: player.userId,
+              username: player.username,
+              displayName: player.displayName,
+              discriminator: player.discriminator,
+            },
+          },
+        ] as const)
+      )
   );
 
   const buildPageHref = (page: number) => `/leagues/${league.id}/matches?page=${page}`;

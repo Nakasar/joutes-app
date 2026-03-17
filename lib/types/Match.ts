@@ -59,6 +59,7 @@ export type LeagueTypeMatch = BaseMatch & {
   leagueId: string;
   gameId: Game['id'];
   playerIds: User['id'][]; // Tous les joueurs du match
+  players?: GameMatchPlayer[]; // Détails des joueurs (récupérés via aggregate)
   playerScores?: Record<User['id'], number>; // Parties gagnées par joueur
   winnerIds: User['id'][]; // Les gagnants du match
   featAwards?: MatchFeatAward[]; // Hauts faits attribués lors du match
