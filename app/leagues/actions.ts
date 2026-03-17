@@ -11,6 +11,7 @@ import {
   getLeagueByInvitationCode,
   isLeagueOrganizer,
   addPointsToParticipant,
+  recalculateLeaguePoints,
   awardFeatToParticipant,
   addLeagueMatch,
   deleteLeagueMatch,
@@ -447,6 +448,33 @@ export async function addPointsAction(
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erreur lors de l'ajout de points",
+    };
+  }
+}
+
+// Recalculer les points de tous les participants (pour les organisateurs)
+export async function recalculateLeaguePointsAction(
+  leagueId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await requireAuth();
+
+    const canManage = await isLeagueOrganizer(leagueId, user.id);
+    if (!canManage) {
+      throw new Error("Vous n'êtes pas autorisé à gérer cette ligue");
+    }
+
+    await recalculateLeaguePoints(leagueId);
+    revalidatePath(`/leagues/${leagueId}`);
+    revalidatePath(`/leagues/${leagueId}/manage`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error recalculating league points:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Erreur lors du recalcul des points",
     };
   }
 }

@@ -689,6 +689,167 @@ export async function awardFeatToParticipant(
   return getLeagueById(leagueId);
 }
 
+// Recalculer tous les points des participants d'une ligue POINTS
+export async function recalculateLeaguePoints(
+  leagueId: string
+): Promise<League | null> {
+  const league = await getLeagueById(leagueId);
+  if (!league) {
+    return null;
+  }
+
+  if (league.format !== "POINTS" || !league.pointsConfig) {
+    throw new Error("Cette ligue n'est pas au format POINTS");
+  }
+
+  const { pointsRules } = league.pointsConfig;
+  const participantIds = new Set(
+    league.participants.map((participant) => participant.userId)
+  );
+
+  const historiesByUser = new Map<string, PointHistoryEntry[]>();
+  const featCountsByUser = new Map<string, Map<string, number>>();
+
+  for (const participant of league.participants) {
+    const preservedEntries = participant.pointsHistory
+      .filter((entry) => !entry.matchId)
+      .map((entry) => ({
+        ...entry,
+        date: new Date(entry.date),
+      }));
+
+    historiesByUser.set(participant.userId, preservedEntries);
+
+    const manualFeatCounts = new Map<string, number>();
+    for (const feat of participant.feats) {
+      if (feat.matchId) {
+        continue;
+      }
+
+      const currentCount = manualFeatCounts.get(feat.featId) || 0;
+      manualFeatCounts.set(feat.featId, currentCount + 1);
+    }
+
+    featCountsByUser.set(participant.userId, manualFeatCounts);
+  }
+
+  const pointsMatches = (league.matches || [])
+    .filter(
+      (match) =>
+        match.matchType === "league" &&
+        !match.isKillerMatch &&
+        (match.status === "CONFIRMED" || typeof match.status === "undefined")
+    )
+    .sort(
+      (a, b) => new Date(a.playedAt).getTime() - new Date(b.playedAt).getTime()
+    );
+
+  for (const match of pointsMatches) {
+    const matchDate = new Date(match.playedAt);
+
+    for (const playerId of match.playerIds) {
+      if (!participantIds.has(playerId)) {
+        continue;
+      }
+
+      const isWinner = match.winnerIds.includes(playerId);
+      const points =
+        pointsRules.participation +
+        (isWinner ? pointsRules.victory : pointsRules.defeat);
+
+      const userHistory = historiesByUser.get(playerId) || [];
+      userHistory.push({
+        date: matchDate,
+        points,
+        reason: isWinner ? "Victoire" : "Défaite",
+        matchId: match.id,
+      });
+      historiesByUser.set(playerId, userHistory);
+    }
+
+    if (!match.featAwards || match.featAwards.length === 0) {
+      continue;
+    }
+
+    const perMatchFeatCounts = new Map<string, number>();
+
+    for (const featAward of match.featAwards) {
+      if (featAward.pointsCounted === false) {
+        continue;
+      }
+
+      if (!participantIds.has(featAward.playerId)) {
+        continue;
+      }
+
+      const featRule = pointsRules.feats.find((feat) => feat.id === featAward.featId);
+      if (!featRule) {
+        continue;
+      }
+
+      const perMatchKey = `${featAward.playerId}:${featAward.featId}`;
+      const countInCurrentMatch = perMatchFeatCounts.get(perMatchKey) || 0;
+      if (
+        featRule.maxPerEvent !== undefined &&
+        countInCurrentMatch >= featRule.maxPerEvent
+      ) {
+        continue;
+      }
+
+      const userFeatCounts =
+        featCountsByUser.get(featAward.playerId) || new Map<string, number>();
+      const countInLeague = userFeatCounts.get(featAward.featId) || 0;
+      if (featRule.maxPerLeague !== undefined && countInLeague >= featRule.maxPerLeague) {
+        continue;
+      }
+
+      const userHistory = historiesByUser.get(featAward.playerId) || [];
+      userHistory.push({
+        date: matchDate,
+        points: featRule.points,
+        reason: `Haut fait: ${featRule.title}`,
+        featId: featAward.featId,
+        matchId: match.id,
+      });
+      historiesByUser.set(featAward.playerId, userHistory);
+
+      userFeatCounts.set(featAward.featId, countInLeague + 1);
+      featCountsByUser.set(featAward.playerId, userFeatCounts);
+      perMatchFeatCounts.set(perMatchKey, countInCurrentMatch + 1);
+    }
+  }
+
+  await Promise.all(
+    league.participants.map(async (participant) => {
+      const rebuiltHistory = (historiesByUser.get(participant.userId) || []).sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+
+      const totalPoints = rebuiltHistory.reduce(
+        (sum, entry) => sum + entry.points,
+        0
+      );
+
+      await db.collection(PARTICIPANTS_COLLECTION).updateOne(
+        { leagueId: new ObjectId(leagueId), userId: participant.userId },
+        {
+          $set: {
+            points: totalPoints,
+            pointsHistory: rebuiltHistory,
+          },
+        } as Document
+      );
+    })
+  );
+
+  await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(leagueId) },
+    { $set: { updatedAt: new Date() } }
+  );
+
+  return getLeagueById(leagueId);
+}
+
 // Obtenir le classement d'une ligue
 export async function getLeagueRanking(
   leagueId: string

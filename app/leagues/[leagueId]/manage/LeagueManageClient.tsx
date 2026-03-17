@@ -55,6 +55,7 @@ import {
   Gamepad2,
   X,
   Crown,
+  RefreshCw,
 } from "lucide-react";
 import {
   updateLeagueAction,
@@ -62,6 +63,7 @@ import {
   deleteLeagueAction,
   removeParticipantAction,
   addPointsAction,
+  recalculateLeaguePointsAction,
   awardFeatAction,
   addLeagueMatchAction,
   deleteLeagueMatchAction,
@@ -363,6 +365,35 @@ export default function LeagueManageClient({
         router.refresh();
       } else {
         setError(result.error || "Erreur lors de l'ajout de points");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Une erreur est survenue");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRecalculatePoints = async () => {
+    if (
+      !confirm(
+        "Recalculer les points de tous les participants a partir des matchs et des regles actuelles ?"
+      )
+    ) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const result = await recalculateLeaguePointsAction(league.id);
+      if (result.success) {
+        setSuccess("Points recalcules pour tous les participants");
+        router.refresh();
+      } else {
+        setError(result.error || "Erreur lors du recalcul des points");
       }
     } catch (err) {
       console.error(err);
@@ -1166,6 +1197,32 @@ export default function LeagueManageClient({
       {/* Tab: Points & Feats */}
       {activeTab === "points" && league.format === "POINTS" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Recalcul des points</CardTitle>
+              <CardDescription>
+                Recalcule les points de chaque participant a partir des matchs valides et des regles actuelles.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <p className="text-sm text-muted-foreground">
+                Les ajustements manuels sans match associe sont conserves.
+              </p>
+              <Button
+                variant="outline"
+                onClick={handleRecalculatePoints}
+                disabled={loading}
+              >
+                {loading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
+                Recalculer tous les points
+              </Button>
+            </CardContent>
+          </Card>
+
           {/* Ajouter des points */}
           <Card>
             <CardHeader>
