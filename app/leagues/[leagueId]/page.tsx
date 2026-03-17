@@ -162,6 +162,9 @@ export default async function LeagueDetailPage({
           <div className="flex gap-2">
             {canJoin && <JoinLeagueButton leagueId={leagueId} />}
             {canLeave && <LeaveLeagueButton leagueId={leagueId} />}
+            <Button variant="outline" asChild>
+              <Link href={`/leagues/${leagueId}/matches`}>Historique des matchs</Link>
+            </Button>
             {canManage && (
               <Button asChild>
                 <Link href={`/leagues/${leagueId}/manage`}>

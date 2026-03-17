@@ -292,9 +292,24 @@ export interface GetMatchesFilters {
   eventId?: string;
   phaseId?: string;
   playerUserIds?: string[];
+  page?: number;
+  limit?: number;
 }
 
 export async function getMatches(filters: GetMatchesFilters = {}): Promise<Match[]> {
+  const requestedLimit = filters.limit;
+  const requestedPage = filters.page;
+
+  const limit =
+    typeof requestedLimit === "number" && Number.isFinite(requestedLimit)
+      ? Math.max(1, Math.floor(requestedLimit))
+      : undefined;
+  const page =
+    typeof requestedPage === "number" && Number.isFinite(requestedPage)
+      ? Math.max(1, Math.floor(requestedPage))
+      : 1;
+  const skip = limit ? (page - 1) * limit : 0;
+
   const matchQuery: Record<string, unknown> = {};
   
   // Filtrer par type de match
@@ -351,6 +366,7 @@ export async function getMatches(filters: GetMatchesFilters = {}): Promise<Match
     .aggregate([
       { $match: matchQuery },
       { $sort: { playedAt: -1 } },
+      ...(limit ? [{ $skip: skip }, { $limit: limit }] : []),
       {
         $lookup: {
           from: "user",
