@@ -25,6 +25,7 @@ import { LeagueStatus, LeagueFormat } from "@/lib/types/League";
 import JoinLeagueButton from "./JoinLeagueButton";
 import LeaveLeagueButton from "./LeaveLeagueButton";
 import KillerTargetsClient from "./KillerTargetsClient";
+import PointsMatchReportingClient from "./PointsMatchReportingClient";
 
 const STATUS_LABELS: Record<LeagueStatus, string> = {
   DRAFT: "Brouillon",
@@ -126,6 +127,13 @@ export default async function LeagueDetailPage({
     session?.user?.id &&
     isParticipant &&
     league.status !== "IN_PROGRESS";
+
+  const canReportPointsMatches =
+    league.format === "POINTS" &&
+    !!session?.user?.id &&
+    isParticipant &&
+    league.status !== "COMPLETED" &&
+    league.status !== "CANCELLED";
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -337,6 +345,14 @@ export default async function LeagueDetailPage({
                   )}
                 </CardContent>
               </Card>
+            )}
+
+            {canReportPointsMatches && session?.user?.id && (
+              <PointsMatchReportingClient
+                leagueId={league.id}
+                league={league}
+                participantsWithUsers={ranking}
+              />
             )}
 
             {/* Règles (format KILLER) */}

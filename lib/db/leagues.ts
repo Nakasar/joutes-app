@@ -20,7 +20,6 @@ import { getLairById } from "@/lib/db/lairs";
 import { 
   createMatch,
   getMatches,
-  updateMatch as updateMatchUnified,
   deleteMatch,
 } from "@/lib/db/matches";
 
