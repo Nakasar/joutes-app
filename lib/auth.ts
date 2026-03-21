@@ -55,6 +55,9 @@ export const auth = betterAuth({
       allowDynamicClientRegistration: true,
       allowUnauthenticatedClientRegistration: true,
       validAudiences: [`${process.env.NEXT_PUBLIC_BASE_URL || process.env.BETTER_AUTH_URL || "http://localhost:3000"}/`],
+      silenceWarnings: {
+        oauthAuthServerConfig: true,
+      },
     }),
   ],
   session: {

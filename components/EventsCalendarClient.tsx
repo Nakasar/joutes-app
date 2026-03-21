@@ -170,7 +170,7 @@ export default function EventsCalendarClient({
   }, [params.month, params.year, params.gameId, params.locParams, fetchEvents]);
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <div className="container mx-auto">
       <div className="space-y-6">
         <EventsCalendar 
           events={events}
