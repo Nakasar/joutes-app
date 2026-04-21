@@ -15,6 +15,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.5,
     },
     {
+        url: 'https://www.joutes.app/games/riftbound',
+        lastModified: new Date(),
+        changeFrequency: 'weekly',
+        priority: 0.5,
+    },
+    {
       url: 'https://www.joutes.app/games',
       lastModified: new Date(),
       changeFrequency: 'monthly',
