@@ -5,7 +5,7 @@ import { getEventById } from "@/lib/db/events";
 import { getPortalSettings, getPhaseStandings } from "../../actions";
 import { getEventParticipants } from "../../participant-actions";
 import OrganizerLayoutServer from "../components/OrganizerLayoutServer";
-import OrganizerStandings from "../components/OrganizerStandings";
+import OrganizerStandings, { EnrichedStanding } from "../components/OrganizerStandings";
 
 type OrganizerStandingsPageProps = {
   params: Promise<{
@@ -47,7 +47,7 @@ export default async function OrganizerStandingsPage({ params }: OrganizerStandi
   }
 
   // Charger les classements de la phase courante
-  let standings: ({ playerId: string; username?: string; discriminator?: string } & Record<string, unknown>)[] = [];
+  let standings: EnrichedStanding[] = [];
   if (settings.currentPhaseId) {
     const standingsResult = await getPhaseStandings(eventId, settings.currentPhaseId);
     standings = standingsResult.success ? standingsResult.data || [] : [];

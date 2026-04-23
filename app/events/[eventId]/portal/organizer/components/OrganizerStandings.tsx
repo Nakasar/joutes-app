@@ -11,7 +11,7 @@ import PlayerDetailsModal from "./PlayerDetailsModal";
 import { PlayerStanding } from "@/lib/utils/pairing";
 import { EventParticipant } from "./OrganizerContext";
 
-type EnrichedStanding = PlayerStanding & { username?: string; discriminator?: string };
+export type EnrichedStanding = PlayerStanding & { username?: string; discriminator?: string };
 
 type OrganizerStandingsProps = {
   event: Event;
