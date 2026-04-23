@@ -30,22 +30,25 @@ export default function WinterDecorations() {
 
     mediaQuery.addEventListener('change', handleChange);
 
-    // Créer moins de flocons sur mobile, aucun si mouvement réduit
-    const isMobile = window.innerWidth < 768;
-    const snowflakeCount = prefersReducedMotion ? 0 : (isMobile ? 20 : 50);
+    const generateSnowflakes = async () => {
+      // Créer moins de flocons sur mobile, aucun si mouvement réduit
+      const isMobile = window.innerWidth < 768;
+      const snowflakeCount = prefersReducedMotion ? 0 : (isMobile ? 20 : 50);
 
-    const flakes: Snowflake[] = [];
-    for (let i = 0; i < snowflakeCount; i++) {
-      flakes.push({
-        id: i,
-        left: Math.random() * 100,
-        animationDuration: 10 + Math.random() * 20, // 10-30s
-        animationDelay: Math.random() * 5, // 0-5s
-        fontSize: 10 + Math.random() * 20, // 10-30px
-        opacity: 0.3 + Math.random() * 0.7, // 0.3-1
-      });
-    }
-    setSnowflakes(flakes);
+      const flakes: Snowflake[] = [];
+      for (let i = 0; i < snowflakeCount; i++) {
+        flakes.push({
+          id: i,
+          left: Math.random() * 100,
+          animationDuration: 10 + Math.random() * 20, // 10-30s
+          animationDelay: Math.random() * 5, // 0-5s
+          fontSize: 10 + Math.random() * 20, // 10-30px
+          opacity: 0.3 + Math.random() * 0.7, // 0.3-1
+        });
+      }
+      setSnowflakes(flakes);
+    };
+    generateSnowflakes();
 
     return () => {
       mediaQuery.removeEventListener('change', handleChange);

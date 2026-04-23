@@ -4,7 +4,8 @@ import { useState, useTransition, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Event } from "@/lib/types/Event";
-import { EventPortalSettings, TournamentPhase, MatchResult, Announcement } from "@/lib/schemas/event-portal.schema";
+import { EventPortalSettings, TournamentPhase, MatchResult, Announcement, MatchType } from "@/lib/schemas/event-portal.schema";
+import { EventParticipant } from "../organizer/components/OrganizerContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -92,7 +93,7 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
 
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [participants, setParticipants] = useState<any[]>([]);
+  const [participants, setParticipants] = useState<EventParticipant[]>([]);
   const [matchesLoaded, setMatchesLoaded] = useState(false);
   const [announcementsLoaded, setAnnouncementsLoaded] = useState(false);
   const [participantsLoaded, setParticipantsLoaded] = useState(false);
@@ -636,7 +637,7 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
                         <select
                           className="w-full border rounded-md p-2"
                           value={phaseForm.matchType}
-                          onChange={(e) => setPhaseForm({ ...phaseForm, matchType: e.target.value as any })}
+                          onChange={(e) => setPhaseForm({ ...phaseForm, matchType: e.target.value as MatchType })}
                         >
                           <option value="BO1">BO1</option>
                           <option value="BO2">BO2</option>
@@ -1276,7 +1277,7 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
                     <select
                       className="w-full border rounded-md p-2"
                       value={announcementForm.priority}
-                      onChange={(e) => setAnnouncementForm({ ...announcementForm, priority: e.target.value as any })}
+                      onChange={(e) => setAnnouncementForm({ ...announcementForm, priority: e.target.value as "normal" | "important" | "urgent" })}
                     >
                       <option value="normal">Normale</option>
                       <option value="important">Importante</option>

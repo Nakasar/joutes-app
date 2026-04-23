@@ -88,7 +88,7 @@ export default function OrganizerAnnouncements({
                 <select
                   className="w-full border rounded-md p-2"
                   value={announcementForm.priority}
-                  onChange={(e) => setAnnouncementForm({ ...announcementForm, priority: e.target.value as any })}
+                  onChange={(e) => setAnnouncementForm({ ...announcementForm, priority: e.target.value as "normal" | "important" | "urgent" })}
                 >
                   <option value="normal">Normale</option>
                   <option value="important">Importante</option>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition, type FormEvent } from "react";
 import { Event } from "@/lib/types/Event";
-import { EventPortalSettings, TournamentPhase } from "@/lib/schemas/event-portal.schema";
+import { EventPortalSettings, TournamentPhase, MatchType } from "@/lib/schemas/event-portal.schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -79,22 +79,28 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
   };
 
   useEffect(() => {
-    setPortalSettingsForm({
-      allowSelfReporting: settings?.allowSelfReporting ?? false,
-      requireConfirmation: settings?.requireConfirmation ?? true,
-    });
+    const init = async () => {
+      setPortalSettingsForm({
+        allowSelfReporting: settings?.allowSelfReporting ?? false,
+        requireConfirmation: settings?.requireConfirmation ?? true,
+      });
+    };
+    init();
   }, [settings]);
 
   useEffect(() => {
-    setEventForm({
-      name: event.name,
-      gameName: event.gameName,
-      startDateTime: formatDateTimeInput(event.startDateTime),
-      endDateTime: formatDateTimeInput(event.endDateTime),
-      url: event.url ?? "",
-      price: event.price?.toString() ?? "",
-      maxParticipants: event.maxParticipants?.toString() ?? "",
-    });
+    const init = async () => {
+      setEventForm({
+        name: event.name,
+        gameName: event.gameName,
+        startDateTime: formatDateTimeInput(event.startDateTime),
+        endDateTime: formatDateTimeInput(event.endDateTime),
+        url: event.url ?? "",
+        price: event.price?.toString() ?? "",
+        maxParticipants: event.maxParticipants?.toString() ?? "",
+      });
+    };
+    init();
   }, [event]);
 
   const handleInitializeSettings = () => {
@@ -449,7 +455,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
                     <select
                       className="w-full border rounded-md p-2"
                       value={phaseForm.matchType}
-                      onChange={(e) => setPhaseForm({ ...phaseForm, matchType: e.target.value as any })}
+                      onChange={(e) => setPhaseForm({ ...phaseForm, matchType: e.target.value as MatchType })}
                     >
                       <option value="BO1">BO1</option>
                       <option value="BO2">BO2</option>
@@ -534,7 +540,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
                             <select
                               className="w-full border rounded-md p-2"
                               value={phaseForm.matchType}
-                              onChange={(e) => setPhaseForm({ ...phaseForm, matchType: e.target.value as any })}
+                              onChange={(e) => setPhaseForm({ ...phaseForm, matchType: e.target.value as MatchType })}
                             >
                               <option value="BO1">BO1</option>
                               <option value="BO2">BO2</option>

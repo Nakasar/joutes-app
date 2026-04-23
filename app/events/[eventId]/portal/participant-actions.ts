@@ -167,7 +167,7 @@ export async function addParticipantToEvent(eventId: string, data: unknown) {
         createdVia: "event-invite", // Marquer que ce compte a été créé via une invitation
       };
 
-      const result = await usersCollection.insertOne(newUser as any);
+      const result = await usersCollection.insertOne(newUser);
       const userId = result.insertedId.toString();
 
       // Créer un participant invité
@@ -271,7 +271,7 @@ export async function removeParticipantFromEvent(eventId: string, participantId:
         await eventsCollection.updateOne(
           { id: eventId },
           {
-            $pull: { participants: guestParticipant.userId } as any,
+            $pull: { participants: guestParticipant.userId },
             $unset: { [`participantRegistrations.${guestParticipant.userId}`]: "" },
           }
         );
@@ -281,7 +281,7 @@ export async function removeParticipantFromEvent(eventId: string, participantId:
       await eventsCollection.updateOne(
         { id: eventId },
         {
-          $pull: { participants: participantId } as any,
+            $pull: { participants: participantId },
           $unset: { [`participantRegistrations.${participantId}`]: "" },
         }
       );

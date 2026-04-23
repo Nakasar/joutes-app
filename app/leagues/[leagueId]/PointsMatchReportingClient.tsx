@@ -170,18 +170,20 @@ export default function PointsMatchReportingClient({
     }
 
     const trimmedQuery = lairQuery.trim();
-    if (!trimmedQuery) {
-      setPlatformLairs([]);
-      return;
-    }
-
     let isActive = true;
-    const timeout = setTimeout(async () => {
-      setIsSearchingLairs(true);
-      const result = await searchPlatformLairsAction(trimmedQuery);
-      if (!isActive) {
+
+    const searchLairs = async () => {
+      if (!trimmedQuery) {
+        setPlatformLairs([]);
         return;
       }
+
+      await new Promise<void>(resolve => setTimeout(resolve, 250));
+      if (!isActive) return;
+
+      setIsSearchingLairs(true);
+      const result = await searchPlatformLairsAction(trimmedQuery);
+      if (!isActive) return;
 
       if (result.success) {
         setPlatformLairs(result.lairs || []);
@@ -190,11 +192,12 @@ export default function PointsMatchReportingClient({
       }
 
       setIsSearchingLairs(false);
-    }, 250);
+    };
+
+    searchLairs();
 
     return () => {
       isActive = false;
-      clearTimeout(timeout);
     };
   }, [hasPartnerLairs, lairQuery]);
 

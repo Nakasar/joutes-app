@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Event } from "@/lib/types/Event";
 import { EventPortalSettings, MatchResult, Announcement } from "@/lib/schemas/event-portal.schema";
+import { type PlayerStanding } from "@/lib/utils/pairing";
+import { type EventParticipant } from "../organizer/components/OrganizerContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -53,8 +55,8 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
 
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [standings, setStandings] = useState<any[]>([]);
-  const [participants, setParticipants] = useState<any[]>([]);
+  const [standings, setStandings] = useState<(PlayerStanding & { username?: string; discriminator?: string })[]>([]);
+  const [participants, setParticipants] = useState<EventParticipant[]>([]);
   const [matchesLoaded, setMatchesLoaded] = useState(false);
   const [announcementsLoaded, setAnnouncementsLoaded] = useState(false);
   const [standingsLoaded, setStandingsLoaded] = useState(false);

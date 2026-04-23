@@ -153,7 +153,7 @@ export function AchievementForm({ initialData }: { initialData?: Achievement }) 
             Succès caché
           </SimpleLabel>
           <p className="text-sm text-muted-foreground">
-            Ce succès ne sera pas visible tant qu'il n'est pas débloqué.
+            Ce succès ne sera pas visible tant qu&apos;il n&apos;est pas débloqué.
           </p>
         </div>
       </div>

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import EventActions from "./EventActions";
 import QRCodeButton from "./QRCodeButton";
 import ParticipantManagerWrapper from "./ParticipantManagerWrapper";
+import { type Participant } from "./AddParticipantForm";
 import FavoriteButton from "./FavoriteButton";
 import AllowJoinSwitch from "./AllowJoinSwitch";
 import PreRegistrationSwitch from "./PreRegistrationSwitch";
@@ -276,7 +277,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                 {isCreator ? (
                   <ParticipantManagerWrapper
                     eventId={event.id}
-                    participants={allParticipants as any}
+                    participants={allParticipants as Participant[]}
                     runningState={event.runningState}
                     preRegistration={event.preRegistration}
                   />

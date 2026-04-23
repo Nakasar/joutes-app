@@ -301,7 +301,7 @@ export default function EventsCalendar({
     if (event.creatorId === session.data.user.id) return true;
     // Vérifier si l'utilisateur est propriétaire du lair (si lair existe)
     if (event.lair && 'owners' in event.lair) {
-      const lair = event.lair as any;
+      const lair = event.lair as { owners?: string[] };
       if (lair.owners && Array.isArray(lair.owners) && lair.owners.includes(session.data.user.id)) {
         return true;
       }

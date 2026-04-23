@@ -46,20 +46,21 @@ export default function EventDetailsModal({
   // Charger les utilisateurs qui ont mis en favori si l'utilisateur a les droits
   useEffect(() => {
     if (open && isCreatorOrOwner && event.favoritedBy && event.favoritedBy.length > 0) {
-      setLoadingFavorites(true);
-      fetch(`/api/events/${event.id}/favorited-users`)
-        .then(res => res.json())
-        .then(data => {
+      const loadFavorites = async () => {
+        setLoadingFavorites(true);
+        try {
+          const res = await fetch(`/api/events/${event.id}/favorited-users`);
+          const data = await res.json();
           if (data.users) {
             setFavoritedUsers(data.users);
           }
-        })
-        .catch(error => {
+        } catch (error) {
           console.error("Erreur lors du chargement des favoris:", error);
-        })
-        .finally(() => {
+        } finally {
           setLoadingFavorites(false);
-        });
+        }
+      };
+      loadFavorites();
     }
   }, [open, isCreatorOrOwner, event.favoritedBy, event.id]);
 

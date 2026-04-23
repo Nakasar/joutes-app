@@ -1147,7 +1147,7 @@ export async function generateMatchesForPhase(eventId: string, phaseId: string) 
       // Déterminer si c'est un BYE et calculer le score automatique
       const isBye = pairing.player2Id === null;
       let player1Score = 0;
-      let player2Score = 0;
+      const player2Score = 0;
       let status: "pending" | "completed" = "pending";
       let winnerId: string | undefined = undefined;
       let reportedBy: string | undefined = undefined;
@@ -1200,7 +1200,7 @@ export async function generateMatchesForPhase(eventId: string, phaseId: string) 
 
     // Insérer tous les matchs
     if (newMatches.length > 0) {
-      await matchesCollection.insertMany(newMatches as any);
+      await matchesCollection.insertMany(newMatches);
     }
 
     return {
@@ -1322,7 +1322,7 @@ export async function getPhaseStandings(eventId: string, phaseId: string) {
     const completedMatches = allMatches.filter(m => (m.round || 1) <= maxCompletedRound);
 
     // Calculer le classement uniquement avec les matchs des rondes terminées
-    const standings = calculateStandings(playerIds, completedMatches as any);
+    const standings = calculateStandings(playerIds, completedMatches as MatchResult[]);
 
     // Enrichir avec les informations des participants
     const enrichedStandings = standings.map(standing => {

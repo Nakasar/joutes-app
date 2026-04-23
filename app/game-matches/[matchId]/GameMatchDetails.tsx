@@ -101,24 +101,27 @@ export default function GameMatchDetails({
 
   // Récupérer les messages de l'URL
   useEffect(() => {
-    const errorParam = searchParams.get("error");
-    const messageParam = searchParams.get("message");
-    
-    if (errorParam) {
-      setError(decodeURIComponent(errorParam));
-      // Nettoyer l'URL
-      const url = new URL(window.location.href);
-      url.searchParams.delete("error");
-      window.history.replaceState({}, "", url.toString());
-    }
-    
-    if (messageParam) {
-      setSuccessMessage(decodeURIComponent(messageParam));
-      // Nettoyer l'URL
-      const url = new URL(window.location.href);
-      url.searchParams.delete("message");
-      window.history.replaceState({}, "", url.toString());
-    }
+    const readParams = async () => {
+      const errorParam = searchParams.get("error");
+      const messageParam = searchParams.get("message");
+
+      if (errorParam) {
+        setError(decodeURIComponent(errorParam));
+        // Nettoyer l'URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete("error");
+        window.history.replaceState({}, "", url.toString());
+      }
+
+      if (messageParam) {
+        setSuccessMessage(decodeURIComponent(messageParam));
+        // Nettoyer l'URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete("message");
+        window.history.replaceState({}, "", url.toString());
+      }
+    };
+    readParams();
   }, [searchParams]);
 
   // Charger les informations des decks utilisés dans le match

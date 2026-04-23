@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Settings, Users, Trophy, Megaphone, AlertCircle } from "lucide-react";
 import { getMatchResults, getAnnouncements } from "../../actions";
 import { getEventParticipants } from "../../participant-actions";
-import { OrganizerContext } from "./OrganizerContext";
+import { OrganizerContext, EventParticipant } from "./OrganizerContext";
 
 type OrganizerLayoutClientProps = {
   event: Event;
@@ -25,7 +25,7 @@ export default function OrganizerLayoutClient({ event, settings, userId, childre
   
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [participants, setParticipants] = useState<any[]>([]);
+  const [participants, setParticipants] = useState<EventParticipant[]>([]);
   const [matchesLoaded, setMatchesLoaded] = useState(false);
   const [announcementsLoaded, setAnnouncementsLoaded] = useState(false);
   const [participantsLoaded, setParticipantsLoaded] = useState(false);
