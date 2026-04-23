@@ -1,6 +1,6 @@
 import db from "@/lib/mongodb";
 import { NewNotification, Notification } from "@/lib/types/Notification";
-import { ObjectId } from "mongodb";
+import { Document, ObjectId } from "mongodb";
 import { getUserById } from "./users";
 
 const COLLECTION_NAME = "notifications";
@@ -16,7 +16,7 @@ export type NotificationDocument = Notification;
 export async function getUserNotifications(
   userId: string, 
   options?: { page?: number; limit?: number }
-): Promise<{ notifications: any[]; total: number }> {
+): Promise<{ notifications: Notification[]; total: number }> {
   try {
     const collection = db.collection<NotificationDocument>(COLLECTION_NAME);
     const user = await getUserById(userId);
@@ -27,7 +27,7 @@ export async function getUserNotifications(
 
     const followedLairIds = user.lairs || [];
 
-    const pipeline: any[] = [
+    const pipeline: Document[] = [
       // Exclure les notifications masquées par l'utilisateur
       {
         $match: {
@@ -277,7 +277,7 @@ export async function getUserNotifications(
         lairConfirmedBy: doc.match.lairConfirmedBy,
         confirmedAt: doc.match.confirmedAt,
       } : undefined,
-      matchPlayers: doc.matchPlayers?.map((player: any) => ({
+      matchPlayers: doc.matchPlayers?.map((player: { _id?: ObjectId; id?: string; username?: string; displayName?: string; discriminator?: string; avatar?: string }) => ({
         id: player._id?.toString() || player.id,
         username: player.username,
         displayName: player.displayName,
@@ -285,7 +285,7 @@ export async function getUserNotifications(
         avatar: player.avatar,
       })) || [],
       readBy: doc.readBy?.includes(userId) ? [userId] : [],
-    }));
+    })) as unknown as Notification[];
 
     return {
       notifications: formattedNotifications,
@@ -306,12 +306,12 @@ export async function createNotification(notification: NewNotification): Promise
   try {
     const collection = db.collection<NotificationDocument>(COLLECTION_NAME);
 
-    const notificationDoc: any = {
+    const notificationDoc = {
       ...notification,
       id: new ObjectId().toString(),
       createdAt: new Date().toISOString(),
-      readBy: [],
-    };
+      readBy: [] as string[],
+    } as Notification;
 
     await collection.insertOne(notificationDoc);
 
