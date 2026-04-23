@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Trophy, Save, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 import { getPlayerNote, updatePlayerNote, getMatchResults } from "../../actions";
+import { EventParticipant } from "./OrganizerContext";
 
 type PlayerDetailsModalProps = {
   open: boolean;
@@ -24,7 +25,7 @@ type PlayerDetailsModalProps = {
   playerId: string;
   playerName: string;
   eventId: string;
-  participants: any[];
+  participants: EventParticipant[];
 };
 
 export default function PlayerDetailsModal({

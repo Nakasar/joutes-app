@@ -25,8 +25,9 @@ import { Badge } from "@/components/ui/badge";
 import { addParticipantToEvent, removeParticipantFromEvent } from "./portal/participant-actions";
 import { updateParticipantRegistrationStatusAction } from "../actions";
 import { RegistrationStatus } from "@/lib/types/Event";
+import { AddParticipant } from "@/lib/schemas/event-portal.schema";
 
-type Participant = {
+export type Participant = {
   id: string;
   username: string;
   discriminator?: string;
@@ -124,7 +125,7 @@ export default function AddParticipantForm({
       setError(null);
       setSuccess(null);
 
-      let data: any;
+      let data: AddParticipant | undefined;
       if (addType === "userTag") {
         if (!userTag.trim()) {
           setError("Veuillez entrer un user tag");
@@ -148,7 +149,7 @@ export default function AddParticipantForm({
       const result = await addParticipantToEvent(eventId, data);
 
       if (result.success) {
-        const participant = result.participant as any;
+        const participant = result.participant as { username?: string; discriminator?: string; newAccount?: boolean; type?: string };
         if (participant.newAccount) {
           setSuccess(
             `${participant.username}#${participant.discriminator} a été ajouté (nouveau compte créé)`

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Plus, PlayCircle, Edit, Trash2, Check, MoreVertical } from "lucide-react";
+import { EventParticipant } from "./OrganizerContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,7 +38,7 @@ type OrganizerMatchesProps = {
   event: Event;
   settings: EventPortalSettings;
   matches: MatchResult[];
-  participants: any[];
+  participants: EventParticipant[];
   selectedPhaseId?: string;
   selectedRound?: string;
   userId: string;

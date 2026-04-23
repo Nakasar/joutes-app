@@ -3,10 +3,20 @@
 import { createContext, useContext } from "react";
 import { EventPortalSettings, MatchResult, Announcement } from "@/lib/schemas/event-portal.schema";
 
+export type EventParticipant = {
+  id: string;
+  username?: string;
+  discriminator?: string;
+  email?: string;
+  profileImage?: string;
+  type: string;
+  registrationStatus: string;
+};
+
 type OrganizerContextType = {
   matches: MatchResult[];
   announcements: Announcement[];
-  participants: any[];
+  participants: EventParticipant[];
   settings: EventPortalSettings | null | undefined;
   onDataUpdate: () => void;
 };

@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import db from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
+import { ObjectId, Document } from "mongodb";
 import {
   createPortalSettingsSchema,
   createPhaseSchema,
@@ -590,7 +590,7 @@ export async function getMatchResults(eventId: string, phaseId?: string) {
 
     return {
       success: true,
-      data: results.map((r: any) => ({
+      data: results.map((r: Document) => ({
         ...r,
         id: r._id?.toString(),
         _id: undefined,
@@ -1276,7 +1276,7 @@ export async function getPhaseStandings(eventId: string, phaseId: string) {
     // Créer une map des participants pour un accès rapide
     const participantsMap = new Map();
     userParticipants
-      .forEach((user: any) => {
+      .forEach((user: { _id: ObjectId; displayName?: string; username?: string; discriminator?: string }) => {
         const id = user._id.toString();
         participantsMap.set(id, {
           id,
@@ -1285,7 +1285,7 @@ export async function getPhaseStandings(eventId: string, phaseId: string) {
         });
       });
     guestParticipants
-      .forEach((guest: any) => {
+      .forEach((guest: { id: string; username?: string; discriminator?: string }) => {
         participantsMap.set(guest.id, {
           id: guest.id,
           username: guest.username,

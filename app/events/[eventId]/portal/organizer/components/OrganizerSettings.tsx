@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition, type FormEvent } from "react";
 import { Event } from "@/lib/types/Event";
-import { EventPortalSettings } from "@/lib/schemas/event-portal.schema";
+import { EventPortalSettings, TournamentPhase } from "@/lib/schemas/event-portal.schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -145,7 +145,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
     });
   };
 
-  const handleEditPhase = (phase: any) => {
+  const handleEditPhase = (phase: TournamentPhase) => {
     setEditingPhaseId(phase.id);
     setPhaseForm({
       name: phase.name,

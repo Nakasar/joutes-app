@@ -8,12 +8,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
 import PlayerDetailsModal from "./PlayerDetailsModal";
+import { PlayerStanding } from "@/lib/utils/pairing";
+import { EventParticipant } from "./OrganizerContext";
+
+type EnrichedStanding = PlayerStanding & { username?: string; discriminator?: string };
 
 type OrganizerStandingsProps = {
   event: Event;
   settings: EventPortalSettings;
-  standings: any[];
-  participants: any[];
+  standings: EnrichedStanding[];
+  participants: EventParticipant[];
 };
 
 export default function OrganizerStandings({ event, settings, standings, participants }: OrganizerStandingsProps) {

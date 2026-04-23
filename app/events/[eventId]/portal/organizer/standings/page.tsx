@@ -47,7 +47,7 @@ export default async function OrganizerStandingsPage({ params }: OrganizerStandi
   }
 
   // Charger les classements de la phase courante
-  let standings: any[] = [];
+  let standings: ({ playerId: string; username?: string; discriminator?: string } & Record<string, unknown>)[] = [];
   if (settings.currentPhaseId) {
     const standingsResult = await getPhaseStandings(eventId, settings.currentPhaseId);
     standings = standingsResult.success ? standingsResult.data || [] : [];

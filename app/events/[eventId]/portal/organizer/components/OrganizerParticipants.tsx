@@ -1,9 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import AddParticipantForm from "../../../AddParticipantForm";
+import AddParticipantForm, { Participant } from "../../../AddParticipantForm";
 
 type OrganizerParticipantsProps = {
   eventId: string;
-  participants: any[];
+  participants: Participant[];
   runningState?: 'not-started' | 'ongoing' | 'completed';
   preRegistration?: boolean;
 };
