@@ -119,7 +119,7 @@ export default function PlayerStandings({ event, settings, userId, matches, stan
                             {standing.gamesWon}-{standing.gamesLost}
                           </td>
                           <td className="p-2 text-center">
-                            {(standing.opponentMatchWinPercentage * 100).toFixed(1)}%
+                            {standing.opponentMatchWinPercentage ? (standing.opponentMatchWinPercentage * 100).toFixed(1) : "-"}%
                           </td>
                         </tr>
                       );
