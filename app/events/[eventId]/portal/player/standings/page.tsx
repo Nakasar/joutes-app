@@ -41,7 +41,7 @@ export default async function PlayerStandingsPage({ params }: PlayerStandingsPag
   const matchesResult = await getMatchResults(eventId);
   const matches = matchesResult.success ? matchesResult.data || [] : [];
 
-  let standings: any[] = [];
+  let standings: ({ playerId: string; username?: string; discriminator?: string } & Record<string, unknown>)[] = [];
   if (settings?.currentPhaseId) {
     const standingsResult = await getPhaseStandings(eventId, settings.currentPhaseId);
     standings = standingsResult.success ? standingsResult.data || [] : [];

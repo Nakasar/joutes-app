@@ -2,13 +2,16 @@ import { Event } from "@/lib/types/Event";
 import { EventPortalSettings, MatchResult } from "@/lib/schemas/event-portal.schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PlayerStanding } from "@/lib/utils/pairing";
+
+type EnrichedStanding = PlayerStanding & { username?: string; discriminator?: string };
 
 type PlayerStandingsProps = {
   event: Event;
   settings: EventPortalSettings | null | undefined;
   userId: string;
   matches: MatchResult[];
-  standings: any[];
+  standings: EnrichedStanding[];
 };
 
 export default function PlayerStandings({ event, settings, userId, matches, standings }: PlayerStandingsProps) {

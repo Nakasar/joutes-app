@@ -8,8 +8,34 @@ import { useState } from "react";
 import Link from "next/link";
 import { NotificationTemplate } from "@/components/notifications/NotificationTemplate";
 
+type EnrichedNotification = {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  createdAt: string;
+  template?: string;
+  userId?: string;
+  lairId?: string;
+  leagueId?: string;
+  matchId?: string;
+  readBy?: string[];
+  lair?: { id?: string; name?: string };
+  event?: { id?: string; name?: string };
+  league?: { id?: string; name?: string };
+  match?: {
+    id?: string;
+    status?: string;
+    winnerIds?: string[];
+    confirmedPlayerIds?: string[];
+    confirmedBy?: string;
+    lairConfirmedBy?: string;
+  };
+  matchPlayers?: { id: string; username?: string; displayName?: string; discriminator?: string; avatar?: string }[];
+};
+
 type NotificationItemProps = {
-  notification: any; // Utiliser any pour accepter les champs additionnels lair/event
+  notification: EnrichedNotification;
   userId: string;
   onMarkAsRead?: () => void;
   onHide?: () => void;

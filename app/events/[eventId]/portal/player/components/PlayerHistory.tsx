@@ -2,10 +2,20 @@ import { MatchResult } from "@/lib/schemas/event-portal.schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
+type EventParticipant = {
+  id: string;
+  username?: string;
+  discriminator?: string;
+  email?: string;
+  profileImage?: string;
+  type: string;
+  registrationStatus: string;
+};
+
 type PlayerHistoryProps = {
   userId: string;
   matches: MatchResult[];
-  participants: any[];
+  participants: EventParticipant[];
 };
 
 export default function PlayerHistory({ userId, matches, participants }: PlayerHistoryProps) {

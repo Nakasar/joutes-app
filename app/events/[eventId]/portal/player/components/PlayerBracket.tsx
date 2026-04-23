@@ -3,12 +3,22 @@ import { EventPortalSettings, MatchResult } from "@/lib/schemas/event-portal.sch
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import BracketView from "../../BracketView";
 
+type EventParticipant = {
+  id: string;
+  username?: string;
+  discriminator?: string;
+  email?: string;
+  profileImage?: string;
+  type: string;
+  registrationStatus: string;
+};
+
 type PlayerBracketProps = {
   event: Event;
   settings: EventPortalSettings | null | undefined;
   userId: string;
   matches: MatchResult[];
-  participants: any[];
+  participants: EventParticipant[];
 };
 
 export default function PlayerBracket({ event, settings, userId, matches, participants }: PlayerBracketProps) {
