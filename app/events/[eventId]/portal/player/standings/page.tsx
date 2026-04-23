@@ -5,6 +5,7 @@ import { getEventById } from "@/lib/db/events";
 import { getPortalSettings, getMatchResults, getPhaseStandings } from "../../actions";
 import PlayerLayoutServer from "../components/PlayerLayoutServer";
 import PlayerStandings from "../components/PlayerStandings";
+import type { EnrichedStanding } from "../../types";
 
 type PlayerStandingsPageProps = {
   params: Promise<{
@@ -41,7 +42,7 @@ export default async function PlayerStandingsPage({ params }: PlayerStandingsPag
   const matchesResult = await getMatchResults(eventId);
   const matches = matchesResult.success ? matchesResult.data || [] : [];
 
-  let standings: ({ playerId: string; username?: string; discriminator?: string } & Record<string, unknown>)[] = [];
+  let standings: EnrichedStanding[] = [];
   if (settings?.currentPhaseId) {
     const standingsResult = await getPhaseStandings(eventId, settings.currentPhaseId);
     standings = standingsResult.success ? standingsResult.data || [] : [];

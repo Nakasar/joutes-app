@@ -2,9 +2,7 @@ import { Event } from "@/lib/types/Event";
 import { EventPortalSettings, MatchResult } from "@/lib/schemas/event-portal.schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { PlayerStanding } from "@/lib/utils/pairing";
-
-type EnrichedStanding = PlayerStanding & { username?: string; discriminator?: string };
+import type { EnrichedStanding } from "../../types";
 
 type PlayerStandingsProps = {
   event: Event;
@@ -119,7 +117,9 @@ export default function PlayerStandings({ event, settings, userId, matches, stan
                             {standing.gamesWon}-{standing.gamesLost}
                           </td>
                           <td className="p-2 text-center">
-                            {(standing.opponentMatchWinPercentage * 100).toFixed(1)}%
+                            {standing.opponentMatchWinPercentage != null
+                              ? `${(standing.opponentMatchWinPercentage * 100).toFixed(1)}%`
+                              : "-"}
                           </td>
                         </tr>
                       );

@@ -22,6 +22,7 @@ import { getEventById } from "@/lib/db/events";
 import { calculateStandings, generateBracketPosition, generateEliminationBracket, generateNextBracketRound, generateSwissPairings } from "@/lib/utils/pairing";
 import { getEventParticipants } from "./participant-actions";
 import { notifyEventAll } from "@/lib/services/notifications";
+import type { EnrichedStanding } from "./types";
 
 const PORTAL_SETTINGS_COLLECTION = "event-portal-settings";
 const ANNOUNCEMENTS_COLLECTION = "event-announcements";
@@ -1228,7 +1229,7 @@ export async function generateMatchesForPhase(eventId: string, phaseId: string) 
 // CLASSEMENT
 // =====================
 
-export async function getPhaseStandings(eventId: string, phaseId: string) {
+export async function getPhaseStandings(eventId: string, phaseId: string): Promise<{ success: boolean; data?: EnrichedStanding[]; error?: string }> {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user) {
