@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { Event } from "@/lib/types/Event";
 import { EventPortalSettings, MatchResult, Announcement } from "@/lib/schemas/event-portal.schema";
 import { type PlayerStanding } from "@/lib/utils/pairing";
-import { type EventParticipant } from "../organizer/components/OrganizerContext";
+import { type EventParticipant } from "./organizer/components/OrganizerContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -629,7 +629,7 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
                                 {standing.gamesWon}-{standing.gamesLost}
                               </td>
                               <td className="p-2 text-center">
-                                {(standing.opponentMatchWinPercentage * 100).toFixed(1)}%
+                                {standing.opponentMatchWinPercentage ? (standing.opponentMatchWinPercentage * 100).toFixed(1) : "-"}%
                               </td>
                             </tr>
                           );
