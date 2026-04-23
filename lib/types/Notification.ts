@@ -1,5 +1,5 @@
-import { Event } from "./Event";
-import { Lair } from "./Lair";
+import type { Event } from "./Event";
+import type { Lair } from "./Lair";
 
 export type UserNotificationTarget = {
   type: 'user';

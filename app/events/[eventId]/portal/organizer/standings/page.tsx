@@ -5,7 +5,8 @@ import { getEventById } from "@/lib/db/events";
 import { getPortalSettings, getPhaseStandings } from "../../actions";
 import { getEventParticipants } from "../../participant-actions";
 import OrganizerLayoutServer from "../components/OrganizerLayoutServer";
-import OrganizerStandings, { EnrichedStanding } from "../components/OrganizerStandings";
+import OrganizerStandings from "../components/OrganizerStandings";
+import type { EnrichedStanding } from "../../types";
 
 type OrganizerStandingsPageProps = {
   params: Promise<{

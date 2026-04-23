@@ -22,7 +22,7 @@ import { getEventById } from "@/lib/db/events";
 import { calculateStandings, generateBracketPosition, generateEliminationBracket, generateNextBracketRound, generateSwissPairings } from "@/lib/utils/pairing";
 import { getEventParticipants } from "./participant-actions";
 import { notifyEventAll } from "@/lib/services/notifications";
-import { EnrichedStanding } from "./organizer/components/OrganizerStandings";
+import type { EnrichedStanding } from "./types";
 
 const PORTAL_SETTINGS_COLLECTION = "event-portal-settings";
 const ANNOUNCEMENTS_COLLECTION = "event-announcements";

@@ -8,10 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
 import PlayerDetailsModal from "./PlayerDetailsModal";
-import { PlayerStanding } from "@/lib/utils/pairing";
 import { EventParticipant } from "./OrganizerContext";
-
-export type EnrichedStanding = PlayerStanding & { username?: string; discriminator?: string };
+import type { EnrichedStanding } from "../../types";
 
 type OrganizerStandingsProps = {
   event: Event;

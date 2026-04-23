@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Event } from "@/lib/types/Event";
 import { EventPortalSettings, MatchResult, Announcement } from "@/lib/schemas/event-portal.schema";
-import { type PlayerStanding } from "@/lib/utils/pairing";
 import { type EventParticipant } from "./organizer/components/OrganizerContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,6 +28,7 @@ import {
 } from "./actions";
 import { getEventParticipants } from "./participant-actions";
 import BracketView from "./BracketView";
+import type { EnrichedStanding } from "./types";
 
 type PlayerPortalProps = {
   event: Event;
@@ -55,7 +55,7 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
 
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [standings, setStandings] = useState<(PlayerStanding & { username?: string; discriminator?: string })[]>([]);
+  const [standings, setStandings] = useState<EnrichedStanding[]>([]);
   const [participants, setParticipants] = useState<EventParticipant[]>([]);
   const [matchesLoaded, setMatchesLoaded] = useState(false);
   const [announcementsLoaded, setAnnouncementsLoaded] = useState(false);
@@ -629,7 +629,9 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
                                 {standing.gamesWon}-{standing.gamesLost}
                               </td>
                               <td className="p-2 text-center">
-                                {standing.opponentMatchWinPercentage ? (standing.opponentMatchWinPercentage * 100).toFixed(1) : "-"}%
+                                {standing.opponentMatchWinPercentage != null
+                                  ? `${(standing.opponentMatchWinPercentage * 100).toFixed(1)}%`
+                                  : "-"}
                               </td>
                             </tr>
                           );

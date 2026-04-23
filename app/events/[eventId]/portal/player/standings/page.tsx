@@ -5,7 +5,7 @@ import { getEventById } from "@/lib/db/events";
 import { getPortalSettings, getMatchResults, getPhaseStandings } from "../../actions";
 import PlayerLayoutServer from "../components/PlayerLayoutServer";
 import PlayerStandings from "../components/PlayerStandings";
-import { EnrichedStanding } from "../../organizer/components/OrganizerStandings";
+import type { EnrichedStanding } from "../../types";
 
 type PlayerStandingsPageProps = {
   params: Promise<{
