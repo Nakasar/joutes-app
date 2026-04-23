@@ -8,7 +8,7 @@ import { CheckCheck, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type NotificationsListProps = {
-  initialNotifications: any[];
+  initialNotifications: Notification[];
   userId: string;
   initialPage: number;
   initialTotal: number;

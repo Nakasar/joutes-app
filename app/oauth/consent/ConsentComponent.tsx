@@ -20,8 +20,8 @@ export default function OAuthConsentComponent({ client }: { client: OAuthClient 
       return;
     }
 
-    if (res.data.redirect && res.data.uri) {
-      window.location.href = res.data.uri;
+    if (res.data.redirect && res.data.url) {
+      window.location.href = res.data.url;
     }
   }
 

@@ -87,7 +87,7 @@ export function NotificationDropdown({ userId }: NotificationDropdownProps) {
           </div>
         ) : (
           <div className="max-h-[400px] overflow-y-auto">
-            {notifications.map((notification: any) => {
+            {notifications.map((notification: Notification) => {
               const isRead = notification.readBy?.includes(userId);
               const timeAgo = DateTime.fromISO(notification.createdAt).setLocale('fr').toRelative() || "à l'instant";
               

@@ -210,7 +210,7 @@ async function processMappingSources(sources: EventSource[], lair: Lair) {
       const jsonData = await response.json();
 
       // Navigate to events using eventsPath
-      const events: {
+      const events = getNestedValue(jsonData, source.mappingConfig.eventsPath) as {
         name: string;
         startDateTime: string;
         endDateTime: string;
@@ -218,7 +218,7 @@ async function processMappingSources(sources: EventSource[], lair: Lair) {
         price?: number;
         status: 'available' | 'sold-out' | 'cancelled';
         url?: string;
-      }[] = getNestedValue(jsonData, source.mappingConfig.eventsPath);
+      }[];
 
       if (!Array.isArray(events)) {
         console.warn(`Le chemin ${source.mappingConfig.eventsPath} ne pointe pas vers un tableau`);
@@ -233,15 +233,15 @@ async function processMappingSources(sources: EventSource[], lair: Lair) {
         const overrides = source.mappingConfig!.eventsFieldsValues || {};
 
         // Extract values from JSON using mapping
-        const name = overrides.name || getNestedValue(eventData, mapping.name || '');
-        const startDateTime = overrides.startDateTime || getNestedValue(eventData, mapping.startDateTime || '');
-        const endDateTime = overrides.endDateTime || getNestedValue(eventData, mapping.endDateTime || '');
-        const gameName = overrides.gameName || getNestedValue(eventData, mapping.gameName || '');
-        const price = overrides.price !== undefined ? overrides.price : (mapping.price ? parseFloat(getNestedValue(eventData, mapping.price)) : undefined);
-        const status = overrides.status || getNestedValue(eventData, mapping.status || '') || 'available';
-        let url = overrides.url || getNestedValue(eventData, mapping.url || '');
+        const name = overrides.name || getNestedValue(eventData, mapping.name || '') as string | undefined;
+        const startDateTime = overrides.startDateTime || getNestedValue(eventData, mapping.startDateTime || '') as string || '';
+        const endDateTime = overrides.endDateTime || getNestedValue(eventData, mapping.endDateTime || '') as string || '';
+        const gameName = overrides.gameName || getNestedValue(eventData, mapping.gameName || '') as string | undefined;
+        const price = overrides.price !== undefined ? overrides.price : (mapping.price ? parseFloat(getNestedValue(eventData, mapping.price) as string) : undefined);
+        const status = overrides.status || getNestedValue(eventData, mapping.status || '') as string || 'available';
+        let url = overrides.url || getNestedValue(eventData, mapping.url || '') as string | undefined;
         if (!url && source.mappingConfig!.eventsBaseUrl) {
-          url = source.mappingConfig!.eventsBaseUrl + (getNestedValue(eventData, mapping.id || '') || '');
+          url = source.mappingConfig!.eventsBaseUrl + (getNestedValue(eventData, mapping.id || '') as string || '');
         }
 
         // Set start and end date year to current year, unless the event month is december and current month is january
@@ -257,7 +257,7 @@ async function processMappingSources(sources: EventSource[], lair: Lair) {
         }
 
         const adjustedStartDateTime = startDate.set({ year: adjustedYear }).toISO() ?? startDateTime;
-        let adjustedEndDateTime = endDate.set({ year: adjustedYear }).toISO() ?? endDateTime;
+        let adjustedEndDateTime: string = endDate.set({ year: adjustedYear }).toISO() ?? endDateTime;
         if (!adjustedEndDateTime) {
           // If endDateTime is invalid, set it to startDateTime + 4 hours
           adjustedEndDateTime = DateTime.fromISO(adjustedStartDateTime, { zone: 'Europe/Paris' }).plus({ hours: 4 }).toISO() ?? adjustedStartDateTime;
@@ -289,19 +289,19 @@ async function processMappingSources(sources: EventSource[], lair: Lair) {
 /**
  * Récupère une valeur dans un objet en utilisant un chemin (ex: "data.events" ou "results[0].name")
  */
-function getNestedValue(obj: any, path: string): any {
+function getNestedValue(obj: unknown, path: string): unknown {
   if (!path) return undefined;
   
-  return path.split('.').reduce((current, key) => {
+  return path.split('.').reduce((current: unknown, key) => {
     if (current === null || current === undefined) return undefined;
     
     // Handle array indexing like "results[0]"
     const arrayMatch = key.match(/^(\w+)\[(\d+)\]$/);
     if (arrayMatch) {
       const [, arrayKey, index] = arrayMatch;
-      return current[arrayKey]?.[parseInt(index)];
+      return (current as Record<string, unknown[]>)[arrayKey]?.[parseInt(index)];
     }
     
-    return current[key];
+    return (current as Record<string, unknown>)[key];
   }, obj);
 }

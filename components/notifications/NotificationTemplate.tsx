@@ -15,8 +15,33 @@ type MatchPlayer = {
   avatar?: string;
 };
 
+type TemplateNotification = {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  createdAt: string;
+  template?: string;
+  userId?: string;
+  lairId?: string;
+  leagueId?: string;
+  matchId?: string;
+  readBy?: string[];
+  lair?: { id?: string; name?: string };
+  league?: { id?: string; name?: string };
+  match?: {
+    id?: string;
+    status?: string;
+    winnerIds?: string[];
+    confirmedPlayerIds?: string[];
+    confirmedBy?: string;
+    lairConfirmedBy?: string;
+  };
+  matchPlayers?: MatchPlayer[];
+};
+
 type TemplateNotificationProps = {
-  notification: any;
+  notification: TemplateNotification;
 };
 
 function formatPlayerName(player?: MatchPlayer | null) {
