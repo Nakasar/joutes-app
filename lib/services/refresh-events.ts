@@ -7,7 +7,8 @@ import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { Event } from "@/lib/types/Event";
 import { getAllGames } from "@/lib/db/games";
-import { EventSource } from "@/lib/types/Lair";
+import { EventSource, Lair } from "@/lib/types/Lair";
+import { Game } from '../types/Game';
 
 const eventSchema = z.object({
   events: z.array(z.object({
@@ -80,7 +81,7 @@ export async function refreshEvents(lairId: string) {
 /**
  * Traite les sources de type IA en utilisant l'extraction intelligente
  */
-async function processAISources(sources: EventSource[], lair: any, existingGames: any[]) {
+async function processAISources(sources: EventSource[], lair: Lair, existingGames: Pick<Game, "name">[]) {
   // Récupérer le contenu de toutes les URLs en parallèle
   const pagesContentPromises: Promise<{ url: string, content: string, instructions?: string } | null>[] = sources.map(async (source) => {
     try {
@@ -194,7 +195,7 @@ ${page.content}
 /**
  * Traite les sources de type MAPPING en récupérant le JSON et appliquant le mapping configuré
  */
-async function processMappingSources(sources: EventSource[], lair: any) {
+async function processMappingSources(sources: EventSource[], lair: Lair) {
   const allEvents: Event[] = [];
 
   for (const source of sources) {
@@ -209,7 +210,15 @@ async function processMappingSources(sources: EventSource[], lair: any) {
       const jsonData = await response.json();
 
       // Navigate to events using eventsPath
-      const events = getNestedValue(jsonData, source.mappingConfig.eventsPath);
+      const events: {
+        name: string;
+        startDateTime: string;
+        endDateTime: string;
+        gameName: string;
+        price?: number;
+        status: 'available' | 'sold-out' | 'cancelled';
+        url?: string;
+      }[] = getNestedValue(jsonData, source.mappingConfig.eventsPath);
 
       if (!Array.isArray(events)) {
         console.warn(`Le chemin ${source.mappingConfig.eventsPath} ne pointe pas vers un tableau`);
@@ -219,7 +228,7 @@ async function processMappingSources(sources: EventSource[], lair: any) {
       console.log(`${events.length} événements trouvés dans ${source.url}`);
 
       // Map each event
-      const mappedEvents = events.map((eventData: any) => {
+      const mappedEvents = events.map((eventData) => {
         const mapping = source.mappingConfig!.eventsFieldsMapping;
         const overrides = source.mappingConfig!.eventsFieldsValues || {};
 

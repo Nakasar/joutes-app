@@ -13,7 +13,7 @@ export default function GameNotFound() {
         </h1>
 
         <p className="text-xl text-gray-400 mb-8">
-          Le jeu que vous recherchez n'existe pas ou a été supprimé.
+          Le jeu que vous recherchez n&apos;existe pas ou a été supprimé.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -27,7 +27,7 @@ export default function GameNotFound() {
           <Link href="/">
             <Button size="lg" className="bg-white text-black hover:bg-gray-200">
               <ArrowLeft className="h-5 w-5 mr-2" />
-              Retour à l'accueil
+              Retour à l&apos;accueil
             </Button>
           </Link>
         </div>
