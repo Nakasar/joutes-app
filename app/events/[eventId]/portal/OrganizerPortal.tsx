@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Event } from "@/lib/types/Event";
 import { EventPortalSettings, TournamentPhase, MatchResult, Announcement, MatchType } from "@/lib/schemas/event-portal.schema";
-import { EventParticipant } from "../organizer/components/OrganizerContext";
+import { EventParticipant } from "./organizer/components/OrganizerContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -130,7 +130,7 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
     startTransition(async () => {
       const result = await getMatchResults(event.id);
       if (result.success && result.data) {
-        setMatches(result.data as MatchResult[]);
+        setMatches(result.data);
         setMatchesLoaded(true);
       }
     });

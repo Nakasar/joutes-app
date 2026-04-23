@@ -401,7 +401,7 @@ export async function deletePhase(eventId: string, phaseId: string) {
 // RÉSULTATS DE MATCHS
 // =====================
 
-export async function getMatchResults(eventId: string, phaseId?: string) {
+export async function getMatchResults(eventId: string, phaseId?: string): Promise<{ success: boolean; data?: MatchResult[]; error?: string }> {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user) {
@@ -586,11 +586,11 @@ export async function getMatchResults(eventId: string, phaseId?: string) {
       }
     ];
 
-    const results = await collection.aggregate(pipeline).toArray();
+    const results = await collection.aggregate<MatchResult & { _id: ObjectId }>(pipeline).toArray();
 
     return {
       success: true,
-      data: results.map((r: Document) => ({
+      data: results.map((r) => ({
         ...r,
         id: r._id?.toString(),
         _id: undefined,
@@ -1276,7 +1276,7 @@ export async function getPhaseStandings(eventId: string, phaseId: string) {
     // Créer une map des participants pour un accès rapide
     const participantsMap = new Map();
     userParticipants
-      .forEach((user: { _id: ObjectId; displayName?: string; username?: string; discriminator?: string }) => {
+      .forEach((user) => {
         const id = user._id.toString();
         participantsMap.set(id, {
           id,
@@ -1285,7 +1285,7 @@ export async function getPhaseStandings(eventId: string, phaseId: string) {
         });
       });
     guestParticipants
-      .forEach((guest: { id: string; username?: string; discriminator?: string }) => {
+      .forEach((guest) => {
         participantsMap.set(guest.id, {
           id: guest.id,
           username: guest.username,

@@ -2,15 +2,16 @@
 
 import { createContext, useContext } from "react";
 import { EventPortalSettings, MatchResult, Announcement } from "@/lib/schemas/event-portal.schema";
+import { RegistrationStatus } from "@/lib/types/Event";
 
 export type EventParticipant = {
   id: string;
-  username?: string;
+  username: string;
   discriminator?: string;
   email?: string;
   profileImage?: string;
-  type: string;
-  registrationStatus: string;
+  type: "user" | "email" | "guest";
+  registrationStatus: RegistrationStatus;
 };
 
 type OrganizerContextType = {
