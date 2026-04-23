@@ -10,7 +10,7 @@ import {
   GuestParticipant,
   AddParticipant,
 } from "@/lib/schemas/event-portal.schema";
-import { getEventById } from "@/lib/db/events";
+import { EventDocument, getEventById } from "@/lib/db/events";
 import { getUserByUsernameAndDiscriminator, getUserByEmail } from "@/lib/db/users";
 
 const GUEST_PARTICIPANTS_COLLECTION = "event-guest-participants";
@@ -253,7 +253,7 @@ export async function removeParticipantFromEvent(eventId: string, participantId:
       return { success: false, error: "Seul le créateur de l'événement peut retirer des participants" };
     }
 
-    const eventsCollection = db.collection(EVENTS_COLLECTION);
+    const eventsCollection = db.collection<EventDocument>(EVENTS_COLLECTION);
     const guestsCollection = db.collection<GuestParticipant>(GUEST_PARTICIPANTS_COLLECTION);
 
     // Vérifier si c'est un participant invité
