@@ -1,3 +1,6 @@
+import { Event } from "./Event";
+import { Lair } from "./Lair";
+
 export type UserNotificationTarget = {
   type: 'user';
   userId: string;
@@ -33,6 +36,8 @@ export type Notification = {
   matchId?: string;
   readBy?: string[];
   hiddenBy?: string[];
+  lair?: Pick<Lair, "id" | "name">;
+  event?: Pick<Event, "id" | "name">;
 } & NotificationTarget;
 export type UserNotification = Notification & { type: 'user'; userId: string; };
 export type LairNotification = Notification & { type: 'lair'; lairId: string; target: 'owners' | 'followers' | 'all'; };
