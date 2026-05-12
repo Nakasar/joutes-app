@@ -334,3 +334,106 @@ export function generateNextBracketRound(
 
   return pairings;
 }
+
+/**
+ * Calcule le classement des joueurs pour le mode multi-FFA
+ * - points-based : somme des points de victoire/nul/défaite
+ * - points-ratio-based : somme des ratios (score joueur / score total du match)
+ */
+export function calculateMultiFfaRankings(
+  playerIds: string[],
+  matches: MatchResult[],
+  pointsComputationType: "points-based" | "points-ratio-based",
+  pointsForWin?: number,
+  pointsForDraw?: number,
+  pointsForLoss?: number,
+): Array<{ playerId: string; totalScore: number }> {
+  const scores = new Map<string, number>();
+  playerIds.forEach(id => scores.set(id, 0));
+
+  for (const match of matches.filter(m => m.status === "completed")) {
+    const nonByePlayers = match.players.filter(p => p.id !== null);
+    const totalScore = nonByePlayers.reduce((sum, p) => sum + p.score, 0);
+
+    for (const playerEntry of nonByePlayers) {
+      const current = scores.get(playerEntry.id!) ?? 0;
+
+      if (pointsComputationType === "points-ratio-based") {
+        const ratio = totalScore > 0 ? playerEntry.score / totalScore : 0;
+        scores.set(playerEntry.id!, current + ratio);
+      } else {
+        // points-based
+        let pts = 0;
+        if (match.winnerId === playerEntry.id) {
+          pts = pointsForWin ?? 3;
+        } else if (match.winnerId === null || match.winnerId === undefined) {
+          pts = pointsForDraw ?? 1;
+        } else {
+          pts = pointsForLoss ?? 0;
+        }
+        scores.set(playerEntry.id!, current + pts);
+      }
+    }
+  }
+
+  return Array.from(scores.entries())
+    .map(([playerId, totalScore]) => ({ playerId, totalScore }))
+    .sort((a, b) => b.totalScore - a.totalScore);
+}
+
+/**
+ * Génère les pairings pour une ronde multi-FFA.
+ * Distribue les joueurs en matchs de taille maximale `playersPerMatch` en équilibrant
+ * au mieux les groupes (ex : préfère 3 matchs de k-1 plutôt qu'1 match de 1).
+ * Ronde 1 : ordre aléatoire. Rondes suivantes : meilleurs joueurs ensemble.
+ */
+export function generateMultiFfaPairings(
+  playerIds: string[],
+  matches: MatchResult[],
+  roundNumber: number,
+  playersPerMatch: number,
+  pointsComputationType: "points-based" | "points-ratio-based",
+  pointsForWin?: number,
+  pointsForDraw?: number,
+  pointsForLoss?: number,
+): PairingResult[] {
+  const n = playerIds.length;
+  if (n === 0) return [];
+
+  const k = Math.max(2, playersPerMatch);
+
+  // ceil(n / k) matchs évite de laisser 1 joueur seul
+  const numMatches = Math.max(1, Math.ceil(n / k));
+
+  // Distribution équilibrée : `remainder` matchs auront baseSize+1 joueurs
+  const baseSize = Math.floor(n / numMatches);
+  const remainder = n % numMatches;
+
+  let orderedPlayers: string[];
+
+  if (roundNumber === 1) {
+    orderedPlayers = shuffleArray([...playerIds]);
+  } else {
+    const rankings = calculateMultiFfaRankings(
+      playerIds,
+      matches,
+      pointsComputationType,
+      pointsForWin,
+      pointsForDraw,
+      pointsForLoss,
+    );
+    orderedPlayers = rankings.map(r => r.playerId);
+  }
+
+  const pairings: PairingResult[] = [];
+  let playerIndex = 0;
+
+  for (let i = 0; i < numMatches; i++) {
+    const matchSize = i < remainder ? baseSize + 1 : baseSize;
+    const matchPlayers = orderedPlayers.slice(playerIndex, playerIndex + matchSize);
+    playerIndex += matchSize;
+    pairings.push({ playerIds: matchPlayers });
+  }
+
+  return pairings;
+}

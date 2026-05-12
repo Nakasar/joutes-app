@@ -19,7 +19,7 @@ import {
   Announcement,
 } from "@/lib/schemas/event-portal.schema";
 import { getEventById } from "@/lib/db/events";
-import { calculateStandings, generateBracketPosition, generateEliminationBracket, generateNextBracketRound, generateSwissPairings } from "@/lib/utils/pairing";
+import { calculateStandings, generateBracketPosition, generateEliminationBracket, generateNextBracketRound, generateSwissPairings, generateMultiFfaPairings } from "@/lib/utils/pairing";
 import type { PairingResult } from "@/lib/utils/pairing";
 import { getEventParticipants } from "./participant-actions";
 import { notifyEventAll } from "@/lib/services/notifications";
@@ -1052,7 +1052,42 @@ export async function generateMatchesForPhase(eventId: string, phaseId: string) 
     let pairings: PairingResult[] = [];
     let roundNumber = 1;
 
-    if (phase.type === "swiss") {
+    if (phase.multiplayer === "multi-ffa") {
+      const existingMatches = await matchesCollection.find<MatchResult>({ eventId, phaseId }).toArray();
+
+      if (existingMatches.length > 0) {
+        const maxRound = Math.max(...existingMatches.map(m => m.round || 1));
+        const lastRoundMatches = existingMatches.filter(m => (m.round || 1) === maxRound);
+        const allCompleted = lastRoundMatches.every(m => m.status === "completed");
+
+        if (!allCompleted) {
+          return {
+            success: false,
+            error: `Tous les matchs de la ronde ${maxRound} doivent être terminés avant de générer la ronde suivante`
+          };
+        }
+
+        roundNumber = maxRound + 1;
+      }
+
+      if (phase.rounds && roundNumber > phase.rounds) {
+        return {
+          success: false,
+          error: `Toutes les rondes (${phase.rounds}) ont déjà été générées`
+        };
+      }
+
+      pairings = generateMultiFfaPairings(
+        playerIds,
+        existingMatches,
+        roundNumber,
+        phase.playersPerMatch ?? 4,
+        phase.pointsComputation?.type ?? "points-based",
+        phase.pointsComputation?.pointsForWin,
+        phase.pointsComputation?.pointsForDraw,
+        phase.pointsComputation?.pointsForLoss,
+      );
+    } else if (phase.type === "swiss") {
       const existingMatches = await matchesCollection.find<MatchResult>({ eventId, phaseId }).toArray();
 
       // Déterminer le numéro de ronde
