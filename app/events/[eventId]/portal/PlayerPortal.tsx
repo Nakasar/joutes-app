@@ -65,8 +65,7 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
   // Formulaire de rapport de résultat
   const [reportForm, setReportForm] = useState<{
     matchId: string;
-    player1Score: number;
-    player2Score: number;
+    playerScores: { id: string; score: number }[];
   } | null>(null);
 
   // Charger les matchs
@@ -139,7 +138,7 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
 
   // Filtrer les matchs du joueur
   const myMatches = matches.filter(
-    m => m.player1Id === userId || m.player2Id === userId
+    m => m.players.some(p => p.id === userId)
   );
 
   // Obtenir la phase actuelle
@@ -180,8 +179,9 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
   const handleReportResult = (match: MatchResult) => {
     setReportForm({
       matchId: match.matchId,
-      player1Score: match.player1Score || 0,
-      player2Score: match.player2Score || 0,
+      playerScores: match.players
+        .filter(p => p.id !== null)
+        .map(p => ({ id: p.id as string, score: p.score })),
     });
   };
 
@@ -191,29 +191,28 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
 
     startTransition(async () => {
       setError(null);
-      const winnerId = reportForm.player1Score > reportForm.player2Score
-        ? matches.find(m => m.matchId === reportForm.matchId)?.player1Id
-        : reportForm.player2Score > reportForm.player1Score
-          ? matches.find(m => m.matchId === reportForm.matchId)?.player2Id
-          : undefined;
+      const scores = reportForm.playerScores;
+      const maxScore = scores.length > 0 ? Math.max(...scores.map(s => s.score)) : 0;
+      const topScorers = scores.filter(s => s.score === maxScore);
+      const winnerId = topScorers.length === 1 ? topScorers[0].id : undefined;
 
       const result = await reportMatchResult(event.id, {
         matchId: reportForm.matchId,
-        player1Score: reportForm.player1Score,
-        player2Score: reportForm.player2Score,
-        winnerId,
+        playerScores: reportForm.playerScores,
       });
 
       if (result.success) {
         // Mise à jour optimiste
         const requireConfirmation = settings?.requireConfirmation ?? false;
-        setMatches(matches.map(m => 
-          m.matchId === reportForm.matchId 
+        setMatches(matches.map(m =>
+          m.matchId === reportForm.matchId
             ? {
                 ...m,
-                player1Score: reportForm.player1Score,
-                player2Score: reportForm.player2Score,
-                winnerId: winnerId || undefined,
+                players: m.players.map(p => {
+                  const entry = reportForm.playerScores.find(s => s.id === p.id);
+                  return entry ? { ...p, score: entry.score } : p;
+                }),
+                winnerId: winnerId ?? null,
                 reportedBy: userId,
                 confirmedBy: requireConfirmation ? undefined : userId,
                 status: requireConfirmation ? 'in-progress' as const : 'completed' as const,
@@ -221,7 +220,7 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
               }
             : m
         ));
-        setSuccess(requireConfirmation 
+        setSuccess(requireConfirmation
           ? "Résultat rapporté avec succès. En attente de confirmation."
           : "Résultat enregistré avec succès."
         );
@@ -379,10 +378,10 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
               <CardContent className="space-y-4">
                 <div className="text-center py-6">
                   <div className="text-2xl font-bold mb-4">
-                    {getPlayerName(currentMatch.player1Id)} vs {getPlayerName(currentMatch.player2Id)}
+                    {currentMatch.players.map(p => getPlayerName(p.id)).join(" vs ")}
                   </div>
                   <div className="text-4xl font-bold mb-4">
-                    {currentMatch.player1Score || 0} - {currentMatch.player2Score || 0}
+                    {currentMatch.players.map(p => p.score).join(" - ")}
                   </div>
                   <Badge variant={
                     currentMatch.status === "completed" 
@@ -424,35 +423,25 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
                 {reportForm && reportForm.matchId === currentMatch.matchId && (
                   <div className="border rounded-lg p-4 space-y-4">
                     <h3 className="font-semibold">Rapporter le résultat</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium">
-                          Score {getPlayerName(currentMatch.player1Id)}
-                        </label>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={reportForm.player1Score}
-                          onChange={(e) => setReportForm({
-                            ...reportForm,
-                            player1Score: parseInt(e.target.value) || 0
-                          })}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">
-                          Score {getPlayerName(currentMatch.player2Id)}
-                        </label>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={reportForm.player2Score}
-                          onChange={(e) => setReportForm({
-                            ...reportForm,
-                            player2Score: parseInt(e.target.value) || 0
-                          })}
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      {reportForm.playerScores.map((entry, idx) => (
+                        <div key={entry.id}>
+                          <label className="text-sm font-medium">
+                            Score {getPlayerName(entry.id)}
+                          </label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={entry.score}
+                            onChange={(e) => setReportForm({
+                              ...reportForm,
+                              playerScores: reportForm.playerScores.map((s, i) =>
+                                i === idx ? { ...s, score: parseInt(e.target.value) || 0 } : s
+                              ),
+                            })}
+                          />
+                        </div>
+                      ))}
                     </div>
                     <div className="flex gap-2">
                       <Button onClick={handleSubmitReport} disabled={isPending}>
@@ -506,10 +495,10 @@ export default function PlayerPortal({ event, settings, userId }: PlayerPortalPr
                         <div className="flex items-center justify-between">
                           <div>
                             <div className="font-medium mb-1">
-                              {getPlayerName(match.player1Id)} vs {getPlayerName(match.player2Id)}
+                              {match.players.map(p => getPlayerName(p.id)).join(" vs ")}
                             </div>
                             <div className="text-2xl font-bold mb-2">
-                              {match.player1Score} - {match.player2Score}
+                              {match.players.map(p => p.score).join(" - ")}
                             </div>
                             {match.round && (
                               <div className="text-xs text-muted-foreground">
