@@ -10,6 +10,8 @@ export const matchTypeSchema = z.enum(['BO1', 'BO2', 'BO3', 'BO5']);
 export const tournamentPhaseSchema = z.object({
   id: z.string(),
   name: z.string().min(1, "Le nom de la phase est requis"),
+  multiplayer: z.enum(['single', 'multi-ffa']).default('single'), // Type de phase : solo ou multijoueur free-for-all
+  playersPerMatch: z.number().min(2).default(2), // Nombre de joueurs par match (2 pour solo, 3+ pour FFA)
   type: phaseTypeSchema,
   matchType: matchTypeSchema,
   rounds: z.number().min(1).optional(), // Nombre de rondes pour les rondes suisses
@@ -75,6 +77,8 @@ export const createPhaseSchema = tournamentPhaseSchema.omit({
 // Schéma pour mettre à jour une phase
 export const updatePhaseSchema = z.object({
   name: z.string().min(1, "Le nom de la phase est requis").optional(),
+  multiplayer: z.enum(['single', 'multi-ffa']).optional(),
+  playersPerMatch: z.number().min(2).optional(),
   type: phaseTypeSchema.optional(), // Peut être modifié seulement si status = 'not-started'
   matchType: matchTypeSchema.optional(),
   rounds: z.number().min(1).optional(),

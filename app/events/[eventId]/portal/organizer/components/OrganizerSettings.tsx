@@ -46,6 +46,8 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
   const [phaseToDelete, setPhaseToDelete] = useState<string | null>(null);
   const [phaseForm, setPhaseForm] = useState({
     name: "",
+    multiplayer: "single" as "single" | "multi-ffa",
+    playersPerMatch: 2,
     type: "swiss" as "swiss" | "bracket",
     matchType: "BO1" as "BO1" | "BO2" | "BO3" | "BO5",
     rounds: 3,
@@ -123,6 +125,8 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
         matchType: phaseForm.matchType,
         rounds: phaseForm.type === "swiss" ? phaseForm.rounds : undefined,
         topCut: phaseForm.type === "bracket" ? phaseForm.topCut : undefined,
+        multiplayer: phaseForm.multiplayer,
+        playersPerMatch: phaseForm.playersPerMatch,
         order: settings ? settings.phases.length : 0,
       });
       setPhaseForm({
@@ -131,6 +135,8 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
         matchType: "BO1",
         rounds: 3,
         topCut: 8,
+        multiplayer: "single",
+        playersPerMatch: 2,
       });
       setShowPhaseForm(false);
       router.refresh();
@@ -159,6 +165,8 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
       matchType: phase.matchType,
       rounds: phase.rounds || 3,
       topCut: phase.topCut || 8,
+      multiplayer: phase.multiplayer || "single",
+      playersPerMatch: phase.playersPerMatch || 2,
     });
   };
 
@@ -172,6 +180,8 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
         matchType: phaseForm.matchType,
         rounds: phaseForm.type === "swiss" ? phaseForm.rounds : undefined,
         topCut: phaseForm.type === "bracket" ? phaseForm.topCut : undefined,
+        multiplayer: phaseForm.multiplayer,
+        playersPerMatch: phaseForm.playersPerMatch,
       });
       setEditingPhaseId(null);
       setPhaseForm({
@@ -180,6 +190,8 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
         matchType: "BO1",
         rounds: 3,
         topCut: 8,
+        multiplayer: "single",
+        playersPerMatch: 2,
       });
       router.refresh();
     });
@@ -193,6 +205,8 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
       matchType: "BO1",
       rounds: 3,
       topCut: 8,
+      multiplayer: "single",
+      playersPerMatch: 2,
     });
   };
 
@@ -439,6 +453,33 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
                       placeholder="Ex: Rondes suisses"
                     />
                   </div>
+                  <div>
+                    <label className="text-sm font-medium">Type</label>
+                    <select
+                      className="w-full border rounded-md p-2"
+                      value={phaseForm.multiplayer}
+                      onChange={(e) => setPhaseForm({ ...phaseForm, multiplayer: e.target.value as "single" | "multi-ffa" })}
+                    >
+                      <option value="single">Solo</option>
+                      <option value="multi-ffa">Multijoueur Free For All</option>
+                    </select>
+                  </div>
+                  {phaseForm.multiplayer === "multi-ffa" && (
+                    <div>
+                      <label className="text-sm font-medium">Nombre de joueurs par match</label>
+                      <Input
+                        type="number"
+                        min="3"
+                        step="1"
+                        value={phaseForm.playersPerMatch}
+                        onChange={(e) => setPhaseForm({ ...phaseForm, playersPerMatch: parseInt(e.target.value) })}
+                        placeholder="Ex: 4 pour des matchs 1v1v1v1"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Nombre total de joueurs dans un match (ex: 3 pour des matchs 1v1v1, 4 pour des matchs 1v1v1v1, etc.)
+                      </p>
+                    </div>
+                  )}
                   <div>
                     <label className="text-sm font-medium">Type</label>
                     <select

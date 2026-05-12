@@ -289,12 +289,25 @@ export async function updatePhase(eventId: string, phaseId: string, phaseData: u
     if (phase.status !== 'not-started' && validated.type) {
       return { success: false, error: "Le type de phase ne peut pas être modifié une fois la phase démarrée" };
     }
+    if (phase.status !== 'not-started' && validated.multiplayer) {
+      return { success: false, error: "Le mode de phase ne peut pas être modifié une fois la phase démarrée" };
+    }
+    if (phase.status !== 'not-started' && validated.playersPerMatch) {
+      return { success: false, error: "Le nombre de joueurs par match ne peut pas être modifié une fois la phase démarrée" };
+    }
 
     // Construire l'objet de mise à jour
     const updateFields: Record<string, unknown> = {};
     if (validated.name !== undefined) {
       updateFields["phases.$.name"] = validated.name;
     }
+    if (validated.multiplayer !== undefined) {
+      updateFields["phases.$.multiplayer"] = validated.multiplayer;
+    }
+    if (validated.playersPerMatch !== undefined) {
+      updateFields["phases.$.playersPerMatch"] = validated.playersPerMatch;
+    }
+
     if (validated.type !== undefined) {
       updateFields["phases.$.type"] = validated.type;
     }
