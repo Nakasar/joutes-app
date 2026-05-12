@@ -46,7 +46,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
   const [phaseToDelete, setPhaseToDelete] = useState<string | null>(null);
   const [phaseForm, setPhaseForm] = useState({
     name: "",
-    multiplayer: "single" as "single" | "multi-ffa",
+    multiplayer: "duel" as "duel" | "multi-ffa",
     playersPerMatch: 2,
     type: "swiss" as "swiss" | "bracket",
     matchType: "BO1" as "BO1" | "BO2" | "BO3" | "BO5",
@@ -135,7 +135,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
         matchType: "BO1",
         rounds: 3,
         topCut: 8,
-        multiplayer: "single",
+        multiplayer: "duel",
         playersPerMatch: 2,
       });
       setShowPhaseForm(false);
@@ -165,7 +165,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
       matchType: phase.matchType,
       rounds: phase.rounds || 3,
       topCut: phase.topCut || 8,
-      multiplayer: phase.multiplayer || "single",
+      multiplayer: phase.multiplayer || "duel",
       playersPerMatch: phase.playersPerMatch || 2,
     });
   };
@@ -190,7 +190,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
         matchType: "BO1",
         rounds: 3,
         topCut: 8,
-        multiplayer: "single",
+        multiplayer: "duel",
         playersPerMatch: 2,
       });
       router.refresh();
@@ -205,7 +205,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
       matchType: "BO1",
       rounds: 3,
       topCut: 8,
-      multiplayer: "single",
+      multiplayer: "duel",
       playersPerMatch: 2,
     });
   };
@@ -458,9 +458,9 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
                     <select
                       className="w-full border rounded-md p-2"
                       value={phaseForm.multiplayer}
-                      onChange={(e) => setPhaseForm({ ...phaseForm, multiplayer: e.target.value as "single" | "multi-ffa" })}
+                      onChange={(e) => setPhaseForm({ ...phaseForm, multiplayer: e.target.value as "duel" | "multi-ffa" })}
                     >
-                      <option value="single">Solo</option>
+                      <option value="duel">Solo</option>
                       <option value="multi-ffa">Multijoueur Free For All</option>
                     </select>
                   </div>
@@ -476,7 +476,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
                         placeholder="Ex: 4 pour des matchs 1v1v1v1"
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Nombre total de joueurs dans un match (ex: 3 pour des matchs 1v1v1, 4 pour des matchs 1v1v1v1, etc.)
+                        Nombre maximal de joueurs dans un match (ex: 3 pour des matchs 1v1v1, 4 pour des matchs 1v1v1v1, etc.)
                       </p>
                     </div>
                   )}
