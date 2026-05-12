@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // Types de phases de tournoi
-export const phaseTypeSchema = z.enum(['swiss', 'bracket', 'top-points-ratio']); // 'top-points-ratio' pour les phases FFA basées sur le ratio points marqués / points totaux
+export const phaseTypeSchema = z.enum(['swiss', 'bracket']);
 
 // Types de match (Best Of)
 export const matchTypeSchema = z.enum(['BO1', 'BO2', 'BO3', 'BO5']);
@@ -10,9 +10,15 @@ export const matchTypeSchema = z.enum(['BO1', 'BO2', 'BO3', 'BO5']);
 export const tournamentPhaseSchema = z.object({
   id: z.string(),
   name: z.string().min(1, "Le nom de la phase est requis"),
-  multiplayer: z.enum(['duel', 'multi-ffa']).default('duel'), // Type de phase : solo ou multijoueur free-for-all
-  playersPerMatch: z.number().min(2).default(2), // Nombre de joueurs par match (2 pour solo, 3+ pour FFA)
+  multiplayer: z.enum(['duel', 'multi-ffa']).default('duel'),
+  playersPerMatch: z.number().min(2).default(2),
   type: phaseTypeSchema,
+  pointsComputation: z.object({
+    type: z.enum(['points-based', 'points-ratio-based']).default('points-based'),
+    pointsForWin: z.number().min(0).default(3).optional(),
+    pointsForDraw: z.number().min(0).default(1).optional(),
+    pointsForLoss: z.number().min(0).default(0).optional(),
+  }),
   matchType: matchTypeSchema,
   rounds: z.number().min(1).optional(), // Nombre de rondes pour les rondes suisses
   topCut: z.number().min(2).optional(), // Nombre de joueurs pour le bracket (ex: 8 pour un top 8)

@@ -44,12 +44,32 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
   const [editingPhaseId, setEditingPhaseId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [phaseToDelete, setPhaseToDelete] = useState<string | null>(null);
-  const [phaseForm, setPhaseForm] = useState({
+  const [phaseForm, setPhaseForm] = useState<{
+    name: string;
+    type: "swiss" | "bracket";
+    matchType: MatchType;
+    rounds: number;
+    topCut: number;
+    multiplayer: "duel" | "multi-ffa";
+    playersPerMatch: number;
+    pointsComputation: {
+      type: "points-based" | "points-ratio-based";
+      pointsForWin?: number;
+      pointsForDraw?: number;
+      pointsForLoss?: number;
+    };
+  }>({
     name: "",
-    multiplayer: "duel" as "duel" | "multi-ffa",
+    multiplayer: "duel",
     playersPerMatch: 2,
-    type: "swiss" as "swiss" | "bracket" | "top-points-ratio",
-    matchType: "BO1" as "BO1" | "BO2" | "BO3" | "BO5",
+    type: "swiss",
+    pointsComputation: {
+      type: "points-based",
+      pointsForWin: 3,
+      pointsForDraw: 1,
+      pointsForLoss: 0,
+    },
+    matchType: "BO1",
     rounds: 3,
     topCut: 8,
   });
@@ -128,6 +148,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
         multiplayer: phaseForm.multiplayer,
         playersPerMatch: phaseForm.playersPerMatch,
         order: settings ? settings.phases.length : 0,
+        pointsComputation: phaseForm.pointsComputation,
       });
       setPhaseForm({
         name: "",
@@ -137,6 +158,12 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
         topCut: 8,
         multiplayer: "duel",
         playersPerMatch: 2,
+        pointsComputation: {
+          type: "points-based",
+          pointsForWin: 3,
+          pointsForDraw: 1,
+          pointsForLoss: 0,
+        },
       });
       setShowPhaseForm(false);
       router.refresh();
@@ -167,6 +194,12 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
       topCut: phase.topCut || 8,
       multiplayer: phase.multiplayer || "duel",
       playersPerMatch: phase.playersPerMatch || 2,
+      pointsComputation: phase.pointsComputation || {
+        type: "points-based",
+        pointsForWin: 3,
+        pointsForDraw: 1,
+        pointsForLoss: 0,
+      },
     });
   };
 
@@ -182,6 +215,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
         topCut: phaseForm.type === "bracket" ? phaseForm.topCut : undefined,
         multiplayer: phaseForm.multiplayer,
         playersPerMatch: phaseForm.playersPerMatch,
+        pointsComputation: phaseForm.pointsComputation,
       });
       setEditingPhaseId(null);
       setPhaseForm({
@@ -192,6 +226,12 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
         topCut: 8,
         multiplayer: "duel",
         playersPerMatch: 2,
+        pointsComputation: {
+          type: "points-based",
+          pointsForWin: 3,
+          pointsForDraw: 1,
+          pointsForLoss: 0,
+        },
       });
       router.refresh();
     });
@@ -207,6 +247,12 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
       topCut: 8,
       multiplayer: "duel",
       playersPerMatch: 2,
+      pointsComputation: {
+        type: "points-based",
+        pointsForWin: 3,
+        pointsForDraw: 1,
+        pointsForLoss: 0,
+      },
     });
   };
 
@@ -485,13 +531,27 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
                     <select
                       className="w-full border rounded-md p-2"
                       value={phaseForm.type}
-                      onChange={(e) => setPhaseForm({ ...phaseForm, type: e.target.value as "swiss" | "bracket" | "top-points-ratio" })}
+                      onChange={(e) => setPhaseForm({ ...phaseForm, type: e.target.value as "swiss" | "bracket" })}
                     >
                       <option value="swiss">Rondes suisses</option>
-                      <option value="bracket">duelion directe</option>
-                      {phaseForm.multiplayer === "multi-ffa" && (
-                        <option value="top-points-ratio">Top selon ratio points marqués / points totaux</option>
-                      )}
+                      <option value="bracket">Elimination directe</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Calcul des points</label>
+                    <select
+                      className="w-full border rounded-md p-2"
+                      value={phaseForm.pointsComputation.type}
+                      onChange={(e) => setPhaseForm({ 
+                        ...phaseForm,
+                        pointsComputation: {
+                          ...phaseForm.pointsComputation,
+                          type: e.target.value as "points-based" | "points-ratio-based"
+                        }
+                      })}
+                    >
+                      <option value="points-based">Points par résultat de match</option>
+                      <option value="points-ratio-based">Ratio entre les points marqués et les points totaux</option>
                     </select>
                   </div>
                   <div>
@@ -567,18 +627,38 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
                             <select
                               className="w-full border rounded-md p-2"
                               value={phaseForm.type}
-                              onChange={(e) => setPhaseForm({ ...phaseForm, type: e.target.value as "swiss" | "bracket" | "top-points-ratio" })}
+                              onChange={(e) => setPhaseForm({ ...phaseForm, type: e.target.value as "swiss" | "bracket" })}
                               disabled={phase.status !== 'not-started'}
                             >
                               <option value="swiss">Rondes suisses</option>
-                              <option value="bracket">duelion directe</option>
-                              {phase.multiplayer === "multi-ffa" && (
-                                <option value="top-points-ratio">Top selon ratio points marqués / points totaux</option>
-                              )}
+                              <option value="bracket">Elimination directe</option>
                             </select>
                             {phase.status !== 'not-started' && (
                               <p className="text-xs text-amber-600 mt-1">
-                                Le type ne peut pas être modifié une fois la phase démarrée
+                                Le type ne peut pas être modifié une fois la phase démarrée.
+                              </p>
+                            )}
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Calcul des points</label>
+                            <select
+                              className="w-full border rounded-md p-2"
+                              value={phaseForm.pointsComputation.type}
+                              onChange={(e) => setPhaseForm({ 
+                                ...phaseForm,
+                                pointsComputation: {
+                                  ...phaseForm.pointsComputation,
+                                  type: e.target.value as "points-based" | "points-ratio-based"
+                                }
+                              })}
+                              disabled={phase.status !== 'not-started'}
+                            >
+                              <option value="points-based">Points par résultat de match</option>
+                              <option value="points-ratio-based">Ratio entre les points marqués et les points totaux</option>
+                            </select>
+                            {phase.status !== 'not-started' && (
+                              <p className="text-xs text-amber-600 mt-1">
+                                La méthode de calcul des points ne peut pas être modifiée une fois la phase démarrée.
                               </p>
                             )}
                           </div>
