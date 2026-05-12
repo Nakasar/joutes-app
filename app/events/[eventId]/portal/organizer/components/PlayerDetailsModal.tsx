@@ -80,7 +80,7 @@ export default function PlayerDetailsModal({
   }, [open, eventId, playerId]);
 
   const playerMatches = matches.filter(
-    (m) => m.player1Id === playerId || m.player2Id === playerId
+    (m) => m.players.some((p) => p.id === playerId)
   );
 
   // Pour les statistiques, ne compter que les matchs terminés
@@ -95,40 +95,39 @@ export default function PlayerDetailsModal({
   const allMatches = playerMatches;
 
   const getOpponentName = (match: MatchResult): string => {
-    const opponentId =
-      match.player1Id === playerId ? match.player2Id : match.player1Id;
-
-    if (opponentId === null) return "BYE";
-
-    const opponentName =
-      match.player1Id === playerId ? match.player2Name : match.player1Name;
-
-    if (opponentName) return opponentName;
-
-    const participant = participants.find((p) => p.id === opponentId);
-    if (participant) {
-      return participant.discriminator
-        ? `${participant.username}#${participant.discriminator}`
-        : participant.username;
-    }
-
-    return `Joueur ${opponentId.slice(-4)}`;
+    const opponents = match.players.filter((p) => p.id !== playerId);
+    if (opponents.length === 0) return "BYE";
+    return opponents
+      .map((p) => {
+        if (p.id === null) return "BYE";
+        if (p.name) return p.name;
+        const participant = participants.find((part) => part.id === p.id);
+        if (participant) {
+          return participant.discriminator
+            ? `${participant.username}#${participant.discriminator}`
+            : participant.username;
+        }
+        return `Joueur ${p.id.slice(-4)}`;
+      })
+      .join(", ");
   };
 
   const getMatchResult = (match: MatchResult): {
     result: "win" | "loss" | "draw";
     playerScore: number;
-    opponentScore: number;
+    opponentScores: number[];
   } => {
-    const isPlayer1 = match.player1Id === playerId;
-    const playerScore = isPlayer1 ? match.player1Score : match.player2Score;
-    const opponentScore = isPlayer1 ? match.player2Score : match.player1Score;
+    const playerEntry = match.players.find((p) => p.id === playerId);
+    const playerScore = playerEntry?.score ?? 0;
+    const opponentScores = match.players
+      .filter((p) => p.id !== playerId)
+      .map((p) => p.score);
 
     let result: "win" | "loss" | "draw" = "draw";
     if (match.winnerId === playerId) result = "win";
     else if (match.winnerId && match.winnerId !== playerId) result = "loss";
 
-    return { result, playerScore, opponentScore };
+    return { result, playerScore, opponentScores };
   };
 
   const handleSaveNotes = () => {
@@ -212,7 +211,7 @@ export default function PlayerDetailsModal({
                       return bDate - aDate;
                     })
                     .map((match) => {
-                      const { result, playerScore, opponentScore } =
+                      const { result, playerScore, opponentScores } =
                         getMatchResult(match);
                       const opponentName = getOpponentName(match);
                       const isCompleted = match.status === "completed";
@@ -244,7 +243,7 @@ export default function PlayerDetailsModal({
                             </div>
                             <div className="flex items-center gap-4">
                               <div className="text-2xl font-bold">
-                                {playerScore} - {opponentScore}
+                                {playerScore} - {opponentScores.join(" - ")}
                               </div>
                               {isCompleted ? (
                                 <Badge
