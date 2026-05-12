@@ -38,19 +38,17 @@ export default function PlayerBracket({ event, settings, userId, matches, partic
 
   const phaseMatches = matches.filter(m => m.phaseId === currentPhase.id);
 
-  // Enrichir les matchs avec les noms des joueurs
+  // Enrichir les matchs : remplacer le nom de l'utilisateur courant par "Vous"
   const enrichedMatches = phaseMatches.map(match => ({
     ...match,
-    player1Name: match.player1Id === null 
-      ? "BYE" 
-      : match.player1Id === userId 
-        ? "Vous"
-        : match.player1Name || `Joueur ${match.player1Id.slice(-4)}`,
-    player2Name: match.player2Id === null 
-      ? "BYE" 
-      : match.player2Id === userId 
-        ? "Vous"
-        : match.player2Name || `Joueur ${match.player2Id.slice(-4)}`,
+    players: match.players.map(p => ({
+      ...p,
+      name: p.id === null
+        ? "BYE"
+        : p.id === userId
+          ? "Vous"
+          : (p.name || `Joueur ${p.id.slice(-4)}`),
+    })),
   }));
 
   return (

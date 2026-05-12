@@ -19,16 +19,14 @@ type PlayerHistoryProps = {
 };
 
 export default function PlayerHistory({ userId, matches, participants }: PlayerHistoryProps) {
-  const myMatches = matches.filter(m => m.player1Id === userId || m.player2Id === userId);
+  const myMatches = matches.filter(m => m.players.some(p => p.id === userId));
   const pastMatches = myMatches.filter(m => m.status === "completed");
 
-  const getPlayerName = (match: MatchResult, isPlayer1: boolean): string => {
-    const playerId = isPlayer1 ? match.player1Id : match.player2Id;
-    const playerName = isPlayer1 ? match.player1Name : match.player2Name;
-    
+  const getPlayerName = (match: MatchResult, playerId: string | null): string => {
     if (playerId === null) return "BYE";
     if (playerId === userId) return "Vous";
-    if (playerName) return playerName;
+    const playerEntry = match.players.find(p => p.id === playerId);
+    if (playerEntry?.name) return playerEntry.name;
     return `Joueur ${playerId.slice(-4)}`;
   };
 
@@ -57,10 +55,10 @@ export default function PlayerHistory({ userId, matches, participants }: PlayerH
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="font-medium mb-1">
-                          {getPlayerName(match, true)} vs {getPlayerName(match, false)}
+                          {match.players.map(p => getPlayerName(match, p.id)).join(" vs ")}
                         </div>
                         <div className="text-2xl font-bold mb-2">
-                          {match.player1Score} - {match.player2Score}
+                          {match.players.filter(p => p.id !== null).map(p => p.score).join(" - ")}
                         </div>
                         {match.round && (
                           <div className="text-xs text-muted-foreground">

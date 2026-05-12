@@ -13,8 +13,7 @@ export type PlayerStanding = {
 };
 
 export type PairingResult = {
-  player1Id: string;
-  player2Id: string | null; // null indique un BYE
+  playerIds: Array<string | null>; // null indique un BYE, toujours 2 éléments pour le mode duel
 };
 
 /**
@@ -44,45 +43,29 @@ export function calculateStandings(
   matches
     .filter((m) => m.status === "completed")
     .forEach((match) => {
-      const p1 = standings.get(match.player1Id);
-      
-      if (!p1) return;
+      const nonByePlayers = match.players.filter(p => p.id !== null);
 
-      // Cas spécial : BYE (player2Id est null)
-      if (match.player2Id === null) {
-        // Le joueur en BYE gagne automatiquement
-        p1.wins++;
-        p1.matchPoints += 3;
-        p1.gamesWon += match.player1Score;
-        p1.gamesLost += match.player2Score;
-        return;
-      }
+      nonByePlayers.forEach((playerEntry) => {
+        const standing = standings.get(playerEntry.id!);
+        if (!standing) return;
 
-      const p2 = standings.get(match.player2Id);
-      if (!p2) return;
+        standing.gamesWon += playerEntry.score;
+        // gamesLost = somme des scores des autres joueurs non-BYE
+        standing.gamesLost += nonByePlayers
+          .filter(p => p.id !== playerEntry.id)
+          .reduce((sum, p) => sum + p.score, 0);
 
-      // Mettre à jour les scores de jeux
-      p1.gamesWon += match.player1Score;
-      p1.gamesLost += match.player2Score;
-      p2.gamesWon += match.player2Score;
-      p2.gamesLost += match.player1Score;
-
-      // Mettre à jour les victoires/défaites/nuls
-      if (match.winnerId === match.player1Id) {
-        p1.wins++;
-        p1.matchPoints += 3;
-        p2.losses++;
-      } else if (match.winnerId === match.player2Id) {
-        p2.wins++;
-        p2.matchPoints += 3;
-        p1.losses++;
-      } else {
-        // Nul
-        p1.draws++;
-        p2.draws++;
-        p1.matchPoints += 1;
-        p2.matchPoints += 1;
-      }
+        if (match.winnerId === playerEntry.id) {
+          standing.wins++;
+          standing.matchPoints += 3;
+        } else if (match.winnerId === null || match.winnerId === undefined) {
+          // Nul (uniquement si tous les joueurs non-BYE sont présents)
+          standing.draws++;
+          standing.matchPoints += 1;
+        } else {
+          standing.losses++;
+        }
+      });
     });
 
   // Calculer les différences de jeux
@@ -96,16 +79,17 @@ export function calculateStandings(
       .filter(
         (m) =>
           m.status === "completed" &&
-          (m.player1Id === standing.playerId || m.player2Id === standing.playerId)
+          m.players.some(p => p.id === standing.playerId)
       )
-      .map((m) =>
-        m.player1Id === standing.playerId ? m.player2Id : m.player1Id
-      )
-      .filter((oppId) => oppId !== null); // Exclure les BYEs
+      .flatMap((m) =>
+        m.players
+          .map(p => p.id)
+          .filter((id) => id !== null && id !== standing.playerId)
+      ) as string[];
 
     if (opponentIds.length > 0) {
       const totalOpponentWinPercentage = opponentIds.reduce((sum, oppId) => {
-        const opp = standings.get(oppId as string);
+        const opp = standings.get(oppId);
         if (!opp) return sum;
         const totalMatches = opp.wins + opp.losses + opp.draws;
         return sum + (totalMatches > 0 ? opp.wins / totalMatches : 0);
@@ -152,8 +136,8 @@ function havePlayedTogether(
 ): boolean {
   return matches.some(
     (m) =>
-      (m.player1Id === player1Id && m.player2Id === player2Id) ||
-      (m.player1Id === player2Id && m.player2Id === player1Id)
+      m.players.some(p => p.id === player1Id) &&
+      m.players.some(p => p.id === player2Id)
   );
 }
 
@@ -172,15 +156,13 @@ export function generateSwissPairings(
     const shuffled = shuffleArray([...playerIds]);
     for (let i = 0; i < shuffled.length - 1; i += 2) {
       pairings.push({
-        player1Id: shuffled[i],
-        player2Id: shuffled[i + 1],
+        playerIds: [shuffled[i], shuffled[i + 1]],
       });
     }
     // Si nombre impair de joueurs, le dernier a un BYE
     if (shuffled.length % 2 === 1) {
       pairings.push({
-        player1Id: shuffled[shuffled.length - 1],
-        player2Id: null,
+        playerIds: [shuffled[shuffled.length - 1], null],
       });
     }
     return pairings;
@@ -199,8 +181,7 @@ export function generateSwissPairings(
       const player2 = availablePlayers[i];
       if (!havePlayedTogether(player1.playerId, player2.playerId, matches)) {
         pairings.push({
-          player1Id: player1.playerId,
-          player2Id: player2.playerId,
+          playerIds: [player1.playerId, player2.playerId],
         });
         availablePlayers.splice(i, 1);
         paired = true;
@@ -212,8 +193,7 @@ export function generateSwissPairings(
     if (!paired && availablePlayers.length > 0) {
       const player2 = availablePlayers.shift()!;
       pairings.push({
-        player1Id: player1.playerId,
-        player2Id: player2.playerId,
+        playerIds: [player1.playerId, player2.playerId],
       });
     }
   }
@@ -221,8 +201,7 @@ export function generateSwissPairings(
   // S'il reste un joueur impair, il a un "bye"
   if (availablePlayers.length === 1) {
     pairings.push({
-      player1Id: availablePlayers[0].playerId,
-      player2Id: null,
+      playerIds: [availablePlayers[0].playerId, null],
     });
   }
 
@@ -265,14 +244,12 @@ export function generateEliminationBracket(
     // Vérifier que les deux joueurs existent
     if (topSeed < selectedPlayers.length && bottomSeed < selectedPlayers.length) {
       pairings.push({
-        player1Id: selectedPlayers[topSeed],
-        player2Id: selectedPlayers[bottomSeed],
+        playerIds: [selectedPlayers[topSeed], selectedPlayers[bottomSeed]],
       });
     } else if (topSeed < selectedPlayers.length) {
       // Si seulement le top seed existe, il a un BYE
       pairings.push({
-        player1Id: selectedPlayers[topSeed],
-        player2Id: null,
+        playerIds: [selectedPlayers[topSeed], null],
       });
     }
   }
@@ -325,9 +302,11 @@ export function generateNextBracketRound(
       if (match.winnerId) {
         return match.winnerId;
       }
-      // Si c'est un BYE, le joueur 1 passe automatiquement
-      if (!match.player2Id) {
-        return match.player1Id;
+      // Si c'est un BYE (dernier joueur avec id null), le premier joueur non-null passe
+      const byePlayer = match.players.find(p => p.id === null);
+      if (byePlayer) {
+        const nonByePlayer = match.players.find(p => p.id !== null);
+        return nonByePlayer?.id ?? null;
       }
       // Si le match n'est pas terminé, on ne peut pas générer la ronde suivante
       return null;
@@ -343,14 +322,12 @@ export function generateNextBracketRound(
   for (let i = 0; i < winners.length; i += 2) {
     if (i + 1 < winners.length) {
       pairings.push({
-        player1Id: winners[i]!,
-        player2Id: winners[i + 1]!,
+        playerIds: [winners[i]!, winners[i + 1]!],
       });
     } else {
       // Si nombre impair de vainqueurs, le dernier a un BYE
       pairings.push({
-        player1Id: winners[i]!,
-        player2Id: null,
+        playerIds: [winners[i]!, null],
       });
     }
   }

@@ -53,12 +53,7 @@ export type MatchDocument = {
   // Event match fields
   eventId?: string;
   phaseId?: string;
-  player1Id?: string;
-  player2Id?: string | null;
-  player1Name?: string;
-  player2Name?: string;
-  player1Score?: number;
-  player2Score?: number;
+  eventPlayers?: Array<{ id: string | null; name?: string; score: number }>;
   winnerId?: string | null;
   round?: number;
   bracketPosition?: string;
@@ -118,12 +113,7 @@ function toMatch(doc: WithId<Document>): Match {
       matchType: 'event',
       eventId: doc.eventId!,
       phaseId: doc.phaseId!,
-      player1Id: doc.player1Id!,
-      player2Id: doc.player2Id,
-      player1Name: doc.player1Name,
-      player2Name: doc.player2Name,
-      player1Score: doc.player1Score || 0,
-      player2Score: doc.player2Score || 0,
+      players: doc.eventPlayers || [],
       winnerId: doc.winnerId,
       round: doc.round,
       bracketPosition: doc.bracketPosition,
@@ -182,12 +172,7 @@ function toDocument(match: Omit<Match, "id" | "createdAt">): Omit<MatchDocument,
       ...base,
       eventId: match.eventId,
       phaseId: match.phaseId,
-      player1Id: match.player1Id,
-      player2Id: match.player2Id,
-      player1Name: match.player1Name,
-      player2Name: match.player2Name,
-      player1Score: match.player1Score,
-      player2Score: match.player2Score,
+      eventPlayers: match.players,
       winnerId: match.winnerId,
       round: match.round,
       bracketPosition: match.bracketPosition,
@@ -322,8 +307,7 @@ export async function getMatches(filters: GetMatchesFilters = {}): Promise<Match
   if (filters.userId) {
     matchQuery.$or = [
       { playerIds: filters.userId },
-      { player1Id: filters.userId },
-      { player2Id: filters.userId },
+      { 'eventPlayers': { $elemMatch: { id: filters.userId } } },
       { createdBy: filters.userId },
     ];
   }
@@ -357,8 +341,7 @@ export async function getMatches(filters: GetMatchesFilters = {}): Promise<Match
   if (filters.playerUserIds && filters.playerUserIds.length > 0) {
     matchQuery.$or = [
       { playerIds: { $in: filters.playerUserIds } },
-      { player1Id: { $in: filters.playerUserIds } },
-      { player2Id: { $in: filters.playerUserIds } },
+      { 'eventPlayers': { $elemMatch: { id: { $in: filters.playerUserIds } } } },
     ];
   }
   

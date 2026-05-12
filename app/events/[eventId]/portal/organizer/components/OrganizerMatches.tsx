@@ -61,10 +61,7 @@ export default function OrganizerMatches({
 
   const [matchForm, setMatchForm] = useState({
     phaseId: "",
-    player1Id: "",
-    player2Id: "",
-    player1Score: 0,
-    player2Score: 0,
+    players: [{ id: "", score: 0 }, { id: "", score: 0 }] as { id: string; score: number }[],
     round: 1,
   });
 
@@ -133,11 +130,10 @@ export default function OrganizerMatches({
   const handleCreateMatch = () => {
     startTransition(async () => {
       const matchId = `match-${Date.now()}`;
-      const winnerId = matchForm.player1Score > matchForm.player2Score 
-        ? matchForm.player1Id 
-        : matchForm.player2Score > matchForm.player1Score
-          ? matchForm.player2Id
-          : undefined;
+      const nonBye = matchForm.players.filter(p => p.id !== "");
+      const maxScore = nonBye.length > 0 ? Math.max(...nonBye.map(p => p.score)) : 0;
+      const topScorers = nonBye.filter(p => p.score === maxScore);
+      const winnerId = topScorers.length === 1 ? topScorers[0].id : undefined;
 
       await createMatchResult(event.id, {
         ...matchForm,
@@ -148,10 +144,7 @@ export default function OrganizerMatches({
       setShowMatchForm(false);
       setMatchForm({
         phaseId: "",
-        player1Id: "",
-        player2Id: "",
-        player1Score: 0,
-        player2Score: 0,
+        players: [{ id: "", score: 0 }, { id: "", score: 0 }],
         round: 1,
       });
       router.refresh();
@@ -162,16 +155,16 @@ export default function OrganizerMatches({
     if (!editingMatch) return;
 
     startTransition(async () => {
-      const winnerId = editingMatch.player1Score > editingMatch.player2Score
-        ? editingMatch.player1Id
-        : editingMatch.player2Score > editingMatch.player1Score
-          ? editingMatch.player2Id
-          : undefined;
+      const nonBye = editingMatch.players.filter(p => p.id !== null);
+      const maxScore = nonBye.length > 0 ? Math.max(...nonBye.map(p => p.score)) : 0;
+      const topScorers = nonBye.filter(p => p.score === maxScore);
+      const winnerId = topScorers.length === 1 ? topScorers[0].id ?? undefined : undefined;
 
       await updateMatchResult(event.id, editingMatch.matchId, {
         matchId: editingMatch.matchId,
-        player1Score: editingMatch.player1Score,
-        player2Score: editingMatch.player2Score,
+        playerScores: editingMatch.players
+          .filter(p => p.id !== null)
+          .map(p => ({ id: p.id!, score: p.score })),
         winnerId,
         status: "completed",
       });
@@ -318,7 +311,15 @@ export default function OrganizerMatches({
                 <select
                   className="w-full border rounded-md p-2"
                   value={matchForm.phaseId}
-                  onChange={(e) => setMatchForm({ ...matchForm, phaseId: e.target.value })}
+                  onChange={(e) => {
+                    const phase = settings?.phases.find(p => p.id === e.target.value);
+                    const count = phase?.playersPerMatch ?? 2;
+                    setMatchForm({
+                      ...matchForm,
+                      phaseId: e.target.value,
+                      players: Array.from({ length: count }, () => ({ id: "", score: 0 })),
+                    });
+                  }}
                 >
                   <option value="">Sélectionner une phase</option>
                   {settings?.phases.map((phase) => (
@@ -328,55 +329,45 @@ export default function OrganizerMatches({
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="text-sm font-medium">Joueur 1</label>
-                <select
-                  className="w-full border rounded-md p-2"
-                  value={matchForm.player1Id}
-                  onChange={(e) => setMatchForm({ ...matchForm, player1Id: e.target.value })}
-                >
-                  <option value="">Sélectionner un joueur</option>
-                  {participants.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {getParticipantName(p.id)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Joueur 2</label>
-                <select
-                  className="w-full border rounded-md p-2"
-                  value={matchForm.player2Id}
-                  onChange={(e) => setMatchForm({ ...matchForm, player2Id: e.target.value })}
-                >
-                  <option value="">Sélectionner un joueur</option>
-                  {participants.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {getParticipantName(p.id)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Score Joueur 1</label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={matchForm.player1Score}
-                    onChange={(e) => setMatchForm({ ...matchForm, player1Score: parseInt(e.target.value) })}
-                  />
+              {matchForm.players.map((player, idx) => (
+                <div key={idx}>
+                  <label className="text-sm font-medium">Joueur {idx + 1}</label>
+                  <select
+                    className="w-full border rounded-md p-2"
+                    value={player.id}
+                    onChange={(e) => {
+                      const updated = matchForm.players.map((p, i) =>
+                        i === idx ? { ...p, id: e.target.value } : p
+                      );
+                      setMatchForm({ ...matchForm, players: updated });
+                    }}
+                  >
+                    <option value="">Sélectionner un joueur</option>
+                    {participants.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {getParticipantName(p.id)}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <div>
-                  <label className="text-sm font-medium">Score Joueur 2</label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={matchForm.player2Score}
-                    onChange={(e) => setMatchForm({ ...matchForm, player2Score: parseInt(e.target.value) })}
-                  />
-                </div>
+              ))}
+              <div className={`grid grid-cols-${matchForm.players.length} gap-4`}>
+                {matchForm.players.map((player, idx) => (
+                  <div key={idx}>
+                    <label className="text-sm font-medium">Score Joueur {idx + 1}</label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={player.score}
+                      onChange={(e) => {
+                        const updated = matchForm.players.map((p, i) =>
+                          i === idx ? { ...p, score: parseInt(e.target.value) || 0 } : p
+                        );
+                        setMatchForm({ ...matchForm, players: updated });
+                      }}
+                    />
+                  </div>
+                ))}
               </div>
               <div>
                 <label className="text-sm font-medium">Ronde</label>
@@ -388,9 +379,9 @@ export default function OrganizerMatches({
                 />
               </div>
               <div className="flex gap-2">
-                <Button 
-                  onClick={handleCreateMatch} 
-                  disabled={isPending || !matchForm.phaseId || !matchForm.player1Id || !matchForm.player2Id}
+                <Button
+                  onClick={handleCreateMatch}
+                  disabled={isPending || !matchForm.phaseId || matchForm.players.some(p => !p.id)}
                 >
                   Créer le match
                 </Button>
@@ -454,37 +445,29 @@ export default function OrganizerMatches({
                         {editingMatch?.matchId === match.matchId ? (
                           <div className="space-y-4">
                             <div className="font-medium">
-                              {getParticipantName(match.player1Id)} vs {getParticipantName(match.player2Id)}
+                              {match.players.map(p => getParticipantName(p.id)).join(" vs ")}
                             </div>
                             <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <label className="text-sm font-medium">
-                                  Score {getParticipantName(match.player1Id)}
-                                </label>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  value={editingMatch.player1Score}
-                                  onChange={(e) => setEditingMatch({
-                                    ...editingMatch,
-                                    player1Score: parseInt(e.target.value) || 0
-                                  })}
-                                />
-                              </div>
-                              <div>
-                                <label className="text-sm font-medium">
-                                  Score {getParticipantName(match.player2Id)}
-                                </label>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  value={editingMatch.player2Score}
-                                  onChange={(e) => setEditingMatch({
-                                    ...editingMatch,
-                                    player2Score: parseInt(e.target.value) || 0
-                                  })}
-                                />
-                              </div>
+                              {editingMatch.players.filter(p => p.id !== null).map((player, idx) => (
+                                <div key={player.id ?? idx}>
+                                  <label className="text-sm font-medium">
+                                    Score {getParticipantName(player.id)}
+                                  </label>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    value={player.score}
+                                    onChange={(e) => setEditingMatch({
+                                      ...editingMatch,
+                                      players: editingMatch.players.map(p =>
+                                        p.id === player.id
+                                          ? { ...p, score: parseInt(e.target.value) || 0 }
+                                          : p
+                                      ),
+                                    })}
+                                  />
+                                </div>
+                              ))}
                             </div>
                             <div className="flex gap-2">
                               <Button size="sm" onClick={handleSaveMatchEdit} disabled={isPending}>
@@ -500,10 +483,10 @@ export default function OrganizerMatches({
                           <div className="flex items-center justify-between">
                             <div>
                               <div className="font-medium mb-1">
-                                {getParticipantName(match.player1Id)} vs {getParticipantName(match.player2Id)}
+                                {match.players.map(p => getParticipantName(p.id)).join(" vs ")}
                               </div>
                               <div className="text-2xl font-bold mb-2">
-                                {match.player1Score} - {match.player2Score}
+                                {match.players.filter(p => p.id !== null).map(p => p.score).join(" - ")}
                               </div>
                               <div className="flex gap-2">
                                 <Badge variant={

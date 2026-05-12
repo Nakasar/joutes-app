@@ -20,6 +20,7 @@ import {
 } from "@/lib/schemas/event-portal.schema";
 import { getEventById } from "@/lib/db/events";
 import { calculateStandings, generateBracketPosition, generateEliminationBracket, generateNextBracketRound, generateSwissPairings } from "@/lib/utils/pairing";
+import type { PairingResult } from "@/lib/utils/pairing";
 import { getEventParticipants } from "./participant-actions";
 import { notifyEventAll } from "@/lib/services/notifications";
 import type { EnrichedStanding } from "./types";
@@ -440,167 +441,138 @@ export async function getMatchResults(eventId: string, phaseId?: string): Promis
       matchQuery.phaseId = phaseId;
     }
 
-    // Agrégation pour joindre les informations des joueurs
+    // Agrégation pour joindre les informations des joueurs dans le tableau players
     const pipeline = [
       { $match: matchQuery },
-      // Lookup pour player1 dans la collection users
+      // Lookup utilisateurs pour tous les IDs non-null du tableau players
       {
         $lookup: {
           from: "user",
-          let: { player1Id: { $cond: [{ $eq: ["$player1Id", null] }, null, { $toObjectId: "$player1Id" }] } },
+          let: {
+            playerIds: {
+              $map: {
+                input: {
+                  $filter: {
+                    input: "$players",
+                    as: "p",
+                    cond: { $ne: ["$$p.id", null] },
+                  },
+                },
+                as: "p",
+                in: { $toObjectId: "$$p.id" },
+              },
+            },
+          },
           pipeline: [
-            { $match: { $expr: { $eq: ["$_id", "$$player1Id"] } } },
-            { $project: { displayName: 1, username: 1, discriminator: 1, profileImage: 1 } }
+            { $match: { $expr: { $in: ["$_id", "$$playerIds"] } } },
+            { $project: { _id: 1, displayName: 1, username: 1, discriminator: 1 } },
           ],
-          as: "player1Info"
-        }
+          as: "userInfos",
+        },
       },
-      // Lookup pour player2 dans la collection users
-      {
-        $lookup: {
-          from: "user",
-          let: { player2Id: { $cond: [{ $eq: ["$player2Id", null] }, null, { $toObjectId: "$player2Id" }] } },
-          pipeline: [
-            { $match: { $expr: { $eq: ["$_id", "$$player2Id"] } } },
-            { $project: { displayName: 1, username: 1, discriminator: 1, profileImage: 1 } }
-          ],
-          as: "player2Info"
-        }
-      },
-      // Lookup pour player1 dans la collection guest-participants
+      // Lookup participants invités pour tous les IDs non-null
       {
         $lookup: {
           from: "event-guest-participants",
-          localField: "player1Id",
-          foreignField: "id",
-          as: "player1GuestInfo"
-        }
+          let: {
+            playerIds: {
+              $filter: {
+                input: { $map: { input: "$players", as: "p", in: "$$p.id" } },
+                as: "pid",
+                cond: { $ne: ["$$pid", null] },
+              },
+            },
+          },
+          pipeline: [
+            { $match: { $expr: { $in: ["$id", "$$playerIds"] } } },
+            { $project: { id: 1, username: 1, discriminator: 1 } },
+          ],
+          as: "guestInfos",
+        },
       },
-      // Lookup pour player2 dans la collection guest-participants
-      {
-        $lookup: {
-          from: "event-guest-participants",
-          localField: "player2Id",
-          foreignField: "id",
-          as: "player2GuestInfo"
-        }
-      },
-      // Ajouter les champs player1Name et player2Name
+      // Enrichir chaque entrée du tableau players avec son nom
       {
         $addFields: {
-          player1Name: {
-            $cond: [
-              { $eq: ["$player1Id", null] },
-              "BYE",
-              {
-                $cond: [
-                  { $gt: [{ $size: "$player1Info" }, 0] },
-                  {
-                    $let: {
-                      vars: {
-                        user: { $arrayElemAt: ["$player1Info", 0] }
-                      },
-                      in: {
-                        $concat: [
-                          { $ifNull: ["$$user.displayName", "$$user.username"] },
-                          "#",
-                          "$$user.discriminator"
-                        ]
-                      }
-                    }
-                  },
-                  {
-                    $cond: [
-                      { $gt: [{ $size: "$player1GuestInfo" }, 0] },
-                      {
-                        $let: {
-                          vars: {
-                            guest: { $arrayElemAt: ["$player1GuestInfo", 0] }
-                          },
-                          in: {
-                            $cond: [
-                              { $ne: [{ $ifNull: ["$$guest.discriminator", null] }, null] },
+          players: {
+            $map: {
+              input: "$players",
+              as: "player",
+              in: {
+                id: "$$player.id",
+                score: "$$player.score",
+                name: {
+                  $cond: [
+                    { $eq: ["$$player.id", null] },
+                    "BYE",
+                    {
+                      $let: {
+                        vars: {
+                          userInfo: {
+                            $arrayElemAt: [
                               {
-                                $concat: [
-                                  "$$guest.username",
-                                  "#",
-                                  "$$guest.discriminator"
-                                ]
+                                $filter: {
+                                  input: "$userInfos",
+                                  as: "u",
+                                  cond: { $eq: [{ $toString: "$$u._id" }, "$$player.id"] },
+                                },
                               },
-                              "$$guest.username"
-                            ]
-                          }
-                        }
+                              0,
+                            ],
+                          },
+                          guestInfo: {
+                            $arrayElemAt: [
+                              {
+                                $filter: {
+                                  input: "$guestInfos",
+                                  as: "g",
+                                  cond: { $eq: ["$$g.id", "$$player.id"] },
+                                },
+                              },
+                              0,
+                            ],
+                          },
+                        },
+                        in: {
+                          $cond: [
+                            { $ne: [{ $ifNull: ["$$userInfo", null] }, null] },
+                            {
+                              $concat: [
+                                { $ifNull: ["$$userInfo.displayName", "$$userInfo.username"] },
+                                "#",
+                                "$$userInfo.discriminator",
+                              ],
+                            },
+                            {
+                              $cond: [
+                                { $ne: [{ $ifNull: ["$$guestInfo", null] }, null] },
+                                {
+                                  $cond: [
+                                    { $ne: [{ $ifNull: ["$$guestInfo.discriminator", null] }, null] },
+                                    { $concat: ["$$guestInfo.username", "#", "$$guestInfo.discriminator"] },
+                                    "$$guestInfo.username",
+                                  ],
+                                },
+                                "Joueur inconnu",
+                              ],
+                            },
+                          ],
+                        },
                       },
-                      "Joueur inconnu"
-                    ]
-                  }
-                ]
-              }
-            ]
+                    },
+                  ],
+                },
+              },
+            },
           },
-          player2Name: {
-            $cond: [
-              { $eq: ["$player2Id", null] },
-              "BYE",
-              {
-                $cond: [
-                  { $gt: [{ $size: "$player2Info" }, 0] },
-                  {
-                    $let: {
-                      vars: {
-                        user: { $arrayElemAt: ["$player2Info", 0] }
-                      },
-                      in: {
-                        $concat: [
-                          { $ifNull: ["$$user.displayName", "$$user.username"] },
-                          "#",
-                          "$$user.discriminator"
-                        ]
-                      }
-                    }
-                  },
-                  {
-                    $cond: [
-                      { $gt: [{ $size: "$player2GuestInfo" }, 0] },
-                      {
-                        $let: {
-                          vars: {
-                            guest: { $arrayElemAt: ["$player2GuestInfo", 0] }
-                          },
-                          in: {
-                            $cond: [
-                              { $ne: [{ $ifNull: ["$$guest.discriminator", null] }, null] },
-                              {
-                                $concat: [
-                                  "$$guest.username",
-                                  "#",
-                                  "$$guest.discriminator"
-                                ]
-                              },
-                              "$$guest.username"
-                            ]
-                          }
-                        }
-                      },
-                      "Joueur inconnu"
-                    ]
-                  }
-                ]
-              }
-            ]
-          }
-        }
+        },
       },
       // Supprimer les champs temporaires
       {
         $project: {
-          player1Info: 0,
-          player2Info: 0,
-          player1GuestInfo: 0,
-          player2GuestInfo: 0
-        }
-      }
+          userInfos: 0,
+          guestInfos: 0,
+        },
+      },
     ];
 
     const results = await collection.aggregate<MatchResult & { _id: ObjectId }>(pipeline).toArray();
@@ -695,7 +667,7 @@ export async function reportMatchResult(eventId: string, data: unknown) {
     }
 
     // Vérifier que l'utilisateur fait partie du match
-    if (match.player1Id !== session.user.id && match.player2Id !== session.user.id && !isCreator) {
+    if (!match.players.some(p => p.id === session.user.id) && !isCreator) {
       return { success: false, error: "Vous ne faites pas partie de ce match" };
     }
 
@@ -705,13 +677,19 @@ export async function reportMatchResult(eventId: string, data: unknown) {
 
     const requireConfirmation = settings?.requireConfirmation ?? false;
 
-    const winnerId = validated.player1Score > validated.player2Score ? match.player1Id
-      : validated.player2Score > validated.player1Score ? match.player2Id
-      : undefined;
+    // Appliquer les scores et calculer le gagnant
+    const updatedPlayers = match.players.map(p => {
+      const scoreEntry = validated.playerScores.find(s => s.id === p.id);
+      return { ...p, score: scoreEntry?.score ?? p.score };
+    });
 
-    const updateData: Partial<MatchResult> = {
-      player1Score: validated.player1Score,
-      player2Score: validated.player2Score,
+    const nonBye = updatedPlayers.filter(p => p.id !== null);
+    const maxScore = nonBye.length > 0 ? Math.max(...nonBye.map(p => p.score)) : 0;
+    const topScorers = nonBye.filter(p => p.score === maxScore);
+    const winnerId = topScorers.length === 1 ? topScorers[0].id : null;
+
+    const updateData: Partial<MatchResult> & { players: typeof updatedPlayers } = {
+      players: updatedPlayers,
       winnerId,
       reportedBy: session.user.id,
       status: requireConfirmation ? 'in-progress' : 'completed',
@@ -764,7 +742,7 @@ export async function confirmMatchResult(eventId: string, data: unknown) {
       return { success: false, error: "Vous ne pouvez pas confirmer votre propre rapport" };
     }
 
-    if (match.player1Id !== session.user.id && match.player2Id !== session.user.id) {
+    if (!match.players.some(p => p.id === session.user.id)) {
       // Vérifier si l'utilisateur est le créateur
       const isCreator = await isEventOrganizer(eventId, session.user.id);
       if (!isCreator) {
@@ -814,9 +792,16 @@ export async function updateMatchResult(eventId: string, matchId: string, data: 
       return { success: false, error: "Match non trouvé" };
     }
 
-    const winnerId = validated.player1Score > validated.player2Score ? match.player1Id
-      : validated.player2Score > validated.player1Score ? match.player2Id
-      : null;
+    // Appliquer les scores et recalculer le gagnant
+    const updatedPlayers = match.players.map(p => {
+      const scoreEntry = validated.playerScores.find(s => s.id === p.id);
+      return { ...p, score: scoreEntry?.score ?? p.score };
+    });
+
+    const nonBye = updatedPlayers.filter(p => p.id !== null);
+    const maxScore = nonBye.length > 0 ? Math.max(...nonBye.map(p => p.score)) : 0;
+    const topScorers = nonBye.filter(p => p.score === maxScore);
+    const winnerId = topScorers.length === 1 ? topScorers[0].id : null;
 
     const collection = db.collection<MatchResult & { eventId: string }>("matches");
 
@@ -824,8 +809,7 @@ export async function updateMatchResult(eventId: string, matchId: string, data: 
       { matchId, eventId },
       {
         $set: {
-          player1Score: validated.player1Score,
-          player2Score: validated.player2Score,
+          players: updatedPlayers,
           winnerId,
           status: 'completed',
           reportedBy: session.user.id,
@@ -1065,7 +1049,7 @@ export async function generateMatchesForPhase(eventId: string, phaseId: string) 
     const matchesCollection = db.collection<MatchResult & { eventId: string }>("matches");
 
     // Générer les pairings selon le type de phase
-    let pairings: Array<{ player1Id: string; player2Id: string | null }> = [];
+    let pairings: PairingResult[] = [];
     let roundNumber = 1;
 
     if (phase.type === "swiss") {
@@ -1161,45 +1145,46 @@ export async function generateMatchesForPhase(eventId: string, phaseId: string) 
       const pairing = pairings[i];
       const matchId = `match-${eventId}-${phaseId}-r${roundNumber}-${i}`;
 
-      // Déterminer si c'est un BYE et calculer le score automatique
-      const isBye = pairing.player2Id === null;
-      let player1Score = 0;
-      const player2Score = 0;
+      // Déterminer si c'est un BYE (dernier élément du tableau est null)
+      const isBye = pairing.playerIds.includes(null);
+      let byeWinnerScore = 0;
       let status: "pending" | "completed" = "pending";
       let winnerId: string | undefined = undefined;
       let reportedBy: string | undefined = undefined;
       let confirmedBy: string | undefined = undefined;
 
       if (isBye) {
-        // Pour un BYE, le joueur gagne automatiquement avec le score maximal
+        // Pour un BYE, le joueur non-null gagne automatiquement avec le score maximal
         switch (phase.matchType) {
           case "BO1":
-            player1Score = 1;
+            byeWinnerScore = 1;
             break;
           case "BO2":
-            player1Score = 2;
+            byeWinnerScore = 2;
             break;
           case "BO3":
-            player1Score = 2;
+            byeWinnerScore = 2;
             break;
           case "BO5":
-            player1Score = 3;
+            byeWinnerScore = 3;
             break;
         }
         status = "completed";
-        winnerId = pairing.player1Id;
-        reportedBy = session.user.id; // L'organisateur
+        winnerId = pairing.playerIds.find(id => id !== null) ?? undefined;
+        reportedBy = session.user.id;
         confirmedBy = session.user.id;
       }
+
+      const players = pairing.playerIds.map(pid => ({
+        id: pid,
+        score: pid !== null && isBye && pid === winnerId ? byeWinnerScore : 0,
+      }));
 
       const match = {
         matchId,
         eventId,
         phaseId,
-        player1Id: pairing.player1Id,
-        player2Id: pairing.player2Id,
-        player1Score,
-        player2Score,
+        players,
         winnerId,
         round: roundNumber,
         bracketPosition: phase.type === "bracket"

@@ -14,7 +14,7 @@ type PlayerStandingsProps = {
 
 export default function PlayerStandings({ event, settings, userId, matches, standings }: PlayerStandingsProps) {
   const currentPhase = settings?.phases.find(p => p.id === settings?.currentPhaseId);
-  const myMatches = matches.filter(m => m.player1Id === userId || m.player2Id === userId);
+  const myMatches = matches.filter(m => m.players.some(p => p.id === userId));
   const pastMatches = myMatches.filter(m => m.status === "completed");
 
   const wins = pastMatches.filter(m => m.winnerId === userId).length;

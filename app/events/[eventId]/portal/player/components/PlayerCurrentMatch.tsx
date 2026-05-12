@@ -31,12 +31,11 @@ export default function PlayerCurrentMatch({
   const [success, setSuccess] = useState<string | null>(null);
   const [reportForm, setReportForm] = useState<{
     matchId: string;
-    player1Score: number;
-    player2Score: number;
+    playerScores: { id: string; score: number }[];
   } | null>(null);
 
   const currentPhase = settings?.phases.find(p => p.id === settings?.currentPhaseId);
-  const myMatches = matches.filter(m => m.player1Id === userId || m.player2Id === userId);
+  const myMatches = matches.filter(m => m.players.some(p => p.id === userId));
 
   // Match actuel
   let currentMatch = myMatches.find(m => m.status === "pending" || m.status === "in-progress");
@@ -56,21 +55,20 @@ export default function PlayerCurrentMatch({
     }
   }
 
-  const getPlayerName = (match: MatchResult, isPlayer1: boolean): string => {
-    const playerId = isPlayer1 ? match.player1Id : match.player2Id;
-    const playerName = isPlayer1 ? match.player1Name : match.player2Name;
-    
+  const getPlayerName = (match: MatchResult, playerId: string | null): string => {
     if (playerId === null) return "BYE";
     if (playerId === userId) return "Vous";
-    if (playerName) return playerName;
+    const playerEntry = match.players.find(p => p.id === playerId);
+    if (playerEntry?.name) return playerEntry.name;
     return `Joueur ${playerId.slice(-4)}`;
   };
 
   const handleReportResult = (match: MatchResult) => {
     setReportForm({
       matchId: match.matchId,
-      player1Score: match.player1Score || 0,
-      player2Score: match.player2Score || 0,
+      playerScores: match.players
+        .filter(p => p.id !== null)
+        .map(p => ({ id: p.id!, score: p.score || 0 })),
     });
   };
 
@@ -143,10 +141,10 @@ export default function PlayerCurrentMatch({
           <CardContent className="space-y-4">
             <div className="text-center py-6">
               <div className="text-2xl font-bold mb-4">
-                {getPlayerName(currentMatch, true)} vs {getPlayerName(currentMatch, false)}
+                {currentMatch.players.map(p => getPlayerName(currentMatch, p.id)).join(" vs ")}
               </div>
               <div className="text-4xl font-bold mb-4">
-                {currentMatch.player1Score || 0} - {currentMatch.player2Score || 0}
+                {currentMatch.players.filter(p => p.id !== null).map(p => p.score || 0).join(" - ")}
               </div>
               <Badge variant={
                 currentMatch.status === "completed" 
@@ -174,24 +172,25 @@ export default function PlayerCurrentMatch({
                   <div className="border rounded-lg p-4 space-y-4">
                     <h4 className="font-medium">Rapporter le résultat</h4>
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm">Score {getPlayerName(currentMatch, true)}</label>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={reportForm.player1Score}
-                          onChange={(e) => setReportForm({ ...reportForm, player1Score: parseInt(e.target.value) || 0 })}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm">Score {getPlayerName(currentMatch, false)}</label>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={reportForm.player2Score}
-                          onChange={(e) => setReportForm({ ...reportForm, player2Score: parseInt(e.target.value) || 0 })}
-                        />
-                      </div>
+                      {reportForm.playerScores.map((ps, idx) => {
+                        const playerEntry = currentMatch.players.find(p => p.id === ps.id);
+                        return (
+                          <div key={ps.id}>
+                            <label className="text-sm">Score {getPlayerName(currentMatch, ps.id)}</label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={ps.score}
+                              onChange={(e) => {
+                                const updated = reportForm.playerScores.map((s, i) =>
+                                  i === idx ? { ...s, score: parseInt(e.target.value) || 0 } : s
+                                );
+                                setReportForm({ ...reportForm, playerScores: updated });
+                              }}
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
                     <div className="flex gap-2">
                       <Button onClick={handleSubmitReport} disabled={isPending} className="flex-1">

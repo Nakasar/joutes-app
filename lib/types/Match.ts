@@ -73,17 +73,19 @@ export type LeagueTypeMatch = BaseMatch & {
   decks?: Record<User['id'], string>; // Decks utilisés par chaque joueur { playerId: deckId }
 };
 
+// Joueur dans un match d'événement (tournoi)
+export type EventMatchPlayer = {
+  id: User['id'] | null; // null pour BYE
+  name?: string; // Nom enrichi par agrégation
+  score: number;
+};
+
 // Match d'événement (tournoi)
 export type EventTypeMatch = BaseMatch & {
   matchType: 'event';
   eventId: string;
   phaseId: string;
-  player1Id: User['id'];
-  player2Id: User['id'] | null; // null pour un BYE
-  player1Name?: string; // Nom du joueur 1 (ajouté par agrégation)
-  player2Name?: string; // Nom du joueur 2 (ajouté par agrégation)
-  player1Score: number;
-  player2Score: number;
+  players: EventMatchPlayer[]; // Liste des joueurs (duel: 2, multi-ffa: N)
   winnerId?: User['id'] | null; // ID du gagnant
   round?: number; // Numéro de ronde (pour les rondes suisses)
   bracketPosition?: string; // Position dans le bracket (ex: "QF1", "SF1", "F")

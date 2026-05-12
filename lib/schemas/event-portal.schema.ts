@@ -26,16 +26,18 @@ export const tournamentPhaseSchema = z.object({
   status: z.enum(['not-started', 'in-progress', 'completed']).default('not-started'),
 });
 
+// Schéma pour un joueur dans un match
+export const matchPlayerSchema = z.object({
+  id: z.string().nullable(), // null pour BYE
+  name: z.string().optional(), // Nom du joueur (ajouté par agrégation)
+  score: z.number().min(0),
+});
+
 // Schéma pour un résultat de match
 export const matchResultSchema = z.object({
   matchId: z.string(),
   phaseId: z.string(),
-  player1Id: z.string(),
-  player2Id: z.string().nullable(), // null pour un BYE
-  player1Name: z.string().optional(), // Nom du joueur 1 (ajouté par agrégation)
-  player2Name: z.string().optional(), // Nom du joueur 2 (ajouté par agrégation)
-  player1Score: z.number().min(0),
-  player2Score: z.number().min(0),
+  players: z.array(matchPlayerSchema).min(1), // Liste des joueurs du match (min 1 pour BYE seul)
   winnerId: z.string().optional().nullable(), // ID du gagnant
   round: z.number().min(1).optional(), // Numéro de ronde (pour les rondes suisses)
   bracketPosition: z.string().optional(), // Position dans le bracket (ex: "QF1", "SF1", "F")
@@ -110,8 +112,10 @@ export const createMatchResultSchema = matchResultSchema.omit({
 // Schéma pour rapporter un résultat (par un joueur)
 export const reportMatchResultSchema = z.object({
   matchId: z.string(),
-  player1Score: z.number().min(0),
-  player2Score: z.number().min(0),
+  playerScores: z.array(z.object({
+    id: z.string(),
+    score: z.number().min(0),
+  })).min(1),
 });
 
 // Schéma pour confirmer un résultat
@@ -161,6 +165,7 @@ export const addParticipantSchema = z.discriminatedUnion('type', [
 export type PhaseType = z.infer<typeof phaseTypeSchema>;
 export type MatchType = z.infer<typeof matchTypeSchema>;
 export type TournamentPhase = z.infer<typeof tournamentPhaseSchema>;
+export type MatchPlayer = z.infer<typeof matchPlayerSchema>;
 export type MatchResult = z.infer<typeof matchResultSchema>;
 export type Announcement = z.infer<typeof announcementSchema>;
 export type EventPortalSettings = z.infer<typeof eventPortalSettingsSchema>;
@@ -169,7 +174,6 @@ export type CreatePhase = z.infer<typeof createPhaseSchema>;
 export type UpdatePhase = z.infer<typeof updatePhaseSchema>;
 export type CreateMatchResult = z.infer<typeof createMatchResultSchema>;
 export type ReportMatchResult = z.infer<typeof reportMatchResultSchema>;
-export type ConfirmMatchResult = z.infer<typeof confirmMatchResultSchema>;
-export type CreateAnnouncement = z.infer<typeof createAnnouncementSchema>;
+export type ConfirmMatchResult = z.infer<typeof confirmMatchResultSchema>;export type CreateAnnouncement = z.infer<typeof createAnnouncementSchema>;
 export type GuestParticipant = z.infer<typeof guestParticipantSchema>;
 export type AddParticipant = z.infer<typeof addParticipantSchema>;

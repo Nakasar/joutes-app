@@ -27,23 +27,19 @@ export default function BracketView({
   onDeleteMatch,
   readonly = false,
 }: BracketViewProps) {
-  // Fonction helper pour obtenir le nom d'un joueur
+  // Fonction helper pour obtenir le nom d'un joueur à partir de son ID
   const getPlayerName = (match: MatchResult, playerId: string | null): string => {
     if (playerId === null) return "BYE";
-    
+
     // Si une fonction getParticipantName est fournie, l'utiliser (mode organisateur)
     if (getParticipantName) {
       return getParticipantName(playerId);
     }
-    
-    // Sinon, utiliser les noms pré-chargés dans le match (mode joueur)
-    if (playerId === match.player1Id && match.player1Name) {
-      return match.player1Name;
-    }
-    if (playerId === match.player2Id && match.player2Name) {
-      return match.player2Name;
-    }
-    
+
+    // Sinon, chercher dans le tableau players du match
+    const playerEntry = match.players.find(p => p.id === playerId);
+    if (playerEntry?.name) return playerEntry.name;
+
     return `Joueur ${playerId.slice(-4)}`;
   };
   
@@ -180,43 +176,30 @@ export default function BracketView({
                         </Badge>
                       </div>
 
-                      {/* Joueur 1 */}
-                      <div
-                        className={`flex items-center justify-between p-2 rounded ${
-                          match.winnerId === match.player1Id
-                            ? "bg-green-100 dark:bg-green-900/30 font-semibold"
-                            : "bg-muted/50"
-                        }`}
-                      >
-                        <span className="truncate flex-1">
-                          {getPlayerName(match, match.player1Id)}
-                        </span>
-                        <span className="ml-2 font-bold text-lg">
-                          {match.player1Score}
-                        </span>
-                      </div>
-
-                      {/* Joueur 2 ou BYE */}
-                      {match.player2Id ? (
-                        <div
-                          className={`flex items-center justify-between p-2 rounded ${
-                            match.winnerId === match.player2Id
-                              ? "bg-green-100 dark:bg-green-900/30 font-semibold"
-                              : "bg-muted/50"
-                          }`}
-                        >
-                          <span className="truncate flex-1">
-                            {getPlayerName(match, match.player2Id)}
-                          </span>
-                          <span className="ml-2 font-bold text-lg">
-                            {match.player2Score}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center p-2 rounded bg-muted/30 text-muted-foreground italic">
-                          BYE
-                        </div>
-                      )}
+                      {/* Joueurs */}
+                      {match.players.map((player, playerIdx) => (
+                        player.id === null ? (
+                          <div key={`bye-${playerIdx}`} className="flex items-center justify-center p-2 rounded bg-muted/30 text-muted-foreground italic">
+                            BYE
+                          </div>
+                        ) : (
+                          <div
+                            key={player.id}
+                            className={`flex items-center justify-between p-2 rounded ${
+                              match.winnerId === player.id
+                                ? "bg-green-100 dark:bg-green-900/30 font-semibold"
+                                : "bg-muted/50"
+                            }`}
+                          >
+                            <span className="truncate flex-1">
+                              {getPlayerName(match, player.id)}
+                            </span>
+                            <span className="ml-2 font-bold text-lg">
+                              {player.score}
+                            </span>
+                          </div>
+                        )
+                      ))}
 
                       {/* Actions (si pas readonly) */}
                       {!readonly && (onEditMatch || onDeleteMatch) && (
