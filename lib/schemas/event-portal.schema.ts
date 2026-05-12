@@ -18,7 +18,7 @@ export const tournamentPhaseSchema = z.object({
     pointsForWin: z.number().min(0).default(3).optional(),
     pointsForDraw: z.number().min(0).default(1).optional(),
     pointsForLoss: z.number().min(0).default(0).optional(),
-  }),
+  }).optional(), // undefined for single elimination/bracket.
   matchType: matchTypeSchema,
   rounds: z.number().min(1).optional(), // Nombre de rondes pour les rondes suisses
   topCut: z.number().min(2).optional(), // Nombre de joueurs pour le bracket (ex: 8 pour un top 8)
@@ -87,6 +87,12 @@ export const updatePhaseSchema = z.object({
   playersPerMatch: z.number().min(2).optional(),
   type: phaseTypeSchema.optional(), // Peut être modifié seulement si status = 'not-started'
   matchType: matchTypeSchema.optional(),
+  pointsComputation: z.object({
+    type: z.enum(['points-based', 'points-ratio-based']).default('points-based'),
+    pointsForWin: z.number().min(0).default(3).optional(),
+    pointsForDraw: z.number().min(0).default(1).optional(),
+    pointsForLoss: z.number().min(0).default(0).optional(),
+  }).optional(),
   rounds: z.number().min(1).optional(),
   topCut: z.number().min(2).optional(),
   order: z.number().min(0).optional(),

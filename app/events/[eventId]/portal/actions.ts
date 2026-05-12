@@ -314,6 +314,9 @@ export async function updatePhase(eventId: string, phaseId: string, phaseData: u
     if (validated.matchType !== undefined) {
       updateFields["phases.$.matchType"] = validated.matchType;
     }
+    if (validated.pointsComputation !== undefined) {
+      updateFields["phases.$.pointsComputation"] = validated.pointsComputation;
+    }
     if (validated.rounds !== undefined) {
       updateFields["phases.$.rounds"] = validated.rounds;
     }
