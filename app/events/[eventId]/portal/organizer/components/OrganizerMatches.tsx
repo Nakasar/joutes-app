@@ -85,9 +85,7 @@ export default function OrganizerMatches({
 
     const maxRound = Math.max(...phaseMatches.map(m => m.round || 1));
     const lastRoundMatches = phaseMatches.filter(m => (m.round || 1) === maxRound);
-    const allMatchesCompleted = lastRoundMatches.every(m => 
-      m.player1Score !== undefined && 
-      m.player2Score !== undefined && 
+    const allMatchesCompleted = lastRoundMatches.every(m =>
       m.status === 'completed'
     );
 
@@ -329,46 +327,107 @@ export default function OrganizerMatches({
                   ))}
                 </select>
               </div>
-              {matchForm.players.map((player, idx) => (
-                <div key={idx}>
-                  <label className="text-sm font-medium">Joueur {idx + 1}</label>
-                  <select
-                    className="w-full border rounded-md p-2"
-                    value={player.id}
-                    onChange={(e) => {
-                      const updated = matchForm.players.map((p, i) =>
-                        i === idx ? { ...p, id: e.target.value } : p
-                      );
-                      setMatchForm({ ...matchForm, players: updated });
-                    }}
-                  >
-                    <option value="">Sélectionner un joueur</option>
-                    {participants.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {getParticipantName(p.id)}
-                      </option>
+
+              {(() => {
+                const selectedPhase = settings?.phases.find(p => p.id === matchForm.phaseId);
+                const isDuel = !selectedPhase || selectedPhase.multiplayer === "duel";
+
+                if (isDuel) {
+                  // UI duel : deux sélecteurs joueurs + deux champs score côte à côte
+                  return (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        {matchForm.players.map((player, idx) => (
+                          <div key={idx}>
+                            <label className="text-sm font-medium">Joueur {idx + 1}</label>
+                            <select
+                              className="w-full border rounded-md p-2"
+                              value={player.id}
+                              onChange={(e) => {
+                                const updated = matchForm.players.map((p, i) =>
+                                  i === idx ? { ...p, id: e.target.value } : p
+                                );
+                                setMatchForm({ ...matchForm, players: updated });
+                              }}
+                            >
+                              <option value="">Sélectionner un joueur</option>
+                              {participants.map((p) => (
+                                <option key={p.id} value={p.id}>
+                                  {getParticipantName(p.id)}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        {matchForm.players.map((player, idx) => (
+                          <div key={idx}>
+                            <label className="text-sm font-medium">
+                              Score {player.id ? getParticipantName(player.id) : `Joueur ${idx + 1}`}
+                            </label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={player.score}
+                              onChange={(e) => {
+                                const updated = matchForm.players.map((p, i) =>
+                                  i === idx ? { ...p, score: parseInt(e.target.value) || 0 } : p
+                                );
+                                setMatchForm({ ...matchForm, players: updated });
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  );
+                }
+
+                // UI multi-ffa : liste verticale joueur + score sur la même ligne
+                return (
+                  <div className="space-y-2">
+                    {matchForm.players.map((player, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <div className="flex-1">
+                          <select
+                            className="w-full border rounded-md p-2 text-sm"
+                            value={player.id}
+                            onChange={(e) => {
+                              const updated = matchForm.players.map((p, i) =>
+                                i === idx ? { ...p, id: e.target.value } : p
+                              );
+                              setMatchForm({ ...matchForm, players: updated });
+                            }}
+                          >
+                            <option value="">Joueur {idx + 1}</option>
+                            {participants.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {getParticipantName(p.id)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="w-24">
+                          <Input
+                            type="number"
+                            min="0"
+                            placeholder="Score"
+                            value={player.score}
+                            onChange={(e) => {
+                              const updated = matchForm.players.map((p, i) =>
+                                i === idx ? { ...p, score: parseInt(e.target.value) || 0 } : p
+                              );
+                              setMatchForm({ ...matchForm, players: updated });
+                            }}
+                          />
+                        </div>
+                      </div>
                     ))}
-                  </select>
-                </div>
-              ))}
-              <div className={`grid grid-cols-${matchForm.players.length} gap-4`}>
-                {matchForm.players.map((player, idx) => (
-                  <div key={idx}>
-                    <label className="text-sm font-medium">Score Joueur {idx + 1}</label>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={player.score}
-                      onChange={(e) => {
-                        const updated = matchForm.players.map((p, i) =>
-                          i === idx ? { ...p, score: parseInt(e.target.value) || 0 } : p
-                        );
-                        setMatchForm({ ...matchForm, players: updated });
-                      }}
-                    />
                   </div>
-                ))}
-              </div>
+                );
+              })()}
+
               <div>
                 <label className="text-sm font-medium">Ronde</label>
                 <Input
@@ -447,28 +506,61 @@ export default function OrganizerMatches({
                             <div className="font-medium">
                               {match.players.map(p => getParticipantName(p.id)).join(" vs ")}
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                              {editingMatch.players.filter(p => p.id !== null).map((player, idx) => (
-                                <div key={player.id ?? idx}>
-                                  <label className="text-sm font-medium">
-                                    Score {getParticipantName(player.id)}
-                                  </label>
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    value={player.score}
-                                    onChange={(e) => setEditingMatch({
-                                      ...editingMatch,
-                                      players: editingMatch.players.map(p =>
-                                        p.id === player.id
-                                          ? { ...p, score: parseInt(e.target.value) || 0 }
-                                          : p
-                                      ),
-                                    })}
-                                  />
+                            {(() => {
+                              const isDuel = !phase || phase.multiplayer === "duel";
+                              const nonBye = editingMatch.players.filter(p => p.id !== null);
+                              if (isDuel) {
+                                return (
+                                  <div className="grid grid-cols-2 gap-4">
+                                    {nonBye.map((player, idx) => (
+                                      <div key={player.id ?? idx}>
+                                        <label className="text-sm font-medium">
+                                          Score {getParticipantName(player.id)}
+                                        </label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          value={player.score}
+                                          onChange={(e) => setEditingMatch({
+                                            ...editingMatch,
+                                            players: editingMatch.players.map(p =>
+                                              p.id === player.id
+                                                ? { ...p, score: parseInt(e.target.value) || 0 }
+                                                : p
+                                            ),
+                                          })}
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              }
+                              return (
+                                <div className="space-y-2">
+                                  {nonBye.map((player, idx) => (
+                                    <div key={player.id ?? idx} className="flex items-center gap-2">
+                                      <span className="flex-1 text-sm">{getParticipantName(player.id)}</span>
+                                      <div className="w-24">
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          placeholder="Score"
+                                          value={player.score}
+                                          onChange={(e) => setEditingMatch({
+                                            ...editingMatch,
+                                            players: editingMatch.players.map(p =>
+                                              p.id === player.id
+                                                ? { ...p, score: parseInt(e.target.value) || 0 }
+                                                : p
+                                            ),
+                                          })}
+                                        />
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
-                              ))}
-                            </div>
+                              );
+                            })()}
                             <div className="flex gap-2">
                               <Button size="sm" onClick={handleSaveMatchEdit} disabled={isPending}>
                                 <Check className="h-4 w-4 mr-2" />
