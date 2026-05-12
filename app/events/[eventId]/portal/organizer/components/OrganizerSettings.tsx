@@ -48,7 +48,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
     name: "",
     multiplayer: "duel" as "duel" | "multi-ffa",
     playersPerMatch: 2,
-    type: "swiss" as "swiss" | "bracket",
+    type: "swiss" as "swiss" | "bracket" | "top-points-ratio",
     matchType: "BO1" as "BO1" | "BO2" | "BO3" | "BO5",
     rounds: 3,
     topCut: 8,
@@ -460,7 +460,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
                       value={phaseForm.multiplayer}
                       onChange={(e) => setPhaseForm({ ...phaseForm, multiplayer: e.target.value as "duel" | "multi-ffa" })}
                     >
-                      <option value="duel">Solo</option>
+                      <option value="duel">Duel</option>
                       <option value="multi-ffa">Multijoueur Free For All</option>
                     </select>
                   </div>
@@ -485,10 +485,13 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
                     <select
                       className="w-full border rounded-md p-2"
                       value={phaseForm.type}
-                      onChange={(e) => setPhaseForm({ ...phaseForm, type: e.target.value as "swiss" | "bracket" })}
+                      onChange={(e) => setPhaseForm({ ...phaseForm, type: e.target.value as "swiss" | "bracket" | "top-points-ratio" })}
                     >
                       <option value="swiss">Rondes suisses</option>
-                      <option value="bracket">Élimination directe</option>
+                      <option value="bracket">duelion directe</option>
+                      {phaseForm.multiplayer === "multi-ffa" && (
+                        <option value="top-points-ratio">Top selon ratio points marqués / points totaux</option>
+                      )}
                     </select>
                   </div>
                   <div>
@@ -564,11 +567,14 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
                             <select
                               className="w-full border rounded-md p-2"
                               value={phaseForm.type}
-                              onChange={(e) => setPhaseForm({ ...phaseForm, type: e.target.value as "swiss" | "bracket" })}
+                              onChange={(e) => setPhaseForm({ ...phaseForm, type: e.target.value as "swiss" | "bracket" | "top-points-ratio" })}
                               disabled={phase.status !== 'not-started'}
                             >
                               <option value="swiss">Rondes suisses</option>
-                              <option value="bracket">Élimination directe</option>
+                              <option value="bracket">duelion directe</option>
+                              {phase.multiplayer === "multi-ffa" && (
+                                <option value="top-points-ratio">Top selon ratio points marqués / points totaux</option>
+                              )}
                             </select>
                             {phase.status !== 'not-started' && (
                               <p className="text-xs text-amber-600 mt-1">
@@ -660,7 +666,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
                             </div>
                           </div>
                           <div className="text-sm text-muted-foreground mb-2">
-                            Type: {phase.type === "swiss" ? "Rondes suisses" : "Élimination directe"} • 
+                            Type: {phase.type === "swiss" ? "Rondes suisses" : phase.type === "bracket" ? "Élimination directe" : "Top selon ratio points marqués / points totaux"} • 
                             Format: {phase.matchType}
                             {phase.rounds && ` • ${phase.rounds} rondes`}
                           </div>
