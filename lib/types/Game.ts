@@ -11,8 +11,41 @@ export type Game = {
   description: string;
   type: GameTypeKey;
   featuredLairs?: Lair['id'][]; // Lieux mis en avant pour ce jeu
+  images: {
+    icon?: string;
+    horizontal?: string;
+    vertical?: string;
+    banner?: string;
+  };
+  longDescription: string;
+  color: string;
+  note: { [category: string]: number };
+  gallery: string[];
+  links: {
+    website?: string;
+    x?: string;
+    discord?: string;
+    youtube?: string;
+    twitch?: string;
+    bluesky?: string;
+  } & { [social: string]: string; };
+  metadata: {
+    publisher?: string;
+    releaseDate?: string;
+    players?: {
+      min: number;
+      max?: number;
+    };
+    playingTimeMinutes?: {
+      min: number;
+      max?: number;
+    };
+  };
+  formats?: { name: string }[];
+  stats: {
+    communityRating: number;
+    popularityScore: number;
+  };
 };
-
-export type GameDb = Game & { _id: ObjectId };
 
 export type GameType = GameTypeKey;

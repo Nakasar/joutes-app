@@ -18,6 +18,18 @@ function toGame(doc: WithId<Document>): Game {
     description: doc.description,
     type: doc.type,
     featuredLairs: doc.featuredLairs || [],
+    gallery: doc.gallery || [],
+    color: doc.color || '#FF6900',
+    note: doc.note || {},
+    longDescription: doc.longDescription || "",
+    images: doc.images || {},
+    links: doc.links || {},
+    metadata: doc.metadata || {},
+    formats: doc.formats || {},
+    stats: doc.stats || {
+      communityRating: 0,
+      popularityScore: 0,
+    },
   };
 }
 
@@ -29,8 +41,17 @@ function toDocument(game: Omit<Game, "id">): Omit<GameDocument, "_id"> {
     icon: game.icon,
     banner: game.banner,
     description: game.description,
+    longDescription: game.longDescription,
     type: game.type,
     featuredLairs: game.featuredLairs || [],
+    images: game.images,
+    gallery: game.gallery,
+    color: game.color,
+    note: game.note,
+    links: game.links,
+    metadata: game.metadata,
+    formats: game.formats,
+    stats: game.stats,
   };
 }
 
