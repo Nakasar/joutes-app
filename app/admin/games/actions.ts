@@ -30,7 +30,20 @@ export async function createGame(data: {
     // Valider les données avec Zod
     const validatedData = gameSchema.parse(data);
 
-    const newGame = await gamesDb.createGame(validatedData);
+    const newGame = await gamesDb.createGame({
+      ...validatedData,
+      metadata: {},
+      images: { banner: validatedData.banner },
+      longDescription: "",
+      color: '#FFFFFF',
+      note: {},
+      gallery: [],
+      links: {},
+      stats: {
+        communityRating: 0,
+        popularityScore: 0,
+      },
+    });
     revalidatePath("/admin/games");
     revalidatePath(`/games`);
     revalidatePath(`/games/${newGame.slug ?? newGame.id}`);
