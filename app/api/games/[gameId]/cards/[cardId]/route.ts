@@ -13,8 +13,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: "game does not exist" }, { status: 404 });
   }
 
-  console.log(game, cardId);
-
   const card = await db.collection<BoosterCard>('cards').findOne({
     gameId: game._id,
     id: cardId,

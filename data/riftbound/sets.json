@@ -1,0 +1,26 @@
+[
+  {
+    "setCode": "OGS",
+    "name": "Origins - Proving Ground",
+    "maxCollectorNumber": 24,
+    "cardMaxNumber": 24
+  },
+  {
+    "setCode": "OGN",
+    "name": "Origins",
+    "maxCollectorNumber": 298,
+    "cardMaxNumber": 298
+  },
+  {
+    "setCode": "SFD",
+    "name": "Spiritforged",
+    "maxCollectorNumber": 221,
+    "cardMaxNumber": 221
+  },
+  {
+    "setCode": "UNL",
+    "name": "Unleashed",
+    "maxCollectorNumber": 219,
+    "cardMaxNumber": 238
+  }
+]
