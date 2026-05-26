@@ -189,7 +189,7 @@ export async function createNews(input: CreateNewsInput, authorId: string): Prom
     banner: input.banner ?? null,
     gameIds: input.gameIds.map((id) => new ObjectId(id)),
     tags: input.tags,
-    authorId,
+    authorId: new ObjectId(authorId),
     likedBy: [] as string[],
     createdAt: now,
     updatedAt: now,
@@ -242,13 +242,13 @@ export async function toggleLikeNews(newsId: string, userId: string): Promise<{ 
   const alreadyLiked = likedBy.includes(userId);
 
   if (alreadyLiked) {
-    await db.collection(COLLECTION_NAME).updateOne(
+    await db.collection<News>(COLLECTION_NAME).updateOne(
       { _id: new ObjectId(newsId) },
       { $pull: { likedBy: userId } }
     );
     return { liked: false, likesCount: likedBy.length - 1 };
   } else {
-    await db.collection(COLLECTION_NAME).updateOne(
+    await db.collection<News>(COLLECTION_NAME).updateOne(
       { _id: new ObjectId(newsId) },
       { $push: { likedBy: userId } }
     );
