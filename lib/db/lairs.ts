@@ -155,8 +155,8 @@ export async function searchLairs(options: SearchLairsOptions): Promise<Paginate
     // For geo queries, we can't use skip/limit directly with $near in the same way
     // So we need to handle it differently
     const allLairs = await db.collection(COLLECTION_NAME).find(geoQuery).project<LairDocument>({
-      eventSourceUrls: 0,
-      eventSourceInstructions: 0,
+      eventsSourceUrls: 0,
+      eventsSourceInstructions: 0,
     }).toArray();
     const total = allLairs.length;
     const skip = (page - 1) * limit;
@@ -176,8 +176,8 @@ export async function searchLairs(options: SearchLairsOptions): Promise<Paginate
   
   const [lairs, total] = await Promise.all([
     db.collection(COLLECTION_NAME).find(query).skip(skip).limit(limit).project<LairDocument>({
-      eventSourceUrls: 0,
-      eventSourceInstructions: 0,
+      eventsSourceUrls: 0,
+      eventsSourceInstructions: 0,
     }).toArray(),
     db.collection(COLLECTION_NAME).countDocuments(query),
   ]);
