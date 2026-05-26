@@ -18,7 +18,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { createDeckAction } from "@/app/decks/actions";
 import { toast } from "sonner";
 
 type DeckSelectorProps = {
@@ -90,25 +89,31 @@ export default function DeckSelector({
 
     setIsCreating(true);
     try {
-      const result = await createDeckAction({
-        name: searchQuery.trim(),
-        gameId,
-        visibility: "private",
+      const response = await fetch("/api/decks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: searchQuery.trim(),
+          gameId,
+          visibility: "private",
+        }),
       });
 
-      if (result.success && result.deck) {
+      if (response.ok) {
+        const deck = await response.json();
         toast.success("Deck créé", {
-          description: `Le deck "${result.deck.name}" a été créé.`,
+          description: `Le deck "${deck.name}" a été créé.`,
         });
         // Ajouter le nouveau deck à la liste
-        setDecks([...decks, result.deck]);
+        setDecks([...decks, deck]);
         // Sélectionner le nouveau deck
-        onChange(result.deck.id);
+        onChange(deck.id);
         setOpen(false);
         setSearchQuery("");
       } else {
+        const data = await response.json();
         toast.error("Erreur", {
-          description: result.error || "Impossible de créer le deck.",
+          description: data.error || "Impossible de créer le deck.",
         });
       }
     } catch (error) {

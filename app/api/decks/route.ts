@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { searchDecks } from "@/lib/db/decks";
+import { searchDecks, createDeck } from "@/lib/db/decks";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
+import { deckSchema } from "@/lib/schemas/deck.schema";
 
 export async function GET(request: NextRequest) {
   try {
@@ -57,5 +59,47 @@ export async function GET(request: NextRequest) {
       { error: "Erreur lors de la récupération des decks" },
       { status: 500 }
     );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    }
+
+    const body = await request.json();
+
+    const validationResult = deckSchema.safeParse(body);
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: validationResult.error.issues[0]?.message || "Données invalides" },
+        { status: 400 }
+      );
+    }
+
+    const deckData = validationResult.data;
+
+    const deck = await createDeck({
+      playerId: session.user.id,
+      gameId: deckData.gameId,
+      name: deckData.name,
+      url: deckData.url,
+      description: deckData.description,
+      visibility: deckData.visibility,
+    });
+
+    revalidatePath("/decks");
+    return NextResponse.json(deck, { status: 201 });
+  } catch (error) {
+    console.error("Error creating deck:", error);
+    if (error instanceof Error && error.message.includes("existe déjà")) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }

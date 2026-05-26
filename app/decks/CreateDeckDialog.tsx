@@ -21,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createDeckAction } from "./actions";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -53,9 +52,13 @@ export default function CreateDeckDialog({
     setIsLoading(true);
 
     try {
-      const result = await createDeckAction(formData);
+      const response = await fetch("/api/decks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
 
-      if (result.success) {
+      if (response.ok) {
         toast.success("Deck créé", {
           description: "Votre deck a été créé avec succès.",
         });
@@ -69,8 +72,9 @@ export default function CreateDeckDialog({
         });
         onSuccess();
       } else {
+        const data = await response.json();
         toast.error("Erreur", {
-          description: result.error || "Impossible de créer le deck.",
+          description: data.error || "Impossible de créer le deck.",
         });
       }
     } catch (error) {

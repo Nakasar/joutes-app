@@ -16,7 +16,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { updateDeckAction } from "../../actions";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -43,16 +42,21 @@ export default function EditDeckForm({ deck, games }: EditDeckFormProps) {
     setIsLoading(true);
 
     try {
-      const result = await updateDeckAction(deck.id, formData);
+      const response = await fetch(`/api/decks/${deck.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
 
-      if (result.success) {
+      if (response.ok) {
         toast.success("Deck mis à jour", {
           description: "Votre deck a été modifié avec succès.",
         });
         router.push(`/decks/${deck.id}`);
       } else {
+        const data = await response.json();
         toast.error("Erreur", {
-          description: result.error || "Impossible de modifier le deck.",
+          description: data.error || "Impossible de modifier le deck.",
         });
       }
     } catch (error) {

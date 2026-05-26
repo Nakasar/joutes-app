@@ -14,7 +14,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { deleteDeckAction } from "../actions";
 import { Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -31,16 +30,19 @@ export default function DeleteDeckButton({ deckId }: DeleteDeckButtonProps) {
     setIsDeleting(true);
 
     try {
-      const result = await deleteDeckAction(deckId);
+      const response = await fetch(`/api/decks/${deckId}`, {
+        method: "DELETE",
+      });
 
-      if (result.success) {
+      if (response.ok) {
         toast.success("Deck supprimé", {
           description: "Le deck a été supprimé avec succès.",
         });
         router.push("/decks");
       } else {
-        toast.error('Error', {
-          description: result.error || "Impossible de supprimer le deck.",
+        const data = await response.json();
+        toast.error("Erreur", {
+          description: data.error || "Impossible de supprimer le deck.",
         });
       }
     } catch (error) {
