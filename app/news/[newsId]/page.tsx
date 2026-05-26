@@ -9,6 +9,7 @@ import Link from "next/link";
 import { ArrowLeft, Pencil, Tag, Gamepad2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import Image from "next/image";
 import LikeButton from "./LikeButton";
 import NewsContent from "./NewsContent";
 
@@ -72,6 +73,20 @@ export default async function NewsDetailPage({ params }: Props) {
 
       {/* En-tête */}
       <article className="space-y-6">
+        {/* Bannière */}
+        {news.banner && (
+          <div className="relative w-full rounded-xl overflow-hidden aspect-[3/1] max-h-64">
+            <Image
+              src={news.banner}
+              alt={`Bannière : ${news.title}`}
+              fill
+              className="object-cover"
+              unoptimized
+              priority
+            />
+          </div>
+        )}
+
         <header className="space-y-4">
           <h1 className="text-4xl font-bold tracking-tight">{news.title}</h1>
 

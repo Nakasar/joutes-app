@@ -6,6 +6,7 @@ export const createNewsSchema = z.object({
   title: z.string().min(1, "Le titre est requis").max(200, "Le titre est trop long"),
   summary: z.string().min(1, "Le résumé est requis").max(500, "Le résumé est trop long"),
   content: z.string().min(1, "Le contenu est requis"),
+  banner: z.string().url("L'URL de la bannière doit être valide").optional(),
   gameIds: z.array(objectIdSchema).default([]),
   tags: z.array(z.string().min(1).max(50)).default([]),
 });

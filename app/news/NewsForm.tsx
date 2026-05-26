@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import MarkdownEditor from "./MarkdownEditor";
+import BannerUploader from "./BannerUploader";
 import { toast } from "sonner";
 import { Loader2, X } from "lucide-react";
 
@@ -22,6 +23,7 @@ type FormData = {
   title: string;
   summary: string;
   content: string;
+  banner?: string;
   gameIds: string[];
   tags: string[];
 };
@@ -34,6 +36,7 @@ export default function NewsForm(props: NewsFormProps) {
     title: isEdit ? props.news.title : "",
     summary: isEdit ? props.news.summary : "",
     content: isEdit ? props.news.content : "",
+    banner: isEdit ? props.news.banner : undefined,
     gameIds: isEdit ? props.news.gameIds : [],
     tags: isEdit ? props.news.tags : [],
   });
@@ -112,6 +115,15 @@ export default function NewsForm(props: NewsFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Bannière */}
+      <div className="space-y-2">
+        <Label>Bannière</Label>
+        <BannerUploader
+          value={form.banner}
+          onChange={(url) => setForm((prev) => ({ ...prev, banner: url }))}
+        />
+      </div>
+
       {/* Titre */}
       <div className="space-y-2">
         <Label htmlFor="title">Titre *</Label>

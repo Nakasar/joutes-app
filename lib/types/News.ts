@@ -3,6 +3,7 @@ export type News = {
   title: string;
   summary: string;
   content: string;
+  banner?: string;
   gameIds: string[];
   games?: Array<{ id: string; name: string; icon?: string; slug?: string }>;
   tags: string[];

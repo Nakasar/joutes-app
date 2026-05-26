@@ -22,6 +22,7 @@ import {
   Gamepad2,
 } from "lucide-react";
 import { toast } from "sonner";
+import Image from "next/image";
 
 type NewsListClientProps = {
   games: Game[];
@@ -262,7 +263,18 @@ function NewsCard({ news, canWrite, isLiking, onLike }: NewsCardProps) {
       : "Auteur inconnu";
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="hover:shadow-md transition-shadow overflow-hidden">
+      {news.banner && (
+        <div className="relative w-full aspect-[3/1] max-h-48">
+          <Image
+            src={news.banner}
+            alt={`Bannière : ${news.title}`}
+            fill
+            className="object-cover"
+            unoptimized
+          />
+        </div>
+      )}
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <Link href={`/news/${news.id}`} className="group">

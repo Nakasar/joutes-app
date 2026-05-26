@@ -14,6 +14,7 @@ function toNews(doc: WithId<Document>, userId?: string): News {
     title: doc.title,
     summary: doc.summary,
     content: doc.content,
+    banner: doc.banner ?? undefined,
     gameIds: (doc.gameIds ?? []).map((id: ObjectId) => id.toString()),
     games: doc.games ?? undefined,
     tags: doc.tags ?? [],
@@ -185,6 +186,7 @@ export async function createNews(input: CreateNewsInput, authorId: string): Prom
     title: input.title,
     summary: input.summary,
     content: input.content,
+    banner: input.banner ?? null,
     gameIds: input.gameIds.map((id) => new ObjectId(id)),
     tags: input.tags,
     authorId,
@@ -197,6 +199,7 @@ export async function createNews(input: CreateNewsInput, authorId: string): Prom
   return {
     id: result.insertedId.toString(),
     ...input,
+    banner: input.banner,
     authorId,
     likedBy: [],
     likesCount: 0,
@@ -214,6 +217,7 @@ export async function updateNews(id: string, input: UpdateNewsInput): Promise<bo
   if (input.title !== undefined) updateDoc.title = input.title;
   if (input.summary !== undefined) updateDoc.summary = input.summary;
   if (input.content !== undefined) updateDoc.content = input.content;
+  if (input.banner !== undefined) updateDoc.banner = input.banner ?? null;
   if (input.tags !== undefined) updateDoc.tags = input.tags;
   if (input.gameIds !== undefined) {
     updateDoc.gameIds = input.gameIds.map((gId) => new ObjectId(gId));
@@ -253,6 +257,13 @@ export async function toggleLikeNews(newsId: string, userId: string): Promise<{ 
 }
 
 export async function getAllTags(): Promise<string[]> {
-  const tags = await db.collection(COLLECTION_NAME).distinct("tags");
-  return tags.filter((t): t is string => typeof t === "string").sort();
+  const results = await db
+    .collection(COLLECTION_NAME)
+    .aggregate([
+      { $unwind: { path: "$tags", preserveNullAndEmptyArrays: false } },
+      { $group: { _id: "$tags" } },
+      { $sort: { _id: 1 } },
+    ])
+    .toArray();
+  return results.map((r) => r._id as string).filter(Boolean);
 }
