@@ -261,7 +261,7 @@ export async function toggleLikeNews(
     { returnDocument: "after", projection: { likedBy: 1 } }
   );
 
-  if (!result.value) throw new Error("Actualité introuvable");
+  if (!result?.value) throw new Error("Actualité introuvable");
 
   const likedBy: string[] = result.value.likedBy ?? [];
   return { liked: likedBy.includes(userId), likesCount: likedBy.length };
