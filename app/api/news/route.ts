@@ -15,8 +15,14 @@ export async function GET(request: NextRequest) {
     const dateFrom = searchParams.get("dateFrom");
     const dateTo = searchParams.get("dateTo");
     const page = parseInt(searchParams.get("page") ?? "1", 10);
-    const limit = Math.min(parseInt(searchParams.get("limit") ?? "10", 10), 50);
+    const limitRaw = parseInt(searchParams.get("limit") ?? "10", 10);
+    const limit = !isNaN(limitRaw) && limitRaw > 0 ? Math.min(limitRaw, 50) : 10;
     const includeTags = searchParams.get("includeTags") === "true";
+
+    const objectIdRegex = /^[0-9a-fA-F]{24}$/;
+    if (gameId && !objectIdRegex.test(gameId)) {
+      return NextResponse.json({ error: "Paramètre gameId invalide" }, { status: 400 });
+    }
 
     if (isNaN(page) || page < 1) {
       return NextResponse.json({ error: "Paramètre page invalide" }, { status: 400 });
