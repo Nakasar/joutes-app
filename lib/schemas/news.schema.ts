@@ -2,16 +2,21 @@ import { z } from "zod";
 
 const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID doit être un ObjectId MongoDB valide");
 
-export const createNewsSchema = z.object({
+const newsBaseSchema = z.object({
   title: z.string().min(1, "Le titre est requis").max(200, "Le titre est trop long"),
   summary: z.string().min(1, "Le résumé est requis").max(500, "Le résumé est trop long"),
   content: z.string().min(1, "Le contenu est requis"),
   banner: z.string().url("L'URL de la bannière doit être valide").optional(),
-  gameIds: z.array(objectIdSchema).default([]),
-  tags: z.array(z.string().min(1).max(50)).default([]),
+  gameIds: z.array(objectIdSchema),
+  tags: z.array(z.string().min(1).max(50)),
 });
 
-export const updateNewsSchema = createNewsSchema.partial().refine(
+export const createNewsSchema = newsBaseSchema.extend({
+  gameIds: newsBaseSchema.shape.gameIds.default([]),
+  tags: newsBaseSchema.shape.tags.default([]),
+});
+
+export const updateNewsSchema = newsBaseSchema.partial().refine(
   (data) => Object.keys(data).length > 0,
   "Au moins un champ doit être modifié"
 );
