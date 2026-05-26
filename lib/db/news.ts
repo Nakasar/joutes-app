@@ -234,26 +234,37 @@ export async function updateNews(id: string, input: UpdateNewsInput): Promise<bo
   }
 }
 
-export async function toggleLikeNews(newsId: string, userId: string): Promise<{ liked: boolean; likesCount: number }> {
-  const doc = await db.collection(COLLECTION_NAME).findOne({ _id: new ObjectId(newsId) });
-  if (!doc) throw new Error("Actualité introuvable");
+export async function toggleLikeNews(
+  newsId: string,
+  userId: string
+): Promise<{ liked: boolean; likesCount: number }> {
+  const result = await db.collection(COLLECTION_NAME).findOneAndUpdate(
+    { _id: new ObjectId(newsId) },
+    [
+      {
+        $set: {
+          likedBy: {
+            $let: {
+              vars: { likedBy: { $ifNull: ["$likedBy", []] } },
+              in: {
+                $cond: [
+                  { $in: [userId, "$$likedBy"] },
+                  { $setDifference: ["$$likedBy", [userId]] },
+                  { $concatArrays: ["$$likedBy", [userId]] },
+                ],
+              },
+            },
+          },
+        },
+      },
+    ],
+    { returnDocument: "after", projection: { likedBy: 1 } }
+  );
 
-  const likedBy: string[] = doc.likedBy ?? [];
-  const alreadyLiked = likedBy.includes(userId);
+  if (!result.value) throw new Error("Actualité introuvable");
 
-  if (alreadyLiked) {
-    await db.collection<News>(COLLECTION_NAME).updateOne(
-      { _id: new ObjectId(newsId) },
-      { $pull: { likedBy: userId } }
-    );
-    return { liked: false, likesCount: likedBy.length - 1 };
-  } else {
-    await db.collection<News>(COLLECTION_NAME).updateOne(
-      { _id: new ObjectId(newsId) },
-      { $push: { likedBy: userId } }
-    );
-    return { liked: true, likesCount: likedBy.length + 1 };
-  }
+  const likedBy: string[] = result.value.likedBy ?? [];
+  return { liked: likedBy.includes(userId), likesCount: likedBy.length };
 }
 
 export async function getAllTags(): Promise<string[]> {
