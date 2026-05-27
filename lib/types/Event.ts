@@ -1,4 +1,5 @@
 import { GeoJSONPoint } from "./Lair";
+import {GameTypeKey} from "@/lib/constants/game-types";
 
 export type RegistrationStatus = 'PRE_REGISTERED' | 'REGISTERED' | 'EXCLUDED';
 
@@ -13,7 +14,7 @@ export type Event = {
     name: string;
     icon?: string;
     banner?: string;
-    type: 'TCG' | 'BoardGame' | 'VideoGame' | 'Other';
+    type: GameTypeKey;
     slug?: string;
   };
   url?: string;

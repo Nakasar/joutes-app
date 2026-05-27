@@ -5,13 +5,7 @@ import { Game } from "@/lib/types/Game";
 import { deleteGame } from "./actions";
 import { GameForm } from "./GameForm";
 import { Button } from "@/components/ui/button";
-
-const gameTypes = {
-  TCG: "TCG",
-  BoardGame: "Jeu de plateau",
-  Other: 'Autre',
-  VideoGame: "Jeu Vidéo",
-};
+import {GAME_TYPES} from "@/lib/constants/game-types";
 
 export function GameList({ games }: { games: Game[] }) {
   const [isPending, startTransition] = useTransition();
@@ -89,7 +83,7 @@ export function GameList({ games }: { games: Game[] }) {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                    {gameTypes[game.type] ?? 'Autre'}
+                    {GAME_TYPES[game.type] ?? 'Autre'}
                   </span>
                 </td>
                 <td className="px-6 py-4">
