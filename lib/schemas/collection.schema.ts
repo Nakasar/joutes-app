@@ -6,4 +6,4 @@ export const collectionCardSchema = z.strictObject({
     setCode: z.string().min(1).max(100),
     collectorNumber: z.string().min(1).max(100),
     image: z.string(),
-})
+});
