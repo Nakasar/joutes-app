@@ -3,6 +3,8 @@ import tr from '@/data/riftbound/tr.json';
 import cr from '@/data/riftbound/cr.json';
 import RuleDocumentViewer from './RuleDocumentViewer';
 import { getGameBySlugOrId } from '@/lib/db/games';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export const metadata: Metadata = {
   title: 'Riftbound Comprehensive Rules',
@@ -26,9 +28,9 @@ export default async function RulesDocumentPage({ params }: { params: Promise<{ 
     }
 
     let entries: { id: string; content: string }[];
-    if (documentId === 'tr') {
+    if (documentId.toLowerCase() === 'tr') {
         entries = tr;
-    } else if (documentId === 'cr') {
+    } else if (documentId.toLowerCase() === 'cr') {
         entries = cr;
     } else {
         return <div className="container mx-auto p-6">Document introuvable</div>;
@@ -37,7 +39,12 @@ export default async function RulesDocumentPage({ params }: { params: Promise<{ 
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold">Règles de tournoi Riftbound</h1>
+        <h1 className="text-3xl font-bold">Règles de {game.name}</h1>
+        <Button asChild>
+          <Link href={`/games/${game.slug}/rules`} className="text-blue-600 hover:underline">
+            ← Retour à la liste des règles
+          </Link>
+        </Button>
         <p className="text-muted-foreground mt-1 text-sm">
           {entries.length} entrées · Cliquez sur les liens bleus pour naviguer entre les règles
         </p>

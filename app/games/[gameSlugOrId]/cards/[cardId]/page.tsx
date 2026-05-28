@@ -6,6 +6,8 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { Metadata } from "next/types";
 import { getErratasByCardId } from "@/lib/db/erratas";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export async function generateMetadata({
   params,
@@ -53,6 +55,12 @@ export default async function RiftboundCardDetailPage({
     return (
       <div className="container mx-auto p-6">
         <h1 className="text-3xl font-bold mb-6">Carte non trouvée</h1>
+        <Button asChild>
+          <Link href={`/games/${"riftbound"}/cards`} className="text-blue-600 hover:underline">
+            ← Retour à la liste des cartes
+          </Link>
+        </Button>
+
         <p>La carte avec l'ID {cardId} n'existe pas.</p>
       </div>
     );
@@ -63,6 +71,12 @@ export default async function RiftboundCardDetailPage({
 
   return (
     <div className="container mx-auto p-6">
+      <Button asChild>
+        <Link href={`/games/${"riftbound"}/cards`} className="text-blue-600 hover:underline">
+          ← Retour à la liste des cartes
+        </Link>
+      </Button>
+
       {/* Barre de recherche */}
       <div className="mb-8 flex justify-center">
         <CardSearchBar />

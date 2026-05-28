@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { BoosterCard } from "@/lib/types/booster";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default function CardsPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -34,6 +35,11 @@ export default function CardsPage() {
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">Recherche de cartes</h1>
+      <Button asChild>
+            <Link href={`/games/${"riftbound"}`} className="text-blue-600 hover:underline">
+                ← Retour au portail du jeu
+            </Link>
+        </Button>
 
       <div className="mb-6 flex gap-2">
         <Input
