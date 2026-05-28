@@ -27,7 +27,7 @@ export default async function GameRulesPage({ params} : { params: Promise<{ game
         <div className="container mx-auto p-6">
             <h1 className="text-3xl font-bold mb-4">Règles de {game.name}</h1>
             <Button asChild>
-                <Link href={`/games/${game.slug}/rules`} className="text-blue-600 hover:underline">
+                <Link href={`/games/${game.slug}`} className="text-blue-600 hover:underline">
                     ← Retour au portail du jeu
                 </Link>
             </Button>
