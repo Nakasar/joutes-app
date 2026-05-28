@@ -183,7 +183,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             )}
 
             {game.features?.tournaments && (
-              <Link href={`/games/${game.id}/tournaments`} className="group">
+              <Link href={`/games/${game.slug}/tournaments`} className="group">
                 <div className="bg-gradient-to-br from-green-900/30 to-green-800/20 backdrop-blur-sm rounded-xl border border-green-500/20 p-8 hover:border-green-500/50 transition-all hover:scale-105">
                   <h3 className="text-xl font-bold text-white mb-2">Tournois</h3>
                   <p className="text-gray-300">Organisez vos propres tournois</p>
@@ -192,7 +192,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             )}
 
             {game.features?.collection && (
-              <Link href={`/games/${game.id}/collection`} className="group">
+              <Link href={`/games/${game.slug}/collection`} className="group">
                 <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 backdrop-blur-sm rounded-xl border border-blue-500/20 p-8 hover:border-blue-500/50 transition-all hover:scale-105">
                   <h3 className="text-xl font-bold text-white mb-2">Collection et échanges</h3>
                   <p className="text-gray-300">Gérez votre collection, échangez avec d'autres joueurs et trouvez des pièces rares</p>
@@ -201,7 +201,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             )}
 
             {game.features?.rules && (
-              <Link href={`/games/${game.id}/rules`} className="group">
+              <Link href={`/games/${game.slug}/rules`} className="group">
                 <div className="bg-gradient-to-br from-yellow-900/30 to-yellow-800/20 backdrop-blur-sm rounded-xl border border-yellow-500/20 p-8 hover:border-yellow-500/50 transition-all hover:scale-105">
                   <h3 className="text-xl font-bold text-white mb-2">Règles du jeu</h3>
                   <p className="text-gray-300">Consultez les règles officielles et guides de jeu</p>
@@ -210,7 +210,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             )}
 
             {game.features?.policies && (
-              <Link href={`/games/${game.id}/policies`} className="group">
+              <Link href={`/games/${game.slug}/policies`} className="group">
                 <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/20 backdrop-blur-sm rounded-xl border border-purple-500/20 p-8 hover:border-purple-500/50 transition-all hover:scale-105">
                   <h3 className="text-xl font-bold text-white mb-2">Politiques</h3>
                   <p className="text-gray-300">Consultez les politiques et précis de règles rédigées par la communauté et les éditeurs</p>

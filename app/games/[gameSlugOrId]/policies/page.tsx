@@ -40,12 +40,12 @@ export default async function GamePoliciesPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ gameSlug: string }>;
+  params: Promise<{ gameSlugOrId: string }>;
   searchParams: Promise<{ page?: string }>;
 }) {
-  const { gameSlug } = await params;
+  const { gameSlugOrId } = await params;
 
-  const game = await db.collection<Game>("games").findOne({ slug: gameSlug });
+  const game = await db.collection<Game>("games").findOne({ slug: gameSlugOrId });
   if (!game) notFound();
 
   const gameId = game._id.toString();
@@ -80,7 +80,7 @@ export default async function GamePoliciesPage({
         initialPage={currentPage}
         pageSize={PAGE_SIZE}
         gameId={gameId}
-        gameSlug={gameSlug}
+        gameSlug={gameSlugOrId}
         userCanUpdatePolicies={userCanUpdatePolicies}
         userCanVotePolicies={userCanVotePolicies}
       />
