@@ -1,6 +1,5 @@
 import { GameTypeKey } from "@/lib/constants/game-types";
 import { Lair } from "@/lib/types/Lair";
-import {ObjectId} from "mongodb";
 
 export type Game = {
   id: string;
@@ -46,6 +45,13 @@ export type Game = {
     communityRating: number;
     popularityScore: number;
   };
+  features?: {
+    cards?: boolean;
+    collection?: boolean;
+    rules?: boolean;
+    policies?: boolean;
+    tournaments?: boolean;
+  }
 };
 
 export type GameType = GameTypeKey;

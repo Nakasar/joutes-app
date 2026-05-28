@@ -30,6 +30,7 @@ function toGame(doc: WithId<Document>): Game {
       communityRating: 0,
       popularityScore: 0,
     },
+    features: doc.features || {},
   };
 }
 
@@ -52,6 +53,7 @@ function toDocument(game: Omit<Game, "id">): Omit<GameDocument, "_id"> {
     metadata: game.metadata,
     formats: game.formats,
     stats: game.stats,
+    features: game.features,
   };
 }
 
