@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { BoosterCard } from "@/lib/types/booster";
 import { useRouter } from "next/navigation";
@@ -31,6 +31,17 @@ export default function CardsPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (searchQuery.length > 2) {
+      const timer = setTimeout(() => {
+        handleSearch();
+      }, 300);
+      return () => clearTimeout(timer);
+    } else {
+      setCards([]);
+    }
+  }, [searchQuery]);
 
   return (
     <div className="container mx-auto p-6">
