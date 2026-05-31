@@ -58,7 +58,7 @@ export default function CardSearchBar() {
   };
 
   const handleCardSelect = (cardId: string) => {
-    router.push(`/riftbound/cards/${cardId}`);
+    router.push(`/games/riftbound/cards/${cardId}`);
     setSearchQuery("");
     setCards([]);
     setIsOpen(false);
