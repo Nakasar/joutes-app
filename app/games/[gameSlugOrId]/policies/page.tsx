@@ -14,10 +14,10 @@ const PAGE_SIZE = 20;
 export async function generateMetadata({
   params
 }: {
-  params: Promise<{ gameSlug: string }>
+  params: Promise<{ gameSlugOrId: string }>
 }): Promise<Metadata> {
-  const { gameSlug } = await params;
-  const game = await db.collection<Game>("games").findOne({ slug: gameSlug });
+  const { gameSlugOrId } = await params;
+  const game = await db.collection<Game>("games").findOne({ slug: gameSlugOrId });
 
   if (!game) {
     return {
