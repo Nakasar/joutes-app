@@ -322,14 +322,15 @@ export default function ApiKeysManager() {
           <div>
             <h4 className="font-medium mb-2">Endpoint MCP</h4>
             <code className="block p-2 bg-gray-50 rounded border text-sm">
-              {process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/mcp
+              {process.env.NEXT_PUBLIC_BASE_URL || "https://www.joutes.app"}/mcp
             </code>
           </div>
           
           <div>
             <h4 className="font-medium mb-2">Authentification</h4>
+            <p>Le MCP Joutes supporte l'authentification OAuth2 que nous recommandons pour plus de sécurité.</p>
             <p className="text-sm text-muted-foreground mb-2">
-              Ajoutez votre clé API dans l&apos;en-tête Authorization :
+              Vous pouvez également utiliser vos clés API à la place dans l&apos;en-tête Authorization :
             </p>
             <code className="block p-2 bg-gray-50 rounded border text-sm">
               Authorization: Bearer votre_clé_api
@@ -339,12 +340,16 @@ export default function ApiKeysManager() {
           <div>
             <h4 className="font-medium mb-2">Outils disponibles</h4>
             <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• <strong>search_events</strong> : Rechercher des évènements (avec personnalisation)</li>
-              <li>• <strong>search_lairs</strong> : Rechercher des lieux</li>
-              <li>• <strong>create_event</strong> : Créer un évènement (auth requise)</li>
-              <li>• <strong>follow_lair</strong> : Suivre un lieu (auth requise)</li>
-              <li>• <strong>add_game</strong> : Ajouter un jeu (auth requise)</li>
-              <li>• <strong>list_games</strong> : Lister les jeux disponibles</li>
+              <li><strong>search_events</strong> : Rechercher des évènements (avec personnalisation)</li>
+              <li><strong>search_lairs</strong> : Rechercher des lieux</li>
+              <li><strong>create_event</strong> : Créer un évènement (auth requise)</li>
+              <li><strong>follow_lair</strong> : Suivre un lieu (auth requise)</li>
+              <li><strong>add_game</strong> : Ajouter un jeu (auth requise)</li>
+              <li><strong>list_games</strong> : Lister les jeux disponibles</li>
+              <li><strong>search_cards</strong>: Rechercher des cartes d'un jeu et leurs erratas</li>
+              <li><strong>search_rules</strong>: Rechercher dans les règles et politiques d'un jeu</li>
+              <li><strong>get_rule</strong>: Récupérer une règle par son ID.</li>
+              <li><strong>vote_errata</strong>: Voter pour un errata (auth requise)</li>
             </ul>
           </div>
         </CardContent>
