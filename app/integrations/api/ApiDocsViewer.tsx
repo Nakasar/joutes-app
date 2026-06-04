@@ -41,7 +41,7 @@ const METHOD_STYLES: Record<HttpMethod, string> = {
 
 const HTTP_METHODS: HttpMethod[] = ["get", "post", "put", "patch", "delete"];
 
-const BASE_URL = "https://api.joutes.app/";
+const BASE_URL = "https://api.joutes.app";
 
 function getRouteGroups(paths: Record<string, PathItem>): Map<string, string[]> {
     const groups = new Map<string, string[]>();
