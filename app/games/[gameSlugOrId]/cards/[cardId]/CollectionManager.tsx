@@ -25,14 +25,14 @@ import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 
 const CONDITIONS = ["Damaged", "Played", "Good", "Near Mint", "Mint"] as const;
 const PRIMARY_LANGUAGES = [
-  { code: "FR", label: "FR" },
-  { code: "EN", label: "EN" },
-  { code: "ZH", label: "ZH" },
+  { code: "FR", label: "🇫🇷 Français" },
+  { code: "EN", label: "🇬🇧 Anglais" },
+  { code: "ZH", label: "🇨🇳 Chinois" },
 ] as const;
 const SECONDARY_LANGUAGES = [
-  { code: "IT", label: "Italien" },
-  { code: "JA", label: "Japonais" },
-  { code: "KO", label: "Coréen" },
+  { code: "IT", label: "🇮🇹 Italien" },
+  { code: "JA", label: "🇯🇵 Japonais" },
+  { code: "KO", label: "🇰🇷 Coréen" },
 ] as const;
 const CURRENCIES = ["EUR", "USD", "GBP", "JPY", "CNY"] as const;
 
@@ -80,7 +80,7 @@ export default function CollectionManager({
   const [language, setLanguage] = useState<LanguageCode | "">("");
   const [condition, setCondition] = useState<Condition | "">("");
   const [grade, setGrade] = useState("");
-  const [obtainedAt, setObtainedAt] = useState("");
+  const [obtainedAt, setObtainedAt] = useState(DateTime.now().toISODate());
   const [acquisitionPrice, setAcquisitionPrice] = useState("");
   const [acquisitionCurrency, setAcquisitionCurrency] = useState<CurrencyCode>("EUR");
   const [adding, setAdding] = useState(false);
@@ -159,7 +159,7 @@ export default function CollectionManager({
         setLanguage("");
         setCondition("");
         setGrade("");
-        setObtainedAt("");
+        setObtainedAt(DateTime.now().toISODate());
         setAcquisitionPrice("");
         setAcquisitionCurrency("EUR");
         setDialogOpen(false);
