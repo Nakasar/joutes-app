@@ -1,6 +1,7 @@
 import { BoosterCard } from "@/lib/types/booster";
 import ReactMarkdown from "react-markdown";
 import CardSearchBar from "./CardSearchBar";
+import CollectionManager from "./CollectionManager";
 import db from "@/lib/mongodb";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -107,6 +108,19 @@ export default async function RiftboundCardDetailPage({
               {card.setCode} #{card.collectorNumber}
             </p>
           </div>
+
+          {userId && (
+            <div className="mb-6">
+              <CollectionManager
+                cardId={card.id}
+                gameSlug="riftbound"
+                cardName={card.name}
+                setCode={card.setCode}
+                collectorNumber={card.collectorNumber}
+                image={card.image}
+              />
+            </div>
+          )}
 
           {/* Section Erratas/Clarifications/Rulings */}
           <div className="mb-6">
