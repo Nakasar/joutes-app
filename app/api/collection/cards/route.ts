@@ -64,14 +64,18 @@ export async function POST(request: NextRequest) {
   }
   const card = validate.data;
 
-  await db.collection('collection-cards').insertOne({
+  const insertResult = await db.collection('collection-cards').insertOne({
     cardId: card.cardId,
     setCode: card.setCode,
     collectorNumber: card.collectorNumber,
     name: card.name,
     image: card.image,
     userId: new ObjectId(session.user.id),
+    ...(card.foil !== undefined && { foil: card.foil }),
+    ...(card.language !== undefined && { language: card.language }),
+    ...(card.condition !== undefined && { condition: card.condition }),
+    ...(card.grade !== undefined && { grade: card.grade }),
   });
 
-  return NextResponse.json({});
+  return NextResponse.json({ id: insertResult.insertedId.toString() });
 }

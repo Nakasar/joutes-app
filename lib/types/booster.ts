@@ -19,7 +19,7 @@ export type BoosterCard = {
 };
 
 export type BoosterCardDb = {
-  boosterId: ObjectId;
+  boosterId?: ObjectId;
   userId: ObjectId;
   cardId?: string;
   lang?: string;
@@ -32,6 +32,10 @@ export type BoosterCardDb = {
   price?: string;
   newInCollection?: boolean;
   banned?: boolean;
+  // Collection-specific optional fields
+  language?: string;
+  condition?: "Damaged" | "Played" | "Good" | "Near Mint" | "Mint";
+  grade?: number;
 }
 
 export type Booster = {
