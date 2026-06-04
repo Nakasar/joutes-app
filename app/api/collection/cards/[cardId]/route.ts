@@ -17,7 +17,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   }
 
   try {
-    const result = await db.collection<BoosterCardDb>('booster-cards').findOneAndDelete({
+    const result = await db.collection<BoosterCardDb>('collection-cards').findOneAndDelete({
       userId: new ObjectId(session.user.id),
       cardId: cardId,
     });
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 
   try {
-    const countResult = await db.collection<BoosterCardDb>('booster-cards').countDocuments({
+    const countResult = await db.collection<BoosterCardDb>('collection-cards').countDocuments({
         userId: new ObjectId(session.user.id),
         cardId: cardId,
     });

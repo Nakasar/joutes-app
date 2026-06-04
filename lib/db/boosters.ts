@@ -260,7 +260,7 @@ export async function getUserCards({
 
   // Compter le total
   const countResult = await db
-    .collection<BoosterCardDb>('booster-cards')
+    .collection<BoosterCardDb>('collection-cards')
     .aggregate([...pipeline, {$count: 'total'}])
     .toArray();
 
@@ -268,7 +268,7 @@ export async function getUserCards({
 
   // Récupérer les cartes paginées
   const cards = await db
-    .collection<BoosterCardDb>('booster-cards')
+    .collection<BoosterCardDb>('collection-cards')
     .aggregate([
       ...pipeline,
       {$skip: skip},

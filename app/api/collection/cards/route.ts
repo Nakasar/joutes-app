@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
   }
   const card = validate.data;
 
-  await db.collection('booster-cards').insertOne({
+  await db.collection('collection-cards').insertOne({
     cardId: card.cardId,
     setCode: card.setCode,
     collectorNumber: card.collectorNumber,
