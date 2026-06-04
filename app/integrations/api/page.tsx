@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import ApiDocsViewer from "./ApiDocsViewer";
 
 export default function IntegrationsAPIPage() {
     return (
@@ -22,9 +23,9 @@ export default function IntegrationsAPIPage() {
                             </p>
                         </div>
                     </div>
-                </div>
 
-                
+                    <ApiDocsViewer />
+                </div>
             </div>
         </div>
     );
