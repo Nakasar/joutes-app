@@ -10,6 +10,8 @@ export function proxy(request: NextRequest) {
 
   if (origin && allowedOrigins.includes(origin)) {
     res.headers.set("Access-Control-Allow-Origin", origin);
+  } else if (origin && request.nextUrl.pathname.startsWith("/api/")) {
+    res.headers.set("Access-Control-Allow-Origin", origin);
   }
   res.headers.set("Access-Control-Allow-Credentials", "true");
   res.headers.set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
