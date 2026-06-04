@@ -17,7 +17,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 
   try {
-    const cards = await db.collection<BoosterCardDb>('collection-cards').find({
+    const cards = await db.collection<BoosterCardDb & { _id: ObjectId }>('collection-cards').find({
       userId: new ObjectId(session.user.id),
       cardId: cardId,
     }).toArray();
@@ -25,11 +25,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({
       quantity: cards.length,
       cards: cards.map((c) => ({
-        id: (c as BoosterCardDb & { _id: ObjectId })._id.toString(),
+        id: c._id.toString(),
         foil: c.foil,
         language: c.language,
         condition: c.condition,
         grade: c.grade,
+        obtainedAt: c.obtainedAt,
+        acquisitionPrice: c.acquisitionPrice,
+        acquisitionCurrency: c.acquisitionCurrency,
       })),
     });
   } catch (error) {

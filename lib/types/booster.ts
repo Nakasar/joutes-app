@@ -32,10 +32,12 @@ export type BoosterCardDb = {
   price?: string;
   newInCollection?: boolean;
   banned?: boolean;
-  // Collection-specific optional fields
-  language?: string;
+  language?: "FR" | "EN" | "ZH" | "IT" | "JA" | "KO";
   condition?: "Damaged" | "Played" | "Good" | "Near Mint" | "Mint";
   grade?: number;
+  obtainedAt?: string;
+  acquisitionPrice?: number;
+  acquisitionCurrency?: "EUR" | "USD" | "GBP" | "JPY" | "CNY";
 }
 
 export type Booster = {

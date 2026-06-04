@@ -75,6 +75,9 @@ export async function POST(request: NextRequest) {
     ...(card.language !== undefined && { language: card.language }),
     ...(card.condition !== undefined && { condition: card.condition }),
     ...(card.grade !== undefined && { grade: card.grade }),
+    ...(card.obtainedAt !== undefined && { obtainedAt: card.obtainedAt }),
+    ...(card.acquisitionPrice !== undefined && { acquisitionPrice: card.acquisitionPrice }),
+    ...(card.acquisitionCurrency !== undefined && { acquisitionCurrency: card.acquisitionCurrency }),
   });
 
   return NextResponse.json({ id: insertResult.insertedId.toString() });
