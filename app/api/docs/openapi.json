@@ -1,0 +1,1914 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Joutes API",
+    "description": "",
+    "version": "1.0.0"
+  },
+  "tags": [],
+  "paths": {
+    "/collection/cards": {
+      "get": {
+        "summary": "Get cards in collection",
+        "deprecated": false,
+        "description": "Get cards in your collection.",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "gameSlug",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "riftbound",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 1,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 50,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "Legend",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "setCode",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "UNL",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "error": "Unauthorized"
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      },
+      "post": {
+        "summary": "Add card to collection",
+        "deprecated": false,
+        "description": "Add a single card to your collection.",
+        "operationId": "addCardToCollection",
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                },
+                "example": {
+                  "error": "Unauthorized"
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/collection/boosters": {
+      "get": {
+        "summary": "Get Boosters in collection",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      },
+      "post": {
+        "summary": "Create booster in collection",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/games/{gameSlug}/cards": {
+      "get": {
+        "summary": "Search cards",
+        "deprecated": false,
+        "description": "Search cards for a given game. Depending on the game, additionnal non-standard properties may be included in Card objects.",
+        "operationId": "searchCards",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "gameSlug",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": "riftbound",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "setCode",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "UNL",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "searchQuery",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "en",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "legend",
+            "schema": {
+              "type": "string",
+              "examples": [
+                "legend",
+                "unit",
+                "creature",
+                "artifact",
+                "battlefield"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Card"
+                  }
+                },
+                "example": [
+                  {
+                    "id": "UNL181",
+                    "isToken": false,
+                    "face": {
+                      "front": {
+                        "name": "Jhin, Virtuoso",
+                        "type": "Legend",
+                        "cost": 0,
+                        "image": {
+                          "en": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/d1e6947cf43a19488a2c31f71a4887aa0423a966-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                          "zh": "https://cdn.playloltcg.com/lol/card/20260319/af04e77a6eea4a58ba2ccec4f94eb8a8.webp"
+                        },
+                        "isHorizontal": false
+                      }
+                    },
+                    "name": "Jhin, Virtuoso",
+                    "type": "Legend",
+                    "cost": 0,
+                    "Domain": [
+                      "ðŸ”´ Fury",
+                      "ðŸ”µ Mind"
+                    ],
+                    "Set": [
+                      "03 - Unleashed"
+                    ],
+                    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/d1e6947cf43a19488a2c31f71a4887aa0423a966-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                    "collectorNumber": "181",
+                    "setCode": "UNL",
+                    "lang": "en",
+                    "_legal": {
+                      "S03": true
+                    },
+                    "_unreleased": true
+                  },
+                  {
+                    "id": "UNL183",
+                    "isToken": false,
+                    "face": {
+                      "front": {
+                        "name": "Rengar, Pridestalker",
+                        "type": "Legend",
+                        "cost": 0,
+                        "image": {
+                          "en": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/b3d3085f62aee993b9f5b80d4659a88439da83be-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                          "zh": "https://cdn.playloltcg.com/lol/card/20260319/eccfbba40f66407ab625f1405e9945b0.webp"
+                        },
+                        "isHorizontal": false
+                      }
+                    },
+                    "name": "Rengar, Pridestalker",
+                    "type": "Legend",
+                    "cost": 0,
+                    "Domain": [
+                      "ðŸ”´ Fury",
+                      "ðŸŸ  Body"
+                    ],
+                    "Set": [
+                      "03 - Unleashed"
+                    ],
+                    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/b3d3085f62aee993b9f5b80d4659a88439da83be-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                    "collectorNumber": "183",
+                    "setCode": "UNL",
+                    "lang": "en",
+                    "_legal": {
+                      "S03": true
+                    },
+                    "_unreleased": true
+                  },
+                  {
+                    "id": "UNL185",
+                    "isToken": false,
+                    "face": {
+                      "front": {
+                        "name": "Pyke, Bloodharbor Ripper",
+                        "type": "Legend",
+                        "cost": 0,
+                        "image": {
+                          "en": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/8ca1bfde8d898a11a6abc73bbab8fc7092b0dcb4-744x1039.png?accountingTag=RB&auto=format&fit=fill&q=80&w=744",
+                          "zh": "https://cdn.playloltcg.com/lol/card/20260319/a7d0001c454d485f9082267900df9132.webp"
+                        },
+                        "isHorizontal": false
+                      }
+                    },
+                    "name": "Pyke, Bloodharbor Ripper",
+                    "type": "Legend",
+                    "cost": 0,
+                    "Domain": [
+                      "ðŸ”´ Fury",
+                      "ðŸŸ£ Chaos"
+                    ],
+                    "Set": [
+                      "03 - Unleashed"
+                    ],
+                    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/8ca1bfde8d898a11a6abc73bbab8fc7092b0dcb4-744x1039.png?accountingTag=RB&auto=format&fit=fill&q=80&w=744",
+                    "collectorNumber": "185",
+                    "setCode": "UNL",
+                    "lang": "en",
+                    "tokens": [
+                      "UNL-T05"
+                    ],
+                    "_legal": {
+                      "S03": true
+                    },
+                    "_unreleased": true
+                  },
+                  {
+                    "id": "UNL187",
+                    "isToken": false,
+                    "face": {
+                      "front": {
+                        "name": "Vi, Piltover Enforcer",
+                        "type": "Legend",
+                        "cost": 0,
+                        "image": {
+                          "en": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/b52fca3d644599008c4b1a67ffd359a9f9c4d8d7-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                          "zh": "https://cdn.playloltcg.com/lol/card/20260319/18b9587cd7dc463bb9610453870c5c36.webp"
+                        },
+                        "isHorizontal": false
+                      }
+                    },
+                    "name": "Vi, Piltover Enforcer",
+                    "type": "Legend",
+                    "cost": 0,
+                    "Domain": [
+                      "ðŸ”´ Fury",
+                      "ðŸŸ¡ Order"
+                    ],
+                    "Set": [
+                      "03 - Unleashed"
+                    ],
+                    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/b52fca3d644599008c4b1a67ffd359a9f9c4d8d7-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                    "collectorNumber": "187",
+                    "setCode": "UNL",
+                    "lang": "en",
+                    "_legal": {
+                      "S03": true
+                    },
+                    "_unreleased": true
+                  },
+                  {
+                    "id": "UNL189",
+                    "isToken": false,
+                    "face": {
+                      "front": {
+                        "name": "Lillia, Bashful Bloom",
+                        "type": "Legend",
+                        "cost": 0,
+                        "image": {
+                          "en": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/7e1554365120c5042947aef8bcac48a07445e9f3-744x1039.png?accountingTag=RB&auto=format&fit=fill&q=80&w=744",
+                          "zh": "https://cdn.playloltcg.com/lol/card/20260319/f11f475222eb4de38a50bc6b4c84b337.webp"
+                        },
+                        "isHorizontal": false
+                      }
+                    },
+                    "name": "Lillia, Bashful Bloom",
+                    "type": "Legend",
+                    "cost": 0,
+                    "Domain": [
+                      "ðŸŸ¢ Calm",
+                      "ðŸ”µ Mind"
+                    ],
+                    "Set": [
+                      "03 - Unleashed"
+                    ],
+                    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/7e1554365120c5042947aef8bcac48a07445e9f3-744x1039.png?accountingTag=RB&auto=format&fit=fill&q=80&w=744",
+                    "collectorNumber": "189",
+                    "setCode": "UNL",
+                    "lang": "en",
+                    "tokens": [
+                      "UNL-T07"
+                    ],
+                    "_legal": {
+                      "S03": true
+                    },
+                    "_unreleased": true
+                  },
+                  {
+                    "id": "UNL191",
+                    "isToken": false,
+                    "face": {
+                      "front": {
+                        "name": "Master Yi, Wuju Master",
+                        "type": "Legend",
+                        "cost": 0,
+                        "image": {
+                          "en": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/ed9af55066593b4ee738b9529b847f2f738078e0-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                          "zh": "https://cdn.playloltcg.com/lol/card/20260319/07fbb94a6f9944ea8f1899370859db18.webp"
+                        },
+                        "isHorizontal": false
+                      }
+                    },
+                    "name": "Master Yi, Wuju Master",
+                    "type": "Legend",
+                    "cost": 0,
+                    "Domain": [
+                      "ðŸŸ¢ Calm",
+                      "ðŸŸ  Body"
+                    ],
+                    "Set": [
+                      "03 - Unleashed"
+                    ],
+                    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/ed9af55066593b4ee738b9529b847f2f738078e0-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                    "collectorNumber": "191",
+                    "setCode": "UNL",
+                    "lang": "en",
+                    "tokens": [
+                      "UNL-T08"
+                    ],
+                    "_legal": {
+                      "S03": true
+                    },
+                    "_unreleased": true
+                  },
+                  {
+                    "id": "UNL193",
+                    "isToken": false,
+                    "face": {
+                      "front": {
+                        "name": "Vex, Gloomist",
+                        "type": "Legend",
+                        "cost": 0,
+                        "image": {
+                          "en": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/653e9b8fc4989bba59aa7ade4e0c33ffd5596e5a-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                          "zh": "https://cdn.playloltcg.com/lol/card/20260319/e7cb6f136a0c49f585a120babafcd9a9.webp"
+                        },
+                        "isHorizontal": false
+                      }
+                    },
+                    "name": "Vex, Gloomist",
+                    "type": "Legend",
+                    "cost": 0,
+                    "Domain": [
+                      "ðŸŸ¢ Calm",
+                      "ðŸŸ£ Chaos"
+                    ],
+                    "Set": [
+                      "03 - Unleashed"
+                    ],
+                    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/653e9b8fc4989bba59aa7ade4e0c33ffd5596e5a-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                    "collectorNumber": "193",
+                    "setCode": "UNL",
+                    "lang": "en",
+                    "_legal": {
+                      "S03": true
+                    },
+                    "_unreleased": true
+                  },
+                  {
+                    "id": "UNL195",
+                    "isToken": false,
+                    "face": {
+                      "front": {
+                        "name": "Ivern, Green Father",
+                        "type": "Legend",
+                        "cost": 0,
+                        "image": {
+                          "en": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/a2ca02d26c1e95db03690729bd31113bda7e4140-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                          "zh": "https://cdn.playloltcg.com/lol/card/20260319/eee6354ff4b34db78ebc6c944ccf1d91.webp"
+                        },
+                        "isHorizontal": false
+                      }
+                    },
+                    "name": "Ivern, Green Father",
+                    "type": "Legend",
+                    "cost": 0,
+                    "Domain": [
+                      "ðŸŸ¢ Calm",
+                      "ðŸŸ¡ Order"
+                    ],
+                    "Set": [
+                      "03 - Unleashed"
+                    ],
+                    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/a2ca02d26c1e95db03690729bd31113bda7e4140-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                    "collectorNumber": "195",
+                    "setCode": "UNL",
+                    "lang": "en",
+                    "tokens": [
+                      "UNL-T03"
+                    ],
+                    "_legal": {
+                      "S03": true
+                    },
+                    "_unreleased": true
+                  },
+                  {
+                    "id": "UNL197",
+                    "isToken": false,
+                    "face": {
+                      "front": {
+                        "name": "Diana, Scorn of the Moon",
+                        "type": "Legend",
+                        "cost": 0,
+                        "image": {
+                          "en": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/b00d922d62daca19190e13149fe3cf725c900330-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                          "zh": "https://cdn.playloltcg.com/lol/card/20260319/d20d7e7b06b444489a45752ec0fd3af4.webp"
+                        },
+                        "isHorizontal": false
+                      }
+                    },
+                    "name": "Diana, Scorn of the Moon",
+                    "type": "Legend",
+                    "cost": 0,
+                    "Domain": [
+                      "ðŸ”µ Mind",
+                      "ðŸŸ£ Chaos"
+                    ],
+                    "Set": [
+                      "03 - Unleashed"
+                    ],
+                    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/b00d922d62daca19190e13149fe3cf725c900330-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                    "collectorNumber": "197",
+                    "setCode": "UNL",
+                    "lang": "en",
+                    "_legal": {
+                      "S03": true
+                    },
+                    "_unreleased": true
+                  },
+                  {
+                    "id": "UNL199",
+                    "isToken": false,
+                    "face": {
+                      "front": {
+                        "name": "LeBlanc, Deceiver",
+                        "type": "Legend",
+                        "cost": 0,
+                        "image": {
+                          "en": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/c17d29602d61d6702372fec4db44c6fb2a29e8a2-744x1039.png?accountingTag=RB&auto=format&fit=fill&q=80&w=744",
+                          "zh": "https://cdn.playloltcg.com/lol/card/20260319/676159225d354706b573d8a7a8cf4e02.webp"
+                        },
+                        "isHorizontal": false
+                      }
+                    },
+                    "name": "LeBlanc, Deceiver",
+                    "type": "Legend",
+                    "cost": 0,
+                    "Domain": [
+                      "ðŸ”µ Mind",
+                      "ðŸŸ¡ Order"
+                    ],
+                    "Set": [
+                      "03 - Unleashed"
+                    ],
+                    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/c17d29602d61d6702372fec4db44c6fb2a29e8a2-744x1039.png?accountingTag=RB&auto=format&fit=fill&q=80&w=744",
+                    "collectorNumber": "199",
+                    "setCode": "UNL",
+                    "lang": "en",
+                    "tokens": [
+                      "UNL-T06"
+                    ],
+                    "_legal": {
+                      "S03": true
+                    },
+                    "_unreleased": true
+                  },
+                  {
+                    "id": "UNL201",
+                    "isToken": false,
+                    "face": {
+                      "front": {
+                        "name": "Kha'Zix, Voidreaver",
+                        "type": "Legend",
+                        "cost": 0,
+                        "image": {
+                          "en": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/a5db0b3340a189de1cf9d8174b11eb583f19ea28-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                          "zh": "https://cdn.playloltcg.com/lol/card/20260319/62c0e05d78144bb09f89fff5f91fc642.webp"
+                        },
+                        "isHorizontal": false
+                      }
+                    },
+                    "name": "Kha'Zix, Voidreaver",
+                    "type": "Legend",
+                    "cost": 0,
+                    "Domain": [
+                      "ðŸŸ  Body",
+                      "ðŸŸ£ Chaos"
+                    ],
+                    "Set": [
+                      "03 - Unleashed"
+                    ],
+                    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/a5db0b3340a189de1cf9d8174b11eb583f19ea28-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                    "collectorNumber": "201",
+                    "setCode": "UNL",
+                    "lang": "en",
+                    "tokens": [
+                      "UNL-T08",
+                      "OGN-T-Buff"
+                    ],
+                    "_legal": {
+                      "S03": true
+                    },
+                    "_unreleased": true
+                  },
+                  {
+                    "id": "UNL203",
+                    "isToken": false,
+                    "face": {
+                      "front": {
+                        "name": "Poppy, Keeper of the Hammer",
+                        "type": "Legend",
+                        "cost": 0,
+                        "image": {
+                          "en": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/ee1393b9bace7bfea4e87405b793bb5462305ed0-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                          "zh": "https://cdn.playloltcg.com/lol/card/20260319/ed58b231081d4ca0bbf429e8c8a741be.webp"
+                        },
+                        "isHorizontal": false
+                      }
+                    },
+                    "name": "Poppy, Keeper of the Hammer",
+                    "type": "Legend",
+                    "cost": 0,
+                    "Domain": [
+                      "ðŸŸ  Body",
+                      "ðŸŸ¡ Order"
+                    ],
+                    "Set": [
+                      "03 - Unleashed"
+                    ],
+                    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/ee1393b9bace7bfea4e87405b793bb5462305ed0-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                    "collectorNumber": "203",
+                    "setCode": "UNL",
+                    "lang": "en",
+                    "tokens": [
+                      "UNL-T08"
+                    ],
+                    "_legal": {
+                      "S03": true
+                    },
+                    "_unreleased": true
+                  },
+                  {
+                    "id": "UNL226",
+                    "isToken": false,
+                    "face": {
+                      "front": {
+                        "name": "Jhin, Virtuoso",
+                        "type": "Legend",
+                        "cost": 0,
+                        "image": {
+                          "en": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/47f10693258104e9373396165e335014bf5783a2-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                          "zh": "https://cdn.playloltcg.com/lol/card/20260324/604c77a7ca3b45b18300301bc854499b.webp"
+                        },
+                        "isHorizontal": false
+                      }
+                    },
+                    "name": "Jhin, Virtuoso",
+                    "type": "Legend",
+                    "cost": 0,
+                    "Domain": [
+                      "ðŸ”´ Fury",
+                      "ðŸ”µ Mind"
+                    ],
+                    "Set": [
+                      "03 - Unleashed"
+                    ],
+                    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/47f10693258104e9373396165e335014bf5783a2-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                    "collectorNumber": "226",
+                    "setCode": "UNL",
+                    "lang": "en",
+                    "_legal": {
+                      "S03": true
+                    },
+                    "_unreleased": true
+                  },
+                  {
+                    "id": "UNL226s",
+                    "isToken": false,
+                    "face": {
+                      "front": {
+                        "name": "Jhin, Virtuoso",
+                        "type": "Legend",
+                        "cost": 0,
+                        "image": {
+                          "en": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/94fb0a4944da2427ce615dd2c311a2c9bc781fd2-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                          "zh": "https://cdn.playloltcg.com/lol/card/20260324/6b6e30c00f194f10b9a1874f892fa1b2.webp"
+                        },
+                        "isHorizontal": false
+                      }
+                    },
+                    "name": "Jhin, Virtuoso",
+                    "type": "Legend",
+                    "cost": 0,
+                    "Domain": [
+                      "ðŸ”´ Fury",
+                      "ðŸ”µ Mind"
+                    ],
+                    "Set": [
+                      "03 - Unleashed"
+                    ],
+                    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/94fb0a4944da2427ce615dd2c311a2c9bc781fd2-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                    "collectorNumber": "226s",
+                    "setCode": "UNL",
+                    "lang": "en",
+                    "_legal": {
+                      "S03": true
+                    },
+                    "_unreleased": true
+                  },
+                  {
+                    "id": "UNL227",
+                    "isToken": false,
+                    "face": {
+                      "front": {
+                        "name": "Rengar, Pridestalker",
+                        "type": "Legend",
+                        "cost": 0,
+                        "image": {
+                          "en": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/1f80a016015ebc77bd3d23ce471e364d70698279-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                          "zh": "https://cdn.playloltcg.com/lol/card/20260324/0c4a034eb79b4c55a27cb1cf63cd592a.webp"
+                        },
+                        "isHorizontal": false
+                      }
+                    },
+                    "name": "Rengar, Pridestalker",
+                    "type": "Legend",
+                    "cost": 0,
+                    "Domain": [
+                      "ðŸ”´ Fury",
+                      "ðŸŸ  Body"
+                    ],
+                    "Set": [
+                      "03 - Unleashed"
+                    ],
+                    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/1f80a016015ebc77bd3d23ce471e364d70698279-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                    "collectorNumber": "227",
+                    "setCode": "UNL",
+                    "lang": "en",
+                    "_legal": {
+                      "S03": true
+                    },
+                    "_unreleased": true
+                  },
+                  {
+                    "id": "UNL227s",
+                    "isToken": false,
+                    "face": {
+                      "front": {
+                        "name": "Rengar, Pridestalker",
+                        "type": "Legend",
+                        "cost": 0,
+                        "image": {
+                          "en": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/9bfffdcab9899c4b0d94ab31d138edd7d2f8e4f1-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                          "zh": "https://cdn.playloltcg.com/lol/card/20260324/adff9c54374d47378781b91f727447b0.webp"
+                        },
+                        "isHorizontal": false
+                      }
+                    },
+                    "name": "Rengar, Pridestalker",
+                    "type": "Legend",
+                    "cost": 0,
+                    "Domain": [
+                      "ðŸ”´ Fury",
+                      "ðŸŸ  Body"
+                    ],
+                    "Set": [
+                      "03 - Unleashed"
+                    ],
+                    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/9bfffdcab9899c4b0d94ab31d138edd7d2f8e4f1-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                    "collectorNumber": "227s",
+                    "setCode": "UNL",
+                    "lang": "en",
+                    "_legal": {
+                      "S03": true
+                    },
+                    "_unreleased": true
+                  },
+                  {
+                    "id": "UNL228",
+                    "isToken": false,
+                    "face": {
+                      "front": {
+                        "name": "Pyke, Bloodharbor Ripper",
+                        "type": "Legend",
+                        "cost": 0,
+                        "image": {
+                          "en": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/b4095d98aff998fda5a08d4c32e97a2a66ccf1e6-744x1039.png?accountingTag=RB&auto=format&fit=fill&q=80&w=744",
+                          "zh": "https://cdn.playloltcg.com/lol/card/20260324/f40dced162d6409182febeddbb7e4539.webp"
+                        },
+                        "isHorizontal": false
+                      }
+                    },
+                    "name": "Pyke, Bloodharbor Ripper",
+                    "type": "Legend",
+                    "cost": 0,
+                    "Domain": [
+                      "ðŸ”´ Fury",
+                      "ðŸŸ£ Chaos"
+                    ],
+                    "Set": [
+                      "03 - Unleashed"
+                    ],
+                    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/b4095d98aff998fda5a08d4c32e97a2a66ccf1e6-744x1039.png?accountingTag=RB&auto=format&fit=fill&q=80&w=744",
+                    "collectorNumber": "228",
+                    "setCode": "UNL",
+                    "lang": "en",
+                    "tokens": [
+                      "UNL-T05"
+                    ],
+                    "_legal": {
+                      "S03": true
+                    },
+                    "_unreleased": true
+                  },
+                  {
+                    "id": "UNL228s",
+                    "isToken": false,
+                    "face": {
+                      "front": {
+                        "name": "Pyke, Bloodharbor Ripper",
+                        "type": "Legend",
+                        "cost": 0,
+                        "image": {
+                          "en": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/75ff8f0b0a4ea110dd4af5b14c23da804481387a-744x1039.png?accountingTag=RB&auto=format&fit=fill&q=80&w=744",
+                          "zh": "https://cdn.playloltcg.com/lol/card/20260324/9790c48c2c624801a7a039f33450937f.webp"
+                        },
+                        "isHorizontal": false
+                      }
+                    },
+                    "name": "Pyke, Bloodharbor Ripper",
+                    "type": "Legend",
+                    "cost": 0,
+                    "Domain": [
+                      "ðŸ”´ Fury",
+                      "ðŸŸ£ Chaos"
+                    ],
+                    "Set": [
+                      "03 - Unleashed"
+                    ],
+                    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/75ff8f0b0a4ea110dd4af5b14c23da804481387a-744x1039.png?accountingTag=RB&auto=format&fit=fill&q=80&w=744",
+                    "collectorNumber": "228s",
+                    "setCode": "UNL",
+                    "lang": "en",
+                    "tokens": [
+                      "UNL-T05"
+                    ],
+                    "_legal": {
+                      "S03": true
+                    },
+                    "_unreleased": true
+                  },
+                  {
+                    "id": "UNL229",
+                    "isToken": false,
+                    "face": {
+                      "front": {
+                        "name": "Vi, Piltover Enforcer",
+                        "type": "Legend",
+                        "cost": 0,
+                        "image": {
+                          "en": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/08c48ad82381bb5830a0b413d7a2f25dd2b20d76-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                          "zh": "https://cdn.playloltcg.com/lol/card/20260324/45f6d402cd104a9e86de6f94ee6cd573.webp"
+                        },
+                        "isHorizontal": false
+                      }
+                    },
+                    "name": "Vi, Piltover Enforcer",
+                    "type": "Legend",
+                    "cost": 0,
+                    "Domain": [
+                      "ðŸ”´ Fury",
+                      "ðŸŸ¡ Order"
+                    ],
+                    "Set": [
+                      "03 - Unleashed"
+                    ],
+                    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/08c48ad82381bb5830a0b413d7a2f25dd2b20d76-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                    "collectorNumber": "229",
+                    "setCode": "UNL",
+                    "lang": "en",
+                    "_legal": {
+                      "S03": true
+                    },
+                    "_unreleased": true
+                  },
+                  {
+                    "id": "UNL229s",
+                    "isToken": false,
+                    "face": {
+                      "front": {
+                        "name": "Vi, Piltover Enforcer",
+                        "type": "Legend",
+                        "cost": 0,
+                        "image": {
+                          "en": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/0febae9c611339d9ed65c7ebe43237b5ec42c9a3-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                          "zh": "https://cdn.playloltcg.com/lol/card/20260324/42756356d34045e891a858a0f7dc23dc.webp"
+                        },
+                        "isHorizontal": false
+                      }
+                    },
+                    "name": "Vi, Piltover Enforcer",
+                    "type": "Legend",
+                    "cost": 0,
+                    "Domain": [
+                      "ðŸ”´ Fury",
+                      "ðŸŸ¡ Order"
+                    ],
+                    "Set": [
+                      "03 - Unleashed"
+                    ],
+                    "image": "https://cmsassets.rgpub.io/sanity/images/dsfx7636/game_data_live/0febae9c611339d9ed65c7ebe43237b5ec42c9a3-744x1039.png?auto=format&fit=fill&q=80&w=744",
+                    "collectorNumber": "229s",
+                    "setCode": "UNL",
+                    "lang": "en",
+                    "_legal": {
+                      "S03": true
+                    },
+                    "_unreleased": true
+                  }
+                ]
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/games/{gameSlug}/cards/{cardId}": {
+      "get": {
+        "summary": "Get Card",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "gameSlug",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cardId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "image": {
+                      "type": "string"
+                    },
+                    "collectorNumber": {
+                      "type": "string"
+                    },
+                    "setCode": {
+                      "type": "string"
+                    },
+                    "lang": {
+                      "type": "string"
+                    },
+                    "erratas": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Errata"
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "type",
+                    "image",
+                    "collectorNumber",
+                    "setCode",
+                    "lang"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/games/{gameSlug}/rules": {
+      "get": {
+        "summary": "Get Rules",
+        "deprecated": false,
+        "description": "Search rules for a given game using query and filters.",
+        "operationId": "searchRules",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "gameSlug",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": "riftbound",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "searchQuery",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "Ambush",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "document",
+            "in": "query",
+            "description": "Source document ID. Depend on the game. usual values: \"TR\" (Tournament Regulation), \"CR\" (Core Rules)",
+            "required": false,
+            "example": "CR",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "content": {
+                        "type": "string"
+                      },
+                      "document": {
+                        "type": "string",
+                        "description": "Source document name (Tournament Rules, Core Rules, ...)"
+                      },
+                      "game": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "slug"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "content",
+                      "id",
+                      "document"
+                    ]
+                  }
+                },
+                "example": [
+                  {
+                    "id": "151.b.3.a",
+                    "content": "For gameplay purposes, a card's Owner is the player who brought it into the game, either as their Champion Legend, one of their Battlefields, or part of their Main Deck or Rune Deck. The legal owner of a card doesn't matter during gameplay. Example: Bo didn't bring a deck, so Alice loans him a deck. During the game, Bo is considered the owner of those cards, even though legally they belong to Alice."
+                  }
+                ]
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/games/{gameSlug}/policies": {
+      "get": {
+        "summary": "Get policies",
+        "deprecated": false,
+        "description": "Get and search community policies, rule tips, explanations and for a game.",
+        "operationId": "getPolicies",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "gameSlug",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "searchQuery",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Policy"
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      },
+      "post": {
+        "summary": "Add policy",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "gameSlug",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/games": {
+      "get": {
+        "summary": "Get games",
+        "deprecated": false,
+        "description": "List supported games.",
+        "operationId": "getGames",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Filter by game type.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "TCG",
+                "BoardGame",
+                "Other"
+              ]
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "description": "Search (results are fuzzy searched).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "206": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Game"
+                  }
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/games/{gameSlug}": {
+      "get": {
+        "summary": "Get Game",
+        "deprecated": false,
+        "description": "Get details and configuration for a supported game.",
+        "operationId": "getGame",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "gameSlug",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": "mtg",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Game"
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    },
+    "/games/{gameSlug}/sets": {
+      "get": {
+        "summary": "Get sets",
+        "deprecated": false,
+        "description": "List extensions and sets for a given game. If the game does not support sets, this route will return 404.",
+        "operationId": "getGameSets",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "gameSlug",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GameSet"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/lairs": {
+      "get": {
+        "summary": "Get lairs",
+        "deprecated": false,
+        "description": "Get lairs, stores and play locations.",
+        "operationId": "getLairs",
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/events": {
+      "get": {
+        "summary": "Search events",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/news": {
+      "get": {
+        "summary": "Get news",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      },
+      "post": {
+        "summary": "Create news article",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/news/{newsId}": {
+      "get": {
+        "summary": "Get news by ID",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "newsId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/decks": {
+      "get": {
+        "summary": "Get decks",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      },
+      "post": {
+        "summary": "Create deck",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/decks/{deckId}": {
+      "get": {
+        "summary": "Get deck by ID",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "deckId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      },
+      "patch": {
+        "summary": "Update deck",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "deckId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      },
+      "delete": {
+        "summary": "Delete deck",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "deckId",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/leagues": {
+      "get": {
+        "summary": "Search leagues",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    }
+  },
+  "webhooks": {},
+  "components": {
+    "schemas": {
+      "Card": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "collectorNumber": {
+            "type": "string"
+          },
+          "setCode": {
+            "type": "string"
+          },
+          "lang": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type",
+          "image",
+          "collectorNumber",
+          "setCode",
+          "lang"
+        ]
+      },
+      "Errata": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "cardId": {
+            "type": "string"
+          },
+          "card": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Card"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "errata",
+              "clarification",
+              "ruling"
+            ]
+          },
+          "details": {
+            "type": "string"
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "errataDate": {
+            "type": "string"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "deprecatedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "votes": {
+            "type": "object",
+            "properties": {
+              "positive": {
+                "type": "integer"
+              },
+              "negative": {
+                "type": "integer"
+              },
+              "userVote": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "positive",
+                  "negative"
+                ]
+              }
+            },
+            "required": [
+              "positive",
+              "negative"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "cardId",
+          "type",
+          "details",
+          "errataDate",
+          "createdBy",
+          "createdAt",
+          "votes"
+        ]
+      },
+      "Policy": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "gameId": {
+            "type": "string"
+          },
+          "game": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "slug": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "slug"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "deprecatedAt": {
+            "type": "string"
+          },
+          "votes": {
+            "type": "object",
+            "properties": {
+              "positive": {
+                "type": "integer"
+              },
+              "negative": {
+                "type": "integer"
+              },
+              "userVote": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "positive",
+                  "negative"
+                ]
+              }
+            },
+            "required": [
+              "positive",
+              "negative"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "gameId",
+          "title",
+          "content",
+          "createdBy",
+          "createdAt",
+          "deprecatedAt",
+          "votes"
+        ]
+      },
+      "Game": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "banner": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "type"
+        ]
+      },
+      "GameSet": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "banner": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "code",
+          "icon",
+          "banner"
+        ]
+      }
+    },
+    "responses": {},
+    "securitySchemes": {}
+  },
+  "servers": [],
+  "security": []
+}
