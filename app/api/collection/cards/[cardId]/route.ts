@@ -16,15 +16,9 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const searchParams = request.nextUrl.searchParams;
-  const gameSlug = searchParams.get("gameSlug") || undefined;
-
   try {
-    const game = gameSlug ? await db.collection("games").findOne({ slug: gameSlug }) : null;
-
     const result = await db.collection<BoosterCardDb>('booster-cards').findOneAndDelete({
       userId: new ObjectId(session.user.id),
-      gameId: game ? new ObjectId(game._id) : undefined,
       cardId: cardId,
     });
 
@@ -53,18 +47,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const searchParams = request.nextUrl.searchParams;
-  const gameSlug = searchParams.get("gameSlug") || undefined;
-
   try {
-    const game = gameSlug ? await db.collection("games").findOne({ slug: gameSlug }) : null;
-
     const countResult = await db.collection<BoosterCardDb>('booster-cards').countDocuments({
         userId: new ObjectId(session.user.id),
-        gameId: game ? new ObjectId(game._id) : undefined,
         cardId: cardId,
     });
-
 
     return NextResponse.json({
         quantity: countResult,
