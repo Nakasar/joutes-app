@@ -468,7 +468,7 @@ async function handleSearchCard(params: {
         content: [
             {
                 type: "text",
-                text: `You searched for card "${params.cardName}" in game "${params.gameName ?? "N/A"}".${card.image ? `\n\n![${card.name}](${card.image})` : ""}\n\nThis card has ${erratas.length} erratas.\n\nErratas details:\n${erratas.map((e, index) => `\n${index + 1}. Type: ${e.type}, Details: ${e.details}, Source: ${e.source}, Errata ID: ${e.id}`).join("\n")}`
+                text: `You searched for card "${params.cardName}" in game "${params.gameName ?? "N/A"}".${card.image ? `\n\n![${card.name}](${card.image})` : ""}${card.text ? `\n\nText of the card:\n${card.text}` : ""}\n\nThis card has ${erratas.length} erratas.\n\nErratas details:\n${erratas.map((e, index) => `\n${index + 1}. Type: ${e.type}, Details: ${e.details}, Source: ${e.source}, Errata ID: ${e.id}`).join("\n")}`
             }
         ],
         isError: false,
