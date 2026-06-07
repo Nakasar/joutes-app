@@ -14,7 +14,7 @@ import {BoosterCard} from "@/lib/types/booster";
 import {ActionRowBuilder, ButtonBuilder, EmbedBuilder} from "@discordjs/builders";
 import {getErratasByCardId} from "@/lib/db/erratas";
 import {Game} from "@/lib/types/Game";
-import {addParticipantToEvent, getEventById} from "@/lib/db/events";
+import {addParticipantToEvent, getEventById, removeParticipantFromEvent} from "@/lib/db/events";
 import {DateTime} from "luxon";
 import {ButtonStyle} from "discord-api-types/v8";
 import {auth, User} from "@/lib/auth";
@@ -281,6 +281,120 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
         );
         return NextResponse.json({success: true}, {status: 200});
       }
+    }
+  } else if (interaction.data.custom_id.startsWith("event-registration-")) {
+    const discordUserId = interaction.user?.id || interaction.member?.user?.id;
+    const user = discordUserId ? await db.collection<{ userId: ObjectId }>('account').findOne({
+      providerId: 'discord',
+      accountId: discordUserId,
+    }).then(discordUser => {
+      if (discordUser?.userId) {
+        return db.collection<{ displayName?: string; discriminator?: string }>('user').findOne({
+          _id: discordUser.userId,
+        })
+      } else {
+        return null;
+      }
+    }) : null;
+    if (!user) {
+      await rest.post(
+        Routes.interactionCallback(interaction.id, interaction.token),
+        {
+          body: {
+            type: 4,
+            data: {
+              content: "Votre compte Discord ne semble pas connecté à un compte Joutes.",
+              flags: 64, // Ephemeral
+              components: [
+                new ActionRowBuilder<ButtonBuilder>().addComponents(
+                  new ButtonBuilder()
+                    .setLabel("Lier mon compte Joutes")
+                    .setURL(`https://joutes.app/account/security`)
+                    .setStyle(ButtonStyle.Link),
+                ),
+              ],
+            },
+          },
+        },
+      );
+      return NextResponse.json({success: true}, {status: 200});
+    }
+
+    const eventId = interaction.data.custom_id.split('event-registration-')[1];
+    const event = await getEventById(eventId);
+
+    if (!event) {
+      await rest.post(
+        Routes.interactionCallback(interaction.id, interaction.token),
+        {
+          body: {
+            type: 4,
+            data: {
+              content: "Cet évènement n'existe pas ou ne vous est pas accessible.",
+              flags: 64, // Ephemeral
+              components: [
+                new ActionRowBuilder<ButtonBuilder>().addComponents(
+                  new ButtonBuilder()
+                    .setLabel("Voir sur Joutes")
+                    .setURL(`https://joutes.app/events/${eventId}`)
+                    .setStyle(ButtonStyle.Link),
+                ),
+              ],
+            },
+          },
+        },
+      );
+      return NextResponse.json({success: true}, {status: 200});
+    }
+
+    const currentRegistrationStatus: RegistrationStatus = (event.preRegistration ? event.participantRegistrations?.[user._id.toString()] : (event.participants?.includes(user._id.toString()) ? "REGISTERED" : "NOT_REGISTERED")) ?? 'NOT_REGISTERED';
+
+    if (currentRegistrationStatus === 'REGISTERED' || currentRegistrationStatus === 'PRE_REGISTERED') {
+      await removeParticipantFromEvent(eventId, user._id.toString());
+
+      await rest.post(
+        Routes.interactionCallback(interaction.id, interaction.token),
+        {
+          body: {
+            type: 4,
+            data: {
+              content: `Bonjour ${user.displayName ?? 'utilisateur anonyme'}#${user.discriminator ?? ''} ! Vous êtes bien désinscrit de l'évènement !`,
+              flags: 64, // Ephemeral
+              components: [
+                new ActionRowBuilder<ButtonBuilder>().addComponents(
+                  new ButtonBuilder()
+                    .setLabel("Me réinscrire")
+                    .setCustomId(`event-register-${event.id}`)
+                    .setStyle(ButtonStyle.Primary),
+                ),
+              ],
+            },
+          },
+        },
+      );
+      return NextResponse.json({success: true}, {status: 200});
+    } else {
+      await rest.post(
+        Routes.interactionCallback(interaction.id, interaction.token),
+        {
+          body: {
+            type: 4,
+            data: {
+              content: `Bonjour ${user.displayName ?? 'utilisateur anonyme'}#${user.discriminator ?? ''} ! Actuellement vous n'êtes pas inscrit à cet évènement.`,
+              flags: 64, // Ephemeral
+              components: [
+                new ActionRowBuilder<ButtonBuilder>().addComponents(
+                  new ButtonBuilder()
+                    .setLabel("M'inscrire")
+                    .setCustomId(`event-register-${event.id}`)
+                    .setStyle(ButtonStyle.Primary),
+                ),
+              ],
+            },
+          },
+        },
+      );
+      return NextResponse.json({success: true}, {status: 200});
     }
   } else {
     await rest.post(
