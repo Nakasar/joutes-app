@@ -86,6 +86,8 @@ async function handleEventsCommand(interaction: APIChatInputApplicationCommandIn
     },
   );
 
+  console.log(interaction.data.options);
+
   const link = interaction.data.options?.find(
     (option: { name: string; type: number }) => option.name === "link" && option.type === 3,
   ) as { value: string } | undefined;
