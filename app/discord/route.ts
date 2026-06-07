@@ -17,7 +17,9 @@ import {Game} from "@/lib/types/Game";
 import {getEventById} from "@/lib/db/events";
 import {DateTime} from "luxon";
 import {ButtonStyle} from "discord-api-types/v8";
-import {auth} from "@/lib/auth";
+import {auth, User} from "@/lib/auth";
+import {Account} from "better-auth";
+import {ObjectId} from "mongodb";
 
 const agentId = "yGypfIpDEb";
 const aiAllowedDiscordIds = JSON.parse(
@@ -88,12 +90,41 @@ async function handleComponentInteraction(
 
 async function handleComponentButtonInteraction(interaction: APIMessageComponentButtonInteraction) {
   if (interaction.data.custom_id.startsWith("event-registration-")) {
-    const user = await auth.api.accountInfo({
-      query: {
+    const user = interaction.user?.id ? await db.collection<{ userId: ObjectId }>('account').findOne({
+        providerId: 'discord',
         accountId: interaction.user?.id,
-      }
-    });
-    console.log(user);
+      }).then(discordUser => {
+        if (discordUser?.userId) {
+          return db.collection<{ displayName?: string; discriminator?: string }>('user').findOne({
+            _id: discordUser.userId,
+          })
+        } else {
+          return null;
+        }
+    }) : null;
+    if (!user) {
+      await rest.post(
+        Routes.interactionCallback(interaction.id, interaction.token),
+        {
+          body: {
+            type: 4,
+            data: {
+              content: "Votre compte Discord ne semble pas connecté à un compte Joutes.",
+              flags: 64, // Ephemeral
+              components: [
+                new ActionRowBuilder<ButtonBuilder>().addComponents(
+                  new ButtonBuilder()
+                    .setLabel("Lier mon compte Joutes")
+                    .setURL(`https://joutes.app/account/security`)
+                    .setStyle(ButtonStyle.Link),
+                ),
+              ],
+            },
+          },
+        },
+      );
+      return NextResponse.json({success: true}, {status: 200});
+    }
 
     await rest.post(
       Routes.interactionCallback(interaction.id, interaction.token),
@@ -101,7 +132,7 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
         body: {
           type: 4,
           data: {
-            content: `${user?.user.name}`,
+            content: `Bonjour ${user.displayName ?? 'utilisateur anonyme'}#${user.discriminator ?? ''} !`,
             flags: 64, // Ephemeral
           },
         },
