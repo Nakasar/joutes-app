@@ -128,6 +128,24 @@ function LoginForm() {
               <Key />
               PassKey/WebAuthN
             </Button>
+            <Button className="w-full mt-8" onClick={async (event) => {
+              event?.preventDefault();
+
+              const { data, error } = await authClient.signIn.social({
+                provider: "discord",
+                fetchOptions: {
+                  onSuccess(context) {
+                    router.push('/');
+                  },
+                  onError(context) {
+                    // Handle authentication errors
+                    console.error("Authentication failed:", context.error.message);
+                  }
+                }
+              });
+            }}>
+              Discord
+            </Button>
           </div>
         ) : (
           <form className="mt-8 space-y-6" onSubmit={handleVerifyOTP}>

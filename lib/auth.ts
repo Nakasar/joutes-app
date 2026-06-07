@@ -13,6 +13,15 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: false, // Désactivé car on utilise uniquement emailOTP
   },
+  socialProviders: {
+    discord: {
+      clientId: process.env.DISCORD_CLIENT_ID!,
+      clientSecret: process.env.DISCORD_CLIENT_SECRET!,
+      mapProfileToUser: (profile) => ({
+        email: profile.email ?? `${profile.id}@discord.placeholder.local`,
+      }),
+    },
+  },
   plugins: [
     jwt(),
     emailOTP({
@@ -62,6 +71,12 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 7, // 7 jours
     updateAge: 60 * 60 * 24, // 1 jour
     storeSessionInDatabase: true,
+  },
+  account: {
+    accountLinking: {
+      allowDifferentEmails: true,
+      allowUnlinkingAll: true,
+    },
   },
   trustedOrigins: process.env.NEXT_PUBLIC_BASE_URL ? [process.env.NEXT_PUBLIC_BASE_URL] : ["http://localhost:3000", "https://localhost:3000"],
   baseURL: process.env.NEXT_PUBLIC_BASE_URL || process.env.BETTER_AUTH_URL || "http://localhost:3000",

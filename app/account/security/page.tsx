@@ -5,7 +5,7 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/compo
 import {auth} from "@/lib/auth";
 import {headers} from "next/headers";
 import {redirect} from "next/navigation";
-import {AddPassKeyButton} from "@/app/account/security/components";
+import {AddPassKeyButton, LinkProviderButton} from "@/app/account/security/components";
 
 export default async function AccountSecurity() {
   const session = await auth.api.getSession({
@@ -19,6 +19,19 @@ export default async function AccountSecurity() {
   const passKeys = await auth.api.listPasskeys({
     headers: await headers(),
   });
+  const socialAccounts = await auth.api.listUserAccounts({
+    headers: await headers(),
+  });
+  const discordSocialAccount = socialAccounts.find(a => a.providerId === 'discord');
+  const discordInfo = discordSocialAccount ? await auth.api.accountInfo({
+    query: {
+      accountId: discordSocialAccount.accountId,
+    },
+    headers: await headers(),
+  }).catch(err => {
+    console.debug(err);
+    return null;
+  }) : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8">
@@ -28,7 +41,7 @@ export default async function AccountSecurity() {
           <div className="flex items-center gap-4">
             <Link href="/account">
               <Button variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                <ArrowLeft className="h-4 w-4 mr-2"/>
                 Retour
               </Button>
             </Link>
@@ -40,19 +53,64 @@ export default async function AccountSecurity() {
             </div>
           </div>
 
-          {/* Section API Keys et MCP */}
           <Card className="border-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Key className="h-5 w-5" />
-                Clés de connexion (PassKeys)
+                <Key className="h-5 w-5"/>
+                Connexions et comptes
               </CardTitle>
               <CardDescription>
-                Gérez vos clés de connexion WebAuthN/PassKeys pour une authentification sécurisée et sans mot de passe rapide sur vos appareils.
+                Gérez vos connexions tierces.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <AddPassKeyButton />
+              <div
+                className="flex items-center justify-between border-b py-4 last:border-0"
+              >
+                <div>
+                  <p className="font-medium">Discord</p>
+                  <p className="text-sm text-muted-foreground">
+                    {discordSocialAccount ? (<>
+                      Connecté en tant que {discordInfo?.user?.name ?? discordSocialAccount.accountId}.
+                    </>) : "Non connecté."}
+                  </p>
+                  {discordInfo?.user.image && <img src={discordInfo.user.image} alt={discordInfo.user.name ?? "Avatar"}
+                                                   className="h-8 w-8 rounded-full mt-2"/>}
+                </div>
+                <form>
+                  {discordSocialAccount ?
+                    <Button variant="destructive" size="sm" formAction={async () => {
+                      'use server';
+
+                      await auth.api.unlinkAccount({
+                        body: {
+                          providerId: 'discord',
+                        },
+                        headers: await headers(),
+                      })
+                    }}>
+                      Délier
+                    </Button>
+                    : <LinkProviderButton provider="discord"/>
+                  }
+                </form>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Key className="h-5 w-5"/>
+                Clés de connexion (PassKeys)
+              </CardTitle>
+              <CardDescription>
+                Gérez vos clés de connexion WebAuthN/PassKeys pour une authentification sécurisée et sans mot de passe
+                rapide sur vos appareils.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AddPassKeyButton/>
               {passKeys.map((key, index) => (
                 <div
                   key={key.id}

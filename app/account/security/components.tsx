@@ -16,3 +16,16 @@ export function AddPassKeyButton() {
     </Button>
   )
 }
+
+export function LinkProviderButton({ provider }: { provider: string }) {
+  return (
+    <Button variant="default" size="sm" onClick={async () => {
+      await authClient.linkSocial({
+        provider,
+        callbackURL: "/account/security",
+      })
+    }}>
+      Lier
+    </Button>
+  )
+}
