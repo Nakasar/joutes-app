@@ -282,7 +282,7 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
         return NextResponse.json({success: true}, {status: 200});
       }
     }
-  } else if (interaction.data.custom_id.startsWith("event-registration-")) {
+  } else if (interaction.data.custom_id.startsWith("event-unregister-")) {
     const discordUserId = interaction.user?.id || interaction.member?.user?.id;
     const user = discordUserId ? await db.collection<{ userId: ObjectId }>('account').findOne({
       providerId: 'discord',
