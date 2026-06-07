@@ -14,12 +14,13 @@ import {BoosterCard} from "@/lib/types/booster";
 import {ActionRowBuilder, ButtonBuilder, EmbedBuilder} from "@discordjs/builders";
 import {getErratasByCardId} from "@/lib/db/erratas";
 import {Game} from "@/lib/types/Game";
-import {getEventById} from "@/lib/db/events";
+import {addParticipantToEvent, getEventById} from "@/lib/db/events";
 import {DateTime} from "luxon";
 import {ButtonStyle} from "discord-api-types/v8";
 import {auth, User} from "@/lib/auth";
 import {Account} from "better-auth";
 import {ObjectId} from "mongodb";
+import {RegistrationStatus} from "@/lib/types/Event";
 
 const agentId = "yGypfIpDEb";
 const aiAllowedDiscordIds = JSON.parse(
@@ -154,19 +155,133 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
       return NextResponse.json({success: true}, {status: 200});
     }
 
-    await rest.post(
-      Routes.interactionCallback(interaction.id, interaction.token),
-      {
-        body: {
-          type: 4,
-          data: {
-            content: `Bonjour ${user.displayName ?? 'utilisateur anonyme'}#${user.discriminator ?? ''} !`,
-            flags: 64, // Ephemeral
+    const currentRegistrationStatus: RegistrationStatus = (event.preRegistration ? event.participantRegistrations?.[user._id.toString()] : (event.participants?.includes(user._id.toString()) ? "REGISTERED" : "NOT_REGISTERED")) ?? 'NOT_REGISTERED';
+
+    if (currentRegistrationStatus === 'REGISTERED') {
+      await rest.post(
+        Routes.interactionCallback(interaction.id, interaction.token),
+        {
+          body: {
+            type: 4,
+            data: {
+              content: `Bonjour ${user.displayName ?? 'utilisateur anonyme'}#${user.discriminator ?? ''} ! Actuellement vous êtes enregistré pour cet évènement.`,
+              flags: 64, // Ephemeral
+              components: [
+                new ActionRowBuilder<ButtonBuilder>().addComponents(
+                  new ButtonBuilder()
+                    .setLabel("Me désinscrire")
+                    .setCustomId(`event-unregister-${event.id}`)
+                    .setStyle(ButtonStyle.Danger),
+                ),
+              ],
+            },
           },
         },
-      },
-    );
-    return NextResponse.json({success: true}, {status: 200});
+      );
+      return NextResponse.json({success: true}, {status: 200});
+    } else if (currentRegistrationStatus === 'PRE_REGISTERED') {
+      await rest.post(
+        Routes.interactionCallback(interaction.id, interaction.token),
+        {
+          body: {
+            type: 4,
+            data: {
+              content: `Bonjour ${user.displayName ?? 'utilisateur anonyme'}#${user.discriminator ?? ''} ! Actuellement vous êtes pré-enregistré pour cet évènement, et votre inscription est en attente de validation par l'organisateur du tournoi.`,
+              flags: 64, // Ephemeral
+              components: [
+                new ActionRowBuilder<ButtonBuilder>().addComponents(
+                  new ButtonBuilder()
+                    .setLabel("Me désinscrire")
+                    .setCustomId(`event-unregister-${event.id}`)
+                    .setStyle(ButtonStyle.Danger),
+                ),
+              ],
+            },
+          },
+        },
+      );
+      return NextResponse.json({success: true}, {status: 200});
+    } else if (currentRegistrationStatus === 'EXCLUDED') {
+      await rest.post(
+        Routes.interactionCallback(interaction.id, interaction.token),
+        {
+          body: {
+            type: 4,
+            data: {
+              content: `Bonjour ${user.displayName ?? 'utilisateur anonyme'}#${user.discriminator ?? ''} ! Actuellement vous êtes noté comme exclu de cet évènement par l'organisateur et ne pouvez pas vous réinscrire.`,
+              flags: 64, // Ephemeral
+            },
+          },
+        },
+      );
+      return NextResponse.json({success: true}, {status: 200});
+    } else if (currentRegistrationStatus === 'NOT_REGISTERED') {
+      if (event.allowJoin) {
+        if (event.preRegistration) {
+          await addParticipantToEvent(eventId, user._id.toString(), "PRE_REGISTERED");
+
+          await rest.post(
+            Routes.interactionCallback(interaction.id, interaction.token),
+            {
+              body: {
+                type: 4,
+                data: {
+                  content: `Bonjour ${user.displayName ?? 'utilisateur anonyme'}#${user.discriminator ?? ''} ! Votre demande d'inscription est bien enregistrée et est en attente de la part de l'organisateur du tournoi.`,
+                  flags: 64, // Ephemeral
+                  components: [
+                    new ActionRowBuilder<ButtonBuilder>().addComponents(
+                      new ButtonBuilder()
+                        .setLabel("Me désinscrire")
+                        .setCustomId(`event-unregister-${event.id}`)
+                        .setStyle(ButtonStyle.Danger),
+                    ),
+                  ],
+                },
+              },
+            },
+          );
+          return NextResponse.json({success: true}, {status: 200});
+        } else {
+          await addParticipantToEvent(eventId, user._id.toString(), "REGISTERED");
+
+          await rest.post(
+            Routes.interactionCallback(interaction.id, interaction.token),
+            {
+              body: {
+                type: 4,
+                data: {
+                  content: `Bonjour ${user.displayName ?? 'utilisateur anonyme'}#${user.discriminator ?? ''} ! Vous êtes désormais enregistré pour cet évènement.`,
+                  flags: 64, // Ephemeral
+                  components: [
+                    new ActionRowBuilder<ButtonBuilder>().addComponents(
+                      new ButtonBuilder()
+                        .setLabel("Me désinscrire")
+                        .setCustomId(`event-unregister-${event.id}`)
+                        .setStyle(ButtonStyle.Danger),
+                    ),
+                  ],
+                },
+              },
+            },
+          );
+          return NextResponse.json({success: true}, {status: 200});
+        }
+      } else {
+        await rest.post(
+          Routes.interactionCallback(interaction.id, interaction.token),
+          {
+            body: {
+              type: 4,
+              data: {
+                content: `Bonjour ${user.displayName ?? 'utilisateur anonyme'}#${user.discriminator ?? ''} ! Cet évènement ne semble pas accepter pas les inscriptions (pour les évènements privés, contactez plutôt l'organisateur afin de recevoir un code d'invitation).`,
+                flags: 64, // Ephemeral
+              },
+            },
+          },
+        );
+        return NextResponse.json({success: true}, {status: 200});
+      }
+    }
   } else {
     await rest.post(
       Routes.interactionCallback(interaction.id, interaction.token),
@@ -285,8 +400,6 @@ async function handleEventsCommand(interaction: APIChatInputApplicationCommandIn
       );
       return NextResponse.json({success: true}, {status: 200});
     }
-
-    console.log(event);
 
     await rest.patch(
       Routes.webhookMessage(
