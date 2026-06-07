@@ -9,11 +9,12 @@ import {NextResponse} from "next/server";
 import crypto from "node:crypto";
 import db from "@/lib/mongodb";
 import {BoosterCard} from "@/lib/types/booster";
-import {EmbedBuilder} from "@discordjs/builders";
+import {ActionRowBuilder, ButtonBuilder, EmbedBuilder} from "@discordjs/builders";
 import { getErratasByCardId } from "@/lib/db/erratas";
 import { Game } from "@/lib/types/Game";
 import {getEventById} from "@/lib/db/events";
 import {DateTime} from "luxon";
+import {ButtonStyle} from "discord-api-types/v8";
 
 const agentId = "yGypfIpDEb";
 const aiAllowedDiscordIds = JSON.parse(
@@ -179,17 +180,17 @@ async function handleEventsCommand(interaction: APIChatInputApplicationCommandIn
                 {
                   inline: true,
                   name: "Début",
-                  value: DateTime.fromISO(event.startDateTime).setLocale('fr').toLocaleString(DateTime.DATETIME_FULL),
+                  value: DateTime.fromISO(event.startDateTime, { zone: "Europe/Paris" }).setLocale('fr').toLocaleString(DateTime.DATETIME_FULL),
                 },
                 {
                   inline: true,
                   name: "Fin",
-                  value: DateTime.fromISO(event.endDateTime).setLocale('fr').toLocaleString(DateTime.DATETIME_FULL),
+                  value: DateTime.fromISO(event.endDateTime, { zone: "Europe/Paris" }).setLocale('fr').toLocaleString(DateTime.DATETIME_FULL),
                 },
                 {
                   inline: true,
                   name: "Participants",
-                  value: event.participants?.length.toString() ?? "Aucun",
+                  value: `${event.participants?.length.toString() ?? "Aucun"}${event.maxParticipants ? `/ ${event.maxParticipants}`: ""}`,
                 },
                 {
                   inline: true,
@@ -198,6 +199,18 @@ async function handleEventsCommand(interaction: APIChatInputApplicationCommandIn
                 },
               ])
               .toJSON(),
+          ],
+          components: [
+            new ActionRowBuilder<ButtonBuilder>().addComponents(
+              new ButtonBuilder()
+                .setLabel("Voir l'évènement")
+                .setURL(event.url ?? `https://joutes.app/events/${event.id}`)
+                .setStyle(ButtonStyle.Link),
+              new ButtonBuilder()
+                .setLabel("S'inscrire")
+                .setCustomId(`${event.id}-registration`)
+                .setStyle(ButtonStyle.Primary),
+            ),
           ],
         },
       },
