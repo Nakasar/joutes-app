@@ -12,6 +12,7 @@ import {BoosterCard} from "@/lib/types/booster";
 import {EmbedBuilder} from "@discordjs/builders";
 import { getErratasByCardId } from "@/lib/db/erratas";
 import { Game } from "@/lib/types/Game";
+import {getEventById} from "@/lib/db/events";
 
 const agentId = "yGypfIpDEb";
 const aiAllowedDiscordIds = JSON.parse(
@@ -65,9 +66,113 @@ async function handleApplicationCommand(
       return handleCardCommand(body);
     case "rules":
       return handleRulesCommand(body);
+    case "events":
+      return handleEventsCommand(body);
     case "policies":
       return handlePoliciesCommand(body);
   }
+}
+
+async function handleEventsCommand(interaction: APIChatInputApplicationCommandInteraction) {
+  await rest.post(
+    Routes.interactionCallback(interaction.id, interaction.token),
+    {
+      body: {
+        type: 4,
+        data: {
+          content: "Je cherche cet évènement...",
+        },
+      },
+    },
+  );
+
+  const link = interaction.data.options?.find(
+    (option: { name: string; type: number }) => option.name === "link" && option.type === 3,
+  ) as { value: string } | undefined;
+  if (!link?.value) {
+    await rest.patch(
+      Routes.webhookMessage(
+        interaction.application_id,
+        interaction.token,
+        "@original",
+      ),
+      {
+        body: {
+          content: "Veuillez indiquer l'ID ou l'URL de l'évènement sur [Joutes](https://joutes.app).",
+        },
+      },
+    );
+    return NextResponse.json({success: true}, {status: 200});
+  }
+
+  const eventId = link.value.split('/').pop();
+  if (!eventId) {
+    await rest.patch(
+      Routes.webhookMessage(
+        interaction.application_id,
+        interaction.token,
+        "@original",
+      ),
+      {
+        body: {
+          content: "L'ID ou l'URL de l'évènement sur [Joutes](https://joutes.app) n'est pas correct.",
+        },
+      },
+    );
+    return NextResponse.json({success: true}, {status: 200});
+  }
+
+  const event = await getEventById(eventId);
+  if (!event || !event.lairId) {
+    await rest.patch(
+      Routes.webhookMessage(
+        interaction.application_id,
+        interaction.token,
+        "@original",
+      ),
+      {
+        body: {
+          content: "L'évènement n'existe pas ou ne vous est pas accessible.",
+        },
+      },
+    );
+    return NextResponse.json({success: true}, {status: 200});
+  }
+
+  console.log(event);
+
+  await rest.patch(
+    Routes.webhookMessage(
+      interaction.application_id,
+      interaction.token,
+      "@original",
+    ),
+    {
+      body: {
+        embeds: [
+          new EmbedBuilder()
+            .setTitle(event.name)
+            .setURL(`https://joutes.app/events/${event.id}`)
+            .setImage("https://www.joutes.app/joutes.png")
+            .setDescription("Description de l'évènement")
+            .addFields([
+              {
+                inline: true,
+                name: "Participants",
+                value: event.participants?.length.toString() ?? "Aucun",
+              },
+              {
+                inline: true,
+                name: "Prix",
+                value: event.price?.toString() ?? "Gratuit/Non précisé",
+              },
+            ])
+            .toJSON(),
+        ],
+      },
+    },
+  );
+  return NextResponse.json({success: true}, {status: 200});
 }
 
 async function handleCardCommand(

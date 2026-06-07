@@ -64,7 +64,17 @@ export async function registerDiscordCommands() {
           .setDescription('Search query')
           .setDescriptionLocalization('fr', 'Votre recherche')
           .setRequired(true)
-      )
+      ),
+    new SlashCommandBuilder()
+      .setName('events')
+      .setDescription("Manage events")
+      .setDescriptionLocalization('fr', 'Gérer les évènements')
+      .addSubcommand(builder =>
+        builder.setName('info')
+          .setDescription("Get event information")
+          .setDescriptionLocalization('fr', 'Afficher les informations')
+          .addStringOption(option => option.setName('link').setDescription('Event ID or URL').setDescriptionLocalization('fr', "ID ou URL d'évènement").setRequired(true))
+      ),
   ];
 
   const rest = new REST().setToken(process.env.DISCORD_TOKEN ?? '');
