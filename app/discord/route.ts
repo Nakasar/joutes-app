@@ -1,6 +1,8 @@
 import {REST} from "@discordjs/rest";
 import {
-  APIChatInputApplicationCommandInteraction,
+  APIChatInputApplicationCommandInteraction, APIMessageComponentButtonInteraction,
+  APIMessageComponentInteraction,
+  ComponentType,
   InteractionType,
   Routes,
 } from "discord-api-types/v10";
@@ -10,11 +12,12 @@ import crypto from "node:crypto";
 import db from "@/lib/mongodb";
 import {BoosterCard} from "@/lib/types/booster";
 import {ActionRowBuilder, ButtonBuilder, EmbedBuilder} from "@discordjs/builders";
-import { getErratasByCardId } from "@/lib/db/erratas";
-import { Game } from "@/lib/types/Game";
+import {getErratasByCardId} from "@/lib/db/erratas";
+import {Game} from "@/lib/types/Game";
 import {getEventById} from "@/lib/db/events";
 import {DateTime} from "luxon";
 import {ButtonStyle} from "discord-api-types/v8";
+import {auth} from "@/lib/auth";
 
 const agentId = "yGypfIpDEb";
 const aiAllowedDiscordIds = JSON.parse(
@@ -52,10 +55,74 @@ export async function POST(req: Request) {
       body as APIChatInputApplicationCommandInteraction,
     );
   } else if (body.type === InteractionType.MessageComponent) {
-
+    return handleComponentInteraction(
+      body as APIMessageComponentInteraction,
+    );
   }
 
   return NextResponse.json({success: true}, {status: 200});
+}
+
+async function handleComponentInteraction(
+  body: APIMessageComponentInteraction,
+) {
+  switch (body.data.component_type) {
+    case ComponentType.Button:
+      return handleComponentButtonInteraction(body as APIMessageComponentButtonInteraction);
+    default:
+      await rest.post(
+        Routes.interactionCallback(body.id, body.token),
+        {
+          body: {
+            type: 4,
+            data: {
+              content: "Commande inconnue.",
+              flags: 64, // Ephemeral
+            },
+          },
+        },
+      );
+      return NextResponse.json({success: true}, {status: 200});
+  }
+}
+
+async function handleComponentButtonInteraction(interaction: APIMessageComponentButtonInteraction) {
+  if (interaction.data.custom_id.startsWith("event-registration-")) {
+    const user = await auth.api.accountInfo({
+      query: {
+        accountId: interaction.user?.id,
+      }
+    });
+    console.log(user);
+
+    await rest.post(
+      Routes.interactionCallback(interaction.id, interaction.token),
+      {
+        body: {
+          type: 4,
+          data: {
+            content: `${user?.user.name}`,
+            flags: 64, // Ephemeral
+          },
+        },
+      },
+    );
+    return NextResponse.json({success: true}, {status: 200});
+  } else {
+    await rest.post(
+      Routes.interactionCallback(interaction.id, interaction.token),
+      {
+        body: {
+          type: 4,
+          data: {
+            content: "Commande inconnue.",
+            flags: 64, // Ephemeral
+          },
+        },
+      },
+    );
+    return NextResponse.json({success: true}, {status: 200});
+  }
 }
 
 async function handleApplicationCommand(
@@ -208,7 +275,7 @@ async function handleEventsCommand(interaction: APIChatInputApplicationCommandIn
                 .setStyle(ButtonStyle.Link),
               new ButtonBuilder()
                 .setLabel("S'inscrire")
-                .setCustomId(`${event.id}-registration`)
+                .setCustomId(`event-registration-${event.id}`)
                 .setStyle(ButtonStyle.Primary),
             ),
           ],
