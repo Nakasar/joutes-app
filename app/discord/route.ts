@@ -90,9 +90,10 @@ async function handleComponentInteraction(
 
 async function handleComponentButtonInteraction(interaction: APIMessageComponentButtonInteraction) {
   if (interaction.data.custom_id.startsWith("event-registration-")) {
-    const user = interaction.user?.id ? await db.collection<{ userId: ObjectId }>('account').findOne({
+    const discordUserId = interaction.user?.id || interaction.member?.user?.id;
+    const user = discordUserId ? await db.collection<{ userId: ObjectId }>('account').findOne({
         providerId: 'discord',
-        accountId: interaction.user?.id,
+        accountId: discordUserId,
       }).then(discordUser => {
         if (discordUser?.userId) {
           return db.collection<{ displayName?: string; discriminator?: string }>('user').findOne({
@@ -116,6 +117,33 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
                   new ButtonBuilder()
                     .setLabel("Lier mon compte Joutes")
                     .setURL(`https://joutes.app/account/security`)
+                    .setStyle(ButtonStyle.Link),
+                ),
+              ],
+            },
+          },
+        },
+      );
+      return NextResponse.json({success: true}, {status: 200});
+    }
+
+    const eventId = interaction.data.custom_id.split('event-registration-')[1];
+    const event = await getEventById(eventId);
+
+    if (!event) {
+      await rest.post(
+        Routes.interactionCallback(interaction.id, interaction.token),
+        {
+          body: {
+            type: 4,
+            data: {
+              content: "Cet évènement n'existe pas ou ne vous est pas accessible.",
+              flags: 64, // Ephemeral
+              components: [
+                new ActionRowBuilder<ButtonBuilder>().addComponents(
+                  new ButtonBuilder()
+                    .setLabel("Voir sur Joutes")
+                    .setURL(`https://joutes.app/events/${eventId}`)
                     .setStyle(ButtonStyle.Link),
                 ),
               ],
