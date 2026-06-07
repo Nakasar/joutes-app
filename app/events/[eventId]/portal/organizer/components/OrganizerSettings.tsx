@@ -31,6 +31,7 @@ import {
 import { useRouter } from "next/navigation";
 import { DateTime } from "luxon";
 import { updateEventDetailsAction } from "@/app/events/actions";
+import { Textarea } from "@/components/ui/textarea";
 
 type OrganizerSettingsProps = {
   event: Event;
@@ -61,6 +62,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
 
   const [eventForm, setEventForm] = useState({
     name: event.name,
+    description: event.description ?? '',
     gameName: event.gameName,
     startDateTime: "",
     endDateTime: "",
@@ -93,6 +95,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
       setEventForm({
         name: event.name,
         gameName: event.gameName,
+        description: event.description ?? "",
         startDateTime: formatDateTimeInput(event.startDateTime),
         endDateTime: formatDateTimeInput(event.endDateTime),
         url: event.url ?? "",
@@ -235,6 +238,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
       const result = await updateEventDetailsAction({
         eventId: event.id,
         name: eventForm.name,
+        description: eventForm.description,
         gameName: eventForm.gameName,
         startDateTime: eventForm.startDateTime,
         endDateTime: eventForm.endDateTime,
@@ -381,6 +385,11 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
                   Valeur actuelle: {event.registeredParticipantsCount ?? 0} inscrit(s)
                 </p>
               </div>
+            </div>
+
+
+            <div className="space-y-2">
+              <Textarea value={eventForm.description} onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}></Textarea>
             </div>
 
             <div className="flex justify-end">

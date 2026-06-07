@@ -7,6 +7,7 @@ export type Event = {
   id: string;
   lairId?: string;
   name: string;
+  description?: string;
   startDateTime: string;
   endDateTime: string;
   gameName: string;

@@ -5,7 +5,21 @@ import { getEventById } from "@/lib/db/events";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Calendar, MapPin, Users, ExternalLink, Euro, Clock, Gamepad2, Info, Lock, CheckCircle, AlertCircle as AlertCircleIcon, Settings } from "lucide-react";
+import {
+  Calendar,
+  MapPin,
+  Users,
+  ExternalLink,
+  Euro,
+  Clock,
+  Gamepad2,
+  Info,
+  Lock,
+  CheckCircle,
+  AlertCircle as AlertCircleIcon,
+  Settings,
+  InfoIcon
+} from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import EventActions from "./EventActions";
@@ -20,6 +34,7 @@ import CancelEventButton from "./CancelEventButton";
 import DeleteEventButton from "./DeleteEventButton";
 import { DateTime } from "luxon";
 import { getEventParticipants } from "./portal/participant-actions";
+import ReactMarkdown from "react-markdown";
 
 type EventPageProps = {
   params: Promise<{
@@ -223,6 +238,20 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                 </CardContent>
               </Card>
             )}
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <InfoIcon className="h-5 w-5" />
+                  Description
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="prose prose-sm dark:prose-invert max-w-none ">
+                  <ReactMarkdown children={event.description} />
+                </div>
+              </CardContent>
+            </Card>
 
             {event.url && (
               <Card>

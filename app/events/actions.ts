@@ -28,6 +28,7 @@ type CreateEventInput = {
 type UpdateEventDetailsInput = {
   eventId: string;
   name: string;
+  description: string;
   startDateTime: string;
   endDateTime: string;
   gameName: string;
@@ -68,6 +69,7 @@ export async function createEventAction(input: CreateEventInput) {
     const event: Event = {
       id: nanoid(12),
       name: input.name,
+      description: '',
       startDateTime: input.startDateTime,
       endDateTime: input.endDateTime,
       gameName: input.gameName,
@@ -148,6 +150,7 @@ export async function updateEventDetailsAction(input: UpdateEventDetailsInput) {
 
     const updated = await updateEvent(input.eventId, {
       name: input.name,
+      description: input.description,
       startDateTime: input.startDateTime,
       endDateTime: input.endDateTime,
       gameName: input.gameName,

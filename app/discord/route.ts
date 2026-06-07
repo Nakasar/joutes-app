@@ -17,8 +17,6 @@ import {Game} from "@/lib/types/Game";
 import {addParticipantToEvent, getEventById, removeParticipantFromEvent} from "@/lib/db/events";
 import {DateTime} from "luxon";
 import {ButtonStyle} from "discord-api-types/v8";
-import {auth, User} from "@/lib/auth";
-import {Account} from "better-auth";
 import {ObjectId} from "mongodb";
 import {RegistrationStatus} from "@/lib/types/Event";
 
@@ -528,7 +526,7 @@ async function handleEventsCommand(interaction: APIChatInputApplicationCommandIn
               .setTitle(event.name)
               .setURL(`https://joutes.app/events/${event.id}`)
               .setImage("https://www.joutes.app/joutes.png")
-              .setDescription("Description de l'évènement")
+              .setDescription(event.description ?? "-")
               .addFields([
                 {
                   inline: true,
@@ -548,7 +546,7 @@ async function handleEventsCommand(interaction: APIChatInputApplicationCommandIn
                 {
                   inline: true,
                   name: "Prix",
-                  value: event.price?.toString() ?? "Gratuit/Non précisé",
+                  value: event.price ? `${event.price.toString()} €` : "Gratuit/Non précisé",
                 },
               ])
               .toJSON(),

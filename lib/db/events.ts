@@ -939,6 +939,7 @@ export async function getEventById(eventId: string): Promise<Event | null> {
     id: event.id,
     lairId: event.lairId,
     name: event.name,
+    description: event.description,
     startDateTime: event.startDateTime,
     endDateTime: event.endDateTime,
     gameName: event.gameName,
