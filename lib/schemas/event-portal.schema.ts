@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // Types de phases de tournoi
-export const phaseTypeSchema = z.enum(['swiss', 'bracket']);
+export const phaseTypeSchema = z.enum(['freeform', 'swiss', 'bracket']);
 
 // Types de match (Best Of)
 export const matchTypeSchema = z.enum(['BO1', 'BO2', 'BO3', 'BO5']);

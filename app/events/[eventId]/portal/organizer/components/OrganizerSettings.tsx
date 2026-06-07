@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition, type FormEvent } from "react";
 import { Event } from "@/lib/types/Event";
-import { EventPortalSettings, TournamentPhase, MatchType } from "@/lib/schemas/event-portal.schema";
+import {EventPortalSettings, TournamentPhase, MatchType, PhaseType} from "@/lib/schemas/event-portal.schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -47,8 +47,8 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
   const [phaseToDelete, setPhaseToDelete] = useState<string | null>(null);
   const [phaseForm, setPhaseForm] = useState({
     name: "",
-    type: "swiss" as "swiss" | "bracket",
-    matchType: "BO1" as "BO1" | "BO2" | "BO3" | "BO5",
+    type: "swiss" as PhaseType,
+    matchType: "BO1" as MatchType,
     rounds: 3,
     topCut: 8,
   });
@@ -457,6 +457,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
                     >
                       <option value="swiss">Rondes suisses</option>
                       <option value="bracket">Élimination directe</option>
+                      <option value="freeform">Format libre</option>
                     </select>
                   </div>
                   <div>
