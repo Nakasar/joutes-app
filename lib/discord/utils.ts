@@ -1,10 +1,10 @@
 import {Event} from "@/lib/types/Event";
 import {ActionRowBuilder, ButtonBuilder, EmbedBuilder} from "@discordjs/builders";
 import {DateTime} from "luxon";
-import {ButtonStyle} from "discord-api-types/v10";
+import {APIEmbedField, ButtonStyle} from "discord-api-types/v10";
 
 export function makeEventDiscordInfoMessage(event: Event) {
-  const fields = [
+  const fields: APIEmbedField[] = [
     {
       inline: true,
       name: "Début",
@@ -31,6 +31,12 @@ export function makeEventDiscordInfoMessage(event: Event) {
       inline: true,
       name: "Jeu",
       value: event.game.name,
+    });
+  }
+  if (event.lair) {
+    fields.push({
+      name: "Lieu",
+      value: event.lair.name,
     });
   }
   return {
