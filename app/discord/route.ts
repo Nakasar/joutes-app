@@ -520,6 +520,7 @@ async function handleEventsCommand(interaction: APIChatInputApplicationCommandIn
       ),
       {
         body: {
+          content: null,
           embeds: [
             new EmbedBuilder()
               .setTitle(event.name)
@@ -640,7 +641,7 @@ async function handleEventsCommand(interaction: APIChatInputApplicationCommandIn
       ),
       {
         body: {
-          content: "",
+          content: null,
           embeds: [
             new EmbedBuilder()
               .setTitle(event.name)
