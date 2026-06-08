@@ -1,7 +1,13 @@
+import type { Metadata } from 'next';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {ArrowLeft, BotIcon, BubblesIcon, Key} from "lucide-react";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+    title: "Joutes - Documentation pour intégrations",
+    description: "Intégration Discord, API et MCP pour agents IA de la plateforme Joutes.",
+};
 
 export default function IntegrationsPage() {
     return (

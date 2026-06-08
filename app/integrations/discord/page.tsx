@@ -15,6 +15,12 @@ import {
 import Link from "next/link";
 import DiscordEventBoard from './discord-event-board.png';
 import Image from "next/image";
+import type {Metadata} from "next";
+
+export const metadata: Metadata = {
+  title: "Joutes - Documentation Discord",
+  description: "Intégrer Joutes avec Discord : gestion de réservation, publications, informations des jeux et règles...",
+};
 
 export default function IntegrationsDiscordPage() {
   return (

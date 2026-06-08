@@ -2,6 +2,12 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import ApiDocsViewer from "./ApiDocsViewer";
+import type {Metadata} from "next";
+
+export const metadata: Metadata = {
+    title: "Joutes - Documentation développeurs et API",
+    description: "Intégrer Joutes dans vos propres applications avec notre API ouverte.",
+};
 
 export default function IntegrationsAPIPage() {
     return (
