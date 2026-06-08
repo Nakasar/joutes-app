@@ -526,7 +526,7 @@ async function handleEventsCommand(interaction: APIChatInputApplicationCommandIn
               .setTitle(event.name)
               .setURL(`https://joutes.app/events/${event.id}`)
               .setImage("https://www.joutes.app/joutes.png")
-              .setDescription(event.description ?? "-")
+              .setDescription(event.description || "-")
               .addFields([
                 {
                   inline: true,
@@ -647,7 +647,7 @@ async function handleEventsCommand(interaction: APIChatInputApplicationCommandIn
               .setTitle(event.name)
               .setURL(`https://joutes.app/events/${event.id}`)
               .setImage("https://www.joutes.app/joutes.png")
-              .setDescription(event.description ?? "-")
+              .setDescription(event.description || "-")
               .addFields([
                 {
                   inline: true,
