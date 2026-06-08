@@ -74,6 +74,13 @@ export async function registerDiscordCommands() {
           .setDescription("Get event information")
           .setDescriptionLocalization('fr', 'Afficher les informations')
           .addStringOption(option => option.setName('link').setDescription('Event ID or URL').setDescriptionLocalization('fr', "ID ou URL d'évènement").setRequired(true))
+      )
+      .addSubcommand(builder =>
+        builder.setName('board')
+          .setNameLocalization('fr', 'tableau')
+          .setDescription("Display an info board automatically updated for an event")
+          .setDescriptionLocalization('fr', "Afficher un tableau d'information mis à jour automatiquement pour un évènement")
+          .addStringOption(option => option.setName('link').setDescription('Event ID or URL').setDescriptionLocalization('fr', "ID ou URL d'évènement").setRequired(true))
       ),
   ];
 

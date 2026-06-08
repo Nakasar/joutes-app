@@ -47,5 +47,7 @@ export type Event = {
     address?: string;
     owners?: string[];
   };
+  discordBoardIds?: { channelId: string; messageId: string }[];
+  boardsNeedsUpdate?: boolean;
 };
 

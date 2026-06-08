@@ -1,6 +1,6 @@
 import {REST} from "@discordjs/rest";
 import {
-  APIChatInputApplicationCommandInteraction, APIMessageComponentButtonInteraction,
+  APIChatInputApplicationCommandInteraction, APIMessage, APIMessageComponentButtonInteraction,
   APIMessageComponentInteraction,
   ComponentType,
   InteractionType,
@@ -91,16 +91,16 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
   if (interaction.data.custom_id.startsWith("event-registration-")) {
     const discordUserId = interaction.user?.id || interaction.member?.user?.id;
     const user = discordUserId ? await db.collection<{ userId: ObjectId }>('account').findOne({
-        providerId: 'discord',
-        accountId: discordUserId,
-      }).then(discordUser => {
-        if (discordUser?.userId) {
-          return db.collection<{ displayName?: string; discriminator?: string }>('user').findOne({
-            _id: discordUser.userId,
-          })
-        } else {
-          return null;
-        }
+      providerId: 'discord',
+      accountId: discordUserId,
+    }).then(discordUser => {
+      if (discordUser?.userId) {
+        return db.collection<{ displayName?: string; discriminator?: string }>('user').findOne({
+          _id: discordUser.userId,
+        })
+      } else {
+        return null;
+      }
     }) : null;
     if (!user) {
       await rest.post(
@@ -429,7 +429,6 @@ async function handleApplicationCommand(
 }
 
 async function handleEventsCommand(interaction: APIChatInputApplicationCommandInteraction) {
-  console.log(interaction.data.options);
   const subCommand = interaction.data.options?.find(o => o.type === 1);
   if (!subCommand) {
     await rest.post(
@@ -531,17 +530,17 @@ async function handleEventsCommand(interaction: APIChatInputApplicationCommandIn
                 {
                   inline: true,
                   name: "Début",
-                  value: DateTime.fromISO(event.startDateTime, { zone: "Europe/Paris" }).setLocale('fr').toLocaleString(DateTime.DATETIME_FULL),
+                  value: DateTime.fromISO(event.startDateTime, {zone: "Europe/Paris"}).setLocale('fr').toLocaleString(DateTime.DATETIME_FULL),
                 },
                 {
                   inline: true,
                   name: "Fin",
-                  value: DateTime.fromISO(event.endDateTime, { zone: "Europe/Paris" }).setLocale('fr').toLocaleString(DateTime.DATETIME_FULL),
+                  value: DateTime.fromISO(event.endDateTime, {zone: "Europe/Paris"}).setLocale('fr').toLocaleString(DateTime.DATETIME_FULL),
                 },
                 {
                   inline: true,
                   name: "Participants",
-                  value: `${event.participants?.length.toString() ?? "Aucun"}${event.maxParticipants ? `/ ${event.maxParticipants}`: ""}`,
+                  value: `${event.participants?.length.toString() ?? "Aucun"}${event.maxParticipants ? `/ ${event.maxParticipants}` : ""}`,
                 },
                 {
                   inline: true,
@@ -566,6 +565,139 @@ async function handleEventsCommand(interaction: APIChatInputApplicationCommandIn
         },
       },
     );
+    return NextResponse.json({success: true}, {status: 200});
+  } else if (subCommand.name === 'board') {
+    await rest.post(
+      Routes.interactionCallback(interaction.id, interaction.token),
+      {
+        body: {
+          type: 4,
+          data: {
+            content: "Je prépare le tableau de cet évènement...",
+          },
+        },
+      },
+    );
+
+    const link = subCommand.options?.find(
+      (option: { name: string; type: number }) => option.name === "link" && option.type === 3,
+    ) as { value: string } | undefined;
+    if (!link?.value) {
+      await rest.patch(
+        Routes.webhookMessage(
+          interaction.application_id,
+          interaction.token,
+          "@original",
+        ),
+        {
+          body: {
+            content: "Veuillez indiquer l'ID ou l'URL de l'évènement sur [Joutes](https://joutes.app).",
+          },
+        },
+      );
+      return NextResponse.json({success: true}, {status: 200});
+    }
+
+    const eventId = link.value.split('/').pop();
+    if (!eventId) {
+      await rest.patch(
+        Routes.webhookMessage(
+          interaction.application_id,
+          interaction.token,
+          "@original",
+        ),
+        {
+          body: {
+            content: "L'ID ou l'URL de l'évènement sur [Joutes](https://joutes.app) n'est pas correct.",
+          },
+        },
+      );
+      return NextResponse.json({success: true}, {status: 200});
+    }
+
+    const event = await getEventById(eventId);
+    if (!event || !event.lairId) {
+      await rest.patch(
+        Routes.webhookMessage(
+          interaction.application_id,
+          interaction.token,
+          "@original",
+        ),
+        {
+          body: {
+            content: "L'évènement n'existe pas ou ne vous est pas accessible.",
+          },
+        },
+      );
+      return NextResponse.json({success: true}, {status: 200});
+    }
+
+    const boardMessage: APIMessage = (await rest.patch(
+      Routes.webhookMessage(
+        interaction.application_id,
+        interaction.token,
+        "@original",
+      ),
+      {
+        body: {
+          content: "",
+          embeds: [
+            new EmbedBuilder()
+              .setTitle(event.name)
+              .setURL(`https://joutes.app/events/${event.id}`)
+              .setImage("https://www.joutes.app/joutes.png")
+              .setDescription(event.description ?? "-")
+              .addFields([
+                {
+                  inline: true,
+                  name: "Début",
+                  value: DateTime.fromISO(event.startDateTime, {zone: "Europe/Paris"}).setLocale('fr').toLocaleString(DateTime.DATETIME_FULL),
+                },
+                {
+                  inline: true,
+                  name: "Fin",
+                  value: DateTime.fromISO(event.endDateTime, {zone: "Europe/Paris"}).setLocale('fr').toLocaleString(DateTime.DATETIME_FULL),
+                },
+                {
+                  inline: true,
+                  name: "Participants",
+                  value: `${event.participants?.length.toString() ?? "Aucun"}${event.maxParticipants ? `/ ${event.maxParticipants}` : ""}`,
+                },
+                {
+                  inline: true,
+                  name: "Prix",
+                  value: event.price ? `${event.price.toString()} €` : "Gratuit/Non précisé",
+                },
+              ])
+              .toJSON(),
+          ],
+          components: [
+            new ActionRowBuilder<ButtonBuilder>().addComponents(
+              new ButtonBuilder()
+                .setLabel("Voir l'évènement")
+                .setURL(event.url ?? `https://joutes.app/events/${event.id}`)
+                .setStyle(ButtonStyle.Link),
+              new ButtonBuilder()
+                .setLabel("S'inscrire")
+                .setCustomId(`event-registration-${event.id}`)
+                .setStyle(ButtonStyle.Primary),
+            ),
+          ],
+        },
+      },
+    )) as APIMessage;
+
+    // @TODO: Allow multiple boards messages. Currently max one per event.
+    await db.collection("events").updateOne({
+      id: event.id,
+    }, {
+      $set: {
+        discordBoards: {
+          channelId: boardMessage.channel_id,
+          messageId: boardMessage.id,
+        },
+      },
+    });
     return NextResponse.json({success: true}, {status: 200});
   } else {
     await rest.post(
