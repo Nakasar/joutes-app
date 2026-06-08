@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, BotIcon, Key } from "lucide-react";
+import {ArrowLeft, BotIcon, BubblesIcon, Key} from "lucide-react";
 import Link from "next/link";
 
 export default function IntegrationsPage() {
@@ -23,6 +23,28 @@ export default function IntegrationsPage() {
                             </p>
                         </div>
                     </div>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <BubblesIcon className="h-5 w-5" />
+                                Discord
+                            </CardTitle>
+                            <CardDescription>
+                                Installez et utilisez notre bot Discord!
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="mb-4">
+                                Le Joutes Bot vous permet de créer et gérer vos évènements, de suivre les inscriptions et de communiquer rapidement avec les joueurs inscrits.
+                            </p>
+                            <Button asChild variant="outline">
+                                <Link href="/integrations/discord">
+                                    Découvrir les fonctionnalités
+                                </Link>
+                            </Button>
+                        </CardContent>
+                    </Card>
 
                     {/* Section API documentation */}
                     <Card>

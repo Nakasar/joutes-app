@@ -10,9 +10,10 @@ const urls = [
   { url: 'https://www.joutes.app/games', lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
   { url: 'https://www.joutes.app/lairs', lastModified: new Date(), changeFrequency: 'daily', priority: 0.5 },
   { url: 'https://www.joutes.app/events', lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
-  { url: 'https://www.joutes.app/integrations', lastModified: new Date(), changeFrequency: 'monthly', priority: 0.2 },
-  { url: 'https://www.joutes.app/integrations/mcp', lastModified: new Date(), changeFrequency: 'monthly', priority: 0.2 },
-  { url: 'https://www.joutes.app/integrations/api', lastModified: new Date(), changeFrequency: 'monthly', priority: 0.2 },
+  { url: 'https://www.joutes.app/integrations', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.2 },
+  { url: 'https://www.joutes.app/integrations/mcp', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.2 },
+  { url: 'https://www.joutes.app/integrations/api', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.2 },
+  { url: 'https://www.joutes.app/integrations/discord', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.2 },
   { url: 'https://tools.joutes.app', lastModified: new Date(), changeFrequency: 'daily', priority: 0.4 },
 ];
 
