@@ -39,16 +39,25 @@ export function makeEventDiscordInfoMessage(event: Event) {
       value: event.lair.name,
     });
   }
+
+  const embed = new EmbedBuilder()
+    .setTitle(event.name)
+    .setURL(`https://joutes.app/events/${event.id}`)
+    .setImage(event?.game?.banner || "https://www.joutes.app/joutes.png")
+    .setDescription(event.description || "-")
+    .addFields(fields);
+
+  if (event.lair) {
+    embed.setAuthor({
+      name: event.lair.name,
+      url: `https://joutes.app/lairs/${event.lairId}`,
+    });
+  }
+
   return {
     content: null,
     embeds: [
-      new EmbedBuilder()
-        .setTitle(event.name)
-        .setURL(`https://joutes.app/events/${event.id}`)
-        .setImage(event?.game?.banner || "https://www.joutes.app/joutes.png")
-        .setDescription(event.description || "-")
-        .addFields(fields)
-        .toJSON(),
+      embed.toJSON(),
     ],
     components: [
       new ActionRowBuilder<ButtonBuilder>().addComponents(
