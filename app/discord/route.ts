@@ -693,10 +693,12 @@ async function handleEventsCommand(interaction: APIChatInputApplicationCommandIn
       id: event.id,
     }, {
       $set: {
-        discordBoards: {
-          channelId: boardMessage.channel_id,
-          messageId: boardMessage.id,
-        },
+        discordBoards: [
+          {
+            channelId: boardMessage.channel_id,
+            messageId: boardMessage.id,
+          }
+        ],
       },
     });
     return NextResponse.json({success: true}, {status: 200});
