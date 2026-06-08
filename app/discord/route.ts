@@ -14,7 +14,7 @@ import {BoosterCard} from "@/lib/types/booster";
 import {ActionRowBuilder, ButtonBuilder, EmbedBuilder} from "@discordjs/builders";
 import {getErratasByCardId} from "@/lib/db/erratas";
 import {Game} from "@/lib/types/Game";
-import {addParticipantToEvent, getEventById, removeParticipantFromEvent} from "@/lib/db/events";
+import {addParticipantToEvent, EventDocument, getEventById, removeParticipantFromEvent} from "@/lib/db/events";
 import {DateTime} from "luxon";
 import {ButtonStyle} from "discord-api-types/v8";
 import {ObjectId} from "mongodb";
@@ -689,7 +689,7 @@ async function handleEventsCommand(interaction: APIChatInputApplicationCommandIn
     )) as APIMessage;
 
     // @TODO: Allow multiple boards messages. Currently max one per event.
-    await db.collection("events").updateOne({
+    await db.collection<EventDocument>("events").updateOne({
       id: event.id,
     }, {
       $set: {

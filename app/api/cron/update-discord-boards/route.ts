@@ -18,7 +18,7 @@ export async function GET(req: Request) {
 
   try {
     const eventsToUpdateCursor = db.collection<EventDocument>('events').find({
-      discordBoardIds: { $exists: true },
+      discordBoards: { $exists: true },
       boardsNeedsUpdate: true,
     });
 
@@ -27,7 +27,7 @@ export async function GET(req: Request) {
       if (event) {
         console.log(`Updating event ${event.id} (${event.name})...`);
 
-        const board = event?.discordBoardIds?.[0];
+        const board = event?.discordBoards?.[0];
         if (board) {
           console.log(`Updating board ${board.messageId} (${board.channelId})...`);
 
