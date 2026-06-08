@@ -5,6 +5,7 @@ import {
   ComponentType,
   InteractionType,
   Routes,
+  ButtonStyle,
 } from "discord-api-types/v10";
 import {verify} from "discord-verify/node";
 import {NextResponse} from "next/server";
@@ -16,9 +17,10 @@ import {getErratasByCardId} from "@/lib/db/erratas";
 import {Game} from "@/lib/types/Game";
 import {addParticipantToEvent, EventDocument, getEventById, removeParticipantFromEvent} from "@/lib/db/events";
 import {DateTime} from "luxon";
-import {ButtonStyle} from "discord-api-types/v8";
 import {ObjectId} from "mongodb";
 import {RegistrationStatus} from "@/lib/types/Event";
+import {makeEventDiscordInfoMessage} from "@/lib/discord/utils";
+import {GameDocument} from "@/lib/db/games";
 
 const agentId = "yGypfIpDEb";
 const aiAllowedDiscordIds = JSON.parse(
@@ -512,6 +514,18 @@ async function handleEventsCommand(interaction: APIChatInputApplicationCommandIn
       return NextResponse.json({success: true}, {status: 200});
     }
 
+    const game = (event.gameName ? await db.collection<Pick<GameDocument, "_id" | "name" | "icon" | "banner" | "type">>('games').findOne({
+      name: event.gameName,
+    }, {
+      projection: {
+        _id: 1,
+        name: 1,
+        icon: 1,
+        banner: 1,
+        type: 1,
+      }
+    }) : undefined) || undefined;
+
     await rest.patch(
       Routes.webhookMessage(
         interaction.application_id,
@@ -519,51 +533,10 @@ async function handleEventsCommand(interaction: APIChatInputApplicationCommandIn
         "@original",
       ),
       {
-        body: {
-          content: null,
-          embeds: [
-            new EmbedBuilder()
-              .setTitle(event.name)
-              .setURL(`https://joutes.app/events/${event.id}`)
-              .setImage("https://www.joutes.app/joutes.png")
-              .setDescription(event.description || "-")
-              .addFields([
-                {
-                  inline: true,
-                  name: "Début",
-                  value: DateTime.fromISO(event.startDateTime, {zone: "Europe/Paris"}).setLocale('fr').toLocaleString(DateTime.DATETIME_FULL),
-                },
-                {
-                  inline: true,
-                  name: "Fin",
-                  value: DateTime.fromISO(event.endDateTime, {zone: "Europe/Paris"}).setLocale('fr').toLocaleString(DateTime.DATETIME_FULL),
-                },
-                {
-                  inline: true,
-                  name: "Participants",
-                  value: `${event.participants?.length.toString() ?? "Aucun"}${event.maxParticipants ? `/ ${event.maxParticipants}` : ""}`,
-                },
-                {
-                  inline: true,
-                  name: "Prix",
-                  value: event.price ? `${event.price.toString()} €` : "Gratuit/Non précisé",
-                },
-              ])
-              .toJSON(),
-          ],
-          components: [
-            new ActionRowBuilder<ButtonBuilder>().addComponents(
-              new ButtonBuilder()
-                .setLabel("Voir l'évènement")
-                .setURL(event.url ?? `https://joutes.app/events/${event.id}`)
-                .setStyle(ButtonStyle.Link),
-              new ButtonBuilder()
-                .setLabel("S'inscrire")
-                .setCustomId(`event-registration-${event.id}`)
-                .setStyle(ButtonStyle.Primary),
-            ),
-          ],
-        },
+        body: makeEventDiscordInfoMessage({
+          ...event,
+          game,
+        }),
       },
     );
     return NextResponse.json({success: true}, {status: 200});

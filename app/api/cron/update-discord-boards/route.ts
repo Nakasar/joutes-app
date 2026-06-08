@@ -1,11 +1,10 @@
-import { NextResponse } from 'next/server';
+import {NextResponse} from 'next/server';
 import db from "@/lib/mongodb";
 import {EventDocument} from "@/lib/db/events";
 import {REST} from "@discordjs/rest";
 import {Routes} from "discord-api-types/v10";
-import {ActionRowBuilder, ButtonBuilder, EmbedBuilder} from "@discordjs/builders";
-import {DateTime} from "luxon";
-import {ButtonStyle} from "discord-api-types/v8";
+import {makeEventDiscordInfoMessage} from "@/lib/discord/utils";
+import {GameDocument} from "@/lib/db/games";
 
 const rest = new REST({version: "10"}).setToken(
   process.env.DISCORD_TOKEN ?? "",
@@ -13,12 +12,12 @@ const rest = new REST({version: "10"}).setToken(
 
 export async function GET(req: Request) {
   if (req.headers.get('Authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({error: 'Unauthorized'}, {status: 401});
   }
 
   try {
     const eventsToUpdateCursor = db.collection<EventDocument>('events').find({
-      discordBoards: { $exists: true },
+      discordBoards: {$exists: true},
       boardsNeedsUpdate: true,
     });
 
@@ -31,55 +30,23 @@ export async function GET(req: Request) {
         if (board) {
           console.log(`Updating board ${board.messageId} (${board.channelId})...`);
 
+          const game = (event.gameName ? await db.collection<Pick<GameDocument, "_id" | "name" | "icon" | "banner" | "type">>('games').findOne({
+            name: event.gameName,
+          }, {
+            projection: {
+              _id: 1,
+              name: 1,
+              icon: 1,
+              banner: 1,
+              type: 1,
+            }
+          }) : undefined) || undefined;
+
           await rest.patch(Routes.channelMessage(
             board.channelId,
             board.messageId,
           ), {
-            body: {
-              content: "",
-              embeds: [
-                new EmbedBuilder()
-                  .setTitle(event.name)
-                  .setURL(`https://joutes.app/events/${event.id}`)
-                  .setImage("https://www.joutes.app/joutes.png")
-                  .setDescription(event.description ?? "-")
-                  .addFields([
-                    {
-                      inline: true,
-                      name: "Début",
-                      value: DateTime.fromISO(event.startDateTime, {zone: "Europe/Paris"}).setLocale('fr').toLocaleString(DateTime.DATETIME_FULL),
-                    },
-                    {
-                      inline: true,
-                      name: "Fin",
-                      value: DateTime.fromISO(event.endDateTime, {zone: "Europe/Paris"}).setLocale('fr').toLocaleString(DateTime.DATETIME_FULL),
-                    },
-                    {
-                      inline: true,
-                      name: "Participants",
-                      value: `${event.participants?.length.toString() ?? "Aucun"}${event.maxParticipants ? `/ ${event.maxParticipants}` : ""}`,
-                    },
-                    {
-                      inline: true,
-                      name: "Prix",
-                      value: event.price ? `${event.price.toString()} €` : "Gratuit/Non précisé",
-                    },
-                  ])
-                  .toJSON(),
-              ],
-              components: [
-                new ActionRowBuilder<ButtonBuilder>().addComponents(
-                  new ButtonBuilder()
-                    .setLabel("Voir l'évènement")
-                    .setURL(event.url ?? `https://joutes.app/events/${event.id}`)
-                    .setStyle(ButtonStyle.Link),
-                  new ButtonBuilder()
-                    .setLabel("S'inscrire")
-                    .setCustomId(`event-registration-${event.id}`)
-                    .setStyle(ButtonStyle.Primary),
-                ),
-              ],
-            }
+            body: makeEventDiscordInfoMessage({...event, game}),
           }).catch(err => {
             console.warn('Failed to update board message (might have been deleted)');
           });
@@ -87,7 +54,7 @@ export async function GET(req: Request) {
 
         await db.collection<EventDocument>('events').updateOne({
           _id: event._id,
-        }, { $set: { boardsNeedsUpdate: false } });
+        }, {$set: {boardsNeedsUpdate: false}});
       }
     }
 
@@ -99,6 +66,6 @@ export async function GET(req: Request) {
     return NextResponse.json({
       ok: false,
       error: 'Erreur lors de la mise à jour des boards discord des événements.'
-    }, { status: 500 });
+    }, {status: 500});
   }
 }
