@@ -85,7 +85,7 @@ export default async function LairDetailPage({
   // Sinon, récupérer uniquement les événements du mois actuel
   const upcomingEvents = await getEventsByLairId(lairId, {
     year: new Date().getFullYear(),
-    month: calendarMode === 'AGENDA' ? undefined : new Date().getMonth() + 1,
+    month: (calendarMode === 'AGENDA' || calendarMode === "CONFERENCE") ? undefined : new Date().getMonth() + 1,
     userId: session?.user?.id,
     gameId: "all", // Afficher tous les jeux sur la page d'un lair
   });
