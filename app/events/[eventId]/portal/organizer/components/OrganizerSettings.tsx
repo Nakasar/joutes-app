@@ -2,7 +2,13 @@
 
 import { useEffect, useState, useTransition, type FormEvent } from "react";
 import { Event } from "@/lib/types/Event";
-import {EventPortalSettings, TournamentPhase, MatchType, PhaseType} from "@/lib/schemas/event-portal.schema";
+import {
+  EventPortalSettings,
+  TournamentPhase,
+  MatchType,
+  PhaseType,
+  phaseTypeText
+} from "@/lib/schemas/event-portal.schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -124,7 +130,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
         name: phaseForm.name,
         type: phaseForm.type,
         matchType: phaseForm.matchType,
-        rounds: phaseForm.type === "swiss" ? phaseForm.rounds : undefined,
+        rounds: (phaseForm.type === "swiss" || phaseForm.type === "freeform") ? phaseForm.rounds : undefined,
         topCut: phaseForm.type === "bracket" ? phaseForm.topCut : undefined,
         order: settings ? settings.phases.length : 0,
       });
@@ -473,7 +479,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
                       <option value="BO5">BO5</option>
                     </select>
                   </div>
-                  {phaseForm.type === "swiss" && (
+                  {(phaseForm.type === "swiss" || phaseForm.type === "freeform") && (
                     <div>
                       <label className="text-sm font-medium">Nombre de rondes</label>
                       <Input
@@ -538,6 +544,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
                             >
                               <option value="swiss">Rondes suisses</option>
                               <option value="bracket">Élimination directe</option>
+                              <option value="freeform">Format libre</option>
                             </select>
                             {phase.status !== 'not-started' && (
                               <p className="text-xs text-amber-600 mt-1">
@@ -629,7 +636,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
                             </div>
                           </div>
                           <div className="text-sm text-muted-foreground mb-2">
-                            Type: {phase.type === "swiss" ? "Rondes suisses" : "Élimination directe"} • 
+                            Type: {phaseTypeText[phase.type]} •
                             Format: {phase.matchType}
                             {phase.rounds && ` • ${phase.rounds} rondes`}
                           </div>

@@ -4,7 +4,14 @@ import { useState, useTransition, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Event } from "@/lib/types/Event";
-import { EventPortalSettings, TournamentPhase, MatchResult, Announcement, MatchType } from "@/lib/schemas/event-portal.schema";
+import {
+  EventPortalSettings,
+  TournamentPhase,
+  MatchResult,
+  Announcement,
+  MatchType,
+  phaseTypeText
+} from "@/lib/schemas/event-portal.schema";
 import { EventParticipant } from "./organizer/components/OrganizerContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -701,7 +708,7 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
                             </div>
                           </div>
                           <div className="text-sm text-muted-foreground mb-2">
-                            Type: {phase.type === "swiss" ? "Rondes suisses" : "Élimination directe"} • 
+                            Type: {phaseTypeText[phase.type]} •
                             Format: {phase.matchType}
                             {phase.rounds && ` • ${phase.rounds} rondes`}
                           </div>

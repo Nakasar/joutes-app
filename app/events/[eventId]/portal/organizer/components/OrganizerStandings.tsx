@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Event } from "@/lib/types/Event";
-import { EventPortalSettings, MatchResult } from "@/lib/schemas/event-portal.schema";
+import {EventPortalSettings, MatchResult, phaseTypeText} from "@/lib/schemas/event-portal.schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,7 +53,7 @@ export default function OrganizerStandings({ event, settings, standings, partici
         <CardHeader>
           <CardTitle>Classement - {currentPhase.name}</CardTitle>
           <CardDescription>
-            {currentPhase.type === "swiss" ? "Rondes suisses" : "Élimination directe"}
+            {phaseTypeText[currentPhase.type]}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -71,7 +71,7 @@ export default function OrganizerStandings({ event, settings, standings, partici
         <CardHeader>
           <CardTitle>Classement - {currentPhase.name}</CardTitle>
           <CardDescription>
-            {currentPhase.type === "swiss" ? "Rondes suisses" : "Élimination directe"} • {standings.length} participants
+            {phaseTypeText[currentPhase.type]} • {standings.length} participants
           </CardDescription>
         </CardHeader>
         <CardContent>

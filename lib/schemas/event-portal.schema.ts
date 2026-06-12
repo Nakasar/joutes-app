@@ -141,6 +141,12 @@ export const addParticipantSchema = z.discriminatedUnion('type', [
   }),
 ]);
 
+export const phaseTypeText: Record<PhaseType, string> = {
+  "freeform": "Format libre",
+  "swiss": "Rondes suisses",
+  "bracket": "Elimination directe",
+};
+
 // Types TypeScript
 export type PhaseType = z.infer<typeof phaseTypeSchema>;
 export type MatchType = z.infer<typeof matchTypeSchema>;
