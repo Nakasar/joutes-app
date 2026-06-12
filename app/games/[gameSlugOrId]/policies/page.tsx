@@ -1,23 +1,25 @@
-import { auth } from "@/lib/auth";
-import { getAllPolicies, countAllPolicies } from "@/lib/db/policies";
+import {auth} from "@/lib/auth";
+import {getAllPolicies, countAllPolicies} from "@/lib/db/policies";
 import db from "@/lib/mongodb";
-import { Game } from "@/lib/types/Game";
-import { headers } from "next/headers";
-import { notFound } from "next/navigation";
-import { Metadata } from "next/types";
+import {Game} from "@/lib/types/Game";
+import {headers} from "next/headers";
+import {notFound} from "next/navigation";
+import {Metadata} from "next/types";
 import PoliciesClientView from "./PoliciesClientView";
-import { Button } from "@/components/ui/button";
+import {Button} from "@/components/ui/button";
 import Link from "next/link";
+import {hasPermission} from "@/lib/db/permissions";
+import AddPolicyDialog from "@/app/games/[gameSlugOrId]/policies/AddPolicyDialog";
 
 const PAGE_SIZE = 20;
 
 export async function generateMetadata({
-  params
-}: {
+                                         params
+                                       }: {
   params: Promise<{ gameSlugOrId: string }>
 }): Promise<Metadata> {
-  const { gameSlugOrId } = await params;
-  const game = await db.collection<Game>("games").findOne({ slug: gameSlugOrId });
+  const {gameSlugOrId} = await params;
+  const game = await db.collection<Game>("games").findOne({slug: gameSlugOrId});
 
   if (!game) {
     return {
@@ -37,42 +39,44 @@ export async function generateMetadata({
 }
 
 export default async function GamePoliciesPage({
-  params,
-  searchParams,
-}: {
+                                                 params,
+                                                 searchParams,
+                                               }: {
   params: Promise<{ gameSlugOrId: string }>;
   searchParams: Promise<{ page?: string }>;
 }) {
-  const { gameSlugOrId } = await params;
+  const {gameSlugOrId} = await params;
 
-  const game = await db.collection<Game>("games").findOne({ slug: gameSlugOrId });
-  if (!game) notFound();
+  const game = await db.collection<Game>("games").findOne({slug: gameSlugOrId});
+  if (!game || !game.slug) notFound();
 
   const gameId = game._id.toString();
 
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await auth.api.getSession({headers: await headers()});
   const userId = session?.user?.id;
 
-  const { page: pageParam } = await searchParams;
+  const {page: pageParam} = await searchParams;
   const currentPage = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
   const offset = (currentPage - 1) * PAGE_SIZE;
 
-  const [policies, totalCount] = await Promise.all([
-    getAllPolicies({ gameId, userId, offset, limit: PAGE_SIZE }),
-    countAllPolicies({ gameId }),
+  const [policies, totalCount, userCanUpdatePolicies, userCanVotePolicies] = await Promise.all([
+    getAllPolicies({gameId, userId, offset, limit: PAGE_SIZE}),
+    countAllPolicies({gameId}),
+    hasPermission("policies:update"),
+    hasPermission("policies:vote"),
   ]);
-  const [userCanUpdatePolicies, userCanVotePolicies] = [false, false];
 
   return (
     <div className="container mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Rule Policies — {game.name}</h1>
+        {userCanUpdatePolicies && <AddPolicyDialog gameId={gameId} gameSlug={game.slug}/>}
       </div>
       <Button asChild>
-            <Link href={`/games/${game.slug}`} className="text-blue-600 hover:underline">
-                ← Retour au portail du jeu
-            </Link>
-        </Button>
+        <Link href={`/games/${game.slug}`} className="text-blue-600 hover:underline">
+          ← Retour au portail du jeu
+        </Link>
+      </Button>
 
       <PoliciesClientView
         initialPolicies={policies}

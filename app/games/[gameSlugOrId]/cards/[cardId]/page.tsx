@@ -9,6 +9,13 @@ import { Metadata } from "next/types";
 import { getErratasByCardId } from "@/lib/db/erratas";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import BanCardButton from "@/app/games/[gameSlugOrId]/cards/[cardId]/BanCardButton";
+import EditErrataDialog from "@/components/EditErrataDialog";
+import DeleteErrataButton from "@/components/DeleteErrataButton";
+import ErrataVoteButtons from "@/components/ErrataVoteButtons";
+import {isAdmin} from "@/lib/config/admins";
+import {hasPermission} from "@/lib/db/permissions";
+import AddErrataButton from "@/app/games/[gameSlugOrId]/cards/[cardId]/AddErrataButton";
 
 export async function generateMetadata({
   params,
@@ -70,6 +77,10 @@ export default async function RiftboundCardDetailPage({
   // Récupérer les erratas pour cette carte (avec votes)
   const erratas = await getErratasByCardId(cardId, userId);
 
+  // Vérifier si l'utilisateur est admin
+  const userIsAdmin = isAdmin(session?.user?.email);
+  const userCanVoteErratas = await hasPermission('erratas:vote');
+
   return (
     <div className="container mx-auto p-6">
       <Button asChild>
@@ -107,6 +118,9 @@ export default async function RiftboundCardDetailPage({
             <p className="text-muted-foreground">
               {card.setCode} #{card.collectorNumber}
             </p>
+            {userIsAdmin && (
+              <BanCardButton cardId={cardId} banned={card.banned} />
+            )}
           </div>
 
           {userId && (
@@ -128,6 +142,7 @@ export default async function RiftboundCardDetailPage({
               <h2 className="text-2xl font-semibold">
                 Erratas & Clarifications
               </h2>
+              {userIsAdmin && <AddErrataButton cardId={cardId} />}
             </div>
 
             {erratas.length === 0 ? (
@@ -166,6 +181,12 @@ export default async function RiftboundCardDetailPage({
                           })}
                         </span>
                       </div>
+                      {userIsAdmin && (
+                        <div className="flex gap-1">
+                          <EditErrataDialog errata={errata} cardId={cardId} />
+                          <DeleteErrataButton errataId={errata.id} cardId={cardId} />
+                        </div>
+                      )}
                     </div>
                     {errata.deprecatedAt && (
                       <span className="inline-block mb-2 text-xs font-semibold px-2 py-0.5 rounded bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
@@ -200,6 +221,11 @@ export default async function RiftboundCardDetailPage({
                       </div>
                     )}
                     <div className="mt-3 pt-3 border-t">
+                      <ErrataVoteButtons
+                        errataId={errata.id}
+                        votes={errata.votes}
+                        userCanVote={userCanVoteErratas}
+                      />
                     </div>
                   </div>
                 ))}

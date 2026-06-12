@@ -10,6 +10,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
+import PolicyVoteButtons from "@/components/PolicyVoteButtons";
+import EditPolicyDialog from "@/components/EditPolicyDialog";
+import DeletePolicyButton from "@/components/DeletePolicyButton";
 
 export default function PoliciesClientView({
   initialPolicies,
@@ -174,6 +177,8 @@ export default function PoliciesClientView({
                       {/* Actions */}
                       {userCanUpdatePolicies && (
                         <div className="flex gap-1 justify-end mb-3">
+                          <EditPolicyDialog policy={policy} gameSlug={gameSlug} />
+                          <DeletePolicyButton policyId={policy.id} gameSlug={gameSlug} />
                         </div>
                       )}
 
@@ -240,6 +245,13 @@ export default function PoliciesClientView({
                             </span>
                           )}
                         </div>
+
+                        <PolicyVoteButtons
+                          policyId={policy.id}
+                          gameSlug={gameSlug}
+                          votes={policy.votes}
+                          userCanVote={userCanVotePolicies}
+                        />
                       </div>
                     </div>
                   )}
