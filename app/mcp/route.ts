@@ -691,6 +691,7 @@ async function authHandler(req: Request) {
                     };
                 }
             } else {
+                console.log(accessToken);
                 const payload = await serverClient.verifyAccessToken(
                     accessToken, {
                     jwksUrl: "https://www.joutes.app/api/auth/jwks",
