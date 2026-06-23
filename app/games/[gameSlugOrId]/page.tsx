@@ -174,7 +174,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
           <h2 className="text-3xl font-bold text-white">Outils</h2>
           <div className="grid md:grid-cols-2 gap-6 mt-4">
             {game.features?.cards && (
-              <Link href={`/games/${game.id}/cards`} className="group">
+              <Link href={`/games/${game.slug}/cards`} className="group">
                 <div className="bg-gradient-to-br from-red-900/30 to-red-800/20 backdrop-blur-sm rounded-xl border border-red-500/20 p-8 hover:border-red-500/50 transition-all hover:scale-105">
                   <h3 className="text-xl font-bold text-white mb-2">Cartes et ressources</h3>
                   <p className="text-gray-300">Accédez aux cartes, fiches de personnages et autres ressources</p>
