@@ -39,7 +39,7 @@ export default function EventsCalendarClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
-  
+
   const [events, setEvents] = useState<Event[]>(initialEvents ?? []);
   const [isLoading, setIsLoading] = useState(false);
   

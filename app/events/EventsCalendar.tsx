@@ -17,6 +17,7 @@ import EventDetailsModal from "./EventDetailsModal";
 import { Game } from "@/lib/types/Game";
 import { toggleEventFavoriteAction } from "./actions";
 import { updateUserLocation } from "../account/actions";
+import {useTranslations} from "next-intl";
 
 type EventsCalendarProps = {
   events: Event[];
@@ -50,6 +51,8 @@ export default function EventsCalendar({
   isLocationMode = false,
   userLocation,
 }: EventsCalendarProps) {
+  const t = useTranslations('EventsCalendar');
+
   const today = DateTime.now();
   const [internalMonth, setInternalMonth] = useState<number>(today.month);
   const [internalYear, setInternalYear] = useState<number>(today.year);
@@ -211,7 +214,7 @@ export default function EventsCalendar({
       setDialogState({
         open: true,
         type: "error",
-        title: "Format invalide",
+        title: "Coordonnées invalides",
         message: "Utilisez le format: latitude, longitude (ex: 48.8566, 2.3522)"
       });
       return;
@@ -225,7 +228,7 @@ export default function EventsCalendar({
         open: true,
         type: "error",
         title: "Coordonnées invalides",
-        message: "Veuillez entrer des nombres valides."
+        message: "Utilisez le format: latitude, longitude (ex: 48.8566, 2.3522)"
       });
       return;
     }
@@ -562,7 +565,7 @@ export default function EventsCalendar({
                 className="w-full sm:w-auto"
               >
                 <ChevronLeft className="mr-2 h-4 w-4" />
-                Mois précédent
+                {t('filters.previousMonth')}
               </Button>
 
               <div className="text-center">
@@ -576,7 +579,7 @@ export default function EventsCalendar({
                       className="mt-2 text-sm"
                       variant="ghost"
                     >
-                      Revenir au mois actuel
+                      {t('filters.currentMonth')}
                     </Button>
                   )}
               </div>
@@ -585,7 +588,7 @@ export default function EventsCalendar({
                 onClick={goToNextMonth}
                 className="w-full sm:w-auto"
               >
-                Mois suivant
+                {t('filters.nextMonth')}
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
@@ -603,12 +606,12 @@ export default function EventsCalendar({
                     {viewMode === "calendar" ? (
                       <>
                         <List className="mr-2 h-4 w-4" />
-                        Vue liste
+                        {t('views.list')}
                       </>
                     ) : (
                       <>
                         <CalendarDays className="mr-2 h-4 w-4" />
-                        Vue calendrier
+                        {t('views.calendar')}
                       </>
                     )}
                   </Button>
@@ -620,19 +623,19 @@ export default function EventsCalendar({
                       <div className="w-full sm:w-auto min-w-[250px]">
                         <Select value={gameId} onValueChange={handleGameIdChange}>
                           <SelectTrigger>
-                            <SelectValue placeholder="Filtrer par jeu" />
+                            <SelectValue placeholder={t('filters.filterByGame')} />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="followed">
                               <div className="flex items-center gap-2">
                                 <Star className="h-4 w-4" />
-                                Mes jeux suivis
+                                {t('filters.myGames')}
                               </div>
                             </SelectItem>
                             <SelectItem value="all">
                               <div className="flex items-center gap-2">
                                 <Gamepad2 className="h-4 w-4" />
-                                Tous les jeux
+                                {t('filters.allGames')}
                               </div>
                             </SelectItem>
                             {availableGames.length > 0 && (
@@ -666,7 +669,7 @@ export default function EventsCalendar({
                           className="w-full sm:w-auto"
                         >
                           <MapPin className="mr-2 h-4 w-4" />
-                          Mes lieux
+                          {t('filters.myLairs')}
                         </Button>
                       )}
                     </>
@@ -680,7 +683,7 @@ export default function EventsCalendar({
                       className="w-full sm:w-auto"
                     >
                       <Navigation className="mr-2 h-4 w-4" />
-                      Proches de moi
+                      {t('filters.nearMe')}
                     </Button>
                   )}
 
@@ -692,7 +695,7 @@ export default function EventsCalendar({
                       className="w-full sm:w-auto"
                     >
                       <MapPin className="mr-2 h-4 w-4" />
-                      Modifier la localisation
+                      {t('filters.geolocUpdate')}
                     </Button>
                   )}
 
@@ -705,7 +708,7 @@ export default function EventsCalendar({
                     >
                       <Link href="/login">
                         <Filter className="mr-2 h-4 w-4" />
-                        Se connecter pour personnaliser
+                        {t('filters.ctaLoginCustomize')}
                       </Link>
                     </Button>
                   )}
@@ -718,16 +721,16 @@ export default function EventsCalendar({
                       <div className="space-y-4">
                         {userLocation && (
                           <div className="p-3 bg-muted/50 rounded-lg text-sm">
-                            <p className="font-medium mb-1">Localisation enregistrée</p>
+                            <p className="font-medium mb-1">{t('filters.geolocSaved')}</p>
                             <p className="text-muted-foreground">
-                              Votre localisation par défaut sera utilisée : {userLocation.latitude.toFixed(4)}, {userLocation.longitude.toFixed(4)}
+                              {t('filters.geolocDetails')} {userLocation.latitude.toFixed(4)}, {userLocation.longitude.toFixed(4)}
                             </p>
                           </div>
                         )}
                         
                         <div>
                           <label className="block text-sm font-medium mb-2">
-                            Coordonnées GPS
+                            {t('filters.geolocCoordinates')}
                           </label>
                           <div className="flex gap-2">
                             <Input
@@ -744,7 +747,7 @@ export default function EventsCalendar({
                               className="flex-shrink-0"
                             >
                               {isGettingLocation ? (
-                                <>Localisation...</>
+                                <>{t('filters.geolocPending')}</>
                               ) : (
                                 <>
                                   <Navigation className="h-4 w-4" />
@@ -754,15 +757,15 @@ export default function EventsCalendar({
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
                             {userLocation 
-                              ? "Cliquez sur le bouton pour utiliser votre localisation enregistrée ou entrez d&apos;autres coordonnées"
-                              : "Format : latitude, longitude ou cliquez sur le bouton pour obtenir votre position"
+                              ? t('filters.geolocUseSaved')
+                              : t('filters.geolocInputHelp')
                             }
                           </p>
                         </div>
 
                         <div>
                           <label className="block text-sm font-medium mb-2">
-                            Distance maximale
+                            {t('filters.geolocMaxDistance')}
                           </label>
                           <Select value={distance} onValueChange={setDistance}>
                             <SelectTrigger>
@@ -784,7 +787,7 @@ export default function EventsCalendar({
                             className="flex-1"
                           >
                             <Navigation className="mr-2 h-4 w-4" />
-                            Rechercher
+                            {t('filters.geolocSearch')}
                           </Button>
                           
                           {session.data?.user && (
@@ -795,7 +798,7 @@ export default function EventsCalendar({
                               className="flex-1"
                             >
                               <MapPin className="mr-2 h-4 w-4" />
-                              {isSavingLocation ? "Sauvegarde..." : "Sauvegarder sur mon compte"}
+                              {isSavingLocation ? t('filters.geolocSaving') : t('filters.geolocSave')}
                             </Button>
                           )}
                           
@@ -828,7 +831,7 @@ export default function EventsCalendar({
                     key={dayName}
                     className="text-center font-semibold text-muted-foreground py-2"
                   >
-                    {dayName}
+                    {t(`CalendarView.weekDays.${dayName}`)}
                   </div>
                 ))}
               </div>

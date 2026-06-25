@@ -11,7 +11,8 @@
       "Succès": "Achievements",
       "Déconnexion": "Logout",
       "Se connecter": "Login",
-      "Connexion": "Login"
+      "Connexion": "Login",
+      "myAccount": "My Account"
     }
   },
   "Home": {
@@ -21,6 +22,92 @@
   "EventsCalendar": {
     "title": "Event calendar",
     "description": "Discover all the gaming events near you",
-    "createEvent": "Create an Event"
+    "createEvent": "Create an Event",
+    "cta": "Use the \"Near me\" feature to discover events near your location.\nLog in to personalize your experience and follow your favorite places and games.",
+    "ctaFollowLairs": {
+      "title": "Follow lairs",
+      "description": "Discover the shops and gaming spaces near you",
+      "discoverLairs": "Discover the lairs"
+    },
+    "ctaFavoriteGames": {
+      "title": "Favorite Games",
+      "description": "Select the games that interest you to see their events",
+      "manageGames": "Manage my Games"
+    },
+    "noUserError": "Error retrieving your profile.",
+    "geolocNotSupported": {
+      "title": "Geolocation not supported",
+      "message": "Geolocation is not supported by your browser"
+    },
+    "geolocError": {
+      "title": "Geolocation error",
+      "message": "Unable to get your position. Please enter your coordinates manually."
+    },
+    "coordinatesMissingError": {
+      "title": "Missing coordinates",
+      "message": "Please enter GPS coordinates or use automatic location"
+    },
+    "coordinatesInvalidError": {
+      "title": "Invalid coordinates",
+      "message": "Use the format: latitude, longitude (ex: 48.8566, 2.3522)"
+    },
+    "favoriteMissingAuthError": {
+      "title": "Authentication required",
+      "message": "You must be logged in to favorite an event"
+    },
+    "favoriteError": {
+      "title": "Error",
+      "message": "Impossible to modify favorites",
+      "genericError": "An error occurred"
+    },
+    "filters": {
+      "previousMonth": "Previous Month",
+      "currentMonth": "Back to current Month",
+      "nextMonth": "Next Month",
+      "filterByGame": "Filter by Game",
+      "myGames": "My followed games",
+      "allGames": "All games",
+      "myLairs": "My lairs",
+      "nearMe": "Near me",
+      "ctaLoginCustomize": "Log in to customize",
+      "geolocUpdate": "Update location",
+      "geolocSaved": "Saved location",
+      "geolocDetails": "Your default location will be used:",
+      "geolocCoordinates": "GPS Coordinates",
+      "geolocPending": "Locating...",
+      "geolocUseSaved": "Click the button to use your saved location or enter other coordinates",
+      "geolocInputHelp": "Format: latitude, longitude or click the button to get your position",
+      "geolocMaxDistance": "Max distance",
+      "geolocSearch": "Search",
+      "geolocSaving": "Saving...",
+      "geolocSave": "Save to my account"
+    },
+    "views": {
+      "list": "List View",
+      "calendar": "Calendar View"
+    },
+    "CalendarView": {
+      "weekDays": {
+        "Lun": "Mon",
+        "Mar": "Tue",
+        "Mer": "Wed",
+        "Jeu": "Thu",
+        "Ven": "Fri",
+        "Sam": "Sat",
+        "Dim": "Sun"
+      }
+    },
+    "ListView": {}
+  },
+  "Login": {
+    "title": "Login Joutes",
+    "emailAddress": "Email address",
+    "codeSending": "Sending...",
+    "sendCode": "Send code",
+    "resendCode": "Resend code",
+    "codeSent": "A verification code has been sent to <strong>{email}</strong>",
+    "OTP": "Verification code",
+    "verifyPending": "Verifying..",
+    "verifyCode": "Verify code"
   }
 }

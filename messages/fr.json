@@ -11,7 +11,8 @@
       "Succès": "Succès",
       "Déconnexion": "Déconnexion",
       "Se connecter": "Se connecter",
-      "Connexion": "Connexion"
+      "Connexion": "Connexion",
+      "myAccount": "Mon Compte"
     }
   },
   "Home": {
@@ -21,6 +22,92 @@
   "EventsCalendar": {
     "title": "Calendrier des Événements",
     "description": "Découvrez tous les événements de jeux près de chez vous",
-    "createEvent": "Créer un Événement"
+    "createEvent": "Créer un Événement",
+    "cta": "Utilisez la fonction \"Proches de moi\" pour découvrir les événements à proximité de votre position.\nConnectez-vous pour personnaliser votre expérience et suivre vos lieux et jeux favoris.",
+    "ctaFollowLairs": {
+      "title": "Suivez des lieux",
+      "description": "Découvrez les boutiques et espaces de jeu près de chez vous",
+      "discoverLairs": "Découvrir les lieux"
+    },
+    "ctaFavoriteGames": {
+      "title": "Suivez des Jeux",
+      "description": "Sélectionnez les jeux qui vous intéressent pour voir leurs événements",
+      "manageGames": "Gérer mes jeux"
+    },
+    "noUserError": "Erreur lors de la récupération de votre profil.",
+    "geolocNotSupported": {
+      "title": "Géolocalisation non supportée",
+      "message": "La géolocalisation n'est pas supportée par votre navigateur"
+    },
+    "geolocError": {
+      "title": "Erreur de géolocalisation",
+      "message": "Impossible d'obtenir votre position. Veuillez entrer vos coordonnées manuellement."
+    },
+    "coordinatesMissingError": {
+      "title": "Coordonnées manquantes",
+      "message": "Veuillez entrer des coordonnées GPS ou utiliser la localisation automatique"
+    },
+    "coordinatesInvalidError": {
+      "title": "Coordonnées invalides",
+      "message": "Utilisez le format: latitude, longitude (ex: 48.8566, 2.3522)"
+    },
+    "favoriteMissingAuthError": {
+        "title": "Authentification requise",
+        "message": "Vous devez être connecté pour mettre un événement en favori"
+    },
+    "favoriteError": {
+      "title": "Erreur",
+      "message": "Impossible de modifier les favoris",
+      "genericError": "Une erreur est survenue"
+    },
+    "filters": {
+      "previousMonth": "Mois précédent",
+      "currentMonth": "Revenir au moins actuel",
+      "nextMonth": "Mois suivant",
+      "filterByGame": "Filtrer par jeu",
+      "myGames": "Mes jeux suivis",
+      "allGames": "Tous les jeux",
+      "myLairs": "Mes lieux",
+      "nearMe": "Proches de moi",
+      "ctaLoginCustomize": "Se connecter pour personnaliser",
+      "geolocUpdate": "Modifier la localisation",
+      "geolocSaved": "Localisation enregistrée",
+      "geolocDetails": "Votre localisation par défaut sera utilisée :",
+      "geolocCoordinates": "Cordonnées GPS",
+      "geolocPending": "Localisation...",
+      "geolocUseSaved": "Cliquez sur le bouton pour utiliser votre localisation enregistrée ou entrez d'autres coordonnées",
+      "geolocInputHelp": "Format : latitude, longitude ou cliquez sur le bouton pour obtenir votre position",
+      "geolocMaxDistance": "Distance maximale",
+      "geolocSearch": "Rechercher",
+      "geolocSaving": "Sauvegarde...",
+      "geolocSave": "Sauvegarder sur mon compte"
+    },
+    "views": {
+      "list": "Vue liste",
+      "calendar": "Vue calendrier"
+    },
+    "CalendarView": {
+      "weekDays": {
+        "Lun": "Lun",
+        "Mar": "Mar",
+        "Mer": "Mer",
+        "Jeu": "Jeu",
+        "Ven": "Ven",
+        "Sam": "Sam",
+        "Dim": "Dim"
+      }
+    },
+    "ListView": {}
+  },
+  "Login": {
+    "title": "Connexion à Joutes",
+    "emailAddress": "Adresse e-mail",
+    "codeSending": "Envoi en cours...",
+    "sendCode": "Recevoir le code",
+    "resendCode": "Renvoyer un code",
+    "codeSent": "Un code de vérification a été envoyé à <strong>{email}</strong>",
+    "OTP": "Code de vérification",
+    "verifyPending": "Vérification...",
+    "verifyCode": "Vérifier le code"
   }
 }

@@ -61,8 +61,7 @@ export default async function EventsCalendarWrapper({
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              Utilisez la fonction &quot;Proches de moi&quot; pour découvrir les événements à proximité de votre position.
-              Connectez-vous pour personnaliser votre expérience et suivre vos lieux et jeux favoris.
+              {t('cta')}
             </AlertDescription>
           </Alert>
 
@@ -85,11 +84,11 @@ export default async function EventsCalendarWrapper({
   if (!user) {
     return (
       <div className="container mx-auto p-6 max-w-4xl">
-        <h1 className="text-3xl font-bold mb-8">Calendrier des Événements</h1>
+        <h1 className="text-3xl font-bold mb-8">{t('title')}</h1>
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Erreur lors de la récupération de votre profil.
+            {t('noUserError')}
           </AlertDescription>
         </Alert>
       </div>
@@ -113,15 +112,15 @@ export default async function EventsCalendarWrapper({
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <MapPin className="h-8 w-8 text-primary mb-2" />
-                  <CardTitle>Suivez des lieux</CardTitle>
+                  <CardTitle>{t('ctaFollowLairs.title')}</CardTitle>
                   <CardDescription>
-                    Découvrez les boutiques et espaces de jeu près de chez vous
+                    {t('ctaFollowLairs.description')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Button asChild className="w-full">
                     <Link href="/lairs">
-                      Découvrir les lieux
+                      {t('ctaFollowLairs.discoverLairs')}
                     </Link>
                   </Button>
                 </CardContent>
@@ -132,15 +131,15 @@ export default async function EventsCalendarWrapper({
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <Gamepad2 className="h-8 w-8 text-primary mb-2" />
-                  <CardTitle>Suivez des jeux</CardTitle>
+                  <CardTitle>{t('ctaFavoriteGames.title')}</CardTitle>
                   <CardDescription>
-                    Sélectionnez les jeux qui vous intéressent pour voir leurs événements
+                    {t('ctaFavoriteGames.description')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Button asChild className="w-full">
                     <Link href="/account">
-                      Gérer mes jeux
+                      {t('ctaFavoriteGames.manageGames')}
                     </Link>
                   </Button>
                 </CardContent>

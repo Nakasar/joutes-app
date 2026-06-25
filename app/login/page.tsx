@@ -5,8 +5,11 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {Button} from "@/components/ui/button";
 import {Key} from "lucide-react";
+import {useTranslations} from "next-intl";
 
 function LoginForm() {
+  const t = useTranslations('Login');
+
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"email" | "otp">("email");
@@ -74,7 +77,7 @@ function LoginForm() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Connexion à Joutes
+            {t('title')}
           </h2>
         </div>
 
@@ -83,7 +86,7 @@ function LoginForm() {
             <form className="mt-8 space-y-6" onSubmit={handleSendOTP}>
             <div>
               <label htmlFor="email" className="sr-only">
-                Adresse email
+                {t('emailAddress')}
               </label>
               <input
                 id="email"
@@ -94,7 +97,7 @@ function LoginForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Adresse email"
+                placeholder={t('emailAddress')}
               />
             </div>
 
@@ -108,7 +111,7 @@ function LoginForm() {
                 disabled={loading}
                 className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? "Envoi en cours..." : "Recevoir le code"}
+                {loading ? t('codeSending') : t('sendCode')}
               </button>
             </div>
           </form>
@@ -151,11 +154,15 @@ function LoginForm() {
           <form className="mt-8 space-y-6" onSubmit={handleVerifyOTP}>
             <div>
               <p className="text-sm text-gray-600 mb-4">
-                Un code de vérification a été envoyé à{" "}
-                <strong>{email}</strong>
+                {t.rich('codeSent', {
+                  strong: (c) => <strong>{c}</strong>,
+                  email
+                })}
+                {/*Un code de vérification a été envoyé à{" "}
+                <strong>{email}</strong>*/}
               </p>
               <label htmlFor="otp" className="sr-only">
-                Code de vérification
+                {t('OTP')}
               </label>
               <input
                 id="otp"
@@ -165,7 +172,7 @@ function LoginForm() {
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
                 className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Code de vérification"
+                placeholder={t('OTP')}
                 maxLength={6}
               />
             </div>
@@ -180,7 +187,7 @@ function LoginForm() {
                 disabled={loading}
                 className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? "Vérification..." : "Vérifier le code"}
+                {loading ? t('verifyPending') : t('verifyCode')}
               </button>
 
               <button
@@ -192,7 +199,7 @@ function LoginForm() {
                 }}
                 className="text-sm text-indigo-600 hover:text-indigo-500"
               >
-                Renvoyer un code
+                {t('resendCode')}
               </button>
             </div>
           </form>
@@ -203,13 +210,14 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
+  const t = useTranslations('Login');
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
           <div>
             <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-              Connexion à Joutes
+              {t('title')}
             </h2>
           </div>
         </div>
