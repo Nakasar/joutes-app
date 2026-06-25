@@ -116,7 +116,7 @@
       "registered": "Inscrit",
       "status": {
         "available": "Disponible",
-        "sold-oud": "Complet",
+        "sold-out": "Complet",
         "cancelled": "Annulé"
       }
     }
