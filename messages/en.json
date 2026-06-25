@@ -19,6 +19,11 @@
     "title": "Event calendar",
     "createEvent": "Create an Event"
   },
+  "LocaleSwitcher": {
+    "label": "Langue",
+    "en": "English",
+    "fr": "Français"
+  },
   "EventsCalendar": {
     "title": "Event calendar",
     "description": "Discover all the gaming events near you",

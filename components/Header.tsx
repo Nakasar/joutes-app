@@ -24,6 +24,7 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import {useTranslations} from "next-intl";
+import LocaleSwitcher from "@/components/locale-switcher";
 
 export default function Header() {
   const t = useTranslations('Header');
@@ -113,39 +114,40 @@ export default function Header() {
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             ) : session ? (
               <>
+                <LocaleSwitcher />
                 <NotificationDropdown userId={session.user.id} />
                 <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="gap-2">
-                    <User className="h-4 w-4" />
-                    <span className="max-w-[150px] truncate">
-                      {session.user.email}
-                    </span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>{t('menu.myAccount')}</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/account" className="flex w-full cursor-pointer">
-                      <User className="mr-2 h-4 w-4" />
-                      <span>{t('menu.Mon Profil')}</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/account/achievements" className="flex w-full cursor-pointer">
-                      <Trophy className="mr-2 h-4 w-4" />
-                      <span>{t('menu.Succès')}</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>{t('menu.Déconnexion')}</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="gap-2">
+                      <User className="h-4 w-4" />
+                      <span className="max-w-[150px] truncate">
+                        {session.user.email}
+                      </span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>{t('menu.myAccount')}</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/account" className="flex w-full cursor-pointer">
+                        <User className="mr-2 h-4 w-4" />
+                        <span>{t('menu.Mon Profil')}</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/account/achievements" className="flex w-full cursor-pointer">
+                        <Trophy className="mr-2 h-4 w-4" />
+                        <span>{t('menu.Succès')}</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>{t('menu.Déconnexion')}</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             ) : (
               <Button asChild>
@@ -158,6 +160,7 @@ export default function Header() {
           <div className="flex items-center gap-2 lg:hidden">
             {!isPending && session && (
               <>
+                <LocaleSwitcher />
                 <NotificationDropdown userId={session.user.id} />
                 <DropdownMenu>
                 <DropdownMenuTrigger asChild>

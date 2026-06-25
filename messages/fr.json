@@ -15,6 +15,11 @@
       "myAccount": "Mon Compte"
     }
   },
+  "LocaleSwitcher": {
+    "label": "Langue",
+    "en": "English",
+    "fr": "Français"
+  },
   "Home": {
     "title": "Calendrier des Événements",
     "createEvent": "Créer un Événement"
