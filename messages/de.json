@@ -1,1 +1,518 @@
-{}
+{
+  "Header": {
+    "menu": {
+      "Jeux": "Spiele",
+      "Événements": "Events",
+      "Lieux": "Orte",
+      "Ligues": "Ligen",
+      "Parties": "Partien",
+      "Administration": "Verwaltung",
+      "Mon Profil": "Mein Profil",
+      "Succès": "Erfolge",
+      "Déconnexion": "Abmelden",
+      "Se connecter": "Anmelden",
+      "Connexion": "Anmeldung",
+      "myAccount": "Mein Konto"
+    }
+  },
+  "LocaleSwitcher": {
+    "label": "Sprache",
+    "en": "English",
+    "fr": "Français",
+    "it": "Italiano",
+    "es": "Español",
+    "de": "Deutsch"
+  },
+  "Home": {
+    "title": "Eventkalender",
+    "createEvent": "Event erstellen"
+  },
+  "EventsCalendar": {
+    "title": "Eventkalender",
+    "description": "Entdecke alle Gaming-Events in deiner Nähe",
+    "createEvent": "Event erstellen",
+    "cta": "Nutze die Funktion \"In meiner Nähe\", um Events in deiner Umgebung zu entdecken.\nMelde dich an, um dein Erlebnis zu personalisieren und deinen Lieblingsorten und -spielen zu folgen.",
+    "ctaFollowLairs": {
+      "title": "Orten folgen",
+      "description": "Entdecke Geschäfte und Spielbereiche in deiner Nähe",
+      "discoverLairs": "Orte entdecken"
+    },
+    "ctaFavoriteGames": {
+      "title": "Spielen folgen",
+      "description": "Wähle Spiele aus, die dich interessieren, um ihre Events zu sehen",
+      "manageGames": "Meine Spiele verwalten"
+    },
+    "noUserError": "Fehler beim Laden deines Profils.",
+    "geolocNotSupported": {
+      "title": "Geolokalisierung nicht unterstützt",
+      "message": "Geolokalisierung wird von deinem Browser nicht unterstützt"
+    },
+    "geolocError": {
+      "title": "Geolokalisierungsfehler",
+      "message": "Dein Standort konnte nicht ermittelt werden. Bitte gib deine Koordinaten manuell ein."
+    },
+    "coordinatesMissingError": {
+      "title": "Fehlende Koordinaten",
+      "message": "Bitte gib GPS-Koordinaten ein oder nutze die automatische Standortbestimmung"
+    },
+    "coordinatesInvalidError": {
+      "title": "Ungültige Koordinaten",
+      "message": "Nutze das Format: Breitengrad, Längengrad (z.B.: 48.8566, 2.3522)"
+    },
+    "favoriteMissingAuthError": {
+      "title": "Anmeldung erforderlich",
+      "message": "Du musst angemeldet sein, um ein Event als Favorit zu markieren"
+    },
+    "favoriteError": {
+      "title": "Fehler",
+      "message": "Favoriten konnten nicht geändert werden",
+      "genericError": "Ein Fehler ist aufgetreten"
+    },
+    "filters": {
+      "previousMonth": "Vorheriger Monat",
+      "currentMonth": "Zum aktuellen Monat zurückkehren",
+      "nextMonth": "Nächster Monat",
+      "filterByGame": "Nach Spiel filtern",
+      "myGames": "Meine gefolgten Spiele",
+      "allGames": "Alle Spiele",
+      "myLairs": "Meine Orte",
+      "nearMe": "In meiner Nähe",
+      "ctaLoginCustomize": "Anmelden zum Personalisieren",
+      "geolocUpdate": "Standort ändern",
+      "geolocSaved": "Standort gespeichert",
+      "geolocDetails": "Dein Standardstandort wird verwendet:",
+      "geolocCoordinates": "GPS-Koordinaten",
+      "geolocPending": "Standortbestimmung...",
+      "geolocUseSaved": "Klicke auf den Button, um deinen gespeicherten Standort zu verwenden, oder gib andere Koordinaten ein",
+      "geolocInputHelp": "Format: Breitengrad, Längengrad oder klicke auf den Button, um deinen Standort zu ermitteln",
+      "geolocMaxDistance": "Maximale Entfernung",
+      "geolocSearch": "Suchen",
+      "geolocSaving": "Speichern...",
+      "geolocSave": "In meinem Konto speichern"
+    },
+    "views": {
+      "list": "Listenansicht",
+      "calendar": "Kalenderansicht"
+    },
+    "CalendarView": {
+      "weekDays": {
+        "Lun": "Mo",
+        "Mar": "Di",
+        "Mer": "Mi",
+        "Jeu": "Do",
+        "Ven": "Fr",
+        "Sam": "Sa",
+        "Dim": "So"
+      }
+    },
+    "ListView": {
+      "noEventsThisMonth": "Keine Events in diesem Monat",
+      "dayTitleToday": " - Heute"
+    },
+    "event": {
+      "unknownUser": "Unbekannter Benutzer",
+      "unknownLair": "Unbekannter Ort",
+      "creator": "Ersteller",
+      "duration": "Dauer: {duration}h",
+      "details": "Details",
+      "seeDetails": "Details ansehen",
+      "favorite": "Favorit",
+      "inFavorite": "Favoriten",
+      "favoriteRemove": "Aus Favoriten entfernen",
+      "favoriteAdd": "Zu Favoriten hinzufügen",
+      "free": "Kostenlos",
+      "registered": "Angemeldet",
+      "status": {
+        "available": "Verfügbar",
+        "sold-out": "Ausgebucht",
+        "cancelled": "Abgesagt"
+      }
+    }
+  },
+  "EventDetail": {
+    "privateEvent": {
+      "title": "Dieses Event ist privat. Nur der Ersteller und die Teilnehmer haben Zugriff darauf.",
+      "description": "Dieses Event ist privat und keinem Ort zugeordnet. Es ist nur für den Ersteller und die Teilnehmer sichtbar."
+    },
+    "joined": "Du bist jetzt für dieses Event angemeldet!",
+    "privateBadge": "Privat",
+    "runningState": {
+      "ongoing": "Laufend",
+      "completed": "Abgeschlossen"
+    },
+    "status": {
+      "available": "Verfügbar",
+      "soldOut": "Ausgebucht",
+      "cancelled": "Abgesagt"
+    },
+    "portalButtons": {
+      "organizer": "Organisator-Portal",
+      "player": "Spieler-Portal"
+    },
+    "sections": {
+      "dateTime": "Datum und Uhrzeit",
+      "start": "Start",
+      "end": "Ende",
+      "location": "Ort",
+      "description": "Beschreibung",
+      "link": "Link",
+      "moreInfo": "Weitere Informationen ansehen",
+      "price": "Preis",
+      "participants": "Teilnehmer",
+      "loginToJoin": "Zum Anmelden einloggen"
+    },
+    "priceFree": "Kostenlos",
+    "participantsCount": "{count} angemeldet",
+    "participantsCountWithMax": "{count} / {max} angemeldet"
+  },
+  "EventJoin": {
+    "pending": "Die Turnierwichtel prüfen gerade deine Anmeldung, bitte hab etwas Geduld!",
+    "errors": {
+      "generic": "Fehler"
+    }
+  },
+  "EventPortal": {
+    "accessDenied": {
+      "title": "Zugriff verweigert",
+      "description": "Du musst Ersteller oder Teilnehmer dieses Events sein, um auf das Portal zugreifen zu können."
+    }
+  },
+  "Games": {
+    "explorer": {
+      "title": "Spiele entdecken",
+      "description": "Entdecke großartige Karten- und Brettspiele für jeden Geschmack.",
+      "searchPlaceholder": "Spiel suchen...",
+      "resultsSingular": "{count} Spiel gefunden",
+      "resultsPlural": "{count} Spiele gefunden",
+      "noGames": "Kein Spiel gefunden",
+      "noGamesHint": "Versuche eine andere Suche",
+      "categories": {
+        "other": "Andere"
+      }
+    },
+    "detail": {
+      "back": "Zurück zu den Spielen",
+      "viewEvents": "Events ansehen",
+      "findLair": "Einen Ort finden",
+      "about": "Über",
+      "gameType": "Spieltyp",
+      "tools": "Werkzeuge",
+      "toolsCards": {
+        "title": "Karten und Ressourcen",
+        "description": "Greife auf Karten, Charakterbögen und andere Ressourcen zu"
+      },
+      "toolsTournaments": {
+        "title": "Turniere",
+        "description": "Organisiere deine eigenen Turniere"
+      },
+      "toolsCollection": {
+        "title": "Sammlung und Tausch",
+        "description": "Verwalte deine Sammlung, tausche mit anderen Spielern und finde seltene Stücke"
+      },
+      "toolsRules": {
+        "title": "Spielregeln",
+        "description": "Sieh dir offizielle Regeln und Spielanleitungen an"
+      },
+      "toolsPolicies": {
+        "title": "Richtlinien",
+        "description": "Sieh dir von der Community und den Herausgebern verfasste Richtlinien und Regelklarstellungen an"
+      },
+      "communityTitle": "Tritt der Community bei",
+      "communityMatches": {
+        "title": "Laufende Partien",
+        "description": "Tritt Partien bei oder erstelle deine eigene"
+      },
+      "communityEvents": {
+        "title": "Events",
+        "description": "Entdecke Turniere und Treffen"
+      },
+      "communityLairs": {
+        "title": "Spielorte",
+        "description": "Finde Orte zum Spielen in deiner Nähe"
+      },
+      "follow": {
+        "loading": "Wird geladen...",
+        "follow": "Diesem Spiel folgen",
+        "unfollow": "Nicht mehr folgen"
+      },
+      "events": {
+        "upcoming": "Kommende Events",
+        "loading": "Events werden geladen...",
+        "none": "Momentan keine kommenden Events",
+        "fetchError": "Events konnten nicht geladen werden",
+        "countSingular": "{count} Event",
+        "countPlural": "{count} Events",
+        "status": {
+          "available": "Verfügbar",
+          "soldOut": "Ausgebucht",
+          "cancelled": "Abgesagt"
+        },
+        "moreInfo": "Mehr erfahren",
+        "participants": "{registered} / {max} Teilnehmer"
+      },
+      "metadata": {
+        "notFoundTitle": "Spiel nicht gefunden - Joutes",
+        "title": "{gameName} - Joutes",
+        "ogDescription": "Verfolge {gameName} Events in deiner Nähe!"
+      }
+    },
+    "cards": {
+      "metadata": {
+        "notFoundTitle": "Spiel nicht gefunden",
+        "title": "{gameName} - Kartengalerie, Errata und Rulings",
+        "description": "Entdecke die Karten sowie deren Errata und Rulings für {gameName}."
+      },
+      "back": "Zurück zum Spielportal",
+      "search": {
+        "title": "Kartensuche",
+        "placeholder": "Suche nach Karte nach Name...",
+        "search": "Suchen",
+        "searching": "Suchen...",
+        "noResults": "Keine Karte gefunden für \"{query}\""
+      },
+      "detail": {
+        "metadata": {
+          "notFoundTitle": "Karte nicht gefunden",
+          "title": "{cardName} - Details, offizielle Errata und Community-Rulings",
+          "description": "Entdecke die Details von {cardName}, einschließlich offizieller Errata und Community-Rulings. Diese Karte hat {count} Errata und Klarstellungen, die von der Community beigetragen wurden.{banned}",
+          "banned": "\n\nDiese Karte ist derzeit gebannt."
+        },
+        "notFoundTitle": "Karte nicht gefunden",
+        "notFoundMessage": "Die Karte mit der ID {cardId} existiert nicht.",
+        "backToList": "Zurück zur Kartenliste",
+        "banned": "Gebannt",
+        "errataSectionTitle": "Errata & Klarstellungen",
+        "noErrata": "Kein Erratum oder Klarstellung für diese Karte.",
+        "errataTypes": {
+          "errata": "Erratum",
+          "clarification": "Klarstellung",
+          "ruling": "Ruling"
+        },
+        "deprecated": "Veraltet",
+        "source": "Quelle",
+        "deprecatedOn": "Veraltet am {date}",
+        "addErrata": {
+          "trigger": "Erratum hinzufügen",
+          "title": "Erratum hinzufügen",
+          "description": "Füge ein Erratum, eine Klarstellung oder ein Ruling für diese Karte hinzu.",
+          "fields": {
+            "type": "Typ",
+            "date": "Datum des Erratums",
+            "details": "Details",
+            "detailsPlaceholder": "Beschreibe das Erratum, die Klarstellung oder das Ruling... (Markdown unterstützt)",
+            "source": "Quelle (optional)",
+            "sourcePlaceholder": "https://example.com/errata"
+          },
+          "actions": {
+            "submit": "Hinzufügen",
+            "submitting": "Wird hinzugefügt..."
+          },
+          "error": "Erratum konnte nicht erstellt werden"
+        },
+        "banButton": {
+          "pending": "...",
+          "ban": "Karte bannen",
+          "unban": "Ban aufheben"
+        }
+      },
+      "collection": {
+        "label": "Sammlung :",
+        "count": "{count, plural, one {# Karte} other {# Karten}}",
+        "actions": {
+          "add": "Hinzufügen",
+          "cancel": "Abbrechen",
+          "adding": "Wird hinzugefügt...",
+          "remove": "Dieses Exemplar aus der Sammlung entfernen"
+        },
+        "dialog": {
+          "title": "Zur Sammlung hinzufügen"
+        },
+        "fields": {
+          "language": "Sprache",
+          "otherLanguages": "Andere Sprachen",
+          "none": "Keine",
+          "obtainedAt": "Erhalten am",
+          "acquisitionPrice": "Kaufpreis",
+          "currency": "Währung",
+          "condition": "Zustand",
+          "conditionPlaceholder": "Zustand auswählen",
+          "grade": "Bewertung (0–10)"
+        },
+        "languages": {
+          "fr": "🇫🇷 Französisch",
+          "en": "🇬🇧 Englisch",
+          "zh": "🇨🇳 Chinesisch",
+          "it": "🇮🇹 Italienisch",
+          "ja": "🇯🇵 Japanisch",
+          "ko": "🇰🇷 Koreanisch"
+        },
+        "conditions": {
+          "damaged": "Beschädigt",
+          "played": "Bespielt",
+          "good": "Gut",
+          "nearMint": "Near Mint",
+          "mint": "Mint"
+        },
+        "empty": "Kein Exemplar in der Sammlung.",
+        "badges": {
+          "foil": "Foil",
+          "grade": "Bewertung {grade}",
+          "obtainedAt": "Erhalten am {date}",
+          "standard": "Standard"
+        }
+      }
+    },
+    "rules": {
+      "metadata": {
+        "title": "Vollständige Regeln für Riftbound",
+        "description": "Sieh dir die vollständigen offiziellen Regeln von Riftbound TCG an."
+      },
+      "notFoundTitle": "Spiel nicht gefunden",
+      "notFoundDescription": "Das gesuchte Spiel existiert nicht oder hat keine Regeln auf Joutes.",
+      "title": "Regeln für {gameName}",
+      "back": "Zurück zum Spielportal",
+      "description": "Hier sind die offiziellen Regeln von {gameName}, die auf Joutes verfügbar sind.",
+      "documents": {
+        "tournamentRegulation": "Turnierregeln",
+        "coreRules": "Grundregeln"
+      },
+      "notFound": {
+        "game": "Spiel nicht gefunden",
+        "unsupported": "Dieses Spiel hat keine Regeln auf Joutes.",
+        "document": "Dokument nicht gefunden"
+      },
+      "document": {
+        "title": "Regeln für {gameName}",
+        "summary": "{count} Einträge · Klicke auf die blauen Links, um zwischen den Regeln zu navigieren"
+      },
+      "backToList": "Zurück zur Regelliste",
+      "viewer": {
+        "copyLink": "Link kopieren",
+        "collapseSection": "Abschnitt einklappen",
+        "expandSection": "Abschnitt ausklappen",
+        "tableOfContents": "Inhaltsverzeichnis",
+        "expand": "Ausklappen",
+        "collapse": "Einklappen",
+        "searchPlaceholder": "Nach einer Regel suchen (Text oder Nummer)…",
+        "close": "✕ Schließen",
+        "openTableOfContents": "☰ Inhaltsverzeichnis",
+        "results": "{count, plural, one {# Ergebnis für “{query}”} other {# Ergebnisse für “{query}”}}"
+      }
+    },
+    "policies": {
+      "metadata": {
+        "notFoundTitle": "Spiel nicht gefunden",
+        "title": "Regelrichtlinien für {gameName}",
+        "description": "Entdecke die Regeln und Richtlinien für {gameName}."
+      },
+      "title": "Regelrichtlinien — {gameName}",
+      "back": "Zurück zum Spielportal",
+      "searchPlaceholder": "Nach Richtlinien suchen…",
+      "sortTitle": "Titel",
+      "countSingular": "{count} Richtlinie",
+      "countPlural": "{count} Richtlinien",
+      "pageLabel": "Seite {currentPage} / {totalPages}",
+      "empty": "Keine Richtlinie entspricht den Suchkriterien.",
+      "deprecated": "Veraltet",
+      "addedOn": "Hinzugefügt am {date}",
+      "source": "Quelle",
+      "deprecatedOn": "Veraltet seit dem {date}",
+      "paginationSummary": "Seite {currentPage} von {totalPages} — {count, plural, one {# Richtlinie} other {# Richtlinien}}",
+      "previous": "Vorherige",
+      "next": "Nächste",
+      "addDialog": {
+        "trigger": "Richtlinie hinzufügen",
+        "title": "Richtlinie hinzufügen",
+        "description": "Verfasse eine offizielle Regel oder Klarstellung. Der Inhalt unterstützt Markdown (Bilder, Links, Tabellen usw.).",
+        "fields": {
+          "title": "Titel",
+          "titlePlaceholder": "Beispiel: Regel für gleichzeitige Effekte",
+          "content": "Inhalt (Markdown)",
+          "contentPlaceholder": "Verfasse den Inhalt in Markdown...",
+          "preview": "Vorschau",
+          "edit": "Bearbeiten",
+          "markdownHint": "Unterstützt Markdown: **fett**, *kursiv*, [Links](url), ![Bilder](url), Tabellen, Listen…",
+          "source": "Quelle (optional)",
+          "sourcePlaceholder": "https://example.com/rules"
+        },
+        "actions": {
+          "cancel": "Abbrechen",
+          "submit": "Hinzufügen",
+          "submitting": "Wird hinzugefügt..."
+        },
+        "errors": {
+          "createError": "Richtlinie konnte nicht erstellt werden"
+        }
+      }
+    }
+  },
+  "Login": {
+    "title": "Joutes Login",
+    "emailAddress": "E-Mail-Adresse",
+    "codeSending": "Wird gesendet...",
+    "sendCode": "Code senden",
+    "resendCode": "Code erneut senden",
+    "codeSent": "Ein Bestätigungscode wurde an <strong>{email}</strong> gesendet",
+    "OTP": "Bestätigungscode",
+    "verifyPending": "Wird überprüft...",
+    "verifyCode": "Code überprüfen"
+  },
+  "EventCreate": {
+    "page": {
+      "title": "Neues Event",
+      "description": "Erstelle ein Event, um Spieler zusammenzubringen",
+      "noOwnedLairs": "Du besitzt keine Orte. Dein Event wird privat sein und nur für dich und die eingeladenen Teilnehmer sichtbar sein."
+    },
+    "form": {
+      "title": "Event erstellen",
+      "descriptionWithLairs": "Erstelle ein öffentliches Event, das einem deiner Orte zugeordnet ist, oder ein privates Event",
+      "descriptionWithoutLairs": "Erstelle ein privates Event (du besitzt keine Orte)",
+      "fields": {
+        "name": {
+          "label": "Name des Events *",
+          "placeholder": "Magic: The Gathering Turnier"
+        },
+        "game": {
+          "label": "Spiel *",
+          "placeholder": "Wähle ein Spiel"
+        },
+        "lair": {
+          "label": "Ort (optional)",
+          "placeholder": "Privates Event (ohne Ort)",
+          "help": "Wenn kein Ort ausgewählt ist, ist das Event privat und nur für dich und die Teilnehmer sichtbar."
+        },
+        "startDate": {
+          "label": "Startdatum und -uhrzeit *"
+        },
+        "endDate": {
+          "label": "Enddatum und -uhrzeit *"
+        },
+        "url": {
+          "label": "URL (optional)",
+          "placeholder": "https://example.com/event"
+        },
+        "price": {
+          "label": "Preis (€, optional)",
+          "placeholder": "0.00"
+        },
+        "maxParticipants": {
+          "label": "Max. Anzahl an Teilnehmern (optional)",
+          "placeholder": "Unbegrenzt"
+        },
+        "preRegistration": {
+          "label": "Vorregistrierung aktivieren",
+          "help": "Wenn aktiviert, erhalten angemeldete Teilnehmer den Status \"Vorangemeldet\" und müssen vom Organisator bestätigt werden."
+        }
+      },
+      "actions": {
+        "create": "Event erstellen",
+        "creating": "Wird erstellt...",
+        "cancel": "Abbrechen"
+      },
+      "errors": {
+        "generic": "Ein Fehler ist aufgetreten",
+        "createFailed": "Beim Erstellen des Events ist ein Fehler aufgetreten"
+      }
+    }
+  }
+}

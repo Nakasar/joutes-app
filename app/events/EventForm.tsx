@@ -11,6 +11,7 @@ import { AlertCircle, Calendar, MapPin } from "lucide-react";
 import { createEventAction } from "./actions";
 import { Lair } from "@/lib/types/Lair";
 import { Game } from "@/lib/types/Game";
+import { useTranslations } from "next-intl";
 
 type EventFormProps = {
   ownedLairs: Lair[];
@@ -19,6 +20,7 @@ type EventFormProps = {
 
 export default function EventForm({ ownedLairs, games }: EventFormProps) {
   const router = useRouter();
+  const t = useTranslations("EventCreate");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -55,11 +57,11 @@ export default function EventForm({ ownedLairs, games }: EventFormProps) {
         router.push(`/events/${result.eventId}`);
         router.refresh();
       } else {
-        setError(result.error || "Une erreur est survenue");
+        setError(result.error || t("form.errors.generic"));
       }
     } catch (err) {
       console.error(err);
-      setError("Une erreur est survenue lors de la création de l&apos;événement");
+      setError(t("form.errors.createFailed"));
     } finally {
       setLoading(false);
     }
@@ -70,12 +72,12 @@ export default function EventForm({ ownedLairs, games }: EventFormProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Calendar className="h-5 w-5" />
-          Créer un événement
+          {t("form.title")}
         </CardTitle>
         <CardDescription>
           {ownedLairs.length > 0
-            ? "Créez un événement public rattaché à l'un de vos lieux, ou un événement privé"
-            : "Créez un événement privé (vous ne possédez aucun lieu)"}
+            ? t("form.descriptionWithLairs")
+            : t("form.descriptionWithoutLairs")}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -89,7 +91,7 @@ export default function EventForm({ ownedLairs, games }: EventFormProps) {
 
           <div className="space-y-2">
             <label htmlFor="name" className="text-sm font-medium">
-              Nom de l&apos;événement *
+              {t("form.fields.name.label")}
             </label>
             <Input
               id="name"
@@ -97,20 +99,20 @@ export default function EventForm({ ownedLairs, games }: EventFormProps) {
               maxLength={500}
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Tournoi Magic: The Gathering"
+              placeholder={t("form.fields.name.placeholder")}
             />
           </div>
 
           <div className="space-y-2">
             <label htmlFor="gameName" className="text-sm font-medium">
-              Jeu *
+              {t("form.fields.game.label")}
             </label>
             <Select
               value={formData.gameName}
               onValueChange={(value) => setFormData({ ...formData, gameName: value })}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Sélectionnez un jeu" />
+                <SelectValue placeholder={t("form.fields.game.placeholder")} />
               </SelectTrigger>
               <SelectContent>
                 {games.map((game) => (
@@ -126,14 +128,14 @@ export default function EventForm({ ownedLairs, games }: EventFormProps) {
             <div className="space-y-2">
               <label htmlFor="lairId" className="text-sm font-medium flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
-                Lieu (optionnel)
+                {t("form.fields.lair.label")}
               </label>
               <Select
                 value={formData.lairId}
                 onValueChange={(value) => setFormData({ ...formData, lairId: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Événement privé (sans lieu)" />
+                  <SelectValue placeholder={t("form.fields.lair.placeholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {ownedLairs.map((lair) => (
@@ -144,7 +146,7 @@ export default function EventForm({ ownedLairs, games }: EventFormProps) {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Si aucun lieu n&apos;est sélectionné, l&apos;événement sera privé et visible uniquement par vous et les participants.
+                {t("form.fields.lair.help")}
               </p>
             </div>
           )}
@@ -152,7 +154,7 @@ export default function EventForm({ ownedLairs, games }: EventFormProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label htmlFor="startDateTime" className="text-sm font-medium">
-                Date et heure de début *
+                {t("form.fields.startDate.label")}
               </label>
               <Input
                 id="startDateTime"
@@ -165,7 +167,7 @@ export default function EventForm({ ownedLairs, games }: EventFormProps) {
 
             <div className="space-y-2">
               <label htmlFor="endDateTime" className="text-sm font-medium">
-                Date et heure de fin *
+                {t("form.fields.endDate.label")}
               </label>
               <Input
                 id="endDateTime"
@@ -179,21 +181,21 @@ export default function EventForm({ ownedLairs, games }: EventFormProps) {
 
           <div className="space-y-2">
             <label htmlFor="url" className="text-sm font-medium">
-              URL (optionnel)
+              {t("form.fields.url.label")}
             </label>
             <Input
               id="url"
               type="url"
               value={formData.url}
               onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-              placeholder="https://example.com/event"
+              placeholder={t("form.fields.url.placeholder")}
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label htmlFor="price" className="text-sm font-medium">
-                Prix (€, optionnel)
+                {t("form.fields.price.label")}
               </label>
               <Input
                 id="price"
@@ -202,13 +204,13 @@ export default function EventForm({ ownedLairs, games }: EventFormProps) {
                 min="0"
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                placeholder="0.00"
+                placeholder={t("form.fields.price.placeholder")}
               />
             </div>
 
             <div className="space-y-2">
               <label htmlFor="maxParticipants" className="text-sm font-medium">
-                Nombre max de participants (optionnel)
+                {t("form.fields.maxParticipants.label")}
               </label>
               <Input
                 id="maxParticipants"
@@ -216,7 +218,7 @@ export default function EventForm({ ownedLairs, games }: EventFormProps) {
                 min="1"
                 value={formData.maxParticipants}
                 onChange={(e) => setFormData({ ...formData, maxParticipants: e.target.value })}
-                placeholder="Illimité"
+                placeholder={t("form.fields.maxParticipants.placeholder")}
               />
             </div>
           </div>
@@ -230,16 +232,16 @@ export default function EventForm({ ownedLairs, games }: EventFormProps) {
               className="h-4 w-4 rounded border-gray-300"
             />
             <label htmlFor="preRegistration" className="text-sm font-medium">
-              Activer la pré-inscription
+              {t("form.fields.preRegistration.label")}
             </label>
           </div>
           <p className="text-xs text-muted-foreground -mt-2">
-            Si activé, les participants qui s&apos;inscrivent auront le statut &quot;Pré-inscrit&quot; et devront être validés par l&apos;organisateur.
+            {t("form.fields.preRegistration.help")}
           </p>
 
           <div className="flex gap-2 pt-4">
             <Button type="submit" disabled={loading}>
-              {loading ? "Création..." : "Créer l'événement"}
+              {loading ? t("form.actions.creating") : t("form.actions.create")}
             </Button>
             <Button
               type="button"
@@ -247,7 +249,7 @@ export default function EventForm({ ownedLairs, games }: EventFormProps) {
               onClick={() => router.back()}
               disabled={loading}
             >
-              Annuler
+              {t("form.actions.cancel")}
             </Button>
           </div>
         </form>

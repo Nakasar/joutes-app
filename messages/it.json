@@ -9,7 +9,7 @@
       "Administration": "Amministrazione",
       "Mon Profil": "Il mio profilo",
       "Succès": "Obiettivi",
-      "Déconnexion": "Disconnetti",
+      "Déconnexion": "Esci",
       "Se connecter": "Accedi",
       "Connexion": "Accesso",
       "myAccount": "Il mio account"
@@ -18,7 +18,10 @@
   "LocaleSwitcher": {
     "label": "Lingua",
     "en": "English",
-    "fr": "Français"
+    "fr": "Français",
+    "it": "Italiano",
+    "es": "Español",
+    "de": "Deutsch"
   },
   "Home": {
     "title": "Calendario degli Eventi",
@@ -28,10 +31,10 @@
     "title": "Calendario degli Eventi",
     "description": "Scopri tutti gli eventi di gioco vicino a te",
     "createEvent": "Crea un Evento",
-    "cta": "Usa la funzione \"Vicino a me\" per scoprire gli eventi prossimi alla tua posizione.\nAccedi per personalizzare la tua esperienza e seguire i tuoi luoghi e giochi preferiti.",
+    "cta": "Usa la funzione \"Vicino a me\" per scoprire gli eventi vicini alla tua posizione.\nAccedi per personalizzare la tua esperienza e seguire i tuoi luoghi e giochi preferiti.",
     "ctaFollowLairs": {
       "title": "Segui dei luoghi",
-      "description": "Scopri i negozi e gli spazi di gioco vicino a te",
+      "description": "Scopri i negozi e le aree di gioco vicino a te",
       "discoverLairs": "Scopri i luoghi"
     },
     "ctaFavoriteGames": {
@@ -75,16 +78,16 @@
       "myLairs": "I miei luoghi",
       "nearMe": "Vicino a me",
       "ctaLoginCustomize": "Accedi per personalizzare",
-      "geolocUpdate": "Modifica la localizzazione",
-      "geolocSaved": "Localizzazione salvata",
-      "geolocDetails": "Verrà utilizzata la tua localizzazione predefinita:",
+      "geolocUpdate": "Modifica la posizione",
+      "geolocSaved": "Posizione salvata",
+      "geolocDetails": "Verrà utilizzata la tua posizione predefinita:",
       "geolocCoordinates": "Coordinate GPS",
-      "geolocPending": "Localizzazione in corso...",
-      "geolocUseSaved": "Fai clic sul pulsante per usare la tua localizzazione salvata o inserisci altre coordinate",
-      "geolocInputHelp": "Formato: latitudine, longitudine o fai clic sul pulsante per ottenere la tua posizione",
+      "geolocPending": "Localizzazione...",
+      "geolocUseSaved": "Clicca sul pulsante per usare la tua posizione salvata o inserisci altre coordinate",
+      "geolocInputHelp": "Formato: latitudine, longitudine o clicca sul pulsante per ottenere la tua posizione",
       "geolocMaxDistance": "Distanza massima",
       "geolocSearch": "Cerca",
-      "geolocSaving": "Salvataggio in corso...",
+      "geolocSaving": "Salvataggio...",
       "geolocSave": "Salva sul mio account"
     },
     "views": {
@@ -114,16 +117,64 @@
       "details": "Dettagli",
       "seeDetails": "Vedi i dettagli",
       "favorite": "Preferito",
-      "inFavorite": "Nei preferiti",
+      "inFavorite": "Nei Preferiti",
       "favoriteRemove": "Rimuovi dai preferiti",
       "favoriteAdd": "Aggiungi ai preferiti",
       "free": "Gratuito",
       "registered": "Iscritto",
       "status": {
         "available": "Disponibile",
-        "sold-out": "Al completo",
+        "sold-out": "Esaurito",
         "cancelled": "Annullato"
       }
+    }
+  },
+  "EventDetail": {
+    "privateEvent": {
+      "title": "Questo evento è privato. Solo il creatore e i partecipanti possono accedervi.",
+      "description": "Questo evento è privato e non è collegato a un luogo. È visibile solo al creatore e ai partecipanti."
+    },
+    "joined": "Ora sei iscritto a questo evento!",
+    "privateBadge": "Privato",
+    "runningState": {
+      "ongoing": "In corso",
+      "completed": "Terminato"
+    },
+    "status": {
+      "available": "Disponibile",
+      "soldOut": "Esaurito",
+      "cancelled": "Annullato"
+    },
+    "portalButtons": {
+      "organizer": "Portale Organizzatore",
+      "player": "Portale Giocatore"
+    },
+    "sections": {
+      "dateTime": "Data e ora",
+      "start": "Inizio",
+      "end": "Fine",
+      "location": "Luogo",
+      "description": "Descrizione",
+      "link": "Link",
+      "moreInfo": "Vedi maggiori informazioni",
+      "price": "Prezzo",
+      "participants": "Partecipanti",
+      "loginToJoin": "Accedi per iscriverti"
+    },
+    "priceFree": "Gratuito",
+    "participantsCount": "{count} iscritto/i",
+    "participantsCountWithMax": "{count} / {max} iscritto/i"
+  },
+  "EventJoin": {
+    "pending": "I folletti di Joutes stanno convalidando la tua iscrizione, attendi un momento!",
+    "errors": {
+      "generic": "Errore"
+    }
+  },
+  "EventPortal": {
+    "accessDenied": {
+      "title": "Accesso negato",
+      "description": "Devi essere il creatore o un partecipante di questo evento per accedere al portale."
     }
   },
   "Games": {
@@ -148,7 +199,7 @@
       "tools": "Strumenti",
       "toolsCards": {
         "title": "Carte e risorse",
-        "description": "Accedi a carte, schede personaggio e altre risorse"
+        "description": "Accedi a carte, schede dei personaggi e altre risorse"
       },
       "toolsTournaments": {
         "title": "Tornei",
@@ -164,7 +215,7 @@
       },
       "toolsPolicies": {
         "title": "Politiche",
-        "description": "Consulta le politiche e le precisazioni delle regole scritte dalla community e dagli editori"
+        "description": "Consulta le politiche e i chiarimenti delle regole scritti dalla community e dagli editori"
       },
       "communityTitle": "Unisciti alla community",
       "communityMatches": {
@@ -186,17 +237,17 @@
       },
       "events": {
         "upcoming": "Prossimi eventi",
-        "loading": "Caricamento eventi...",
-        "none": "Nessun evento in programma al momento",
+        "loading": "Caricamento degli eventi...",
+        "none": "Nessun evento in arrivo per il momento",
         "fetchError": "Impossibile caricare gli eventi",
         "countSingular": "{count} evento",
         "countPlural": "{count} eventi",
         "status": {
           "available": "Disponibile",
-          "soldOut": "Al completo",
+          "soldOut": "Esaurito",
           "cancelled": "Annullato"
         },
-        "moreInfo": "Maggiori informazioni",
+        "moreInfo": "Scopri di più",
         "participants": "{registered} / {max} partecipanti"
       },
       "metadata": {
@@ -208,8 +259,8 @@
     "cards": {
       "metadata": {
         "notFoundTitle": "Gioco non trovato",
-        "title": "{gameName} - Galleria delle carte, errata e ruling",
-        "description": "Esplora le carte, i loro errata e i ruling per {gameName}."
+        "title": "{gameName} - Galleria di carte, errata e ruling",
+        "description": "Esplora le carte e i loro errata e ruling per {gameName}."
       },
       "back": "Torna al portale del gioco",
       "search": {
@@ -227,10 +278,10 @@
           "banned": "\n\nQuesta carta è attualmente bannata."
         },
         "notFoundTitle": "Carta non trovata",
-        "notFoundMessage": "La carta con ID {cardId} non esiste.",
+        "notFoundMessage": "La carta con l'ID {cardId} non esiste.",
         "backToList": "Torna alla lista delle carte",
         "banned": "Bannata",
-        "errataSectionTitle": "Errata & Chiarimenti",
+        "errataSectionTitle": "Errata e Chiarimenti",
         "noErrata": "Nessun errata o chiarimento per questa carta.",
         "errataTypes": {
           "errata": "Errata",
@@ -248,7 +299,7 @@
             "type": "Tipo",
             "date": "Data dell'errata",
             "details": "Dettagli",
-            "detailsPlaceholder": "Descrivi l'errata, il chiarimento o il ruling... (Supporta Markdown)",
+            "detailsPlaceholder": "Descrivi l'errata, il chiarimento o il ruling... (Markdown supportato)",
             "source": "Fonte (opzionale)",
             "sourcePlaceholder": "https://example.com/errata"
           },
@@ -265,7 +316,7 @@
         }
       },
       "collection": {
-        "label": "Collezione :",
+        "label": "Collezione:",
         "count": "{count, plural, one {# carta} other {# carte}}",
         "actions": {
           "add": "Aggiungi",
@@ -281,7 +332,7 @@
           "otherLanguages": "Altre lingue",
           "none": "Nessuna",
           "obtainedAt": "Data di ottenimento",
-          "acquisitionPrice": "Prezzo di acquisto",
+          "acquisitionPrice": "Prezzo di ottenimento",
           "currency": "Valuta",
           "condition": "Condizione",
           "conditionPlaceholder": "Seleziona una condizione",
@@ -305,8 +356,8 @@
         "empty": "Nessun esemplare nella collezione.",
         "badges": {
           "foil": "Foil",
-          "grade": "Voto {grade}",
-          "obtainedAt": "Ottenuta il {date}",
+          "grade": "Grado {grade}",
+          "obtainedAt": "Ottenuto il {date}",
           "standard": "Standard"
         }
       }
@@ -317,34 +368,34 @@
         "description": "Consulta le regole complete ufficiali di Riftbound TCG."
       },
       "notFoundTitle": "Gioco non trovato",
-      "notFoundDescription": "Il gioco che stai cercando non esiste o non dispone di regole su Joutes.",
+      "notFoundDescription": "Il gioco che stai cercando non esiste o non ha regole su Joutes.",
       "title": "Regole di {gameName}",
       "back": "Torna al portale del gioco",
       "description": "Ecco le regole ufficiali di {gameName} disponibili su Joutes.",
       "documents": {
-        "tournamentRegulation": "Regolamento dei Tornei",
-        "coreRules": "Regole Base"
+        "tournamentRegulation": "Tournament Regulation",
+        "coreRules": "Core Rules"
       },
       "notFound": {
         "game": "Gioco introvabile",
-        "unsupported": "Questo gioco non dispone di regole su Joutes.",
+        "unsupported": "Questo gioco non ha regole su Joutes.",
         "document": "Documento introvabile"
       },
       "document": {
         "title": "Regole di {gameName}",
-        "summary": "{count} voci · Fai clic sui link blu per navigare tra le regole"
+        "summary": "{count} voci · Clicca sui link blu per navigare tra le regole"
       },
       "backToList": "Torna alla lista delle regole",
       "viewer": {
         "copyLink": "Copia il link",
-        "collapseSection": "Comprimi la sezione",
+        "collapseSection": "Riduci la sezione",
         "expandSection": "Espandi la sezione",
-        "tableOfContents": "Indice",
+        "tableOfContents": "Sommario",
         "expand": "Espandi",
-        "collapse": "Comprimi",
-        "searchPlaceholder": "Cerca una regola (testo o numero)...",
+        "collapse": "Riduci",
+        "searchPlaceholder": "Cerca una regola (testo o numero)…",
         "close": "✕ Chiudi",
-        "openTableOfContents": "☰ Indice",
+        "openTableOfContents": "☰ Sommario",
         "results": "{count, plural, one {# risultato per “{query}”} other {# risultati per “{query}”}}"
       }
     },
@@ -356,7 +407,7 @@
       },
       "title": "Politiche delle regole — {gameName}",
       "back": "Torna al portale del gioco",
-      "searchPlaceholder": "Cerca delle politiche...",
+      "searchPlaceholder": "Cerca politiche…",
       "sortTitle": "Titolo",
       "countSingular": "{count} politica",
       "countPlural": "{count} politiche",
@@ -380,8 +431,8 @@
           "contentPlaceholder": "Scrivi il contenuto in Markdown...",
           "preview": "Anteprima",
           "edit": "Modifica",
-          "markdownHint": "Supporta Markdown: **grassetto**, *corsivo*, [link](url), ![immagini](url), tabelle, liste...",
-          "source": "Fonte (opzionale)",
+          "markdownHint": "Supporta Markdown: **grassetto**, *corsivo*, [link](url), ![immagini](url), tabelle, liste…",
+          "source": "Fonte (facoltativo)",
           "sourcePlaceholder": "https://example.com/rules"
         },
         "actions": {

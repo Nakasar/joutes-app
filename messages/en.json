@@ -22,7 +22,10 @@
   "LocaleSwitcher": {
     "label": "Langue",
     "en": "English",
-    "fr": "Français"
+    "fr": "Français",
+    "it": "Italiano",
+    "es": "Español",
+    "de": "Deutsch"
   },
   "EventsCalendar": {
     "title": "Event calendar",
@@ -453,5 +456,63 @@
     "OTP": "Verification code",
     "verifyPending": "Verifying..",
     "verifyCode": "Verify code"
+  },
+  "EventCreate": {
+    "page": {
+      "title": "New event",
+      "description": "Create an event to bring players together",
+      "noOwnedLairs": "You do not own any venues. Your event will be private and visible only to you and the participants you invite."
+    },
+    "form": {
+      "title": "Create an event",
+      "descriptionWithLairs": "Create a public event attached to one of your venues, or a private event",
+      "descriptionWithoutLairs": "Create a private event (you do not own any venues)",
+      "fields": {
+        "name": {
+          "label": "Event name *",
+          "placeholder": "Magic: The Gathering tournament"
+        },
+        "game": {
+          "label": "Game *",
+          "placeholder": "Select a game"
+        },
+        "lair": {
+          "label": "Venue (optional)",
+          "placeholder": "Private event (no venue)",
+          "help": "If no venue is selected, the event will be private and visible only to you and the participants."
+        },
+        "startDate": {
+          "label": "Start date and time *"
+        },
+        "endDate": {
+          "label": "End date and time *"
+        },
+        "url": {
+          "label": "URL (optional)",
+          "placeholder": "https://example.com/event"
+        },
+        "price": {
+          "label": "Price (€ , optional)",
+          "placeholder": "0.00"
+        },
+        "maxParticipants": {
+          "label": "Maximum number of participants (optional)",
+          "placeholder": "Unlimited"
+        },
+        "preRegistration": {
+          "label": "Enable pre-registration",
+          "help": "If enabled, participants who register will receive the \"Pre-registered\" status and will need to be validated by the organizer."
+        }
+      },
+      "actions": {
+        "create": "Create event",
+        "creating": "Creating...",
+        "cancel": "Cancel"
+      },
+      "errors": {
+        "generic": "An error occurred",
+        "createFailed": "An error occurred while creating the event"
+      }
+    }
   }
 }

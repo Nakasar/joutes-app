@@ -19,6 +19,16 @@ export default function LocaleSwitcher() {
           flag: '🇫🇷',
           label: t("fr"),
         },
+        {
+          value: "it",
+          flag: '🇮🇹',
+          label: t("it"),
+        },
+        {
+          value: "de",
+          flag: '🇩🇪',
+          label: t("de"),
+        },
       ]}
       label={t("label")}
     />

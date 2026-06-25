@@ -18,7 +18,10 @@
   "LocaleSwitcher": {
     "label": "Langue",
     "en": "English",
-    "fr": "Français"
+    "fr": "Français",
+    "it": "Italiano",
+    "es": "Español",
+    "de": "Deutsch"
   },
   "Home": {
     "title": "Calendrier des Événements",
@@ -454,5 +457,63 @@
     "OTP": "Verification code",
     "verifyPending": "Verifying..",
     "verifyCode": "Verify code"
+  },
+  "EventCreate": {
+    "page": {
+      "title": "Nouvel événement",
+      "description": "Créez un événement pour rassembler des joueurs",
+      "noOwnedLairs": "Vous ne possédez aucun lieu. Votre événement sera privé et visible uniquement par vous et les participants que vous inviterez."
+    },
+    "form": {
+      "title": "Créer un événement",
+      "descriptionWithLairs": "Créez un événement public rattaché à l'un de vos lieux, ou un événement privé",
+      "descriptionWithoutLairs": "Créez un événement privé (vous ne possédez aucun lieu)",
+      "fields": {
+        "name": {
+          "label": "Nom de l'événement *",
+          "placeholder": "Tournoi Magic: The Gathering"
+        },
+        "game": {
+          "label": "Jeu *",
+          "placeholder": "Sélectionnez un jeu"
+        },
+        "lair": {
+          "label": "Lieu (optionnel)",
+          "placeholder": "Événement privé (sans lieu)",
+          "help": "Si aucun lieu n'est sélectionné, l'événement sera privé et visible uniquement par vous et les participants."
+        },
+        "startDate": {
+          "label": "Date et heure de début *"
+        },
+        "endDate": {
+          "label": "Date et heure de fin *"
+        },
+        "url": {
+          "label": "URL (optionnel)",
+          "placeholder": "https://example.com/event"
+        },
+        "price": {
+          "label": "Prix (€, optionnel)",
+          "placeholder": "0.00"
+        },
+        "maxParticipants": {
+          "label": "Nombre max de participants (optionnel)",
+          "placeholder": "Illimité"
+        },
+        "preRegistration": {
+          "label": "Activer la pré-inscription",
+          "help": "Si activé, les participants qui s'inscrivent auront le statut \"Pré-inscrit\" et devront être validés par l'organisateur."
+        }
+      },
+      "actions": {
+        "create": "Créer l'événement",
+        "creating": "Création...",
+        "cancel": "Annuler"
+      },
+      "errors": {
+        "generic": "Une erreur est survenue",
+        "createFailed": "Une erreur est survenue lors de la création de l'événement"
+      }
+    }
   }
 }
