@@ -97,7 +97,29 @@
         "Dim": "Sun"
       }
     },
-    "ListView": {}
+    "ListView": {
+      "noEventsThisMonth": "No events for this month",
+      "dayTitleToday": " - Today"
+    },
+    "event": {
+      "unknownUser": "Unknown user",
+      "unknownLair": "Unknown lair",
+      "creator": "Creator",
+      "duration": "Duration: {duration}h",
+      "details": "Details",
+      "seeDetails": "See details",
+      "favorite": "Favorite",
+      "inFavorite": "In favorites",
+      "favoriteRemove": "Remove from favorites",
+      "favoriteAdd": "Add to favorites",
+      "free": "Free",
+      "registered": "Registered",
+      "status": {
+        "available": "Available",
+        "sold-out": "Sold out",
+        "cancelled": "Cancelled"
+      }
+    }
   },
   "Login": {
     "title": "Login Joutes",

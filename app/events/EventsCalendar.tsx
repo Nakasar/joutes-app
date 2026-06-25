@@ -17,7 +17,7 @@ import EventDetailsModal from "./EventDetailsModal";
 import { Game } from "@/lib/types/Game";
 import { toggleEventFavoriteAction } from "./actions";
 import { updateUserLocation } from "../account/actions";
-import {useTranslations} from "next-intl";
+import {useTranslations, useLocale} from "next-intl";
 
 type EventsCalendarProps = {
   events: Event[];
@@ -51,6 +51,7 @@ export default function EventsCalendar({
   isLocationMode = false,
   userLocation,
 }: EventsCalendarProps) {
+  const locale = useLocale();
   const t = useTranslations('EventsCalendar');
 
   const today = DateTime.now();
@@ -473,7 +474,7 @@ export default function EventsCalendar({
 
       // Ne garder que les événements à partir d'aujourd'hui
       if (eventDate >= todayStart) {
-        const dayKey = eventDate.setLocale('fr').toLocaleString({
+        const dayKey = eventDate.setLocale(locale).toLocaleString({
           weekday: 'long',
           day: 'numeric',
           month: 'long',
@@ -535,19 +536,6 @@ export default function EventsCalendar({
         return "secondary";
       default:
         return "outline";
-    }
-  };
-
-  const getStatusLabel = (status: Event["status"]) => {
-    switch (status) {
-      case "available":
-        return "Disponible";
-      case "sold-out":
-        return "Complet";
-      case "cancelled":
-        return "Annulé";
-      default:
-        return status;
     }
   };
 
@@ -924,14 +912,14 @@ export default function EventsCalendar({
                                     {startTime}
                                   </div>
                                   {event.creator ? (
-                                    <div className="text-xs text-muted-foreground truncate flex items-center gap-1" title={event.lair?.name}>
+                                    <div className="text-xs text-muted-foreground truncate flex items-center gap-1" title={event.creator.displayName ? `${event.creator.displayName}#${event.creator.discriminator}` : t('event.unknownUser')}>
                                       <User2Icon className="h-3 w-3" />
-                                      {event.creator.displayName ? `${event.creator.displayName}#${event.creator.discriminator}` : "Utilisateur inconnu"}
+                                      {event.creator.displayName ? `${event.creator.displayName}#${event.creator.discriminator}` : t('event.unknownUser')}
                                     </div>
                                   ) : (
-                                    <div className="text-xs text-muted-foreground truncate flex items-center gap-1" title={event.lair?.name}>
+                                    <div className="text-xs text-muted-foreground truncate flex items-center gap-1" title={event.lair?.name || t('event.unknownLair')}>
                                       <MapPin className="h-3 w-3" />
-                                      {event.lair?.name || "Lieu inconnu"}
+                                      {event.lair?.name || t('event.unknownLair')}
                                     </div>
                                   )}
                                   {!event.game && event.gameName && (
@@ -942,7 +930,7 @@ export default function EventsCalendar({
                                   )}
                                   <div className="flex items-center gap-1 flex-wrap mt-1">
                                     <Badge variant={getStatusVariant(event.status)} className="text-xs">
-                                      {getStatusLabel(event.status)}
+                                      {t(`event.status.${event.status}`)}
                                     </Badge>
                                     {(event.price && event.price !== 0) && (
                                       <span className="text-xs font-semibold flex items-center">
@@ -953,12 +941,12 @@ export default function EventsCalendar({
                                   </div>
                                   {session.data?.user?.id && (event.creatorId === session.data?.user?.id) && (
                                     <Badge variant="default" className="text-xs bg-blue-500 text-white mt-1">
-                                      Créateur
+                                      {t('event.creator')}
                                     </Badge>
                                   )}
                                   {session.data?.user?.id && (event.participants?.includes(session.data?.user?.id)) && (
                                     <Badge variant="default" className="text-xs bg-green-500 text-white mt-1">
-                                      Inscrit
+                                      {t('event.registered')}
                                     </Badge>
                                   )}
                                   {/* Boutons d'action en bas */}
@@ -1017,19 +1005,6 @@ export default function EventsCalendar({
               </div>
             </CardContent>
           </Card>
-
-          {/* Légende */}
-          <div className="flex flex-wrap gap-4 justify-center mt-4">
-            <div className="flex items-center gap-2">
-              <Badge variant="default">Disponible</Badge>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="destructive">Complet</Badge>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">Annulé</Badge>
-            </div>
-          </div>
         </div>
       )}
 
@@ -1041,7 +1016,6 @@ export default function EventsCalendar({
           today={today}
           userId={session.data?.user?.id}
           getStatusVariant={getStatusVariant}
-          getStatusLabel={getStatusLabel}
           localFavorites={localFavorites}
           onToggleFavorite={handleToggleFavorite}
           onOpenEventDetails={handleOpenEventDetails}
@@ -1094,7 +1068,6 @@ type ListViewProps = {
   today: DateTime;
   userId?: string;
   getStatusVariant: (status: Event["status"]) => "default" | "secondary" | "destructive" | "outline";
-  getStatusLabel: (status: Event["status"]) => string;
   localFavorites: Record<string, boolean>;
   onToggleFavorite: (eventId: string, currentlyFavorited: boolean, e: React.MouseEvent) => void;
   onOpenEventDetails: (event: Event, e: React.MouseEvent) => void;
@@ -1106,18 +1079,19 @@ function ListView({
   today,
   userId,
   getStatusVariant,
-  getStatusLabel,
   localFavorites,
   onToggleFavorite,
   onOpenEventDetails
 }: ListViewProps) {
+  const t = useTranslations("EventsCalendar");
+
   if (eventsInMonth.length === 0) {
     return (
       <Card>
         <CardContent className="text-center py-12">
           <CalendarIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <p className="text-muted-foreground">
-            Aucun événement ce mois-ci
+            {t('ListView.noEventsThisMonth')}
           </p>
         </CardContent>
       </Card>
@@ -1143,7 +1117,7 @@ function ListView({
                 }`}
             >
               {dayKey}
-              {isEventToday && " - Aujourd'hui"}
+              {isEventToday && t('ListView.dayTitleToday')}
             </div>
 
             {/* Événements du jour */}
@@ -1221,7 +1195,7 @@ function ListView({
                           {event.name}
                         </CardTitle>
                         <Badge variant={getStatusVariant(event.status)}>
-                          {getStatusLabel(event.status)}
+                          {t(`event.status.${event.status}`)}
                         </Badge>
                       </div>
                     </CardHeader>
@@ -1234,21 +1208,21 @@ function ListView({
                       <div className="flex items-center gap-2 text-sm">
                         <Clock className="h-4 w-4 text-muted-foreground" />
                         <span>
-                          Durée : {endDate.diff(eventDate, 'hours').hours.toFixed(1)}h
+                          {t('event.duration', { duration: endDate.diff(eventDate, 'hours').hours.toFixed(1) }) }
                         </span>
                       </div>
                       {event.creator ? (
                         <div className="flex items-center gap-2 text-sm">
                           <User2Icon className="h-4 w-4 text-muted-foreground" />
                           <span className="font-medium">
-                            {event.creator.displayName ? `${event.creator.displayName}#${event.creator.discriminator}` : "Utilisateur inconnu"}
+                            {event.creator.displayName ? `${event.creator.displayName}#${event.creator.discriminator}` : t('event.unknownUser')}
                           </span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2 text-sm">
                           <MapPin className="h-4 w-4 text-muted-foreground" />
                           <span className="font-medium">
-                            {event.lair?.name || "Lieu inconnu"}
+                            {event.lair?.name || t('event.unknownLair')}
                           </span>
                         </div>
                       )}
@@ -1262,18 +1236,18 @@ function ListView({
                       <div className="flex items-center gap-2 text-sm">
                           <Euro className="h-4 w-4 text-muted-foreground" />
                           <span className="font-semibold">
-                            {(!event.price || event.price === 0) ? "Gratuit" : `${event.price}€`}
+                            {(!event.price || event.price === 0) ? t('event.free') : `${event.price}€`}
                           </span>
                         </div>
                       <div className="flex flex-wrap gap-1 mt-2">
                         {userId && (event.creatorId === userId) && (
                           <Badge variant="default" className="text-xs bg-blue-500 text-white">
-                            Créateur
+                            {t('event.creator')}
                           </Badge>
                         )}
                         {userId && event.participants?.includes(userId) && (
                           <Badge variant="default" className="text-xs bg-green-500 text-white">
-                            Inscrit
+                            {t('event.registered')}
                           </Badge>
                         )}
                       </div>
@@ -1283,23 +1257,23 @@ function ListView({
                         <button
                           onClick={(e) => onOpenEventDetails(event, e)}
                           className="flex-1 py-2 px-3 hover:bg-accent rounded-md transition-colors flex items-center justify-center gap-2"
-                          title="Voir les détails"
+                          title={t('event.seeDetails')}
                         >
                           <HelpCircle className="h-4 w-4" />
-                          <span className="text-sm">Détails</span>
+                          <span className="text-sm">{t('event.details')}</span>
                         </button>
                         {/* Bouton favori */}
                         {userId && (
                           <button
                             onClick={(e) => onToggleFavorite(event.id, !!isFavorited, e)}
                             className="flex-1 py-2 px-3 hover:bg-accent rounded-md transition-colors flex items-center justify-center gap-2"
-                            title={isFavorited ? "Retirer des favoris" : "Ajouter aux favoris"}
+                            title={isFavorited ? t('event.favoriteRemove') : t('event.favoriteAdd')}
                           >
                             <Star 
                               className={cn("h-4 w-4", isFavorited && "fill-yellow-500 text-yellow-500")} 
                             />
                             <span className="text-sm">
-                              {isFavorited ? "Favori" : "Favoris"}
+                              {isFavorited ? t('event.inFavorites') : t('event.favorite') }
                               {event.favoritedBy && event.favoritedBy.length > 0 && (
                                 <span className="ml-1 font-medium">({event.favoritedBy.length})</span>
                               )}

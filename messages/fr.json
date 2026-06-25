@@ -97,7 +97,29 @@
         "Dim": "Dim"
       }
     },
-    "ListView": {}
+    "ListView": {
+      "noEventsThisMonth": "Aucun événement pour ce mois",
+      "dayTitleToday": " - Aujourd'hui"
+    },
+    "event": {
+      "unknownUser": "Utilisateur inconnu",
+      "unknownLair": "Lieu inconnu",
+      "creator": "Créateur",
+      "duration": "Durée : {duration}h",
+      "details": "Détails",
+      "seeDetails": "Voir les détails",
+      "favorite": "Favori",
+      "inFavorite": "Favoris",
+      "favoriteRemove": "Retirer des favoris",
+      "favoriteAdd": "Ajouter aux favoris",
+      "free": "Gratuit",
+      "registered": "Inscrit",
+      "status": {
+        "available": "Disponible",
+        "sold-oud": "Complet",
+        "cancelled": "Annulé"
+      }
+    }
   },
   "Login": {
     "title": "Connexion à Joutes",
