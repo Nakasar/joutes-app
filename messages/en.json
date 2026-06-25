@@ -126,6 +126,54 @@
       }
     }
   },
+  "EventDetail": {
+    "privateEvent": {
+      "title": "This event is private. Only the creator and participants can access it.",
+      "description": "This event is private and is not linked to a venue. It is only visible to the creator and participants."
+    },
+    "joined": "You are now registered for this event!",
+    "privateBadge": "Private",
+    "runningState": {
+      "ongoing": "Ongoing",
+      "completed": "Completed"
+    },
+    "status": {
+      "available": "Available",
+      "soldOut": "Sold out",
+      "cancelled": "Cancelled"
+    },
+    "portalButtons": {
+      "organizer": "Organizer portal",
+      "player": "Player portal"
+    },
+    "sections": {
+      "dateTime": "Date and time",
+      "start": "Start",
+      "end": "End",
+      "location": "Location",
+      "description": "Description",
+      "link": "Link",
+      "moreInfo": "See more information",
+      "price": "Price",
+      "participants": "Participants",
+      "loginToJoin": "Log in to register"
+    },
+    "priceFree": "Free",
+    "participantsCount": "{count} participant(s)",
+    "participantsCountWithMax": "{count} / {max} participant(s)"
+  },
+  "EventJoin": {
+    "pending": "The Joutes goblins are validating your registration, please wait a moment!",
+    "errors": {
+      "generic": "Error"
+    }
+  },
+  "EventPortal": {
+    "accessDenied": {
+      "title": "Access denied",
+      "description": "You must be the creator or a participant of this event to access the portal."
+    }
+  },
   "Games": {
     "explorer": {
       "title": "Explore the Games",

@@ -4,11 +4,13 @@ import { useParams, useRouter } from "next/navigation";
 import { joinEventAction } from "../../actions";
 import { useEffect } from "react";
 import { useSession } from "@/lib/auth-client";
+import { useTranslations } from "next-intl";
 
 export default function JoinPage() {
     const { eventId } = useParams<{ eventId: string }>();
     const router = useRouter();
     const session = useSession();
+    const t = useTranslations("EventJoin");
 
     useEffect(() => {
         if (session.isPending) {
@@ -23,16 +25,16 @@ export default function JoinPage() {
             if (result.success) {
                 router.push(`/events/${eventId}?joined=true`);
             } else {
-                router.push(`/events/${eventId}?error=${encodeURIComponent(result.error || "Erreur")}`);
+                router.push(`/events/${eventId}?error=${encodeURIComponent(result.error || t("errors.generic"))}`);
             }
         }).catch(() => {
-            router.push(`/events/${eventId}?error=${encodeURIComponent("Erreur")}`);
+            router.push(`/events/${eventId}?error=${encodeURIComponent(t("errors.generic"))}`);
         });
-    }, [eventId, session]);
+    }, [eventId, session, t, router]);
 
     return (
         <div>
-            <p>Les lutins de joutes sont en train de valider votre inscription, patientez un peu !</p>
+            <p>{t("pending")}</p>
         </div>
     );
 }

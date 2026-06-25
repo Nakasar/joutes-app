@@ -126,6 +126,54 @@
       }
     }
   },
+  "EventDetail": {
+    "privateEvent": {
+      "title": "Cet événement est privé. Seul le créateur et les participants peuvent y accéder.",
+      "description": "Cet événement est privé et n'est pas rattaché à un lieu. Il est visible uniquement par le créateur et les participants."
+    },
+    "joined": "Vous êtes maintenant inscrit à cet événement !",
+    "privateBadge": "Privé",
+    "runningState": {
+      "ongoing": "En cours",
+      "completed": "Terminé"
+    },
+    "status": {
+      "available": "Disponible",
+      "soldOut": "Complet",
+      "cancelled": "Annulé"
+    },
+    "portalButtons": {
+      "organizer": "Portail Organisateur",
+      "player": "Portail Joueur"
+    },
+    "sections": {
+      "dateTime": "Date et heure",
+      "start": "Début",
+      "end": "Fin",
+      "location": "Lieu",
+      "description": "Description",
+      "link": "Lien",
+      "moreInfo": "Voir plus d'informations",
+      "price": "Prix",
+      "participants": "Participants",
+      "loginToJoin": "Se connecter pour s'inscrire"
+    },
+    "priceFree": "Gratuit",
+    "participantsCount": "{count} inscrit(s)",
+    "participantsCountWithMax": "{count} / {max} inscrit(s)"
+  },
+  "EventJoin": {
+    "pending": "Les lutins de joutes sont en train de valider votre inscription, patientez un peu !",
+    "errors": {
+      "generic": "Erreur"
+    }
+  },
+  "EventPortal": {
+    "accessDenied": {
+      "title": "Accès refusé",
+      "description": "Vous devez être créateur ou participant de cet événement pour accéder au portail."
+    }
+  },
   "Games": {
     "explorer": {
       "title": "Explorez les jeux",

@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events";
+import { getTranslations } from "next-intl/server";
 
 type PortalPageProps = {
   params: Promise<{
@@ -14,6 +15,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
+  const t = await getTranslations("EventPortal");
 
   if (!session?.user) {
     redirect(`/login?from=/events/${eventId}/portal`);
@@ -35,9 +37,9 @@ export default async function PortalPage({ params }: PortalPageProps) {
     return (
       <div className="container mx-auto p-6 max-w-4xl">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Accès refusé</h1>
+          <h1 className="text-2xl font-bold mb-4">{t("accessDenied.title")}</h1>
           <p className="text-muted-foreground">
-            Vous devez être créateur ou participant de cet événement pour accéder au portail.
+            {t("accessDenied.description")}
           </p>
         </div>
       </div>

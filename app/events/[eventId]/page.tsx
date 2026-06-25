@@ -35,6 +35,7 @@ import DeleteEventButton from "./DeleteEventButton";
 import { DateTime } from "luxon";
 import { getEventParticipants } from "./portal/participant-actions";
 import ReactMarkdown from "react-markdown";
+import { getLocale, getTranslations } from "next-intl/server";
 
 type EventPageProps = {
   params: Promise<{
@@ -52,6 +53,8 @@ export default async function EventPage({ params, searchParams }: EventPageProps
   const session = await auth.api.getSession({
     headers: await headers(),
   });
+  const locale = await getLocale();
+  const t = await getTranslations("EventDetail");
 
   const event = await getEventById(eventId);
 
@@ -74,27 +77,27 @@ export default async function EventPage({ params, searchParams }: EventPageProps
         <Alert>
           <Lock className="h-4 w-4" />
           <AlertDescription>
-            Cet événement est privé. Seul le créateur et les participants peuvent y accéder.
+            {t("privateEvent.title")}
           </AlertDescription>
         </Alert>
       </div>
     );
   }
 
-  const startDate = DateTime.fromISO(event.startDateTime);
-  const endDate = DateTime.fromISO(event.endDateTime);
+  const startDate = DateTime.fromISO(event.startDateTime, { locale });
+  const endDate = DateTime.fromISO(event.endDateTime, { locale });
   const isFavorited = session?.user && event.favoritedBy?.includes(session.user.id);
 
   // Récupérer les participants (utilisateurs et invités)
-  const participantsResult = isCreator 
+  const participantsResult = isCreator
     ? await getEventParticipants(event.id)
     : { success: true, data: [] };
-  
-  const allParticipants = participantsResult.success && participantsResult.data 
-    ? participantsResult.data 
+
+  const allParticipants = participantsResult.success && participantsResult.data
+    ? participantsResult.data
     : [];
 
-  const registeredCount = allParticipants.filter(p => p.registrationStatus === "REGISTERED").length;
+  const registeredCount = allParticipants.filter((p) => p.registrationStatus === "REGISTERED").length;
   const isFull = event.maxParticipants ? registeredCount >= event.maxParticipants : false;
 
   return (
@@ -104,7 +107,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
           <Alert className="border-green-500 bg-green-50">
             <CheckCircle className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-800">
-              Vous êtes maintenant inscrit à cet événement !
+              {t("joined")}
             </AlertDescription>
           </Alert>
         )}
@@ -124,17 +127,17 @@ export default async function EventPage({ params, searchParams }: EventPageProps
               {isPrivateEvent && (
                 <Badge variant="secondary">
                   <Lock className="h-3 w-3 mr-1" />
-                  Privé
+                  {t("privateBadge")}
                 </Badge>
               )}
-              {event.runningState === 'ongoing' && (
+              {event.runningState === "ongoing" && (
                 <Badge variant="default" className="bg-green-600">
-                  En cours
+                  {t("runningState.ongoing")}
                 </Badge>
               )}
-              {event.runningState === 'completed' && (
+              {event.runningState === "completed" && (
                 <Badge variant="secondary">
-                  Terminé
+                  {t("runningState.completed")}
                 </Badge>
               )}
             </div>
@@ -152,9 +155,9 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                 : "secondary"
             }
           >
-            {event.status === "available" && "Disponible"}
-            {event.status === "sold-out" && "Complet"}
-            {event.status === "cancelled" && "Annulé"}
+            {event.status === "available" && t("status.available")}
+            {event.status === "sold-out" && t("status.soldOut")}
+            {event.status === "cancelled" && t("status.cancelled")}
           </Badge>
         </div>
 
@@ -162,7 +165,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              Cet événement est privé et n&apos;est pas rattaché à un lieu. Il est visible uniquement par le créateur et les participants.
+              {t("privateEvent.description")}
             </AlertDescription>
           </Alert>
         )}
@@ -174,7 +177,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
               <Button asChild className="flex-1">
                 <Link href={`/events/${event.id}/portal/organizer`}>
                   <Settings className="h-4 w-4 mr-2" />
-                  Portail Organisateur
+                  {t("portalButtons.organizer")}
                 </Link>
               </Button>
             )}
@@ -182,7 +185,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
               <Button asChild variant="outline" className="flex-1">
                 <Link href={`/events/${event.id}/portal/player`}>
                   <Users className="h-4 w-4 mr-2" />
-                  Portail Joueur
+                  {t("portalButtons.player")}
                 </Link>
               </Button>
             )}
@@ -195,25 +198,25 @@ export default async function EventPage({ params, searchParams }: EventPageProps
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="h-5 w-5" />
-                  Date et heure
+                  {t("sections.dateTime")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex items-start gap-2">
                   <Clock className="h-4 w-4 mt-1 text-muted-foreground" />
                   <div>
-                    <p className="font-medium">Début</p>
+                    <p className="font-medium">{t("sections.start")}</p>
                     <p className="text-sm text-muted-foreground">
-                      {startDate.setLocale('fr').toLocaleString(DateTime.DATETIME_FULL)}
+                      {startDate.toLocaleString(DateTime.DATETIME_FULL)}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <Clock className="h-4 w-4 mt-1 text-muted-foreground" />
                   <div>
-                    <p className="font-medium">Fin</p>
+                    <p className="font-medium">{t("sections.end")}</p>
                     <p className="text-sm text-muted-foreground">
-                      {endDate.setLocale('fr').toLocaleString(DateTime.DATETIME_FULL)}
+                      {endDate.toLocaleString(DateTime.DATETIME_FULL)}
                     </p>
                   </div>
                 </div>
@@ -225,7 +228,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <MapPin className="h-5 w-5" />
-                    Lieu
+                    {t("sections.location")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -243,12 +246,12 @@ export default async function EventPage({ params, searchParams }: EventPageProps
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <InfoIcon className="h-5 w-5" />
-                  Description
+                  {t("sections.description")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="prose prose-sm dark:prose-invert max-w-none ">
-                  <ReactMarkdown children={event.description} />
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <ReactMarkdown>{event.description}</ReactMarkdown>
                 </div>
               </CardContent>
             </Card>
@@ -258,7 +261,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <ExternalLink className="h-5 w-5" />
-                    Lien
+                    {t("sections.link")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -268,7 +271,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                     rel="noopener noreferrer"
                     className="text-primary hover:underline flex items-center gap-1"
                   >
-                    Voir plus d&apos;informations
+                    {t("sections.moreInfo")}
                     <ExternalLink className="h-3 w-3" />
                   </a>
                 </CardContent>
@@ -281,12 +284,12 @@ export default async function EventPage({ params, searchParams }: EventPageProps
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Euro className="h-5 w-5" />
-                  Prix
+                  {t("sections.price")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-bold">
-                  {(event.price === 0 || !event.price) ? "Gratuit" : `${event.price.toFixed(2)} €`}
+                  {(event.price === 0 || !event.price) ? t("priceFree") : `${event.price.toFixed(2)} €`}
                 </p>
               </CardContent>
             </Card>
@@ -295,11 +298,12 @@ export default async function EventPage({ params, searchParams }: EventPageProps
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Users className="h-5 w-5" />
-                  Participants
+                  {t("sections.participants")}
                 </CardTitle>
                 <CardDescription>
-                  {registeredCount}
-                  {event.maxParticipants && ` / ${event.maxParticipants}`} inscrit(s)
+                  {event.maxParticipants
+                    ? t("participantsCountWithMax", { count: registeredCount, max: event.maxParticipants })
+                    : t("participantsCount", { count: registeredCount })}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -347,7 +351,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                       eventId={event.id}
                       initialIsFavorited={isFavorited || false}
                     />
-                    
+
                     {isCreator && (
                       <QRCodeButton eventId={event.id} />
                     )}
@@ -356,14 +360,14 @@ export default async function EventPage({ params, searchParams }: EventPageProps
 
                 {isCreator && (
                   <div className="pt-4 border-t space-y-2">
-                    {event.status !== 'cancelled' && (
-                      <CancelEventButton 
+                    {event.status !== "cancelled" && (
+                      <CancelEventButton
                         eventId={event.id}
                         eventName={event.name}
-                        disabled={event.runningState === 'completed'}
+                        disabled={event.runningState === "completed"}
                       />
                     )}
-                    <DeleteEventButton 
+                    <DeleteEventButton
                       eventId={event.id}
                       eventName={event.name}
                     />
@@ -373,7 +377,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                 {!session?.user && (
                   <Button asChild className="w-full">
                     <Link href={`/login?redirect=/events/${event.id}`}>
-                      Se connecter pour s&apos;inscrire
+                      {t("sections.loginToJoin")}
                     </Link>
                   </Button>
                 )}
