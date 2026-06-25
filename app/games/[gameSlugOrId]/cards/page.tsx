@@ -35,5 +35,5 @@ export default async function CardsPage({ params }: { params: Promise<{ gameSlug
   const game = await db.collection<Game>("games").findOne({slug: gameSlugOrId});
   if (!game || !game.slug) notFound();
 
-  return <CardsComponent />;
+  return <CardsComponent gameSlug={game.slug} />;
 }

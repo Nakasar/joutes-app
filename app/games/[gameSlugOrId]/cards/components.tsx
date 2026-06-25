@@ -3,15 +3,13 @@
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { BoosterCard } from "@/lib/types/booster";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-export function CardsComponent() {
+export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [cards, setCards] = useState<BoosterCard[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -19,7 +17,7 @@ export function CardsComponent() {
     setIsLoading(true);
     try {
       const response = await fetch(
-        `/api/games/riftbound/cards?searchQuery=${encodeURIComponent(
+        `/api/games/${gameSlug}/cards?searchQuery=${encodeURIComponent(
           searchQuery
         )}`
       );
@@ -47,7 +45,7 @@ export function CardsComponent() {
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">Recherche de cartes</h1>
       <Button asChild>
-        <Link href={`/games/${"riftbound"}`} className="text-blue-600 hover:underline">
+        <Link href={`/games/${gameSlug}`} className="text-blue-600 hover:underline">
           ← Retour au portail du jeu
         </Link>
       </Button>
@@ -78,7 +76,7 @@ export function CardsComponent() {
         {cards.map((card) => (
           <Link
             key={`${card.cardId}-${card.setCode}-${card.collectorNumber}`}
-            href={`/games/riftbound/cards/${card.id}`}
+            href={`/games/${gameSlug}/cards/${card.id}`}
             className="cursor-pointer border rounded-lg p-4 hover:shadow-lg transition-shadow"
           >
             <img
