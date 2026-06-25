@@ -1,0 +1,17 @@
+{
+  "Header": {
+    "menu": {
+      "Jeux": "Jeux",
+      "Événements": "Événements",
+      "Lieux": "Lieux",
+      "Ligues": "Ligues",
+      "Parties": "Parties",
+      "Administration": "Administration",
+      "Mon Profil": "Mon Profil",
+      "Succès": "Succès",
+      "Déconnexion": "Déconnexion",
+      "Se connecter": "Se connecter",
+      "Connexion": "Connexion"
+    }
+  }
+}

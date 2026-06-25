@@ -1,0 +1,17 @@
+{
+  "Header": {
+    "menu": {
+      "Jeux": "Games",
+      "Événements": "Events",
+      "Lieux": "Lairs",
+      "Ligues": "Leagues",
+      "Parties": "Matches",
+      "Administration": "Administration",
+      "Mon Profil": "My Profile",
+      "Succès": "Achievements",
+      "Déconnexion": "Logout",
+      "Se connecter": "Login",
+      "Connexion": "Login"
+    }
+  }
+}

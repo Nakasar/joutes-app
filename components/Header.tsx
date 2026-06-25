@@ -23,8 +23,11 @@ import {
   NavigationMenuList,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
+import {useTranslations} from "next-intl";
 
 export default function Header() {
+  const t = useTranslations('Header');
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { data: session, isPending } = useSession();
 
@@ -53,7 +56,7 @@ export default function Header() {
                 <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
                   <Link href="/games">
                     <Dices className="mr-2 h-4 w-4" />
-                    Jeux
+                    {t('menu.Jeux')}
                   </Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
@@ -61,7 +64,7 @@ export default function Header() {
                 <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
                   <Link href="/events">
                     <Calendar className="mr-2 h-4 w-4" />
-                    Événements
+                    {t('menu.Événements')}
                   </Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
@@ -69,7 +72,7 @@ export default function Header() {
                 <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
                   <Link href="/lairs">
                     <MapPin className="mr-2 h-4 w-4" />
-                    Lieux
+                    {t('menu.Lieux')}
                   </Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
@@ -77,7 +80,7 @@ export default function Header() {
                 <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
                   <Link href="/leagues">
                     <Trophy className="mr-2 h-4 w-4" />
-                    Ligues
+                    {t('menu.Ligues')}
                   </Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
@@ -86,7 +89,7 @@ export default function Header() {
                   <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
                     <Link href="/game-matches">
                       <GamepadIcon className="mr-2 h-4 w-4" />
-                      Parties
+                      {t('menu.Parties')}
                     </Link>
                   </NavigationMenuLink>
                 </NavigationMenuItem>
@@ -96,7 +99,7 @@ export default function Header() {
                   <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
                     <Link href="/admin">
                       <Shield className="mr-2 h-4 w-4" />
-                      Administration
+                      {t('menu.Administration')}
                     </Link>
                   </NavigationMenuLink>
                 </NavigationMenuItem>
@@ -126,27 +129,27 @@ export default function Header() {
                   <DropdownMenuItem asChild>
                     <Link href="/account" className="flex w-full cursor-pointer">
                       <User className="mr-2 h-4 w-4" />
-                      <span>Mon Profil</span>
+                      <span>{t('menu.Mon Profil')}</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link href="/account/achievements" className="flex w-full cursor-pointer">
                       <Trophy className="mr-2 h-4 w-4" />
-                      <span>Succès</span>
+                      <span>{t('menu.Succès')}</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>Déconnexion</span>
+                    <span>{t('menu.Déconnexion')}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               </>
             ) : (
               <Button asChild>
-                <Link href="/login">Se connecter</Link>
+                <Link href="/login">{t('menu.Se connecter')}</Link>
               </Button>
             )}
           </div>
@@ -174,20 +177,20 @@ export default function Header() {
                   <DropdownMenuItem asChild>
                     <Link href="/account" className="flex w-full cursor-pointer">
                       <User className="mr-2 h-4 w-4" />
-                      <span>Mon Profil</span>
+                      <span>{t('menu.Mon Profil')}</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link href="/account/achievements" className="flex w-full cursor-pointer">
                       <Trophy className="mr-2 h-4 w-4" />
-                      <span>Succès</span>
+                      <span>{t('menu.Succès')}</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>Déconnexion</span>
+                    <span>{t('menu.Déconnexion')}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -196,7 +199,7 @@ export default function Header() {
 
             {!isPending && !session && (
               <Button size="sm" asChild>
-                <Link href="/login">Connexion</Link>
+                <Link href="/login">{t('menu.Connexion')}</Link>
               </Button>
             )}
 
@@ -222,32 +225,32 @@ export default function Header() {
               <Button variant="ghost" asChild className="justify-start">
                 <Link href="/games" onClick={() => setMobileMenuOpen(false)}>
                   <Dices className="mr-2 h-4 w-4" />
-                  Jeux
+                  {t('menu.Jeux')}
                 </Link>
               </Button>
               <Button variant="ghost" asChild className="justify-start">
                 <Link href="/events" onClick={() => setMobileMenuOpen(false)}>
                   <Calendar className="mr-2 h-4 w-4" />
-                  Événements
+                  {t('menu.Événements')}
                 </Link>
               </Button>
               <Button variant="ghost" asChild className="justify-start">
                 <Link href="/lairs" onClick={() => setMobileMenuOpen(false)}>
                   <MapPin className="mr-2 h-4 w-4" />
-                  Lieux
+                  {t('menu.Lieux')}
                 </Link>
               </Button>
               <Button variant="ghost" asChild className="justify-start">
                 <Link href="/leagues" onClick={() => setMobileMenuOpen(false)}>
                   <Trophy className="mr-2 h-4 w-4" />
-                  Ligues
+                  {t('menu.Ligues')}
                 </Link>
               </Button>
               {session && (
                 <Button variant="ghost" asChild className="justify-start">
                   <Link href="/game-matches" onClick={() => setMobileMenuOpen(false)}>
                     <GamepadIcon className="mr-2 h-4 w-4" />
-                    Parties
+                    {t('menu.Parties')}
                   </Link>
                 </Button>
               )}
@@ -255,7 +258,7 @@ export default function Header() {
                 <Button variant="ghost" asChild className="justify-start">
                   <Link href="/admin" onClick={() => setMobileMenuOpen(false)}>
                     <Shield className="mr-2 h-4 w-4" />
-                    Administration
+                    {t('menu.Administration')}
                   </Link>
                 </Button>
               )}
