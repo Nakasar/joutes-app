@@ -91,7 +91,7 @@ export default function IntegrationsPage() {
                         </CardHeader>
                         <CardContent>
                             <p className="mb-4">
-                                Notre serveur MCP expose les informations de Joutes dans un protocole supporté par les applications d'agents IA. Utilisez les connecteurs personnalisés pour intégrer les données de Joutes dans vos agents et permettre des interactions intelligentes avec les règles de jeux, les erratas, les précises de règles, les évènements à venir et les lieux de jeu.
+                                Notre serveur MCP expose les informations de Joutes dans un protocole supporté par les applications d&apos;agents IA. Utilisez les connecteurs personnalisés pour intégrer les données de Joutes dans vos agents et permettre des interactions intelligentes avec les règles de jeux, les erratas, les précises de règles, les évènements à venir et les lieux de jeu.
                             </p>
                             <Button asChild variant="outline">
                                 <Link href="/integrations/mcp">

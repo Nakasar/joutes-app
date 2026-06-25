@@ -621,5 +621,44 @@
         "unexpected": "Si è verificato un errore inatteso"
       }
     }
+  },
+  "PlayGroups": {
+    "page": {
+      "title": "Gruppi di gioco",
+      "description": "Gestisci i tuoi gruppi di gioco, gli inviti e i membri.",
+      "createTitle": "Crea un gruppo",
+      "createDescription": "Crea un nuovo gruppo e invita altri giocatori.",
+      "nameLabel": "Nome del gruppo",
+      "namePlaceholder": "Le mie serate di gioco",
+      "descriptionLabel": "Descrizione",
+      "descriptionPlaceholder": "Descrivi il tuo gruppo...",
+      "submit": "Crea il gruppo",
+      "groupsTitle": "I miei gruppi",
+      "empty": "Non hai ancora alcun gruppo.",
+      "invitesTitle": "Inviti in sospeso",
+      "invitedBy": "Invito ricevuto",
+      "accept": "Accetta",
+      "memberCount": "{count} membro/i",
+      "createdAt": "Creato il {value}",
+      "details": "Apri il portale",
+      "members": "Membri",
+      "loading": "Caricamento...",
+      "inviteTitle": "Invita un giocatore",
+      "invitePlaceholder": "Username, identificatore o e-mail",
+      "inviteSubmit": "Invia l'invito",
+      "membersTitle": "Membri del gruppo",
+      "membersDescription": "Gestisci i membri e i loro ruoli.",
+      "noMembers": "Nessun membro ancora.",
+      "demote": "Declassa",
+      "promote": "Promuovi",
+      "remove": "Rimuovi",
+      "portalTitle": "Portale del gruppo",
+      "portalDescription": "Visualizza le informazioni e i membri del gruppo.",
+      "portalOverview": "Panoramica del gruppo",
+      "createdAtLabel": "Data di creazione",
+      "manageMembers": "Gestisci i membri",
+      "memberCountValue": "{count} membro/i",
+      "back": "Torna ai gruppi"
+    }
   }
 }

@@ -201,7 +201,7 @@ export default function AddErrataDialog() {
             </div>
             <div className="grid gap-2">
               <label htmlFor="errataDate" className="text-sm font-medium">
-                Date de l'errata
+                Date de l&apos;errata
               </label>
               <Input
                 id="errataDate"

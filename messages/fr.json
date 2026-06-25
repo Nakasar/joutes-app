@@ -680,5 +680,45 @@
         "unexpected": "Une erreur inattendue s'est produite"
       }
     }
+  },
+  "PlayGroups": {
+    "page": {
+      "title": "Groupes de jeu",
+      "description": "Gérez vos groupes de jeu, vos invitations et les membres de votre équipe.",
+      "createTitle": "Créer un groupe",
+      "createDescription": "Créez un nouveau groupe et invitez d'autres joueurs.",
+      "nameLabel": "Nom du groupe",
+      "namePlaceholder": "Mes soirées de jeu",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Décrivez votre groupe...",
+      "submit": "Créer le groupe",
+      "groupsTitle": "Mes groupes",
+      "empty": "Vous n'avez pas encore de groupe.",
+      "invitesTitle": "Invitations en attente",
+      "invitedBy": "Invitation reçue",
+      "accept": "Accepter",
+      "memberCount": "{count} membre(s)",
+      "createdAt": "Créé le {value}",
+      "details": "Voir le portail",
+      "members": "Membres",
+      "loading": "Chargement...",
+      "inviteTitle": "Inviter un joueur",
+      "invitePlaceholder": "Nom d'utilisateur, identifiant ou e-mail",
+      "inviteSubmit": "Envoyer l'invitation",
+      "membersTitle": "Membres du groupe",
+      "membersDescription": "Gérez les membres et leurs rôles.",
+      "noMembers": "Aucun membre pour le moment.",
+      "demote": "Rétrograder",
+      "promote": "Promouvoir",
+      "remove": "Retirer",
+      "portalTitle": "Portail du groupe",
+      "portalDescription": "Consultez les informations et les membres du groupe.",
+      "portalOverview": "Aperçu du groupe",
+      "createdAtLabel": "Date de création",
+      "manageMembers": "Gérer les membres",
+      "memberCountValue": "{count} membre(s)",
+      "back": "Retour aux groupes"
+    }
   }
+
 }

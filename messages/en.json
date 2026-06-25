@@ -679,5 +679,44 @@
         "unexpected": "An unexpected error occurred"
       }
     }
+  },
+  "PlayGroups": {
+    "page": {
+      "title": "Play groups",
+      "description": "Manage your play groups, invitations, and members.",
+      "createTitle": "Create a group",
+      "createDescription": "Create a new group and invite other players.",
+      "nameLabel": "Group name",
+      "namePlaceholder": "My game nights",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Describe your group...",
+      "submit": "Create the group",
+      "groupsTitle": "My groups",
+      "empty": "You do not have any group yet.",
+      "invitesTitle": "Pending invitations",
+      "invitedBy": "Invitation received",
+      "accept": "Accept",
+      "memberCount": "{count} member(s)",
+      "createdAt": "Created on {value}",
+      "details": "Open portal",
+      "members": "Members",
+      "loading": "Loading...",
+      "inviteTitle": "Invite a player",
+      "invitePlaceholder": "Username, identifier, or e-mail",
+      "inviteSubmit": "Send invitation",
+      "membersTitle": "Group members",
+      "membersDescription": "Manage members and their roles.",
+      "noMembers": "No members yet.",
+      "demote": "Demote",
+      "promote": "Promote",
+      "remove": "Remove",
+      "portalTitle": "Group portal",
+      "portalDescription": "View the group information and members.",
+      "portalOverview": "Group overview",
+      "createdAtLabel": "Creation date",
+      "manageMembers": "Manage members",
+      "memberCountValue": "{count} member(s)",
+      "back": "Back to groups"
+    }
   }
 }

@@ -200,9 +200,7 @@ export async function getUserCards({
   }
 
   // Agrégation pour grouper les cartes par setCode et collectorNumber
-  const pipeline: {
-
-  }[] = [
+  const pipeline: Record<string, unknown>[] = [
     {
       $match: initialMatch,
     },
