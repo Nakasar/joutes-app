@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { addLairToUserList, removeLairFromUserList } from "@/app/account/actions";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 interface FollowLairButtonProps {
   lairId: string;
@@ -15,6 +16,7 @@ export default function FollowLairButton({
   isFollowing: initialIsFollowing,
   isAuthenticated 
 }: FollowLairButtonProps) {
+  const t = useTranslations("Lairs");
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +35,7 @@ export default function FollowLairButton({
           setError(null);
           router.refresh();
         } else {
-          setError(result.error || "Erreur");
+          setError(result.error || t("follow.errors.generic"));
         }
       } else {
         const result = await addLairToUserList(lairId);
@@ -42,7 +44,7 @@ export default function FollowLairButton({
           setError(null);
           router.refresh();
         } else {
-          setError(result.error || "Erreur");
+          setError(result.error || t("follow.errors.generic"));
         }
       }
     });
@@ -64,7 +66,7 @@ export default function FollowLairButton({
             : "bg-blue-500 text-white hover:bg-blue-600"
         }`}
       >
-        {isPending ? "..." : isFollowing ? "NE PLUS SUIVRE" : "SUIVRE"}
+        {isPending ? "..." : isFollowing ? t("follow.unfollow") : t("follow.follow")}
       </button>
     </div>
   );

@@ -13,12 +13,14 @@ import LairDetailsForm from "./LairDetailsForm";
 import OwnersManager from "./OwnersManager";
 import PrivateLairInvitationManager from "./PrivateLairInvitationManager";
 import PrivateLairFollowersManager from "./PrivateLairFollowersManager";
+import { getTranslations } from "next-intl/server";
 
 export default async function ManageLairPage({
   params,
 }: {
   params: Promise<{ lairId: string }>;
 }) {
+  const t = await getTranslations("Lairs");
   const { lairId } = await params;
   
   // Vérifier que l'utilisateur est admin ou owner du lair
@@ -54,17 +56,17 @@ export default async function ManageLairPage({
         <Button variant="secondary" asChild size="sm">
           <Link href={`/lairs/${lairId}`}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Retour au lieu
+            {t("manage.backToLair")}
           </Link>
         </Button>
       </div>
 
       <div className="flex items-center gap-3 mb-8">
-        <h1 className="text-4xl font-bold">Gérer {lair.name}</h1>
+        <h1 className="text-4xl font-bold">{t("manage.title", { name: lair.name })}</h1>
         {lair.isPrivate && (
           <Badge variant="secondary" className="bg-muted">
             <Lock className="h-3 w-3 mr-1" />
-            Privé
+            {t("manage.privateBadge")}
           </Badge>
         )}
       </div>
@@ -91,9 +93,9 @@ export default async function ManageLairPage({
         {/* Formulaire de modification des détails */}
         <Card>
           <CardHeader>
-            <CardTitle>Informations du lieu</CardTitle>
+            <CardTitle>{t("manage.detailsTitle")}</CardTitle>
             <CardDescription>
-              Modifiez le nom, la bannière et les jeux disponibles dans ce lieu
+              {t("manage.detailsDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -104,9 +106,9 @@ export default async function ManageLairPage({
         {/* Gestion des owners */}
         <Card>
           <CardHeader>
-            <CardTitle>Propriétaires</CardTitle>
+            <CardTitle>{t("manage.ownersTitle")}</CardTitle>
             <CardDescription>
-              Gérez les personnes qui peuvent administrer ce lieu
+              {t("manage.ownersDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent>

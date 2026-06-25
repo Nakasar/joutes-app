@@ -6,13 +6,20 @@ import { Metadata } from "next";
 import { MapPin } from "lucide-react";
 import CreatePrivateLairButton from "./CreatePrivateLairButton";
 import LairsClient from "./LairsClient";
+import { getTranslations } from "next-intl/server";
 
-export const metadata: Metadata = {
-  title: 'Lieux de jeu',
-  description: 'Découvrez tous les lieux de jeu et leurs événements à venir',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("Lairs");
+
+  return {
+    title: t("page.title"),
+    description: t("page.description"),
+  };
+}
 
 export default async function LairsPage({ searchParams }: { searchParams: Promise<{ gameId?: string }> }) {
+  const t = await getTranslations("Lairs");
+
   // Récupérer l'utilisateur connecté pour afficher ses lairs privés
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -37,10 +44,10 @@ export default async function LairsPage({ searchParams }: { searchParams: Promis
           <div className="space-y-2">
             <h1 className="text-4xl font-bold tracking-tight flex items-center gap-2">
               <MapPin className="h-8 w-8 text-primary" />
-              Lieux de jeu
+              {t("page.title")}
             </h1>
             <p className="text-xl text-muted-foreground">
-              Découvrez tous les lieux de jeu et leurs événements à venir
+              {t("page.description")}
             </p>
           </div>
           {session?.user && <CreatePrivateLairButton />}

@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DateTime } from "luxon";
+import { useTranslations } from "next-intl";
 
 type EventFormProps = {
   lairId: string;
@@ -23,6 +24,7 @@ type EventFormProps = {
 
 export default function EventForm({ lairId, games }: EventFormProps) {
   const router = useRouter();
+  const t = useTranslations("Lairs");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   
@@ -59,7 +61,7 @@ export default function EventForm({ lairId, games }: EventFormProps) {
       if (result.success) {
         router.push(`/lairs/${lairId}`);
       } else {
-        setError(result.error || "Erreur lors de la création de l'événement");
+        setError(result.error || t("eventForm.errors.createFailed"));
       }
     });
   };
@@ -75,7 +77,7 @@ export default function EventForm({ lairId, games }: EventFormProps) {
       {/* Nom de l'événement */}
       <div className="space-y-2">
         <label htmlFor="name" className="text-sm font-medium">
-          Nom de l&apos;événement <span className="text-destructive">*</span>
+          {t("eventForm.nameLabel")} <span className="text-destructive">*</span>
         </label>
         <Input
           id="name"
@@ -83,14 +85,14 @@ export default function EventForm({ lairId, games }: EventFormProps) {
           required
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          placeholder="Ex: Tournoi du vendredi soir"
+          placeholder={t("eventForm.namePlaceholder")}
         />
       </div>
 
       {/* Jeu */}
       <div className="space-y-2">
         <label htmlFor="gameName" className="text-sm font-medium">
-          Jeu <span className="text-destructive">*</span>
+          {t("eventForm.gameLabel")} <span className="text-destructive">*</span>
         </label>
         {games.length > 0 ? (
           <Select
@@ -115,7 +117,7 @@ export default function EventForm({ lairId, games }: EventFormProps) {
             required
             value={formData.gameName}
             onChange={(e) => setFormData({ ...formData, gameName: e.target.value })}
-            placeholder="Nom du jeu"
+            placeholder={t("eventForm.gamePlaceholder")}
           />
         )}
       </div>
@@ -123,7 +125,7 @@ export default function EventForm({ lairId, games }: EventFormProps) {
       {/* Date et heure de début */}
       <div className="space-y-2">
         <label htmlFor="startDateTime" className="text-sm font-medium">
-          Date et heure de début <span className="text-destructive">*</span>
+          {t("eventForm.startDateLabel")} <span className="text-destructive">*</span>
         </label>
         <Input
           id="startDateTime"
@@ -137,7 +139,7 @@ export default function EventForm({ lairId, games }: EventFormProps) {
       {/* Date et heure de fin */}
       <div className="space-y-2">
         <label htmlFor="endDateTime" className="text-sm font-medium">
-          Date et heure de fin <span className="text-destructive">*</span>
+          {t("eventForm.endDateLabel")} <span className="text-destructive">*</span>
         </label>
         <Input
           id="endDateTime"
@@ -151,7 +153,7 @@ export default function EventForm({ lairId, games }: EventFormProps) {
       {/* Statut */}
       <div className="space-y-2">
         <label htmlFor="status" className="text-sm font-medium">
-          Statut <span className="text-destructive">*</span>
+          {t("eventForm.statusLabel")} <span className="text-destructive">*</span>
         </label>
         <Select
           value={formData.status}
@@ -163,17 +165,17 @@ export default function EventForm({ lairId, games }: EventFormProps) {
           <SelectContent>
             <SelectItem value="available">
               <div className="flex items-center gap-2">
-                <Badge variant="default">Disponible</Badge>
+                <Badge variant="default">{t("eventForm.status.available")}</Badge>
               </div>
             </SelectItem>
             <SelectItem value="sold-out">
               <div className="flex items-center gap-2">
-                <Badge variant="destructive">Complet</Badge>
+                <Badge variant="destructive">{t("eventForm.status.soldOut")}</Badge>
               </div>
             </SelectItem>
             <SelectItem value="cancelled">
               <div className="flex items-center gap-2">
-                <Badge variant="secondary">Annulé</Badge>
+                <Badge variant="secondary">{t("eventForm.status.cancelled")}</Badge>
               </div>
             </SelectItem>
           </SelectContent>
@@ -183,7 +185,7 @@ export default function EventForm({ lairId, games }: EventFormProps) {
       {/* Prix */}
       <div className="space-y-2">
         <label htmlFor="price" className="text-sm font-medium">
-          Prix (€) <span className="text-muted-foreground">(optionnel)</span>
+          {t("eventForm.priceLabel")} <span className="text-muted-foreground">({t("eventForm.optional")})</span>
         </label>
         <Input
           id="price"
@@ -199,7 +201,7 @@ export default function EventForm({ lairId, games }: EventFormProps) {
       {/* URL */}
       <div className="space-y-2">
         <label htmlFor="url" className="text-sm font-medium">
-          Lien vers l&apos;événement <span className="text-muted-foreground">(optionnel)</span>
+          {t("eventForm.urlLabel")} <span className="text-muted-foreground">({t("eventForm.optional")})</span>
         </label>
         <Input
           id="url"
@@ -219,10 +221,10 @@ export default function EventForm({ lairId, games }: EventFormProps) {
           disabled={isPending}
           className="flex-1"
         >
-          Annuler
+          {t("eventForm.cancel")}
         </Button>
         <Button type="submit" disabled={isPending} className="flex-1">
-          {isPending ? "Création en cours..." : "Créer l'événement"}
+          {isPending ? t("eventForm.creating") : t("eventForm.create")}
         </Button>
       </div>
     </form>

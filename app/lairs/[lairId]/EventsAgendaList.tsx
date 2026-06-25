@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { useSession } from '@/lib/auth-client';
 import EventDetailsModal from '@/app/events/EventDetailsModal';
 import { toggleEventFavoriteAction } from '@/app/events/actions';
+import { useTranslations } from 'next-intl';
 
 interface EventsAgendaListProps {
   events: Event[];
@@ -18,7 +19,8 @@ interface EventsAgendaListProps {
 
 export default function EventsAgendaList({ events }: EventsAgendaListProps) {
   const session = useSession();
-  
+  const t = useTranslations('Lairs');
+
   // État pour gérer les favoris localement (optimistic updates)
   const [localFavorites, setLocalFavorites] = useState<Record<string, boolean>>({});
   
@@ -42,8 +44,8 @@ export default function EventsAgendaList({ events }: EventsAgendaListProps) {
       setDialogState({
         open: true,
         type: "error",
-        title: "Authentification requise",
-        message: "Vous devez être connecté pour mettre un événement en favori"
+        title: t('agenda.favorite.authRequiredTitle'),
+        message: t('agenda.favorite.authRequiredMessage')
       });
       return;
     }
@@ -60,8 +62,8 @@ export default function EventsAgendaList({ events }: EventsAgendaListProps) {
         setDialogState({
           open: true,
           type: "error",
-          title: "Erreur",
-          message: result.error || "Impossible de modifier les favoris"
+          title: t('agenda.favorite.errorTitle'),
+          message: result.error || t('agenda.favorite.genericError')
         });
       }
     } catch (error) {
@@ -71,8 +73,8 @@ export default function EventsAgendaList({ events }: EventsAgendaListProps) {
       setDialogState({
         open: true,
         type: "error",
-        title: "Erreur",
-        message: "Une erreur est survenue"
+        title: t('agenda.favorite.errorTitle'),
+        message: t('agenda.favorite.genericError')
       });
     }
   };
@@ -109,9 +111,9 @@ export default function EventsAgendaList({ events }: EventsAgendaListProps) {
     return (
       <div className="text-center py-12">
         <Calendar className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-semibold mb-2">Aucun événement à venir</h3>
+        <h3 className="text-lg font-semibold mb-2">{t('agenda.emptyTitle')}</h3>
         <p className="text-muted-foreground">
-          Il n&apos;y a pas d&apos;événements programmés pour le moment.
+          {t('agenda.emptyDescription')}
         </p>
       </div>
     );
@@ -165,10 +167,10 @@ export default function EventsAgendaList({ events }: EventsAgendaListProps) {
                                 }
                               >
                                 {event.status === 'available'
-                                  ? 'Disponible'
+                                  ? t('agenda.status.available')
                                   : event.status === 'sold-out'
-                                  ? 'Complet'
-                                  : 'Annulé'}
+                                  ? t('agenda.status.soldOut')
+                                  : t('agenda.status.cancelled')}
                               </Badge>
                             </div>
                             <div className="flex items-center gap-2 text-muted-foreground">
@@ -210,7 +212,7 @@ export default function EventsAgendaList({ events }: EventsAgendaListProps) {
                             {event.price !== undefined && (
                               <div className="flex items-center gap-2">
                                 <span className="font-semibold">
-                                  {event.price === 0 ? 'Gratuit' : `${event.price}€`}
+                                  {event.price === 0 ? t('agenda.priceFree') : `${event.price}€`}
                                 </span>
                               </div>
                             )}
@@ -218,6 +220,7 @@ export default function EventsAgendaList({ events }: EventsAgendaListProps) {
                             {event.maxParticipants && (
                               <div className="flex items-center gap-2">
                                 <Users className="h-4 w-4 text-muted-foreground" />
+
                                 <span>
                                   {event.registeredParticipantsCount ?? 0} / {event.maxParticipants}
                                 </span>
@@ -238,7 +241,7 @@ export default function EventsAgendaList({ events }: EventsAgendaListProps) {
                                     isFavorited ? 'fill-yellow-400 text-yellow-400' : ''
                                   }`}
                                 />
-                                {isFavorited ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                                {isFavorited ? t('agenda.favorite.remove') : t('agenda.favorite.add')}
                               </Button>
                             )}
                             <Button
@@ -248,12 +251,12 @@ export default function EventsAgendaList({ events }: EventsAgendaListProps) {
                               className="gap-2"
                             >
                               <Info className="h-4 w-4" />
-                              Détails
+                              {t('agenda.details')}
                             </Button>
                             <Button asChild variant="outline" size="sm" className="gap-2">
                               <Link href={`/events/${event.id}`}>
                                 <ExternalLink className="h-4 w-4" />
-                                Voir la page
+                                {t('agenda.viewPage')}
                               </Link>
                             </Button>
                             {event.url && (
@@ -264,7 +267,7 @@ export default function EventsAgendaList({ events }: EventsAgendaListProps) {
                                   rel="noopener noreferrer"
                                 >
                                   <ExternalLink className="h-4 w-4 mr-2" />
-                                  Site de l&apos;événement
+                                  {t('agenda.eventSite')}
                                 </a>
                               </Button>
                             )}

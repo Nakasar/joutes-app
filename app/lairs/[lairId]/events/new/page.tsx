@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, CalendarPlus } from "lucide-react";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 export async function generateMetadata({ 
   params 
@@ -17,17 +18,18 @@ export async function generateMetadata({
   params: Promise<{ lairId: string }> 
 }): Promise<Metadata> {
   const { lairId } = await params;
+  const t = await getTranslations("Lairs");
   const lair = await getLairById(lairId);
 
   if (!lair) {
     return {
-      title: 'Lieu non trouvé',
+      title: t("eventNew.notFound"),
     };
   }
 
   return {
-    title: `Ajouter un événement - ${lair.name}`,
-    description: `Créer un nouvel événement pour ${lair.name}`,
+    title: t("eventNew.metadata.title", { name: lair.name }),
+    description: t("eventNew.metadata.description", { name: lair.name }),
   };
 }
 
@@ -36,6 +38,7 @@ export default async function NewEventPage({
 }: { 
   params: Promise<{ lairId: string }> 
 }) {
+  const t = await getTranslations("Lairs");
   const { lairId } = await params;
   
   // Vérifier l'authentification
@@ -76,25 +79,25 @@ export default async function NewEventPage({
           <Button variant="ghost" asChild className="mb-4">
             <Link href={`/lairs/${lairId}`}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Retour au lieu
+              {t("eventNew.backToLair")}
             </Link>
           </Button>
           
           <div className="flex items-center gap-3 mb-2">
             <CalendarPlus className="h-8 w-8 text-primary" />
-            <h1 className="text-4xl font-bold">Ajouter un événement</h1>
+            <h1 className="text-4xl font-bold">{t("eventNew.title")}</h1>
           </div>
           <p className="text-muted-foreground text-lg">
-            Créer un nouvel événement pour <strong>{lair.name}</strong>
+            {t("eventNew.description", { name: lair.name })}
           </p>
         </div>
 
         {/* Formulaire */}
         <Card>
           <CardHeader>
-            <CardTitle>Informations de l&apos;événement</CardTitle>
+            <CardTitle>{t("eventNew.formTitle")}</CardTitle>
             <CardDescription>
-              Remplissez les détails de l&apos;événement que vous souhaitez créer
+              {t("eventNew.formDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, MapPin, LocateFixed, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export type LairsFiltersValues = {
   search: string;
@@ -36,6 +37,7 @@ export default function LairsFilters({
   onFiltersChange,
   isLoading,
 }: LairsFiltersProps) {
+  const t = useTranslations("Lairs");
   const [localSearch, setLocalSearch] = useState(filters.search);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState(false);
@@ -59,7 +61,7 @@ export default function LairsFilters({
 
   const handleUseMyLocation = () => {
     if (!navigator.geolocation) {
-      setGeoError("La géolocalisation n&apos;est pas supportée par votre navigateur");
+      setGeoError(t("filters.errors.geolocationNotSupported"));
       return;
     }
 
@@ -82,16 +84,16 @@ export default function LairsFilters({
         setIsLocating(false);
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            setGeoError("Permission de géolocalisation refusée");
+            setGeoError(t("filters.errors.permissionDenied"));
             break;
           case error.POSITION_UNAVAILABLE:
-            setGeoError("Position non disponible");
+            setGeoError(t("filters.errors.positionUnavailable"));
             break;
           case error.TIMEOUT:
-            setGeoError("Délai de géolocalisation dépassé");
+            setGeoError(t("filters.errors.timeout"));
             break;
           default:
-            setGeoError("Erreur de géolocalisation");
+            setGeoError(t("filters.errors.generic"));
         }
       }
     );
@@ -102,12 +104,12 @@ export default function LairsFilters({
     const lng = parseFloat(manualCoords.lng);
 
     if (isNaN(lat) || isNaN(lng)) {
-      setGeoError("Coordonnées invalides");
+      setGeoError(t("filters.errors.invalidCoordinates"));
       return;
     }
 
     if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-      setGeoError("Coordonnées hors limites");
+      setGeoError(t("filters.errors.outOfBounds"));
       return;
     }
 
@@ -152,7 +154,7 @@ export default function LairsFilters({
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Rechercher un lieu..."
+            placeholder={t("filters.searchPlaceholder")}
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
             className="pl-10"
@@ -164,10 +166,10 @@ export default function LairsFilters({
         <div className="w-full sm:w-64">
           <Select value={filters.gameId} onValueChange={handleGameChange} disabled={isLoading}>
             <SelectTrigger>
-              <SelectValue placeholder="Filtrer par jeu" />
+              <SelectValue placeholder={t("filters.gamePlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tous les jeux</SelectItem>
+              <SelectItem value="all">{t("filters.allGames")}</SelectItem>
               {games.map((game) => (
                 <SelectItem key={game.id} value={game.id}>
                   {game.name}
@@ -189,7 +191,7 @@ export default function LairsFilters({
             disabled={isLoading || isLocating}
           >
             <LocateFixed className="h-4 w-4 mr-2" />
-            {isLocating ? "Localisation..." : "Utiliser ma position"}
+            {isLocating ? t("filters.locating") : t("filters.useMyLocation")}
           </Button>
 
           <Button
@@ -200,7 +202,7 @@ export default function LairsFilters({
             disabled={isLoading}
           >
             <MapPin className="h-4 w-4 mr-2" />
-            Coordonnées GPS
+            {t("filters.gpsCoordinates")}
           </Button>
 
           {filters.nearLocation && (
@@ -212,7 +214,7 @@ export default function LairsFilters({
               disabled={isLoading}
             >
               <X className="h-4 w-4 mr-2" />
-              Effacer localisation
+              {t("filters.clearLocation")}
             </Button>
           )}
         </div>
@@ -220,7 +222,7 @@ export default function LairsFilters({
         {/* Distance selector - only shown when location is active */}
         {(filters.nearLocation || showManualCoords) && (
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground whitespace-nowrap">Rayon :</span>
+            <span className="text-sm text-muted-foreground whitespace-nowrap">{t("filters.radius")}</span>
             <Select value={distance} onValueChange={handleDistanceChange} disabled={isLoading}>
               <SelectTrigger className="w-24">
                 <SelectValue />
@@ -238,13 +240,17 @@ export default function LairsFilters({
         )}
       </div>
 
+      {geoError && (
+        <p className="text-sm text-destructive">{geoError}</p>
+      )}
+
       {/* Manual coordinates input */}
       {showManualCoords && (
         <div className="flex flex-col sm:flex-row gap-2 p-4 bg-muted rounded-lg">
           <Input
             type="number"
             step="any"
-            placeholder="Latitude (ex: 48.8566)"
+            placeholder={t("filters.manualLatPlaceholder")}
             value={manualCoords.lat}
             onChange={(e) => setManualCoords({ ...manualCoords, lat: e.target.value })}
             className="flex-1"
@@ -252,28 +258,15 @@ export default function LairsFilters({
           <Input
             type="number"
             step="any"
-            placeholder="Longitude (ex: 2.3522)"
+            placeholder={t("filters.manualLngPlaceholder")}
             value={manualCoords.lng}
             onChange={(e) => setManualCoords({ ...manualCoords, lng: e.target.value })}
             className="flex-1"
           />
           <Button onClick={handleManualCoordsSubmit} disabled={isLoading}>
-            Appliquer
+            {t("filters.useCoordinates")}
           </Button>
         </div>
-      )}
-
-      {/* Current location indicator */}
-      {filters.nearLocation && (
-        <div className="text-sm text-muted-foreground flex items-center gap-2">
-          <MapPin className="h-4 w-4" />
-          Recherche à proximité de {filters.nearLocation.latitude.toFixed(4)}, {filters.nearLocation.longitude.toFixed(4)} (rayon : {filters.nearLocation.maxDistanceKm} km)
-        </div>
-      )}
-
-      {/* Error message */}
-      {geoError && (
-        <div className="text-sm text-destructive">{geoError}</div>
       )}
     </div>
   );

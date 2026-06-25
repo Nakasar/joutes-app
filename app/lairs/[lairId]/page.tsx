@@ -17,6 +17,7 @@ import { ArrowLeft, Gamepad2, Calendar, Settings } from "lucide-react";
 import EventsCalendarClient from "@/components/EventsCalendarClient";
 import EventsAgendaList from "./EventsAgendaList";
 import EventsConferenceView from "./EventsConferenceView";
+import { getTranslations } from "next-intl/server";
 
 export async function generateMetadata({
   params
@@ -24,20 +25,21 @@ export async function generateMetadata({
   params: Promise<{ lairId: string }>
 }): Promise<Metadata> {
   const { lairId } = await params;
+  const t = await getTranslations("Lairs");
   const lair = await getLairById(lairId);
 
   if (!lair) {
     return {
-      title: 'Lieu non trouvé',
+      title: t("detail.notFound"),
     };
   }
 
   return {
-    title: `${lair.name} - Lieu de jeu`,
-    description: `Découvrez ${lair.name} et ses événements à venir. ${lair.games.length} jeu(x) disponible(s).`,
+    title: t("detail.metadata.title", { name: lair.name }),
+    description: t("detail.metadata.description", { name: lair.name, count: lair.games.length }),
     openGraph: {
       title: lair.name,
-      description: `Découvrez ${lair.name} et ses événements à venir`,
+      description: t("detail.metadata.openGraphDescription", { name: lair.name }),
       images: lair.banner ? [lair.banner] : [],
     },
   };
@@ -54,6 +56,7 @@ export default async function LairDetailPage({
     gameId?: string;
   }>;
 }) {
+  const t = await getTranslations("Lairs");
   const { lairId } = await params;
   const { month, year, gameId } = await searchParams;
   const lair = await getLairById(lairId);
@@ -123,7 +126,7 @@ export default async function LairDetailPage({
               <Button variant="secondary" asChild size="sm">
                 <Link href="/lairs">
                   <ArrowLeft className="mr-2 h-4 w-4" />
-                  Retour à la liste
+                  {t("detail.backToList")}
                 </Link>
               </Button>
               {session?.user && (
@@ -137,7 +140,7 @@ export default async function LairDetailPage({
                 <Button variant="default" asChild size="sm">
                   <Link href={`/lairs/${lairId}/manage`}>
                     <Settings className="mr-2 h-4 w-4" />
-                    Gérer
+                    {t("detail.manage")}
                   </Link>
                 </Button>
               )}
@@ -150,17 +153,17 @@ export default async function LairDetailPage({
         {/* Informations du lieu */}
         {(lair.address || lair.website || lair.location) && (
           <div className="mb-8 p-6 bg-card rounded-lg border">
-            <h2 className="text-xl font-semibold mb-4">Informations pratiques</h2>
+            <h2 className="text-xl font-semibold mb-4">{t("detail.practicalInfo")}</h2>
             <div className="space-y-3">
               {lair.address && (
                 <div className="flex items-start gap-3">
-                  <span className="text-sm font-medium text-muted-foreground min-w-[100px]">Adresse :</span>
+                  <span className="text-sm font-medium text-muted-foreground min-w-[100px]">{t("detail.address")}</span>
                   <span className="text-sm">{lair.address}</span>
                 </div>
               )}
               {lair.website && (
                 <div className="flex items-start gap-3">
-                  <span className="text-sm font-medium text-muted-foreground min-w-[100px]">Site web :</span>
+                  <span className="text-sm font-medium text-muted-foreground min-w-[100px]">{t("detail.website")}</span>
                   <a
                     href={lair.website}
                     target="_blank"
@@ -173,14 +176,14 @@ export default async function LairDetailPage({
               )}
               {lair.location && (
                 <div className="flex items-start gap-3">
-                  <span className="text-sm font-medium text-muted-foreground min-w-[100px]">Coordonnées :</span>
+                  <span className="text-sm font-medium text-muted-foreground min-w-[100px]">{t("detail.coordinates")}</span>
                   <a
                     href={`https://www.google.com/maps?q=${lair.location.coordinates[1]},${lair.location.coordinates[0]}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-primary hover:underline"
                   >
-                    {lair.location.coordinates[1]}, {lair.location.coordinates[0]} (voir sur la carte)
+                    {lair.location.coordinates[1]}, {lair.location.coordinates[0]} ({t("detail.mapLink")})
                   </a>
                 </div>
               )}
@@ -194,10 +197,12 @@ export default async function LairDetailPage({
             <div className="mb-6">
               <h2 className="text-3xl font-bold flex items-center gap-3">
                 <Gamepad2 className="h-8 w-8" />
-                Jeux disponibles
+                {t("detail.availableGamesTitle")}
               </h2>
               <p className="text-muted-foreground mt-2">
-                {games.length} jeu{games.length > 1 ? 'x' : ''} disponible{games.length > 1 ? 's' : ''} dans ce lieu
+                {games.length === 1
+                  ? t("detail.availableGamesDescriptionOne", { count: games.length })
+                  : t("detail.availableGamesDescriptionOther", { count: games.length })}
               </p>
             </div>
 
@@ -258,6 +263,7 @@ export default async function LairDetailPage({
                             {game.description}
                           </p>
                         )}
+
                       </div>
                     </div>
 
@@ -289,14 +295,14 @@ export default async function LairDetailPage({
               <div>
                 <CardTitle className="text-3xl flex items-center gap-2">
                   <Calendar className="h-8 w-8" />
-                  Événements à venir
+                  {t("detail.upcomingEventsTitle")}
                 </CardTitle>
               </div>
               {canManageLair && (
                 <Button asChild>
                   <Link href={`/lairs/${lairId}/events/new`}>
                     <Calendar className="mr-2 h-4 w-4" />
-                    Ajouter un événement
+                    {t("detail.addEvent")}
                   </Link>
                 </Button>
               )}
@@ -309,15 +315,15 @@ export default async function LairDetailPage({
                   <Card className="hover:shadow-lg transition-shadow">
                     <CardHeader>
                       <Gamepad2 className="h-8 w-8 text-primary mb-2" />
-                      <CardTitle>Suivez des jeux</CardTitle>
+                      <CardTitle>{t("detail.followGamesTitle")}</CardTitle>
                       <CardDescription>
-                        Sélectionnez les jeux qui vous intéressent pour voir leurs événements
+                        {t("detail.followGamesDescription")}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <Button asChild className="w-full">
                         <Link href="/account">
-                          Gérer mes jeux
+                          {t("detail.manageGames")}
                         </Link>
                       </Button>
                     </CardContent>

@@ -514,5 +514,170 @@
         "createFailed": "An error occurred while creating the event"
       }
     }
+  },
+  "Lairs": {
+    "page": {
+      "title": "Game venues",
+      "description": "Discover all game venues and their upcoming events"
+    },
+    "createPrivate": {
+      "trigger": "Create a private venue",
+      "title": "Create a private venue",
+      "description": "Private venues are only visible to users you invite through a unique QR code.",
+      "nameLabel": "Venue name *",
+      "namePlaceholder": "My game venue",
+      "addressLabel": "Address (optional)",
+      "addressPlaceholder": "123 rue de la Paix",
+      "cancel": "Cancel",
+      "create": "Create",
+      "nameRequired": "The venue name is required",
+      "errors": {
+        "createFailed": "An error occurred while creating the venue"
+      }
+    },
+    "filters": {
+      "searchPlaceholder": "Search a venue...",
+      "gamePlaceholder": "Filter by game",
+      "allGames": "All games",
+      "useMyLocation": "Use my location",
+      "locating": "Locating...",
+      "gpsCoordinates": "GPS coordinates",
+      "clearLocation": "Clear location",
+      "radius": "Radius:",
+      "manualLatPlaceholder": "Latitude (e.g. 48.8566)",
+      "manualLngPlaceholder": "Longitude (e.g. 2.3522)",
+      "useCoordinates": "Use coordinates",
+      "errors": {
+        "geolocationNotSupported": "Geolocation is not supported by your browser",
+        "permissionDenied": "Geolocation permission was denied",
+        "positionUnavailable": "Position unavailable",
+        "timeout": "Geolocation timed out",
+        "generic": "Geolocation error",
+        "invalidCoordinates": "Invalid coordinates",
+        "outOfBounds": "Coordinates are out of bounds"
+      }
+    },
+    "list": {
+      "resultsCountOne": "{count} venue found",
+      "resultsCountOther": "{count} venues found",
+      "loading": "Loading...",
+      "empty": "No game venue matches your criteria.",
+      "paginationPrevious": "Previous",
+      "paginationNext": "Next",
+      "privateBadge": "Private",
+      "gamesCountOne": "{count} game",
+      "gamesCountOther": "{count} games",
+      "detailsButton": "See details"
+    },
+    "detail": {
+      "metadata": {
+        "title": "{name} - Game venue",
+        "description": "Discover {name} and its upcoming events. {count} game(s) available.",
+        "openGraphDescription": "Discover {name} and its upcoming events"
+      },
+      "notFound": "Venue not found",
+      "backToList": "Back to list",
+      "manage": "Manage",
+      "practicalInfo": "Practical information",
+      "address": "Address:",
+      "website": "Website:",
+      "coordinates": "Coordinates:",
+      "mapLink": "View on map",
+      "availableGamesTitle": "Available games",
+      "availableGamesDescriptionOne": "{count} game available in this venue",
+      "availableGamesDescriptionOther": "{count} games available in this venue",
+      "upcomingEventsTitle": "Upcoming events",
+      "addEvent": "Add an event",
+      "followGamesTitle": "Follow games",
+      "followGamesDescription": "Select the games that interest you to see their events",
+      "manageGames": "Manage my games"
+    },
+    "follow": {
+      "follow": "Follow",
+      "unfollow": "Unfollow",
+      "errors": {
+        "generic": "An error occurred"
+      }
+    },
+    "agenda": {
+      "emptyTitle": "No upcoming events",
+      "emptyDescription": "There are no scheduled events at the moment.",
+      "favorite": {
+        "authRequiredTitle": "Authentication required",
+        "authRequiredMessage": "You must be logged in to favorite an event",
+        "errorTitle": "Error",
+        "genericError": "An error occurred",
+        "add": "Add to favorites",
+        "remove": "Remove from favorites"
+      },
+      "status": {
+        "available": "Available",
+        "soldOut": "Sold out",
+        "cancelled": "Cancelled"
+      },
+      "priceFree": "Free",
+      "details": "Details",
+      "viewPage": "View page",
+      "eventSite": "Event website"
+    },
+    "manage": {
+      "backToLair": "Back to venue",
+      "title": "Manage {name}",
+      "privateBadge": "Private",
+      "detailsTitle": "Venue information",
+      "detailsDescription": "Update the name, banner, and available games for this venue",
+      "ownersTitle": "Owners",
+      "ownersDescription": "Manage the people who can administer this venue"
+    },
+    "eventNew": {
+      "notFound": "Venue not found",
+      "metadata": {
+        "title": "Add an event - {name}",
+        "description": "Create a new event for {name}"
+      },
+      "backToLair": "Back to venue",
+      "title": "Add an event",
+      "description": "Create a new event for {name}",
+      "formTitle": "Event information",
+      "formDescription": "Fill in the details of the event you want to create"
+    },
+    "eventForm": {
+      "nameLabel": "Event name",
+      "namePlaceholder": "e.g. Friday night tournament",
+      "gameLabel": "Game",
+      "gamePlaceholder": "Game name",
+      "startDateLabel": "Start date and time",
+      "endDateLabel": "End date and time",
+      "statusLabel": "Status",
+      "status": {
+        "available": "Available",
+        "soldOut": "Sold out",
+        "cancelled": "Cancelled"
+      },
+      "priceLabel": "Price (€)",
+      "optional": "optional",
+      "urlLabel": "Event link",
+      "cancel": "Cancel",
+      "creating": "Creating...",
+      "create": "Create event",
+      "errors": {
+        "createFailed": "An error occurred while creating the event"
+      }
+    },
+    "invite": {
+      "loading": "Processing your invitation...",
+      "invalidTitle": "Invalid invitation",
+      "invalidDescription": "The invitation code may have expired or be invalid. Contact the venue owner to obtain a new code.",
+      "viewAllLairs": "See all venues",
+      "successTitle": "Invitation accepted!",
+      "successDescription": "You are now following the private venue {name}",
+      "successInfo": "You can now see this venue's events in your calendar and in your followed venues list.",
+      "viewLair": "View venue",
+      "myAccount": "My account",
+      "errors": {
+        "acceptFailed": "An error occurred while accepting the invitation",
+        "unexpected": "An unexpected error occurred"
+      }
+    }
   }
 }

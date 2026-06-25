@@ -16,9 +16,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Plus, Loader2, AlertCircle, Lock } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export default function CreatePrivateLairButton() {
   const router = useRouter();
+  const t = useTranslations("Lairs");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -28,7 +30,7 @@ export default function CreatePrivateLairButton() {
 
   const handleCreateLair = () => {
     if (!newLairName.trim()) {
-      setError("Le nom du lieu est requis");
+      setError(t("createPrivate.nameRequired"));
       return;
     }
 
@@ -47,7 +49,7 @@ export default function CreatePrivateLairButton() {
         // Rediriger vers la page du lair créé
         router.push(`/lairs/${result.lairId}`);
       } else {
-        setError(result.error || "Erreur lors de la création du lieu");
+        setError(result.error || t("createPrivate.errors.createFailed"));
       }
     });
   };
@@ -57,18 +59,17 @@ export default function CreatePrivateLairButton() {
       <DialogTrigger asChild>
         <Button>
           <Plus className="mr-2 h-4 w-4" />
-          Créer un lieu privé
+          {t("createPrivate.trigger")}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Lock className="h-5 w-5" />
-            Créer un lieu privé
+            {t("createPrivate.title")}
           </DialogTitle>
           <DialogDescription>
-            Les lieux privés ne sont visibles que par les utilisateurs que vous invitez via un
-            code QR unique.
+            {t("createPrivate.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -82,11 +83,11 @@ export default function CreatePrivateLairButton() {
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <label htmlFor="name" className="text-sm font-medium">
-              Nom du lieu *
+              {t("createPrivate.nameLabel")}
             </label>
             <Input
               id="name"
-              placeholder="Mon lieu de jeu"
+              placeholder={t("createPrivate.namePlaceholder")}
               value={newLairName}
               onChange={(e) => setNewLairName(e.target.value)}
               disabled={isPending}
@@ -94,11 +95,11 @@ export default function CreatePrivateLairButton() {
           </div>
           <div className="space-y-2">
             <label htmlFor="address" className="text-sm font-medium">
-              Adresse (optionnel)
+              {t("createPrivate.addressLabel")}
             </label>
             <Input
               id="address"
-              placeholder="123 rue de la Paix"
+              placeholder={t("createPrivate.addressPlaceholder")}
               value={newLairAddress}
               onChange={(e) => setNewLairAddress(e.target.value)}
               disabled={isPending}
@@ -115,7 +116,7 @@ export default function CreatePrivateLairButton() {
             }}
             disabled={isPending}
           >
-            Annuler
+            {t("createPrivate.cancel")}
           </Button>
           <Button onClick={handleCreateLair} disabled={isPending}>
             {isPending ? (
@@ -123,7 +124,7 @@ export default function CreatePrivateLairButton() {
             ) : (
               <Plus className="mr-2 h-4 w-4" />
             )}
-            Créer
+            {t("createPrivate.create")}
           </Button>
         </DialogFooter>
       </DialogContent>

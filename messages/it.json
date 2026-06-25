@@ -456,5 +456,170 @@
     "OTP": "Codice di verifica",
     "verifyPending": "Verifica in corso...",
     "verifyCode": "Verifica codice"
+  },
+  "Lairs": {
+    "page": {
+      "title": "Luoghi di gioco",
+      "description": "Scopri tutti i luoghi di gioco e i loro prossimi eventi"
+    },
+    "createPrivate": {
+      "trigger": "Crea un luogo privato",
+      "title": "Crea un luogo privato",
+      "description": "I luoghi privati sono visibili solo agli utenti che inviti tramite un codice QR unico.",
+      "nameLabel": "Nome del luogo *",
+      "namePlaceholder": "Il mio luogo di gioco",
+      "addressLabel": "Indirizzo (facoltativo)",
+      "addressPlaceholder": "123 Via Roma",
+      "cancel": "Annulla",
+      "create": "Crea",
+      "nameRequired": "Il nome del luogo è obbligatorio",
+      "errors": {
+        "createFailed": "Si è verificato un errore durante la creazione del luogo"
+      }
+    },
+    "filters": {
+      "searchPlaceholder": "Cerca un luogo...",
+      "gamePlaceholder": "Filtra per gioco",
+      "allGames": "Tutti i giochi",
+      "useMyLocation": "Usa la mia posizione",
+      "locating": "Ricerca della posizione...",
+      "gpsCoordinates": "Coordinate GPS",
+      "clearLocation": "Cancella posizione",
+      "radius": "Raggio:",
+      "manualLatPlaceholder": "Latitudine (es. 48,8566)",
+      "manualLngPlaceholder": "Longitudine (es. 2,3522)",
+      "useCoordinates": "Usa coordinate",
+      "errors": {
+        "geolocationNotSupported": "La geolocalizzazione non è supportata dal tuo browser",
+        "permissionDenied": "Il permesso per la geolocalizzazione è stato negato",
+        "positionUnavailable": "Posizione non disponibile",
+        "timeout": "La geolocalizzazione è scaduta",
+        "generic": "Errore di geolocalizzazione",
+        "invalidCoordinates": "Coordinate non valide",
+        "outOfBounds": "Le coordinate sono fuori limite"
+      }
+    },
+    "list": {
+      "resultsCountOne": "{count} luogo trovato",
+      "resultsCountOther": "{count} luoghi trovati",
+      "loading": "Caricamento...",
+      "empty": "Nessun luogo di gioco corrisponde ai tuoi criteri.",
+      "paginationPrevious": "Precedente",
+      "paginationNext": "Successivo",
+      "privateBadge": "Privato",
+      "gamesCountOne": "{count} gioco",
+      "gamesCountOther": "{count} giochi",
+      "detailsButton": "Vedi dettagli"
+    },
+    "detail": {
+      "metadata": {
+        "title": "{name} - Luogo di gioco",
+        "description": "Scopri {name} e i suoi prossimi eventi. {count} gioco(i) disponibile(i).",
+        "openGraphDescription": "Scopri {name} e i suoi prossimi eventi"
+      },
+      "notFound": "Luogo non trovato",
+      "backToList": "Torna alla lista",
+      "manage": "Gestisci",
+      "practicalInfo": "Informazioni pratiche",
+      "address": "Indirizzo:",
+      "website": "Sito web:",
+      "coordinates": "Coordinate:",
+      "mapLink": "Visualizza sulla mappa",
+      "availableGamesTitle": "Giochi disponibili",
+      "availableGamesDescriptionOne": "{count} gioco disponibile in questo luogo",
+      "availableGamesDescriptionOther": "{count} giochi disponibili in questo luogo",
+      "upcomingEventsTitle": "Prossimi eventi",
+      "addEvent": "Aggiungi un evento",
+      "followGamesTitle": "Segui i giochi",
+      "followGamesDescription": "Seleziona i giochi che ti interessano per vedere i loro eventi",
+      "manageGames": "Gestisci i miei giochi"
+    },
+    "follow": {
+      "follow": "Segui",
+      "unfollow": "Smetti di seguire",
+      "errors": {
+        "generic": "Si è verificato un errore"
+      }
+    },
+    "agenda": {
+      "emptyTitle": "Nessun evento imminente",
+      "emptyDescription": "Al momento non ci sono eventi programmati.",
+      "favorite": {
+        "authRequiredTitle": "Autenticazione richiesta",
+        "authRequiredMessage": "Devi essere connesso per aggiungere un evento ai preferiti",
+        "errorTitle": "Errore",
+        "genericError": "Si è verificato un errore",
+        "add": "Aggiungi ai preferiti",
+        "remove": "Rimuovi dai preferiti"
+      },
+      "status": {
+        "available": "Disponibile",
+        "soldOut": "Esaurito",
+        "cancelled": "Annullato"
+      },
+      "priceFree": "Gratuito",
+      "details": "Dettagli",
+      "viewPage": "Vedi pagina",
+      "eventSite": "Sito dell'evento"
+    },
+    "manage": {
+      "backToLair": "Torna al luogo",
+      "title": "Gestisci {name}",
+      "privateBadge": "Privato",
+      "detailsTitle": "Informazioni sul luogo",
+      "detailsDescription": "Aggiorna il nome, il banner e i giochi disponibili in questo luogo",
+      "ownersTitle": "Proprietari",
+      "ownersDescription": "Gestisci le persone che possono amministrare questo luogo"
+    },
+    "eventNew": {
+      "notFound": "Luogo non trovato",
+      "metadata": {
+        "title": "Aggiungi un evento - {name}",
+        "description": "Crea un nuovo evento per {name}"
+      },
+      "backToLair": "Torna al luogo",
+      "title": "Aggiungi un evento",
+      "description": "Crea un nuovo evento per {name}",
+      "formTitle": "Informazioni sull'evento",
+      "formDescription": "Compila i dettagli dell'evento che vuoi creare"
+    },
+    "eventForm": {
+      "nameLabel": "Nome dell'evento",
+      "namePlaceholder": "es. Torneo di venerdì sera",
+      "gameLabel": "Gioco",
+      "gamePlaceholder": "Nome del gioco",
+      "startDateLabel": "Data e ora di inizio",
+      "endDateLabel": "Data e ora di fine",
+      "statusLabel": "Stato",
+      "status": {
+        "available": "Disponibile",
+        "soldOut": "Esaurito",
+        "cancelled": "Annullato"
+      },
+      "priceLabel": "Prezzo (€)",
+      "optional": "facoltativo",
+      "urlLabel": "Link dell'evento",
+      "cancel": "Annulla",
+      "creating": "Creazione in corso...",
+      "create": "Crea evento",
+      "errors": {
+        "createFailed": "Si è verificato un errore durante la creazione dell'evento"
+      }
+    },
+    "invite": {
+      "loading": "Elaborazione del tuo invito...",
+      "invalidTitle": "Invito non valido",
+      "invalidDescription": "Il codice di invito potrebbe essere scaduto o non valido. Contatta il proprietario del luogo per ottenere un nuovo codice.",
+      "viewAllLairs": "Vedi tutti i luoghi",
+      "successTitle": "Invito accettato!",
+      "successDescription": "Ora segui il luogo privato {name}",
+      "successInfo": "Ora puoi vedere gli eventi di questo luogo nel tuo calendario e nella tua lista dei luoghi seguiti.",
+      "viewLair": "Vedi il luogo",
+      "myAccount": "Il mio account",
+      "errors": {
+        "acceptFailed": "Si è verificato un errore durante l'accettazione dell'invito",
+        "unexpected": "Si è verificato un errore inatteso"
+      }
+    }
   }
 }

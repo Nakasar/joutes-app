@@ -11,7 +11,8 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, ArrowRight, Gamepad2, Lock, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
-import {usePathname, useRouter, useSearchParams} from "next/navigation";
+import {usePathname, useRouter} from "next/navigation";
+import { useTranslations } from "next-intl";
 
 type LairsClientProps = {
   initialData: PaginatedLairsResult;
@@ -24,6 +25,7 @@ type LairsClientProps = {
 export default function LairsClient({ initialData, games, initialFilters }: LairsClientProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const t = useTranslations("Lairs");
   const [data, setData] = useState<PaginatedLairsResult>(initialData);
   const [isLoading, setIsLoading] = useState(false);
   const [filters, setFilters] = useState<LairsFiltersValues>({
@@ -89,12 +91,14 @@ export default function LairsClient({ initialData, games, initialFilters }: Lair
       {/* Results count */}
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <span>
-          {data.total} lieu{data.total > 1 ? "x" : ""} trouvé{data.total > 1 ? "s" : ""}
+          {data.total === 1
+            ? t("list.resultsCountOne", { count: data.total })
+            : t("list.resultsCountOther", { count: data.total })}
         </span>
         {isLoading && (
           <span className="flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Chargement...
+            {t("list.loading")}
           </span>
         )}
       </div>
@@ -105,7 +109,7 @@ export default function LairsClient({ initialData, games, initialFilters }: Lair
           <CardContent className="text-center py-12">
             <MapPin className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
             <p className="text-lg text-muted-foreground">
-              Aucun lieu de jeu ne correspond à vos critères.
+              {t("list.empty")}
             </p>
           </CardContent>
         </Card>
@@ -127,7 +131,7 @@ export default function LairsClient({ initialData, games, initialFilters }: Lair
             disabled={data.page <= 1 || isLoading}
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
-            Précédent
+            {t("list.paginationPrevious")}
           </Button>
           
           <div className="flex items-center gap-1">
@@ -155,7 +159,7 @@ export default function LairsClient({ initialData, games, initialFilters }: Lair
             onClick={() => handlePageChange(data.page + 1)}
             disabled={data.page >= data.totalPages || isLoading}
           >
-            Suivant
+            {t("list.paginationNext")}
             <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </div>
@@ -165,6 +169,8 @@ export default function LairsClient({ initialData, games, initialFilters }: Lair
 }
 
 function LairCard({ lair }: { lair: Lair }) {
+  const t = useTranslations("Lairs");
+
   return (
     <Link href={`/lairs/${lair.id}`} className="group">
       <Card className="h-full overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
@@ -194,14 +200,16 @@ function LairCard({ lair }: { lair: Lair }) {
             {lair.isPrivate && (
               <Badge variant="secondary" className="bg-muted">
                 <Lock className="h-3 w-3 mr-1" />
-                Privé
+                {t("list.privateBadge")}
               </Badge>
             )}
             {lair.games.length > 0 && (
               <div className="flex items-center gap-2">
                 <Gamepad2 className="h-4 w-4 text-muted-foreground" />
                 <Badge variant="secondary">
-                  {lair.games.length} jeu{lair.games.length > 1 ? "x" : ""}
+                  {lair.games.length === 1
+                    ? t("list.gamesCountOne", { count: lair.games.length })
+                    : t("list.gamesCountOther", { count: lair.games.length })}
                 </Badge>
               </div>
             )}
@@ -219,7 +227,7 @@ function LairCard({ lair }: { lair: Lair }) {
             variant="ghost"
             className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
           >
-            Voir les détails
+            {t("list.detailsButton")}
             <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
           </Button>
         </CardFooter>
@@ -259,6 +267,6 @@ function generatePaginationNumbers(currentPage: number, totalPages: number): (nu
     // Always show last page
     pages.push(totalPages);
   }
-  
+
   return pages;
 }

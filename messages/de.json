@@ -514,5 +514,170 @@
         "createFailed": "Beim Erstellen des Events ist ein Fehler aufgetreten"
       }
     }
+  },
+  "Lairs": {
+    "page": {
+      "title": "Spielorte",
+      "description": "Entdecke alle Spielorte und ihre kommenden Veranstaltungen"
+    },
+    "createPrivate": {
+      "trigger": "Einen privaten Ort erstellen",
+      "title": "Einen privaten Ort erstellen",
+      "description": "Private Orte sind nur für Benutzer sichtbar, die Sie über einen eindeutigen QR-Code einladen.",
+      "nameLabel": "Name des Ortes *",
+      "namePlaceholder": "Mein Spielort",
+      "addressLabel": "Adresse (optional)",
+      "addressPlaceholder": "123 Musterstraße",
+      "cancel": "Abbrechen",
+      "create": "Erstellen",
+      "nameRequired": "Der Name des Ortes ist erforderlich",
+      "errors": {
+        "createFailed": "Beim Erstellen des Ortes ist ein Fehler aufgetreten"
+      }
+    },
+    "filters": {
+      "searchPlaceholder": "Einen Ort suchen...",
+      "gamePlaceholder": "Nach Spiel filtern",
+      "allGames": "Alle Spiele",
+      "useMyLocation": "Meinen Standort verwenden",
+      "locating": "Standort ermitteln...",
+      "gpsCoordinates": "GPS-Koordinaten",
+      "clearLocation": "Standort löschen",
+      "radius": "Radius:",
+      "manualLatPlaceholder": "Breitengrad (z. B. 48,8566)",
+      "manualLngPlaceholder": "Längengrad (z. B. 2,3522)",
+      "useCoordinates": "Koordinaten verwenden",
+      "errors": {
+        "geolocationNotSupported": "Die Geolokalisierung wird von Ihrem Browser nicht unterstützt",
+        "permissionDenied": "Die Erlaubnis für die Geolokalisierung wurde verweigert",
+        "positionUnavailable": "Position nicht verfügbar",
+        "timeout": "Die Geolokalisierung hat zu lange gedauert",
+        "generic": "Geolokalisierungsfehler",
+        "invalidCoordinates": "Ungültige Koordinaten",
+        "outOfBounds": "Die Koordinaten liegen außerhalb des zulässigen Bereichs"
+      }
+    },
+    "list": {
+      "resultsCountOne": "{count} Ort gefunden",
+      "resultsCountOther": "{count} Orte gefunden",
+      "loading": "Wird geladen...",
+      "empty": "Kein Spielort entspricht Ihren Kriterien.",
+      "paginationPrevious": "Zurück",
+      "paginationNext": "Weiter",
+      "privateBadge": "Privat",
+      "gamesCountOne": "{count} Spiel",
+      "gamesCountOther": "{count} Spiele",
+      "detailsButton": "Details anzeigen"
+    },
+    "detail": {
+      "metadata": {
+        "title": "{name} - Spielort",
+        "description": "Entdecke {name} und seine kommenden Veranstaltungen. {count} Spiel(e) verfügbar.",
+        "openGraphDescription": "Entdecke {name} und seine kommenden Veranstaltungen"
+      },
+      "notFound": "Ort nicht gefunden",
+      "backToList": "Zurück zur Liste",
+      "manage": "Verwalten",
+      "practicalInfo": "Praktische Informationen",
+      "address": "Adresse:",
+      "website": "Website:",
+      "coordinates": "Koordinaten:",
+      "mapLink": "Auf der Karte anzeigen",
+      "availableGamesTitle": "Verfügbare Spiele",
+      "availableGamesDescriptionOne": "{count} Spiel in diesem Ort verfügbar",
+      "availableGamesDescriptionOther": "{count} Spiele in diesem Ort verfügbar",
+      "upcomingEventsTitle": "Kommende Veranstaltungen",
+      "addEvent": "Veranstaltung hinzufügen",
+      "followGamesTitle": "Spiele folgen",
+      "followGamesDescription": "Wähle die Spiele aus, die dich interessieren, um ihre Veranstaltungen zu sehen",
+      "manageGames": "Meine Spiele verwalten"
+    },
+    "follow": {
+      "follow": "Folgen",
+      "unfollow": "Nicht mehr folgen",
+      "errors": {
+        "generic": "Ein Fehler ist aufgetreten"
+      }
+    },
+    "agenda": {
+      "emptyTitle": "Keine kommenden Veranstaltungen",
+      "emptyDescription": "Im Moment sind keine Veranstaltungen geplant.",
+      "favorite": {
+        "authRequiredTitle": "Authentifizierung erforderlich",
+        "authRequiredMessage": "Du musst angemeldet sein, um eine Veranstaltung zu favorisieren",
+        "errorTitle": "Fehler",
+        "genericError": "Ein Fehler ist aufgetreten",
+        "add": "Zu Favoriten hinzufügen",
+        "remove": "Aus Favoriten entfernen"
+      },
+      "status": {
+        "available": "Verfügbar",
+        "soldOut": "Ausverkauft",
+        "cancelled": "Abgesagt"
+      },
+      "priceFree": "Kostenlos",
+      "details": "Details",
+      "viewPage": "Seite anzeigen",
+      "eventSite": "Veranstaltungswebsite"
+    },
+    "manage": {
+      "backToLair": "Zurück zum Ort",
+      "title": "{name} verwalten",
+      "privateBadge": "Privat",
+      "detailsTitle": "Ortsinformationen",
+      "detailsDescription": "Name, Banner und verfügbare Spiele dieses Ortes aktualisieren",
+      "ownersTitle": "Besitzer",
+      "ownersDescription": "Personen verwalten, die diesen Ort administrieren dürfen"
+    },
+    "eventNew": {
+      "notFound": "Ort nicht gefunden",
+      "metadata": {
+        "title": "Eine Veranstaltung hinzufügen - {name}",
+        "description": "Eine neue Veranstaltung für {name} erstellen"
+      },
+      "backToLair": "Zurück zum Ort",
+      "title": "Eine Veranstaltung hinzufügen",
+      "description": "Eine neue Veranstaltung für {name} erstellen",
+      "formTitle": "Veranstaltungsinformationen",
+      "formDescription": "Fülle die Details der Veranstaltung aus, die du erstellen möchtest"
+    },
+    "eventForm": {
+      "nameLabel": "Name der Veranstaltung",
+      "namePlaceholder": "z. B. Freitagabend-Turnier",
+      "gameLabel": "Spiel",
+      "gamePlaceholder": "Spielname",
+      "startDateLabel": "Startdatum und -zeit",
+      "endDateLabel": "Enddatum und -zeit",
+      "statusLabel": "Status",
+      "status": {
+        "available": "Verfügbar",
+        "soldOut": "Ausverkauft",
+        "cancelled": "Abgesagt"
+      },
+      "priceLabel": "Preis (€)",
+      "optional": "optional",
+      "urlLabel": "Veranstaltungslink",
+      "cancel": "Abbrechen",
+      "creating": "Wird erstellt...",
+      "create": "Veranstaltung erstellen",
+      "errors": {
+        "createFailed": "Beim Erstellen der Veranstaltung ist ein Fehler aufgetreten"
+      }
+    },
+    "invite": {
+      "loading": "Ihre Einladung wird verarbeitet...",
+      "invalidTitle": "Ungültige Einladung",
+      "invalidDescription": "Der Einladungscode ist möglicherweise abgelaufen oder ungültig. Wenden Sie sich an den Eigentümer des Ortes, um einen neuen Code zu erhalten.",
+      "viewAllLairs": "Alle Orte ansehen",
+      "successTitle": "Einladung angenommen!",
+      "successDescription": "Sie folgen jetzt dem privaten Ort {name}",
+      "successInfo": "Sie können jetzt die Veranstaltungen dieses Ortes in Ihrem Kalender und in Ihrer Liste der verfolgten Orte sehen.",
+      "viewLair": "Ort ansehen",
+      "myAccount": "Mein Konto",
+      "errors": {
+        "acceptFailed": "Beim Annehmen der Einladung ist ein Fehler aufgetreten",
+        "unexpected": "Ein unerwarteter Fehler ist aufgetreten"
+      }
+    }
   }
 }

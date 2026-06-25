@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, CheckCircle, XCircle, Lock, MapPin } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 interface InvitePageProps {
   params: Promise<{
@@ -18,6 +19,7 @@ interface InvitePageProps {
 export default function InvitePage({ params }: InvitePageProps) {
   const { code } = use(params);
   const router = useRouter();
+  const t = useTranslations("Lairs");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lairName, setLairName] = useState<string | null>(null);
@@ -36,12 +38,12 @@ export default function InvitePage({ params }: InvitePageProps) {
           setLairName(result.lairName);
           setError(null);
         } else {
-          setError(result.error || "Erreur lors de l'acceptation de l'invitation");
+          setError(result.error || t("invite.errors.acceptFailed"));
           setSuccess(false);
         }
       } catch (err) {
         console.error("Erreur:", err);
-        setError("Une erreur inattendue s'est produite");
+        setError(t("invite.errors.unexpected"));
         setSuccess(false);
       } finally {
         setIsLoading(false);
@@ -49,7 +51,7 @@ export default function InvitePage({ params }: InvitePageProps) {
     };
 
     acceptInvitation();
-  }, [code]);
+  }, [code, t]);
 
   if (isLoading) {
     return (
@@ -58,7 +60,7 @@ export default function InvitePage({ params }: InvitePageProps) {
           <CardContent className="flex flex-col items-center justify-center py-16">
             <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
             <p className="text-lg text-muted-foreground">
-              Traitement de votre invitation...
+              {t("invite.loading")}
             </p>
           </CardContent>
         </Card>
@@ -74,19 +76,18 @@ export default function InvitePage({ params }: InvitePageProps) {
             <div className="flex items-center justify-center mb-4">
               <XCircle className="h-16 w-16 text-destructive" />
             </div>
-            <CardTitle className="text-center text-2xl">Invitation invalide</CardTitle>
+            <CardTitle className="text-center text-2xl">{t("invite.invalidTitle")}</CardTitle>
             <CardDescription className="text-center">{error}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-4">
             <Alert variant="destructive">
               <AlertDescription>
-                Le code d&apos;invitation est peut-être expiré ou invalide. Contactez le
-                propriétaire du lieu pour obtenir un nouveau code.
+                {t("invite.invalidDescription")}
               </AlertDescription>
             </Alert>
             <Button onClick={() => router.push("/lairs")} className="w-full">
               <MapPin className="mr-2 h-4 w-4" />
-              Voir tous les lieux
+              {t("invite.viewAllLairs")}
             </Button>
           </CardContent>
         </Card>
@@ -104,29 +105,27 @@ export default function InvitePage({ params }: InvitePageProps) {
             </div>
             <CardTitle className="text-center text-2xl flex items-center justify-center gap-2">
               <Lock className="h-6 w-6" />
-              Invitation acceptée !
+              {t("invite.successTitle")}
             </CardTitle>
             <CardDescription className="text-center text-lg">
-              Vous suivez maintenant le lieu privé{" "}
-              <span className="font-semibold">{lairName}</span>
+              {t("invite.successDescription", { name: lairName })}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-4">
             <Alert>
               <AlertDescription>
-                Vous pouvez maintenant voir les événements de ce lieu dans votre calendrier et
-                dans votre liste de lieux suivis.
+                {t("invite.successInfo")}
               </AlertDescription>
             </Alert>
             <div className="flex gap-2 w-full">
               <Button asChild className="flex-1">
                 <Link href={`/lairs/${lairId}`}>
                   <MapPin className="mr-2 h-4 w-4" />
-                  Voir le lieu
+                  {t("invite.viewLair")}
                 </Link>
               </Button>
               <Button asChild variant="outline" className="flex-1">
-                <Link href="/account">Mon compte</Link>
+                <Link href="/account">{t("invite.myAccount")}</Link>
               </Button>
             </div>
           </CardContent>
