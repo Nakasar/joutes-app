@@ -7,6 +7,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin, Clock, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
+import { DateTime } from "luxon";
 
 interface FeaturedEventsAgendaProps {
   featuredLairs: Lair[];
@@ -20,6 +22,8 @@ export function FeaturedEventsAgenda({
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const t = useTranslations("Games");
+  const locale = useLocale();
 
   useEffect(() => {
     if (featuredLairs.length === 0) {
@@ -31,7 +35,6 @@ export function FeaturedEventsAgenda({
       setLoading(true);
       setError(null);
       try {
-        // Récupérer les événements pour chaque lieu
         const lairIds = featuredLairs.map((lair) => lair.id);
         const eventsPromises = lairIds.map(async (lairId) => {
           const response = await fetch(
@@ -39,7 +42,7 @@ export function FeaturedEventsAgenda({
               gameName
             )}&limit=50`
           );
-          if (!response.ok) throw new Error("Erreur lors du chargement");
+          if (!response.ok) throw new Error(t("detail.events.fetchError"));
           const data = await response.json();
           return data.events || [];
         });
@@ -47,7 +50,6 @@ export function FeaturedEventsAgenda({
         const eventsArrays = await Promise.all(eventsPromises);
         const allEvents = eventsArrays.flat();
 
-        // Filtrer les événements futurs et les trier par date
         const futureEvents = allEvents
           .filter((event) => new Date(event.startDateTime) > new Date())
           .sort(
@@ -61,7 +63,7 @@ export function FeaturedEventsAgenda({
         setError(
           err instanceof Error
             ? err.message
-            : "Erreur lors du chargement des événements"
+            : t("detail.events.fetchError")
         );
       } finally {
         setLoading(false);
@@ -69,7 +71,7 @@ export function FeaturedEventsAgenda({
     };
 
     fetchEvents();
-  }, [featuredLairs, gameName]);
+  }, [featuredLairs, gameName, t]);
 
   if (featuredLairs.length === 0) {
     return null;
@@ -78,10 +80,10 @@ export function FeaturedEventsAgenda({
   if (loading) {
     return (
       <section className="space-y-6">
-        <h2 className="text-3xl font-bold text-white">Événements à venir</h2>
+        <h2 className="text-3xl font-bold text-white">{t("detail.events.upcoming")}</h2>
         <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-8">
           <p className="text-gray-400 text-center">
-            Chargement des événements...
+            {t("detail.events.loading")}
           </p>
         </div>
       </section>
@@ -91,7 +93,7 @@ export function FeaturedEventsAgenda({
   if (error) {
     return (
       <section className="space-y-6">
-        <h2 className="text-3xl font-bold text-white">Événements à venir</h2>
+        <h2 className="text-3xl font-bold text-white">{t("detail.events.upcoming")}</h2>
         <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-8">
           <p className="text-red-400 text-center">{error}</p>
         </div>
@@ -102,17 +104,16 @@ export function FeaturedEventsAgenda({
   if (events.length === 0) {
     return (
       <section className="space-y-6">
-        <h2 className="text-3xl font-bold text-white">Événements à venir</h2>
+        <h2 className="text-3xl font-bold text-white">{t("detail.events.upcoming")}</h2>
         <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-8">
           <p className="text-gray-400 text-center">
-            Aucun événement à venir pour le moment
+            {t("detail.events.none")}
           </p>
         </div>
       </section>
     );
   }
 
-  // Grouper les événements par lieu
   const eventsByLair = events.reduce((acc, event) => {
     const lairId = event.lairId || "unknown";
     if (!acc[lairId]) {
@@ -123,8 +124,7 @@ export function FeaturedEventsAgenda({
   }, {} as Record<string, Event[]>);
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("fr-FR", {
+    return DateTime.fromISO(dateString).setLocale(locale).toLocaleString({
       weekday: "short",
       day: "numeric",
       month: "short",
@@ -132,11 +132,7 @@ export function FeaturedEventsAgenda({
   };
 
   const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString("fr-FR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return DateTime.fromISO(dateString).setLocale(locale).toFormat("HH:mm");
   };
 
   const getStatusBadge = (status: Event["status"]) => {
@@ -144,19 +140,19 @@ export function FeaturedEventsAgenda({
       case "available":
         return (
           <Badge variant="secondary" className="bg-green-500/20 text-green-300">
-            Disponible
+            {t("detail.events.status.available")}
           </Badge>
         );
       case "sold-out":
         return (
           <Badge variant="secondary" className="bg-orange-500/20 text-orange-300">
-            Complet
+            {t("detail.events.status.soldOut")}
           </Badge>
         );
       case "cancelled":
         return (
           <Badge variant="secondary" className="bg-red-500/20 text-red-300">
-            Annulé
+            {t("detail.events.status.cancelled")}
           </Badge>
         );
     }
@@ -165,9 +161,9 @@ export function FeaturedEventsAgenda({
   return (
     <section className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold text-white">Événements à venir</h2>
+        <h2 className="text-3xl font-bold text-white">{t("detail.events.upcoming")}</h2>
         <p className="text-gray-400">
-          {events.length} événement{events.length > 1 ? "s" : ""}
+          {events.length > 1 ? t("detail.events.countPlural", { count: events.length }) : t("detail.events.countSingular", { count: events.length })}
         </p>
       </div>
 
@@ -178,7 +174,6 @@ export function FeaturedEventsAgenda({
 
           return (
             <div key={lair.id} className="space-y-4">
-              {/* Lieu header */}
               <div className="flex items-center gap-3">
                 <MapPin className="h-5 w-5 text-blue-400" />
                 <Link
@@ -192,7 +187,6 @@ export function FeaturedEventsAgenda({
                 )}
               </div>
 
-              {/* Liste des événements en format agenda */}
               <div className="space-y-2">
                 {lairEvents.map((event) => (
                   <Card
@@ -201,7 +195,6 @@ export function FeaturedEventsAgenda({
                   >
                     <div className="p-4">
                       <div className="flex items-start gap-4">
-                        {/* Date box */}
                         <div className="flex flex-col items-center justify-center bg-blue-500/20 rounded-lg p-3 min-w-[80px]">
                           <Calendar className="h-5 w-5 text-blue-400 mb-1" />
                           <div className="text-center">
@@ -211,7 +204,6 @@ export function FeaturedEventsAgenda({
                           </div>
                         </div>
 
-                        {/* Event details */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
                             <h3 className="text-lg font-semibold text-white">
@@ -244,15 +236,14 @@ export function FeaturedEventsAgenda({
                                 className="flex items-center gap-1 text-blue-400 hover:text-blue-300"
                               >
                                 <ExternalLink className="h-4 w-4" />
-                                En savoir plus
+                                {t("detail.events.moreInfo")}
                               </Link>
                             )}
                           </div>
 
                           {event.maxParticipants && (
                             <div className="mt-2 text-sm text-gray-400">
-                              {event.registeredParticipantsCount ?? 0} /{" "}
-                              {event.maxParticipants} participants
+                              {t("detail.events.participants", { registered: event.registeredParticipantsCount ?? 0, max: event.maxParticipants })}
                             </div>
                           )}
                         </div>
@@ -268,4 +259,3 @@ export function FeaturedEventsAgenda({
     </section>
   );
 }
-

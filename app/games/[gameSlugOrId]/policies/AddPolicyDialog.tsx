@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { createPolicy } from "./actions";
+import { useTranslations } from "next-intl";
 
 export default function AddPolicyDialog({ gameId }: { gameId: string; gameSlug: string }) {
   const [open, setOpen] = useState(false);
@@ -22,6 +23,7 @@ export default function AddPolicyDialog({ gameId }: { gameId: string; gameSlug: 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [preview, setPreview] = useState(false);
   const [ReactMarkdown, setReactMarkdown] = useState<React.ComponentType<{ children: string; remarkPlugins?: unknown[]; rehypePlugins?: unknown[] }> | null>(null);
+  const t = useTranslations("Games");
 
   const openDialog = async (isOpen: boolean) => {
     setOpen(isOpen);
@@ -31,8 +33,11 @@ export default function AddPolicyDialog({ gameId }: { gameId: string; gameSlug: 
         import("remark-gfm"),
         import("rehype-raw"),
       ]);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setReactMarkdown(() => (props: any) => <MD remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} {...props} />);
+      const MarkdownPreview = ({ children }: { children: string }) => (
+        <MD remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{children}</MD>
+      );
+      MarkdownPreview.displayName = "MarkdownPreview";
+      setReactMarkdown(() => MarkdownPreview);
     }
     if (!isOpen) {
       setPreview(false);
@@ -58,7 +63,7 @@ export default function AddPolicyDialog({ gameId }: { gameId: string; gameSlug: 
       setPreview(false);
     } catch (error) {
       console.error("Erreur lors de la création de la policy:", error);
-      alert("Erreur lors de la création de la policy");
+      alert(t("policies.addDialog.errors.createError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -67,36 +72,36 @@ export default function AddPolicyDialog({ gameId }: { gameId: string; gameSlug: 
   return (
     <Dialog open={open} onOpenChange={openDialog}>
       <DialogTrigger asChild>
-        <Button>Ajouter une policy</Button>
+        <Button>{t("policies.addDialog.trigger")}</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Ajouter une policy</DialogTitle>
+            <DialogTitle>{t("policies.addDialog.title")}</DialogTitle>
             <DialogDescription>
-              Rédigez une règle ou précision officielle. Le contenu supporte le Markdown (images, liens, tableaux…).
+              {t("policies.addDialog.description")}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <label htmlFor="title" className="text-sm font-medium">Titre</label>
+              <label htmlFor="title" className="text-sm font-medium">{t("policies.addDialog.fields.title")}</label>
               <Input
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ex : Règle sur les effets simultanés"
+                placeholder={t("policies.addDialog.fields.titlePlaceholder")}
                 required
               />
             </div>
             <div className="grid gap-2">
               <div className="flex items-center justify-between">
-                <label htmlFor="content" className="text-sm font-medium">Contenu (Markdown)</label>
+                <label htmlFor="content" className="text-sm font-medium">{t("policies.addDialog.fields.content")}</label>
                 <button
                   type="button"
                   onClick={() => setPreview((v) => !v)}
                   className="text-xs text-muted-foreground underline hover:text-foreground"
                 >
-                  {preview ? "Éditer" : "Prévisualiser"}
+                  {preview ? t("policies.addDialog.fields.edit") : t("policies.addDialog.fields.preview")}
                 </button>
               </div>
               {preview && ReactMarkdown ? (
@@ -110,30 +115,30 @@ export default function AddPolicyDialog({ gameId }: { gameId: string; gameSlug: 
                   onChange={(e) => setContent(e.target.value)}
                   required
                   className="min-h-[200px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-mono"
-                  placeholder="Rédigez le contenu en Markdown...&#10;&#10;Exemples :&#10;**Gras**, *italique*, [lien](https://...), ![image](https://...)&#10;&#10;| Col 1 | Col 2 |&#10;|-------|-------|&#10;| val   | val   |"
+                  placeholder={t("policies.addDialog.fields.contentPlaceholder")}
                 />
               )}
               <p className="text-xs text-muted-foreground">
-                Supporte le Markdown : **gras**, *italique*, [liens](url), ![images](url), tableaux, listes…
+                {t("policies.addDialog.fields.markdownHint")}
               </p>
             </div>
             <div className="grid gap-2">
-              <label htmlFor="source" className="text-sm font-medium">Source (optionnel)</label>
+              <label htmlFor="source" className="text-sm font-medium">{t("policies.addDialog.fields.source")}</label>
               <Input
                 id="source"
                 type="url"
                 value={source}
                 onChange={(e) => setSource(e.target.value)}
-                placeholder="https://exemple.com/regles"
+                placeholder={t("policies.addDialog.fields.sourcePlaceholder")}
               />
             </div>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>
-              Annuler
+              {t("policies.addDialog.actions.cancel")}
             </Button>
             <Button type="submit" disabled={isSubmitting || !title.trim() || !content.trim()}>
-              {isSubmitting ? "Ajout en cours..." : "Ajouter"}
+              {isSubmitting ? t("policies.addDialog.actions.submitting") : t("policies.addDialog.actions.submit")}
             </Button>
           </DialogFooter>
         </form>
@@ -141,4 +146,3 @@ export default function AddPolicyDialog({ gameId }: { gameId: string; gameSlug: 
     </Dialog>
   );
 }
-

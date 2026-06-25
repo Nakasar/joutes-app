@@ -12,6 +12,7 @@ import { headers } from "next/headers";
 import { getUserById } from "@/lib/db/users";
 import FollowGameButton from "./FollowGameButton";
 import { FeaturedEventsAgenda } from "./FeaturedEventsAgenda";
+import { getTranslations } from "next-intl/server";
 
 interface GameDetailPageProps {
   params: Promise<{
@@ -22,21 +23,22 @@ interface GameDetailPageProps {
 export async function generateMetadata({ params }: GameDetailPageProps): Promise<Metadata> {
   const { gameSlugOrId } = await params;
   const game = await getGameBySlugOrId(gameSlugOrId);
+  const t = await getTranslations("Games");
 
   if (!game) {
     return {
-      title: "Jeu non trouvé - Joutes",
+      title: t("detail.metadata.notFoundTitle"),
     };
   }
 
   return {
-    title: `${game.name} - Joutes`,
+    title: t("detail.metadata.title", { gameName: game.name }),
     description: game.description,
     openGraph: {
       url: `https://joutes.app/games/${gameSlugOrId}`,
       siteName: 'Joutes - Star Wars Unlimited',
       title: game.name,
-      description: `Suivez les évènements ${game.name} autour de vous !`,
+      description: t("detail.metadata.ogDescription", { gameName: game.name }),
       images: game.banner ? [game.banner] : [],
     },
   };
@@ -45,12 +47,12 @@ export async function generateMetadata({ params }: GameDetailPageProps): Promise
 export default async function GameDetailPage({ params }: GameDetailPageProps) {
   const { gameSlugOrId } = await params;
   const game = await getGameBySlugOrId(gameSlugOrId);
+  const t = await getTranslations("Games");
 
   if (!game) {
     notFound();
   }
 
-  // Vérifier l'authentification et les jeux suivis
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -61,16 +63,13 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     isFollowing = user?.games?.includes(game.id) ?? false;
   }
 
-  // Récupérer les lieux mis en avant pour ce jeu
   const featuredLairs = game.featuredLairs && game.featuredLairs.length > 0
     ? await getLairsByIds(game.featuredLairs)
     : [];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-gray-900 to-black">
-      {/* Hero Section avec Banner */}
       <div className="relative h-[70vh] min-h-[500px] overflow-hidden">
-        {/* Background Banner */}
         {game.banner ? (
           <div className="absolute inset-0">
             <img
@@ -78,7 +77,6 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
               alt={game.name}
               className="w-full h-full object-cover"
             />
-            {/* Gradient overlays */}
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-r from-black via-transparent to-transparent" />
           </div>
@@ -86,20 +84,17 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
           <div className="absolute inset-0 bg-gradient-to-br from-gray-800 via-gray-900 to-black" />
         )}
 
-        {/* Back Button */}
         <div className="absolute top-8 left-8 z-20">
           <Link href="/games">
             <Button variant="secondary" className="bg-black/50 backdrop-blur-sm border-white/20 text-white hover:bg-black/70">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour aux jeux
+              {t("detail.back")}
             </Button>
           </Link>
         </div>
 
-        {/* Game Info */}
         <div className="absolute inset-0 flex items-end z-10">
           <div className="w-full max-w-7xl mx-auto px-8 pb-16 space-y-6">
-            {/* Game Icon */}
             {game.icon && (
               <div className="w-32 h-32 rounded-lg overflow-hidden shadow-2xl border-4 border-white/20">
                 <img
@@ -110,24 +105,20 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
               </div>
             )}
 
-            {/* Title */}
             <h1 className="text-5xl md:text-7xl font-bold text-white drop-shadow-2xl animate-fade-in">
               {game.name}
             </h1>
 
-            {/* Type Badge */}
             <div className="flex gap-3 items-center animate-fade-in animate-delay-100">
               <Badge variant="secondary" className="text-base px-4 py-2 bg-white/20 backdrop-blur-sm text-white border-white/30">
                 {GAME_TYPES[game.type]}
               </Badge>
             </div>
 
-            {/* Description */}
             <p className="text-xl text-gray-200 max-w-3xl leading-relaxed drop-shadow-lg animate-fade-in animate-delay-200">
               {game.description}
             </p>
 
-            {/* Action Buttons */}
             <div className="flex gap-4 pt-4 animate-fade-in animate-delay-300">
               <FollowGameButton
                 gameId={game.id}
@@ -137,13 +128,13 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
               <Link href={`/events?gameId=${game.id}`}>
                 <Button size="lg" variant="secondary" className="bg-black/50 backdrop-blur-sm border-white/20 text-white hover:bg-black/70 px-8">
                   <Calendar className="h-5 w-5 mr-2" />
-                  Voir les événements
+                  {t("detail.viewEvents")}
                 </Button>
               </Link>
               <Link href={`/lairs?gameId=${game.id}`}>
                 <Button size="lg" variant="secondary" className="bg-black/50 backdrop-blur-sm border-white/20 text-white hover:bg-black/70 px-8">
                   <MapPin className="h-5 w-5 mr-2" />
-                  Trouver un lieu
+                  {t("detail.findLair")}
                 </Button>
               </Link>
             </div>
@@ -151,11 +142,9 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
         </div>
       </div>
 
-      {/* Additional Content Sections */}
       <div className="relative z-20 max-w-7xl mx-auto px-8 py-16 space-y-16">
-        {/* À propos du jeu */}
         <section className="space-y-6">
-          <h2 className="text-3xl font-bold text-white">À propos</h2>
+          <h2 className="text-3xl font-bold text-white">{t("detail.about")}</h2>
           <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-8">
             <p className="text-gray-300 text-lg leading-relaxed">
               {game.description}
@@ -163,7 +152,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
 
             <div className="grid md:grid-cols-3 gap-6 mt-8 pt-8 border-t border-white/10">
               <div>
-                <h3 className="text-sm text-gray-400 uppercase tracking-wider mb-2">Type de jeu</h3>
+                <h3 className="text-sm text-gray-400 uppercase tracking-wider mb-2">{t("detail.gameType")}</h3>
                 <p className="text-white text-lg font-semibold">{GAME_TYPES[game.type]}</p>
               </div>
             </div>
@@ -171,13 +160,13 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
         </section>
 
         <section>
-          <h2 className="text-3xl font-bold text-white">Outils</h2>
+          <h2 className="text-3xl font-bold text-white">{t("detail.tools")}</h2>
           <div className="grid md:grid-cols-2 gap-6 mt-4">
             {game.features?.cards && (
               <Link href={`/games/${game.slug}/cards`} className="group">
                 <div className="bg-gradient-to-br from-red-900/30 to-red-800/20 backdrop-blur-sm rounded-xl border border-red-500/20 p-8 hover:border-red-500/50 transition-all hover:scale-105">
-                  <h3 className="text-xl font-bold text-white mb-2">Cartes et ressources</h3>
-                  <p className="text-gray-300">Accédez aux cartes, fiches de personnages et autres ressources</p>
+                  <h3 className="text-xl font-bold text-white mb-2">{t("detail.toolsCards.title")}</h3>
+                  <p className="text-gray-300">{t("detail.toolsCards.description")}</p>
                 </div>
               </Link>
             )}
@@ -185,8 +174,8 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             {game.features?.tournaments && (
               <Link href={`/games/${game.slug}/tournaments`} className="group">
                 <div className="bg-gradient-to-br from-green-900/30 to-green-800/20 backdrop-blur-sm rounded-xl border border-green-500/20 p-8 hover:border-green-500/50 transition-all hover:scale-105">
-                  <h3 className="text-xl font-bold text-white mb-2">Tournois</h3>
-                  <p className="text-gray-300">Organisez vos propres tournois</p>
+                  <h3 className="text-xl font-bold text-white mb-2">{t("detail.toolsTournaments.title")}</h3>
+                  <p className="text-gray-300">{t("detail.toolsTournaments.description")}</p>
                 </div>
               </Link>
             )}
@@ -194,8 +183,8 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             {game.features?.collection && (
               <Link href={`/games/${game.slug}/collection`} className="group">
                 <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 backdrop-blur-sm rounded-xl border border-blue-500/20 p-8 hover:border-blue-500/50 transition-all hover:scale-105">
-                  <h3 className="text-xl font-bold text-white mb-2">Collection et échanges</h3>
-                  <p className="text-gray-300">Gérez votre collection, échangez avec d'autres joueurs et trouvez des pièces rares</p>
+                  <h3 className="text-xl font-bold text-white mb-2">{t("detail.toolsCollection.title")}</h3>
+                  <p className="text-gray-300">{t("detail.toolsCollection.description")}</p>
                 </div>
               </Link>
             )}
@@ -203,8 +192,8 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             {game.features?.rules && (
               <Link href={`/games/${game.slug}/rules`} className="group">
                 <div className="bg-gradient-to-br from-yellow-900/30 to-yellow-800/20 backdrop-blur-sm rounded-xl border border-yellow-500/20 p-8 hover:border-yellow-500/50 transition-all hover:scale-105">
-                  <h3 className="text-xl font-bold text-white mb-2">Règles du jeu</h3>
-                  <p className="text-gray-300">Consultez les règles officielles et guides de jeu</p>
+                  <h3 className="text-xl font-bold text-white mb-2">{t("detail.toolsRules.title")}</h3>
+                  <p className="text-gray-300">{t("detail.toolsRules.description")}</p>
                 </div>
               </Link>
             )}
@@ -212,15 +201,14 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             {game.features?.policies && (
               <Link href={`/games/${game.slug}/policies`} className="group">
                 <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/20 backdrop-blur-sm rounded-xl border border-purple-500/20 p-8 hover:border-purple-500/50 transition-all hover:scale-105">
-                  <h3 className="text-xl font-bold text-white mb-2">Politiques</h3>
-                  <p className="text-gray-300">Consultez les politiques et précis de règles rédigées par la communauté et les éditeurs</p>
+                  <h3 className="text-xl font-bold text-white mb-2">{t("detail.toolsPolicies.title")}</h3>
+                  <p className="text-gray-300">{t("detail.toolsPolicies.description")}</p>
                 </div>
               </Link>
             )}
           </div>
         </section>
 
-        {/* Événements des lieux mis en avant */}
         {featuredLairs.length > 0 && (
           <FeaturedEventsAgenda
             featuredLairs={featuredLairs}
@@ -228,31 +216,30 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
           />
         )}
 
-        {/* Communauté - Placeholder pour futurs contenus */}
         <section className="space-y-6">
-          <h2 className="text-3xl font-bold text-white">Rejoignez la communauté</h2>
+          <h2 className="text-3xl font-bold text-white">{t("detail.communityTitle")}</h2>
           <div className="grid md:grid-cols-3 gap-6">
             <Link href={`/game-matches?gameId=${game.id}`} className="group">
               <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 backdrop-blur-sm rounded-xl border border-blue-500/20 p-8 hover:border-blue-500/50 transition-all hover:scale-105">
                 <Users className="h-12 w-12 text-blue-400 mb-4" />
-                <h3 className="text-xl font-bold text-white mb-2">Parties en cours</h3>
-                <p className="text-gray-300">Rejoignez des parties ou créez la vôtre</p>
+                <h3 className="text-xl font-bold text-white mb-2">{t("detail.communityMatches.title")}</h3>
+                <p className="text-gray-300">{t("detail.communityMatches.description")}</p>
               </div>
             </Link>
 
             <Link href={`/events?gameId=${game.id}`} className="group">
               <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/20 backdrop-blur-sm rounded-xl border border-purple-500/20 p-8 hover:border-purple-500/50 transition-all hover:scale-105">
                 <Calendar className="h-12 w-12 text-purple-400 mb-4" />
-                <h3 className="text-xl font-bold text-white mb-2">Événements</h3>
-                <p className="text-gray-300">Découvrez les tournois et rencontres</p>
+                <h3 className="text-xl font-bold text-white mb-2">{t("detail.communityEvents.title")}</h3>
+                <p className="text-gray-300">{t("detail.communityEvents.description")}</p>
               </div>
             </Link>
 
             <Link href={`/lairs?gameId=${game.id}`} className="group">
               <div className="bg-gradient-to-br from-green-900/30 to-green-800/20 backdrop-blur-sm rounded-xl border border-green-500/20 p-8 hover:border-green-500/50 transition-all hover:scale-105">
                 <MapPin className="h-12 w-12 text-green-400 mb-4" />
-                <h3 className="text-xl font-bold text-white mb-2">Lieux de jeu</h3>
-                <p className="text-gray-300">Trouvez des endroits pour jouer près de chez vous</p>
+                <h3 className="text-xl font-bold text-white mb-2">{t("detail.communityLairs.title")}</h3>
+                <p className="text-gray-300">{t("detail.communityLairs.description")}</p>
               </div>
             </Link>
           </div>
@@ -261,4 +248,3 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
     </div>
   );
 }
-

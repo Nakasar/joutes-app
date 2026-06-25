@@ -1,37 +1,39 @@
 import { Button } from "@/components/ui/button";
 import { getGameBySlugOrId } from "@/lib/db/games";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 export default async function GameRulesPage({ params} : { params: Promise<{ gameSlugOrId: string }> }) {
     const { gameSlugOrId } = await params;
 
     const game = await getGameBySlugOrId(gameSlugOrId);
+    const t = await getTranslations("Games");
     if (!game?.features?.rules) {
         return (
             <div className="container mx-auto p-6">
-                <h1 className="text-3xl font-bold mb-4">Jeu non trouvé</h1>
-                <p>Le jeu que vous recherchez n&apos;existe pas ou ne dispose pas de règles sur Joutes.</p>
+                <h1 className="text-3xl font-bold mb-4">{t("rules.notFoundTitle")}</h1>
+                <p>{t("rules.notFoundDescription")}</p>
             </div>
         )
     }
 
     const rulesDocuments = [{
         id: 'tr',
-        name: 'Tournament Regulation',
+        name: t("rules.documents.tournamentRegulation"),
     }, {
         id: 'cr',
-        name: 'Core Rules',
+        name: t("rules.documents.coreRules"),
     }];
 
     return (
         <div className="container mx-auto p-6">
-            <h1 className="text-3xl font-bold mb-4">Règles de {game.name}</h1>
+            <h1 className="text-3xl font-bold mb-4">{t("rules.title", { gameName: game.name })}</h1>
             <Button asChild>
                 <Link href={`/games/${game.slug}`} className="text-blue-600 hover:underline">
-                    ← Retour au portail du jeu
+                    ← {t("rules.back")}
                 </Link>
             </Button>
-            <p className="mb-6">Voici les règles officielles de {game.name} disponibles sur Joutes.</p>
+            <p className="mb-6">{t("rules.description", { gameName: game.name })}</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {rulesDocuments.map(doc => (
                     <Link

@@ -10,6 +10,7 @@ import {Button} from "@/components/ui/button";
 import Link from "next/link";
 import {hasPermission} from "@/lib/db/permissions";
 import AddPolicyDialog from "@/app/games/[gameSlugOrId]/policies/AddPolicyDialog";
+import { getTranslations } from "next-intl/server";
 
 const PAGE_SIZE = 20;
 
@@ -20,19 +21,20 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const {gameSlugOrId} = await params;
   const game = await db.collection<Game>("games").findOne({slug: gameSlugOrId});
+  const t = await getTranslations("Games");
 
   if (!game) {
     return {
-      title: 'Jeu non trouvé',
+      title: t("policies.metadata.notFoundTitle"),
     };
   }
 
   return {
-    title: `Précis de règles et policies pour ${game.name}`,
-    description: `Explorez les règles et les policies pour ${game.name}.`,
+    title: t("policies.metadata.title", { gameName: game.name }),
+    description: t("policies.metadata.description", { gameName: game.name }),
     openGraph: {
-      title: `Précis de règles et policies pour ${game.name}`,
-      description: `Explorez les règles et les policies pour ${game.name}.`,
+      title: t("policies.metadata.title", { gameName: game.name }),
+      description: t("policies.metadata.description", { gameName: game.name }),
       images: game.banner ? [game.banner] : [],
     },
   };
@@ -65,16 +67,17 @@ export default async function GamePoliciesPage({
     hasPermission("policies:update"),
     hasPermission("policies:vote"),
   ]);
+  const t = await getTranslations("Games");
 
   return (
     <div className="container mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Rule Policies — {game.name}</h1>
+        <h1 className="text-3xl font-bold">{t("policies.title", { gameName: game.name })}</h1>
         {userCanUpdatePolicies && <AddPolicyDialog gameId={gameId} gameSlug={game.slug}/>}
       </div>
       <Button asChild>
         <Link href={`/games/${game.slug}`} className="text-blue-600 hover:underline">
-          ← Retour au portail du jeu
+          ← {t("policies.back")}
         </Link>
       </Button>
 

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Heart } from "lucide-react";
 import { addGameToUserList, removeGameFromUserList } from "@/app/account/actions";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 interface FollowGameButtonProps {
   gameId: string;
@@ -20,6 +21,7 @@ export default function FollowGameButton({
   const [following, setFollowing] = useState(isFollowing);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const t = useTranslations("Games");
 
   const handleToggleFollow = async () => {
     if (!isAuthenticated) {
@@ -68,11 +70,10 @@ export default function FollowGameButton({
         className={`h-5 w-5 mr-2 ${following ? "fill-current" : ""}`}
       />
       {loading
-        ? "Chargement..."
+        ? t("detail.follow.loading")
         : following
-        ? "Ne plus suivre"
-        : "Suivre ce jeu"}
+        ? t("detail.follow.unfollow")
+        : t("detail.follow.follow")}
     </Button>
   );
 }
-

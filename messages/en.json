@@ -126,6 +126,143 @@
       }
     }
   },
+  "Games": {
+    "explorer": {
+      "title": "Explore the Games",
+      "description": "Discover exceptional card and board games for every taste.",
+      "searchPlaceholder": "Search a game...",
+      "resultsSingular": "{count} game found",
+      "resultsPlural": "{count} games found",
+      "noGames": "No games found",
+      "noGamesHint": "Try another search",
+      "categories": {
+        "other": "Other"
+      }
+    },
+    "detail": {
+      "back": "Back to games",
+      "viewEvents": "View events",
+      "findLair": "Find a venue",
+      "about": "About",
+      "gameType": "Game type",
+      "tools": "Tools",
+      "toolsCards": {
+        "title": "Cards and resources",
+        "description": "Access cards, character sheets, and other resources"
+      },
+      "toolsTournaments": {
+        "title": "Tournaments",
+        "description": "Organize your own tournaments"
+      },
+      "toolsCollection": {
+        "title": "Collection and trading",
+        "description": "Manage your collection, trade with other players, and find rare pieces"
+      },
+      "toolsRules": {
+        "title": "Game rules",
+        "description": "Consult the official rules and gameplay guides"
+      },
+      "toolsPolicies": {
+        "title": "Policies",
+        "description": "Consult policies and rule clarifications written by the community and publishers"
+      },
+      "communityTitle": "Join the community",
+      "communityMatches": {
+        "title": "Current games",
+        "description": "Join or create your own games"
+      },
+      "communityEvents": {
+        "title": "Events",
+        "description": "Discover tournaments and meetups"
+      },
+      "communityLairs": {
+        "title": "Gaming venues",
+        "description": "Find places to play near you"
+      },
+      "follow": {
+        "loading": "Loading...",
+        "follow": "Follow this game",
+        "unfollow": "Stop following"
+      },
+      "events": {
+        "upcoming": "Upcoming events",
+        "loading": "Loading events...",
+        "none": "No upcoming events for now",
+        "fetchError": "Unable to load events",
+        "countSingular": "{count} event",
+        "countPlural": "{count} events",
+        "status": {
+          "available": "Available",
+          "soldOut": "Sold out",
+          "cancelled": "Cancelled"
+        },
+        "moreInfo": "More info",
+        "participants": "{registered} / {max} participants"
+      },
+      "metadata": {
+        "notFoundTitle": "Game not found - Joutes",
+        "title": "{gameName} - Joutes",
+        "ogDescription": "Follow the {gameName} events around you!"
+      }
+    },
+    "rules": {
+      "notFoundTitle": "Game not found",
+      "notFoundDescription": "The game you are looking for does not exist or has no rules on Joutes.",
+      "title": "Rules for {gameName}",
+      "back": "Back to the game portal",
+      "description": "Here are the official rules of {gameName} available on Joutes.",
+      "documents": {
+        "tournamentRegulation": "Tournament Regulation",
+        "coreRules": "Core Rules"
+      }
+    },
+    "policies": {
+      "metadata": {
+        "notFoundTitle": "Game not found",
+        "title": "Rule policies for {gameName}",
+        "description": "Explore the rules and policies for {gameName}."
+      },
+      "title": "Rule policies — {gameName}",
+      "back": "Back to the game portal",
+      "searchPlaceholder": "Search policies…",
+      "sortTitle": "Title",
+      "countSingular": "{count} policy",
+      "countPlural": "{count} policies",
+      "pageLabel": "page {currentPage} / {totalPages}",
+      "empty": "No policy matches the search criteria.",
+      "deprecated": "Deprecated",
+      "addedOn": "Added on {date}",
+      "source": "Source",
+      "deprecatedOn": "Deprecated on {date}",
+      "paginationSummary": "Page {currentPage} of {totalPages} — {count, plural, one {# policy} other {# policies}}",
+      "previous": "Previous",
+      "next": "Next",
+      "addDialog": {
+        "trigger": "Add a policy",
+        "title": "Add a policy",
+        "description": "Write an official rule or clarification. The content supports Markdown (images, links, tables, etc.).",
+        "fields": {
+          "title": "Title",
+          "titlePlaceholder": "Example: Rule for simultaneous effects",
+          "content": "Content (Markdown)",
+          "contentPlaceholder": "Write the content in Markdown...",
+          "preview": "Preview",
+          "edit": "Edit",
+          "markdownHint": "Supports Markdown: **bold**, *italic*, [links](url), ![images](url), tables, lists…",
+          "source": "Source (optional)",
+          "sourcePlaceholder": "https://example.com/rules"
+        },
+        "actions": {
+          "cancel": "Cancel",
+          "submit": "Add",
+          "submitting": "Adding..."
+        },
+        "errors": {
+          "createError": "Unable to create the policy"
+        }
+      }
+    }
+  },
   "Login": {
     "title": "Login Joutes",
     "emailAddress": "Email address",
