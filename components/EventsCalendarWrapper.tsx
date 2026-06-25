@@ -1,4 +1,3 @@
-import { getEventsForUser } from "@/lib/db/events";
 import { getAllGames } from "@/lib/db/games";
 import EventsCalendarClient from "@/components/EventsCalendarClient";
 import { auth } from "@/lib/auth";
@@ -11,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Calendar, MapPin, Gamepad2, AlertCircle, Info, Plus } from "lucide-react";
 import { DateTime } from "luxon";
 import { Event } from "@/lib/types/Event";
+import {getTranslations} from "next-intl/server";
 
 type EventsCalendarWrapperProps = {
   basePath?: string;
@@ -25,6 +25,8 @@ export default async function EventsCalendarWrapper({
   basePath = "/",
   searchParams = {},
 }: EventsCalendarWrapperProps) {
+  const t = await getTranslations('EventsCalendar');
+
   const today = DateTime.now();
   
   // Parse search params
@@ -49,10 +51,10 @@ export default async function EventsCalendarWrapper({
           <div className="text-center space-y-4 py-12">
             <Calendar className="h-16 w-16 mx-auto text-primary" />
             <h1 className="text-4xl font-bold tracking-tight">
-              Calendrier des Événements
+              {t('title')}
             </h1>
             <p className="text-xl text-muted-foreground">
-              Découvrez tous les événements de jeux près de chez vous
+              {t('description')}
             </p>
           </div>
           

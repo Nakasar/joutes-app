@@ -13,5 +13,14 @@
       "Se connecter": "Se connecter",
       "Connexion": "Connexion"
     }
+  },
+  "Home": {
+    "title": "Calendrier des Événements",
+    "createEvent": "Créer un Événement"
+  },
+  "EventsCalendar": {
+    "title": "Calendrier des Événements",
+    "description": "Découvrez tous les événements de jeux près de chez vous",
+    "createEvent": "Créer un Événement"
   }
 }

@@ -13,5 +13,14 @@
       "Se connecter": "Login",
       "Connexion": "Login"
     }
+  },
+  "Home": {
+    "title": "Event calendar",
+    "createEvent": "Create an Event"
+  },
+  "EventsCalendar": {
+    "title": "Event calendar",
+    "description": "Discover all the gaming events near you",
+    "createEvent": "Create an Event"
   }
 }
