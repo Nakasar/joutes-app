@@ -16,6 +16,8 @@ import ErrataVoteButtons from "@/components/ErrataVoteButtons";
 import {isAdmin} from "@/lib/config/admins";
 import {hasPermission} from "@/lib/db/permissions";
 import AddErrataButton from "@/app/games/[gameSlugOrId]/cards/[cardId]/AddErrataButton";
+import { getLocale, getTranslations } from "next-intl/server";
+import { DateTime } from "luxon";
 
 export async function generateMetadata({
   params,
@@ -23,24 +25,24 @@ export async function generateMetadata({
   params: Promise<{ cardId: string }>;
 }): Promise<Metadata> {
   const { cardId } = await params;
+  const t = await getTranslations("Games");
 
-  // Récupérer les informations de la carte depuis MongoDB
   const card = await db.collection<BoosterCard>("cards").findOne({ id: cardId });
 
   if (!card) {
     return {
-      title: 'Carte non trouvée',
+      title: t("cards.detail.metadata.notFoundTitle"),
     };
   }
 
   const erratas = await getErratasByCardId(cardId);
 
   return {
-    title: `${card.name} - Details, official erratas and community rulings`,
-    description: `Discover details of ${card.name}, including official erratas and community rulings.\n\nThis card has ${erratas.length} errata and clarifications contributed by the community.${card.banned ? "\n\nThis card is currently banned." : ""}${erratas.length === 1 ? `\n\n${erratas[0].type} (${erratas[0].errataDate}):\n${erratas[0].details}` : ''}`,
+    title: t("cards.detail.metadata.title", { cardName: card.name }),
+    description: t("cards.detail.metadata.description", { cardName: card.name, count: erratas.length, banned: card.banned ? t("cards.detail.metadata.banned") : "" }),
     openGraph: {
-      title: `${card.name} - Details, official erratas and community rulings`,
-      description: `Discover details of ${card.name}, including official erratas and community rulings.\n\nThis card has ${erratas.length} errata and clarifications contributed by the community.${card.banned ? "\n\nThis card is currently banned." : ""}${erratas.length === 1 ? `\n\n${erratas[0].type} (${erratas[0].errataDate}):\n${erratas[0].details}` : ''}`,
+      title: t("cards.detail.metadata.title", { cardName: card.name }),
+      description: t("cards.detail.metadata.description", { cardName: card.name, count: erratas.length, banned: card.banned ? t("cards.detail.metadata.banned") : "" }),
       images: [card.image],
     },
   };
@@ -52,50 +54,46 @@ export default async function RiftboundCardDetailPage({
   params: Promise<{ cardId: string }>;
 }) {
   const { cardId } = await params;
+  const locale = await getLocale();
+  const t = await getTranslations("Games");
 
   const session = await auth.api.getSession({ headers: await headers() });
   const userId = session?.user?.id;
 
-  // Récupérer les informations de la carte depuis MongoDB
   const card = await db.collection<BoosterCard>("cards").findOne({ id: cardId });
 
   if (!card) {
     return (
       <div className="container mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-6">Carte non trouvée</h1>
+        <h1 className="text-3xl font-bold mb-6">{t("cards.detail.notFoundTitle")}</h1>
         <Button asChild>
           <Link href={`/games/${"riftbound"}/cards`} className="text-blue-600 hover:underline">
-            ← Retour à la liste des cartes
+            ← {t("cards.detail.backToList")}
           </Link>
         </Button>
 
-        <p>La carte avec l'ID {cardId} n'existe pas.</p>
+        <p>{t("cards.detail.notFoundMessage", { cardId })}</p>
       </div>
     );
   }
 
-  // Récupérer les erratas pour cette carte (avec votes)
   const erratas = await getErratasByCardId(cardId, userId);
-
-  // Vérifier si l'utilisateur est admin
   const userIsAdmin = isAdmin(session?.user?.email);
-  const userCanVoteErratas = await hasPermission('erratas:vote');
+  const userCanVoteErratas = await hasPermission("erratas:vote");
 
   return (
     <div className="container mx-auto p-6">
       <Button asChild>
         <Link href={`/games/${"riftbound"}/cards`} className="text-blue-600 hover:underline">
-          ← Retour à la liste des cartes
+          ← {t("cards.detail.backToList")}
         </Link>
       </Button>
 
-      {/* Barre de recherche */}
       <div className="mb-8 flex justify-center">
         <CardSearchBar />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Image de la carte */}
         <div>
           <img
             src={card.image}
@@ -104,13 +102,12 @@ export default async function RiftboundCardDetailPage({
           />
         </div>
 
-        {/* Détails de la carte */}
         <div>
           <div className="flex items-center gap-3 mb-4 flex-wrap">
             <h1 className="text-3xl font-bold">{card.name}</h1>
             {card.banned && (
               <span className="bg-red-600 text-white text-sm font-semibold px-2 py-1 rounded">
-                Banned
+                {t("cards.detail.banned")}
               </span>
             )}
           </div>
@@ -136,18 +133,17 @@ export default async function RiftboundCardDetailPage({
             </div>
           )}
 
-          {/* Section Erratas/Clarifications/Rulings */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-semibold">
-                Erratas & Clarifications
+                {t("cards.detail.errataSectionTitle")}
               </h2>
               {userIsAdmin && <AddErrataButton cardId={cardId} />}
             </div>
 
             {erratas.length === 0 ? (
               <p className="text-muted-foreground">
-                Aucun errata ou clarification pour cette carte.
+                {t("cards.detail.noErrata")}
               </p>
             ) : (
               <div className="space-y-4">
@@ -168,17 +164,13 @@ export default async function RiftboundCardDetailPage({
                           }`}
                         >
                           {errata.type === "errata"
-                            ? "Errata"
+                            ? t("cards.detail.errataTypes.errata")
                             : errata.type === "clarification"
-                            ? "Clarification"
-                            : "Ruling"}
+                            ? t("cards.detail.errataTypes.clarification")
+                            : t("cards.detail.errataTypes.ruling")}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          {new Date(errata.errataDate).toLocaleDateString("fr-FR", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
+                          {DateTime.fromJSDate(new Date(errata.errataDate)).setLocale(locale).toLocaleString(DateTime.DATE_MED)}
                         </span>
                       </div>
                       {userIsAdmin && (
@@ -190,11 +182,11 @@ export default async function RiftboundCardDetailPage({
                     </div>
                     {errata.deprecatedAt && (
                       <span className="inline-block mb-2 text-xs font-semibold px-2 py-0.5 rounded bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-                        Déprécié
+                        {t("cards.detail.deprecated")}
                       </span>
                     )}
                     <div className="prose prose-sm dark:prose-invert max-w-none ">
-                      <ReactMarkdown children={errata.details} />
+                      <ReactMarkdown>{errata.details}</ReactMarkdown>
                     </div>
                     {errata.source && (
                       <div className="mt-2 pt-2 border-t">
@@ -204,19 +196,14 @@ export default async function RiftboundCardDetailPage({
                           rel="noopener noreferrer"
                           className="text-xs text-blue-600 hover:underline"
                         >
-                          Source →
+                          {t("cards.detail.source")} →
                         </a>
                       </div>
                     )}
                     {errata.deprecatedAt && (
                       <div className="mt-2 pt-2 border-t">
                         <span className="text-xs text-muted-foreground italic">
-                          Déprécié le{" "}
-                          {new Date(errata.deprecatedAt).toLocaleDateString("fr-FR", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
+                          {t("cards.detail.deprecatedOn", { date: DateTime.fromJSDate(new Date(errata.deprecatedAt)).setLocale(locale).toLocaleString(DateTime.DATE_MED) })}
                         </span>
                       </div>
                     )}

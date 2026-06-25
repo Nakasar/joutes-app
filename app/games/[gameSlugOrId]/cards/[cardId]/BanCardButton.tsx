@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { setBanStatus } from "@/app/games/[gameSlugOrId]/actions";
+import { useTranslations } from "next-intl";
 
 export default function BanCardButton({
   cardId,
@@ -12,6 +13,7 @@ export default function BanCardButton({
   banned?: boolean;
 }) {
   const [isPending, setIsPending] = useState(false);
+  const t = useTranslations("Games");
 
   const handleClick = async () => {
     setIsPending(true);
@@ -29,7 +31,7 @@ export default function BanCardButton({
       onClick={handleClick}
       disabled={isPending}
     >
-      {isPending ? "..." : banned ? "Retirer le ban" : "Bannir la carte"}
+      {isPending ? t("cards.detail.banButton.pending") : banned ? t("cards.detail.banButton.unban") : t("cards.detail.banButton.ban")}
     </Button>
   );
 }

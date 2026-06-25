@@ -3,6 +3,7 @@ import {Game} from "@/lib/types/Game";
 import {Metadata} from "next";
 import db from "@/lib/mongodb";
 import {notFound} from "next/navigation";
+import { getTranslations } from "next-intl/server";
 
 export async function generateMetadata({
                                          params
@@ -11,19 +12,20 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const {gameSlugOrId} = await params;
   const game = await db.collection<Game>("games").findOne({slug: gameSlugOrId});
+  const t = await getTranslations("Games");
 
   if (!game) {
     return {
-      title: 'Jeu non trouvé',
+      title: t("cards.metadata.notFoundTitle"),
     };
   }
 
   return {
-    title: `${game.name} - Galerie de cartes, erratas et rulings`,
-    description: `Explore cards and their erratas and rulings for ${game.name}.`,
+    title: t("cards.metadata.title", { gameName: game.name }),
+    description: t("cards.metadata.description", { gameName: game.name }),
     openGraph: {
-      title: `${game.name} - Galerie de cartes, erratas et rulings`,
-      description: `Explore cards and their erratas and rulings for ${game.name}.`,
+      title: t("cards.metadata.title", { gameName: game.name }),
+      description: t("cards.metadata.description", { gameName: game.name }),
       images: game.banner ? [game.banner] : [],
     },
   };

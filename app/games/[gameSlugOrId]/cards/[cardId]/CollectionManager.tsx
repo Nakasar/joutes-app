@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 
 const CONDITIONS = ["Damaged", "Played", "Good", "Near Mint", "Mint"] as const;
 const PRIMARY_LANGUAGES = [
@@ -84,6 +85,25 @@ export default function CollectionManager({
   const [acquisitionPrice, setAcquisitionPrice] = useState("");
   const [acquisitionCurrency, setAcquisitionCurrency] = useState<CurrencyCode>("EUR");
   const [adding, setAdding] = useState(false);
+  const locale = useLocale();
+  const t = useTranslations("Games");
+  const primaryLanguages = [
+    { code: "FR" as const, label: t("cards.collection.languages.fr") },
+    { code: "EN" as const, label: t("cards.collection.languages.en") },
+    { code: "ZH" as const, label: t("cards.collection.languages.zh") },
+  ];
+  const secondaryLanguages = [
+    { code: "IT" as const, label: t("cards.collection.languages.it") },
+    { code: "JA" as const, label: t("cards.collection.languages.ja") },
+    { code: "KO" as const, label: t("cards.collection.languages.ko") },
+  ];
+  const conditionOptions = [
+    { value: "Damaged" as const, label: t("cards.collection.conditions.damaged") },
+    { value: "Played" as const, label: t("cards.collection.conditions.played") },
+    { value: "Good" as const, label: t("cards.collection.conditions.good") },
+    { value: "Near Mint" as const, label: t("cards.collection.conditions.nearMint") },
+    { value: "Mint" as const, label: t("cards.collection.conditions.mint") },
+  ];
 
   useEffect(() => {
     let active = true;
@@ -186,7 +206,7 @@ export default function CollectionManager({
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-3">
-        <span className="text-sm text-muted-foreground">Collection&nbsp;:</span>
+        <span className="text-sm text-muted-foreground">{t("cards.collection.label")}</span>
         <Button
           variant="ghost"
           size="sm"
@@ -195,7 +215,7 @@ export default function CollectionManager({
         >
           <span className="font-semibold">{entries.length}</span>
           <span className="text-muted-foreground">
-            carte{entries.length !== 1 ? "s" : ""}
+            {t("cards.collection.count", { count: entries.length })}
           </span>
           {expanded ? (
             <ChevronUp className="h-4 w-4" />
@@ -208,12 +228,12 @@ export default function CollectionManager({
           <DialogTrigger asChild>
             <Button variant="outline" size="sm" className="gap-1">
               <Plus className="h-4 w-4" />
-              Ajouter
+              {t("cards.collection.actions.add")}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Ajouter à la collection</DialogTitle>
+              <DialogTitle>{t("cards.collection.dialog.title")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-2">
               <div className="flex items-center gap-2">
@@ -226,9 +246,9 @@ export default function CollectionManager({
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="language">Langue</Label>
+                <Label htmlFor="language">{t("cards.collection.fields.language")}</Label>
                 <div className="flex flex-wrap gap-2">
-                  {PRIMARY_LANGUAGES.map((option) => (
+                  {primaryLanguages.map((option) => (
                     <Button
                       key={option.code}
                       type="button"
@@ -242,14 +262,14 @@ export default function CollectionManager({
                     </Button>
                   ))}
                   <Select
-                    value={SECONDARY_LANGUAGES.some((option) => option.code === language) ? language : ""}
+                    value={secondaryLanguages.some((option) => option.code === language) ? language : ""}
                     onValueChange={(value) => setLanguage(value as LanguageCode)}
                   >
                     <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Autres langues" />
+                      <SelectValue placeholder={t("cards.collection.fields.otherLanguages")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {SECONDARY_LANGUAGES.map((option) => (
+                      {secondaryLanguages.map((option) => (
                         <SelectItem key={option.code} value={option.code}>
                           {option.label}
                         </SelectItem>
@@ -262,13 +282,13 @@ export default function CollectionManager({
                     size="sm"
                     onClick={() => setLanguage("")}
                   >
-                    Aucune
+                    {t("cards.collection.fields.none")}
                   </Button>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="obtainedAt">Date d&apos;obtention</Label>
+                <Label htmlFor="obtainedAt">{t("cards.collection.fields.obtainedAt")}</Label>
                 <Input
                   id="obtainedAt"
                   type="date"
@@ -278,7 +298,7 @@ export default function CollectionManager({
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="acquisitionPrice">Prix d&apos;obtention</Label>
+                <Label htmlFor="acquisitionPrice">{t("cards.collection.fields.acquisitionPrice")}</Label>
                 <div className="flex gap-2">
                   <Input
                     id="acquisitionPrice"
@@ -295,7 +315,7 @@ export default function CollectionManager({
                     onValueChange={(value) => setAcquisitionCurrency(value as CurrencyCode)}
                   >
                     <SelectTrigger className="w-[120px]">
-                      <SelectValue placeholder="Devise" />
+                      <SelectValue placeholder={t("cards.collection.fields.currency")} />
                     </SelectTrigger>
                     <SelectContent>
                       {CURRENCIES.map((currency) => (
@@ -309,18 +329,18 @@ export default function CollectionManager({
               </div>
 
               <div className="space-y-1">
-                <Label>État</Label>
+                <Label>{t("cards.collection.fields.condition")}</Label>
                 <Select
                   value={condition}
                   onValueChange={(v) => setCondition(v as Condition)}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Sélectionner un état" />
+                    <SelectValue placeholder={t("cards.collection.fields.conditionPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {CONDITIONS.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {c}
+                    {conditionOptions.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {c.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -328,7 +348,7 @@ export default function CollectionManager({
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="grade">Note de gradation (0–10)</Label>
+                <Label htmlFor="grade">{t("cards.collection.fields.grade")}</Label>
                 <Input
                   id="grade"
                   type="number"
@@ -343,10 +363,10 @@ export default function CollectionManager({
 
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="ghost" onClick={() => setDialogOpen(false)}>
-                  Annuler
+                  {t("cards.collection.actions.cancel")}
                 </Button>
                 <Button type="button" onClick={addCard} disabled={adding}>
-                  {adding ? "Ajout…" : "Ajouter"}
+                  {adding ? t("cards.collection.actions.adding") : t("cards.collection.actions.add")}
                 </Button>
               </div>
             </div>
@@ -358,7 +378,7 @@ export default function CollectionManager({
         <div className="border rounded-lg divide-y">
           {entries.length === 0 ? (
             <p className="text-sm text-muted-foreground p-3">
-              Aucun exemplaire dans la collection.
+              {t("cards.collection.empty")}
             </p>
           ) : (
             entries.map((entry, i) => (
@@ -370,26 +390,28 @@ export default function CollectionManager({
                   <span className="text-muted-foreground">#{i + 1}</span>
                   {entry.language && (
                     <Badge variant="secondary">
-                      {PRIMARY_LANGUAGES.find((option) => option.code === entry.language)?.label ??
-                        SECONDARY_LANGUAGES.find((option) => option.code === entry.language)?.label ??
+                      {primaryLanguages.find((option) => option.code === entry.language)?.label ??
+                        secondaryLanguages.find((option) => option.code === entry.language)?.label ??
                         entry.language}
                     </Badge>
                   )}
-                  {entry.foil && <Badge variant="secondary">Foil</Badge>}
+                  {entry.foil && <Badge variant="secondary">{t("cards.collection.badges.foil")}</Badge>}
                   {entry.condition && (
                     <Badge variant="outline">{entry.condition}</Badge>
                   )}
                   {entry.grade !== undefined && (
-                    <Badge variant="outline">Grade {entry.grade}</Badge>
+                    <Badge variant="outline">
+                      {t("cards.collection.badges.grade", { grade: entry.grade })}
+                    </Badge>
                   )}
                   {entry.obtainedAt && (
                     <Badge variant="outline">
-                      Obtenu le {DateTime.fromISO(entry.obtainedAt).setLocale("fr").toLocaleString(DateTime.DATE_FULL)}
+                      {t("cards.collection.badges.obtainedAt", { date: DateTime.fromISO(entry.obtainedAt).setLocale(locale).toLocaleString(DateTime.DATE_FULL) })}
                     </Badge>
                   )}
                   {entry.acquisitionPrice !== undefined && (
                     <Badge variant="outline">
-                      {new Intl.NumberFormat("fr-FR", {
+                      {new Intl.NumberFormat(locale === "en" ? "en-US" : "fr-FR", {
                         style: "currency",
                         currency: entry.acquisitionCurrency ?? "EUR",
                       }).format(entry.acquisitionPrice)}
@@ -401,7 +423,7 @@ export default function CollectionManager({
                     entry.grade === undefined &&
                     entry.obtainedAt === undefined &&
                     entry.acquisitionPrice === undefined && (
-                      <span className="text-muted-foreground">Standard</span>
+                      <span className="text-muted-foreground">{t("cards.collection.badges.standard")}</span>
                     )}
                 </div>
                 <Button
@@ -409,7 +431,7 @@ export default function CollectionManager({
                   size="icon"
                   className="h-8 w-8 text-destructive hover:text-destructive shrink-0"
                   onClick={() => removeEntry(entry.id)}
-                  aria-label="Retirer cet exemplaire de la collection"
+                  aria-label={t("cards.collection.actions.remove")}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>

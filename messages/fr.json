@@ -57,8 +57,8 @@
       "message": "Utilisez le format: latitude, longitude (ex: 48.8566, 2.3522)"
     },
     "favoriteMissingAuthError": {
-        "title": "Authentification requise",
-        "message": "Vous devez être connecté pour mettre un événement en favori"
+      "title": "Authentification requise",
+      "message": "Vous devez être connecté pour mettre un événement en favori"
     },
     "favoriteError": {
       "title": "Erreur",
@@ -205,7 +205,117 @@
         "ogDescription": "Suivez les événements {gameName} autour de vous !"
       }
     },
+    "cards": {
+      "metadata": {
+        "notFoundTitle": "Jeu non trouvé",
+        "title": "{gameName} - Galerie de cartes, erratas et rulings",
+        "description": "Explorez les cartes et leurs erratas et rulings pour {gameName}."
+      },
+      "back": "Retour au portail du jeu",
+      "search": {
+        "title": "Recherche de cartes",
+        "placeholder": "Rechercher une carte par nom...",
+        "search": "Rechercher",
+        "searching": "Recherche...",
+        "noResults": "Aucune carte trouvée pour \"{query}\""
+      },
+      "detail": {
+        "metadata": {
+          "notFoundTitle": "Carte non trouvée",
+          "title": "{cardName} - Détails, erratas officiels et rulings communautaires",
+          "description": "Découvrez les détails de {cardName}, y compris les erratas officiels et les rulings communautaires. Cette carte a {count} errata et clarifications contribué par la communauté.{banned}",
+          "banned": "\n\nCette carte est actuellement bannie."
+        },
+        "notFoundTitle": "Carte non trouvée",
+        "notFoundMessage": "La carte avec l'ID {cardId} n'existe pas.",
+        "backToList": "Retour à la liste des cartes",
+        "banned": "Bannie",
+        "errataSectionTitle": "Erratas & Clarifications",
+        "noErrata": "Aucun errata ou clarification pour cette carte.",
+        "errataTypes": {
+          "errata": "Errata",
+          "clarification": "Clarification",
+          "ruling": "Ruling"
+        },
+        "deprecated": "Déprécié",
+        "source": "Source",
+        "deprecatedOn": "Déprécié le {date}",
+        "addErrata": {
+          "trigger": "Ajouter un errata",
+          "title": "Ajouter un errata",
+          "description": "Ajoutez un errata, une clarification ou un ruling pour cette carte.",
+          "fields": {
+            "type": "Type",
+            "date": "Date de l'errata",
+            "details": "Détails",
+            "detailsPlaceholder": "Décrivez l'errata, la clarification ou le ruling... (Markdown supporté)",
+            "source": "Source (optionnel)",
+            "sourcePlaceholder": "https://example.com/errata"
+          },
+          "actions": {
+            "submit": "Ajouter",
+            "submitting": "Ajout en cours..."
+          },
+          "error": "Impossible de créer l'errata"
+        },
+        "banButton": {
+          "pending": "...",
+          "ban": "Bannir la carte",
+          "unban": "Retirer le ban"
+        }
+      },
+      "collection": {
+        "label": "Collection :",
+        "count": "{count, plural, one {# carte} other {# cartes}}",
+        "actions": {
+          "add": "Ajouter",
+          "cancel": "Annuler",
+          "adding": "Ajout en cours...",
+          "remove": "Retirer cet exemplaire de la collection"
+        },
+        "dialog": {
+          "title": "Ajouter à la collection"
+        },
+        "fields": {
+          "language": "Langue",
+          "otherLanguages": "Autres langues",
+          "none": "Aucune",
+          "obtainedAt": "Date d'obtention",
+          "acquisitionPrice": "Prix d'obtention",
+          "currency": "Devise",
+          "condition": "État",
+          "conditionPlaceholder": "Sélectionner un état",
+          "grade": "Note de gradation (0–10)"
+        },
+        "languages": {
+          "fr": "🇫🇷 Français",
+          "en": "🇬🇧 Anglais",
+          "zh": "🇨🇳 Chinois",
+          "it": "🇮🇹 Italien",
+          "ja": "🇯🇵 Japonais",
+          "ko": "🇰🇷 Coréen"
+        },
+        "conditions": {
+          "damaged": "Dommage",
+          "played": "Joué",
+          "good": "Bon",
+          "nearMint": "Near Mint",
+          "mint": "Mint"
+        },
+        "empty": "Aucun exemplaire dans la collection.",
+        "badges": {
+          "foil": "Foil",
+          "grade": "Grade {grade}",
+          "obtainedAt": "Obtenu le {date}",
+          "standard": "Standard"
+        }
+      }
+    },
     "rules": {
+      "metadata": {
+        "title": "Règles complètes de Riftbound",
+        "description": "Consultez les règles complètes officielles de Riftbound TCG."
+      },
       "notFoundTitle": "Jeu non trouvé",
       "notFoundDescription": "Le jeu que vous recherchez n'existe pas ou ne dispose pas de règles sur Joutes.",
       "title": "Règles de {gameName}",
@@ -214,43 +324,65 @@
       "documents": {
         "tournamentRegulation": "Tournament Regulation",
         "coreRules": "Core Rules"
+      },
+      "notFound": {
+        "game": "Jeu introuvable",
+        "unsupported": "Ce jeu ne dispose pas de règles sur Joutes.",
+        "document": "Document introuvable"
+      },
+      "document": {
+        "title": "Règles de {gameName}",
+        "summary": "{count} entrées · Cliquez sur les liens bleus pour naviguer entre les règles"
+      },
+      "backToList": "Retour à la liste des règles",
+      "viewer": {
+        "copyLink": "Copier le lien",
+        "collapseSection": "Réduire la section",
+        "expandSection": "Développer la section",
+        "tableOfContents": "Table des matières",
+        "expand": "Développer",
+        "collapse": "Réduire",
+        "searchPlaceholder": "Rechercher une règle (texte ou numéro)…",
+        "close": "✕ Fermer",
+        "openTableOfContents": "☰ Sommaire",
+        "results": "{count, plural, one {# résultat pour “{query}”} other {# résultats pour “{query}”}}"
       }
     },
     "policies": {
       "metadata": {
-        "notFoundTitle": "Jeu non trouvé",
-        "title": "Précis de règles et policies pour {gameName}",
-        "description": "Explorez les règles et les policies pour {gameName}."
+        "notFoundTitle": "Jeu introuvable",
+        "title": "Politiques de règles pour {gameName}",
+        "description": "Explorez les règles et les politiques pour {gameName}."
       },
-      "title": "Précis de règles et policies — {gameName}",
+      "title": "Politiques de règles — {gameName}",
       "back": "Retour au portail du jeu",
-      "searchPlaceholder": "Rechercher dans les policies…",
+      "searchPlaceholder": "Rechercher des politiques…",
       "sortTitle": "Titre",
-      "countSingular": "{count} policy",
-      "countPlural": "{count} policies",
+      "countSingular": "{count} politique",
+      "countPlural": "{count} politiques",
       "pageLabel": "page {currentPage} / {totalPages}",
-      "empty": "Aucune policy ne correspond aux critères de recherche.",
-      "deprecated": "Déprécié",
+      "empty": "Aucune politique ne correspond aux critères de recherche.",
+      "deprecated": "Obsolète",
       "addedOn": "Ajouté le {date}",
       "source": "Source",
-      "deprecatedOn": "Déprécié le {date}",
-      "paginationSummary": "Page {currentPage} sur {totalPages} — {count, plural, one {# policy} other {# policies}}",
+      "deprecatedOn": "Obsolète depuis le {date}",
+      "paginationSummary": "Page {currentPage} sur {totalPages} — {count, plural, one {# politique} other {# politiques}}",
       "previous": "Précédent",
       "next": "Suivant",
       "addDialog": {
-        "trigger": "Ajouter une policy",
-        "title": "Ajouter une policy",
-        "description": "Rédigez une règle ou précision officielle. Le contenu supporte le Markdown (images, liens, tableaux, etc.).",
+        "trigger": "Ajouter une politique",
+        "title": "Ajouter une politique",
+        "description": "Rédigez une règle officielle ou une clarification. Le contenu prend en charge Markdown (images, liens, tableaux, etc.).",
         "fields": {
           "title": "Titre",
-          "titlePlaceholder": "Ex : Règle sur les effets simultanés",
+          "titlePlaceholder": "Exemple : Règle pour les effets simultanés",
           "content": "Contenu (Markdown)",
           "contentPlaceholder": "Rédigez le contenu en Markdown...",
-          "preview": "Prévisualiser",
-          "edit": "Éditer",
-          "markdownHint": "Supporte le Markdown : **gras**, *italique*, [liens](url), ![images](url), tableaux, listes…",
-          "source": "Source (optionnel)",
-          "sourcePlaceholder": "https://exemple.com/regles"
+          "preview": "Aperçu",
+          "edit": "Modifier",
+          "markdownHint": "Prend en charge Markdown : **gras**, *italique*, [liens](url), ![images](url), tableaux, listes…",
+          "source": "Source (facultatif)",
+          "sourcePlaceholder": "https://example.com/rules"
         },
         "actions": {
           "cancel": "Annuler",
@@ -258,20 +390,21 @@
           "submitting": "Ajout en cours..."
         },
         "errors": {
-          "createError": "Impossible de créer la policy"
+          "createError": "Impossible de créer la politique"
         }
       }
     }
+
   },
   "Login": {
-    "title": "Connexion à Joutes",
-    "emailAddress": "Adresse e-mail",
-    "codeSending": "Envoi en cours...",
-    "sendCode": "Recevoir le code",
-    "resendCode": "Renvoyer un code",
-    "codeSent": "Un code de vérification a été envoyé à <strong>{email}</strong>",
-    "OTP": "Code de vérification",
-    "verifyPending": "Vérification...",
-    "verifyCode": "Vérifier le code"
+    "title": "Login Joutes",
+    "emailAddress": "Email address",
+    "codeSending": "Sending...",
+    "sendCode": "Send code",
+    "resendCode": "Resend code",
+    "codeSent": "A verification code has been sent to <strong>{email}</strong>",
+    "OTP": "Verification code",
+    "verifyPending": "Verifying..",
+    "verifyCode": "Verify code"
   }
 }

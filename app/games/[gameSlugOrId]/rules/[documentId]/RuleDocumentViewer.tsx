@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect, useRef, useCallback, memo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Link2Icon, CheckIcon, ChevronDownIcon } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export interface TREntry {
   id: string;
@@ -200,6 +201,7 @@ function renderTextWithLinks(
 
 function CopyLinkButton({ anchorId }: { anchorId: string }) {
   const [copied, setCopied] = useState(false);
+  const t = useTranslations('Games');
 
   const handleCopy = useCallback(() => {
     const url = `${window.location.origin}${window.location.pathname}#${anchorId}`;
@@ -213,8 +215,8 @@ function CopyLinkButton({ anchorId }: { anchorId: string }) {
   return (
     <button
       onClick={handleCopy}
-      aria-label="Copier le lien"
-      title="Copier le lien"
+      aria-label={t('rules.viewer.copyLink')}
+      title={t('rules.viewer.copyLink')}
       className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity shrink-0 mt-0.5 p-0.5 rounded text-muted-foreground hover:text-foreground"
     >
       {copied
@@ -246,6 +248,7 @@ const RuleNode = memo(function RuleNode({
   const [isOpen, setIsOpen] = useState(true);
   const contentNodes = renderTextWithLinks(node.content, titleData, node.id, searchQuery);
   const indent = depthStyles[node.depth] || 'ml-16';
+  const t = useTranslations('Games');
 
   // Auto-expand when a search is active so matches are always visible
   const effectivelyOpen = searchQuery ? true : isOpen;
@@ -269,7 +272,7 @@ const RuleNode = memo(function RuleNode({
         <h2 className="text-xl font-bold text-primary border-b border-border pb-1 mb-2 flex items-center gap-1">
           <button
             onClick={() => setIsOpen(v => !v)}
-            aria-label={isOpen ? 'Réduire la section' : 'Développer la section'}
+            aria-label={isOpen ? t('rules.viewer.collapseSection') : t('rules.viewer.expandSection')}
             className="shrink-0 p-0.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
           >
             <ChevronDownIcon
@@ -325,6 +328,7 @@ function TableOfContents({
   activeSection: number | null;
 }) {
   const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
+  const t = useTranslations('Games');
 
   const toggle = (start: number) =>
     setCollapsed(prev => {
@@ -336,7 +340,7 @@ function TableOfContents({
   return (
     <nav className="text-sm space-y-0.5">
       <p className="font-semibold text-xs uppercase tracking-wider text-muted-foreground mb-2 px-2">
-        Table des matières
+        {t('rules.viewer.tableOfContents')}
       </p>
       {sections.map(sec => {
         const titleNodes = sec.nodes.filter(n => n.isTitle && n.depth === 1);
@@ -348,7 +352,7 @@ function TableOfContents({
               {subItems.length > 0 && (
                 <button
                   onClick={() => toggle(sec.start)}
-                  aria-label={isCollapsed ? 'Développer' : 'Réduire'}
+                  aria-label={isCollapsed ? t('rules.viewer.expand') : t('rules.viewer.collapse')}
                   className="p-1 shrink-0 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <ChevronDownIcon
@@ -402,6 +406,7 @@ export default function RuleDocumentViewer({ entries }: { entries: TREntry[] }) 
   const [activeSection, setActiveSection] = useState<number | null>(null);
   const [tocOpen, setTocOpen] = useState(false);
   const mainRef = useRef<HTMLDivElement>(null);
+  const t = useTranslations('Games');
 
   const tree = useMemo(() => buildTree(entries), [entries]);
   const sections = useMemo(() => getSections(tree), [tree]);
@@ -458,7 +463,7 @@ export default function RuleDocumentViewer({ entries }: { entries: TREntry[] }) 
         <div className="flex gap-2 mb-4 sticky top-0 z-10 bg-background pt-1 pb-2 border-b border-border">
           <Input
             type="search"
-            placeholder="Rechercher une règle (texte ou numéro)…"
+            placeholder={t('rules.viewer.searchPlaceholder')}
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="flex-1"
@@ -467,7 +472,7 @@ export default function RuleDocumentViewer({ entries }: { entries: TREntry[] }) 
             className="lg:hidden px-3 py-2 rounded-md border border-border text-sm hover:bg-accent transition-colors"
             onClick={() => setTocOpen(v => !v)}
           >
-            {tocOpen ? '✕ Fermer' : '☰ Sommaire'}
+            {tocOpen ? t('rules.viewer.close') : t('rules.viewer.openTableOfContents')}
           </button>
         </div>
 
@@ -480,7 +485,7 @@ export default function RuleDocumentViewer({ entries }: { entries: TREntry[] }) 
 
         {debouncedQuery && (
           <p className="text-sm text-muted-foreground mb-3">
-            {totalMatches} résultat{totalMatches !== 1 ? 's' : ''} pour &laquo;{debouncedQuery}&raquo;
+            {t('rules.viewer.results', { count: totalMatches ?? 0, query: debouncedQuery })}
           </p>
         )}
 

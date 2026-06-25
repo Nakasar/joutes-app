@@ -205,7 +205,117 @@
         "ogDescription": "Follow the {gameName} events around you!"
       }
     },
+    "cards": {
+      "metadata": {
+        "notFoundTitle": "Game not found",
+        "title": "{gameName} - Card gallery, errata and rulings",
+        "description": "Explore cards and their errata and rulings for {gameName}."
+      },
+      "back": "Back to the game portal",
+      "search": {
+        "title": "Card search",
+        "placeholder": "Search a card by name...",
+        "search": "Search",
+        "searching": "Searching...",
+        "noResults": "No cards found for \"{query}\""
+      },
+      "detail": {
+        "metadata": {
+          "notFoundTitle": "Card not found",
+          "title": "{cardName} - Details, official errata and community rulings",
+          "description": "Discover details about {cardName}, including official errata and community rulings. This card has {count} errata and clarifications contributed by the community.{banned}",
+          "banned": "\n\nThis card is currently banned."
+        },
+        "notFoundTitle": "Card not found",
+        "notFoundMessage": "The card with ID {cardId} does not exist.",
+        "backToList": "Back to the card list",
+        "banned": "Banned",
+        "errataSectionTitle": "Errata & Clarifications",
+        "noErrata": "No errata or clarification for this card.",
+        "errataTypes": {
+          "errata": "Errata",
+          "clarification": "Clarification",
+          "ruling": "Ruling"
+        },
+        "deprecated": "Deprecated",
+        "source": "Source",
+        "deprecatedOn": "Deprecated on {date}",
+        "addErrata": {
+          "trigger": "Add errata",
+          "title": "Add an errata",
+          "description": "Add an errata, clarification or ruling for this card.",
+          "fields": {
+            "type": "Type",
+            "date": "Errata date",
+            "details": "Details",
+            "detailsPlaceholder": "Describe the errata, clarification or ruling... (Markdown supported)",
+            "source": "Source (optional)",
+            "sourcePlaceholder": "https://example.com/errata"
+          },
+          "actions": {
+            "submit": "Add",
+            "submitting": "Adding..."
+          },
+          "error": "Unable to create the errata"
+        },
+        "banButton": {
+          "pending": "...",
+          "ban": "Ban card",
+          "unban": "Remove ban"
+        }
+      },
+      "collection": {
+        "label": "Collection:",
+        "count": "{count, plural, one {# card} other {# cards}}",
+        "actions": {
+          "add": "Add",
+          "cancel": "Cancel",
+          "adding": "Adding...",
+          "remove": "Remove this copy from the collection"
+        },
+        "dialog": {
+          "title": "Add to collection"
+        },
+        "fields": {
+          "language": "Language",
+          "otherLanguages": "Other languages",
+          "none": "None",
+          "obtainedAt": "Date obtained",
+          "acquisitionPrice": "Acquisition price",
+          "currency": "Currency",
+          "condition": "Condition",
+          "conditionPlaceholder": "Select a condition",
+          "grade": "Grading note (0–10)"
+        },
+        "languages": {
+          "fr": "🇫🇷 French",
+          "en": "🇬🇧 English",
+          "zh": "🇨🇳 Chinese",
+          "it": "🇮🇹 Italian",
+          "ja": "🇯🇵 Japanese",
+          "ko": "🇰🇷 Korean"
+        },
+        "conditions": {
+          "damaged": "Damaged",
+          "played": "Played",
+          "good": "Good",
+          "nearMint": "Near Mint",
+          "mint": "Mint"
+        },
+        "empty": "No copies in the collection.",
+        "badges": {
+          "foil": "Foil",
+          "grade": "Grade {grade}",
+          "obtainedAt": "Obtained on {date}",
+          "standard": "Standard"
+        }
+      }
+    },
     "rules": {
+      "metadata": {
+        "title": "Riftbound Comprehensive Rules",
+        "description": "Consult official comprehensive rules for Riftbound TCG."
+      },
       "notFoundTitle": "Game not found",
       "notFoundDescription": "The game you are looking for does not exist or has no rules on Joutes.",
       "title": "Rules for {gameName}",
@@ -214,6 +324,28 @@
       "documents": {
         "tournamentRegulation": "Tournament Regulation",
         "coreRules": "Core Rules"
+      },
+      "notFound": {
+        "game": "Game not found",
+        "unsupported": "This game does not have rules on Joutes.",
+        "document": "Document not found"
+      },
+      "document": {
+        "title": "Rules for {gameName}",
+        "summary": "{count} entries · Click the blue links to navigate between rules"
+      },
+      "backToList": "Back to the rules list",
+      "viewer": {
+        "copyLink": "Copy link",
+        "collapseSection": "Collapse section",
+        "expandSection": "Expand section",
+        "tableOfContents": "Table of contents",
+        "expand": "Expand",
+        "collapse": "Collapse",
+        "searchPlaceholder": "Search a rule (text or number)…",
+        "close": "✕ Close",
+        "openTableOfContents": "☰ Table of contents",
+        "results": "{count, plural, one {# result for “{query}”} other {# results for “{query}”}}"
       }
     },
     "policies": {

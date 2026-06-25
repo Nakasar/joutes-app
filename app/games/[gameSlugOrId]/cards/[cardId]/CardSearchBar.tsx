@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { BoosterCard } from "@/lib/types/booster";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 
 export default function CardSearchBar() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -13,6 +14,8 @@ export default function CardSearchBar() {
   const [isOpen, setIsOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const locale = useLocale();
+  const t = useTranslations("Games");
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -45,7 +48,7 @@ export default function CardSearchBar() {
       const response = await fetch(
         `/api/games/riftbound/cards?searchQuery=${encodeURIComponent(
           searchQuery
-        )}&setCode=*&lang=fr`
+        )}&setCode=*&lang=${locale}`
       );
       const data = await response.json();
       setCards(data.slice(0, 10));
@@ -70,7 +73,7 @@ export default function CardSearchBar() {
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           type="text"
-          placeholder="Rechercher une carte..."
+          placeholder={t("cards.search.placeholder")}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10"
@@ -104,7 +107,7 @@ export default function CardSearchBar() {
 
       {isSearching && (
         <div className="absolute top-full mt-2 w-full bg-card border rounded-lg shadow-lg z-50 p-3">
-          <p className="text-sm text-muted-foreground">Recherche...</p>
+          <p className="text-sm text-muted-foreground">{t("cards.search.searching")}</p>
         </div>
       )}
     </div>

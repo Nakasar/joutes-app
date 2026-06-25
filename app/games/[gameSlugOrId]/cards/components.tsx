@@ -5,11 +5,13 @@ import { Input } from "@/components/ui/input";
 import { BoosterCard } from "@/lib/types/booster";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "next-intl";
 
 export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [cards, setCards] = useState<BoosterCard[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const t = useTranslations("Games");
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -43,17 +45,17 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
 
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">Recherche de cartes</h1>
+      <h1 className="text-3xl font-bold mb-6">{t("cards.search.title")}</h1>
       <Button asChild>
         <Link href={`/games/${gameSlug}`} className="text-blue-600 hover:underline">
-          ← Retour au portail du jeu
+          ← {t("cards.back")}
         </Link>
       </Button>
 
       <div className="mb-6 flex gap-2">
         <Input
           type="text"
-          placeholder="Rechercher une carte par nom..."
+          placeholder={t("cards.search.placeholder")}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={(e) => {
@@ -68,7 +70,7 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
           disabled={isLoading}
           className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
         >
-          {isLoading ? "Recherche..." : "Rechercher"}
+          {isLoading ? t("cards.search.searching") : t("cards.search.search")}
         </button>
       </div>
 
@@ -94,7 +96,7 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
 
       {!isLoading && cards.length === 0 && searchQuery && (
         <p className="text-center text-muted-foreground mt-8">
-          Aucune carte trouvée pour "{searchQuery}"
+          {t("cards.search.noResults", { query: searchQuery })}
         </p>
       )}
     </div>

@@ -5,26 +5,32 @@ import RuleDocumentViewer from './RuleDocumentViewer';
 import { getGameBySlugOrId } from '@/lib/db/games';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { getTranslations } from 'next-intl/server';
 
-export const metadata: Metadata = {
-  title: 'Riftbound Comprehensive Rules',
-  description: 'Consult official comprehensive rules for Riftbound TCG.',
-  openGraph: {
-    title: 'Riftbound Comprehensive Rules',
-    description: 'Consult official comprehensive rules for Riftbound TCG.',
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('Games');
+
+  return {
+    title: t('rules.metadata.title'),
+    description: t('rules.metadata.description'),
+    openGraph: {
+      title: t('rules.metadata.title'),
+      description: t('rules.metadata.description'),
+    },
+  };
+}
 
 export default async function RulesDocumentPage({ params }: { params: Promise<{ gameSlugOrId: string; documentId: string }> }) {
     const { documentId, gameSlugOrId } = await params;
+    const t = await getTranslations('Games');
 
     const game = await getGameBySlugOrId(gameSlugOrId);
     if (!game) {
-        return <div className="container mx-auto p-6">Jeu introuvable</div>;
+        return <div className="container mx-auto p-6">{t('rules.notFound.game')}</div>;
     }
 
-    if (game.slug !== 'riftbound') { 
-        return <div className="container mx-auto p-6">Ce jeu ne dispose pas de règles sur Joutes.</div>;
+    if (game.slug !== 'riftbound') {
+        return <div className="container mx-auto p-6">{t('rules.notFound.unsupported')}</div>;
     }
 
     let entries: { id: string; content: string }[];
@@ -33,20 +39,20 @@ export default async function RulesDocumentPage({ params }: { params: Promise<{ 
     } else if (documentId.toLowerCase() === 'cr') {
         entries = cr;
     } else {
-        return <div className="container mx-auto p-6">Document introuvable</div>;
+        return <div className="container mx-auto p-6">{t('rules.notFound.document')}</div>;
     }
 
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold">Règles de {game.name}</h1>
+        <h1 className="text-3xl font-bold">{t('rules.document.title', { gameName: game.name })}</h1>
         <Button asChild>
           <Link href={`/games/${game.slug}/rules`} className="text-blue-600 hover:underline">
-            ← Retour à la liste des règles
+            ← {t('rules.backToList')}
           </Link>
         </Button>
         <p className="text-muted-foreground mt-1 text-sm">
-          {entries.length} entrées · Cliquez sur les liens bleus pour naviguer entre les règles
+          {t('rules.document.summary', { count: entries.length })}
         </p>
       </div>
       <RuleDocumentViewer entries={entries} />
