@@ -110,6 +110,26 @@ export async function validateDeckList(decklist: DeckList): Promise<DeckList> {
   return result;
 }
 
+export async function getDeckFromPiltover(deckId: string): Promise<DeckList> {
+  const res = await fetch(`https://piltoverarchive.com/api/external/v1/decks/${deckId}/price`);
+  if (!res.ok) {
+    throw new Error('Failed to get deck list.');
+  }
+  const data = await res.json() as {
+    breakdown: { champions: {cardName:string;quantity:number}[]; legend: {cardName:string;quantity:number}[]; maindeck: {cardName:string;quantity:number}[]; sideboard: {cardName:string;quantity:number}[]; battlefields: {cardName:string;quantity:number}[]; runes: {cardName:string;quantity:number}[]; };
+  };
+
+  const parsed = {
+    champions:   data.breakdown.champions.map(c => ({name: c.cardName, quantity: c.quantity})),
+    legends:     data.breakdown.legend.map(c => ({name: c.cardName, quantity: c.quantity})),
+    maindeck:    data.breakdown.maindeck.map(c => ({name: c.cardName, quantity: c.quantity})),
+    sideboard:   data.breakdown.sideboard.map(c => ({name: c.cardName, quantity: c.quantity})),
+    battlefields:data.breakdown.battlefields.map(c => ({name: c.cardName, quantity: c.quantity})),
+    runes:       data.breakdown.runes.map(c => ({name: c.cardName, quantity: c.quantity})),
+  };
+
+  return parsed;
+}
 
 export async function analyzeDeckListImageBase64Action(imageBase64: string): Promise<{ raw: string; deckList: DeckList }> {
   const session = await auth.api.getSession({

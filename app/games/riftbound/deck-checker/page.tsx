@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/command";
 import {
   validateDeckList, type DeckListCard, type DeckList, analyzeDeckListImageBase64Action,
-  analyzeDeckListImageURLAction
+  analyzeDeckListImageURLAction, getDeckFromPiltover
 } from "./action";
 import {type ErrataType} from "@/lib/types/errata";
 import {type BoosterCard} from "@/lib/types/booster";
@@ -394,24 +394,7 @@ export default function RiftboundDeckCheckerPage() {
 
       if (rawDeckList.startsWith('https://piltoverarchive.com/decks/view/')) {
         const deckId = rawDeckList.split('/').at(-1)!;
-        const res = await fetch(`https://piltoverarchive.com/api/external/v1/decks/${deckId}/price`);
-        if (!res.ok) {
-          setError(t('form.errors.importFailed'));
-          setDeckList(null);
-          setIsLoading(false);
-          return;
-        }
-        const data = await res.json() as {
-          breakdown: { champions: {name:string;quantity:number}[]; legends: {name:string;quantity:number}[]; maindeck: {name:string;quantity:number}[]; sideboard: {name:string;quantity:number}[]; battlefields: {name:string;quantity:number}[]; runes: {name:string;quantity:number}[]; };
-        };
-        parsed = {
-          champions:   data.breakdown.champions.map(c => ({name: c.name, quantity: c.quantity})),
-          legends:     data.breakdown.legends.map(c => ({name: c.name, quantity: c.quantity})),
-          maindeck:    data.breakdown.maindeck.map(c => ({name: c.name, quantity: c.quantity})),
-          sideboard:   data.breakdown.sideboard.map(c => ({name: c.name, quantity: c.quantity})),
-          battlefields:data.breakdown.battlefields.map(c => ({name: c.name, quantity: c.quantity})),
-          runes:       data.breakdown.runes.map(c => ({name: c.name, quantity: c.quantity})),
-        };
+        parsed = await getDeckFromPiltover(deckId);
       } else {
         parsed = parseDeckList(rawDeckList);
       }
