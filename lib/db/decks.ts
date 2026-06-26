@@ -234,8 +234,8 @@ export async function toggleDeckFavorite(deckId: string, userId: string, favorit
   }
 
   const update = favorite
-    ? { $addToSet: { favoritedBy: userId }, $set: { updatedAt: new Date() } }
-    : { $pull: { favoritedBy: userId }, $set: { updatedAt: new Date() } };
+    ? { $addToSet: { favoritedBy: userId } }
+    : { $pull: { favoritedBy: userId } };
 
   const result = await db.collection(COLLECTION_NAME).findOneAndUpdate(
     { _id: new ObjectId(deckId) },
