@@ -92,7 +92,7 @@ export default function PlayGroupPortalClient() {
                 <dd>{DateTime.fromISO(group.createdAt).toLocaleString(DateTime.DATE_MED)}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-muted-foreground">{t("page.memberCount")}</dt>
+                <dt className="text-sm font-medium text-muted-foreground">{t("page.members")}</dt>
                 <dd>{t("page.memberCountValue", { count: group.members.length })}</dd>
               </div>
             </dl>
