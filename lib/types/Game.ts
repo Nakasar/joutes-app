@@ -51,6 +51,7 @@ export type Game = {
     rules?: boolean;
     policies?: boolean;
     tournaments?: boolean;
+    deckChecker?: boolean;
   }
 };
 

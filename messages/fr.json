@@ -217,6 +217,10 @@
         "title": "Politiques",
         "description": "Consultez les politiques et précisions de règles rédigées par la communauté et les éditeurs"
       },
+      "toolsDeckChecker": {
+        "title": "Vérificateur de deck",
+        "description": "Vérifiez la légalité de votre deck et obtenez des informations sur ses cartes"
+      },
       "communityTitle": "Rejoignez la communauté",
       "communityMatches": {
         "title": "Parties en cours",

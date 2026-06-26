@@ -217,6 +217,10 @@
         "title": "Politiche",
         "description": "Consulta le politiche e i chiarimenti delle regole scritti dalla community e dagli editori"
       },
+      "toolsDeckChecker": {
+        "title": "Controllo del mazzo",
+        "description": "Verifica la legalità del tuo mazzo e ottieni informazioni sulle sue carte"
+      },
       "communityTitle": "Unisciti alla community",
       "communityMatches": {
         "title": "Partite in corso",

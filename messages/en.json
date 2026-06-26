@@ -217,6 +217,10 @@
         "title": "Policies",
         "description": "Consult policies and rule clarifications written by the community and publishers"
       },
+      "toolsDeckChecker": {
+        "title": "Deck checker",
+        "description": "Check the legality of your deck and information about its cards"
+      },
       "communityTitle": "Join the community",
       "communityMatches": {
         "title": "Current games",

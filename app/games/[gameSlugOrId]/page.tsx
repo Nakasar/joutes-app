@@ -206,6 +206,15 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
                 </div>
               </Link>
             )}
+
+            {game.features?.deckChecker && (
+              <Link href={`/games/${game.slug}/deck-checker`} className="group">
+                <div className="bg-gradient-to-br from-cyan-900/30 to-cyan-800/20 backdrop-blur-sm rounded-xl border border-cyan-500/20 p-8 hover:border-cyan-500/50 transition-all hover:scale-105">
+                  <h3 className="text-xl font-bold text-white mb-2">{t("detail.toolsDeckChecker.title")}</h3>
+                  <p className="text-gray-300">{t("detail.toolsDeckChecker.description")}</p>
+                </div>
+              </Link>
+            )}
           </div>
         </section>
 

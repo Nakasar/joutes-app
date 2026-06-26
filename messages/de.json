@@ -217,6 +217,10 @@
         "title": "Richtlinien",
         "description": "Sieh dir von der Community und den Herausgebern verfasste Richtlinien und Regelklarstellungen an"
       },
+      "toolsDeckChecker": {
+        "title": "Deck-Checker",
+        "description": "Überprüfe die Legalität deines Decks und erhalte Informationen zu seinen Karten"
+      },
       "communityTitle": "Tritt der Community bei",
       "communityMatches": {
         "title": "Laufende Partien",
