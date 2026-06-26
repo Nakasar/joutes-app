@@ -23,6 +23,59 @@
     "es": "Español",
     "de": "Deutsch"
   },
+  "DeckChecker": {
+    "title": "Vérificateur de deck Riftbound",
+    "form": {
+      "label": "Liste de deck (texte ou lien Piltover Archive)",
+      "placeholder": "Collez votre liste de deck ou un lien https://piltoverarchive.com/decks/view/...\n\nLégende:\n1 Azir, Emperor of the Sands\n\nChampion:\n1 Azir, Sovereign\n\nMainDeck:\n3 Discipline\n...",
+      "validate": "Valider",
+      "loading": "Validation en cours…",
+      "uploadPhoto": "Charger une photo",
+      "copyLink": "Copier le lien",
+      "errors": {
+        "importFailed": "Impossible de récupérer le deck depuis Piltover Archive.",
+        "imageRead": "Erreur lors de la lecture de l'image",
+        "imageCheck": "Erreur lors de la vérification",
+        "generic": "Une erreur est survenue."
+      }
+    },
+    "sections": {
+      "legend": "Légende",
+      "champion": "Champion",
+      "battlefields": "Champs de bataille",
+      "runes": "Runes",
+      "mainDeck": "Main Deck",
+      "sideboard": "Sideboard",
+      "count": "{count, plural, one {# carte} other {# cartes}}",
+      "invalid": "INVALID",
+      "rules": {
+        "requiredCount": "requis\u00a0: {count}",
+        "requiredRange": "requis\u00a0: {min}–{max}"
+      }
+    },
+    "cards": {
+      "unrecognizedTitle": "Cartes non reconnues",
+      "banned": "BANNIE",
+      "notes": "NOTES",
+      "edit": "Modifier",
+      "editTitle": "Modifier la carte",
+      "replace": "Remplacement de {cardName}",
+      "searchPlaceholder": "Rechercher une carte…",
+      "searching": "Recherche en cours…",
+      "minChars": "Tapez au moins 2 caractères…",
+      "noResults": "Aucun résultat.",
+      "bannedMessage": "Cette carte est bannie et ne peut pas être jouée en tournoi.",
+      "noErrata": "Aucun errata ou clarification pour cette carte.",
+      "deprecated": "Déprécié",
+      "source": "Source →",
+      "errataSectionTitle": "Erratas et clarifications ({count})"
+    },
+    "errataTypes": {
+      "errata": "Errata",
+      "clarification": "Clarification",
+      "ruling": "Ruling"
+    }
+  },
   "Home": {
     "title": "Calendrier des Événements",
     "createEvent": "Créer un Événement"

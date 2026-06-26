@@ -20,12 +20,65 @@
     "createEvent": "Create an Event"
   },
   "LocaleSwitcher": {
-    "label": "Langue",
+    "label": "Language",
     "en": "English",
     "fr": "Français",
     "it": "Italiano",
     "es": "Español",
     "de": "Deutsch"
+  },
+  "DeckChecker": {
+    "title": "Riftbound Deck Checker",
+    "form": {
+      "label": "Deck list (text or Piltover Archive link)",
+      "placeholder": "Paste your deck list or a link https://piltoverarchive.com/decks/view/...\n\nLegend:\n1 Azir, Emperor of the Sands\n\nChampion:\n1 Azir, Sovereign\n\nMainDeck:\n3 Discipline\n...",
+      "validate": "Validate",
+      "loading": "Validating…",
+      "uploadPhoto": "Upload a photo",
+      "copyLink": "Copy link",
+      "errors": {
+        "importFailed": "Unable to retrieve the deck from Piltover Archive.",
+        "imageRead": "Error while reading the image",
+        "imageCheck": "Error while verifying the image",
+        "generic": "An error occurred."
+      }
+    },
+    "sections": {
+      "legend": "Legend",
+      "champion": "Champion",
+      "battlefields": "Battlefields",
+      "runes": "Runes",
+      "mainDeck": "Main Deck",
+      "sideboard": "Sideboard",
+      "count": "{count, plural, one {# card} other {# cards}}",
+      "invalid": "INVALID",
+      "rules": {
+        "requiredCount": "required: {count}",
+        "requiredRange": "required: {min}–{max}"
+      }
+    },
+    "cards": {
+      "unrecognizedTitle": "Unrecognized cards",
+      "banned": "BANNED",
+      "notes": "NOTES",
+      "edit": "Edit",
+      "editTitle": "Edit card",
+      "replace": "Replacement of {cardName}",
+      "searchPlaceholder": "Search a card…",
+      "searching": "Searching…",
+      "minChars": "Type at least 2 characters…",
+      "noResults": "No results.",
+      "bannedMessage": "This card is banned and cannot be played in tournaments.",
+      "noErrata": "No errata or clarification for this card.",
+      "deprecated": "Deprecated",
+      "source": "Source →",
+      "errataSectionTitle": "Erratas & Clarifications ({count})"
+    },
+    "errataTypes": {
+      "errata": "Errata",
+      "clarification": "Clarification",
+      "ruling": "Ruling"
+    }
   },
   "EventsCalendar": {
     "title": "Event calendar",

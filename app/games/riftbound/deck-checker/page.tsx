@@ -1,6 +1,7 @@
 'use client';
 
 import {useEffect, useState} from "react";
+import {DateTime} from "luxon";
 import ReactMarkdown from "react-markdown";
 import {Button} from "@/components/ui/button";
 import {Label} from "@/components/ui/label";
@@ -30,6 +31,7 @@ import {useSession} from "@/lib/auth-client";
 import {parseDeckList, serializeDeckList, stringifyDeckList} from "@/app/games/riftbound/deck-checker/utils";
 import {upload} from "@vercel/blob/client";
 import {Pencil} from "lucide-react";
+import {useLocale, useTranslations} from "next-intl";
 
 const ConstructionRules = {
   legends: {
@@ -56,11 +58,6 @@ const ConstructionRules = {
 
 
 // ── Errata type badge ─────────────────────────────────────────────────────────
-const ERRATA_LABEL: Record<ErrataType, string> = {
-  errata: "Errata",
-  clarification: "Clarification",
-  ruling: "Ruling",
-};
 const ERRATA_CLASS: Record<ErrataType, string> = {
   errata: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
   clarification: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
@@ -80,6 +77,7 @@ function EditCardDialog({
   const [searchQuery, setSearchQuery] = useState(card?.name ?? "");
   const [results, setResults] = useState<BoosterCard[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const t = useTranslations('DeckChecker');
 
   // Reset search query when the edited card changes
   useEffect(() => {
@@ -113,27 +111,27 @@ function EditCardDialog({
     <Dialog open={!!card} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden">
         <DialogHeader className="px-4 pt-4 pb-2">
-          <DialogTitle>Modifier la carte</DialogTitle>
+          <DialogTitle>{t('cards.editTitle')}</DialogTitle>
           {card && (
             <p className="text-sm text-muted-foreground">
-              Remplacement de&nbsp;<span className="font-medium text-foreground">{card.name}</span>
+              {t('cards.replace', { cardName: card.name })}
             </p>
           )}
         </DialogHeader>
         <Command shouldFilter={false} className="border-t rounded-none">
           <CommandInput
-            placeholder="Rechercher une carte…"
+            placeholder={t('cards.searchPlaceholder')}
             value={searchQuery}
             onValueChange={setSearchQuery}
             autoFocus
           />
           <CommandList className="max-h-80">
             {isSearching ? (
-              <div className="py-6 text-center text-sm text-muted-foreground">Recherche en cours…</div>
+              <div className="py-6 text-center text-sm text-muted-foreground">{t('cards.searching')}</div>
             ) : searchQuery.length < 2 ? (
-              <div className="py-6 text-center text-sm text-muted-foreground">Tapez au moins 2 caractères…</div>
+              <div className="py-6 text-center text-sm text-muted-foreground">{t('cards.minChars')}</div>
             ) : results.length === 0 ? (
-              <CommandEmpty>Aucun résultat.</CommandEmpty>
+              <CommandEmpty>{t('cards.noResults')}</CommandEmpty>
             ) : (
               <CommandGroup>
                 {results.map((result) => (
@@ -170,6 +168,12 @@ function EditCardDialog({
 // ── Card tile ─────────────────────────────────────────────────────────────────
 function CardTile({card, onEdit, onQuantityChange}: {card: DeckListCard; onEdit?: () => void; onQuantityChange?: (delta: number) => void}) {
   const hasErratas = (card.erratas?.length ?? 0) > 0;
+  const t = useTranslations('DeckChecker');
+  const locale = useLocale();
+  const formatDate = (value: string | Date) => {
+    const parsedDate = value instanceof Date ? DateTime.fromJSDate(value) : DateTime.fromISO(value);
+    return parsedDate.isValid ? parsedDate.setLocale(locale).toLocaleString(DateTime.DATE_MED) : value.toString();
+  };
 
   const cardContent = (
     <div
@@ -205,12 +209,12 @@ function CardTile({card, onEdit, onQuantityChange}: {card: DeckListCard; onEdit?
       </div>
       {card.banned ? (
         <div className="absolute top-1.5 right-1.5 bg-red-600 text-white text-[10px] font-bold rounded px-1.5 py-0.5 leading-none uppercase tracking-widest">
-          BANNED
+          {t('cards.banned')}
         </div>
       ) : (
         hasErratas && (
           <div className="absolute top-1.5 right-1.5 bg-yellow-600 text-white text-[10px] font-bold rounded px-1.5 py-0.5 leading-none uppercase tracking-widest">
-            NOTES
+            {t('cards.notes')}
           </div>
         )
       )}
@@ -231,7 +235,7 @@ function CardTile({card, onEdit, onQuantityChange}: {card: DeckListCard; onEdit?
             {card.name}
             {card.banned && (
               <span className="text-[11px] font-bold bg-red-600 text-white rounded px-2 py-0.5 uppercase tracking-widest">
-                BANNED
+                {t('cards.banned')}
               </span>
             )}
           </DialogTitle>
@@ -252,27 +256,28 @@ function CardTile({card, onEdit, onQuantityChange}: {card: DeckListCard; onEdit?
           <div className="flex-1 min-w-0">
             {card.banned && (
               <p className="mb-4 text-sm text-red-500 font-medium">
-                Cette carte est bannie et ne peut pas être jouée en tournoi.
+                {t('cards.bannedMessage')}
               </p>
             )}
 
             {hasErratas ? (
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                  Erratas &amp; Clarifications ({card.erratas!.length})
+                  {t('cards.errataSectionTitle', { count: card.erratas!.length })}
                 </h3>
                 {card.erratas!.map((errata, i) => (
                   <div key={errata.id ?? i} className={`rounded-lg border p-3 ${errata.deprecatedAt ? 'opacity-50' : ''}`}>
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded ${ERRATA_CLASS[errata.type]}`}>
-                        {ERRATA_LABEL[errata.type]}
+                        {t(`errataTypes.${errata.type}`)}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {new Date(errata.errataDate).toLocaleDateString('fr-FR', {year: 'numeric', month: 'long', day: 'numeric'})}
+                        {formatDate(errata.errataDate)}
                       </span>
+
                       {errata.deprecatedAt && (
                         <span className="text-xs font-semibold px-2 py-0.5 rounded bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-                          Déprécié
+                          {t('cards.deprecated')}
                         </span>
                       )}
                     </div>
@@ -282,7 +287,7 @@ function CardTile({card, onEdit, onQuantityChange}: {card: DeckListCard; onEdit?
                     {errata.source && (
                       <div className="mt-2 pt-2 border-t">
                         <a href={errata.source} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">
-                          Source →
+                          {t('cards.source')}
                         </a>
                       </div>
                     )}
@@ -290,7 +295,7 @@ function CardTile({card, onEdit, onQuantityChange}: {card: DeckListCard; onEdit?
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">Aucun errata ou clarification pour cette carte.</p>
+              <p className="text-sm text-muted-foreground">{t('cards.noErrata')}</p>
             )}
           </div>
         </div>
@@ -307,10 +312,10 @@ function CardTile({card, onEdit, onQuantityChange}: {card: DeckListCard; onEdit?
         <button
           onClick={(e) => { e.stopPropagation(); onEdit(); }}
           className="absolute bottom-0 left-0 right-0 h-7 flex items-center justify-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground opacity-0 group-hover/card:opacity-100 transition-opacity"
-          title="Modifier la carte"
+          title={t('cards.editTitle')}
         >
           <Pencil size={11} />
-          <span>Modifier</span>
+          <span>{t('cards.edit')}</span>
         </button>
       )}
     </div>
@@ -320,13 +325,13 @@ function CardTile({card, onEdit, onQuantityChange}: {card: DeckListCard; onEdit?
 // ── Section grid ──────────────────────────────────────────────────────────────
 type SectionRules = { min: number; max: number };
 
-function formatRuleNote(rules: SectionRules): string {
-  if (rules.min === rules.max) return `requis\u00a0: ${rules.min}`;
-  return `requis\u00a0: ${rules.min}\u2013${rules.max}`;
-}
 
 function DeckSection({title, cards, compact, rules, onEditCard, onQuantityChange}: {title: string; cards: DeckListCard[]; compact?: boolean; rules?: SectionRules; onEditCard?: (index: number) => void; onQuantityChange?: (index: number, delta: number) => void}) {
+  const t = useTranslations('DeckChecker');
   const total = cards.reduce((sum, c) => sum + c.quantity, 0);
+  const ruleNote = rules ? (rules.min === rules.max
+    ? t('sections.rules.requiredCount', { count: rules.min })
+    : t('sections.rules.requiredRange', { min: rules.min, max: rules.max })) : null;
 
   // Hide section only when empty AND (no rules OR min is 0)
   if (cards.length === 0 && (!rules || rules.min === 0)) return null;
@@ -338,16 +343,16 @@ function DeckSection({title, cards, compact, rules, onEditCard, onQuantityChange
       <div className="flex items-center gap-2 mb-3 flex-wrap">
         <h2 className="text-lg font-semibold">{title}</h2>
         <span className={`text-sm font-medium ${isInvalid ? 'text-red-500' : 'text-muted-foreground'}`}>
-          ({total} carte{total !== 1 ? 's' : ''})
+          ({t('sections.count', { count: total })})
         </span>
         {isInvalid && (
           <span className="text-[10px] font-bold bg-red-600 text-white rounded-full px-2 py-0.5 uppercase tracking-widest leading-none">
-            INVALID
+            {t('sections.invalid')}
           </span>
         )}
         {rules && (
           <span className="text-xs text-muted-foreground italic">
-            {formatRuleNote(rules)}
+            {ruleNote}
           </span>
         )}
       </div>
@@ -371,13 +376,14 @@ function DeckSection({title, cards, compact, rules, onEditCard, onQuantityChange
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function RiftboundDeckCheckerPage() {
+  const t = useTranslations('DeckChecker');
+
   const session = useSession();
   const [rawDeckList, setRawDeckList] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [deckList, setDeckList] = useState<DeckList | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [canUseImageLoader, setCanUseImageLoader] = useState<boolean | null>(null);
+  const [canUseImageLoader] = useState<boolean>(false);
   const [editingCard, setEditingCard] = useState<{ section: keyof DeckList; index: number } | null>(null);
 
   async function importDeckList() {
@@ -389,7 +395,12 @@ export default function RiftboundDeckCheckerPage() {
       if (rawDeckList.startsWith('https://piltoverarchive.com/decks/view/')) {
         const deckId = rawDeckList.split('/').at(-1)!;
         const res = await fetch(`https://piltoverarchive.com/api/external/v1/decks/${deckId}/price`);
-        if (!res.ok) throw new Error('Impossible de récupérer le deck depuis Piltover Archive.');
+        if (!res.ok) {
+          setError(t('form.errors.importFailed'));
+          setDeckList(null);
+          setIsLoading(false);
+          return;
+        }
         const data = await res.json() as {
           breakdown: { champions: {name:string;quantity:number}[]; legends: {name:string;quantity:number}[]; maindeck: {name:string;quantity:number}[]; sideboard: {name:string;quantity:number}[]; battlefields: {name:string;quantity:number}[]; runes: {name:string;quantity:number}[]; };
         };
@@ -408,7 +419,7 @@ export default function RiftboundDeckCheckerPage() {
       setDeckList(await validateDeckList(parsed));
     } catch (err) {
       console.error("Erreur lors de l'import de la liste de deck", err);
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue.');
+      setError(err instanceof Error ? err.message : t('form.errors.generic'));
       setDeckList(null);
     } finally {
       setIsLoading(false);
@@ -419,10 +430,9 @@ export default function RiftboundDeckCheckerPage() {
     const file = e.target.files?.[0];
     if (file) {
       setIsLoading(true);
-      setImageFile(file);
-
       // if file <1 MB
-      if (file.size <= 1*1024*1024) {
+      if (file.size <= 1024 * 1024) {
+
         const reader = new FileReader();
         reader.onloadend = async () => {
           try {
@@ -434,14 +444,14 @@ export default function RiftboundDeckCheckerPage() {
             setIsLoading(false);
           } catch (err) {
             setError(
-              err instanceof Error ? err.message : "Erreur lors de la vérification"
+              err instanceof Error ? err.message : t('form.errors.imageCheck')
             );
           } finally {
             setIsLoading(false);
           }
         };
         reader.onerror = () => {
-          setError("Erreur lors de la lecture de l'image");
+          setError(t('form.errors.imageRead'));
           setIsLoading(false);
         };
         reader.readAsDataURL(file);
@@ -460,7 +470,7 @@ export default function RiftboundDeckCheckerPage() {
           setIsLoading(false);
         } catch (err) {
           setError(
-            err instanceof Error ? err.message : "Erreur lors de la vérification"
+            err instanceof Error ? err.message : t('form.errors.imageCheck')
           );
         } finally {
           setIsLoading(false);
@@ -506,7 +516,7 @@ export default function RiftboundDeckCheckerPage() {
     try {
       setDeckList(await validateDeckList(newDeckList));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue.');
+      setError(err instanceof Error ? err.message : t('form.errors.generic'));
     } finally {
       setIsLoading(false);
     }
@@ -517,18 +527,18 @@ export default function RiftboundDeckCheckerPage() {
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
-      <h1 className="text-3xl font-bold mb-6">Vérificateur de Deck RiftBound</h1>
+      <h1 className="text-3xl font-bold mb-6">{t('title')}</h1>
 
       <div className="mb-8">
         <div className="mb-3">
           <Label htmlFor="deck-list" className="block text-sm font-medium mb-2">
-            Liste de Deck (texte ou lien Piltover Archive)
+            {t('form.label')}
           </Label>
           <Textarea
             id="deck-list"
             value={rawDeckList}
             onChange={(e) => setRawDeckList(e.target.value)}
-            placeholder={"Collez votre liste de deck ou un lien https://piltoverarchive.com/decks/view/...\n\nLegend:\n1 Azir, Emperor of the Sands\n\nChampion:\n1 Azir, Sovereign\n\nMainDeck:\n3 Discipline\n..."}
+            placeholder={t('form.placeholder')}
             className="w-full h-60 p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           {canUseImageLoader &&
@@ -544,12 +554,12 @@ export default function RiftboundDeckCheckerPage() {
 
         <div className="flex flex-row space-x-4">
           <Button onClick={importDeckList} disabled={isLoading || !rawDeckList.trim()}>
-            {isLoading ? 'Validation en cours\u2026' : 'Valider'}
+            {isLoading ? t('form.loading') : t('form.validate')}
           </Button>
           {canUseImageLoader && (
             <Button asChild variant="outline">
               <label htmlFor="deck-image" className="cursor-pointer">
-                {isLoading ? 'Validation en cours\u2026' : 'Charger une photo'}
+                {isLoading ? t('form.loading') : t('form.uploadPhoto')}
               </label>
             </Button>
           )}
@@ -565,19 +575,19 @@ export default function RiftboundDeckCheckerPage() {
             if (window?.navigator?.clipboard) {
               window?.navigator?.clipboard.writeText(link);
             }
-          }}>Copier le lien</Button>
+          }}>{t('form.copyLink')}</Button>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <DeckSection title="Légende" cards={deckList.legends} compact rules={ConstructionRules.legends} onEditCard={(i) => setEditingCard({ section: 'legends', index: i })} onQuantityChange={(i, d) => handleQuantityChange('legends', i, d)} />
-            <DeckSection title="Champion" cards={deckList.champions} compact rules={ConstructionRules.champions} onEditCard={(i) => setEditingCard({ section: 'champions', index: i })} onQuantityChange={(i, d) => handleQuantityChange('champions', i, d)} />
-            <DeckSection title="Champs de bataille" cards={deckList.battlefields} compact onEditCard={(i) => setEditingCard({ section: 'battlefields', index: i })} onQuantityChange={(i, d) => handleQuantityChange('battlefields', i, d)} />
-            <DeckSection title="Runes" cards={deckList.runes} compact rules={ConstructionRules.runes} onEditCard={(i) => setEditingCard({ section: 'runes', index: i })} onQuantityChange={(i, d) => handleQuantityChange('runes', i, d)} />
+            <DeckSection title={t('sections.legend')} cards={deckList.legends} compact rules={ConstructionRules.legends} onEditCard={(i) => setEditingCard({ section: 'legends', index: i })} onQuantityChange={(i, d) => handleQuantityChange('legends', i, d)} />
+            <DeckSection title={t('sections.champion')} cards={deckList.champions} compact rules={ConstructionRules.champions} onEditCard={(i) => setEditingCard({ section: 'champions', index: i })} onQuantityChange={(i, d) => handleQuantityChange('champions', i, d)} />
+            <DeckSection title={t('sections.battlefields')} cards={deckList.battlefields} compact onEditCard={(i) => setEditingCard({ section: 'battlefields', index: i })} onQuantityChange={(i, d) => handleQuantityChange('battlefields', i, d)} />
+            <DeckSection title={t('sections.runes')} cards={deckList.runes} compact rules={ConstructionRules.runes} onEditCard={(i) => setEditingCard({ section: 'runes', index: i })} onQuantityChange={(i, d) => handleQuantityChange('runes', i, d)} />
           </div>
-          <DeckSection title="Main Deck" cards={deckList.maindeck} rules={ConstructionRules.maindeck} onEditCard={(i) => setEditingCard({ section: 'maindeck', index: i })} onQuantityChange={(i, d) => handleQuantityChange('maindeck', i, d)} />
-          <DeckSection title="Sideboard" cards={deckList.sideboard} rules={ConstructionRules.sideboard} onEditCard={(i) => setEditingCard({ section: 'sideboard', index: i })} onQuantityChange={(i, d) => handleQuantityChange('sideboard', i, d)} />
+          <DeckSection title={t('sections.mainDeck')} cards={deckList.maindeck} rules={ConstructionRules.maindeck} onEditCard={(i) => setEditingCard({ section: 'maindeck', index: i })} onQuantityChange={(i, d) => handleQuantityChange('maindeck', i, d)} />
+          <DeckSection title={t('sections.sideboard')} cards={deckList.sideboard} rules={ConstructionRules.sideboard} onEditCard={(i) => setEditingCard({ section: 'sideboard', index: i })} onQuantityChange={(i, d) => handleQuantityChange('sideboard', i, d)} />
 
           {unrecognized.length > 0 && (
             <div className="border border-red-500/40 rounded-lg p-4 bg-red-950/20">
-              <h3 className="text-sm font-semibold text-red-400 mb-2">&#9888; Cartes non reconnues</h3>
+              <h3 className="text-sm font-semibold text-red-400 mb-2">⚠ {t('cards.unrecognizedTitle')}</h3>
               <ul className="list-disc list-inside space-y-0.5">
                 {unrecognized.map((c, i) => <li key={i} className="text-red-400 text-sm">{c.name}</li>)}
               </ul>
