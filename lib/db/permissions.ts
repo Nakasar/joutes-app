@@ -21,6 +21,10 @@ export async function hasPermission(permission: string) {
     return false;
   }
 
+  if (['policies:vote', 'erratas:vote'].includes(permission)) {
+    return true;
+  }
+
   const userWithPermission = await db.collection('user').findOne({
     $and: [
       { _id: new ObjectId(session.user.id) },
