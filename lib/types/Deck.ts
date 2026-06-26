@@ -9,6 +9,8 @@ export type Deck = {
   description?: string;
   decklist?: string;
   visibility: DeckVisibility;
+  creatorName?: string;
+  favoritedBy?: string[];
   createdAt: Date;
   updatedAt: Date;
 };

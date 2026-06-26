@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Search } from "lucide-react";
 
 export type DecksFiltersValues = {
@@ -18,28 +19,29 @@ export type DecksFiltersValues = {
   gameId: string;
   sortBy: "name" | "createdAt" | "updatedAt";
   sortOrder: "asc" | "desc";
+  scope: "mine" | "all";
+  favoritesOnly: boolean;
 };
 
 type DecksFiltersProps = {
   games: Game[];
   filters: DecksFiltersValues;
-  onFiltersChange: (filters: DecksFiltersValues) => void;
+  onFiltersChangeAction: (filters: DecksFiltersValues) => void;
   isLoading: boolean;
 };
 
 export default function DecksFilters({
   games,
   filters,
-  onFiltersChange,
+  onFiltersChangeAction,
   isLoading,
 }: DecksFiltersProps) {
   const [localSearch, setLocalSearch] = useState(filters.search);
 
   const handleSearchChange = (value: string) => {
     setLocalSearch(value);
-    // Debounce search
     const timer = setTimeout(() => {
-      onFiltersChange({ ...filters, search: value });
+      onFiltersChangeAction({ ...filters, search: value });
     }, 500);
     return () => clearTimeout(timer);
   };
@@ -69,7 +71,7 @@ export default function DecksFilters({
           <Label htmlFor="game">Jeu</Label>
           <Select
             value={filters.gameId}
-            onValueChange={(value) => onFiltersChange({ ...filters, gameId: value })}
+            onValueChange={(value) => onFiltersChangeAction({ ...filters, gameId: value })}
             disabled={isLoading}
           >
             <SelectTrigger id="game">
@@ -92,7 +94,7 @@ export default function DecksFilters({
           <Select
             value={filters.sortBy}
             onValueChange={(value: "name" | "createdAt" | "updatedAt") =>
-              onFiltersChange({ ...filters, sortBy: value })
+              onFiltersChangeAction({ ...filters, sortBy: value })
             }
             disabled={isLoading}
           >
@@ -113,7 +115,7 @@ export default function DecksFilters({
           <Select
             value={filters.sortOrder}
             onValueChange={(value: "asc" | "desc") =>
-              onFiltersChange({ ...filters, sortOrder: value })
+              onFiltersChangeAction({ ...filters, sortOrder: value })
             }
             disabled={isLoading}
           >
@@ -125,6 +127,31 @@ export default function DecksFilters({
               <SelectItem value="asc">Croissant</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-start">
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="scope"
+            checked={filters.scope === "mine"}
+            onCheckedChange={(checked) =>
+              onFiltersChangeAction({ ...filters, scope: checked ? "mine" : "all" })
+            }
+            disabled={isLoading}
+          />
+          <Label htmlFor="scope">Afficher uniquement mes decks</Label>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="favoritesOnly"
+            checked={filters.favoritesOnly}
+            onCheckedChange={(checked) =>
+              onFiltersChangeAction({ ...filters, favoritesOnly: checked })
+            }
+            disabled={isLoading}
+          />
+          <Label htmlFor="favoritesOnly">Afficher uniquement les favoris</Label>
         </div>
       </div>
     </div>

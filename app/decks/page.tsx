@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   description: 'Gérez vos decks de jeu',
 };
 
-export default async function DecksPage({ searchParams }: { searchParams: Promise<{ gameId?: string }> }) {
+export default async function DecksPage({ searchParams }: { searchParams: Promise<{ gameId?: string; scope?: string; favoritesOnly?: string }> }) {
   // Récupérer l'utilisateur connecté
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -23,7 +23,7 @@ export default async function DecksPage({ searchParams }: { searchParams: Promis
     redirect("/login");
   }
 
-  const { gameId } = await searchParams;
+  const { gameId, scope, favoritesOnly } = await searchParams;
 
   // Fetch initial data with pagination
   const [initialDecksData, games] = await Promise.all([
@@ -32,6 +32,9 @@ export default async function DecksPage({ searchParams }: { searchParams: Promis
       gameId: gameId || undefined,
       page: 1,
       limit: 20,
+      scope: scope === "all" ? "all" : "mine",
+      viewerId: session.user.id,
+      favoritesOnly: favoritesOnly === "true",
     }),
     getAllGames(),
   ]);
@@ -50,8 +53,8 @@ export default async function DecksPage({ searchParams }: { searchParams: Promis
             </p>
           </div>
         </div>
-        
-        <DecksClient initialData={initialDecksData} games={games} initialFilters={{ gameId }} />
+
+        <DecksClient currentUserId={session.user.id} initialData={initialDecksData} games={games} initialFilters={{ gameId, scope: scope === "all" ? "all" : "mine", favoritesOnly: favoritesOnly === "true" }} />
       </div>
     </div>
   );

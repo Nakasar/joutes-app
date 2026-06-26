@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
       headers: await headers(),
     });
     const { searchParams } = new URL(request.url);
-    
+
     const playerId = searchParams.get("playerId");
     const gameId = searchParams.get("gameId");
     const visibility = searchParams.get("visibility") as "private" | "public" | null;
@@ -20,6 +20,8 @@ export async function GET(request: NextRequest) {
     const sortOrder = searchParams.get("sortOrder") as "asc" | "desc" | null;
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
+    const scope = searchParams.get("scope") as "mine" | "all" | null;
+    const favoritesOnly = searchParams.get("favoritesOnly") === "true";
 
     // Si on demande les decks privés d'un joueur, il faut être ce joueur
     if (visibility === "private" && playerId && session?.user?.id !== playerId) {
@@ -37,7 +39,7 @@ export async function GET(request: NextRequest) {
 
     // Si on ne spécifie pas de playerId et pas de visibilité, on ne retourne que les decks publics
     let effectiveVisibility = visibility;
-    if (!effectivePlayerId && !visibility) {
+    if (!effectivePlayerId && !visibility && !scope) {
       effectiveVisibility = "public";
     }
 
@@ -50,6 +52,9 @@ export async function GET(request: NextRequest) {
       sortOrder: sortOrder || undefined,
       page,
       limit,
+      scope: scope || undefined,
+      viewerId: session?.user?.id,
+      favoritesOnly,
     });
 
     return NextResponse.json(result);

@@ -1,6 +1,7 @@
 import db from "@/lib/mongodb";
 import { Deck } from "@/lib/types/Deck";
 import { ObjectId, WithId, Document } from "mongodb";
+import { getUsersByIds } from "@/lib/db/users";
 
 const COLLECTION_NAME = "decks";
 
@@ -14,6 +15,9 @@ export type SearchDecksOptions = {
   sortOrder?: "asc" | "desc";
   page?: number;
   limit?: number;
+  scope?: "mine" | "all";
+  viewerId?: string;
+  favoritesOnly?: boolean;
 };
 
 // Type pour le résultat de recherche paginé
@@ -28,8 +32,20 @@ export type PaginatedDecksResult = {
 // Type pour un deck dans MongoDB (avec _id)
 export type DeckDocument = Omit<Deck, "id"> & { _id: ObjectId };
 
+function getUserDisplayName(user: { displayName?: string; username?: string; discriminator?: string } | null | undefined): string | undefined {
+  if (!user) {
+    return undefined;
+  }
+
+  if (user.displayName) {
+    return user.discriminator ? `${user.displayName}#${user.discriminator}` : user.displayName;
+  }
+
+  return user.username || undefined;
+}
+
 // Convertir un document MongoDB en Deck
-function toDeck(doc: WithId<Document>): Deck {
+function toDeck(doc: WithId<Document>, creatorName?: string): Deck {
   return {
     id: doc._id.toString(),
     playerId: doc.playerId,
@@ -39,6 +55,8 @@ function toDeck(doc: WithId<Document>): Deck {
     description: doc.description,
     decklist: doc.decklist,
     visibility: doc.visibility || "private",
+    creatorName,
+    favoritedBy: doc.favoritedBy || [],
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };
@@ -54,6 +72,7 @@ function toDocument(deck: Omit<Deck, "id" | "createdAt" | "updatedAt">): Omit<De
     description: deck.description,
     decklist: deck.decklist,
     visibility: deck.visibility || "private",
+    favoritedBy: deck.favoritedBy || [],
   };
 }
 
@@ -68,11 +87,21 @@ export async function searchDecks(options: SearchDecksOptions): Promise<Paginate
     sortOrder = "desc",
     page = 1,
     limit = 20,
+    scope,
+    viewerId,
+    favoritesOnly = false,
   } = options;
 
   const query: Record<string, unknown> = {};
 
-  if (playerId) {
+  if (scope === "mine" && viewerId) {
+    query.playerId = viewerId;
+  } else if (scope === "all" && viewerId) {
+    query.$or = [
+      { playerId: viewerId },
+      { visibility: "public" },
+    ];
+  } else if (playerId) {
     query.playerId = playerId;
   }
 
@@ -84,8 +113,13 @@ export async function searchDecks(options: SearchDecksOptions): Promise<Paginate
     query.visibility = visibility;
   }
 
+  if (favoritesOnly && viewerId) {
+    query.favoritedBy = viewerId;
+  }
+
   if (search) {
     query.$or = [
+      ...(Array.isArray(query.$or) ? query.$or : []),
       { name: { $regex: search, $options: "i" } },
       { description: { $regex: search, $options: "i" } },
     ];
@@ -106,8 +140,11 @@ export async function searchDecks(options: SearchDecksOptions): Promise<Paginate
     db.collection(COLLECTION_NAME).countDocuments(query),
   ]);
 
+  const creators = await getUsersByIds(decks.map((deck) => deck.playerId).filter(Boolean));
+  const creatorNamesById = new Map(creators.map((user) => [user.id, getUserDisplayName(user)]));
+
   return {
-    decks: decks.map(toDeck),
+    decks: decks.map((deck) => toDeck(deck, creatorNamesById.get(deck.playerId))),
     total,
     page,
     limit,
@@ -122,7 +159,12 @@ export async function getDeckById(deckId: string): Promise<Deck | null> {
   }
 
   const deck = await db.collection(COLLECTION_NAME).findOne({ _id: new ObjectId(deckId) });
-  return deck ? toDeck(deck) : null;
+  if (!deck) {
+    return null;
+  }
+
+  const creator = await getUsersByIds([deck.playerId]);
+  return toDeck(deck, getUserDisplayName(creator[0]));
 }
 
 // Créer un nouveau deck
@@ -186,6 +228,24 @@ export async function updateDeck(
   return result ? toDeck(result) : null;
 }
 
+export async function toggleDeckFavorite(deckId: string, userId: string, favorite: boolean): Promise<Deck | null> {
+  if (!ObjectId.isValid(deckId)) {
+    return null;
+  }
+
+  const update = favorite
+    ? { $addToSet: { favoritedBy: userId }, $set: { updatedAt: new Date() } }
+    : { $pull: { favoritedBy: userId }, $set: { updatedAt: new Date() } };
+
+  const result = await db.collection(COLLECTION_NAME).findOneAndUpdate(
+    { _id: new ObjectId(deckId) },
+    update as Record<string, unknown>,
+    { returnDocument: "after" }
+  );
+
+  return result ? toDeck(result) : null;
+}
+
 // Supprimer un deck
 export async function deleteDeck(deckId: string, playerId: string): Promise<boolean> {
   if (!ObjectId.isValid(deckId)) {
@@ -205,6 +265,7 @@ export async function createDeckIndexes() {
   await db.collection(COLLECTION_NAME).createIndex({ playerId: 1, name: 1 }, { unique: true });
   await db.collection(COLLECTION_NAME).createIndex({ gameId: 1 });
   await db.collection(COLLECTION_NAME).createIndex({ visibility: 1 });
+  await db.collection(COLLECTION_NAME).createIndex({ favoritedBy: 1 });
   await db.collection(COLLECTION_NAME).createIndex({ updatedAt: -1 });
   await db.collection(COLLECTION_NAME).createIndex({ createdAt: -1 });
 }

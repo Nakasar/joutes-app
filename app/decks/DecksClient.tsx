@@ -8,21 +8,25 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Library, Eye, EyeOff, ChevronLeft, ChevronRight, Loader2, Plus, ExternalLink } from "lucide-react";
+import { Library, Eye, EyeOff, ChevronLeft, ChevronRight, Loader2, Plus, ExternalLink, User } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { DateTime } from "luxon";
 import DecksFilters, { DecksFiltersValues } from "./DecksFilters";
 import CreateDeckDialog from "./CreateDeckDialog";
+import FavoriteDeckButton from "./FavoriteDeckButton";
 
 type DecksClientProps = {
   initialData: PaginatedDecksResult;
   games: Game[];
+  currentUserId: string;
   initialFilters: {
     gameId?: string;
+    scope?: "mine" | "all";
+    favoritesOnly?: boolean;
   };
 };
 
-export default function DecksClient({ initialData, games, initialFilters }: DecksClientProps) {
+export default function DecksClient({ initialData, games, currentUserId, initialFilters }: DecksClientProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [data, setData] = useState<PaginatedDecksResult>(initialData);
@@ -32,6 +36,8 @@ export default function DecksClient({ initialData, games, initialFilters }: Deck
     gameId: initialFilters.gameId || "all",
     sortBy: "updatedAt",
     sortOrder: "desc",
+    scope: initialFilters.scope || "mine",
+    favoritesOnly: initialFilters.favoritesOnly || false,
   });
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
@@ -46,13 +52,14 @@ export default function DecksClient({ initialData, games, initialFilters }: Deck
       if (currentFilters.gameId !== "all") params.append("gameId", currentFilters.gameId);
       if (currentFilters.sortBy) params.append("sortBy", currentFilters.sortBy);
       if (currentFilters.sortOrder) params.append("sortOrder", currentFilters.sortOrder);
+      if (currentFilters.scope) params.append("scope", currentFilters.scope);
+      if (currentFilters.favoritesOnly) params.append("favoritesOnly", "true");
       params.append("page", page.toString());
       params.append("limit", "20");
-      params.append("visibility", "private"); // On récupère seulement nos decks privés
 
       const response = await fetch(`/api/decks?${params.toString()}`);
       const result = await response.json();
-      
+
       if (response.ok) {
         setData(result);
       } else {
@@ -67,25 +74,37 @@ export default function DecksClient({ initialData, games, initialFilters }: Deck
 
   // Fetch when filters change
   useEffect(() => {
-    fetchDecks(filters, 1);
+    void fetchDecks(filters, 1);
   }, [filters, fetchDecks]);
 
   const handleFiltersChange = (newFilters: DecksFiltersValues) => {
     setFilters(newFilters);
-    if (newFilters.gameId === "all") {
-      router.push(pathname);
-    } else {
-      router.push(`${pathname}?gameId=${newFilters.gameId}`);
+    const params = new URLSearchParams();
+    if (newFilters.gameId !== "all") {
+      params.set("gameId", newFilters.gameId);
     }
+    if (newFilters.scope !== "mine") {
+      params.set("scope", newFilters.scope);
+    }
+    if (newFilters.favoritesOnly) {
+      params.set("favoritesOnly", "true");
+    }
+
+    const queryString = params.toString();
+    router.push(queryString ? `${pathname}?${queryString}` : pathname);
   };
 
   const handlePageChange = (newPage: number) => {
-    fetchDecks(filters, newPage);
+    void fetchDecks(filters, newPage);
   };
 
   const handleDeckCreated = () => {
     setIsCreateDialogOpen(false);
-    fetchDecks(filters, 1);
+    void fetchDecks(filters, 1);
+  };
+
+  const handleFavoriteToggle = () => {
+    void fetchDecks(filters, data.page);
   };
 
   return (
@@ -94,7 +113,7 @@ export default function DecksClient({ initialData, games, initialFilters }: Deck
         <DecksFilters
           games={games}
           filters={filters}
-          onFiltersChange={handleFiltersChange}
+          onFiltersChangeAction={handleFiltersChange}
           isLoading={isLoading}
         />
         <Button onClick={() => setIsCreateDialogOpen(true)}>
@@ -133,7 +152,13 @@ export default function DecksClient({ initialData, games, initialFilters }: Deck
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {data.decks.map((deck) => (
-            <DeckCard key={deck.id} deck={deck} games={games} />
+            <DeckCard
+              key={deck.id}
+              deck={deck}
+              games={games}
+              currentUserId={currentUserId}
+              onFavoriteToggle={handleFavoriteToggle}
+            />
           ))}
         </div>
       )}
@@ -150,7 +175,7 @@ export default function DecksClient({ initialData, games, initialFilters }: Deck
             <ChevronLeft className="h-4 w-4 mr-1" />
             Précédent
           </Button>
-          
+
           <div className="flex items-center gap-1">
             {generatePaginationNumbers(data.page, data.totalPages).map((pageNum, index) => (
               pageNum === "..." ? (
@@ -192,9 +217,20 @@ export default function DecksClient({ initialData, games, initialFilters }: Deck
   );
 }
 
-function DeckCard({ deck, games }: { deck: Deck; games: Game[] }) {
+function DeckCard({
+  deck,
+  games,
+  currentUserId,
+  onFavoriteToggle,
+}: {
+  deck: Deck;
+  games: Game[];
+  currentUserId: string;
+  onFavoriteToggle: () => void;
+}) {
   const game = games.find((g) => g.id === deck.gameId);
   const updatedAt = DateTime.fromJSDate(new Date(deck.updatedAt)).setLocale("fr");
+  const isFavorited = (deck.favoritedBy || []).includes(currentUserId);
 
   return (
     <Link href={`/decks/${deck.id}`} className="group">
@@ -204,19 +240,28 @@ function DeckCard({ deck, games }: { deck: Deck; games: Game[] }) {
             <CardTitle className="text-xl group-hover:text-primary transition-colors line-clamp-2 flex-1">
               {deck.name}
             </CardTitle>
-            <Badge variant={deck.visibility === "public" ? "default" : "secondary"}>
-              {deck.visibility === "public" ? (
-                <>
-                  <Eye className="h-3 w-3 mr-1" />
-                  Public
-                </>
-              ) : (
-                <>
-                  <EyeOff className="h-3 w-3 mr-1" />
-                  Privé
-                </>
-              )}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <FavoriteDeckButton
+                deckId={deck.id}
+                isFavorited={isFavorited}
+                onAfterToggleAction={onFavoriteToggle}
+                className="h-8 w-8 p-0"
+                showLabel={false}
+              />
+              <Badge variant={deck.visibility === "public" ? "default" : "secondary"}>
+                {deck.visibility === "public" ? (
+                  <>
+                    <Eye className="h-3 w-3 mr-1" />
+                    Public
+                  </>
+                ) : (
+                  <>
+                    <EyeOff className="h-3 w-3 mr-1" />
+                    Privé
+                  </>
+                )}
+              </Badge>
+            </div>
           </div>
           {game && (
             <CardDescription className="flex items-center gap-2">
@@ -226,6 +271,10 @@ function DeckCard({ deck, games }: { deck: Deck; games: Game[] }) {
               {game.name}
             </CardDescription>
           )}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <User className="h-4 w-4" />
+            <span>Par {deck.creatorName || "un joueur"}</span>
+          </div>
         </CardHeader>
 
         {deck.description && (
@@ -250,35 +299,31 @@ function DeckCard({ deck, games }: { deck: Deck; games: Game[] }) {
 // Fonction pour générer les numéros de page avec ellipses
 function generatePaginationNumbers(currentPage: number, totalPages: number): (number | "...")[] {
   const pages: (number | "...")[] = [];
-  
+
   if (totalPages <= 7) {
-    // Si 7 pages ou moins, afficher toutes les pages
     for (let i = 1; i <= totalPages; i++) {
       pages.push(i);
     }
   } else {
-    // Toujours afficher la première page
     pages.push(1);
-    
+
     if (currentPage > 3) {
       pages.push("...");
     }
-    
-    // Afficher les pages autour de la page actuelle
+
     const start = Math.max(2, currentPage - 1);
     const end = Math.min(totalPages - 1, currentPage + 1);
-    
+
     for (let i = start; i <= end; i++) {
       pages.push(i);
     }
-    
+
     if (currentPage < totalPages - 2) {
       pages.push("...");
     }
-    
-    // Toujours afficher la dernière page
+
     pages.push(totalPages);
   }
-  
+
   return pages;
 }

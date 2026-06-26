@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDeckById, updateDeck, deleteDeck } from "@/lib/db/decks";
+import {
+  getDeckById,
+  updateDeck,
+  deleteDeck,
+  toggleDeckFavorite,
+} from "@/lib/db/decks";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
@@ -65,6 +70,31 @@ export async function PATCH(
     }
 
     const body = await request.json();
+
+    if (typeof body.favorite === "boolean") {
+      const deck = await getDeckById(deckId);
+
+      if (!deck) {
+        return NextResponse.json({ error: "Deck non trouvé" }, { status: 404 });
+      }
+
+      if (deck.visibility === "private" && deck.playerId !== session.user.id) {
+        return NextResponse.json(
+          { error: "Vous n'avez pas l'autorisation de modifier ce favori" },
+          { status: 403 }
+        );
+      }
+
+      const updatedDeck = await toggleDeckFavorite(deckId, session.user.id, body.favorite);
+
+      if (!updatedDeck) {
+        return NextResponse.json({ error: "Impossible de mettre à jour le favori" }, { status: 500 });
+      }
+
+      revalidatePath("/decks");
+      revalidatePath(`/decks/${deckId}`);
+      return NextResponse.json(updatedDeck);
+    }
 
     const validationResult = deckUpdateSchema.safeParse(body);
     if (!validationResult.success) {

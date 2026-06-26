@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { DateTime } from "luxon";
 import DeleteDeckButton from "./DeleteDeckButton";
+import FavoriteDeckButton from "../FavoriteDeckButton";
 
 type Params = Promise<{ deckId: string }>;
 
@@ -51,6 +52,7 @@ export default async function DeckPage({ params }: { params: Params }) {
   const game = await getGameById(deck.gameId);
   const createdAt = DateTime.fromJSDate(new Date(deck.createdAt)).setLocale("fr");
   const updatedAt = DateTime.fromJSDate(new Date(deck.updatedAt)).setLocale("fr");
+  const isFavorited = Boolean(session?.user && deck.favoritedBy?.includes(session.user.id));
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -76,6 +78,9 @@ export default async function DeckPage({ params }: { params: Params }) {
                 <span>{game.name}</span>
               </div>
             )}
+            <p className="text-sm text-muted-foreground">
+              Créé par {deck.creatorName || "un joueur"}
+            </p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -92,6 +97,9 @@ export default async function DeckPage({ params }: { params: Params }) {
                 </>
               )}
             </Badge>
+            {session?.user?.id && (
+              <FavoriteDeckButton deckId={deck.id} isFavorited={isFavorited} />
+            )}
             {isOwner && (
               <>
                 <Button asChild variant="outline" size="sm">
