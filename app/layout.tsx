@@ -115,6 +115,10 @@ export default function RootLayout({
                       CGU
                     </Link>
                     <span className="text-muted-foreground/50">•</span>
+                    <Link href="/integrations" className="hover:text-foreground transition-colors">
+                      Développeurs
+                    </Link>
+                    <span className="text-muted-foreground/50">•</span>
                     <Link href="/open-source" className="hover:text-foreground transition-colors">
                       Open Source
                     </Link>
