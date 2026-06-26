@@ -175,54 +175,60 @@ function CardTile({card, onEdit, onQuantityChange}: {card: DeckListCard; onEdit?
     return parsedDate.isValid ? parsedDate.setLocale(locale).toLocaleString(DateTime.DATE_MED) : value.toString();
   };
 
+  const statusPill = card.banned ? (
+    <div className="mt-1 flex justify-center">
+      <span className="bg-red-600 text-white text-[10px] font-bold rounded px-1.5 py-0.5 leading-none uppercase tracking-widest">
+        {t('cards.banned')}
+      </span>
+    </div>
+  ) : hasErratas ? (
+    <div className="mt-1 flex justify-center">
+      <span className="cursor-pointer bg-yellow-600 text-white text-[10px] font-bold rounded px-1.5 py-0.5 leading-none uppercase tracking-widest">
+        {t('cards.notes')}
+      </span>
+    </div>
+  ) : null;
+
   const cardContent = (
-    <div
-      className={`relative rounded-lg overflow-hidden shadow-md bg-gray-800 group cursor-pointer${card.banned ? ' ring-2 ring-red-500' : ''}`}
-      style={{aspectRatio: '2.5 / 3.5'}}
-    >
-      {card.image ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={card.image} alt={card.name} className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105" />
-      ) : (
-        <div className="w-full h-full flex flex-col items-center justify-center bg-gray-700 p-2 gap-1">
-          <span className="text-3xl opacity-40">?</span>
-          <span className="text-red-400 text-center text-xs font-medium leading-tight line-clamp-3">{card.name}</span>
-        </div>
-      )}
-      <div className="absolute top-1.5 left-1.5 flex items-center gap-0.5">
-        {onQuantityChange && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onQuantityChange(-1); }}
-            disabled={card.quantity <= 1}
-            className="w-5 h-5 flex items-center justify-center bg-black/75 hover:bg-black text-white text-sm font-bold rounded leading-none opacity-0 group-hover/card:opacity-100 transition-opacity disabled:opacity-20 disabled:cursor-not-allowed"
-          >−</button>
-        )}
-        <div className="bg-black/75 text-white text-xs font-bold rounded px-1.5 py-0.5 leading-none">
-          &times;{card.quantity}
-        </div>
-        {onQuantityChange && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onQuantityChange(+1); }}
-            className="w-5 h-5 flex items-center justify-center bg-black/75 hover:bg-black text-white text-sm font-bold rounded leading-none opacity-0 group-hover/card:opacity-100 transition-opacity"
-          >+</button>
-        )}
-      </div>
-      {card.banned ? (
-        <div className="absolute top-1.5 right-1.5 bg-red-600 text-white text-[10px] font-bold rounded px-1.5 py-0.5 leading-none uppercase tracking-widest">
-          {t('cards.banned')}
-        </div>
-      ) : (
-        hasErratas && (
-          <div className="absolute top-1.5 right-1.5 bg-yellow-600 text-white text-[10px] font-bold rounded px-1.5 py-0.5 leading-none uppercase tracking-widest">
-            {t('cards.notes')}
+    <div className="flex flex-col">
+      <div
+        className={`relative rounded-lg overflow-hidden shadow-md bg-gray-800 group cursor-pointer${hasErratas ? ' ring-2 ring-yellow-600' : ''}${card.banned ? ' ring-2 ring-red-500' : ''}`}
+        style={{aspectRatio: '2.5 / 3.5'}}
+      >
+        {card.image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={card.image} alt={card.name} className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105" />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gray-700 p-2 gap-1">
+            <span className="text-3xl opacity-40">?</span>
+            <span className="text-red-400 text-center text-xs font-medium leading-tight line-clamp-3">{card.name}</span>
           </div>
-        )
-      )}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-4 pb-1.5 px-1.5">
-        <p className={`text-xs font-medium truncate ${!card.recognized ? 'text-red-400' : 'text-white'}`}>
-          {card.name}
-        </p>
+        )}
+        <div className="absolute top-1.5 left-1.5 flex items-center gap-0.5">
+          {onQuantityChange && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onQuantityChange(-1); }}
+              disabled={card.quantity <= 1}
+              className="w-5 h-5 flex items-center justify-center bg-black/75 hover:bg-black text-white text-sm font-bold rounded leading-none opacity-0 group-hover/card:opacity-100 transition-opacity disabled:opacity-20 disabled:cursor-not-allowed"
+            >−</button>
+          )}
+          <div className="bg-black/75 text-white text-xs font-bold rounded px-1.5 py-0.5 leading-none">
+            &times;{card.quantity}
+          </div>
+          {onQuantityChange && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onQuantityChange(+1); }}
+              className="w-5 h-5 flex items-center justify-center bg-black/75 hover:bg-black text-white text-sm font-bold rounded leading-none opacity-0 group-hover/card:opacity-100 transition-opacity"
+            >+</button>
+          )}
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-4 pb-1.5 px-1.5">
+          <p className={`text-xs font-medium truncate ${!card.recognized ? 'text-red-400' : 'text-white'}`}>
+            {card.name}
+          </p>
+        </div>
       </div>
+      {statusPill}
     </div>
   );
 
