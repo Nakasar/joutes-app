@@ -25,6 +25,7 @@
   },
   "DeckChecker": {
     "title": "Riftbound-Deck-Checker",
+    "description": "Überprüfe die Legalität deines Decks und erhalte Informationen zu seinen Karten und deren Rulings",
     "form": {
       "label": "Deckliste (Text oder Link von Piltover Archive)",
       "placeholder": "Füge deine Deckliste oder einen Link https://piltoverarchive.com/decks/view/...\n\nLegende:\n1 Azir, Emperor of the Sands\n\nChampion:\n1 Azir, Sovereign\n\nMainDeck:\n3 Discipline\n...",
