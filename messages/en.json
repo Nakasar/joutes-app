@@ -326,7 +326,20 @@
         "placeholder": "Search a card by name...",
         "search": "Search",
         "searching": "Searching...",
-        "noResults": "No cards found for \"{query}\""
+        "noResults": "No cards found for \"{query}\"",
+        "emptyState": "No cards available yet.",
+        "filters": {
+          "setCode": "Set",
+          "allSets": "All sets",
+          "type": "Type",
+          "allTypes": "All types"
+        },
+        "pagination": {
+          "results": "Showing {start}-{end} of {total} cards",
+          "previous": "Previous",
+          "next": "Next",
+          "page": "Page {currentPage} of {totalPages}"
+        }
       },
       "detail": {
         "metadata": {

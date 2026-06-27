@@ -326,7 +326,20 @@
         "placeholder": "Suche nach Karte nach Name...",
         "search": "Suchen",
         "searching": "Suchen...",
-        "noResults": "Keine Karte gefunden für \"{query}\""
+        "noResults": "Keine Karte gefunden für \"{query}\"",
+        "emptyState": "Noch keine Karten verfügbar.",
+        "filters": {
+          "setCode": "Set",
+          "allSets": "Alle Sets",
+          "type": "Typ",
+          "allTypes": "Alle Typen"
+        },
+        "pagination": {
+          "results": "Zeige {start}-{end} von {total} Karten",
+          "previous": "Zurück",
+          "next": "Weiter",
+          "page": "Seite {currentPage} von {totalPages}"
+        }
       },
       "detail": {
         "metadata": {

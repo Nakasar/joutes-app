@@ -326,7 +326,20 @@
         "placeholder": "Cerca una carta per nome...",
         "search": "Cerca",
         "searching": "Ricerca in corso...",
-        "noResults": "Nessuna carta trovata per \"{query}\""
+        "noResults": "Nessuna carta trovata per \"{query}\"",
+        "emptyState": "Nessuna carta disponibile al momento.",
+        "filters": {
+          "setCode": "Set",
+          "allSets": "Tutti i set",
+          "type": "Tipo",
+          "allTypes": "Tutti i tipi"
+        },
+        "pagination": {
+          "results": "Mostrando {start}-{end} di {total} carte",
+          "previous": "Precedente",
+          "next": "Successivo",
+          "page": "Pagina {currentPage} di {totalPages}"
+        }
       },
       "detail": {
         "metadata": {
