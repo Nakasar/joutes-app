@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { BoosterCard } from "@/lib/types/booster";
 import Link from "next/link";
@@ -30,48 +30,68 @@ type CardsApiResponse = {
 const PAGE_SIZE = 24;
 
 export function CardsComponent({ gameSlug }: { gameSlug: string }) {
-  const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const initialSearchQuery = searchParams.get("searchQuery") ?? "";
+  const initialPage = Math.max(1, Number.parseInt(searchParams.get("page") ?? "1", 10) || 1);
+
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
   const [selectedSetCode, setSelectedSetCode] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
   const [cards, setCards] = useState<CardWithType[]>([]);
   const [setCodes, setSetCodes] = useState<string[]>([]);
   const [types, setTypes] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(initialPage);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: PAGE_SIZE,
     total: 0,
     totalPages: 1,
   });
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const didSyncFromUrlRef = useRef(false);
+  const pendingRequestKeyRef = useRef<string | null>(null);
+  const activeControllerRef = useRef<AbortController | null>(null);
   const t = useTranslations("Games");
 
   const fetchCards = useCallback(
     async (query: string, setCode: string, type: string, pageNumber: number) => {
+      const trimmedQuery = query.trim();
+      const normalizedSetCode = setCode && setCode !== "all" ? setCode : "all";
+      const normalizedType = type && type !== "all" ? type : "all";
+      const requestKey = `${trimmedQuery}|${normalizedSetCode}|${normalizedType}|${pageNumber}`;
+
+      if (pendingRequestKeyRef.current === requestKey) {
+        return;
+      }
+
+      activeControllerRef.current?.abort();
+      const controller = new AbortController();
+      activeControllerRef.current = controller;
+      pendingRequestKeyRef.current = requestKey;
       setIsLoading(true);
       try {
         const params = new URLSearchParams();
-        const trimmedQuery = query.trim();
 
         if (trimmedQuery) {
           params.set("searchQuery", trimmedQuery);
         }
 
-        if (setCode && setCode !== "all") {
-          params.set("setCode", setCode);
+        if (normalizedSetCode !== "all") {
+          params.set("setCode", normalizedSetCode);
         }
 
-        if (type && type !== "all") {
-          params.set("type", type);
+        if (normalizedType !== "all") {
+          params.set("type", normalizedType);
         }
 
         params.set("page", String(pageNumber));
         params.set("limit", String(PAGE_SIZE));
 
-        const response = await fetch(`/api/games/${gameSlug}/cards?${params.toString()}`);
+        const response = await fetch(`/api/games/${gameSlug}/cards?${params.toString()}`, {
+          signal: controller.signal,
+        });
         const data = (await response.json()) as CardsApiResponse | CardWithType[];
         const nextCards = Array.isArray(data)
           ? data.filter((card): card is CardWithType => Boolean(card))
@@ -92,17 +112,31 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
               totalPages: data.totalPages ?? Math.max(1, Math.ceil((data.total ?? nextCards.length) / PAGE_SIZE)),
             };
 
+        if (controller.signal.aborted) {
+          return;
+        }
+
         setCards(nextCards);
         setSetCodes(nextSetCodes);
         setTypes(nextTypes);
         setPagination(nextPagination);
       } catch (error) {
+        if (controller.signal.aborted) {
+          return;
+        }
+
         console.error("Erreur lors de la recherche:", error);
         setCards([]);
         setSetCodes([]);
         setTypes([]);
         setPagination({ page: 1, limit: PAGE_SIZE, total: 0, totalPages: 1 });
       } finally {
+        if (activeControllerRef.current === controller) {
+          activeControllerRef.current = null;
+        }
+        if (pendingRequestKeyRef.current === requestKey) {
+          pendingRequestKeyRef.current = null;
+        }
         setIsLoading(false);
       }
     },
@@ -130,6 +164,13 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   useEffect(() => {
     const urlQuery = searchParams.get("searchQuery") ?? "";
     const urlPage = Number.parseInt(searchParams.get("page") ?? "1", 10) || 1;
+    const urlSetCode = searchParams.get("setCode") ?? "all";
+    const urlType = searchParams.get("type") ?? "all";
+
+    if (didSyncFromUrlRef.current) {
+      didSyncFromUrlRef.current = false;
+      return;
+    }
 
     if (urlQuery !== searchQuery) {
       setSearchQuery(urlQuery);
@@ -138,7 +179,15 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
     if (urlPage !== currentPage) {
       setCurrentPage(urlPage);
     }
-  }, [currentPage, searchParams, searchQuery]);
+
+    if (urlSetCode !== selectedSetCode) {
+      setSelectedSetCode(urlSetCode);
+    }
+
+    if (urlType !== selectedType) {
+      setSelectedType(urlType);
+    }
+  }, [currentPage, searchParams, searchQuery, selectedSetCode, selectedType]);
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
@@ -149,6 +198,18 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
       params.delete("searchQuery");
     }
 
+    if (selectedSetCode && selectedSetCode !== "all") {
+      params.set("setCode", selectedSetCode);
+    } else {
+      params.delete("setCode");
+    }
+
+    if (selectedType && selectedType !== "all") {
+      params.set("type", selectedType);
+    } else {
+      params.delete("type");
+    }
+
     if (currentPage > 1) {
       params.set("page", String(currentPage));
     } else {
@@ -156,10 +217,13 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
     }
 
     const nextSearch = params.toString();
-    if (nextSearch !== searchParams.toString()) {
-      router.replace(`${pathname}${nextSearch ? `?${nextSearch}` : ""}`, { scroll: false });
+    if (nextSearch === searchParams.toString()) {
+      return;
     }
-  }, [currentPage, pathname, router, searchParams, searchQuery]);
+
+    didSyncFromUrlRef.current = true;
+    router.replace(`${pathname}${nextSearch ? `?${nextSearch}` : ""}`, { scroll: false });
+  }, [currentPage, pathname, router, searchParams, searchQuery, selectedSetCode, selectedType]);
 
   const handleSearch = () => {
     setCurrentPage(1);
