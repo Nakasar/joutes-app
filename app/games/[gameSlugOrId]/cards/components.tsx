@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { BoosterCard } from "@/lib/types/booster";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -13,8 +14,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTranslations } from "next-intl";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 type CardWithType = BoosterCard & { type?: string };
+type CardsApiResponse = {
+  cards: CardWithType[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  setCodes: string[];
+  types: string[];
+};
 
 const PAGE_SIZE = 24;
 
@@ -27,10 +38,19 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   const [types, setTypes] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: PAGE_SIZE,
+    total: 0,
+    totalPages: 1,
+  });
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const t = useTranslations("Games");
 
   const fetchCards = useCallback(
-    async (query: string, setCode: string, type: string) => {
+    async (query: string, setCode: string, type: string, pageNumber: number) => {
       setIsLoading(true);
       try {
         const params = new URLSearchParams();
@@ -48,30 +68,40 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
           params.set("type", type);
         }
 
+        params.set("page", String(pageNumber));
+        params.set("limit", String(PAGE_SIZE));
+
         const response = await fetch(`/api/games/${gameSlug}/cards?${params.toString()}`);
-        const data = await response.json();
+        const data = (await response.json()) as CardsApiResponse | CardWithType[];
         const nextCards = Array.isArray(data)
-          ? (data as CardWithType[]).filter((card): card is CardWithType => Boolean(card))
-          : [];
+          ? data.filter((card): card is CardWithType => Boolean(card))
+          : data.cards ?? [];
+        const nextSetCodes = Array.isArray(data) ? [] : data.setCodes ?? [];
+        const nextTypes = Array.isArray(data) ? [] : data.types ?? [];
+        const nextPagination = Array.isArray(data)
+          ? {
+              page: 1,
+              limit: PAGE_SIZE,
+              total: nextCards.length,
+              totalPages: Math.max(1, Math.ceil(nextCards.length / PAGE_SIZE)),
+            }
+          : {
+              page: data.page ?? pageNumber,
+              limit: data.limit ?? PAGE_SIZE,
+              total: data.total ?? nextCards.length,
+              totalPages: data.totalPages ?? Math.max(1, Math.ceil((data.total ?? nextCards.length) / PAGE_SIZE)),
+            };
 
         setCards(nextCards);
-        setSetCodes(
-          Array.from(new Set(nextCards.map((card) => card.setCode).filter(Boolean))).sort()
-        );
-        setTypes(
-          Array.from(
-            new Set(
-              nextCards
-                .map((card) => card.type)
-                .filter((cardType): cardType is string => Boolean(cardType))
-            )
-          ).sort()
-        );
+        setSetCodes(nextSetCodes);
+        setTypes(nextTypes);
+        setPagination(nextPagination);
       } catch (error) {
         console.error("Erreur lors de la recherche:", error);
         setCards([]);
         setSetCodes([]);
         setTypes([]);
+        setPagination({ page: 1, limit: PAGE_SIZE, total: 0, totalPages: 1 });
       } finally {
         setIsLoading(false);
       }
@@ -84,8 +114,7 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
 
     if (trimmedQuery.length === 0 || trimmedQuery.length > 2) {
       const timer = window.setTimeout(() => {
-        setCurrentPage(1);
-        void fetchCards(trimmedQuery, selectedSetCode, selectedType);
+        void fetchCards(trimmedQuery, selectedSetCode, selectedType, currentPage);
       }, trimmedQuery.length === 0 ? 0 : 300);
 
       return () => window.clearTimeout(timer);
@@ -94,26 +123,66 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
     setCards([]);
     setSetCodes([]);
     setTypes([]);
-    setCurrentPage(1);
+    setPagination({ page: 1, limit: PAGE_SIZE, total: 0, totalPages: 1 });
     return undefined;
-  }, [fetchCards, searchQuery, selectedSetCode, selectedType]);
+  }, [fetchCards, searchQuery, selectedSetCode, selectedType, currentPage]);
 
   useEffect(() => {
-    const totalPages = Math.max(1, Math.ceil(cards.length / PAGE_SIZE));
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [cards.length, currentPage]);
+    const urlQuery = searchParams.get("searchQuery") ?? "";
+    const urlPage = Number.parseInt(searchParams.get("page") ?? "1", 10) || 1;
 
-  const totalPages = Math.max(1, Math.ceil(cards.length / PAGE_SIZE));
-  const paginatedCards = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return cards.slice(start, start + PAGE_SIZE);
-  }, [cards, currentPage]);
+    if (urlQuery !== searchQuery) {
+      setSearchQuery(urlQuery);
+    }
+
+    if (urlPage !== currentPage) {
+      setCurrentPage(urlPage);
+    }
+  }, [currentPage, searchParams, searchQuery]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (searchQuery.trim()) {
+      params.set("searchQuery", searchQuery.trim());
+    } else {
+      params.delete("searchQuery");
+    }
+
+    if (currentPage > 1) {
+      params.set("page", String(currentPage));
+    } else {
+      params.delete("page");
+    }
+
+    const nextSearch = params.toString();
+    if (nextSearch !== searchParams.toString()) {
+      router.replace(`${pathname}${nextSearch ? `?${nextSearch}` : ""}`, { scroll: false });
+    }
+  }, [currentPage, pathname, router, searchParams, searchQuery]);
 
   const handleSearch = () => {
     setCurrentPage(1);
-    void fetchCards(searchQuery, selectedSetCode, selectedType);
+    void fetchCards(searchQuery, selectedSetCode, selectedType, 1);
+  };
+
+  const handlePageChange = (nextPage: number) => {
+    if (nextPage < 1 || nextPage > pagination.totalPages || isLoading) {
+      return;
+    }
+
+    setCurrentPage(nextPage);
+    void fetchCards(searchQuery, selectedSetCode, selectedType, nextPage);
+  };
+
+  const handleSetCodeChange = (value: string) => {
+    setSelectedSetCode(value);
+    setCurrentPage(1);
+  };
+
+  const handleTypeChange = (value: string) => {
+    setSelectedType(value);
+    setCurrentPage(1);
   };
 
   return (
@@ -131,7 +200,10 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
             type="text"
             placeholder={t("cards.search.placeholder")}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 handleSearch();
@@ -146,7 +218,7 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
             <label className="mb-1 block text-sm font-medium">
               {t("cards.search.filters.setCode")}
             </label>
-            <Select value={selectedSetCode} onValueChange={setSelectedSetCode}>
+            <Select value={selectedSetCode} onValueChange={handleSetCodeChange}>
               <SelectTrigger>
                 <SelectValue placeholder={t("cards.search.filters.allSets")} />
               </SelectTrigger>
@@ -165,7 +237,7 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
             <label className="mb-1 block text-sm font-medium">
               {t("cards.search.filters.type")}
             </label>
-            <Select value={selectedType} onValueChange={setSelectedType}>
+            <Select value={selectedType} onValueChange={handleTypeChange}>
               <SelectTrigger>
                 <SelectValue placeholder={t("cards.search.filters.allTypes")} />
               </SelectTrigger>
@@ -193,17 +265,13 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
       ) : null}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {paginatedCards.map((card) => (
+        {cards.map((card) => (
           <Link
             key={`${card.cardId}-${card.setCode}-${card.collectorNumber}`}
             href={`/games/${gameSlug}/cards/${card.id}`}
             className="cursor-pointer border rounded-lg p-4 hover:shadow-lg transition-shadow"
           >
-            <img
-              src={card.image}
-              alt={card.name}
-              className="w-full rounded-md mb-2"
-            />
+            <Image src={card.image} alt={card.name} width={600} height={400} unoptimized className="w-full rounded-md mb-2" />
             <h3 className="font-semibold">{card.name}</h3>
             <p className="text-sm text-muted-foreground">
               {card.setCode} #{card.collectorNumber}
@@ -223,19 +291,19 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
         </p>
       ) : null}
 
-      {cards.length > PAGE_SIZE ? (
+      {pagination.totalPages > 1 ? (
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
             {t("cards.search.pagination.results", {
-              start: (currentPage - 1) * PAGE_SIZE + 1,
-              end: Math.min(currentPage * PAGE_SIZE, cards.length),
-              total: cards.length,
+              start: pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1,
+              end: Math.min(pagination.page * pagination.limit, pagination.total),
+              total: pagination.total,
             })}
           </p>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1 || isLoading}
             >
               {t("cards.search.pagination.previous")}
@@ -243,13 +311,13 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
             <span className="text-sm text-muted-foreground">
               {t("cards.search.pagination.page", {
                 currentPage,
-                totalPages,
+                totalPages: pagination.totalPages,
               })}
             </span>
             <Button
               variant="outline"
-              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-              disabled={currentPage === totalPages || isLoading}
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === pagination.totalPages || isLoading}
             >
               {t("cards.search.pagination.next")}
             </Button>
