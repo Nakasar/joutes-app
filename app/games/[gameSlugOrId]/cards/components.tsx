@@ -50,7 +50,7 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
     total: 0,
     totalPages: 1,
   });
-  const didSyncFromUrlRef = useRef(false);
+  const hasInitializedRef = useRef(false);
   const pendingRequestKeyRef = useRef<string | null>(null);
   const activeControllerRef = useRef<AbortController | null>(null);
   const t = useTranslations("Games");
@@ -143,12 +143,62 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
     [gameSlug]
   );
 
+  const updateURL = useCallback((query: string, setCode: string, type: string, page: number) => {
+    const params = new URLSearchParams();
+
+    if (query.trim()) {
+      params.set("searchQuery", query.trim());
+    }
+
+    if (setCode && setCode !== "all") {
+      params.set("setCode", setCode);
+    }
+
+    if (type && type !== "all") {
+      params.set("type", type);
+    }
+
+    if (page > 1) {
+      params.set("page", String(page));
+    }
+
+    const nextSearch = params.toString();
+    router.replace(`${pathname}${nextSearch ? `?${nextSearch}` : ""}`, { scroll: false });
+  }, [pathname, router]);
+
+  // Initial load from URL parameters
   useEffect(() => {
+    if (hasInitializedRef.current) {
+      return;
+    }
+
+    hasInitializedRef.current = true;
+    const urlQuery = searchParams.get("searchQuery") ?? "";
+    const urlPage = Number.parseInt(searchParams.get("page") ?? "1", 10) || 1;
+    const urlSetCode = searchParams.get("setCode") ?? "all";
+    const urlType = searchParams.get("type") ?? "all";
+
+    setSearchQuery(urlQuery);
+    setCurrentPage(urlPage);
+    setSelectedSetCode(urlSetCode);
+    setSelectedType(urlType);
+
+    void fetchCards(urlQuery, urlSetCode, urlType, urlPage);
+  }, [fetchCards, searchParams]);
+
+  // Debounced search when typing
+  useEffect(() => {
+    if (!hasInitializedRef.current) {
+      return;
+    }
+
     const trimmedQuery = searchQuery.trim();
 
     if (trimmedQuery.length === 0 || trimmedQuery.length > 2) {
       const timer = window.setTimeout(() => {
-        void fetchCards(trimmedQuery, selectedSetCode, selectedType, currentPage);
+        void fetchCards(trimmedQuery, selectedSetCode, selectedType, 1);
+        setCurrentPage(1);
+        updateURL(trimmedQuery, selectedSetCode, selectedType, 1);
       }, trimmedQuery.length === 0 ? 0 : 300);
 
       return () => window.clearTimeout(timer);
@@ -159,75 +209,13 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
     setTypes([]);
     setPagination({ page: 1, limit: PAGE_SIZE, total: 0, totalPages: 1 });
     return undefined;
-  }, [fetchCards, searchQuery, selectedSetCode, selectedType, currentPage]);
-
-  useEffect(() => {
-    const urlQuery = searchParams.get("searchQuery") ?? "";
-    const urlPage = Number.parseInt(searchParams.get("page") ?? "1", 10) || 1;
-    const urlSetCode = searchParams.get("setCode") ?? "all";
-    const urlType = searchParams.get("type") ?? "all";
-
-    if (didSyncFromUrlRef.current) {
-      didSyncFromUrlRef.current = false;
-      return;
-    }
-
-    if (urlQuery !== searchQuery) {
-      setSearchQuery(urlQuery);
-    }
-
-    if (urlPage !== currentPage) {
-      setCurrentPage(urlPage);
-    }
-
-    if (urlSetCode !== selectedSetCode) {
-      setSelectedSetCode(urlSetCode);
-    }
-
-    if (urlType !== selectedType) {
-      setSelectedType(urlType);
-    }
-  }, [currentPage, searchParams, searchQuery, selectedSetCode, selectedType]);
-
-  useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
-
-    if (searchQuery.trim()) {
-      params.set("searchQuery", searchQuery.trim());
-    } else {
-      params.delete("searchQuery");
-    }
-
-    if (selectedSetCode && selectedSetCode !== "all") {
-      params.set("setCode", selectedSetCode);
-    } else {
-      params.delete("setCode");
-    }
-
-    if (selectedType && selectedType !== "all") {
-      params.set("type", selectedType);
-    } else {
-      params.delete("type");
-    }
-
-    if (currentPage > 1) {
-      params.set("page", String(currentPage));
-    } else {
-      params.delete("page");
-    }
-
-    const nextSearch = params.toString();
-    if (nextSearch === searchParams.toString()) {
-      return;
-    }
-
-    didSyncFromUrlRef.current = true;
-    router.replace(`${pathname}${nextSearch ? `?${nextSearch}` : ""}`, { scroll: false });
-  }, [currentPage, pathname, router, searchParams, searchQuery, selectedSetCode, selectedType]);
+  }, [searchQuery, selectedSetCode, selectedType, fetchCards, updateURL]);
 
   const handleSearch = () => {
-    setCurrentPage(1);
-    void fetchCards(searchQuery, selectedSetCode, selectedType, 1);
+    const newPage = 1;
+    setCurrentPage(newPage);
+    void fetchCards(searchQuery, selectedSetCode, selectedType, newPage);
+    updateURL(searchQuery, selectedSetCode, selectedType, newPage);
   };
 
   const handlePageChange = (nextPage: number) => {
@@ -237,16 +225,23 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
 
     setCurrentPage(nextPage);
     void fetchCards(searchQuery, selectedSetCode, selectedType, nextPage);
+    updateURL(searchQuery, selectedSetCode, selectedType, nextPage);
   };
 
   const handleSetCodeChange = (value: string) => {
+    const newPage = 1;
     setSelectedSetCode(value);
-    setCurrentPage(1);
+    setCurrentPage(newPage);
+    void fetchCards(searchQuery, value, selectedType, newPage);
+    updateURL(searchQuery, value, selectedType, newPage);
   };
 
   const handleTypeChange = (value: string) => {
+    const newPage = 1;
     setSelectedType(value);
-    setCurrentPage(1);
+    setCurrentPage(newPage);
+    void fetchCards(searchQuery, selectedSetCode, value, newPage);
+    updateURL(searchQuery, selectedSetCode, value, newPage);
   };
 
   return (
@@ -266,7 +261,6 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
-              setCurrentPage(1);
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
