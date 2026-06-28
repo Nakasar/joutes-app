@@ -1,0 +1,3542 @@
+[
+  {
+    "id": "000",
+    "content": "Règle d'or"
+  },
+  {
+    "id": "1",
+    "content": "Les règles du tournoi existent afin de garantir à toute personne participant à un événement de partie organisée Riftbound une expérience agréable, équitable, juste, sûre et cohérente. Elles visent à permettre aux concurrents et aux arbitres de collaborer afin d'avoir des attentes et des compréhensions mutuelles."
+  },
+  {
+    "id": "100",
+    "content": "Introduction"
+  },
+  {
+    "id": "101",
+    "content": "Objet: ce document définit le cadre et la structure des compétitions Riftbound en définissant les règles, les obligations et les procédures à suivre lors de toutes les compétitions Riftbound."
+  },
+  {
+    "id": "102",
+    "content": "Cohérence: il est impératif que toutes les compétitions Riftbound soient organisées de la même manière, quel que soit l'organisateur ou le lieu, afin de garantir un traitement équitable des joueurs et d'assurer le caractère interchangeable des événements, quel que soit la région ou le niveau."
+  },
+  {
+    "id": "103",
+    "content": "Responsabilité :"
+  },
+  {
+    "id": "103.1",
+    "content": "Participants: tous les participants ET tous les responsables sont tenus de respecter les règles telles qu'elles sont écrites et en faisant preuve de bonne foi. Cela inclut le respect de toutes les personnes présentes lors des compétitions."
+  },
+  {
+    "id": "103.2",
+    "content": "Spectateurs: les spectateurs ont également un certain nombre d'obligations et de devoirs. Pour plus d'informations à propos des responsabilités et devoirs des spectateurs, reportez-vous à la section 204.8."
+  },
+  {
+    "id": "103.3",
+    "content": "Sanctions: les personnes qui enfreignent le cadre et la structure énoncés dans le présent document s'exposent à des sanctions prévues au niveau de parties organisées (NPO) approprié. Pour plus d'informations à propos des niveaux de partie organisée, reportez-vous à la section 205."
+  },
+  {
+    "id": "104",
+    "content": "Priorité :"
+  },
+  {
+    "id": "104.1",
+    "content": "vs Règles de base: il est possible que certaines informations contenues dans ce document contredisent les Règles de base de Riftbound ou contiennent des informations qui n'y figurent pas. Dans l'ensemble de ces cas, c'est le présent document qui prévaut lors des compétitions."
+  },
+  {
+    "id": "104.2",
+    "content": "vs Traductions officielles dans les langues régionales: la version anglaise de ce document prévaut sur toutes les traductions."
+  },
+  {
+    "id": "104.3",
+    "content": "vs avenants relatifs à des événements spécifiques: il est possible que certaines informations contenues dans ce document contredisent des directives ou procédures annexes ou supplémentaires figurant dans des avenants officiels relatifs à des compétitions spécifiques. Dans l'ensemble de ces cas, ce sont les avenants qui prévalent lors de ces événements."
+  },
+  {
+    "id": "105",
+    "content": "Modification: Riot Games ou ses partenaires officiels Riftbound se réservent le droit de modifier le présent document ou tout avenant spécifique à une compétition à tout moment et sans préavis."
+  },
+  {
+    "id": "200",
+    "content": "Définitions"
+  },
+  {
+    "id": "201",
+    "content": "Types de compétition: il existe trois types de compétition Riftbound."
+  },
+  {
+    "id": "201.1",
+    "content": "Premier: une compétition organisée par Riot Games ou un organisateur officiel, qui possède un nom et des caractéristiques uniques."
+  },
+  {
+    "id": "201.2",
+    "content": "Qualificative: toute compétition dont les récompenses consistent en un accès ou des avantages aux compétitions majeures. (Les compétitions majeures peuvent également être des compétitions qualificatives.)"
+  },
+  {
+    "id": "201.3",
+    "content": "Locale: toute compétition qui n'est ni une compétition majeure ni une compétition qualificative."
+  },
+  {
+    "id": "202",
+    "content": "Format de la compétition: les compétitions Riftbound peuvent être organisées selon deux formats différents."
+  },
+  {
+    "id": "202.1",
+    "content": "Format limité: une compétition au format limité est une compétition où tous les éléments nécessaires au jeu sont fournis pendant la compétition."
+  },
+  {
+    "id": "202.2",
+    "content": "Format construit: une compétition au format construit est une compétition où les joueurs s'affrontent à l'aide de decks qu'ils ont préparés à l'avance."
+  },
+  {
+    "id": "202.3",
+    "content": "Format suisse: une compétition ou le moment lors d'une compétition où les joueurs sont opposés en fonction de leur classement actuel dans la compétition."
+  },
+  {
+    "id": "202.4",
+    "content": "Play-offs: une compétition ou le moment lors d'une compétition où les joueurs sont d'abord opposés en fonction de leur classement, puis éliminés en cas de défaite."
+  },
+  {
+    "id": "202.5",
+    "content": "Règles: chaque format possède ses propres règles."
+  },
+  {
+    "id": "202.6",
+    "content": "Format multiple: certaines compétitions peuvent se dérouler selon plusieurs formats au sein d'une même compétition."
+  },
+  {
+    "id": "203",
+    "content": "Unités de jeu :"
+  },
+  {
+    "id": "203.1",
+    "content": "Partie: le terme << partie >> est défini dans les Règles de base de Riftbound."
+  },
+  {
+    "id": "203.2",
+    "content": "Match: le terme << match >> est défini dans les Règles de base de Riftbound."
+  },
+  {
+    "id": "204",
+    "content": "Rôles lors de la compétition: toutes les personnes présentes à une compétition ont au moins l'un des rôles suivants."
+  },
+  {
+    "id": "204.1",
+    "content": "Rôles à responsabilités : les rôles 3-6 sont considérés comme des responsables de compétition dans le cadre du présent document."
+  },
+  {
+    "id": "204.1.a",
+    "content": "Fonction multiple: toute personne peut exercer plusieurs rôles à responsabilités."
+  },
+  {
+    "id": "204.2",
+    "content": "Rôles d'arbitre: les rôles 4-5 sont considérés comme des arbitres dans le cadre du présent document."
+  },
+  {
+    "id": "204.2.a",
+    "content": "Les arbitres jouent à la fois le rôle d'arbitres et celui de garants d'un environnement sûr et accueillant pour tous les joueurs."
+  },
+  {
+    "id": "204.3",
+    "content": "Organisateur officiel (OF): l'organisateur officiel est responsable de toute la logistique des compétitions, notamment :"
+  },
+  {
+    "id": "204.3.a",
+    "content": "Approuver l'événement en le faisant enregistrer auprès de Riot Games ou de ses partenaires officiels."
+  },
+  {
+    "id": "204.3.b",
+    "content": "Fournir un lieu pour l'événement qui réponde aux besoins de la compétition, comprenant notamment un espace suffisant et des équipements adaptés au nombre de participants attendus."
+  },
+  {
+    "id": "204.3.c",
+    "content": "Promouvoir l'événement avant sa tenue."
+  },
+  {
+    "id": "204.3.d",
+    "content": "Recruter le personnel nécessaire pour l'événement, notamment les responsables de la compétition et le personnel d'assistance."
+  },
+  {
+    "id": "204.3.e",
+    "content": "Fournir tout le matériel nécessaire au bon déroulement de l'événement."
+  },
+  {
+    "id": "204.3.f",
+    "content": "Communiquer les résultats de l'événement."
+  },
+  {
+    "id": "204.3.g",
+    "content": "Conserver les résultats de la compétition (pour chaque partie et chaque match) pendant au moins trois mois afin de statuer sur les appels éventuels. Pour plus d'informations à propos des appels, reportez-vous à la section 413."
+  },
+  {
+    "id": "204.4",
+    "content": "Arbitre principal: toutes les compétitions officielles doivent être supervisées par un arbitre principal. L'arbitre principal est l'autorité décisionnaire finale en matière de règles et règlements de la compétition. Ses responsabilités comprennent :"
+  },
+  {
+    "id": "204.4.a",
+    "content": "Veiller au respect des règles, procédures et réglementations."
+  },
+  {
+    "id": "204.4.b",
+    "content": "Veiller à ce que toutes les infractions aux règles du jeu ou au règlement soient signalées et que les mesures correctives appropriées soient prises."
+  },
+  {
+    "id": "204.4.c",
+    "content": "Répondre aux arbitres de salle lorsqu'ils attirent son attention sur un problème."
+  },
+  {
+    "id": "204.4.d",
+    "content": "Coordonner et répartir les responsabilités entre les arbitres de salle selon les besoins."
+  },
+  {
+    "id": "204.4.e",
+    "content": "Déterminer les mesures correctives à prendre en cas d'erreurs ou d'infractions commises par le marqueur ou les arbitres de salle."
+  },
+  {
+    "id": "204.4.f",
+    "content": "L'arbitre principal est seul juge en cas de situation où les règles écrites ne sont pas claires ou insuffisantes."
+  },
+  {
+    "id": "204.5",
+    "content": "Arbitre de salle: les arbitres de salle sont chargés de répondre aux joueurs et aux spectateurs qui ont des questions sur les règles et les règlements, et/ou qui ont besoin d'un arbitrage à ce sujet. Leurs responsabilités comprennent:"
+  },
+  {
+    "id": "204.5.a",
+    "content": "Répondre aux questions concernant les règles, les interactions entre les cartes, donner le libellé des cartes de Watcher ou l'état du jeu aux spectateurs."
+  },
+  {
+    "id": "204.5.a.1",
+    "content": "À NPO élevé, les arbitres ne peuvent pas répondre aux questions directes concernant les résultats des actions de jeu qu'un joueur n'a pas encore effectuées. Dans ces situations, les joueurs doivent poser des questions hypothétiques sur les règles."
+  },
+  {
+    "id": "204.5.a.1.a",
+    "content": "Question inappropriée : << Si j'attaque et conquiers ce champ de bataille avec mon Tryndamere, Barbare, est-ce que je marquerai le point de victoire ? >>"
+  },
+  {
+    "id": "204.5.a.1.b",
+    "content": "Question appropriée: << Les compétences permettant de marquer des points comme celle de Tryndamere peuvent-elles permettre de marquer le point de victoire ? >>"
+  },
+  {
+    "id": "204.5.a.1.c",
+    "content": "Les arbitres peuvent demander aux joueurs de reformuler leurs questions afin qu'elles soient appropriées lorsque cela est possible."
+  },
+  {
+    "id": "204.5.b",
+    "content": "Prendre des mesures disciplinaires à l'encontre des joueurs qui enfreignent les règles du jeu ou le règlement."
+  },
+  {
+    "id": "204.5.c",
+    "content": "Aider à la traduction, si possible."
+  },
+  {
+    "id": "204.5.d",
+    "content": "Aider les joueurs en leur apportant une précision technique (lorsque le NPO est bas). (Ils ne doivent pas donner de conseils stratégiques.)"
+  },
+  {
+    "id": "204.6",
+    "content": "Marqueur: toutes les compétitions officielles sont tenues d'avoir un marqueur. Les marqueurs sont responsables de la bonne logistique des compétitions en ce qui concerne les matchs et les résultats, notamment:"
+  },
+  {
+    "id": "204.6.a",
+    "content": "Générer à chaque manche de la compétition les données nécessaires à son bon déroulement (par exemple, la répartition des joueurs dans les matchs)."
+  },
+  {
+    "id": "204.6.b",
+    "content": "Générer les classements de la compétition avant la dernière manche (dans les compétitions au format suisse)."
+  },
+  {
+    "id": "204.6.c",
+    "content": "Générer les classements de la compétition après la dernière manche (dans les compétitions au format suisse)."
+  },
+  {
+    "id": "204.6.d",
+    "content": "Résoudre les problèmes liés au décompte des points avec l'aide de l'arbitre principal."
+  },
+  {
+    "id": "204.6.e",
+    "content": "Dresser un bilan de la compétition après la fin de celle-ci, en incluant toutes les données nécessaires."
+  },
+  {
+    "id": "204.7",
+    "content": "Joueur"
+  },
+  {
+    "id": "204.7.a",
+    "content": "Toute personne participant à la compétition qui n'est pas un membre de l'organisation est considérée comme un joueur."
+  },
+  {
+    "id": "204.7.b",
+    "content": "Les joueurs ont des obligations, voici lesquelles :"
+  },
+  {
+    "id": "204.7.b.1",
+    "content": "Se comporter de manière respectueuse envers toutes les personnes présentes lors de la compétition, y compris les responsables et les spectateurs."
+  },
+  {
+    "id": "204.7.b.2",
+    "content": "Maintenir un état de jeu clair."
+  },
+  {
+    "id": "204.7.b.3",
+    "content": "Respecter tous les règlements et procédures de la compétition, y compris les annonces et le respect des délais."
+  },
+  {
+    "id": "204.7.b.4",
+    "content": "Signaler à un arbitre toute infraction aux règles ou au règlement observée lors des matchs auxquels le joueur participe."
+  },
+  {
+    "id": "204.7.b.5",
+    "content": "Signaler à un arbitre toute erreur dans les résultats de la compétition inscrits par le marqueur."
+  },
+  {
+    "id": "204.7.b.6",
+    "content": "Communiquer les résultats de leurs matchs à un responsable dans les délais impartis."
+  },
+  {
+    "id": "204.7.b.7",
+    "content": "Respecter les critères d'éligibilité."
+  },
+  {
+    "id": "204.7.b.8",
+    "content": "Prendre connaissance du présent document et de ses avenants."
+  },
+  {
+    "id": "204.7.b.9",
+    "content": "Être physiquement présent pendant toute la durée de la compétition."
+  },
+  {
+    "id": "204.7.c",
+    "content": "Même si le personnel officiel apporte son aide, le joueur reste responsable des points susmentionnés."
+  },
+  {
+    "id": "204.7.d",
+    "content": "Chaque membre d'une équipe de la compétition est individuellement responsable des points susmentionnés."
+  },
+  {
+    "id": "204.7.d.1",
+    "content": "Les membres d'une même équipe sont tenus de signaler à l'arbitre toute infraction aux règles ou au règlement qu'ils constatent lors des matchs de leurs coéquipiers."
+  },
+  {
+    "id": "204.7.e",
+    "content": "Le non-respect des obligations susmentionnées peut entraîner des sanctions, la suspension ou la radiation du joueur concerné."
+  },
+  {
+    "id": "204.8",
+    "content": "Spectateur"
+  },
+  {
+    "id": "204.8.a",
+    "content": "Toute personne présente à une compétition, mais n'occupant pas l'une des fonctions susmentionnées est considérée comme un spectateur."
+  },
+  {
+    "id": "204.8.b",
+    "content": "Un joueur qui participe à la compétition, mais qui ne joue pas au moment présent, est également considéré comme un spectateur."
+  },
+  {
+    "id": "204.8.c",
+    "content": "Les spectateurs ont des obligations, voici lesquelles :"
+  },
+  {
+    "id": "204.8.c.1",
+    "content": "Rester silencieux pendant les matchs et dans tout autre endroit du site où le silence est requis."
+  },
+  {
+    "id": "204.8.c.2",
+    "content": "Aux NPO amicaux et compétitifs, les spectateurs peuvent demander aux joueurs de mettre la partie en pause pendant qu'ils préviennent un arbitre d'un problème potentiel."
+  },
+  {
+    "id": "204.8.c.3",
+    "content": "Au NPO professionnel, les spectateurs ne peuvent pas demander aux joueurs de mettre la partie en pause, mais ils peuvent toujours signaler un problème potentiel à un arbitre."
+  },
+  {
+    "id": "204.8.d",
+    "content": "Les spectateurs ont interdiction de :"
+  },
+  {
+    "id": "204.8.d.1",
+    "content": "Signaler eux-mêmes aux joueurs les infractions aux règles ou au règlement."
+  },
+  {
+    "id": "204.8.d.2",
+    "content": "Apporter des conseils stratégiques aux joueurs."
+  },
+  {
+    "id": "204.8.d.3",
+    "content": "Lors des compétitions au NPO professionnel, les spectateurs ne peuvent pas demander aux joueurs d'interrompre leur partie pendant qu'ils signalent un problème à un arbitre."
+  },
+  {
+    "id": "204.8.e",
+    "content": "Les joueurs peuvent demander à un arbitre d'interdire à un spectateur d'assister à leur match, cette décision reste toutefois à la discrétion de l'arbitre."
+  },
+  {
+    "id": "204.8.e.1",
+    "content": "Les joueurs n'ont pas le droit de faire cette demande pour une raison stratégique."
+  },
+  {
+    "id": "204.8.e.2",
+    "content": "Lors des compétitions non locales, il est possible que des règles supplémentaires régissent le comportement et la présence des spectateurs."
+  },
+  {
+    "id": "204.8.f",
+    "content": "Les responsables de la compétition peuvent demander à un spectateur de ne pas assister à un match."
+  },
+  {
+    "id": "205",
+    "content": "Niveau de partie organisée (NPO): le terme NPO est un raccourci qui aide à communiquer les attentes de la partie aux joueurs et aux arbitres."
+  },
+  {
+    "id": "205.1",
+    "content": "L'objectif du NPO est de définir dans quelle mesure les manquements aux règles, au règlement et aux procédures doivent être considérés comme des infractions et quelles sanctions doivent être appliquées."
+  },
+  {
+    "id": "205.2",
+    "content": "Amical (bas): la plupart des compétitions sont amicales et privilégient le divertissement et les interactions sociales, et non pas l'application stricte des règles."
+  },
+  {
+    "id": "205.2.a",
+    "content": "Il est attendu des joueurs qu'ils connaissent la majorité des règles du jeu telles qu'elles sont écrites dans les Règles de base."
+  },
+  {
+    "id": "205.2.b",
+    "content": "Les joueurs sont tenus de respecter les règles énoncées dans les Règles de base et dans le présent document, mais:"
+  },
+  {
+    "id": "205.2.b.1",
+    "content": "Les arbitres et les responsables de la compétition mettent l'accent sur la pédagogie et le fair-play."
+  },
+  {
+    "id": "205.2.b.2",
+    "content": "La précision technique n'est pas une priorité."
+  },
+  {
+    "id": "205.2.c",
+    "content": "De manière générale, les infractions à ce niveau sont passibles de sanctions moins sévères, telles que décrites dans la section 700 ci-dessous."
+  },
+  {
+    "id": "205.3",
+    "content": "Compétitif (haut): ces compétitions donnent droit à des récompenses importantes, qui peuvent inclure des invitations ou des avantages pour des compétitions professionnelles."
+  },
+  {
+    "id": "205.3.a",
+    "content": "Il est attendu des joueurs qu'ils connaissent les règles du jeu telles qu'elles sont écrites dans les Règles de base et dans le présent document."
+  },
+  {
+    "id": "205.3.b",
+    "content": "Tous les participants sont tenus de respecter l'intégrité de la compétition, tout en tenant compte du fait que certains joueurs ne sont peut-être pas habitués à jouer à un niveau aussi élevé et aussi précis sur le plan technique."
+  },
+  {
+    "id": "205.3.c",
+    "content": "De manière générale, les infractions à ce niveau sont passibles de sanctions plus sévères, telles que décrites dans la section 700 ci-dessous."
+  },
+  {
+    "id": "205.4",
+    "content": "Professionnel (haut): ces compétitions sont prestigieuses et donnent droit à des récompenses importantes."
+  },
+  {
+    "id": "205.4.a",
+    "content": "Il est attendu des joueurs qu'ils connaissent parfaitement les règles du jeu telles qu'elles sont écrites dans les Règles de base et dans le présent document."
+  },
+  {
+    "id": "205.4.b",
+    "content": "Tous les participants sont tenus de respecter l'intégrité de la compétition, et d'avoir le plus grand respect des règles de conduite et une technique irréprochable."
+  },
+  {
+    "id": "205.4.c",
+    "content": "De manière générale, les infractions à ce niveau sont passibles des sanctions les plus sévères, telles que décrites dans la section 700 ci-dessous."
+  },
+  {
+    "id": "206",
+    "content": "Cycle de manche: un cycle de manche est une boucle où tous les joueurs ont joué leur tour une fois."
+  },
+  {
+    "id": "206.1",
+    "content": "Les tours supplémentaires n'ont aucune incidence sur le cycle de manche."
+  },
+  {
+    "id": "300",
+    "content": "Éligibilité"
+  },
+  {
+    "id": "301",
+    "content": "Toute personne peut participer en tant que joueur aux compétitions Riftbound, sauf si le joueur est :"
+  },
+  {
+    "id": "301.1",
+    "content": "Suspendu."
+  },
+  {
+    "id": "301.2",
+    "content": "Un responsable de cette même compétition, sauf si la compétition l'autorise explicitement (compétitions non majeures uniquement)."
+  },
+  {
+    "id": "301.3",
+    "content": "Explicitement visé par une interdiction de Riot ou d'un partenaire officiel."
+  },
+  {
+    "id": "301.4",
+    "content": "Âgé de moins de 13 ans et ne disposant pas de l'autorisation d'un parent ou d'un tuteur."
+  },
+  {
+    "id": "301.5",
+    "content": "Soumis à une interdiction par la loi, les règles ou le règlement de l'organisateur, ou par les règles ou le règlement du lieu."
+  },
+  {
+    "id": "301.6",
+    "content": "Soumis à des restrictions liées à des avenants concernant l'âge, à condition que ces restrictions aient été communiquées à l'avance (lorsque le NPO est bas)."
+  },
+  {
+    "id": "302",
+    "content": "Toute personne peut être responsable de compétition, sauf si cet individu est:"
+  },
+  {
+    "id": "302.1",
+    "content": "Suspendu."
+  },
+  {
+    "id": "302.2",
+    "content": "Un joueur de cette même compétition, sauf si la compétition l'autorise explicitement (compétitions non majeures uniquement)."
+  },
+  {
+    "id": "303",
+    "content": "Si un responsable officiel d'une compétition participe à une compétition, celle-ci doit avoir un NPO amical."
+  },
+  {
+    "id": "304",
+    "content": "Les propriétaires des organisations qui organisent des compétitions majeures ne peuvent pas participer à ces compétitions, même si cela leur est autrement autorisé."
+  },
+  {
+    "id": "305",
+    "content": "Certaines compétitions imposent des critères d'éligibilité supplémentaires aux joueurs ou aux responsables de la compétition (c'est le cas des compétitions sur invitation uniquement)."
+  },
+  {
+    "id": "306",
+    "content": "Les employés de Riot et leurs familles sont soumis à des conditions supplémentaires."
+  },
+  {
+    "id": "306.1",
+    "content": "La famille désigne ici toute personne vivant avec un employé concerné ou ayant un lien de parenté avec lui, mais qui n'est pas elle-même employée."
+  },
+  {
+    "id": "306.2",
+    "content": "Tous les employés et leur famille sont autorisés à participer aux compétitions locales."
+  },
+  {
+    "id": "306.2.a",
+    "content": "Si la récompense est matérielle ou pécuniaire, les employés ou les membres de leur famille peuvent revendiquer ce type de récompense."
+  },
+  {
+    "id": "306.3",
+    "content": "Les employés doivent déclarer leur présence en tant que joueurs à l'organisateur officiel de la compétition."
+  },
+  {
+    "id": "306.4",
+    "content": "L'organisateur officiel a le droit d'interdire à un employé Riot de participer à la compétition pour quelque raison que ce soit. Le cas échéant, l'employé doit respecter cette décision."
+  },
+  {
+    "id": "306.5",
+    "content": "Aucun employé de chez Riot n'est autorisé à participer à des compétitions majeures ou à des compétitions qualificatives."
+  },
+  {
+    "id": "306.6",
+    "content": "Les familles des employés sont autorisées à participer aux compétitions majeures ou aux compétitions qualificatives, à condition qu'elles remplissent les autres conditions d'éligibilité."
+  },
+  {
+    "id": "400",
+    "content": "Directives"
+  },
+  {
+    "id": "401",
+    "content": "Enregistrement des decks"
+  },
+  {
+    "id": "401.1",
+    "content": "Les joueurs sont tenus d'enregistrer leurs decks et leurs cartes de réserve (si applicable au format) lors des compétitions à haut NPO."
+  },
+  {
+    "id": "401.1.a",
+    "content": "L'arbitre principal peut demander aux joueurs d'enregistrer leurs decks lors de compétition à NPO bas."
+  },
+  {
+    "id": "401.2",
+    "content": "Une feuille d'enregistrement de deck doit tenir un registre complet et précis de la légende, des champs de bataille, des cartes du deck principal, dont la carte de champion élu, du deck de runes et de la réserve (si applicable au format de la compétition)."
+  },
+  {
+    "id": "401.3",
+    "content": "Une fois qu'une feuille d'enregistrement de deck a été enregistrée et remise à un responsable officiel de la compétition, elle ne peut plus être modifiée."
+  },
+  {
+    "id": "401.4",
+    "content": "Lors d'une compétition au format construit, le deck d'un joueur doit être enregistré avant le début de la première manche de la compétition."
+  },
+  {
+    "id": "401.5",
+    "content": "La liste de deck des autres joueurs est généralement considérée comme étant une information privée. L'arbitre principal d'un événement peut gérer cet événement ou les manches finales de celui-ci en appliquant une politique de liste de deck ouverte. Dans ce cas, toutes les listes de decks des joueurs seront considérées comme étant des informations publiques."
+  },
+  {
+    "id": "401.5.a",
+    "content": "Dans une compétition à liste de deck ouverte, à chaque manche, les joueurs reçoivent la liste de deck de leur adversaire à consulter au début du match et entre les parties du match. Les joueurs ne peuvent pas consulter les listes de decks pendant la partie."
+  },
+  {
+    "id": "401.5.b",
+    "content": "En règle générale, les compétitions de NPO professionnel doivent se dérouler avec des listes de decks ouvertes, mais la décision finale revient à l'arbitre principal, quel que soit le niveau de l'événement."
+  },
+  {
+    "id": "402",
+    "content": "Taille du deck"
+  },
+  {
+    "id": "402.1",
+    "content": "Lors d'une compétition au format construit, les joueurs doivent faire enregistrer un deck principal de précisément 40 cartes (dont la carte de champion élu), 1 légende, 12 runes et exactement 3 champs de bataille avec un nom différent."
+  },
+  {
+    "id": "402.2",
+    "content": "Pour les compétitions ne suivant pas un format construit, la construction des deck est précisée dans les Règles de base."
+  },
+  {
+    "id": "403",
+    "content": "Réserve"
+  },
+  {
+    "id": "403.1",
+    "content": "Dans certaines compétitions, les joueurs peuvent disposer de cartes supplémentaires (qui ne font pas partie de leur deck de départ) appelées la réserve. Consultez le point 600 pour plus d'informations sur les réserves en fonction des formats de compétition."
+  },
+  {
+    "id": "403.2",
+    "content": "La taille et le contenu de la réserve sont déterminés par le format de la compétition."
+  },
+  {
+    "id": "403.3",
+    "content": "Le nombre limite d'exemplaires d'une carte nominative, défini par le format de la compétition, s'applique aux cartes du deck principal et de la réserve combinées."
+  },
+  {
+    "id": "403.4",
+    "content": "Les joueurs peuvent utiliser des cartes de leur réserve pour modifier leur deck entre les parties d'un match. Les cartes de la réserve doivent être échangées une par une avec les cartes du deck principal."
+  },
+  {
+    "id": "403.4.a",
+    "content": "À ce moment-là, un joueur peut changer son champion élu pour l'une de ses cartes de réserve ou l'une des cartes de son deck principal qui correspond aux règles de construction de deck du format de la compétition."
+  },
+  {
+    "id": "403.4.b",
+    "content": "Dans les formats construits, les joueurs n'ont plus le droit de changer de runes, de légende ou de champs de bataille après l'enregistrement de leur deck."
+  },
+  {
+    "id": "403.4.c",
+    "content": "Après avoir interagi avec la réserve, le deck principal d'un joueur doit respecter les exigences de taille de deck dictées par le format de la compétition."
+  },
+  {
+    "id": "403.5",
+    "content": "Les joueurs n'ont pas le droit d'utiliser les cartes de leur réserve lors de la première partie d'un match."
+  },
+  {
+    "id": "403.6",
+    "content": "Les joueurs ont le droit de recompter les cartes de réserve de leurs adversaires à tout moment."
+  },
+  {
+    "id": "403.7",
+    "content": "Un joueur peut consulter sa propre réserve à tout moment, mais il doit la garder distincte de ses autres cartes."
+  },
+  {
+    "id": "403.8",
+    "content": "Le deck principal et la réserve d'un joueur doivent être remis dans l'état dans lequel ils ont été enregistrés avant la première partie du match suivant."
+  },
+  {
+    "id": "403.9",
+    "content": "Si un match ignore complètement la première partie en raison d'une pénalité, aucun joueur ne peut modifier sa réserve pour la partie suivante."
+  },
+  {
+    "id": "403.10",
+    "content": "Si une partie se termine sur une égalité, aucun joueur ne peut utiliser sa réserve pour la partie suivante."
+  },
+  {
+    "id": "403.11",
+    "content": "Si une partie est recommencée à cause d'un élément du jeu ou d'une décision des arbitres, le deck et la réserve de chaque joueur ne peuvent pas être modifiés et doivent rester identiques."
+  },
+  {
+    "id": "404",
+    "content": "Match"
+  },
+  {
+    "id": "404.1",
+    "content": "Un match de Riftbound consiste en une série de parties jouées jusqu'à ce qu'un des deux joueurs remporte un nombre prédéterminé de parties."
+  },
+  {
+    "id": "404.2",
+    "content": "La majorité des matchs Riftbound sont des « séries en 2 manches gagnantes », ce qui signifie que le nombre prédéterminé de parties à gagner est de 2."
+  },
+  {
+    "id": "404.3",
+    "content": "Les parties qui se terminent par une égalité ne comptent pas."
+  },
+  {
+    "id": "404.4",
+    "content": "Si la manche se termine (en raison de limites de temps) avant que l'un des joueurs ne parvienne à atteindre l'objectif, le vainqueur du match est celui qui a remporté le plus de parties."
+  },
+  {
+    "id": "404.5",
+    "content": "Si les adversaires ont gagné le même nombre de parties, le match est déclaré match nul."
+  },
+  {
+    "id": "405",
+    "content": "Procédure de début de match"
+  },
+  {
+    "id": "405.1",
+    "content": "Avant le début de chaque manche, les joueurs doivent se renseigner sur le match qui les attend, leur adversaire et leur place dans la salle."
+  },
+  {
+    "id": "405.2",
+    "content": "Les joueurs doivent s'installer à leur place avant le début de la manche."
+  },
+  {
+    "id": "406",
+    "content": "Procédure de début de partie"
+  },
+  {
+    "id": "406.1",
+    "content": "Le déroulement de la procédure de début de partie de Riftbound est défini dans les Règles de base. Voir la section 110 des Règles de base << Mise en place ». Par ailleurs:"
+  },
+  {
+    "id": "406.1.a",
+    "content": "Lors des compétitions dans lesquelles les réserves sont acceptées, les joueurs peuvent échanger des cartes de leur deck principal et de leur réserve après chaque partie d'un match. Pour plus d'informations à propos de la réserve, reportez-vous à la section 403."
+  },
+  {
+    "id": "406.1.b",
+    "content": "Si une partie se termine sur une égalité, les joueurs doivent utiliser les mêmes champs de bataille pour la partie suivante."
+  },
+  {
+    "id": "406.1.c",
+    "content": "Chaque joueur doit mélanger son deck principal et son deck de runes. Pour plus d'informations à propos du mélange de cartes, reportez-vous à la section 420."
+  },
+  {
+    "id": "406.1.d",
+    "content": "Chaque joueur doit présenter son deck principal, son deck de runes et sa réserve (si applicable au format de la compétition) à ses adversaires."
+  },
+  {
+    "id": "406.1.e",
+    "content": "Chaque joueur a le droit de mélanger le deck principal et le deck de runes de tous ses adversaires."
+  },
+  {
+    "id": "406.1.e.1",
+    "content": "Lors des compétitions en équipe, chaque joueur a le droit de mélanger le deck principal et le deck de runes d'un des joueurs de l'équipe adverse."
+  },
+  {
+    "id": "406.1.e.2",
+    "content": "Lors des compétitions qui ont un NPO professionnel, l'action décrite ci-dessus est obligatoire."
+  },
+  {
+    "id": "406.1.e.3",
+    "content": "Un joueur peut demander à un arbitre de mélanger le deck de son adversaire à sa place, ce que l'arbitre peut accepter ou refuser, à sa seule discrétion."
+  },
+  {
+    "id": "406.1.f",
+    "content": "Pour la première partie d'un match, la procédure de début de partie peut être effectuée dès que les deux joueurs rejoignent leur place, avant même le début du chronomètre de la manche. Le début de la partie ne peut commencer qu'une fois que le chronomètre de la manche a été activé."
+  },
+  {
+    "id": "406.1.g",
+    "content": "Pour les compétitions organisées selon un format en une manche gagnante au lieu d'un format en deux manches gagnantes, l'arbitre principal peut choisir d'utiliser le processus de préparation initiale modifié mentionné ci-dessous afin de mieux refléter l'expérience de partie en deux manches gagnantes:"
+  },
+  {
+    "id": "406.1.g.1",
+    "content": "Chaque joueur sépare sa légende et la place dans la zone de légende."
+  },
+  {
+    "id": "406.1.g.2",
+    "content": "Chaque joueur sélectionne au hasard l'un de ses trois champs de bataille, puis le place dans la zone de champs de bataille."
+  },
+  {
+    "id": "406.1.g.3",
+    "content": "Les joueurs utilisent les règles relatives à l'ordre de jeu indiquées ci-dessous pour déterminer le joueur désigné. Pour plus d'informations sur ces règles, reportez-vous à la section 407."
+  },
+  {
+    "id": "406.1.g.4",
+    "content": "Le joueur désigné choisit s'il souhaite commencer ou passer en dernier."
+  },
+  {
+    "id": "406.1.g.5",
+    "content": "Les joueurs ont alors l'opportunité de modifier leur réserve, comme s'ils étaient entre deux parties d'un match en deux manches gagnantes. Pour plus d'informations à propos de la réserve, reportez-vous à la section 403."
+  },
+  {
+    "id": "406.1.g.6",
+    "content": "Une fois les échanges avec la réserve terminés, chaque joueur sépare son champion élu et le place dans la zone de champion."
+  },
+  {
+    "id": "406.1.g.7",
+    "content": "Les joueurs effectuent les étapes de mélange 406.1.c.-406.1.e.3. mentionnées ci-dessus, puis passent à la section 116 des règles de base. Mise en place."
+  },
+  {
+    "id": "407",
+    "content": "Règle relative à l'ordre de jeu"
+  },
+  {
+    "id": "407.1",
+    "content": "Au début de la première partie d'un match, un joueur désigné décide s'il souhaite jouer en premier ou en dernier."
+  },
+  {
+    "id": "407.2",
+    "content": "Toute méthode de choix aléatoire approuvée par tous les joueurs de la partie actuelle peut être utilisée pour désigner ce joueur."
+  },
+  {
+    "id": "407.2.a",
+    "content": "À NPO élevé, lors des matchs de play-offs qui ont lieu après la phase au format suisse, le joueur le mieux classé à l'issue de la phase au format suisse devient automatiquement le joueur désigné pour le premier match de chaque rencontre."
+  },
+  {
+    "id": "407.3",
+    "content": "La désignation du joueur et le choix de l'ordre des tours se font lors de la mise en place de début de partie. Voir la section 115 des Règles de base Déterminer l'ordre des tours »."
+  },
+  {
+    "id": "407.4",
+    "content": "Pour les parties suivant la première partie d'un match, le perdant de la partie peut choisir s'il joue en premier ou en dernier. Si la partie précédente s'est terminée sur une égalité, le joueur qui joue en premier est le même que lors de la partie précédente."
+  },
+  {
+    "id": "407.5",
+    "content": "Pour plus d'informations à propos des modifications de cette règle en 2c2, reportez-vous à la section 603.7."
+  },
+  {
+    "id": "408",
+    "content": "Procédure de fin de match"
+  },
+  {
+    "id": "408.1",
+    "content": "Un match est terminé dès que le résultat est enregistré par les joueurs ou par un responsable officiel de la compétition."
+  },
+  {
+    "id": "408.2",
+    "content": "Si le temps imparti pour une manche de la compétition est écoulé avant qu'un gagnant n'ait été déterminé, le joueur qui joue termine son tour."
+  },
+  {
+    "id": "408.2.a",
+    "content": "Une fois que ce joueur a terminé son tour, trois tours supplémentaires sont joués, puis la partie se termine."
+  },
+  {
+    "id": "408.2.b",
+    "content": "Si la partie n'est pas terminée à la fin des tours supplémentaires, un joueur est déclaré vainqueur du match s'il possède une avance de deux points ou plus. Si aucun joueur n'a une avance de deux points ou plus, la partie est une égalité."
+  },
+  {
+    "id": "408.2.c",
+    "content": "Les tours supplémentaires ne sont pas chronométrés, mais lorsque le NPO de la compétition est de niveau professionnel, un arbitre doit être présent pour garantir un rythme raisonnable."
+  },
+  {
+    "id": "408.2.d",
+    "content": "Si les joueurs sont entre deux parties lorsque le temps imparti pour la manche est écoulé, aucune nouvelle partie n'est lancée."
+  },
+  {
+    "id": "408.3",
+    "content": "Le vainqueur d'un match est le premier joueur qui atteint le nombre de parties gagnées requis."
+  },
+  {
+    "id": "408.3.a",
+    "content": "Si aucun des joueurs n'a atteint ce nombre de parties gagnées à la fin de la procédure de fin de match, le joueur ayant remporté le plus de parties remporte le match."
+  },
+  {
+    "id": "408.3.b",
+    "content": "Si les joueurs sont à égalité en termes de victoiresle , match est nul."
+  },
+  {
+    "id": "408.4",
+    "content": "Les parties à élimination directe utilisent des manches sans limite de temps afin que les joueurs puissent terminer leurs parties naturellement. Dans le cas où les manches à élimination directe doivent utiliser un minuteur, la procédure de fin de partie suivante peut être appliquée pour déterminer un vainqueur si le temps imparti est écoulé :"
+  },
+  {
+    "id": "408.4.a",
+    "content": "Lorsque le temps imparti est écoulé avant qu'un vainqueur ne soit déterminé, si les joueurs sont entre deux manches, si un joueur a remporté plus de manches dans la rencontre, il remporte la partie. Si les victoires de manches sont à égalité, passez à la section 408.4.d."
+  },
+  {
+    "id": "408.4.b",
+    "content": "Lorsque le temps imparti est écoulé avant qu'un vainqueur ne soit déterminé, si les joueurs sont en train de disputer une manche, le joueur dont c'est le tour termine son tour."
+  },
+  {
+    "id": "408.4.c",
+    "content": "Une fois que le tour de ce joueur est terminé, trois tours supplémentaires sont joués. À la fin de ces tours supplémentaires :"
+  },
+  {
+    "id": "408.4.c.1",
+    "content": "Si un joueur a le plus de points de la manche en cours, il remporte cette manche. Ensuite, si un joueur a remporté plus de manches dans la partie, il remporte la partie. Si le score de la manche est à égalité, passez à la section 408.4.d."
+  },
+  {
+    "id": "408.4.c.2",
+    "content": "Si le score de la manche en cours est à égalité, mais qu'un joueur a remporté le plus de manches dans la partie, ce joueur remporte la partie."
+  },
+  {
+    "id": "408.4.c.3",
+    "content": "Si le score de la manche en cours est à égalité et que le score de la partie est également à égalité, les joueurs continuent à jouer jusqu'à ce que le point suivant soit marqué. Le joueur qui marque ce point remporte la partie. Cela ne supprime pas les restrictions qui s'appliquent au point de victoire si le point suivant est le point de victoire. Pour plus de détails sur le point de victoire, consultez la section 448.1.a. des règles de base."
+  },
+  {
+    "id": "408.4.d",
+    "content": "Si le score de la manche est à égalité et qu'une nouvelle manche doit être lancée, les joueurs commencent la nouvelle manche et agissent comme si le temps était immédiatement écoulé, en entamant le processus de la section 408.4.a., sauf qu'il y a cinq tours supplémentaires après le tour du premier joueur avant de passer au point de mort subite tel que décrit dans la section 408.4.c.3. si le score est à égalité à la fin de ces tours."
+  },
+  {
+    "id": "409",
+    "content": "Critères de départage"
+  },
+  {
+    "id": "409.1",
+    "content": "Lors de l'établissement du classement, le marqueur peut être amené à départager deux joueurs ayant gagné le même nombre de matchs."
+  },
+  {
+    "id": "409.2",
+    "content": "Dans ces cas, les critères de départage suivants doivent être appliqués dans l'ordre indiqué :"
+  },
+  {
+    "id": "409.2.a",
+    "content": "Le joueur ayant la moyenne de victoires de match la plus élevée gagne."
+  },
+  {
+    "id": "409.2.b",
+    "content": "Le joueur ayant remporté le plus haut pourcentage de parties gagne."
+  },
+  {
+    "id": "409.2.c",
+    "content": "Le joueur ayant la moyenne de victoires de partie la plus élevée gagne."
+  },
+  {
+    "id": "409.3",
+    "content": "Lorsque tous les critères de départage ont été appliqués et que deux joueurs sont toujours à égalité, le marqueur doit recourir à une méthode aléatoire pour départager les joueurs."
+  },
+  {
+    "id": "410",
+    "content": "Forfait et matchs nuls intentionnels"
+  },
+  {
+    "id": "410.1",
+    "content": "À tout moment avant la fin d'une partie, n'importe quel joueur peut déclarer forfait, et tous les joueurs peuvent mutuellement convenir de déclarer la partie nulle."
+  },
+  {
+    "id": "410.2",
+    "content": "À tout moment avant la fin d'un match, n'importe quel joueur peut déclarer forfait, et tous les joueurs peuvent mutuellement convenir de déclarer le match nul."
+  },
+  {
+    "id": "410.3",
+    "content": "Il est interdit pour les joueurs d'accepter de déclarer forfait ou de déclarer une égalité en échange d'une contrepartie quelconque. Pour plus d'informations à propos de la corruption, reportez-vous à la section 704.5."
+  },
+  {
+    "id": "410.4",
+    "content": "Il est interdit pour les joueurs de consulter les résultats d'autres matchs avant de décider d'abandonner ou de déclarer un match nul. Ils sont tenus de rester à leur place pendant toute la durée du match."
+  },
+  {
+    "id": "410.5",
+    "content": "Si un joueur refuse de jouer, les responsables de la compétition doivent considérer cela comme un forfait."
+  },
+  {
+    "id": "411",
+    "content": "Contrôles des decks"
+  },
+  {
+    "id": "411.1",
+    "content": "Lors des compétitions à haut NPO, les arbitres doivent contrôler les decks au cours de la compétition."
+  },
+  {
+    "id": "411.2",
+    "content": "Lorsque le format de la compétition exige des contrôles de decks, il convient de vérifier au moins 10% de tous les decks, choisis au hasard, au cours de la compétition."
+  },
+  {
+    "id": "411.3",
+    "content": "La vérification des decks des joueurs doit avoir lieu une fois que les joueurs ont mélangé et présenté leurs decks, mais avant que les premières cartes ne soient révélées."
+  },
+  {
+    "id": "411.3.a",
+    "content": "Si un contrôle des decks est effectué pendant un match, les arbitres accordent une prolongation suffisante pour avoir le temps nécessaire de réaliser le contrôle."
+  },
+  {
+    "id": "412",
+    "content": "Appel d'un arbitre"
+  },
+  {
+    "id": "412.1",
+    "content": "À tout moment pendant un match, un joueur peut faire une pause pour appeler un arbitre de salle. Pour plus d'informations à propos des responsabilités des arbitres de salle, reportez-vous à la section 204.4."
+  },
+  {
+    "id": "412.2",
+    "content": "Une prolongation doit être accordée si la durée totale de l'intervention d'un arbitre dure plus de 1 minute."
+  },
+  {
+    "id": "413",
+    "content": "Appels"
+  },
+  {
+    "id": "413.1",
+    "content": "Si un joueur n'est pas d'accord avec la décision d'un arbitre, il peut faire appel auprès de l'arbitre principal."
+  },
+  {
+    "id": "413.2",
+    "content": "Lorsque le NPO est haut, l'arbitre principal peut désigner certains arbitres de salle comme arbitres d'appel, qui sont alors habilités à entendre et à statuer sur les appels des joueurs."
+  },
+  {
+    "id": "413.3",
+    "content": "Dans de tels cas, ces arbitres doivent porter un uniforme identique à celui de l'arbitre principal."
+  },
+  {
+    "id": "413.4",
+    "content": "Les joueurs ne peuvent pas faire appel tant que la décision finale de l'arbitre n'a pas été annoncée."
+  },
+  {
+    "id": "413.5",
+    "content": "Les joueurs ne peuvent pas faire appel d'une décision d'un arbitre d'appel ou de l'arbitre principal."
+  },
+  {
+    "id": "414",
+    "content": "Abandon"
+  },
+  {
+    "id": "414.1",
+    "content": "Les joueurs peuvent abandonner la compétition à tout moment."
+  },
+  {
+    "id": "414.2",
+    "content": "Si un joueur abandonne avant le début de la compétition, il est considéré comme n'ayant jamais participé à la compétition."
+  },
+  {
+    "id": "414.3",
+    "content": "Les joueurs qui souhaitent abandonner doivent en informer le marqueur avant que les matchs de la prochaine manche ne soient établis."
+  },
+  {
+    "id": "414.4",
+    "content": "Si un joueur ne se présente pas à un match auquel il est censé participer, il est automatiquement éliminé de la compétition, sauf s'il en informe le marqueur."
+  },
+  {
+    "id": "414.5",
+    "content": "Les joueurs qui abandonnent une compétition au format limité conservent les cartes qu'ils possèdent au moment de leur abandon, y compris les paquets non ouverts."
+  },
+  {
+    "id": "414.6",
+    "content": "Si un joueur abandonne une compétition alors que les qualifications ont déjà eu lieu, aucun joueur ne le remplace. Le joueur le mieux classé bénéficie d'une exemption si l'abandon a lieu avant que les confrontations aient été déterminées."
+  },
+  {
+    "id": "414.7",
+    "content": "Les joueurs ayant abandonné peuvent réintégrer la compétition avant le début de la manche suivante, à la discrétion de l'arbitre principal."
+  },
+  {
+    "id": "414.8",
+    "content": "Les joueurs ne peuvent pas réintégrer une compétition s'ils ont manqué une phase de construction de deck."
+  },
+  {
+    "id": "414.9",
+    "content": "Les joueurs ne peuvent pas réintégrer une compétition après une phase éliminatoire."
+  },
+  {
+    "id": "415",
+    "content": "Suivi des scores"
+  },
+  {
+    "id": "415.1",
+    "content": "Tous les joueurs d'une partie sont responsables du suivi des scores des autres joueurs tout au long de la partie."
+  },
+  {
+    "id": "415.2",
+    "content": "Les changements apportés au score doivent être annoncés et approuvés par tous les joueurs."
+  },
+  {
+    "id": "415.3",
+    "content": "Les scores doivent être notés, affichés et mis à jour de manière lisible par écrit."
+  },
+  {
+    "id": "415.3.a",
+    "content": "Lors des compétitions à NPO bas, un appareil électronique, des dés ou des méthodes similaires peuvent être utilisés pour suivre le nombre de points."
+  },
+  {
+    "id": "415.3.b",
+    "content": "Si un joueur remarque une anomalie dans les scores, il doit immédiatement en informer tous les autres joueurs. Si les joueurs ne parviennent pas à résoudre le problème, ils doivent faire appel à un arbitre."
+  },
+  {
+    "id": "416",
+    "content": "Prise de notes"
+  },
+  {
+    "id": "416.1",
+    "content": "Les joueurs peuvent prendre des notes écrites pendant un match et s'y référer à tout moment pendant les parties disputées dans le cadre de ce même match."
+  },
+  {
+    "id": "416.2",
+    "content": "Au début de chaque match, les fiches annotées de tous les joueurs doivent être vierges et visibles par tous les adversaires et les responsables de la compétition."
+  },
+  {
+    "id": "416.3",
+    "content": "Les joueurs ne sont pas tenus de montrer leurs notes écrites à leurs adversaires. Les arbitres peuvent demander aux joueurs de révéler et/ou expliquer leurs notes."
+  },
+  {
+    "id": "416.4",
+    "content": "Pendant une partie, les joueurs n'ont pas le droit de se référer à des notes externes à cette partie en cours, y compris celles provenant de matchs précédents."
+  },
+  {
+    "id": "416.5",
+    "content": "Entre les parties, les joueurs peuvent consulter les notes qu'ils ont prises avant le match. Ils ne sont pas tenus de les montrer à leurs adversaires."
+  },
+  {
+    "id": "417",
+    "content": "Appareils électroniques"
+  },
+  {
+    "id": "417.1",
+    "content": "Les joueurs peuvent utiliser des appareils électroniques pendant les compétitions, mais n'ont pas le droit de les utiliser pendant les matchs."
+  },
+  {
+    "id": "417.2",
+    "content": "Lors des compétitions à NPO bas, les appareils numériques peuvent remplacer les notes écrites sur papier."
+  },
+  {
+    "id": "417.3",
+    "content": "L'arbitre principal est libre de limiter davantage ou d'autoriser l'utilisation des appareils électroniques."
+  },
+  {
+    "id": "418",
+    "content": "Captation vidéo"
+  },
+  {
+    "id": "418.1",
+    "content": "Certaines compétitions à haut NPO filment les matchs."
+  },
+  {
+    "id": "418.2",
+    "content": "Il se peut que certains événements, ou portions d'événements, soient filmés et que les joueurs apparaissent à l'écran."
+  },
+  {
+    "id": "418.3",
+    "content": "Les spectateurs et les joueurs filmés pendant les matchs sont tenus de se comporter de manière respectueuse envers tous les participants."
+  },
+  {
+    "id": "418.4",
+    "content": "Les spectateurs sont autorisés à enregistrer les matchs à l'aide d'un appareil vidéo, à condition de ne pas perturber le déroulement du match."
+  },
+  {
+    "id": "418.5",
+    "content": "Lors des compétitions à NPO professionnel, l'arbitre principal peut consulter les enregistrements vidéo pour statuer sur des décisions pendant un match."
+  },
+  {
+    "id": "418.6",
+    "content": "Les arbitres ne doivent jamais accéder à la demande d'un joueur souhaitant consulter les images vidéo."
+  },
+  {
+    "id": "419",
+    "content": "Cartes proxy et altérées"
+  },
+  {
+    "id": "419.1",
+    "content": "Une carte proxy est une version non officielle d'une carte Riftbound servant de substitut."
+  },
+  {
+    "id": "419.2",
+    "content": "Les cartes proxy ne sont pas autorisées lors des compétitions, peu importe le NPO."
+  },
+  {
+    "id": "419.2.a",
+    "content": "Il existe une seule exception à cette règle: les cartes proxy sont acceptées si elles sont officiellement délivrées par l'arbitre principal, pour remplacer une carte qu'il juge (à sa seule discrétion) inutilisable."
+  },
+  {
+    "id": "419.3",
+    "content": "Une carte altérée est une carte Riftbound officielle dont l'apparence a été modifiée d'une manière ou d'une autre."
+  },
+  {
+    "id": "419.4",
+    "content": "Les cartes altérées sont autorisées en compétition uniquement si les modifications:"
+  },
+  {
+    "id": "419.4.a",
+    "content": "Ne modifient ni ne cachent le nom ou le coût de la carte, et ne rendent pas l'illustration méconnaissable"
+  },
+  {
+    "id": "419.4.b",
+    "content": "Ne contiennent pas de conseils stratégiques pertinents"
+  },
+  {
+    "id": "419.4.c",
+    "content": "Ne contiennent pas d'images ou textes offensants"
+  },
+  {
+    "id": "419.5",
+    "content": "À la seule discrétion des arbitres, les cartes altérées pourraient ne pas être autorisées lors des matchs qui sont streamés ou diffusés."
+  },
+  {
+    "id": "419.5.a",
+    "content": "Les joueurs utilisant des cartes altérées se doivent d'être en possession des versions officielles et non altérées de ces cartes à utiliser lors des parties qui sont streamées ou diffusées si l'arbitre leur en donne l'instruction."
+  },
+  {
+    "id": "419.5.b",
+    "content": "Lorsqu'ils en reçoivent l'instruction, les joueurs doivent remplacer les versions altérées des cartes par leur version officielle et non altérée avant le début de la partie pour les matchs qui sont streamés ou diffusés."
+  },
+  {
+    "id": "419.5.c",
+    "content": "Les cartes altérées contenant des éléments qui ne sont pas la propriété intellectuelle de Riot Games pourraient ne pas être autorisées lors des matchs qui sont streamés ou diffusés."
+  },
+  {
+    "id": "419.6",
+    "content": "L'arbitre principal de la compétition est la seule autorité compétente à décider si une carte est acceptée ou non dans cette compétition."
+  },
+  {
+    "id": "420",
+    "content": "Langue des cartes"
+  },
+  {
+    "id": "420.1",
+    "content": "Les joueurs peuvent inclure dans leurs decks, lors de la création de deck et pendant la partie, des cartes officielles Riftbound de n'importe quelle langue."
+  },
+  {
+    "id": "420.2",
+    "content": "Un joueur peut appeler un arbitre à n'importe quel moment pour connaître la formulation exacte de Watcher de n'importe quelle carte dans la langue de leur choix."
+  },
+  {
+    "id": "421",
+    "content": "Mélange des cartes"
+  },
+  {
+    "id": "421.1",
+    "content": "Les decks doivent être mélangés au début de chaque partie, ainsi que chaque fois qu'une indication sur les cartes ou une décision des responsables de la compétition le requiert."
+  },
+  {
+    "id": "421.2",
+    "content": "On entend par << aléatoire >> un état dans lequel aucun joueur ne saurait connaître l'ordre ou la position des cartes dans aucune partie du deck."
+  },
+  {
+    "id": "421.3",
+    "content": "Le mélange méthodique des cartes en piles distinctes peut être utilisé comme méthode pour compter les cartes d'un deck, mais ne peut pas être utilisé pour mélanger le deck."
+  },
+  {
+    "id": "421.4",
+    "content": "Lorsqu'un deck a été mélangé, il est présenté à l'adversaire du joueur. Cela indique que le joueur estime que son deck est conforme et aléatoire."
+  },
+  {
+    "id": "421.5",
+    "content": "Les joueurs doivent avertir un arbitre s'ils pensent que le deck de leur adversaire n'a pas été suffisamment mélangé. Pour plus d'informations à propos d'un mélange insuffisant, reportez-vous à la section 703.7."
+  },
+  {
+    "id": "421.6",
+    "content": "Les joueurs peuvent également remélanger les decks de leurs adversaires."
+  },
+  {
+    "id": "421.7",
+    "content": "Ce faisant, ils doivent veiller à ne pas endommager ou marquer les cartes ou les pochettes adverses."
+  },
+  {
+    "id": "421.8",
+    "content": "Lorsque deux cartes ou plus sont recyclées dans le deck principal d'un joueur au cours d'une même action, les étapes 1 à 7 décrites ci-dessus doivent être suivies pour ces cartes afin de les mélanger correctement avant de les recycler."
+  },
+  {
+    "id": "422",
+    "content": "Protection des cartes"
+  },
+  {
+    "id": "422.1",
+    "content": "Les joueurs peuvent utiliser des pochettes plastiques ou autres dispositifs de protection pour protéger leurs cartes."
+  },
+  {
+    "id": "422.2",
+    "content": "Si un joueur utilise une protection pour ses cartes, toutes les pochettes doivent être identiques et toutes les cartes de son deck doivent être protégées de la même manière. Les cartes des decks doivent posséder le même nombre de couches et être orientées dans la même direction en tout temps."
+  },
+  {
+    "id": "422.2.a",
+    "content": "Il est recommandé, mais pas obligatoire, que les joueurs utilisent des pochettes différentes pour les différents decks (deck principal, deck de runes)."
+  },
+  {
+    "id": "422.2.b",
+    "content": "Les joueurs peuvent utiliser une pochette unique ou une couche supplémentaire pour distinguer leur champion élu lors de la préparation du match, mais doivent changer sa pochette pour qu'elle corresponde à celle de leur deck principal si ce champion devait entrer dans une zone dont le niveau d'information est privé pendant le match. Voir la section 127 des Règles de base: Confidentialité pour plus d'informations."
+  },
+  {
+    "id": "422.3",
+    "content": "Les pochettes doivent être opaques au dos."
+  },
+  {
+    "id": "422.4",
+    "content": "Pendant un match, un joueur peut demander à un arbitre d'inspecter les pochettes d'un adversaire."
+  },
+  {
+    "id": "422.5",
+    "content": "Les arbitres peuvent refuser l'utilisation d'un style de pochette spécifique ou l'utilisation de toutes les pochettes s'ils estiment qu'elles sont marquées, usées, inappropriées, offensives ou qu'elles gênent le jeu ou le mélange des cartes."
+  },
+  {
+    "id": "422.6",
+    "content": "À NPO haut, l'utilisation de pochettes pour le deck principal, le deck de runes et les champs de bataille est obligatoire."
+  },
+  {
+    "id": "422.7",
+    "content": "À NPO bas, l'utilisation de pochettes peut être exigée à la discrétion de l'arbitre principal. Lors des compétitions à haut NPO, les pochettes ne doivent pas:"
+  },
+  {
+    "id": "422.7.a",
+    "content": "Avoir un dos trop réfléchissant"
+  },
+  {
+    "id": "422.7.b",
+    "content": "Comporter de motifs holographiques à l'avant ou à l'arrière"
+  },
+  {
+    "id": "423",
+    "content": "Marquage des cartes"
+  },
+  {
+    "id": "423.1",
+    "content": "Pendant les compétitions, les joueurs sont responsables de s'assurer que leurs cartes et/ou pochettes ne sont pas marquées."
+  },
+  {
+    "id": "423.2",
+    "content": "Le terme << marqué >> désigne le fait que la carte comporte un élément permettant de l'identifier sans avoir besoin de voir sa face."
+  },
+  {
+    "id": "423.3",
+    "content": "Si les cartes sont protégées par des pochettes, elles doivent être inspectées à l'intérieur de celles-ci afin de vérifier qu'elles ne portent aucune marque."
+  },
+  {
+    "id": "423.4",
+    "content": "Les arbitres peuvent demander aux joueurs de retirer leurs pochettes ou de remplacer une pochette en particulier à tout moment pendant une compétition."
+  },
+  {
+    "id": "424",
+    "content": "Disposition"
+  },
+  {
+    "id": "424.1",
+    "content": "Pendant un match, au début de la procédure de match et à tout autre moment pertinent pendant une compétition, les joueurs doivent tenir leurs cartes à la verticale et les garder au-dessus de la surface de jeu."
+  },
+  {
+    "id": "424.2",
+    "content": "Les joueurs sont chargés de prendre toutes les mesures nécessaires pour éviter que des informations confidentielles ne soient accidentellement dévoilées. Voir la section 127 des Règles de base: Confidentialité pour plus d'informations."
+  },
+  {
+    "id": "424.3",
+    "content": "Les joueurs peuvent dévoiler des informations confidentielles, sauf lorsque cela est expressément interdit par les Règles de base."
+  },
+  {
+    "id": "424.4",
+    "content": "Lors des compétitions à haut NPO, les joueurs ne sont pas tenus de signaler à leurs adversaires les informations confidentielles qu'ils ont accidentellement révélées."
+  },
+  {
+    "id": "500",
+    "content": "Communication"
+  },
+  {
+    "id": "501",
+    "content": "Obligations"
+  },
+  {
+    "id": "501.1",
+    "content": "Les joueurs sont tenus de communiquer honnêtement avec leurs adversaires sur l'état de la partie."
+  },
+  {
+    "id": "501.2",
+    "content": "Les joueurs sont tenus de communiquer de manière honnête et exhaustive avec les responsables de la compétition."
+  },
+  {
+    "id": "501.3",
+    "content": "Les joueurs ne sont pas tenus de prêter assistance à leurs adversaires pendant la partie."
+  },
+  {
+    "id": "501.4",
+    "content": "Les joueurs sont tenus de traiter les autres joueurs, les responsables de la compétition et les spectateurs avec respect."
+  },
+  {
+    "id": "501.5",
+    "content": "Lors des événements en équipe, la communication entre coéquipiers est autorisée et encouragée, mais elle doit se faire dans un délai raisonnable. Pour plus d'informations à propos du jeu lent, reportez-vous à la section 703.2."
+  },
+  {
+    "id": "502",
+    "content": "Information"
+  },
+  {
+    "id": "502.1",
+    "content": "Les cartes ont un niveau de confidentialité tel que spécifié dans la section 127 des Règles de base: Confidentialité. Cela s'applique également au niveau d'informations auxquels les joueurs ont accès."
+  },
+  {
+    "id": "502.2",
+    "content": "En plus de ces niveaux d'informations, certaines informations peuvent être déduites."
+  },
+  {
+    "id": "502.2.a",
+    "content": "Les informations déduites sont une combinaison d'informations connues par tous et des capacités ou calculs propres à un joueur."
+  },
+  {
+    "id": "502.2.b",
+    "content": "Les joueurs ne sont pas tenus d'aider leurs adversaires à déduire des informations."
+  },
+  {
+    "id": "502.3",
+    "content": "Comme pour les cartes, les informations pertinentes concernant l'état du jeu peuvent être publiques, déduites, confidentielles ou secrètes."
+  },
+  {
+    "id": "502.4",
+    "content": "Les informations publiques comprennent:"
+  },
+  {
+    "id": "502.4.a",
+    "content": "Le joueur dont c'est le tour, la phase, l'étape, l'état du tour, ainsi que le joueur qui a la priorité et le focus."
+  },
+  {
+    "id": "502.4.b",
+    "content": "Les réserves de runes et le nombre et la quantité de ressources qu'elles contiennent."
+  },
+  {
+    "id": "502.4.c",
+    "content": "Les scores actuels de tous les joueurs."
+  },
+  {
+    "id": "502.4.d",
+    "content": "L'état actuel d'une carte permanente, par opposition à son état imprimé."
+  },
+  {
+    "id": "502.4.e",
+    "content": "Les sorts et compétences d'une chaîne d'effets, leur ordre et les choix de jeu associés."
+  },
+  {
+    "id": "502.4.f",
+    "content": "Les sorts et compétences dont les effets ont été appliqués pendant le tour, ainsi que leurs sources."
+  },
+  {
+    "id": "502.5",
+    "content": "Les informations déduites comprennent:"
+  },
+  {
+    "id": "502.5.a",
+    "content": "L'identité des cartes publiques qui ont été recyclées."
+  },
+  {
+    "id": "502.5.b",
+    "content": "L'ordre des runes dans un deck de runes."
+  },
+  {
+    "id": "502.5.c",
+    "content": "Les conséquences d'actions qui pourraient se produire, comme le fait qu'une unité bénéficie d'un bonus de puissance grâce à la compétence Bouclier si un joueur attaque."
+  },
+  {
+    "id": "502.6",
+    "content": "Les joueurs doivent reconnaître les modifications apportées aux informations publiques causées par leurs cartes et effets, dans la mesure où ces effets auraient un impact observable sur la partie. Voir l'article 506.3.d. pour des exemples d'impact observable."
+  },
+  {
+    "id": "502.7",
+    "content": "Les joueurs doivent répondre avec honnêteté à toutes les questions concernant les informations publiques."
+  },
+  {
+    "id": "502.8",
+    "content": "Les joueurs n'ont pas le droit de déformer des informations publiques ou déduites."
+  },
+  {
+    "id": "502.9",
+    "content": "Les joueurs doivent signaler toute incohérence entre les informations publiques annoncées et celles qui ont été enregistrées."
+  },
+  {
+    "id": "502.10",
+    "content": "Il est recommandé aux arbitres d'aider les joueurs à déterminer les informations publiques, mais pas les informations déduites."
+  },
+  {
+    "id": "502.11",
+    "content": "En 2c2, les coéquipiers peuvent partager des informations privées, y compris en montrant directement les cartes de leur main, comme défini par le point 484.8.e. des Règles de base."
+  },
+  {
+    "id": "503",
+    "content": "Raccourcis de jeu"
+  },
+  {
+    "id": "503.1",
+    "content": "En compétition, les joueurs peuvent effectuer des actions qui permettent de sauter certaines séquences techniques sans les annoncer explicitement."
+  },
+  {
+    "id": "503.2",
+    "content": "Le type de raccourci le plus courant consiste à ne pas effectuer un ou plusieurs éléments d'un tour, d'une phase ou d'une étape, avec l'accord de tous les joueurs concernés."
+  },
+  {
+    "id": "503.3",
+    "content": "Les joueurs peuvent demander à utiliser un nouveau raccourci dans une partie, mais ils doivent bien préciser l'état de la partie au début et à la fin du raccourci."
+  },
+  {
+    "id": "503.4",
+    "content": "Les joueurs peuvent interrompre les raccourcis des autres joueurs en expliquant à quel moment ils souhaitent intervenir pour effectuer une action."
+  },
+  {
+    "id": "503.5",
+    "content": "Les joueurs peuvent interrompre leurs propres raccourcis."
+  },
+  {
+    "id": "503.6",
+    "content": "Les joueurs ne sont pas autorisés à utiliser des raccourcis qu'ils n'ont pas signalés au préalable ni à modifier des raccourcis existants sans le signaler au préalable."
+  },
+  {
+    "id": "503.7",
+    "content": "Les joueurs ne peuvent pas interrompre un raccourci s'ils n'ont pas l'intention d'effectuer une action."
+  },
+  {
+    "id": "503.8",
+    "content": "Lorsqu'un joueur applique les effets de sorts ou compétences, il ne peut pas supposer que ses adversaires utilisent des raccourcis avant de leur avoir demandé."
+  },
+  {
+    "id": "503.9",
+    "content": "Voici quelques raccourcis de jeu courants utilisés lors des compétitions Riftbound:"
+  },
+  {
+    "id": "503.9.a",
+    "content": "Lorsqu'un joueur canalise des runes ou pioche une carte au début de son tour, on considère qu'il a terminé la phase de départ."
+  },
+  {
+    "id": "503.9.b",
+    "content": "Lorsqu'un joueur ajoute un sort ou une compétence à la chaîne d'effet, il est supposé passer la priorité, sauf s'il annonce explicitement son intention de la conserver."
+  },
+  {
+    "id": "503.9.c",
+    "content": "Quand un joueur ajoute un sort ou une compétence à la chaîne d'effet et qu'il annonce les choix qui doivent normalement être faits lors de l'application des effets, il doit s'en tenir à ces choix, sauf si ses adversaires réagissent."
+  },
+  {
+    "id": "503.9.d",
+    "content": "Lorsqu'un joueur pose une question sur les choix, on suppose qu'il passe la priorité et permet au sort ou à la compétence d'appliquer ses effets."
+  },
+  {
+    "id": "504",
+    "content": "Séquences d'actions"
+  },
+  {
+    "id": "504.1",
+    "content": "Des séries complexes d'actions sont parfois raccourcies en séquences non chronologiques, qui sont techniquement incorrectes ou imprécises, mais aboutissent à un état de jeu correct, conforme et compréhensible."
+  },
+  {
+    "id": "504.1.a",
+    "content": "Piocher une carte avant de canaliser des runes."
+  },
+  {
+    "id": "504.2",
+    "content": "Les joueurs peuvent demander à leurs adversaires d'effectuer ces actions, ou une partie de ces actions, dans le bon ordre pour pouvoir réagir à ces actions au bon moment."
+  },
+  {
+    "id": "504.3",
+    "content": "Les joueurs n'ont pas le droit de raccourcir une séquence d'actions dans le désordre pour obtenir prématurément des informations susceptibles d'influencer leurs décisions ultérieures."
+  },
+  {
+    "id": "504.4",
+    "content": "Lorsqu'une carte est recyclée, elle doit être immédiatement placée sous le deck approprié."
+  },
+  {
+    "id": "504.4.a",
+    "content": "Exemple: un joueur ne peut pas garder ses runes recyclées face cachée sur le plateau pour compter ses énergies."
+  },
+  {
+    "id": "504.4.b",
+    "content": "Le non-respect de ces règles de recyclage constitue un manquement aux règles de communication. Pour plus d'informations à propos des manquements aux règles de communication, reportez-vous à la section 703.5."
+  },
+  {
+    "id": "505",
+    "content": "Boucles"
+  },
+  {
+    "id": "505.1",
+    "content": "Certaines séquences d'actions sont parfois répétées, elles peuvent être raccourcies en une boucle."
+  },
+  {
+    "id": "505.2",
+    "content": "Les joueurs effectuant une boucle doivent s'assurer que chaque itération de la boucle est identique, sans aucune action conditionnelle."
+  },
+  {
+    "id": "505.3",
+    "content": "Pour décider comment faire fonctionner une boucle, les joueurs doivent d'abord déterminer combien de joueurs sont nécessaires pour la faire fonctionner (qui doit agir ou prendre des décisions pour maintenir la boucle):"
+  },
+  {
+    "id": "505.3.a",
+    "content": "Aucun joueur"
+  },
+  {
+    "id": "505.3.b",
+    "content": "Un joueur"
+  },
+  {
+    "id": "505.3.c",
+    "content": "Deux joueurs ou plus"
+  },
+  {
+    "id": "505.4",
+    "content": "Pour chaque joueur nécessaire au bon fonctionnement de la boucle (le cas échéant), dans l'ordre de jeu, le joueur choisit un nombre d'itérations."
+  },
+  {
+    "id": "505.5",
+    "content": "Chaque autre joueur (le cas échéant), dans l'ordre de jeu, peut choisir d'accepter ce nombre ou choisir un nombre d'itérations après lesquelles il s'engage à rompre la boucle ou choisir de ne pas la rompre."
+  },
+  {
+    "id": "505.6",
+    "content": "Si aucun joueur ne choisit de briser la boucle et qu'il n'y a pas de joueurs qui maintiennent la boucle, la partie se termine sur une égalité."
+  },
+  {
+    "id": "505.7",
+    "content": "Sinon, la boucle continue jusqu'à ce que le plus petit nombre d'itérations choisi soit atteint, puis ce joueur obtient la priorité (s'il s'agit d'un joueur qui maintient la boucle) ou il rompt la boucle."
+  },
+  {
+    "id": "505.8",
+    "content": "Si un joueur intervient pour interrompre une boucle, il peut choisir d'interrompre une itération partiellement terminée."
+  },
+  {
+    "id": "505.9",
+    "content": "Si une séquence d'actions n'est pas déterminée, elle ne peut pas être raccourcie et les itérations doivent être effectuées manuellement."
+  },
+  {
+    "id": "505.10",
+    "content": "Certaines boucles sont maintenues par des décisions plutôt que par des actions. Dans ces cas, appliquez les règles 505.4 à 505.8, mais en remplaçant l'action par une décision différente de la part du joueur."
+  },
+  {
+    "id": "505.11",
+    "content": "Les arbitres sont seuls habilités à déterminer ce qui constitue une boucle ou s'il existe des options permettant de poursuivre une boucle lorsque des informations secrètes sont en jeu."
+  },
+  {
+    "id": "505.12",
+    "content": "Les joueurs qui tentent de contourner les raccourcis ou proposent des raccourcis incorrects dans le but de gagner du temps sont coupables de tricherie. Pour plus d'informations à propos de la tricherie, reportez-vous à la section 704.8."
+  },
+  {
+    "id": "506",
+    "content": "Compétences déclenchées"
+  },
+  {
+    "id": "506.1",
+    "content": "Joueur responsable: le joueur qui a placé une compétence déclenchée dans la chaîne, tel que défini par les règles de base. Voir la section 375. des Règles de base: Compétences déclenchées pour plus d'informations."
+  },
+  {
+    "id": "506.1.a",
+    "content": "Le joueur responsable des déclencheurs provenant des champs de bataille dépend du contrôle du champ de bataille et n'est pas automatiquement le joueur ayant introduit le champ de bataille dans le match. Voir la section 184.6. des Règles de base pour plus d'informations sur les compétences de champ de bataille."
+  },
+  {
+    "id": "506.2",
+    "content": "Les joueurs ne sont pas tenus d'informer les autres joueurs des compétences déclenchées lorsqu'ils ne sont pas le joueur responsable, mais peuvent le faire s'ils le souhaitent."
+  },
+  {
+    "id": "506.2.a",
+    "content": "À NPO bas, un joueur n'est pas tenu d'informer les autres joueurs des compétences déclenchées lorsqu'il n'est pas le joueur responsable, mais cela est encouragé pour favoriser l'esprit sportif et l'apprentissage."
+  },
+  {
+    "id": "506.3",
+    "content": "Le joueur responsable doit reconnaître ses déclencheurs au moment où ils pourraient avoir un impact observable sur le match. S'il ne le fait pas, les déclencheurs sont considérés comme oubliés."
+  },
+  {
+    "id": "506.3.a",
+    "content": "Un déclencheur est considéré comme oublié une fois que son point d'impact observable a été atteint et qu'une nouvelle action de match est effectuée sans que le joueur responsable ne reconnaisse le déclencheur."
+  },
+  {
+    "id": "506.3.b",
+    "content": "Les joueurs reconnus coupables d'abuser de cette règle afin d'oublier intentionnellement des déclencheurs obligatoires dont ils sont responsables seront sanctionnés. Pour plus d'informations à propos des compétences déclenchées manquées, reportez-vous à la section 702.2."
+  },
+  {
+    "id": "506.3.c",
+    "content": "Pour les déclencheurs qui se produisent << au début de la première phase de départ de chaque joueur », le joueur concerné dispose de toute la durée du tour au cours duquel le déclencheur se produit pour le signaler avant qu'il ne soit considéré comme oublié, quel que soit son impact observable. (Exemples de cartes: Obélisque de pouvoir et Légende de l'arène.)"
+  },
+  {
+    "id": "506.3.d",
+    "content": "Exemples d'impact observable:"
+  },
+  {
+    "id": "506.3.d.1",
+    "content": "Le déclencheur modifierait un total de points. (Exemple de carte: Ahri, Charmeuse)"
+  },
+  {
+    "id": "506.3.d.2",
+    "content": "Le déclencheur modifierait le total de runes. (Exemple de carte: Pic étoilé)"
+  },
+  {
+    "id": "506.3.d.3",
+    "content": "Le déclencheur ajouterait un buff à une unité. (Exemple de carte: Sett, Bagarreur)"
+  },
+  {
+    "id": "506.3.d.4",
+    "content": "Le déclencheur aurait un impact sur le combat ou d'autres procédures de match. Une carte qui indique << Lorsque vous jouez un sort, octroyez-moi +1 de puissance pendant ce tour. » n'a PAS d'impact observable immédiat. Cela a un impact observable dès que sa puissance devient pertinente. (Exemple de carte: Élève de Corbelladone)"
+  },
+  {
+    "id": "506.3.d.5",
+    "content": "Un déclencheur ferait piocher ou défausser un joueur. (Exemple de carte: Marchand itinérant)"
+  },
+  {
+    "id": "506.3.d.6",
+    "content": "Un déclencheur entraînerait l'épuisement ou la préparation d'un élément de jeu. (Exemple de carte: Miss Fortune, Capitaine)"
+  },
+  {
+    "id": "506.3.d.7",
+    "content": "Un déclencheur ferait se déplacer une unité. (Exemple de carte: Traqueuse furtive)"
+  },
+  {
+    "id": "506.3.d.8",
+    "content": "Un joueur demande des informations publiques qui seraient affectées par un déclencheur. Pour plus d'informations à propos des informations publiques, reportez-vous à la section 502."
+  },
+  {
+    "id": "506.3.d.9",
+    "content": "Un joueur serait tenu de choisir s'il souhaite ou non placer un effet déclencheur optionnel dans la chaîne. (Exemple: Fan excessif)"
+  },
+  {
+    "id": "506.4",
+    "content": "Une compétence qui aurait dû être déclenchée, mais qui a été oubliée, n'est en aucun cas ajoutée à la chaîne d'effet."
+  },
+  {
+    "id": "506.5",
+    "content": "Une compétence déclenchée oubliée est quand même considérée comme déclenchée pour faire fonctionner les déclencheurs à utiliser obligatoirement, telles que ceux ayant des restrictions comme « La première fois que  ou similaires."
+  },
+  {
+    "id": "507",
+    "content": "Équipes dans des matchs séparés"
+  },
+  {
+    "id": "507.1",
+    "content": "Les joueurs peuvent communiquer avec leurs coéquipiers à tout moment, sauf si les règles du format de la compétition l'interdisent explicitement."
+  },
+  {
+    "id": "507.2",
+    "content": "Les joueurs qui obtiennent des informations secrètes ou confidentielles concernant un match auquel participe un coéquipier n'ont pas le droit de communiquer avec ce dernier jusqu'à la fin du match. Voir la section 127 des Règles de base: << Confidentialité >> pour plus d'informations."
+  },
+  {
+    "id": "508",
+    "content": "Organisation des cartes"
+  },
+  {
+    "id": "508.1",
+    "content": "Lors des compétitions à haut NPO, les joueurs doivent organiser leurs cartes selon les règles suivantes, pour plus de clarté."
+  },
+  {
+    "id": "508.2",
+    "content": "Les runes doivent se trouver plus près du joueur que les autres cartes."
+  },
+  {
+    "id": "508.3",
+    "content": "Les cartes qui ne sont pas des runes doivent être plus proches de l'adversaire du joueur que les runes du joueur."
+  },
+  {
+    "id": "508.4",
+    "content": "Le deck principal et la défausse doivent être placés ensemble soit à gauche, soit à droite du plateau."
+  },
+  {
+    "id": "508.5",
+    "content": "Le deck de runes doit se trouver de l'autre côté (à droite ou à gauche) du plateau par rapport au deck principal."
+  },
+  {
+    "id": "508.6",
+    "content": "La légende doit se trouver entre les cartes qui ne sont pas des runes et le champion élu. La légende et le champion élu doivent être placés ensemble soit à gauche, soit à droite du plateau."
+  },
+  {
+    "id": "508.7",
+    "content": "Chaque carte ou indicateur qui s'attache à une autre carte doit être clairement associé à celle-ci physiquement."
+  },
+  {
+    "id": "508.8",
+    "content": "Les unités créées doivent être représentées par des objets de carte contenant toutes les informations nécessaires, y compris leur état."
+  },
+  {
+    "id": "508.9",
+    "content": "Les buffs doivent être représentés par un objet qui représente explicitement un buff dans les termes du jeu."
+  },
+  {
+    "id": "508.10",
+    "content": "Les objets préparés doivent être tournés vers celui qui les contrôle. Les objets épuisés doivent être orientés à 90 degrés par rapport aux objets préparés, dans le sens des aiguilles d'une montre ou dans le sens inverse, mais tous les objets épuisés doivent être tournés de la même manière."
+  },
+  {
+    "id": "509",
+    "content": "Décisions de jeu"
+  },
+  {
+    "id": "509.1",
+    "content": "En compétition, les joueurs doivent réfléchir aux différentes options qui s'offrent à eux avant d'agir."
+  },
+  {
+    "id": "509.2",
+    "content": "Une fois qu'une action est communiquée à un adversaire, elle ne peut généralement plus être annulée."
+  },
+  {
+    "id": "509.3",
+    "content": "À bas NPO, un joueur peut annuler sa dernière action et prendre une décision différente pour cette action (y compris ne pas la réaliser du tout), tant qu'aucune nouvelle action n'a été effectuée par l'un ou l'autre des joueurs. Le changement de décision n'a pas besoin d'être immédiat."
+  },
+  {
+    "id": "509.4",
+    "content": "À haut NPO, un joueur peut annuler sa dernière action et prendre une décision différente pour cette action (y compris ne pas la réaliser du tout) si aucune nouvelle action n'a été effectuée par l'un ou l'autre des joueurs et si les conditions suivantes sont réunies:"
+  },
+  {
+    "id": "509.4.a",
+    "content": "Le joueur souhaite prendre une décision différente pour un sort ou une compétence immédiatement après que tous les choix ont été faits et communiqués pour l'ajouter à la chaîne. Exemple:"
+  },
+  {
+    "id": "509.4.a.1",
+    "content": "Un joueur joue Discipline en ciblant une unité. Il change immédiatement d'avis et choisit une autre unité, ou décide de ne pas jouer Discipline du tout."
+  },
+  {
+    "id": "509.4.b",
+    "content": "Le joueur souhaite prendre une décision différente concernant une unité ou un équipement immédiatement après l'avoir joué à un endroit. Exemple:"
+  },
+  {
+    "id": "509.4.b.1",
+    "content": "Un joueur joue Marchand itinérant sur le champ de bataille Allée des pillards. Il change immédiatement d'avis et choisit de le jouer dans sa base à la place, ou décide de ne pas le jouer du tout."
+  },
+  {
+    "id": "509.4.c",
+    "content": "Le joueur souhaite prendre une décision différente immédiatement après avoir effectué un choix, comme déplacer une unité vers un endroit ou défausser une carte. Exemple:"
+  },
+  {
+    "id": "509.4.c.1",
+    "content": "Un joueur déplace Poro ronchon vers le Portail du Néant. Il change immédiatement d'avis et choisit également de déplacer une unité supplémentaire à cet endroit, ou décide finalement de ne pas déplacer d'unité du tout."
+  },
+  {
+    "id": "509.4.d",
+    "content": "Le joueur souhaite annuler une décision via laquelle il a épuisé ou recyclé des runes."
+  },
+  {
+    "id": "509.4.d.1",
+    "content": "Un joueur épuise deux runes de Calme. Avant d'effectuer une nouvelle action de jeu, le joueur décide qu'il ne souhaite pas les épuiser et les prépare."
+  },
+  {
+    "id": "509.5",
+    "content": "Tenter délibérément de revenir sur des décisions afin d'obtenir des informations d'un adversaire est considéré comme un comportement abusif. Les joueurs ne peuvent pas modifier leurs décisions en fonction de la réaction physique d'un adversaire ou en réponse au début d'une action de jeu de la part d'un adversaire. Pour plus d'informations à propos des comportements abusifs, reportez-vous à la section 704.4."
+  },
+  {
+    "id": "509.6",
+    "content": "Bien que modifier des décisions comme décrit ci-dessus soit autorisé, les joueurs doivent tout de même maintenir un rythme de jeu approprié. Pour plus d'informations à propos du jeu lent, reportez-vous à la section 703.2."
+  },
+  {
+    "id": "600",
+    "content": "Formats des compétitions"
+  },
+  {
+    "id": "601",
+    "content": "Format construit"
+  },
+  {
+    "id": "601.1",
+    "content": "Construction de deck"
+  },
+  {
+    "id": "601.1.a",
+    "content": "Les règles relatives à la construction d'un deck se trouvent dans la section 101 des Règles de base: << Construction de deck », sauf mention contraire ci-dessous pour le format de compétition construit."
+  },
+  {
+    "id": "601.1.b",
+    "content": "En compétition, le deck principal d'un joueur doit compter exactement 40 cartes."
+  },
+  {
+    "id": "601.1.c",
+    "content": "Lors des compétitions pendant lesquelles les réserves sont autorisées :"
+  },
+  {
+    "id": "601.1.c.1",
+    "content": "La réserve d'un joueur peut contenir 8 cartes ou moins."
+  },
+  {
+    "id": "601.1.c.2",
+    "content": "Une réserve ne peut être composée que de cartes de deck principal valides."
+  },
+  {
+    "id": "601.1.c.3",
+    "content": "Le nombre limite d'exemplaires d'une carte nominative s'applique aux cartes du deck principal et de la réserve combinées."
+  },
+  {
+    "id": "601.1.c.4",
+    "content": "Un joueur peut changer son champion élu pour l'une de ses cartes de réserve ou l'une des cartes de son deck principal qui correspond à sa légende lorsque les interactions avec la réserve sont autorisées."
+  },
+  {
+    "id": "601.1.c.5",
+    "content": "Pour plus d'informations à propos des réserves, reportez-vous à la section 403."
+  },
+  {
+    "id": "601.1.d",
+    "content": "Dans certaines compétitions, les champs de bataille autorisés diffèrent des champs de bataille conformes au format. Si c'est le cas, l'information sera communiquée aux joueurs par le biais d'avenants spécifiques à l'événement."
+  },
+  {
+    "id": "601.2",
+    "content": "Conformité des cartes"
+  },
+  {
+    "id": "601.2.a",
+    "content": "Une carte ne peut être incluse dans un deck que si elle provient d'un set autorisé dans ce format ou si elle porte le même nom qu'une carte d'un set autorisé dans ce format."
+  },
+  {
+    "id": "601.2.b",
+    "content": "Jusqu'à ce que la parité de sortie des sets soit atteinte, les limitations régionales concernant la légalité des cartes seront appliquées en fonction de la date de sortie officielle du produit dans la région où l'événement a lieu."
+  },
+  {
+    "id": "601.2.c",
+    "content": "Si une carte existante est réimprimée dans un nouveau set, mais que son numéro de collection ne figure pas dans la numérotation normale de cette extension, cela n'affecte pas la légalité de la carte dans le format."
+  },
+  {
+    "id": "601.2.c.1",
+    "content": "Exemple: une carte avec le numéro de collection $300/250$ n'est pas automatiquement légale dans le format standard de ce set."
+  },
+  {
+    "id": "601.2.d",
+    "content": "Si une carte est interdite dans un format spécifique, cette carte ne peut pas être incluse dans un deck."
+  },
+  {
+    "id": "601.2.d.1",
+    "content": "La liste des cartes bannies de Riftbound est disponible ici."
+  },
+  {
+    "id": "601.2.d.2",
+    "content": "À bas NPO, si un joueur utilise le composition de deck exacte d'un produit préconstruit Riftbound, il est autorisé à jouer avec des cartes figurant sur la liste des cartes bannies. Par exemple:"
+  },
+  {
+    "id": "601.2.d.2.a",
+    "content": "Lors des Nexus Nights, si un joueur utilise un deck correspondant exactement au contenu du deck de champion préconstruit de Jinx, il est autorisé à utiliser les cartes bannies présentes dans ce deck, telles que Combattre ou fuir, Dépotoir et Allée des pillards. Si le joueur effectue des modifications ou ajoute une réserve, il ne peut plus inclure les cartes bannies."
+  },
+  {
+    "id": "601.3",
+    "content": "Standard"
+  },
+  {
+    "id": "601.3.a",
+    "content": "Le format << standard >> est un format composé des 5 à 8 derniers sets."
+  },
+  {
+    "id": "601.3.b",
+    "content": "Chaque format standard comprend les sets de l'année en cours et ceux de l'année précédente."
+  },
+  {
+    "id": "601.3.c",
+    "content": "Le format standard actuel comprend:"
+  },
+  {
+    "id": "601.3.c.1",
+    "content": "Le set supplémentaire Origines contenu dans Premiers pas (OGS)"
+  },
+  {
+    "id": "601.3.c.2",
+    "content": "Origines (OGN)"
+  },
+  {
+    "id": "601.3.c.3",
+    "content": "Armes spirituelles (SFD)"
+  },
+  {
+    "id": "601.3.c.4",
+    "content": "Déchaînement (UNL)"
+  },
+  {
+    "id": "601.3.c.4.a",
+    "content": "Date légale en Chine - $10/04/26$"
+  },
+  {
+    "id": "601.3.c.4.b",
+    "content": "Date légale pour le reste du monde: $08/05/26$"
+  },
+  {
+    "id": "602",
+    "content": "Limité"
+  },
+  {
+    "id": "602.1",
+    "content": "Légalité"
+  },
+  {
+    "id": "602.1.a",
+    "content": "Une compétition au format limité est une compétition où tous les éléments nécessaires au jeu sont fournis pendant la compétition."
+  },
+  {
+    "id": "602.1.a.1",
+    "content": "Une carte ne peut être incluse dans un deck limité que si elle est fournie au joueur dans le cadre de la compétition."
+  },
+  {
+    "id": "602.1.a.1.a",
+    "content": "Pour certaines compétitions limitées, des cartes promo supplémentaires peuvent être remises aux joueurs, mais l'arbitre principal précisera qu'elles ne font pas partie de la sélection de cartes limitée de ce joueur et qu'elles ne peuvent pas être utilisées pour cet événement."
+  },
+  {
+    "id": "602.1.a.2",
+    "content": "Les joueurs peuvent utiliser n'importe quelle quantité des 6 runes de base provenant de n'importe quelle source, même si elles ne figurent pas dans la sélection de cartes fournie. Les joueurs peuvent utiliser autant de champs de bataille << vierges >> que nécessaire pour les parties en mode limité. Consultez la section 602.3.d. ci-dessous pour plus d'informations sur les champs de bataille << vierges »."
+  },
+  {
+    "id": "602.1.b",
+    "content": "Si une carte est interdite dans les formats construits, elle peut être utilisée dans un deck limité tant qu'elle n'est pas également interdite dans ce format limité."
+  },
+  {
+    "id": "602.2",
+    "content": "Produits non conformes"
+  },
+  {
+    "id": "602.2.a",
+    "content": "Nous ne pouvons garantir que la composition ou la répartition d'un produit scellé soit correcte."
+  },
+  {
+    "id": "602.2.b",
+    "content": "Si un joueur remarque une différence entre la rareté ou la fréquence prévue des cartes dans un booster et ce qu'il y trouve après ouverture, il doit en informer un arbitre."
+  },
+  {
+    "id": "602.2.c",
+    "content": "L'arbitre principal peut, à sa seule discrétion, remplacer les produits non conformes dans ces cas-là."
+  },
+  {
+    "id": "602.2.d",
+    "content": "Dans certains cas, les responsables de la compétition peuvent autoriser les joueurs à utiliser leurs propres produits, mais dans ce cas, les produits fournis par les joueurs doivent être regroupés et distribués de manière aléatoire entre les participants."
+  },
+  {
+    "id": "602.3",
+    "content": "Construire un deck à partir d'une sélection limitée"
+  },
+  {
+    "id": "602.3.a",
+    "content": "602.1.a. Les règles relatives à la construction d'un deck se trouvent dans la section 101 des Règles de base: << Construction de deck », sauf mention contraire ci-dessous pour les formats limités."
+  },
+  {
+    "id": "602.3.b",
+    "content": "À haut NPO, les joueurs ne peuvent pas utiliser d'appareils électroniques pour prendre des notes ou comme aide stratégique lors de la création de deck. À bas NPO, cela peut être autorisé par l'arbitre principal."
+  },
+  {
+    "id": "602.3.c",
+    "content": "À haut NPO, les joueurs ne peuvent recevoir aucune assistance extérieure lors de la création de deck. À bas NPO, cela peut être autorisé par l'arbitre principal."
+  },
+  {
+    "id": "602.3.d",
+    "content": "Les decks limités peuvent utiliser des champs de bataille issus de la sélection de cartes fournie ou autant de champs de bataille << vierges » qu'ils le souhaitent. Un joueur peut choisir d'utiliser des champs de bataille << vierges >> à la place des champs de bataille qu'il a reçus dans les cartes fournies dans le cadre de la compétition."
+  },
+  {
+    "id": "602.3.d.1",
+    "content": "Les champs de bataille << vierges >> fonctionnent comme des champs de bataille ne comportant aucun texte de règles. Sinon, ils respectent toutes les autres règles des champs de bataille normaux telles que définies dans les Règles de base."
+  },
+  {
+    "id": "602.3.d.2",
+    "content": "À faible NPO, les champs de bataille << vierges >> peuvent être représentés par tout élément sur lequel tous les joueurs de la partie se sont mis d'accord."
+  },
+  {
+    "id": "602.3.d.2.a",
+    "content": "À haut NPO, les champs de bataille << vierges >> doivent être représentés par n'importe quelle carte officielle Riftbound, placée dans une pochette opaque avec le dos de la carte tourné vers l'extérieur."
+  },
+  {
+    "id": "602.3.e",
+    "content": "À haut NPO, les joueurs doivent enregistrer une configuration de départ à partir de la sélection de cartes fournie et doivent enregistrer le reste de leur sélection de cartes comme réserve."
+  },
+  {
+    "id": "602.3.e.1",
+    "content": "Les joueurs doivent utiliser leur configuration de départ enregistrée lors de la première de chaque match."
+  },
+  {
+    "id": "602.3.e.2",
+    "content": "La légende, le champion élu et le deck de runes doivent être enregistrés dans la configuration de départ d'un joueur."
+  },
+  {
+    "id": "602.3.e.3",
+    "content": "Pour les compétitions en une manche gagnante, les joueurs doivent enregistrer trois champs de bataille parmi lesquels un choix aléatoire sera effectué lors de la procédure de début de match, y compris tout champ de bataille << vierge » qu'ils souhaitent utiliser."
+  },
+  {
+    "id": "602.3.e.4",
+    "content": "Pour les compétitions en deux manches gagnantes, les joueurs peuvent sélectionner n'importe quel champ de bataille de leur réserve de cartes ou un champ de bataille << vierge >> lors de la procédure de début de match."
+  },
+  {
+    "id": "602.3.e.4.a",
+    "content": "Les joueurs ne peuvent utiliser une même copie d'un champ de bataille spécifique qu'une seule fois par match, mais peuvent utiliser le champ de bataille du même nom autant de fois qu'ils ont d'exemplaires dans la sélection de cartes fournie."
+  },
+  {
+    "id": "602.3.f",
+    "content": "À bas NPO, l'enregistrement de la configuration de départ n'est pas requis et les joueurs peuvent librement modifier la composition de leur deck de départ et de leur réserve entre les parties et les manches, sauf indication contraire de l'arbitre principal."
+  },
+  {
+    "id": "602.3.g",
+    "content": "Pour connaître les règles de génération de la sélection de cartes et de construction de deck propres à chaque format limité, consultez la section Formats limités ci-dessous."
+  },
+  {
+    "id": "602.4",
+    "content": "Formats limités"
+  },
+  {
+    "id": "602.4.a",
+    "content": "Scellé"
+  },
+  {
+    "id": "602.4.a.1",
+    "content": "Le format scellé est un format limité dans lequel les joueurs reçoivent chacun 6 boosters Riftbound non ouverts à ouvrir et à utiliser pour construire leur deck."
+  },
+  {
+    "id": "602.4.a.2",
+    "content": "Les decks principaux en formats scellés doivent contenir au moins 25 cartes, mais peuvent en comporter davantage."
+  },
+  {
+    "id": "602.4.a.3",
+    "content": "L'identité de domaine d'un deck limité peut être n'importe quelle combinaison de trois domaines, ou l'un des domaines plus les domaines de la légende du deck."
+  },
+  {
+    "id": "602.4.a.3.a",
+    "content": "Un deck scellé peut avoir comme champion élu n'importe quelle unité champion incluse dans son identité de domaine, même si elle ne possède pas d'indicateur de champion correspondant à sa légende (si elle en a une)."
+  },
+  {
+    "id": "602.4.a.3.b",
+    "content": "Un deck scellé peut contenir tous les sorts signatures inclus dans son identité de domaine, même si le deck ne contient pas le champion correspondant."
+  },
+  {
+    "id": "602.4.a.3.b.1",
+    "content": "Exemple: un deck principal scellé avec une identité de domaine Fureur/Corps/Ordre peut utiliser des sorts signatures Fureur/Ordre ou Corps/Ordre, mais il ne peut pas utiliser des sorts signature Fureur/Esprit ou Corps/Chaos."
+  },
+  {
+    "id": "602.4.a.4",
+    "content": "Les joueurs ne peuvent inclure dans leur deck de runes que des runes provenant de n'importe quelle source correspondant à l'identité de domaine de leur deck scellé."
+  },
+  {
+    "id": "602.4.a.5",
+    "content": "Un deck scellé est légal même s'il n'a pas de légende ou de champion élu."
+  },
+  {
+    "id": "602.4.a.5.a",
+    "content": "Un joueur peut décider de ne pas utiliser une légende ou un champion élu de son deck scellé même s'il en a trouvé un dans la sélection de cartes fournie."
+  },
+  {
+    "id": "602.4.a.5.b",
+    "content": "Si le deck d'un joueur ne comprend pas de légende et/ou de champion élu, ce joueur pioche une carte au début de sa première phase de départ de chaque partie. (S'il n'a aucun des deux, il ne pioche tout de même qu'une seule carte.)"
+  },
+  {
+    "id": "602.4.a.6",
+    "content": "Les restrictions normales concernant les quantités de cartes en fonction de leur nom et des cartes signature ne s'appliquent pas. Par exemple, un joueur peut utiliser 10 exemplaires de Poro ronchon dans son deck principal s'il les a obtenus dans la sélection de cartes fournie."
+  },
+  {
+    "id": "602.4.a.6.a",
+    "content": "Le mot-clé << Unique >> ne s'applique pas en scellé."
+  },
+  {
+    "id": "602.4.a.7",
+    "content": "La réserve d'un deck scellé comprend toutes les cartes fournies au joueur dans le cadre de la compétition qui ne sont pas utilisées dans la configuration initiale de son deck, sauf indication contraire. Pour plus d'informations à propos de la réserve, reportez-vous à la section 403."
+  },
+  {
+    "id": "602.4.a.7.a",
+    "content": "De plus, les joueurs peuvent changer leur identité de domaine, leur deck de runes, leur légende et leur champion élu lorsqu'ils utilisent la réserve tant que le deck résultant respecte toujours les règles 602.4.a.2 à 602.4.a.4."
+  },
+  {
+    "id": "602.4.a.8",
+    "content": "Enregistrement de sélection et construction du deck en scellé"
+  },
+  {
+    "id": "602.4.a.8.a",
+    "content": "Lors des compétitions à haut NPO, l'arbitre principal doit exiger l'enregistrement des boosters scellés avant le début de la construction de deck."
+  },
+  {
+    "id": "602.4.a.8.b",
+    "content": "Chaque joueur reçoit le produit non ouvert à sa place."
+  },
+  {
+    "id": "602.4.a.8.c",
+    "content": "Les joueurs se trouvant d'un côté de la table (A) ouvrent leurs produits pendant que les joueurs de l'autre côté de la table (B) les observent."
+  },
+  {
+    "id": "602.4.a.8.d",
+    "content": "Les joueurs vérifient que le produit contient la quantité correcte de cartes non endommagées ainsi qu'une répartition conforme des raretés. Si un paquet comportant une erreur est découvert, veuillez appeler un arbitre afin de le remplacer si possible."
+  },
+  {
+    "id": "602.4.a.8.e",
+    "content": "Une fois que tous les produits non ouverts ont été ouverts et contrôlés par le côté B, ces cartes sont placées vers le côté B."
+  },
+  {
+    "id": "602.4.a.8.f",
+    "content": "Répétez les étapes décrites dans les sections 602.4.8.c. à 602.4.8.e., mais avec (B) qui ouvre et (A) qui observe."
+  },
+  {
+    "id": "602.4.a.8.g",
+    "content": "Chaque joueur trie et enregistre le contenu des cartes placées à côté de lui."
+  },
+  {
+    "id": "602.4.a.8.h",
+    "content": "Une fois l'enregistrement des cartes terminé, chaque joueur rend les cartes et la feuille d'enregistrement à l'autre joueur."
+  },
+  {
+    "id": "602.4.a.8.i",
+    "content": "Chaque joueur vérifie que ses propres cartes ont été enregistrées correctement."
+  },
+  {
+    "id": "602.4.a.8.j",
+    "content": "La construction de deck commence."
+  },
+  {
+    "id": "602.4.a.8.k",
+    "content": "Il est recommandé d'accorder 20 minutes aux joueurs pour enregistrer leur deck, ainsi que 30 minutes pour la construction de leur deck. Le temps de construction de deck peut être porté à 45 minutes pour les événements à bas NPO d'avant-première ou de sortie, afin de permettre aux joueurs de découvrir les cartes pour la première fois."
+  },
+  {
+    "id": "602.4.a.8.l",
+    "content": "La configuration du deck de départ et de la réserve sont enregistrées sur la même feuille que l'ensemble de la sélection de cartes."
+  },
+  {
+    "id": "602.4.a.9",
+    "content": "Decks préconstruits en compétitions au format scellé"
+  },
+  {
+    "id": "602.4.a.9.a",
+    "content": "Certaines compétitions, ou portions de compétitions, fournissent des decks préconstruits que les joueurs doivent utiliser. Ce sont des decks scellés."
+  },
+  {
+    "id": "602.4.a.9.b",
+    "content": "Les joueurs doivent exclusivement utiliser les decks fournis, sauf en cas de modification apportée au règlement de la compétition par avenant."
+  },
+  {
+    "id": "602.4.a.9.b.1",
+    "content": "Cela peut prévaloir sur les règles de construction de decks scellés mentionnées ci-dessus."
+  },
+  {
+    "id": "602.4.b",
+    "content": "Draft"
+  },
+  {
+    "id": "602.4.b.1",
+    "content": "Le draft est un format limité où les joueurs reçoivent chacun 3 boosters Riftbound non ouverts à ouvrir et à drafter parmi d'autres joueurs."
+  },
+  {
+    "id": "602.4.b.2",
+    "content": "Les groupes de draft sont composés d'autant de joueurs que possible, jusqu'à huit, assis aléatoirement autour d'une table. Le processus de draft est le suivant:"
+  },
+  {
+    "id": "602.4.b.2.a",
+    "content": "Chaque joueur ouvre l'un de ses boosters, retire la rune ou la carte de création, puis examine le reste du contenu afin de s'assurer qu'il y a treize cartes non endommagées dans le paquet, avec une répartition correcte des raretés."
+  },
+  {
+    "id": "602.4.b.2.a.1",
+    "content": "Les joueurs peuvent conserver la rune ou la carte de création qu'ils ont obtenue."
+  },
+  {
+    "id": "602.4.b.2.a.2",
+    "content": "Si un booster ouvert présente une erreur, les joueurs doivent appeler un arbitre pour remplacer le booster si possible."
+  },
+  {
+    "id": "602.4.b.2.b",
+    "content": "Une fois le contenu du booster vérifié, les joueurs examineront les cartes de leur booster et en sélectionneront une à drafter sur le dessus d'une pile visible de cartes face cachée devant eux, puis passeront le reste du contenu face cachée au joueur à leur gauche. Les joueurs répètent ce processus avec les cartes qui leur sont passées jusqu'à ce qu'il ne reste plus de cartes."
+  },
+  {
+    "id": "602.4.b.2.b.1",
+    "content": "Une fois le premier booster terminé, répétez les étapes 602.4.b.2.a à 602.4.b.2.b avec le deuxième booster, en passant les cartes vers la droite."
+  },
+  {
+    "id": "602.4.b.2.b.2",
+    "content": "Une fois le deuxième booster terminé, répétez les étapes 602.4.b.2.a à 602.4.b.2.b avec le troisième booster, en passant à nouveau les cartes vers la gauche."
+  },
+  {
+    "id": "602.4.b.2.b.3",
+    "content": "Une fois qu'une carte a été ajoutée à la pile de cartes face cachée devant vous, elle est considérée comme sélectionnée et ne peut plus être remise dans le booster."
+  },
+  {
+    "id": "602.4.b.2.b.4",
+    "content": "Les joueurs doivent faire un effort raisonnable pour dissimuler la face avant des cartes qu'ils ont sélectionnées ainsi que celles de leur booster actuel aux yeux des autres joueurs."
+  },
+  {
+    "id": "602.4.b.2.c",
+    "content": "Une fois ce processus terminé, chaque joueur devrait disposer de 39 cartes à utiliser comme sélection de cartes limitée."
+  },
+  {
+    "id": "602.4.b.2.d",
+    "content": "À haut NPO, les joueurs ne peuvent pas utiliser d'appareils électroniques pour prendre des notes ou comme aide stratégique pendant la phase de draft. À bas NPO, cela peut être autorisé par l'arbitre principal."
+  },
+  {
+    "id": "602.4.b.2.e",
+    "content": "À haut NPO, les joueurs ne peuvent recevoir aucune assistance extérieure pendant la phase de draft. À bas NPO, cela peut être autorisé par l'arbitre principal."
+  },
+  {
+    "id": "602.4.b.2.f",
+    "content": "À haut NPO, lors du processus cessus de draft, les joueurs ne peuvent pas révéler les cartes qu'ils ont vues ou sélectionnées, ni discuter ouvertement du draft. À bas NPO, cela peut être autorisé par l'arbitre principal."
+  },
+  {
+    "id": "602.4.b.2.g",
+    "content": "Lors du processus de draft, les joueurs ne sont pas autorisés à essayer de savoir ce qui figure sur les cartes que tout autre drafter consulte ou a déjà sélectionnées, et ce par quelque moyen que ce soit. Tenter de le faire constitue une tricherie."
+  },
+  {
+    "id": "602.4.b.2.g.1",
+    "content": "Ce n'est pas de la triche pour un joueur de voir le dos des cartes que d'autres joueurs consultent ou des cartes que des joueurs ont ajoutées à la pile face cachée devant eux."
+  },
+  {
+    "id": "602.4.b.2.h",
+    "content": "À haut NPO, les joueurs ne peuvent pas consulter les cartes qu'ils ont déjà draftées, sauf pendant les intervalles désignés par un arbitre entre les boosters. À bas NPO, cela est autorisé à tout moment tant que le joueur ne tient pas d'autres cartes en même temps."
+  },
+  {
+    "id": "602.4.b.2.i",
+    "content": "À NPO professionnel, les phases de draft doivent être chronométrées. À NPO compétitif, les phases de draft sont chronométrées à la discrétion de l'arbitre principal. À NPO amical, les phases de draft ne sont pas chronométrées, mais les joueurs doivent sélectionner les cartes à un rythme raisonnable."
+  },
+  {
+    "id": "602.4.b.3",
+    "content": "Les decks principaux pour les decks de draft doivent comporter au moins 20 cartes, mais peuvent en contenir davantage."
+  },
+  {
+    "id": "602.4.b.4",
+    "content": "L'identité de domaine d'un deck de draft peut être n'importe quelle combinaison de trois domaines, ou l'un des domaines plus les domaines de la légende du deck."
+  },
+  {
+    "id": "602.4.b.4.a",
+    "content": "Un deck de draft peut avoir comme champion élu n'importe quelle unité champion incluse dans son identité de domaine, même si elle ne possède pas d'indicateur de champion correspondant à sa légende (si elle en a une)."
+  },
+  {
+    "id": "602.4.b.4.b",
+    "content": "Un deck de draft peut contenir tous les sorts signatures inclus dans son identité de domaine, même si le deck ne contient pas le champion correspondant."
+  },
+  {
+    "id": "602.4.b.4.b.1",
+    "content": "Exemple: un deck principal de draft avec une identité de domaine Fureur/Corps/Ordre peut utiliser des sorts signatures Fureur/Ordre ou Corps/Ordre, mais il ne peut pas utiliser des sorts signature Fureur/Esprit ou Corps/Chaos."
+  },
+  {
+    "id": "602.4.b.5",
+    "content": "Les joueurs ne peuvent inclure dans leur deck de runes que des runes provenant de n'importe quelle source correspondant à l'identité de domaine de leur deck de draft."
+  },
+  {
+    "id": "602.4.b.6",
+    "content": "Un deck de draft est légal même s'il n'a pas de légende ou de champion élu."
+  },
+  {
+    "id": "602.4.b.6.a",
+    "content": "Un joueur peut décider de ne pas utiliser une légende ou un champion élu de son deck de draft même s'il en a trouvé dans les cartes draftées."
+  },
+  {
+    "id": "602.4.b.6.b",
+    "content": "Si le deck d'un joueur ne comprend pas de légende et/ou de champion élu, ce joueur pioche une carte au début de sa première phase de départ de chaque partie. (S'il n'a aucun des deux, il ne pioche tout de même qu'une seule carte.)"
+  },
+  {
+    "id": "602.4.b.7",
+    "content": "Les restrictions normales concernant les quantités de cartes en fonction de leur nom et des cartes signature ne s'appliquent pas. Par exemple, un joueur peut utiliser 10 exemplaires de Poro ronchon dans son deck principal s'il les a choisis lors du draft des cartes."
+  },
+  {
+    "id": "602.4.b.7.a",
+    "content": "Le mot-clé << Unique >> ne s'applique pas en draft."
+  },
+  {
+    "id": "602.4.b.8",
+    "content": "La réserve d'un deck de draft comprend toutes les cartes draftées par le joueur dans le cadre de la compétition qui ne sont pas utilisées dans la configuration initiale de son deck, sauf indication contraire. Pour plus d'informations à propos de la réserve, reportez-vous à la section 403."
+  },
+  {
+    "id": "602.4.b.8.a",
+    "content": "De plus, les joueurs peuvent changer leur identité de domaine, leur deck de runes, leur légende et leur champion élu lorsqu'ils utilisent la réserve tant que le deck résultant respecte toujours les règles 602.4.b.3 à 602.4.b.5."
+  },
+  {
+    "id": "603",
+    "content": "2c2"
+  },
+  {
+    "id": "603.1",
+    "content": "Une équipe 2c2 est composée de 2 joueurs qui s'inscrivent ensemble à une compétition en tant qu'équipe et jouent ensemble lors d'un match unique, conformément aux Règles de base."
+  },
+  {
+    "id": "603.2",
+    "content": "Chaque joueur doit fournir ses propres informations d'inscription pour participer à la compétition."
+  },
+  {
+    "id": "603.2.a",
+    "content": "Lorsqu'elles s'inscrivent, les équipes doivent indiquer l'ordre des joueurs de l'équipe pour l'attribution des places en désignant un joueur A et un joueur B."
+  },
+  {
+    "id": "603.3",
+    "content": "Si un joueur abandonne la compétition, toute son équipe est éliminée."
+  },
+  {
+    "id": "603.4",
+    "content": "Si un joueur est disqualifié de la compétition, toute son équipe est disqualifiée."
+  },
+  {
+    "id": "603.5",
+    "content": "Dans certaines compétitions, les équipes 2c2 peuvent fournir un nom d'équipe qui sera affiché. Les responsables de la compétition se réservent le droit de refuser un nom d'équipe s'ils le jugent inapproprié."
+  },
+  {
+    "id": "603.6",
+    "content": "Le format des compétitions en 2c2 peut être scellé ou construit."
+  },
+  {
+    "id": "603.7",
+    "content": "Dans les compétitions en 2c2 à format scellé, l'équipe partage l'ensemble des produits, qui est composé de 8 boosters. Pendant les matchs, les membres d'une même équipe s'assoient côte à côte dans l'ordre AB dans lequel ils sont inscrits. Le déroulement de la procédure de début de partie de Riftbound est défini dans les Règles de base, avec ces exceptions supplémentaires pour les équipes en 2c2:"
+  },
+  {
+    "id": "603.7.a",
+    "content": "L'ordre des tours est le suivant :"
+  },
+  {
+    "id": "603.7.a.1",
+    "content": "Le joueur A de la première équipe."
+  },
+  {
+    "id": "603.7.a.2",
+    "content": "Le joueur A de la deuxième équipe."
+  },
+  {
+    "id": "603.7.a.3",
+    "content": "Le joueur B de la première équipe."
+  },
+  {
+    "id": "603.7.a.4",
+    "content": "Le joueur B de la deuxième équipe."
+  },
+  {
+    "id": "603.7.a.5",
+    "content": "On recommence le même ordre."
+  },
+  {
+    "id": "603.7.b",
+    "content": "Une méthode de choix aléatoire est utilisée pour déterminer quelle équipe choisit le joueur qui commence."
+  },
+  {
+    "id": "603.7.c",
+    "content": "Une fois que la partie atteint l'étape appropriée dans les Règles de base, l'équipe qui remporte la décision choisit dans quel ordre les joueurs commencent à jouer parmi les options a.1 à a.4."
+  },
+  {
+    "id": "603.7.c.1",
+    "content": "Pour les parties suivant la première partie d'un match, c'est l'équipe perdante de la partie précédente qui choisit qui joue en premier. Si la partie précédente s'est terminée sur une égalité, l'ordre dans lequel les joueurs ont joué lors de la partie précédente est conservé."
+  },
+  {
+    "id": "604",
+    "content": "Limite de temps des événements et des manches"
+  },
+  {
+    "id": "604.1",
+    "content": "Il est recommandé d'accorder 60 minutes aux joueurs pour les manches en système suisse d'un événement compétitif."
+  },
+  {
+    "id": "604.2",
+    "content": "Il est fortement recommandé que les parties à élimination directe utilisent des manches sans limite de temps afin que les joueurs puissent terminer leurs parties naturellement. Si les manches à élimination directe doivent être chronométrées, veuillez consulter la section 408.4 pour une procédure de fin de manche modifiée."
+  },
+  {
+    "id": "604.2.a",
+    "content": "Il est tout de même attendu des joueurs qu'ils jouent à un rythme raisonnable. Voir règle 703.2., les sanctions pour jeu lent."
+  },
+  {
+    "id": "700",
+    "content": "Sanctions et mise en application"
+  },
+  {
+    "id": "701",
+    "content": "Généralités"
+  },
+  {
+    "id": "701.1",
+    "content": "Philosophie"
+  },
+  {
+    "id": "701.1.a",
+    "content": "Nous partons du principe que les erreurs sont commises involontairement. Si l'arbitre estime qu'il s'agit d'une faute intentionnelle, cela constitue une tricherie. Pour plus d'informations à propos de la tricherie, reportez-vous à la section 704.8."
+  },
+  {
+    "id": "701.1.a.1",
+    "content": "Les joueurs qui tentent d'abuser des mesures correctives pour obtenir des avantages sont coupables de tricherie."
+  },
+  {
+    "id": "701.1.b",
+    "content": "Les arbitres sont impartiaux et ont pour mission de faire respecter les règles et les règlements."
+  },
+  {
+    "id": "701.1.c",
+    "content": "Les arbitres ne doivent pas empêcher les erreurs. Ils doivent au contraire régler les erreurs qui se sont produites."
+  },
+  {
+    "id": "701.1.d",
+    "content": "Les arbitres ne doivent pas intervenir pendant les parties, sauf si :"
+  },
+  {
+    "id": "701.1.d.1",
+    "content": "Ils estiment qu'une infraction a été commise"
+  },
+  {
+    "id": "701.1.d.2",
+    "content": "Un joueur leur demande de l'aide"
+  },
+  {
+    "id": "701.1.d.3",
+    "content": "Ils observent une situation liée à une conduite antisportive."
+  },
+  {
+    "id": "701.1.e",
+    "content": "Les arbitres doivent donner l'exemple en matière de fair-play, de conduite sportive et de respect."
+  },
+  {
+    "id": "701.1.f",
+    "content": "Les arbitres ne doivent pas tenir compte des antécédents ou des compétences d'un joueur lorsqu'ils déterminent si une erreur a été commise."
+  },
+  {
+    "id": "701.1.g",
+    "content": "Les arbitres sont autorisés à prendre en considération les antécédents ou les compétences d'un joueur lorsqu'ils examinent une situation."
+  },
+  {
+    "id": "701.1.h",
+    "content": "Les sanctions ont pour but de faire en sorte que les joueurs apprennent de leurs erreurs et évitent de les refaire à l'avenir."
+  },
+  {
+    "id": "701.1.i",
+    "content": "Les sanctions visent également à dissuader les autres joueurs de commettre des erreurs similaires."
+  },
+  {
+    "id": "701.1.j",
+    "content": "Les sanctions sont prononcées et enregistrées afin d'aider les arbitres à comprendre les intentions derrière les comportements récurrents."
+  },
+  {
+    "id": "701.1.k",
+    "content": "Seuls les arbitres principaux peuvent imposer des sanctions en dehors du cadre de ces directives. Ils peuvent décider d'appliquer des sanctions plus sévères ou d'enquêter sur la triche si nécessaire. Pour plus d'informations à propos de la tricherie, reportez-vous à la section 704.8."
+  },
+  {
+    "id": "701.1.l",
+    "content": "Les arbitres restent des humains et sont susceptibles de faire des erreurs."
+  },
+  {
+    "id": "701.1.m",
+    "content": "Si un arbitre constate une erreur dont il est responsable, il doit la reconnaître et la corriger si possible."
+  },
+  {
+    "id": "701.1.n",
+    "content": "Si un responsable de la compétition commet une erreur qui entraîne une sanction pour un joueur, l'arbitre principal peut décider d'alléger cette sanction."
+  },
+  {
+    "id": "701.1.o",
+    "content": "Si un joueur agit sur la base d'informations erronées fournies par un responsable de la compétition, l'arbitre principal peut décider de revenir en arrière dans la partie pour corriger cette erreur, même si aucune autre erreur n'a été commise."
+  },
+  {
+    "id": "701.2",
+    "content": "Définitions des sanctions"
+  },
+  {
+    "id": "701.2.a",
+    "content": "Avertissement: un avertissement est une mention indiquant qu'une erreur s'est produite et permettant de conserver une trace de cette erreur."
+  },
+  {
+    "id": "701.2.a.1",
+    "content": "Une prolongation doit être accordée si le temps total nécessaire pour arbitrer et corriger une faute est supérieur à 1 minute."
+  },
+  {
+    "id": "701.2.b",
+    "content": "Perte de partie: une perte de partie signifie que le joueur ayant commis l'erreur et tous ses coéquipiers perdent la partie par forfait. Si cela ne permet pas directement de désigner un vainqueur, les joueurs restants continuent le match."
+  },
+  {
+    "id": "701.2.b.1",
+    "content": "Cette sanction est appliquée immédiatement si le joueur a une partie en cours, ou lors de sa prochaine partie de la compétition si ce n'est pas le cas."
+  },
+  {
+    "id": "701.2.b.2",
+    "content": "Si un joueur reçoit plusieurs fois cette sanction au cours de la même partie, il n'est alors pénalisé qu'une seule fois."
+  },
+  {
+    "id": "701.2.b.3",
+    "content": "Si tous les joueurs d'un match reçoivent simultanément une perte de partie, la partie en cours s'achève sur une égalité. Toutes les pertes de partie sont enregistrées, mais n'ont pas d'incidence sur le score du match."
+  },
+  {
+    "id": "701.2.c",
+    "content": "Perte de match: la perte de match est une sanction sévère, qui est appliquée lorsque l'ensemble du match a été compromis par l'erreur du joueur."
+  },
+  {
+    "id": "701.2.c.1",
+    "content": "La perte de match est appliquée immédiatement si le joueur a un match en cours, ou lors de son prochain match de la compétition si ce n'est pas le cas."
+  },
+  {
+    "id": "701.2.d",
+    "content": "Disqualification: une sanction infligée en cas de faute qui porte atteinte à l'intégrité de la compétition ou en cas de comportement inacceptable."
+  },
+  {
+    "id": "701.2.d.1",
+    "content": "La disqualification entraîne la perte du match en cours pour le joueur concerné et son élimination de la compétition."
+  },
+  {
+    "id": "701.2.d.2",
+    "content": "Si un joueur a déjà gagné des récompenses physiques dans le cadre de la compétition, il peut les garder. Cependant, il ne pourra pas recevoir d'autres récompenses après sa disqualification, même si son classement dans l'événement lui permettrait normalement d'en recevoir."
+  },
+  {
+    "id": "701.2.d.3",
+    "content": "Lorsqu'un joueur est disqualifié, il est exclu de la compétition et du classement."
+  },
+  {
+    "id": "701.2.d.4",
+    "content": "Tous les participants d'une compétition peuvent être disqualifiés, cela ne s'applique pas seulement aux joueurs. La disqualification peut entraîner l'exclusion du lieu où se déroule la compétition, à la discrétion de l'arbitre principal."
+  },
+  {
+    "id": "701.2.d.5",
+    "content": "L'arbitre principal peut appliquer cette sanction même en l'absence de preuve concluante s'il estime que l'intégrité de la compétition a été compromise."
+  },
+  {
+    "id": "701.3",
+    "content": "Application des sanctions"
+  },
+  {
+    "id": "701.3.a",
+    "content": "Les sanctions de perte de partie ou plus graves (section b à d) doivent être signalées à l'arbitre principal."
+  },
+  {
+    "id": "701.3.b",
+    "content": "Les arbitres doivent expliquer l'erreur, la procédure permettant de la corriger et les sanctions infligées aux joueurs concernés."
+  },
+  {
+    "id": "701.3.c",
+    "content": "Certaines erreurs impliquent des mesures correctives qui vont au-delà de la sanction de base, afin de protéger les responsables de la compétition contre toute accusation de parti pris."
+  },
+  {
+    "id": "701.3.d",
+    "content": "Si une seule erreur entraîne plusieurs sanctions, les arbitres ne doivent infliger que la sanction la plus sévère."
+  },
+  {
+    "id": "701.4",
+    "content": "Mélange des cartes"
+  },
+  {
+    "id": "701.4.a",
+    "content": "Certaines mesures correctives nécessitent de mélanger à nouveau la partie aléatoire du deck."
+  },
+  {
+    "id": "701.4.b",
+    "content": "De nombreuses cartes recyclent des cartes au bas du deck. L'arbitre doit faire tout son possible, à partir des informations sur l'état du jeu et des joueurs, pour déterminer quelle partie du deck est connue d'un ou plusieurs joueurs, et séparer ces cartes avant de mélanger le deck."
+  },
+  {
+    "id": "701.4.c",
+    "content": "Une fois que le deck a été mélangé, toutes les cartes qui ont été mises de côté doivent être replacées à leur emplacement initial dans le deck."
+  },
+  {
+    "id": "701.4.d",
+    "content": "Les mélanges effectués par un arbitre dans ces conditions ne sont pas considérés comme des mélanges dans les termes du jeu."
+  },
+  {
+    "id": "701.5",
+    "content": "Retour en arrière"
+  },
+  {
+    "id": "701.5.a",
+    "content": "Certaines mesures correctives permettent de revenir à un état antérieur de la partie lorsque, dans des circonstances extrêmes, laisser la partie dans son état actuel serait nettement pire que de revenir en arrière."
+  },
+  {
+    "id": "701.5.b",
+    "content": "Certains retours en arrière sont simples: cela signifie que seule la dernière action effectuée ou celle en cours est annulée."
+  },
+  {
+    "id": "701.5.b.1",
+    "content": "Tout arbitre peut effectuer un retour en arrière sur la dernière action d'une partie."
+  },
+  {
+    "id": "701.5.b.2",
+    "content": "Lorsqu'un retour en arrière simple est effectué sur une action de jeu d'un joueur, effectuez le retour en arrière pour revenir avant le début de l'action, par exemple avant qu'une carte jouée ne soit placée dans la chaîne. Le joueur peut alors choisir de ne pas effectuer l'action, ou de l'effectuer en prenant des décisions différentes."
+  },
+  {
+    "id": "701.5.c",
+    "content": "Pour les retours en arrière plus complexes que les retours en arrière simples, seuls l'arbitre principal ou les arbitres d'appel (pour les compétitions à haut NPO) peuvent les autoriser."
+  },
+  {
+    "id": "701.5.d",
+    "content": "Pour effectuer un retour en arrière:"
+  },
+  {
+    "id": "701.5.d.1",
+    "content": "Chaque action individuelle effectuée depuis le moment où l'erreur s'est produite est annulée, en commençant par la plus récente."
+  },
+  {
+    "id": "701.5.d.2",
+    "content": "Chaque action doit être annulée dans le bon ordre."
+  },
+  {
+    "id": "701.5.d.3",
+    "content": "Si l'identité d'une carte impliquée dans un retour en arrière ne doit pas être publique (par exemple, une carte piochée), une carte est choisie au hasard parmi les cartes éligibles."
+  },
+  {
+    "id": "701.5.d.4",
+    "content": "Si un joueur a découvert l'identité d'une carte d'un deck, mais ne l'a ni piochée ni canalisée, celle-ci doit être remélangée dans la partie aléatoire du deck."
+  },
+  {
+    "id": "701.6",
+    "content": "Enquêtes"
+  },
+  {
+    "id": "701.6.a",
+    "content": "Toute sanction entraînant une disqualification donne automatiquement lieu à une enquête sur le joueur concerné et sur les comportements susceptibles de compromettre son éligibilité à de futures compétitions."
+  },
+  {
+    "id": "701.6.b",
+    "content": "Des enquêtes peuvent également être menées, à la discrétion d'un arbitre, à la suite d'une sanction infligée en cas de suspicion de tricherie. Pour plus d'informations à propos de la tricherie, reportez-vous à la section 704.8."
+  },
+  {
+    "id": "701.6.c",
+    "content": "Une enquête peut aboutir à la suspension du joueur de toutes les compétitions Riftbound."
+  },
+  {
+    "id": "701.6.d",
+    "content": "Les joueurs suspendus ne peuvent pas participer à des compétitions Riftbound. Si un joueur suspendu se révèle inscrit à une compétition, l'organisateur se réserve le droit de déclarer une disqualification à tout moment."
+  },
+  {
+    "id": "702",
+    "content": "Erreurs de jeu"
+  },
+  {
+    "id": "702.1",
+    "content": "Vue d'ensemble"
+  },
+  {
+    "id": "702.1.a",
+    "content": "Une erreur de jeu est commise lorsque les Règles de base ne sont pas respectées lors d'une partie."
+  },
+  {
+    "id": "702.1.b",
+    "content": "Une erreur de jeu répétée [Avertissements] peut évoluer en [Perte de partie]."
+  },
+  {
+    "id": "702.1.b.1",
+    "content": "Exception faite de la section 702.17, si un joueur commet trois fois ou plus une même erreur de jeu lui valant un [Avertissement] au cours d'un même événement, la sanction passe à la [Perte de partie]."
+  },
+  {
+    "id": "702.1.b.2",
+    "content": "À un NPO compétitif, si un joueur commet un total de 6 erreurs de jeu ou plus lui valant un [Avertissement] au cours d'un même événement, la sanction passe à la [Perte de partie]."
+  },
+  {
+    "id": "702.1.b.3",
+    "content": "À un NPO professionnel, si un joueur commet un total de 5 erreurs de jeu ou plus lui valant un [Avertissement] au cours d'un même événement, la sanction passe à la [Perte de partie]."
+  },
+  {
+    "id": "702.1.b.4",
+    "content": "Même si un joueur n'a pas encore atteint le seuil pour que ses sanctions soient augmentées, un arbitre principal peut initier une enquête pour tricherie s'il estime que cela est approprié. Pour plus d'informations à propos de la tricherie, reportez-vous à la section 704.8."
+  },
+  {
+    "id": "702.1.c",
+    "content": "Lors de compétitions à NPO bas, les sanctions sont généralement moins sévères et il est possible de faire un retour en arrière même si le joueur ayant commis l'erreur a obtenu un avantage en matière d'informations."
+  },
+  {
+    "id": "702.1.c.1",
+    "content": "À bas NPO, lorsqu'une sanction oblige l'adversaire du joueur ayant commis l'erreur à faire un choix, ce choix doit être effectué de manière aléatoire par un arbitre s'il ne peut être évité par un retour en arrière."
+  },
+  {
+    "id": "702.2",
+    "content": "Compétence déclenchée manquée [Pas de sanction]: on considère qu'il y a une compétence déclenchée manquée lorsqu'un joueur est responsable d'une compétence déclenchée et ne montre pas qu'il est conscient du déclencheur avant la première fois où celui-ci pourrait affecter le jeu de manière visible."
+  },
+  {
+    "id": "702.2.a",
+    "content": "Pour plus d'informations à propos des compétences déclenchées, reportez-vous à la section 506."
+  },
+  {
+    "id": "702.2.b",
+    "content": "Une fois que la compétence déclenchée a été manquée, toute autre erreur liée à ce déclencheur est considérée comme une erreur générale. Pour plus d'informations à propos des erreurs générales, reportez-vous à la section 702.15."
+  },
+  {
+    "id": "702.2.c",
+    "content": "Les joueurs n'ont pas le droit d'essayer d'empêcher les compétences déclenchées par un adversaire de se déclencher en effectuant des actions ou en faisant avancer prématurément la partie, y compris par le biais de raccourcis autrement acceptables."
+  },
+  {
+    "id": "702.2.d",
+    "content": "Une compétence déclenchée est considérée comme ayant été déclenchée même si elle a été manquée. Les effets qui décomptent ou limitent le nombre de fois où la compétence peut se déclencher prennent en compte le déclenchement manqué."
+  },
+  {
+    "id": "702.2.e",
+    "content": "Si un déclencheur obligatoire est manqué par le joueur responsable et que le fait de manquer ce déclencheur lui est avantageux, cette pénalité devient un [Avertissement] à la place."
+  },
+  {
+    "id": "702.2.f",
+    "content": "Mesures correctives:"
+  },
+  {
+    "id": "702.2.f.1",
+    "content": "Si le déclencheur a été manqué lors d'un tour précédent, demandez aux joueurs de continuer à jouer."
+  },
+  {
+    "id": "702.2.f.2",
+    "content": "Sinon, l'adversaire suivant dans l'ordre de jeu choisit s'il souhaite déclencher la compétence immédiatement ou l'ignorer complètement."
+  },
+  {
+    "id": "702.3",
+    "content": "Oubli de comptabilisation d'un point [Pas de sanction]: l'oubli de comptabilisation d'un point se produit lorsqu'un joueur obtient un point en conquérant ou en occupant un champ de bataille, mais qu'il oublie de le comptabiliser."
+  },
+  {
+    "id": "702.3.a",
+    "content": "Cela ne s'applique pas aux points obtenus grâce aux déclencheurs de cartes comme Ahri, Charmeuse."
+  },
+  {
+    "id": "702.3.b",
+    "content": "Mesures correctives:"
+  },
+  {
+    "id": "702.3.b.1",
+    "content": "Si le vrai score peut être déterminé et que le cycle de manche complet n'est pas encore terminé, on ajoute le score du joueur concerné au total."
+  },
+  {
+    "id": "702.3.b.2",
+    "content": "Dans le cas contraire, les joueurs doivent continuer à jouer."
+  },
+  {
+    "id": "702.4",
+    "content": "Oubli de pioche [Pas de sanction]: l'oubli de pioche se produit lorsqu'un joueur doit piocher une carte, soit dans le cadre de sa phase de pioche, soit en suivant les instructions d'une carte, mais qu'il ne le fait pas."
+  },
+  {
+    "id": "702.4.a",
+    "content": "Mesures correctives:"
+  },
+  {
+    "id": "702.4.a.1",
+    "content": "Si l'on peut déterminer à quel moment le joueur aurait dû piocher et que le cycle de manche n'est pas encore terminé, le joueur concerné pioche les cartes manquantes."
+  },
+  {
+    "id": "702.4.a.2",
+    "content": "Dans le cas contraire, les joueurs doivent continuer à jouer."
+  },
+  {
+    "id": "702.4.b",
+    "content": "Si le fait d'oublier de piocher était avantageux pour le joueur ayant commis l'erreur (par exemple, si le joueur est sur le point de ne plus avoir de carte), le joueur est alors sanctionné par un [Avertissement]."
+  },
+  {
+    "id": "702.5",
+    "content": "Consultation de cartes supplémentaires [Avertissement]: lorsqu'une action de jeu permet à un joueur de regarder des cartes d'un deck, et que celui-ci regarde plus de cartes que ce à quoi il a droit."
+  },
+  {
+    "id": "702.5.a",
+    "content": "Les cartes consultées à partir d'informations secrètes, comme un deck, sont ajoutées à un groupe d'informations privées pendant qu'elles sont examinées."
+  },
+  {
+    "id": "702.5.b",
+    "content": "Une fois que des cartes supplémentaires examinées ont rejoint un nouveau groupe privé ou secret depuis leur source d'origine, elles font partie de ce groupe. Si les cartes supplémentaires n'ont pas touché un nouveau groupe, il s'agit alors d'une erreur de Consultation d'informations secrètes. Consultez le point 702.10 pour plus d'informations sur les erreurs liées à la consultation d'informations secrètes."
+  },
+  {
+    "id": "702.5.b.1",
+    "content": "Par exemple, si un joueur utilise Partie truquée et ajoute une quatrième carte à l'ensemble privé de cartes qu'il consulte, il s'agit d'une Consultation de cartes supplémentaires. S'il regarde correctement les trois cartes du dessus, mais fait tomber la première carte de son deck principal sans l'ajouter au groupe privé, cela constitue une Consultation d'informations secrètes."
+  },
+  {
+    "id": "702.5.c",
+    "content": "Mesures correctives:"
+  },
+  {
+    "id": "702.5.c.1",
+    "content": "Si l'erreur est détectée pendant que le joueur fautif regarde les cartes supplémentaires, le prochain adversaire dans l'ordre des tours après le joueur fautif regarde le groupe privé et choisit le nombre approprié de cartes supplémentaires à mélanger dans la partie aléatoire du deck approprié."
+  },
+  {
+    "id": "702.5.c.1.a",
+    "content": "Si une ou plusieurs des cartes ont déjà été ajoutées à un nouveau groupe de cartes, le prochain adversaire dans l'ordre des tours après le joueur ayant commis l'erreur examine ce groupe et choisit le nombre approprié de cartes à remettre dans le groupe de cartes d'origine en train d'être consultées. Ensuite, appliquez le point 702.5.c.1."
+  },
+  {
+    "id": "702.5.c.2",
+    "content": "Si l'erreur est détectée à un stade ultérieur de la partie, invitez les joueurs à continuer à jouer."
+  },
+  {
+    "id": "702.6",
+    "content": "Canalisation de runes supplémentaires [Avertissement]: on considère qu'une canalisation de runes supplémentaires a lieu lorsqu'un joueur canalise plus de runes que le nombre autorisé par les Règles de base à la suite d'une action limitée."
+  },
+  {
+    "id": "702.6.a",
+    "content": "Les erreurs de ce type sont généralement publiques, et tous les joueurs sont tenus d'être attentifs à l'état du jeu."
+  },
+  {
+    "id": "702.6.b",
+    "content": "Mesures correctives:"
+  },
+  {
+    "id": "702.6.b.1",
+    "content": "Si les runes supplémentaires ont été utilisées pour payer des actions, il faut effectuer un retour en arrière si cela est possible. S'il n'est pas possible d'effectuer un retour en arrière, l'erreur est reclassifiée en erreur générale. Pour plus d'informations à propos des erreurs générales, reportez-vous à la section 702.15."
+  },
+  {
+    "id": "702.6.b.2",
+    "content": "Si un joueur se rend compte que des runes supplémentaires ont été canalisées et que pas plus d'un cycle de manche complet ne s'est écoulé, les runes supplémentaires doivent être remélangées dans le deck de runes."
+  },
+  {
+    "id": "702.6.b.2.a",
+    "content": "S'il est impossible de déterminer quelles sont les runes supplémentaires, des runes aléatoires doivent être mélangées."
+  },
+  {
+    "id": "702.6.b.3",
+    "content": "Dans le cas contraire, les joueurs doivent continuer à jouer."
+  },
+  {
+    "id": "702.7",
+    "content": "Canalisation insuffisante de runes [Pas de sanction]: on considère qu'une canalisation insuffisante de runes a lieu lorsqu'un joueur canalise moins de runes que le nombre autorisé par les Règles de base à la suite d'une action limitée."
+  },
+  {
+    "id": "702.7.a",
+    "content": "Les erreurs de ce type sont généralement publiques, et tous les joueurs sont tenus d'être attentifs à l'état du jeu."
+  },
+  {
+    "id": "702.7.b",
+    "content": "Mesures correctives:"
+  },
+  {
+    "id": "702.7.b.1",
+    "content": "Si pas plus d'un cycle de manche complet s'est écoulé, le joueur concerné a le droit de canaliser le nombre correct de runes."
+  },
+  {
+    "id": "702.7.b.2",
+    "content": "Dans le cas contraire, les joueurs doivent continuer à jouer."
+  },
+  {
+    "id": "702.7.c",
+    "content": "Si la canalisation insuffisante de rune était avantageuse pour le joueur ayant commis l'erreur, la sanction est aggravée et passe à un [Avertissement]."
+  },
+  {
+    "id": "702.8",
+    "content": "Paiement excessif de coût [Pas de sanction]: on considère qu'il y a un paiement excessif de coût lorsqu'un joueur paie un montant supérieur à un coût en énergie ou en essence runique."
+  },
+  {
+    "id": "702.8.a",
+    "content": "Les erreurs de ce type sont généralement publiques, et tous les joueurs sont tenus d'être attentifs à l'état du jeu."
+  },
+  {
+    "id": "702.8.b",
+    "content": "Mesures correctives:"
+  },
+  {
+    "id": "702.8.b.1",
+    "content": "Si un paiement excessif a été effectué et que c'est toujours le tour du joueur qui a effectué ce paiement, ce dernier est considéré comme ayant des ressources supplémentaires dans sa réserve."
+  },
+  {
+    "id": "702.8.b.1.a",
+    "content": "Si le paiement excessif d'un coût était avantageux pour le joueur ayant commis l'erreur, la sanction est aggravée et passe à un [Avertissement]."
+  },
+  {
+    "id": "702.8.b.1.b",
+    "content": "Si le paiement excessif d'un coût a entraîné une conséquence qui ne se serait pas produite autrement, l'erreur est reclassifiée en erreur générale. Pour plus d'informations à propos des erreurs générales, reportez-vous à la section 702.15."
+  },
+  {
+    "id": "702.9",
+    "content": "Paiement de coût insuffisant [Avertissement]: on considère qu'il y a un paiement de coût insuffisant lorsqu'un joueur paie un montant inférieur à un coût en énergie ou en pouvoir ou utilise le mauvais domaine pour payer un coût en pouvoir."
+  },
+  {
+    "id": "702.9.a",
+    "content": "Les erreurs de ce type sont généralement publiques, et tous les joueurs sont tenus d'être attentifs à l'état du jeu."
+  },
+  {
+    "id": "702.9.b",
+    "content": "Mesures correctives:"
+  },
+  {
+    "id": "702.9.b.1",
+    "content": "Si possible, effectuez un retour en arrière juste avant que la carte ou la compétence n'ait été placée dans la chaîne."
+  },
+  {
+    "id": "702.9.b.2",
+    "content": "S'il n'est pas possible d'effectuer un retour en arrière simple, il faut corriger le coût payé si possible, en épuisant ou en recyclant les runes si nécessaire."
+  },
+  {
+    "id": "702.9.b.2.a",
+    "content": "Si les runes ont été recyclées de manière incorrecte lors du paiement, il faut effectuer un retour en arrière."
+  },
+  {
+    "id": "702.9.b.3",
+    "content": "S'il n'est pas possible d'effectuer un retour en arrière, les joueurs doivent continuer à jouer."
+  },
+  {
+    "id": "702.10",
+    "content": "Consultation d'informations secrètes [Avertissement]: on considère qu'il y a eu consultation d'informations secrètes lorsqu'un joueur consulte des informations qui ne sont accessibles à aucun joueur. Voir la section 127 des Règles de base: Confidentialité pour plus d'informations."
+  },
+  {
+    "id": "702.10.a",
+    "content": "Les joueurs ne doivent pas être sanctionnés si l'erreur est commise par leur adversaire. Exemple: si l'un de vos adversaires retourne la carte du dessus de son deck par inadvertance, vous ne recevez pas de sanction si vous voyez les informations de cette carte."
+  },
+  {
+    "id": "702.10.b",
+    "content": "Mesures correctives:"
+  },
+  {
+    "id": "702.10.b.1",
+    "content": "Si cela est possible, il faut prendre la carte concernée dans les informations confidentielles connues et la remélanger avec les cartes appropriées pour éliminer l'avantage en matière d'information."
+  },
+  {
+    "id": "702.10.b.2",
+    "content": "Si cela n'est pas possible, l'information doit être révélée à tous les joueurs pour éliminer l'avantage en matière d'information, et les joueurs doivent continuer à jouer."
+  },
+  {
+    "id": "702.11",
+    "content": "Consultation d'informations confidentielles adverses [Avertissement]: on considère qu'il y a eu consultation d'informations confidentielles adverses lorsqu'un joueur regarde accidentellement les informations confidentielles de son adversaire. Voir la section 127 des Règles de base: Confidentialité pour plus d'informations."
+  },
+  {
+    "id": "702.11.a",
+    "content": "Les joueurs ne doivent pas être sanctionnés si l'erreur est commise par leur adversaire. Exemple: si l'un de vos adversaires laisse tomber une carte de sa main sur la table face vers le haut, vous ne recevez pas de sanction si vous voyez les informations de cette carte."
+  },
+  {
+    "id": "702.11.b",
+    "content": "Mesures correctives:"
+  },
+  {
+    "id": "702.11.b.1",
+    "content": "L'adversaire à qui appartient la carte peut décider de prendre la carte concernée dans les informations confidentielles connues et de la remélanger avec les cartes appropriées."
+  },
+  {
+    "id": "702.11.b.2",
+    "content": "Si ce joueur décide de ne pas le faire, les joueurs doivent continuer à jouer."
+  },
+  {
+    "id": "702.12",
+    "content": "Pioche de cartes supplémentaires [Avertissement]: on considère qu'une pioche de cartes supplémentaires a lieu lorsqu'un joueur pioche plus de cartes que le nombre autorisé par les Règles de base à la suite d'une action limitée ou lorsqu'un joueur pioche des cartes alors qu'il n'y était pas autorisé par les Règles de base."
+  },
+  {
+    "id": "702.12.a",
+    "content": "Le fait de regarder des cartes supplémentaires est également considéré comme une pioche de cartes supplémentaires, mais seule cette erreur doit être enregistrée."
+  },
+  {
+    "id": "702.12.b",
+    "content": "Mesures correctives:"
+  },
+  {
+    "id": "702.12.b.1",
+    "content": "Si l'erreur est constatée avant que les cartes supplémentaires piochées ne soient ajoutées à un groupe de cartes confidentielles, ces cartes doivent être remélangées dans le deck principal pour éliminer l'avantage en matière d'information."
+  },
+  {
+    "id": "702.12.b.2",
+    "content": "Si l'erreur est constatée lorsqu'un joueur pioche sa main de départ lors de la procédure de début de partie et que le joueur n'a pas encore réalisé de mulligan, les cartes supplémentaires doivent être remélangées dans le deck principal pour éliminer l'avantage en matière d'information."
+  },
+  {
+    "id": "702.12.b.3",
+    "content": "Si l'erreur est détectée une fois que les cartes piochées ont été ajoutées à un groupe de cartes confidentielles et que le cycle de manche est toujours en cours, le prochain adversaire dans l'ordre de jeu regarde la main du joueur ayant commis l'erreur et choisit le nombre approprié de cartes à mélanger dans son deck principal."
+  },
+  {
+    "id": "702.12.b.4",
+    "content": "Si, plus tard dans la partie, il est avéré qu'un joueur dispose de plus de cartes en main qu'il ne le devrait, la mesure corrective doit s'appliquer à ce moment-là."
+  },
+  {
+    "id": "702.13",
+    "content": "Erreur de carte face cachée [Avertissement]: on considère qu'il s'agit d'une erreur lorsqu'un joueur place une carte dans une zone face cachée d'une autre manière que celles autorisées par les Règles de base."
+  },
+  {
+    "id": "702.13.a",
+    "content": "Exemple: cacher une carte qui ne possède pas le mot-clé [Caché]."
+  },
+  {
+    "id": "702.13.b",
+    "content": "Mesures correctives:"
+  },
+  {
+    "id": "702.13.b.1",
+    "content": "Si l'erreur est immédiatement remarquée par le joueur fautif et avant que d'autres actions de match n'aient été effectuées, replacez la carte dans la zone d'où elle provient et reprenez la partie."
+  },
+  {
+    "id": "702.13.b.2",
+    "content": "Si l'erreur est détectée après que des actions de jeu supplémentaires ont été effectuées, mais avant que des cartes aient été ajoutées à la zone d'où provient la carte illégale (par exemple, si une nouvelle carte a été piochée), replacez la carte illégale dans cette zone et remplacez-la par une carte aléatoire de cette zone qui est légale pour la zone face cachée, puis reprenez la partie."
+  },
+  {
+    "id": "702.13.b.2.a",
+    "content": "S'il n'existe aucun remplaçant légal disponible, cette pénalité est aggravée en [Perte de partie]."
+  },
+  {
+    "id": "702.13.b.2.b",
+    "content": "Si l'erreur est détectée après que des cartes ont été ajoutées à la zone d'où provient la carte illégale, cette pénalité est portée à [Perte de partie]."
+  },
+  {
+    "id": "702.14",
+    "content": "Erreur de procédure de mulligan [Avertissement]: on considère qu'il y a une erreur de procédure de mulligan lorsqu'un joueur effectue la procédure de mulligan de manière incorrecte."
+  },
+  {
+    "id": "702.14.a",
+    "content": "Mesures correctives:"
+  },
+  {
+    "id": "702.14.a.1",
+    "content": "Si un joueur recycle et remplace plus de 2 cartes lors de son mulligan, l'adversaire suivant dans l'ordre de jeu regarde la main de ce joueur et peut choisir un nombre de cartes égal au nombre de cartes supplémentaires pour que le joueur les recycle et les remplace."
+  },
+  {
+    "id": "702.14.a.1.a",
+    "content": "Exemple: si un joueur a accidentellement recyclé 3 cartes lors du mulligan, l'adversaire suivant selon l'ordre de jeu regarde la main de ce joueur et peut choisir une carte que ce joueur doit recycler et remplacer."
+  },
+  {
+    "id": "702.14.a.2",
+    "content": "Si cette erreur est détectée après le début de la partie, les joueurs continuent à jouer."
+  },
+  {
+    "id": "702.15",
+    "content": "Oublier de préparer des cartes pendant la phase d'éveil [Pas de sanction]: un joueur oublie de préparer un ou plusieurs éléments de jeu pendant sa phase d'éveil."
+  },
+  {
+    "id": "702.15.a",
+    "content": "Mesures correctives:"
+  },
+  {
+    "id": "702.15.a.1",
+    "content": "Si c'est toujours le tour du joueur ayant commis l'erreur et ayant oublié de procéder à la phase d'éveil, préparez tous les éléments de jeu qui auraient dû être préparés. Si un élément de jeu préparé de cette manière devait placer un déclencheur dans la chaîne, il n'est alors pas placé dans la chaîne."
+  },
+  {
+    "id": "702.15.a.2",
+    "content": "Si ce n'est plus le tour du joueur ayant oublié de procéder à la phase d'éveil, laissez les éléments de jeu dans leur état actuel et poursuivez la partie."
+  },
+  {
+    "id": "702.15.b",
+    "content": "Si l'oubli était avantageux pour le joueur ayant commis l'erreur, la sanction est aggravée et passe à un [Avertissement]."
+  },
+  {
+    "id": "702.16",
+    "content": "Erreurs générales [Avertissement]: on parle d'erreur générale pour toutes les autres infractions des Règles de Riftbound."
+  },
+  {
+    "id": "702.16.a",
+    "content": "Cette catégorie regroupe toutes les autres erreurs de jeu."
+  },
+  {
+    "id": "702.16.b",
+    "content": "Les erreurs de ce type sont généralement publiques, et tous les joueurs sont tenus d'être attentifs à l'état du jeu."
+  },
+  {
+    "id": "702.16.c",
+    "content": "Mesures correctives:"
+  },
+  {
+    "id": "702.16.c.1",
+    "content": "On effectue un retour en arrière si cela est possible."
+  },
+  {
+    "id": "702.16.c.2",
+    "content": "Dans le cas contraire, les joueurs doivent continuer à jouer."
+  },
+  {
+    "id": "702.17",
+    "content": "Manquement au maintien de l'état du jeu [Avertissement]: on considère qu'il y a un manquement au maintien de l'état du jeu lorsqu'un joueur ne signale pas à un autre joueur qu'il n'a pas respecté les règles du jeu, notamment si un joueur oublie de compter un point en conquérant ou en occupant."
+  },
+  {
+    "id": "702.17.a",
+    "content": "De manière générale, cette erreur se produit lorsqu'un joueur commet une erreur de jeu et que son adversaire n'appelle pas immédiatement un arbitre."
+  },
+  {
+    "id": "702.17.b",
+    "content": "Contrairement aux autres erreurs de jeu, cette erreur est liée au suivi de la partie et la sanction liée à cette erreur ne peut pas être aggravée sauf mention contraire de l'arbitre principal."
+  },
+  {
+    "id": "703",
+    "content": "Erreurs de compétition"
+  },
+  {
+    "id": "703.1",
+    "content": "Vue d'ensemble"
+  },
+  {
+    "id": "703.1.a",
+    "content": "Une erreur de compétition est commise lorsque des actions commises dans le cadre d'un match de compétition ou en rapport avec celui-ci enfreignent les règles de la compétition."
+  },
+  {
+    "id": "703.1.b",
+    "content": "Une erreur de tournoi répétée [Avertissements] peut être sanctionnée par une [Perte de partie]."
+  },
+  {
+    "id": "703.1.b.1",
+    "content": "Si un joueur commet trois fois ou plus une erreur de compétition lui valant un [Avertissement] au cours d'un même événement, la sanction passe à la [Perte de partie]."
+  },
+  {
+    "id": "703.1.b.2",
+    "content": "À un NPO compétitif, si un joueur commet un total de 6 erreurs de jeu en tournoi ou plus lui valant un [Avertissement] au cours d'un même événement, la sanction passe à la [Perte de partie]."
+  },
+  {
+    "id": "703.1.b.3",
+    "content": "À un NPO professionnel, si un joueur commet un total de 5 erreurs de jeu en tournoi ou plus lui valant un [Avertissement] au cours d'un même tournoi, la sanction passe à la [Perte de partie]."
+  },
+  {
+    "id": "703.1.b.4",
+    "content": "Même si un joueur n'a pas encore atteint le seuil pour que ses sanctions soient augmentées, un arbitre principal peut initier une enquête pour tricherie s'il estime que cela est approprié. Pour plus d'informations à propos de la tricherie, reportez-vous à la section 704.8."
+  },
+  {
+    "id": "703.1.c",
+    "content": "Lors de compétitions à NPO bas, les sanctions sont généralement moins sévères et il est possible de faire un retour en arrière même si le joueur ayant commis l'erreur a obtenu un avantage en matière d'informations."
+  },
+  {
+    "id": "703.1.c.1",
+    "content": "Lorsqu'une sanction oblige l'adversaire du joueur ayant commis l'erreur à faire un choix, ce choix peut être effectué de manière aléatoire ou par un arbitre s'il ne peut être évité par un retour en arrière."
+  },
+  {
+    "id": "703.2",
+    "content": "Jeu lent [Avertissement]: on considère qu'un joueur commet un jeu lent lorsqu'il effectue la mise en place de début de partie à un rythme anormalement lent, ou qu'il joue à un rythme anormalement lent en cours de partie."
+  },
+  {
+    "id": "703.2.a",
+    "content": "Les joueurs doivent jouer leur tour dans les délais impartis, conformément aux instructions de l'arbitre en fonction de l'état de la partie, et respecter les limites de temps fixées pour la compétition."
+  },
+  {
+    "id": "703.2.b",
+    "content": "Les joueurs peuvent demander à un arbitre de surveiller leur partie afin de détecter tout jeu trop lent."
+  },
+  {
+    "id": "703.2.c",
+    "content": "Le fait de jouer intentionnellement lentement pour obtenir un avantage constitue une tricherie. Pour plus d'informations à propos de la tricherie, reportez-vous à la section 704.8."
+  },
+  {
+    "id": "703.3",
+    "content": "Erreur de feuille d'enregistrement de deck [Perte de partie]: on considère qu'il y a erreur de feuille d'enregistrement de deck lorsqu'un joueur soumet une feuille d'enregistrement de deck qui contient des éléments non conformes."
+  },
+  {
+    "id": "703.3.a",
+    "content": "Exemples:"
+  },
+  {
+    "id": "703.3.a.1",
+    "content": "Le nombre de cartes est supérieur ou inférieur au nombre de cartes que devrait contenir le deck. Pour plus d'informations à propos du nombre de cartes d'un deck, reportez-vous à la section 402."
+  },
+  {
+    "id": "703.3.a.2",
+    "content": "Certaines cartes inscrites sur la feuille d'enregistrement du deck ne sont pas autorisées dans le format de la compétition."
+  },
+  {
+    "id": "703.3.a.3",
+    "content": "Il y a plus de 3 exemplaires d'une carte du deck principal au total dans le deck principal et la réserve."
+  },
+  {
+    "id": "703.3.a.4",
+    "content": "Il y a des cartes qui ne correspondent pas au domaine de la légende enregistrée."
+  },
+  {
+    "id": "703.3.a.5",
+    "content": "Le champion élu ne correspond pas à l'identité de la légende."
+  },
+  {
+    "id": "703.3.a.6",
+    "content": "Le deck d'un joueur contient des cartes qui ne correspondent pas à sa feuille d'enregistrement de deck."
+  },
+  {
+    "id": "703.3.b",
+    "content": "Mesures correctives:"
+  },
+  {
+    "id": "703.3.b.1",
+    "content": "Si la feuille d'enregistrement de deck du joueur est illégale, le joueur doit rectifier sa feuille d'enregistrement de deck afin qu'elle soit conforme aux règles, en apportant le moins de modifications possible, et s'assurer que son deck corresponde bien au nouveau deck enregistré."
+  },
+  {
+    "id": "703.3.b.2",
+    "content": "Si les decks présentés par le joueur ne correspondent pas à la feuille d'enregistrement de deck mais que les decks présentés sont légaux, le joueur doit modifier sa feuille d'enregistrement de deck pour qu'elle corresponde à son deck présenté."
+  },
+  {
+    "id": "703.3.b.3",
+    "content": "Si les cartes nécessaires à la mise en conformité d'une feuille d'enregistrement de deck ne peuvent être obtenues dans un délai raisonnable, l'arbitre principal peut délivrer une carte de remplacement."
+  },
+  {
+    "id": "703.4",
+    "content": "Erreur de présentation de deck [Avertissement]: on considère qu'il y a erreur de présentation de deck lorsqu'un joueur présente à son adversaire ou utilise pendant le jeu un deck dont le contenu n'est pas réglementaire."
+  },
+  {
+    "id": "703.4.a",
+    "content": "Exemples:"
+  },
+  {
+    "id": "703.4.a.1",
+    "content": "Un joueur utilise un champ de bataille qu'il a déjà utilisé lors du match."
+  },
+  {
+    "id": "703.4.a.2",
+    "content": "Un joueur oublie de remettre son deck dans l'état où il était avant l'ajout des cartes de réserve pour la première partie du match suivant."
+  },
+  {
+    "id": "703.4.a.3",
+    "content": "Un joueur oublie de sortir son champion élu de son deck et de le mettre dans la zone de champion."
+  },
+  {
+    "id": "703.4.a.4",
+    "content": "Le deck d'un joueur n'a pas le bon nombre de cartes. Pour plus d'informations à propos du nombre de cartes d'un deck, reportez-vous à la section 402. (Exemples: un joueur a mal placé une carte, un joueur a oublié de mélanger ses cartes bannies dans son deck entre les parties, le deck d'un joueur comporte une carte supplémentaire ou il manque une carte en raison d'un effet tel que Possession lors d'une partie précédente.)"
+  },
+  {
+    "id": "703.4.a.5",
+    "content": "Un joueur possède dans sa boîte de deck des cartes avec son deck qui ne font pas partie du contenu de sa feuille d'enregistrement de deck. Les cartes promotionnelles distribuées dans le cadre de l'événement, les créations et les cartes endommagées remplacées par des remplacements officiels peuvent être stockées de cette manière et ne causent pas cette erreur."
+  },
+  {
+    "id": "703.4.a.5.a",
+    "content": "À NPO professionnel, les cartes supplémentaires conservées dans la boîte de deck de cette manière entraînent une [Perte de partie]."
+  },
+  {
+    "id": "703.4.b",
+    "content": "Mesures correctives:"
+  },
+  {
+    "id": "703.4.b.1",
+    "content": "Si un joueur détecte l'erreur avant que les premières cartes aient été distribuées, le deck doit être remis dans son état initial si possible, et les joueurs doivent continuer la partie."
+  },
+  {
+    "id": "703.4.b.2",
+    "content": "Si le joueur qui a commis l'erreur s'en aperçoit alors que les premières cartes ont déjà été distribuées, le deck doit être remis dans son état initial si possible et les joueurs doivent continuer la partie. Par exemple:"
+  },
+  {
+    "id": "703.4.b.2.a",
+    "content": "Au cours de la première partie d'un match, un joueur se rend compte qu'il a oublié de remettre son deck dans l'état où il était avant l'ajout des cartes de réserve."
+  },
+  {
+    "id": "703.4.b.2.a.1",
+    "content": "Un arbitre peut alors remettre le deck dans l'état approprié en remettant les cartes correspondantes dans le deck principal et dans la réserve."
+  },
+  {
+    "id": "703.4.b.2.a.1.a",
+    "content": "Si des cartes de la réserve se trouvent dans la main du joueur, elles sont remplacées au hasard par des cartes du deck principal qui se trouvaient par erreur dans la réserve."
+  },
+  {
+    "id": "703.4.b.2.a.2",
+    "content": "Les cartes de la partie aléatoire du deck doivent être mélangées une fois que les cartes ont été remises au bon endroit."
+  },
+  {
+    "id": "703.4.b.3",
+    "content": "Si l'erreur est détectée par un autre joueur que celui qui a commis l'erreur alors que les premières cartes ont déjà été distribuées, la sanction appliquée est aggravée et passe à la [Perte de partie]."
+  },
+  {
+    "id": "703.4.b.3.a",
+    "content": "Lors d'une partie à NPO amical ou compétitif, si l'erreur consiste pour un joueur à oublier de déplacer son champion élu de son deck principal vers la zone du champion choisi lors de la mise en place, l'arbitre peut réduire la sanction à un [Avertissement] et rétablir l'état du match si possible, peu importe qui a découvert l'erreur ou le moment où elle a été constatée au cours du match."
+  },
+  {
+    "id": "703.4.b.3.b",
+    "content": "Les joueurs peuvent demander à un arbitre de vérifier que le deck d'un adversaire est conforme. (Exemple: si un joueur pense que son adversaire utilise une carte de réserve lors de la première partie.)"
+  },
+  {
+    "id": "703.4.b.4",
+    "content": "S'il n'est pas possible de remettre le deck dans l'état approprié, la sanction appliquée est aggravée et passe à la [Perte de partie]."
+  },
+  {
+    "id": "703.4.b.4.a",
+    "content": "Lorsqu'une mesure corrective pour un champion élu manquant est applicable, si cela se produit à tout moment après que les mains de départ ont été tirées et qu'aucun exemplaire du champion élu n'est disponible dans le deck principal pour être déplacé dans la zone du champion élu afin de rétablir l'état de jeu, la pénalité peut être rétrogradée à un [Avertissement] et la partie peut se poursuivre sans que le joueur en erreur ait un champion dans la zone du champion élu."
+  },
+  {
+    "id": "703.4.b.4.b",
+    "content": "Exemple: un joueur possède deux exemplaires de Marchand itinérant dans sa feuille d'enregistrement de deck, un dans son deck principal et un dans sa réserve. Lors de la première manche d'une partie, un joueur pioche et joue un Marchand itinérant. Lors d'un tour ultérieur, il pioche le deuxième exemplaire et se rend compte qu'il a oublié de le retirer de sa réserve. $\\tilde{A}$ ce stade, il n'est plus possible de restaurer le deck."
+  },
+  {
+    "id": "703.4.b.5",
+    "content": "Si les cartes nécessaires à la mise en conformité du deck ne peuvent être obtenues dans un délai raisonnable, l'arbitre principal peut délivrer une carte de remplacement."
+  },
+  {
+    "id": "703.5",
+    "content": "Manquement aux règles de communication [Avertissement]: on considère qu'il y a manquement aux règles de communication lorsqu'un joueur ne communique pas correctement avec ses adversaires pendant le jeu."
+  },
+  {
+    "id": "703.5.a",
+    "content": "Ce type d'erreur comprend tout manquement involontaire aux règles de communication énoncées dans la section 500."
+  },
+  {
+    "id": "703.5.b",
+    "content": "Mesures correctives:"
+  },
+  {
+    "id": "703.5.b.1",
+    "content": "Si des informations incorrectes ont été communiquées, les informations correctes doivent être communiquées."
+  },
+  {
+    "id": "703.5.b.2",
+    "content": "Si des décisions ont été prises sur la base d'informations incorrectes, les joueurs doivent effectuer un retour en arrière si cela est possible."
+  },
+  {
+    "id": "703.6",
+    "content": "Marquage des cartes [Avertissement]: on considère qu'une carte est marquée lorsqu'il est possible d'identifier la carte d'un joueur sans en voir la face."
+  },
+  {
+    "id": "703.6.a",
+    "content": "Cela inclut, sans s'y limiter, les rayures, la décoloration et les plis."
+  },
+  {
+    "id": "703.6.b",
+    "content": "Si les cartes d'un joueur sont protégées par des pochettes, les cartes doivent être examinées dans leurs pochettes afin de déterminer si ces dernières sont marquées."
+  },
+  {
+    "id": "703.6.c",
+    "content": "L'arbitre principal est habilité à déterminer si une carte du deck d'un joueur est marquée."
+  },
+  {
+    "id": "703.6.d",
+    "content": "Mesures correctives"
+  },
+  {
+    "id": "703.6.d.1",
+    "content": "Les arbitres peuvent demander à un joueur de retirer immédiatement ses pochettes ou de remplacer n'importe quelle pochette ou carte de son deck, soit immédiatement, soit avant la prochaine manche."
+  },
+  {
+    "id": "703.6.d.2",
+    "content": "Si les cartes nécessaires à la mise en conformité du deck ne peuvent être obtenues dans un délai raisonnable, l'arbitre principal peut délivrer une carte de remplacement."
+  },
+  {
+    "id": "703.7",
+    "content": "Mélange insuffisant [Avertissement]: on considère que le mélange des cartes est insuffisant lorsqu'un joueur n'a pas suffisamment mélangé son deck alors qu'il était tenu de le faire."
+  },
+  {
+    "id": "703.7.a",
+    "content": "Si un joueur estime qu'un adversaire n'a pas suffisamment mélangé son deck principal ou son deck de runes avant de les présenter, il peut faire appel à un arbitre."
+  },
+  {
+    "id": "703.7.b",
+    "content": "Le mélange en piles n'est pas une méthode suffisante et ne doit être utilisé que comme méthode de comptage."
+  },
+  {
+    "id": "703.7.c",
+    "content": "Mesures correctives:"
+  },
+  {
+    "id": "703.7.c.1",
+    "content": "Un arbitre peut demander à un joueur de mélanger à nouveau son deck."
+  },
+  {
+    "id": "703.7.c.2",
+    "content": "Un arbitre peut mélanger le deck du joueur à sa place."
+  },
+  {
+    "id": "703.8",
+    "content": "Arriver en retard à un match: on considère qu'un joueur arrive en retard à un match lorsqu'il se présente à son match après le début du temps réglementaire."
+  },
+  {
+    "id": "703.8.a",
+    "content": "Si le joueur arrive dans les 2 minutes suivant le début de la manche, la sanction appliquée au joueur est un [Avertissement], et une prolongation est accordée."
+  },
+  {
+    "id": "703.8.b",
+    "content": "Si le joueur arrive dans les 10 minutes suivant le début de la manche, la sanction appliquée au joueur est un [Avertissement], et une prolongation est accordée. Lors des compétitions à haut NPO, la sanction appliquée est aggravée et passe à [Perte de partie]."
+  },
+  {
+    "id": "703.8.c",
+    "content": "Si le joueur arrive plus de 10 minutes après le début de la manche, la sanction est une [Perte de match]."
+  },
+  {
+    "id": "703.8.d",
+    "content": "Si un joueur ne se présente pas à son match, la sanction est une [Perte de match] et le joueur est éliminé de la compétition, à moins qu'il ne se présente à un arbitre avant le début du match suivant."
+  },
+  {
+    "id": "703.8.e",
+    "content": "Les joueurs peuvent appeler un arbitre avant le début du temps réglementaire ou entre deux parties d'un match pour demander une prolongation de 10 minutes maximum afin d'éviter une sanction. La décision revient à l'arbitre. (Exemple: si un joueur a besoin d'aller aux toilettes.)"
+  },
+  {
+    "id": "703.9",
+    "content": "Aide extérieure: on considère qu'il y a aide extérieure lorsqu'un joueur reçoit des conseils ou de l'aide stratégique de la part d'une personne extérieure au match."
+  },
+  {
+    "id": "703.9.a",
+    "content": "Si le joueur qui reçoit le conseil refuse activement ce dernier en le signalant un arbitre, sa sanction est un [Avertissement]. Si le joueur ne signale pas cette infraction à un arbitre, la sanction est une [Perte de match]. Cette sanction ne s'applique pas si l'arbitre principal juge que le conseil a été donné de manière malveillante."
+  },
+  {
+    "id": "703.9.b",
+    "content": "Si le joueur qui reçoit le conseil a demandé ce conseil, il s'agit d'une tricherie. Pour plus d'informations à propos de la tricherie, reportez-vous à la section 704.8."
+  },
+  {
+    "id": "703.9.c",
+    "content": "Si le spectateur fournissant une assistance extérieure est également un participant de l'événement, cette sanction lui est également appliquée."
+  },
+  {
+    "id": "703.9.d",
+    "content": "Si un spectateur donne des conseils de manière malveillante ou délibérée, il peut être exclu du lieu de la compétition."
+  },
+  {
+    "id": "703.9.e",
+    "content": "Recevoir des conseils stratégiques d'un coéquipier dans une compétition 2c2 ou autres formats d'équipe lorsque cela est spécifié ne constitue pas une aide extérieure."
+  },
+  {
+    "id": "703.9.f",
+    "content": "À la discrétion de l'arbitre, un joueur peut recevoir de l'aide physique pendant la compétition, notamment pour des actions liées au jeu telles que le mélange des cartes ou leur déplacement. Il ne s'agit alors pas d'aide extérieure."
+  },
+  {
+    "id": "703.10",
+    "content": "Méthode incorrecte pour déterminer le gagnant [Perte de match]: les résultats des parties et des matchs de Riftbound doivent être déterminés en jouant à Riftbound selon les règles du format de la compétition."
+  },
+  {
+    "id": "703.10.a",
+    "content": "Il est interdit d'utiliser d'autres méthodes, y compris, mais sans s'y limiter, le tirage au sort, le lancer de dés ou tout autre type de jeu, pour déterminer le gagnant."
+  },
+  {
+    "id": "703.10.b",
+    "content": "Jouer à d'autres formats de Riftbound que celui de la compétition avec une feuille d'enregistrement de deck appropriée ne peut pas être utilisé pour déterminer un gagnant."
+  },
+  {
+    "id": "703.10.c",
+    "content": "Proposer ou accepter de telles offres est considéré comme une méthode incorrecte pour déterminer le gagnant"
+  },
+  {
+    "id": "704",
+    "content": "Comportement antisportif"
+  },
+  {
+    "id": "704.1",
+    "content": "Vue d'ensemble"
+  },
+  {
+    "id": "704.1.a",
+    "content": "Riftbound ne tolère pas les comportements antisportifs. Les participants et les spectateurs de la compétition doivent se comporter de manière respectueuse et honnête."
+  },
+  {
+    "id": "704.1.b",
+    "content": "Si un joueur commet deux fois ou plus une faute antisportive de la catégorie [Avertissement] au cours d'un même événement, la sanction est aggravée et passe à une [Perte de partie] et peut être de nouveau aggravée, à la seule discrétion de l'arbitre principal."
+  },
+  {
+    "id": "704.1.c",
+    "content": "Les infractions et sanctions détaillées dans cette section visent à servir de lignes directrices générales. Les infractions mentionnées ne sont que des exemples et ne constituent pas une liste exhaustive. Tous les arbitres sont habilités à signaler les comportements antisportifs, et l'arbitre principal peut appliquer toute sanction jugée appropriée pour un comportement antisportif, y compris une [Disqualification]"
+  },
+  {
+    "id": "704.2",
+    "content": "Conduite antisportive mineure [Avertissement]:"
+  },
+  {
+    "id": "704.2.a",
+    "content": "Les exemples comprennent, sans s'y limiter:"
+  },
+  {
+    "id": "704.2.a.1",
+    "content": "Manquer de respecter aux participants ou aux spectateurs"
+  },
+  {
+    "id": "704.2.a.2",
+    "content": "Harcèlement"
+  },
+  {
+    "id": "704.2.a.3",
+    "content": "Mauvaise hygiène"
+  },
+  {
+    "id": "704.2.a.4",
+    "content": "Matériel de jeu comportant des éléments offensants"
+  },
+  {
+    "id": "704.3",
+    "content": "Conduite antisportive majeure [Disqualification]:"
+  },
+  {
+    "id": "704.3.a",
+    "content": "Les exemples comprennent, sans s'y limiter:"
+  },
+  {
+    "id": "704.3.a.1",
+    "content": "Utilisation d'insultes raciales"
+  },
+  {
+    "id": "704.3.a.2",
+    "content": "Violence physique ou menace de violence physique"
+  },
+  {
+    "id": "704.3.a.3",
+    "content": "Faire preuve d'agressivité"
+  },
+  {
+    "id": "704.3.a.4",
+    "content": "Mégenrer intentionnellement une personne participant à un événement"
+  },
+  {
+    "id": "704.3.b",
+    "content": "Cette sanction s'accompagne souvent d'une expulsion du site, cette décision est à la seule discrétion des responsables de la compétition."
+  },
+  {
+    "id": "704.4",
+    "content": "Comportement abusif [Avertissement]: on considère comme un comportement abusif le fait qu'un joueur utilise la technicité des règles pour obtenir un avantage qui n'est pas fair-play."
+  },
+  {
+    "id": "704.4.a",
+    "content": "Les exemples comprennent, sans s'y limiter:"
+  },
+  {
+    "id": "704.4.a.1",
+    "content": "Demander à un joueur quelle décision il prendrait avant de décider de réagir ou pas."
+  },
+  {
+    "id": "704.4.a.2",
+    "content": "Jouer rapidement après l'adversaire pour l'empêcher d'avoir le temps de prendre la priorité."
+  },
+  {
+    "id": "704.4.a.3",
+    "content": "Promettre un compromis afin d'obtenir des informations supplémentaires avant de prendre une décision différente."
+  },
+  {
+    "id": "704.4.a.4",
+    "content": "Utiliser une carte imprimée avec une erreur sans en informer les adversaires une fois que la carte a été jouée."
+  },
+  {
+    "id": "704.4.a.5",
+    "content": "Inciter un adversaire à enfreindre les règles."
+  },
+  {
+    "id": "704.4.a.6",
+    "content": "Distraire intentionnellement un adversaire afin qu'il manque l'occasion de prendre la priorité."
+  },
+  {
+    "id": "704.4.a.7",
+    "content": "Jouer de manière imprécise ou faire une représentation imprécise de l'état du jeu afin de dissimuler une stratégie ou des informations."
+  },
+  {
+    "id": "704.5",
+    "content": "Corruption [Perte de match]: les participants et les spectateurs n'ont pas le droit de soudoyer les joueurs ou les responsables de la compétition."
+  },
+  {
+    "id": "704.5.a",
+    "content": "Les résultats des matchs disputés dans le cadre d'une compétition ne peuvent être influencés par des récompenses ou des avantages hors jeu."
+  },
+  {
+    "id": "704.5.a.1",
+    "content": "Faire ou accepter ce genre de proposition est considéré comme de la corruption."
+  },
+  {
+    "id": "704.5.a.2",
+    "content": "La corruption concerne les actions commises au cours d'une partie et ne se limite pas seulement aux résultats finaux."
+  },
+  {
+    "id": "704.5.a.3",
+    "content": "Le fait de se voir proposer une faveur n'est pas considéré comme un acte de corruption (sauf si celle-ci est acceptée ou donne lieu à une contrepartie), mais le joueur qui se voit proposer une faveur doit en informer un arbitre."
+  },
+  {
+    "id": "704.5.b",
+    "content": "Partager des récompenses qui n'ont pas encore été attribuées dans la compétition en cours ne constitue pas un acte de corruption. Les joueurs ont le droit de passer ce genre d'accord avant ou pendant leur match, à condition que le partage des gains ne soit pas proposé ou accepté en échange d'un certain résultat, d'une action en jeu ou de l'abandon d'un joueur."
+  },
+  {
+    "id": "704.5.c",
+    "content": "Il ne s'agit pas d'un acte de corruption lorsque les joueurs participant à la phase à élimination directe d'une compétition qui n'offre que des récompenses comme de l'argent, des crédits commerciaux, et/ou des produits non ouverts, avec l'autorisation de l'organisateur de la compétition, conviennent de se partager les récompenses qui seront remises à l'issue de la compétition. Tous les joueurs encore en lice dans le tournoi doivent accepter cet arrangement."
+  },
+  {
+    "id": "704.5.c.1",
+    "content": "À ce stade, les joueurs peuvent décider de mettre fin à leur participation à la compétition ou de continuer à jouer. S'il s'agit d'un événement majeur diffusé en streaming, les joueurs doivent continuer à jouer afin que le classement final puisse être établi."
+  },
+  {
+    "id": "704.5.d",
+    "content": "Il ne s'agit pas d'un acte de corruption lorsque les joueurs participant à la manche finale d'une phase à élimination directe d'une compétition, avec l'autorisation de l'organisateur de la compétition, conviennent mutuellement d'un gagnant et de se partager les récompenses restantes. Dans ces cas-là, un joueur doit accepter de se retirer du tournoi. Les récompenses sont octroyées selon le classement final de chaque joueur."
+  },
+  {
+    "id": "704.6",
+    "content": "Pari [Disqualification] : les participants de la compétition ne sont pas autorisés à parier sur une phase ou l'ensemble d'une compétition, d'un match ou d'une partie, y compris sur le résultat."
+  },
+  {
+    "id": "704.7",
+    "content": "Vol [Disqualification]: voler ou tenter de voler les biens d'un participant, d'un spectateur, d'un vendeur ou d'un organisateur de l'événement."
+  },
+  {
+    "id": "704.8",
+    "content": "Tricherie [Disqualification]: Riftbound ne tolère aucune forme de tricherie, quel que soit le niveau de jeu."
+  },
+  {
+    "id": "704.8.a",
+    "content": "La tricherie désigne, sans s'y limiter, toute action entraînant une sanction mentionnée dans les sections 702 ou 703, lorsqu'elle est commise de manière délibérée ou malveillante dans le but d'obtenir un avantage."
+  },
+  {
+    "id": "704.8.a.1",
+    "content": "Cela inclut le fait de tenter de provoquer des erreurs pendant la partie pour utiliser une solution à votre avantage."
+  },
+  {
+    "id": "704.8.a.2",
+    "content": "Si les arbitres soupçonnent qu'un joueur enfreint délibérément ou malicieusement le règlement, l'arbitre principal peut initier une enquête afin de déterminer s'il y a eu tricherie."
+  },
+  {
+    "id": "704.8.b",
+    "content": "Mentir à un responsable de la compétition est considéré comme de la tricherie."
+  },
+  {
+    "id": "704.8.c",
+    "content": "Omettre intentionnellement de signaler l'erreur d'un coéquipier est considéré comme de la tricherie."
+  },
+  {
+    "id": "704.8.d",
+    "content": "L'arbitre principal est le seul responsable de la décision finale concernant les sanctions à infliger en cas de tricherie."
+  }
+]
