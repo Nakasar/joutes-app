@@ -332,7 +332,9 @@
           "setCode": "Set",
           "allSets": "All sets",
           "type": "Type",
-          "allTypes": "All types"
+          "allTypes": "All types",
+          "language": "Language",
+          "allLanguages": "All languages"
         },
         "pagination": {
           "results": "Showing {start}-{end} of {total} cards",

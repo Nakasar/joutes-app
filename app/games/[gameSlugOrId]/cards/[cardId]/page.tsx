@@ -51,9 +51,9 @@ export async function generateMetadata({
 export default async function RiftboundCardDetailPage({
   params,
 }: {
-  params: Promise<{ cardId: string }>;
+  params: Promise<{ cardId: string; gameSlugOrId: string }>;
 }) {
-  const { cardId } = await params;
+  const { cardId, gameSlugOrId } = await params;
   const locale = await getLocale();
   const t = await getTranslations("Games");
 
@@ -67,7 +67,7 @@ export default async function RiftboundCardDetailPage({
       <div className="container mx-auto p-6">
         <h1 className="text-3xl font-bold mb-6">{t("cards.detail.notFoundTitle")}</h1>
         <Button asChild>
-          <Link href={`/games/${"riftbound"}/cards`} className="text-blue-600 hover:underline">
+          <Link href={`/games/${gameSlugOrId}/cards`} className="text-blue-600 hover:underline">
             ← {t("cards.detail.backToList")}
           </Link>
         </Button>

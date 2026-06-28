@@ -12,21 +12,24 @@ type SearchCard = BoosterCard & {
   [key: string]: unknown;
 };
 
-async function getFilterValues(gameSlug: string): Promise<{ setCodes: string[]; types: string[] }> {
+async function getFilterValues(gameSlug: string): Promise<{ setCodes: string[]; types: string[]; languages: string[] }> {
   const game = await db.collection<Game>("games").findOne({ slug: gameSlug });
   if (!game) {
-    return { setCodes: [], types: [] };
+    return { setCodes: [], types: [], languages: [] };
   }
 
-  const cardsCollection = db.collection<{ setCode?: string; type?: string }>("cards");
+  const cardsCollection = db.collection<{ setCode?: string; type?: string; lang?: string }>("cards");
   const setCodes = (await cardsCollection.distinct("setCode", { gameId: game._id }))
     .filter((value): value is string => typeof value === "string" && value.length > 0)
     .sort();
   const types = (await cardsCollection.distinct("type", { gameId: game._id }))
     .filter((value): value is string => typeof value === "string" && value.length > 0)
     .sort();
+  const languages = (await cardsCollection.distinct("lang", { gameId: game._id }))
+    .filter((value): value is string => typeof value === "string" && value.length > 0)
+    .sort();
 
-  return { setCodes, types };
+  return { setCodes, types, languages };
 }
 
 async function search({ gameId, searchQuery, lang, setCode, type, limit, offset }: { gameId: string; searchQuery: string; lang: string; setCode: string; type?: string; limit?: number; offset?: number }): Promise<{
@@ -34,11 +37,12 @@ async function search({ gameId, searchQuery, lang, setCode, type, limit, offset 
   total: number;
   setCodes: string[];
   types: string[];
+  languages: string[];
 }> {
   const indexConfig = indexes[gameId];
   if (!indexConfig) {
     console.error(`No index found for gameId: ${gameId}`);
-    return { cards: [], total: 0, setCodes: [], types: [] };
+    return { cards: [], total: 0, setCodes: [], types: [], languages: [] };
   }
 
   const index = meilisearch.index<SearchCard>(indexConfig.name);
@@ -46,8 +50,8 @@ async function search({ gameId, searchQuery, lang, setCode, type, limit, offset 
   const queryOptions: { filter: string[]; limit?: number; offset?: number } = { filter: [] };
   let queryString = "";
 
-  if (searchQuery.includes(' lang:')) {
-
+  if (lang === 'all') {
+    // no language filter
   } else if (lang !== 'en') {
     queryOptions.filter.push(
       `lang IN [en, ${lang}]`,
@@ -114,6 +118,7 @@ async function search({ gameId, searchQuery, lang, setCode, type, limit, offset 
     total: result.estimatedTotalHits ?? cards.length,
     setCodes: filterValues.setCodes,
     types: filterValues.types,
+    languages: filterValues.languages,
   };
 }
 
@@ -123,7 +128,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const searchParams = new URL(request.url).searchParams;
   const setCode = searchParams.get('setCode') || '';
   const searchQuery = searchParams.get('searchQuery') || '';
-  const lang = searchParams.get('lang') || 'en';
+  const lang = searchParams.get('lang') || 'all';
   const type = searchParams.get('type') || undefined;
   const pageParam = searchParams.get('page');
   const limitParam = searchParams.get('limit');
@@ -154,5 +159,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     totalPages: Math.max(1, Math.ceil(result.total / limit)),
     setCodes: result.setCodes,
     types: result.types,
+    languages: result.languages,
   });
 }

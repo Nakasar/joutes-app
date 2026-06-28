@@ -329,10 +329,12 @@
         "noResults": "Aucune carte trouvée pour \"{query}\"",
         "emptyState": "Aucune carte disponible pour le moment.",
         "filters": {
-          "setCode": "Extension",
-          "allSets": "Toutes les extensions",
+          "setCode": "Édition",
+          "allSets": "Toutes les éditions",
           "type": "Type",
-          "allTypes": "Tous les types"
+          "allTypes": "Tous les types",
+          "language": "Langue",
+          "allLanguages": "Toutes les langues"
         },
         "pagination": {
           "results": "Affichage de {start}-{end} sur {total} cartes",

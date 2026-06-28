@@ -25,6 +25,7 @@ type CardsApiResponse = {
   totalPages: number;
   setCodes: string[];
   types: string[];
+  languages: string[];
 };
 
 const PAGE_SIZE = 24;
@@ -39,9 +40,11 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
   const [selectedSetCode, setSelectedSetCode] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
+  const [selectedLanguage, setSelectedLanguage] = useState("all");
   const [cards, setCards] = useState<CardWithType[]>([]);
   const [setCodes, setSetCodes] = useState<string[]>([]);
   const [types, setTypes] = useState<string[]>([]);
+  const [languages, setLanguages] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [pagination, setPagination] = useState({
@@ -56,11 +59,12 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   const t = useTranslations("Games");
 
   const fetchCards = useCallback(
-    async (query: string, setCode: string, type: string, pageNumber: number) => {
+    async (query: string, setCode: string, type: string, language: string, pageNumber: number) => {
       const trimmedQuery = query.trim();
       const normalizedSetCode = setCode && setCode !== "all" ? setCode : "all";
       const normalizedType = type && type !== "all" ? type : "all";
-      const requestKey = `${trimmedQuery}|${normalizedSetCode}|${normalizedType}|${pageNumber}`;
+      const normalizedLanguage = language && language !== "all" ? language : "all";
+      const requestKey = `${trimmedQuery}|${normalizedSetCode}|${normalizedType}|${normalizedLanguage}|${pageNumber}`;
 
       if (pendingRequestKeyRef.current === requestKey) {
         return;
@@ -86,6 +90,10 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
           params.set("type", normalizedType);
         }
 
+        if (normalizedLanguage !== "all") {
+          params.set("lang", normalizedLanguage);
+        }
+
         params.set("page", String(pageNumber));
         params.set("limit", String(PAGE_SIZE));
 
@@ -98,6 +106,7 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
           : data.cards ?? [];
         const nextSetCodes = Array.isArray(data) ? [] : data.setCodes ?? [];
         const nextTypes = Array.isArray(data) ? [] : data.types ?? [];
+        const nextLanguages = Array.isArray(data) ? [] : data.languages ?? [];
         const nextPagination = Array.isArray(data)
           ? {
               page: 1,
@@ -119,6 +128,7 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
         setCards(nextCards);
         setSetCodes(nextSetCodes);
         setTypes(nextTypes);
+        setLanguages(nextLanguages);
         setPagination(nextPagination);
       } catch (error) {
         if (controller.signal.aborted) {
@@ -129,6 +139,7 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
         setCards([]);
         setSetCodes([]);
         setTypes([]);
+        setLanguages([]);
         setPagination({ page: 1, limit: PAGE_SIZE, total: 0, totalPages: 1 });
       } finally {
         if (activeControllerRef.current === controller) {
@@ -143,7 +154,7 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
     [gameSlug]
   );
 
-  const updateURL = useCallback((query: string, setCode: string, type: string, page: number) => {
+  const updateURL = useCallback((query: string, setCode: string, type: string, language: string, page: number) => {
     const params = new URLSearchParams();
 
     if (query.trim()) {
@@ -156,6 +167,10 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
 
     if (type && type !== "all") {
       params.set("type", type);
+    }
+
+    if (language && language !== "all") {
+      params.set("lang", language);
     }
 
     if (page > 1) {
@@ -177,13 +192,15 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
     const urlPage = Number.parseInt(searchParams.get("page") ?? "1", 10) || 1;
     const urlSetCode = searchParams.get("setCode") ?? "all";
     const urlType = searchParams.get("type") ?? "all";
+    const urlLanguage = searchParams.get("lang") ?? "all";
 
     setSearchQuery(urlQuery);
     setCurrentPage(urlPage);
     setSelectedSetCode(urlSetCode);
     setSelectedType(urlType);
+    setSelectedLanguage(urlLanguage);
 
-    void fetchCards(urlQuery, urlSetCode, urlType, urlPage);
+    void fetchCards(urlQuery, urlSetCode, urlType, urlLanguage, urlPage);
   }, [fetchCards, searchParams]);
 
   // Debounced search when typing
@@ -196,9 +213,9 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
 
     if (trimmedQuery.length === 0 || trimmedQuery.length > 2) {
       const timer = window.setTimeout(() => {
-        void fetchCards(trimmedQuery, selectedSetCode, selectedType, 1);
+        void fetchCards(trimmedQuery, selectedSetCode, selectedType, selectedLanguage, 1);
         setCurrentPage(1);
-        updateURL(trimmedQuery, selectedSetCode, selectedType, 1);
+        updateURL(trimmedQuery, selectedSetCode, selectedType, selectedLanguage, 1);
       }, trimmedQuery.length === 0 ? 0 : 300);
 
       return () => window.clearTimeout(timer);
@@ -207,15 +224,16 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
     setCards([]);
     setSetCodes([]);
     setTypes([]);
+    setLanguages([]);
     setPagination({ page: 1, limit: PAGE_SIZE, total: 0, totalPages: 1 });
     return undefined;
-  }, [searchQuery, selectedSetCode, selectedType, fetchCards, updateURL]);
+  }, [searchQuery, selectedSetCode, selectedType, selectedLanguage, fetchCards, updateURL]);
 
   const handleSearch = () => {
     const newPage = 1;
     setCurrentPage(newPage);
-    void fetchCards(searchQuery, selectedSetCode, selectedType, newPage);
-    updateURL(searchQuery, selectedSetCode, selectedType, newPage);
+    void fetchCards(searchQuery, selectedSetCode, selectedType, selectedLanguage, newPage);
+    updateURL(searchQuery, selectedSetCode, selectedType, selectedLanguage, newPage);
   };
 
   const handlePageChange = (nextPage: number) => {
@@ -224,24 +242,42 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
     }
 
     setCurrentPage(nextPage);
-    void fetchCards(searchQuery, selectedSetCode, selectedType, nextPage);
-    updateURL(searchQuery, selectedSetCode, selectedType, nextPage);
+    void fetchCards(searchQuery, selectedSetCode, selectedType, selectedLanguage, nextPage);
+    updateURL(searchQuery, selectedSetCode, selectedType, selectedLanguage, nextPage);
   };
 
   const handleSetCodeChange = (value: string) => {
     const newPage = 1;
     setSelectedSetCode(value);
     setCurrentPage(newPage);
-    void fetchCards(searchQuery, value, selectedType, newPage);
-    updateURL(searchQuery, value, selectedType, newPage);
+    void fetchCards(searchQuery, value, selectedType, selectedLanguage, newPage);
+    updateURL(searchQuery, value, selectedType, selectedLanguage, newPage);
   };
 
   const handleTypeChange = (value: string) => {
     const newPage = 1;
     setSelectedType(value);
     setCurrentPage(newPage);
-    void fetchCards(searchQuery, selectedSetCode, value, newPage);
-    updateURL(searchQuery, selectedSetCode, value, newPage);
+    void fetchCards(searchQuery, selectedSetCode, value, selectedLanguage, newPage);
+    updateURL(searchQuery, selectedSetCode, value, selectedLanguage, newPage);
+  };
+
+  const handleLanguageChange = (value: string) => {
+    const newPage = 1;
+    setSelectedLanguage(value);
+    setCurrentPage(newPage);
+    void fetchCards(searchQuery, selectedSetCode, selectedType, value, newPage);
+    updateURL(searchQuery, selectedSetCode, selectedType, value, newPage);
+  };
+
+  const getLanguageLabel = (language: string) => {
+    if (language === "all") {
+      return t("cards.search.filters.allLanguages");
+    }
+
+    const translationKey = `cards.collection.languages.${language.toLowerCase()}`;
+    const translated = t(translationKey);
+    return translated === translationKey ? language.toUpperCase() : translated;
   };
 
   return (
@@ -304,6 +340,25 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
                 {types.map((type) => (
                   <SelectItem key={type} value={type}>
                     {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="w-full sm:w-44">
+            <label className="mb-1 block text-sm font-medium">
+              {t("cards.search.filters.language")}
+            </label>
+            <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
+              <SelectTrigger>
+                <SelectValue placeholder={t("cards.search.filters.allLanguages")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("cards.search.filters.allLanguages")}</SelectItem>
+                {languages.map((language) => (
+                  <SelectItem key={language} value={language}>
+                    {getLanguageLabel(language)}
                   </SelectItem>
                 ))}
               </SelectContent>
