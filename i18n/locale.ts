@@ -9,29 +9,27 @@ import {match} from "@formatjs/intl-localematcher";
 // also read it from a database, backend service, or any other source.
 const COOKIE_NAME = "NEXT_LOCALE";
 
-export async function getUserLocale() {
+export async function getUserLocale(): Promise<string> {
   const locale = (await cookies()).get(COOKIE_NAME)?.value;
 
   if (locale) {
     return locale;
   }
 
-  if (!locale) {
-    const h = await headers();
-    const acceptLanguages = h.get('accept-language');
+  const h = await headers();
+  const acceptLanguages = h.get('accept-language');
 
-    if (!acceptLanguages) {
-      return defaultLocale;
-    }
-
-    const languages = new Negotiator({
-      headers: {
-        'accept-language': acceptLanguages,
-      }
-    }).languages()
-
-    return match(languages, locales, defaultLocale)
+  if (!acceptLanguages) {
+    return defaultLocale;
   }
+
+  const languages = new Negotiator({
+    headers: {
+      'accept-language': acceptLanguages,
+    }
+  }).languages()
+
+  return match(languages, locales, defaultLocale);
 }
 
 export async function setUserLocale(locale: Locale) {
