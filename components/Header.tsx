@@ -150,9 +150,12 @@ export default function Header() {
                 </DropdownMenu>
               </>
             ) : (
-              <Button asChild>
-                <Link href="/login">{t('menu.Se connecter')}</Link>
-              </Button>
+              <>
+                <LocaleSwitcher />
+                <Button asChild>
+                  <Link href="/login">{t('menu.Se connecter')}</Link>
+                </Button>
+              </>
             )}
           </div>
 
