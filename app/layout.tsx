@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   title: "Joutes - Ligues et rencontres multi-jeux à proximité",
   description: "Ligues et rencontres multi-jeux à proximité pour les passionnés de jeux de cartes à collectionner et de jeux de société. Trouvez des événements organisés et consultez les règles et rulings communautaires.",
   applicationName: "Joutes App",
-  keywords: ["tcg", "board games", "events", "organized play", "local gaming community", "local game stores"],
+  keywords: ["tcg", "board games", "events", "organized play", "rules", "rulings", "cards", "local gaming community", "local game stores"],
   creator: "Nakasar",
   publisher: "Nakasar",
   openGraph: {
