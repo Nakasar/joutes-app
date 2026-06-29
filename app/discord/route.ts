@@ -25,6 +25,8 @@ import {ObjectId} from "mongodb";
 import {RegistrationStatus} from "@/lib/types/Event";
 import {makeEventDiscordInfoMessage} from "@/lib/discord/utils";
 import {GameDocument} from "@/lib/db/games";
+import {DeckList, getDeckFromPiltover, validateDeckList} from "@/app/games/riftbound/deck-checker/action";
+import {parseDeckList} from "@/app/games/riftbound/deck-checker/utils";
 
 const agentId = "yGypfIpDEb";
 const aiAllowedDiscordIds = JSON.parse(
@@ -469,7 +471,8 @@ async function handleContextualMessageCommand(interaction: APIContextMenuInterac
 }
 
 async function handleVerifyDeckCommand(interaction: APIContextMenuInteraction) {
-  const messageContent = interaction.message?.content;
+  const message = await rest.get(Routes.channelMessage(interaction.channel_id, interaction.data.target_id)) as APIMessage;
+  const messageContent = message.content;
 
   if (!messageContent) {
     await rest.post(
@@ -500,6 +503,28 @@ async function handleVerifyDeckCommand(interaction: APIContextMenuInteraction) {
     },
   );
 
+  let parsed: DeckList;
+  if (messageContent.startsWith('https://piltoverarchive.com/decks/view/')) {
+    const deckId = messageContent.split('/').at(-1)!;
+    parsed = await getDeckFromPiltover(deckId);
+  } else {
+    parsed = parseDeckList(messageContent);
+  }
+
+  const validated = await validateDeckList(parsed);
+
+  await rest.patch(
+    Routes.webhookMessage(
+      interaction.application_id,
+      interaction.token,
+      "@original",
+    ),
+    {
+      body: {
+        content: "Analyse du deck terminée: voici les informations utiles à savoir à son sujet...",
+      },
+    },
+  );
   return NextResponse.json({success: true}, {status: 200});
 }
 
