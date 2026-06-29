@@ -1,8 +1,8 @@
 'use server';
 
 import {REST} from "@discordjs/rest";
-import {Routes} from 'discord-api-types/v10';
-import {SlashCommandBuilder} from '@discordjs/builders';
+import {Routes, ApplicationCommandType} from 'discord-api-types/v10';
+import {ContextMenuCommandBuilder, SlashCommandBuilder} from '@discordjs/builders';
 import { requireAdmin } from "@/lib/middleware/admin";
 
 export async function registerDiscordCommands() {
@@ -82,6 +82,10 @@ export async function registerDiscordCommands() {
           .setDescriptionLocalization('fr', "Afficher un tableau d'information mis à jour automatiquement pour un évènement")
           .addStringOption(option => option.setName('link').setDescription('Event ID or URL').setDescriptionLocalization('fr', "ID ou URL d'évènement").setRequired(true))
       ),
+    new ContextMenuCommandBuilder()
+      .setName('Verify Deck')
+      .setNameLocalization('fr', 'Vérifier le deck')
+      .setType(ApplicationCommandType.Message)
   ];
 
   const rest = new REST().setToken(process.env.DISCORD_TOKEN ?? '');

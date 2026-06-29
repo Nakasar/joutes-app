@@ -1,11 +1,15 @@
 import {REST} from "@discordjs/rest";
 import {
-  APIChatInputApplicationCommandInteraction, APIMessage, APIMessageComponentButtonInteraction,
+  APIApplicationCommandInteraction,
+  APIChatInputApplicationCommandInteraction, APIContextMenuInteraction,
+  APIMessage,
+  APIMessageComponentButtonInteraction,
   APIMessageComponentInteraction,
+  ApplicationCommandType,
+  ButtonStyle,
   ComponentType,
   InteractionType,
   Routes,
-  ButtonStyle,
 } from "discord-api-types/v10";
 import {verify} from "discord-verify/node";
 import {NextResponse} from "next/server";
@@ -413,21 +417,90 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
   }
 }
 
+function isApplicationCommandChatInputInteraction(body: APIApplicationCommandInteraction): body is APIChatInputApplicationCommandInteraction {
+  return body.data.type === ApplicationCommandType.ChatInput;
+}
+
+function isApplicationCommandContextMenuInteraction(body: APIApplicationCommandInteraction): body is APIContextMenuInteraction {
+  return body.data.type === ApplicationCommandType.Message;
+}
+
 async function handleApplicationCommand(
-  body: APIChatInputApplicationCommandInteraction,
-) {
-  switch (body.data.name) {
-    case "ask":
-      return handleAskCommand(body);
-    case "card":
-      return handleCardCommand(body);
-    case "rules":
-      return handleRulesCommand(body);
-    case "events":
-      return handleEventsCommand(body);
-    case "policies":
-      return handlePoliciesCommand(body);
+  body: APIApplicationCommandInteraction,
+)
+{
+  if (isApplicationCommandChatInputInteraction(body)) {
+    switch (body.data.name) {
+      case "ask":
+        return handleAskCommand(body);
+      case "card":
+        return handleCardCommand(body);
+      case "rules":
+        return handleRulesCommand(body);
+      case "events":
+        return handleEventsCommand(body);
+      case "policies":
+        return handlePoliciesCommand(body);
+    }
+  } else if (isApplicationCommandContextMenuInteraction(body)) {
+    return handleContextualMessageCommand(body);
   }
+}
+
+async function handleContextualMessageCommand(interaction: APIContextMenuInteraction) {
+  switch (interaction.data.name) {
+    case 'Verify Deck':
+      return handleVerifyDeckCommand(interaction);
+    default:
+      await rest.post(
+        Routes.interactionCallback(interaction.id, interaction.token),
+        {
+          body: {
+            type: 4,
+            data: {
+              content: "Commande inconnue",
+              flags: 64, // Ephemeral
+            },
+          },
+        },
+      );
+      return NextResponse.json({success: true}, {status: 200});
+  }
+}
+
+async function handleVerifyDeckCommand(interaction: APIContextMenuInteraction) {
+  const messageContent = interaction.message?.content;
+
+  if (!messageContent) {
+    await rest.post(
+      Routes.interactionCallback(interaction.id, interaction.token),
+      {
+        body: {
+          type: 4,
+          data: {
+            content: "Ce message ne semble pas contenir de liste de deck ou de lien PiltoverArchive utilisable.",
+            flags: 64, // Ephemeral
+          },
+        },
+      },
+    );
+    return NextResponse.json({success: true}, {status: 200});
+  }
+
+  await rest.post(
+    Routes.interactionCallback(interaction.id, interaction.token),
+    {
+      body: {
+        type: 4,
+        data: {
+          content: "Analyse du deck en cours...",
+          flags: 64, // Ephemeral
+        },
+      },
+    },
+  );
+
+  return NextResponse.json({success: true}, {status: 200});
 }
 
 async function handleEventsCommand(interaction: APIChatInputApplicationCommandInteraction) {
