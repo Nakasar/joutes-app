@@ -472,6 +472,7 @@ async function handleContextualMessageCommand(interaction: APIContextMenuInterac
 }
 
 async function handleVerifyDeckCommand(interaction: APIContextMenuInteraction) {
+  console.log(inspect(interaction.data.resolved, false, 20));
   const messageContent = (interaction.data.resolved as APIMessageApplicationCommandInteractionDataResolved).messages[0]?.content;
 
   if (!messageContent) {
