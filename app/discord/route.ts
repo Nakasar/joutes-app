@@ -472,8 +472,9 @@ async function handleContextualMessageCommand(interaction: APIContextMenuInterac
 }
 
 function formatCardDetails(card: DeckListCard): string {
-  const erratas = card.erratas?.filter(e => e.type === 'errata') ?? [];
-  const others = card.erratas?.filter(e => e.type !== 'errata') ?? [];
+
+  const erratas = card.erratas?.filter(e => e.type === 'errata' && !e.deprecatedAt) ?? [];
+  const others = card.erratas?.filter(e => e.type !== 'errata' && !e.deprecatedAt) ?? [];
 
   let notes = '(';
   if (erratas.length > 0 && others.length === 0) {
@@ -486,16 +487,37 @@ function formatCardDetails(card: DeckListCard): string {
   notes+=')';
 
   let details = `- **[${card.name}](https://joutes.app/games/riftbound/cards/${card.cardId})** ${notes} :`;
+
   if (erratas.length > 0) {
-    erratas.sort((a, b) => a.errataDate.getTime() - b.errataDate.getTime());
+    erratas.sort((a, b) => DateTime.fromJSDate(b.errataDate).toMillis() - DateTime.fromJSDate(a.errataDate).toMillis());
     details+=`\n> Dernier errata:\n> ${erratas[0].details}`;
+  }
+  if (others.length > 0) {
+    const maxPreviewLength = 200;
+    const previewNotes = [...others]
+      .sort((a, b) => DateTime.fromJSDate(b.errataDate).toMillis() - DateTime.fromJSDate(a.errataDate).toMillis())
+      .slice(0, 2);
+
+    const hasEllipsis = previewNotes.some((note) => note.details.length > maxPreviewLength);
+    const hasMoreNotes = others.length > previewNotes.length;
+
+    details += "\n> Notes récentes :";
+    for (const note of previewNotes) {
+      const content = note.details.length > maxPreviewLength
+        ? `${note.details.slice(0, maxPreviewLength - 3)}...`
+        : note.details;
+      details += `\n> - ${content} (${note.votes.positive} vote${note.votes.positive > 1 ? 's' : ''} positif${note.votes.positive > 1 ? 's' : ''}, ${note.votes.negative} vote${note.votes.negative > 1 ? 's' : ''} négatif${note.votes.negative > 1 ? 's' : ''})`;
+    }
+
+    if (hasMoreNotes || hasEllipsis) {
+      details += `\n> [Lire la suite](https://joutes.app/games/riftbound/cards/${card.cardId})`;
+    }
   }
 
   return details;
 }
 
 async function handleVerifyDeckCommand(interaction: APIContextMenuInteraction) {
-  console.log(inspect(interaction.data.resolved, false, 20));
   const messageContent = (interaction.data.resolved as APIMessageApplicationCommandInteractionDataResolved).messages[interaction.data.target_id]?.content;
 
   if (!messageContent) {
@@ -556,11 +578,19 @@ async function handleVerifyDeckCommand(interaction: APIContextMenuInteraction) {
           embeds: [
             new EmbedBuilder()
               .setTitle(`Notes sur le deck`)
-              .setURL(`https://joutes.app/games/riftbound/deck-checker`)
+              .setURL(`https://joutes.app/games/riftbound/deck-checker?input=${encodeURIComponent(messageContent)}`)
               .setDescription(`Les cartes suivantes ont des notes les concernant :
 
 ${cardsWithErratas.map(formatCardDetails).join('\n\n')}`)
               .toJSON(),
+          ],
+          components: [
+            new ActionRowBuilder<ButtonBuilder>().addComponents(
+              new ButtonBuilder()
+                .setLabel("Voir le deck")
+                .setURL(`https://joutes.app/games/riftbound/deck-checker?input=${encodeURIComponent(messageContent)}`)
+                .setStyle(ButtonStyle.Link),
+            ),
           ],
         },
       },
