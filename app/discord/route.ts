@@ -917,7 +917,10 @@ async function handleEventsBoardCommand(interaction: APIChatInputApplicationComm
         embeds: [
           new EmbedBuilder()
             .setTitle(`Events - ${lair.name}`)
-            .setDescription(`Voici les évènements à venir : ${events.length > 0 ? events.map(e => `-${e.game?.slug ? ` <:${e.game.slug}:${DiscordEmojis[e.game.slug] ?? ''}>` : ''} [${e.name}](https://joutes.app/events/${e.id}) le ${DateTime.fromISO(e.startDateTime, { zone: 'Europe/Paris', locale: 'fr' }).toLocaleString(DateTime.DATETIME_MED)}`).join('\n') : 'Aucun évènement à venir.'}`)
+            .setDescription(`Voici les évènements à venir :\n\n${events.length > 0 ? events.map(e => `-${e.game?.slug ? ` <:${e.game.slug}:${DiscordEmojis[e.game.slug] ?? ''}>` : ''} [${e.name}](https://joutes.app/events/${e.id}) le ${DateTime.fromISO(e.startDateTime, { zone: 'Europe/Paris', locale: 'fr' }).toLocaleString(DateTime.DATETIME_MED)}`).join('\n') : 'Aucun évènement à venir.'}`)
+            .setFooter({
+              text: `Updated: ${currentDate.setZone('Europe/Paris').toLocaleString(DateTime.DATETIME_MED, { locale: 'fr' })}`,
+            }),
         ],
         content: null,
       },
