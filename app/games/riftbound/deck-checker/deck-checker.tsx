@@ -381,11 +381,12 @@ function DeckSection({title, cards, compact, rules, onEditCard, onQuantityChange
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
-export function RiftboundDeckChecker() {
+export function RiftboundDeckChecker({ input }: { input?: string }) {
   const t = useTranslations('Games.DeckChecker');
 
   const session = useSession();
-  const [rawDeckList, setRawDeckList] = useState("");
+
+  const [rawDeckList, setRawDeckList] = useState(input ?? "");
   const [deckList, setDeckList] = useState<DeckList | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -473,6 +474,12 @@ export function RiftboundDeckChecker() {
       return;
     }
   }, [session]);
+
+  useEffect(() => {
+    if (input && input.length > 10) {
+      importDeckList();
+    }
+  }, []);
 
   function handleQuantityChange(section: keyof DeckList, index: number, delta: number) {
     if (!deckList) return;

@@ -23,9 +23,10 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function RiftboundDeckCheckerPage() {
+export default async function RiftboundDeckCheckerPage({ searchParams }: { searchParams: Promise<{ input?: string }> }) {
   const t = await getTranslations("Games.DeckChecker");
 
+  const { input } = await searchParams;
   const game = await db.collection<Game>("games").findOne({slug: 'riftbound' });
   if (!game || !game.slug) notFound();
 
@@ -43,7 +44,7 @@ export default async function RiftboundDeckCheckerPage() {
         <GameToolsNavBar gameSlug="riftbound" currentTab={'deckChecker'} />
       </div>
 
-      <RiftboundDeckChecker />
+      <RiftboundDeckChecker input={input} />
     </div>
   )
 }
