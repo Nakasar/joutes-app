@@ -598,7 +598,15 @@ ${cardsWithErratas.map(formatCardDetails).join('\n\n')}`)
       ),
       {
         body: {
-          content: "Impossible de vérifier ce deck.",
+          content: "Impossible de vérifier ce deck ici. Vous pouvez essayer le vérificateur en ligne sur Joutes.",
+          components: [
+            new ActionRowBuilder<ButtonBuilder>().addComponents(
+              new ButtonBuilder()
+                .setLabel("Vérificateur de Deck")
+                .setURL(`https://joutes.app/games/riftbound/deck-checker`)
+                .setStyle(ButtonStyle.Link),
+            ),
+          ],
         },
       },
     );
