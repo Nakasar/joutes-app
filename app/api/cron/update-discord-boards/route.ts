@@ -2,7 +2,6 @@ import {NextResponse} from 'next/server';
 import db from "@/lib/mongodb";
 import {REST} from "@discordjs/rest";
 import {Routes} from "discord-api-types/v10";
-import {makeEventDiscordInfoMessage} from "@/lib/discord/utils";
 import {DiscordBoard} from "@/app/discord/route";
 import {getEventsByLairId} from "@/lib/db/events";
 import {DateTime} from "luxon";
@@ -30,11 +29,11 @@ export async function GET(req: Request) {
 
         const currentDate = DateTime.utc();
 
-        const lair = await getLairById(board.lairs[0].id.toString())
-        const game = await getGameById(board.games[0].id.toString())
+        const lair = await getLairById(board.lairs[0].toString())
+        const game = await getGameById(board.games[0].toString())
         if (lair && game) {
-          const events = await getEventsByLairId(board.lairs[0].id.toString(), {
-            gameId: board.games[0].id.toString(),
+          const events = await getEventsByLairId(board.lairs[0].toString(), {
+            gameId: board.games[0].toString(),
             year: currentDate.year,
             month: currentDate.month,
           });
