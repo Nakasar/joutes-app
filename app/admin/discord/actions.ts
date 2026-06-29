@@ -47,8 +47,8 @@ export async function registerDiscordCommands() {
       .setDescription('Retrieve info and rulings for a deck')
       .setDescriptionLocalization('fr', 'Analyse un deck et retourne le détails des cartes')
       .addStringOption(option =>
-        option.setName('linkOrCode')
-          .setNameLocalization('fr', 'lienOuCode')
+        option.setName('link-or-code')
+          .setNameLocalization('fr', 'lien-ou-code')
           .setDescription('PiltoverArchive link or code')
           .setDescriptionLocalization('fr', 'Code ou lien PiltoverArchive')
           .setRequired(true)

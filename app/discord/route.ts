@@ -644,7 +644,7 @@ async function handleVerifyDeckSlachCommand(interaction: APIChatInputApplication
   );
 
   const linkOrCode = interaction.data.options?.find(
-    (option: { name: string; type: number }) => option.name === "linkOrCode" && option.type === 3,
+    (option: { name: string; type: number }) => option.name === "link-or-code" && option.type === 3,
   ) as { value: string } | undefined;
   if (!linkOrCode?.value) {
     await rest.patch(
