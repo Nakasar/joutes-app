@@ -472,7 +472,8 @@ async function handleContextualMessageCommand(interaction: APIContextMenuInterac
 }
 
 function formatCardDetails(card: DeckListCard): string {
-
+  const maxTotalCharacters = 5000;
+  let totalCharacters = 0;
   const erratas = card.erratas?.filter(e => e.type === 'errata' && !e.deprecatedAt) ?? [];
   const others = card.erratas?.filter(e => e.type !== 'errata' && !e.deprecatedAt) ?? [];
 
@@ -498,19 +499,12 @@ function formatCardDetails(card: DeckListCard): string {
       .sort((a, b) => DateTime.fromJSDate(b.errataDate).toMillis() - DateTime.fromJSDate(a.errataDate).toMillis())
       .slice(0, 2);
 
-    const hasEllipsis = previewNotes.some((note) => note.details.length > maxPreviewLength);
-    const hasMoreNotes = others.length > previewNotes.length;
-
     details += "\n> Notes récentes :";
     for (const note of previewNotes) {
       const content = note.details.length > maxPreviewLength
         ? `${note.details.slice(0, maxPreviewLength - 3)}...`
         : note.details;
       details += `\n> - ${content} (${note.votes.positive} vote${note.votes.positive > 1 ? 's' : ''} positif${note.votes.positive > 1 ? 's' : ''}, ${note.votes.negative} vote${note.votes.negative > 1 ? 's' : ''} négatif${note.votes.negative > 1 ? 's' : ''})`;
-    }
-
-    if (hasMoreNotes || hasEllipsis) {
-      details += `\n> [Lire la suite](https://joutes.app/games/riftbound/cards/${card.cardId})`;
     }
   }
 
@@ -597,6 +591,7 @@ ${cardsWithErratas.map(formatCardDetails).join('\n\n')}`)
     );
     return NextResponse.json({success: true}, {status: 200});
   } catch (error) {
+    console.warn(error);
     await rest.patch(
       Routes.webhookMessage(
         interaction.application_id,
