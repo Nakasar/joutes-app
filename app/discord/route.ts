@@ -555,6 +555,8 @@ async function handleVerifyDeckCommand(interaction: APIContextMenuInteraction) {
       ...validated.champions.filter(c => c.erratas?.length && c.erratas?.length > 0),
       ...validated.maindeck.filter(c => c.erratas?.length && c.erratas?.length > 0),
       ...validated.sideboard.filter(c => c.erratas?.length && c.erratas?.length > 0),
+      ...validated.battlefields.filter(c => c.erratas?.length && c.erratas?.length > 0),
+      ...validated.runes.filter(c => c.erratas?.length && c.erratas?.length > 0),
     ];
 
     await rest.patch(
