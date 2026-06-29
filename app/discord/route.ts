@@ -27,7 +27,6 @@ import {makeEventDiscordInfoMessage} from "@/lib/discord/utils";
 import {GameDocument} from "@/lib/db/games";
 import {DeckList, DeckListCard, getDeckFromPiltover, validateDeckList} from "@/app/games/riftbound/deck-checker/action";
 import {parseDeckList, serializeDeckList} from "@/app/games/riftbound/deck-checker/utils";
-import {inspect} from "node:util";
 
 const agentId = "yGypfIpDEb";
 const aiAllowedDiscordIds = JSON.parse(
@@ -544,6 +543,14 @@ async function handleVerifyDeckCommand(interaction: APIContextMenuInteraction) {
     if (messageContent.startsWith('https://piltoverarchive.com/decks/view/')) {
       const deckId = messageContent.split('/').at(-1)!;
       parsed = await getDeckFromPiltover(deckId);
+    } else if (messageContent.includes("https://piltoverarchive.com/decks/view/")) {
+      const regex = /https:\/\/piltoverarchive\.com\/decks\/view\/(?<id>[0-9a-z\-]+)/gi;
+      const match = regex.exec(messageContent);
+      if (match) {
+        parsed = await getDeckFromPiltover(match[1]);
+      } else {
+        throw new Error('No deck found');
+      }
     } else {
       parsed = parseDeckList(messageContent);
     }
