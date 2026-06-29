@@ -18,6 +18,8 @@ import {hasPermission} from "@/lib/db/permissions";
 import AddErrataButton from "@/app/games/[gameSlugOrId]/cards/[cardId]/AddErrataButton";
 import { getLocale, getTranslations } from "next-intl/server";
 import { DateTime } from "luxon";
+import {getGameBySlugOrId} from "@/lib/db/games";
+import {ObjectId} from "mongodb";
 
 export async function generateMetadata({
   params,
@@ -60,7 +62,23 @@ export default async function RiftboundCardDetailPage({
   const session = await auth.api.getSession({ headers: await headers() });
   const userId = session?.user?.id;
 
-  const card = await db.collection<BoosterCard>("cards").findOne({ id: cardId });
+  const game = await getGameBySlugOrId(gameSlugOrId);
+  if (!game) {
+    return (
+      <div className="container mx-auto p-6">
+        <h1 className="text-3xl font-bold mb-6">{t("cards.detail.notFoundTitle")}</h1>
+        <Button asChild>
+          <Link href={`/games/${gameSlugOrId}/cards`} className="text-blue-600 hover:underline">
+            ← {t("cards.detail.backToList")}
+          </Link>
+        </Button>
+
+        <p>{t("cards.detail.notFoundMessage", { cardId })}</p>
+      </div>
+    );
+  }
+
+  const card = await db.collection<BoosterCard>("cards").findOne({ id: cardId, gameId: new ObjectId(game.id) });
 
   if (!card) {
     return (
@@ -84,7 +102,7 @@ export default async function RiftboundCardDetailPage({
   return (
     <div className="container mx-auto p-6">
       <Button asChild>
-        <Link href={`/games/${"riftbound"}/cards`} className="text-blue-600 hover:underline">
+        <Link href={`/games/${gameSlugOrId}/cards`} className="text-blue-600 hover:underline">
           ← {t("cards.detail.backToList")}
         </Link>
       </Button>
