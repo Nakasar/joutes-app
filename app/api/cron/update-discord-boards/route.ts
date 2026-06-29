@@ -1,11 +1,11 @@
 import {NextResponse} from 'next/server';
 import db from "@/lib/mongodb";
 import {REST} from "@discordjs/rest";
-import {Routes} from "discord-api-types/v10";
+import {ButtonStyle, Routes} from "discord-api-types/v10";
 import {DiscordBoard} from "@/app/discord/route";
 import {getEventsByLairId} from "@/lib/db/events";
 import {DateTime} from "luxon";
-import {EmbedBuilder} from "@discordjs/builders";
+import {ActionRowBuilder, ButtonBuilder, EmbedBuilder} from "@discordjs/builders";
 import {DiscordEmojis} from "@/app/discord/utils";
 import {getLairById} from "@/lib/db/lairs";
 import {getGameById} from "@/lib/db/games";
@@ -52,6 +52,14 @@ export async function GET(req: Request) {
                   }),
               ],
               content: null,
+              components: [
+                new ActionRowBuilder<ButtonBuilder>().addComponents(
+                  new ButtonBuilder()
+                    .setLabel("Modifier")
+                    .setCustomId(`modify-events-board-${board._id.toString()}`)
+                    .setStyle(ButtonStyle.Secondary),
+                ),
+              ]
             },
           }).catch(err => {
             console.warn('Failed to update board message (might have been deleted)');
