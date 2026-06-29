@@ -84,6 +84,24 @@ export async function registerDiscordCommands() {
           .setRequired(true)
       ),
     new SlashCommandBuilder()
+      .setName('events-board')
+      .setDescription('Create an events board')
+      .setDescriptionLocalization('fr', 'Créer un tableau d’évènements')
+      .addStringOption(option =>
+        option.setName('game')
+          .setNameLocalization('fr', 'jeu')
+          .setDescription('Initial game to display on this board')
+          .setDescriptionLocalization('fr', 'Jeu initial à afficher sur ce tableau')
+          .setRequired(true)
+      )
+      .addStringOption(option =>
+        option.setName('lair')
+          .setNameLocalization('fr', 'lieu')
+          .setDescription('Initial lair to track on this board')
+          .setDescriptionLocalization('fr', 'Lieu initial à afficher sur ce tableau')
+          .setRequired(true)
+      ),
+    new SlashCommandBuilder()
       .setName('events')
       .setDescription("Manage events")
       .setDescriptionLocalization('fr', 'Gérer les évènements')

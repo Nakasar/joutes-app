@@ -19,12 +19,18 @@ import {BoosterCard} from "@/lib/types/booster";
 import {ActionRowBuilder, ButtonBuilder, EmbedBuilder} from "@discordjs/builders";
 import {getErratasByCardId} from "@/lib/db/erratas";
 import {Game} from "@/lib/types/Game";
-import {addParticipantToEvent, EventDocument, getEventById, removeParticipantFromEvent} from "@/lib/db/events";
+import {
+  addParticipantToEvent,
+  EventDocument,
+  getEventById,
+  getEventsByLairId,
+  removeParticipantFromEvent
+} from "@/lib/db/events";
 import {DateTime} from "luxon";
 import {ObjectId} from "mongodb";
 import {RegistrationStatus} from "@/lib/types/Event";
 import {makeEventDiscordInfoMessage} from "@/lib/discord/utils";
-import {GameDocument} from "@/lib/db/games";
+import {GameDocument, getGameBySlugOrId} from "@/lib/db/games";
 import {
   DeckList,
   DeckListCard,
@@ -33,6 +39,7 @@ import {
   validateDeckList
 } from "@/app/games/riftbound/deck-checker/action";
 import {parseDeckList, serializeDeckList} from "@/app/games/riftbound/deck-checker/utils";
+import {getLairById} from "@/lib/db/lairs";
 
 const agentId = "yGypfIpDEb";
 const aiAllowedDiscordIds = JSON.parse(
@@ -449,7 +456,9 @@ async function handleApplicationCommand(
       case "policies":
         return handlePoliciesCommand(body);
       case "verify-deck":
-        return handleVerifyDeckSlachCommand(body);
+        return handleVerifyDeckSlashCommand(body);
+      case 'events-board':
+        return handleEventsBoardCommand(body);
     }
   } else if (isApplicationCommandContextMenuInteraction(body)) {
     return handleContextualMessageCommand(body);
@@ -630,7 +639,7 @@ ${cardsWithErratas.map(formatCardDetails).join('\n\n')}`)
   }
 }
 
-async function handleVerifyDeckSlachCommand(interaction: APIChatInputApplicationCommandInteraction) {
+async function handleVerifyDeckSlashCommand(interaction: APIChatInputApplicationCommandInteraction) {
   await rest.post(
     Routes.interactionCallback(interaction.id, interaction.token),
     {
@@ -799,6 +808,118 @@ ${cardsWithErratas.map(formatCardDetails).join('\n\n')}`)
     );
     return NextResponse.json({success: true}, {status: 200});
   }
+}
+
+async function handleEventsBoardCommand(interaction: APIChatInputApplicationCommandInteraction) {
+  await rest.post(
+    Routes.interactionCallback(interaction.id, interaction.token),
+    {
+      body: {
+        type: 4,
+        data: {
+          content: "Création du tableau...",
+        },
+      },
+    },
+  );
+
+  const lairLink = interaction.data.options?.find(
+    (option: { name: string; type: number }) => option.name === "lair" && option.type === 3,
+  ) as { value: string } | undefined;
+  if (!lairLink?.value) {
+    await rest.patch(
+      Routes.webhookMessage(
+        interaction.application_id,
+        interaction.token,
+        "@original",
+      ),
+      {
+        body: {
+          content: "Précisez une URL d'un lieu à suivre en premier sur ce tableau.\nRendez-vous sur [Joutes](https://joutes.app/lairs) pour découvrir des lieux.",
+        },
+      },
+    );
+    return NextResponse.json({success: true}, {status: 200});
+  }
+
+  const gameName = interaction.data.options?.find(
+    (option: { name: string; type: number }) => option.name === "game" && option.type === 3,
+  ) as { value: string } | undefined;
+  if (!gameName?.value) {
+    await rest.patch(
+      Routes.webhookMessage(
+        interaction.application_id,
+        interaction.token,
+        "@original",
+      ),
+      {
+        body: {
+          content: "Précisez un nom de jeu à suivre en premier sur ce tableau.",
+        },
+      },
+    );
+    return NextResponse.json({success: true}, {status: 200});
+  }
+
+  const game = await getGameBySlugOrId(gameName.value);
+  const lairUrl = new URL(lairLink.value);
+  const lairId = lairUrl.pathname.split('/lairs/').pop();
+  if (!lairId) {
+    await rest.patch(
+      Routes.webhookMessage(
+        interaction.application_id,
+        interaction.token,
+        "@original",
+      ),
+      {
+        body: {
+          content: "Précisez une URL d'un lieu à suivre en premier sur ce tableau.\nRendez-vous sur [Joutes](https://joutes.app/lairs) pour découvrir des lieux.",
+        },
+      },
+    );
+    return NextResponse.json({success: true}, {status: 200});
+  }
+
+  const lair = await getLairById(lairId)
+  if (!lair || !game) {
+    await rest.patch(
+      Routes.webhookMessage(
+        interaction.application_id,
+        interaction.token,
+        "@original",
+      ),
+      {
+        body: {
+          content: "Le lieu et/ou le jeu précisés n'existe pas.",
+        },
+      },
+    );
+    return NextResponse.json({success: true}, {status: 200});
+  }
+
+  const currentDate = DateTime.utc();
+
+  const events = await getEventsByLairId(lairId, {
+    gameId: game.id,
+    year: currentDate.year,
+    month: currentDate.month,
+  });
+
+  console.log(events);
+
+  await rest.patch(
+    Routes.webhookMessage(
+      interaction.application_id,
+      interaction.token,
+      "@original",
+    ),
+    {
+      body: {
+        content: `Voici les évènements à venir pour ce lieu et ce jeu : ${events.length > 0 ? events.map(e => `- [${e.name}](https://joutes.app/events/${e.id}) le ${DateTime.fromISO(e.startDateTime).toLocaleString(DateTime.DATETIME_MED)}`).join('\n') : 'Aucun évènement à venir.'}`,
+      },
+    },
+  );
+  return NextResponse.json({success: true}, {status: 200});
 }
 
 async function handleEventsCommand(interaction: APIChatInputApplicationCommandInteraction) {
