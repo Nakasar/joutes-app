@@ -16,7 +16,14 @@ import {NextResponse} from "next/server";
 import crypto from "node:crypto";
 import db from "@/lib/mongodb";
 import {BoosterCard} from "@/lib/types/booster";
-import {ActionRowBuilder, ButtonBuilder, EmbedBuilder, ModalBuilder} from "@discordjs/builders";
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  EmbedBuilder,
+  LabelBuilder,
+  ModalBuilder,
+  StringSelectMenuBuilder, StringSelectMenuOptionBuilder
+} from "@discordjs/builders";
 import {getErratasByCardId} from "@/lib/db/erratas";
 import {Game} from "@/lib/types/Game";
 import {
@@ -450,6 +457,34 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
     }
 
     const modal = new ModalBuilder().setCustomId('modify-events-board-').setTitle('Modification');
+
+    const gamesSelectMenu = new StringSelectMenuBuilder()
+      .setCustomId('games')
+      .setPlaceholder('Riftbound')
+      .setRequired(true)
+      .addOptions(
+        new StringSelectMenuOptionBuilder()
+          .setLabel('Riftbound')
+          .setDescription('TCG')
+          .setValue('riftbound'),
+        new StringSelectMenuOptionBuilder()
+          .setLabel('Star Wars Unlimited')
+          .setDescription('TCG')
+          .setValue('swu'),
+        new StringSelectMenuOptionBuilder()
+          .setLabel('Lorcana')
+          .setDescription('TCG')
+          .setValue('lorcana'),
+      )
+      .setMinValues(1)
+      .setMaxValues(20);
+
+    const gamesLabel = new LabelBuilder()
+      .setLabel("Jeux")
+      .setDescription('Jeux à suivre sur ce tableau.')
+      .setStringSelectMenuComponent(gamesSelectMenu);
+
+    modal.addLabelComponents(gamesLabel);
 
     await rest.post(
       Routes.interactionCallback(interaction.id, interaction.token),
