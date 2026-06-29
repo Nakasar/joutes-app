@@ -472,8 +472,6 @@ async function handleContextualMessageCommand(interaction: APIContextMenuInterac
 }
 
 function formatCardDetails(card: DeckListCard): string {
-  const maxTotalCharacters = 5000;
-  let totalCharacters = 0;
   const erratas = card.erratas?.filter(e => e.type === 'errata' && !e.deprecatedAt) ?? [];
   const others = card.erratas?.filter(e => e.type !== 'errata' && !e.deprecatedAt) ?? [];
 
@@ -504,7 +502,7 @@ function formatCardDetails(card: DeckListCard): string {
       const content = note.details.length > maxPreviewLength
         ? `${note.details.slice(0, maxPreviewLength - 3)}...`
         : note.details;
-      details += `\n> - ${content} (${note.votes.positive} vote${note.votes.positive > 1 ? 's' : ''} positif${note.votes.positive > 1 ? 's' : ''}, ${note.votes.negative} vote${note.votes.negative > 1 ? 's' : ''} négatif${note.votes.negative > 1 ? 's' : ''})`;
+      details += `\n> - ${content} ${note.votes ? `(${note.votes.positive} vote${note.votes.positive > 1 ? 's' : ''} positif${note.votes.positive > 1 ? 's' : ''}, ${note.votes.negative} vote${note.votes.negative > 1 ? 's' : ''} négatif${note.votes.negative > 1 ? 's' : ''})`: ''}`;
     }
   }
 
