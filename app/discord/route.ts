@@ -1,14 +1,14 @@
 import {REST} from "@discordjs/rest";
 import {
   APIApplicationCommandInteraction,
-  APIChatInputApplicationCommandInteraction, APIContextMenuInteraction, APIContextMenuInteractionData,
+  APIChatInputApplicationCommandInteraction, APIContextMenuInteraction,
   APIMessage, APIMessageApplicationCommandInteractionDataResolved,
   APIMessageComponentButtonInteraction,
   APIMessageComponentInteraction,
   ApplicationCommandType,
   ButtonStyle,
   ComponentType,
-  InteractionType, MessageFlags,
+  InteractionType,
   Routes,
 } from "discord-api-types/v10";
 import {verify} from "discord-verify/node";
@@ -430,8 +430,7 @@ function isApplicationCommandContextMenuInteraction(body: APIApplicationCommandI
 
 async function handleApplicationCommand(
   body: APIApplicationCommandInteraction,
-)
-{
+) {
   if (isApplicationCommandChatInputInteraction(body)) {
     switch (body.data.name) {
       case "ask":
@@ -477,19 +476,19 @@ function formatCardDetails(card: DeckListCard): string {
 
   let notes = '(';
   if (erratas.length > 0 && others.length === 0) {
-    notes+=`${erratas.length} erratas`;
+    notes += `${erratas.length} erratas`;
   } else if (others.length > 0 && erratas.length === 0) {
-    notes+=`${others.length} notes`;
+    notes += `${others.length} notes`;
   } else {
-    notes+=`${erratas.length} erratas & ${others.length} notes`;
+    notes += `${erratas.length} erratas & ${others.length} notes`;
   }
-  notes+=')';
+  notes += ')';
 
   let details = `- **[${card.name}](https://joutes.app/games/riftbound/cards/${card.cardId})** ${notes} :`;
 
   if (erratas.length > 0) {
     erratas.sort((a, b) => DateTime.fromJSDate(b.errataDate).toMillis() - DateTime.fromJSDate(a.errataDate).toMillis());
-    details+=`\n> Dernier errata:\n> ${erratas[0].details}`;
+    details += `\n> Dernier errata:\n> ${erratas[0].details}`;
   }
   if (others.length > 0) {
     const maxPreviewLength = 200;
@@ -502,7 +501,7 @@ function formatCardDetails(card: DeckListCard): string {
       const content = note.details.length > maxPreviewLength
         ? `${note.details.slice(0, maxPreviewLength - 3)}...`
         : note.details;
-      details += `\n> - ${content} ${note.votes ? `(${note.votes.positive} vote${note.votes.positive > 1 ? 's' : ''} positif${note.votes.positive > 1 ? 's' : ''}, ${note.votes.negative} vote${note.votes.negative > 1 ? 's' : ''} négatif${note.votes.negative > 1 ? 's' : ''})`: ''}`;
+      details += `\n> - ${content} ${note.votes ? `(${note.votes.positive} vote${note.votes.positive > 1 ? 's' : ''} positif${note.votes.positive > 1 ? 's' : ''}, ${note.votes.negative} vote${note.votes.negative > 1 ? 's' : ''} négatif${note.votes.negative > 1 ? 's' : ''})` : ''}`;
     }
   }
 
