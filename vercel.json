@@ -5,8 +5,12 @@
       "schedule": "0 8 * * 3"
     },
     {
-      "path": "/api/cron/update-discord-boards",
+      "path": "/api/cron/update-event-boards",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/update-discord-boards",
+      "schedule": "0 1 * * *"
     }
   ]
 }
