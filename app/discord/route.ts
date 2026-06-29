@@ -41,6 +41,7 @@ import {
 import {parseDeckList, serializeDeckList} from "@/app/games/riftbound/deck-checker/utils";
 import {getLairById} from "@/lib/db/lairs";
 import {DiscordEmojis} from "@/app/discord/utils";
+import {inspect} from "node:util";
 
 const agentId = "yGypfIpDEb";
 const aiAllowedDiscordIds = JSON.parse(
@@ -50,6 +51,12 @@ const aiAllowedDiscordIds = JSON.parse(
 const rest = new REST({version: "10"}).setToken(
   process.env.DISCORD_TOKEN ?? "",
 );
+
+export type DiscordBoard = {
+  channelId: string;
+  messageId: string;
+  creatorDiscordId: string;
+};
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -906,7 +913,7 @@ async function handleEventsBoardCommand(interaction: APIChatInputApplicationComm
     month: currentDate.month,
   });
 
-  await rest.patch(
+  const boardMessage: APIMessage = (await rest.patch(
     Routes.webhookMessage(
       interaction.application_id,
       interaction.token,
@@ -925,7 +932,10 @@ async function handleEventsBoardCommand(interaction: APIChatInputApplicationComm
         content: null,
       },
     },
-  );
+  )) as APIMessage;
+
+  console.log(inspect(interaction, false, 20));
+
   return NextResponse.json({success: true}, {status: 200});
 }
 
