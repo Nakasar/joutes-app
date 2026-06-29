@@ -41,7 +41,6 @@ import {
 import {parseDeckList, serializeDeckList} from "@/app/games/riftbound/deck-checker/utils";
 import {getLairById} from "@/lib/db/lairs";
 import {DiscordEmojis} from "@/app/discord/utils";
-import {inspect} from "node:util";
 
 const agentId = "yGypfIpDEb";
 const aiAllowedDiscordIds = JSON.parse(
@@ -56,6 +55,8 @@ export type DiscordBoard = {
   channelId: string;
   messageId: string;
   creatorDiscordId: string;
+  lairs: ObjectId[];
+  games: ObjectId[];
 };
 
 export async function POST(req: Request) {
@@ -819,6 +820,9 @@ ${cardsWithErratas.map(formatCardDetails).join('\n\n')}`)
 }
 
 async function handleEventsBoardCommand(interaction: APIChatInputApplicationCommandInteraction) {
+  if (!interaction.member?.user.id) {
+    return NextResponse.json({success: true}, {status: 200});
+  }
   await rest.post(
     Routes.interactionCallback(interaction.id, interaction.token),
     {
@@ -934,7 +938,17 @@ async function handleEventsBoardCommand(interaction: APIChatInputApplicationComm
     },
   )) as APIMessage;
 
-  console.log(inspect(interaction, false, 20));
+  await db.collection<DiscordBoard>('discord-boards').insertOne({
+    channelId: boardMessage.channel_id,
+    messageId: boardMessage.id,
+    creatorDiscordId: interaction.member?.user.id,
+    lairs: [
+      new ObjectId(lair.id),
+    ],
+    games: [
+      new ObjectId(game.id),
+    ],
+  });
 
   return NextResponse.json({success: true}, {status: 200});
 }
