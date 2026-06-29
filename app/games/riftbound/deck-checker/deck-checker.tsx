@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/command";
 import {
   validateDeckList, type DeckListCard, type DeckList, analyzeDeckListImageBase64Action,
-  analyzeDeckListImageURLAction, getDeckFromPiltover
+  analyzeDeckListImageURLAction, getDeckFromPiltover, getDeckFromPiltoverCode
 } from "./action";
 import {type ErrataType} from "@/lib/types/errata";
 import {type BoosterCard} from "@/lib/types/booster";
@@ -402,6 +402,8 @@ export function RiftboundDeckChecker({ input }: { input?: string }) {
       if (rawDeckList.startsWith('https://piltoverarchive.com/decks/view/')) {
         const deckId = rawDeckList.split('/').at(-1)!;
         parsed = await getDeckFromPiltover(deckId);
+      } else if (!rawDeckList.includes(' ')) {
+        parsed = await getDeckFromPiltoverCode(rawDeckList)
       } else {
         parsed = parseDeckList(rawDeckList);
       }

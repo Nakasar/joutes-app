@@ -1,7 +1,7 @@
 // ── Parse a pasted deck list text into the DeckList structure ─────────────────
 import {DeckList, DeckListCard} from "@/app/games/riftbound/deck-checker/action";
-import { getCodeFromDeck } from "@piltoverarchive/riftbound-deck-codes";
-import type { Deck, Card } from "@piltoverarchive/riftbound-deck-codes";
+import {getCodeFromDeck} from "@piltoverarchive/riftbound-deck-codes";
+import type {Card} from "@piltoverarchive/riftbound-deck-codes";
 
 export function parseDeckList(text: string): DeckList {
   const result: DeckList = {
@@ -42,7 +42,10 @@ export function parseDeckList(text: string): DeckList {
     const headerMatch = line.match(/^([A-Za-z\u00C0-\u024F\u1E00-\u1EFF \-]+):?$/);
     if (headerMatch) {
       const key = headerMatch[1].trim().toLowerCase();
-      if (map[key]) { current = map[key]; continue; }
+      if (map[key]) {
+        current = map[key];
+        continue;
+      }
     }
 
     const qtyMatch = line.match(/^\s*[xX\-*]*?(\d+)\s*x?\s+(.+)$/i);
@@ -70,16 +73,16 @@ export function parseDeckList(text: string): DeckList {
 // ── Stringify a DeckList back to raw text ──────────────────────────────────────
 export function stringifyDeckList(deckList: DeckList): string {
   const sections: Array<{ label: string; key: keyof DeckList }> = [
-    { label: 'Legend', key: 'legends' },
-    { label: 'Champion', key: 'champions' },
-    { label: 'MainDeck', key: 'maindeck' },
-    { label: 'Sideboard', key: 'sideboard' },
-    { label: 'Battlefields', key: 'battlefields' },
-    { label: 'Runes', key: 'runes' },
+    {label: 'Legend', key: 'legends'},
+    {label: 'Champion', key: 'champions'},
+    {label: 'MainDeck', key: 'maindeck'},
+    {label: 'Sideboard', key: 'sideboard'},
+    {label: 'Battlefields', key: 'battlefields'},
+    {label: 'Runes', key: 'runes'},
   ];
 
   const parts: string[] = [];
-  for (const { label, key } of sections) {
+  for (const {label, key} of sections) {
     const cards = deckList[key];
     if (cards.length === 0) continue;
     parts.push(`${label}:`);
@@ -121,6 +124,20 @@ export function cardIdToPiltoverFormat(cardId: string): string {
   const set = match[1];
   const cn = match[2];
   return `${set}-${cn}`;
+}
+
+export function cardIdFromPiltoverFormat(piltoverFormat: string): string {
+  if (piltoverFormat.startsWith('OGN')) {
+    const cn = piltoverFormat.split('OGN-')[1];
+    return `origins-${cn}298`;
+  }
+
+  if (piltoverFormat.startsWith('OGS')) {
+    const cn = piltoverFormat.split('OGS-')[1];
+    return `ogs${cn}24`;
+  }
+
+  return piltoverFormat.replace('-', '');
 }
 
 export function serializeDeckList(deckList: DeckList): string {

@@ -6,7 +6,10 @@ import {auth} from "@/lib/auth";
 import {headers} from "next/headers";
 import {generateText} from "ai";
 import {openai} from "@ai-sdk/openai";
-import {parseDeckList} from "@/app/games/riftbound/deck-checker/utils";
+import {cardIdFromPiltoverFormat, parseDeckList} from "@/app/games/riftbound/deck-checker/utils";
+import {getDeckFromCode} from "@piltoverarchive/riftbound-deck-codes";
+import {ObjectId} from "mongodb";
+import {BoosterCard} from "@/lib/types/booster";
 
 export type DeckListCard = {
   name: string;
@@ -129,6 +132,109 @@ export async function getDeckFromPiltover(deckId: string): Promise<DeckList> {
   };
 
   return parsed;
+}
+
+export async function getDeckFromPiltoverCode(code: string): Promise<DeckList> {
+  const deck = getDeckFromCode(code);
+
+  const result: DeckList = {
+    champions: [],
+    legends: [],
+    maindeck: [],
+    sideboard: [],
+    battlefields: [],
+    runes: [],
+  };
+
+  const cardIdsToSearch: string[] = [
+    deck.chosenChampion,
+    ...deck.sideboard.map(c => c.cardCode),
+    ...deck.mainDeck.map(c => c.cardCode),
+  ].filter((c) : c is string => !!(c?.length && c.length > 2));
+
+  // safeguard, max 100 cards.
+  const uniques = new Set(cardIdsToSearch);
+  if (uniques.size === 0 || uniques.size >= 100) {
+    throw new Error('Failed to get deck list. Too many uniques cards.');
+  }
+
+  const uniqueIds = [...uniques.keys()].map(id => cardIdFromPiltoverFormat(id));
+
+  console.log(uniqueIds);
+
+  const cards = await db.collection<{ id: string; name: string; type: string }>('cards').find({
+    id: {
+      $in: uniqueIds,
+    },
+    gameId: new ObjectId('69009afea722eab4fa0e55c4'),
+  }, { projection: { id: 1, name: 1, type: 1 } }).toArray();
+
+  if (deck.chosenChampion) {
+    const card = cards.find(c => c.id === cardIdFromPiltoverFormat(deck.chosenChampion!))
+
+    if (card) {
+      result.champions.push({
+        cardId: card.id,
+        name: card.name,
+        quantity: 1,
+      })
+    }
+  }
+
+  if (deck.sideboard.length > 0) {
+    const sideboard = deck.sideboard.map((c): DeckListCard => {
+      const card = cards.find(candidate => candidate.id === cardIdFromPiltoverFormat(c.cardCode));
+
+      return {
+        cardId: card?.id ?? cardIdFromPiltoverFormat(c.cardCode),
+        name: card?.name ?? c.cardCode,
+        quantity: c.count,
+      };
+    });
+
+    result.sideboard.push(...sideboard);
+  }
+
+  for (const sourceCard of deck.mainDeck) {
+    const cardId = cardIdFromPiltoverFormat(sourceCard.cardCode);
+    const card = cards.find(candidate => candidate.id === cardId);
+
+    if (!card) {
+      result.maindeck.push({
+        cardId,
+        name: sourceCard.cardCode,
+        quantity: sourceCard.count,
+      })
+    } else {
+      if (card.type === 'Runes') {
+        result.runes.push({
+          cardId,
+          name: card.name,
+          quantity: sourceCard.count,
+        });
+      } else if (card.type === 'Battlefields') {
+        result.battlefields.push({
+          cardId,
+          name: card.name,
+          quantity: sourceCard.count,
+        });
+      } else if (card.type === 'Legend') {
+        result.legends.push({
+          cardId,
+          name: card.name,
+          quantity: sourceCard.count,
+        });
+      } else {
+        result.maindeck.push({
+          cardId,
+          name: card.name,
+          quantity: sourceCard.count,
+        })
+      }
+    }
+  }
+
+  return result;
 }
 
 export async function analyzeDeckListImageBase64Action(imageBase64: string): Promise<{ raw: string; deckList: DeckList }> {
