@@ -1,8 +1,8 @@
 import {REST} from "@discordjs/rest";
 import {
   APIApplicationCommandInteraction,
-  APIChatInputApplicationCommandInteraction, APIContextMenuInteraction,
-  APIMessage,
+  APIChatInputApplicationCommandInteraction, APIContextMenuInteraction, APIContextMenuInteractionData,
+  APIMessage, APIMessageApplicationCommandInteractionDataResolved,
   APIMessageComponentButtonInteraction,
   APIMessageComponentInteraction,
   ApplicationCommandType,
@@ -472,10 +472,7 @@ async function handleContextualMessageCommand(interaction: APIContextMenuInterac
 }
 
 async function handleVerifyDeckCommand(interaction: APIContextMenuInteraction) {
-  console.log(inspect(interaction, false, 20));
-  const message = await rest.get(Routes.channelMessage(interaction.channel.id, interaction.data.target_id)) as APIMessage;
-  console.log(inspect(message, false, 20));
-  const messageContent = message.content;
+  const messageContent = (interaction.data.resolved as APIMessageApplicationCommandInteractionDataResolved).messages[0]?.content;
 
   if (!messageContent) {
     await rest.post(
@@ -506,29 +503,45 @@ async function handleVerifyDeckCommand(interaction: APIContextMenuInteraction) {
     },
   );
 
-  let parsed: DeckList;
-  if (messageContent.startsWith('https://piltoverarchive.com/decks/view/')) {
-    const deckId = messageContent.split('/').at(-1)!;
-    parsed = await getDeckFromPiltover(deckId);
-  } else {
-    parsed = parseDeckList(messageContent);
-  }
+  try {
+    let parsed: DeckList;
+    if (messageContent.startsWith('https://piltoverarchive.com/decks/view/')) {
+      const deckId = messageContent.split('/').at(-1)!;
+      parsed = await getDeckFromPiltover(deckId);
+    } else {
+      parsed = parseDeckList(messageContent);
+    }
 
-  const validated = await validateDeckList(parsed);
+    const validated = await validateDeckList(parsed);
 
-  await rest.patch(
-    Routes.webhookMessage(
-      interaction.application_id,
-      interaction.token,
-      "@original",
-    ),
-    {
-      body: {
-        content: "Analyse du deck terminée: voici les informations utiles à savoir à son sujet...",
+    await rest.patch(
+      Routes.webhookMessage(
+        interaction.application_id,
+        interaction.token,
+        "@original",
+      ),
+      {
+        body: {
+          content: "Analyse du deck terminée: voici les informations utiles à savoir à son sujet...",
+        },
       },
-    },
-  );
-  return NextResponse.json({success: true}, {status: 200});
+    );
+    return NextResponse.json({success: true}, {status: 200});
+  } catch (error) {
+    await rest.patch(
+      Routes.webhookMessage(
+        interaction.application_id,
+        interaction.token,
+        "@original",
+      ),
+      {
+        body: {
+          content: "Impossible de vérifier ce deck.",
+        },
+      },
+    );
+    return NextResponse.json({success: true}, {status: 200});
+  }
 }
 
 async function handleEventsCommand(interaction: APIChatInputApplicationCommandInteraction) {
