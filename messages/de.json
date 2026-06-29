@@ -23,60 +23,6 @@
     "es": "Spanisch",
     "de": "Deutsch"
   },
-  "DeckChecker": {
-    "title": "Riftbound-Deck-Checker",
-    "description": "Überprüfe die Legalität deines Decks und erhalte Informationen zu seinen Karten und deren Rulings",
-    "form": {
-      "label": "Deckliste (Text oder Link von Piltover Archive)",
-      "placeholder": "Füge deine Deckliste oder einen Link https://piltoverarchive.com/decks/view/...\n\nLegende:\n1 Azir, Emperor of the Sands\n\nChampion:\n1 Azir, Sovereign\n\nMainDeck:\n3 Discipline\n...",
-      "validate": "Überprüfen",
-      "loading": "Wird überprüft…",
-      "uploadPhoto": "Foto hochladen",
-      "copyLink": "Link kopieren",
-      "errors": {
-        "importFailed": "Das Deck konnte nicht von Piltover Archive abgerufen werden.",
-        "imageRead": "Fehler beim Lesen des Bildes",
-        "imageCheck": "Fehler bei der Überprüfung",
-        "generic": "Ein Fehler ist aufgetreten."
-      }
-    },
-    "sections": {
-      "legend": "Legende",
-      "champion": "Champion",
-      "battlefields": "Schlachtfelder",
-      "runes": "Runen",
-      "mainDeck": "Main Deck",
-      "sideboard": "Sideboard",
-      "count": "{count, plural, one {# Karte} other {# Karten}}",
-      "invalid": "UNGÜLTIG",
-      "rules": {
-        "requiredCount": "benötigt: {count}",
-        "requiredRange": "benötigt: {min}–{max}"
-      }
-    },
-    "cards": {
-      "unrecognizedTitle": "Nicht erkannte Karten",
-      "banned": "VERBOTEN",
-      "notes": "ANMERKUNGEN",
-      "edit": "Bearbeiten",
-      "editTitle": "Karte bearbeiten",
-      "replace": "Ersetzung von {cardName}",
-      "searchPlaceholder": "Karte suchen…",
-      "searching": "Suche läuft…",
-      "minChars": "Mindestens 2 Zeichen eingeben…",
-      "noResults": "Keine Ergebnisse.",
-      "bannedMessage": "Diese Karte ist verboten und darf nicht bei Turnieren gespielt werden.",
-      "noErrata": "Keine Errata oder Klärung für diese Karte.",
-      "deprecated": "Veraltet",
-      "source": "Quelle →",
-      "errataSectionTitle": "Errata & Klarifizierungen ({count})"
-    },
-    "errataTypes": {
-      "errata": "Errata",
-      "clarification": "Klarifizierung",
-      "ruling": "Entscheidung"
-    }
-  },
   "Home": {
     "title": "Eventkalender",
     "createEvent": "Event erstellen"
@@ -232,6 +178,14 @@
     }
   },
   "Games": {
+    "nav": {
+      "tools": "Werkzeuge",
+      "cards": "Karten",
+      "rules": "Regeln",
+      "policies": "Richtlinien",
+      "deckChecker": "Deck-Checker",
+      "collection": "Sammlung"
+    },
     "explorer": {
       "title": "Spiele entdecken",
       "description": "Entdecke großartige Karten- und Brettspiele für jeden Geschmack.",
@@ -516,6 +470,60 @@
         "errors": {
           "createError": "Richtlinie konnte nicht erstellt werden"
         }
+      }
+    },
+    "DeckChecker": {
+      "title": "Riftbound-Deck-Checker",
+      "description": "Überprüfe die Legalität deines Decks und erhalte Informationen zu seinen Karten und deren Rulings",
+      "form": {
+        "label": "Deckliste (Text oder Link von Piltover Archive)",
+        "placeholder": "Füge deine Deckliste oder einen Link https://piltoverarchive.com/decks/view/...\n\nLegende:\n1 Azir, Emperor of the Sands\n\nChampion:\n1 Azir, Sovereign\n\nMainDeck:\n3 Discipline\n...",
+        "validate": "Überprüfen",
+        "loading": "Wird überprüft…",
+        "uploadPhoto": "Foto hochladen",
+        "copyLink": "Link kopieren",
+        "errors": {
+          "importFailed": "Das Deck konnte nicht von Piltover Archive abgerufen werden.",
+          "imageRead": "Fehler beim Lesen des Bildes",
+          "imageCheck": "Fehler bei der Überprüfung",
+          "generic": "Ein Fehler ist aufgetreten."
+        }
+      },
+      "sections": {
+        "legend": "Legende",
+        "champion": "Champion",
+        "battlefields": "Schlachtfelder",
+        "runes": "Runen",
+        "mainDeck": "Main Deck",
+        "sideboard": "Sideboard",
+        "count": "{count, plural, one {# Karte} other {# Karten}}",
+        "invalid": "UNGÜLTIG",
+        "rules": {
+          "requiredCount": "benötigt: {count}",
+          "requiredRange": "benötigt: {min}–{max}"
+        }
+      },
+      "cards": {
+        "unrecognizedTitle": "Nicht erkannte Karten",
+        "banned": "VERBOTEN",
+        "notes": "ANMERKUNGEN",
+        "edit": "Bearbeiten",
+        "editTitle": "Karte bearbeiten",
+        "replace": "Ersetzung von {cardName}",
+        "searchPlaceholder": "Karte suchen…",
+        "searching": "Suche läuft…",
+        "minChars": "Mindestens 2 Zeichen eingeben…",
+        "noResults": "Keine Ergebnisse.",
+        "bannedMessage": "Diese Karte ist verboten und darf nicht bei Turnieren gespielt werden.",
+        "noErrata": "Keine Errata oder Klärung für diese Karte.",
+        "deprecated": "Veraltet",
+        "source": "Quelle →",
+        "errataSectionTitle": "Errata & Klarifizierungen ({count})"
+      },
+      "errataTypes": {
+        "errata": "Errata",
+        "clarification": "Klarifizierung",
+        "ruling": "Entscheidung"
       }
     }
   },

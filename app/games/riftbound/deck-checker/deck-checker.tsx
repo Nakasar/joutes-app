@@ -77,7 +77,7 @@ function EditCardDialog({
   const [searchQuery, setSearchQuery] = useState(card?.name ?? "");
   const [results, setResults] = useState<BoosterCard[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const t = useTranslations('DeckChecker');
+  const t = useTranslations('Games.DeckChecker');
 
   // Reset search query when the edited card changes
   useEffect(() => {
@@ -168,7 +168,7 @@ function EditCardDialog({
 // ── Card tile ─────────────────────────────────────────────────────────────────
 function CardTile({card, onEdit, onQuantityChange}: {card: DeckListCard; onEdit?: () => void; onQuantityChange?: (delta: number) => void}) {
   const hasErratas = (card.erratas?.length ?? 0) > 0;
-  const t = useTranslations('DeckChecker');
+  const t = useTranslations('Games.DeckChecker');
   const locale = useLocale();
   const formatDate = (value: string | Date) => {
     const parsedDate = value instanceof Date ? DateTime.fromJSDate(value) : DateTime.fromISO(value);
@@ -333,7 +333,7 @@ type SectionRules = { min: number; max: number };
 
 
 function DeckSection({title, cards, compact, rules, onEditCard, onQuantityChange}: {title: string; cards: DeckListCard[]; compact?: boolean; rules?: SectionRules; onEditCard?: (index: number) => void; onQuantityChange?: (index: number, delta: number) => void}) {
-  const t = useTranslations('DeckChecker');
+  const t = useTranslations('Games.DeckChecker');
   const total = cards.reduce((sum, c) => sum + c.quantity, 0);
   const ruleNote = rules ? (rules.min === rules.max
     ? t('sections.rules.requiredCount', { count: rules.min })
@@ -382,7 +382,7 @@ function DeckSection({title, cards, compact, rules, onEditCard, onQuantityChange
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export function RiftboundDeckChecker() {
-  const t = useTranslations('DeckChecker');
+  const t = useTranslations('Games.DeckChecker');
 
   const session = useSession();
   const [rawDeckList, setRawDeckList] = useState("");
@@ -516,8 +516,6 @@ export function RiftboundDeckChecker() {
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
-      <h1 className="text-3xl font-bold mb-6">{t('title')}</h1>
-
       <div className="mb-8">
         <div className="mb-3">
           <Label htmlFor="deck-list" className="block text-sm font-medium mb-2">

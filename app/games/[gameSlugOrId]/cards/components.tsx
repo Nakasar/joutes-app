@@ -281,14 +281,7 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   };
 
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">{t("cards.search.title")}</h1>
-      <Button asChild>
-        <Link href={`/games/${gameSlug}`} className="text-blue-600 hover:underline">
-          ← {t("cards.back")}
-        </Link>
-      </Button>
-
+    <>
       <div className="mb-6 mt-6 flex flex-col gap-4 lg:flex-row lg:items-end">
         <div className="flex-1">
           <Input
@@ -437,6 +430,6 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
           </div>
         </div>
       ) : null}
-    </div>
+    </>
   );
 }
