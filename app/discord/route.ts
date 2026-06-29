@@ -25,7 +25,7 @@ import {ObjectId} from "mongodb";
 import {RegistrationStatus} from "@/lib/types/Event";
 import {makeEventDiscordInfoMessage} from "@/lib/discord/utils";
 import {GameDocument} from "@/lib/db/games";
-import {DeckList, getDeckFromPiltover, validateDeckList} from "@/app/games/riftbound/deck-checker/action";
+import {DeckList, DeckListCard, getDeckFromPiltover, validateDeckList} from "@/app/games/riftbound/deck-checker/action";
 import {parseDeckList} from "@/app/games/riftbound/deck-checker/utils";
 import {inspect} from "node:util";
 
@@ -471,6 +471,29 @@ async function handleContextualMessageCommand(interaction: APIContextMenuInterac
   }
 }
 
+function formatCardDetails(card: DeckListCard): string {
+  const erratas = card.erratas?.filter(e => e.type === 'errata') ?? [];
+  const others = card.erratas?.filter(e => e.type !== 'errata') ?? [];
+
+  let notes = '(';
+  if (erratas.length > 0 && others.length === 0) {
+    notes+=`${erratas.length} erratas`;
+  } else if (others.length > 0 && erratas.length === 0) {
+    notes+=`${others.length} notes`;
+  } else {
+    notes+=`${erratas.length} erratas & ${others.length} notes`;
+  }
+  notes+=')';
+
+  let details = `- **${card.name}** ${notes} :`;
+  if (erratas.length > 0) {
+    erratas.sort((a, b) => a.errataDate.getTime() - b.errataDate.getTime());
+    details+=`\n> Dernier errata:\n> ${erratas[0].details}`;
+  }
+
+  return details;
+}
+
 async function handleVerifyDeckCommand(interaction: APIContextMenuInteraction) {
   console.log(inspect(interaction.data.resolved, false, 20));
   const messageContent = (interaction.data.resolved as APIMessageApplicationCommandInteractionDataResolved).messages[interaction.data.target_id]?.content;
@@ -515,6 +538,13 @@ async function handleVerifyDeckCommand(interaction: APIContextMenuInteraction) {
 
     const validated = await validateDeckList(parsed);
 
+    const cardsWithErratas = [
+      ...validated.legends.filter(c => c.erratas?.length && c.erratas?.length > 0),
+      ...validated.champions.filter(c => c.erratas?.length && c.erratas?.length > 0),
+      ...validated.maindeck.filter(c => c.erratas?.length && c.erratas?.length > 0),
+      ...validated.sideboard.filter(c => c.erratas?.length && c.erratas?.length > 0),
+    ];
+
     await rest.patch(
       Routes.webhookMessage(
         interaction.application_id,
@@ -524,6 +554,15 @@ async function handleVerifyDeckCommand(interaction: APIContextMenuInteraction) {
       {
         body: {
           content: "Analyse du deck terminée: voici les informations utiles à savoir à son sujet...",
+          embeds: [
+            new EmbedBuilder()
+              .setTitle(`Notes sur le deck`)
+              .setURL(`https://joutes.app/games/riftbound/deck-checker`)
+              .setDescription(`Les cartes suivantes ont des notes les concernant :
+
+${cardsWithErratas.map(formatCardDetails).join('\n\n')}`)
+              .toJSON(),
+          ],
         },
       },
     );
