@@ -579,7 +579,7 @@ ${cardsWithErratas.map(formatCardDetails).join('\n\n')}`)
             new ActionRowBuilder<ButtonBuilder>().addComponents(
               new ButtonBuilder()
                 .setLabel("Voir le deck")
-                .setURL(`https://joutes.app/games/riftbound/deck-checker?input=${encodeURIComponent(messageContent)}`)
+                .setURL(`https://joutes.app/games/riftbound/deck-checker?input=${serializeDeckList(validated)}`)
                 .setStyle(ButtonStyle.Link),
             ),
           ],
