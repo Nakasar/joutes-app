@@ -8,7 +8,7 @@ import {
   ApplicationCommandType,
   ButtonStyle,
   ComponentType,
-  InteractionType,
+  InteractionType, MessageFlags,
   Routes,
 } from "discord-api-types/v10";
 import {verify} from "discord-verify/node";
@@ -485,7 +485,7 @@ function formatCardDetails(card: DeckListCard): string {
   }
   notes+=')';
 
-  let details = `- **${card.name}** ${notes} :`;
+  let details = `- **[${card.name}](https://joutes.app/games/riftbound/cards/${card.cardId})** ${notes} :`;
   if (erratas.length > 0) {
     erratas.sort((a, b) => a.errataDate.getTime() - b.errataDate.getTime());
     details+=`\n> Dernier errata:\n> ${erratas[0].details}`;
@@ -521,7 +521,6 @@ async function handleVerifyDeckCommand(interaction: APIContextMenuInteraction) {
         type: 4,
         data: {
           content: "Analyse du deck en cours...",
-          flags: 64, // Ephemeral
         },
       },
     },
