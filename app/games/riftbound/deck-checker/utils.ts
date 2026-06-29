@@ -141,7 +141,7 @@ export function cardIdFromPiltoverFormat(piltoverFormat: string): string {
 }
 
 export function serializeDeckList(deckList: DeckList): string {
-  return getCodeFromDeck([...deckList.maindeck, ...deckList.runes, ...deckList.legends].map((c: DeckListCard): Card => {
+  return getCodeFromDeck([...deckList.maindeck, ...deckList.runes, ...deckList.legends, ...deckList.battlefields].map((c: DeckListCard): Card => {
     if (!c.cardId) {
       throw new Error('Missing card ID');
     }
