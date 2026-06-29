@@ -477,7 +477,7 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
           .setValue('lorcana'),
       )
       .setMinValues(1)
-      .setMaxValues(20);
+      .setMaxValues(3);
 
     const gamesLabel = new LabelBuilder()
       .setLabel("Jeux")
