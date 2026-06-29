@@ -27,6 +27,7 @@ import {makeEventDiscordInfoMessage} from "@/lib/discord/utils";
 import {GameDocument} from "@/lib/db/games";
 import {DeckList, getDeckFromPiltover, validateDeckList} from "@/app/games/riftbound/deck-checker/action";
 import {parseDeckList} from "@/app/games/riftbound/deck-checker/utils";
+import {inspect} from "node:util";
 
 const agentId = "yGypfIpDEb";
 const aiAllowedDiscordIds = JSON.parse(
@@ -471,7 +472,9 @@ async function handleContextualMessageCommand(interaction: APIContextMenuInterac
 }
 
 async function handleVerifyDeckCommand(interaction: APIContextMenuInteraction) {
-  const message = await rest.get(Routes.channelMessage(interaction.channel_id, interaction.data.target_id)) as APIMessage;
+  console.log(inspect(interaction, false, 20));
+  const message = await rest.get(Routes.channelMessage(interaction.channel.id, interaction.data.target_id)) as APIMessage;
+  console.log(inspect(message, false, 20));
   const messageContent = message.content;
 
   if (!messageContent) {
