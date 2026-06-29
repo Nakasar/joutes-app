@@ -26,7 +26,7 @@ import {RegistrationStatus} from "@/lib/types/Event";
 import {makeEventDiscordInfoMessage} from "@/lib/discord/utils";
 import {GameDocument} from "@/lib/db/games";
 import {DeckList, DeckListCard, getDeckFromPiltover, validateDeckList} from "@/app/games/riftbound/deck-checker/action";
-import {parseDeckList} from "@/app/games/riftbound/deck-checker/utils";
+import {parseDeckList, serializeDeckList} from "@/app/games/riftbound/deck-checker/utils";
 import {inspect} from "node:util";
 
 const agentId = "yGypfIpDEb";
@@ -569,7 +569,7 @@ async function handleVerifyDeckCommand(interaction: APIContextMenuInteraction) {
           embeds: [
             new EmbedBuilder()
               .setTitle(`Notes sur le deck`)
-              .setURL(`https://joutes.app/games/riftbound/deck-checker?input=${encodeURIComponent(messageContent)}`)
+              .setURL(`https://joutes.app/games/riftbound/deck-checker?input=${serializeDeckList(validated)}`)
               .setDescription(`Les cartes suivantes ont des notes les concernant :
 
 ${cardsWithErratas.map(formatCardDetails).join('\n\n')}`)
