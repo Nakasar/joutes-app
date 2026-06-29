@@ -53,8 +53,8 @@ export async function getEventsByLairId(lairId: string, {year, month, gameId, us
   }
 
   // Apply game filter if specified
-  if (gameId && gameId !== "all" && user) {
-    if (gameId === "followed") {
+  if (gameId && gameId !== "all") {
+    if (gameId === "followed" && user) {
       // Filter by user's followed games
       if (!user.games || user.games.length === 0) {
         return [];

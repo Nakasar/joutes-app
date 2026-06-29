@@ -915,7 +915,12 @@ async function handleEventsBoardCommand(interaction: APIChatInputApplicationComm
     ),
     {
       body: {
-        content: `Voici les évènements à venir pour ce lieu et ce jeu : ${events.length > 0 ? events.map(e => `- [${e.name}](https://joutes.app/events/${e.id}) le ${DateTime.fromISO(e.startDateTime).toLocaleString(DateTime.DATETIME_MED)}`).join('\n') : 'Aucun évènement à venir.'}`,
+        embeds: [
+          new EmbedBuilder()
+            .setTitle(`Events - ${lair.name}`)
+            .setDescription(`Voici les évènements à venir pour ce lieu et ce jeu : ${events.length > 0 ? events.map(e => `- [${e.name}](https://joutes.app/events/${e.id}) le ${DateTime.fromISO(e.startDateTime).toLocaleString(DateTime.DATETIME_MED)}`).join('\n') : 'Aucun évènement à venir.'}`)
+        ],
+        content: null,
       },
     },
   );
