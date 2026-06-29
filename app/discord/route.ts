@@ -7,7 +7,7 @@ import {
   APIMessageComponentInteraction,
   ApplicationCommandType,
   ButtonStyle,
-  ComponentType,
+  ComponentType, InteractionResponseType,
   InteractionType,
   Routes,
 } from "discord-api-types/v10";
@@ -16,7 +16,7 @@ import {NextResponse} from "next/server";
 import crypto from "node:crypto";
 import db from "@/lib/mongodb";
 import {BoosterCard} from "@/lib/types/booster";
-import {ActionRowBuilder, ButtonBuilder, EmbedBuilder} from "@discordjs/builders";
+import {ActionRowBuilder, ButtonBuilder, EmbedBuilder, ModalBuilder} from "@discordjs/builders";
 import {getErratasByCardId} from "@/lib/db/erratas";
 import {Game} from "@/lib/types/Game";
 import {
@@ -424,6 +424,43 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
       );
       return NextResponse.json({success: true}, {status: 200});
     }
+  } else if (interaction.data.custom_id.startsWith("modify-events-board-")) {
+    const discordUserId = interaction.user?.id || interaction.member?.user?.id;
+    const boardId = interaction.data.custom_id.split('modify-events-board-')[1];
+
+    const board = await db.collection<DiscordBoard>('discord-boards').findOne({
+      _id: new ObjectId(boardId),
+      creatorDiscordId: discordUserId,
+    });
+
+    if (!board) {
+      await rest.post(
+        Routes.interactionCallback(interaction.id, interaction.token),
+        {
+          body: {
+            type: 4,
+            data: {
+              content: "Commande inconnue.",
+              flags: 64, // Ephemeral
+            },
+          },
+        },
+      );
+      return NextResponse.json({success: true}, {status: 200});
+    }
+
+    const modal = new ModalBuilder().setCustomId('modify-events-board-').setTitle('Modification');
+
+    await rest.post(
+      Routes.interactionCallback(interaction.id, interaction.token),
+      {
+        body: {
+          type: InteractionResponseType.Modal,
+          data: modal.toJSON(),
+        },
+      },
+    );
+    return NextResponse.json({success: true}, {status: 200});
   } else {
     await rest.post(
       Routes.interactionCallback(interaction.id, interaction.token),
@@ -928,9 +965,12 @@ async function handleEventsBoardCommand(interaction: APIChatInputApplicationComm
         embeds: [
           new EmbedBuilder()
             .setTitle(`Events - ${lair.name}`)
-            .setDescription(`Voici les évènements à venir :\n\n${events.length > 0 ? events.map(e => `-${e.game?.slug ? ` <:${e.game.slug}:${DiscordEmojis[e.game.slug] ?? ''}>` : ''} [${e.name}](https://joutes.app/events/${e.id}) le ${DateTime.fromISO(e.startDateTime, { zone: 'Europe/Paris', locale: 'fr' }).toLocaleString(DateTime.DATETIME_MED)}`).join('\n') : 'Aucun évènement à venir.'}`)
+            .setDescription(`Voici les évènements à venir :\n\n${events.length > 0 ? events.map(e => `-${e.game?.slug ? ` <:${e.game.slug}:${DiscordEmojis[e.game.slug] ?? ''}>` : ''} [${e.name}](https://joutes.app/events/${e.id}) le ${DateTime.fromISO(e.startDateTime, {
+              zone: 'Europe/Paris',
+              locale: 'fr'
+            }).toLocaleString(DateTime.DATETIME_MED)}`).join('\n') : 'Aucun évènement à venir.'}`)
             .setFooter({
-              text: `Updated: ${currentDate.setZone('Europe/Paris').toLocaleString(DateTime.DATETIME_MED, { locale: 'fr' })}`,
+              text: `Updated: ${currentDate.setZone('Europe/Paris').toLocaleString(DateTime.DATETIME_MED, {locale: 'fr'})}`,
             }),
         ],
         content: null,
