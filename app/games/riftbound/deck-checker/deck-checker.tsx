@@ -557,19 +557,21 @@ export function RiftboundDeckChecker({ input }: { input?: string }) {
               </label>
             </Button>
           )}
+          {deckList &&
+            <Button onClick={() => {
+              const link = `${process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL}` : 'http://localhost:3000'}/games/riftbound/deck-checker?input=${serializeDeckList(deckList)}`;
+
+              if (window?.navigator?.clipboard) {
+                window?.navigator?.clipboard.writeText(link);
+              }
+            }}>{t('form.copyLink')}</Button>
+          }
         </div>
         {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
       </div>
 
       {deckList && (
         <div className="space-y-8">
-          <Button className="hidden" onClick={() => {
-            const link = `${process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL}` : 'http://localhost:3000'}/riftbound/deck-checker?deckCode=${serializeDeckList(deckList)}`;
-
-            if (window?.navigator?.clipboard) {
-              window?.navigator?.clipboard.writeText(link);
-            }
-          }}>{t('form.copyLink')}</Button>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <DeckSection title={t('sections.legend')} cards={deckList.legends} compact rules={ConstructionRules.legends} onEditCard={(i) => setEditingCard({ section: 'legends', index: i })} onQuantityChange={(i, d) => handleQuantityChange('legends', i, d)} />
             <DeckSection title={t('sections.champion')} cards={deckList.champions} compact rules={ConstructionRules.champions} onEditCard={(i) => setEditingCard({ section: 'champions', index: i })} onQuantityChange={(i, d) => handleQuantityChange('champions', i, d)} />

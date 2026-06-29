@@ -92,14 +92,45 @@ export function stringifyDeckList(deckList: DeckList): string {
   return parts.join('\n').trim();
 }
 
+export function cardIdToPiltoverFormat(cardId: string): string {
+  // exception for legacy cards
+  // @TODO: harmonize IDs
+  if (cardId.startsWith('origins-')) {
+
+    const codeRegex = /origins-(?<cn>[0-9]{3}[a-z*]?)[0-9]+/gi;
+    const match = codeRegex.exec(cardId);
+    if (!match) {
+      return cardId;
+    }
+    return `OGN-${match[1]}`;
+  }
+  if (cardId.startsWith('ogs')) {
+    const codeRegex = /ogs(?<cn>[0-9]{3}[a-z*]?)[0-9]+/gi;
+    const match = codeRegex.exec(cardId);
+    if (!match) {
+      return cardId;
+    }
+    return `OGS-${match[1]}`
+  }
+
+  const codeRegex = /(?<set>[A-Z]{3})-?(?<cn>[A-Z0-9]{3}[a*]?)(?:\/[0-9]{3})?/;
+  const match = codeRegex.exec(cardId);
+  if (!match) {
+    return cardId;
+  }
+  const set = match[1];
+  const cn = match[2];
+  return `${set}-${cn}`;
+}
+
 export function serializeDeckList(deckList: DeckList): string {
-  return getCodeFromDeck([...deckList.maindeck, ...deckList.runes, ...deckList.sideboard, ...deckList.legends].map((c: DeckListCard): Card => {
+  return getCodeFromDeck([...deckList.maindeck, ...deckList.runes, ...deckList.legends].map((c: DeckListCard): Card => {
     if (!c.cardId) {
       throw new Error('Missing card ID');
     }
 
     return {
-      cardCode: c.cardId,
+      cardCode: cardIdToPiltoverFormat(c.cardId),
       count: c.quantity,
     };
   }), deckList.sideboard.map((c: DeckListCard): Card => {
@@ -108,8 +139,8 @@ export function serializeDeckList(deckList: DeckList): string {
     }
 
     return {
-      cardCode: c.cardId,
+      cardCode: cardIdToPiltoverFormat(c.cardId),
       count: c.quantity,
     };
-  }), deckList.champions[0].cardId);
+  }), deckList.champions[0]?.cardId ? cardIdToPiltoverFormat(deckList.champions[0].cardId) : undefined);
 }
