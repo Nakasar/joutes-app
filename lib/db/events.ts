@@ -3,6 +3,7 @@ import {Event, RegistrationStatus} from "@/lib/types/Event";
 import {getUserById} from "@/lib/db/users";
 import {getLairIdsNearLocation} from "./lairs";
 import {ObjectId} from "mongodb";
+import {GameTypeKey} from "@/lib/constants/game-types";
 
 const COLLECTION_NAME = "events";
 
@@ -48,9 +49,34 @@ export async function getEventsByLairId(lairId: string, {year, month, gameId, us
           $gte: startDate.toISOString(),
           $lte: endDate.toISOString()
         }
-      }
+      },
     });
   }
+
+  pipeline.push(...[
+    {
+      $lookup: {
+        from: "games",
+        localField: 'gameName',
+        foreignField: 'name',
+        pipeline: [
+          {
+            $project: {
+              name: 1,
+              icon: 1,
+              banner: 1,
+              type: 1,
+              slug: 1,
+            }
+          }
+        ],
+        as: "matchedGame"
+      }
+    },
+    {
+      $unwind: "$matchedGame",
+    },
+  ]);
 
   // Apply game filter if specified
   if (gameId && gameId !== "all") {
@@ -68,42 +94,16 @@ export async function getEventsByLairId(lairId: string, {year, month, gameId, us
           console.error(`Invalid game ID: ${id}`);
           return null;
         }
-      }).filter((id): id is import("mongodb").ObjectId => id !== null);
+      }).filter((id): id is ObjectId => id !== null);
 
       // Add lookup stage to join with games collection
       pipeline.push(
         // Lookup games to get game names from game IDs
         {
-          $lookup: {
-            from: "games",
-            let: {eventGameName: "$gameName"},
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $and: [
-                      {$eq: ["$name", "$$eventGameName"]},
-                      {$in: ["$_id", gameObjectIds]}
-                    ]
-                  }
-                }
-              }
-            ],
-            as: "matchedGame"
-          }
-        },
-        // Only keep events that have a matching game
-        {
           $match: {
-            matchedGame: {$ne: []}
+            'matchedGame._id': {$in: gameObjectIds},
           }
         },
-        // Remove the matchedGame field from results
-        {
-          $project: {
-            matchedGame: 0
-          }
-        }
       );
     } else {
       // Filter by specific game ID
@@ -112,38 +112,12 @@ export async function getEventsByLairId(lairId: string, {year, month, gameId, us
 
         // Add lookup stage to join with games collection
         pipeline.push(
-          // Lookup games to get game names from game IDs
-          {
-            $lookup: {
-              from: "games",
-              let: {eventGameName: "$gameName"},
-              pipeline: [
-                {
-                  $match: {
-                    $expr: {
-                      $and: [
-                        {$eq: ["$name", "$$eventGameName"]},
-                        {$eq: ["$_id", gameObjectId]}
-                      ]
-                    }
-                  }
-                }
-              ],
-              as: "matchedGame"
-            }
-          },
           // Only keep events that have a matching game
           {
             $match: {
-              matchedGame: {$ne: []}
-            }
+              'matchedGame._id': gameObjectId,
+            },
           },
-          // Remove the matchedGame field from results
-          {
-            $project: {
-              matchedGame: 0
-            }
-          }
         );
       } catch (e) {
         console.error(`Invalid game ID: ${gameId}`);
@@ -182,6 +156,7 @@ export async function getEventsByLairId(lairId: string, {year, month, gameId, us
     startDateTime: event.startDateTime,
     endDateTime: event.endDateTime,
     gameName: event.gameName,
+    game: event.matchedGame,
     url: event.url,
     price: event.price,
     status: event.status,
