@@ -25,7 +25,13 @@ import {ObjectId} from "mongodb";
 import {RegistrationStatus} from "@/lib/types/Event";
 import {makeEventDiscordInfoMessage} from "@/lib/discord/utils";
 import {GameDocument} from "@/lib/db/games";
-import {DeckList, DeckListCard, getDeckFromPiltover, validateDeckList} from "@/app/games/riftbound/deck-checker/action";
+import {
+  DeckList,
+  DeckListCard,
+  getDeckFromPiltover,
+  getDeckFromPiltoverCode,
+  validateDeckList
+} from "@/app/games/riftbound/deck-checker/action";
 import {parseDeckList, serializeDeckList} from "@/app/games/riftbound/deck-checker/utils";
 
 const agentId = "yGypfIpDEb";
@@ -442,6 +448,8 @@ async function handleApplicationCommand(
         return handleEventsCommand(body);
       case "policies":
         return handlePoliciesCommand(body);
+      case "verify-deck":
+        return handleVerifyDeckSlachCommand(body);
     }
   } else if (isApplicationCommandContextMenuInteraction(body)) {
     return handleContextualMessageCommand(body);
@@ -553,6 +561,177 @@ async function handleVerifyDeckCommand(interaction: APIContextMenuInteraction) {
       }
     } else {
       parsed = parseDeckList(messageContent);
+    }
+
+    const validated = await validateDeckList(parsed);
+
+    const cardsWithErratas = [
+      ...validated.legends.filter(c => c.erratas?.length && c.erratas?.length > 0),
+      ...validated.champions.filter(c => c.erratas?.length && c.erratas?.length > 0),
+      ...validated.maindeck.filter(c => c.erratas?.length && c.erratas?.length > 0),
+      ...validated.sideboard.filter(c => c.erratas?.length && c.erratas?.length > 0),
+      ...validated.battlefields.filter(c => c.erratas?.length && c.erratas?.length > 0),
+      ...validated.runes.filter(c => c.erratas?.length && c.erratas?.length > 0),
+    ];
+
+    await rest.patch(
+      Routes.webhookMessage(
+        interaction.application_id,
+        interaction.token,
+        "@original",
+      ),
+      {
+        body: {
+          content: "Analyse du deck terminée: voici les informations utiles à savoir à son sujet...",
+          embeds: [
+            new EmbedBuilder()
+              .setTitle(`Notes sur le deck`)
+              .setURL(`https://joutes.app/games/riftbound/deck-checker?input=${serializeDeckList(validated)}`)
+              .setDescription(`Les cartes suivantes ont des notes les concernant :
+
+${cardsWithErratas.map(formatCardDetails).join('\n\n')}`)
+              .toJSON(),
+          ],
+          components: [
+            new ActionRowBuilder<ButtonBuilder>().addComponents(
+              new ButtonBuilder()
+                .setLabel("Voir le deck")
+                .setURL(`https://joutes.app/games/riftbound/deck-checker?input=${serializeDeckList(validated)}`)
+                .setStyle(ButtonStyle.Link),
+            ),
+          ],
+        },
+      },
+    );
+    return NextResponse.json({success: true}, {status: 200});
+  } catch (error) {
+    console.warn(error);
+    await rest.patch(
+      Routes.webhookMessage(
+        interaction.application_id,
+        interaction.token,
+        "@original",
+      ),
+      {
+        body: {
+          content: "Impossible de vérifier ce deck ici. Vous pouvez essayer le vérificateur en ligne sur Joutes.",
+          components: [
+            new ActionRowBuilder<ButtonBuilder>().addComponents(
+              new ButtonBuilder()
+                .setLabel("Vérificateur de Deck")
+                .setURL(`https://joutes.app/games/riftbound/deck-checker`)
+                .setStyle(ButtonStyle.Link),
+            ),
+          ],
+        },
+      },
+    );
+    return NextResponse.json({success: true}, {status: 200});
+  }
+}
+
+async function handleVerifyDeckSlachCommand(interaction: APIChatInputApplicationCommandInteraction) {
+  await rest.post(
+    Routes.interactionCallback(interaction.id, interaction.token),
+    {
+      body: {
+        type: 4,
+        data: {
+          content: "Vérification du deck en cours...",
+        },
+      },
+    },
+  );
+
+  const linkOrCode = interaction.data.options?.find(
+    (option: { name: string; type: number }) => option.name === "linkOrCode" && option.type === 3,
+  ) as { value: string } | undefined;
+  if (!linkOrCode?.value) {
+    await rest.patch(
+      Routes.webhookMessage(
+        interaction.application_id,
+        interaction.token,
+        "@original",
+      ),
+      {
+        body: {
+          content: "Précisez une URL [PiltoverArchive](https://piltoverarchive.com/decks) ou un code de deck.\nVous pouvez aussi aller sur le [vérificateur de deck](https://joutes.app/games/riftbound/deck-checker) en ligne.",
+          components: [
+            new ActionRowBuilder<ButtonBuilder>().addComponents(
+              new ButtonBuilder()
+                .setLabel("Vérificateur de deck")
+                .setURL(`https://joutes.app/games/riftbound/deck-checker`)
+                .setStyle(ButtonStyle.Link),
+            ),
+          ],
+        },
+      },
+    );
+    return NextResponse.json({success: true}, {status: 200});
+  }
+
+  const gameName = interaction.data.options?.find(
+    (option: { name: string; type: number }) => option.name === "game" && option.type === 3,
+  ) as { value: string } | undefined;
+
+  const game = await db.collection<Game>("games").findOne({$or: [{name: gameName?.value ?? 'riftbound'}, {slug: gameName?.value ?? 'riftbound'}]});
+  if (!game || game.slug !== 'riftbound') {
+    await rest.patch(
+      Routes.webhookMessage(
+        interaction.application_id,
+        interaction.token,
+        "@original",
+      ),
+      {
+        body: {
+          content: "Veuillez fournir un nom de jeu. Actuellement, seul le jeu **Riftbound** (par défaut) est supporté pour la vérification de deck.",
+          components: [
+            new ActionRowBuilder<ButtonBuilder>().addComponents(
+              new ButtonBuilder()
+                .setLabel("Vérificateur de deck")
+                .setURL(`https://joutes.app/games/riftbound/deck-checker`)
+                .setStyle(ButtonStyle.Link),
+            ),
+          ],
+        },
+      },
+    );
+    return NextResponse.json({success: true}, {status: 200});
+  }
+
+  if (!linkOrCode) {
+    await rest.post(
+      Routes.interactionCallback(interaction.id, interaction.token),
+      {
+        body: {
+          type: 4,
+          data: {
+            content: "Ce message ne semble pas contenir de liste de deck ou de lien PiltoverArchive utilisable.",
+            flags: 64, // Ephemeral
+          },
+        },
+      },
+    );
+    return NextResponse.json({success: true}, {status: 200});
+  }
+
+  try {
+    let parsed: DeckList;
+    if (linkOrCode.value.startsWith('https://piltoverarchive.com/decks/view/')) {
+      const deckId = linkOrCode.value.split('/').at(-1)!;
+      parsed = await getDeckFromPiltover(deckId);
+    } else if (linkOrCode.value.includes("https://piltoverarchive.com/decks/view/")) {
+      const regex = /https:\/\/piltoverarchive\.com\/decks\/view\/(?<id>[0-9a-z\-]+)/gi;
+      const match = regex.exec(linkOrCode.value);
+      if (match) {
+        parsed = await getDeckFromPiltover(match[1]);
+      } else {
+        throw new Error('No deck found');
+      }
+    } else if (!linkOrCode.value.includes(' ')) {
+      parsed = await getDeckFromPiltoverCode(linkOrCode.value);
+    } else {
+      throw new Error('No deck found');
     }
 
     const validated = await validateDeckList(parsed);

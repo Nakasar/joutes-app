@@ -42,6 +42,24 @@ export async function registerDiscordCommands() {
           .setRequired(false)
       ),
     new SlashCommandBuilder()
+      .setName('verify-deck')
+      .setNameLocalization('fr', 'vérifier-deck')
+      .setDescription('Retrieve info and rulings for a deck')
+      .setDescriptionLocalization('fr', 'Analyse un deck et retourne le détails des cartes')
+      .addStringOption(option =>
+        option.setName('linkOrCode')
+          .setNameLocalization('fr', 'lienOuCode')
+          .setDescription('PiltoverArchive link or code')
+          .setDescriptionLocalization('fr', 'Code ou lien PiltoverArchive')
+          .setRequired(true)
+      ).addStringOption(option =>
+      option.setName('game')
+        .setNameLocalization('fr', 'jeu')
+        .setDescription('Name of the game')
+        .setDescriptionLocalization('fr', 'Nom du jeu')
+        .setRequired(false)
+    ),
+    new SlashCommandBuilder()
       .setName('policies')
       .setNameLocalization('fr', 'politiques')
       .setDescription('Search policies')
