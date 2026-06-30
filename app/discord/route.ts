@@ -1,13 +1,17 @@
 import {REST} from "@discordjs/rest";
 import {
   APIApplicationCommandInteraction,
-  APIChatInputApplicationCommandInteraction, APIContextMenuInteraction,
-  APIMessage, APIMessageApplicationCommandInteractionDataResolved,
+  APIChatInputApplicationCommandInteraction,
+  APIContextMenuInteraction,
+  APIMessage,
+  APIMessageApplicationCommandInteractionDataResolved,
   APIMessageComponentButtonInteraction,
-  APIMessageComponentInteraction, APIModalSubmitInteraction,
+  APIMessageComponentInteraction,
+  APIModalSubmitInteraction, APIModalSubmitStringSelectComponent, APIModalSubmitTextInputComponent,
   ApplicationCommandType,
   ButtonStyle,
-  ComponentType, InteractionResponseType,
+  ComponentType,
+  InteractionResponseType,
   InteractionType,
   Routes,
   TextInputStyle
@@ -23,7 +27,9 @@ import {
   EmbedBuilder,
   LabelBuilder,
   ModalBuilder,
-  StringSelectMenuBuilder, StringSelectMenuOptionBuilder, TextInputBuilder
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder,
+  TextInputBuilder
 } from "@discordjs/builders";
 import {getErratasByCardId} from "@/lib/db/erratas";
 import {Game} from "@/lib/types/Game";
@@ -151,6 +157,63 @@ async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInte
   }
 
   console.log(inspect(interaction, false, 20));
+
+  const gamesSelected = (interaction.data.components.find(c => c.type === ComponentType.Label && c.component.type === ComponentType.StringSelect && c.component.custom_id === 'games') as (APIModalSubmitStringSelectComponent | undefined))?.values ?? [];
+  const games = gamesSelected.length > 0 ? await db.collection<GameDocument>('games').find({
+    slug: { $in: gamesSelected },
+  }, { projection: { _id: 1 } }) : [];
+
+  const lairsSelected = (interaction.data.components.find(c => c.type === ComponentType.Label && c.component.type === ComponentType.StringSelect && c.component.custom_id === 'lairs') as (APIModalSubmitStringSelectComponent | undefined))?.values ?? [];
+  const lairs = lairsSelected.map(id => new ObjectId(id));
+
+  const lairToAdd = (interaction.data.components.find(c => c.type === ComponentType.Label && c.component.type === ComponentType.TextInput && c.component.custom_id === 'addLair') as (APIModalSubmitTextInputComponent | undefined))?.value;
+  if (lairToAdd) {
+    const lairUrl = new URL(lairToAdd);
+    const lairId = lairUrl.pathname.split('/lairs/').pop();
+    if (!lairId) {
+      await rest.patch(
+        Routes.webhookMessage(
+          interaction.application_id,
+          interaction.token,
+          "@original",
+        ),
+        {
+          body: {
+            content: "Précisez une URL d'un lieu à suivre en premier sur ce tableau.\nRendez-vous sur [Joutes](https://joutes.app/lairs) pour découvrir des lieux.",
+          },
+        },
+      );
+      return NextResponse.json({success: true}, {status: 200});
+    }
+
+    const lair = await getLairById(lairId);
+    if (!lair) {
+      await rest.patch(
+        Routes.webhookMessage(
+          interaction.application_id,
+          interaction.token,
+          "@original",
+        ),
+        {
+          body: {
+            content: "Précisez une URL d'un lieu à suivre en premier sur ce tableau.\nRendez-vous sur [Joutes](https://joutes.app/lairs) pour découvrir des lieux.",
+          },
+        },
+      );
+      return NextResponse.json({success: true}, {status: 200});
+    }
+
+    lairs.push(new ObjectId(lair.id));
+  }
+
+  await db.collection('discord-boards').updateOne({
+    _id: board._id,
+  }, {
+    $set: {
+      games: games.map(g => g._id),
+      lairs,
+    },
+  })
 
   await rest.post(
     Routes.interactionCallback(interaction.id, interaction.token),
