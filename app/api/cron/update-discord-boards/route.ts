@@ -61,6 +61,7 @@ export async function GET(req: Request) {
           },
         }).catch(err => {
           console.warn('Failed to update board message (might have been deleted)');
+          console.warn(err);
         });
       }
     }

@@ -1210,7 +1210,7 @@ async function handleEventsBoardCommand(interaction: APIChatInputApplicationComm
     },
   )) as APIMessage;
 
-  await db.collection<DiscordBoard>('discord-boards').insertOne({
+  const board = await db.collection<DiscordBoard>('discord-boards').insertOne({
     channelId: boardMessage.channel_id,
     messageId: boardMessage.id,
     creatorDiscordId: interaction.member?.user.id,
@@ -1220,6 +1220,25 @@ async function handleEventsBoardCommand(interaction: APIChatInputApplicationComm
     games: [
       new ObjectId(game.id),
     ],
+  });
+
+  await rest.patch(Routes.channelMessage(
+    boardMessage.channel_id,
+    boardMessage.id,
+  ), {
+    body: {
+      components: [
+        new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setLabel("Modifier")
+            .setCustomId(`modify-events-board-${board.insertedId.toString()}`)
+            .setStyle(ButtonStyle.Secondary),
+        ),
+      ]
+    },
+  }).catch(err => {
+    console.warn('Failed to update board message (might have been deleted)');
+    console.warn(err);
   });
 
   return NextResponse.json({success: true}, {status: 200});
