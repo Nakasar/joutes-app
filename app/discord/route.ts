@@ -159,7 +159,7 @@ async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInte
   const gamesSelected = (interaction.data.components.find(c => c.type === ComponentType.Label && c.component.type === ComponentType.StringSelect && c.component.custom_id === 'games') as (APIModalSubmitStringSelectComponent | undefined))?.values ?? [];
   const games = gamesSelected.length > 0 ? await db.collection<GameDocument>('games').find({
     slug: { $in: gamesSelected },
-  }, { projection: { _id: 1 } }) : [];
+  }, { projection: { _id: 1 } }).toArray() : [];
 
   const lairsSelected = (interaction.data.components.find(c => c.type === ComponentType.Label && c.component.type === ComponentType.StringSelect && c.component.custom_id === 'lairs') as (APIModalSubmitStringSelectComponent | undefined))?.values ?? [];
   const lairs = lairsSelected.map(id => new ObjectId(id));
@@ -217,7 +217,7 @@ async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInte
   const currentDate = DateTime.utc();
 
   const events = await getEventsByLairIds(lairs.map(id => id.toString()), {
-    gameIds: gamesSelected,
+    gameIds: games.map(g => g._id.toString()),
     year: currentDate.year,
     month: currentDate.month,
   });

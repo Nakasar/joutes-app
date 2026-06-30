@@ -373,12 +373,11 @@ export async function getEventsByLairIds(lairIds: string[], {
   );
 
   if (gameIds) {
-    pipeline.push(
-      {
-        $match: {
-          'game._id': {$in: gameIds.map(id => new ObjectId(id))},
-        }
-      });
+    pipeline.push({
+      $match: {
+        'game._id': {$in: gameIds.map(id => new ObjectId(id))},
+      }
+    });
   }
 
   // Execute aggregation
