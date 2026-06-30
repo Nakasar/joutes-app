@@ -37,7 +37,7 @@ import {
   addParticipantToEvent,
   EventDocument,
   getEventById,
-  getEventsByLairId,
+  getEventsByLairId, getEventsByLairIds,
   removeParticipantFromEvent
 } from "@/lib/db/events";
 import {DateTime} from "luxon";
@@ -156,8 +156,6 @@ async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInte
     return NextResponse.json({success: true}, {status: 200});
   }
 
-  console.log(inspect(interaction, false, 20));
-
   const gamesSelected = (interaction.data.components.find(c => c.type === ComponentType.Label && c.component.type === ComponentType.StringSelect && c.component.custom_id === 'games') as (APIModalSubmitStringSelectComponent | undefined))?.values ?? [];
   const games = gamesSelected.length > 0 ? await db.collection<GameDocument>('games').find({
     slug: { $in: gamesSelected },
@@ -213,7 +211,41 @@ async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInte
       games: games.map(g => g._id),
       lairs,
     },
-  })
+  });
+
+  // update the board content
+  const currentDate = DateTime.utc();
+
+  const events = await getEventsByLairIds(lairs.map(id => id.toString()), {
+    gameIds: gamesSelected,
+    year: currentDate.year,
+    month: currentDate.month,
+  });
+
+  await rest.patch(
+    Routes.webhookMessage(
+      interaction.application_id,
+      interaction.token,
+      "@original",
+    ),
+    {
+      body: {
+        embeds: [
+          new EmbedBuilder()
+            .setTitle(`Events`)
+            .setDescription(`Voici les évènements à venir :\n\n${events.length > 0 ? events.map(e => `-${e.game?.slug ? ` <:${e.game.slug}:${DiscordEmojis[e.game.slug] ?? ''}>` : ''} [${e.name}](https://joutes.app/events/${e.id}) le ${DateTime.fromISO(e.startDateTime, {
+              zone: 'Europe/Paris',
+              locale: 'fr'
+            }).toLocaleString(DateTime.DATETIME_MED)} à ${e.lair?.name ?? 'Lieu Inconnu'}`).join('\n') : 'Aucun évènement à venir.'}`)
+            .setFooter({
+              text: `Updated: ${currentDate.setZone('Europe/Paris').toLocaleString(DateTime.DATETIME_MED, {locale: 'fr'})}`,
+            }),
+        ],
+        content: null,
+      },
+    },
+  );
+
 
   await rest.post(
     Routes.interactionCallback(interaction.id, interaction.token),

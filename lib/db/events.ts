@@ -288,8 +288,9 @@ export async function getAllEvents({year, month, games, userId}: {
 
 // Get events for multiple lairs
 export async function getEventsByLairIds(lairIds: string[], {
-  year, month, userId
+  year, month, userId, gameIds,
 }: {
+  gameIds?: string[];
   year?: number;
   month?: number;
   userId?: string;
@@ -370,6 +371,15 @@ export async function getEventsByLairIds(lairIds: string[], {
       },
     },
   );
+
+  if (gameIds) {
+    pipeline.push(
+      {
+        $match: {
+          'game._id': {$in: gameIds.map(id => new ObjectId(id))},
+        }
+      });
+  }
 
   // Execute aggregation
   const events = await db
