@@ -105,22 +105,39 @@ export async function POST(req: Request) {
 }
 
 async function handleModalSubmitInteraction(interaction: APIModalSubmitInteraction) {
-  switch (interaction.data.custom_id) {
-    default:
-      await rest.post(
-        Routes.interactionCallback(interaction.id, interaction.token),
-        {
-          body: {
-            type: 4,
-            data: {
-              content: "Commande inconnue.",
-              flags: 64, // Ephemeral
-            },
-          },
-        },
-      );
-      return NextResponse.json({success: true}, {status: 200});
+  if (interaction.data.custom_id.startsWith('modify-events-board-')) {
+    return handleModalSubmitInteraction(interaction);
   }
+
+  await rest.post(
+    Routes.interactionCallback(interaction.id, interaction.token),
+    {
+      body: {
+        type: 4,
+        data: {
+          content: "Commande inconnue.",
+          flags: 64, // Ephemeral
+        },
+      },
+    },
+  );
+  return NextResponse.json({success: true}, {status: 200});
+}
+
+async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInteraction) {
+  await rest.post(
+    Routes.interactionCallback(interaction.id, interaction.token),
+    {
+      body: {
+        type: 4,
+        data: {
+          content: "Tableau mis à jour.",
+          flags: 64, // Ephemeral
+        },
+      },
+    },
+  );
+  return NextResponse.json({success: true}, {status: 200});
 }
 
 async function handleComponentInteraction(
@@ -486,7 +503,7 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
       _id: { $in: board.lairs },
     }, { projection: { _id: 1, name: 1 } }).toArray();
 
-    const modal = new ModalBuilder().setCustomId('modify-events-board-').setTitle('Modification');
+    const modal = new ModalBuilder().setCustomId(`modify-events-board-${boardId}`).setTitle('Modification');
 
     const gamesSelectMenu = new StringSelectMenuBuilder()
       .setCustomId('games')
@@ -518,8 +535,9 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
           .setDefault(true)
         ),
       )
-      .setMinValues(1)
-      .setMaxValues(games.length);
+      .setRequired(false)
+      .setMinValues(0)
+      .setMaxValues(lairs.length);
 
     const lairsLabel = new LabelBuilder()
       .setLabel("Lieux")
