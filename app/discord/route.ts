@@ -49,6 +49,7 @@ import {
 import {parseDeckList, serializeDeckList} from "@/app/games/riftbound/deck-checker/utils";
 import {getLairById, LairDocument} from "@/lib/db/lairs";
 import {DiscordEmojis} from "@/app/discord/utils";
+import {inspect} from "node:util";
 
 const agentId = "yGypfIpDEb";
 const aiAllowedDiscordIds = JSON.parse(
@@ -106,7 +107,7 @@ export async function POST(req: Request) {
 
 async function handleModalSubmitInteraction(interaction: APIModalSubmitInteraction) {
   if (interaction.data.custom_id.startsWith('modify-events-board-')) {
-    return handleModalSubmitInteraction(interaction);
+    return handleModifyEventBoardModalSubmit(interaction);
   }
 
   await rest.post(
@@ -125,6 +126,32 @@ async function handleModalSubmitInteraction(interaction: APIModalSubmitInteracti
 }
 
 async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInteraction) {
+  const discordUserId = interaction.user?.id || interaction.member?.user?.id;
+  const boardId = interaction.data.custom_id.split('modify-events-board-')[1];
+
+  const board = await db.collection<DiscordBoard>('discord-boards').findOne({
+    _id: new ObjectId(boardId),
+    creatorDiscordId: discordUserId,
+  });
+
+  if (!board) {
+    await rest.post(
+      Routes.interactionCallback(interaction.id, interaction.token),
+      {
+        body: {
+          type: 4,
+          data: {
+            content: "Commande inconnue.",
+            flags: 64, // Ephemeral
+          },
+        },
+      },
+    );
+    return NextResponse.json({success: true}, {status: 200});
+  }
+
+  console.log(inspect(interaction, false, 20));
+
   await rest.post(
     Routes.interactionCallback(interaction.id, interaction.token),
     {
@@ -547,6 +574,8 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
     const addLairInput = new TextInputBuilder()
       .setCustomId('addLair')
       .setStyle(TextInputStyle.Short)
+      .setRequired(false)
+      .setMinLength(0)
       .setPlaceholder('https://joutes.app/lairs/...');
     const addLairLabel = new LabelBuilder()
       .setLabel("Ajouter un lieu")
