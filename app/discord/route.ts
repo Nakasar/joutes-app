@@ -218,8 +218,8 @@ async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInte
 
   const events = await getEventsByLairIds(lairs.map(id => id.toString()), {
     gameIds: games.map(g => g._id.toString()),
-    year: currentDate.year,
-    month: currentDate.month,
+    afterDate: currentDate.toISO(),
+    beforeDate: currentDate.plus({ weeks: 2 }).toISO(),
   });
 
   await rest.patch(Routes.channelMessage(
@@ -239,6 +239,14 @@ async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInte
             }),
         ],
         content: null,
+        components: [
+          new ActionRowBuilder<ButtonBuilder>().addComponents(
+            new ButtonBuilder()
+              .setLabel("Modifier")
+              .setCustomId(`modify-events-board-${board._id.toString()}`)
+              .setStyle(ButtonStyle.Secondary),
+          ),
+        ]
       },
     },
   );
@@ -1172,10 +1180,10 @@ async function handleEventsBoardCommand(interaction: APIChatInputApplicationComm
 
   const currentDate = DateTime.utc();
 
-  const events = await getEventsByLairId(lairId, {
-    gameId: game.id,
-    year: currentDate.year,
-    month: currentDate.month,
+  const events = await getEventsByLairIds([lairId], {
+    gameIds: [game.id],
+    afterDate: currentDate.toISO(),
+    beforeDate: currentDate.plus({ weeks: 2 }).toISO(),
   });
 
   const boardMessage: APIMessage = (await rest.patch(

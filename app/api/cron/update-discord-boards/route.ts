@@ -31,8 +31,8 @@ export async function GET(req: Request) {
 
         const events = await getEventsByLairIds(board.lairs.map(id => id.toString()), {
           gameIds: board.games.map(id => id.toString()),
-          year: currentDate.year,
-          month: currentDate.month,
+          afterDate: currentDate.toISO(),
+          beforeDate: currentDate.plus({ weeks: 2 }).toISO(),
         });
 
         await rest.patch(Routes.channelMessage(

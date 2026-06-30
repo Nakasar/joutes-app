@@ -288,9 +288,11 @@ export async function getAllEvents({year, month, games, userId}: {
 
 // Get events for multiple lairs
 export async function getEventsByLairIds(lairIds: string[], {
-  year, month, userId, gameIds,
+  year, month, userId, gameIds, afterDate, beforeDate,
 }: {
   gameIds?: string[];
+  afterDate?: string;
+  beforeDate?: string;
   year?: number;
   month?: number;
   userId?: string;
@@ -316,6 +318,24 @@ export async function getEventsByLairIds(lairIds: string[], {
         startDateTime: {
           $gte: startDate.toISOString(),
           $lte: endDate.toISOString()
+        }
+      }
+    });
+  }
+  if (afterDate) {
+    pipeline.push({
+      $match: {
+        startDateTime: {
+          $gte: afterDate,
+        }
+      }
+    });
+  }
+  if (beforeDate) {
+    pipeline.push({
+      $match: {
+        startDateTime: {
+          $lte: beforeDate,
         }
       }
     });
