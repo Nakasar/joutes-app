@@ -222,13 +222,10 @@ async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInte
     month: currentDate.month,
   });
 
-  await rest.patch(
-    Routes.webhookMessage(
-      interaction.application_id,
-      interaction.token,
-      "@original",
-    ),
-    {
+  await rest.patch(Routes.channelMessage(
+    board.channelId,
+    board.messageId,
+  ), {
       body: {
         embeds: [
           new EmbedBuilder()
@@ -245,7 +242,6 @@ async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInte
       },
     },
   );
-
 
   await rest.post(
     Routes.interactionCallback(interaction.id, interaction.token),
