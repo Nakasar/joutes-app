@@ -157,19 +157,14 @@ async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInte
   }
 
   const gamesSelected = (interaction.data.components.find(c => c.type === ComponentType.Label && c.component.type === ComponentType.StringSelect && c.component.custom_id === 'games') as { component: APIModalSubmitStringSelectComponent } | undefined)?.component.values ?? [];
-  console.log(gamesSelected);
   const games = gamesSelected.length > 0 ? await db.collection<GameDocument>('games').find({
     slug: { $in: gamesSelected },
   }, { projection: { _id: 1, slug: 1, name: 1 } }).toArray() : [];
-  console.log(games);
 
   const lairsSelected = (interaction.data.components.find(c => c.type === ComponentType.Label && c.component.type === ComponentType.StringSelect && c.component.custom_id === 'lairs') as { component: APIModalSubmitStringSelectComponent } | undefined)?.component.values ?? [];
-  console.log(lairsSelected);
   const lairs = lairsSelected.map(id => new ObjectId(id));
-  console.log(lairs);
 
   const lairToAdd = (interaction.data.components.find(c => c.type === ComponentType.Label && c.component.type === ComponentType.TextInput && c.component.custom_id === 'addLair') as { component: APIModalSubmitTextInputComponent } | undefined)?.component.value;
-  console.log(lairToAdd);
   if (lairToAdd) {
     const lairUrl = new URL(lairToAdd);
     const lairId = lairUrl.pathname.split('/lairs/').pop();
@@ -208,7 +203,6 @@ async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInte
 
     lairs.push(new ObjectId(lair.id));
   }
-  console.log(lairs);
 
   await db.collection('discord-boards').updateOne({
     _id: board._id,
