@@ -400,6 +400,12 @@ export async function getEventsByLairIds(lairIds: string[], {
     });
   }
 
+  pipeline.push({
+    $sort: {
+      'startDateTime': 1
+    }
+  });
+
   // Execute aggregation
   const events = await db
     .collection<EventDocument>(COLLECTION_NAME)
