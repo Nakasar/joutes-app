@@ -10,6 +10,7 @@ import {
   ComponentType, InteractionResponseType,
   InteractionType,
   Routes,
+  TextInputStyle
 } from "discord-api-types/v10";
 import {verify} from "discord-verify/node";
 import {NextResponse} from "next/server";
@@ -22,7 +23,7 @@ import {
   EmbedBuilder,
   LabelBuilder,
   ModalBuilder,
-  StringSelectMenuBuilder, StringSelectMenuOptionBuilder
+  StringSelectMenuBuilder, StringSelectMenuOptionBuilder, TextInputBuilder
 } from "@discordjs/builders";
 import {getErratasByCardId} from "@/lib/db/erratas";
 import {Game} from "@/lib/types/Game";
@@ -46,7 +47,7 @@ import {
   validateDeckList
 } from "@/app/games/riftbound/deck-checker/action";
 import {parseDeckList, serializeDeckList} from "@/app/games/riftbound/deck-checker/utils";
-import {getLairById} from "@/lib/db/lairs";
+import {getLairById, LairDocument} from "@/lib/db/lairs";
 import {DiscordEmojis} from "@/app/discord/utils";
 
 const agentId = "yGypfIpDEb";
@@ -460,6 +461,10 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
       slug: { $in: ['riftbound', 'mtg', 'swu', 'lorcana', 'op', 'dnp'] },
     }, { projection: { _id: 1, slug: 1, name: 1, type: 1 } }).toArray();
 
+    const lairs = await db.collection<LairDocument>('lairs').find({
+      _id: { $id: board.lairs },
+    }, { projection: { _id: 1, name: 1 } }).toArray();
+
     const modal = new ModalBuilder().setCustomId('modify-events-board-').setTitle('Modification');
 
     const gamesSelectMenu = new StringSelectMenuBuilder()
@@ -482,7 +487,34 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
       .setDescription('Jeux à suivre sur ce tableau.')
       .setStringSelectMenuComponent(gamesSelectMenu);
 
-    modal.addLabelComponents(gamesLabel);
+    const lairsSelectMenu = new StringSelectMenuBuilder()
+      .setCustomId('lairs')
+      .setPlaceholder('Aucun lieu suivi')
+      .addOptions(
+        lairs.map(lair => new StringSelectMenuOptionBuilder()
+          .setLabel(lair.name)
+          .setValue(lair._id.toString())
+          .setDefault(true)
+        ),
+      )
+      .setMinValues(1)
+      .setMaxValues(games.length);
+
+    const lairsLabel = new LabelBuilder()
+      .setLabel("Lieux")
+      .setDescription('Lieux à suivre sur ce tableau (décocher pour retirer des lieux).')
+      .setStringSelectMenuComponent(lairsSelectMenu);
+
+    const addLairInput = new TextInputBuilder()
+      .setCustomId('addLair')
+      .setStyle(TextInputStyle.Short)
+      .setPlaceholder('https://joutes.app/lairs/...');
+    const addLairLabel = new LabelBuilder()
+      .setLabel("Ajouter un lieu")
+      .setDescription("Copiez l'URL du lieu sur Joutes.")
+      .setTextInputComponent(addLairInput);
+
+    modal.addLabelComponents(gamesLabel, lairsLabel, addLairLabel);
 
     await rest.post(
       Routes.interactionCallback(interaction.id, interaction.token),
