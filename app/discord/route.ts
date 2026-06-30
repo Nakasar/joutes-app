@@ -456,6 +456,10 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
       return NextResponse.json({success: true}, {status: 200});
     }
 
+    const games = await db.collection<GameDocument & { slug: string }>('games').find({
+      slug: { $in: ['riftbound', 'mtg', 'swu', 'lorcana', 'op', 'dnp'] },
+    }, { projection: { _id: 1, slug: 1, name: 1, type: 1 } }).toArray();
+
     const modal = new ModalBuilder().setCustomId('modify-events-board-').setTitle('Modification');
 
     const gamesSelectMenu = new StringSelectMenuBuilder()
@@ -463,21 +467,15 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
       .setPlaceholder('Riftbound')
       .setRequired(true)
       .addOptions(
-        new StringSelectMenuOptionBuilder()
-          .setLabel('Riftbound')
-          .setDescription('TCG')
-          .setValue('riftbound'),
-        new StringSelectMenuOptionBuilder()
-          .setLabel('Star Wars Unlimited')
-          .setDescription('TCG')
-          .setValue('swu'),
-        new StringSelectMenuOptionBuilder()
-          .setLabel('Lorcana')
-          .setDescription('TCG')
-          .setValue('lorcana'),
+        games.map(game => new StringSelectMenuOptionBuilder()
+          .setLabel(game.name)
+          .setDescription(game.type)
+          .setValue(game.slug)
+          .setDefault(board.games.some(g => g.equals(game._id)))
+        ),
       )
       .setMinValues(1)
-      .setMaxValues(3);
+      .setMaxValues(games.length);
 
     const gamesLabel = new LabelBuilder()
       .setLabel("Jeux")
