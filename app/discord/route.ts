@@ -4,7 +4,7 @@ import {
   APIChatInputApplicationCommandInteraction, APIContextMenuInteraction,
   APIMessage, APIMessageApplicationCommandInteractionDataResolved,
   APIMessageComponentButtonInteraction,
-  APIMessageComponentInteraction,
+  APIMessageComponentInteraction, APIModalSubmitInteraction,
   ApplicationCommandType,
   ButtonStyle,
   ComponentType, InteractionResponseType,
@@ -97,9 +97,30 @@ export async function POST(req: Request) {
     return handleComponentInteraction(
       body as APIMessageComponentInteraction,
     );
+  } else if (body.type === InteractionType.ModalSubmit) {
+    return handleModalSubmitInteraction(body as APIModalSubmitInteraction)
   }
 
   return NextResponse.json({success: true}, {status: 200});
+}
+
+async function handleModalSubmitInteraction(interaction: APIModalSubmitInteraction) {
+  switch (interaction.data.custom_id) {
+    default:
+      await rest.post(
+        Routes.interactionCallback(interaction.id, interaction.token),
+        {
+          body: {
+            type: 4,
+            data: {
+              content: "Commande inconnue.",
+              flags: 64, // Ephemeral
+            },
+          },
+        },
+      );
+      return NextResponse.json({success: true}, {status: 200});
+  }
 }
 
 async function handleComponentInteraction(
@@ -462,7 +483,7 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
     }, { projection: { _id: 1, slug: 1, name: 1, type: 1 } }).toArray();
 
     const lairs = await db.collection<LairDocument>('lairs').find({
-      _id: { $id: board.lairs },
+      _id: { $in: board.lairs },
     }, { projection: { _id: 1, name: 1 } }).toArray();
 
     const modal = new ModalBuilder().setCustomId('modify-events-board-').setTitle('Modification');
