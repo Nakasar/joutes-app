@@ -400,8 +400,6 @@ export async function getEventsByLairIds(lairIds: string[], {
     });
   }
 
-  console.log(inspect(pipeline, false, 20));
-
   // Execute aggregation
   const events = await db
     .collection<EventDocument>(COLLECTION_NAME)
