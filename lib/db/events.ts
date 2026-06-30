@@ -3,7 +3,7 @@ import {Event, RegistrationStatus} from "@/lib/types/Event";
 import {getUserById} from "@/lib/db/users";
 import {getLairIdsNearLocation} from "./lairs";
 import {ObjectId} from "mongodb";
-import {GameTypeKey} from "@/lib/constants/game-types";
+import {inspect} from "node:util";
 
 const COLLECTION_NAME = "events";
 
@@ -399,6 +399,8 @@ export async function getEventsByLairIds(lairIds: string[], {
       }
     });
   }
+
+  console.log(inspect(pipeline, false, 20));
 
   // Execute aggregation
   const events = await db

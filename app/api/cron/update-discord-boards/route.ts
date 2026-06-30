@@ -3,12 +3,10 @@ import db from "@/lib/mongodb";
 import {REST} from "@discordjs/rest";
 import {ButtonStyle, Routes} from "discord-api-types/v10";
 import {DiscordBoard} from "@/app/discord/route";
-import {getEventsByLairId, getEventsByLairIds} from "@/lib/db/events";
+import {getEventsByLairIds} from "@/lib/db/events";
 import {DateTime} from "luxon";
 import {ActionRowBuilder, ButtonBuilder, EmbedBuilder} from "@discordjs/builders";
 import {DiscordEmojis} from "@/app/discord/utils";
-import {getLairById} from "@/lib/db/lairs";
-import {getGameById} from "@/lib/db/games";
 
 const rest = new REST({version: "10"}).setToken(
   process.env.DISCORD_TOKEN ?? "",
