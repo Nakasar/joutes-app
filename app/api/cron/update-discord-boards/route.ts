@@ -20,7 +20,7 @@ export async function GET(req: Request) {
   try {
     const boardsToUpdateCursor = db.collection<DiscordBoard>('discord-boards').find({});
 
-    if (await boardsToUpdateCursor.hasNext()) {
+    while (await boardsToUpdateCursor.hasNext()) {
       const board = await boardsToUpdateCursor.next();
       if (board && board.lairs.length > 0 && board.games.length > 0) {
         console.log(`Updating board ${board.messageId}`);
