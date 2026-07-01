@@ -92,7 +92,7 @@ export function UserWeeklyEmail(props: UserWeeklyEmailProps) {
                   <Column className="w-full align-top">
                     <Section align="left" className="mt-8 w-[152px]">
                       <Row align="left">
-                        <Column className="w-[20px] pr-6">
+                        <Column className="w-[20px]">
                           <Link href="https://x.com/JoutesApp" className="inline-block">
                             <Img
                               src={`${baseUrl}/images/social/x.png`}
