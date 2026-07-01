@@ -5,8 +5,11 @@ import Link from "next/link";
 import {Button} from "@/components/ui/button";
 import {ArrowLeft, Calendar1Icon, MailIcon, SmartphoneIcon} from "lucide-react";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Switch} from "@/components/ui/switch";
-import {Field, FieldContent, FieldDescription, FieldGroup, FieldLabel, FieldTitle} from "@/components/ui/field";
+import {FieldGroup} from "@/components/ui/field";
+import {NotificationPreferenceSwitch} from "@/app/account/notifications/components";
+import db from "@/lib/mongodb";
+import {ObjectId} from "mongodb";
+import {User} from "@/lib/types/User";
 
 export default async function AccountNotificationsPage() {
   const session = await auth.api.getSession({
@@ -16,6 +19,16 @@ export default async function AccountNotificationsPage() {
   if (!session?.user) {
     redirect("/login");
   }
+
+  const user = await db.collection<Pick<User, "notifications">>('user').findOne({
+    _id: new ObjectId(session.user.id),
+  }, { projection: { _id: 1, notifications: 1 } });
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  console.log(user);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8">
@@ -52,34 +65,29 @@ export default async function AccountNotificationsPage() {
                 className="flex items-center justify-between border-b py-4 last:border-0"
               >
                 <FieldGroup className="w-full">
-                  <FieldLabel htmlFor="switch-recap-email">
-                    <Field orientation="horizontal">
-                      <FieldContent>
-                        <FieldTitle>
-                          <MailIcon className="mr-2 h-4 w-4" />
-                          Courriels
-                        </FieldTitle>
-                        <FieldDescription>
-                          Recevez votre récapitulatif par email.
-                        </FieldDescription>
-                      </FieldContent>
-                      <Switch id="switch-recap-email" />
-                    </Field>
-                  </FieldLabel>
-                  <FieldLabel htmlFor="switch-recap-app">
-                    <Field orientation="horizontal">
-                      <FieldContent>
-                        <FieldTitle>
-                          <SmartphoneIcon className="mr-2 h-4 w-4" />
-                          Joutes App (coming soon)
-                        </FieldTitle>
-                        <FieldDescription>
-                          Recevez votre récapitulatif par notification push sur votre téléphone.
-                        </FieldDescription>
-                      </FieldContent>
-                      <Switch id="switch-recap-app" disabled />
-                    </Field>
-                  </FieldLabel>
+                  <NotificationPreferenceSwitch type="weekly" channel="emails" label="Courriels" icon={<MailIcon className="mr-2 h-4 w-4" />} description="Recevez votre récapitulatif par curriel." initialEnabled={user.notifications?.emails?.weekly?.enabled ?? false} />
+                  <NotificationPreferenceSwitch type="weekly" channel="app" label="App Joutes (coming soon)" icon={<SmartphoneIcon className="mr-2 h-4 w-4" />} description="Recevez votre récapitulatif par notifications push sur l'application." initialEnabled={user.notifications?.app?.weekly?.enabled ?? false} disabled />
+                </FieldGroup>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar1Icon className="h-5 w-5"/>
+                Actualités de Joutes
+              </CardTitle>
+              <CardDescription>
+                Tenez vous au courant des dernières nouveautés de la plateforme Joutes.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div
+                className="flex items-center justify-between border-b py-4 last:border-0"
+              >
+                <FieldGroup className="w-full">
+                  <NotificationPreferenceSwitch type="platform" channel="emails" label="Courriels" icon={<MailIcon className="mr-2 h-4 w-4" />} description="Recevez nos actualités par courriel." initialEnabled={user.notifications?.emails?.platform?.enabled ?? false} />
                 </FieldGroup>
               </div>
             </CardContent>

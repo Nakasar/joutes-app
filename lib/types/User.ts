@@ -27,4 +27,22 @@ export type User = {
     latitude: number;
     longitude: number;
   };
+  notifications?: {
+    emails?: {
+      weekly?: {
+        enabled: boolean;
+        lastSent?: string | null;
+      },
+      platform?: {
+        enabled: boolean;
+        lastSent?: string | null;
+      },
+    };
+    app?: {
+      weekly?: {
+        enabled: boolean;
+        lastSent?: string | null;
+      },
+    }
+  }
 };

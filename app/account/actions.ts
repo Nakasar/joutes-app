@@ -224,7 +224,7 @@ export async function updateNotificationsPreference(
       return { success: false, error: "Non authentifié" };
     }
 
-    if (!["emails", "app"].includes(channel) || !["weekly"].includes(type)) {
+    if (!["emails", "app"].includes(channel) || !["weekly", "platform"].includes(type)) {
       return { success: false, error: "Invalid channel or type." };
     }
 
@@ -232,7 +232,7 @@ export async function updateNotificationsPreference(
       _id: new ObjectId(session.user.id),
     }, {
       $set: {
-        [`notifications.${type}.${channel}.enabled`]: enable,
+        [`notifications.${channel}.${type}.enabled`]: enable,
       },
     });
 
