@@ -222,38 +222,54 @@ async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInte
     beforeDate: currentDate.plus({ weeks: 2 }).toISO(),
   });
 
-  await rest.patch(Routes.channelMessage(
-    board.channelId,
-    board.messageId,
-  ), {
-      body: {
-        embeds: [
-          new EmbedBuilder()
-            .setTitle(`Events`)
-            .setDescription(`Voici les évènements à venir :\n\n${events.length > 0 ? events.map(e => `-${e.game?.slug ? ` <:${e.game.slug}:${DiscordEmojis[e.game.slug] ?? ''}>` : ''} [${e.name}](https://joutes.app/events/${e.id}) le ${DateTime.fromISO(e.startDateTime, {
-              zone: 'Europe/Paris',
-              locale: 'fr'
-            }).toLocaleString(DateTime.DATETIME_MED)} à ${e.lair?.name ?? 'Lieu Inconnu'}`).join('\n') : 'Aucun évènement à venir.'}`)
-            .setFooter({
-              text: `Updated: ${currentDate.setZone('Europe/Paris').toLocaleString(DateTime.DATETIME_MED, {locale: 'fr'})}`,
-            }),
-        ],
-        content: null,
-        components: [
-          new ButtonBuilder()
-            .setLabel("Actualiser")
-            .setCustomId(`refresh-events-board-${board._id.toString()}`)
-            .setStyle(ButtonStyle.Primary),
-          new ActionRowBuilder<ButtonBuilder>().addComponents(
+  try {
+    await rest.patch(Routes.channelMessage(
+        board.channelId,
+        board.messageId,
+      ), {
+        body: {
+          embeds: [
+            new EmbedBuilder()
+              .setTitle(`Events`)
+              .setDescription(`Voici les évènements à venir :\n\n${events.length > 0 ? events.map(e => `-${e.game?.slug ? ` <:${e.game.slug}:${DiscordEmojis[e.game.slug] ?? ''}>` : ''} [${e.name}](https://joutes.app/events/${e.id}) le ${DateTime.fromISO(e.startDateTime, {
+                zone: 'Europe/Paris',
+                locale: 'fr'
+              }).toLocaleString(DateTime.DATETIME_MED)} à ${e.lair?.name ?? 'Lieu Inconnu'}`).join('\n') : 'Aucun évènement à venir.'}`)
+              .setFooter({
+                text: `Updated: ${currentDate.setZone('Europe/Paris').toLocaleString(DateTime.DATETIME_MED, {locale: 'fr'})}`,
+              }),
+          ],
+          content: null,
+          components: [
             new ButtonBuilder()
-              .setLabel("Modifier")
-              .setCustomId(`modify-events-board-${board._id.toString()}`)
-              .setStyle(ButtonStyle.Secondary),
-          ),
-        ]
+              .setLabel("Actualiser")
+              .setCustomId(`refresh-events-board-${board._id.toString()}`)
+              .setStyle(ButtonStyle.Primary),
+            new ActionRowBuilder<ButtonBuilder>().addComponents(
+              new ButtonBuilder()
+                .setLabel("Modifier")
+                .setCustomId(`modify-events-board-${board._id.toString()}`)
+                .setStyle(ButtonStyle.Secondary),
+            ),
+          ]
+        },
       },
-    },
-  );
+    );
+  } catch (err) {
+    await rest.post(
+      Routes.interactionCallback(interaction.id, interaction.token),
+      {
+        body: {
+          type: 4,
+          data: {
+            content: "Les paramètres du tableau ont été modifié, mais impossible de modifier le message du tableau (probablement un problème de permissions ou le message originel a été supprimé). Actualisez manuellement le tableau.",
+            flags: 64, // Ephemeral
+          },
+        },
+      },
+    );
+    return NextResponse.json({success: true}, {status: 200});
+  }
 
   await rest.post(
     Routes.interactionCallback(interaction.id, interaction.token),
