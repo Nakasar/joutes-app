@@ -240,12 +240,10 @@ async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInte
         ],
         content: null,
         components: [
-          new ActionRowBuilder<ButtonBuilder>().addComponents(
-            new ButtonBuilder()
-              .setLabel("Actualiser")
-              .setCustomId(`refresh-events-board-${board._id.toString()}`)
-              .setStyle(ButtonStyle.Primary),
-          ),
+          new ButtonBuilder()
+            .setLabel("Actualiser")
+            .setCustomId(`refresh-events-board-${board._id.toString()}`)
+            .setStyle(ButtonStyle.Primary),
           new ActionRowBuilder<ButtonBuilder>().addComponents(
             new ButtonBuilder()
               .setLabel("Modifier")
@@ -766,8 +764,6 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
                 .setLabel("Actualiser")
                 .setCustomId(`refresh-events-board-${board._id.toString()}`)
                 .setStyle(ButtonStyle.Primary),
-            ),
-            new ActionRowBuilder<ButtonBuilder>().addComponents(
               new ButtonBuilder()
                 .setLabel("Modifier")
                 .setCustomId(`modify-events-board-${board._id.toString()}`)
@@ -1319,8 +1315,6 @@ async function handleEventsBoardCommand(interaction: APIChatInputApplicationComm
             .setLabel("Actualiser")
             .setCustomId(`refresh-events-board-${board.insertedId.toString()}`)
             .setStyle(ButtonStyle.Primary),
-        ),
-        new ActionRowBuilder<ButtonBuilder>().addComponents(
           new ButtonBuilder()
             .setLabel("Modifier")
             .setCustomId(`modify-events-board-${board.insertedId.toString()}`)

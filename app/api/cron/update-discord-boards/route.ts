@@ -51,12 +51,10 @@ export async function GET(req: Request) {
             ],
             content: null,
             components: [
-              new ActionRowBuilder<ButtonBuilder>().addComponents(
-                new ButtonBuilder()
-                  .setLabel("Actualiser")
-                  .setCustomId(`refresh-events-board-${board._id.toString()}`)
-                  .setStyle(ButtonStyle.Primary),
-              ),
+              new ButtonBuilder()
+                .setLabel("Actualiser")
+                .setCustomId(`refresh-events-board-${board._id.toString()}`)
+                .setStyle(ButtonStyle.Primary),
               new ActionRowBuilder<ButtonBuilder>().addComponents(
                 new ButtonBuilder()
                   .setLabel("Modifier")
