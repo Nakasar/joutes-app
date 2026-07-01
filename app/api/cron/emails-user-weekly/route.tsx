@@ -52,7 +52,7 @@ export async function GET(req: Request) {
           from: process.env.EMAIL_FROM || "onboarding@resend.dev",
           to: user.email,
           subject: `Votre newsletter hebdomadaire Joutes du ${today.setZone('Europe/Paris').toFormat('dd/MM', { locale: 'fr' })}`,
-          react: <UserWeeklyEmail today={today} username={user.username} events={events} />,
+          react: <UserWeeklyEmail today={today} username={user.displayName} events={events} />,
         });
       }
     }
