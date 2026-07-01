@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/emails-user-weekly",
+      "schedule": "0 8 * * 1"
+    },
+    {
       "path": "/api/cron/refresh-events",
       "schedule": "0 8 * * 3"
     },
