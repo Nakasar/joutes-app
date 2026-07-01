@@ -132,7 +132,7 @@ export function UserWeeklyEmail(props: UserWeeklyEmailProps) {
                 <Row align="left">
                   <Column className="w-full pt-5 align-top">
                     <Text className="font-11 text-muted-foreground m-0 max-w-[169px] font-sans">
-                      <Link href="https://joutes.app/email-unsubscribe/ERUTHD" className="text-fg-2">
+                      <Link href="https://joutes.app/account/notifications" className="text-fg-2">
                         Se désinscrire
                       </Link>{' '}
                       des emails de Joutes.
