@@ -37,13 +37,13 @@ import {
   addParticipantToEvent,
   EventDocument,
   getEventById,
-  getEventsByLairId, getEventsByLairIds,
+  getEventsByLairIds,
   removeParticipantFromEvent
 } from "@/lib/db/events";
 import {DateTime} from "luxon";
 import {ObjectId} from "mongodb";
 import {RegistrationStatus} from "@/lib/types/Event";
-import {makeEventDiscordInfoMessage} from "@/lib/discord/utils";
+import {makeEventDiscordInfoMessage, makeEventsBoardDiscordMessage} from "@/lib/discord/utils";
 import {GameDocument, getGameBySlugOrId} from "@/lib/db/games";
 import {
   DeckList,
@@ -55,7 +55,6 @@ import {
 import {parseDeckList, serializeDeckList} from "@/app/games/riftbound/deck-checker/utils";
 import {getLairById, LairDocument} from "@/lib/db/lairs";
 import {DiscordEmojis} from "@/app/discord/utils";
-import {inspect} from "node:util";
 
 const agentId = "yGypfIpDEb";
 const aiAllowedDiscordIds = JSON.parse(
@@ -156,15 +155,21 @@ async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInte
     return NextResponse.json({success: true}, {status: 200});
   }
 
-  const gamesSelected = (interaction.data.components.find(c => c.type === ComponentType.Label && c.component.type === ComponentType.StringSelect && c.component.custom_id === 'games') as { component: APIModalSubmitStringSelectComponent } | undefined)?.component.values ?? [];
+  const gamesSelected = (interaction.data.components.find(c => c.type === ComponentType.Label && c.component.type === ComponentType.StringSelect && c.component.custom_id === 'games') as {
+    component: APIModalSubmitStringSelectComponent
+  } | undefined)?.component.values ?? [];
   const games = gamesSelected.length > 0 ? await db.collection<GameDocument>('games').find({
-    slug: { $in: gamesSelected },
-  }, { projection: { _id: 1, slug: 1, name: 1 } }).toArray() : [];
+    slug: {$in: gamesSelected},
+  }, {projection: {_id: 1, slug: 1, name: 1}}).toArray() : [];
 
-  const lairsSelected = (interaction.data.components.find(c => c.type === ComponentType.Label && c.component.type === ComponentType.StringSelect && c.component.custom_id === 'lairs') as { component: APIModalSubmitStringSelectComponent } | undefined)?.component.values ?? [];
+  const lairsSelected = (interaction.data.components.find(c => c.type === ComponentType.Label && c.component.type === ComponentType.StringSelect && c.component.custom_id === 'lairs') as {
+    component: APIModalSubmitStringSelectComponent
+  } | undefined)?.component.values ?? [];
   const lairs = lairsSelected.map(id => new ObjectId(id));
 
-  const lairToAdd = (interaction.data.components.find(c => c.type === ComponentType.Label && c.component.type === ComponentType.TextInput && c.component.custom_id === 'addLair') as { component: APIModalSubmitTextInputComponent } | undefined)?.component.value;
+  const lairToAdd = (interaction.data.components.find(c => c.type === ComponentType.Label && c.component.type === ComponentType.TextInput && c.component.custom_id === 'addLair') as {
+    component: APIModalSubmitTextInputComponent
+  } | undefined)?.component.value;
   if (lairToAdd) {
     const lairUrl = new URL(lairToAdd);
     const lairId = lairUrl.pathname.split('/lairs/').pop();
@@ -219,41 +224,16 @@ async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInte
   const events = await getEventsByLairIds(lairs.map(id => id.toString()), {
     gameIds: games.map(g => g._id.toString()),
     afterDate: currentDate.toISO(),
-    beforeDate: currentDate.plus({ weeks: 2 }).toISO(),
+    beforeDate: currentDate.plus({weeks: 2}).toISO(),
   });
 
   try {
     await rest.patch(Routes.channelMessage(
-      board.channelId,
-      board.messageId,
-    ), {
-      body: {
-          embeds: [
-            new EmbedBuilder()
-              .setTitle(`Events`)
-              .setDescription(`Voici les évènements à venir :\n\n${events.length > 0 ? events.map(e => `-${e.game?.slug ? ` <:${e.game.slug}:${DiscordEmojis[e.game.slug] ?? ''}>` : ''} [${e.name}](https://joutes.app/events/${e.id}) le ${DateTime.fromISO(e.startDateTime, {
-                zone: 'Europe/Paris',
-                locale: 'fr'
-              }).toLocaleString(DateTime.DATETIME_MED)} à ${e.lair?.name ?? 'Lieu Inconnu'}`).join('\n') : 'Aucun évènement à venir.'}`)
-              .setFooter({
-                text: `Updated: ${currentDate.setZone('Europe/Paris').toLocaleString(DateTime.DATETIME_MED, {locale: 'fr'})}`,
-              }),
-          ],
-          content: null,
-          components: [
-            new ButtonBuilder()
-              .setLabel("Actualiser")
-              .setCustomId(`refresh-events-board-${board._id.toString()}`)
-              .setStyle(ButtonStyle.Primary),
-            new ActionRowBuilder<ButtonBuilder>().addComponents(
-              new ButtonBuilder()
-                .setLabel("Modifier")
-                .setCustomId(`modify-events-board-${board._id.toString()}`)
-                .setStyle(ButtonStyle.Secondary),
-            ),
-          ]
-        },
-      },
+        board.channelId,
+        board.messageId,
+      ), {
+        body: makeEventsBoardDiscordMessage(board._id.toString(), currentDate, events),
+      }
     );
   } catch (err) {
     console.warn('Failed to update original message.');
@@ -644,12 +624,12 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
     }
 
     const games = await db.collection<GameDocument & { slug: string }>('games').find({
-      slug: { $in: ['riftbound', 'mtg', 'swu', 'lorcana', 'op', 'dnp'] },
-    }, { projection: { _id: 1, slug: 1, name: 1, type: 1 } }).toArray();
+      slug: {$in: ['riftbound', 'mtg', 'swu', 'lorcana', 'op', 'dnp']},
+    }, {projection: {_id: 1, slug: 1, name: 1, type: 1}}).toArray();
 
     const lairs = await db.collection<LairDocument>('lairs').find({
-      _id: { $in: board.lairs },
-    }, { projection: { _id: 1, name: 1 } }).toArray();
+      _id: {$in: board.lairs},
+    }, {projection: {_id: 1, name: 1}}).toArray();
 
     const modal = new ModalBuilder().setCustomId(`modify-events-board-${boardId}`).setTitle('Modification');
 
@@ -753,7 +733,7 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
     const events = await getEventsByLairIds(board.lairs.map(id => id.toString()), {
       gameIds: board.games.map(id => id.toString()),
       afterDate: currentDate.toISO(),
-      beforeDate: currentDate.plus({ weeks: 2 }).toISO(),
+      beforeDate: currentDate.plus({weeks: 2}).toISO(),
     });
 
     await rest.patch(
@@ -1282,7 +1262,7 @@ async function handleEventsBoardCommand(interaction: APIChatInputApplicationComm
   const events = await getEventsByLairIds([lairId], {
     gameIds: [game.id],
     afterDate: currentDate.toISO(),
-    beforeDate: currentDate.plus({ weeks: 2 }).toISO(),
+    beforeDate: currentDate.plus({weeks: 2}).toISO(),
   });
 
   const boardMessage: APIMessage = (await rest.patch(

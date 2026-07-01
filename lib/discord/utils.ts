@@ -2,6 +2,7 @@ import {Event} from "@/lib/types/Event";
 import {ActionRowBuilder, ButtonBuilder, EmbedBuilder} from "@discordjs/builders";
 import {DateTime} from "luxon";
 import {APIEmbedField, ButtonStyle} from "discord-api-types/v10";
+import {DiscordEmojis} from "@/app/discord/utils";
 
 export function makeEventDiscordInfoMessage(event: Event) {
   const fields: APIEmbedField[] = [
@@ -72,4 +73,33 @@ export function makeEventDiscordInfoMessage(event: Event) {
       ),
     ],
   }
+}
+
+export function makeEventsBoardDiscordMessage(boardId: string, date: DateTime, events: Event[]) {
+  return {
+    embeds: [
+      new EmbedBuilder()
+        .setTitle(`Events`)
+        .setDescription(`Voici les évènements à venir :\n\n${events.length > 0 ? events.map(e => `-${e.game?.slug ? ` <:${e.game.slug}:${DiscordEmojis[e.game.slug] ?? ''}>` : ''} [${e.name}](https://joutes.app/events/${e.id}) le ${DateTime.fromISO(e.startDateTime, {
+          zone: 'Europe/Paris',
+          locale: 'fr'
+        }).toLocaleString(DateTime.DATETIME_MED)} à ${e.lair?.name ?? 'Lieu Inconnu'}`).join('\n') : 'Aucun évènement à venir.'}`)
+        .setFooter({
+          text: `Updated: ${date.setZone('Europe/Paris').toLocaleString(DateTime.DATETIME_MED, {locale: 'fr'})}`,
+        }),
+    ],
+    content: null,
+    components: [
+      new ButtonBuilder()
+        .setLabel("Actualiser")
+        .setCustomId(`refresh-events-board-${boardId}`)
+        .setStyle(ButtonStyle.Primary),
+      new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+          .setLabel("Modifier")
+          .setCustomId(`modify-events-board-${boardId}`)
+          .setStyle(ButtonStyle.Secondary),
+      ),
+    ],
+  };
 }

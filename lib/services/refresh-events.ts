@@ -66,11 +66,11 @@ export async function refreshEvents(lairId: string) {
     }
 
     // Upsert events for this lair (update existing ones based on URL + lairId, insert new ones)
-    const { inserted, updated } = await eventsDb.upsertEventsForLair(lair.id, allEvents);
+    const { inserted, updated, removed } = await eventsDb.upsertEventsForLair(lair.id, allEvents);
     
     return { 
       success: true, 
-      message: `${inserted} nouveaux événements créés, ${updated} événements mis à jour`,
+      message: `${inserted} nouveaux événements créés, ${updated} événements mis à jour, ${removed} évènements supprimés.`,
     };
   } catch (error) {
     console.error("Erreur lors du rafraîchissement des événements:", error);

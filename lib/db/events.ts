@@ -3,7 +3,7 @@ import {Event, RegistrationStatus} from "@/lib/types/Event";
 import {getUserById} from "@/lib/db/users";
 import {getLairIdsNearLocation} from "./lairs";
 import {ObjectId} from "mongodb";
-import {inspect} from "node:util";
+import {DateTime} from "luxon";
 
 const COLLECTION_NAME = "events";
 
@@ -541,16 +541,28 @@ export async function replaceEventsForLair(lairId: string, events: Event[]): Pro
  */
 export async function upsertEventsForLair(lairId: string, events: Event[]): Promise<{
   inserted: number;
-  updated: number
+  updated: number;
+  removed: number;
 }> {
+  const currentDate = DateTime.utc().minus({ days: 1 });
+
   if (events.length === 0) {
-    return {inserted: 0, updated: 0};
+    const result = await db.collection<EventDocument>(COLLECTION_NAME).deleteMany({
+      lairId,
+      addedBy: {$in: ["AI-SCRAPPING", "JSON-MAPPING"]},
+      startDateTime: { $gte: currentDate.toISO() },
+      endDateTime: { $gte: currentDate.toISO() },
+    });
+
+    return { inserted: 0, updated: 0, removed: result.deletedCount };
   }
 
   // Use a transaction for atomic operation
   const session = db.client.startSession();
   let inserted = 0;
   let updated = 0;
+  let removed = 0;
+  const eventsUpserted: ObjectId[] = [];
 
   try {
     await session.withTransaction(async () => {
@@ -577,24 +589,38 @@ export async function upsertEventsForLair(lairId: string, events: Event[]): Prom
           );
 
           if (result.matchedCount > 0) {
+            if (result.upsertedId) {
+              eventsUpserted.push(result.upsertedId);
+            }
             updated++;
           } else {
             // L'événement n'existe pas, on l'insère
-            await db.collection<EventDocument>(COLLECTION_NAME).insertOne(event, {session});
+            const result = await db.collection<EventDocument>(COLLECTION_NAME).insertOne(event, {session});
+            eventsUpserted.push(result.insertedId);
             inserted++;
           }
         } else {
           // Si pas d'URL, on insère toujours (impossible de détecter les doublons)
-          await db.collection<EventDocument>(COLLECTION_NAME).insertOne(event, {session});
+          const result = await db.collection<EventDocument>(COLLECTION_NAME).insertOne(event, {session});
+          eventsUpserted.push(result.insertedId);
           inserted++;
         }
       }
+
+      const result = await db.collection<EventDocument>(COLLECTION_NAME).deleteMany({
+        lairId,
+        addedBy: {$in: ["AI-SCRAPPING", "JSON-MAPPING"]},
+        _id: { $nin: eventsUpserted },
+        startDateTime: { $gte: currentDate.toISO() },
+        endDateTime: { $gte: currentDate.toISO() },
+      });
+      removed+=result.deletedCount;
     });
   } finally {
     await session.endSession();
   }
 
-  return {inserted, updated};
+  return {inserted, updated, removed};
 }
 
 /**
