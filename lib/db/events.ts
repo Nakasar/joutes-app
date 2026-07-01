@@ -641,7 +641,8 @@ export async function getEventsForUser(
   month?: number,
   year?: number,
   userLocation?: { latitude: number; longitude: number },
-  maxDistanceKm?: number
+  maxDistanceKm?: number,
+  { afterDate, beforeDate }: { afterDate?: string; beforeDate?: string } = {},
 ): Promise<Event[]> {
   // Get user data
   const user = await getUserById(userId);
@@ -691,6 +692,24 @@ export async function getEventsForUser(
         startDateTime: {
           $gte: startDate.toISOString(),
           $lte: endDate.toISOString()
+        }
+      }
+    });
+  }
+  if (afterDate) {
+    pipeline.push({
+      $match: {
+        startDateTime: {
+          $gte: afterDate,
+        }
+      }
+    });
+  }
+  if (beforeDate) {
+    pipeline.push({
+      $match: {
+        startDateTime: {
+          $lte: beforeDate,
         }
       }
     });
