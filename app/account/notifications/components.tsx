@@ -12,7 +12,7 @@ export function NotificationPreferenceSwitch({ type, channel, label, icon, descr
   icon: ReactNode;
   description: string;
   initialEnabled: boolean;
-  disabled: boolean;
+  disabled?: boolean;
 }) {
   const [enabled, setEnabled] = useState(initialEnabled);
 
