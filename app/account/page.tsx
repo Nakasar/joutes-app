@@ -12,7 +12,7 @@ import ProfileImageDisplay from "./ProfileImageDisplay";
 import LocationDisplay from "./LocationDisplay";
 import ProfileVisibilitySwitch from "./ProfileVisibilitySwitch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {User as UserIcon, Mail, Gamepad2, MapPin, FileText, Settings, Shield, Trophy} from "lucide-react";
+import {User as UserIcon, Mail, Gamepad2, MapPin, FileText, Settings, Shield, Trophy, MailIcon} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -70,6 +70,12 @@ export default async function AccountPage() {
                 <Button variant="outline" size="sm">
                   <Trophy className="h-4 w-4 mr-2" />
                   Succès
+                </Button>
+              </Link>
+              <Link href="/account/notifications">
+                <Button variant="outline" size="sm">
+                  <MailIcon className="h-4 w-4 mr-2" />
+                  Notifications
                 </Button>
               </Link>
               <Link href="/account/security">

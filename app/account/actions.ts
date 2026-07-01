@@ -13,6 +13,9 @@ import {
 } from "@/lib/db/users";
 import { updateDisplayNameSchema } from "@/lib/schemas/user.schema";
 import { generateDiscriminator } from "@/lib/utils";
+import db from "@/lib/mongodb";
+import {User} from "@/lib/types/User";
+import {ObjectId} from "mongodb";
 
 export async function addGameToUserList(gameId: string): Promise<{ success: boolean; error?: string }> {
   try {
@@ -195,6 +198,47 @@ export async function updateUserLocation(
     return { success: true };
   } catch (error) {
     console.error("Erreur lors de la mise à jour de la localisation:", error);
+    return { success: false, error: "Erreur serveur" };
+  }
+}
+
+export async function updateNotificationsPreference(
+  type: "weekly" | "platform",
+  channel: "emails" | "app",
+  enable: boolean,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    const user = await db.collection<User>('user').findOne({
+      _id: new ObjectId(session.user.id),
+    }, { projection: { _id: 1, notifications: 1 }});
+
+    if (!user) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    if (!["emails", "app"].includes(channel) || !["weekly"].includes(type)) {
+      return { success: false, error: "Invalid channel or type." };
+    }
+
+    await db.collection<User>('user').updateOne({
+      _id: new ObjectId(session.user.id),
+    }, {
+      $set: {
+        [`notifications.${type}.${channel}.enabled`]: enable,
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la MàJ des préférences de notification :", error);
     return { success: false, error: "Erreur serveur" };
   }
 }
