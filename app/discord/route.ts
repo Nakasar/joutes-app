@@ -223,12 +223,11 @@ async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInte
   });
 
   try {
-    await rest.patch(Routes.webhookMessage(
-        interaction.id,
-        interaction.token,
-        board.messageId,
-      ), {
-        body: {
+    await rest.patch(Routes.channelMessage(
+      board.channelId,
+      board.messageId,
+    ), {
+      body: {
           embeds: [
             new EmbedBuilder()
               .setTitle(`Events`)
