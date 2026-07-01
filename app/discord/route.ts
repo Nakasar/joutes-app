@@ -242,6 +242,12 @@ async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInte
         components: [
           new ActionRowBuilder<ButtonBuilder>().addComponents(
             new ButtonBuilder()
+              .setLabel("Actualiser")
+              .setCustomId(`refresh-events-board-${board._id.toString()}`)
+              .setStyle(ButtonStyle.Primary),
+          ),
+          new ActionRowBuilder<ButtonBuilder>().addComponents(
+            new ButtonBuilder()
               .setLabel("Modifier")
               .setCustomId(`modify-events-board-${board._id.toString()}`)
               .setStyle(ButtonStyle.Secondary),
@@ -689,6 +695,85 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
         body: {
           type: InteractionResponseType.Modal,
           data: modal.toJSON(),
+        },
+      },
+    );
+    return NextResponse.json({success: true}, {status: 200});
+  } else if (interaction.data.custom_id.startsWith('refresh-events-board-')) {
+    await rest.post(
+      Routes.interactionCallback(interaction.id, interaction.token),
+      {
+        body: {
+          type: 4,
+          data: {
+            content: "Génération du tableau...",
+          },
+        },
+      },
+    );
+
+    const boardId = interaction.data.custom_id.split('refresh-events-board-')[1];
+    const board = await db.collection<DiscordBoard>('discord-boards').findOne({
+      _id: new ObjectId(boardId),
+    });
+
+    if (!board) {
+      await rest.patch(
+        Routes.webhookMessage(
+          interaction.application_id,
+          interaction.token,
+          "@original",
+        ),
+        {
+          body: {
+            content: "Ce tableau n'existe plus.",
+          },
+        },
+      );
+      return NextResponse.json({success: true}, {status: 200});
+    }
+    const currentDate = DateTime.utc();
+
+    const events = await getEventsByLairIds(board.lairs.map(id => id.toString()), {
+      gameIds: board.games.map(id => id.toString()),
+      afterDate: currentDate.toISO(),
+      beforeDate: currentDate.plus({ weeks: 2 }).toISO(),
+    });
+
+    await rest.patch(
+      Routes.webhookMessage(
+        interaction.application_id,
+        interaction.token,
+        "@original",
+      ),
+      {
+        body: {
+          embeds: [
+            new EmbedBuilder()
+              .setTitle(`Events`)
+              .setDescription(`Voici les évènements à venir :\n\n${events.length > 0 ? events.map(e => `-${e.game?.slug ? ` <:${e.game.slug}:${DiscordEmojis[e.game.slug] ?? ''}>` : ''} [${e.name}](https://joutes.app/events/${e.id}) le ${DateTime.fromISO(e.startDateTime, {
+                zone: 'Europe/Paris',
+                locale: 'fr'
+              }).toLocaleString(DateTime.DATETIME_MED)} à ${e.lair?.name ?? 'Lieu Inconnu'}`).join('\n') : 'Aucun évènement à venir.'}`)
+              .setFooter({
+                text: `Généré : ${currentDate.setZone('Europe/Paris').toLocaleString(DateTime.DATETIME_MED, {locale: 'fr'})} (non mis à jour automatiquement)`,
+              }),
+          ],
+          content: null,
+          components: [
+            new ActionRowBuilder<ButtonBuilder>().addComponents(
+              new ButtonBuilder()
+                .setLabel("Actualiser")
+                .setCustomId(`refresh-events-board-${board._id.toString()}`)
+                .setStyle(ButtonStyle.Primary),
+            ),
+            new ActionRowBuilder<ButtonBuilder>().addComponents(
+              new ButtonBuilder()
+                .setLabel("Modifier")
+                .setCustomId(`modify-events-board-${board._id.toString()}`)
+                .setStyle(ButtonStyle.Secondary),
+            ),
+          ]
         },
       },
     );
@@ -1222,12 +1307,19 @@ async function handleEventsBoardCommand(interaction: APIChatInputApplicationComm
     ],
   });
 
-  await rest.patch(Routes.channelMessage(
-    boardMessage.channel_id,
-    boardMessage.id,
+  await rest.patch(Routes.webhookMessage(
+    interaction.application_id,
+    interaction.token,
+    "@original",
   ), {
     body: {
       components: [
+        new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setLabel("Actualiser")
+            .setCustomId(`refresh-events-board-${board.insertedId.toString()}`)
+            .setStyle(ButtonStyle.Primary),
+        ),
         new ActionRowBuilder<ButtonBuilder>().addComponents(
           new ButtonBuilder()
             .setLabel("Modifier")
