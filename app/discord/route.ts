@@ -223,9 +223,8 @@ async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInte
   });
 
   try {
-
     await rest.patch(Routes.webhookMessage(
-        interaction.application_id,
+        interaction.id,
         interaction.token,
         board.messageId,
       ), {
@@ -258,6 +257,8 @@ async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInte
       },
     );
   } catch (err) {
+    console.warn('Failed to update original message.');
+    console.warn(err);
     await rest.post(
       Routes.interactionCallback(interaction.id, interaction.token),
       {
