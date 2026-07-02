@@ -38,44 +38,61 @@ export function UserWeeklyEmail(props: UserWeeklyEmailProps) {
                 <Text className="text-md text-foreground m-0 mt-[32px] max-w-[430px] font-sans">
                   Bonjour {props.username},
                 </Text>
-                <Text
-                  className="text-md text-foreground m-0 mt-[32px] max-w-[430px] font-sans mb-[36px]"
-                >
-                  Comme tu as activé les notifications hebdomadaires pour te tenir au jus des évènements de tes jeux
-                  préférés, voici un petit récapitulatif des évènements qui vont t&apos;intéresser cette semaine.
-                </Text>
+                {props.events?.length > 0 ? (
+                  <>
+                    <Text
+                      className="text-md text-foreground m-0 mt-[32px] max-w-[430px] font-sans mb-[36px]"
+                    >
+                      Comme tu as activé les notifications hebdomadaires pour te tenir au jus des évènements de tes jeux
+                      préférés, voici un petit récapitulatif des évènements qui vont t&apos;intéresser cette semaine.
+                    </Text>
 
-                {props.events.map(event => (
-                  <Section key={event.id} className="mb-[36px]">
-                    <Link href={`https://joutes.app/events/${event.id}`}>
-                      <Row>
-                        <Column
-                          className="mobile:!block w-[178px] mobile:!w-full max-w-[178px] mobile:!max-w-full align-middle">
-                          <Img
-                            src={event.game?.banner}
-                            alt={event.game?.name ?? ''}
-                            width={178}
-                            className="block w-full max-w-[178px] mobile:!max-w-full"
-                          />
-                        </Column>
-                        <Column className="mobile:!hidden w-[36px]"/>
-                        <Column className="mobile:!block mobile:pt-6 mobile:!w-full mobile:!max-w-full align-middle">
-                          <Text className="m-0 text-lg font-serif text-foreground font-bold">
-                            {event.name}
-                          </Text>
-                          {event.lair && (
-                            <Text className="m-0 mt-[12px] text-sm font-serif text-foreground">
-                              📍 <Link href={`https://joutes.app/lairs/${event.lair?.id}`}>{event.lair?.name}</Link>
-                            </Text>
-                          )}
-                          <Text className="m-0 mt-[12px] text-sm font-serif text-foreground">
-                            🕦 {DateTime.fromISO(event.startDateTime).toLocaleString(DateTime.DATETIME_SHORT, {locale: 'fr'})} - {DateTime.fromISO(event.endDateTime).toLocaleString(DateTime.TIME_24_SIMPLE, {locale: 'fr'})}
-                          </Text>
-                        </Column>
-                      </Row>
-                    </Link>
-                  </Section>
-                ))}
+                    {props.events.map(event => (
+                      <Section key={event.id} className="mb-[36px]">
+                        <Link href={`https://joutes.app/events/${event.id}`}>
+                          <Row>
+                            <Column
+                              className="mobile:!block w-[178px] mobile:!w-full max-w-[178px] mobile:!max-w-full align-middle">
+                              <Img
+                                src={event.game?.banner}
+                                alt={event.game?.name ?? ''}
+                                width={178}
+                                className="block w-full max-w-[178px] mobile:!max-w-full"
+                              />
+                            </Column>
+                            <Column className="mobile:!hidden w-[36px]"/>
+                            <Column className="mobile:!block mobile:pt-6 mobile:!w-full mobile:!max-w-full align-middle">
+                              <Text className="m-0 text-lg font-serif text-foreground font-bold">
+                                {event.name}
+                              </Text>
+                              {event.lair && (
+                                <Text className="m-0 mt-[12px] text-sm font-serif text-foreground">
+                                  📍 <Link href={`https://joutes.app/lairs/${event.lair?.id}`}>{event.lair?.name}</Link>
+                                </Text>
+                              )}
+                              <Text className="m-0 mt-[12px] text-sm font-serif text-foreground">
+                                🕦 {DateTime.fromISO(event.startDateTime).toLocaleString(DateTime.DATETIME_SHORT, {locale: 'fr'})} - {DateTime.fromISO(event.endDateTime).toLocaleString(DateTime.TIME_24_SIMPLE, {locale: 'fr'})}
+                              </Text>
+                            </Column>
+                          </Row>
+                        </Link>
+                      </Section>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    <Text
+                      className="text-md text-foreground m-0 mt-[32px] max-w-[430px] font-sans mb-[36px]"
+                    >
+                      Tu as activé les notifications hebdomadaires pour recevoir un résumé des évènements qui peuvent t&apos;intéresser, mais tu ne suis aucun jeu et aucun lieu.
+                    </Text>
+                    <Text
+                      className="text-md text-foreground m-0 mt-[32px] max-w-[430px] font-sans mb-[36px]"
+                    >
+                      Explore <Link href="https://www.joutes.app/games">la gallerie des jeux disponibles</Link> et suis tes jeux préférés, puis abonne toi aux <Link href="https://www.joutes.app/lairs">profils de tes lieux ludiques favoris</Link> !
+                    </Text>
+                  </>
+                )}
 
                 <Text className="text-md text-foreground m-0 mt-[32px] max-w-[430px] font-sans">
                   A bientôt sur <Link href="https://joutes.app">Joutes</Link> !
