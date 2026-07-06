@@ -13,7 +13,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   const game = await getGameBySlugOrId(slug);
   if (!game) {
-    return [];
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+</urlset>`;
+
+    return new NextResponse(xml, {
+      headers: {
+        'Content-Type': 'application/xml',
+      },
+    });
   }
 
   const cards = await db.collection<Pick<BoosterCard, "id">>('cards').find({
