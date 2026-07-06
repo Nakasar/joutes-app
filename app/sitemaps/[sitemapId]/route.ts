@@ -4,8 +4,9 @@ import {BoosterCard} from "@/lib/types/booster";
 import {ObjectId} from "mongodb";
 import {DateTime} from "luxon";
 import {SITEMAP_LIMIT} from "@/app/sitemap_index.xml/route";
+import {NextRequest} from "next/server";
 
-export async function GET(request: Request, { params }: { params: Promise<{ sitemapId: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ sitemapId: string }> }) {
   const { sitemapId } = await params;
 
   const [slug, index] = sitemapId.split('---');
