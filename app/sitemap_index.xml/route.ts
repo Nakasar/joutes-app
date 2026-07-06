@@ -1,5 +1,24 @@
-import {generateSitemaps} from "@/app/sitemaps/sitemap";
 import {NextResponse} from "next/server";
+import db from "@/lib/mongodb";
+import {Game} from "@/lib/types/Game";
+
+export const SITEMAP_LIMIT = 10000;
+
+export async function generateSitemaps() {
+  const games = await db.collection<Game>('games').find({}, { projection: { slug: 1, features: 1 } }).toArray();
+
+  const cardsForGames = await Promise.all(games.filter(g => g.features?.cards).map(async g => {
+    return { count: await db.collection('cards').countDocuments({ gameId: g._id }), gameSlug: g.slug };
+  }));
+
+  const ids = cardsForGames.map(g => {
+    return Array.from({ length: Math.ceil(g.count / SITEMAP_LIMIT) }).map((_, i) => ({
+      id: `${g.gameSlug}---${i}`,
+    }));
+  });
+
+  return ids.flat();
+}
 
 function buildSitemapIndex(sitemaps: string[]) {
   let xml = '<?xml version="1.0" encoding="UTF-8"?>';
@@ -23,7 +42,7 @@ export async function GET() {
     // Combine static and dynamic sitemaps
     const sitemaps = [
       `https://www.joutes.app/sitemap.xml`,
-      ...dynamicSitemaps.map(sitemap => `https://www.joutes.app/sitemaps/sitemap/${sitemap.id}.xml`),
+      ...dynamicSitemaps.map(sitemap => `https://www.joutes.app/sitemaps/${sitemap.id}.xml`),
     ];
 
     console.log('Generated sitemaps:', sitemaps);
