@@ -475,9 +475,9 @@ export default function RuleDocumentViewer({ entries, lang }: { entries: TREntry
             className="flex-1"
           />
           <Select value={lang} onValueChange={(v: string) => {
-            const params = new URLSearchParams(searchParams);
-            params.set('lang', v);
-            replace(`${pathname}?${params.toString()}${window.location.hash}`);
+            const url = new URL(window.location.href);
+            url.searchParams.set('lang', v);
+            replace(url.toString());
           }}>
             <SelectTrigger className="flex-0">
               <SelectValue placeholder="Langue" />
