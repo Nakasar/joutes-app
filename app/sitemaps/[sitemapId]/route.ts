@@ -4,7 +4,7 @@ import {BoosterCard} from "@/lib/types/booster";
 import {ObjectId} from "mongodb";
 import {DateTime} from "luxon";
 import {SITEMAP_LIMIT} from "@/app/sitemap_index.xml/route";
-import {NextRequest} from "next/server";
+import {NextRequest, NextResponse} from "next/server";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ sitemapId: string }> }) {
   const { sitemapId } = await params;
@@ -37,7 +37,7 @@ ${urls.map(({ url, lastModified, changeFrequency, priority }) => `  <url>
   </url>`).join('\n')}
 </urlset>`;
 
-  return new Response(xml, {
+  return new NextResponse(xml, {
     headers: {
       'Content-Type': 'application/xml',
     },
