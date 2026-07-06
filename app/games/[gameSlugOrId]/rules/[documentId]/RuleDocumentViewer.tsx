@@ -4,6 +4,8 @@ import { useMemo, useState, useEffect, useRef, useCallback, memo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Link2Icon, CheckIcon, ChevronDownIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {usePathname, useRouter, useSearchParams} from "next/navigation";
 
 export interface TREntry {
   id: string;
@@ -400,7 +402,11 @@ function TableOfContents({
   );
 }
 
-export default function RuleDocumentViewer({ entries }: { entries: TREntry[] }) {
+export default function RuleDocumentViewer({ entries, lang }: { entries: TREntry[]; lang: string }) {
+  const searchParams = useSearchParams();
+  const { replace } = useRouter();
+  const pathname = usePathname()
+
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedQuery = useDebounce(searchQuery, 300);
   const [activeSection, setActiveSection] = useState<number | null>(null);
@@ -468,6 +474,23 @@ export default function RuleDocumentViewer({ entries }: { entries: TREntry[] }) 
             onChange={e => setSearchQuery(e.target.value)}
             className="flex-1"
           />
+          <Select value={lang} onValueChange={(v: string) => {
+            const params = new URLSearchParams(searchParams);
+            params.set('lang', v);
+            replace(`${pathname}?${params.toString()}${window.location.hash}`);
+          }}>
+            <SelectTrigger className="flex-0">
+              <SelectValue placeholder="Langue" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="en">
+                🇬🇧 English
+              </SelectItem>
+              <SelectItem value="fr">
+                🇫🇷 Français
+              </SelectItem>
+            </SelectContent>
+          </Select>
           <button
             className="lg:hidden px-3 py-2 rounded-md border border-border text-sm hover:bg-accent transition-colors"
             onClick={() => setTocOpen(v => !v)}

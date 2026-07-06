@@ -1,6 +1,8 @@
 import type {Metadata} from 'next';
 import tr from '@/data/riftbound/tr.json';
 import cr from '@/data/riftbound/cr.json';
+import tr_fr from '@/data/riftbound/fr/tr.json';
+import cr_fr from '@/data/riftbound/fr/cr.json';
 import RuleDocumentViewer from './RuleDocumentViewer';
 import {getGameBySlugOrId} from '@/lib/db/games';
 import Link from 'next/link';
@@ -21,10 +23,12 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function RulesDocumentPage({params}: {
-  params: Promise<{ gameSlugOrId: string; documentId: string }>
+export default async function RulesDocumentPage({params, searchParams }: {
+  params: Promise<{ gameSlugOrId: string; documentId: string; }>;
+  searchParams: Promise<{ lang?: string }>
 }) {
   const {documentId, gameSlugOrId} = await params;
+  const { lang } = await searchParams;
   const t = await getTranslations('Games');
 
   const game = await getGameBySlugOrId(gameSlugOrId);
@@ -38,9 +42,9 @@ export default async function RulesDocumentPage({params}: {
 
   let entries: { id: string; content: string }[];
   if (documentId.toLowerCase() === 'tr') {
-    entries = tr;
+    entries = lang === 'fr' ? tr_fr : tr;
   } else if (documentId.toLowerCase() === 'cr') {
-    entries = cr;
+    entries = lang === 'fr' ? cr_fr : cr;
   } else {
     return <div className="container mx-auto p-6">{t('rules.notFound.document')}</div>;
   }
@@ -61,7 +65,7 @@ export default async function RulesDocumentPage({params}: {
       <p className="text-muted-foreground mt-1 text-sm mb-4">
         {t('rules.document.summary', {count: entries.length})}
       </p>
-      <RuleDocumentViewer entries={entries}/>
+      <RuleDocumentViewer entries={entries} lang={lang ?? 'en'} />
     </div>
   );
 }
