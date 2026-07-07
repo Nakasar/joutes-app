@@ -68,7 +68,10 @@
       "message": "Impossible to modify favorites",
       "genericError": "An error occurred"
     },
+    "loading": "Loading events…",
+    "monthEventsCount": "{count, plural, =0 {No events} one {# event} other {# events}}",
     "filters": {
+      "today": "Today",
       "previousMonth": "Previous Month",
       "currentMonth": "Back to current Month",
       "nextMonth": "Next Month",
@@ -103,10 +106,16 @@
         "Ven": "Fri",
         "Sam": "Sat",
         "Dim": "Sun"
-      }
+      },
+      "more": "+{count, plural, one {# more} other {# more}}",
+      "dayEventsCount": "{count, plural, =0 {No events} one {# event} other {# events}}"
     },
     "ListView": {
       "noEventsThisMonth": "No events for this month",
+      "noUpcomingEvents": "No upcoming events this month",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "eventsCount": "{count, plural, one {# event} other {# events}}",
       "dayTitleToday": " - Today"
     },
     "event": {

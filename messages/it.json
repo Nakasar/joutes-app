@@ -68,7 +68,10 @@
       "message": "Impossibile modificare i preferiti",
       "genericError": "Si è verificato un errore"
     },
+    "loading": "Caricamento degli eventi…",
+    "monthEventsCount": "{count, plural, =0 {Nessun evento} one {# evento} other {# eventi}}",
     "filters": {
+      "today": "Oggi",
       "previousMonth": "Mese precedente",
       "currentMonth": "Torna al mese corrente",
       "nextMonth": "Mese successivo",
@@ -103,10 +106,16 @@
         "Ven": "Ven",
         "Sam": "Sab",
         "Dim": "Dom"
-      }
+      },
+      "more": "+{count, plural, one {# altro} other {# altri}}",
+      "dayEventsCount": "{count, plural, =0 {Nessun evento} one {# evento} other {# eventi}}"
     },
     "ListView": {
       "noEventsThisMonth": "Nessun evento per questo mese",
+      "noUpcomingEvents": "Nessun evento in programma questo mese",
+      "today": "Oggi",
+      "tomorrow": "Domani",
+      "eventsCount": "{count, plural, one {# evento} other {# eventi}}",
       "dayTitleToday": " - Oggi"
     },
     "event": {

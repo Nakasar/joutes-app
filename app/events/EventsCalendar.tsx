@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Gamepad2, Euro, Filter, List, CalendarDays, Clock, Navigation, X, User2Icon, AlertCircle, CheckCircle, Star, HelpCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Gamepad2, Euro, Filter, List, CalendarDays, Clock, Navigation, X, User2Icon, AlertCircle, CheckCircle, Star, HelpCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { DateTime } from "luxon";
 import { useSession } from "@/lib/auth-client";
@@ -21,6 +21,7 @@ import {useTranslations, useLocale} from "next-intl";
 
 type EventsCalendarProps = {
   events: Event[];
+  isLoading?: boolean;
   showViewToggle?: boolean;
   currentMonth?: number;
   currentYear?: number;
@@ -37,8 +38,28 @@ type EventsCalendarProps = {
   };
 };
 
+// Nombre maximal d'événements affichés dans une case du calendrier avant de replier
+const MAX_VISIBLE_EVENTS = 3;
+
+// Classe de bordure gauche selon le statut de l'événement
+const getStatusBorderClass = (status: Event["status"]) =>
+  status === "available"
+    ? "border-l-emerald-500"
+    : status === "sold-out"
+      ? "border-l-red-500"
+      : "border-l-muted-foreground/40";
+
+// Classe de pastille de couleur selon le statut
+const getStatusDotClass = (status: Event["status"]) =>
+  status === "available"
+    ? "bg-emerald-500"
+    : status === "sold-out"
+      ? "bg-red-500"
+      : "bg-muted-foreground/50";
+
 export default function EventsCalendar({
   events,
+  isLoading = false,
   showViewToggle = true,
   currentMonth: controlledMonth,
   currentYear: controlledYear,
@@ -71,13 +92,16 @@ export default function EventsCalendar({
     message: string;
   }>({ open: false, type: "error", title: "", message: "" });
   const session = useSession();
-  
+
   // État pour gérer les favoris localement (optimistic updates)
   const [localFavorites, setLocalFavorites] = useState<Record<string, boolean>>({});
-  
+
   // État pour le modal de détails
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+
+  // État pour la fenêtre listant tous les événements d'un jour (débordement du calendrier)
+  const [dayDialogDay, setDayDialogDay] = useState<number | null>(null);
 
   // Détecter la taille de l'écran et initialiser la vue en conséquence
   useEffect(() => {
@@ -446,7 +470,7 @@ export default function EventsCalendar({
   // Les événements sont déjà filtrés par mois et par jeux côté serveur
   // On les trie simplement par date
   const eventsInMonth = useMemo(() => {
-    return events.sort((a, b) => {
+    return [...events].sort((a, b) => {
       const dateA = DateTime.fromISO(a.startDateTime);
       const dateB = DateTime.fromISO(b.startDateTime);
       return dateA.toMillis() - dateB.toMillis();
@@ -454,14 +478,17 @@ export default function EventsCalendar({
   }, [events]);
 
   // Organiser les événements par jour
-  const eventsByDay = new Map<number, Event[]>();
-  eventsInMonth.forEach((event) => {
-    const day = DateTime.fromISO(event.startDateTime).day;
-    if (!eventsByDay.has(day)) {
-      eventsByDay.set(day, []);
-    }
-    eventsByDay.get(day)?.push(event);
-  });
+  const eventsByDay = useMemo(() => {
+    const map = new Map<number, Event[]>();
+    eventsInMonth.forEach((event) => {
+      const day = DateTime.fromISO(event.startDateTime).day;
+      if (!map.has(day)) {
+        map.set(day, []);
+      }
+      map.get(day)?.push(event);
+    });
+    return map;
+  }, [eventsInMonth]);
 
   // Grouper les événements par jour pour la vue liste (mobile)
   // Ne montrer que les événements à partir du jour actuel
@@ -487,29 +514,21 @@ export default function EventsCalendar({
       }
     });
     return grouped;
-  }, [eventsInMonth, today]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventsInMonth, locale]);
 
-  // Noms des mois en français
-  const monthNames = [
-    "Janvier",
-    "Février",
-    "Mars",
-    "Avril",
-    "Mai",
-    "Juin",
-    "Juillet",
-    "Août",
-    "Septembre",
-    "Octobre",
-    "Novembre",
-    "Décembre",
-  ];
+  // Libellé du mois localisé (corrige l'affichage figé en français)
+  const monthLabel = DateTime.local(currentYear, currentMonth, 1)
+    .setLocale(locale)
+    .toLocaleString({ month: "long", year: "numeric" });
 
-  // Noms des jours de la semaine
+  const isCurrentMonth = currentMonth === today.month && currentYear === today.year;
+
+  // Noms des jours de la semaine (clés de traduction)
   const dayNames = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
   // Générer les jours du calendrier (avec les cases vides au début)
-  const calendarDays = [];
+  const calendarDays: (number | null)[] = [];
   for (let i = 0; i < firstDayOfWeek; i++) {
     calendarDays.push(null);
   }
@@ -539,489 +558,504 @@ export default function EventsCalendar({
     }
   };
 
+  // Rendu d'une pastille d'événement compacte (vue calendrier + fenêtre jour)
+  // showTime : afficher l'heure en ligne (utile dans la fenêtre du jour, plus large)
+  const renderEventPill = (event: Event, showTime = false) => {
+    const startTime = DateTime.fromISO(event.startDateTime)
+      .setZone('Europe/Paris')
+      .toLocaleString(DateTime.TIME_24_SIMPLE);
+    const isFavorited = localFavorites[event.id] !== undefined
+      ? localFavorites[event.id]
+      : event.favoritedBy?.includes(session.data?.user?.id || "");
+    const isUserEvent = session.data?.user?.id && (
+      event.creatorId === session.data?.user?.id ||
+      event.participants?.includes(session.data?.user?.id || "") ||
+      isFavorited
+    );
+
+    const inner = (
+      <div
+        className={cn(
+          "group/pill relative flex items-center gap-1.5 overflow-hidden rounded-md border border-l-[3px] bg-card py-1 pl-1.5 pr-1.5 text-xs shadow-sm transition-all hover:bg-accent hover:shadow",
+          getStatusBorderClass(event.status),
+          isUserEvent && "ring-1 ring-amber-400/60",
+        )}
+        title={`${startTime} · ${event.name}`}
+      >
+        {event.game?.icon ? (
+          <img
+            src={event.game.icon}
+            alt=""
+            className="h-3.5 w-3.5 shrink-0 rounded object-cover"
+          />
+        ) : (
+          <span className={cn("h-2 w-2 shrink-0 rounded-full", getStatusDotClass(event.status))} />
+        )}
+        {showTime && (
+          <span className="shrink-0 text-[11px] font-semibold tabular-nums text-muted-foreground" suppressHydrationWarning>
+            {startTime}
+          </span>
+        )}
+        <span
+          className={cn(
+            "min-w-0 flex-1 truncate font-medium",
+            event.status === "cancelled" && "text-muted-foreground line-through",
+          )}
+        >
+          {event.name}
+        </span>
+
+        {/* Actions révélées au survol */}
+        <span className="absolute right-0.5 top-1/2 hidden -translate-y-1/2 items-center gap-0.5 rounded bg-card/95 pl-1 shadow-sm group-hover/pill:flex">
+          <button
+            type="button"
+            onClick={(e) => handleOpenEventDetails(event, e)}
+            className="rounded-sm p-1 text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
+            title={t('event.seeDetails')}
+            aria-label={t('event.seeDetails')}
+          >
+            <HelpCircle className="h-3.5 w-3.5" />
+          </button>
+          {session.data?.user && (
+            <button
+              type="button"
+              onClick={(e) => handleToggleFavorite(event.id, !!isFavorited, e)}
+              className="rounded-sm p-1 text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
+              title={isFavorited ? t('event.favoriteRemove') : t('event.favoriteAdd')}
+              aria-label={isFavorited ? t('event.favoriteRemove') : t('event.favoriteAdd')}
+            >
+              <Star className={cn("h-3.5 w-3.5", isFavorited && "fill-amber-400 text-amber-400")} />
+            </button>
+          )}
+        </span>
+      </div>
+    );
+
+    return event.url ? (
+      <Link key={event.id} href={event.url} target="_blank" rel="noopener noreferrer">
+        {inner}
+      </Link>
+    ) : (
+      <Link key={event.id} href={`/events/${event.id}`}>
+        {inner}
+      </Link>
+    );
+  };
+
+  const dayDialogEvents = dayDialogDay !== null ? eventsByDay.get(dayDialogDay) ?? [] : [];
+  const dayDialogLabel = dayDialogDay !== null
+    ? DateTime.local(currentYear, currentMonth, dayDialogDay).setLocale(locale).toLocaleString(DateTime.DATE_HUGE)
+    : "";
+
   return (
     <>
     <div className="space-y-6">
       {/* En-tête avec navigation */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col gap-4">
-            {/* Navigation mois */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <Button
-                onClick={goToPreviousMonth}
-                className="w-full sm:w-auto"
-              >
-                <ChevronLeft className="mr-2 h-4 w-4" />
-                {t('filters.previousMonth')}
-              </Button>
+      <Card className="overflow-hidden">
+        <CardHeader className="gap-4">
+          {/* Navigation mois : chevrons compacts + titre localisé */}
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={goToPreviousMonth}
+              aria-label={t('filters.previousMonth')}
+              title={t('filters.previousMonth')}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
 
-              <div className="text-center">
-                <CardTitle className="text-2xl">
-                  {monthNames[currentMonth - 1]} {currentYear}
-                </CardTitle>
-                {(currentMonth !== today.month ||
-                  currentYear !== today.year) && (
-                    <Button
-                      onClick={goToCurrentMonth}
-                      className="mt-2 text-sm"
-                      variant="ghost"
-                    >
-                      {t('filters.currentMonth')}
-                    </Button>
-                  )}
-              </div>
-
-              <Button
-                onClick={goToNextMonth}
-                className="w-full sm:w-auto"
-              >
-                {t('filters.nextMonth')}
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
+            <div className="min-w-0 flex-1 text-center">
+              <CardTitle className="truncate text-xl capitalize sm:text-2xl">
+                {monthLabel}
+              </CardTitle>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {t('monthEventsCount', { count: events.length })}
+              </p>
+              {!isCurrentMonth && (
+                <Button
+                  onClick={goToCurrentMonth}
+                  variant="link"
+                  className="mt-0.5 h-auto p-0 text-xs"
+                >
+                  {t('filters.today')}
+                </Button>
+              )}
             </div>
 
-            {/* Boutons de contrôle */}
-            {showViewToggle && (
-              <div className="space-y-3">
-                <div className="flex flex-wrap gap-2 justify-center">
-                  {/* Bouton de toggle vue calendrier/liste */}
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={goToNextMonth}
+              aria-label={t('filters.nextMonth')}
+              title={t('filters.nextMonth')}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Barre d'outils */}
+          {showViewToggle && (
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                {/* Segmented control vue calendrier/liste */}
+                <div className="inline-flex rounded-lg border bg-muted/50 p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("calendar")}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                      viewMode === "calendar"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                    aria-pressed={viewMode === "calendar"}
+                  >
+                    <CalendarDays className="h-4 w-4" />
+                    <span className="hidden sm:inline">{t('views.calendar')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("list")}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                      viewMode === "list"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                    aria-pressed={viewMode === "list"}
+                  >
+                    <List className="h-4 w-4" />
+                    <span className="hidden sm:inline">{t('views.list')}</span>
+                  </button>
+                </div>
+
+                {/* Boutons spécifiques aux utilisateurs connectés */}
+                {!session.isPending && session.data?.user && (
+                  <>
+                    {/* Sélecteur de filtre par jeu */}
+                    <div className="w-full sm:w-auto sm:min-w-[220px]">
+                      <Select value={gameId} onValueChange={handleGameIdChange}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={t('filters.filterByGame')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="followed">
+                            <div className="flex items-center gap-2">
+                              <Star className="h-4 w-4" />
+                              {t('filters.myGames')}
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="all">
+                            <div className="flex items-center gap-2">
+                              <Gamepad2 className="h-4 w-4" />
+                              {t('filters.allGames')}
+                            </div>
+                          </SelectItem>
+                          {availableGames.length > 0 && (
+                            <>
+                              <div className="my-1 border-t"></div>
+                              {availableGames.map((game) => (
+                                <SelectItem key={game.id} value={game.id}>
+                                  <div className="flex items-center gap-2">
+                                    {game.icon && (
+                                      <img
+                                        src={game.icon}
+                                        alt=""
+                                        className="h-4 w-4 object-contain"
+                                      />
+                                    )}
+                                    {game.name}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Bouton Mes lieux (mode normal) */}
+                    {isLocationMode && (
+                      <Button
+                        variant="default"
+                        onClick={handleResetLocation}
+                        className="w-full sm:w-auto"
+                      >
+                        <MapPin className="mr-2 h-4 w-4" />
+                        {t('filters.myLairs')}
+                      </Button>
+                    )}
+                  </>
+                )}
+
+                {/* Bouton Proches de moi - disponible pour tous */}
+                {!isLocationMode && (
                   <Button
                     variant="outline"
-                    onClick={() => setViewMode(viewMode === "calendar" ? "list" : "calendar")}
+                    onClick={handleNearMeClick}
                     className="w-full sm:w-auto"
                   >
-                    {viewMode === "calendar" ? (
-                      <>
-                        <List className="mr-2 h-4 w-4" />
-                        {t('views.list')}
-                      </>
-                    ) : (
-                      <>
-                        <CalendarDays className="mr-2 h-4 w-4" />
-                        {t('views.calendar')}
-                      </>
-                    )}
+                    <Navigation className="mr-2 h-4 w-4" />
+                    {t('filters.nearMe')}
                   </Button>
+                )}
 
-                  {/* Boutons spécifiques aux utilisateurs connectés */}
-                  {!session.isPending && session.data?.user && (
-                    <>
-                      {/* Sélecteur de filtre par jeu */}
-                      <div className="w-full sm:w-auto min-w-[250px]">
-                        <Select value={gameId} onValueChange={handleGameIdChange}>
-                          <SelectTrigger>
-                            <SelectValue placeholder={t('filters.filterByGame')} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="followed">
-                              <div className="flex items-center gap-2">
-                                <Star className="h-4 w-4" />
-                                {t('filters.myGames')}
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="all">
-                              <div className="flex items-center gap-2">
-                                <Gamepad2 className="h-4 w-4" />
-                                {t('filters.allGames')}
-                              </div>
-                            </SelectItem>
-                            {availableGames.length > 0 && (
+                {/* Bouton Modifier la localisation - en mode localisation avec userLocation */}
+                {isLocationMode && userLocation && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowLocationForm(!showLocationForm)}
+                    className="w-full sm:w-auto"
+                  >
+                    <MapPin className="mr-2 h-4 w-4" />
+                    {t('filters.geolocUpdate')}
+                  </Button>
+                )}
+
+                {/* Bouton Se connecter pour personnaliser - uniquement pour non connectés */}
+                {!session.isPending && !session.data?.user && (
+                  <Button
+                    variant="default"
+                    className="w-full sm:w-auto"
+                    asChild
+                  >
+                    <Link href="/login">
+                      <Filter className="mr-2 h-4 w-4" />
+                      {t('filters.ctaLoginCustomize')}
+                    </Link>
+                  </Button>
+                )}
+              </div>
+
+              {/* Formulaire de recherche par localisation */}
+              {showLocationForm && (
+                <Card className="border-2 border-primary">
+                  <CardContent className="pt-6">
+                    <div className="space-y-4">
+                      {userLocation && (
+                        <div className="rounded-lg bg-muted/50 p-3 text-sm">
+                          <p className="mb-1 font-medium">{t('filters.geolocSaved')}</p>
+                          <p className="text-muted-foreground">
+                            {t('filters.geolocDetails')} {userLocation.latitude.toFixed(4)}, {userLocation.longitude.toFixed(4)}
+                          </p>
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="mb-2 block text-sm font-medium">
+                          {t('filters.geolocCoordinates')}
+                        </label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="text"
+                            value={coordinates}
+                            onChange={(e) => setCoordinates(e.target.value)}
+                            placeholder="48.8566, 2.3522"
+                            className="flex-1"
+                          />
+                          <Button
+                            variant="outline"
+                            onClick={handleGetCurrentLocation}
+                            disabled={isGettingLocation}
+                            className="flex-shrink-0"
+                          >
+                            {isGettingLocation ? (
+                              <>{t('filters.geolocPending')}</>
+                            ) : (
                               <>
-                                <div className="border-t my-1"></div>
-                                {availableGames.map((game) => (
-                                  <SelectItem key={game.id} value={game.id}>
-                                    <div className="flex items-center gap-2">
-                                      {game.icon && (
-                                        <img 
-                                          src={game.icon} 
-                                          alt="" 
-                                          className="h-4 w-4 object-contain" 
-                                        />
-                                      )}
-                                      {game.name}
-                                    </div>
-                                  </SelectItem>
-                                ))}
+                                <Navigation className="h-4 w-4" />
                               </>
                             )}
+                          </Button>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {userLocation
+                            ? t('filters.geolocUseSaved')
+                            : t('filters.geolocInputHelp')
+                          }
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-sm font-medium">
+                          {t('filters.geolocMaxDistance')}
+                        </label>
+                        <Select value={distance} onValueChange={setDistance}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1">1 km</SelectItem>
+                            <SelectItem value="5">5 km</SelectItem>
+                            <SelectItem value="15">15 km</SelectItem>
+                            <SelectItem value="50">50 km</SelectItem>
+                            <SelectItem value="150">150 km</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
 
-                      {/* Bouton Mes lieux (mode normal) */}
-                      {isLocationMode && (
+                      <div className="flex flex-wrap gap-2">
                         <Button
-                          variant="default"
-                          onClick={handleResetLocation}
-                          className="w-full sm:w-auto"
+                          onClick={handleLocationSearch}
+                          className="flex-1"
                         >
-                          <MapPin className="mr-2 h-4 w-4" />
-                          {t('filters.myLairs')}
+                          <Navigation className="mr-2 h-4 w-4" />
+                          {t('filters.geolocSearch')}
                         </Button>
-                      )}
-                    </>
-                  )}
 
-                  {/* Bouton Proches de moi - disponible pour tous */}
-                  {!isLocationMode && (
-                    <Button
-                      variant="outline"
-                      onClick={handleNearMeClick}
-                      className="w-full sm:w-auto"
-                    >
-                      <Navigation className="mr-2 h-4 w-4" />
-                      {t('filters.nearMe')}
-                    </Button>
-                  )}
-
-                  {/* Bouton Modifier la localisation - en mode localisation avec userLocation */}
-                  {isLocationMode && userLocation && (
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowLocationForm(!showLocationForm)}
-                      className="w-full sm:w-auto"
-                    >
-                      <MapPin className="mr-2 h-4 w-4" />
-                      {t('filters.geolocUpdate')}
-                    </Button>
-                  )}
-
-                  {/* Bouton Se connecter pour personnaliser - uniquement pour non connectés */}
-                  {!session.isPending && !session.data?.user && (
-                    <Button
-                      variant="default"
-                      className="w-full sm:w-auto"
-                      asChild
-                    >
-                      <Link href="/login">
-                        <Filter className="mr-2 h-4 w-4" />
-                        {t('filters.ctaLoginCustomize')}
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-
-                {/* Formulaire de recherche par localisation */}
-                {showLocationForm && (
-                  <Card className="border-2 border-primary">
-                    <CardContent className="pt-6">
-                      <div className="space-y-4">
-                        {userLocation && (
-                          <div className="p-3 bg-muted/50 rounded-lg text-sm">
-                            <p className="font-medium mb-1">{t('filters.geolocSaved')}</p>
-                            <p className="text-muted-foreground">
-                              {t('filters.geolocDetails')} {userLocation.latitude.toFixed(4)}, {userLocation.longitude.toFixed(4)}
-                            </p>
-                          </div>
-                        )}
-                        
-                        <div>
-                          <label className="block text-sm font-medium mb-2">
-                            {t('filters.geolocCoordinates')}
-                          </label>
-                          <div className="flex gap-2">
-                            <Input
-                              type="text"
-                              value={coordinates}
-                              onChange={(e) => setCoordinates(e.target.value)}
-                              placeholder="48.8566, 2.3522"
-                              className="flex-1"
-                            />
-                            <Button
-                              variant="outline"
-                              onClick={handleGetCurrentLocation}
-                              disabled={isGettingLocation}
-                              className="flex-shrink-0"
-                            >
-                              {isGettingLocation ? (
-                                <>{t('filters.geolocPending')}</>
-                              ) : (
-                                <>
-                                  <Navigation className="h-4 w-4" />
-                                </>
-                              )}
-                            </Button>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {userLocation 
-                              ? t('filters.geolocUseSaved')
-                              : t('filters.geolocInputHelp')
-                            }
-                          </p>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium mb-2">
-                            {t('filters.geolocMaxDistance')}
-                          </label>
-                          <Select value={distance} onValueChange={setDistance}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="1">1 km</SelectItem>
-                              <SelectItem value="5">5 km</SelectItem>
-                              <SelectItem value="15">15 km</SelectItem>
-                              <SelectItem value="50">50 km</SelectItem>
-                              <SelectItem value="150">150 km</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="flex gap-2 flex-wrap">
+                        {session.data?.user && (
                           <Button
-                            onClick={handleLocationSearch}
+                            variant="secondary"
+                            onClick={handleSaveLocation}
+                            disabled={isSavingLocation || !coordinates.trim()}
                             className="flex-1"
                           >
-                            <Navigation className="mr-2 h-4 w-4" />
-                            {t('filters.geolocSearch')}
+                            <MapPin className="mr-2 h-4 w-4" />
+                            {isSavingLocation ? t('filters.geolocSaving') : t('filters.geolocSave')}
                           </Button>
-                          
-                          {session.data?.user && (
-                            <Button
-                              variant="secondary"
-                              onClick={handleSaveLocation}
-                              disabled={isSavingLocation || !coordinates.trim()}
-                              className="flex-1"
-                            >
-                              <MapPin className="mr-2 h-4 w-4" />
-                              {isSavingLocation ? t('filters.geolocSaving') : t('filters.geolocSave')}
-                            </Button>
-                          )}
-                          
-                          <Button
-                            variant="outline"
-                            onClick={() => setShowLocationForm(false)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        )}
+
+                        <Button
+                          variant="outline"
+                          onClick={() => setShowLocationForm(false)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            )}
-          </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
         </CardHeader>
       </Card>
 
-      {/* Vue calendrier */}
-      {viewMode === "calendar" && (
-        <div>
-          <Card>
-            <CardContent className="p-4">
-              {/* En-têtes des jours de la semaine */}
-              <div className="grid grid-cols-7 gap-2 mb-2">
-                {dayNames.map((dayName) => (
-                  <div
-                    key={dayName}
-                    className="text-center font-semibold text-muted-foreground py-2"
-                  >
-                    {t(`CalendarView.weekDays.${dayName}`)}
-                  </div>
-                ))}
-              </div>
+      {/* Zone de contenu (avec superposition de chargement) */}
+      <div className="relative">
+        {isLoading && (
+          <div className="absolute inset-0 z-20 flex items-start justify-center rounded-lg bg-background/60 pt-24 backdrop-blur-[1px]">
+            <div className="flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-sm text-muted-foreground shadow-sm">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              {t('loading')}
+            </div>
+          </div>
+        )}
 
-              {/* Jours du calendrier */}
-              <div className="grid grid-cols-7 gap-2">
-                {calendarDays.map((day, index) => (
-                  <div
-                    key={index}
-                    className={`min-h-[120px] border rounded-lg p-2 ${day === null
-                      ? "bg-muted/30"
-                      : isToday(day)
-                        ? "bg-primary/10 border-primary"
-                        : "bg-card"
-                      }`}
-                  >
-                    {day !== null && (
-                      <>
-                        <div
-                          className={`text-sm font-semibold mb-1 ${isToday(day)
-                            ? "text-primary"
-                            : "text-foreground"
-                            }`}
-                        >
-                          {day}
-                        </div>
-                        <div className="flex gap-1 flex-col">
-                          {eventsByDay.get(day)?.map((event) => {
-                            const startTime = DateTime.fromISO(
-                              event.startDateTime
-                            ).setZone('Europe/Paris').toLocaleString(DateTime.TIME_24_SIMPLE);
-                            const isFavorited = localFavorites[event.id] !== undefined 
-                              ? localFavorites[event.id] 
-                              : event.favoritedBy?.includes(session.data?.user?.id || "");
-                            const isUserEvent = session.data?.user?.id && (
-                              event.creatorId === session.data?.user?.id || 
-                              event.participants?.includes(session.data?.user?.id || "") ||
-                              isFavorited
-                            );
+        <div className={cn("transition-opacity", isLoading && "pointer-events-none opacity-50")}>
+          {/* Vue calendrier */}
+          {viewMode === "calendar" && (
+            <Card>
+              <CardContent className="p-2 sm:p-4">
+                {/* En-têtes des jours de la semaine */}
+                <div className="mb-2 grid grid-cols-7 gap-1 sm:gap-2">
+                  {dayNames.map((dayName, i) => (
+                    <div
+                      key={dayName}
+                      className={cn(
+                        "py-2 text-center text-xs font-semibold uppercase tracking-wide sm:text-sm",
+                        i >= 5 ? "text-muted-foreground/70" : "text-muted-foreground",
+                      )}
+                    >
+                      {t(`CalendarView.weekDays.${dayName}`)}
+                    </div>
+                  ))}
+                </div>
 
-                            const eventContent = (
-                              <div className={cn("text-xs rounded-md bg-background border hover:bg-accent hover:border-accent-foreground transition-colors cursor-pointer overflow-hidden", isUserEvent && "border-yellow-500")}>
-                                {/* Bannière du jeu en haut avec bordure épaisse */}
-                                {event.game?.banner && (
-                                  <div className="relative h-12 border-primary overflow-hidden">
-                                    <img
-                                      src={event.game.banner}
-                                      alt={event.game.name}
-                                      className="w-full h-full object-cover opacity-80"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80" />
+                {/* Jours du calendrier */}
+                <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                  {calendarDays.map((day, index) => {
+                    const dayEvents = day !== null ? eventsByDay.get(day) ?? [] : [];
+                    const columnIndex = index % 7;
+                    const isWeekend = columnIndex >= 5;
+                    const visibleEvents = dayEvents.slice(0, MAX_VISIBLE_EVENTS);
+                    const hiddenCount = dayEvents.length - visibleEvents.length;
 
-                                    <div className="absolute bottom-1 left-1 right-1 flex items-center gap-1.5">
-                                      {event.game.icon && (
-                                        <img
-                                          src={event.game.icon}
-                                          alt={event.game.name}
-                                          className="w-4 h-4 rounded object-cover shadow-md"
-                                        />
-                                      )}
-                                      <span className="text-[10px] font-bold text-black drop-shadow-md truncate">
-                                          {event.game.name}
-                                        </span>
-                                    </div>
-                                  </div>
+                    return (
+                      <div
+                        key={index}
+                        className={cn(
+                          "flex min-h-[96px] flex-col rounded-lg border p-1 transition-colors sm:min-h-[120px] sm:p-1.5",
+                          day === null
+                            ? "border-transparent bg-transparent"
+                            : isToday(day)
+                              ? "border-primary/50 bg-primary/5 ring-1 ring-primary/30"
+                              : isWeekend
+                                ? "border-transparent bg-muted/40 hover:border-border"
+                                : "bg-card hover:border-muted-foreground/30",
+                        )}
+                      >
+                        {day !== null && (
+                          <>
+                            <div className="mb-1 flex items-center justify-between px-0.5">
+                              <span
+                                className={cn(
+                                  "flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold sm:text-sm",
+                                  isToday(day) ? "bg-primary text-primary-foreground" : "text-foreground",
                                 )}
-
-                                <div className="p-2">
-                                  {/* Afficher l'icône et le nom du jeu uniquement si pas de bannière */}
-                                  {event.game && !event.game.banner && (
-                                    <div className="flex items-center gap-1.5 mb-2 pb-1.5 border-b">
-                                      {event.game.icon && (
-                                        <img
-                                          src={event.game.icon}
-                                          alt={event.game.name}
-                                          className="w-4 h-4 rounded object-cover"
-                                        />
-                                      )}
-                                      <span className="text-[10px] font-bold text-primary truncate">
-                                        {event.game.name}
-                                      </span>
-                                    </div>
-                                  )}
-
-                                  <div className="font-semibold truncate mb-1" title={event.name}>
-                                    {event.name}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground flex items-center gap-1 mb-1" suppressHydrationWarning>
-                                    <CalendarIcon className="h-3 w-3" />
-                                    {startTime}
-                                  </div>
-                                  {event.creator ? (
-                                    <div className="text-xs text-muted-foreground truncate flex items-center gap-1" title={event.creator.displayName ? `${event.creator.displayName}#${event.creator.discriminator}` : t('event.unknownUser')}>
-                                      <User2Icon className="h-3 w-3" />
-                                      {event.creator.displayName ? `${event.creator.displayName}#${event.creator.discriminator}` : t('event.unknownUser')}
-                                    </div>
-                                  ) : (
-                                    <div className="text-xs text-muted-foreground truncate flex items-center gap-1" title={event.lair?.name || t('event.unknownLair')}>
-                                      <MapPin className="h-3 w-3" />
-                                      {event.lair?.name || t('event.unknownLair')}
-                                    </div>
-                                  )}
-                                  {!event.game && event.gameName && (
-                                    <div className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
-                                      <Gamepad2 className="h-3 w-3" />
-                                      {event.gameName}
-                                    </div>
-                                  )}
-                                  <div className="flex items-center gap-1 flex-wrap mt-1">
-                                    <Badge variant={getStatusVariant(event.status)} className="text-xs">
-                                      {t(`event.status.${event.status}`)}
-                                    </Badge>
-                                    {(event.price && event.price !== 0) && (
-                                      <span className="text-xs font-semibold flex items-center">
-                                        <Euro className="h-3 w-3" />
-                                        {event.price}
-                                      </span>
-                                    )}
-                                  </div>
-                                  {session.data?.user?.id && (event.creatorId === session.data?.user?.id) && (
-                                    <Badge variant="default" className="text-xs bg-blue-500 text-white mt-1">
-                                      {t('event.creator')}
-                                    </Badge>
-                                  )}
-                                  {session.data?.user?.id && (event.participants?.includes(session.data?.user?.id)) && (
-                                    <Badge variant="default" className="text-xs bg-green-500 text-white mt-1">
-                                      {t('event.registered')}
-                                    </Badge>
-                                  )}
-                                  {/* Boutons d'action en bas */}
-                                  <div className="flex gap-1 mt-2 pt-2 border-t">
-                                    {/* Bouton info */}
-                                    <button
-                                      onClick={(e) => handleOpenEventDetails(event, e)}
-                                      className="flex-1 p-1 hover:bg-accent rounded-sm transition-colors flex items-center justify-center"
-                                      title="Voir les détails"
-                                    >
-                                      <HelpCircle className="h-3 w-3" />
-                                    </button>
-                                    {/* Bouton favori */}
-                                    {session.data?.user && (
-                                      <button
-                                        onClick={(e) => handleToggleFavorite(event.id, !!isFavorited, e)}
-                                        className="flex-1 p-1 hover:bg-accent rounded-sm transition-colors flex items-center justify-center gap-1"
-                                        title={isFavorited ? "Retirer des favoris" : "Ajouter aux favoris"}
-                                      >
-                                        <Star
-                                          className={cn("h-3 w-3", isFavorited && "fill-yellow-500 text-yellow-500")}
-                                        />
-                                        {event.favoritedBy && event.favoritedBy.length > 0 && (
-                                          <span className="text-[10px] font-medium">{event.favoritedBy.length}</span>
-                                        )}
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            );
-
-                            return event.url ? (
-                              <Link
-                                key={event.id}
-                                href={event.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
                               >
-                                {eventContent}
-                              </Link>
-                            ) : (
-                              <Link
-                                key={event.id}
-                                href={`/events/${event.id}`}
-                              >
-                                {eventContent}
-                              </Link>
-                            );
-                          })}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                                {day}
+                              </span>
+                              {dayEvents.length > 0 && (
+                                <span className="text-[10px] font-medium text-muted-foreground">
+                                  {dayEvents.length}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              {visibleEvents.map((event) => renderEventPill(event))}
+                              {hiddenCount > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setDayDialogDay(day)}
+                                  className="rounded-md px-1.5 py-1 text-left text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                                >
+                                  {t('CalendarView.more', { count: hiddenCount })}
+                                </button>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Vue liste */}
+          {viewMode === "list" && (
+            <ListView
+              eventsInMonth={eventsInMonth}
+              eventsByDayForList={eventsByDayForList}
+              today={today}
+              userId={session.data?.user?.id}
+              getStatusVariant={getStatusVariant}
+              localFavorites={localFavorites}
+              onToggleFavorite={handleToggleFavorite}
+              onOpenEventDetails={handleOpenEventDetails}
+            />
+          )}
         </div>
-      )}
-
-      {/* Vue liste */}
-      {viewMode === "list" && (
-        <ListView
-          eventsInMonth={eventsInMonth}
-          eventsByDayForList={eventsByDayForList}
-          today={today}
-          userId={session.data?.user?.id}
-          getStatusVariant={getStatusVariant}
-          localFavorites={localFavorites}
-          onToggleFavorite={handleToggleFavorite}
-          onOpenEventDetails={handleOpenEventDetails}
-        />
-      )}
+      </div>
     </div>
+
+    {/* Fenêtre listant tous les événements d'un jour */}
+    <Dialog open={dayDialogDay !== null} onOpenChange={(open) => !open && setDayDialogDay(null)}>
+      <DialogContent className="max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="capitalize">{dayDialogLabel}</DialogTitle>
+          <DialogDescription>
+            {t('CalendarView.dayEventsCount', { count: dayDialogEvents.length })}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-2">
+          {dayDialogEvents.map((event) => renderEventPill(event, true))}
+        </div>
+      </DialogContent>
+    </Dialog>
 
     {/* Modal de détails de l'événement */}
     {selectedEvent && (
@@ -1088,9 +1122,11 @@ function ListView({
   if (eventsInMonth.length === 0) {
     return (
       <Card>
-        <CardContent className="text-center py-12">
-          <CalendarIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">
+        <CardContent className="py-16 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+            <CalendarIcon className="h-7 w-7 text-muted-foreground" />
+          </div>
+          <p className="font-medium text-muted-foreground">
             {t('ListView.noEventsThisMonth')}
           </p>
         </CardContent>
@@ -1098,74 +1134,93 @@ function ListView({
     );
   }
 
+  if (eventsByDayForList.size === 0) {
+    return (
+      <Card>
+        <CardContent className="py-16 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+            <CalendarIcon className="h-7 w-7 text-muted-foreground" />
+          </div>
+          <p className="font-medium text-muted-foreground">
+            {t('ListView.noUpcomingEvents')}
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {Array.from(eventsByDayForList.entries()).map(([dayKey, dayEvents]) => {
         const firstEventDate = DateTime.fromISO(dayEvents[0].startDateTime);
-        const isEventToday =
-          firstEventDate.day === today.day &&
-          firstEventDate.month === today.month &&
-          firstEventDate.year === today.year;
+        const isEventToday = firstEventDate.hasSame(today, 'day');
+        const isEventTomorrow = firstEventDate.hasSame(today.plus({ days: 1 }), 'day');
+        const relLabel = isEventToday
+          ? t('ListView.today')
+          : isEventTomorrow
+            ? t('ListView.tomorrow')
+            : null;
 
         return (
           <div key={dayKey} className="space-y-3">
-            {/* En-tête du jour */}
-            <div
-              className={`sticky top-16 z-10 py-3 px-4 rounded-lg font-bold text-lg capitalize ${isEventToday
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted"
-                }`}
-            >
-              {dayKey}
-              {isEventToday && t('ListView.dayTitleToday')}
+            {/* En-tête du jour (sticky, effet verre) */}
+            <div className="sticky top-16 z-10 flex items-center gap-2 rounded-lg border bg-background/85 px-4 py-2.5 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/70">
+              <CalendarIcon className={cn("h-4 w-4 shrink-0", isEventToday ? "text-primary" : "text-muted-foreground")} />
+              <span className="truncate font-semibold capitalize">{dayKey}</span>
+              {relLabel && (
+                <Badge variant={isEventToday ? "default" : "secondary"} className="shrink-0">
+                  {relLabel}
+                </Badge>
+              )}
+              <span className="ml-auto hidden shrink-0 text-xs text-muted-foreground sm:inline">
+                {t('ListView.eventsCount', { count: dayEvents.length })}
+              </span>
             </div>
 
             {/* Événements du jour */}
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
               {dayEvents.map((event) => {
                 const eventDate = DateTime.fromISO(event.startDateTime);
                 const endDate = DateTime.fromISO(event.endDateTime);
                 const timeStr = eventDate.setZone('Europe/Paris').toLocaleString(DateTime.TIME_24_SIMPLE);
                 const endTimeStr = endDate.setZone('Europe/Paris').toLocaleString(DateTime.TIME_24_SIMPLE);
-                const isFavorited = localFavorites[event.id] !== undefined 
-                  ? localFavorites[event.id] 
+                const isFavorited = localFavorites[event.id] !== undefined
+                  ? localFavorites[event.id]
                   : event.favoritedBy?.includes(userId || "");
                 const isUserEvent = userId && (
-                  event.creatorId === userId || 
+                  event.creatorId === userId ||
                   event.participants?.includes(userId) ||
                   isFavorited
                 );
 
                 const cardContent = (
                   <Card
-                    className={cn(`my-2 hover:shadow-lg transition-shadow overflow-hidden ${event.url ? "cursor-pointer hover:bg-accent" : ""}`, event.status === "available"
-                      ? "border-l-4 border-l-green-500"
-                      : event.status === "sold-out"
-                        ? "border-l-4 border-l-red-500"
-                        : "border-l-4 border-l-gray-400"
-                    , isUserEvent && "border-yellow-500")}
+                    className={cn(
+                      "h-full gap-0 overflow-hidden border-l-4 py-0 transition-all hover:shadow-md",
+                      getStatusBorderClass(event.status),
+                      isUserEvent && "ring-1 ring-amber-400/50",
+                      event.url && "cursor-pointer hover:bg-accent/40",
+                    )}
                   >
-                    {/* Bannière du jeu en haut avec bordure épaisse */}
+                    {/* Bannière du jeu */}
                     {event.game?.banner && (
-                      <div className="relative h-24 border-b-4 border-primary overflow-hidden">
+                      <div className="relative h-24 overflow-hidden">
                         <img
                           src={event.game.banner}
                           alt={event.game.name}
-                          className="w-full h-full object-cover"
+                          className="h-full w-full object-cover"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/80" />
-
-                        {/* Icône et nom du jeu par-dessus la bannière */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/30 to-transparent" />
                         {event.game && (
-                          <div className="absolute bottom-2 left-2 right-2 flex items-center gap-2">
+                          <div className="absolute bottom-2 left-3 right-3 flex items-center gap-2">
                             {event.game.icon && (
                               <img
                                 src={event.game.icon}
-                                alt={event.game.name}
-                                className="w-8 h-8 rounded object-cover shadow-lg"
+                                alt=""
+                                className="h-7 w-7 rounded object-cover shadow-lg ring-1 ring-white/20"
                               />
                             )}
-                            <span className="text-sm font-bold text-white drop-shadow-lg truncate">
+                            <span className="truncate text-sm font-bold text-white drop-shadow-lg">
                               {event.game.name}
                             </span>
                           </div>
@@ -1173,115 +1228,116 @@ function ListView({
                       </div>
                     )}
 
-                    <CardHeader className="pb-3">
+                    <div className="flex flex-col gap-3 p-4">
                       {/* Icône et nom du jeu uniquement si pas de bannière */}
                       {event.game && !event.game.banner && (
-                        <div className="flex items-center gap-2 mb-2 pb-2 border-b">
+                        <div className="flex items-center gap-2">
                           {event.game.icon && (
                             <img
                               src={event.game.icon}
-                              alt={event.game.name}
-                              className="w-8 h-8 rounded object-cover shadow-sm"
+                              alt=""
+                              className="h-6 w-6 rounded object-cover shadow-sm"
                             />
                           )}
-                          <span className="text-sm font-bold text-primary">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-primary">
                             {event.game.name}
                           </span>
                         </div>
                       )}
 
                       <div className="flex items-start justify-between gap-2">
-                        <CardTitle className="text-xl">
+                        <CardTitle className="text-lg leading-tight">
                           {event.name}
                         </CardTitle>
-                        <Badge variant={getStatusVariant(event.status)}>
+                        <Badge variant={getStatusVariant(event.status)} className="shrink-0">
                           {t(`event.status.${event.status}`)}
                         </Badge>
                       </div>
-                    </CardHeader>
 
-                    <CardContent className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground" suppressHydrationWarning>
-                        <CalendarIcon className="h-4 w-4" />
-                        {timeStr} - {endTimeStr}
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span>
-                          {t('event.duration', { duration: endDate.diff(eventDate, 'hours').hours.toFixed(1) }) }
-                        </span>
-                      </div>
-                      {event.creator ? (
-                        <div className="flex items-center gap-2 text-sm">
-                          <User2Icon className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">
-                            {event.creator.displayName ? `${event.creator.displayName}#${event.creator.discriminator}` : t('event.unknownUser')}
-                          </span>
+                      {/* Métadonnées */}
+                      <div className="grid grid-cols-1 gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
+                        <div className="flex items-center gap-2" suppressHydrationWarning>
+                          <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          <span className="font-medium">{timeStr} – {endTimeStr}</span>
                         </div>
-                      ) : (
-                        <div className="flex items-center gap-2 text-sm">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">
-                            {event.lair?.name || t('event.unknownLair')}
-                          </span>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <CalendarIcon className="h-4 w-4 shrink-0" />
+                          <span>{t('event.duration', { duration: endDate.diff(eventDate, 'hours').hours.toFixed(1) })}</span>
                         </div>
-                      )}
-
-                      {!event.game && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <Gamepad2 className="h-4 w-4 text-muted-foreground" />
-                          <span>{event.gameName}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2 text-sm">
-                          <Euro className="h-4 w-4 text-muted-foreground" />
+                        {event.creator ? (
+                          <div className="flex items-center gap-2">
+                            <User2Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            <span className="truncate font-medium">
+                              {event.creator.displayName ? `${event.creator.displayName}#${event.creator.discriminator}` : t('event.unknownUser')}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            <span className="truncate font-medium">
+                              {event.lair?.name || t('event.unknownLair')}
+                            </span>
+                          </div>
+                        )}
+                        {!event.game && event.gameName && (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Gamepad2 className="h-4 w-4 shrink-0" />
+                            <span className="truncate">{event.gameName}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <Euro className="h-4 w-4 shrink-0 text-muted-foreground" />
                           <span className="font-semibold">
                             {(!event.price || event.price === 0) ? t('event.free') : `${event.price}€`}
                           </span>
                         </div>
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {userId && (event.creatorId === userId) && (
-                          <Badge variant="default" className="text-xs bg-blue-500 text-white">
-                            {t('event.creator')}
-                          </Badge>
-                        )}
-                        {userId && event.participants?.includes(userId) && (
-                          <Badge variant="default" className="text-xs bg-green-500 text-white">
-                            {t('event.registered')}
-                          </Badge>
-                        )}
                       </div>
-                      {/* Boutons d'action en bas */}
-                      <div className="flex gap-2 mt-3 pt-3 border-t">
-                        {/* Bouton info */}
+
+                      {/* Badges de relation utilisateur */}
+                      {(userId && (event.creatorId === userId || event.participants?.includes(userId))) && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {event.creatorId === userId && (
+                            <Badge className="bg-blue-500 text-white hover:bg-blue-500">
+                              {t('event.creator')}
+                            </Badge>
+                          )}
+                          {event.participants?.includes(userId) && (
+                            <Badge className="bg-emerald-500 text-white hover:bg-emerald-500">
+                              {t('event.registered')}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Boutons d'action */}
+                      <div className="mt-auto flex gap-2 border-t pt-3">
                         <button
+                          type="button"
                           onClick={(e) => onOpenEventDetails(event, e)}
-                          className="flex-1 py-2 px-3 hover:bg-accent rounded-md transition-colors flex items-center justify-center gap-2"
+                          className="flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent"
                           title={t('event.seeDetails')}
                         >
                           <HelpCircle className="h-4 w-4" />
-                          <span className="text-sm">{t('event.details')}</span>
+                          <span>{t('event.details')}</span>
                         </button>
-                        {/* Bouton favori */}
                         {userId && (
                           <button
+                            type="button"
                             onClick={(e) => onToggleFavorite(event.id, !!isFavorited, e)}
-                            className="flex-1 py-2 px-3 hover:bg-accent rounded-md transition-colors flex items-center justify-center gap-2"
+                            className="flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent"
                             title={isFavorited ? t('event.favoriteRemove') : t('event.favoriteAdd')}
                           >
-                            <Star 
-                              className={cn("h-4 w-4", isFavorited && "fill-yellow-500 text-yellow-500")} 
-                            />
-                            <span className="text-sm">
-                              {isFavorited ? t('event.inFavorites') : t('event.favorite') }
+                            <Star className={cn("h-4 w-4", isFavorited && "fill-amber-400 text-amber-400")} />
+                            <span>
+                              {isFavorited ? t('event.inFavorite') : t('event.favorite')}
                               {event.favoritedBy && event.favoritedBy.length > 0 && (
-                                <span className="ml-1 font-medium">({event.favoritedBy.length})</span>
+                                <span className="ml-1 font-semibold">({event.favoritedBy.length})</span>
                               )}
                             </span>
                           </button>
                         )}
                       </div>
-                    </CardContent>
+                    </div>
                   </Card>
                 );
 
@@ -1291,6 +1347,7 @@ function ListView({
                     href={event.url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    className="block"
                   >
                     {cardContent}
                   </Link>
@@ -1298,6 +1355,7 @@ function ListView({
                   <Link
                     key={event.id}
                     href={`/events/${event.id}`}
+                    className="block"
                   >
                     {cardContent}
                   </Link>

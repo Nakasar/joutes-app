@@ -172,8 +172,9 @@ export default function EventsCalendarClient({
   return (
     <div className="container mx-auto">
       <div className="space-y-6">
-        <EventsCalendar 
+        <EventsCalendar
           events={events}
+          isLoading={isLoading || isPending}
           showViewToggle={true}
           currentMonth={params.month}
           currentYear={params.year}
