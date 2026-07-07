@@ -28,7 +28,7 @@ export async function getUserLocale(): Promise<string> {
       'accept-language': acceptLanguages,
     }
   }).languages()
-  
+
   if (languages.length === 1 && languages[0] === "*") {
     return defaultLocale;
   }
