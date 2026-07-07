@@ -1,6 +1,7 @@
 {
   "Header": {
     "menu": {
+      "Collection": "Ma collection",
       "Jeux": "Jeux",
       "Événements": "Événements",
       "Lieux": "Lieux",
@@ -809,6 +810,68 @@
       "memberCountValue": "{count} membre(s)",
       "back": "Retour aux groupes"
     }
-  }
-
+  },
+    "Collection": {
+      "metadata": {
+        "title": "Ma collection",
+        "description": "Suivez votre collection sur tous vos jeux."
+      },
+      "gameMetadata": {
+        "title": "Collection · {game}"
+      },
+      "title": "Ma collection",
+      "subtitle": "Suivez votre progression sur tous vos jeux.",
+      "stats": {
+        "copies": "Exemplaires",
+        "items": "Cartes uniques",
+        "completion": "Complétion",
+        "games": "Jeux"
+      },
+      "toggle": {
+        "owned": "Mes jeux",
+        "all": "Tous les jeux"
+      },
+      "empty": {
+        "title": "Votre collection est vide",
+        "description": "Ajoutez des cartes depuis les pages de jeux pour suivre votre progression.",
+        "cta": "Explorer les jeux",
+        "noGames": "Aucun jeu à afficher."
+      },
+      "masterSet": {
+        "label": "Master Set",
+        "hint": "toutes les variantes",
+        "short": "Master"
+      },
+      "gameSet": {
+        "label": "Game Set",
+        "hint": "cartes uniques",
+        "short": "Game"
+      },
+      "game": {
+        "copies": "{count, plural, =0 {Aucun exemplaire} one {# exemplaire} other {# exemplaires}}",
+        "sets": "{count, plural, one {# extension} other {# extensions}}",
+        "open": "Ouvrir",
+        "showSets": "Voir les extensions",
+        "hideSets": "Masquer les extensions",
+        "backToOverview": "Retour à la collection"
+      },
+      "filters": {
+        "searchPlaceholder": "Rechercher une carte…",
+        "allSets": "Toutes les extensions",
+        "allTypes": "Tous les types",
+        "all": "Toutes",
+        "ownedOnly": "Possédées",
+        "results": "{count, plural, =0 {Aucune carte} one {# carte} other {# cartes}}",
+        "noResults": "Aucune carte ne correspond à vos filtres.",
+        "range": "{start}–{end} sur {total}",
+        "previous": "Précédent",
+        "next": "Suivant",
+        "pageOf": "Page {page} / {totalPages}"
+      },
+      "card": {
+        "manage": "Gérer {name}",
+        "addOne": "Ajouter un exemplaire",
+        "removeOne": "Retirer un exemplaire"
+      }
+    }
 }

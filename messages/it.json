@@ -1,6 +1,7 @@
 {
   "Header": {
     "menu": {
+      "Collection": "La mia collezione",
       "Jeux": "Giochi",
       "Événements": "Eventi",
       "Lieux": "Luoghi",
@@ -750,5 +751,68 @@
       "memberCountValue": "{count} membro/i",
       "back": "Torna ai gruppi"
     }
-  }
+  },
+    "Collection": {
+      "metadata": {
+        "title": "La mia collezione",
+        "description": "Monitora la tua collezione su tutti i tuoi giochi."
+      },
+      "gameMetadata": {
+        "title": "Collezione · {game}"
+      },
+      "title": "La mia collezione",
+      "subtitle": "Monitora i tuoi progressi su tutti i tuoi giochi.",
+      "stats": {
+        "copies": "Copie",
+        "items": "Carte uniche",
+        "completion": "Completamento",
+        "games": "Giochi"
+      },
+      "toggle": {
+        "owned": "I miei giochi",
+        "all": "Tutti i giochi"
+      },
+      "empty": {
+        "title": "La tua collezione è vuota",
+        "description": "Aggiungi carte dalle pagine dei giochi per monitorare i tuoi progressi.",
+        "cta": "Esplora i giochi",
+        "noGames": "Nessun gioco da mostrare."
+      },
+      "masterSet": {
+        "label": "Master Set",
+        "hint": "tutte le varianti",
+        "short": "Master"
+      },
+      "gameSet": {
+        "label": "Game Set",
+        "hint": "carte uniche",
+        "short": "Game"
+      },
+      "game": {
+        "copies": "{count, plural, =0 {Nessuna copia} one {# copia} other {# copie}}",
+        "sets": "{count, plural, one {# set} other {# set}}",
+        "open": "Apri",
+        "showSets": "Mostra i set",
+        "hideSets": "Nascondi i set",
+        "backToOverview": "Torna alla collezione"
+      },
+      "filters": {
+        "searchPlaceholder": "Cerca una carta…",
+        "allSets": "Tutti i set",
+        "allTypes": "Tutti i tipi",
+        "all": "Tutte",
+        "ownedOnly": "Possedute",
+        "results": "{count, plural, =0 {Nessuna carta} one {# carta} other {# carte}}",
+        "noResults": "Nessuna carta corrisponde ai tuoi filtri.",
+        "range": "{start}–{end} di {total}",
+        "previous": "Precedente",
+        "next": "Successivo",
+        "pageOf": "Pagina {page} di {totalPages}"
+      },
+      "card": {
+        "manage": "Gestisci {name}",
+        "addOne": "Aggiungi una copia",
+        "removeOne": "Rimuovi una copia"
+      }
+    }
 }

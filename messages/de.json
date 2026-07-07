@@ -1,6 +1,7 @@
 {
   "Header": {
     "menu": {
+      "Collection": "Meine Sammlung",
       "Jeux": "Spiele",
       "Événements": "Events",
       "Lieux": "Orte",
@@ -769,5 +770,68 @@
         "unexpected": "Ein unerwarteter Fehler ist aufgetreten"
       }
     }
-  }
+  },
+    "Collection": {
+      "metadata": {
+        "title": "Meine Sammlung",
+        "description": "Verfolge deine Sammlung über alle deine Spiele hinweg."
+      },
+      "gameMetadata": {
+        "title": "Sammlung · {game}"
+      },
+      "title": "Meine Sammlung",
+      "subtitle": "Verfolge deinen Fortschritt über alle deine Spiele hinweg.",
+      "stats": {
+        "copies": "Exemplare",
+        "items": "Einzigartige Karten",
+        "completion": "Fortschritt",
+        "games": "Spiele"
+      },
+      "toggle": {
+        "owned": "Meine Spiele",
+        "all": "Alle Spiele"
+      },
+      "empty": {
+        "title": "Deine Sammlung ist leer",
+        "description": "Füge Karten über die Spielseiten hinzu, um deinen Fortschritt zu verfolgen.",
+        "cta": "Spiele entdecken",
+        "noGames": "Keine Spiele anzuzeigen."
+      },
+      "masterSet": {
+        "label": "Master Set",
+        "hint": "alle Varianten",
+        "short": "Master"
+      },
+      "gameSet": {
+        "label": "Game Set",
+        "hint": "einzigartige Karten",
+        "short": "Game"
+      },
+      "game": {
+        "copies": "{count, plural, =0 {Keine Exemplare} one {# Exemplar} other {# Exemplare}}",
+        "sets": "{count, plural, one {# Set} other {# Sets}}",
+        "open": "Öffnen",
+        "showSets": "Sets anzeigen",
+        "hideSets": "Sets ausblenden",
+        "backToOverview": "Zurück zur Sammlung"
+      },
+      "filters": {
+        "searchPlaceholder": "Karte suchen…",
+        "allSets": "Alle Sets",
+        "allTypes": "Alle Typen",
+        "all": "Alle",
+        "ownedOnly": "Besessen",
+        "results": "{count, plural, =0 {Keine Karten} one {# Karte} other {# Karten}}",
+        "noResults": "Keine Karten entsprechen deinen Filtern.",
+        "range": "{start}–{end} von {total}",
+        "previous": "Zurück",
+        "next": "Weiter",
+        "pageOf": "Seite {page} von {totalPages}"
+      },
+      "card": {
+        "manage": "{name} verwalten",
+        "addOne": "Exemplar hinzufügen",
+        "removeOne": "Exemplar entfernen"
+      }
+    }
 }

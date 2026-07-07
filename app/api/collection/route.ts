@@ -1,32 +1,24 @@
-import {NextRequest, NextResponse} from "next/server";
-import {auth} from "@/lib/auth";
-import {headers} from "next/headers";
-import db from "@/lib/mongodb";
-import {Game} from "@/lib/types/Game";
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { getCollectionOverview } from "@/lib/db/collection";
 
 export async function GET(request: NextRequest) {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
-  if (!session) {
-    return NextResponse.json({}, { status: 401 });
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const games = await db.collection<Game>("games").find({}, {
-    projection: {
-      name: 1,
-      id: 1,
-      slug: 1,
-      icon: 1,
-      type: 1,
-    },
-  }).limit(25).toArray();
+  const includeEmpty = request.nextUrl.searchParams.get("includeEmpty") === "true";
 
-  return NextResponse.json(games.map((game: Game) => ({
-    game,
-    userCardCount: 150,
-    totalGameCards: 986,
-    completionPourcentage: 15.21,
-  })));
+  try {
+    const overview = await getCollectionOverview(session.user.id, { includeEmpty });
+    return NextResponse.json(overview);
+  } catch (error) {
+    console.error("Error building collection overview:", error);
+    return NextResponse.json({ error: "Failed to build collection overview" }, { status: 500 });
+  }
 }

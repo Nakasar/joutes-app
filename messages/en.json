@@ -1,6 +1,7 @@
 {
   "Header": {
     "menu": {
+      "Collection": "My collection",
       "Jeux": "Games",
       "Événements": "Events",
       "Lieux": "Lairs",
@@ -808,5 +809,68 @@
       "memberCountValue": "{count} member(s)",
       "back": "Back to groups"
     }
-  }
+  },
+    "Collection": {
+      "metadata": {
+        "title": "My collection",
+        "description": "Track your collection across all your games."
+      },
+      "gameMetadata": {
+        "title": "Collection · {game}"
+      },
+      "title": "My collection",
+      "subtitle": "Track your progress across all your games.",
+      "stats": {
+        "copies": "Copies",
+        "items": "Unique cards",
+        "completion": "Completion",
+        "games": "Games"
+      },
+      "toggle": {
+        "owned": "My games",
+        "all": "All games"
+      },
+      "empty": {
+        "title": "Your collection is empty",
+        "description": "Add cards from the game pages to start tracking your progress.",
+        "cta": "Browse games",
+        "noGames": "No games to display."
+      },
+      "masterSet": {
+        "label": "Master Set",
+        "hint": "every variant",
+        "short": "Master"
+      },
+      "gameSet": {
+        "label": "Game Set",
+        "hint": "unique cards",
+        "short": "Game"
+      },
+      "game": {
+        "copies": "{count, plural, =0 {No copies} one {# copy} other {# copies}}",
+        "sets": "{count, plural, one {# set} other {# sets}}",
+        "open": "Open",
+        "showSets": "Show sets",
+        "hideSets": "Hide sets",
+        "backToOverview": "Back to collection"
+      },
+      "filters": {
+        "searchPlaceholder": "Search for a card…",
+        "allSets": "All sets",
+        "allTypes": "All types",
+        "all": "All",
+        "ownedOnly": "Owned",
+        "results": "{count, plural, =0 {No cards} one {# card} other {# cards}}",
+        "noResults": "No cards match your filters.",
+        "range": "{start}–{end} of {total}",
+        "previous": "Previous",
+        "next": "Next",
+        "pageOf": "Page {page} of {totalPages}"
+      },
+      "card": {
+        "manage": "Manage {name}",
+        "addOne": "Add a copy",
+        "removeOne": "Remove a copy"
+      }
+    }
 }

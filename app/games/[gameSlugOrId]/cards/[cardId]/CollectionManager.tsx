@@ -61,6 +61,7 @@ type CollectionManagerProps = {
   setCode: string;
   collectorNumber: string;
   image: string;
+  onChange?: (quantity: number) => void;
 };
 
 export default function CollectionManager({
@@ -70,6 +71,7 @@ export default function CollectionManager({
   setCode,
   collectorNumber,
   image,
+  onChange,
 }: CollectionManagerProps) {
   const [entries, setEntries] = useState<CollectionEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -160,21 +162,25 @@ export default function CollectionManager({
 
       if (res.ok) {
         const data = await res.json();
-        setEntries((prev) => [
-          ...prev,
-          {
-            id: data.id,
-            foil: foil || undefined,
-            language: language || undefined,
-            condition: condition || undefined,
-            grade: grade !== "" ? parseFloat(grade) : undefined,
-            obtainedAt: obtainedAt || undefined,
-            acquisitionPrice:
-              acquisitionPrice !== "" ? parseFloat(acquisitionPrice) : undefined,
-            acquisitionCurrency:
-              acquisitionPrice !== "" ? acquisitionCurrency : undefined,
-          },
-        ]);
+        setEntries((prev) => {
+          const next = [
+            ...prev,
+            {
+              id: data.id,
+              foil: foil || undefined,
+              language: language || undefined,
+              condition: condition || undefined,
+              grade: grade !== "" ? parseFloat(grade) : undefined,
+              obtainedAt: obtainedAt || undefined,
+              acquisitionPrice:
+                acquisitionPrice !== "" ? parseFloat(acquisitionPrice) : undefined,
+              acquisitionCurrency:
+                acquisitionPrice !== "" ? acquisitionCurrency : undefined,
+            },
+          ];
+          onChange?.(next.length);
+          return next;
+        });
         setFoil(false);
         setLanguage("");
         setCondition("");
@@ -195,7 +201,11 @@ export default function CollectionManager({
       { method: "DELETE" }
     );
     if (res.ok) {
-      setEntries((prev) => prev.filter((e) => e.id !== entryId));
+      setEntries((prev) => {
+        const next = prev.filter((e) => e.id !== entryId);
+        onChange?.(next.length);
+        return next;
+      });
     }
   }
 

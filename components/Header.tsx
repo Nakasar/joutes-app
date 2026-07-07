@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useSession, signOut } from "@/lib/auth-client";
 import Image from "next/image";
-import {Menu, Calendar, MapPin, User, LogOut, Shield, GamepadIcon, Trophy, Dices} from "lucide-react";
+import {Menu, Calendar, MapPin, User, LogOut, Shield, GamepadIcon, Trophy, Dices, Library} from "lucide-react";
 import { isAdmin } from "@/lib/config/admins";
 import { Button } from "@/components/ui/button";
 import { NotificationDropdown } from "@/components/NotificationDropdown";
@@ -91,6 +91,16 @@ export default function Header() {
                     <Link href="/game-matches">
                       <GamepadIcon className="mr-2 h-4 w-4" />
                       {t('menu.Parties')}
+                    </Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+              )}
+              {session && (
+                <NavigationMenuItem>
+                  <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                    <Link href="/collection">
+                      <Library className="mr-2 h-4 w-4" />
+                      {t('menu.Collection')}
                     </Link>
                   </NavigationMenuLink>
                 </NavigationMenuItem>
@@ -257,6 +267,14 @@ export default function Header() {
                   <Link href="/game-matches" onClick={() => setMobileMenuOpen(false)}>
                     <GamepadIcon className="mr-2 h-4 w-4" />
                     {t('menu.Parties')}
+                  </Link>
+                </Button>
+              )}
+              {session && (
+                <Button variant="ghost" asChild className="justify-start">
+                  <Link href="/collection" onClick={() => setMobileMenuOpen(false)}>
+                    <Library className="mr-2 h-4 w-4" />
+                    {t('menu.Collection')}
                   </Link>
                 </Button>
               )}

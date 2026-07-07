@@ -50,6 +50,13 @@ export async function GameToolsNavBar({gameSlug, currentTab}: { gameSlug: string
             </Link>
           </Button>
         }
+        {game.features?.cards && currentTab !== 'collection' &&
+          <Button variant="secondary" asChild>
+            <Link href={`/collection/${gameSlug}`} className="hover:underline">
+              {t("collection")}
+            </Link>
+          </Button>
+        }
       </div>
       <div className="lg:hidden">
         <DropdownMenu>
@@ -85,6 +92,13 @@ export async function GameToolsNavBar({gameSlug, currentTab}: { gameSlug: string
               <DropdownMenuItem asChild>
                 <Link href={`/games/${gameSlug}/deck-checker`}>
                   {t("deckChecker")}
+                </Link>
+              </DropdownMenuItem>
+            }
+            {game.features?.cards &&
+              <DropdownMenuItem asChild>
+                <Link href={`/collection/${gameSlug}`}>
+                  {t("collection")}
                 </Link>
               </DropdownMenuItem>
             }
