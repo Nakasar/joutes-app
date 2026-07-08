@@ -842,6 +842,9 @@
           "searchHint": "Suggerimento: “e:OGN” filtra il set, “cn:001” filtra il numero.",
           "noResults": "Nessuna carta trovata.",
           "addCard": "Aggiungi {name}",
+          "foil": "Foil",
+          "addFoil": "Aggiungi {name} come foil",
+          "toggleFoil": "Attiva/disattiva foil",
           "removeCard": "Rimuovi carta"
         }
     }

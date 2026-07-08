@@ -169,6 +169,13 @@ export async function addCardToBooster(boosterId: string, card: Omit<BoosterCard
   });
 }
 
+export async function setBoosterCardFoil(boosterId: string, entryId: string, foil: boolean): Promise<void> {
+  await db.collection<BoosterCardDb>('booster-cards').updateOne(
+    {_id: new ObjectId(entryId), boosterId: new ObjectId(boosterId)},
+    foil ? {$set: {foil: true}} : {$unset: {foil: ""}},
+  );
+}
+
 export async function removeCardFromBooster(boosterId: string, cardId: string): Promise<void> {
   console.log('Removing card', cardId, 'from booster', boosterId);
   const booster = await db.collection<BoosterDb>('boosters').findOne({

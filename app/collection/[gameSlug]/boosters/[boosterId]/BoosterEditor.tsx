@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { ArrowLeft, Search, Plus, X, Loader2, Package, Info } from "lucide-react";
+import { ArrowLeft, Search, Plus, X, Loader2, Package, Info, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -70,6 +70,7 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
   const [totalPages, setTotalPages] = useState(1);
   const [busyAddId, setBusyAddId] = useState<string | null>(null);
   const [busyRemoveId, setBusyRemoveId] = useState<string | null>(null);
+  const [busyFoilId, setBusyFoilId] = useState<string | null>(null);
   const [creatingSibling, setCreatingSibling] = useState(false);
 
   const controllerRef = useRef<AbortController | null>(null);
@@ -146,12 +147,12 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
     }
   }, [booster.id]);
 
-  const addCard = async (card: SearchCard) => {
+  const addCard = async (card: SearchCard, foil = false) => {
     setBusyAddId(card.id);
     const tempId = `tmp-${Date.now()}`;
     setBoosterCards((prev) => [
       ...prev,
-      { ...card, id: tempId, collectorNumber: String(card.collectorNumber) },
+      { ...card, id: tempId, collectorNumber: String(card.collectorNumber), foil: foil || undefined },
     ]);
     // Clear the search and return focus to it, ready for the next card.
     setRawQuery("");
@@ -167,6 +168,7 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
           collectorNumber: String(card.collectorNumber),
           image: card.image,
           lang: card.lang,
+          foil,
         }),
       });
       if (res.ok) await refetchBooster();
@@ -192,6 +194,27 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
       setBoosterCards(snapshot);
     } finally {
       setBusyRemoveId(null);
+    }
+  };
+
+  const toggleFoil = async (card: BoosterCard) => {
+    if (card.id.startsWith("tmp-")) return;
+    const next = !card.foil;
+    setBusyFoilId(card.id);
+    setBoosterCards((prev) => prev.map((c) => (c.id === card.id ? { ...c, foil: next || undefined } : c)));
+    try {
+      const res = await fetch(`/api/collection/boosters/${booster.id}/cards`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entryId: card.id, foil: next }),
+      });
+      if (!res.ok) {
+        setBoosterCards((prev) => prev.map((c) => (c.id === card.id ? { ...c, foil: card.foil } : c)));
+      }
+    } catch {
+      setBoosterCards((prev) => prev.map((c) => (c.id === card.id ? { ...c, foil: card.foil } : c)));
+    } finally {
+      setBusyFoilId(null);
     }
   };
 
@@ -247,10 +270,15 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
         if (activeIndex - cols < 0) searchRef.current?.focus();
         else focusCardAt(activeIndex - cols);
         break;
+      case "f":
+      case "F":
+        e.preventDefault();
+        void addCard(results[activeIndex], true);
+        break;
       default:
         break;
     }
-    // Enter / Space add the focused card natively via the button's onClick.
+    // Enter / Space add the focused card (normal) natively via the button's onClick.
   };
 
   return (
@@ -306,6 +334,21 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
                   <div className="relative aspect-[3/4] w-full bg-muted">
                     <Image src={card.image} alt={card.name} fill unoptimized sizes="120px" className="object-cover" />
                     <Button
+                      type="button"
+                      size="icon-sm"
+                      className={`absolute left-1 top-1 size-6 ${
+                        card.foil
+                          ? "bg-amber-500 text-white hover:bg-amber-500/90"
+                          : "bg-background/80 text-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-background"
+                      }`}
+                      disabled={busyFoilId === card.id || card.id.startsWith("tmp-")}
+                      onClick={() => toggleFoil(card)}
+                      aria-label={t("boosters.toggleFoil")}
+                      title={t("boosters.foil")}
+                    >
+                      {busyFoilId === card.id ? <Loader2 className="size-3 animate-spin" /> : <Sparkles className="size-3" />}
+                    </Button>
+                    <Button
                       variant="destructive"
                       size="icon-sm"
                       className="absolute right-1 top-1 size-6 opacity-0 transition-opacity group-hover:opacity-100"
@@ -318,7 +361,10 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
                   </div>
                   <div className="p-1.5">
                     <p className="truncate text-[11px] font-medium leading-tight" title={card.name}>{card.name}</p>
-                    <p className="truncate text-[10px] text-muted-foreground">{card.setCode} #{card.collectorNumber}</p>
+                    <p className="truncate text-[10px] text-muted-foreground">
+                      {card.setCode} #{card.collectorNumber}
+                      {card.foil ? <span className="ml-1 font-semibold text-amber-500">· {t("boosters.foil")}</span> : null}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -379,32 +425,45 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
               onKeyDown={handleGridKeyDown}
             >
               {results.map((card, i) => (
-                <button
-                  key={`${card.id}-${card.setCode}-${card.collectorNumber}`}
-                  type="button"
-                  ref={(el) => {
-                    cardRefs.current[i] = el;
-                  }}
-                  tabIndex={i === activeIndex ? 0 : -1}
-                  onClick={() => addCard(card)}
-                  onFocus={() => setActiveIndex(i)}
-                  disabled={busyAddId === card.id}
-                  aria-label={t("boosters.addCard", { name: card.name })}
-                  className="group relative overflow-hidden rounded-lg border bg-card text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <div className="relative aspect-[3/4] w-full bg-muted">
-                    <Image src={card.image} alt={card.name} fill unoptimized sizes="120px" className="object-cover" />
-                    <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/40 group-hover:opacity-100 group-focus-visible:bg-black/40 group-focus-visible:opacity-100">
-                      <span className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
-                        {busyAddId === card.id ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-5" />}
+                <div key={`${card.id}-${card.setCode}-${card.collectorNumber}`} className="group relative">
+                  <button
+                    type="button"
+                    ref={(el) => {
+                      cardRefs.current[i] = el;
+                    }}
+                    tabIndex={i === activeIndex ? 0 : -1}
+                    onClick={() => addCard(card)}
+                    onFocus={() => setActiveIndex(i)}
+                    disabled={busyAddId === card.id}
+                    aria-label={t("boosters.addCard", { name: card.name })}
+                    className="block w-full overflow-hidden rounded-lg border bg-card text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <div className="relative aspect-[3/4] w-full bg-muted">
+                      <Image src={card.image} alt={card.name} fill unoptimized sizes="120px" className="object-cover" />
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/40 group-hover:opacity-100 group-focus-within:bg-black/40 group-focus-within:opacity-100">
+                        <span className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
+                          {busyAddId === card.id ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-5" />}
+                        </span>
                       </span>
-                    </span>
-                  </div>
-                  <div className="p-1.5">
-                    <p className="truncate text-[11px] font-medium leading-tight" title={card.name}>{card.name}</p>
-                    <p className="truncate text-[10px] text-muted-foreground">{card.setCode} #{card.collectorNumber}</p>
-                  </div>
-                </button>
+                    </div>
+                    <div className="p-1.5">
+                      <p className="truncate text-[11px] font-medium leading-tight" title={card.name}>{card.name}</p>
+                      <p className="truncate text-[10px] text-muted-foreground">{card.setCode} #{card.collectorNumber}</p>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={() => addCard(card, true)}
+                    disabled={busyAddId === card.id}
+                    aria-label={t("boosters.addFoil", { name: card.name })}
+                    title={t("boosters.foil")}
+                    className="absolute right-1 top-1 z-10 flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold text-white opacity-0 shadow transition-opacity hover:bg-amber-500/90 group-hover:opacity-100 group-focus-within:opacity-100"
+                  >
+                    <Sparkles className="size-3" />
+                    {t("boosters.foil")}
+                  </button>
+                </div>
               ))}
             </div>
           )}

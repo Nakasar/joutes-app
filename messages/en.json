@@ -900,6 +900,9 @@
           "searchHint": "Tip: “e:OGN” filters the set, “cn:001” filters the collector number.",
           "noResults": "No cards found.",
           "addCard": "Add {name}",
+          "foil": "Foil",
+          "addFoil": "Add {name} as foil",
+          "toggleFoil": "Toggle foil status",
           "removeCard": "Remove card"
         }
     }

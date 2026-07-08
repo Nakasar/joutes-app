@@ -901,6 +901,9 @@
           "searchHint": "Astuce : « e:OGN » filtre l'extension, « cn:001 » filtre le numéro.",
           "noResults": "Aucune carte trouvée.",
           "addCard": "Ajouter {name}",
+          "foil": "Foil",
+          "addFoil": "Ajouter {name} en foil",
+          "toggleFoil": "Basculer le statut foil",
           "removeCard": "Retirer la carte"
         }
     }
