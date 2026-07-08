@@ -137,6 +137,23 @@ export async function getBooster(boosterId: string): Promise<Booster | null> {
   };
 }
 
+export async function userOwnsBooster(userId: string, boosterId: string): Promise<boolean> {
+  if (!ObjectId.isValid(boosterId)) {
+    return false;
+  }
+  const booster = await db.collection<BoosterDb>('boosters').findOne({
+    _id: new ObjectId(boosterId),
+    userId: new ObjectId(userId),
+  }, {projection: {_id: 1}});
+  return booster !== null;
+}
+
+export async function deleteBooster(boosterId: string): Promise<void> {
+  const _id = new ObjectId(boosterId);
+  await db.collection<BoosterCardDb>('booster-cards').deleteMany({boosterId: _id});
+  await db.collection<BoosterDb>('boosters').deleteOne({_id});
+}
+
 export async function addCardToBooster(boosterId: string, card: Omit<BoosterCard, 'id'>): Promise<void> {
   const booster = await db.collection<BoosterDb>('boosters').findOne({
     _id: new ObjectId(boosterId),

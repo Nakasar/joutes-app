@@ -853,6 +853,7 @@
         "open": "Ouvrir",
         "showSets": "Voir les extensions",
         "hideSets": "Masquer les extensions",
+        "backToCollection": "Retour à {game}",
         "backToOverview": "Retour à la collection"
       },
       "filters": {
@@ -872,6 +873,32 @@
         "manage": "Gérer {name}",
         "addOne": "Ajouter un exemplaire",
         "removeOne": "Retirer un exemplaire"
-      }
+      },
+        "boosters": {
+          "title": "Boosters",
+          "metadataTitle": "Boosters · {game}",
+          "subtitle": "Les boosters que vous avez créés pour {game}.",
+          "create": "Nouveau booster",
+          "createTitle": "Créer un booster",
+          "set": "Extension",
+          "setPlaceholder": "Choisir une extension",
+          "language": "Langue",
+          "languagePlaceholder": "Choisir une langue",
+          "cancel": "Annuler",
+          "cardCount": "{count, plural, =0 {Aucune carte} one {# carte} other {# cartes}}",
+          "emptyTitle": "Aucun booster",
+          "emptyDescription": "Créez votre premier booster pour commencer à y ajouter des cartes.",
+          "delete": "Supprimer le booster",
+          "backToList": "Retour aux boosters",
+          "editorTitle": "Booster",
+          "contents": "{count, plural, =0 {Contenu du booster} one {Contenu · # carte} other {Contenu · # cartes}}",
+          "emptyBooster": "Ce booster est vide. Recherchez des cartes à ajouter.",
+          "addCards": "Ajouter des cartes",
+          "searchPlaceholder": "Rechercher une carte…",
+          "searchHint": "Astuce : « e:OGN » filtre l'extension, « cn:001 » filtre le numéro.",
+          "noResults": "Aucune carte trouvée.",
+          "addCard": "Ajouter {name}",
+          "removeCard": "Retirer la carte"
+        }
     }
 }

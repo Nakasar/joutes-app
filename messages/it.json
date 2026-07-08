@@ -794,6 +794,7 @@
         "open": "Apri",
         "showSets": "Mostra i set",
         "hideSets": "Nascondi i set",
+        "backToCollection": "Torna a {game}",
         "backToOverview": "Torna alla collezione"
       },
       "filters": {
@@ -813,6 +814,32 @@
         "manage": "Gestisci {name}",
         "addOne": "Aggiungi una copia",
         "removeOne": "Rimuovi una copia"
-      }
+      },
+        "boosters": {
+          "title": "Bustine",
+          "metadataTitle": "Bustine · {game}",
+          "subtitle": "Le bustine che hai creato per {game}.",
+          "create": "Nuova bustina",
+          "createTitle": "Crea una bustina",
+          "set": "Set",
+          "setPlaceholder": "Scegli un set",
+          "language": "Lingua",
+          "languagePlaceholder": "Scegli una lingua",
+          "cancel": "Annulla",
+          "cardCount": "{count, plural, =0 {Nessuna carta} one {# carta} other {# carte}}",
+          "emptyTitle": "Ancora nessuna bustina",
+          "emptyDescription": "Crea la tua prima bustina per iniziare ad aggiungere carte.",
+          "delete": "Elimina bustina",
+          "backToList": "Torna alle bustine",
+          "editorTitle": "Bustina",
+          "contents": "{count, plural, =0 {Contenuto della bustina} one {Contenuto · # carta} other {Contenuto · # carte}}",
+          "emptyBooster": "Questa bustina è vuota. Cerca delle carte da aggiungere.",
+          "addCards": "Aggiungi carte",
+          "searchPlaceholder": "Cerca una carta…",
+          "searchHint": "Suggerimento: “e:OGN” filtra il set, “cn:001” filtra il numero.",
+          "noResults": "Nessuna carta trovata.",
+          "addCard": "Aggiungi {name}",
+          "removeCard": "Rimuovi carta"
+        }
     }
 }

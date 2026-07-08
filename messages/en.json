@@ -852,6 +852,7 @@
         "open": "Open",
         "showSets": "Show sets",
         "hideSets": "Hide sets",
+        "backToCollection": "Back to {game}",
         "backToOverview": "Back to collection"
       },
       "filters": {
@@ -871,6 +872,32 @@
         "manage": "Manage {name}",
         "addOne": "Add a copy",
         "removeOne": "Remove a copy"
-      }
+      },
+        "boosters": {
+          "title": "Boosters",
+          "metadataTitle": "Boosters · {game}",
+          "subtitle": "The boosters you've created for {game}.",
+          "create": "New booster",
+          "createTitle": "Create a booster",
+          "set": "Set",
+          "setPlaceholder": "Choose a set",
+          "language": "Language",
+          "languagePlaceholder": "Choose a language",
+          "cancel": "Cancel",
+          "cardCount": "{count, plural, =0 {No cards} one {# card} other {# cards}}",
+          "emptyTitle": "No boosters yet",
+          "emptyDescription": "Create your first booster to start adding cards to it.",
+          "delete": "Delete booster",
+          "backToList": "Back to boosters",
+          "editorTitle": "Booster",
+          "contents": "{count, plural, =0 {Booster contents} one {Contents · # card} other {Contents · # cards}}",
+          "emptyBooster": "This booster is empty. Search for cards to add.",
+          "addCards": "Add cards",
+          "searchPlaceholder": "Search for a card…",
+          "searchHint": "Tip: “e:OGN” filters the set, “cn:001” filters the collector number.",
+          "noResults": "No cards found.",
+          "addCard": "Add {name}",
+          "removeCard": "Remove card"
+        }
     }
 }

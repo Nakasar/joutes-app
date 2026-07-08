@@ -13,6 +13,7 @@ import {
   SlidersHorizontal,
   Layers,
   LayoutGrid,
+  Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -177,7 +178,15 @@ export default function GameCollectionBrowser({ gameSlug, gameName, initialData 
           <ArrowLeft className="size-4" />
           {t("game.backToOverview")}
         </Link>
-        <h1 className="text-3xl font-bold tracking-tight">{gameName}</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-3xl font-bold tracking-tight">{gameName}</h1>
+          <Button asChild variant="outline" className="gap-2">
+            <Link href={`/collection/${gameSlug}/boosters`}>
+              <Package className="size-4" />
+              {t("boosters.title")}
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Game-level completion */}

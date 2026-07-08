@@ -813,6 +813,7 @@
         "open": "Öffnen",
         "showSets": "Sets anzeigen",
         "hideSets": "Sets ausblenden",
+        "backToCollection": "Zurück zu {game}",
         "backToOverview": "Zurück zur Sammlung"
       },
       "filters": {
@@ -832,6 +833,32 @@
         "manage": "{name} verwalten",
         "addOne": "Exemplar hinzufügen",
         "removeOne": "Exemplar entfernen"
-      }
+      },
+        "boosters": {
+          "title": "Booster",
+          "metadataTitle": "Booster · {game}",
+          "subtitle": "Die von dir erstellten Booster für {game}.",
+          "create": "Neuer Booster",
+          "createTitle": "Booster erstellen",
+          "set": "Set",
+          "setPlaceholder": "Set auswählen",
+          "language": "Sprache",
+          "languagePlaceholder": "Sprache auswählen",
+          "cancel": "Abbrechen",
+          "cardCount": "{count, plural, =0 {Keine Karten} one {# Karte} other {# Karten}}",
+          "emptyTitle": "Noch keine Booster",
+          "emptyDescription": "Erstelle deinen ersten Booster, um Karten hinzuzufügen.",
+          "delete": "Booster löschen",
+          "backToList": "Zurück zu den Boostern",
+          "editorTitle": "Booster",
+          "contents": "{count, plural, =0 {Booster-Inhalt} one {Inhalt · # Karte} other {Inhalt · # Karten}}",
+          "emptyBooster": "Dieser Booster ist leer. Suche nach Karten zum Hinzufügen.",
+          "addCards": "Karten hinzufügen",
+          "searchPlaceholder": "Karte suchen…",
+          "searchHint": "Tipp: „e:OGN“ filtert das Set, „cn:001“ filtert die Sammlernummer.",
+          "noResults": "Keine Karten gefunden.",
+          "addCard": "{name} hinzufügen",
+          "removeCard": "Karte entfernen"
+        }
     }
 }
