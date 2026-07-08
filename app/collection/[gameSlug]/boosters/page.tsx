@@ -46,7 +46,10 @@ export default async function BoostersPage({
   ]);
 
   const setCodes = (setCodesRaw as unknown[]).filter((v): v is string => typeof v === "string" && v.length > 0).sort();
-  const langs = (langsRaw as unknown[]).filter((v): v is string => typeof v === "string" && v.length > 0).sort();
+  let langs = (langsRaw as unknown[]).filter((v): v is string => typeof v === "string" && v.length > 0).sort();
+  if (langs.length === 0) {
+    langs = ['fr', 'en'];
+  }
 
   return (
     <div className="container mx-auto p-4 sm:p-6">

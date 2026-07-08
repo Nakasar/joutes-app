@@ -101,7 +101,7 @@ export default function BoostersList({ gameSlug, gameName, initialBoosters, setC
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2" disabled={setCodes.length === 0}>
+              <Button className="gap-2">
                 <Plus className="size-4" />
                 {t("boosters.create")}
               </Button>
