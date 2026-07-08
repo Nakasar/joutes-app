@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Booster } from "@/lib/types/booster";
+import SetCombobox from "./SetCombobox";
 
 const LANG_LABELS: Record<string, string> = {
   en: "🇬🇧 EN", fr: "🇫🇷 FR", it: "🇮🇹 IT", de: "🇩🇪 DE",
@@ -113,18 +114,7 @@ export default function BoostersList({ gameSlug, gameName, initialBoosters, setC
               <div className="space-y-4 pt-2">
                 <div className="space-y-1.5">
                   <Label>{t("boosters.set")}</Label>
-                  <Select value={setCode} onValueChange={setSetCode}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder={t("boosters.setPlaceholder")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {setCodes.map((s) => (
-                        <SelectItem key={s} value={s}>
-                          {s}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SetCombobox value={setCode} onChange={setSetCode} options={setCodes} />
                 </div>
                 <div className="space-y-1.5">
                   <Label>{t("boosters.language")}</Label>
