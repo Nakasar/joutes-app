@@ -40,7 +40,12 @@ function parseSearch(raw: string): { setCode: string | null; cn: string | null; 
     cn = c[1];
     text = text.replace(c[0], " ");
   }
-  return { setCode, cn, text: text.trim() };
+  const trimmed = text.trim();
+  // A bare number is treated as a collector-number filter.
+  if (!cn && /^\d+$/.test(trimmed)) {
+    return { setCode, cn: trimmed, text: "" };
+  }
+  return { setCode, cn, text: trimmed };
 }
 
 type Props = {
@@ -66,6 +71,9 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
 
   const controllerRef = useRef<AbortController | null>(null);
   const pendingKeyRef = useRef<string | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const cardRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   const fetchResults = useCallback(
     async (searchText: string, setCode: string, pageNum: number) => {
@@ -90,6 +98,7 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
         if (controller.signal.aborted) return;
         const cards: SearchCard[] = Array.isArray(data) ? data : data.cards ?? [];
         setResults(cards);
+        setActiveIndex(0);
         if (!Array.isArray(data)) {
           if (Array.isArray(data.setCodes) && data.setCodes.length) setResultSetCodes(data.setCodes);
           setTotalPages(data.totalPages ?? 1);
@@ -141,6 +150,9 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
       ...prev,
       { ...card, id: tempId, collectorNumber: String(card.collectorNumber) },
     ]);
+    // Clear the search and return focus to it, ready for the next card.
+    setRawQuery("");
+    requestAnimationFrame(() => searchRef.current?.focus());
     try {
       const res = await fetch(`/api/collection/boosters/${booster.id}/cards`, {
         method: "POST",
@@ -184,6 +196,40 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
     const set = new Set<string>([initialBooster.setCode, ...resultSetCodes]);
     return [...set].filter(Boolean).sort();
   }, [initialBooster.setCode, resultSetCodes]);
+
+  const focusCardAt = (index: number) => {
+    if (results.length === 0) return;
+    const clamped = Math.max(0, Math.min(index, results.length - 1));
+    setActiveIndex(clamped);
+    cardRefs.current[clamped]?.focus();
+  };
+
+  const handleGridKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (results.length === 0) return;
+    const cols = window.innerWidth >= 640 ? 4 : 3; // matches grid-cols-3 sm:grid-cols-4
+    switch (e.key) {
+      case "ArrowRight":
+        e.preventDefault();
+        focusCardAt(activeIndex + 1);
+        break;
+      case "ArrowLeft":
+        e.preventDefault();
+        focusCardAt(activeIndex - 1);
+        break;
+      case "ArrowDown":
+        e.preventDefault();
+        focusCardAt(activeIndex + cols);
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        if (activeIndex - cols < 0) searchRef.current?.focus();
+        else focusCardAt(activeIndex - cols);
+        break;
+      default:
+        break;
+    }
+    // Enter / Space add the focused card natively via the button's onClick.
+  };
 
   return (
     <div className="space-y-6">
@@ -257,8 +303,15 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
+                ref={searchRef}
                 value={rawQuery}
                 onChange={(e) => setRawQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "ArrowDown" && results.length > 0) {
+                    e.preventDefault();
+                    focusCardAt(0);
+                  }
+                }}
                 placeholder={t("boosters.searchPlaceholder")}
                 className="pl-9"
               />
@@ -284,28 +337,38 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
               {t("boosters.noResults")}
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-              {results.map((card) => (
-                <div key={`${card.id}-${card.setCode}-${card.collectorNumber}`} className="group relative overflow-hidden rounded-lg border bg-card">
+            <div
+              className="grid grid-cols-3 gap-2 sm:grid-cols-4"
+              role="grid"
+              onKeyDown={handleGridKeyDown}
+            >
+              {results.map((card, i) => (
+                <button
+                  key={`${card.id}-${card.setCode}-${card.collectorNumber}`}
+                  type="button"
+                  ref={(el) => {
+                    cardRefs.current[i] = el;
+                  }}
+                  tabIndex={i === activeIndex ? 0 : -1}
+                  onClick={() => addCard(card)}
+                  onFocus={() => setActiveIndex(i)}
+                  disabled={busyAddId === card.id}
+                  aria-label={t("boosters.addCard", { name: card.name })}
+                  className="group relative overflow-hidden rounded-lg border bg-card text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
                   <div className="relative aspect-[3/4] w-full bg-muted">
                     <Image src={card.image} alt={card.name} fill unoptimized sizes="120px" className="object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => addCard(card)}
-                      disabled={busyAddId === card.id}
-                      aria-label={t("boosters.addCard", { name: card.name })}
-                      className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/40 group-hover:opacity-100"
-                    >
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/40 group-hover:opacity-100 group-focus-visible:bg-black/40 group-focus-visible:opacity-100">
                       <span className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
                         {busyAddId === card.id ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-5" />}
                       </span>
-                    </button>
+                    </span>
                   </div>
                   <div className="p-1.5">
                     <p className="truncate text-[11px] font-medium leading-tight" title={card.name}>{card.name}</p>
                     <p className="truncate text-[10px] text-muted-foreground">{card.setCode} #{card.collectorNumber}</p>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           )}
