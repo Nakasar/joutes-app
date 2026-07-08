@@ -92,6 +92,7 @@ export async function getBoosters({userId, gameId, page = 0, limit = 20, offset 
     cards: booster.cards,
     value: booster.price,
     archived: booster.archived,
+    addedToCollection: booster.addedToCollection ?? false,
     createdAt: booster.createdAt.toISOString(),
     id: booster._id.toString(),
     _id: undefined,
@@ -132,6 +133,7 @@ export async function getBooster(boosterId: string): Promise<Booster | null> {
     })),
     value: booster.price,
     archived: booster.archived,
+    addedToCollection: booster.addedToCollection ?? false,
     createdAt: booster.createdAt.toISOString(),
     id: booster._id.toString(),
   };
@@ -167,6 +169,37 @@ export async function addCardToBooster(boosterId: string, card: Omit<BoosterCard
     boosterId: booster._id,
     userId: booster.userId,
   });
+}
+
+export async function addBoosterToCollection(userId: string, boosterId: string): Promise<number> {
+  const _id = new ObjectId(boosterId);
+  const uid = new ObjectId(userId);
+
+  const cards = await db.collection<BoosterCardDb>('booster-cards').find({boosterId: _id}).toArray();
+  if (cards.length > 0) {
+    await db.collection('collection-cards').insertMany(cards.map((c) => ({
+      userId: uid,
+      cardId: c.cardId,
+      setCode: c.setCode,
+      collectorNumber: c.collectorNumber,
+      name: c.name,
+      image: c.image,
+      ...(c.foil ? {foil: true} : {}),
+      fromBoosterId: _id,
+    })));
+  }
+
+  await db.collection<BoosterDb>('boosters').updateOne({_id}, {$set: {addedToCollection: true}});
+  return cards.length;
+}
+
+export async function removeBoosterFromCollection(userId: string, boosterId: string): Promise<void> {
+  const _id = new ObjectId(boosterId);
+  await db.collection<BoosterCardDb>('collection-cards').deleteMany({
+    userId: new ObjectId(userId),
+    fromBoosterId: _id,
+  });
+  await db.collection<BoosterDb>('boosters').updateOne({_id}, {$set: {addedToCollection: false}});
 }
 
 export async function setBoosterCardFoil(boosterId: string, entryId: string, foil: boolean): Promise<void> {

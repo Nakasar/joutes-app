@@ -845,6 +845,9 @@
           "foil": "Foil",
           "addFoil": "Aggiungi {name} come foil",
           "toggleFoil": "Attiva/disattiva foil",
+          "addToCollection": "Aggiungi alla collezione",
+          "removeFromCollection": "Rimuovi dalla collezione",
+          "inCollection": "Nella collezione",
           "removeCard": "Rimuovi carta"
         }
     }

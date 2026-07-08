@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { ArrowLeft, Search, Plus, X, Loader2, Package, Info, Sparkles } from "lucide-react";
+import { ArrowLeft, Search, Plus, X, Loader2, Package, Info, Sparkles, Library, CheckCircle2, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -72,6 +72,8 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
   const [busyRemoveId, setBusyRemoveId] = useState<string | null>(null);
   const [busyFoilId, setBusyFoilId] = useState<string | null>(null);
   const [creatingSibling, setCreatingSibling] = useState(false);
+  const [addedToCollection, setAddedToCollection] = useState(initialBooster.addedToCollection ?? false);
+  const [busyCollection, setBusyCollection] = useState(false);
 
   const controllerRef = useRef<AbortController | null>(null);
   const pendingKeyRef = useRef<string | null>(null);
@@ -218,6 +220,26 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
     }
   };
 
+  const addToCollection = async () => {
+    setBusyCollection(true);
+    try {
+      const res = await fetch(`/api/collection/boosters/${booster.id}/collection`, { method: "POST" });
+      if (res.ok) setAddedToCollection(true);
+    } finally {
+      setBusyCollection(false);
+    }
+  };
+
+  const removeFromCollection = async () => {
+    setBusyCollection(true);
+    try {
+      const res = await fetch(`/api/collection/boosters/${booster.id}/collection`, { method: "DELETE" });
+      if (res.ok) setAddedToCollection(false);
+    } finally {
+      setBusyCollection(false);
+    }
+  };
+
   const createSibling = async () => {
     setCreatingSibling(true);
     try {
@@ -304,15 +326,29 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
               <span className="text-xs text-muted-foreground">{gameName}</span>
             </div>
           </div>
-          <Button
-            variant="outline"
-            className="ml-auto gap-2"
-            onClick={createSibling}
-            disabled={creatingSibling}
-          >
-            {creatingSibling ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
-            {t("boosters.create")}
-          </Button>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            {addedToCollection ? (
+              <>
+                <Badge className="gap-1 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" variant="outline">
+                  <CheckCircle2 className="size-3.5" />
+                  {t("boosters.inCollection")}
+                </Badge>
+                <Button variant="outline" className="gap-2" onClick={removeFromCollection} disabled={busyCollection}>
+                  {busyCollection ? <Loader2 className="size-4 animate-spin" /> : <Undo2 className="size-4" />}
+                  {t("boosters.removeFromCollection")}
+                </Button>
+              </>
+            ) : (
+              <Button variant="secondary" className="gap-2" onClick={addToCollection} disabled={busyCollection || boosterCards.length === 0}>
+                {busyCollection ? <Loader2 className="size-4 animate-spin" /> : <Library className="size-4" />}
+                {t("boosters.addToCollection")}
+              </Button>
+            )}
+            <Button variant="outline" className="gap-2" onClick={createSibling} disabled={creatingSibling}>
+              {creatingSibling ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+              {t("boosters.create")}
+            </Button>
+          </div>
         </div>
       </div>
 

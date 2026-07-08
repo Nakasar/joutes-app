@@ -903,6 +903,9 @@
           "foil": "Foil",
           "addFoil": "Add {name} as foil",
           "toggleFoil": "Toggle foil status",
+          "addToCollection": "Add to collection",
+          "removeFromCollection": "Remove from collection",
+          "inCollection": "In collection",
           "removeCard": "Remove card"
         }
     }

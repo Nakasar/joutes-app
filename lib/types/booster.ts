@@ -20,6 +20,7 @@ export type BoosterCard = {
 
 export type BoosterCardDb = {
   boosterId?: ObjectId;
+  fromBoosterId?: ObjectId;
   userId: ObjectId;
   cardId?: string;
   lang?: string;
@@ -54,6 +55,7 @@ export type Booster = {
   cards: BoosterCard[];
   value?: string;
   archived: boolean;
+  addedToCollection?: boolean;
   createdAt: string;
 };
 
@@ -65,5 +67,6 @@ export type BoosterDb = {
   type: string;
   price?: string;
   archived: boolean;
+  addedToCollection?: boolean;
   createdAt: Date;
 };

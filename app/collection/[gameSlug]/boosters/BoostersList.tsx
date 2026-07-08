@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { DateTime } from "luxon";
-import { ArrowLeft, Package, Plus, Trash2, Loader2, PackagePlus } from "lucide-react";
+import { ArrowLeft, Package, Plus, Trash2, Loader2, PackagePlus, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -166,6 +166,12 @@ export default function BoostersList({ gameSlug, gameName, initialBoosters, setC
                   <div className="flex flex-wrap items-center gap-1.5">
                     <Badge variant="outline" className="font-mono text-[11px]">{booster.setCode}</Badge>
                     <Badge variant="secondary" className="text-[11px]">{langLabel(booster.lang)}</Badge>
+                    {booster.addedToCollection ? (
+                      <Badge variant="outline" className="gap-1 border-emerald-500/30 bg-emerald-500/10 text-[11px] text-emerald-600 dark:text-emerald-400">
+                        <CheckCircle2 className="size-3" />
+                        {t("boosters.inCollection")}
+                      </Badge>
+                    ) : null}
                   </div>
                   <p className="mt-1.5 text-sm font-medium">
                     {t("boosters.cardCount", { count: booster.cards?.length ?? 0 })}
