@@ -307,9 +307,14 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
                 value={rawQuery}
                 onChange={(e) => setRawQuery(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "ArrowDown" && results.length > 0) {
+                  if (results.length === 0) return;
+                  if (e.key === "ArrowDown") {
                     e.preventDefault();
                     focusCardAt(0);
+                  } else if (e.key === "Enter") {
+                    // Enter from the search bar validates the first card.
+                    e.preventDefault();
+                    void addCard(results[0]);
                   }
                 }}
                 placeholder={t("boosters.searchPlaceholder")}
