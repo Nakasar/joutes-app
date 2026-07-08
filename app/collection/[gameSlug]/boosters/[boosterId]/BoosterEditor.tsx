@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { ArrowLeft, Search, Plus, X, Loader2, Package, Info } from "lucide-react";
@@ -56,6 +57,7 @@ type Props = {
 
 export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Props) {
   const t = useTranslations("Collection");
+  const router = useRouter();
   const booster = initialBooster;
 
   const [boosterCards, setBoosterCards] = useState<BoosterCard[]>(initialBooster.cards ?? []);
@@ -68,6 +70,7 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
   const [totalPages, setTotalPages] = useState(1);
   const [busyAddId, setBusyAddId] = useState<string | null>(null);
   const [busyRemoveId, setBusyRemoveId] = useState<string | null>(null);
+  const [creatingSibling, setCreatingSibling] = useState(false);
 
   const controllerRef = useRef<AbortController | null>(null);
   const pendingKeyRef = useRef<string | null>(null);
@@ -192,6 +195,25 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
     }
   };
 
+  const createSibling = async () => {
+    setCreatingSibling(true);
+    try {
+      const res = await fetch(`/api/collection/boosters`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gameSlug, setCode: booster.setCode, lang: booster.lang }),
+      });
+      if (res.ok) {
+        const { id } = await res.json();
+        router.push(`/collection/${gameSlug}/boosters/${id}`);
+      } else {
+        setCreatingSibling(false);
+      }
+    } catch {
+      setCreatingSibling(false);
+    }
+  };
+
   const setOptions = useMemo(() => {
     const set = new Set<string>([initialBooster.setCode, ...resultSetCodes]);
     return [...set].filter(Boolean).sort();
@@ -254,6 +276,15 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
               <span className="text-xs text-muted-foreground">{gameName}</span>
             </div>
           </div>
+          <Button
+            variant="outline"
+            className="ml-auto gap-2"
+            onClick={createSibling}
+            disabled={creatingSibling}
+          >
+            {creatingSibling ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+            {t("boosters.create")}
+          </Button>
         </div>
       </div>
 
