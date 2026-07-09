@@ -94,6 +94,84 @@ function RuleMarkup({ markup, keyPrefix }: { markup: string; keyPrefix: string }
   return <>{renderMarkupNodes(nodes, keyPrefix)}</>;
 }
 
+// Keyword glossary badges (e.g. "BACKLINE", "AMBUSH") — colored pill per keyword,
+// matching the card's official keyword color coding.
+const KEYWORD_COLORS: Record<string, string> = {
+  tank: '#C22D6A',
+  assault: '#C22D6A',
+  shield: '#C22D6A',
+  backline: '#C22D6A',
+  deathknell: '#8EAD2A',
+  ganking: '#8EAD2A',
+  temporary: '#8EAD2A',
+  deflect: '#8EAD2A',
+  empowered: '#8EAD2A',
+  hunt: '#8EAD2A',
+  level: '#8EAD2A',
+  burn: '#6D6C6D',
+  vision: '#6D6C6D',
+  empower: '#6D6C6D',
+  weaponmaster: '#6D6C6D',
+  action: '#226B5C',
+  equip: '#226B5C',
+  repeat: '#226B5C',
+  reaction: '#226B5C',
+  ambush: '#226B5C',
+  accelerate: '#226B5C',
+  legion: '#226B5C',
+  hidden: '#226B5C',
+  'quick-draw': '#226B5C',
+};
+
+// Fallback palette for keywords outside the official mapping above (e.g. Backline,
+// Ambush) — deterministic by id so the same keyword always gets the same color.
+const FALLBACK_PALETTE = [
+  'bg-teal-100 text-teal-900 ring-teal-300 dark:bg-teal-900/50 dark:text-teal-100 dark:ring-teal-700',
+  'bg-rose-100 text-rose-900 ring-rose-300 dark:bg-rose-900/50 dark:text-rose-100 dark:ring-rose-700',
+  'bg-lime-100 text-lime-900 ring-lime-300 dark:bg-lime-900/50 dark:text-lime-100 dark:ring-lime-700',
+  'bg-slate-200 text-slate-900 ring-slate-400 dark:bg-slate-700 dark:text-slate-100 dark:ring-slate-500',
+  'bg-amber-100 text-amber-900 ring-amber-300 dark:bg-amber-900/50 dark:text-amber-100 dark:ring-amber-700',
+  'bg-violet-100 text-violet-900 ring-violet-300 dark:bg-violet-900/50 dark:text-violet-100 dark:ring-violet-700',
+];
+
+function fallbackPalette(id: string): string {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  return FALLBACK_PALETTE[hash % FALLBACK_PALETTE.length];
+}
+
+// Relative luminance (WCAG-ish) to pick readable white/dark text on a given bg color
+function contrastTextColor(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+  return luminance > 140 ? '#161616' : '#ffffff';
+}
+
+function KeywordBadge({ id, content, children }: { id: string; content: string; children: ReactNode }) {
+  const hex = KEYWORD_COLORS[content.toLowerCase()];
+
+  if (hex) {
+    return (
+      <span
+        className="inline-flex items-center rounded-md px-2 py-0.5 text-sm font-bold uppercase tracking-wide ring-1 ring-inset ring-black/10"
+        style={{ backgroundColor: hex, color: contrastTextColor(hex) }}
+      >
+        {children}
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={`inline-flex items-center rounded-md px-2 py-0.5 text-sm font-bold uppercase tracking-wide ring-1 ring-inset ${fallbackPalette(id)}`}
+    >
+      {children}
+    </span>
+  );
+}
+
 function CopyLinkButton({ anchorId }: { anchorId: string }) {
   const [copied, setCopied] = useState(false);
   const t = useTranslations('Games');
@@ -173,7 +251,13 @@ const RuleNode = memo(function RuleNode({
             />
           </button>
           <span className="text-muted-foreground text-base font-mono mr-1">{node.id}.</span>
-          <span><RuleMarkup markup={markup} keyPrefix={`title-${node.id}`} /></span>
+          {node.isKeyword ? (
+            <KeywordBadge id={node.id} content={node.content}>
+              <RuleMarkup markup={markup} keyPrefix={`title-${node.id}`} />
+            </KeywordBadge>
+          ) : (
+            <span><RuleMarkup markup={markup} keyPrefix={`title-${node.id}`} /></span>
+          )}
           <CopyLinkButton anchorId={`rule-${node.id}`} />
         </h2>
         {isOpen && node.children.length > 0 && (

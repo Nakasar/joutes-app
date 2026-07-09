@@ -20,6 +20,8 @@ export interface HyperlinkedRuleEntry extends RuleEntry {
    */
   markup: string;
   isTitle: boolean;
+  /** True for entries in the CR's "Keyword Glossary" section (e.g. "Backline", "Ambush") */
+  isKeyword: boolean;
   depth: number;
   document: RuleDocument;
 }
@@ -47,6 +49,15 @@ export function getRawEntries(document: RuleDocument, lang: RuleLang): RuleEntry
 
 export function isTitle(entry: RuleEntry): boolean {
   return /^\d{3}$/.test(entry.id) && entry.content.length <= 60;
+}
+
+// Id of the CR's "Keyword Glossary" header — every title entry after it (805, 806, ...)
+// is an individual keyword (Backline, Ambush, ...), not a regular section heading.
+// Ids are stable across languages, so this works regardless of `lang`.
+const KEYWORD_GLOSSARY_HEADER_ID = 804;
+
+export function isKeywordEntry(entry: RuleEntry, document: RuleDocument): boolean {
+  return document === 'CR' && isTitle(entry) && parseInt(entry.id, 10) > KEYWORD_GLOSSARY_HEADER_ID;
 }
 
 function getDepth(id: string): number {
@@ -156,6 +167,7 @@ export function getHyperlinkedEntries(document: RuleDocument, lang: RuleLang): H
     content: entry.content,
     markup: buildMarkup(entry.content, titleData, entry.id),
     isTitle: isTitle(entry),
+    isKeyword: isKeywordEntry(entry, document),
     depth: getDepth(entry.id),
     document,
   }));
