@@ -188,6 +188,45 @@
     }
   },
   "Games": {
+    "Developers": {
+      "metadata": {
+        "title": "Joutes pour développeurs Riftbound | MCP, Discord et API",
+        "description": "Découvrez les outils de développement Joutes orientés Riftbound : serveur MCP, intégrations Discord, API et documentation pour construire autour du jeu.",
+        "ogTitle": "Joutes pour développeurs Riftbound",
+        "ogDescription": "Explorez les fonctionnalités développeur Joutes pour Riftbound via MCP, Discord et API."
+      },
+      "back": "Retour au jeu",
+      "title": "Développeurs Riftbound sur Joutes",
+      "intro": "Une collection de fonctionnalités et d’intégrations conçues pour les outils, bots, agents IA et applications autour de Riftbound.",
+      "features": {
+        "mcp": {
+          "title": "MCP pour agents IA",
+          "description": "Connectez vos assistants IA aux données de Riftbound pour rechercher des cartes, des règles, des erratas et des événements.",
+          "badge": "IA"
+        },
+        "discord": {
+          "title": "Intégration Discord",
+          "description": "Automatisez les annonces d’événements, les tableaux synchronisés et la recherche de cartes depuis Discord.",
+          "badge": "Discord"
+        },
+        "api": {
+          "title": "API de données",
+          "description": "Accédez aux ressources Joutes de manière programmatique pour créer des outils, dashboards et workflows autour de Riftbound.",
+          "badge": "API"
+        }
+      },
+      "why": {
+        "title": "Pourquoi cette section existe",
+        "description": "Joutes expose des données structurées et des intégrations pratiques pour que les développeurs puissent construire des expériences autour du métagame Riftbound."
+      },
+      "covered": {
+        "title": "Fonctionnalités couvertes",
+        "description": "Chaque rubrique vous guide vers une expérience dédiée selon le type d’intégration que vous souhaitez mettre en place.",
+        "mcp": "Le protocole MCP permet d’interroger les règles, les cartes et les événements depuis des agents IA compatibles.",
+        "discord": "Le bot Discord apporte une expérience collaborative autour des événements et de la recherche de cartes.",
+        "api": "Les endpoints API et la documentation OpenAPI facilitent l’intégration dans des applications tierces ou des workflows automatisés."
+      }
+    },
     "nav": {
       "tools": "Outils",
       "cards": "Cartes",

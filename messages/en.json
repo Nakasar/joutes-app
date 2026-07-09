@@ -188,6 +188,45 @@
     }
   },
   "Games": {
+    "Developers": {
+      "metadata": {
+        "title": "Joutes for Riftbound developers | MCP, Discord and API",
+        "description": "Discover Joutes developer tools focused on Riftbound: MCP server, Discord integrations, API and documentation to build around the game.",
+        "ogTitle": "Joutes for Riftbound developers",
+        "ogDescription": "Explore Joutes developer features for Riftbound via MCP, Discord and API."
+      },
+      "back": "Back to the game",
+      "title": "Riftbound developers on Joutes",
+      "intro": "A collection of features and integrations designed for tools, bots, AI agents and applications around Riftbound.",
+      "features": {
+        "mcp": {
+          "title": "MCP for AI agents",
+          "description": "Connect your AI assistants to Riftbound data to search cards, rules, erratas and events.",
+          "badge": "AI"
+        },
+        "discord": {
+          "title": "Discord integration",
+          "description": "Automate event announcements, synced standings and card search from Discord.",
+          "badge": "Discord"
+        },
+        "api": {
+          "title": "Data API",
+          "description": "Access Joutes resources programmatically to build tools, dashboards and workflows around Riftbound.",
+          "badge": "API"
+        }
+      },
+      "why": {
+        "title": "Why this section exists",
+        "description": "Joutes exposes structured data and practical integrations so developers can build experiences around the Riftbound metagame."
+      },
+      "covered": {
+        "title": "Covered features",
+        "description": "Each section guides you to a dedicated experience based on the type of integration you want to set up.",
+        "mcp": "The MCP protocol lets you query rules, cards and events from compatible AI agents.",
+        "discord": "The Discord bot brings a collaborative experience around events and card search.",
+        "api": "API endpoints and OpenAPI documentation make integration into third-party applications or automated workflows easier."
+      }
+    },
     "nav": {
       "tools": "Tools",
       "cards": "Cards",
