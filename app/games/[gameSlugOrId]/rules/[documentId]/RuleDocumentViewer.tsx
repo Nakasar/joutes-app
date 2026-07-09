@@ -19,15 +19,17 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 // The API returns rule text with a small custom tag format, not HTML:
-// {{rule id="826"}}Backline{{/rule}} for glossary/section links, {{match}}text{{/match}}
-// for search-highlighted text. Parse it here so the frontend owns all styling
-// instead of injecting server-authored HTML into the DOM.
+// {{rule id="107"}}Combat{{/rule}} for section links, {{keyword id="826"}}Backline{{/keyword}}
+// for keyword-glossary mentions, {{match}}text{{/match}} for search-highlighted text.
+// Parse it here so the frontend owns all styling instead of injecting server-authored HTML.
 type MarkupNode =
   | { type: 'text'; text: string }
   | { type: 'rule'; id: string; children: MarkupNode[] }
+  | { type: 'keyword'; id: string; children: MarkupNode[] }
   | { type: 'match'; children: MarkupNode[] };
 
-const MARKUP_TAG_REGEX = /\{\{rule id="([^"]*)"\}\}|\{\{\/rule\}\}|\{\{match\}\}|\{\{\/match\}\}/g;
+const MARKUP_TAG_REGEX =
+  /\{\{rule id="([^"]*)"\}\}|\{\{\/rule\}\}|\{\{keyword id="([^"]*)"\}\}|\{\{\/keyword\}\}|\{\{match\}\}|\{\{\/match\}\}/g;
 
 function parseMarkup(markup: string): MarkupNode[] {
   const root: MarkupNode[] = [];
@@ -49,12 +51,16 @@ function parseMarkup(markup: string): MarkupNode[] {
       const node: MarkupNode = { type: 'rule', id: match[1], children: [] };
       stack[stack.length - 1].children.push(node);
       stack.push(node);
+    } else if (token.startsWith('{{keyword')) {
+      const node: MarkupNode = { type: 'keyword', id: match[2], children: [] };
+      stack[stack.length - 1].children.push(node);
+      stack.push(node);
     } else if (token === '{{match}}') {
       const node: MarkupNode = { type: 'match', children: [] };
       stack[stack.length - 1].children.push(node);
       stack.push(node);
     } else if (stack.length > 1) {
-      // {{/rule}} or {{/match}}
+      // {{/rule}}, {{/keyword}} or {{/match}}
       stack.pop();
     }
 
@@ -63,6 +69,10 @@ function parseMarkup(markup: string): MarkupNode[] {
   pushText(markup.slice(lastIndex));
 
   return root;
+}
+
+function flattenMarkupText(nodes: MarkupNode[]): string {
+  return nodes.map(n => (n.type === 'text' ? n.text : flattenMarkupText(n.children))).join('');
 }
 
 function renderMarkupNodes(nodes: MarkupNode[], keyPrefix: string): ReactNode {
@@ -79,6 +89,13 @@ function renderMarkupNodes(nodes: MarkupNode[], keyPrefix: string): ReactNode {
         >
           {renderMarkupNodes(node.children, key)}
         </a>
+      );
+    }
+    if (node.type === 'keyword') {
+      return (
+        <KeywordBadge key={key} id={node.id} content={flattenMarkupText(node.children)} asLink>
+          {renderMarkupNodes(node.children, key)}
+        </KeywordBadge>
       );
     }
     return (
@@ -149,26 +166,36 @@ function contrastTextColor(hex: string): string {
   return luminance > 140 ? '#161616' : '#ffffff';
 }
 
-function KeywordBadge({ id, content, children }: { id: string; content: string; children: ReactNode }) {
+function KeywordBadge({
+  id,
+  content,
+  children,
+  size = 'inline',
+  asLink = false,
+}: {
+  id: string;
+  content: string;
+  children: ReactNode;
+  size?: 'heading' | 'inline';
+  asLink?: boolean;
+}) {
   const hex = KEYWORD_COLORS[content.toLowerCase()];
+  const colorStyle = hex ? { backgroundColor: hex, color: contrastTextColor(hex) } : undefined;
+  const colorClass = hex ? '' : fallbackPalette(id);
+  const sizeClass = size === 'heading' ? 'text-sm px-2.5 py-0.5' : 'text-[0.7rem] px-1.5 py-px';
 
-  if (hex) {
-    return (
-      <span
-        className="inline-flex items-center rounded-md px-2 py-0.5 text-sm font-bold uppercase tracking-wide ring-1 ring-inset ring-black/10"
-        style={{ backgroundColor: hex, color: contrastTextColor(hex) }}
-      >
-        {children}
-      </span>
-    );
-  }
+  const Tag = asLink ? 'a' : 'span';
 
   return (
-    <span
-      className={`inline-flex items-center rounded-md px-2 py-0.5 text-sm font-bold uppercase tracking-wide ring-1 ring-inset ${fallbackPalette(id)}`}
+    <Tag
+      {...(asLink ? { href: `#rule-${id}`, 'data-rule-link': `rule-${id}` } : {})}
+      className={`inline-block -skew-x-[12deg] border border-black/15 dark:border-white/15 ${colorClass}`}
+      style={colorStyle}
     >
-      {children}
-    </span>
+      <span className={`inline-block skew-x-[12deg] font-bold uppercase tracking-wide leading-[1.5] ${sizeClass}`}>
+        {children}
+      </span>
+    </Tag>
   );
 }
 
@@ -252,7 +279,7 @@ const RuleNode = memo(function RuleNode({
           </button>
           <span className="text-muted-foreground text-base font-mono mr-1">{node.id}.</span>
           {node.isKeyword ? (
-            <KeywordBadge id={node.id} content={node.content}>
+            <KeywordBadge id={node.id} content={node.content} size="heading">
               <RuleMarkup markup={markup} keyPrefix={`title-${node.id}`} />
             </KeywordBadge>
           ) : (

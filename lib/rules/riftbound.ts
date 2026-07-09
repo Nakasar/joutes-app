@@ -13,8 +13,9 @@ export interface RuleEntry {
 
 export interface HyperlinkedRuleEntry extends RuleEntry {
   /**
-   * `content` with glossary/section-title mentions wrapped in `{{rule id="..."}}...{{/rule}}`
-   * and (for search results) matched text wrapped in `{{match}}...{{/match}}`.
+   * `content` with section-title mentions wrapped in `{{rule id="..."}}...{{/rule}}`,
+   * keyword-glossary mentions wrapped in `{{keyword id="..."}}...{{/keyword}}`, and
+   * (for search results) matched text wrapped in `{{match}}...{{/match}}`.
    * This is a small custom tag format, not HTML — render it by parsing, not by
    * injecting into the DOM, so the frontend owns the styling of links/highlights.
    */
@@ -64,16 +65,21 @@ function getDepth(id: string): number {
   return id.split('.').length;
 }
 
+interface TitleTarget {
+  id: string;
+  isKeyword: boolean;
+}
+
 interface TitleData {
-  map: Map<string, string>;
+  map: Map<string, TitleTarget>;
   regexSource: string;
 }
 
-function buildTitleData(entries: RuleEntry[]): TitleData {
-  const map = new Map<string, string>();
+function buildTitleData(entries: RuleEntry[], document: RuleDocument): TitleData {
+  const map = new Map<string, TitleTarget>();
   for (const entry of entries) {
     if (isTitle(entry)) {
-      map.set(entry.content, entry.id);
+      map.set(entry.content, { id: entry.id, isKeyword: isKeywordEntry(entry, document) });
     }
   }
   const sortedTitles = [...map.keys()].sort((a, b) => b.length - a.length);
@@ -82,8 +88,10 @@ function buildTitleData(entries: RuleEntry[]): TitleData {
   return { map, regexSource };
 }
 
-// A text run, or a glossary/title link wrapping a run
-type Token = { type: 'text'; text: string } | { type: 'link'; text: string; targetId: string };
+// A text run, or a glossary/title/keyword link wrapping a run
+type Token =
+  | { type: 'text'; text: string }
+  | { type: 'link'; text: string; targetId: string; isKeyword: boolean };
 
 function tokenizeWithLinks(text: string, titleData: TitleData, currentId: string): Token[] {
   if (!titleData.regexSource) return [{ type: 'text', text }];
@@ -95,14 +103,14 @@ function tokenizeWithLinks(text: string, titleData: TitleData, currentId: string
 
   while ((match = regex.exec(text)) !== null) {
     const matchedTitle = match[1];
-    const targetId = titleData.map.get(matchedTitle);
+    const target = titleData.map.get(matchedTitle);
 
     if (match.index > lastIndex) {
       tokens.push({ type: 'text', text: text.slice(lastIndex, match.index) });
     }
 
-    if (targetId && targetId !== currentId) {
-      tokens.push({ type: 'link', text: matchedTitle, targetId });
+    if (target && target.id !== currentId) {
+      tokens.push({ type: 'link', text: matchedTitle, targetId: target.id, isKeyword: target.isKeyword });
     } else {
       tokens.push({ type: 'text', text: matchedTitle });
     }
@@ -140,7 +148,8 @@ function serializeTokens(tokens: Token[], query: string | undefined): string {
     .map(token => {
       const inner = query ? markQueryInMarkup(token.text, query) : token.text;
       if (token.type === 'link') {
-        return `{{rule id="${token.targetId}"}}${inner}{{/rule}}`;
+        const tag = token.isKeyword ? 'keyword' : 'rule';
+        return `{{${tag} id="${token.targetId}"}}${inner}{{/${tag}}}`;
       }
       return inner;
     })
@@ -160,7 +169,7 @@ export function getHyperlinkedEntries(document: RuleDocument, lang: RuleLang): H
   if (cached) return cached;
 
   const entries = getRawEntries(document, lang);
-  const titleData = buildTitleData(entries);
+  const titleData = buildTitleData(entries, document);
 
   const result = entries.map(entry => ({
     id: entry.id,
@@ -253,7 +262,7 @@ export function searchRuleEntries({ document, lang, query, limit = 30 }: SearchR
   for (const doc of documents) {
     const entries = getHyperlinkedEntries(doc, lang);
     const entriesById = new Map(entries.map(e => [e.id, e]));
-    const titleData = buildTitleData(getRawEntries(doc, lang));
+    const titleData = buildTitleData(getRawEntries(doc, lang), doc);
 
     const matchedIds = entries
       .filter(e => e.id.includes(query) || e.content.toLowerCase().includes(lowerQuery))

@@ -1119,7 +1119,7 @@
                       },
                       "markup": {
                         "type": "string",
-                        "description": "content with glossary/section-title mentions wrapped in {{rule id=\"...\"}}...{{/rule}} and, when searchQuery is set, matched text wrapped in {{match}}...{{/match}}. This is a small custom tag format, not HTML — clients should parse it and render their own styling."
+                        "description": "content with section-title mentions wrapped in {{rule id=\"...\"}}...{{/rule}}, keyword-glossary mentions wrapped in {{keyword id=\"...\"}}...{{/keyword}}, and, when searchQuery is set, matched text wrapped in {{match}}...{{/match}}. This is a small custom tag format, not HTML — clients should parse it and render their own styling."
                       },
                       "isTitle": {
                         "type": "boolean",
