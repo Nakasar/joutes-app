@@ -1,113 +1,12 @@
 'use client';
 
-import { useMemo, useState, useEffect, useRef, useCallback, memo } from 'react';
+import { useMemo, useState, useEffect, useRef, useCallback, memo, Fragment, type ReactNode } from 'react';
 import { Input } from '@/components/ui/input';
 import { Link2Icon, CheckIcon, ChevronDownIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {usePathname, useRouter, useSearchParams} from "next/navigation";
-
-export interface TREntry {
-  id: string;
-  content: string;
-}
-
-interface TRNode extends TREntry {
-  children: TRNode[];
-  depth: number;
-  isTitle: boolean;
-}
-
-// Determine depth from an ID string
-function getDepth(id: string): number {
-  return id.split('.').length;
-}
-
-// Determine if an entry is a "title" (section header)
-function isTitle(entry: TREntry): boolean {
-  return /^\d{3}$/.test(entry.id) && entry.content.length <= 60;
-}
-
-// Build a hierarchical tree from flat entries
-function buildTree(entries: TREntry[]): TRNode[] {
-  const nodeMap = new Map<string, TRNode>();
-  const roots: TRNode[] = [];
-
-  for (const entry of entries) {
-    const node: TRNode = {
-      ...entry,
-      children: [],
-      depth: getDepth(entry.id),
-      isTitle: isTitle(entry),
-    };
-    nodeMap.set(entry.id, node);
-
-    const parts = entry.id.split('.');
-    if (parts.length === 1) {
-      roots.push(node);
-    } else {
-      const parentId = parts.slice(0, -1).join('.');
-      const parent = nodeMap.get(parentId);
-      if (parent) {
-        parent.children.push(node);
-      } else {
-        // Parent not found, add as root
-        roots.push(node);
-      }
-    }
-  }
-
-  return roots;
-}
-
-// Group top-level rules into major sections (by hundreds)
-function getSections(roots: TRNode[]): { label: string; start: number; anchorId: string; nodes: TRNode[] }[] {
-  const sections: Map<number, { label: string; start: number; anchorId: string; nodes: TRNode[] }> = new Map();
-
-  for (const node of roots) {
-    const num = parseInt(node.id);
-    const hundred = Math.floor(num / 100) * 100;
-    if (!sections.has(hundred)) {
-      sections.set(hundred, {
-        label: '',
-        start: hundred,
-        anchorId: '',
-        nodes: [],
-      });
-    }
-    sections.get(hundred)!.nodes.push(node);
-  }
-
-  // Resolve labels and anchor IDs
-  for (const [hundred, sec] of sections) {
-    const exactTitle = sec.nodes.find(n => parseInt(n.id) === hundred && n.isTitle);
-    const firstTitle = sec.nodes.find(n => n.isTitle);
-    const titleNode = exactTitle || firstTitle || sec.nodes[0];
-    sec.label = titleNode.content;
-    sec.anchorId = `rule-${titleNode.id.padStart(3, '0')}`;
-  }
-
-  return [...sections.values()].sort((a, b) => a.start - b.start);
-}
-
-// Pre-built title data: map + compiled regex (built once, not per render)
-interface TitleData {
-  map: Map<string, string>;
-  regexSource: string; // stored as source so each call creates a stateless instance
-}
-
-function buildTitleData(entries: TREntry[]): TitleData {
-  const map = new Map<string, string>();
-  for (const entry of entries) {
-    if (isTitle(entry)) {
-      map.set(entry.content, `rule-${entry.id}`);
-    }
-  }
-  const sortedTitles = [...map.keys()].sort((a, b) => b.length - a.length);
-  const escaped = sortedTitles.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-  const regexSource = `(${escaped.join('|')})`;
-  return { map, regexSource };
-}
+import type {RuleTreeNode, RuleSection, SearchRuleEntry, RuleDocument, RuleLang} from '@/lib/rules/riftbound';
 
 // Debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -119,86 +18,80 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced;
 }
 
-// Highlight search term occurrences in a plain string (case-insensitive)
-function highlightText(text: string, query: string): React.ReactNode[] {
-  if (!query) return [text];
-  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp(`(${escaped})`, 'gi');
-  const parts: React.ReactNode[] = [];
-  let last = 0;
-  let match: RegExpExecArray | null;
-  while ((match = regex.exec(text)) !== null) {
-    if (match.index > last) parts.push(text.slice(last, match.index));
-    parts.push(
-      <mark key={`hl-${match.index}`} className="bg-yellow-200 dark:bg-yellow-700 text-foreground rounded-sm px-0.5">
-        {match[1]}
-      </mark>
-    );
-    last = match.index + match[1].length;
-  }
-  if (last < text.length) parts.push(text.slice(last));
-  return parts.length > 0 ? parts : [text];
-}
+// The API returns rule text with a small custom tag format, not HTML:
+// {{rule id="826"}}Backline{{/rule}} for glossary/section links, {{match}}text{{/match}}
+// for search-highlighted text. Parse it here so the frontend owns all styling
+// instead of injecting server-authored HTML into the DOM.
+type MarkupNode =
+  | { type: 'text'; text: string }
+  | { type: 'rule'; id: string; children: MarkupNode[] }
+  | { type: 'match'; children: MarkupNode[] };
 
-// Replace title occurrences in text with hyperlinks, respecting case,
-// then highlight search query within the produced text nodes
-function renderTextWithLinks(
-  text: string,
-  titleData: TitleData,
-  currentId: string,
-  searchQuery: string = '',
-): React.ReactNode[] {
-  if (!titleData.regexSource) return highlightText(text, searchQuery);
+const MARKUP_TAG_REGEX = /\{\{rule id="([^"]*)"\}\}|\{\{\/rule\}\}|\{\{match\}\}|\{\{\/match\}\}/g;
 
-  // Create a fresh regex instance (RegExp is stateful via lastIndex)
-  const regex = new RegExp(titleData.regexSource, 'g');
-  const { map: titleMap } = titleData;
-
-  const parts: React.ReactNode[] = [];
+function parseMarkup(markup: string): MarkupNode[] {
+  const root: MarkupNode[] = [];
+  const stack: { children: MarkupNode[] }[] = [{ children: root }];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
-  regex.lastIndex = 0;
-  while ((match = regex.exec(text)) !== null) {
-    const matchedTitle = match[1];
-    const targetId = titleMap.get(matchedTitle);
+  const pushText = (raw: string) => {
+    if (!raw) return;
+    stack[stack.length - 1].children.push({ type: 'text', text: raw });
+  };
 
-    if (match.index > lastIndex) {
-      const raw = text.slice(lastIndex, match.index);
-      parts.push(...highlightText(raw, searchQuery));
+  MARKUP_TAG_REGEX.lastIndex = 0;
+  while ((match = MARKUP_TAG_REGEX.exec(markup)) !== null) {
+    pushText(markup.slice(lastIndex, match.index));
+    const token = match[0];
+
+    if (token.startsWith('{{rule')) {
+      const node: MarkupNode = { type: 'rule', id: match[1], children: [] };
+      stack[stack.length - 1].children.push(node);
+      stack.push(node);
+    } else if (token === '{{match}}') {
+      const node: MarkupNode = { type: 'match', children: [] };
+      stack[stack.length - 1].children.push(node);
+      stack.push(node);
+    } else if (stack.length > 1) {
+      // {{/rule}} or {{/match}}
+      stack.pop();
     }
 
-    if (targetId && targetId !== `rule-${currentId}`) {
-      // Highlight inside the link text if it matches the search query
-      const linkContent = searchQuery
-        ? highlightText(matchedTitle, searchQuery)
-        : [matchedTitle];
-      parts.push(
+    lastIndex = match.index + token.length;
+  }
+  pushText(markup.slice(lastIndex));
+
+  return root;
+}
+
+function renderMarkupNodes(nodes: MarkupNode[], keyPrefix: string): ReactNode {
+  return nodes.map((node, i) => {
+    const key = `${keyPrefix}-${i}`;
+    if (node.type === 'text') return <Fragment key={key}>{node.text}</Fragment>;
+    if (node.type === 'rule') {
+      return (
         <a
-          key={`${currentId}-link-${match.index}`}
-          href={`#${targetId}`}
+          key={key}
+          href={`#rule-${node.id}`}
+          data-rule-link={`rule-${node.id}`}
           className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
-          onClick={(e) => {
-            e.preventDefault();
-            window.history.pushState(null, '', `#${targetId}`);
-            document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }}
         >
-          {linkContent}
+          {renderMarkupNodes(node.children, key)}
         </a>
       );
-    } else {
-      parts.push(...highlightText(matchedTitle, searchQuery));
     }
+    return (
+      <mark key={key} className="bg-yellow-200 dark:bg-yellow-700 text-foreground rounded-sm px-0.5">
+        {renderMarkupNodes(node.children, key)}
+      </mark>
+    );
+  });
+}
 
-    lastIndex = match.index + matchedTitle.length;
-  }
-
-  if (lastIndex < text.length) {
-    parts.push(...highlightText(text.slice(lastIndex), searchQuery));
-  }
-
-  return parts.length > 0 ? parts : highlightText(text, searchQuery);
+function RuleMarkup({ markup, keyPrefix }: { markup: string; keyPrefix: string }) {
+  const nodes = useMemo(() => parseMarkup(markup), [markup]);
+  return <>{renderMarkupNodes(nodes, keyPrefix)}</>;
 }
 
 function CopyLinkButton({ anchorId }: { anchorId: string }) {
@@ -228,7 +121,6 @@ function CopyLinkButton({ anchorId }: { anchorId: string }) {
   );
 }
 
-
 const depthStyles: Record<number, string> = {
   1: '',
   2: 'ml-4 sm:ml-6',
@@ -240,56 +132,62 @@ const depthStyles: Record<number, string> = {
 
 const RuleNode = memo(function RuleNode({
   node,
-  titleData,
-  searchQuery,
+  collapsedIds,
+  onToggle,
+  searchActive,
+  resultsById,
+  framedSectionIds,
 }: {
-  node: TRNode;
-  titleData: TitleData;
-  searchQuery: string;
+  node: RuleTreeNode;
+  collapsedIds: Set<string>;
+  onToggle: (id: string) => void;
+  searchActive: boolean;
+  resultsById: Map<string, SearchRuleEntry>;
+  framedSectionIds: Set<string>;
 }) {
-  const [isOpen, setIsOpen] = useState(true);
-  const contentNodes = renderTextWithLinks(node.content, titleData, node.id, searchQuery);
   const indent = depthStyles[node.depth] || 'ml-16';
   const t = useTranslations('Games');
 
-  // Auto-expand when a search is active so matches are always visible
-  const effectivelyOpen = searchQuery ? true : isOpen;
-
-  const isVisible =
-    !searchQuery ||
-    node.id.includes(searchQuery) ||
-    node.content.toLowerCase().includes(searchQuery.toLowerCase());
-
-  const hasMatchingChild = (n: TRNode): boolean => {
-    if (!searchQuery) return true;
-    if (n.id.includes(searchQuery) || n.content.toLowerCase().includes(searchQuery.toLowerCase())) return true;
-    return n.children.some(hasMatchingChild);
-  };
-
-  if (searchQuery && !hasMatchingChild(node)) return null;
+  const markup = searchActive ? (resultsById.get(node.id)?.markup ?? node.markup) : node.markup;
+  const isOpen = !collapsedIds.has(node.id);
 
   if (node.isTitle && node.depth === 1) {
+    const isFramed = searchActive && framedSectionIds.has(node.id);
+    const isDimmed = searchActive && !framedSectionIds.has(node.id);
     return (
-      <div id={`rule-${node.id}`} className={`mt-6 scroll-mt-20 group ${indent}`}>
+      <div
+        id={`rule-${node.id}`}
+        className={`mt-6 scroll-mt-20 group ${indent} transition-opacity ${isDimmed ? 'opacity-40' : ''} ${
+          isFramed ? 'ring-2 ring-primary/40 rounded-lg bg-accent/30 p-2 -m-2' : ''
+        }`}
+      >
         <h2 className="text-xl font-bold text-primary border-b border-border pb-1 mb-2 flex items-center gap-1">
           <button
-            onClick={() => setIsOpen(v => !v)}
+            onClick={() => onToggle(node.id)}
             aria-label={isOpen ? t('rules.viewer.collapseSection') : t('rules.viewer.expandSection')}
             className="shrink-0 p-0.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
           >
             <ChevronDownIcon
               size={18}
-              className={`transition-transform duration-200 ${effectivelyOpen ? '' : '-rotate-90'}`}
+              className={`transition-transform duration-200 ${isOpen ? '' : '-rotate-90'}`}
             />
           </button>
           <span className="text-muted-foreground text-base font-mono mr-1">{node.id}.</span>
-          {node.content}
+          <span><RuleMarkup markup={markup} keyPrefix={`title-${node.id}`} /></span>
           <CopyLinkButton anchorId={`rule-${node.id}`} />
         </h2>
-        {effectivelyOpen && node.children.length > 0 && (
+        {isOpen && node.children.length > 0 && (
           <div className="space-y-1">
             {node.children.map(child => (
-              <RuleNode key={child.id} node={child} titleData={titleData} searchQuery={searchQuery} />
+              <RuleNode
+                key={child.id}
+                node={child}
+                collapsedIds={collapsedIds}
+                onToggle={onToggle}
+                searchActive={searchActive}
+                resultsById={resultsById}
+                framedSectionIds={framedSectionIds}
+              />
             ))}
           </div>
         )}
@@ -298,23 +196,28 @@ const RuleNode = memo(function RuleNode({
   }
 
   return (
-    <div
-      id={`rule-${node.id}`}
-      className={`scroll-mt-20 py-0.5 group ${indent} ${!isVisible && searchQuery ? 'opacity-30' : ''}`}
-    >
+    <div id={`rule-${node.id}`} className={`scroll-mt-20 py-0.5 group ${indent}`}>
       <div className="flex gap-2 text-sm leading-relaxed">
         <span className="text-muted-foreground font-mono text-xs shrink-0 mt-0.5 min-w-14 text-right">
           {node.id}
         </span>
         <p className={`flex-1 ${node.depth === 1 ? 'font-semibold text-foreground' : 'text-foreground/90'}`}>
-          {contentNodes}
+          <RuleMarkup markup={markup} keyPrefix={`rule-${node.id}`} />
         </p>
         <CopyLinkButton anchorId={`rule-${node.id}`} />
       </div>
       {node.children.length > 0 && (
         <div className="mt-0.5">
           {node.children.map(child => (
-            <RuleNode key={child.id} node={child} titleData={titleData} searchQuery={searchQuery} />
+            <RuleNode
+              key={child.id}
+              node={child}
+              collapsedIds={collapsedIds}
+              onToggle={onToggle}
+              searchActive={searchActive}
+              resultsById={resultsById}
+              framedSectionIds={framedSectionIds}
+            />
           ))}
         </div>
       )}
@@ -326,7 +229,7 @@ function TableOfContents({
   sections,
   activeSection,
 }: {
-  sections: { label: string; start: number; anchorId: string; nodes: TRNode[] }[];
+  sections: RuleSection[];
   activeSection: number | null;
 }) {
   const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
@@ -402,21 +305,33 @@ function TableOfContents({
   );
 }
 
-export default function RuleDocumentViewer({ entries, lang }: { entries: TREntry[]; lang: string }) {
+export default function RuleDocumentViewer({ sections, lang, document: ruleDocument, gameSlug }: {
+  sections: RuleSection[];
+  lang: RuleLang;
+  document: RuleDocument;
+  gameSlug: string;
+}) {
   const searchParams = useSearchParams();
   const { replace } = useRouter();
   const pathname = usePathname()
 
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedQuery = useDebounce(searchQuery, 300);
+  const [searchResults, setSearchResults] = useState<SearchRuleEntry[] | null>(null);
   const [activeSection, setActiveSection] = useState<number | null>(null);
   const [tocOpen, setTocOpen] = useState(false);
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
   const mainRef = useRef<HTMLDivElement>(null);
+  const requestIdRef = useRef(0);
   const t = useTranslations('Games');
 
-  const tree = useMemo(() => buildTree(entries), [entries]);
-  const sections = useMemo(() => getSections(tree), [tree]);
-  const titleData = useMemo(() => buildTitleData(entries), [entries]);
+  const toggleCollapsed = useCallback((id: string) => {
+    setCollapsedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }, []);
 
   // Intersection observer to track active section
   useEffect(() => {
@@ -436,7 +351,6 @@ export default function RuleDocumentViewer({ entries, lang }: { entries: TREntry
       { rootMargin: '-20% 0px -70% 0px' }
     );
 
-    // Observe all section anchors
     sections.forEach(sec => {
       const el = document.getElementById(sec.anchorId);
       if (el) observer.observe(el);
@@ -445,14 +359,78 @@ export default function RuleDocumentViewer({ entries, lang }: { entries: TREntry
     return () => observer.disconnect();
   }, [sections]);
 
-  const totalMatches = useMemo(() => {
-    if (!debouncedQuery) return null;
-    return entries.filter(
-      e =>
-        e.id.includes(debouncedQuery) ||
-        e.content.toLowerCase().includes(debouncedQuery.toLowerCase())
-    ).length;
-  }, [debouncedQuery, entries]);
+  // Delegated click handler for server-generated glossary/title links
+  useEffect(() => {
+    const container = mainRef.current;
+    if (!container) return;
+
+    const handleClick = (e: MouseEvent) => {
+      const target = (e.target as HTMLElement).closest('[data-rule-link]');
+      if (!target) return;
+      const targetId = target.getAttribute('data-rule-link');
+      if (!targetId) return;
+      e.preventDefault();
+      window.history.pushState(null, '', `#${targetId}`);
+      document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    container.addEventListener('click', handleClick);
+    return () => container.removeEventListener('click', handleClick);
+  }, []);
+
+  // Server-side search: fetch matching entries + their surrounding context
+  useEffect(() => {
+    if (!debouncedQuery) {
+      setSearchResults(null);
+      return;
+    }
+
+    const requestId = ++requestIdRef.current;
+    const controller = new AbortController();
+
+    const params = new URLSearchParams({ document: ruleDocument, lang, searchQuery: debouncedQuery });
+    fetch(`/api/games/${gameSlug}/rules?${params.toString()}`, { signal: controller.signal })
+      .then(res => res.ok ? res.json() : [])
+      .then((results: SearchRuleEntry[]) => {
+        if (requestId !== requestIdRef.current) return;
+        setSearchResults(results);
+
+        const sectionIds = new Set(results.map(r => r.sectionId));
+        if (sectionIds.size > 0) {
+          setCollapsedIds(prev => {
+            const next = new Set(prev);
+            sectionIds.forEach(id => next.delete(id));
+            return next;
+          });
+        }
+
+        const firstMatchId = results.find(r => r.matched)?.id;
+        if (firstMatchId) {
+          requestAnimationFrame(() => {
+            document.getElementById(`rule-${firstMatchId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          });
+        }
+      })
+      .catch(err => {
+        if (err.name !== 'AbortError' && requestId === requestIdRef.current) setSearchResults([]);
+      });
+
+    return () => controller.abort();
+  }, [debouncedQuery, ruleDocument, lang, gameSlug]);
+
+  const searchActive = searchResults !== null;
+  const resultsById = useMemo(
+    () => new Map((searchResults ?? []).map(r => [r.id, r])),
+    [searchResults]
+  );
+  const framedSectionIds = useMemo(
+    () => new Set((searchResults ?? []).map(r => r.sectionId)),
+    [searchResults]
+  );
+  const totalMatches = useMemo(
+    () => (searchResults ?? []).filter(r => r.matched).length,
+    [searchResults]
+  );
 
   return (
     <div className="flex gap-6 relative">
@@ -508,7 +486,7 @@ export default function RuleDocumentViewer({ entries, lang }: { entries: TREntry
 
         {debouncedQuery && (
           <p className="text-sm text-muted-foreground mb-3">
-            {t('rules.viewer.results', { count: totalMatches ?? 0, query: debouncedQuery })}
+            {t('rules.viewer.results', { count: totalMatches, query: debouncedQuery })}
           </p>
         )}
 
@@ -519,8 +497,11 @@ export default function RuleDocumentViewer({ entries, lang }: { entries: TREntry
                 <RuleNode
                   key={node.id}
                   node={node}
-                  titleData={titleData}
-                  searchQuery={debouncedQuery}
+                  collapsedIds={collapsedIds}
+                  onToggle={toggleCollapsed}
+                  searchActive={searchActive}
+                  resultsById={resultsById}
+                  framedSectionIds={framedSectionIds}
                 />
               ))}
             </div>

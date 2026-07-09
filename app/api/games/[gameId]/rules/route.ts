@@ -1,10 +1,7 @@
 import {NextRequest, NextResponse} from "next/server";
 import db from "@/lib/mongodb";
-import cr from '@/data/riftbound/cr.json';
-import tr from '@/data/riftbound/tr.json';
-import fr_cr from '@/data/riftbound/fr/cr.json';
-import fr_tr from '@/data/riftbound/fr/tr.json';
 import {Game} from "@/lib/types/Game";
+import {getHyperlinkedEntries, searchRuleEntries, RuleDocument, RuleLang} from "@/lib/rules/riftbound";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ gameId: string }> }) {
   const { gameId } = await params;
@@ -20,50 +17,45 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   const searchParams = new URL(request.url).searchParams;
   const documentRaw = searchParams.get('document') ?? undefined;
-  const lang = searchParams.get('lang') ?? 'en';
+  const langRaw = searchParams.get('lang') ?? 'en';
   const ruleId = searchParams.get('ruleId') ?? undefined;
+  const searchQuery = searchParams.get('searchQuery') ?? undefined;
+  const limitRaw = searchParams.get('limit') ?? undefined;
 
-  if (!documentRaw) {
+  if (langRaw !== 'en' && langRaw !== 'fr') {
+    return NextResponse.json({ error: `allowed lang in query for ${game.name}: en, fr` }, { status: 400 });
+  }
+  const lang = langRaw as RuleLang;
+
+  const document = documentRaw ? documentRaw.toUpperCase() : undefined;
+  if (document && !['TR', 'CR'].includes(document)) {
+    return NextResponse.json({ error: `allowed document sources in query for ${game.name}: TR, CR` }, { status: 400 });
+  }
+
+  if (searchQuery) {
+    const limit = limitRaw ? parseInt(limitRaw, 10) : undefined;
+    const results = searchRuleEntries({
+      document: document as RuleDocument | undefined,
+      lang,
+      query: searchQuery,
+      limit: limit && !isNaN(limit) ? limit : undefined,
+    });
+    return NextResponse.json(results);
+  }
+
+  if (!document) {
     return NextResponse.json({ error: "missing source document in query" }, { status: 400 });
   }
 
-  const document = documentRaw.toUpperCase();
+  const entries = getHyperlinkedEntries(document as RuleDocument, lang);
 
-  if (!['TR', 'CR'].includes(document)) {
-    return NextResponse.json({ error: `allowed document sources in query for ${game.name}: TR, CR` });
+  if (ruleId) {
+    const rule = entries.find(r => r.id === ruleId);
+    if (!rule) {
+      return NextResponse.json({ error: `rule ${ruleId} not found in ${document} for ${game.name}` }, { status: 404 });
+    }
+    return NextResponse.json([rule]);
   }
 
-  if (document === 'TR') {
-    if (lang === 'fr') {
-      if (ruleId) {
-        const rule = fr_tr.find(r => r.id === ruleId);
-        return NextResponse.json([rule]);
-      }
-      return NextResponse.json(fr_tr);
-    } else if (lang === 'en') {
-      if (ruleId) {
-        const rule = tr.find(r => r.id === ruleId);
-        return NextResponse.json([rule]);
-      }
-      return NextResponse.json(tr);
-    } else {
-      return NextResponse.json({ error: `allowed lang in query for ${document} in ${game.name}: en, fr` });
-    }
-  } else if (document === 'CR') {
-    if (lang === 'fr') {
-      if (ruleId) {
-        const rule = fr_cr.find(r => r.id === ruleId);
-        return NextResponse.json([rule]);
-      }
-      return NextResponse.json(fr_cr);
-    } else if (lang === 'en') {
-      if (ruleId) {
-        const rule = cr.find(r => r.id === ruleId);
-        return NextResponse.json([rule]);
-      }
-      return NextResponse.json(cr);
-    } else {
-      return NextResponse.json({ error: `allowed lang in query for ${document} in ${game.name}: en, fr` });
-    }
-  }
+  return NextResponse.json(entries);
 }

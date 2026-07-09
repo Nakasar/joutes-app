@@ -1,14 +1,11 @@
 import type {Metadata} from 'next';
-import tr from '@/data/riftbound/tr.json';
-import cr from '@/data/riftbound/cr.json';
-import tr_fr from '@/data/riftbound/fr/tr.json';
-import cr_fr from '@/data/riftbound/fr/cr.json';
 import RuleDocumentViewer from './RuleDocumentViewer';
 import {getGameBySlugOrId} from '@/lib/db/games';
 import Link from 'next/link';
 import {Button} from '@/components/ui/button';
 import {getTranslations} from 'next-intl/server';
 import {GameToolsNavBar} from "@/components/games/GameToolsNavBar";
+import {getHyperlinkedEntries, buildRuleTree, getRuleSections, RuleDocument, RuleLang} from '@/lib/rules/riftbound';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('Games');
@@ -40,14 +37,19 @@ export default async function RulesDocumentPage({params, searchParams }: {
     return <div className="container mx-auto p-6">{t('rules.notFound.unsupported')}</div>;
   }
 
-  let entries: { id: string; content: string }[];
+  let document: RuleDocument;
   if (documentId.toLowerCase() === 'tr') {
-    entries = lang === 'fr' ? tr_fr : tr;
+    document = 'TR';
   } else if (documentId.toLowerCase() === 'cr') {
-    entries = lang === 'fr' ? cr_fr : cr;
+    document = 'CR';
   } else {
     return <div className="container mx-auto p-6">{t('rules.notFound.document')}</div>;
   }
+
+  const ruleLang: RuleLang = lang === 'fr' ? 'fr' : 'en';
+  const entries = getHyperlinkedEntries(document, ruleLang);
+  const tree = buildRuleTree(entries);
+  const sections = getRuleSections(tree);
 
   return (
     <div className="container mx-auto p-6">
@@ -65,7 +67,12 @@ export default async function RulesDocumentPage({params, searchParams }: {
       <p className="text-muted-foreground mt-1 text-sm mb-4">
         {t('rules.document.summary', {count: entries.length})}
       </p>
-      <RuleDocumentViewer entries={entries} lang={lang ?? 'en'} />
+      <RuleDocumentViewer
+        sections={sections}
+        lang={ruleLang}
+        document={document}
+        gameSlug={game.slug}
+      />
     </div>
   );
 }

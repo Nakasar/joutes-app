@@ -1062,11 +1062,42 @@
           {
             "name": "document",
             "in": "query",
-            "description": "Source document ID. Depend on the game. usual values: \"TR\" (Tournament Regulation), \"CR\" (Core Rules)",
+            "description": "Source document ID. Depend on the game. usual values: \"TR\" (Tournament Regulation), \"CR\" (Core Rules). Required unless searchQuery is set, in which case both TR and CR are searched when omitted.",
             "required": false,
             "example": "CR",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "lang",
+            "in": "query",
+            "description": "Language of the rules text. Defaults to \"en\".",
+            "required": false,
+            "example": "en",
+            "schema": {
+              "type": "string",
+              "enum": ["en", "fr"]
+            }
+          },
+          {
+            "name": "ruleId",
+            "in": "query",
+            "description": "Look up a single rule by its exact id instead of returning the whole document. Ignored when searchQuery is set.",
+            "required": false,
+            "example": "151.b.3.a",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of matches to return when searchQuery is set. Defaults to 30.",
+            "required": false,
+            "example": 30,
+            "schema": {
+              "type": "integer"
             }
           }
         ],
@@ -1086,28 +1117,25 @@
                       "content": {
                         "type": "string"
                       },
+                      "markup": {
+                        "type": "string",
+                        "description": "content with glossary/section-title mentions wrapped in {{rule id=\"...\"}}...{{/rule}} and, when searchQuery is set, matched text wrapped in {{match}}...{{/match}}. This is a small custom tag format, not HTML — clients should parse it and render their own styling."
+                      },
+                      "isTitle": {
+                        "type": "boolean",
+                        "description": "whether this entry is a section or keyword-glossary heading"
+                      },
                       "document": {
                         "type": "string",
-                        "description": "Source document name (Tournament Rules, Core Rules, ...)"
+                        "description": "Source document (TR, CR)"
                       },
-                      "game": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "slug": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "id",
-                          "name",
-                          "slug"
-                        ]
+                      "sectionId": {
+                        "type": "string",
+                        "description": "Only present when searchQuery is set: id of the enclosing section/glossary entry, used to group context around a match"
+                      },
+                      "matched": {
+                        "type": "boolean",
+                        "description": "Only present when searchQuery is set: true if this entry matched the query, false if it's included as surrounding context"
                       }
                     },
                     "required": [
@@ -1120,7 +1148,10 @@
                 "example": [
                   {
                     "id": "151.b.3.a",
-                    "content": "For gameplay purposes, a card's Owner is the player who brought it into the game, either as their Champion Legend, one of their Battlefields, or part of their Main Deck or Rune Deck. The legal owner of a card doesn't matter during gameplay. Example: Bo didn't bring a deck, so Alice loans him a deck. During the game, Bo is considered the owner of those cards, even though legally they belong to Alice."
+                    "content": "For gameplay purposes, a card's Owner is the player who brought it into the game, either as their Champion Legend, one of their Battlefields, or part of their Main Deck or Rune Deck. The legal owner of a card doesn't matter during gameplay. Example: Bo didn't bring a deck, so Alice loans him a deck. During the game, Bo is considered the owner of those cards, even though legally they belong to Alice.",
+                    "markup": "For gameplay purposes, a card's Owner is the player who brought it into the game, either as their Champion Legend, one of their Battlefields, or part of their Main Deck or Rune Deck. The legal owner of a card doesn't matter during gameplay. Example: Bo didn't bring a deck, so Alice loans him a deck. During the game, Bo is considered the owner of those cards, even though legally they belong to Alice.",
+                    "isTitle": false,
+                    "document": "CR"
                   }
                 ]
               }

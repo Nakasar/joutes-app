@@ -18,8 +18,7 @@ import { getErratasByCardId } from "@/lib/db/erratas";
 import { getAllPolicies } from "@/lib/db/policies";
 import db from "@/lib/mongodb";
 import { Game } from "@/lib/types/Game";
-import tr from '@/data/riftbound/tr.json';
-import cr from '@/data/riftbound/cr.json';
+import { getRawEntries } from "@/lib/rules/riftbound";
 import { serverClient } from "@/lib/server-client";
 import { validateApiKey } from "@/lib/db/api-keys";
 
@@ -517,6 +516,9 @@ async function handleSearchRules(params: {
 
     const rules: { id: string; content: string }[] = [];
     if (game.slug === 'riftbound') {
+        const cr = getRawEntries('CR', 'en');
+        const tr = getRawEntries('TR', 'en');
+
         // search for matching rules in CR
         const crRule = cr.find(r => r.content.toLowerCase() === params.query.toLowerCase());
         if (crRule) {
@@ -567,9 +569,9 @@ async function handleGetRule(params: {
 
     let rule: string | undefined;
     if (params.id.startsWith("TR")) {
-        rule = tr.find(r => r.id === params.id.replace("TR", ""))?.content;
+        rule = getRawEntries('TR', 'en').find(r => r.id === params.id.replace("TR", ""))?.content;
     } else {
-        rule = cr.find(r => r.id === params.id.replace("CR", ""))?.content;
+        rule = getRawEntries('CR', 'en').find(r => r.id === params.id.replace("CR", ""))?.content;
     }
 
     if (!rule) {
