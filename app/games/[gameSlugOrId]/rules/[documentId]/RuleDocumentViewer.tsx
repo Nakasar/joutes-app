@@ -71,10 +71,6 @@ function parseMarkup(markup: string): MarkupNode[] {
   return root;
 }
 
-function flattenMarkupText(nodes: MarkupNode[]): string {
-  return nodes.map(n => (n.type === 'text' ? n.text : flattenMarkupText(n.children))).join('');
-}
-
 function renderMarkupNodes(nodes: MarkupNode[], keyPrefix: string): ReactNode {
   return nodes.map((node, i) => {
     const key = `${keyPrefix}-${i}`;
@@ -93,7 +89,7 @@ function renderMarkupNodes(nodes: MarkupNode[], keyPrefix: string): ReactNode {
     }
     if (node.type === 'keyword') {
       return (
-        <KeywordBadge key={key} id={node.id} content={flattenMarkupText(node.children)} asLink>
+        <KeywordBadge key={key} id={node.id} asLink>
           {renderMarkupNodes(node.children, key)}
         </KeywordBadge>
       );
@@ -112,32 +108,32 @@ function RuleMarkup({ markup, keyPrefix }: { markup: string; keyPrefix: string }
 }
 
 // Keyword glossary badges (e.g. "BACKLINE", "AMBUSH") — colored pill per keyword,
-// matching the card's official keyword color coding.
+// matching the card's official keyword color coding. Keyed by rule id (stable
+// across languages) rather than by name, so this also works when lang=fr and the
+// displayed text is the translated keyword name, not the English one.
 const KEYWORD_COLORS: Record<string, string> = {
-  tank: '#C22D6A',
-  assault: '#C22D6A',
-  shield: '#C22D6A',
-  backline: '#C22D6A',
-  deathknell: '#8EAD2A',
-  ganking: '#8EAD2A',
-  temporary: '#8EAD2A',
-  deflect: '#8EAD2A',
-  empowered: '#8EAD2A',
-  hunt: '#8EAD2A',
-  level: '#8EAD2A',
-  burn: '#6D6C6D',
-  vision: '#6D6C6D',
-  empower: '#6D6C6D',
-  weaponmaster: '#6D6C6D',
-  action: '#226B5C',
-  equip: '#226B5C',
-  repeat: '#226B5C',
-  reaction: '#226B5C',
-  ambush: '#226B5C',
-  accelerate: '#226B5C',
-  legion: '#226B5C',
-  hidden: '#226B5C',
-  'quick-draw': '#226B5C',
+  '805': '#226B5C', // Accelerate
+  '806': '#226B5C', // Action
+  '807': '#C22D6A', // Assault
+  '808': '#8EAD2A', // Deathknell
+  '809': '#8EAD2A', // Deflect
+  '810': '#8EAD2A', // Ganking
+  '811': '#226B5C', // Hidden
+  '812': '#226B5C', // Legion
+  '813': '#226B5C', // Reaction
+  '814': '#C22D6A', // Shield
+  '815': '#C22D6A', // Tank
+  '816': '#8EAD2A', // Temporary
+  '817': '#6D6C6D', // Vision
+  '818': '#226B5C', // Equip
+  '819': '#226B5C', // Quick-Draw
+  '820': '#226B5C', // Repeat
+  '821': '#6D6C6D', // Weaponmaster
+  '822': '#226B5C', // Ambush
+  '823': '#8EAD2A', // Hunt
+  '824': '#8EAD2A', // Level
+  '825': '#6D6C6D', // Unique
+  '826': '#C22D6A', // Backline
 };
 
 // Fallback palette for keywords outside the official mapping above (e.g. Backline,
@@ -168,18 +164,16 @@ function contrastTextColor(hex: string): string {
 
 function KeywordBadge({
   id,
-  content,
   children,
   size = 'inline',
   asLink = false,
 }: {
   id: string;
-  content: string;
   children: ReactNode;
   size?: 'heading' | 'inline';
   asLink?: boolean;
 }) {
-  const hex = KEYWORD_COLORS[content.toLowerCase()];
+  const hex = KEYWORD_COLORS[id];
   const colorStyle = hex ? { backgroundColor: hex, color: contrastTextColor(hex) } : undefined;
   const colorClass = hex ? '' : fallbackPalette(id);
   const sizeClass = size === 'heading' ? 'text-sm px-2.5 py-0.5' : 'text-[0.7rem] px-1.5 py-px';
@@ -279,7 +273,7 @@ const RuleNode = memo(function RuleNode({
           </button>
           <span className="text-muted-foreground text-base font-mono mr-1">{node.id}.</span>
           {node.isKeyword ? (
-            <KeywordBadge id={node.id} content={node.content} size="heading">
+            <KeywordBadge id={node.id} size="heading">
               <RuleMarkup markup={markup} keyPrefix={`title-${node.id}`} />
             </KeywordBadge>
           ) : (
