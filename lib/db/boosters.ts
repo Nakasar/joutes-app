@@ -339,7 +339,12 @@ export async function getUserCards({
           card: 1,
         },
       },
-    ])
+    ], {
+      collation: {
+        locale: "en_US",
+        numericOrdering: true
+      }
+    })
     .toArray();
 
   return {
