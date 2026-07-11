@@ -333,7 +333,7 @@ export async function getGameCollection({
   setCode,
   type,
   search,
-  ownedOnly = false,
+  owned,
   page = 1,
   limit = 48,
 }: {
@@ -342,7 +342,8 @@ export async function getGameCollection({
   setCode?: string;
   type?: string;
   search?: string;
-  ownedOnly?: boolean;
+  /** true = owned only, false = not-owned only, undefined = all */
+  owned?: boolean;
   page?: number;
   limit?: number;
 }): Promise<GameCollectionResult> {
@@ -381,11 +382,15 @@ export async function getGameCollection({
 
   let countPipeline: Record<string, unknown>[];
   let itemsPipeline: Record<string, unknown>[];
-  if (ownedOnly) {
+  if (owned !== undefined) {
     // Ownership is only known after the lookup, so it must precede pagination.
-    const owned = [{ $match: match }, ...ownedLookup, { $match: { quantity: { $gt: 0 } } }];
-    countPipeline = [...owned, { $count: "total" }];
-    itemsPipeline = [...owned, ...sortSkipLimit, project];
+    const filtered = [
+      { $match: match },
+      ...ownedLookup,
+      { $match: { quantity: owned ? { $gt: 0 } : { $eq: 0 } } },
+    ];
+    countPipeline = [...filtered, { $count: "total" }];
+    itemsPipeline = [...filtered, ...sortSkipLimit, project];
   } else {
     // Paginate first, then only resolve quantities for the page being returned.
     countPipeline = [{ $match: match }, { $count: "total" }];

@@ -900,6 +900,7 @@
         "allTypes": "All types",
         "all": "All",
         "ownedOnly": "Owned",
+        "notOwned": "Not owned",
         "results": "{count, plural, =0 {No cards} one {# card} other {# cards}}",
         "noResults": "No cards match your filters.",
         "range": "{start}–{end} of {total}",
@@ -910,7 +911,14 @@
       "card": {
         "manage": "Manage {name}",
         "addOne": "Add a copy",
-        "removeOne": "Remove a copy"
+        "removeOne": "Remove a copy",
+        "viewDetails": "View card details"
+      },
+      "sets": {
+        "title": "Sets",
+        "metadataTitle": "Sets · {game}",
+        "subtitle": "Completion for every set of {game}.",
+        "noSets": "No sets to display."
       },
         "boosters": {
           "title": "Boosters",

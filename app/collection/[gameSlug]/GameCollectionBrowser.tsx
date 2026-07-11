@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import {
   ArrowLeft,
+  ExternalLink,
   Loader2,
   Minus,
   Plus,
@@ -14,6 +15,7 @@ import {
   Layers,
   LayoutGrid,
   Package,
+  Boxes,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +57,7 @@ export default function GameCollectionBrowser({ gameSlug, gameName, initialData 
   const [search, setSearch] = useState("");
   const [setCode, setSetCode] = useState("all");
   const [type, setType] = useState("all");
-  const [ownedOnly, setOwnedOnly] = useState(false);
+  const [ownership, setOwnership] = useState<"all" | "owned" | "unowned">("all");
   const [loading, setLoading] = useState(false);
 
   const [manageCard, setManageCard] = useState<CollectionItem | null>(null);
@@ -65,7 +67,7 @@ export default function GameCollectionBrowser({ gameSlug, gameName, initialData 
   const initializedRef = useRef(false);
 
   const fetchPage = useCallback(
-    async (opts: { search: string; setCode: string; type: string; ownedOnly: boolean; page: number }) => {
+    async (opts: { search: string; setCode: string; type: string; ownership: "all" | "owned" | "unowned"; page: number }) => {
       controllerRef.current?.abort();
       const controller = new AbortController();
       controllerRef.current = controller;
@@ -75,7 +77,8 @@ export default function GameCollectionBrowser({ gameSlug, gameName, initialData 
         if (opts.search.trim()) params.set("search", opts.search.trim());
         if (opts.setCode !== "all") params.set("setCode", opts.setCode);
         if (opts.type !== "all") params.set("type", opts.type);
-        if (opts.ownedOnly) params.set("ownedOnly", "true");
+        if (opts.ownership === "owned") params.set("owned", "true");
+        if (opts.ownership === "unowned") params.set("owned", "false");
 
         const res = await fetch(`/api/collection/games/${gameSlug}?${params.toString()}`, {
           signal: controller.signal,
@@ -108,15 +111,15 @@ export default function GameCollectionBrowser({ gameSlug, gameName, initialData 
     }
     const delay = search.trim() ? 300 : 0;
     const timer = window.setTimeout(() => {
-      void fetchPage({ search, setCode, type, ownedOnly, page: 1 });
+      void fetchPage({ search, setCode, type, ownership, page: 1 });
     }, delay);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, setCode, type, ownedOnly]);
+  }, [search, setCode, type, ownership]);
 
   const goToPage = (next: number) => {
     if (next < 1 || next > totalPages || loading) return;
-    void fetchPage({ search, setCode, type, ownedOnly, page: next });
+    void fetchPage({ search, setCode, type, ownership, page: next });
   };
 
   const setQuantity = (cardId: string, quantity: number) => {
@@ -167,6 +170,11 @@ export default function GameCollectionBrowser({ gameSlug, gameName, initialData 
       ? { start: 0, end: 0 }
       : { start: (page - 1) * initialData.limit + 1, end: Math.min(page * initialData.limit, total) };
 
+  const activeSetStats = useMemo(
+    () => (setCode !== "all" ? stats?.sets.find((s) => s.setCode === setCode) ?? null : null),
+    [stats, setCode]
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -180,17 +188,44 @@ export default function GameCollectionBrowser({ gameSlug, gameName, initialData 
         </Link>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-3xl font-bold tracking-tight">{gameName}</h1>
-          <Button asChild variant="outline" className="gap-2">
-            <Link href={`/collection/${gameSlug}/boosters`}>
-              <Package className="size-4" />
-              {t("boosters.title")}
-            </Link>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button asChild variant="outline" className="gap-2">
+              <Link href={`/collection/${gameSlug}/sets`}>
+                <Boxes className="size-4" />
+                {t("sets.title")}
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="gap-2">
+              <Link href={`/collection/${gameSlug}/boosters`}>
+                <Package className="size-4" />
+                {t("boosters.title")}
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Game-level completion */}
-      {stats ? (
+      {/* Completion — whole game, or the selected set when a set filter is active */}
+      {activeSetStats ? (
+        <div className="grid grid-cols-1 gap-4 rounded-xl border bg-card p-4 sm:grid-cols-2">
+          <CompletionBar
+            label={`${t("masterSet.label")} · ${activeSetStats.setCode}`}
+            hint={t("masterSet.hint")}
+            owned={activeSetStats.masterOwned}
+            total={activeSetStats.masterTotal}
+            tone="master"
+            icon={<Layers className="size-4 text-primary" />}
+          />
+          <CompletionBar
+            label={`${t("gameSet.label")} · ${activeSetStats.setCode}`}
+            hint={t("gameSet.hint")}
+            owned={activeSetStats.gameOwned}
+            total={activeSetStats.gameTotal}
+            tone="game"
+            icon={<LayoutGrid className="size-4 text-emerald-500" />}
+          />
+        </div>
+      ) : stats ? (
         <div className="grid grid-cols-1 gap-4 rounded-xl border bg-card p-4 sm:grid-cols-2">
           <CompletionBar
             label={t("masterSet.label")}
@@ -256,23 +291,33 @@ export default function GameCollectionBrowser({ gameSlug, gameName, initialData 
           <div className="inline-flex items-center rounded-lg border bg-muted/40 p-0.5 text-sm">
             <button
               type="button"
-              onClick={() => setOwnedOnly(false)}
-              aria-pressed={!ownedOnly}
+              onClick={() => setOwnership("all")}
+              aria-pressed={ownership === "all"}
               className={`rounded-md px-3 py-1.5 font-medium transition-colors ${
-                !ownedOnly ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"
+                ownership === "all" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {t("filters.all")}
             </button>
             <button
               type="button"
-              onClick={() => setOwnedOnly(true)}
-              aria-pressed={ownedOnly}
+              onClick={() => setOwnership("owned")}
+              aria-pressed={ownership === "owned"}
               className={`rounded-md px-3 py-1.5 font-medium transition-colors ${
-                ownedOnly ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"
+                ownership === "owned" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {t("filters.ownedOnly")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setOwnership("unowned")}
+              aria-pressed={ownership === "unowned"}
+              className={`rounded-md px-3 py-1.5 font-medium transition-colors ${
+                ownership === "unowned" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t("filters.notOwned")}
             </button>
           </div>
         </div>
@@ -394,14 +439,22 @@ export default function GameCollectionBrowser({ gameSlug, gameName, initialData 
                 </DialogTitle>
               </DialogHeader>
               <div className="flex flex-col gap-4 sm:flex-row">
-                <Image
-                  src={manageCard.image}
-                  alt={manageCard.name}
-                  width={200}
-                  height={280}
-                  unoptimized
-                  className="mx-auto h-auto w-40 rounded-lg shadow sm:mx-0"
-                />
+                <div className="mx-auto flex w-40 flex-col gap-2 sm:mx-0">
+                  <Image
+                    src={manageCard.image}
+                    alt={manageCard.name}
+                    width={200}
+                    height={280}
+                    unoptimized
+                    className="h-auto w-40 rounded-lg shadow"
+                  />
+                  <Button asChild variant="outline" size="sm" className="gap-1.5">
+                    <Link href={`/games/${gameSlug}/cards/${manageCard.id}`}>
+                      <ExternalLink className="size-3.5" />
+                      {t("card.viewDetails")}
+                    </Link>
+                  </Button>
+                </div>
                 <div className="flex-1">
                   <CollectionManager
                     cardId={manageCard.id}

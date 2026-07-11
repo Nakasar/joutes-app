@@ -861,6 +861,7 @@
         "allTypes": "Alle Typen",
         "all": "Alle",
         "ownedOnly": "Besessen",
+        "notOwned": "Nicht besessen",
         "results": "{count, plural, =0 {Keine Karten} one {# Karte} other {# Karten}}",
         "noResults": "Keine Karten entsprechen deinen Filtern.",
         "range": "{start}–{end} von {total}",
@@ -871,7 +872,14 @@
       "card": {
         "manage": "{name} verwalten",
         "addOne": "Exemplar hinzufügen",
-        "removeOne": "Exemplar entfernen"
+        "removeOne": "Exemplar entfernen",
+        "viewDetails": "Kartendetails ansehen"
+      },
+      "sets": {
+        "title": "Sets",
+        "metadataTitle": "Sets · {game}",
+        "subtitle": "Fortschritt für jedes Set von {game}.",
+        "noSets": "Keine Sets anzuzeigen."
       },
         "boosters": {
           "title": "Booster",

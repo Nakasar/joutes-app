@@ -901,6 +901,7 @@
         "allTypes": "Tous les types",
         "all": "Toutes",
         "ownedOnly": "Possédées",
+        "notOwned": "Non possédées",
         "results": "{count, plural, =0 {Aucune carte} one {# carte} other {# cartes}}",
         "noResults": "Aucune carte ne correspond à vos filtres.",
         "range": "{start}–{end} sur {total}",
@@ -911,7 +912,14 @@
       "card": {
         "manage": "Gérer {name}",
         "addOne": "Ajouter un exemplaire",
-        "removeOne": "Retirer un exemplaire"
+        "removeOne": "Retirer un exemplaire",
+        "viewDetails": "Voir la fiche de la carte"
+      },
+      "sets": {
+        "title": "Extensions",
+        "metadataTitle": "Extensions · {game}",
+        "subtitle": "Complétion pour chaque extension de {game}.",
+        "noSets": "Aucune extension à afficher."
       },
         "boosters": {
           "title": "Boosters",

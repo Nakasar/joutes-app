@@ -842,6 +842,7 @@
         "allTypes": "Tutti i tipi",
         "all": "Tutte",
         "ownedOnly": "Possedute",
+        "notOwned": "Non possedute",
         "results": "{count, plural, =0 {Nessuna carta} one {# carta} other {# carte}}",
         "noResults": "Nessuna carta corrisponde ai tuoi filtri.",
         "range": "{start}–{end} di {total}",
@@ -852,7 +853,14 @@
       "card": {
         "manage": "Gestisci {name}",
         "addOne": "Aggiungi una copia",
-        "removeOne": "Rimuovi una copia"
+        "removeOne": "Rimuovi una copia",
+        "viewDetails": "Vedi dettagli carta"
+      },
+      "sets": {
+        "title": "Set",
+        "metadataTitle": "Set · {game}",
+        "subtitle": "Completamento per ogni set di {game}.",
+        "noSets": "Nessun set da mostrare."
       },
         "boosters": {
           "title": "Bustine",

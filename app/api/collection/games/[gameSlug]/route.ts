@@ -26,7 +26,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const setCode = searchParams.get("setCode") || undefined;
   const type = searchParams.get("type") || undefined;
   const search = searchParams.get("search") || undefined;
-  const ownedOnly = searchParams.get("ownedOnly") === "true";
+  const ownedParam = searchParams.get("owned");
+  const owned = ownedParam === "true" ? true : ownedParam === "false" ? false : undefined;
 
   try {
     const result = await getGameCollection({
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       setCode,
       type,
       search,
-      ownedOnly,
+      owned,
       page,
       limit,
     });
