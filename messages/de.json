@@ -873,7 +873,10 @@
         "manage": "{name} verwalten",
         "addOne": "Exemplar hinzufügen",
         "removeOne": "Exemplar entfernen",
-        "viewDetails": "Kartendetails ansehen"
+        "viewDetails": "Kartendetails ansehen",
+        "variantsBadge": "{count, plural, one {+# Variante} other {+# Varianten}}",
+        "variantsBadgeHint": "Du besitzt weitere Drucke dieser Karte",
+        "variantsSectionTitle": "Weitere Drucke"
       },
       "sets": {
         "title": "Sets",

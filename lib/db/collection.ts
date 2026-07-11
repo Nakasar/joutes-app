@@ -310,6 +310,8 @@ export type CollectionItem = {
   image: string;
   type?: string;
   quantity: number;
+  /** Number of *other* printings of this same card name the user owns at least one copy of. */
+  variantsOwned: number;
 };
 
 export type GameCollectionResult = {
@@ -322,6 +324,63 @@ export type GameCollectionResult = {
   types: string[];
   stats: GameCollectionStats | null;
 };
+
+/**
+ * For a batch of catalog items, count how many *other* printings sharing the same
+ * card name the user owns at least one copy of. Ownership is matched directly on
+ * `collection-cards` (name + setCode + collectorNumber, all denormalized on that
+ * collection at write time) rather than joining through `cards.id`, since that id
+ * is not strictly unique (see module-level note on `getGamesStats`).
+ */
+async function getVariantsOwnedByKey(
+  userObjId: ObjectId,
+  gameObjId: ObjectId,
+  items: { name: string; setCode: string; collectorNumber: string }[]
+): Promise<Map<string, number>> {
+  const names = [...new Set(items.map((it) => it.name))];
+  if (names.length === 0) return new Map();
+
+  const [catalogPrintings, ownedGroups] = await Promise.all([
+    db
+      .collection("cards")
+      .find(
+        { gameId: gameObjId, name: { $in: names } },
+        { projection: { _id: 0, name: 1, setCode: 1, collectorNumber: 1 } }
+      )
+      .toArray(),
+    db
+      .collection("collection-cards")
+      .aggregate<{ _id: { name: string; setCode: string; collectorNumber: string } }>([
+        { $match: { userId: userObjId, name: { $in: names } } },
+        { $group: { _id: { name: "$name", setCode: "$setCode", collectorNumber: "$collectorNumber" } } },
+      ])
+      .toArray(),
+  ]);
+
+  const ownedKeys = new Set(
+    ownedGroups.map((g) => `${g._id.name}|${g._id.setCode}|${g._id.collectorNumber}`)
+  );
+
+  const printingsByName = new Map<string, { setCode: string; collectorNumber: string }[]>();
+  for (const p of catalogPrintings) {
+    const key = p.name as string;
+    const list = printingsByName.get(key) ?? [];
+    list.push({ setCode: p.setCode as string, collectorNumber: String(p.collectorNumber ?? "") });
+    printingsByName.set(key, list);
+  }
+
+  const result = new Map<string, number>();
+  for (const it of items) {
+    const printings = printingsByName.get(it.name) ?? [];
+    const count = printings.filter((p) => {
+      const isSelf = p.setCode === it.setCode && p.collectorNumber === it.collectorNumber;
+      return !isSelf && ownedKeys.has(`${it.name}|${p.setCode}|${p.collectorNumber}`);
+    }).length;
+    result.set(`${it.name}|${it.setCode}|${it.collectorNumber}`, count);
+  }
+
+  return result;
+}
 
 /**
  * Paginated catalog for a single game, each item annotated with the quantity
@@ -400,10 +459,16 @@ export async function getGameCollection({
   const countRes = await cards.aggregate(countPipeline).toArray();
   const total = countRes.length > 0 ? (countRes[0].total as number) : 0;
 
-  const items = (await cards.aggregate(itemsPipeline).toArray()).map((c) => ({
+  const rawItems = (await cards.aggregate(itemsPipeline).toArray()).map((c) => ({
     ...c,
     collectorNumber: String(c.collectorNumber ?? ""),
-  })) as CollectionItem[];
+  })) as Omit<CollectionItem, "variantsOwned">[];
+
+  const variantsOwnedByKey = await getVariantsOwnedByKey(userObjId, gameObjId, rawItems);
+  const items: CollectionItem[] = rawItems.map((it) => ({
+    ...it,
+    variantsOwned: variantsOwnedByKey.get(`${it.name}|${it.setCode}|${it.collectorNumber}`) ?? 0,
+  }));
 
   const setCodes = ((await cards.distinct("setCode", { gameId: gameObjId })) as unknown[])
     .filter((v): v is string => typeof v === "string" && v.length > 0)
@@ -424,4 +489,69 @@ export async function getGameCollection({
     types,
     stats: stats ?? null,
   };
+}
+
+export type CardVariant = {
+  id: string;
+  name: string;
+  setCode: string;
+  collectorNumber: string;
+  image: string;
+  type?: string;
+  quantity: number;
+};
+
+/**
+ * Every catalog printing sharing the given card name, each annotated with the
+ * quantity the user owns of that specific printing (0 if none). Used to list
+ * "variants" of a card (e.g. alt arts) in the collection modal.
+ */
+export async function getCardVariants({
+  userId,
+  gameId,
+  name,
+}: {
+  userId: string;
+  gameId: string;
+  name: string;
+}): Promise<CardVariant[]> {
+  const userObjId = new ObjectId(userId);
+  const gameObjId = new ObjectId(gameId);
+
+  const variants = await db
+    .collection("cards")
+    .aggregate([
+      { $match: { gameId: gameObjId, name } },
+      {
+        $lookup: {
+          from: "collection-cards",
+          let: { setCode: "$setCode", collectorNumber: { $toString: "$collectorNumber" } },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$userId", userObjId] },
+                    { $eq: ["$name", name] },
+                    { $eq: ["$setCode", "$$setCode"] },
+                    { $eq: ["$collectorNumber", "$$collectorNumber"] },
+                  ],
+                },
+              },
+            },
+            { $count: "n" },
+          ],
+          as: "owned",
+        },
+      },
+      { $addFields: { quantity: { $ifNull: [{ $arrayElemAt: ["$owned.n", 0] }, 0] } } },
+      { $sort: { setCode: 1, collectorNumber: 1 } },
+      { $project: { _id: 0, id: 1, name: 1, setCode: 1, collectorNumber: 1, image: 1, type: 1, quantity: 1 } },
+    ])
+    .toArray();
+
+  return variants.map((v) => ({
+    ...v,
+    collectorNumber: String(v.collectorNumber ?? ""),
+  })) as CardVariant[];
 }

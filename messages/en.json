@@ -912,7 +912,10 @@
         "manage": "Manage {name}",
         "addOne": "Add a copy",
         "removeOne": "Remove a copy",
-        "viewDetails": "View card details"
+        "viewDetails": "View card details",
+        "variantsBadge": "{count, plural, one {+# variant} other {+# variants}}",
+        "variantsBadgeHint": "You own other printings of this card",
+        "variantsSectionTitle": "Other printings"
       },
       "sets": {
         "title": "Sets",

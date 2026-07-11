@@ -3,7 +3,6 @@ import path from "node:path";
 import {ObjectId} from "mongodb";
 import db from "@/lib/mongodb";
 import meilisearch, {indexes} from "@/lib/meilisearch";
-import {randomUUID} from "node:crypto";
 
 export type Card = {
   id: string;
@@ -23,6 +22,7 @@ export type Card = {
   cost: number;
   hp: number;
   power: number;
+  token?: boolean;
 };
 
 export async function importCardDatabase() {
@@ -44,13 +44,14 @@ export async function importCardDatabase() {
 
   for (const cardRaw of cardsRaw) {
     cards.push({
-      id: randomUUID(),
+      id: `${cardRaw.setCode}-${cardRaw.token ? `T${String(cardRaw.collectorNumber).padStart(2, '0')}` : cardRaw.collectorNumber}`,
       image: cardRaw.imageUrl,
       lang: cardRaw.lang,
       setCode: cardRaw.setCode,
-      collectorNumber: cardRaw.collectorNumber,
-      name: cardRaw.name,
-      subtitle: cardRaw.name,
+      collectorNumber: cardRaw.token ? `T${String(cardRaw.collectorNumber).padStart(2, '0')}` : String(cardRaw.collectorNumber),
+      name: `${cardRaw.name}${cardRaw.subtitle ? `, ${cardRaw.subtitle}` : ''}`,
+      title: cardRaw.name,
+      subtitle: cardRaw.subtitle,
       traits: cardRaw.traits,
       type: cardRaw.type,
       arenas: cardRaw.arenas,
@@ -61,6 +62,7 @@ export async function importCardDatabase() {
       cost: cardRaw.cost,
       hp: cardRaw.hp,
       power: cardRaw.power,
+      token: cardRaw.token,
     });
 
     if (cards.length >= batchSize) {
@@ -105,6 +107,7 @@ async function getCardsListFromFile(): Promise<Card[]> {
     rarity: cardRaw.attributes.rarity.data.attributes.englishName,
     imageUrl: cardRaw.attributes.artFront.data?.attributes.url,
     collectorNumber: cardRaw.attributes.cardNumber,
+    token: cardRaw.attributes.type.data.attributes.value === 'Token',
   }))
 }
 
@@ -136,8 +139,7 @@ async function getCardsListFromOfficialWebSite(): Promise<Card[]> {
 
   writeFileSync(path.join(__dirname, './cards.json'), JSON.stringify(cards));
 
-  // const cardsRaw = JSON.parse(readFileSync('/Users/kevin.thizy/Documents/Personnel/swu-collection-tools/tmp/data/cards.json').toString());
-  // cards.push(...cardsRaw);
+
 
   return cards.map(cardRaw => ({
     id: cardRaw.id,
@@ -155,6 +157,7 @@ async function getCardsListFromOfficialWebSite(): Promise<Card[]> {
     rarity: cardRaw.attributes.rarity.data.attributes.englishName,
     imageUrl: cardRaw.attributes.artFront.data?.attributes.url,
     collectorNumber: cardRaw.attributes.cardNumber,
+    token: cardRaw.attributes.type.data.attributes.value === 'Token',
   }))
 }
 

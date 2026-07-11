@@ -35,13 +35,15 @@ import {
 } from "@/components/ui/select";
 import CollectionManager from "@/app/games/[gameSlugOrId]/cards/[cardId]/CollectionManager";
 import { CompletionBar } from "@/app/collection/CollectionOverview";
-import type { CollectionItem, GameCollectionResult } from "@/lib/db/collection";
+import type { CardVariant, CollectionItem, GameCollectionResult } from "@/lib/db/collection";
 
 type Props = {
   gameSlug: string;
   gameName: string;
   initialData: GameCollectionResult;
 };
+
+type ManageableCard = Pick<CollectionItem, "id" | "name" | "setCode" | "collectorNumber" | "image" | "quantity">;
 
 export default function GameCollectionBrowser({ gameSlug, gameName, initialData }: Props) {
   const t = useTranslations("Collection");
@@ -60,8 +62,10 @@ export default function GameCollectionBrowser({ gameSlug, gameName, initialData 
   const [ownership, setOwnership] = useState<"all" | "owned" | "unowned">("all");
   const [loading, setLoading] = useState(false);
 
-  const [manageCard, setManageCard] = useState<CollectionItem | null>(null);
+  const [manageCard, setManageCard] = useState<ManageableCard | null>(null);
   const [busyCardId, setBusyCardId] = useState<string | null>(null);
+  const [variants, setVariants] = useState<CardVariant[] | null>(null);
+  const [variantsLoading, setVariantsLoading] = useState(false);
 
   const controllerRef = useRef<AbortController | null>(null);
   const initializedRef = useRef(false);
@@ -116,6 +120,32 @@ export default function GameCollectionBrowser({ gameSlug, gameName, initialData 
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, setCode, type, ownership]);
+
+  // Fetch other printings of the open card's name (only re-fetches when the name
+  // changes, so clicking between variants of the same card doesn't re-fetch).
+  useEffect(() => {
+    if (!manageCard) {
+      setVariants(null);
+      return;
+    }
+    const controller = new AbortController();
+    setVariantsLoading(true);
+    fetch(`/api/collection/games/${gameSlug}/variants?name=${encodeURIComponent(manageCard.name)}`, {
+      signal: controller.signal,
+    })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: CardVariant[]) => {
+        if (!controller.signal.aborted) setVariants(data);
+      })
+      .catch((err) => {
+        if (err.name !== "AbortError") setVariants([]);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setVariantsLoading(false);
+      });
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [manageCard?.name, gameSlug]);
 
   const goToPage = (next: number) => {
     if (next < 1 || next > totalPages || loading) return;
@@ -371,8 +401,18 @@ export default function GameCollectionBrowser({ gameSlug, gameName, initialData 
                     <p className="truncate text-sm font-medium leading-tight" title={card.name}>
                       {card.name}
                     </p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {card.setCode} #{card.collectorNumber}
+                    <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
+                      <span className="truncate">
+                        {card.setCode} #{card.collectorNumber}
+                      </span>
+                      {card.variantsOwned > 0 ? (
+                        <span
+                          className="inline-flex shrink-0 items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary"
+                          title={t("card.variantsBadgeHint")}
+                        >
+                          {t("card.variantsBadge", { count: card.variantsOwned })}
+                        </span>
+                      ) : null}
                     </p>
                   </div>
                   <div className="mt-auto flex items-center gap-1">
@@ -467,6 +507,53 @@ export default function GameCollectionBrowser({ gameSlug, gameName, initialData 
                   />
                 </div>
               </div>
+
+              {/* Other printings of this same card (e.g. alt arts) */}
+              {(() => {
+                const otherVariants = (variants ?? []).filter(
+                  (v) => !(v.setCode === manageCard.setCode && v.collectorNumber === manageCard.collectorNumber)
+                );
+                if (!variantsLoading && otherVariants.length === 0) return null;
+                return (
+                  <div className="mt-2 border-t pt-3">
+                    <p className="mb-2 flex items-center gap-2 text-sm font-medium">
+                      {t("card.variantsSectionTitle")}
+                      {variantsLoading ? <Loader2 className="size-3.5 animate-spin text-muted-foreground" /> : null}
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {otherVariants.map((variant) => (
+                        <button
+                          key={`${variant.setCode}-${variant.collectorNumber}`}
+                          type="button"
+                          onClick={() => setManageCard(variant)}
+                          className="flex items-center gap-2 rounded-lg border p-1.5 text-left transition-colors hover:bg-accent"
+                        >
+                          <Image
+                            src={variant.image}
+                            alt={variant.name}
+                            width={40}
+                            height={56}
+                            unoptimized
+                            className="h-14 w-10 shrink-0 rounded object-cover"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs text-muted-foreground">
+                              {variant.setCode} #{variant.collectorNumber}
+                            </p>
+                            <p
+                              className={`text-xs font-semibold tabular-nums ${
+                                variant.quantity > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"
+                              }`}
+                            >
+                              ×{variant.quantity}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </>
           ) : null}
         </DialogContent>

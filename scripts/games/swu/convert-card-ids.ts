@@ -1,25 +1,35 @@
 import db from "@/lib/mongodb";
-import {ObjectId} from "mongodb";
-
-/*
-  Created to migrate existing SWU cards whose IDS where numerical to strings.
-  This is a temporary measure, SWU cards will be imported using their standard format ID <SET><CN> next time.
- */
 
 async function main() {
+  const setCode = 'ASHP';
 
-  const cursor = db.collection('cards').find({
-    gameId: new ObjectId('68f108675fdfb9c53ba3387d'),
+  const cursorBoosters = db.collection('booster-cards').find({
+    setCode: setCode,
   });
 
-  while (await cursor.hasNext()) {
-    const card = await cursor.next();
+  while (await cursorBoosters.hasNext()) {
+    const card = await cursorBoosters.next();
     if (!card) continue;
 
-    await db.collection('cards').updateOne({
+    await db.collection('booster-cards').updateOne({
       _id: card._id,
     }, {
-      $set: { id: `${card.id}` },
+      $set: { cardId: `${card.setCode}-${card.collectorNumber}` },
+    });
+  }
+
+  const cursorCollection = db.collection('collection-cards').find({
+    setCode: setCode,
+  });
+
+  while (await cursorCollection.hasNext()) {
+    const card = await cursorCollection.next();
+    if (!card) continue;
+
+    await db.collection('collection-cards').updateOne({
+      _id: card._id,
+    }, {
+      $set: { cardId: `${card.setCode}-${card.collectorNumber}` },
     });
   }
 }

@@ -913,7 +913,10 @@
         "manage": "Gérer {name}",
         "addOne": "Ajouter un exemplaire",
         "removeOne": "Retirer un exemplaire",
-        "viewDetails": "Voir la fiche de la carte"
+        "viewDetails": "Voir la fiche de la carte",
+        "variantsBadge": "{count, plural, one {+# variante} other {+# variantes}}",
+        "variantsBadgeHint": "Vous possédez d'autres versions de cette carte",
+        "variantsSectionTitle": "Autres versions"
       },
       "sets": {
         "title": "Extensions",

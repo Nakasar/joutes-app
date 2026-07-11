@@ -854,7 +854,10 @@
         "manage": "Gestisci {name}",
         "addOne": "Aggiungi una copia",
         "removeOne": "Rimuovi una copia",
-        "viewDetails": "Vedi dettagli carta"
+        "viewDetails": "Vedi dettagli carta",
+        "variantsBadge": "{count, plural, one {+# variante} other {+# varianti}}",
+        "variantsBadgeHint": "Possiedi altre stampe di questa carta",
+        "variantsSectionTitle": "Altre stampe"
       },
       "sets": {
         "title": "Set",
