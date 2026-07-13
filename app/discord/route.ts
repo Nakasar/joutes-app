@@ -58,6 +58,7 @@ import {
 import {parseDeckList, serializeDeckList} from "@/app/games/riftbound/deck-checker/utils";
 import {getLairById, LairDocument} from "@/lib/db/lairs";
 import {DiscordEmojis} from "@/app/discord/utils";
+import {inspect} from "node:util";
 
 const agentId = "yGypfIpDEb";
 const aiAllowedDiscordIds = JSON.parse(
@@ -756,6 +757,7 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
     });
 
     const messages = makeEventsBoardDiscordMessages(board._id.toString(), currentDate, events);
+    console.log(inspect(messages, null, { depth: 20 }));
     for (const [idx, message] of messages.entries()) {
       if (idx === 0) {
         await rest.patch(
