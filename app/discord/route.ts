@@ -45,7 +45,6 @@ import {ObjectId} from "mongodb";
 import {RegistrationStatus} from "@/lib/types/Event";
 import {
   makeEventDiscordInfoMessage,
-  makeEventsBoardDiscordMessage,
   makeEventsBoardDiscordMessages
 } from "@/lib/discord/utils";
 import {GameDocument, getGameBySlugOrId} from "@/lib/db/games";
@@ -755,41 +754,32 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
       beforeDate: currentDate.plus({weeks: 2}).toISO(),
     });
 
-    await rest.patch(
-      Routes.webhookMessage(
-        interaction.application_id,
-        interaction.token,
-        "@original",
-      ),
-      {
-        body: {
-          embeds: [
-            new EmbedBuilder()
-              .setTitle(`Events`)
-              .setDescription(`Voici les évènements à venir :\n\n${events.length > 0 ? events.map(e => `-${e.game?.slug ? ` <:${e.game.slug}:${DiscordEmojis[e.game.slug] ?? ''}>` : ''} [${e.name}](https://joutes.app/events/${e.id}) le ${DateTime.fromISO(e.startDateTime, {
-                zone: 'Europe/Paris',
-                locale: 'fr'
-              }).toLocaleString(DateTime.DATETIME_MED)} à ${e.lair?.name ?? 'Lieu Inconnu'}`).join('\n') : 'Aucun évènement à venir.'}`)
-              .setFooter({
-                text: `Généré : ${currentDate.setZone('Europe/Paris').toLocaleString(DateTime.DATETIME_MED, {locale: 'fr'})} (non mis à jour automatiquement)`,
-              }),
-          ],
-          content: null,
-          components: [
-            new ActionRowBuilder<ButtonBuilder>().addComponents(
-              new ButtonBuilder()
-                .setLabel("Actualiser")
-                .setCustomId(`refresh-events-board-${board._id.toString()}`)
-                .setStyle(ButtonStyle.Primary),
-              new ButtonBuilder()
-                .setLabel("Modifier")
-                .setCustomId(`modify-events-board-${board._id.toString()}`)
-                .setStyle(ButtonStyle.Secondary),
-            ),
-          ]
-        },
-      },
-    );
+    const messages = makeEventsBoardDiscordMessages(board._id.toString(), currentDate, events);
+    if (messages.length > 0) {
+      await rest.patch(
+        Routes.webhookMessage(
+          interaction.application_id,
+          interaction.token,
+          "@original",
+        ),
+        {
+          body: messages[0],
+        }
+      );
+
+      if (messages.length > 1) {
+        for (const message of messages) {
+          await rest.post(Routes.interactionCallback(interaction.id, interaction.token),
+            {
+              body: {
+                type: 4,
+                data: message,
+              },
+            });
+        }
+      }
+    }
+
     return NextResponse.json({success: true}, {status: 200});
   } else {
     await rest.post(
