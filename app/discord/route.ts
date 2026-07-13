@@ -757,7 +757,7 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
     });
 
     const messages = makeEventsBoardDiscordMessages(board._id.toString(), currentDate, events);
-    console.log(inspect(messages, null, { depth: 20 }));
+    console.log(inspect(messages, false, { depth: 20 }));
     for (const [idx, message] of messages.entries()) {
       if (idx === 0) {
         await rest.patch(
