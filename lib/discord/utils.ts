@@ -75,6 +75,16 @@ export function makeEventDiscordInfoMessage(event: Event) {
   }
 }
 
+export function makeEventsBoardDiscordMessages(boardId: string, date: DateTime, events: Event[]) {
+  const messages = [];
+
+  for (let i = 0; i < events.length; i += 10) {
+    messages.push(makeEventsBoardDiscordMessage(boardId, date, events.slice(i, i + 10)));
+  }
+
+  return messages;
+}
+
 export function makeEventsBoardDiscordMessage(boardId: string, date: DateTime, events: Event[]) {
   return {
     embeds: [

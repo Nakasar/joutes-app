@@ -43,7 +43,11 @@ import {
 import {DateTime} from "luxon";
 import {ObjectId} from "mongodb";
 import {RegistrationStatus} from "@/lib/types/Event";
-import {makeEventDiscordInfoMessage, makeEventsBoardDiscordMessage} from "@/lib/discord/utils";
+import {
+  makeEventDiscordInfoMessage,
+  makeEventsBoardDiscordMessage,
+  makeEventsBoardDiscordMessages
+} from "@/lib/discord/utils";
 import {GameDocument, getGameBySlugOrId} from "@/lib/db/games";
 import {
   DeckList,
@@ -224,17 +228,32 @@ async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInte
   const events = await getEventsByLairIds(lairs.map(id => id.toString()), {
     gameIds: games.map(g => g._id.toString()),
     afterDate: currentDate.toISO(),
-    beforeDate: currentDate.plus({weeks: 1}).toISO(),
+    beforeDate: currentDate.plus({weeks: 2}).toISO(),
   });
 
   try {
-    await rest.patch(Routes.channelMessage(
-        board.channelId,
-        board.messageId,
-      ), {
-        body: makeEventsBoardDiscordMessage(board._id.toString(), currentDate, events),
+    const messages = makeEventsBoardDiscordMessages(board._id.toString(), currentDate, events);
+    if (messages.length > 0) {
+      await rest.patch(Routes.channelMessage(
+          board.channelId,
+          board.messageId,
+        ), {
+          body: messages[0],
+        }
+      );
+
+      if (messages.length > 1) {
+        for (const message of messages) {
+          await rest.post(Routes.interactionCallback(interaction.id, interaction.token),
+            {
+              body: {
+                type: 4,
+                data: message,
+              },
+            });
+        }
       }
-    );
+    }
   } catch (err) {
     console.warn('Failed to update original message.');
     console.warn(err);
