@@ -96,15 +96,15 @@ export function makeEventsBoardDiscordMessage(boardId: string, date: DateTime, e
         }).toLocaleString(DateTime.DATETIME_MED)} à ${e.lair?.name ?? 'Lieu Inconnu'}`).join('\n') : 'Aucun évènement à venir.'}`)
         .setFooter({
           text: `Updated: ${date.setZone('Europe/Paris').toLocaleString(DateTime.DATETIME_MED, {locale: 'fr'})}`,
-        }),
+        }).toJSON(),
     ],
     content: null,
     components: [
-      new ButtonBuilder()
-        .setLabel("Actualiser")
-        .setCustomId(`refresh-events-board-${boardId}`)
-        .setStyle(ButtonStyle.Primary),
       new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+          .setLabel("Actualiser")
+          .setCustomId(`refresh-events-board-${boardId}`)
+          .setStyle(ButtonStyle.Primary),
         new ButtonBuilder()
           .setLabel("Modifier")
           .setCustomId(`modify-events-board-${boardId}`)
