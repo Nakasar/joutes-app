@@ -233,9 +233,10 @@ async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInte
   try {
     const messages = makeEventsBoardDiscordMessages(board._id.toString(), currentDate, events);
     if (messages.length > 0) {
-      await rest.patch(Routes.channelMessage(
-          board.channelId,
-          board.messageId,
+      await rest.patch(Routes.webhookMessage(
+        interaction.application_id,
+        interaction.token,
+        "@original",
         ), {
           body: messages[0],
         }
