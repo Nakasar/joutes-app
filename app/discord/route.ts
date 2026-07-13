@@ -224,7 +224,7 @@ async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInte
   const events = await getEventsByLairIds(lairs.map(id => id.toString()), {
     gameIds: games.map(g => g._id.toString()),
     afterDate: currentDate.toISO(),
-    beforeDate: currentDate.plus({weeks: 2}).toISO(),
+    beforeDate: currentDate.plus({weeks: 1}).toISO(),
   });
 
   try {
