@@ -97,19 +97,24 @@ export async function POST(req: Request) {
     return NextResponse.json({success: false}, {status: 403});
   }
 
-  if (body.type === 1) {
-    return NextResponse.json({type: 1});
-  } else if (body.type === InteractionType.ApplicationCommand) {
-    return handleApplicationCommand(
-      body as APIChatInputApplicationCommandInteraction,
-    );
-  } else if (body.type === InteractionType.MessageComponent) {
-    return handleComponentInteraction(
-      body as APIMessageComponentInteraction,
-    );
-  } else if (body.type === InteractionType.ModalSubmit) {
-    return handleModalSubmitInteraction(body as APIModalSubmitInteraction)
+  try {
+    if (body.type === 1) {
+      return NextResponse.json({type: 1});
+    } else if (body.type === InteractionType.ApplicationCommand) {
+      return handleApplicationCommand(
+        body as APIChatInputApplicationCommandInteraction,
+      );
+    } else if (body.type === InteractionType.MessageComponent) {
+      return handleComponentInteraction(
+        body as APIMessageComponentInteraction,
+      );
+    } else if (body.type === InteractionType.ModalSubmit) {
+      return handleModalSubmitInteraction(body as APIModalSubmitInteraction)
+    }
+  } catch (error) {
+    console.error(inspect(error, false, 20));
   }
+
 
   return NextResponse.json({success: true}, {status: 200});
 }
