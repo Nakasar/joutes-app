@@ -232,26 +232,26 @@ async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInte
 
   try {
     const messages = makeEventsBoardDiscordMessages(board._id.toString(), currentDate, events);
-    if (messages.length > 0) {
-      await rest.patch(Routes.webhookMessage(
-        interaction.application_id,
-        interaction.token,
-        "@original",
-        ), {
-          body: messages[0],
-        }
-      );
-
-      if (messages.length > 1) {
-        for (const message of messages) {
-          await rest.post(Routes.interactionCallback(interaction.id, interaction.token),
-            {
-              body: {
-                type: 4,
-                data: message,
-              },
-            });
-        }
+    for (const [idx, message] of messages.entries()) {
+      if (idx === 0) {
+        await rest.patch(
+          Routes.webhookMessage(
+            interaction.application_id,
+            interaction.token,
+            "@original",
+          ),
+          {
+            body: messages[0],
+          }
+        );
+      } else {
+        await rest.post(Routes.interactionCallback(interaction.id, interaction.token),
+          {
+            body: {
+              type: 4,
+              data: message,
+            },
+          });
       }
     }
   } catch (err) {
