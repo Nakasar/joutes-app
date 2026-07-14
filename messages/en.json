@@ -16,7 +16,8 @@
       "myAccount": "My Account",
       "Wishlists": "Wishlists",
       "Groupes": "Groups",
-      "PlayGroups": "My Play-Groups"
+      "PlayGroups": "My Play-Groups",
+      "Fonctionnalités": "Features"
     }
   },
   "Home": {
@@ -1103,5 +1104,146 @@
           "inCollection": "In collection",
           "removeCard": "Remove card"
         }
+    },
+    "Features": {
+      "metadata": {
+        "title": "Features",
+        "description": "Discover everything Joutes offers for your trading card game passion: collection tracking, wishlists, play groups, events and more."
+      },
+      "hero": {
+        "eyebrow": "Joutes",
+        "titleHighlight": "One app",
+        "title": "for all your trading card games",
+        "subtitle": "Card catalogs, collection tracking, wishlists, play groups, events… Joutes brings together everything you need to live your TCG passion, solo or with friends.",
+        "ctaPrimary": "Explore games",
+        "ctaSecondary": "Create an account"
+      },
+      "items": {
+        "games": {
+          "title": "A hub for all your games",
+          "description": "Browse card catalogs across multiple TCGs, search by name, set or type, and find everything you need in one place.",
+          "bullets": [
+            "Instant search within each game",
+            "Game pages with news, rules and tools",
+            "Built to welcome new games over time"
+          ]
+        },
+        "cards": {
+          "title": "Card pages that get straight to the point",
+          "description": "Every card shows its game-specific properties (domains, traits, cost, might…) along with its errata, rulings and clarifications, sorted intelligently.",
+          "bullets": [
+            "Properties tailored to each game",
+            "Community-voted errata and rulings",
+            "Outdated content is automatically pushed to the bottom"
+          ]
+        },
+        "collection": {
+          "title": "Your collection, tracked down to the smallest detail",
+          "description": "Add your cards with language, condition, foil or purchase price, and track your progress toward the master set and game set of each expansion.",
+          "bullets": [
+            "Detailed completion per set and per game",
+            "Foil, language, condition, grading, acquisition price",
+            "Variants (alt-arts) automatically grouped together"
+          ]
+        },
+        "playGroups": {
+          "title": "Play together with your groups",
+          "description": "Create play groups, share a collection that any member can update, and keep track of who borrowed which card.",
+          "bullets": [
+            "A collection shared across all members",
+            "Card-by-card borrow tracking",
+            "Invitations and roles (owner, admin, member)"
+          ]
+        },
+        "wishlists": {
+          "title": "Wishlists that do the work for you",
+          "description": "Create as many lists as you like, across every game, with private, unlisted or public visibility. Joutes shows at a glance what you already own.",
+          "bullets": [
+            "Real-time \"already owned\" indicator",
+            "One-click add from your collection or a card page",
+            "Text export to share your list instantly"
+          ]
+        },
+        "lairs": {
+          "title": "Local game stores and events near you",
+          "description": "Discover game stores (lairs), their events, and sign up in a few seconds.",
+          "bullets": [
+            "Event calendar for every location",
+            "Store pages with practical info",
+            "Reminders and notifications"
+          ]
+        },
+        "decks": {
+          "title": "Build and validate your decks",
+          "description": "Build your decks and check their legality against the game's rules, right inside the app.",
+          "bullets": [
+            "Automatic legality checker",
+            "Public or private sharing",
+            "A solid base to prepare for tournaments"
+          ]
+        },
+        "leagues": {
+          "title": "Leagues and matches, no spreadsheet needed",
+          "description": "Track your leagues, log your matches and standings, without needing a shared spreadsheet.",
+          "bullets": [
+            "Automatically calculated standings",
+            "Full match history",
+            "Multiple formats (points, elimination…)"
+          ]
+        }
+      },
+      "cta": {
+        "title": "Ready to centralize your passion?",
+        "subtitle": "Join Joutes for free and start by exploring your first game.",
+        "ctaPrimary": "Explore games",
+        "ctaSecondary": "Create a free account"
+      },
+      "mockup": {
+        "hero": {
+          "dashboard": "Joutes dashboard"
+        },
+        "games": {
+          "searchPlaceholder": "Search for a card…"
+        },
+        "cards": {
+          "domain": "Domain",
+          "cost": "Cost {value}",
+          "might": "Might {value}",
+          "ruling": "Ruling · {count} upvotes",
+          "outdatedErrata": "Outdated errata"
+        },
+        "collection": {
+          "masterSet": "Master set",
+          "gameSet": "Game set"
+        },
+        "playGroups": {
+          "sharedCollection": "Shared collection",
+          "cardName1": "Runic Flare",
+          "cardName2": "Steel Guard",
+          "borrowedBy": "Borrowed · {name}",
+          "available": "×{count} available"
+        },
+        "wishlists": {
+          "title": "My wishlist",
+          "visibilityPublic": "Public",
+          "cardName1": "Everlasting Flame",
+          "cardName2": "Mist Sentinel",
+          "owned": "Owned",
+          "wanted": "Wanted ×{count}"
+        },
+        "lairs": {
+          "name": "The Dragon's Lair",
+          "event": "Riftbound tournament · Saturday 2pm"
+        },
+        "decks": {
+          "name": "Domination deck",
+          "legal": "Legal",
+          "costAxis": "cost"
+        },
+        "leagues": {
+          "name": "Spring league",
+          "points": "{count} pts"
+        }
+      }
     }
 }
