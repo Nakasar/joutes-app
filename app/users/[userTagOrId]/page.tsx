@@ -3,8 +3,9 @@ import { getPublicUserProfileAction } from "@/app/account/user-actions";
 import { getAllGames } from "@/lib/db/games";
 import { getLairById } from "@/lib/db/lairs";
 import { getAchievementsForUser, getAllAchievements } from "@/lib/db/achievements";
+import { getPublicWishlistsForOwner } from "@/lib/db/wishlists";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Gamepad2, MapPin, Lock, Globe, ExternalLink, Trophy } from "lucide-react";
+import { Gamepad2, MapPin, Lock, Globe, ExternalLink, Trophy, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Game } from "@/lib/types/Game";
 import { Lair } from "@/lib/types/Lair";
@@ -56,6 +57,9 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
     // On ne garde que les succès débloqués pour l'affichage public
     userAchievements = allAchievements.filter(a => a.unlockedAt);
   }
+
+  // Listes de souhaits publiques (affichées quel que soit isPublic : c'est un choix explicite par liste)
+  const publicWishlists = await getPublicWishlistsForOwner({ type: "user", id: user.id });
 
   // Vérifier si l'utilisateur connecté est admin
   const isAdmin = await checkAdmin();
@@ -301,6 +305,45 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
                         </div>
                       </div>
                     </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Listes de souhaits publiques */}
+          {publicWishlists.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Heart className="h-5 w-5" />
+                  Listes de souhaits
+                </CardTitle>
+                <CardDescription>
+                  Les listes de souhaits publiques de {user.displayName || user.username}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {publicWishlists.map((wishlist) => (
+                    <a
+                      key={wishlist.id}
+                      href={`/wishlists/${wishlist.id}`}
+                      className="flex items-start gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <Heart className="h-5 w-5 text-primary mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold truncate">{wishlist.name}</p>
+                        {wishlist.description && (
+                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                            {wishlist.description}
+                          </p>
+                        )}
+                        <Badge variant="secondary" className="mt-2 text-xs">
+                          {wishlist.itemsCount} carte{wishlist.itemsCount !== 1 ? "s" : ""}
+                        </Badge>
+                      </div>
+                    </a>
                   ))}
                 </div>
               </CardContent>

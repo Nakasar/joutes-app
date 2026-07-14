@@ -13,7 +13,8 @@
       "Déconnexion": "Logout",
       "Se connecter": "Login",
       "Connexion": "Login",
-      "myAccount": "My Account"
+      "myAccount": "My Account",
+      "Wishlists": "Wishlists"
     }
   },
   "Home": {
@@ -866,7 +867,10 @@
       "back": "Back to groups",
       "collectionTitle": "Collection",
       "viewCollection": "View collection",
-      "collectionDescription": "Browse and complete the card collection shared by the group."
+      "collectionDescription": "Browse and complete the card collection shared by the group.",
+      "wishlistsTitle": "Wishlists",
+      "viewWishlists": "View wishlists",
+      "wishlistsDescription": "Browse and complete the wishlists shared by the group."
     },
     "collection": {
       "title": "{group}'s collection",
@@ -876,6 +880,89 @@
       "emptyDescription": "Group members can add cards from game pages to track shared progress."
     }
   },
+    "Wishlists": {
+      "metadata": {
+        "title": "My wishlists",
+        "description": "Manage your card wishlists, across all your TCGs.",
+        "notFoundTitle": "Wishlist not found"
+      },
+      "metadataTitleGroup": "Wishlists · {group}",
+      "metadataTitleWishlist": "{name} - Wishlist",
+      "title": "My wishlists",
+      "subtitle": "Track the cards you'd like to get, across every game.",
+      "create": {
+        "trigger": "New wishlist",
+        "title": "Create a wishlist",
+        "submit": "Create"
+      },
+      "edit": {
+        "title": "Edit wishlist",
+        "submit": "Save"
+      },
+      "form": {
+        "name": "Name",
+        "description": "Description",
+        "visibility": "Visibility",
+        "cancel": "Cancel"
+      },
+      "visibility": {
+        "private": "Private",
+        "unlisted": "Unlisted",
+        "public": "Public",
+        "privateHint": "Only you (or the group's members) can see it.",
+        "unlistedHint": "Visible to anyone with the link, but not listed on your profile.",
+        "publicHint": "Visible to everyone and shown on your profile."
+      },
+      "empty": {
+        "title": "No wishlists yet",
+        "description": "Create a wishlist to track cards you'd like to acquire."
+      },
+      "card": {
+        "itemsCount": "{count, plural, =0 {No cards} one {# card} other {# cards}}",
+        "updatedAt": "updated {date}",
+        "open": "Open",
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "delete": {
+        "title": "Delete wishlist?",
+        "description": "\"{name}\" will be permanently deleted, along with all its cards.",
+        "confirm": "Delete"
+      },
+      "errors": {
+        "create": "Unable to create the wishlist",
+        "update": "Unable to update the wishlist",
+        "delete": "Unable to delete the wishlist",
+        "removeItem": "Unable to remove this card",
+        "updateItem": "Unable to update this card",
+        "addItem": "Unable to add this card"
+      },
+      "detail": {
+        "back": "Back",
+        "searchPlaceholder": "Search a card…",
+        "allGames": "All games",
+        "allTypes": "All types",
+        "results": "{count, plural, =0 {No cards} one {# card} other {# cards}}",
+        "noResults": "No cards match your filters.",
+        "decreaseQuantity": "Decrease wanted quantity",
+        "increaseQuantity": "Increase wanted quantity",
+        "removeItem": "Remove this card from the list",
+        "quantityWanted": "{count, plural, one {# copy wanted} other {# copies wanted}}",
+        "previous": "Previous",
+        "next": "Next",
+        "pageOf": "Page {page} of {totalPages}",
+        "editSettings": "Settings"
+      },
+      "addItem": {
+        "trigger": "Add a card",
+        "title": "Add a card to the wishlist",
+        "selectGame": "Choose a game",
+        "searchPlaceholder": "Search a card…",
+        "search": "Search",
+        "add": "Add",
+        "added": "{name} added to the wishlist"
+      }
+    },
     "Collection": {
       "metadata": {
         "title": "My collection",
