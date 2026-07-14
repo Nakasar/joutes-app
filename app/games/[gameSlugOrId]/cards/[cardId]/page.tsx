@@ -2,6 +2,7 @@ import {BoosterCard} from "@/lib/types/booster";
 import ReactMarkdown from "react-markdown";
 import CardSearchBar from "./CardSearchBar";
 import CollectionManager from "./CollectionManager";
+import AddToWishlistButton from "@/components/AddToWishlistButton";
 import db from "@/lib/mongodb";
 import {auth} from "@/lib/auth";
 import {headers} from "next/headers";
@@ -163,10 +164,18 @@ export default async function RiftboundCardDetailPage({
           </div>
 
           {userId && (
-            <div className="mb-6">
+            <div className="mb-6 flex flex-wrap items-center gap-3">
               <CollectionManager
                 cardId={card.id}
-                gameSlug="riftbound"
+                gameSlug={game.slug ?? gameSlugOrId}
+                cardName={card.name}
+                setCode={card.setCode}
+                collectorNumber={card.collectorNumber}
+                image={card.image}
+              />
+              <AddToWishlistButton
+                cardId={card.id}
+                gameSlug={game.slug ?? gameSlugOrId}
                 cardName={card.name}
                 setCode={card.setCode}
                 collectorNumber={card.collectorNumber}

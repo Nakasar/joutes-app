@@ -915,6 +915,14 @@
         "search": "Suchen",
         "add": "Hinzufügen",
         "added": "{name} zur Wunschliste hinzugefügt"
+      },
+      "addToWishlist": {
+        "trigger": "Wunschliste",
+        "loading": "Wunschlisten werden geladen…",
+        "empty": "Noch keine Wunschliste. Erstelle unten eine.",
+        "personalHeading": "Meine Wunschlisten",
+        "newPlaceholder": "Neue Wunschliste…",
+        "added": "Zu „{wishlist}“ hinzugefügt"
       }
     },
     "Collection": {

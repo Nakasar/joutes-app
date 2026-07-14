@@ -967,6 +967,14 @@
         "search": "Search",
         "add": "Add",
         "added": "{name} added to the wishlist"
+      },
+      "addToWishlist": {
+        "trigger": "Wishlist",
+        "loading": "Loading wishlists…",
+        "empty": "No wishlists yet. Create one below.",
+        "personalHeading": "My wishlists",
+        "newPlaceholder": "New wishlist…",
+        "added": "Added to \"{wishlist}\""
       }
     },
     "Collection": {

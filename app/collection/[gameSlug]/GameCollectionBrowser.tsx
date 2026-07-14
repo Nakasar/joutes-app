@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import CollectionManager from "@/app/games/[gameSlugOrId]/cards/[cardId]/CollectionManager";
+import AddToWishlistButton from "@/components/AddToWishlistButton";
 import { CompletionBar } from "@/app/collection/CollectionOverview";
 import type { CardVariant, CollectionItem, GameCollectionResult } from "@/lib/db/collection";
 
@@ -509,6 +510,14 @@ export default function GameCollectionBrowser({
                       {t("card.viewDetails")}
                     </Link>
                   </Button>
+                  <AddToWishlistButton
+                    cardId={manageCard.id}
+                    gameSlug={gameSlug}
+                    cardName={manageCard.name}
+                    setCode={manageCard.setCode}
+                    collectorNumber={String(manageCard.collectorNumber)}
+                    image={manageCard.image}
+                  />
                 </div>
                 <div className="flex-1">
                   <CollectionManager
