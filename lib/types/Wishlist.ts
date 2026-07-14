@@ -31,4 +31,6 @@ export type WishlistItem = {
   /** Which member added this item — mainly meaningful for play-group wishlists. */
   addedByUserId?: string;
   createdAt: Date;
+  /** How many copies of this card the *viewing* user personally owns — only computed when the viewer is logged in. */
+  ownedQuantity?: number;
 };

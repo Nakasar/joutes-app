@@ -45,6 +45,7 @@ function toWishlistItem(doc: WithId<Document>): WishlistItem {
     note: doc.note || undefined,
     addedByUserId: doc.addedByUserId ? doc.addedByUserId.toString() : undefined,
     createdAt: doc.createdAt,
+    ownedQuantity: typeof doc.ownedQuantity === "number" ? doc.ownedQuantity : undefined,
   };
 }
 
@@ -206,6 +207,10 @@ export type WishlistItemsOptions = {
   search?: string;
   page?: number;
   limit?: number;
+  /** Current viewer, used to annotate/filter items by how many the viewer personally owns. */
+  viewerId?: string;
+  /** Only include items the viewer owns at least this many copies of (requires viewerId). */
+  ownedMinQuantity?: number;
 };
 
 export type PaginatedWishlistItems = {
@@ -220,7 +225,7 @@ export type PaginatedWishlistItems = {
 
 export async function getWishlistItems(
   wishlistId: string,
-  { gameId, type, search, page = 1, limit = 48 }: WishlistItemsOptions = {}
+  { gameId, type, search, page = 1, limit = 48, viewerId, ownedMinQuantity }: WishlistItemsOptions = {}
 ): Promise<PaginatedWishlistItems> {
   const wishlistObjId = new ObjectId(wishlistId);
   const match: Record<string, unknown> = { wishlistId: wishlistObjId };
@@ -230,14 +235,49 @@ export async function getWishlistItems(
 
   const collection = db.collection(WISHLIST_ITEMS_COLLECTION);
 
-  const [total, docs, gameRows, types] = await Promise.all([
-    collection.countDocuments(match),
-    collection
-      .find(match)
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .toArray(),
+  const ownedLookup: Record<string, unknown>[] = viewerId
+    ? [
+        {
+          $lookup: {
+            from: "collection-cards",
+            let: { cid: "$cardId" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $and: [{ $eq: ["$cardId", "$$cid"] }, { $eq: ["$userId", new ObjectId(viewerId)] }] },
+                },
+              },
+              { $count: "n" },
+            ],
+            as: "owned",
+          },
+        },
+        { $addFields: { ownedQuantity: { $ifNull: [{ $arrayElemAt: ["$owned.n", 0] }, 0] } } },
+      ]
+    : [];
+
+  const sortSkipLimit: Record<string, unknown>[] = [
+    { $sort: { createdAt: -1 } },
+    { $skip: (page - 1) * limit },
+    { $limit: limit },
+  ];
+
+  let countPipeline: Record<string, unknown>[];
+  let itemsPipeline: Record<string, unknown>[];
+
+  if (viewerId && ownedMinQuantity !== undefined) {
+    // Ownership is only known after the lookup, so it must precede pagination.
+    const filtered = [{ $match: match }, ...ownedLookup, { $match: { ownedQuantity: { $gte: ownedMinQuantity } } }];
+    countPipeline = [...filtered, { $count: "total" }];
+    itemsPipeline = [...filtered, ...sortSkipLimit];
+  } else {
+    countPipeline = [{ $match: match }, { $count: "total" }];
+    itemsPipeline = [{ $match: match }, ...sortSkipLimit, ...ownedLookup];
+  }
+
+  const [countRes, docs, gameRows, types] = await Promise.all([
+    collection.aggregate<{ total: number }>(countPipeline).toArray(),
+    collection.aggregate<WithId<Document>>(itemsPipeline).toArray(),
     collection
       .aggregate<{ _id: ObjectId; gameName?: string; gameSlug?: string }>([
         { $match: { wishlistId: wishlistObjId } },
@@ -246,6 +286,8 @@ export async function getWishlistItems(
       .toArray(),
     collection.distinct("type", { wishlistId: wishlistObjId }) as Promise<string[]>,
   ]);
+
+  const total = countRes.length > 0 ? (countRes[0].total as number) : 0;
 
   return {
     items: docs.map(toWishlistItem),

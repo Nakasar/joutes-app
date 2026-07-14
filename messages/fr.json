@@ -952,7 +952,11 @@
         "previous": "Précédent",
         "next": "Suivant",
         "pageOf": "Page {page} / {totalPages}",
-        "editSettings": "Paramètres"
+        "editSettings": "Paramètres",
+        "ownedOnly": "Cartes possédées",
+        "minOwned": "Qté min.",
+        "ownedCount": "{count, plural, one {Vous possédez # exemplaire} other {Vous possédez # exemplaires}}",
+        "notOwned": "Vous ne possédez pas cette carte"
       },
       "addItem": {
         "trigger": "Ajouter une carte",

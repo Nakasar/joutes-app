@@ -12,6 +12,7 @@ import {
   Loader2,
   Lock,
   Minus,
+  PackageCheck,
   Pencil,
   Plus,
   Search,
@@ -67,11 +68,13 @@ export default function WishlistDetailClient({
   initialItems,
   canEdit,
   games,
+  isLoggedIn,
 }: {
   wishlist: Wishlist;
   initialItems: PaginatedWishlistItems;
   canEdit: boolean;
   games: Game[];
+  isLoggedIn: boolean;
 }) {
   const t = useTranslations("Wishlists");
   const router = useRouter();
@@ -87,19 +90,29 @@ export default function WishlistDetailClient({
   const [search, setSearch] = useState("");
   const [gameFilter, setGameFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [ownedOnly, setOwnedOnly] = useState(false);
+  const [minOwned, setMinOwned] = useState(1);
   const [loading, setLoading] = useState(false);
   const [busyItemId, setBusyItemId] = useState<string | null>(null);
 
   const initializedRef = useRef(false);
 
   const fetchItems = useCallback(
-    async (opts: { search: string; gameId: string; type: string; page: number }) => {
+    async (opts: {
+      search: string;
+      gameId: string;
+      type: string;
+      page: number;
+      ownedOnly: boolean;
+      minOwned: number;
+    }) => {
       setLoading(true);
       try {
         const params = new URLSearchParams({ page: String(opts.page), limit: "48" });
         if (opts.search.trim()) params.set("search", opts.search.trim());
         if (opts.gameId !== "all") params.set("gameId", opts.gameId);
         if (opts.type !== "all") params.set("type", opts.type);
+        if (opts.ownedOnly) params.set("minOwned", String(opts.minOwned));
 
         const res = await fetch(`/api/wishlists/${wishlist.id}/items?${params.toString()}`);
         if (!res.ok) return;
@@ -124,15 +137,15 @@ export default function WishlistDetailClient({
     }
     const delay = search.trim() ? 300 : 0;
     const timer = window.setTimeout(() => {
-      void fetchItems({ search, gameId: gameFilter, type: typeFilter, page: 1 });
+      void fetchItems({ search, gameId: gameFilter, type: typeFilter, page: 1, ownedOnly, minOwned });
     }, delay);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, gameFilter, typeFilter]);
+  }, [search, gameFilter, typeFilter, ownedOnly, minOwned]);
 
   const goToPage = (next: number) => {
     if (next < 1 || next > totalPages || loading) return;
-    void fetchItems({ search, gameId: gameFilter, type: typeFilter, page: next });
+    void fetchItems({ search, gameId: gameFilter, type: typeFilter, page: next, ownedOnly, minOwned });
   };
 
   async function handleRemove(item: WishlistItem) {
@@ -250,6 +263,36 @@ export default function WishlistDetailClient({
               </SelectContent>
             </Select>
           )}
+          {isLoggedIn && (
+            <div className="flex items-center gap-2 rounded-lg border bg-muted/40 p-1.5">
+              <Button
+                type="button"
+                variant={ownedOnly ? "default" : "outline"}
+                size="sm"
+                className="h-7 gap-1.5"
+                onClick={() => setOwnedOnly((v) => !v)}
+              >
+                <PackageCheck className="size-3.5" />
+                {t("detail.ownedOnly")}
+              </Button>
+              {ownedOnly && (
+                <div className="flex items-center gap-1.5 pr-1 text-sm">
+                  <Label htmlFor="min-owned" className="text-xs text-muted-foreground">
+                    {t("detail.minOwned")}
+                  </Label>
+                  <Input
+                    id="min-owned"
+                    type="number"
+                    min={1}
+                    max={99}
+                    value={minOwned}
+                    onChange={(e) => setMinOwned(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                    className="h-7 w-16 px-2"
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -274,6 +317,11 @@ export default function WishlistDetailClient({
                     {item.gameName}
                   </span>
                 )}
+                {isLoggedIn && (item.ownedQuantity ?? 0) > 0 && (
+                  <span className="absolute right-1.5 top-1.5 flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white shadow">
+                    <PackageCheck className="size-3" />×{item.ownedQuantity}
+                  </span>
+                )}
               </div>
               <div className="flex flex-1 flex-col gap-2 p-2">
                 <div className="min-w-0">
@@ -283,6 +331,17 @@ export default function WishlistDetailClient({
                   <p className="truncate text-xs text-muted-foreground">
                     {item.setCode} #{item.collectorNumber}
                   </p>
+                  {isLoggedIn && item.ownedQuantity !== undefined && (
+                    <p
+                      className={`text-xs font-medium ${
+                        item.ownedQuantity > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"
+                      }`}
+                    >
+                      {item.ownedQuantity > 0
+                        ? t("detail.ownedCount", { count: item.ownedQuantity })
+                        : t("detail.notOwned")}
+                    </p>
+                  )}
                 </div>
                 {canEdit ? (
                   <div className="mt-auto flex items-center gap-1">

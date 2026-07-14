@@ -27,9 +27,19 @@ export async function GET(request: NextRequest, { params }: { params: Params }) 
   const search = searchParams.get("search") || undefined;
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
   const limit = Math.max(1, Math.min(96, parseInt(searchParams.get("limit") || "48", 10) || 48));
+  const minOwnedParam = searchParams.get("minOwned");
+  const ownedMinQuantity = minOwnedParam !== null ? Math.max(0, parseInt(minOwnedParam, 10) || 0) : undefined;
 
   try {
-    const result = await getWishlistItems(wishlistId, { gameId, type, search, page, limit });
+    const result = await getWishlistItems(wishlistId, {
+      gameId,
+      type,
+      search,
+      page,
+      limit,
+      viewerId: session?.user?.id,
+      ownedMinQuantity,
+    });
     return NextResponse.json(result);
   } catch (error) {
     console.error("Error fetching wishlist items:", error);

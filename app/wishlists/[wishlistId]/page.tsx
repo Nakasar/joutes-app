@@ -48,7 +48,7 @@ export default async function WishlistDetailPage({
   }
 
   const [initialItems, games] = await Promise.all([
-    getWishlistItems(wishlistId, { page: 1, limit: 48 }),
+    getWishlistItems(wishlistId, { page: 1, limit: 48, viewerId: session?.user?.id }),
     getAllGames(),
   ]);
 
@@ -59,6 +59,7 @@ export default async function WishlistDetailPage({
         initialItems={initialItems}
         canEdit={canEdit}
         games={games}
+        isLoggedIn={!!session?.user?.id}
       />
     </div>
   );
