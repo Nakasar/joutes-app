@@ -260,6 +260,77 @@ export async function deleteDeck(deckId: string, playerId: string): Promise<bool
   return result.deletedCount === 1;
 }
 
+/** Best-effort "{quantity} {name}" line parser for a deck's free-text decklist. */
+function parseDecklistText(decklist: string): { name: string; quantity: number }[] {
+  const result: { name: string; quantity: number }[] = [];
+
+  for (const raw of decklist.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || /^[A-Za-zÀ-ÿ '\-]+:$/.test(line)) {
+      // Skip blank lines and section headers (e.g. "Sideboard:").
+      continue;
+    }
+
+    const qtyMatch = line.match(/^\s*[xX\-*]*?(\d+)\s*x?\s+(.+)$/i);
+    const quantity = qtyMatch ? parseInt(qtyMatch[1], 10) : 1;
+    const name = (qtyMatch ? qtyMatch[2] : line.replace(/^[-•]\s*/, "")).trim();
+    if (!name) continue;
+
+    const existing = result.find((c) => c.name.toLowerCase() === name.toLowerCase());
+    if (existing) {
+      existing.quantity += quantity;
+    } else {
+      result.push({ name, quantity });
+    }
+  }
+
+  return result;
+}
+
+export type DeckCardPreview = { name: string; image: string; quantity: number };
+
+/**
+ * Resolves a deck's free-text decklist against the game's card catalog to get
+ * real card images for previews — best-effort, exact-name (case-insensitive)
+ * matches only, since decklists aren't structured/validated data.
+ */
+export async function getDeckCardPreviews(
+  deck: Pick<Deck, "gameId" | "decklist">,
+  maxItems = 30
+): Promise<DeckCardPreview[]> {
+  if (!deck.decklist || !ObjectId.isValid(deck.gameId)) {
+    return [];
+  }
+
+  const parsed = parseDecklistText(deck.decklist);
+  const uniqueNames = [...new Set(parsed.map((c) => c.name))];
+  if (uniqueNames.length === 0) {
+    return [];
+  }
+
+  const cards = await db
+    .collection<{ name: string; image?: string }>("cards")
+    .find(
+      { gameId: new ObjectId(deck.gameId), name: { $in: uniqueNames } },
+      { projection: { name: 1, image: 1 } }
+    )
+    .collation({ locale: "en", strength: 2 })
+    .toArray();
+
+  const cardByName = new Map(cards.map((c) => [c.name.toLowerCase(), c]));
+
+  const previews: DeckCardPreview[] = [];
+  for (const card of parsed) {
+    const match = cardByName.get(card.name.toLowerCase());
+    if (match?.image) {
+      previews.push({ name: card.name, image: match.image, quantity: card.quantity });
+    }
+    if (previews.length >= maxItems) break;
+  }
+
+  return previews;
+}
+
 // Créer les index nécessaires
 export async function createDeckIndexes() {
   await db.collection(COLLECTION_NAME).createIndex({ playerId: 1, name: 1 }, { unique: true });

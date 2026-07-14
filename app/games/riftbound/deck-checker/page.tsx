@@ -8,8 +8,20 @@ import db from "@/lib/mongodb";
 import {Game} from "@/lib/types/Game";
 import {notFound} from "next/navigation";
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ input?: string }>;
+}): Promise<Metadata> {
   const t = await getTranslations("Games.DeckChecker");
+  const { input } = await searchParams;
+
+  // Un deck précis (via ?input=) obtient sa propre image de preview générée
+  // à la volée ; sinon on garde le mockup générique (app/.../opengraph-image.tsx).
+  const previewImageUrl =
+    input && input.length > 10
+      ? `/games/riftbound/deck-checker/preview-image?input=${encodeURIComponent(input)}`
+      : undefined;
 
   return {
     title: `Joutes - ${t("title")}`,
@@ -20,7 +32,9 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: `Joutes`,
       title: `Joutes - ${t("title")}`,
       description: t("description"),
+      ...(previewImageUrl ? { images: [{ url: previewImageUrl, width: 1200, height: 630 }] } : {}),
     },
+    ...(previewImageUrl ? { twitter: { card: "summary_large_image" as const, images: [previewImageUrl] } } : {}),
   };
 }
 

@@ -524,47 +524,78 @@ export function buildOgImage({
   );
 }
 
-export type WishlistOgItem = {
+export type CardGridItem = {
   name: string;
   image: string;
   quantity: number;
+  /** Shows a small warning badge (top-left) — used for cards with active rulings/errata. */
+  hasNote?: boolean;
 };
+
+/** @deprecated kept as an alias — use {@link CardGridItem}. */
+export type WishlistOgItem = CardGridItem;
 
 // Grille plein cadre : dimensionnée pour tenir sous l'en-tête compact tout en
 // affichant le plus grand nombre de cartes possible (10 colonnes x 3 lignes).
-const WISHLIST_GRID_COLUMNS = 10;
-export const WISHLIST_GRID_MAX_ITEMS = 30;
-const WISHLIST_GRID_GAP = 12;
-const WISHLIST_CARD_WIDTH = 102;
-const WISHLIST_CARD_HEIGHT = 143;
+const CARD_GRID_COLUMNS = 10;
+export const CARD_GRID_MAX_ITEMS = 30;
+const CARD_GRID_GAP = 12;
+const CARD_GRID_ITEM_WIDTH = 102;
+const CARD_GRID_ITEM_HEIGHT = 143;
 
-function WishlistCardGrid({ items, accent }: { items: WishlistOgItem[]; accent: string }) {
+function NoteBadge() {
+  return (
+    <div
+      style={{
+        display: "flex",
+        position: "absolute",
+        top: 4,
+        left: 4,
+        width: 22,
+        height: 22,
+        borderRadius: 999,
+        backgroundColor: "#f59e0b",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 9v4" />
+        <path d="M12 17h.01" />
+        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+      </svg>
+    </div>
+  );
+}
+
+function CardGrid({ items, accent }: { items: CardGridItem[]; accent: string }) {
   return (
     <div
       style={{
         display: "flex",
         flexWrap: "wrap",
         alignContent: "flex-start",
-        gap: WISHLIST_GRID_GAP,
-        width: WISHLIST_GRID_COLUMNS * WISHLIST_CARD_WIDTH + (WISHLIST_GRID_COLUMNS - 1) * WISHLIST_GRID_GAP,
+        gap: CARD_GRID_GAP,
+        width: CARD_GRID_COLUMNS * CARD_GRID_ITEM_WIDTH + (CARD_GRID_COLUMNS - 1) * CARD_GRID_GAP,
       }}
     >
-      {items.slice(0, WISHLIST_GRID_MAX_ITEMS).map((item, index) => (
+      {items.slice(0, CARD_GRID_MAX_ITEMS).map((item, index) => (
         <div
           key={index}
-          style={{ display: "flex", position: "relative", width: WISHLIST_CARD_WIDTH, height: WISHLIST_CARD_HEIGHT }}
+          style={{ display: "flex", position: "relative", width: CARD_GRID_ITEM_WIDTH, height: CARD_GRID_ITEM_HEIGHT }}
         >
           <img
             src={item.image}
             alt={item.name}
-            width={WISHLIST_CARD_WIDTH}
-            height={WISHLIST_CARD_HEIGHT}
+            width={CARD_GRID_ITEM_WIDTH}
+            height={CARD_GRID_ITEM_HEIGHT}
             style={{
               borderRadius: 8,
               objectFit: "cover",
               border: "1px solid rgba(255,255,255,0.15)",
             }}
           />
+          {item.hasNote && <NoteBadge />}
           {item.quantity > 1 && (
             <div
               style={{
@@ -589,6 +620,96 @@ function WishlistCardGrid({ items, accent }: { items: WishlistOgItem[]; accent: 
   );
 }
 
+function CardGridOgImage({
+  accent,
+  eyebrow = "Joutes",
+  title,
+  subtitleLine,
+  countLabel,
+  items,
+}: {
+  accent: readonly [string, string];
+  eyebrow?: string;
+  title: string;
+  subtitleLine?: string;
+  countLabel: string;
+  items: CardGridItem[];
+}) {
+  const [from, to] = accent;
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        padding: 32,
+        backgroundColor: "#0b1120",
+        backgroundImage: "linear-gradient(135deg, #0b1120 0%, #111827 60%, #0b1120 100%)",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: -140,
+          right: -140,
+          width: 420,
+          height: 420,
+          borderRadius: 999,
+          backgroundImage: `linear-gradient(135deg, ${from}, ${to})`,
+          opacity: 0.18,
+          filter: "blur(40px)",
+        }}
+      />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              fontSize: 20,
+              fontWeight: 700,
+              color: "#f8fafc",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                width: 12,
+                height: 12,
+                borderRadius: 4,
+                backgroundImage: `linear-gradient(135deg, ${from}, ${to})`,
+              }}
+            />
+            {eyebrow}
+          </div>
+          <div style={{ display: "flex", fontSize: 40, fontWeight: 800, color: "#f8fafc" }}>{title}</div>
+          {subtitleLine && <div style={{ display: "flex", fontSize: 20, color: "#94a3b8" }}>{subtitleLine}</div>}
+        </div>
+        <div
+          style={{
+            display: "flex",
+            padding: "10px 20px",
+            borderRadius: 999,
+            fontSize: 20,
+            fontWeight: 700,
+            color: from,
+            backgroundColor: `${from}22`,
+          }}
+        >
+          {countLabel}
+        </div>
+      </div>
+      <div style={{ display: "flex", marginTop: 24 }}>
+        <CardGrid items={items} accent={from} />
+      </div>
+    </div>
+  );
+}
+
 export function buildWishlistOgImage({
   wishlistName,
   ownerLabel,
@@ -598,9 +719,8 @@ export function buildWishlistOgImage({
   wishlistName: string;
   ownerLabel?: string;
   totalCount: number;
-  items: WishlistOgItem[];
+  items: CardGridItem[];
 }) {
-  const [from, to] = ACCENTS.wishlists;
   const cardWord = totalCount > 1 ? "cartes" : "carte";
   const wantedWord = totalCount > 1 ? "recherchées" : "recherchée";
 
@@ -612,81 +732,85 @@ export function buildWishlistOgImage({
     return buildOgImage({ title: wishlistName, subtitle, variant: "wishlists" });
   }
 
-  const countLabel = `${totalCount} ${cardWord} ${wantedWord}`;
+  return new ImageResponse(
+    (
+      <CardGridOgImage
+        accent={ACCENTS.wishlists}
+        title={wishlistName}
+        subtitleLine={ownerLabel ? `Liste de ${ownerLabel}` : undefined}
+        countLabel={`${totalCount} ${cardWord} ${wantedWord}`}
+        items={items}
+      />
+    ),
+    ogImageSize
+  );
+}
+
+export function buildDeckOgImage({
+  deckName,
+  gameName,
+  ownerLabel,
+  items,
+}: {
+  deckName: string;
+  gameName?: string;
+  ownerLabel?: string;
+  items: CardGridItem[];
+}) {
+  const subtitleLine = [ownerLabel ? `Deck de ${ownerLabel}` : null, gameName].filter(Boolean).join(" · ") || undefined;
+
+  if (items.length === 0) {
+    return buildOgImage({
+      title: deckName,
+      subtitle: subtitleLine ?? "Construisez et partagez vos decks de jeux de cartes à collectionner sur Joutes.",
+      variant: "decks",
+    });
+  }
+
+  const totalCards = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return new ImageResponse(
     (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          position: "relative",
-          width: "100%",
-          height: "100%",
-          padding: 32,
-          backgroundColor: "#0b1120",
-          backgroundImage: "linear-gradient(135deg, #0b1120 0%, #111827 60%, #0b1120 100%)",
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            top: -140,
-            right: -140,
-            width: 420,
-            height: 420,
-            borderRadius: 999,
-            backgroundImage: `linear-gradient(135deg, ${from}, ${to})`,
-            opacity: 0.18,
-            filter: "blur(40px)",
-          }}
-        />
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                fontSize: 20,
-                fontWeight: 700,
-                color: "#f8fafc",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  width: 12,
-                  height: 12,
-                  borderRadius: 4,
-                  backgroundImage: `linear-gradient(135deg, ${from}, ${to})`,
-                }}
-              />
-              Joutes
-            </div>
-            <div style={{ display: "flex", fontSize: 40, fontWeight: 800, color: "#f8fafc" }}>{wishlistName}</div>
-            {ownerLabel && (
-              <div style={{ display: "flex", fontSize: 20, color: "#94a3b8" }}>Liste de {ownerLabel}</div>
-            )}
-          </div>
-          <div
-            style={{
-              display: "flex",
-              padding: "10px 20px",
-              borderRadius: 999,
-              fontSize: 20,
-              fontWeight: 700,
-              color: from,
-              backgroundColor: `${from}22`,
-            }}
-          >
-            {countLabel}
-          </div>
-        </div>
-        <div style={{ display: "flex", marginTop: 24 }}>
-          <WishlistCardGrid items={items} accent={from} />
-        </div>
-      </div>
+      <CardGridOgImage
+        accent={ACCENTS.decks}
+        title={deckName}
+        subtitleLine={subtitleLine}
+        countLabel={`${totalCards} carte${totalCards > 1 ? "s" : ""}`}
+        items={items}
+      />
+    ),
+    ogImageSize
+  );
+}
+
+export function buildDeckCheckerOgImage({
+  championName,
+  items,
+}: {
+  championName?: string;
+  items: CardGridItem[];
+}) {
+  const title = championName ? `Deck ${championName}` : "Vérification de deck";
+
+  if (items.length === 0) {
+    return buildOgImage({
+      title,
+      subtitle: "Vérifiez la légalité de votre deck Riftbound sur Joutes.",
+      variant: "decks",
+    });
+  }
+
+  const totalCards = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  return new ImageResponse(
+    (
+      <CardGridOgImage
+        accent={ACCENTS.decks}
+        title={title}
+        subtitleLine="Deck Riftbound vérifié sur Joutes"
+        countLabel={`${totalCards} carte${totalCards > 1 ? "s" : ""}`}
+        items={items}
+      />
     ),
     ogImageSize
   );
