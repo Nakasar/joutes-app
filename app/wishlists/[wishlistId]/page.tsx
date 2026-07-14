@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
 import { getWishlistAccess, getWishlistById, getWishlistItems } from "@/lib/db/wishlists";
 import { getAllGames } from "@/lib/db/games";
+import { getPlayGroupById, isGameEnabledForPlayGroup } from "@/lib/db/play-groups";
 import WishlistDetailClient from "./WishlistDetailClient";
 
 export const dynamic = "force-dynamic";
@@ -47,10 +48,18 @@ export default async function WishlistDetailPage({
     notFound();
   }
 
-  const [initialItems, games] = await Promise.all([
+  const [initialItems, allGames] = await Promise.all([
     getWishlistItems(wishlistId, { page: 1, limit: 48, viewerId: session?.user?.id }),
     getAllGames(),
   ]);
+
+  let games = allGames;
+  if (wishlist.ownerType === "playGroup") {
+    const group = await getPlayGroupById(wishlist.ownerId);
+    if (group?.enabledGameIds) {
+      games = allGames.filter((game) => isGameEnabledForPlayGroup(group, game.id));
+    }
+  }
 
   return (
     <div className="container mx-auto p-4 sm:p-6">

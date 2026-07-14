@@ -26,9 +26,15 @@ function toPlayGroup(doc: WithId<PlayGroupDocument>): PlayGroup {
       role: member.role,
       joinedAt: member.joinedAt,
     })),
+    enabledGameIds: doc.enabledGameIds ?? null,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };
+}
+
+/** Whether a game is available for a group's collection/wishlists. `null` enabledGameIds means every game is allowed. */
+export function isGameEnabledForPlayGroup(group: Pick<PlayGroup, "enabledGameIds">, gameId: string): boolean {
+  return !group.enabledGameIds || group.enabledGameIds.includes(gameId);
 }
 
 function toPlayGroupInvitation(doc: WithId<PlayGroupInvitationDocument>): PlayGroupInvitation {
@@ -76,6 +82,17 @@ export async function getPlayGroupById(playGroupId: string): Promise<PlayGroup |
 export async function getPlayGroupByIdAndUser(playGroupId: string, userId: string): Promise<PlayGroup | null> {
   const group = await playGroupsCollection.findOne({ id: playGroupId, "members.userId": userId });
   return group ? toPlayGroup(group) : null;
+}
+
+export async function updatePlayGroupEnabledGames(playGroupId: string, enabledGameIds: string[] | null): Promise<PlayGroup | null> {
+  const now = new Date().toISOString();
+  const update: UpdateFilter<PlayGroupDocument> = enabledGameIds
+    ? { $set: { enabledGameIds, updatedAt: now } }
+    : { $set: { updatedAt: now }, $unset: { enabledGameIds: "" } };
+
+  const result = await playGroupsCollection.findOneAndUpdate({ id: playGroupId }, update, { returnDocument: "after" });
+
+  return result ? toPlayGroup(result) : null;
 }
 
 export async function addPlayGroupMember(playGroupId: string, userId: string, role: Exclude<PlayGroupMemberRole, "owner"> = "member"): Promise<boolean> {

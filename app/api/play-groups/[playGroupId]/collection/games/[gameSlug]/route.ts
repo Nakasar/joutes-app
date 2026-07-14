@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { getPlayGroupByIdAndUser } from "@/lib/db/play-groups";
+import { getPlayGroupByIdAndUser, isGameEnabledForPlayGroup } from "@/lib/db/play-groups";
 import { getGameCollection } from "@/lib/db/collection";
 import { getGameBySlugOrId } from "@/lib/db/games";
 
@@ -21,7 +21,7 @@ export async function GET(
   }
 
   const game = await getGameBySlugOrId(gameSlug);
-  if (!game) {
+  if (!game || !isGameEnabledForPlayGroup(group, game.id)) {
     return NextResponse.json({ error: "Game not found" }, { status: 404 });
   }
 

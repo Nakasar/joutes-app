@@ -4,8 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
 import { getPlayGroupByIdAndUser } from "@/lib/db/play-groups";
-import { getCollectionOverview } from "@/lib/db/collection";
-import CollectionOverview from "@/app/collection/CollectionOverview";
+import { getAllGames } from "@/lib/db/games";
+import PlayGroupGamesSettings from "@/components/play-groups/PlayGroupGamesSettings";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +15,7 @@ export async function generateMetadata({
   params: Promise<{ playGroupId: string }>;
 }): Promise<Metadata> {
   const { playGroupId } = await params;
-  const t = await getTranslations("PlayGroups.collection");
+  const t = await getTranslations("PlayGroups.settings");
   const session = await auth.api.getSession({ headers: await headers() });
   const group = session?.user?.id ? await getPlayGroupByIdAndUser(playGroupId, session.user.id) : null;
 
@@ -24,7 +24,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function PlayGroupCollectionPage({
+export default async function PlayGroupSettingsPage({
   params,
 }: {
   params: Promise<{ playGroupId: string }>;
@@ -41,20 +41,22 @@ export default async function PlayGroupCollectionPage({
     notFound();
   }
 
-  const t = await getTranslations("PlayGroups.collection");
+  const member = group.members.find((m) => m.userId === session.user.id);
+  if (!member || (member.role !== "owner" && member.role !== "admin")) {
+    redirect(`/play-groups/${group.id}`);
+  }
 
-  const overview = await getCollectionOverview({ type: "playGroup", id: group.id }, { allowedGameIds: group.enabledGameIds });
+  const games = await getAllGames();
 
   return (
-    <div className="container mx-auto p-4 sm:p-6">
-      <CollectionOverview
-        initialOverview={overview}
-        basePath={`/play-groups/${group.id}/collection`}
-        apiBasePath={`/api/play-groups/${group.id}/collection`}
-        title={t("title", { group: group.name })}
-        subtitle={t("subtitle")}
-        emptyTitle={t("emptyTitle")}
-        emptyDescription={t("emptyDescription")}
+    <div className="container mx-auto max-w-3xl px-4 py-8">
+      <PlayGroupGamesSettings
+        playGroupId={group.id}
+        groupName={group.name}
+        games={games
+          .map((g) => ({ id: g.id, name: g.name, slug: g.slug }))
+          .sort((a, b) => a.name.localeCompare(b.name))}
+        initialEnabledGameIds={group.enabledGameIds ?? null}
       />
     </div>
   );

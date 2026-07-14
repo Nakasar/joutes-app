@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { getPlayGroupByIdAndUser } from "@/lib/db/play-groups";
+import { getPlayGroupByIdAndUser, isGameEnabledForPlayGroup } from "@/lib/db/play-groups";
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
@@ -29,6 +29,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: "Invalid card data", details: validate.error }, { status: 400 });
   }
   const card = validate.data;
+
+  if (group.enabledGameIds) {
+    const cardDoc = await db.collection("cards").findOne({ id: card.cardId }, { projection: { gameId: 1 } });
+    const gameId = cardDoc?.gameId ? cardDoc.gameId.toString() : null;
+    if (!gameId || !isGameEnabledForPlayGroup(group, gameId)) {
+      return NextResponse.json({ error: "Ce jeu n'est pas activé pour ce groupe" }, { status: 403 });
+    }
+  }
 
   const insertResult = await db.collection('collection-cards').insertOne({
     cardId: card.cardId,

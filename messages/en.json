@@ -884,7 +884,8 @@
       "collectionDescription": "Browse and complete the card collection shared by the group.",
       "wishlistsTitle": "Wishlists",
       "viewWishlists": "View wishlists",
-      "wishlistsDescription": "Browse and complete the wishlists shared by the group."
+      "wishlistsDescription": "Browse and complete the wishlists shared by the group.",
+      "settings": "Settings"
     },
     "collection": {
       "title": "{group}'s collection",
@@ -892,6 +893,24 @@
       "subtitle": "Track the progress of the collection shared by the group's members.",
       "emptyTitle": "The group's collection is empty",
       "emptyDescription": "Group members can add cards from game pages to track shared progress."
+    },
+    "settings": {
+      "title": "Group settings",
+      "subtitle": "Configure the games available for {group}.",
+      "back": "Back to group",
+      "metadataTitle": "Settings · {group}",
+      "restrictLabel": "Restrict the group's games",
+      "restrictDescription": "Limit the group's collection and wishlists to a selection of games.",
+      "gamesLabel": "Enabled games",
+      "gamesPlaceholder": "Select games...",
+      "gamesSearchPlaceholder": "Search a game...",
+      "gamesEmpty": "No game found.",
+      "noneSelectedWarning": "No game selected: the group's collection and wishlists will be empty.",
+      "allGamesEnabled": "Every game is currently available for this group.",
+      "save": "Save",
+      "saving": "Saving...",
+      "saveSuccess": "Group settings updated.",
+      "saveError": "Could not update the group settings."
     }
   },
     "Wishlists": {

@@ -268,7 +268,7 @@ export async function getGamesStats(
  */
 export async function getCollectionOverview(
   owner: CollectionOwner,
-  { includeEmpty = false }: { includeEmpty?: boolean } = {}
+  { includeEmpty = false, allowedGameIds = null }: { includeEmpty?: boolean; allowedGameIds?: string[] | null } = {}
 ): Promise<CollectionOverview> {
   // Distinct games the owner owns items in.
   const ownedGameRows = await db
@@ -287,6 +287,11 @@ export async function getCollectionOverview(
   if (includeEmpty) {
     const allGameIds = (await db.collection("cards").distinct("gameId")) as ObjectId[];
     gameIds = allGameIds;
+  }
+
+  if (allowedGameIds) {
+    const allowedSet = new Set(allowedGameIds);
+    gameIds = gameIds.filter((gameId) => allowedSet.has(gameId.toString()));
   }
 
   const games = await getGamesStats(owner, gameIds);

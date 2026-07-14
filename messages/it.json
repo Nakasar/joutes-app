@@ -826,7 +826,8 @@
       "collectionDescription": "Consulta e completa la collezione di carte condivisa dal gruppo.",
       "wishlistsTitle": "Liste dei desideri",
       "viewWishlists": "Vedi le liste dei desideri",
-      "wishlistsDescription": "Consulta e completa le liste dei desideri condivise dal gruppo."
+      "wishlistsDescription": "Consulta e completa le liste dei desideri condivise dal gruppo.",
+      "settings": "Impostazioni"
     },
     "collection": {
       "title": "Collezione di {group}",
@@ -834,6 +835,24 @@
       "subtitle": "Segui i progressi della collezione condivisa dai membri del gruppo.",
       "emptyTitle": "La collezione del gruppo è vuota",
       "emptyDescription": "I membri del gruppo possono aggiungere carte dalle pagine dei giochi per seguire i progressi comuni."
+    },
+    "settings": {
+      "title": "Impostazioni del gruppo",
+      "subtitle": "Configura i giochi disponibili per {group}.",
+      "back": "Torna al gruppo",
+      "metadataTitle": "Impostazioni · {group}",
+      "restrictLabel": "Limita i giochi del gruppo",
+      "restrictDescription": "Limita la collezione e le liste dei desideri del gruppo a una selezione di giochi.",
+      "gamesLabel": "Giochi abilitati",
+      "gamesPlaceholder": "Seleziona giochi...",
+      "gamesSearchPlaceholder": "Cerca un gioco...",
+      "gamesEmpty": "Nessun gioco trovato.",
+      "noneSelectedWarning": "Nessun gioco selezionato: la collezione e le liste dei desideri del gruppo saranno vuote.",
+      "allGamesEnabled": "Al momento tutti i giochi sono disponibili per questo gruppo.",
+      "save": "Salva",
+      "saving": "Salvataggio...",
+      "saveSuccess": "Impostazioni del gruppo aggiornate.",
+      "saveError": "Impossibile aggiornare le impostazioni del gruppo."
     }
   },
     "Wishlists": {

@@ -19,7 +19,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const includeEmpty = request.nextUrl.searchParams.get("includeEmpty") === "true";
 
   try {
-    const overview = await getCollectionOverview({ type: "playGroup", id: group.id }, { includeEmpty });
+    const overview = await getCollectionOverview(
+      { type: "playGroup", id: group.id },
+      { includeEmpty, allowedGameIds: group.enabledGameIds }
+    );
     return NextResponse.json(overview);
   } catch (error) {
     console.error("Error building play-group collection overview:", error);
