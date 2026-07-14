@@ -23,7 +23,7 @@ export default async function CollectionPage() {
     redirect("/login");
   }
 
-  const overview = await getCollectionOverview(session.user.id);
+  const overview = await getCollectionOverview({ type: "user", id: session.user.id });
 
   return (
     <div className="container mx-auto p-4 sm:p-6">

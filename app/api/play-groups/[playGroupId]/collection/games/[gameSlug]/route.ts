@@ -1,18 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { getPlayGroupByIdAndUser } from "@/lib/db/play-groups";
 import { getGameCollection } from "@/lib/db/collection";
 import { getGameBySlugOrId } from "@/lib/db/games";
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ gameSlug: string }> }) {
-  const { gameSlug } = await params;
-
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ playGroupId: string; gameSlug: string }> }
+) {
+  const { playGroupId, gameSlug } = await params;
+  const session = await auth.api.getSession({ headers: request.headers });
 
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Authentification requise" }, { status: 401 });
+  }
+
+  const group = await getPlayGroupByIdAndUser(playGroupId, session.user.id);
+  if (!group) {
+    return NextResponse.json({ error: "Groupe introuvable" }, { status: 404 });
   }
 
   const game = await getGameBySlugOrId(gameSlug);
@@ -31,7 +36,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   try {
     const result = await getGameCollection({
-      owner: { type: "user", id: session.user.id },
+      owner: { type: "playGroup", id: group.id },
       gameId: game.id,
       setCode,
       type,
@@ -42,7 +47,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     });
     return NextResponse.json({ ...result, game: { id: game.id, name: game.name, slug: game.slug } });
   } catch (error) {
-    console.error("Error fetching game collection:", error);
+    console.error("Error fetching play-group game collection:", error);
     return NextResponse.json({ error: "Failed to fetch game collection" }, { status: 500 });
   }
 }

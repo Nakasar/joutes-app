@@ -41,11 +41,24 @@ type Props = {
   gameSlug: string;
   gameName: string;
   initialData: GameCollectionResult;
+  /** Link prefix for the overview/sets/boosters/card-detail navigation. Override for a play-group's collection. */
+  basePath?: string;
+  /** API prefix for reads/writes. Override to manage a play-group's shared collection instead of the current user's. */
+  apiBasePath?: string;
+  /** Boosters aren't tracked per play-group yet, so group pages hide the link. */
+  showBoosters?: boolean;
 };
 
 type ManageableCard = Pick<CollectionItem, "id" | "name" | "setCode" | "collectorNumber" | "image" | "quantity">;
 
-export default function GameCollectionBrowser({ gameSlug, gameName, initialData }: Props) {
+export default function GameCollectionBrowser({
+  gameSlug,
+  gameName,
+  initialData,
+  basePath = "/collection",
+  apiBasePath = "/api/collection",
+  showBoosters = true,
+}: Props) {
   const t = useTranslations("Collection");
 
   const [items, setItems] = useState<CollectionItem[]>(initialData.items);
@@ -84,7 +97,7 @@ export default function GameCollectionBrowser({ gameSlug, gameName, initialData 
         if (opts.ownership === "owned") params.set("owned", "true");
         if (opts.ownership === "unowned") params.set("owned", "false");
 
-        const res = await fetch(`/api/collection/games/${gameSlug}?${params.toString()}`, {
+        const res = await fetch(`${apiBasePath}/games/${gameSlug}?${params.toString()}`, {
           signal: controller.signal,
         });
         if (!res.ok) return;
@@ -104,7 +117,7 @@ export default function GameCollectionBrowser({ gameSlug, gameName, initialData 
         }
       }
     },
-    [gameSlug]
+    [gameSlug, apiBasePath]
   );
 
   // Debounced refetch on filter changes (skip first render — SSR provided initial data).
@@ -130,7 +143,7 @@ export default function GameCollectionBrowser({ gameSlug, gameName, initialData 
     }
     const controller = new AbortController();
     setVariantsLoading(true);
-    fetch(`/api/collection/games/${gameSlug}/variants?name=${encodeURIComponent(manageCard.name)}`, {
+    fetch(`${apiBasePath}/games/${gameSlug}/variants?name=${encodeURIComponent(manageCard.name)}`, {
       signal: controller.signal,
     })
       .then((res) => (res.ok ? res.json() : []))
@@ -145,7 +158,7 @@ export default function GameCollectionBrowser({ gameSlug, gameName, initialData 
       });
     return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [manageCard?.name, gameSlug]);
+  }, [manageCard?.name, gameSlug, apiBasePath]);
 
   const goToPage = (next: number) => {
     if (next < 1 || next > totalPages || loading) return;
@@ -161,7 +174,7 @@ export default function GameCollectionBrowser({ gameSlug, gameName, initialData 
     const previous = card.quantity;
     setQuantity(card.id, previous + 1); // optimistic
     try {
-      const res = await fetch(`/api/collection/cards`, {
+      const res = await fetch(`${apiBasePath}/cards`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -186,7 +199,7 @@ export default function GameCollectionBrowser({ gameSlug, gameName, initialData 
     const previous = card.quantity;
     setQuantity(card.id, previous - 1); // optimistic
     try {
-      const res = await fetch(`/api/collection/cards/${encodeURIComponent(card.id)}`, { method: "DELETE" });
+      const res = await fetch(`${apiBasePath}/cards/${encodeURIComponent(card.id)}`, { method: "DELETE" });
       if (!res.ok) setQuantity(card.id, previous);
     } catch {
       setQuantity(card.id, previous);
@@ -210,7 +223,7 @@ export default function GameCollectionBrowser({ gameSlug, gameName, initialData 
       {/* Header */}
       <div className="flex flex-col gap-3">
         <Link
-          href="/collection"
+          href={basePath}
           className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-4" />
@@ -220,17 +233,19 @@ export default function GameCollectionBrowser({ gameSlug, gameName, initialData 
           <h1 className="text-3xl font-bold tracking-tight">{gameName}</h1>
           <div className="flex flex-wrap items-center gap-2">
             <Button asChild variant="outline" className="gap-2">
-              <Link href={`/collection/${gameSlug}/sets`}>
+              <Link href={`${basePath}/${gameSlug}/sets`}>
                 <Boxes className="size-4" />
                 {t("sets.title")}
               </Link>
             </Button>
-            <Button asChild variant="outline" className="gap-2">
-              <Link href={`/collection/${gameSlug}/boosters`}>
-                <Package className="size-4" />
-                {t("boosters.title")}
-              </Link>
-            </Button>
+            {showBoosters && (
+              <Button asChild variant="outline" className="gap-2">
+                <Link href={`${basePath}/${gameSlug}/boosters`}>
+                  <Package className="size-4" />
+                  {t("boosters.title")}
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -504,6 +519,7 @@ export default function GameCollectionBrowser({ gameSlug, gameName, initialData 
                     collectorNumber={String(manageCard.collectorNumber)}
                     image={manageCard.image}
                     onChange={(quantity) => setQuantity(manageCard.id, quantity)}
+                    apiBasePath={apiBasePath}
                   />
                 </div>
               </div>

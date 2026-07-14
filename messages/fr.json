@@ -864,7 +864,17 @@
       "createdAtLabel": "Date de création",
       "manageMembers": "Gérer les membres",
       "memberCountValue": "{count} membre(s)",
-      "back": "Retour aux groupes"
+      "back": "Retour aux groupes",
+      "collectionTitle": "Collection",
+      "viewCollection": "Voir la collection",
+      "collectionDescription": "Consultez et complétez la collection de cartes partagée par le groupe."
+    },
+    "collection": {
+      "title": "Collection de {group}",
+      "metadataTitle": "Collection · {group}",
+      "subtitle": "Suivez la progression de la collection partagée par les membres du groupe.",
+      "emptyTitle": "La collection du groupe est vide",
+      "emptyDescription": "Les membres du groupe peuvent ajouter des cartes depuis les pages de jeux pour suivre la progression commune."
     }
   },
     "Collection": {

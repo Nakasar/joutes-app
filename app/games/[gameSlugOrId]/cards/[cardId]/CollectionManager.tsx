@@ -62,6 +62,8 @@ type CollectionManagerProps = {
   collectorNumber: string;
   image: string;
   onChange?: (quantity: number) => void;
+  /** API prefix to use for reads/writes — override to manage a play-group's shared collection instead of the current user's. */
+  apiBasePath?: string;
 };
 
 export default function CollectionManager({
@@ -72,6 +74,7 @@ export default function CollectionManager({
   collectorNumber,
   image,
   onChange,
+  apiBasePath = "/api/collection",
 }: CollectionManagerProps) {
   const [entries, setEntries] = useState<CollectionEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,7 +117,7 @@ export default function CollectionManager({
       setLoading(true);
       try {
         const res = await fetch(
-          `/api/collection/cards/${encodeURIComponent(cardId)}?gameSlug=${encodeURIComponent(gameSlug)}`
+          `${apiBasePath}/cards/${encodeURIComponent(cardId)}?gameSlug=${encodeURIComponent(gameSlug)}`
         );
         if (!res.ok) return;
         const data = await res.json();
@@ -132,7 +135,7 @@ export default function CollectionManager({
     return () => {
       active = false;
     };
-  }, [cardId, gameSlug]);
+  }, [cardId, gameSlug, apiBasePath]);
 
   async function addCard() {
     setAdding(true);
@@ -154,7 +157,7 @@ export default function CollectionManager({
         body.acquisitionCurrency = acquisitionCurrency;
       }
 
-      const res = await fetch(`/api/collection/cards`, {
+      const res = await fetch(`${apiBasePath}/cards`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -197,7 +200,7 @@ export default function CollectionManager({
 
   async function removeEntry(entryId: string) {
     const res = await fetch(
-      `/api/collection/cards/${encodeURIComponent(cardId)}?entryId=${encodeURIComponent(entryId)}`,
+      `${apiBasePath}/cards/${encodeURIComponent(cardId)}?entryId=${encodeURIComponent(entryId)}`,
       { method: "DELETE" }
     );
     if (res.ok) {
