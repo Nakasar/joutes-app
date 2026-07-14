@@ -311,6 +311,10 @@
         "moreInfo": "More info",
         "participants": "{registered} / {max} participants"
       },
+      "news": {
+        "title": "News",
+        "viewAll": "View all news"
+      },
       "metadata": {
         "notFoundTitle": "Game not found - Joutes",
         "title": "{gameName} - Joutes",
@@ -520,6 +524,19 @@
           "createError": "Unable to create the policy"
         }
       }
+    },
+    "news": {
+      "metadata": {
+        "notFoundTitle": "Game not found",
+        "title": "News — {gameName}",
+        "description": "Find all the news related to {gameName}."
+      },
+      "title": "News — {gameName}",
+      "back": "Back to game",
+      "empty": "No news for this game yet.",
+      "readMore": "Read more",
+      "unknownAuthor": "Unknown author",
+      "pageLabel": "Page {currentPage} of {totalPages}"
     },
     "DeckChecker": {
       "title": "Riftbound Deck Checker",

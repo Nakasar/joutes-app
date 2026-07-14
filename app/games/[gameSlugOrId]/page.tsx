@@ -1,5 +1,6 @@
 import { getGameBySlugOrId } from "@/lib/db/games";
 import { getLairsByIds } from "@/lib/db/lairs";
+import { getNews } from "@/lib/db/news";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { GAME_TYPES } from "@/lib/constants/game-types";
@@ -12,6 +13,7 @@ import { headers } from "next/headers";
 import { getUserById } from "@/lib/db/users";
 import FollowGameButton from "./FollowGameButton";
 import { FeaturedEventsAgenda } from "./FeaturedEventsAgenda";
+import { GameNewsSection } from "./GameNewsSection";
 import { getTranslations } from "next-intl/server";
 
 interface GameDetailPageProps {
@@ -66,6 +68,12 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
   const featuredLairs = game.featuredLairs && game.featuredLairs.length > 0
     ? await getLairsByIds(game.featuredLairs)
     : [];
+
+  const { news: latestNews } = await getNews({
+    gameId: game.id,
+    limit: 3,
+    userId: session?.user?.id,
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-gray-900 to-black">
@@ -226,6 +234,12 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             )}
           </div>
         </section>
+
+        <GameNewsSection
+          news={latestNews}
+          gameSlug={game.slug ?? gameSlugOrId}
+          isLoggedIn={!!session?.user?.id}
+        />
 
         {featuredLairs.length > 0 && (
           <FeaturedEventsAgenda

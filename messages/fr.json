@@ -311,6 +311,10 @@
         "moreInfo": "En savoir plus",
         "participants": "{registered} / {max} participants"
       },
+      "news": {
+        "title": "Actualités",
+        "viewAll": "Voir toutes les actualités"
+      },
       "metadata": {
         "notFoundTitle": "Jeu non trouvé - Joutes",
         "title": "{gameName} - Joutes",
@@ -520,6 +524,19 @@
           "createError": "Impossible de créer la politique"
         }
       }
+    },
+    "news": {
+      "metadata": {
+        "notFoundTitle": "Jeu introuvable",
+        "title": "Actualités — {gameName}",
+        "description": "Retrouvez toutes les actualités liées à {gameName}."
+      },
+      "title": "Actualités — {gameName}",
+      "back": "Retour au jeu",
+      "empty": "Aucune actualité pour ce jeu pour le moment.",
+      "readMore": "Lire la suite",
+      "unknownAuthor": "Auteur inconnu",
+      "pageLabel": "Page {currentPage} sur {totalPages}"
     },
     "DeckChecker": {
       "title": "Vérificateur de deck Riftbound",
