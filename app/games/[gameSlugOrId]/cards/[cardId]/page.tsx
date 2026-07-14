@@ -21,6 +21,22 @@ import {DateTime} from "luxon";
 import {getGameBySlugOrId} from "@/lib/db/games";
 import {ObjectId} from "mongodb";
 import {GameToolsNavBar} from "@/components/games/GameToolsNavBar";
+import {Badge} from "@/components/ui/badge";
+
+type CardWithProperties = BoosterCard & {
+  type?: string;
+  rarity?: string;
+  cost?: number;
+  hp?: number;
+  power?: number;
+  might?: number;
+  mightBonus?: number;
+  traits?: string[];
+  arenas?: string[];
+  domains?: string[];
+  tags?: string[];
+  token?: boolean;
+};
 
 export async function generateMetadata({
                                          params,
@@ -92,7 +108,7 @@ export default async function RiftboundCardDetailPage({
     );
   }
 
-  const card = await db.collection<BoosterCard>("cards").findOne({id: cardId, gameId: new ObjectId(game.id)});
+  const card = await db.collection<CardWithProperties>("cards").findOne({id: cardId, gameId: new ObjectId(game.id)});
 
   if (!card) {
     return (
@@ -117,6 +133,25 @@ export default async function RiftboundCardDetailPage({
   const erratas = await getErratasByCardId(cardId, userId);
   const userIsAdmin = isAdmin(session?.user?.email);
   const userCanVoteErratas = await hasPermission("erratas:vote");
+
+  const simpleProperties: { label: string; value: string | number }[] = [
+    ...(card.type ? [{ label: t("cards.detail.properties.labels.type"), value: card.type }] : []),
+    ...(card.rarity ? [{ label: t("cards.detail.properties.labels.rarity"), value: card.rarity }] : []),
+    ...(card.cost !== undefined ? [{ label: t("cards.detail.properties.labels.cost"), value: card.cost }] : []),
+    ...(card.hp !== undefined ? [{ label: t("cards.detail.properties.labels.hp"), value: card.hp }] : []),
+    ...(card.power !== undefined ? [{ label: t("cards.detail.properties.labels.power"), value: card.power }] : []),
+    ...(card.might !== undefined ? [{ label: t("cards.detail.properties.labels.might"), value: card.might }] : []),
+    ...(card.mightBonus !== undefined ? [{ label: t("cards.detail.properties.labels.mightBonus"), value: card.mightBonus }] : []),
+  ];
+
+  const listProperties: { label: string; values: string[] }[] = [
+    ...(card.traits?.length ? [{ label: t("cards.detail.properties.labels.traits"), values: card.traits }] : []),
+    ...(card.arenas?.length ? [{ label: t("cards.detail.properties.labels.arenas"), values: card.arenas }] : []),
+    ...(card.domains?.length ? [{ label: t("cards.detail.properties.labels.domains"), values: card.domains }] : []),
+    ...(card.tags?.length ? [{ label: t("cards.detail.properties.labels.tags"), values: card.tags }] : []),
+  ];
+
+  const hasProperties = card.token || simpleProperties.length > 0 || listProperties.length > 0;
 
   return (
     <div className="container mx-auto p-6">
@@ -162,6 +197,46 @@ export default async function RiftboundCardDetailPage({
             )}
           </div>
 
+          {hasProperties && (
+            <div className="mb-6 border rounded-lg p-4 bg-card">
+              <h2 className="text-lg font-semibold mb-3">{t("cards.detail.properties.title")}</h2>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {card.token && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                      {t("cards.detail.properties.labels.token")}
+                    </p>
+                    <p className="font-medium">✓</p>
+                  </div>
+                )}
+                {simpleProperties.map((property) => (
+                  <div key={property.label}>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                      {property.label}
+                    </p>
+                    <p className="font-medium">{property.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              {listProperties.map((property) => (
+                <div key={property.label} className="mt-3">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                    {property.label}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {property.values.map((value) => (
+                      <Badge key={value} variant="secondary">
+                        {value}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {userId && (
             <div className="mb-6">
               <CollectionManager
@@ -189,11 +264,15 @@ export default async function RiftboundCardDetailPage({
               </p>
             ) : (
               <div className="space-y-4">
-                {erratas.map((errata) => (
-                  <div
-                    key={errata.id}
-                    className={`border rounded-lg p-4 bg-card ${errata.deprecatedAt ? "opacity-50" : ""}`}
-                  >
+                {erratas.map((errata) => {
+                  const hasNegativeReviews = errata.votes.negative > errata.votes.positive;
+                  const isDownranked = !!errata.deprecatedAt || hasNegativeReviews;
+
+                  return (
+                    <div
+                      key={errata.id}
+                      className={`border rounded-lg p-4 bg-card ${isDownranked ? "opacity-50" : ""}`}
+                    >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <span
@@ -228,6 +307,12 @@ export default async function RiftboundCardDetailPage({
                         {t("cards.detail.deprecated")}
                       </span>
                     )}
+                    {!errata.deprecatedAt && hasNegativeReviews && (
+                      <span
+                        className="inline-block mb-2 text-xs font-semibold px-2 py-0.5 rounded bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                        {t("cards.detail.negativeReviews")}
+                      </span>
+                    )}
                     <div className="prose prose-sm dark:prose-invert max-w-none ">
                       <ReactMarkdown>{errata.details}</ReactMarkdown>
                     </div>
@@ -258,7 +343,8 @@ export default async function RiftboundCardDetailPage({
                       />
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

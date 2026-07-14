@@ -369,8 +369,26 @@
           "ruling": "Ruling"
         },
         "deprecated": "Deprecato",
+        "negativeReviews": "Recensioni prevalentemente negative",
         "source": "Fonte",
         "deprecatedOn": "Deprecato il {date}",
+        "properties": {
+          "title": "Caratteristiche",
+          "labels": {
+            "type": "Tipo",
+            "rarity": "Rarità",
+            "cost": "Costo",
+            "hp": "PV",
+            "power": "Potenza",
+            "might": "Forza",
+            "mightBonus": "Bonus Forza",
+            "traits": "Tratti",
+            "arenas": "Arene",
+            "domains": "Domini",
+            "tags": "Tag",
+            "token": "Token"
+          }
+        },
         "addErrata": {
           "trigger": "Aggiungi un errata",
           "title": "Aggiungi un errata",
