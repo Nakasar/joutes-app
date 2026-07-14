@@ -117,6 +117,16 @@ export default function PlayGroupPortalClient() {
               })}
             </div>
           </div>
+
+          <div className="rounded-xl border bg-card p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">{t("page.collectionTitle")}</h2>
+              <Button asChild size="sm">
+                <Link href={`/play-groups/${group.id}/collection`}>{t("page.viewCollection")}</Link>
+              </Button>
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">{t("page.collectionDescription")}</p>
+          </div>
         </div>
       ) : null}
     </div>

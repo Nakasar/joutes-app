@@ -9,10 +9,12 @@ export default async function SetsOverview({
   gameSlug,
   gameName,
   sets,
+  basePath = "/collection",
 }: {
   gameSlug: string;
   gameName: string;
   sets: SetCompletion[];
+  basePath?: string;
 }) {
   const t = await getTranslations("Collection");
 
@@ -20,7 +22,7 @@ export default async function SetsOverview({
     <div className="space-y-6">
       <div className="flex flex-col gap-3">
         <Link
-          href={`/collection/${gameSlug}`}
+          href={`${basePath}/${gameSlug}`}
           className="inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-4" />
@@ -39,7 +41,7 @@ export default async function SetsOverview({
           {sets.map((set) => (
             <Link
               key={set.setCode}
-              href={`/collection/${gameSlug}?setCode=${encodeURIComponent(set.setCode)}`}
+              href={`${basePath}/${gameSlug}?setCode=${encodeURIComponent(set.setCode)}`}
               className="flex flex-col gap-3 rounded-xl border bg-card p-4 transition-shadow hover:shadow-md"
             >
               <Badge variant="outline" className="w-fit font-mono text-xs">

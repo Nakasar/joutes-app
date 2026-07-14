@@ -40,7 +40,7 @@ export default async function GameSetsPage({
     notFound();
   }
 
-  const [stats] = await getGamesStats(session.user.id, [new ObjectId(game.id)]);
+  const [stats] = await getGamesStats({ type: "user", id: session.user.id }, [new ObjectId(game.id)]);
 
   return (
     <div className="container mx-auto p-4 sm:p-6">

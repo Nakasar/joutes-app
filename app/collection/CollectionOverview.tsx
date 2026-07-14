@@ -75,7 +75,7 @@ function StatTile({ icon, value, label }: { icon: React.ReactNode; value: string
   );
 }
 
-function GameCard({ game }: { game: GameCollectionStats }) {
+function GameCard({ game, basePath }: { game: GameCollectionStats; basePath: string }) {
   const t = useTranslations("Collection");
   const [showSets, setShowSets] = useState(false);
   const hasSets = game.sets.length > 0;
@@ -101,7 +101,7 @@ function GameCard({ game }: { game: GameCollectionStats }) {
           </p>
         </div>
         <Button asChild size="sm" variant="secondary" className="shrink-0">
-          <Link href={`/collection/${game.slug ?? game.gameId}`}>{t("game.open")}</Link>
+          <Link href={`${basePath}/${game.slug ?? game.gameId}`}>{t("game.open")}</Link>
         </Button>
       </div>
 
@@ -168,7 +168,27 @@ function GameCard({ game }: { game: GameCollectionStats }) {
   );
 }
 
-export default function CollectionOverview({ initialOverview }: { initialOverview: CollectionOverviewData }) {
+type CollectionOverviewProps = {
+  initialOverview: CollectionOverviewData;
+  /** Link prefix for per-game pages. Override for a play-group's collection. */
+  basePath?: string;
+  /** API prefix for reads. Override to view a play-group's shared collection instead of the current user's. */
+  apiBasePath?: string;
+  title?: string;
+  subtitle?: string;
+  emptyTitle?: string;
+  emptyDescription?: string;
+};
+
+export default function CollectionOverview({
+  initialOverview,
+  basePath = "/collection",
+  apiBasePath = "/api/collection",
+  title,
+  subtitle,
+  emptyTitle,
+  emptyDescription,
+}: CollectionOverviewProps) {
   const t = useTranslations("Collection");
   const [overview, setOverview] = useState(initialOverview);
   const [includeEmpty, setIncludeEmpty] = useState(false);
@@ -177,14 +197,14 @@ export default function CollectionOverview({ initialOverview }: { initialOvervie
   const load = useCallback(async (withEmpty: boolean) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/collection?includeEmpty=${withEmpty}`);
+      const res = await fetch(`${apiBasePath}?includeEmpty=${withEmpty}`);
       if (res.ok) {
         setOverview(await res.json());
       }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [apiBasePath]);
 
   // Refetch when the toggle changes (skip the very first render — SSR data is "owned only").
   const [mounted, setMounted] = useState(false);
@@ -202,16 +222,16 @@ export default function CollectionOverview({ initialOverview }: { initialOvervie
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
-        <p className="text-muted-foreground">{t("subtitle")}</p>
+        <h1 className="text-3xl font-bold tracking-tight">{title ?? t("title")}</h1>
+        <p className="text-muted-foreground">{subtitle ?? t("subtitle")}</p>
       </div>
 
       {!hasAnyItems && !includeEmpty ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed py-16 text-center">
           <Boxes className="size-10 text-muted-foreground" />
           <div>
-            <p className="font-semibold">{t("empty.title")}</p>
-            <p className="text-sm text-muted-foreground">{t("empty.description")}</p>
+            <p className="font-semibold">{emptyTitle ?? t("empty.title")}</p>
+            <p className="text-sm text-muted-foreground">{emptyDescription ?? t("empty.description")}</p>
           </div>
           <Button asChild>
             <Link href="/games">{t("empty.cta")}</Link>
@@ -264,7 +284,7 @@ export default function CollectionOverview({ initialOverview }: { initialOvervie
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               {overview.games.map((game) => (
-                <GameCard key={game.gameId} game={game} />
+                <GameCard key={game.gameId} game={game} basePath={basePath} />
               ))}
             </div>
           )}

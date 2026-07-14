@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   const includeEmpty = request.nextUrl.searchParams.get("includeEmpty") === "true";
 
   try {
-    const overview = await getCollectionOverview(session.user.id, { includeEmpty });
+    const overview = await getCollectionOverview({ type: "user", id: session.user.id }, { includeEmpty });
     return NextResponse.json(overview);
   } catch (error) {
     console.error("Error building collection overview:", error);

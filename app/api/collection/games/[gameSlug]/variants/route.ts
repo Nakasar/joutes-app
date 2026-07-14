@@ -26,7 +26,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 
   try {
-    const variants = await getCardVariants({ userId: session.user.id, gameId: game.id, name });
+    const variants = await getCardVariants({ owner: { type: "user", id: session.user.id }, gameId: game.id, name });
     return NextResponse.json(variants);
   } catch (error) {
     console.error("Error fetching card variants:", error);

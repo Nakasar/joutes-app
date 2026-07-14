@@ -3,16 +3,17 @@ import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
+import { getPlayGroupByIdAndUser } from "@/lib/db/play-groups";
 import { getGameBySlugOrId } from "@/lib/db/games";
 import { getGameCollection } from "@/lib/db/collection";
-import GameCollectionBrowser from "./GameCollectionBrowser";
+import GameCollectionBrowser from "@/app/collection/[gameSlug]/GameCollectionBrowser";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ gameSlug: string }>;
+  params: Promise<{ playGroupId: string; gameSlug: string }>;
 }): Promise<Metadata> {
   const { gameSlug } = await params;
   const t = await getTranslations("Collection");
@@ -22,16 +23,21 @@ export async function generateMetadata({
   };
 }
 
-export default async function GameCollectionPage({
+export default async function PlayGroupGameCollectionPage({
   params,
 }: {
-  params: Promise<{ gameSlug: string }>;
+  params: Promise<{ playGroupId: string; gameSlug: string }>;
 }) {
-  const { gameSlug } = await params;
+  const { playGroupId, gameSlug } = await params;
 
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
     redirect("/login");
+  }
+
+  const group = await getPlayGroupByIdAndUser(playGroupId, session.user.id);
+  if (!group) {
+    notFound();
   }
 
   const game = await getGameBySlugOrId(gameSlug);
@@ -40,7 +46,7 @@ export default async function GameCollectionPage({
   }
 
   const initial = await getGameCollection({
-    owner: { type: "user", id: session.user.id },
+    owner: { type: "playGroup", id: group.id },
     gameId: game.id,
     page: 1,
     limit: 48,
@@ -52,6 +58,9 @@ export default async function GameCollectionPage({
         gameSlug={game.slug ?? game.id}
         gameName={game.name}
         initialData={initial}
+        basePath={`/play-groups/${group.id}/collection`}
+        apiBasePath={`/api/play-groups/${group.id}/collection`}
+        showBoosters={false}
       />
     </div>
   );

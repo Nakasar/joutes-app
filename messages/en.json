@@ -863,7 +863,17 @@
       "createdAtLabel": "Creation date",
       "manageMembers": "Manage members",
       "memberCountValue": "{count} member(s)",
-      "back": "Back to groups"
+      "back": "Back to groups",
+      "collectionTitle": "Collection",
+      "viewCollection": "View collection",
+      "collectionDescription": "Browse and complete the card collection shared by the group."
+    },
+    "collection": {
+      "title": "{group}'s collection",
+      "metadataTitle": "Collection · {group}",
+      "subtitle": "Track the progress of the collection shared by the group's members.",
+      "emptyTitle": "The group's collection is empty",
+      "emptyDescription": "Group members can add cards from game pages to track shared progress."
     }
   },
     "Collection": {

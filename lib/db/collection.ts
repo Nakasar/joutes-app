@@ -49,6 +49,23 @@ export type CollectionOverview = {
 
 type FacetCount = { masterOwned?: number; masterTotal?: number; gameOwned?: number; gameTotal?: number; copies?: number };
 
+/**
+ * A collection can be owned either by an individual user (their personal
+ * collection) or shared by a whole play-group (any member can add/remove
+ * cards). `collection-cards` documents carry either a `userId` or a
+ * `playGroupId` field (never both), and every query below matches on
+ * whichever field applies to the given owner.
+ */
+export type CollectionOwner = { type: "user"; id: string } | { type: "playGroup"; id: string };
+
+function ownerField(owner: CollectionOwner): "userId" | "playGroupId" {
+  return owner.type === "user" ? "userId" : "playGroupId";
+}
+
+function ownerMatch(owner: CollectionOwner): Record<string, ObjectId> {
+  return { [ownerField(owner)]: new ObjectId(owner.id) };
+}
+
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -58,23 +75,21 @@ function escapeRegex(value: string): string {
  * Games with no catalog data are skipped.
  */
 export async function getGamesStats(
-  userId: string,
+  owner: CollectionOwner,
   gameIds: ObjectId[]
 ): Promise<GameCollectionStats[]> {
   if (gameIds.length === 0) {
     return [];
   }
 
-  const userObjId = new ObjectId(userId);
-
-  // --- Owned stats (from the user's individual copies, joined to the catalog) ---
+  // --- Owned stats (from the owner's individual copies, joined to the catalog) ---
   const [ownedFacet] = await db
     .collection("collection-cards")
     .aggregate<{
       bySet: { _id: { gameId: ObjectId; setCode: string } } & FacetCount[][0];
       byGame: { _id: ObjectId } & FacetCount;
     }>([
-      { $match: { userId: userObjId } },
+      { $match: ownerMatch(owner) },
       { $lookup: { from: "cards", localField: "cardId", foreignField: "id", as: "c" } },
       // cards.id is not strictly unique (a few tokens/promos share an id); take a
       // single catalog match per owned copy so the join never fans a copy out.
@@ -252,16 +267,14 @@ export async function getGamesStats(
  * to also include every game that has a catalog (shown at 0%).
  */
 export async function getCollectionOverview(
-  userId: string,
+  owner: CollectionOwner,
   { includeEmpty = false }: { includeEmpty?: boolean } = {}
 ): Promise<CollectionOverview> {
-  const userObjId = new ObjectId(userId);
-
-  // Distinct games the user owns items in.
+  // Distinct games the owner owns items in.
   const ownedGameRows = await db
     .collection("collection-cards")
     .aggregate<{ _id: ObjectId }>([
-      { $match: { userId: userObjId } },
+      { $match: ownerMatch(owner) },
       { $lookup: { from: "cards", localField: "cardId", foreignField: "id", as: "c" } },
       { $addFields: { c: { $arrayElemAt: ["$c", 0] } } },
       { $match: { c: { $ne: null } } },
@@ -276,7 +289,7 @@ export async function getCollectionOverview(
     gameIds = allGameIds;
   }
 
-  const games = await getGamesStats(userId, gameIds);
+  const games = await getGamesStats(owner, gameIds);
 
   // Show games with the most owned first, then the biggest catalogs.
   games.sort((a, b) => b.copies - a.copies || b.masterTotal - a.masterTotal || a.name.localeCompare(b.name));
@@ -333,7 +346,7 @@ export type GameCollectionResult = {
  * is not strictly unique (see module-level note on `getGamesStats`).
  */
 async function getVariantsOwnedByKey(
-  userObjId: ObjectId,
+  owner: CollectionOwner,
   gameObjId: ObjectId,
   items: { name: string; setCode: string; collectorNumber: string }[]
 ): Promise<Map<string, number>> {
@@ -351,7 +364,7 @@ async function getVariantsOwnedByKey(
     db
       .collection("collection-cards")
       .aggregate<{ _id: { name: string; setCode: string; collectorNumber: string } }>([
-        { $match: { userId: userObjId, name: { $in: names } } },
+        { $match: { ...ownerMatch(owner), name: { $in: names } } },
         { $group: { _id: { name: "$name", setCode: "$setCode", collectorNumber: "$collectorNumber" } } },
       ])
       .toArray(),
@@ -387,7 +400,7 @@ async function getVariantsOwnedByKey(
  * the user owns. Supports set / type / search filtering and an owned-only mode.
  */
 export async function getGameCollection({
-  userId,
+  owner,
   gameId,
   setCode,
   type,
@@ -396,7 +409,7 @@ export async function getGameCollection({
   page = 1,
   limit = 48,
 }: {
-  userId: string;
+  owner: CollectionOwner;
   gameId: string;
   setCode?: string;
   type?: string;
@@ -406,8 +419,9 @@ export async function getGameCollection({
   page?: number;
   limit?: number;
 }): Promise<GameCollectionResult> {
-  const userObjId = new ObjectId(userId);
   const gameObjId = new ObjectId(gameId);
+  const ownerFieldName = ownerField(owner);
+  const ownerObjId = new ObjectId(owner.id);
 
   const match: Record<string, unknown> = { gameId: gameObjId };
   if (setCode && setCode !== "all") match.setCode = setCode;
@@ -420,7 +434,7 @@ export async function getGameCollection({
         from: "collection-cards",
         let: { cid: "$id" },
         pipeline: [
-          { $match: { $expr: { $and: [{ $eq: ["$cardId", "$$cid"] }, { $eq: ["$userId", userObjId] }] } } },
+          { $match: { $expr: { $and: [{ $eq: ["$cardId", "$$cid"] }, { $eq: [`$${ownerFieldName}`, ownerObjId] }] } } },
           { $count: "n" },
         ],
         as: "owned",
@@ -464,7 +478,7 @@ export async function getGameCollection({
     collectorNumber: String(c.collectorNumber ?? ""),
   })) as Omit<CollectionItem, "variantsOwned">[];
 
-  const variantsOwnedByKey = await getVariantsOwnedByKey(userObjId, gameObjId, rawItems);
+  const variantsOwnedByKey = await getVariantsOwnedByKey(owner, gameObjId, rawItems);
   const items: CollectionItem[] = rawItems.map((it) => ({
     ...it,
     variantsOwned: variantsOwnedByKey.get(`${it.name}|${it.setCode}|${it.collectorNumber}`) ?? 0,
@@ -477,7 +491,7 @@ export async function getGameCollection({
     .filter((v): v is string => typeof v === "string" && v.length > 0)
     .sort();
 
-  const [stats] = await getGamesStats(userId, [gameObjId]);
+  const [stats] = await getGamesStats(owner, [gameObjId]);
 
   return {
     items,
@@ -507,16 +521,17 @@ export type CardVariant = {
  * "variants" of a card (e.g. alt arts) in the collection modal.
  */
 export async function getCardVariants({
-  userId,
+  owner,
   gameId,
   name,
 }: {
-  userId: string;
+  owner: CollectionOwner;
   gameId: string;
   name: string;
 }): Promise<CardVariant[]> {
-  const userObjId = new ObjectId(userId);
   const gameObjId = new ObjectId(gameId);
+  const ownerFieldName = ownerField(owner);
+  const ownerObjId = new ObjectId(owner.id);
 
   const variants = await db
     .collection("cards")
@@ -531,7 +546,7 @@ export async function getCardVariants({
               $match: {
                 $expr: {
                   $and: [
-                    { $eq: ["$userId", userObjId] },
+                    { $eq: [`$${ownerFieldName}`, ownerObjId] },
                     { $eq: ["$name", name] },
                     { $eq: ["$setCode", "$$setCode"] },
                     { $eq: ["$collectorNumber", "$$collectorNumber"] },
