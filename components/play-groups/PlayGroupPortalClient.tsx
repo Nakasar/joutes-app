@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { useSession } from "@/lib/auth-client";
+import { Settings } from "lucide-react";
 
 type PlayGroupMember = {
   userId: string;
@@ -34,9 +36,13 @@ export default function PlayGroupPortalClient() {
   const t = useTranslations("PlayGroups");
   const params = useParams<{ playGroupId?: string }>();
   const playGroupId = params?.playGroupId;
+  const { data: session } = useSession();
   const [group, setGroup] = useState<GroupPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const currentMember = group?.members.find((member) => member.userId === session?.user?.id);
+  const canManageSettings = currentMember?.role === "owner" || currentMember?.role === "admin";
 
   useEffect(() => {
     if (!playGroupId) {
@@ -73,9 +79,19 @@ export default function PlayGroupPortalClient() {
           <h1 className="text-3xl font-semibold">{group?.name || t("page.portalTitle")}</h1>
           <p className="mt-2 text-muted-foreground">{group?.description || t("page.portalDescription")}</p>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/play-groups">{t("page.back")}</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {canManageSettings && group ? (
+            <Button asChild variant="outline">
+              <Link href={`/play-groups/${group.id}/settings`}>
+                <Settings className="mr-2 size-4" />
+                {t("page.settings")}
+              </Link>
+            </Button>
+          ) : null}
+          <Button asChild variant="outline">
+            <Link href="/play-groups">{t("page.back")}</Link>
+          </Button>
+        </div>
       </div>
 
       {error ? <p className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{error}</p> : null}

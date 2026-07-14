@@ -14,6 +14,8 @@ export type PlayGroup = {
   description?: string;
   ownerId: string;
   members: PlayGroupMember[];
+  /** Game ids enabled for this group's collection/wishlists. `null`/`undefined` means every game is allowed. */
+  enabledGameIds?: string[] | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -38,6 +40,7 @@ export type PlayGroupDocument = {
   description?: string;
   ownerId: string;
   members: PlayGroupMemberDocument[];
+  enabledGameIds?: string[] | null;
   createdAt: string;
   updatedAt: string;
 };

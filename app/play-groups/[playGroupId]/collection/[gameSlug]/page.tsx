@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
-import { getPlayGroupByIdAndUser } from "@/lib/db/play-groups";
+import { getPlayGroupByIdAndUser, isGameEnabledForPlayGroup } from "@/lib/db/play-groups";
 import { getGameBySlugOrId } from "@/lib/db/games";
 import { getGameCollection } from "@/lib/db/collection";
 import GameCollectionBrowser from "@/app/collection/[gameSlug]/GameCollectionBrowser";
@@ -41,7 +41,7 @@ export default async function PlayGroupGameCollectionPage({
   }
 
   const game = await getGameBySlugOrId(gameSlug);
-  if (!game) {
+  if (!game || !isGameEnabledForPlayGroup(group, game.id)) {
     notFound();
   }
 

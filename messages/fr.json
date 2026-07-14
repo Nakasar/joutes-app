@@ -885,7 +885,8 @@
       "collectionDescription": "Consultez et complétez la collection de cartes partagée par le groupe.",
       "wishlistsTitle": "Listes de souhaits",
       "viewWishlists": "Voir les listes de souhaits",
-      "wishlistsDescription": "Consultez et complétez les listes de souhaits partagées par le groupe."
+      "wishlistsDescription": "Consultez et complétez les listes de souhaits partagées par le groupe.",
+      "settings": "Paramètres"
     },
     "collection": {
       "title": "Collection de {group}",
@@ -893,6 +894,24 @@
       "subtitle": "Suivez la progression de la collection partagée par les membres du groupe.",
       "emptyTitle": "La collection du groupe est vide",
       "emptyDescription": "Les membres du groupe peuvent ajouter des cartes depuis les pages de jeux pour suivre la progression commune."
+    },
+    "settings": {
+      "title": "Paramètres du groupe",
+      "subtitle": "Configurez les jeux disponibles pour {group}.",
+      "back": "Retour au groupe",
+      "metadataTitle": "Paramètres · {group}",
+      "restrictLabel": "Restreindre les jeux du groupe",
+      "restrictDescription": "Limitez la collection et les listes de souhaits du groupe à une sélection de jeux.",
+      "gamesLabel": "Jeux activés",
+      "gamesPlaceholder": "Sélectionner des jeux...",
+      "gamesSearchPlaceholder": "Rechercher un jeu...",
+      "gamesEmpty": "Aucun jeu trouvé.",
+      "noneSelectedWarning": "Aucun jeu sélectionné : la collection et les listes de souhaits du groupe seront vides.",
+      "allGamesEnabled": "Tous les jeux sont actuellement disponibles pour ce groupe.",
+      "save": "Enregistrer",
+      "saving": "Enregistrement...",
+      "saveSuccess": "Paramètres du groupe mis à jour.",
+      "saveError": "Impossible de mettre à jour les paramètres du groupe."
     }
   },
     "Wishlists": {
