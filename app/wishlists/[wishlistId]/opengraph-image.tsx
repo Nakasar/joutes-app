@@ -1,4 +1,4 @@
-import { buildOgImage, buildWishlistOgImage, type WishlistOgItem } from "@/lib/og";
+import { buildOgImage, buildWishlistOgImage, WISHLIST_GRID_MAX_ITEMS, type WishlistOgItem } from "@/lib/og";
 import { getWishlistById, getWishlistItems } from "@/lib/db/wishlists";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +21,7 @@ export default async function Image({ params }: { params: Promise<{ wishlistId: 
     });
   }
 
-  const { items } = await getWishlistItems(wishlistId, { page: 1, limit: 6 });
+  const { items } = await getWishlistItems(wishlistId, { page: 1, limit: WISHLIST_GRID_MAX_ITEMS });
   const cardItems: WishlistOgItem[] = items
     .filter((item) => !!item.image)
     .map((item) => ({ name: item.name, image: item.image, quantity: item.quantity }));

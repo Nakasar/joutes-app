@@ -530,22 +530,37 @@ export type WishlistOgItem = {
   quantity: number;
 };
 
-const CARD_THUMB_WIDTH = 100;
-const CARD_THUMB_HEIGHT = 140;
-const WISHLIST_PANEL_MAX_ITEMS = 6;
+// Grille plein cadre : dimensionnée pour tenir sous l'en-tête compact tout en
+// affichant le plus grand nombre de cartes possible (10 colonnes x 3 lignes).
+const WISHLIST_GRID_COLUMNS = 10;
+export const WISHLIST_GRID_MAX_ITEMS = 30;
+const WISHLIST_GRID_GAP = 12;
+const WISHLIST_CARD_WIDTH = 102;
+const WISHLIST_CARD_HEIGHT = 143;
 
-function WishlistCardsPanel({ items, accent }: { items: WishlistOgItem[]; accent: string }) {
+function WishlistCardGrid({ items, accent }: { items: WishlistOgItem[]; accent: string }) {
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 12, width: CARD_THUMB_WIDTH * 3 + 24 }}>
-      {items.slice(0, WISHLIST_PANEL_MAX_ITEMS).map((item, index) => (
-        <div key={index} style={{ display: "flex", position: "relative", width: CARD_THUMB_WIDTH, height: CARD_THUMB_HEIGHT }}>
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        alignContent: "flex-start",
+        gap: WISHLIST_GRID_GAP,
+        width: WISHLIST_GRID_COLUMNS * WISHLIST_CARD_WIDTH + (WISHLIST_GRID_COLUMNS - 1) * WISHLIST_GRID_GAP,
+      }}
+    >
+      {items.slice(0, WISHLIST_GRID_MAX_ITEMS).map((item, index) => (
+        <div
+          key={index}
+          style={{ display: "flex", position: "relative", width: WISHLIST_CARD_WIDTH, height: WISHLIST_CARD_HEIGHT }}
+        >
           <img
             src={item.image}
             alt={item.name}
-            width={CARD_THUMB_WIDTH}
-            height={CARD_THUMB_HEIGHT}
+            width={WISHLIST_CARD_WIDTH}
+            height={WISHLIST_CARD_HEIGHT}
             style={{
-              borderRadius: 10,
+              borderRadius: 8,
               objectFit: "cover",
               border: "1px solid rgba(255,255,255,0.15)",
             }}
@@ -555,13 +570,13 @@ function WishlistCardsPanel({ items, accent }: { items: WishlistOgItem[]; accent
               style={{
                 display: "flex",
                 position: "absolute",
-                bottom: 6,
-                right: 6,
+                bottom: 4,
+                right: 4,
                 backgroundColor: accent,
                 color: "white",
-                fontSize: 14,
+                fontSize: 12,
                 fontWeight: 700,
-                padding: "2px 8px",
+                padding: "1px 6px",
                 borderRadius: 999,
               }}
             >
@@ -588,29 +603,87 @@ export function buildWishlistOgImage({
   const [from, to] = ACCENTS.wishlists;
   const cardWord = totalCount > 1 ? "cartes" : "carte";
   const wantedWord = totalCount > 1 ? "recherchées" : "recherchée";
-  const subtitle = ownerLabel
-    ? `Liste de souhaits de ${ownerLabel} - ${totalCount} ${cardWord} ${wantedWord} sur Joutes.`
-    : `${totalCount} ${cardWord} ${wantedWord} sur Joutes.`;
 
-  const hasImages = items.length > 0;
+  if (items.length === 0) {
+    const subtitle = ownerLabel
+      ? `Liste de souhaits de ${ownerLabel} - ${totalCount} ${cardWord} ${wantedWord} sur Joutes.`
+      : `${totalCount} ${cardWord} ${wantedWord} sur Joutes.`;
+
+    return buildOgImage({ title: wishlistName, subtitle, variant: "wishlists" });
+  }
+
+  const countLabel = `${totalCount} ${cardWord} ${wantedWord}`;
 
   return new ImageResponse(
     (
-      <OgShell
-        from={from}
-        to={to}
-        title={wishlistName}
-        subtitle={subtitle}
-        panel={
-          <DeviceFrame>
-            {hasImages ? (
-              <WishlistCardsPanel items={items} accent={from} />
-            ) : (
-              <MockupContent variant="wishlists" from={from} to={to} />
-            )}
-          </DeviceFrame>
-        }
-      />
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          position: "relative",
+          width: "100%",
+          height: "100%",
+          padding: 32,
+          backgroundColor: "#0b1120",
+          backgroundImage: "linear-gradient(135deg, #0b1120 0%, #111827 60%, #0b1120 100%)",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: -140,
+            right: -140,
+            width: 420,
+            height: 420,
+            borderRadius: 999,
+            backgroundImage: `linear-gradient(135deg, ${from}, ${to})`,
+            opacity: 0.18,
+            filter: "blur(40px)",
+          }}
+        />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                fontSize: 20,
+                fontWeight: 700,
+                color: "#f8fafc",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  width: 12,
+                  height: 12,
+                  borderRadius: 4,
+                  backgroundImage: `linear-gradient(135deg, ${from}, ${to})`,
+                }}
+              />
+              Joutes
+            </div>
+            <div style={{ display: "flex", fontSize: 40, fontWeight: 800, color: "#f8fafc" }}>{wishlistName}</div>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              padding: "10px 20px",
+              borderRadius: 999,
+              fontSize: 20,
+              fontWeight: 700,
+              color: from,
+              backgroundColor: `${from}22`,
+            }}
+          >
+            {countLabel}
+          </div>
+        </div>
+        <div style={{ display: "flex", marginTop: 24 }}>
+          <WishlistCardGrid items={items} accent={from} />
+        </div>
+      </div>
     ),
     ogImageSize
   );
