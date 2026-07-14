@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useSession, signOut } from "@/lib/auth-client";
 import Image from "next/image";
-import {Menu, Calendar, MapPin, User, LogOut, Shield, GamepadIcon, Trophy, Dices, Library, Heart} from "lucide-react";
+import {Menu, Calendar, MapPin, User, LogOut, Shield, Trophy, Dices, Library, Heart, Users, ChevronDown} from "lucide-react";
 import { isAdmin } from "@/lib/config/admins";
 import { Button } from "@/components/ui/button";
 import { NotificationDropdown } from "@/components/NotificationDropdown";
@@ -77,42 +77,48 @@ export default function Header() {
                   </Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
-                  <Link href="/leagues">
-                    <Trophy className="mr-2 h-4 w-4" />
-                    {t('menu.Ligues')}
-                  </Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
               {session && (
                 <NavigationMenuItem>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
-                    <Link href="/game-matches">
-                      <GamepadIcon className="mr-2 h-4 w-4" />
-                      {t('menu.Parties')}
-                    </Link>
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
-              )}
-              {session && (
-                <NavigationMenuItem>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
-                    <Link href="/collection">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className={navigationMenuTriggerStyle()}>
                       <Library className="mr-2 h-4 w-4" />
                       {t('menu.Collection')}
-                    </Link>
-                  </NavigationMenuLink>
+                      <ChevronDown className="ml-1 h-3 w-3" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem asChild>
+                        <Link href="/collection" className="flex w-full cursor-pointer">
+                          <Library className="mr-2 h-4 w-4" />
+                          <span>{t('menu.Collection')}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/wishlists" className="flex w-full cursor-pointer">
+                          <Heart className="mr-2 h-4 w-4" />
+                          <span>{t('menu.Wishlists')}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </NavigationMenuItem>
               )}
               {session && (
                 <NavigationMenuItem>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
-                    <Link href="/wishlists">
-                      <Heart className="mr-2 h-4 w-4" />
-                      {t('menu.Wishlists')}
-                    </Link>
-                  </NavigationMenuLink>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className={navigationMenuTriggerStyle()}>
+                      <Users className="mr-2 h-4 w-4" />
+                      {t('menu.Groupes')}
+                      <ChevronDown className="ml-1 h-3 w-3" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem asChild>
+                        <Link href="/play-groups" className="flex w-full cursor-pointer">
+                          <Users className="mr-2 h-4 w-4" />
+                          <span>{t('menu.PlayGroups')}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </NavigationMenuItem>
               )}
               {session && isAdmin(session.user.email) && (
@@ -266,35 +272,33 @@ export default function Header() {
                   {t('menu.Lieux')}
                 </Link>
               </Button>
-              <Button variant="ghost" asChild className="justify-start">
-                <Link href="/leagues" onClick={() => setMobileMenuOpen(false)}>
-                  <Trophy className="mr-2 h-4 w-4" />
-                  {t('menu.Ligues')}
-                </Link>
-              </Button>
               {session && (
-                <Button variant="ghost" asChild className="justify-start">
-                  <Link href="/game-matches" onClick={() => setMobileMenuOpen(false)}>
-                    <GamepadIcon className="mr-2 h-4 w-4" />
-                    {t('menu.Parties')}
-                  </Link>
-                </Button>
+                <>
+                  <p className="px-3 pt-2 text-xs font-medium text-muted-foreground">{t('menu.Collection')}</p>
+                  <Button variant="ghost" asChild className="justify-start">
+                    <Link href="/collection" onClick={() => setMobileMenuOpen(false)}>
+                      <Library className="mr-2 h-4 w-4" />
+                      {t('menu.Collection')}
+                    </Link>
+                  </Button>
+                  <Button variant="ghost" asChild className="justify-start">
+                    <Link href="/wishlists" onClick={() => setMobileMenuOpen(false)}>
+                      <Heart className="mr-2 h-4 w-4" />
+                      {t('menu.Wishlists')}
+                    </Link>
+                  </Button>
+                </>
               )}
               {session && (
-                <Button variant="ghost" asChild className="justify-start">
-                  <Link href="/collection" onClick={() => setMobileMenuOpen(false)}>
-                    <Library className="mr-2 h-4 w-4" />
-                    {t('menu.Collection')}
-                  </Link>
-                </Button>
-              )}
-              {session && (
-                <Button variant="ghost" asChild className="justify-start">
-                  <Link href="/wishlists" onClick={() => setMobileMenuOpen(false)}>
-                    <Heart className="mr-2 h-4 w-4" />
-                    {t('menu.Wishlists')}
-                  </Link>
-                </Button>
+                <>
+                  <p className="px-3 pt-2 text-xs font-medium text-muted-foreground">{t('menu.Groupes')}</p>
+                  <Button variant="ghost" asChild className="justify-start">
+                    <Link href="/play-groups" onClick={() => setMobileMenuOpen(false)}>
+                      <Users className="mr-2 h-4 w-4" />
+                      {t('menu.PlayGroups')}
+                    </Link>
+                  </Button>
+                </>
               )}
               {session && isAdmin(session.user.email) && (
                 <Button variant="ghost" asChild className="justify-start">
