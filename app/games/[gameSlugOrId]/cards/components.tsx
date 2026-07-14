@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/select";
 import { useTranslations } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "@/lib/auth-client";
+import AddToWishlistButton from "@/components/AddToWishlistButton";
 
 type CardWithType = BoosterCard & { type?: string };
 type CardsApiResponse = {
@@ -34,6 +36,7 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
   const initialSearchQuery = searchParams.get("searchQuery") ?? "";
   const initialPage = Math.max(1, Number.parseInt(searchParams.get("page") ?? "1", 10) || 1);
 
@@ -372,20 +375,35 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {cards.map((card) => (
-          <Link
+          <div
             key={`${card.cardId}-${card.setCode}-${card.collectorNumber}`}
-            href={`/games/${gameSlug}/cards/${card.id}`}
-            className="cursor-pointer border rounded-lg p-4 hover:shadow-lg transition-shadow"
+            className="relative overflow-hidden rounded-lg border hover:shadow-lg transition-shadow"
           >
-            <Image src={card.image} alt={card.name} width={600} height={400} unoptimized className="w-full rounded-md mb-2" />
-            <h3 className="font-semibold">{card.name}</h3>
-            <p className="text-sm text-muted-foreground">
-              {card.setCode} #{card.collectorNumber}
-            </p>
-            {card.type ? (
-              <p className="text-xs text-muted-foreground mt-1">{card.type}</p>
-            ) : null}
-          </Link>
+            <Link href={`/games/${gameSlug}/cards/${card.id}`} className="block cursor-pointer p-4">
+              <Image src={card.image} alt={card.name} width={600} height={400} unoptimized className="w-full rounded-md mb-2" />
+              <h3 className="font-semibold">{card.name}</h3>
+              <p className="text-sm text-muted-foreground">
+                {card.setCode} #{card.collectorNumber}
+              </p>
+              {card.type ? (
+                <p className="text-xs text-muted-foreground mt-1">{card.type}</p>
+              ) : null}
+            </Link>
+            {session && (
+              <div className="absolute right-2 top-2 z-10">
+                <AddToWishlistButton
+                  iconOnly
+                  cardId={card.id}
+                  gameSlug={gameSlug}
+                  cardName={card.name}
+                  setCode={card.setCode}
+                  collectorNumber={String(card.collectorNumber)}
+                  image={card.image}
+                  type={card.type}
+                />
+              </div>
+            )}
+          </div>
         ))}
       </div>
 

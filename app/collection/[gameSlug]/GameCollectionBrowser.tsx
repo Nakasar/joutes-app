@@ -388,7 +388,7 @@ export default function GameCollectionBrowser({
             return (
               <div
                 key={card.id}
-                className={`group flex flex-col overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-md ${
+                className={`group relative flex flex-col overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-md ${
                   owned ? "ring-1 ring-emerald-500/40" : ""
                 }`}
               >
@@ -412,6 +412,17 @@ export default function GameCollectionBrowser({
                     </span>
                   ) : null}
                 </button>
+                <div className="absolute left-1.5 top-1.5 z-10">
+                  <AddToWishlistButton
+                    iconOnly
+                    cardId={card.id}
+                    gameSlug={gameSlug}
+                    cardName={card.name}
+                    setCode={card.setCode}
+                    collectorNumber={String(card.collectorNumber)}
+                    image={card.image}
+                  />
+                </div>
                 <div className="flex flex-1 flex-col gap-2 p-2">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium leading-tight" title={card.name}>

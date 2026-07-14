@@ -29,6 +29,9 @@ type AddToWishlistButtonProps = {
   collectorNumber: string;
   image: string;
   type?: string;
+  /** Render a compact circular icon button instead of a labeled one — for overlaying on card thumbnails. */
+  iconOnly?: boolean;
+  className?: string;
 };
 
 export default function AddToWishlistButton({
@@ -39,6 +42,8 @@ export default function AddToWishlistButton({
   collectorNumber,
   image,
   type,
+  iconOnly = false,
+  className,
 }: AddToWishlistButtonProps) {
   const t = useTranslations("Wishlists");
   const [open, setOpen] = useState(false);
@@ -127,10 +132,25 @@ export default function AddToWishlistButton({
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1.5">
-          <Heart className="size-4" />
-          {t("addToWishlist.trigger")}
-        </Button>
+        {iconOnly ? (
+          <button
+            type="button"
+            onClick={(e) => e.stopPropagation()}
+            className={
+              className ??
+              "flex size-7 items-center justify-center rounded-full bg-black/60 text-white shadow transition-colors hover:bg-black/80"
+            }
+            aria-label={t("addToWishlist.trigger")}
+            title={t("addToWishlist.trigger")}
+          >
+            <Heart className="size-3.5" />
+          </button>
+        ) : (
+          <Button variant="outline" size="sm" className={className ?? "gap-1.5"}>
+            <Heart className="size-4" />
+            {t("addToWishlist.trigger")}
+          </Button>
+        )}
       </PopoverTrigger>
       <PopoverContent className="w-72 p-0" align="start">
         <Command shouldFilter={false}>
