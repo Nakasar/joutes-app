@@ -373,11 +373,11 @@ function MockupContent({ variant, from, to }: { variant: OgVariant; from: string
 }
 
 /**
- * Stylized device-frame mockup used as the base for all OG/Twitter preview
+ * Stylized device-frame chrome used as the base for all OG/Twitter preview
  * images, matching the illustrative style already used on the /features
  * page (see app/features/Mockups.tsx) rather than real screenshots.
  */
-function DeviceFrame({ variant, from, to }: { variant: OgVariant; from: string; to: string }) {
+function DeviceFrame({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
@@ -405,8 +405,88 @@ function DeviceFrame({ variant, from, to }: { variant: OgVariant; from: string; 
         <div style={{ display: "flex", width: 12, height: 12, borderRadius: 999, backgroundColor: "#fbbf24" }} />
         <div style={{ display: "flex", width: 12, height: 12, borderRadius: 999, backgroundColor: "#4ade80" }} />
       </div>
-      <div style={{ display: "flex", padding: 28 }}>
-        <MockupContent variant={variant} from={from} to={to} />
+      <div style={{ display: "flex", padding: 24 }}>{children}</div>
+    </div>
+  );
+}
+
+function OgShell({
+  from,
+  to,
+  eyebrow = "Joutes",
+  title,
+  subtitle,
+  panel,
+}: {
+  from: string;
+  to: string;
+  eyebrow?: string;
+  title: string;
+  subtitle: string;
+  panel: React.ReactNode;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        width: "100%",
+        height: "100%",
+        backgroundColor: "#0b1120",
+        backgroundImage: "linear-gradient(135deg, #0b1120 0%, #111827 60%, #0b1120 100%)",
+        position: "relative",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: -160,
+          right: -120,
+          width: 560,
+          height: 560,
+          borderRadius: 999,
+          backgroundImage: `linear-gradient(135deg, ${from}, ${to})`,
+          opacity: 0.25,
+          filter: "blur(40px)",
+        }}
+      />
+      <div
+        style={{
+          display: "flex",
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 72px",
+          gap: 48,
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 22, maxWidth: 560 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              fontSize: 28,
+              fontWeight: 700,
+              color: "#f8fafc",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                width: 14,
+                height: 14,
+                borderRadius: 4,
+                backgroundImage: `linear-gradient(135deg, ${from}, ${to})`,
+              }}
+            />
+            {eyebrow}
+          </div>
+          <div style={{ display: "flex", fontSize: 56, fontWeight: 800, color: "#f8fafc", lineHeight: 1.1 }}>
+            {title}
+          </div>
+          <div style={{ display: "flex", fontSize: 26, color: "#94a3b8", lineHeight: 1.4 }}>{subtitle}</div>
+        </div>
+        <div style={{ display: "flex" }}>{panel}</div>
       </div>
     </div>
   );
@@ -427,71 +507,110 @@ export function buildOgImage({
 
   return new ImageResponse(
     (
-      <div
-        style={{
-          display: "flex",
-          width: "100%",
-          height: "100%",
-          backgroundColor: "#0b1120",
-          backgroundImage: "linear-gradient(135deg, #0b1120 0%, #111827 60%, #0b1120 100%)",
-          position: "relative",
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            top: -160,
-            right: -120,
-            width: 560,
-            height: 560,
-            borderRadius: 999,
-            backgroundImage: `linear-gradient(135deg, ${from}, ${to})`,
-            opacity: 0.25,
-            filter: "blur(40px)",
-          }}
-        />
-        <div
-          style={{
-            display: "flex",
-            flex: 1,
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "0 72px",
-            gap: 48,
-          }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: 22, maxWidth: 560 }}>
+      <OgShell
+        from={from}
+        to={to}
+        eyebrow={eyebrow}
+        title={title}
+        subtitle={subtitle}
+        panel={
+          <DeviceFrame>
+            <MockupContent variant={variant} from={from} to={to} />
+          </DeviceFrame>
+        }
+      />
+    ),
+    ogImageSize
+  );
+}
+
+export type WishlistOgItem = {
+  name: string;
+  image: string;
+  quantity: number;
+};
+
+const CARD_THUMB_WIDTH = 100;
+const CARD_THUMB_HEIGHT = 140;
+const WISHLIST_PANEL_MAX_ITEMS = 6;
+
+function WishlistCardsPanel({ items, accent }: { items: WishlistOgItem[]; accent: string }) {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 12, width: CARD_THUMB_WIDTH * 3 + 24 }}>
+      {items.slice(0, WISHLIST_PANEL_MAX_ITEMS).map((item, index) => (
+        <div key={index} style={{ display: "flex", position: "relative", width: CARD_THUMB_WIDTH, height: CARD_THUMB_HEIGHT }}>
+          <img
+            src={item.image}
+            alt={item.name}
+            width={CARD_THUMB_WIDTH}
+            height={CARD_THUMB_HEIGHT}
+            style={{
+              borderRadius: 10,
+              objectFit: "cover",
+              border: "1px solid rgba(255,255,255,0.15)",
+            }}
+          />
+          {item.quantity > 1 && (
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
-                gap: 10,
-                fontSize: 28,
+                position: "absolute",
+                bottom: 6,
+                right: 6,
+                backgroundColor: accent,
+                color: "white",
+                fontSize: 14,
                 fontWeight: 700,
-                color: "#f8fafc",
+                padding: "2px 8px",
+                borderRadius: 999,
               }}
             >
-              <div
-                style={{
-                  display: "flex",
-                  width: 14,
-                  height: 14,
-                  borderRadius: 4,
-                  backgroundImage: `linear-gradient(135deg, ${from}, ${to})`,
-                }}
-              />
-              {eyebrow}
+              x{item.quantity}
             </div>
-            <div style={{ display: "flex", fontSize: 56, fontWeight: 800, color: "#f8fafc", lineHeight: 1.1 }}>
-              {title}
-            </div>
-            <div style={{ display: "flex", fontSize: 26, color: "#94a3b8", lineHeight: 1.4 }}>{subtitle}</div>
-          </div>
-          <div style={{ display: "flex" }}>
-            <DeviceFrame variant={variant} from={from} to={to} />
-          </div>
+          )}
         </div>
-      </div>
+      ))}
+    </div>
+  );
+}
+
+export function buildWishlistOgImage({
+  wishlistName,
+  ownerLabel,
+  totalCount,
+  items,
+}: {
+  wishlistName: string;
+  ownerLabel?: string;
+  totalCount: number;
+  items: WishlistOgItem[];
+}) {
+  const [from, to] = ACCENTS.wishlists;
+  const cardWord = totalCount > 1 ? "cartes" : "carte";
+  const wantedWord = totalCount > 1 ? "recherchées" : "recherchée";
+  const subtitle = ownerLabel
+    ? `Liste de souhaits de ${ownerLabel} - ${totalCount} ${cardWord} ${wantedWord} sur Joutes.`
+    : `${totalCount} ${cardWord} ${wantedWord} sur Joutes.`;
+
+  const hasImages = items.length > 0;
+
+  return new ImageResponse(
+    (
+      <OgShell
+        from={from}
+        to={to}
+        title={wishlistName}
+        subtitle={subtitle}
+        panel={
+          <DeviceFrame>
+            {hasImages ? (
+              <WishlistCardsPanel items={items} accent={from} />
+            ) : (
+              <MockupContent variant="wishlists" from={from} to={to} />
+            )}
+          </DeviceFrame>
+        }
+      />
     ),
     ogImageSize
   );
