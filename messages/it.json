@@ -893,7 +893,11 @@
         "previous": "Precedente",
         "next": "Successivo",
         "pageOf": "Pagina {page} di {totalPages}",
-        "editSettings": "Impostazioni"
+        "editSettings": "Impostazioni",
+        "ownedOnly": "Carte possedute",
+        "minOwned": "Qtà min.",
+        "ownedCount": "{count, plural, one {Possiedi # copia} other {Possiedi # copie}}",
+        "notOwned": "Non possiedi questa carta"
       },
       "addItem": {
         "trigger": "Aggiungi una carta",

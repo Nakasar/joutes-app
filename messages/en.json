@@ -951,7 +951,11 @@
         "previous": "Previous",
         "next": "Next",
         "pageOf": "Page {page} of {totalPages}",
-        "editSettings": "Settings"
+        "editSettings": "Settings",
+        "ownedOnly": "Owned cards",
+        "minOwned": "Min. qty",
+        "ownedCount": "{count, plural, one {You own # copy} other {You own # copies}}",
+        "notOwned": "You don't own this card"
       },
       "addItem": {
         "trigger": "Add a card",

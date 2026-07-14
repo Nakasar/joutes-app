@@ -899,7 +899,11 @@
         "previous": "Zurück",
         "next": "Weiter",
         "pageOf": "Seite {page} von {totalPages}",
-        "editSettings": "Einstellungen"
+        "editSettings": "Einstellungen",
+        "ownedOnly": "Besessene Karten",
+        "minOwned": "Min. Anzahl",
+        "ownedCount": "{count, plural, one {Du besitzt # Exemplar} other {Du besitzt # Exemplare}}",
+        "notOwned": "Du besitzt diese Karte nicht"
       },
       "addItem": {
         "trigger": "Karte hinzufügen",
