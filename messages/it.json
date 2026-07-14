@@ -914,6 +914,8 @@
       },
       "detail": {
         "back": "Indietro",
+        "ownerUser": "Lista di {name}",
+        "ownerGroup": "Lista del gruppo {name}",
         "searchPlaceholder": "Cerca una carta…",
         "allGames": "Tutti i giochi",
         "allTypes": "Tutti i tipi",

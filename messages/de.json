@@ -901,6 +901,8 @@
       },
       "detail": {
         "back": "Zurück",
+        "ownerUser": "Wunschliste von {name}",
+        "ownerGroup": "Wunschliste der Gruppe {name}",
         "searchPlaceholder": "Karte suchen…",
         "allGames": "Alle Spiele",
         "allTypes": "Alle Typen",

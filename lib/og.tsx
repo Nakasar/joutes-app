@@ -665,6 +665,9 @@ export function buildWishlistOgImage({
               Joutes
             </div>
             <div style={{ display: "flex", fontSize: 40, fontWeight: 800, color: "#f8fafc" }}>{wishlistName}</div>
+            {ownerLabel && (
+              <div style={{ display: "flex", fontSize: 20, color: "#94a3b8" }}>Liste de {ownerLabel}</div>
+            )}
           </div>
           <div
             style={{
