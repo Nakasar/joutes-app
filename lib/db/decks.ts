@@ -323,7 +323,7 @@ export async function getDeckCardPreviews(
   for (const card of parsed) {
     const match = cardByName.get(card.name.toLowerCase());
     if (match?.image) {
-      previews.push({ name: card.name, image: match.image, quantity: card.quantity });
+      previews.push({ name: card.name, image: match.image?.split('?')[0], quantity: card.quantity });
     }
     if (previews.length >= maxItems) break;
   }

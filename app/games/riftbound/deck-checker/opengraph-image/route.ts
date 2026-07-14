@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       .slice(0, CARD_GRID_MAX_ITEMS)
       .map((card) => ({
         name: card.name,
-        image: card.image,
+        image: card.image?.split('?')[0],
         quantity: card.quantity,
         hasNote: (card.erratas?.length ?? 0) > 0,
       }));
