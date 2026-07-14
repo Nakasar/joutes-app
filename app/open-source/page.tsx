@@ -4,8 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Heart } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Open Source - Joutes",
+  title: "Open Source",
   description: "Librairies et projets open source utilisés par Joutes.",
+  keywords: ["open source", "librairies", "dépendances", "joutes"],
 };
 
 const dependencies = [

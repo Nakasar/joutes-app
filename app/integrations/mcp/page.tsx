@@ -4,8 +4,9 @@ import Link from "next/link";
 import type {Metadata} from "next";
 
 export const metadata: Metadata = {
-    title: "Joutes - Documentation server MCP",
+    title: "Documentation server MCP",
     description: "Un serveur MCP pour intégrer la plateforme Joutes avec vos agents IA.",
+    keywords: ["mcp", "model context protocol", "agents ia", "intégration", "intelligence artificielle"],
 };
 
 export default function IntegrationsMPCPage() {

@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export const metadata: Metadata = {
   title: "Joutes Discord pour Riftbound | Bot et automatisations",
   description: "Découvrez les fonctionnalités Discord de Joutes pour Riftbound : commandes d’événements, tableaux synchronisés, recherche de cartes et inscriptions directes.",
+  keywords: ["discord", "bot discord", "riftbound", "événements", "automatisation"],
   alternates: { canonical: "/games/riftbound/developers/discord" },
   openGraph: {
     url: "https://www.joutes.app/games/riftbound/developers/discord",

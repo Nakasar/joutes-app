@@ -25,9 +25,22 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     };
   }
 
+  // Les decks privés ne sont visibles que par leur propriétaire (la page redirige
+  // les autres utilisateurs) : on évite de les indexer ou d'en exposer le détail.
+  if (deck.visibility === "private") {
+    return {
+      title: deck.name,
+      robots: { index: false, follow: false },
+    };
+  }
+
   return {
     title: deck.name,
     description: deck.description || `Deck ${deck.name}`,
+    openGraph: {
+      title: `${deck.name} - Joutes`,
+      description: deck.description || `Deck ${deck.name}`,
+    },
   };
 }
 

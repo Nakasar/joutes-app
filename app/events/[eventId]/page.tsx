@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { getEventById } from "@/lib/db/events";
+import { Metadata } from "next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -46,6 +47,47 @@ type EventPageProps = {
     error?: string;
   }>;
 };
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ eventId: string }>;
+}): Promise<Metadata> {
+  const { eventId } = await params;
+  const event = await getEventById(eventId);
+
+  if (!event) {
+    return { title: "Événement introuvable" };
+  }
+
+  // Les événements privés (sans lieu partenaire associé) ne doivent pas être indexés
+  // ni divulguer leurs détails dans les métadonnées, même si la page redirige déjà
+  // les utilisateurs non autorisés.
+  const isPrivateEvent = !event.lairId;
+  if (isPrivateEvent) {
+    return {
+      title: event.name,
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const startDate = DateTime.fromISO(event.startDateTime)
+    .setLocale("fr")
+    .toLocaleString(DateTime.DATE_FULL);
+  const locationPart = event.lair?.name ? ` à ${event.lair.name}` : "";
+  const description = event.description
+    ? event.description.slice(0, 160)
+    : `Événement ${event.gameName} le ${startDate}${locationPart}.`;
+
+  return {
+    title: event.name,
+    description,
+    openGraph: {
+      title: `${event.name} - Joutes`,
+      description,
+    },
+  };
+}
 
 export default async function EventPage({ params, searchParams }: EventPageProps) {
   const { eventId } = await params;

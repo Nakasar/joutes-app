@@ -13,6 +13,11 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: t("metadata.title"),
     description: t("metadata.description"),
+    keywords: ["wishlist", "liste de souhaits", "cartes recherchées", "échange de cartes", "jeux de cartes à collectionner"],
+    openGraph: {
+      title: `${t("metadata.title")} - Joutes`,
+      description: t("metadata.description"),
+    },
   };
 }
 

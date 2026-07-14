@@ -3,8 +3,21 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import {getTranslations} from "next-intl/server";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Événements",
+  description: "Trouvez et organisez des évènements de jeux de cartes à collectionner et jeux de plateau près de chez vous : tournois, organized play et rencontres locales.",
+  keywords: ["événements", "tournois", "jeux de cartes à collectionner", "organized play", "communauté locale"],
+  openGraph: {
+    url: `https://joutes.app/events`,
+    siteName: 'Joutes',
+    title: 'Événements - Joutes',
+    description: "Trouvez et organisez des évènements de jeux de cartes à collectionner et jeux de plateau près de chez vous.",
+  },
+};
 
 type EventsPageProps = {
   searchParams: Promise<{

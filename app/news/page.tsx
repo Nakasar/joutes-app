@@ -11,12 +11,13 @@ import NewsListClient from "./NewsListClient";
 
 export const metadata: Metadata = {
   title: "Actualités",
-  description: "Toutes les actualités de la communauté Joutes",
+  description: "Toutes les actualités de la communauté Joutes : annonces, extensions, événements et mises à jour des jeux.",
+  keywords: ["actualités", "news", "annonces", "extensions", "communauté", "jeux de cartes à collectionner"],
   openGraph: {
     url: "https://joutes.app/news",
-    siteName: "Joutes - Actualités",
+    siteName: "Joutes",
     title: "Actualités - Joutes",
-    description: "Toutes les actualités de la communauté Joutes",
+    description: "Toutes les actualités de la communauté Joutes : annonces, extensions, événements et mises à jour des jeux.",
   },
 };
 

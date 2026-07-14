@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export const metadata: Metadata = {
   title: "Joutes MCP pour Riftbound | Intégrer les règles et cartes via MCP",
   description: "Découvrez comment utiliser le serveur MCP de Joutes pour Riftbound avec les assistants IA : recherche d’événements, cartes, règles, erratas et plus encore.",
+  keywords: ["mcp", "model context protocol", "riftbound", "ia", "agents ia"],
   alternates: { canonical: "/games/riftbound/developers/mcp" },
   openGraph: {
     url: "https://www.joutes.app/games/riftbound/developers/mcp",

@@ -11,12 +11,13 @@ import {isAdmin} from "@/lib/config/admins";
 
 export const metadata: Metadata = {
   title: "Ligues",
-  description: "Découvrez les ligues et tournois de jeux",
+  description: "Découvrez les ligues et tournois de jeux de cartes à collectionner et de jeux de plateau près de chez vous.",
+  keywords: ["ligues", "tournois", "compétition", "classement", "jeux de cartes à collectionner", "organized play"],
   openGraph: {
     url: `https://joutes.app/leagues`,
-    siteName: 'Joutes - Participez aux ligues',
+    siteName: 'Joutes',
     title: 'Ligues - Joutes',
-    description: "Découvrez les ligues et tournois de jeux",
+    description: "Découvrez les ligues et tournois de jeux de cartes à collectionner et de jeux de plateau près de chez vous.",
   },
 };
 

@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export const metadata: Metadata = {
   title: "Joutes API pour Riftbound | Données ouvertes et intégrations",
   description: "Consultez les endpoints API de Joutes pour Riftbound afin d’accéder aux jeux, règles, sets et documentation OpenAPI pour vos intégrations.",
+  keywords: ["api", "riftbound", "openapi", "intégration", "développeurs"],
   alternates: { canonical: "/games/riftbound/developers/api" },
   openGraph: {
     url: "https://www.joutes.app/games/riftbound/developers/api",

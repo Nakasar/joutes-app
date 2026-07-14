@@ -3,14 +3,14 @@ import GamesExplorer from "./GamesExplorer";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Jeux - Joutes",
-  description: "Explorez les jeux de cartes à collectionner et jeux de plateau.",
+  title: "Jeux",
+  description: "Explorez les jeux de cartes à collectionner et jeux de plateau disponibles sur Joutes : règles, cartes, rulings et communauté.",
+  keywords: ["jeux de cartes à collectionner", "tcg", "jeux de plateau", "règles du jeu", "rulings", "riftbound", "lorcana", "altered"],
   openGraph: {
     url: `https://joutes.app/games`,
-    siteName: 'Joutes - Explorez les jeux',
+    siteName: 'Joutes',
     title: 'Jeux - Joutes',
-    description: 'Explorez les jeux de cartes à collectionner et jeux de plateau.',
-    images: 'https://joutes.app/joutes-games.png',
+    description: 'Explorez les jeux de cartes à collectionner et jeux de plateau disponibles sur Joutes.',
   },
 };
 
