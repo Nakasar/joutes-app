@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useSession, signOut } from "@/lib/auth-client";
 import Image from "next/image";
-import {Menu, Calendar, MapPin, User, LogOut, Shield, Trophy, Dices, Library, Heart, Users, ChevronDown} from "lucide-react";
+import {Menu, Calendar, MapPin, User, LogOut, Shield, Trophy, Dices, Library, Heart, Users, ChevronDown, Sparkles} from "lucide-react";
 import { isAdmin } from "@/lib/config/admins";
 import { Button } from "@/components/ui/button";
 import { NotificationDropdown } from "@/components/NotificationDropdown";
@@ -74,6 +74,14 @@ export default function Header() {
                   <Link href="/lairs">
                     <MapPin className="mr-2 h-4 w-4" />
                     {t('menu.Lieux')}
+                  </Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                  <Link href="/features">
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    {t('menu.Fonctionnalités')}
                   </Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
@@ -270,6 +278,12 @@ export default function Header() {
                 <Link href="/lairs" onClick={() => setMobileMenuOpen(false)}>
                   <MapPin className="mr-2 h-4 w-4" />
                   {t('menu.Lieux')}
+                </Link>
+              </Button>
+              <Button variant="ghost" asChild className="justify-start">
+                <Link href="/features" onClick={() => setMobileMenuOpen(false)}>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  {t('menu.Fonctionnalités')}
                 </Link>
               </Button>
               {session && (

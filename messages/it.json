@@ -16,7 +16,8 @@
       "myAccount": "Il mio account",
       "Wishlists": "Liste dei desideri",
       "Groupes": "Gruppi",
-      "PlayGroups": "I miei gruppi di gioco"
+      "PlayGroups": "I miei gruppi di gioco",
+      "Fonctionnalités": "Funzionalità"
     }
   },
   "LocaleSwitcher": {
@@ -1045,5 +1046,146 @@
           "inCollection": "Nella collezione",
           "removeCard": "Rimuovi carta"
         }
+    },
+    "Features": {
+      "metadata": {
+        "title": "Funzionalità",
+        "description": "Scopri tutto ciò che Joutes offre per la tua passione per i giochi di carte collezionabili: collezione, liste dei desideri, gruppi di gioco, eventi e altro ancora."
+      },
+      "hero": {
+        "eyebrow": "Joutes",
+        "titleHighlight": "Un'unica app",
+        "title": "per tutti i tuoi giochi di carte collezionabili",
+        "subtitle": "Cataloghi di carte, collezione, liste dei desideri, gruppi di gioco, eventi… Joutes riunisce tutto ciò di cui hai bisogno per vivere la tua passione per i TCG, da solo o con altri giocatori.",
+        "ctaPrimary": "Scopri i giochi",
+        "ctaSecondary": "Crea un account"
+      },
+      "items": {
+        "games": {
+          "title": "Un hub per tutti i tuoi giochi",
+          "description": "Sfoglia i cataloghi di carte di più TCG, cerca per nome, set o tipo, e trova tutte le informazioni utili in un unico posto.",
+          "bullets": [
+            "Ricerca istantanea all'interno di ogni gioco",
+            "Pagine di gioco con notizie, regole e strumenti",
+            "Pensato per accogliere nuovi giochi nel tempo"
+          ]
+        },
+        "cards": {
+          "title": "Schede carta che vanno dritte al punto",
+          "description": "Ogni carta mostra le sue proprietà specifiche del gioco (domini, tratti, costo, forza…) oltre a errata, ruling e chiarimenti, ordinati in modo intelligente.",
+          "bullets": [
+            "Proprietà adattate a ogni gioco",
+            "Errata e ruling votati dalla community",
+            "I contenuti obsoleti vengono spostati automaticamente in fondo"
+          ]
+        },
+        "collection": {
+          "title": "La tua collezione, seguita nei minimi dettagli",
+          "description": "Aggiungi le tue carte con lingua, condizione, foil o prezzo d'acquisto, e segui i tuoi progressi verso il master set e il game set di ogni espansione.",
+          "bullets": [
+            "Completamento dettagliato per set e per gioco",
+            "Foil, lingua, condizione, grading, prezzo d'acquisto",
+            "Varianti (alt-art) raggruppate automaticamente"
+          ]
+        },
+        "playGroups": {
+          "title": "Gioca insieme ai tuoi gruppi",
+          "description": "Crea gruppi di gioco, condividi una collezione comune modificabile da tutti i membri, e tieni traccia di chi ha preso in prestito quale carta.",
+          "bullets": [
+            "Una collezione condivisa tra tutti i membri",
+            "Tracciamento dei prestiti carta per carta",
+            "Inviti e ruoli (proprietario, admin, membro)"
+          ]
+        },
+        "wishlists": {
+          "title": "Liste dei desideri che lavorano per te",
+          "description": "Crea tutte le liste che vuoi, di tutti i giochi, con visibilità privata, non elencata o pubblica. Joutes ti mostra a colpo d'occhio cosa possiedi già.",
+          "bullets": [
+            "Indicatore \"già posseduta\" in tempo reale",
+            "Aggiunta in un clic dalla collezione o da una scheda carta",
+            "Esportazione in testo per condividerla all'istante"
+          ]
+        },
+        "lairs": {
+          "title": "Negozi ed eventi vicino a te",
+          "description": "Scopri i negozi di gioco, i loro eventi, e iscriviti in pochi secondi.",
+          "bullets": [
+            "Calendario degli eventi per ogni luogo",
+            "Schede dei negozi con informazioni pratiche",
+            "Promemoria e notifiche"
+          ]
+        },
+        "decks": {
+          "title": "Costruisci e valida i tuoi mazzi",
+          "description": "Costruisci i tuoi mazzi e verifica la loro legalità secondo le regole del gioco, direttamente nell'app.",
+          "bullets": [
+            "Verifica automatica della legalità",
+            "Condivisione pubblica o privata",
+            "Una base solida per preparare i tuoi tornei"
+          ]
+        },
+        "leagues": {
+          "title": "Leghe e partite, senza foglio di calcolo",
+          "description": "Segui le tue leghe, registra le tue partite e le classifiche, senza bisogno di un foglio condiviso.",
+          "bullets": [
+            "Classifiche calcolate automaticamente",
+            "Storico completo delle partite",
+            "Più formati (punti, eliminazione…)"
+          ]
+        }
+      },
+      "cta": {
+        "title": "Pronto a centralizzare la tua passione?",
+        "subtitle": "Unisciti a Joutes gratuitamente e inizia esplorando il tuo primo gioco.",
+        "ctaPrimary": "Scopri i giochi",
+        "ctaSecondary": "Crea un account gratuito"
+      },
+      "mockup": {
+        "hero": {
+          "dashboard": "Dashboard di Joutes"
+        },
+        "games": {
+          "searchPlaceholder": "Cerca una carta…"
+        },
+        "cards": {
+          "domain": "Dominio",
+          "cost": "Costo {value}",
+          "might": "Forza {value}",
+          "ruling": "Ruling · {count} voti positivi",
+          "outdatedErrata": "Errata obsoleta"
+        },
+        "collection": {
+          "masterSet": "Master set",
+          "gameSet": "Game set"
+        },
+        "playGroups": {
+          "sharedCollection": "Collezione condivisa",
+          "cardName1": "Bagliore runico",
+          "cardName2": "Guardia d'acciaio",
+          "borrowedBy": "Prestata · {name}",
+          "available": "×{count} disponibili"
+        },
+        "wishlists": {
+          "title": "La mia lista dei desideri",
+          "visibilityPublic": "Pubblica",
+          "cardName1": "Fiamma eterna",
+          "cardName2": "Sentinella di nebbia",
+          "owned": "Posseduta",
+          "wanted": "Desiderata ×{count}"
+        },
+        "lairs": {
+          "name": "La Tana del Drago",
+          "event": "Torneo Riftbound · Sabato ore 14"
+        },
+        "decks": {
+          "name": "Mazzo Dominio",
+          "legal": "Legale",
+          "costAxis": "costo"
+        },
+        "leagues": {
+          "name": "Lega di primavera",
+          "points": "{count} pt"
+        }
+      }
     }
 }

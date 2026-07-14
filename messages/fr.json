@@ -16,7 +16,8 @@
       "myAccount": "Mon Compte",
       "Wishlists": "Listes de souhaits",
       "Groupes": "Groupes",
-      "PlayGroups": "Mes Groupes de Jeu"
+      "PlayGroups": "Mes Groupes de Jeu",
+      "Fonctionnalités": "Fonctionnalités"
     }
   },
   "LocaleSwitcher": {
@@ -1104,5 +1105,146 @@
           "inCollection": "Dans la collection",
           "removeCard": "Retirer la carte"
         }
+    },
+    "Features": {
+      "metadata": {
+        "title": "Fonctionnalités",
+        "description": "Découvrez tout ce que Joutes propose pour vivre votre passion des jeux de cartes à collectionner : collection, wishlists, groupes de jeu, événements et bien plus."
+      },
+      "hero": {
+        "eyebrow": "Joutes",
+        "titleHighlight": "Une seule application",
+        "title": "pour tous vos jeux de cartes à collectionner",
+        "subtitle": "Catalogues de cartes, collection, listes de souhaits, groupes de jeu, événements… Joutes centralise tout ce dont vous avez besoin pour vivre votre passion des TCG, seul ou entre joueurs.",
+        "ctaPrimary": "Découvrir les jeux",
+        "ctaSecondary": "Créer un compte"
+      },
+      "items": {
+        "games": {
+          "title": "Un hub pour tous vos jeux",
+          "description": "Parcourez les catalogues de cartes de plusieurs TCG, recherchez par nom, set ou type, et retrouvez toutes les infos utiles au même endroit.",
+          "bullets": [
+            "Recherche instantanée par jeu",
+            "Fiches de jeu avec actualités, règles et outils",
+            "Pensé pour accueillir de nouveaux jeux"
+          ]
+        },
+        "cards": {
+          "title": "Des fiches de carte qui vont à l'essentiel",
+          "description": "Chaque carte affiche ses propriétés spécifiques au jeu (domaines, traits, coût, force…) ainsi que ses erratas, rulings et clarifications, triés intelligemment.",
+          "bullets": [
+            "Propriétés adaptées à chaque jeu",
+            "Erratas et rulings votés par la communauté",
+            "Contenus obsolètes automatiquement relégués en bas de liste"
+          ]
+        },
+        "collection": {
+          "title": "Votre collection, suivie au détail près",
+          "description": "Ajoutez vos cartes avec langue, état, foil ou prix d'achat, et suivez votre progression vers la master set et la game set de chaque extension.",
+          "bullets": [
+            "Complétion détaillée par set et par jeu",
+            "Foil, langue, état, gradation, prix d'acquisition",
+            "Variantes (alt-arts) regroupées automatiquement"
+          ]
+        },
+        "playGroups": {
+          "title": "Jouez collectif avec vos groupes",
+          "description": "Créez des groupes de jeu, partagez une collection commune modifiable par tous les membres, et suivez qui a emprunté quelle carte.",
+          "bullets": [
+            "Collection partagée entre tous les membres",
+            "Suivi des emprunts, carte par carte",
+            "Invitations et rôles (propriétaire, admin, membre)"
+          ]
+        },
+        "wishlists": {
+          "title": "Des listes de souhaits qui font le travail pour vous",
+          "description": "Créez autant de listes que vous voulez, tous jeux confondus, avec une visibilité privée, non répertoriée ou publique. Joutes indique en un clin d'œil ce que vous possédez déjà.",
+          "bullets": [
+            "Indicateur « déjà possédé » en temps réel",
+            "Ajout en un clic depuis la collection ou une fiche carte",
+            "Export en texte pour la partager en un instant"
+          ]
+        },
+        "lairs": {
+          "title": "Repaires et événements près de chez vous",
+          "description": "Découvrez les lieux de jeu (repaires), leurs événements, et inscrivez-vous en quelques secondes.",
+          "bullets": [
+            "Calendrier des événements par lieu",
+            "Fiches de repaires avec infos pratiques",
+            "Rappels et notifications"
+          ]
+        },
+        "decks": {
+          "title": "Construisez et validez vos decks",
+          "description": "Construisez vos decks et vérifiez leur légalité selon les règles du jeu, directement dans l'application.",
+          "bullets": [
+            "Vérificateur de légalité automatique",
+            "Partage public ou privé",
+            "Une base solide pour préparer vos tournois"
+          ]
+        },
+        "leagues": {
+          "title": "Ligues et parties, sans tableur",
+          "description": "Suivez vos ligues, enregistrez vos parties et vos classements, sans avoir besoin d'un tableau partagé.",
+          "bullets": [
+            "Classements calculés automatiquement",
+            "Historique complet des parties",
+            "Plusieurs formats (points, élimination…)"
+          ]
+        }
+      },
+      "cta": {
+        "title": "Prêt à centraliser votre passion ?",
+        "subtitle": "Rejoignez Joutes gratuitement et commencez par explorer votre premier jeu.",
+        "ctaPrimary": "Explorer les jeux",
+        "ctaSecondary": "Créer un compte gratuit"
+      },
+      "mockup": {
+        "hero": {
+          "dashboard": "Tableau de bord Joutes"
+        },
+        "games": {
+          "searchPlaceholder": "Rechercher une carte…"
+        },
+        "cards": {
+          "domain": "Domaine",
+          "cost": "Coût {value}",
+          "might": "Force {value}",
+          "ruling": "Ruling · {count} votes positifs",
+          "outdatedErrata": "Erratum obsolète"
+        },
+        "collection": {
+          "masterSet": "Master set",
+          "gameSet": "Game set"
+        },
+        "playGroups": {
+          "sharedCollection": "Collection partagée",
+          "cardName1": "Éclat runique",
+          "cardName2": "Garde d'acier",
+          "borrowedBy": "Empruntée · {name}",
+          "available": "×{count} disponibles"
+        },
+        "wishlists": {
+          "title": "Ma liste de souhaits",
+          "visibilityPublic": "Publique",
+          "cardName1": "Flamme éternelle",
+          "cardName2": "Sentinelle de brume",
+          "owned": "Possédée",
+          "wanted": "Souhaitée ×{count}"
+        },
+        "lairs": {
+          "name": "Le Repaire du Dragon",
+          "event": "Tournoi Riftbound · Samedi 14h"
+        },
+        "decks": {
+          "name": "Deck Domination",
+          "legal": "Légal",
+          "costAxis": "coût"
+        },
+        "leagues": {
+          "name": "Ligue de printemps",
+          "points": "{count} pts"
+        }
+      }
     }
 }

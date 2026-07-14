@@ -16,7 +16,8 @@
       "myAccount": "Mein Konto",
       "Wishlists": "Wunschlisten",
       "Groupes": "Gruppen",
-      "PlayGroups": "Meine Spielgruppen"
+      "PlayGroups": "Meine Spielgruppen",
+      "Fonctionnalités": "Funktionen"
     }
   },
   "LocaleSwitcher": {
@@ -1051,5 +1052,146 @@
           "inCollection": "In der Sammlung",
           "removeCard": "Karte entfernen"
         }
+    },
+    "Features": {
+      "metadata": {
+        "title": "Funktionen",
+        "description": "Entdecke alles, was Joutes für deine Sammelkartenspiel-Leidenschaft bietet: Sammlung, Wunschlisten, Spielgruppen, Events und mehr."
+      },
+      "hero": {
+        "eyebrow": "Joutes",
+        "titleHighlight": "Eine App",
+        "title": "für all deine Sammelkartenspiele",
+        "subtitle": "Kartenkataloge, Sammlung, Wunschlisten, Spielgruppen, Events… Joutes bündelt alles, was du für deine TCG-Leidenschaft brauchst, allein oder mit Freunden.",
+        "ctaPrimary": "Spiele entdecken",
+        "ctaSecondary": "Konto erstellen"
+      },
+      "items": {
+        "games": {
+          "title": "Ein Hub für all deine Spiele",
+          "description": "Durchstöbere Kartenkataloge mehrerer TCGs, suche nach Name, Set oder Typ und finde alle nützlichen Infos an einem Ort.",
+          "bullets": [
+            "Sofortige Suche innerhalb jedes Spiels",
+            "Spielseiten mit News, Regeln und Werkzeugen",
+            "Gebaut, um weitere Spiele aufzunehmen"
+          ]
+        },
+        "cards": {
+          "title": "Kartenseiten, die auf den Punkt kommen",
+          "description": "Jede Karte zeigt ihre spielspezifischen Eigenschaften (Domänen, Merkmale, Kosten, Stärke…) sowie ihre Errata, Rulings und Klarstellungen, intelligent sortiert.",
+          "bullets": [
+            "Eigenschaften passend zu jedem Spiel",
+            "Von der Community bewertete Errata und Rulings",
+            "Veraltete Inhalte werden automatisch ans Ende gestellt"
+          ]
+        },
+        "collection": {
+          "title": "Deine Sammlung, bis ins Detail verfolgt",
+          "description": "Füge deine Karten mit Sprache, Zustand, Foil oder Kaufpreis hinzu und verfolge deinen Fortschritt beim Master Set und Game Set jeder Erweiterung.",
+          "bullets": [
+            "Detaillierte Vervollständigung pro Set und Spiel",
+            "Foil, Sprache, Zustand, Grading, Anschaffungspreis",
+            "Varianten (Alt-Arts) werden automatisch gruppiert"
+          ]
+        },
+        "playGroups": {
+          "title": "Spiele gemeinsam mit deinen Gruppen",
+          "description": "Erstelle Spielgruppen, teile eine gemeinsame Sammlung, die jedes Mitglied bearbeiten kann, und behalte den Überblick, wer welche Karte ausgeliehen hat.",
+          "bullets": [
+            "Eine Sammlung, geteilt von allen Mitgliedern",
+            "Kartenweise Verfolgung von Ausleihen",
+            "Einladungen und Rollen (Besitzer, Admin, Mitglied)"
+          ]
+        },
+        "wishlists": {
+          "title": "Wunschlisten, die dir die Arbeit abnehmen",
+          "description": "Erstelle so viele Listen, wie du möchtest, spieleübergreifend, mit privater, nicht gelisteter oder öffentlicher Sichtbarkeit. Joutes zeigt dir auf einen Blick, was du schon besitzt.",
+          "bullets": [
+            "Echtzeit-Anzeige \"bereits im Besitz\"",
+            "Mit einem Klick aus der Sammlung oder einer Kartenseite hinzufügen",
+            "Textexport, um deine Liste sofort zu teilen"
+          ]
+        },
+        "lairs": {
+          "title": "Spielorte und Events in deiner Nähe",
+          "description": "Entdecke Spielorte, ihre Events, und melde dich in wenigen Sekunden an.",
+          "bullets": [
+            "Eventkalender für jeden Ort",
+            "Ortsseiten mit praktischen Infos",
+            "Erinnerungen und Benachrichtigungen"
+          ]
+        },
+        "decks": {
+          "title": "Baue und prüfe deine Decks",
+          "description": "Baue deine Decks und prüfe ihre Legalität nach den Regeln des Spiels, direkt in der App.",
+          "bullets": [
+            "Automatische Legalitätsprüfung",
+            "Öffentliches oder privates Teilen",
+            "Eine solide Basis für deine Turniervorbereitung"
+          ]
+        },
+        "leagues": {
+          "title": "Ligen und Partien, ganz ohne Tabelle",
+          "description": "Verfolge deine Ligen, erfasse deine Partien und Ranglisten, ohne eine geteilte Tabelle zu benötigen.",
+          "bullets": [
+            "Automatisch berechnete Ranglisten",
+            "Vollständiger Partienverlauf",
+            "Mehrere Formate (Punkte, K.-o.-System…)"
+          ]
+        }
+      },
+      "cta": {
+        "title": "Bereit, deine Leidenschaft zu bündeln?",
+        "subtitle": "Tritt Joutes kostenlos bei und entdecke zuerst dein erstes Spiel.",
+        "ctaPrimary": "Spiele entdecken",
+        "ctaSecondary": "Kostenloses Konto erstellen"
+      },
+      "mockup": {
+        "hero": {
+          "dashboard": "Joutes-Dashboard"
+        },
+        "games": {
+          "searchPlaceholder": "Karte suchen…"
+        },
+        "cards": {
+          "domain": "Domäne",
+          "cost": "Kosten {value}",
+          "might": "Stärke {value}",
+          "ruling": "Ruling · {count} positive Stimmen",
+          "outdatedErrata": "Veraltetes Erratum"
+        },
+        "collection": {
+          "masterSet": "Master Set",
+          "gameSet": "Game Set"
+        },
+        "playGroups": {
+          "sharedCollection": "Geteilte Sammlung",
+          "cardName1": "Runensplitter",
+          "cardName2": "Stahlwache",
+          "borrowedBy": "Ausgeliehen · {name}",
+          "available": "×{count} verfügbar"
+        },
+        "wishlists": {
+          "title": "Meine Wunschliste",
+          "visibilityPublic": "Öffentlich",
+          "cardName1": "Ewige Flamme",
+          "cardName2": "Nebelwächterin",
+          "owned": "Im Besitz",
+          "wanted": "Gewünscht ×{count}"
+        },
+        "lairs": {
+          "name": "Die Drachenhöhle",
+          "event": "Riftbound-Turnier · Samstag 14 Uhr"
+        },
+        "decks": {
+          "name": "Deck Dominanz",
+          "legal": "Legal",
+          "costAxis": "Kosten"
+        },
+        "leagues": {
+          "name": "Frühlingsliga",
+          "points": "{count} Pkt."
+        }
+      }
     }
 }
