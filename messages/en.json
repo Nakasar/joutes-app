@@ -972,6 +972,8 @@
       },
       "detail": {
         "back": "Back",
+        "ownerUser": "Wishlist by {name}",
+        "ownerGroup": "Wishlist of group {name}",
         "searchPlaceholder": "Search a card…",
         "allGames": "All games",
         "allTypes": "All types",

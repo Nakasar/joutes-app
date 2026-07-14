@@ -3,7 +3,8 @@ import 'server-only';
 import db from "@/lib/mongodb";
 import { ObjectId, WithId, Document } from "mongodb";
 import { Wishlist, WishlistItem, WishlistOwnerType, WishlistVisibility } from "@/lib/types/Wishlist";
-import { getPlayGroupByIdAndUser } from "@/lib/db/play-groups";
+import { getPlayGroupByIdAndUser, getPlayGroupById } from "@/lib/db/play-groups";
+import { getUserById } from "@/lib/db/users";
 
 const WISHLISTS_COLLECTION = "wishlists";
 const WISHLIST_ITEMS_COLLECTION = "wishlist-items";
@@ -199,6 +200,33 @@ export async function getWishlistAccess(
     canView: wishlist.visibility !== "private" || isOwnerOrMember,
     canEdit: isOwnerOrMember,
   };
+}
+
+export type WishlistOwnerInfo = { label: string; href: string };
+
+/** Display name + profile/group link for a wishlist's owner, for "wishlist by X" labels. */
+export async function getWishlistOwnerInfo(
+  wishlist: Pick<Wishlist, "ownerType" | "ownerId">
+): Promise<WishlistOwnerInfo | null> {
+  if (wishlist.ownerType === "user") {
+    const owner = await getUserById(wishlist.ownerId);
+    if (!owner) {
+      return null;
+    }
+
+    const hasTag = !!(owner.displayName && owner.discriminator);
+    const label = hasTag ? `${owner.displayName}#${owner.discriminator}` : owner.username;
+    const tagForUrl = hasTag ? `${owner.displayName}${owner.discriminator}` : owner.username;
+
+    return { label, href: `/users/${tagForUrl}` };
+  }
+
+  const group = await getPlayGroupById(wishlist.ownerId);
+  if (!group) {
+    return null;
+  }
+
+  return { label: group.name, href: `/play-groups/${group.id}` };
 }
 
 export type WishlistItemsOptions = {

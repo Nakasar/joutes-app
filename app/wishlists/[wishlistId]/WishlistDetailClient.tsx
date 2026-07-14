@@ -53,7 +53,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import type { Wishlist, WishlistItem, WishlistVisibility } from "@/lib/types/Wishlist";
-import type { PaginatedWishlistItems } from "@/lib/db/wishlists";
+import type { PaginatedWishlistItems, WishlistOwnerInfo } from "@/lib/db/wishlists";
 import type { Game } from "@/lib/types/Game";
 import type { BoosterCard } from "@/lib/types/booster";
 import { useRouter } from "next/navigation";
@@ -72,12 +72,14 @@ export default function WishlistDetailClient({
   canEdit,
   games,
   isLoggedIn,
+  ownerInfo,
 }: {
   wishlist: Wishlist;
   initialItems: PaginatedWishlistItems;
   canEdit: boolean;
   games: Game[];
   isLoggedIn: boolean;
+  ownerInfo: WishlistOwnerInfo | null;
 }) {
   const t = useTranslations("Wishlists");
   const router = useRouter();
@@ -212,6 +214,11 @@ export default function WishlistDetailClient({
               {t(`visibility.${wishlist.visibility}`)}
             </Badge>
           </div>
+          {ownerInfo && (
+            <Link href={ownerInfo.href} className="text-sm text-muted-foreground hover:text-foreground hover:underline w-fit">
+              {t(wishlist.ownerType === "playGroup" ? "detail.ownerGroup" : "detail.ownerUser", { name: ownerInfo.label })}
+            </Link>
+          )}
           {wishlist.description && <p className="text-muted-foreground">{wishlist.description}</p>}
         </div>
 

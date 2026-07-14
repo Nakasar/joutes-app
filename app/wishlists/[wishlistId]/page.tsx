@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
-import { getWishlistAccess, getWishlistById, getWishlistItems } from "@/lib/db/wishlists";
+import { getWishlistAccess, getWishlistById, getWishlistItems, getWishlistOwnerInfo } from "@/lib/db/wishlists";
 import { getAllGames } from "@/lib/db/games";
 import { getPlayGroupById, isGameEnabledForPlayGroup } from "@/lib/db/play-groups";
 import WishlistDetailClient from "./WishlistDetailClient";
@@ -23,9 +23,14 @@ export async function generateMetadata({
     return { title: t("metadata.notFoundTitle") };
   }
 
+  const ownerInfo = await getWishlistOwnerInfo(wishlist);
+  const description = ownerInfo
+    ? `Liste de souhaits de ${ownerInfo.label}${wishlist.description ? ` - ${wishlist.description}` : ""}.`
+    : wishlist.description;
+
   return {
     title: t("metadataTitleWishlist", { name: wishlist.name }),
-    description: wishlist.description,
+    description,
   };
 }
 
@@ -48,9 +53,10 @@ export default async function WishlistDetailPage({
     notFound();
   }
 
-  const [initialItems, allGames] = await Promise.all([
+  const [initialItems, allGames, ownerInfo] = await Promise.all([
     getWishlistItems(wishlistId, { page: 1, limit: 48, viewerId: session?.user?.id }),
     getAllGames(),
+    getWishlistOwnerInfo(wishlist),
   ]);
 
   let games = allGames;
@@ -69,6 +75,7 @@ export default async function WishlistDetailPage({
         canEdit={canEdit}
         games={games}
         isLoggedIn={!!session?.user?.id}
+        ownerInfo={ownerInfo}
       />
     </div>
   );

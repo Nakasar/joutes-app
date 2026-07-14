@@ -973,6 +973,8 @@
       },
       "detail": {
         "back": "Retour",
+        "ownerUser": "Liste de {name}",
+        "ownerGroup": "Liste du groupe {name}",
         "searchPlaceholder": "Rechercher une carte…",
         "allGames": "Tous les jeux",
         "allTypes": "Tous les types",
