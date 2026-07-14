@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   publisher: "Nakasar",
   openGraph: {
     url: "https://joutes.app",
-    title: "Joutes - Ligues et rencontres multi-jeux à proximité",
+    title: "Ligues et rencontres multi-jeux à proximité",
     description: "Ligues et rencontres multi-jeux à proximité pour les passionnés de jeux de cartes à collectionner et de jeux de société. Trouvez des événements organisés et consultez les règles et rulings communautaires.",
     siteName: "Joutes",
     locale: "fr_FR",
