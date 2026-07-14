@@ -2,8 +2,9 @@ import { Metadata } from "next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Conditions Générales d'Utilisation - Joutes",
+  title: "Conditions Générales d'Utilisation",
   description: "Conditions générales d'utilisation de la plateforme Joutes.",
+  keywords: ["cgu", "conditions générales d'utilisation", "mentions légales", "joutes"],
 };
 
 export default function CGUPage() {

@@ -5,8 +5,13 @@ import {ArrowLeft, BotIcon, BubblesIcon, Key} from "lucide-react";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-    title: "Joutes - Documentation pour intégrations",
-    description: "Intégration Discord, API et MCP pour agents IA de la plateforme Joutes.",
+    title: "Documentation pour intégrations",
+    description: "Intégration Discord, API REST et serveur MCP pour agents IA de la plateforme Joutes.",
+    keywords: ["intégrations", "api", "discord bot", "mcp", "model context protocol", "développeurs", "documentation"],
+    openGraph: {
+      title: "Documentation pour intégrations - Joutes",
+      description: "Intégration Discord, API REST et serveur MCP pour agents IA de la plateforme Joutes.",
+    },
 };
 
 export default function IntegrationsPage() {

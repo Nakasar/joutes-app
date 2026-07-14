@@ -8,6 +8,19 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import GameMatchesClient from "./GameMatchesClient";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Historique des parties",
+  description: "Consultez et enregistrez l'historique de vos parties de jeux de cartes à collectionner : résultats, adversaires et statistiques.",
+  keywords: ["historique des parties", "suivi de matchs", "jeux de cartes à collectionner", "statistiques de jeu", "résultats"],
+  openGraph: {
+    url: `https://joutes.app/game-matches`,
+    siteName: 'Joutes',
+    title: 'Historique des parties - Joutes',
+    description: "Consultez et enregistrez l'historique de vos parties : résultats, adversaires et statistiques.",
+  },
+};
 
 export default async function GameMatchesPage() {
   const session = await auth.api.getSession({

@@ -1,6 +1,12 @@
 import OAuthConsentComponent from "@/app/oauth/consent/ConsentComponent";
 import {auth} from "@/lib/auth";
 import {headers} from "next/headers";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Autoriser l'application",
+  robots: { index: false, follow: false },
+};
 
 export default async function OAuthConsentPage({ searchParams }: { searchParams: Promise<{ client_id?: string }> }) {
   const headersRes = await headers();

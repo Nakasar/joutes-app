@@ -8,8 +8,13 @@ import DecksClient from "./DecksClient";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: 'Mes Decks',
-  description: 'Gérez vos decks de jeu',
+  title: 'Decks',
+  description: 'Construisez, gérez et partagez vos decks de jeux de cartes à collectionner. Vérifiez leur légalité et analysez votre courbe de coûts.',
+  keywords: ["decks", "deck building", "jeux de cartes à collectionner", "courbe de coûts", "légalité de deck"],
+  openGraph: {
+    title: 'Decks - Joutes',
+    description: 'Construisez, gérez et partagez vos decks de jeux de cartes à collectionner.',
+  },
 };
 
 export default async function DecksPage({ searchParams }: { searchParams: Promise<{ gameId?: string; scope?: string; favoritesOnly?: string }> }) {

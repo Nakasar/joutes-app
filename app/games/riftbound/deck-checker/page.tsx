@@ -14,6 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: `Joutes - ${t("title")}`,
     description: t("description"),
+    keywords: ["deck checker", "riftbound", "légalité de deck", "vérification de deck"],
     openGraph: {
       url: `https://joutes.app/games/riftbound/deck-checker`,
       siteName: `Joutes`,

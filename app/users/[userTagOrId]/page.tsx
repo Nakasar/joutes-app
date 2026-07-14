@@ -12,11 +12,40 @@ import { Lair } from "@/lib/types/Lair";
 import {Achievement, AchievementWithUnlockInfo} from "@/lib/types/Achievement";
 import { checkAdmin } from "@/lib/middleware/admin";
 import { UnlockAchievementButton } from "@/app/users/UnlockAchievementButton";
+import { Metadata } from "next";
 
 interface UserProfilePageProps {
   params: Promise<{
     userTagOrId: string;
   }>;
+}
+
+export async function generateMetadata({
+  params,
+}: UserProfilePageProps): Promise<Metadata> {
+  const { userTagOrId } = await params;
+  const decodedUserTagOrId = decodeURIComponent(userTagOrId);
+  const result = await getPublicUserProfileAction(decodedUserTagOrId);
+
+  if (!result.success || !result.user) {
+    return { title: "Profil introuvable" };
+  }
+
+  const { user } = result;
+  const userTag =
+    user.displayName && user.discriminator
+      ? `${user.displayName}#${user.discriminator}`
+      : user.username;
+  const description = `Profil de ${userTag} sur Joutes : collection, decks et wishlists partagés.`;
+
+  return {
+    title: userTag,
+    description,
+    openGraph: {
+      title: `${userTag} - Joutes`,
+      description,
+    },
+  };
 }
 
 export default async function UserProfilePage({ params }: UserProfilePageProps) {

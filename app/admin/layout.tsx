@@ -1,6 +1,12 @@
 import { requireAdmin } from "@/lib/middleware/admin";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Administration",
+  robots: { index: false, follow: false },
+};
 
 export default async function AdminLayout({
   children,

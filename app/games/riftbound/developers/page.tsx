@@ -11,6 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: t("metadata.title"),
     description: t("metadata.description"),
+    keywords: ["riftbound", "développeurs", "api", "mcp", "discord", "intégration"],
     alternates: { canonical: "/games/riftbound/developers" },
     openGraph: {
       url: "https://www.joutes.app/games/riftbound/developers",

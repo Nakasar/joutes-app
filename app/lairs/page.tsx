@@ -14,6 +14,11 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: t("page.title"),
     description: t("page.description"),
+    keywords: ["lairs", "boutiques de jeux", "magasins de jeux", "local game stores", "événements locaux", "jeux de cartes à collectionner"],
+    openGraph: {
+      title: `${t("page.title")} - Joutes`,
+      description: t("page.description"),
+    },
   };
 }
 

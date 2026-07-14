@@ -20,6 +20,7 @@ import type {Metadata} from "next";
 export const metadata: Metadata = {
   title: "Joutes - Documentation Discord",
   description: "Intégrer Joutes avec Discord : gestion de réservation, publications, informations des jeux et règles...",
+  keywords: ["discord", "bot discord", "intégration discord", "évènements", "jeux de cartes à collectionner"],
 };
 
 export default function IntegrationsDiscordPage() {

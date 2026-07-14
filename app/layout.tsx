@@ -26,7 +26,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Joutes - Ligues et rencontres multi-jeux à proximité",
+  metadataBase: new URL("https://joutes.app"),
+  title: {
+    default: "Joutes - Ligues et rencontres multi-jeux à proximité",
+    template: "%s - Joutes",
+  },
   description: "Ligues et rencontres multi-jeux à proximité pour les passionnés de jeux de cartes à collectionner et de jeux de société. Trouvez des événements organisés et consultez les règles et rulings communautaires.",
   applicationName: "Joutes App",
   keywords: ["tcg", "board games", "events", "organized play", "rules", "rulings", "cards", "local gaming community", "local game stores"],
@@ -36,17 +40,13 @@ export const metadata: Metadata = {
     url: "https://joutes.app",
     title: "Joutes - Ligues et rencontres multi-jeux à proximité",
     description: "Ligues et rencontres multi-jeux à proximité pour les passionnés de jeux de cartes à collectionner et de jeux de société. Trouvez des événements organisés et consultez les règles et rulings communautaires.",
-    images: [
-      {
-        url: `https://joutes.app/joutes${process.env.NEXT_PUBLIC_THEME === 'default' ? '' : process.env.NEXT_PUBLIC_THEME}.png`,
-        width: 720,
-        height: 404,
-        alt: "Joutes App",
-      },
-    ],
     siteName: "Joutes",
     locale: "fr_FR",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: "@JoutesApp",
   },
 };
 

@@ -3,8 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Swords, Users, MapPin, Calendar, Heart } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "À propos - Joutes",
+  title: "À propos",
   description: "Découvrez Joutes, la plateforme qui connecte les passionnés de jeux de cartes à collectionner et de jeux de société avec leur communauté locale.",
+  keywords: ["à propos", "joutes", "communauté locale", "jeux de cartes à collectionner", "jeux de société"],
+  openGraph: {
+    title: "À propos - Joutes",
+    description: "Découvrez Joutes, la plateforme qui connecte les passionnés de jeux de cartes à collectionner et de jeux de société avec leur communauté locale.",
+  },
 };
 
 export default function AboutPage() {

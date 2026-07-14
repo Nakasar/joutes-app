@@ -7,6 +7,7 @@ import type {Metadata} from "next";
 export const metadata: Metadata = {
     title: "Joutes - Documentation développeurs et API",
     description: "Intégrer Joutes dans vos propres applications avec notre API ouverte.",
+    keywords: ["api", "développeurs", "intégration", "openapi", "données ouvertes"],
 };
 
 export default function IntegrationsAPIPage() {
