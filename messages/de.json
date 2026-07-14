@@ -311,6 +311,10 @@
         "moreInfo": "Mehr erfahren",
         "participants": "{registered} / {max} Teilnehmer"
       },
+      "news": {
+        "title": "Neuigkeiten",
+        "viewAll": "Alle Neuigkeiten ansehen"
+      },
       "metadata": {
         "notFoundTitle": "Spiel nicht gefunden - Joutes",
         "title": "{gameName} - Joutes",
@@ -520,6 +524,19 @@
           "createError": "Richtlinie konnte nicht erstellt werden"
         }
       }
+    },
+    "news": {
+      "metadata": {
+        "notFoundTitle": "Spiel nicht gefunden",
+        "title": "Neuigkeiten — {gameName}",
+        "description": "Finde alle Neuigkeiten zu {gameName}."
+      },
+      "title": "Neuigkeiten — {gameName}",
+      "back": "Zurück zum Spiel",
+      "empty": "Noch keine Neuigkeiten für dieses Spiel.",
+      "readMore": "Weiterlesen",
+      "unknownAuthor": "Unbekannter Autor",
+      "pageLabel": "Seite {currentPage} von {totalPages}"
     },
     "DeckChecker": {
       "title": "Riftbound-Deck-Checker",

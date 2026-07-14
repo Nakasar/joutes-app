@@ -311,6 +311,10 @@
         "moreInfo": "Scopri di più",
         "participants": "{registered} / {max} partecipanti"
       },
+      "news": {
+        "title": "Notizie",
+        "viewAll": "Vedi tutte le notizie"
+      },
       "metadata": {
         "notFoundTitle": "Gioco non trovato - Joutes",
         "title": "{gameName} - Joutes",
@@ -520,6 +524,19 @@
           "createError": "Impossibile creare la politica"
         }
       }
+    },
+    "news": {
+      "metadata": {
+        "notFoundTitle": "Gioco non trovato",
+        "title": "Notizie — {gameName}",
+        "description": "Trova tutte le notizie relative a {gameName}."
+      },
+      "title": "Notizie — {gameName}",
+      "back": "Torna al gioco",
+      "empty": "Nessuna notizia per questo gioco per il momento.",
+      "readMore": "Continua a leggere",
+      "unknownAuthor": "Autore sconosciuto",
+      "pageLabel": "Pagina {currentPage} di {totalPages}"
     },
     "DeckChecker": {
       "title": "Controllore mazzo Riftbound",
