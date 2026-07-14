@@ -24,7 +24,7 @@ export default async function Image({ params }: { params: Promise<{ wishlistId: 
   const { items } = await getWishlistItems(wishlistId, { page: 1, limit: WISHLIST_GRID_MAX_ITEMS });
   const cardItems: WishlistOgItem[] = items
     .filter((item) => !!item.image)
-    .map((item) => ({ name: item.name, image: item.image, quantity: item.quantity }));
+    .map((item) => ({ name: item.name, image: item.image?.split('?')[0], quantity: item.quantity }));
 
   return buildWishlistOgImage({
     wishlistName: wishlist.name,
