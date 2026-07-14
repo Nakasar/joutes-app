@@ -8,6 +8,10 @@ export const metadata: Metadata = {
     title: "Documentation développeurs et API",
     description: "Intégrer Joutes dans vos propres applications avec notre API ouverte.",
     keywords: ["api", "développeurs", "intégration", "openapi", "données ouvertes"],
+    openGraph: {
+        title: "Documentation développeurs et API - Joutes",
+        description: "Intégrer Joutes dans vos propres applications avec notre API ouverte.",
+    },
 };
 
 export default function IntegrationsAPIPage() {

@@ -61,9 +61,13 @@ export async function generateMetadata({
     };
   }
 
+  const title = `${league.name} - Ligue`;
+  const description = league.description || `Ligue ${FORMAT_LABELS[league.format]}`;
+
   return {
-    title: `${league.name} - Ligue`,
-    description: league.description || `Ligue ${FORMAT_LABELS[league.format]}`,
+    title,
+    description,
+    openGraph: { title: `${title} - Joutes`, description },
   };
 }
 

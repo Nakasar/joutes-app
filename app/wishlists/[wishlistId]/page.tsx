@@ -27,10 +27,12 @@ export async function generateMetadata({
   const description = ownerInfo
     ? `Liste de souhaits de ${ownerInfo.label}${wishlist.description ? ` - ${wishlist.description}` : ""}.`
     : wishlist.description;
+  const title = t("metadataTitleWishlist", { name: wishlist.name });
 
   return {
-    title: t("metadataTitleWishlist", { name: wishlist.name }),
+    title,
     description,
+    openGraph: { title: `${title} - Joutes`, description },
   };
 }
 

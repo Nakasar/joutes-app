@@ -7,6 +7,10 @@ export const metadata: Metadata = {
     title: "Documentation server MCP",
     description: "Un serveur MCP pour intégrer la plateforme Joutes avec vos agents IA.",
     keywords: ["mcp", "model context protocol", "agents ia", "intégration", "intelligence artificielle"],
+    openGraph: {
+        title: "Documentation server MCP - Joutes",
+        description: "Un serveur MCP pour intégrer la plateforme Joutes avec vos agents IA.",
+    },
 };
 
 export default function IntegrationsMPCPage() {

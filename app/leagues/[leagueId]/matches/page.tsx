@@ -99,9 +99,13 @@ export async function generateMetadata({
     };
   }
 
+  const title = `${league.name} - Matchs`;
+  const description = `Historique des matchs de la ligue ${league.name}`;
+
   return {
-    title: `${league.name} - Matchs`,
-    description: `Historique des matchs de la ligue ${league.name}`,
+    title,
+    description,
+    openGraph: { title: `${title} - Joutes`, description },
   };
 }
 

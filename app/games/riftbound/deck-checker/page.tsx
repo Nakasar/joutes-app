@@ -16,12 +16,14 @@ export async function generateMetadata({
   const t = await getTranslations("Games.DeckChecker");
   const { input } = await searchParams;
 
-  // Un deck précis (via ?input=) obtient sa propre image de preview générée
-  // à la volée ; sinon on garde le mockup générique (app/.../opengraph-image.tsx).
+  // app/.../opengraph-image/route.ts génère la preview à la volée : la
+  // grille de cartes du deck si ?input= est fourni, sinon le mockup
+  // générique. Comme ce n'est pas le fichier de convention spécial de Next
+  // (juste une route classique), il faut la référencer explicitement ici.
   const previewImageUrl =
     input && input.length > 10
-      ? `/games/riftbound/deck-checker/preview-image?input=${encodeURIComponent(input)}`
-      : undefined;
+      ? `/games/riftbound/deck-checker/opengraph-image?input=${encodeURIComponent(input)}`
+      : `/games/riftbound/deck-checker/opengraph-image`;
 
   return {
     title: `Joutes - ${t("title")}`,
@@ -32,9 +34,9 @@ export async function generateMetadata({
       siteName: `Joutes`,
       title: `Joutes - ${t("title")}`,
       description: t("description"),
-      ...(previewImageUrl ? { images: [{ url: previewImageUrl, width: 1200, height: 630 }] } : {}),
+      images: [{ url: previewImageUrl, width: 1200, height: 630 }],
     },
-    ...(previewImageUrl ? { twitter: { card: "summary_large_image" as const, images: [previewImageUrl] } } : {}),
+    twitter: { card: "summary_large_image", images: [previewImageUrl] },
   };
 }
 

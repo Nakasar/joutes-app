@@ -21,6 +21,10 @@ export const metadata: Metadata = {
   title: "Documentation Discord",
   description: "Intégrer Joutes avec Discord : gestion de réservation, publications, informations des jeux et règles...",
   keywords: ["discord", "bot discord", "intégration discord", "évènements", "jeux de cartes à collectionner"],
+  openGraph: {
+    title: "Documentation Discord - Joutes",
+    description: "Intégrer Joutes avec Discord : gestion de réservation, publications, informations des jeux et règles...",
+  },
 };
 
 export default function IntegrationsDiscordPage() {

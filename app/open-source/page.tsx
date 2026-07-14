@@ -7,6 +7,10 @@ export const metadata: Metadata = {
   title: "Open Source",
   description: "Librairies et projets open source utilisés par Joutes.",
   keywords: ["open source", "librairies", "dépendances", "joutes"],
+  openGraph: {
+    title: "Open Source - Joutes",
+    description: "Librairies et projets open source utilisés par Joutes.",
+  },
 };
 
 const dependencies = [
