@@ -909,6 +909,14 @@
         "search": "Cerca",
         "add": "Aggiungi",
         "added": "{name} aggiunta alla lista dei desideri"
+      },
+      "addToWishlist": {
+        "trigger": "Wishlist",
+        "loading": "Caricamento delle liste…",
+        "empty": "Nessuna lista dei desideri per ora. Creane una qui sotto.",
+        "personalHeading": "Le mie liste",
+        "newPlaceholder": "Nuova lista…",
+        "added": "Aggiunta a \"{wishlist}\""
       }
     },
     "Collection": {

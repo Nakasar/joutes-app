@@ -968,6 +968,14 @@
         "search": "Rechercher",
         "add": "Ajouter",
         "added": "{name} ajoutée à la liste de souhaits"
+      },
+      "addToWishlist": {
+        "trigger": "Wishlist",
+        "loading": "Chargement des listes…",
+        "empty": "Aucune liste de souhaits pour le moment. Créez-en une ci-dessous.",
+        "personalHeading": "Mes listes",
+        "newPlaceholder": "Nouvelle liste…",
+        "added": "Ajoutée à « {wishlist} »"
       }
     },
     "Collection": {
