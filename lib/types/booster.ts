@@ -39,6 +39,7 @@ export type BoosterCardDb = {
   obtainedAt?: string;
   acquisitionPrice?: number;
   acquisitionCurrency?: "EUR" | "USD" | "GBP" | "JPY" | "CNY";
+  borrowedBy?: string;
 }
 
 export type Booster = {

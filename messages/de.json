@@ -405,7 +405,17 @@
           "add": "Hinzufügen",
           "cancel": "Abbrechen",
           "adding": "Wird hinzugefügt...",
-          "remove": "Dieses Exemplar aus der Sammlung entfernen"
+          "remove": "Dieses Exemplar aus der Sammlung entfernen",
+          "markBorrowed": "Als ausgeliehen markieren"
+        },
+        "borrow": {
+          "title": "Als ausgeliehen markieren",
+          "placeholder": "Name der ausleihenden Person…",
+          "me": "Ich",
+          "loadingMembers": "Mitglieder werden geladen…",
+          "noMembers": "Keine Mitglieder gefunden.",
+          "clear": "Markierung entfernen",
+          "save": "Speichern"
         },
         "dialog": {
           "title": "Zur Sammlung hinzufügen"
@@ -441,7 +451,8 @@
           "foil": "Foil",
           "grade": "Bewertung {grade}",
           "obtainedAt": "Erhalten am {date}",
-          "standard": "Standard"
+          "standard": "Standard",
+          "borrowedBy": "Ausgeliehen an {name}"
         }
       }
     },
@@ -923,6 +934,12 @@
         "personalHeading": "Meine Wunschlisten",
         "newPlaceholder": "Neue Wunschliste…",
         "added": "Zu „{wishlist}“ hinzugefügt"
+      },
+      "export": {
+        "trigger": "Als Text exportieren",
+        "title": "Wunschliste exportieren",
+        "copy": "Kopieren",
+        "copied": "In die Zwischenablage kopiert"
       }
     },
     "Collection": {

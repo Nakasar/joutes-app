@@ -18,3 +18,8 @@ export const collectionCardSchema = z.strictObject({
     acquisitionPrice: z.number().min(0).optional(),
     acquisitionCurrency: collectionCurrency.optional(),
 });
+
+export const collectionCardBorrowSchema = z.strictObject({
+    entryId: z.string().min(1).max(100),
+    borrowedBy: z.string().trim().min(1).max(100).nullable(),
+});

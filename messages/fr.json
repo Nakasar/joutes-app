@@ -405,7 +405,17 @@
           "add": "Ajouter",
           "cancel": "Annuler",
           "adding": "Ajout en cours...",
-          "remove": "Retirer cet exemplaire de la collection"
+          "remove": "Retirer cet exemplaire de la collection",
+          "markBorrowed": "Marquer comme emprunté"
+        },
+        "borrow": {
+          "title": "Marquer comme emprunté",
+          "placeholder": "Nom de l'emprunteur…",
+          "me": "Moi",
+          "loadingMembers": "Chargement des membres…",
+          "noMembers": "Aucun membre trouvé.",
+          "clear": "Ne plus marquer",
+          "save": "Valider"
         },
         "dialog": {
           "title": "Ajouter à la collection"
@@ -441,7 +451,8 @@
           "foil": "Foil",
           "grade": "Grade {grade}",
           "obtainedAt": "Obtenu le {date}",
-          "standard": "Standard"
+          "standard": "Standard",
+          "borrowedBy": "Emprunté par {name}"
         }
       }
     },
@@ -976,6 +987,12 @@
         "personalHeading": "Mes listes",
         "newPlaceholder": "Nouvelle liste…",
         "added": "Ajoutée à « {wishlist} »"
+      },
+      "export": {
+        "trigger": "Exporter en texte",
+        "title": "Exporter la liste de souhaits",
+        "copy": "Copier",
+        "copied": "Copié dans le presse-papier"
       }
     },
     "Collection": {

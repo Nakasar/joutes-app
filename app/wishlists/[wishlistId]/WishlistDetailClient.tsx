@@ -7,6 +7,9 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   ArrowLeft,
+  Check,
+  Clipboard,
+  Download,
   Globe,
   Link as LinkIcon,
   Loader2,
@@ -212,13 +215,16 @@ export default function WishlistDetailClient({
           {wishlist.description && <p className="text-muted-foreground">{wishlist.description}</p>}
         </div>
 
-        {canEdit && (
-          <div className="flex items-center gap-2">
-            <EditWishlistDialog wishlist={wishlist} onSaved={setWishlist} />
-            <DeleteWishlistButton wishlist={wishlist} onDeleted={() => router.push(wishlist.ownerType === "playGroup" ? `/play-groups/${wishlist.ownerId}/wishlists` : "/wishlists")} />
-            <AddItemDialog wishlistId={wishlist.id} games={games} onAdded={handleItemAdded} />
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <ExportWishlistDialog wishlistId={wishlist.id} />
+          {canEdit && (
+            <>
+              <EditWishlistDialog wishlist={wishlist} onSaved={setWishlist} />
+              <DeleteWishlistButton wishlist={wishlist} onDeleted={() => router.push(wishlist.ownerType === "playGroup" ? `/play-groups/${wishlist.ownerId}/wishlists` : "/wishlists")} />
+              <AddItemDialog wishlistId={wishlist.id} games={games} onAdded={handleItemAdded} />
+            </>
+          )}
+        </div>
       </div>
 
       {/* Filters */}
@@ -398,6 +404,84 @@ export default function WishlistDetailClient({
         </div>
       )}
     </div>
+  );
+}
+
+function ExportWishlistDialog({ wishlistId }: { wishlistId: string }) {
+  const t = useTranslations("Wishlists");
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [text, setText] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  async function loadText() {
+    setLoading(true);
+    try {
+      const names: string[] = [];
+      let page = 1;
+      let totalPages = 1;
+      do {
+        const res = await fetch(`/api/wishlists/${wishlistId}/items?page=${page}&limit=96`);
+        if (!res.ok) break;
+        const data: PaginatedWishlistItems = await res.json();
+        for (const item of data.items) {
+          names.push(item.quantity > 1 ? `${item.name} x${item.quantity}` : item.name);
+        }
+        totalPages = data.totalPages;
+        page += 1;
+      } while (page <= totalPages);
+      setText(names.join("\n"));
+      setLoaded(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next);
+    if (next && !loaded) void loadText();
+  }
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast.success(t("export.copied"));
+    window.setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-1.5">
+          <Download className="size-3.5" />
+          {t("export.trigger")}
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("export.title")}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 pt-2">
+          {loading ? (
+            <div className="flex items-center justify-center gap-2 p-8 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" />
+              {t("addToWishlist.loading")}
+            </div>
+          ) : (
+            <>
+              <Textarea readOnly value={text} rows={12} className="font-mono text-sm" onFocus={(e) => e.target.select()} />
+              <div className="flex justify-end">
+                <Button onClick={handleCopy} disabled={!text} className="gap-1.5">
+                  {copied ? <Check className="size-4" /> : <Clipboard className="size-4" />}
+                  {t("export.copy")}
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

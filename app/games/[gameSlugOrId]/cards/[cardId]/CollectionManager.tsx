@@ -21,8 +21,11 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+import { ChevronDown, ChevronUp, HandHelping, Loader2, Plus, Trash2, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { useSession } from "@/lib/auth-client";
 
 const CONDITIONS = ["Damaged", "Played", "Good", "Near Mint", "Mint"] as const;
 const PRIMARY_LANGUAGES = [
@@ -52,6 +55,7 @@ type CollectionEntry = {
   obtainedAt?: string;
   acquisitionPrice?: number;
   acquisitionCurrency?: CurrencyCode;
+  borrowedBy?: string;
 };
 
 type CollectionManagerProps = {
@@ -64,6 +68,8 @@ type CollectionManagerProps = {
   onChange?: (quantity: number) => void;
   /** API prefix to use for reads/writes — override to manage a play-group's shared collection instead of the current user's. */
   apiBasePath?: string;
+  /** Set when managing a play-group's shared collection — enables username autocompletion when marking a card borrowed. */
+  playGroupId?: string;
 };
 
 export default function CollectionManager({
@@ -75,6 +81,7 @@ export default function CollectionManager({
   image,
   onChange,
   apiBasePath = "/api/collection",
+  playGroupId,
 }: CollectionManagerProps) {
   const [entries, setEntries] = useState<CollectionEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -209,6 +216,19 @@ export default function CollectionManager({
         onChange?.(next.length);
         return next;
       });
+    }
+  }
+
+  async function setBorrowed(entryId: string, borrowedBy: string | null) {
+    const res = await fetch(`${apiBasePath}/cards/${encodeURIComponent(cardId)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entryId, borrowedBy }),
+    });
+    if (res.ok) {
+      setEntries((prev) =>
+        prev.map((e) => (e.id === entryId ? { ...e, borrowedBy: borrowedBy ?? undefined } : e))
+      );
     }
   }
 
@@ -438,21 +458,188 @@ export default function CollectionManager({
                     entry.acquisitionPrice === undefined && (
                       <span className="text-muted-foreground">{t("cards.collection.badges.standard")}</span>
                     )}
+                  {entry.borrowedBy && (
+                    <Badge className="gap-1 border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400">
+                      <HandHelping className="h-3 w-3" />
+                      {t("cards.collection.badges.borrowedBy", { name: entry.borrowedBy })}
+                    </Badge>
+                  )}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive hover:text-destructive shrink-0"
-                  onClick={() => removeEntry(entry.id)}
-                  aria-label={t("cards.collection.actions.remove")}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-1 shrink-0">
+                  <BorrowPopover
+                    entry={entry}
+                    playGroupId={playGroupId}
+                    onSet={(borrowedBy) => setBorrowed(entry.id, borrowedBy)}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    onClick={() => removeEntry(entry.id)}
+                    aria-label={t("cards.collection.actions.remove")}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             ))
           )}
         </div>
       )}
     </div>
+  );
+}
+
+function BorrowPopover({
+  entry,
+  playGroupId,
+  onSet,
+}: {
+  entry: CollectionEntry;
+  playGroupId?: string;
+  onSet: (borrowedBy: string | null) => Promise<void> | void;
+}) {
+  const t = useTranslations("Games");
+  const { data: session } = useSession();
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(entry.borrowedBy ?? "");
+  const [saving, setSaving] = useState(false);
+  const [members, setMembers] = useState<string[] | null>(null);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+
+  const myName = session?.user?.name || session?.user?.email || "";
+
+  async function loadMembers() {
+    if (!playGroupId || members !== null) return;
+    setLoadingMembers(true);
+    try {
+      const res = await fetch(`/api/play-groups/${playGroupId}/members`);
+      if (res.ok) {
+        const data = await res.json();
+        type MemberWithUser = { user: { username?: string } | null };
+        const usernames = ((data.members ?? []) as MemberWithUser[])
+          .map((m) => m.user?.username)
+          .filter((u): u is string => !!u);
+        setMembers(usernames);
+      }
+    } finally {
+      setLoadingMembers(false);
+    }
+  }
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next);
+    if (next) {
+      setValue(entry.borrowedBy ?? "");
+      void loadMembers();
+    }
+  }
+
+  async function handleSave(next: string) {
+    const trimmed = next.trim();
+    if (!trimmed) return;
+    setSaving(true);
+    try {
+      await onSet(trimmed);
+      setOpen(false);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleClear() {
+    setSaving(true);
+    try {
+      await onSet(null);
+      setOpen(false);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={`h-8 w-8 shrink-0 ${entry.borrowedBy ? "text-amber-600 hover:text-amber-600" : ""}`}
+          aria-label={t("cards.collection.actions.markBorrowed")}
+          title={t("cards.collection.actions.markBorrowed")}
+        >
+          <HandHelping className="h-4 w-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72" align="end">
+        <div className="space-y-3">
+          <p className="text-sm font-medium">{t("cards.collection.borrow.title")}</p>
+          <div className="flex gap-1.5">
+            <Input
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder={t("cards.collection.borrow.placeholder")}
+              className="h-8"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void handleSave(value);
+                }
+              }}
+            />
+            {myName && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 shrink-0"
+                disabled={saving}
+                onClick={() => setValue(myName)}
+              >
+                {t("cards.collection.borrow.me")}
+              </Button>
+            )}
+          </div>
+          {playGroupId && (
+            <div className="max-h-32 overflow-y-auto rounded-md border">
+              <Command>
+                <CommandList>
+                  {loadingMembers ? (
+                    <div className="flex items-center justify-center gap-2 p-3 text-xs text-muted-foreground">
+                      <Loader2 className="size-3.5 animate-spin" />
+                      {t("cards.collection.borrow.loadingMembers")}
+                    </div>
+                  ) : (
+                    <>
+                      <CommandEmpty className="p-3 text-xs text-muted-foreground">
+                        {t("cards.collection.borrow.noMembers")}
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {(members ?? []).map((username) => (
+                          <CommandItem key={username} value={username} onSelect={() => setValue(username)}>
+                            {username}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </>
+                  )}
+                </CommandList>
+              </Command>
+            </div>
+          )}
+          <div className="flex justify-end gap-2">
+            {entry.borrowedBy && (
+              <Button type="button" variant="ghost" size="sm" className="gap-1" disabled={saving} onClick={handleClear}>
+                <X className="size-3.5" />
+                {t("cards.collection.borrow.clear")}
+              </Button>
+            )}
+            <Button type="button" size="sm" disabled={saving || !value.trim()} onClick={() => handleSave(value)}>
+              {saving && <Loader2 className="mr-1.5 size-3.5 animate-spin" />}
+              {t("cards.collection.borrow.save")}
+            </Button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
