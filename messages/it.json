@@ -13,7 +13,8 @@
       "Déconnexion": "Esci",
       "Se connecter": "Accedi",
       "Connexion": "Accesso",
-      "myAccount": "Il mio account"
+      "myAccount": "Il mio account",
+      "Wishlists": "Liste dei desideri"
     }
   },
   "LocaleSwitcher": {
@@ -808,7 +809,10 @@
       "back": "Torna ai gruppi",
       "collectionTitle": "Collezione",
       "viewCollection": "Vedi la collezione",
-      "collectionDescription": "Consulta e completa la collezione di carte condivisa dal gruppo."
+      "collectionDescription": "Consulta e completa la collezione di carte condivisa dal gruppo.",
+      "wishlistsTitle": "Liste dei desideri",
+      "viewWishlists": "Vedi le liste dei desideri",
+      "wishlistsDescription": "Consulta e completa le liste dei desideri condivise dal gruppo."
     },
     "collection": {
       "title": "Collezione di {group}",
@@ -818,6 +822,89 @@
       "emptyDescription": "I membri del gruppo possono aggiungere carte dalle pagine dei giochi per seguire i progressi comuni."
     }
   },
+    "Wishlists": {
+      "metadata": {
+        "title": "Le mie liste dei desideri",
+        "description": "Gestisci le tue liste dei desideri di carte, tra tutti i tuoi TCG.",
+        "notFoundTitle": "Lista dei desideri non trovata"
+      },
+      "metadataTitleGroup": "Liste dei desideri · {group}",
+      "metadataTitleWishlist": "{name} - Lista dei desideri",
+      "title": "Le mie liste dei desideri",
+      "subtitle": "Tieni traccia delle carte che vorresti ottenere, in tutti i giochi.",
+      "create": {
+        "trigger": "Nuova lista",
+        "title": "Crea una lista dei desideri",
+        "submit": "Crea"
+      },
+      "edit": {
+        "title": "Modifica la lista dei desideri",
+        "submit": "Salva"
+      },
+      "form": {
+        "name": "Nome",
+        "description": "Descrizione",
+        "visibility": "Visibilità",
+        "cancel": "Annulla"
+      },
+      "visibility": {
+        "private": "Privata",
+        "unlisted": "Non elencata",
+        "public": "Pubblica",
+        "privateHint": "Solo tu (o i membri del gruppo) potete vederla.",
+        "unlistedHint": "Visibile a chiunque abbia il link, ma non elencata sul tuo profilo.",
+        "publicHint": "Visibile a tutti e mostrata sul tuo profilo."
+      },
+      "empty": {
+        "title": "Nessuna lista dei desideri",
+        "description": "Crea una lista per tenere traccia delle carte che vorresti ottenere."
+      },
+      "card": {
+        "itemsCount": "{count, plural, =0 {Nessuna carta} one {# carta} other {# carte}}",
+        "updatedAt": "aggiornata {date}",
+        "open": "Apri",
+        "edit": "Modifica",
+        "delete": "Elimina"
+      },
+      "delete": {
+        "title": "Eliminare la lista dei desideri?",
+        "description": "\"{name}\" verrà eliminata definitivamente, insieme a tutte le sue carte.",
+        "confirm": "Elimina"
+      },
+      "errors": {
+        "create": "Impossibile creare la lista dei desideri",
+        "update": "Impossibile aggiornare la lista dei desideri",
+        "delete": "Impossibile eliminare la lista dei desideri",
+        "removeItem": "Impossibile rimuovere questa carta",
+        "updateItem": "Impossibile aggiornare questa carta",
+        "addItem": "Impossibile aggiungere questa carta"
+      },
+      "detail": {
+        "back": "Indietro",
+        "searchPlaceholder": "Cerca una carta…",
+        "allGames": "Tutti i giochi",
+        "allTypes": "Tutti i tipi",
+        "results": "{count, plural, =0 {Nessuna carta} one {# carta} other {# carte}}",
+        "noResults": "Nessuna carta corrisponde ai tuoi filtri.",
+        "decreaseQuantity": "Diminuisci la quantità desiderata",
+        "increaseQuantity": "Aumenta la quantità desiderata",
+        "removeItem": "Rimuovi questa carta dalla lista",
+        "quantityWanted": "{count, plural, one {# copia desiderata} other {# copie desiderate}}",
+        "previous": "Precedente",
+        "next": "Successivo",
+        "pageOf": "Pagina {page} di {totalPages}",
+        "editSettings": "Impostazioni"
+      },
+      "addItem": {
+        "trigger": "Aggiungi una carta",
+        "title": "Aggiungi una carta alla lista dei desideri",
+        "selectGame": "Scegli un gioco",
+        "searchPlaceholder": "Cerca una carta…",
+        "search": "Cerca",
+        "add": "Aggiungi",
+        "added": "{name} aggiunta alla lista dei desideri"
+      }
+    },
     "Collection": {
       "metadata": {
         "title": "La mia collezione",

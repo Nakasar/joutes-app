@@ -13,7 +13,8 @@
       "Déconnexion": "Abmelden",
       "Se connecter": "Anmelden",
       "Connexion": "Anmeldung",
-      "myAccount": "Mein Konto"
+      "myAccount": "Mein Konto",
+      "Wishlists": "Wunschlisten"
     }
   },
   "LocaleSwitcher": {
@@ -827,6 +828,89 @@
       }
     }
   },
+    "Wishlists": {
+      "metadata": {
+        "title": "Meine Wunschlisten",
+        "description": "Verwalte deine Kartenwunschlisten, über alle deine TCGs hinweg.",
+        "notFoundTitle": "Wunschliste nicht gefunden"
+      },
+      "metadataTitleGroup": "Wunschlisten · {group}",
+      "metadataTitleWishlist": "{name} - Wunschliste",
+      "title": "Meine Wunschlisten",
+      "subtitle": "Verfolge die Karten, die du erwerben möchtest, über alle Spiele hinweg.",
+      "create": {
+        "trigger": "Neue Wunschliste",
+        "title": "Wunschliste erstellen",
+        "submit": "Erstellen"
+      },
+      "edit": {
+        "title": "Wunschliste bearbeiten",
+        "submit": "Speichern"
+      },
+      "form": {
+        "name": "Name",
+        "description": "Beschreibung",
+        "visibility": "Sichtbarkeit",
+        "cancel": "Abbrechen"
+      },
+      "visibility": {
+        "private": "Privat",
+        "unlisted": "Nicht gelistet",
+        "public": "Öffentlich",
+        "privateHint": "Nur du (oder die Mitglieder der Gruppe) können sie sehen.",
+        "unlistedHint": "Sichtbar für jeden mit dem Link, aber nicht auf deinem Profil gelistet.",
+        "publicHint": "Für alle sichtbar und auf deinem Profil angezeigt."
+      },
+      "empty": {
+        "title": "Noch keine Wunschliste",
+        "description": "Erstelle eine Wunschliste, um Karten zu verfolgen, die du erwerben möchtest."
+      },
+      "card": {
+        "itemsCount": "{count, plural, =0 {Keine Karten} one {# Karte} other {# Karten}}",
+        "updatedAt": "aktualisiert {date}",
+        "open": "Öffnen",
+        "edit": "Bearbeiten",
+        "delete": "Löschen"
+      },
+      "delete": {
+        "title": "Wunschliste löschen?",
+        "description": "„{name}“ wird zusammen mit allen enthaltenen Karten endgültig gelöscht.",
+        "confirm": "Löschen"
+      },
+      "errors": {
+        "create": "Wunschliste konnte nicht erstellt werden",
+        "update": "Wunschliste konnte nicht aktualisiert werden",
+        "delete": "Wunschliste konnte nicht gelöscht werden",
+        "removeItem": "Diese Karte konnte nicht entfernt werden",
+        "updateItem": "Diese Karte konnte nicht aktualisiert werden",
+        "addItem": "Diese Karte konnte nicht hinzugefügt werden"
+      },
+      "detail": {
+        "back": "Zurück",
+        "searchPlaceholder": "Karte suchen…",
+        "allGames": "Alle Spiele",
+        "allTypes": "Alle Typen",
+        "results": "{count, plural, =0 {Keine Karten} one {# Karte} other {# Karten}}",
+        "noResults": "Keine Karten entsprechen deinen Filtern.",
+        "decreaseQuantity": "Gewünschte Anzahl verringern",
+        "increaseQuantity": "Gewünschte Anzahl erhöhen",
+        "removeItem": "Diese Karte von der Liste entfernen",
+        "quantityWanted": "{count, plural, one {# gewünschtes Exemplar} other {# gewünschte Exemplare}}",
+        "previous": "Zurück",
+        "next": "Weiter",
+        "pageOf": "Seite {page} von {totalPages}",
+        "editSettings": "Einstellungen"
+      },
+      "addItem": {
+        "trigger": "Karte hinzufügen",
+        "title": "Karte zur Wunschliste hinzufügen",
+        "selectGame": "Spiel auswählen",
+        "searchPlaceholder": "Karte suchen…",
+        "search": "Suchen",
+        "add": "Hinzufügen",
+        "added": "{name} zur Wunschliste hinzugefügt"
+      }
+    },
     "Collection": {
       "metadata": {
         "title": "Meine Sammlung",
