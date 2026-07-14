@@ -48,6 +48,8 @@ type Props = {
   apiBasePath?: string;
   /** Boosters aren't tracked per play-group yet, so group pages hide the link. */
   showBoosters?: boolean;
+  /** Set when browsing a play-group's shared collection — enables username autocompletion when marking a card borrowed. */
+  playGroupId?: string;
 };
 
 type ManageableCard = Pick<CollectionItem, "id" | "name" | "setCode" | "collectorNumber" | "image" | "quantity">;
@@ -59,6 +61,7 @@ export default function GameCollectionBrowser({
   basePath = "/collection",
   apiBasePath = "/api/collection",
   showBoosters = true,
+  playGroupId,
 }: Props) {
   const t = useTranslations("Collection");
 
@@ -540,6 +543,7 @@ export default function GameCollectionBrowser({
                     image={manageCard.image}
                     onChange={(quantity) => setQuantity(manageCard.id, quantity)}
                     apiBasePath={apiBasePath}
+                    playGroupId={playGroupId}
                   />
                 </div>
               </div>

@@ -405,7 +405,17 @@
           "add": "Add",
           "cancel": "Cancel",
           "adding": "Adding...",
-          "remove": "Remove this copy from the collection"
+          "remove": "Remove this copy from the collection",
+          "markBorrowed": "Mark as borrowed"
+        },
+        "borrow": {
+          "title": "Mark as borrowed",
+          "placeholder": "Borrower's name…",
+          "me": "Me",
+          "loadingMembers": "Loading members…",
+          "noMembers": "No members found.",
+          "clear": "Unmark",
+          "save": "Save"
         },
         "dialog": {
           "title": "Add to collection"
@@ -441,7 +451,8 @@
           "foil": "Foil",
           "grade": "Grade {grade}",
           "obtainedAt": "Obtained on {date}",
-          "standard": "Standard"
+          "standard": "Standard",
+          "borrowedBy": "Borrowed by {name}"
         }
       }
     },
@@ -975,6 +986,12 @@
         "personalHeading": "My wishlists",
         "newPlaceholder": "New wishlist…",
         "added": "Added to \"{wishlist}\""
+      },
+      "export": {
+        "trigger": "Export as text",
+        "title": "Export wishlist",
+        "copy": "Copy",
+        "copied": "Copied to clipboard"
       }
     },
     "Collection": {

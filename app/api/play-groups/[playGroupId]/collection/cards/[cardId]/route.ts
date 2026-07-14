@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { BoosterCardDb } from "@/lib/types/booster";
+import { collectionCardBorrowSchema } from "@/lib/schemas/collection.schema";
 
 export async function GET(
   request: NextRequest,
@@ -38,6 +39,7 @@ export async function GET(
         obtainedAt: c.obtainedAt,
         acquisitionPrice: c.acquisitionPrice,
         acquisitionCurrency: c.acquisitionCurrency,
+        borrowedBy: c.borrowedBy,
       })),
     });
   } catch (error) {
@@ -46,6 +48,55 @@ export async function GET(
       { error: "Failed to fetch cards" },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * Mark (or unmark) a specific copy in the play-group's shared collection as borrowed.
+ * Any member of the group may update this.
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ playGroupId: string; cardId: string }> }
+) {
+  const { playGroupId, cardId } = await params;
+  const session = await auth.api.getSession({ headers: request.headers });
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Authentification requise" }, { status: 401 });
+  }
+
+  const group = await getPlayGroupByIdAndUser(playGroupId, session.user.id);
+  if (!group) {
+    return NextResponse.json({ error: "Groupe introuvable" }, { status: 404 });
+  }
+
+  const bodyRaw = await request.json();
+  const validate = collectionCardBorrowSchema.safeParse(bodyRaw);
+  if (!validate.success) {
+    return NextResponse.json({ error: "Données invalides", details: validate.error }, { status: 400 });
+  }
+  const { entryId, borrowedBy } = validate.data;
+
+  try {
+    const result = await db.collection<BoosterCardDb>("collection-cards").findOneAndUpdate(
+      {
+        _id: new ObjectId(entryId),
+        playGroupId: new ObjectId(group.id),
+        cardId,
+      },
+      borrowedBy ? { $set: { borrowedBy } } : { $unset: { borrowedBy: "" } },
+      { returnDocument: "after" }
+    );
+
+    if (!result) {
+      return NextResponse.json({ error: "Card not found in collection" }, { status: 404 });
+    }
+
+    return NextResponse.json({ id: entryId, borrowedBy: result.borrowedBy });
+  } catch (error) {
+    console.error("Error updating borrow status:", error);
+    return NextResponse.json({ error: "Failed to update card" }, { status: 500 });
   }
 }
 

@@ -61,6 +61,7 @@ export default async function PlayGroupGameCollectionPage({
         basePath={`/play-groups/${group.id}/collection`}
         apiBasePath={`/api/play-groups/${group.id}/collection`}
         showBoosters={false}
+        playGroupId={group.id}
       />
     </div>
   );
