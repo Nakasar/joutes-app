@@ -17,7 +17,8 @@
       "Wishlists": "Wishlists",
       "Groupes": "Groups",
       "PlayGroups": "My Play-Groups",
-      "Fonctionnalités": "Features"
+      "Fonctionnalités": "Features",
+      "SellLists": "My Sell List"
     }
   },
   "Home": {
@@ -407,7 +408,10 @@
           "cancel": "Cancel",
           "adding": "Adding...",
           "remove": "Remove this copy from the collection",
-          "markBorrowed": "Mark as borrowed"
+          "markBorrowed": "Mark as borrowed",
+          "sell": "List for sale",
+          "unlist": "Remove from sale",
+          "editPrice": "Edit price"
         },
         "borrow": {
           "title": "Mark as borrowed",
@@ -453,7 +457,17 @@
           "grade": "Grade {grade}",
           "obtainedAt": "Obtained on {date}",
           "standard": "Standard",
-          "borrowedBy": "Borrowed by {name}"
+          "borrowedBy": "Borrowed by {name}",
+          "forSale": "For sale ({price})",
+          "forSaleNoPrice": "For sale"
+        },
+        "sell": {
+          "title": "List for sale",
+          "price": "Price (optional)",
+          "note": "Note (optional)",
+          "submit": "List for sale",
+          "update": "Update",
+          "error": "Could not list this card for sale"
         }
       }
     },
@@ -885,6 +899,9 @@
       "wishlistsTitle": "Wishlists",
       "viewWishlists": "View wishlists",
       "wishlistsDescription": "Browse and complete the wishlists shared by the group.",
+      "sellListTitle": "Sell list",
+      "viewSellList": "View sell list",
+      "sellListDescription": "View and manage the group's shared sell list.",
       "settings": "Settings"
     },
     "collection": {
@@ -1014,6 +1031,59 @@
         "title": "Export wishlist",
         "copy": "Copy",
         "copied": "Copied to clipboard"
+      }
+    },
+    "SellLists": {
+      "metadata": {
+        "notFoundTitle": "Sell list not found"
+      },
+      "metadataTitle": "{name}'s sell list",
+      "edit": {
+        "title": "Edit sell list",
+        "submit": "Save"
+      },
+      "form": {
+        "description": "Description",
+        "descriptionPlaceholder": "Payment terms, contact info...",
+        "price": "Price",
+        "priceOptional": "Price (optional)",
+        "currency": "Currency",
+        "note": "Note",
+        "cancel": "Cancel"
+      },
+      "empty": {
+        "title": "No sell list yet",
+        "description": "List cards from your collection for sale to create your list.",
+        "cta": "Go to my collection",
+        "groupDescription": "This group has no cards for sale yet."
+      },
+      "errors": {
+        "update": "Could not update the sell list",
+        "removeItem": "Could not remove this card",
+        "updateItem": "Could not update this card"
+      },
+      "detail": {
+        "back": "Back",
+        "title": "Sell list",
+        "public": "Public",
+        "ownerUser": "{name}'s sell list",
+        "ownerGroup": "{name} group's sell list",
+        "addFromCollection": "Add from my collection",
+        "searchPlaceholder": "Search a card…",
+        "allGames": "All games",
+        "allTypes": "All types",
+        "allConditions": "All conditions",
+        "priceMin": "Min price",
+        "priceMax": "Max price",
+        "noPrice": "No price set",
+        "results": "{count, plural, =0 {No cards} one {# card} other {# cards}}",
+        "noResults": "No cards match your filters.",
+        "removeItem": "Remove this card from sale",
+        "editPrice": "Edit price",
+        "editSettings": "Settings",
+        "previous": "Previous",
+        "next": "Next",
+        "pageOf": "Page {page} of {totalPages}"
       }
     },
     "Collection": {

@@ -17,7 +17,8 @@
       "Wishlists": "Listes de souhaits",
       "Groupes": "Groupes",
       "PlayGroups": "Mes Groupes de Jeu",
-      "Fonctionnalités": "Fonctionnalités"
+      "Fonctionnalités": "Fonctionnalités",
+      "SellLists": "Ma liste de vente"
     }
   },
   "LocaleSwitcher": {
@@ -407,7 +408,10 @@
           "cancel": "Annuler",
           "adding": "Ajout en cours...",
           "remove": "Retirer cet exemplaire de la collection",
-          "markBorrowed": "Marquer comme emprunté"
+          "markBorrowed": "Marquer comme emprunté",
+          "sell": "Mettre en vente",
+          "unlist": "Retirer de la vente",
+          "editPrice": "Modifier le prix"
         },
         "borrow": {
           "title": "Marquer comme emprunté",
@@ -453,7 +457,17 @@
           "grade": "Grade {grade}",
           "obtainedAt": "Obtenu le {date}",
           "standard": "Standard",
-          "borrowedBy": "Emprunté par {name}"
+          "borrowedBy": "Emprunté par {name}",
+          "forSale": "En vente ({price})",
+          "forSaleNoPrice": "En vente"
+        },
+        "sell": {
+          "title": "Mettre en vente",
+          "price": "Prix (optionnel)",
+          "note": "Note (optionnel)",
+          "submit": "Mettre en vente",
+          "update": "Mettre à jour",
+          "error": "Impossible de mettre cette carte en vente"
         }
       }
     },
@@ -886,6 +900,9 @@
       "wishlistsTitle": "Listes de souhaits",
       "viewWishlists": "Voir les listes de souhaits",
       "wishlistsDescription": "Consultez et complétez les listes de souhaits partagées par le groupe.",
+      "sellListTitle": "Liste de vente",
+      "viewSellList": "Voir la liste de vente",
+      "sellListDescription": "Consultez et complétez la liste de vente partagée par le groupe.",
       "settings": "Paramètres"
     },
     "collection": {
@@ -1015,6 +1032,59 @@
         "title": "Exporter la liste de souhaits",
         "copy": "Copier",
         "copied": "Copié dans le presse-papier"
+      }
+    },
+    "SellLists": {
+      "metadata": {
+        "notFoundTitle": "Liste de vente introuvable"
+      },
+      "metadataTitle": "Liste de vente de {name}",
+      "edit": {
+        "title": "Modifier la liste de vente",
+        "submit": "Enregistrer"
+      },
+      "form": {
+        "description": "Description",
+        "descriptionPlaceholder": "Modalités de paiement, contact...",
+        "price": "Prix",
+        "priceOptional": "Prix (optionnel)",
+        "currency": "Devise",
+        "note": "Note",
+        "cancel": "Annuler"
+      },
+      "empty": {
+        "title": "Aucune liste de vente",
+        "description": "Mettez des cartes de votre collection en vente pour créer votre liste.",
+        "cta": "Aller à ma collection",
+        "groupDescription": "Ce groupe n'a pas encore de carte en vente."
+      },
+      "errors": {
+        "update": "Impossible de mettre à jour la liste de vente",
+        "removeItem": "Impossible de retirer cette carte",
+        "updateItem": "Impossible de mettre à jour cette carte"
+      },
+      "detail": {
+        "back": "Retour",
+        "title": "Liste de vente",
+        "public": "Publique",
+        "ownerUser": "Liste de vente de {name}",
+        "ownerGroup": "Liste de vente du groupe {name}",
+        "addFromCollection": "Ajouter depuis ma collection",
+        "searchPlaceholder": "Rechercher une carte…",
+        "allGames": "Tous les jeux",
+        "allTypes": "Tous les types",
+        "allConditions": "Tous les états",
+        "priceMin": "Prix min.",
+        "priceMax": "Prix max.",
+        "noPrice": "Prix non indiqué",
+        "results": "{count, plural, =0 {Aucune carte} one {# carte} other {# cartes}}",
+        "noResults": "Aucune carte ne correspond à vos filtres.",
+        "removeItem": "Retirer cette carte de la vente",
+        "editPrice": "Modifier le prix",
+        "editSettings": "Paramètres",
+        "previous": "Précédent",
+        "next": "Suivant",
+        "pageOf": "Page {page} / {totalPages}"
       }
     },
     "Collection": {

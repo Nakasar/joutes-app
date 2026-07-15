@@ -4,8 +4,9 @@ import { getAllGames } from "@/lib/db/games";
 import { getLairById } from "@/lib/db/lairs";
 import { getAchievementsForUser, getAllAchievements } from "@/lib/db/achievements";
 import { getPublicWishlistsForOwner } from "@/lib/db/wishlists";
+import { getSellListForOwner } from "@/lib/db/sell-lists";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Gamepad2, MapPin, Lock, Globe, ExternalLink, Trophy, Heart } from "lucide-react";
+import { Gamepad2, MapPin, Lock, Globe, ExternalLink, Trophy, Heart, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Game } from "@/lib/types/Game";
 import { Lair } from "@/lib/types/Lair";
@@ -89,6 +90,9 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
 
   // Listes de souhaits publiques (affichées quel que soit isPublic : c'est un choix explicite par liste)
   const publicWishlists = await getPublicWishlistsForOwner({ type: "user", id: user.id });
+
+  // Liste de vente (toujours publique, affichée quel que soit isPublic)
+  const sellList = await getSellListForOwner({ type: "user", id: user.id });
 
   // Vérifier si l'utilisateur connecté est admin
   const isAdmin = await checkAdmin();
@@ -375,6 +379,35 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
                     </a>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Liste de vente publique */}
+          {sellList && sellList.itemsCount > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Tag className="h-5 w-5" />
+                  Liste de vente
+                </CardTitle>
+                <CardDescription>
+                  Les cartes que {user.displayName || user.username} met en vente
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <a
+                  href={`/sell-lists/${sellList.id}`}
+                  className="flex items-start gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                >
+                  <Tag className="h-5 w-5 text-primary mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold">Voir la liste de vente</p>
+                    <Badge variant="secondary" className="mt-2 text-xs">
+                      {sellList.itemsCount} carte{sellList.itemsCount !== 1 ? "s" : ""}
+                    </Badge>
+                  </div>
+                </a>
               </CardContent>
             </Card>
           )}

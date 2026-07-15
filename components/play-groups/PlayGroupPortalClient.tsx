@@ -153,6 +153,16 @@ export default function PlayGroupPortalClient() {
             </div>
             <p className="mt-2 text-sm text-muted-foreground">{t("page.wishlistsDescription")}</p>
           </div>
+
+          <div className="rounded-xl border bg-card p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">{t("page.sellListTitle")}</h2>
+              <Button asChild size="sm">
+                <Link href={`/play-groups/${group.id}/sell-list`}>{t("page.viewSellList")}</Link>
+              </Button>
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">{t("page.sellListDescription")}</p>
+          </div>
         </div>
       ) : null}
     </div>
