@@ -1,6 +1,7 @@
 const urls = [
   { url: 'https://www.joutes.app', lastModified: new Date(), changeFrequency: 'daily', priority: 1 },
-  { url: 'https://www.joutes.app/about', lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
+  { url: 'https://www.joutes.app/features', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
+  { url: 'https://www.joutes.app/about', lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
   { url: 'https://www.joutes.app/games/riftbound', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.5 },
   { url: 'https://www.joutes.app/games/riftbound/rules', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.5 },
   { url: 'https://www.joutes.app/games/riftbound/rules/cr', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.5 },
