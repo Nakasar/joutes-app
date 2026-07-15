@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
-import { ChevronDown, ChevronUp, HandHelping, Loader2, Plus, Trash2, X } from "lucide-react";
+import { ChevronDown, ChevronUp, HandHelping, Loader2, Plus, Tag, Trash2, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useSession } from "@/lib/auth-client";
 
@@ -46,6 +46,14 @@ type LanguageCode =
   | (typeof SECONDARY_LANGUAGES)[number]["code"];
 type CurrencyCode = (typeof CURRENCIES)[number];
 
+type ForSaleInfo = {
+  itemId: string;
+  sellListId: string;
+  price?: number;
+  currency?: CurrencyCode;
+  note?: string;
+};
+
 type CollectionEntry = {
   id: string;
   foil?: boolean;
@@ -56,6 +64,7 @@ type CollectionEntry = {
   acquisitionPrice?: number;
   acquisitionCurrency?: CurrencyCode;
   borrowedBy?: string;
+  forSale?: ForSaleInfo;
 };
 
 type CollectionManagerProps = {
@@ -83,6 +92,8 @@ export default function CollectionManager({
   apiBasePath = "/api/collection",
   playGroupId,
 }: CollectionManagerProps) {
+  const sellListApiBasePath = playGroupId ? `/api/play-groups/${playGroupId}/sell-list` : "/api/sell-lists/mine";
+
   const [entries, setEntries] = useState<CollectionEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(false);
@@ -230,6 +241,68 @@ export default function CollectionManager({
         prev.map((e) => (e.id === entryId ? { ...e, borrowedBy: borrowedBy ?? undefined } : e))
       );
     }
+  }
+
+  async function listForSale(entryId: string, price: number | undefined, currency: CurrencyCode, note: string) {
+    const res = await fetch(`${sellListApiBasePath}/items`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        collectionEntryId: entryId,
+        gameSlug,
+        ...(price !== undefined && { price, currency }),
+        ...(note.trim() && { note: note.trim() }),
+      }),
+    });
+    if (res.ok) {
+      const item = await res.json();
+      setEntries((prev) =>
+        prev.map((e) =>
+          e.id === entryId
+            ? { ...e, forSale: { itemId: item.id, sellListId: item.sellListId, price: item.price, currency: item.currency, note: item.note } }
+            : e
+        )
+      );
+      return true;
+    }
+    return false;
+  }
+
+  async function updateSalePrice(entry: CollectionEntry, price: number | undefined, currency: CurrencyCode, note: string) {
+    if (!entry.forSale) return false;
+    const res = await fetch(`/api/sell-lists/${entry.forSale.sellListId}/items/${entry.forSale.itemId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        price: price !== undefined ? price : null,
+        ...(price !== undefined && { currency }),
+        ...(note.trim() && { note: note.trim() }),
+      }),
+    });
+    if (res.ok) {
+      const item = await res.json();
+      setEntries((prev) =>
+        prev.map((e) =>
+          e.id === entry.id
+            ? { ...e, forSale: { itemId: item.id, sellListId: item.sellListId, price: item.price, currency: item.currency, note: item.note } }
+            : e
+        )
+      );
+      return true;
+    }
+    return false;
+  }
+
+  async function unlistFromSale(entry: CollectionEntry) {
+    if (!entry.forSale) return false;
+    const res = await fetch(`/api/sell-lists/${entry.forSale.sellListId}/items/${entry.forSale.itemId}`, {
+      method: "DELETE",
+    });
+    if (res.ok) {
+      setEntries((prev) => prev.map((e) => (e.id === entry.id ? { ...e, forSale: undefined } : e)));
+      return true;
+    }
+    return false;
   }
 
   if (loading) {
@@ -464,12 +537,34 @@ export default function CollectionManager({
                       {t("cards.collection.badges.borrowedBy", { name: entry.borrowedBy })}
                     </Badge>
                   )}
+                  {entry.forSale && (
+                    <Badge className="gap-1 border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+                      <Tag className="h-3 w-3" />
+                      {entry.forSale.price !== undefined
+                        ? t("cards.collection.badges.forSale", {
+                            price: new Intl.NumberFormat(locale === "en" ? "en-US" : "fr-FR", {
+                              style: "currency",
+                              currency: entry.forSale.currency,
+                            }).format(entry.forSale.price),
+                          })
+                        : t("cards.collection.badges.forSaleNoPrice")}
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <BorrowPopover
                     entry={entry}
                     playGroupId={playGroupId}
                     onSet={(borrowedBy) => setBorrowed(entry.id, borrowedBy)}
+                  />
+                  <SellPopover
+                    entry={entry}
+                    onList={(price, currency, note) =>
+                      entry.forSale
+                        ? updateSalePrice(entry, price, currency, note)
+                        : listForSale(entry.id, price, currency, note)
+                    }
+                    onUnlist={() => unlistFromSale(entry)}
                   />
                   <Button
                     variant="ghost"
@@ -636,6 +731,133 @@ function BorrowPopover({
             <Button type="button" size="sm" disabled={saving || !value.trim()} onClick={() => handleSave(value)}>
               {saving && <Loader2 className="mr-1.5 size-3.5 animate-spin" />}
               {t("cards.collection.borrow.save")}
+            </Button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function SellPopover({
+  entry,
+  onList,
+  onUnlist,
+}: {
+  entry: CollectionEntry;
+  onList: (price: number | undefined, currency: CurrencyCode, note: string) => Promise<boolean> | boolean;
+  onUnlist: () => Promise<boolean> | boolean;
+}) {
+  const t = useTranslations("Games");
+  const [open, setOpen] = useState(false);
+  const [price, setPrice] = useState(entry.forSale?.price !== undefined ? String(entry.forSale.price) : "");
+  const [currency, setCurrency] = useState<CurrencyCode>(entry.forSale?.currency ?? "EUR");
+  const [note, setNote] = useState(entry.forSale?.note ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next);
+    if (next) {
+      setPrice(entry.forSale?.price !== undefined ? String(entry.forSale.price) : "");
+      setCurrency(entry.forSale?.currency ?? "EUR");
+      setNote(entry.forSale?.note ?? "");
+      setError(null);
+    }
+  }
+
+  async function handleList() {
+    const trimmedPrice = price.trim();
+    let parsedPrice: number | undefined;
+    if (trimmedPrice) {
+      parsedPrice = parseFloat(trimmedPrice);
+      if (isNaN(parsedPrice) || parsedPrice < 0) return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const ok = await onList(parsedPrice, currency, note);
+      if (ok) {
+        setOpen(false);
+      } else {
+        setError(t("cards.collection.sell.error"));
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleUnlist() {
+    setSaving(true);
+    setError(null);
+    try {
+      const ok = await onUnlist();
+      if (ok) {
+        setOpen(false);
+      } else {
+        setError(t("cards.collection.sell.error"));
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={`h-8 w-8 shrink-0 ${entry.forSale ? "text-emerald-600 hover:text-emerald-600" : ""}`}
+          aria-label={t("cards.collection.actions.sell")}
+          title={t("cards.collection.actions.sell")}
+        >
+          <Tag className="h-4 w-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72" align="end">
+        <div className="space-y-3">
+          <p className="text-sm font-medium">{t("cards.collection.sell.title")}</p>
+          <div className="flex gap-2">
+            <Input
+              type="number"
+              min={0}
+              step="0.01"
+              placeholder={t("cards.collection.sell.price")}
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className="h-8 flex-1"
+            />
+            <Select value={currency} onValueChange={(v) => setCurrency(v as CurrencyCode)}>
+              <SelectTrigger className="h-8 w-[90px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CURRENCIES.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder={t("cards.collection.sell.note")}
+            className="h-8"
+          />
+          {error && <p className="text-xs text-destructive">{error}</p>}
+          <div className="flex justify-end gap-2">
+            {entry.forSale && (
+              <Button type="button" variant="ghost" size="sm" className="gap-1" disabled={saving} onClick={handleUnlist}>
+                <X className="size-3.5" />
+                {t("cards.collection.actions.unlist")}
+              </Button>
+            )}
+            <Button type="button" size="sm" disabled={saving} onClick={handleList}>
+              {saving && <Loader2 className="mr-1.5 size-3.5 animate-spin" />}
+              {entry.forSale ? t("cards.collection.sell.update") : t("cards.collection.sell.submit")}
             </Button>
           </div>
         </div>

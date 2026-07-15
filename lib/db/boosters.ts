@@ -2,6 +2,7 @@ import 'server-only';
 import db from "@/lib/mongodb";
 import {Booster, BoosterCard, BoosterCardDb, BoosterDb} from "@/lib/types/booster";
 import {ObjectId} from "bson";
+import {removeSellListItemsByCollectionEntryIds} from "@/lib/db/sell-lists";
 
 export async function createBooster(booster: Omit<Booster, 'id' | 'createdAt'>): Promise<Booster> {
   const result = await db.collection<BoosterDb>('boosters').insertOne({
@@ -195,10 +196,18 @@ export async function addBoosterToCollection(userId: string, boosterId: string):
 
 export async function removeBoosterFromCollection(userId: string, boosterId: string): Promise<void> {
   const _id = new ObjectId(boosterId);
-  await db.collection<BoosterCardDb>('collection-cards').deleteMany({
+  const filter = {
     userId: new ObjectId(userId),
     fromBoosterId: _id,
-  });
+  };
+
+  const removedEntries = await db
+    .collection<BoosterCardDb>('collection-cards')
+    .find(filter, {projection: {_id: 1}})
+    .toArray();
+
+  await db.collection<BoosterCardDb>('collection-cards').deleteMany(filter);
+  await removeSellListItemsByCollectionEntryIds(removedEntries.map((entry) => entry._id));
   await db.collection<BoosterDb>('boosters').updateOne({_id}, {$set: {addedToCollection: false}});
 }
 

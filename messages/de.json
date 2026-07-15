@@ -17,7 +17,8 @@
       "Wishlists": "Wunschlisten",
       "Groupes": "Gruppen",
       "PlayGroups": "Meine Spielgruppen",
-      "Fonctionnalités": "Funktionen"
+      "Fonctionnalités": "Funktionen",
+      "SellLists": "Meine Verkaufsliste"
     }
   },
   "LocaleSwitcher": {
@@ -407,7 +408,10 @@
           "cancel": "Abbrechen",
           "adding": "Wird hinzugefügt...",
           "remove": "Dieses Exemplar aus der Sammlung entfernen",
-          "markBorrowed": "Als ausgeliehen markieren"
+          "markBorrowed": "Als ausgeliehen markieren",
+          "sell": "Zum Verkauf anbieten",
+          "unlist": "Vom Verkauf entfernen",
+          "editPrice": "Preis bearbeiten"
         },
         "borrow": {
           "title": "Als ausgeliehen markieren",
@@ -453,7 +457,17 @@
           "grade": "Bewertung {grade}",
           "obtainedAt": "Erhalten am {date}",
           "standard": "Standard",
-          "borrowedBy": "Ausgeliehen an {name}"
+          "borrowedBy": "Ausgeliehen an {name}",
+          "forSale": "Zu verkaufen ({price})",
+          "forSaleNoPrice": "Zu verkaufen"
+        },
+        "sell": {
+          "title": "Zum Verkauf anbieten",
+          "price": "Preis (optional)",
+          "note": "Notiz (optional)",
+          "submit": "Zum Verkauf anbieten",
+          "update": "Aktualisieren",
+          "error": "Diese Karte konnte nicht zum Verkauf angeboten werden"
         }
       }
     },
@@ -943,6 +957,59 @@
         "title": "Wunschliste exportieren",
         "copy": "Kopieren",
         "copied": "In die Zwischenablage kopiert"
+      }
+    },
+    "SellLists": {
+      "metadata": {
+        "notFoundTitle": "Verkaufsliste nicht gefunden"
+      },
+      "metadataTitle": "Verkaufsliste von {name}",
+      "edit": {
+        "title": "Verkaufsliste bearbeiten",
+        "submit": "Speichern"
+      },
+      "form": {
+        "description": "Beschreibung",
+        "descriptionPlaceholder": "Zahlungsbedingungen, Kontakt...",
+        "price": "Preis",
+        "priceOptional": "Preis (optional)",
+        "currency": "Währung",
+        "note": "Notiz",
+        "cancel": "Abbrechen"
+      },
+      "empty": {
+        "title": "Noch keine Verkaufsliste",
+        "description": "Biete Karten aus deiner Sammlung zum Verkauf an, um deine Liste zu erstellen.",
+        "cta": "Zu meiner Sammlung",
+        "groupDescription": "Diese Gruppe hat noch keine Karten zum Verkauf."
+      },
+      "errors": {
+        "update": "Verkaufsliste konnte nicht aktualisiert werden",
+        "removeItem": "Diese Karte konnte nicht entfernt werden",
+        "updateItem": "Diese Karte konnte nicht aktualisiert werden"
+      },
+      "detail": {
+        "back": "Zurück",
+        "title": "Verkaufsliste",
+        "public": "Öffentlich",
+        "ownerUser": "Verkaufsliste von {name}",
+        "ownerGroup": "Verkaufsliste der Gruppe {name}",
+        "addFromCollection": "Aus meiner Sammlung hinzufügen",
+        "searchPlaceholder": "Karte suchen…",
+        "allGames": "Alle Spiele",
+        "allTypes": "Alle Typen",
+        "allConditions": "Alle Zustände",
+        "priceMin": "Preis min.",
+        "priceMax": "Preis max.",
+        "noPrice": "Kein Preis angegeben",
+        "results": "{count, plural, =0 {Keine Karten} one {# Karte} other {# Karten}}",
+        "noResults": "Keine Karten entsprechen deinen Filtern.",
+        "removeItem": "Diese Karte vom Verkauf entfernen",
+        "editPrice": "Preis bearbeiten",
+        "editSettings": "Einstellungen",
+        "previous": "Zurück",
+        "next": "Weiter",
+        "pageOf": "Seite {page} von {totalPages}"
       }
     },
     "Collection": {

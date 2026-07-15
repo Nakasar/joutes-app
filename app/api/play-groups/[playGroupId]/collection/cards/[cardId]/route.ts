@@ -5,6 +5,7 @@ import db from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { BoosterCardDb } from "@/lib/types/booster";
 import { collectionCardBorrowSchema } from "@/lib/schemas/collection.schema";
+import { getForSaleInfoForEntries, removeSellListItemByCollectionEntryId } from "@/lib/db/sell-lists";
 
 export async function GET(
   request: NextRequest,
@@ -28,6 +29,8 @@ export async function GET(
       cardId: cardId,
     }).toArray();
 
+    const forSaleByEntry = await getForSaleInfoForEntries(cards.map((c) => c._id));
+
     return NextResponse.json({
       quantity: cards.length,
       cards: cards.map((c) => ({
@@ -40,6 +43,7 @@ export async function GET(
         acquisitionPrice: c.acquisitionPrice,
         acquisitionCurrency: c.acquisitionCurrency,
         borrowedBy: c.borrowedBy,
+        forSale: forSaleByEntry.get(c._id.toString()),
       })),
     });
   } catch (error) {
@@ -133,6 +137,8 @@ export async function DELETE(
     if (!result) {
       return NextResponse.json({ error: "Card not found in collection" }, { status: 404 });
     }
+
+    await removeSellListItemByCollectionEntryId(result._id.toString());
 
     return NextResponse.json({ success: true });
   } catch (error) {

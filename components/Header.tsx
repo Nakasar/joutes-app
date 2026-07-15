@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useSession, signOut } from "@/lib/auth-client";
 import Image from "next/image";
-import {Menu, Calendar, MapPin, User, LogOut, Shield, Trophy, Dices, Library, Heart, Users, ChevronDown, Sparkles} from "lucide-react";
+import {Menu, Calendar, MapPin, User, LogOut, Shield, Trophy, Dices, Library, Heart, Users, ChevronDown, Sparkles, Tag} from "lucide-react";
 import { isAdmin } from "@/lib/config/admins";
 import { Button } from "@/components/ui/button";
 import { NotificationDropdown } from "@/components/NotificationDropdown";
@@ -104,6 +104,12 @@ export default function Header() {
                         <Link href="/wishlists" className="flex w-full cursor-pointer">
                           <Heart className="mr-2 h-4 w-4" />
                           <span>{t('menu.Wishlists')}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/sell-lists" className="flex w-full cursor-pointer">
+                          <Tag className="mr-2 h-4 w-4" />
+                          <span>{t('menu.SellLists')}</span>
                         </Link>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -299,6 +305,12 @@ export default function Header() {
                     <Link href="/wishlists" onClick={() => setMobileMenuOpen(false)}>
                       <Heart className="mr-2 h-4 w-4" />
                       {t('menu.Wishlists')}
+                    </Link>
+                  </Button>
+                  <Button variant="ghost" asChild className="justify-start">
+                    <Link href="/sell-lists" onClick={() => setMobileMenuOpen(false)}>
+                      <Tag className="mr-2 h-4 w-4" />
+                      {t('menu.SellLists')}
                     </Link>
                   </Button>
                 </>
