@@ -39,13 +39,17 @@ export function extractBracketedMentions(text: string): string[] {
 
 /**
  * Rewrites errata markdown so that:
- * - bracketed mentions, e.g. `[Leblanc, Deceiver]`, that match a card name
- *   become `[Leblanc, Deceiver](card://<id>)` links — and are never treated
- *   as keyword mentions, even if the card name happens to contain a keyword
- *   word, since the brackets mark it as a card reference here, not a keyword;
+ * - a bracketed mention that is *exactly* a keyword name, e.g. `[Deathknell]`
+ *   or `[Predict]`, becomes `[Deathknell](keyword://808)`;
+ * - any other bracketed mention, e.g. `[Leblanc, Deceiver]` or
+ *   `[Deathknell Bringer]` (a card name that merely starts with a keyword
+ *   word), is treated as a card-name reference instead — matching a card
+ *   name becomes `[Leblanc, Deceiver](card://<id>)`; otherwise it's left as
+ *   plain text rather than falling back to keyword styling;
  * - keyword mentions (Deathknell, Accelerate, ...) found anywhere else in the
  *   text become `[Deathknell](keyword://808)` links;
- * - `:rb_xxx:` glyph tags become inline icon images.
+ * - `:rb_xxx:` glyph tags and bracket icon shorthands ([A], [1], [M], ...)
+ *   become inline icon images.
  * The resulting string is still valid markdown; rendering code maps these
  * pseudo-protocols to styled components instead of real anchors.
  */
@@ -69,11 +73,16 @@ export function annotateErrataMarkdown(text: string, cardIdByName: Map<string, s
     result += applyKeywords(text.slice(lastIndex, match.index));
 
     const name = match[1].trim();
-    const cardId = cardIdByName.get(name.toLowerCase());
-    // Bracketed mentions are always card references here, never keyword
-    // mentions — even when unresolved, keep the plain text instead of
-    // falling back to keyword styling (the bracket is part of a name).
-    result += cardId ? `[${name}](card://${cardId})` : match[0];
+    const keywordId = idByName.get(name);
+    if (keywordId) {
+      result += `[${name}](keyword://${keywordId})`;
+    } else {
+      const cardId = cardIdByName.get(name.toLowerCase());
+      // Unresolved, non-exact-keyword brackets are left as plain text
+      // rather than falling back to keyword styling (the bracket is part
+      // of a name, e.g. "Deathknell Bringer", not a keyword mention).
+      result += cardId ? `[${name}](card://${cardId})` : match[0];
+    }
 
     lastIndex = match.index + match[0].length;
   }

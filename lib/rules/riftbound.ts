@@ -57,8 +57,15 @@ export function isTitle(entry: RuleEntry): boolean {
 // Ids are stable across languages, so this works regardless of `lang`.
 const KEYWORD_GLOSSARY_HEADER_ID = 804;
 
+// A handful of card-level keyword abilities (referenced via bracket notation
+// on card text, e.g. "[Predict 2]") are defined in their own CR section rather
+// than in the numbered Keyword Glossary above — but should still be treated
+// as keywords for styling/auto-linking purposes.
+const EXTRA_KEYWORD_IDS = new Set(['436']); // Predict / Prédiction
+
 export function isKeywordEntry(entry: RuleEntry, document: RuleDocument): boolean {
-  return document === 'CR' && isTitle(entry) && parseInt(entry.id, 10) > KEYWORD_GLOSSARY_HEADER_ID;
+  if (document !== 'CR' || !isTitle(entry)) return false;
+  return parseInt(entry.id, 10) > KEYWORD_GLOSSARY_HEADER_ID || EXTRA_KEYWORD_IDS.has(entry.id);
 }
 
 export interface KeywordEntry {
