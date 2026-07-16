@@ -62,7 +62,11 @@ export default function PoliciesClientView({
 
   const resolvePolicyLang = (policy: Policy): Locale => {
     const availableLangs = [policy.originalLang, ...(policy.translations ?? []).map((tr) => tr.lang)];
-    return selectedLangs[policy.id] ?? (availableLangs.includes(locale) ? locale : policy.originalLang);
+    const rememberedLang = selectedLangs[policy.id];
+    if (rememberedLang && availableLangs.includes(rememberedLang)) {
+      return rememberedLang;
+    }
+    return availableLangs.includes(locale) ? locale : policy.originalLang;
   };
 
   const searchTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);

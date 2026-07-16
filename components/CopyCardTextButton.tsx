@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Check, Copy } from "lucide-react";
 import { rbGlyphsToBracketText } from "@/lib/card-text-copy";
@@ -15,12 +15,18 @@ export default function CopyCardTextButton({
   copiedLabel: string;
 }) {
   const [copied, setCopied] = useState(false);
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  useEffect(() => {
+    return () => clearTimeout(resetTimerRef.current);
+  }, []);
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(rbGlyphsToBracketText(text));
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error("Erreur lors de la copie du texte de la carte:", error);
     }
