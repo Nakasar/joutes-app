@@ -6,9 +6,13 @@ export type ErrataType = "errata" | "clarification" | "ruling";
 
 export type ErrataVoteType = "positive" | "negative";
 
-export type ErrataTranslation = {
+export type ErrataTranslationInput = {
   lang: Locale;
   details: string;
+};
+
+export type ErrataTranslation = ErrataTranslationInput & {
+  updatedAt: Date;
 };
 
 export type Errata = {
@@ -18,6 +22,7 @@ export type Errata = {
   type: ErrataType;
   details: string;
   originalLang: Locale;
+  contentUpdatedAt: Date;
   translations?: ErrataTranslation[];
   source?: string;
   errataDate: Date;
@@ -36,6 +41,7 @@ export type ErrataDb = {
   type: ErrataType;
   details: string;
   originalLang: Locale;
+  contentUpdatedAt: Date;
   translations?: ErrataTranslation[];
   source?: string;
   errataDate: Date;

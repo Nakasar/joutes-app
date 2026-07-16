@@ -300,10 +300,12 @@ export default async function RiftboundCardDetailPage({
                         gameSlug={game.slug ?? gameSlugOrId}
                         ruleLang={ruleLang}
                         originalLang={errata.originalLang}
-                        translations={errata.translations?.map((tr) => ({lang: tr.lang, content: tr.details}))}
+                        translations={errata.translations?.map((tr) => ({lang: tr.lang, content: tr.details, updatedAt: tr.updatedAt}))}
                         interfaceLocale={locale as Locale}
                         originalLabel={t("cards.detail.originalLangLabel")}
                         languagePickerLabel={t("cards.detail.languagePickerLabel")}
+                        contentUpdatedAt={errata.contentUpdatedAt}
+                        staleTranslationWarning={t("cards.detail.staleTranslationWarning")}
                       />
                     </div>
                     {errata.cards && errata.cards.filter((c) => c.id !== cardId).length > 0 && (

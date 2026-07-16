@@ -6,6 +6,7 @@ import { CardNameMatch } from "@/lib/db/cards";
 import { Locale } from "@/i18n/config";
 import AnnotatedMarkdown from "@/components/AnnotatedMarkdown";
 import LanguagePicker from "@/components/LanguagePicker";
+import StaleTranslationWarning from "@/components/StaleTranslationWarning";
 import EditPolicyDialog from "@/components/EditPolicyDialog";
 import DeletePolicyButton from "@/components/DeletePolicyButton";
 import PolicyVoteButtons from "@/components/PolicyVoteButtons";
@@ -37,8 +38,11 @@ export default function PolicyDetailView({
     availableLangs.includes(interfaceLocale) ? interfaceLocale : policy.originalLang
   );
   const translation = policy.translations?.find((tr) => tr.lang === selectedLang);
-  const resolvedTitle = selectedLang !== policy.originalLang ? translation?.title || policy.title : policy.title;
-  const resolvedContent = selectedLang !== policy.originalLang ? translation?.content || policy.content : policy.content;
+  const isShowingTranslation = selectedLang !== policy.originalLang && !!translation;
+  const resolvedTitle = isShowingTranslation ? translation!.title || policy.title : policy.title;
+  const resolvedContent = isShowingTranslation ? translation!.content || policy.content : policy.content;
+  const isStale =
+    isShowingTranslation && !!translation?.content && translation.updatedAt < policy.contentUpdatedAt;
 
   return (
     <div className={`border rounded-lg bg-card shadow-sm p-6 ${policy.deprecatedAt ? "opacity-60" : ""}`}>
@@ -67,6 +71,8 @@ export default function PolicyDetailView({
           </div>
         )}
       </div>
+
+      {isStale && <StaleTranslationWarning message={t("policies.staleTranslationWarning")} />}
 
       <div className="prose prose-sm dark:prose-invert max-w-none">
         <AnnotatedMarkdown

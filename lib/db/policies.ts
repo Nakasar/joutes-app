@@ -1,8 +1,16 @@
 import 'server-only';
 
 import db from "@/lib/mongodb";
-import { Policy, PolicyDb } from "@/lib/types/policies";
+import { Policy, PolicyDb, PolicyVoteDb } from "@/lib/types/policies";
 import { ObjectId } from "bson";
+
+// Shape of an aggregation pipeline result that joins in votes and the game,
+// as opposed to a plain `PolicyDb` document straight from the collection.
+type PolicyAggregateResult = PolicyDb & {
+  _id: ObjectId;
+  votesList?: PolicyVoteDb[];
+  gameArr?: { _id: ObjectId; slug?: string; name: string };
+};
 
 function buildPolicyMatchFilter({
                                   gameId,
@@ -91,7 +99,7 @@ export async function getAllPolicies({
 
   const policiesDb = await db
     .collection<PolicyDb>("policies")
-    .aggregate(pipeline)
+    .aggregate<PolicyAggregateResult>(pipeline)
     .toArray();
 
   return policiesDb.map((p) => ({
@@ -99,6 +107,7 @@ export async function getAllPolicies({
     title: p.title,
     content: p.content,
     originalLang: p.originalLang ?? "fr",
+    contentUpdatedAt: p.contentUpdatedAt ?? p.createdAt,
     translations: p.translations,
     gameId: p.gameId.toString(),
     game: p.gameArr
@@ -153,7 +162,7 @@ export async function getPolicyById(id: string, userId?: string): Promise<Policy
     },
   ];
 
-  const [p] = await db.collection<PolicyDb>("policies").aggregate(pipeline).toArray();
+  const [p] = await db.collection<PolicyDb>("policies").aggregate<PolicyAggregateResult>(pipeline).toArray();
   if (!p) return null;
 
   return {
@@ -161,6 +170,7 @@ export async function getPolicyById(id: string, userId?: string): Promise<Policy
     title: p.title,
     content: p.content,
     originalLang: p.originalLang ?? "fr",
+    contentUpdatedAt: p.contentUpdatedAt ?? p.createdAt,
     translations: p.translations,
     gameId: p.gameId.toString(),
     game: p.gameArr

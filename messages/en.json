@@ -436,7 +436,8 @@
           "unban": "Remove ban"
         },
         "originalLangLabel": "original",
-        "languagePickerLabel": "Display language"
+        "languagePickerLabel": "Display language",
+        "staleTranslationWarning": "This translation hasn't been updated since the original content was last changed."
       },
       "collection": {
         "label": "Collection:",
@@ -594,6 +595,7 @@
       },
       "originalLangLabel": "original",
       "languagePickerLabel": "Display language",
+      "staleTranslationWarning": "This translation hasn't been updated since the original content was last changed.",
       "permalink": "Direct link to this policy",
       "detail": {
         "backToList": "← Back to {gameName} policies"

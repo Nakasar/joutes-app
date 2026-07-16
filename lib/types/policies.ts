@@ -4,10 +4,14 @@ import {Locale} from "@/i18n/config";
 
 export type PolicyVoteType = "positive" | "negative";
 
-export type PolicyTranslation = {
+export type PolicyTranslationInput = {
   lang: Locale;
   title: string;
   content: string;
+};
+
+export type PolicyTranslation = PolicyTranslationInput & {
+  updatedAt: Date;
 };
 
 export type Policy = {
@@ -15,6 +19,7 @@ export type Policy = {
   title: string;
   content: string;
   originalLang: Locale;
+  contentUpdatedAt: Date;
   translations?: PolicyTranslation[];
 
   gameId: string;
@@ -38,6 +43,7 @@ export type PolicyDb = {
   title: string;
   content: string;
   originalLang: Locale;
+  contentUpdatedAt: Date;
   translations?: PolicyTranslation[];
   source?: string;
   createdBy: string;

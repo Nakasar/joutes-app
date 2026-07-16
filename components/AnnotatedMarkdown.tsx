@@ -3,11 +3,12 @@
 import { useMemo, useState } from "react";
 import GameMarkdown from "@/components/GameMarkdown";
 import LanguagePicker from "@/components/LanguagePicker";
+import StaleTranslationWarning from "@/components/StaleTranslationWarning";
 import { annotateErrataMarkdown } from "@/lib/errata-markdown";
 import { CardNameMatch } from "@/lib/db/cards";
 import { Locale } from "@/i18n/config";
 
-export type ContentTranslation = { lang: Locale; content: string };
+export type ContentTranslation = { lang: Locale; content: string; updatedAt?: Date };
 
 /**
  * Renders free-form game content (policies, news, erratas, ...) with
@@ -38,6 +39,8 @@ export default function AnnotatedMarkdown({
   interfaceLocale,
   originalLabel,
   languagePickerLabel,
+  contentUpdatedAt,
+  staleTranslationWarning,
 }: {
   content: string;
   cardIdByName: Record<string, string>;
@@ -50,9 +53,11 @@ export default function AnnotatedMarkdown({
   interfaceLocale?: Locale;
   originalLabel?: string;
   languagePickerLabel?: string;
+  contentUpdatedAt?: Date;
+  staleTranslationWarning?: string;
 }) {
   const availableLangs = originalLang
-    ? [originalLang, ...(translations ?? []).map((t) => t.lang)]
+    ? [...new Set([originalLang, ...(translations ?? []).map((t) => t.lang)])]
     : [];
   const [selectedLang, setSelectedLang] = useState<Locale | undefined>(
     originalLang
@@ -62,10 +67,17 @@ export default function AnnotatedMarkdown({
       : undefined
   );
 
-  const resolvedContent =
-    originalLang && selectedLang && selectedLang !== originalLang
-      ? translations?.find((t) => t.lang === selectedLang)?.content || content
-      : content;
+  const selectedTranslation = translations?.find((t) => t.lang === selectedLang);
+  const isShowingTranslation =
+    !!originalLang && !!selectedLang && selectedLang !== originalLang && !!selectedTranslation?.content;
+
+  const resolvedContent = isShowingTranslation ? (selectedTranslation!.content as string) : content;
+
+  const isStale =
+    isShowingTranslation &&
+    !!contentUpdatedAt &&
+    !!selectedTranslation?.updatedAt &&
+    selectedTranslation.updatedAt < contentUpdatedAt;
 
   const markdown = useMemo(
     () => annotateErrataMarkdown(resolvedContent, new Map(Object.entries(cardIdByName))),
@@ -74,7 +86,7 @@ export default function AnnotatedMarkdown({
 
   return (
     <div>
-      {originalLang && selectedLang && (
+      {originalLang && selectedLang && availableLangs.length > 1 && (
         <div className="mb-2 flex justify-end">
           <LanguagePicker
             availableLangs={availableLangs}
@@ -85,6 +97,9 @@ export default function AnnotatedMarkdown({
             ariaLabel={languagePickerLabel}
           />
         </div>
+      )}
+      {isStale && staleTranslationWarning && (
+        <StaleTranslationWarning message={staleTranslationWarning} />
       )}
       <GameMarkdown
         markdown={markdown}

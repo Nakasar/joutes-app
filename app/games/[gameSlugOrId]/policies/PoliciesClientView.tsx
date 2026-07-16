@@ -10,6 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import AnnotatedMarkdown from "@/components/AnnotatedMarkdown";
 import LanguagePicker from "@/components/LanguagePicker";
+import StaleTranslationWarning from "@/components/StaleTranslationWarning";
 import { CardNameMatch } from "@/lib/db/cards";
 import PolicyVoteButtons from "@/components/PolicyVoteButtons";
 import EditPolicyDialog from "@/components/EditPolicyDialog";
@@ -167,8 +168,11 @@ export default function PoliciesClientView({
               const availableLangs = [policy.originalLang, ...(policy.translations ?? []).map((tr) => tr.lang)];
               const selectedLang = resolvePolicyLang(policy);
               const translation = policy.translations?.find((tr) => tr.lang === selectedLang);
-              const resolvedTitle = selectedLang !== policy.originalLang ? translation?.title || policy.title : policy.title;
-              const resolvedContent = selectedLang !== policy.originalLang ? translation?.content || policy.content : policy.content;
+              const isShowingTranslation = selectedLang !== policy.originalLang && !!translation;
+              const resolvedTitle = isShowingTranslation ? translation!.title || policy.title : policy.title;
+              const resolvedContent = isShowingTranslation ? translation!.content || policy.content : policy.content;
+              const isStale =
+                isShowingTranslation && !!translation?.content && translation.updatedAt < policy.contentUpdatedAt;
 
               return (
                 <div
@@ -221,6 +225,8 @@ export default function PoliciesClientView({
                           </div>
                         )}
                       </div>
+
+                      {isStale && <StaleTranslationWarning message={t("policies.staleTranslationWarning")} />}
 
                       <div className="prose prose-sm dark:prose-invert max-w-none">
                         <AnnotatedMarkdown

@@ -436,7 +436,8 @@
           "unban": "Ban aufheben"
         },
         "originalLangLabel": "Original",
-        "languagePickerLabel": "Anzeigesprache"
+        "languagePickerLabel": "Anzeigesprache",
+        "staleTranslationWarning": "Diese Übersetzung wurde seit der letzten Änderung des Originalinhalts nicht aktualisiert."
       },
       "collection": {
         "label": "Sammlung :",
@@ -594,6 +595,7 @@
       },
       "originalLangLabel": "Original",
       "languagePickerLabel": "Anzeigesprache",
+      "staleTranslationWarning": "Diese Übersetzung wurde seit der letzten Änderung des Originalinhalts nicht aktualisiert.",
       "permalink": "Direkter Link zu dieser Richtlinie",
       "detail": {
         "backToList": "← Zurück zu den Richtlinien von {gameName}"

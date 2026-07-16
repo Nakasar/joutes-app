@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { updatePolicy } from "@/app/games/[gameSlugOrId]/policies/actions";
-import { Policy, PolicyTranslation } from "@/lib/types/policies";
+import { Policy, PolicyTranslationInput } from "@/lib/types/policies";
 import { Pencil, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Locale, locales, localeLabels } from "@/i18n/config";
@@ -65,7 +65,7 @@ export default function EditPolicyDialog({
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const resolvedTranslations: PolicyTranslation[] = translationLangs
+      const resolvedTranslations: PolicyTranslationInput[] = translationLangs
         .map((lang) => ({ lang, title: translations[lang].title.trim(), content: translations[lang].content.trim() }))
         .filter((tr) => tr.title.length > 0 || tr.content.length > 0);
 
