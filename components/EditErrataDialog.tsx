@@ -54,6 +54,7 @@ export default function EditErrataDialog({
       translationLangs.map((l) => [l, errata.translations?.find((tr) => tr.lang === l)?.details ?? ""])
     ) as Record<Locale, string>
   );
+  const [selectedTranslationLang, setSelectedTranslationLang] = useState<Locale>(translationLangs[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -176,21 +177,37 @@ export default function EditErrataDialog({
             </div>
 
             <div className="grid gap-2">
-              <span className="text-sm font-medium">{t("cards.detail.editErrata.fields.translations")}</span>
-              {translationLangs.map((lang) => (
-                <div key={lang} className="grid gap-1">
-                  <label htmlFor={`translation-${lang}`} className="text-xs text-muted-foreground">
-                    {localeLabels[lang]}
-                  </label>
-                  <textarea
-                    id={`translation-${lang}`}
-                    className="min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    value={translationTexts[lang]}
-                    onChange={(e) => setTranslationTexts((prev) => ({ ...prev, [lang]: e.target.value }))}
-                    placeholder={t("cards.detail.editErrata.fields.translationPlaceholder")}
-                  />
-                </div>
-              ))}
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">{t("cards.detail.editErrata.fields.translations")}</span>
+                <Select value={selectedTranslationLang} onValueChange={(v) => setSelectedTranslationLang(v as Locale)}>
+                  <SelectTrigger
+                    id="translationLang"
+                    className="w-[160px]"
+                    aria-label={t("cards.detail.editErrata.fields.translationLangLabel")}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {translationLangs.map((lang) => (
+                      <SelectItem key={lang} value={lang}>
+                        {localeLabels[lang]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <label htmlFor="translation-details" className="sr-only">
+                {t("cards.detail.editErrata.fields.translations")} ({localeLabels[selectedTranslationLang]})
+              </label>
+              <textarea
+                id="translation-details"
+                className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={translationTexts[selectedTranslationLang]}
+                onChange={(e) =>
+                  setTranslationTexts((prev) => ({ ...prev, [selectedTranslationLang]: e.target.value }))
+                }
+                placeholder={t("cards.detail.editErrata.fields.translationPlaceholder")}
+              />
             </div>
 
             <div className="grid gap-2">

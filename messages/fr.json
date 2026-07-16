@@ -414,6 +414,7 @@
             "details": "Détails (Markdown)",
             "originalLangBadge": "(langue originale : {lang})",
             "translations": "Traductions",
+            "translationLangLabel": "Langue à modifier",
             "translationPlaceholder": "Laisser vide si non traduit dans cette langue...",
             "source": "Source (URL optionnelle)",
             "sourcePlaceholder": "https://...",
