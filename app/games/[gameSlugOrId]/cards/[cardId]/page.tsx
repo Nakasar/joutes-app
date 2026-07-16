@@ -22,6 +22,11 @@ import {DateTime} from "luxon";
 import {getGameBySlugOrId} from "@/lib/db/games";
 import {ObjectId} from "mongodb";
 import {GameToolsNavBar} from "@/components/games/GameToolsNavBar";
+import {Errata} from "@/lib/types/errata";
+
+function hasNegativeVoteRatio(errata: Errata): boolean {
+  return errata.votes.negative > errata.votes.positive;
+}
 
 export async function generateMetadata({
                                          params,
@@ -115,7 +120,9 @@ export default async function RiftboundCardDetailPage({
     );
   }
 
-  const erratas = await getErratasByCardId(cardId, userId);
+  const erratas = [...await getErratasByCardId(cardId, userId)].sort(
+    (a, b) => Number(hasNegativeVoteRatio(a)) - Number(hasNegativeVoteRatio(b))
+  );
   const userIsAdmin = isAdmin(session?.user?.email);
   const userCanVoteErratas = await hasPermission("erratas:vote");
 
@@ -201,7 +208,13 @@ export default async function RiftboundCardDetailPage({
                 {erratas.map((errata) => (
                   <div
                     key={errata.id}
-                    className={`border rounded-lg p-4 bg-card ${errata.deprecatedAt ? "opacity-50" : ""}`}
+                    className={`border rounded-lg p-4 bg-card ${
+                      errata.deprecatedAt
+                        ? "opacity-50"
+                        : hasNegativeVoteRatio(errata)
+                          ? "opacity-70"
+                          : ""
+                    }`}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
