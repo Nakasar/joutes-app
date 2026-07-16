@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { PlayGroupToolsNavBar } from "@/components/play-groups/PlayGroupToolsNavBar";
 
 type GroupMember = {
   userId: string;
@@ -129,9 +130,18 @@ export default function PlayGroupMembersClient() {
           <h1 className="text-3xl font-semibold">{data?.group.name || t("page.membersTitle")}</h1>
           <p className="mt-2 text-muted-foreground">{t("page.membersDescription")}</p>
         </div>
-        <Button asChild variant="outline">
-          <Link href={`/play-groups/${playGroupId}`}>{t("page.back")}</Link>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button asChild variant="outline">
+            <Link href={`/play-groups/${playGroupId}`}>{t("page.back")}</Link>
+          </Button>
+          {playGroupId ? (
+            <PlayGroupToolsNavBar
+              playGroupId={playGroupId}
+              currentTab="members"
+              canManageSettings={data?.currentUserRole === "owner" || data?.currentUserRole === "admin"}
+            />
+          ) : null}
+        </div>
       </div>
 
       {error ? <p className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{error}</p> : null}

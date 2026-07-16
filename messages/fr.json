@@ -1038,6 +1038,15 @@
       "saving": "Enregistrement...",
       "saveSuccess": "Paramètres du groupe mis à jour.",
       "saveError": "Impossible de mettre à jour les paramètres du groupe."
+    },
+    "nav": {
+      "tools": "Outils",
+      "portal": "Portail",
+      "members": "Membres",
+      "collection": "Collection",
+      "wishlists": "Listes de souhaits",
+      "sellList": "Liste de vente",
+      "settings": "Paramètres"
     }
   },
     "Wishlists": {

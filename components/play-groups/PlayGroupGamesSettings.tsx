@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { MultiSelect } from "@/components/ui/multi-select";
+import { PlayGroupToolsNavBar } from "@/components/play-groups/PlayGroupToolsNavBar";
 
 type GameOption = { id: string; name: string; slug?: string };
 
@@ -68,9 +69,12 @@ export default function PlayGroupGamesSettings({
           <h1 className="text-3xl font-semibold">{t("title")}</h1>
           <p className="mt-2 text-muted-foreground">{t("subtitle", { group: groupName })}</p>
         </div>
-        <Button asChild variant="outline">
-          <Link href={`/play-groups/${playGroupId}`}>{t("back")}</Link>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button asChild variant="outline">
+            <Link href={`/play-groups/${playGroupId}`}>{t("back")}</Link>
+          </Button>
+          <PlayGroupToolsNavBar playGroupId={playGroupId} currentTab="settings" canManageSettings />
+        </div>
       </div>
 
       <div className="space-y-4 rounded-xl border bg-card p-6 shadow-sm">

@@ -6,6 +6,9 @@ import { Metadata } from "next/types";
 import { getPlayGroupByIdAndUser } from "@/lib/db/play-groups";
 import { getWishlistsForOwner } from "@/lib/db/wishlists";
 import WishlistsClient from "@/app/wishlists/WishlistsClient";
+import { PlayGroupToolsNavBar } from "@/components/play-groups/PlayGroupToolsNavBar";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -42,9 +45,18 @@ export default async function PlayGroupWishlistsPage({
   }
 
   const wishlists = await getWishlistsForOwner({ type: "playGroup", id: group.id });
+  const tNav = await getTranslations("PlayGroups.page");
+  const member = group.members.find((m) => m.userId === session.user.id);
+  const canManageSettings = member?.role === "owner" || member?.role === "admin";
 
   return (
     <div className="container mx-auto p-4 sm:p-6">
+      <div className="flex flex-row flex-wrap justify-between items-center gap-2 mb-4">
+        <Button asChild variant="outline">
+          <Link href="/play-groups">{tNav("back")}</Link>
+        </Button>
+        <PlayGroupToolsNavBar playGroupId={group.id} currentTab="wishlists" canManageSettings={canManageSettings} />
+      </div>
       <WishlistsClient initialWishlists={wishlists} apiBasePath={`/api/play-groups/${group.id}/wishlists`} />
     </div>
   );
