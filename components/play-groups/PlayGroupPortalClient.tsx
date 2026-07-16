@@ -7,7 +7,7 @@ import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth-client";
-import { Settings } from "lucide-react";
+import { PlayGroupToolsNavBar } from "@/components/play-groups/PlayGroupToolsNavBar";
 
 type PlayGroupMember = {
   userId: string;
@@ -79,18 +79,13 @@ export default function PlayGroupPortalClient() {
           <h1 className="text-3xl font-semibold">{group?.name || t("page.portalTitle")}</h1>
           <p className="mt-2 text-muted-foreground">{group?.description || t("page.portalDescription")}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {canManageSettings && group ? (
-            <Button asChild variant="outline">
-              <Link href={`/play-groups/${group.id}/settings`}>
-                <Settings className="mr-2 size-4" />
-                {t("page.settings")}
-              </Link>
-            </Button>
-          ) : null}
+        <div className="flex flex-wrap items-center gap-2">
           <Button asChild variant="outline">
             <Link href="/play-groups">{t("page.back")}</Link>
           </Button>
+          {group ? (
+            <PlayGroupToolsNavBar playGroupId={group.id} currentTab="portal" canManageSettings={canManageSettings} />
+          ) : null}
         </div>
       </div>
 

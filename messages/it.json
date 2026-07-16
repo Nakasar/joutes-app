@@ -979,6 +979,15 @@
       "saving": "Salvataggio...",
       "saveSuccess": "Impostazioni del gruppo aggiornate.",
       "saveError": "Impossibile aggiornare le impostazioni del gruppo."
+    },
+    "nav": {
+      "tools": "Strumenti",
+      "portal": "Portale",
+      "members": "Membri",
+      "collection": "Collezione",
+      "wishlists": "Liste dei desideri",
+      "sellList": "Lista di vendita",
+      "settings": "Impostazioni"
     }
   },
     "Wishlists": {

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSession, signOut } from "@/lib/auth-client";
 import Image from "next/image";
 import {Menu, Calendar, MapPin, User, LogOut, Shield, Trophy, Dices, Library, Heart, Users, ChevronDown, Sparkles, Tag} from "lucide-react";
@@ -31,6 +31,29 @@ export default function Header() {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { data: session, isPending } = useSession();
+  const [playGroups, setPlayGroups] = useState<{ id: string; name: string }[]>([]);
+
+  const userId = session?.user?.id;
+  useEffect(() => {
+    if (!userId) {
+      setPlayGroups([]);
+      return;
+    }
+
+    let cancelled = false;
+    fetch("/api/play-groups")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && Array.isArray(data?.groups)) {
+          setPlayGroups(data.groups.slice(0, 3));
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
 
@@ -125,6 +148,15 @@ export default function Header() {
                       <ChevronDown className="ml-1 h-3 w-3" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start">
+                      {playGroups.map((group) => (
+                        <DropdownMenuItem asChild key={group.id}>
+                          <Link href={`/play-groups/${group.id}`} className="flex w-full cursor-pointer">
+                            <Users className="mr-2 h-4 w-4" />
+                            <span className="truncate">{group.name}</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      ))}
+                      {playGroups.length > 0 && <DropdownMenuSeparator />}
                       <DropdownMenuItem asChild>
                         <Link href="/play-groups" className="flex w-full cursor-pointer">
                           <Users className="mr-2 h-4 w-4" />
@@ -318,6 +350,14 @@ export default function Header() {
               {session && (
                 <>
                   <p className="px-3 pt-2 text-xs font-medium text-muted-foreground">{t('menu.Groupes')}</p>
+                  {playGroups.map((group) => (
+                    <Button variant="ghost" asChild className="justify-start" key={group.id}>
+                      <Link href={`/play-groups/${group.id}`} onClick={() => setMobileMenuOpen(false)}>
+                        <Users className="mr-2 h-4 w-4" />
+                        <span className="truncate">{group.name}</span>
+                      </Link>
+                    </Button>
+                  ))}
                   <Button variant="ghost" asChild className="justify-start">
                     <Link href="/play-groups" onClick={() => setMobileMenuOpen(false)}>
                       <Users className="mr-2 h-4 w-4" />

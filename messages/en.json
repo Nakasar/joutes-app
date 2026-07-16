@@ -1037,6 +1037,15 @@
       "saving": "Saving...",
       "saveSuccess": "Group settings updated.",
       "saveError": "Could not update the group settings."
+    },
+    "nav": {
+      "tools": "Tools",
+      "portal": "Portal",
+      "members": "Members",
+      "collection": "Collection",
+      "wishlists": "Wishlists",
+      "sellList": "Sell list",
+      "settings": "Settings"
     }
   },
     "Wishlists": {
