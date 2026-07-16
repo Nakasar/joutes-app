@@ -238,6 +238,7 @@
       "rules": "Regole",
       "policies": "Politiche",
       "deckChecker": "Controllo mazzo",
+      "loop": "Lente",
       "collection": "Collezione"
     },
     "explorer": {
@@ -688,6 +689,40 @@
         "deprecated": "Deprecato",
         "source": "Fonte →",
         "errataSectionTitle": "Errata e chiarimenti ({count})"
+      },
+      "errataTypes": {
+        "errata": "Errata",
+        "clarification": "Chiarimento",
+        "ruling": "Decisione"
+      }
+    },
+    "Loop": {
+      "metadata": {
+        "title": "Joutes - Lente {gameName}",
+        "description": "Analizza un testo libero e identifica automaticamente le carte e le parole chiave {gameName} menzionate.",
+        "notFoundTitle": "Gioco non trovato"
+      },
+      "back": "Torna al portale del gioco",
+      "title": "Lente — {gameName}",
+      "description": "Incolla un testo libero (una regola, una domanda per l'arbitro, una discussione...) per identificare automaticamente tutte le carte e le parole chiave {gameName} menzionate.",
+      "notFoundTitle": "Lente non disponibile",
+      "notFoundDescription": "Questa funzionalità richiede un database di carte per questo gioco.",
+      "form": {
+        "label": "Testo da analizzare",
+        "placeholder": "Incolla qui un testo libero da analizzare (una regola, una domanda per l'arbitro, una discussione...)",
+        "analyze": "Analizza",
+        "loading": "Analisi in corso…"
+      },
+      "errors": {
+        "generic": "Si è verificato un errore durante l'analisi."
+      },
+      "results": {
+        "annotatedTitle": "Testo annotato",
+        "cardsTitle": "{count, plural, one {# carta menzionata} other {# carte menzionate}}",
+        "noCards": "Nessuna carta riconosciuta in questo testo.",
+        "noErrata": "Nessun errata o chiarimento per questa carta.",
+        "deprecated": "Deprecato",
+        "source": "Fonte"
       },
       "errataTypes": {
         "errata": "Errata",
