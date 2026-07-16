@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import LikeButton from "./LikeButton";
 import NewsContent from "./NewsContent";
+import { ObjectId } from "mongodb";
+import { resolveCardMentions } from "@/lib/game-content-cards";
 
 type Props = { params: Promise<{ newsId: string }> };
 
@@ -41,6 +43,15 @@ export default async function NewsDetailPage({ params }: Props) {
   if (!news) {
     notFound();
   }
+
+  // Keyword styling applies regardless of which game a news post is about,
+  // but resolving `[Card Name]` mentions needs a single unambiguous game —
+  // skip it for global/multi-game news rather than guessing.
+  const singleGame = news.games?.length === 1 ? news.games[0] : undefined;
+  const {cardIdByName, cardsById} = singleGame
+    ? await resolveCardMentions(new ObjectId(singleGame.id), [news.content])
+    : {cardIdByName: {}, cardsById: {}};
+  const gameSlug = singleGame?.slug ?? "riftbound";
 
   const date = DateTime.fromJSDate(new Date(news.createdAt))
     .setLocale("fr")
@@ -121,7 +132,12 @@ export default async function NewsDetailPage({ params }: Props) {
         </header>
 
         {/* Contenu markdown */}
-        <NewsContent content={news.content} />
+        <NewsContent
+          content={news.content}
+          cardIdByName={cardIdByName}
+          cardsById={cardsById}
+          gameSlug={gameSlug}
+        />
 
         {/* Like */}
         <footer className="pt-6 border-t flex items-center justify-between">
