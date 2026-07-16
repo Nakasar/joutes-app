@@ -38,6 +38,12 @@ export default function CardNameHoverPopover({
         className="w-72 max-h-[420px] overflow-y-auto p-3"
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
+        // Radix returns focus to the trigger link on close by default, which
+        // fires our own `onFocus` handler below and reopens the popover
+        // right away — turning every non-click close (Escape, scroll) into
+        // a no-op. This popover is a hover preview, not a focus target, so
+        // skip that focus restoration entirely.
+        onCloseAutoFocus={(e) => e.preventDefault()}
       >
         <img src={card.image} alt={card.name} className="w-full h-auto rounded mb-2" />
         <div className="text-sm font-semibold leading-tight">{card.name}</div>
