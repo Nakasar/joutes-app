@@ -61,7 +61,7 @@ export default function GameMarkdown({
             const card = cardsById[id];
             if (!card) return <>{children}</>;
             return (
-              <CardNameHoverPopover card={card} gameSlug={gameSlug}>
+              <CardNameHoverPopover card={card} gameSlug={gameSlug} ruleLang={ruleLang}>
                 {children}
               </CardNameHoverPopover>
             );
