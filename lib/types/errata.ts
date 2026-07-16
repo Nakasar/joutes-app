@@ -1,9 +1,19 @@
 import { ObjectId } from "bson";
 import {BoosterCard} from "@/lib/types/booster";
+import {Locale} from "@/i18n/config";
 
 export type ErrataType = "errata" | "clarification" | "ruling";
 
 export type ErrataVoteType = "positive" | "negative";
+
+export type ErrataTranslationInput = {
+  lang: Locale;
+  details: string;
+};
+
+export type ErrataTranslation = ErrataTranslationInput & {
+  updatedAt: Date;
+};
 
 export type Errata = {
   id: string;
@@ -11,6 +21,9 @@ export type Errata = {
   cards?: BoosterCard[];
   type: ErrataType;
   details: string;
+  originalLang: Locale;
+  contentUpdatedAt: Date;
+  translations?: ErrataTranslation[];
   source?: string;
   errataDate: Date;
   createdBy: string;
@@ -27,6 +40,9 @@ export type ErrataDb = {
   cardIds: string[];
   type: ErrataType;
   details: string;
+  originalLang: Locale;
+  contentUpdatedAt: Date;
+  translations?: ErrataTranslation[];
   source?: string;
   errataDate: Date;
   createdBy: ObjectId;

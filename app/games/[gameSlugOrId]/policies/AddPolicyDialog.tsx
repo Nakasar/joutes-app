@@ -12,14 +12,24 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { createPolicy } from "./actions";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { Locale, locales, localeLabels } from "@/i18n/config";
 
 export default function AddPolicyDialog({ gameId }: { gameId: string; gameSlug: string }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [source, setSource] = useState("");
+  const interfaceLocale = useLocale() as Locale;
+  const [originalLang, setOriginalLang] = useState<Locale>(interfaceLocale);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [preview, setPreview] = useState(false);
   const [ReactMarkdown, setReactMarkdown] = useState<React.ComponentType<{ children: string; remarkPlugins?: unknown[]; rehypePlugins?: unknown[] }> | null>(null);
@@ -54,6 +64,7 @@ export default function AddPolicyDialog({ gameId }: { gameId: string; gameSlug: 
         gameId,
         title: title.trim(),
         content: content.trim(),
+        originalLang,
         source: source.trim() || undefined,
       });
       setOpen(false);
@@ -92,6 +103,23 @@ export default function AddPolicyDialog({ gameId }: { gameId: string; gameSlug: 
                 placeholder={t("policies.addDialog.fields.titlePlaceholder")}
                 required
               />
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="originalLang" className="text-sm font-medium">
+                {t("policies.addDialog.fields.originalLang")}
+              </label>
+              <Select value={originalLang} onValueChange={(value) => setOriginalLang(value as Locale)}>
+                <SelectTrigger id="originalLang">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {locales.map((lang) => (
+                    <SelectItem key={lang} value={lang}>
+                      {localeLabels[lang]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid gap-2">
               <div className="flex items-center justify-between">

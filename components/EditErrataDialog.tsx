@@ -25,6 +25,7 @@ import { BoosterCard } from "@/lib/types/booster";
 import { Pencil, X } from "lucide-react";
 import ErrataCardsPicker from "@/components/ErrataCardsPicker";
 import { useTranslations } from "next-intl";
+import { Locale, locales, localeLabels } from "@/i18n/config";
 
 export default function EditErrataDialog({
   errata,
@@ -47,6 +48,13 @@ export default function EditErrataDialog({
     errata.deprecatedAt ? new Date(errata.deprecatedAt).toISOString().split("T")[0] : ""
   );
   const [selectedCards, setSelectedCards] = useState<BoosterCard[]>(errata.cards ?? []);
+  const translationLangs = locales.filter((l) => l !== errata.originalLang);
+  const [translationTexts, setTranslationTexts] = useState<Record<Locale, string>>(() =>
+    Object.fromEntries(
+      translationLangs.map((l) => [l, errata.translations?.find((tr) => tr.lang === l)?.details ?? ""])
+    ) as Record<Locale, string>
+  );
+  const [selectedTranslationLang, setSelectedTranslationLang] = useState<Locale>(translationLangs[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,6 +69,9 @@ export default function EditErrataDialog({
 
     try {
       const newCardIds = selectedCards.map((c) => c.id);
+      const translations = translationLangs
+        .map((lang) => ({ lang, details: translationTexts[lang].trim() }))
+        .filter((tr) => tr.details.length > 0);
 
       await updateErrata(
         errata.id,
@@ -71,6 +82,7 @@ export default function EditErrataDialog({
           errataDate: new Date(errataDate),
           deprecatedAt: deprecatedAt ? new Date(deprecatedAt) : null,
           cardIds: newCardIds,
+          translations,
         },
         Array.from(new Set([...errata.cardIds, ...newCardIds, ...(cardId ? [cardId] : [])]))
       );
@@ -151,6 +163,9 @@ export default function EditErrataDialog({
             <div className="grid gap-2">
               <label htmlFor="details" className="text-sm font-medium">
                 {t("cards.detail.editErrata.fields.details")}
+                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  {t("cards.detail.editErrata.fields.originalLangBadge", { lang: localeLabels[errata.originalLang] })}
+                </span>
               </label>
               <textarea
                 id="details"
@@ -158,6 +173,40 @@ export default function EditErrataDialog({
                 value={details}
                 onChange={(e) => setDetails(e.target.value)}
                 required
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">{t("cards.detail.editErrata.fields.translations")}</span>
+                <Select value={selectedTranslationLang} onValueChange={(v) => setSelectedTranslationLang(v as Locale)}>
+                  <SelectTrigger
+                    id="translationLang"
+                    className="w-[160px]"
+                    aria-label={t("cards.detail.editErrata.fields.translationLangLabel")}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {translationLangs.map((lang) => (
+                      <SelectItem key={lang} value={lang}>
+                        {localeLabels[lang]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <label htmlFor="translation-details" className="sr-only">
+                {t("cards.detail.editErrata.fields.translations")} ({localeLabels[selectedTranslationLang]})
+              </label>
+              <textarea
+                id="translation-details"
+                className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={translationTexts[selectedTranslationLang]}
+                onChange={(e) =>
+                  setTranslationTexts((prev) => ({ ...prev, [selectedTranslationLang]: e.target.value }))
+                }
+                placeholder={t("cards.detail.editErrata.fields.translationPlaceholder")}
               />
             </div>
 

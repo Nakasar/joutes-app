@@ -70,7 +70,10 @@ export default async function GamePoliciesPage({
     hasPermission("policies:update"),
     hasPermission("policies:vote"),
   ]);
-  const {cardIdByName, cardsById} = await resolveCardMentions(new ObjectId(gameId), policies.map((p) => p.content));
+  const {cardIdByName, cardsById} = await resolveCardMentions(
+    new ObjectId(gameId),
+    policies.flatMap((p) => [p.content, ...(p.translations ?? []).map((tr) => tr.content)])
+  );
   const locale = await getLocale();
   const ruleLang = locale === "fr" ? "fr" : "en";
   const t = await getTranslations("Games");

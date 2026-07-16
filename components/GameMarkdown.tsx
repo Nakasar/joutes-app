@@ -3,9 +3,25 @@
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import { KeywordBadge } from "@/components/games/KeywordBadge";
 import CardNameHoverPopover from "@/components/CardNameHoverPopover";
 import { CardNameMatch } from "@/lib/db/cards";
+
+// rehype-raw alone lets embedded raw HTML through completely unsanitized —
+// e.g. a literal <script> tag renders and executes as-is. rehype-sanitize
+// strips dangerous tags/attributes (script, event handlers, javascript:
+// URLs, ...) from the whole tree, so it must always run right after
+// rehype-raw when raw HTML is allowed. The schema is extended to keep
+// allowing our keyword:// and card:// pseudo-links, which the default
+// schema's protocol allowlist would otherwise strip.
+const sanitizeSchema = {
+  ...defaultSchema,
+  protocols: {
+    ...defaultSchema.protocols,
+    href: [...(defaultSchema.protocols?.href ?? []), "keyword", "card"],
+  },
+};
 
 export default function GameMarkdown({
   markdown,
@@ -24,7 +40,7 @@ export default function GameMarkdown({
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
-      rehypePlugins={allowRawHtml ? [rehypeRaw] : []}
+      rehypePlugins={allowRawHtml ? [rehypeRaw, [rehypeSanitize, sanitizeSchema]] : []}
       // react-markdown's default URL sanitizer only allows a fixed list of
       // "safe" protocols (http/https/mailto/...) and silently blanks out
       // anything else — including our keyword:// and card:// pseudo-links —

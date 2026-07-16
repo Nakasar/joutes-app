@@ -22,8 +22,9 @@ import {
 import { createErrata } from "@/app/games/[gameSlugOrId]/actions";
 import { ErrataType } from "@/lib/types/errata";
 import { BoosterCard } from "@/lib/types/booster";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import ErrataCardsPicker from "@/components/ErrataCardsPicker";
+import { Locale, locales, localeLabels } from "@/i18n/config";
 
 export default function AddErrataButton({
   cardId,
@@ -50,6 +51,8 @@ export default function AddErrataButton({
   );
   const currentCard: BoosterCard = { id: cardId, name: cardName, setCode, collectorNumber, image };
   const [selectedCards, setSelectedCards] = useState<BoosterCard[]>([currentCard]);
+  const interfaceLocale = useLocale() as Locale;
+  const [originalLang, setOriginalLang] = useState<Locale>(interfaceLocale);
   const t = useTranslations("Games");
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,6 +64,7 @@ export default function AddErrataButton({
         cardIds: selectedCards.map((c) => c.id),
         type,
         details,
+        originalLang,
         source: source.trim() || undefined,
         errataDate: new Date(errataDate),
       });
@@ -122,6 +126,23 @@ export default function AddErrataButton({
                   <SelectItem value="errata">{t("cards.detail.errataTypes.errata")}</SelectItem>
                   <SelectItem value="clarification">{t("cards.detail.errataTypes.clarification")}</SelectItem>
                   <SelectItem value="ruling">{t("cards.detail.errataTypes.ruling")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="originalLang" className="text-sm font-medium">
+                {t("cards.detail.addErrata.fields.originalLang")}
+              </label>
+              <Select value={originalLang} onValueChange={(value) => setOriginalLang(value as Locale)}>
+                <SelectTrigger id="originalLang">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {locales.map((lang) => (
+                    <SelectItem key={lang} value={lang}>
+                      {localeLabels[lang]}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

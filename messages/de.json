@@ -367,6 +367,8 @@
         "backToList": "Zurück zur Kartenliste",
         "banned": "Gebannt",
         "cardTextTitle": "Kartentext",
+        "copyCardText": "Text kopieren",
+        "copyCardTextCopied": "Kopiert!",
         "errataSectionTitle": "Errata & Klarstellungen",
         "noErrata": "Kein Erratum oder Klarstellung für diese Karte.",
         "errataTypes": {
@@ -393,7 +395,8 @@
             "additionalCardsSearchPlaceholder": "Nach einer Karte suchen...",
             "additionalCardsEmpty": "Keine Karte gefunden.",
             "additionalCardsSearching": "Suche läuft...",
-            "removeCard": "{cardName} entfernen"
+            "removeCard": "{cardName} entfernen",
+            "originalLang": "Originalsprache"
           },
           "actions": {
             "submit": "Hinzufügen",
@@ -409,6 +412,10 @@
             "type": "Typ",
             "date": "Datum des Erratums",
             "details": "Details (Markdown)",
+            "originalLangBadge": "(Originalsprache: {lang})",
+            "translations": "Übersetzungen",
+            "translationLangLabel": "Zu bearbeitende Sprache",
+            "translationPlaceholder": "Leer lassen, wenn nicht in diese Sprache übersetzt...",
             "source": "Quelle (optionale URL)",
             "sourcePlaceholder": "https://...",
             "deprecatedAt": "Datum der Veraltung (optional)",
@@ -430,7 +437,10 @@
           "pending": "...",
           "ban": "Karte bannen",
           "unban": "Ban aufheben"
-        }
+        },
+        "originalLangLabel": "Original",
+        "languagePickerLabel": "Anzeigesprache",
+        "staleTranslationWarning": "Diese Übersetzung wurde seit der letzten Änderung des Originalinhalts nicht aktualisiert."
       },
       "collection": {
         "label": "Sammlung :",
@@ -574,7 +584,8 @@
           "edit": "Bearbeiten",
           "markdownHint": "Unterstützt Markdown: **fett**, *kursiv*, [Links](url), ![Bilder](url), Tabellen, Listen…",
           "source": "Quelle (optional)",
-          "sourcePlaceholder": "https://example.com/rules"
+          "sourcePlaceholder": "https://example.com/rules",
+          "originalLang": "Originalsprache"
         },
         "actions": {
           "cancel": "Abbrechen",
@@ -583,6 +594,37 @@
         },
         "errors": {
           "createError": "Richtlinie konnte nicht erstellt werden"
+        }
+      },
+      "originalLangLabel": "Original",
+      "languagePickerLabel": "Anzeigesprache",
+      "staleTranslationWarning": "Diese Übersetzung wurde seit der letzten Änderung des Originalinhalts nicht aktualisiert.",
+      "permalink": "Direkter Link zu dieser Richtlinie",
+      "detail": {
+        "backToList": "← Zurück zu den Richtlinien von {gameName}"
+      },
+      "editDialog": {
+        "title": "Richtlinie bearbeiten",
+        "description": "Bearbeite den Titel, Inhalt oder die Metadaten dieser Richtlinie.",
+        "error": "Richtlinie konnte nicht aktualisiert werden",
+        "fields": {
+          "title": "Titel",
+          "originalLangBadge": "(Originalsprache: {lang})",
+          "content": "Inhalt (Markdown)",
+          "edit": "Bearbeiten",
+          "preview": "Vorschau",
+          "translations": "Übersetzungen",
+          "translationTitlePlaceholder": "Übersetzter Titel (leer lassen, wenn nicht übersetzt)...",
+          "translationContentPlaceholder": "Leer lassen, wenn nicht in diese Sprache übersetzt...",
+          "source": "Quelle (optionale URL)",
+          "sourcePlaceholder": "https://...",
+          "deprecatedAt": "Datum der Veraltung (optional)",
+          "removeDeprecation": "Veraltung entfernen"
+        },
+        "actions": {
+          "cancel": "Abbrechen",
+          "submit": "Speichern",
+          "submitting": "Wird gespeichert..."
         }
       }
     },

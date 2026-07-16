@@ -23,9 +23,12 @@ import {ObjectId} from "mongodb";
 import {GameToolsNavBar} from "@/components/games/GameToolsNavBar";
 import {Errata} from "@/lib/types/errata";
 import {getCardsByNames} from "@/lib/db/cards";
-import {extractBracketedMentions, annotateErrataMarkdown} from "@/lib/errata-markdown";
+import {extractBracketedMentions} from "@/lib/errata-markdown";
 import {annotateCardText} from "@/lib/card-text-markdown";
 import GameMarkdown from "@/components/GameMarkdown";
+import AnnotatedMarkdown from "@/components/AnnotatedMarkdown";
+import CopyCardTextButton from "@/components/CopyCardTextButton";
+import {Locale} from "@/i18n/config";
 
 function hasNegativeVoteRatio(errata: Errata): boolean {
   return errata.votes.negative > errata.votes.positive;
@@ -131,10 +134,15 @@ export default async function RiftboundCardDetailPage({
   const userCanVoteErratas = await hasPermission("erratas:vote");
 
   const mentionedCardNames = [
-    ...new Set(erratas.flatMap((errata) => extractBracketedMentions(errata.details))),
+    ...new Set(
+      erratas.flatMap((errata) => [
+        ...extractBracketedMentions(errata.details),
+        ...(errata.translations ?? []).flatMap((tr) => extractBracketedMentions(tr.details)),
+      ])
+    ),
   ];
   const mentionedCards = await getCardsByNames(new ObjectId(game.id), mentionedCardNames);
-  const cardIdByName = new Map(mentionedCards.map((c) => [c.name.toLowerCase(), c.id]));
+  const cardIdByName = Object.fromEntries(mentionedCards.map((c) => [c.name.toLowerCase(), c.id]));
   const cardsById = Object.fromEntries(mentionedCards.map((c) => [c.id, c]));
 
   return (
@@ -183,9 +191,16 @@ export default async function RiftboundCardDetailPage({
 
           {card.text && (
             <div className="mb-6">
-              <h2 className="text-lg font-semibold mb-2">
-                {t("cards.detail.cardTextTitle")}
-              </h2>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-lg font-semibold">
+                  {t("cards.detail.cardTextTitle")}
+                </h2>
+                <CopyCardTextButton
+                  text={card.text}
+                  label={t("cards.detail.copyCardText")}
+                  copiedLabel={t("cards.detail.copyCardTextCopied")}
+                />
+              </div>
               <div className="prose prose-sm dark:prose-invert max-w-none">
                 <GameMarkdown
                   markdown={annotateCardText(card.text)}
@@ -286,11 +301,19 @@ export default async function RiftboundCardDetailPage({
                       </span>
                     )}
                     <div className="prose prose-sm dark:prose-invert max-w-none ">
-                      <GameMarkdown
-                        markdown={annotateErrataMarkdown(errata.details, cardIdByName)}
+                      <AnnotatedMarkdown
+                        content={errata.details}
+                        cardIdByName={cardIdByName}
                         cardsById={cardsById}
                         gameSlug={game.slug ?? gameSlugOrId}
                         ruleLang={ruleLang}
+                        originalLang={errata.originalLang}
+                        translations={errata.translations?.map((tr) => ({lang: tr.lang, content: tr.details, updatedAt: tr.updatedAt}))}
+                        interfaceLocale={locale as Locale}
+                        originalLabel={t("cards.detail.originalLangLabel")}
+                        languagePickerLabel={t("cards.detail.languagePickerLabel")}
+                        contentUpdatedAt={errata.contentUpdatedAt}
+                        staleTranslationWarning={t("cards.detail.staleTranslationWarning")}
                       />
                     </div>
                     {errata.cards && errata.cards.filter((c) => c.id !== cardId).length > 0 && (

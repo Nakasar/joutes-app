@@ -1,8 +1,16 @@
 import 'server-only';
 
 import db from "@/lib/mongodb";
-import { Policy, PolicyDb } from "@/lib/types/policies";
+import { Policy, PolicyDb, PolicyVoteDb } from "@/lib/types/policies";
 import { ObjectId } from "bson";
+
+// Shape of an aggregation pipeline result that joins in votes and the game,
+// as opposed to a plain `PolicyDb` document straight from the collection.
+type PolicyAggregateResult = PolicyDb & {
+  _id: ObjectId;
+  votesList?: PolicyVoteDb[];
+  gameArr?: { _id: ObjectId; slug?: string; name: string };
+};
 
 function buildPolicyMatchFilter({
                                   gameId,
@@ -91,13 +99,16 @@ export async function getAllPolicies({
 
   const policiesDb = await db
     .collection<PolicyDb>("policies")
-    .aggregate(pipeline)
+    .aggregate<PolicyAggregateResult>(pipeline)
     .toArray();
 
   return policiesDb.map((p) => ({
     id: p._id.toString(),
     title: p.title,
     content: p.content,
+    originalLang: p.originalLang ?? "fr",
+    contentUpdatedAt: p.contentUpdatedAt ?? p.createdAt,
+    translations: p.translations,
     gameId: p.gameId.toString(),
     game: p.gameArr
       ? { id: p.gameArr._id.toString(), slug: p.gameArr.slug, name: p.gameArr.name }
@@ -116,4 +127,67 @@ export async function getAllPolicies({
         : undefined,
     },
   }));
+}
+
+export async function getPolicyById(id: string, userId?: string): Promise<Policy | null> {
+  if (!ObjectId.isValid(id)) return null;
+
+  const pipeline: object[] = [
+    { $match: { _id: new ObjectId(id) } },
+    {
+      $lookup: {
+        from: "policy-votes",
+        localField: "_id",
+        foreignField: "policyId",
+        as: "votesList",
+      },
+    },
+    {
+      $lookup: {
+        from: "games",
+        localField: "gameId",
+        foreignField: "_id",
+        as: "gameArr",
+        pipeline: [
+          { $limit: 1 },
+          { $project: { _id: 1, slug: 1, name: 1 } },
+        ],
+      },
+    },
+    {
+      $unwind: {
+        path: "$gameArr",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+  ];
+
+  const [p] = await db.collection<PolicyDb>("policies").aggregate<PolicyAggregateResult>(pipeline).toArray();
+  if (!p) return null;
+
+  return {
+    id: p._id.toString(),
+    title: p.title,
+    content: p.content,
+    originalLang: p.originalLang ?? "fr",
+    contentUpdatedAt: p.contentUpdatedAt ?? p.createdAt,
+    translations: p.translations,
+    gameId: p.gameId.toString(),
+    game: p.gameArr
+      ? { id: p.gameArr._id.toString(), slug: p.gameArr.slug, name: p.gameArr.name }
+      : undefined,
+    source: p.source,
+    createdBy: p.createdBy,
+    createdAt: p.createdAt,
+    deprecatedAt: p.deprecatedAt,
+    votes: {
+      positive: (p.votesList ?? []).filter((v: { vote: string }) => v.vote === "positive").length,
+      negative: (p.votesList ?? []).filter((v: { vote: string }) => v.vote === "negative").length,
+      userVote: userId
+        ? (p.votesList ?? []).find(
+          (v: { userId: ObjectId; vote: string }) => v.userId.toString() === userId
+        )?.vote
+        : undefined,
+    },
+  };
 }

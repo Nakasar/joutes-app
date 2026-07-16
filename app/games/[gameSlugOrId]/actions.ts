@@ -1,6 +1,7 @@
 "use server";
 
-import {ErrataDb, ErrataType, ErrataVoteDb, ErrataVoteType} from "@/lib/types/errata";
+import {ErrataDb, ErrataTranslationInput, ErrataType, ErrataVoteDb, ErrataVoteType} from "@/lib/types/errata";
+import {Locale} from "@/i18n/config";
 import {requirePermission} from "@/lib/db/permissions";
 import {headers} from "next/headers";
 import {auth} from "@/lib/auth";
@@ -9,11 +10,13 @@ import db from "@/lib/mongodb";
 import {revalidatePath} from "next/cache";
 import {requireAdmin} from "@/lib/middleware/admin";
 import meilisearch, {indexes} from "@/lib/meilisearch";
+import {mergeTranslationTimestamps} from "@/lib/translations";
 
 export async function createErrata(data: {
   cardIds: string[];
   type: ErrataType;
   details: string;
+  originalLang: Locale;
   source?: string;
   errataDate: Date;
 }) {
@@ -28,14 +31,17 @@ export async function createErrata(data: {
     throw new Error("Utilisateur non authentifié");
   }
 
+  const now = new Date();
   const errata: ErrataDb = {
     cardIds: data.cardIds,
     type: data.type,
     details: data.details,
+    originalLang: data.originalLang,
+    contentUpdatedAt: now,
     source: data.source,
     errataDate: data.errataDate,
     createdBy: new ObjectId(session.user.id),
-    createdAt: new Date(),
+    createdAt: now,
   };
 
   await db.collection<ErrataDb>("erratas").insertOne(errata);
@@ -55,6 +61,7 @@ export async function updateErrata(
     errataDate: Date;
     deprecatedAt?: Date | null;
     cardIds?: string[];
+    translations?: ErrataTranslationInput[];
   },
   revalidateCardIds?: string[]
 ) {
@@ -64,11 +71,27 @@ export async function updateErrata(
     throw new Error("Un errata doit être lié à au moins une carte.");
   }
 
+  if (!ObjectId.isValid(errataId)) {
+    throw new Error("Identifiant d'errata invalide");
+  }
+  const errataObjId = new ObjectId(errataId);
+
+  const existing = await db.collection<ErrataDb>("erratas").findOne({ _id: errataObjId });
+  const now = new Date();
+  let contentUpdatedAt = now;
+  if (existing && existing.details === data.details) {
+    contentUpdatedAt = existing.contentUpdatedAt ?? existing.createdAt;
+  }
+
   const updateFields: Partial<ErrataDb> = {
     type: data.type,
     details: data.details,
     source: data.source,
     errataDate: data.errataDate,
+    contentUpdatedAt,
+    translations: data.translations
+      ? mergeTranslationTimestamps(existing?.translations, data.translations, (a, b) => a.details === b.details, now)
+      : undefined,
   };
 
   if (data.cardIds) {
@@ -78,19 +101,19 @@ export async function updateErrata(
   if (data.deprecatedAt !== undefined) {
     if (data.deprecatedAt === null) {
       await db.collection<ErrataDb>("erratas").updateOne(
-        { _id: new ObjectId(errataId) },
+        { _id: errataObjId },
         { $set: updateFields, $unset: { deprecatedAt: "" } }
       );
     } else {
       updateFields.deprecatedAt = data.deprecatedAt;
       await db.collection<ErrataDb>("erratas").updateOne(
-        { _id: new ObjectId(errataId) },
+        { _id: errataObjId },
         { $set: updateFields }
       );
     }
   } else {
     await db.collection<ErrataDb>("erratas").updateOne(
-      { _id: new ObjectId(errataId) },
+      { _id: errataObjId },
       { $set: updateFields }
     );
   }
