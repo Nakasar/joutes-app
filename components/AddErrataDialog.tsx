@@ -82,6 +82,7 @@ export default function AddErrataDialog() {
         cardIds: [selectedCard.id],
         type,
         details,
+        originalLang: "fr",
         source: source.trim() || undefined,
         errataDate: new Date(errataDate),
       });

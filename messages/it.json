@@ -393,7 +393,8 @@
             "additionalCardsSearchPlaceholder": "Cerca una carta...",
             "additionalCardsEmpty": "Nessuna carta trovata.",
             "additionalCardsSearching": "Ricerca in corso...",
-            "removeCard": "Rimuovi {cardName}"
+            "removeCard": "Rimuovi {cardName}",
+            "originalLang": "Lingua originale"
           },
           "actions": {
             "submit": "Aggiungi",
@@ -409,6 +410,9 @@
             "type": "Tipo",
             "date": "Data dell'errata",
             "details": "Dettagli (Markdown)",
+            "originalLangBadge": "(lingua originale: {lang})",
+            "translations": "Traduzioni",
+            "translationPlaceholder": "Lascia vuoto se non tradotto in questa lingua...",
             "source": "Fonte (URL opzionale)",
             "sourcePlaceholder": "https://...",
             "deprecatedAt": "Data di deprecazione (opzionale)",
@@ -430,7 +434,8 @@
           "pending": "...",
           "ban": "Banna la carta",
           "unban": "Rimuovi il ban"
-        }
+        },
+        "originalLangLabel": "originale"
       },
       "collection": {
         "label": "Collezione:",
@@ -574,7 +579,8 @@
           "edit": "Modifica",
           "markdownHint": "Supporta Markdown: **grassetto**, *corsivo*, [link](url), ![immagini](url), tabelle, liste…",
           "source": "Fonte (facoltativo)",
-          "sourcePlaceholder": "https://example.com/rules"
+          "sourcePlaceholder": "https://example.com/rules",
+          "originalLang": "Lingua originale"
         },
         "actions": {
           "cancel": "Annulla",
@@ -583,6 +589,35 @@
         },
         "errors": {
           "createError": "Impossibile creare la politica"
+        }
+      },
+      "originalLangLabel": "originale",
+      "permalink": "Link diretto a questa policy",
+      "detail": {
+        "backToList": "← Torna alle policy di {gameName}"
+      },
+      "editDialog": {
+        "title": "Modifica policy",
+        "description": "Modifica il titolo, il contenuto o i metadati di questa policy.",
+        "error": "Impossibile modificare la policy",
+        "fields": {
+          "title": "Titolo",
+          "originalLangBadge": "(lingua originale: {lang})",
+          "content": "Contenuto (Markdown)",
+          "edit": "Modifica",
+          "preview": "Anteprima",
+          "translations": "Traduzioni",
+          "translationTitlePlaceholder": "Titolo tradotto (lascia vuoto se non tradotto)...",
+          "translationContentPlaceholder": "Lascia vuoto se non tradotto in questa lingua...",
+          "source": "Fonte (URL opzionale)",
+          "sourcePlaceholder": "https://...",
+          "deprecatedAt": "Data di deprecazione (opzionale)",
+          "removeDeprecation": "Rimuovi la deprecazione"
+        },
+        "actions": {
+          "cancel": "Annulla",
+          "submit": "Salva",
+          "submitting": "Salvataggio in corso..."
         }
       }
     },

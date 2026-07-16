@@ -1,12 +1,21 @@
 import {ObjectId} from "bson";
 import {Game} from "@/lib/types/Game";
+import {Locale} from "@/i18n/config";
 
 export type PolicyVoteType = "positive" | "negative";
+
+export type PolicyTranslation = {
+  lang: Locale;
+  title: string;
+  content: string;
+};
 
 export type Policy = {
   id: string;
   title: string;
   content: string;
+  originalLang: Locale;
+  translations?: PolicyTranslation[];
 
   gameId: string;
   game?: Pick<Game, 'id' | 'slug' | 'name'>
@@ -28,6 +37,8 @@ export type PolicyDb = {
   gameId: ObjectId;
   title: string;
   content: string;
+  originalLang: Locale;
+  translations?: PolicyTranslation[];
   source?: string;
   createdBy: string;
   createdAt: Date;

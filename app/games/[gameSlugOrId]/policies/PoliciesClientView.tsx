@@ -5,15 +5,18 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Policy } from "@/lib/types/policies";
 import { searchPolicies } from "./actions";
-import { Search, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ArrowUpDown, ChevronLeft, ChevronRight, Link2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import AnnotatedMarkdown from "@/components/AnnotatedMarkdown";
+import LanguagePicker from "@/components/LanguagePicker";
 import { CardNameMatch } from "@/lib/db/cards";
 import PolicyVoteButtons from "@/components/PolicyVoteButtons";
 import EditPolicyDialog from "@/components/EditPolicyDialog";
 import DeletePolicyButton from "@/components/DeletePolicyButton";
 import { useLocale, useTranslations } from "next-intl";
 import { DateTime } from "luxon";
+import { Locale } from "@/i18n/config";
 
 export default function PoliciesClientView({
   initialPolicies,
@@ -43,7 +46,7 @@ export default function PoliciesClientView({
   const router = useRouter();
   const urlSearchParams = useSearchParams();
   const t = useTranslations("Games");
-  const locale = useLocale();
+  const locale = useLocale() as Locale;
 
   const [policies, setPolicies] = useState(initialPolicies);
   const [totalCount, setTotalCount] = useState(initialTotalCount);
@@ -54,6 +57,12 @@ export default function PoliciesClientView({
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [isPending, startTransition] = useTransition();
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [selectedLangs, setSelectedLangs] = useState<Record<string, Locale>>({});
+
+  const resolvePolicyLang = (policy: Policy): Locale => {
+    const availableLangs = [policy.originalLang, ...(policy.translations ?? []).map((tr) => tr.lang)];
+    return selectedLangs[policy.id] ?? (availableLangs.includes(locale) ? locale : policy.originalLang);
+  };
 
   const searchTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const totalPages = Math.ceil(totalCount / pageSize);
@@ -155,6 +164,12 @@ export default function PoliciesClientView({
           <div className="space-y-4">
             {policies.map((policy) => {
               const isExpanded = policies.length === 1 ? true : expandedIds.has(policy.id);
+              const availableLangs = [policy.originalLang, ...(policy.translations ?? []).map((tr) => tr.lang)];
+              const selectedLang = resolvePolicyLang(policy);
+              const translation = policy.translations?.find((tr) => tr.lang === selectedLang);
+              const resolvedTitle = selectedLang !== policy.originalLang ? translation?.title ?? policy.title : policy.title;
+              const resolvedContent = selectedLang !== policy.originalLang ? translation?.content ?? policy.content : policy.content;
+
               return (
                 <div
                   key={policy.id}
@@ -166,7 +181,7 @@ export default function PoliciesClientView({
                     className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-muted/40 transition-colors rounded-t-lg"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="font-semibold text-base truncate">{policy.title}</span>
+                      <span className="font-semibold text-base truncate">{resolvedTitle}</span>
                       {policy.deprecatedAt && (
                         <span className="shrink-0 text-xs font-semibold px-2 py-0.5 rounded bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
                           {t("policies.deprecated")}
@@ -180,16 +195,35 @@ export default function PoliciesClientView({
 
                   {isExpanded && (
                     <div className="px-6 pb-6 border-t pt-4">
-                      {userCanUpdatePolicies && (
-                        <div className="flex gap-1 justify-end mb-3">
-                          <EditPolicyDialog policy={policy} gameSlug={gameSlug} />
-                          <DeletePolicyButton policyId={policy.id} gameSlug={gameSlug} />
+                      <div className="flex items-center justify-between gap-3 mb-3">
+                        <div className="flex items-center gap-3">
+                          <LanguagePicker
+                            availableLangs={availableLangs}
+                            originalLang={policy.originalLang}
+                            value={selectedLang}
+                            onChange={(lang) => setSelectedLangs((prev) => ({ ...prev, [policy.id]: lang }))}
+                            originalLabel={t("policies.originalLangLabel")}
+                          />
+                          <Link
+                            href={`/policies/${policy.id}`}
+                            title={t("policies.permalink")}
+                            aria-label={t("policies.permalink")}
+                            className="text-muted-foreground hover:text-foreground"
+                          >
+                            <Link2 className="h-3.5 w-3.5" />
+                          </Link>
                         </div>
-                      )}
+                        {userCanUpdatePolicies && (
+                          <div className="flex gap-1">
+                            <EditPolicyDialog policy={policy} gameSlug={gameSlug} />
+                            <DeletePolicyButton policyId={policy.id} gameSlug={gameSlug} />
+                          </div>
+                        )}
+                      </div>
 
                       <div className="prose prose-sm dark:prose-invert max-w-none">
                         <AnnotatedMarkdown
-                          content={policy.content}
+                          content={resolvedContent}
                           cardIdByName={cardIdByName}
                           cardsById={cardsById}
                           gameSlug={gameSlug}

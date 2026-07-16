@@ -1,6 +1,7 @@
 "use server";
 
-import {ErrataDb, ErrataType, ErrataVoteDb, ErrataVoteType} from "@/lib/types/errata";
+import {ErrataDb, ErrataTranslation, ErrataType, ErrataVoteDb, ErrataVoteType} from "@/lib/types/errata";
+import {Locale} from "@/i18n/config";
 import {requirePermission} from "@/lib/db/permissions";
 import {headers} from "next/headers";
 import {auth} from "@/lib/auth";
@@ -14,6 +15,7 @@ export async function createErrata(data: {
   cardIds: string[];
   type: ErrataType;
   details: string;
+  originalLang: Locale;
   source?: string;
   errataDate: Date;
 }) {
@@ -32,6 +34,7 @@ export async function createErrata(data: {
     cardIds: data.cardIds,
     type: data.type,
     details: data.details,
+    originalLang: data.originalLang,
     source: data.source,
     errataDate: data.errataDate,
     createdBy: new ObjectId(session.user.id),
@@ -55,6 +58,7 @@ export async function updateErrata(
     errataDate: Date;
     deprecatedAt?: Date | null;
     cardIds?: string[];
+    translations?: ErrataTranslation[];
   },
   revalidateCardIds?: string[]
 ) {
@@ -69,6 +73,7 @@ export async function updateErrata(
     details: data.details,
     source: data.source,
     errataDate: data.errataDate,
+    translations: data.translations,
   };
 
   if (data.cardIds) {

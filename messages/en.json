@@ -393,7 +393,8 @@
             "additionalCardsSearchPlaceholder": "Search for a card...",
             "additionalCardsEmpty": "No card found.",
             "additionalCardsSearching": "Searching...",
-            "removeCard": "Remove {cardName}"
+            "removeCard": "Remove {cardName}",
+            "originalLang": "Original language"
           },
           "actions": {
             "submit": "Add",
@@ -409,6 +410,9 @@
             "type": "Type",
             "date": "Errata date",
             "details": "Details (Markdown)",
+            "originalLangBadge": "(original language: {lang})",
+            "translations": "Translations",
+            "translationPlaceholder": "Leave empty if not translated into this language...",
             "source": "Source (optional URL)",
             "sourcePlaceholder": "https://...",
             "deprecatedAt": "Deprecation date (optional)",
@@ -430,7 +434,8 @@
           "pending": "...",
           "ban": "Ban card",
           "unban": "Remove ban"
-        }
+        },
+        "originalLangLabel": "original"
       },
       "collection": {
         "label": "Collection:",
@@ -574,7 +579,8 @@
           "edit": "Edit",
           "markdownHint": "Supports Markdown: **bold**, *italic*, [links](url), ![images](url), tables, lists…",
           "source": "Source (optional)",
-          "sourcePlaceholder": "https://example.com/rules"
+          "sourcePlaceholder": "https://example.com/rules",
+          "originalLang": "Original language"
         },
         "actions": {
           "cancel": "Cancel",
@@ -583,6 +589,35 @@
         },
         "errors": {
           "createError": "Unable to create the policy"
+        }
+      },
+      "originalLangLabel": "original",
+      "permalink": "Direct link to this policy",
+      "detail": {
+        "backToList": "← Back to {gameName} policies"
+      },
+      "editDialog": {
+        "title": "Edit policy",
+        "description": "Edit the title, content or metadata of this policy.",
+        "error": "Failed to update the policy",
+        "fields": {
+          "title": "Title",
+          "originalLangBadge": "(original language: {lang})",
+          "content": "Content (Markdown)",
+          "edit": "Edit",
+          "preview": "Preview",
+          "translations": "Translations",
+          "translationTitlePlaceholder": "Translated title (leave empty if not translated)...",
+          "translationContentPlaceholder": "Leave empty if not translated into this language...",
+          "source": "Source (optional URL)",
+          "sourcePlaceholder": "https://...",
+          "deprecatedAt": "Deprecation date (optional)",
+          "removeDeprecation": "Remove deprecation"
+        },
+        "actions": {
+          "cancel": "Cancel",
+          "submit": "Save",
+          "submitting": "Saving..."
         }
       }
     },

@@ -393,7 +393,8 @@
             "additionalCardsSearchPlaceholder": "Rechercher une carte...",
             "additionalCardsEmpty": "Aucune carte trouvée.",
             "additionalCardsSearching": "Recherche...",
-            "removeCard": "Retirer {cardName}"
+            "removeCard": "Retirer {cardName}",
+            "originalLang": "Langue originale"
           },
           "actions": {
             "submit": "Ajouter",
@@ -409,6 +410,9 @@
             "type": "Type",
             "date": "Date de l'errata",
             "details": "Détails (Markdown)",
+            "originalLangBadge": "(langue originale : {lang})",
+            "translations": "Traductions",
+            "translationPlaceholder": "Laisser vide si non traduit dans cette langue...",
             "source": "Source (URL optionnelle)",
             "sourcePlaceholder": "https://...",
             "deprecatedAt": "Date de dépréciation (optionnelle)",
@@ -430,7 +434,8 @@
           "pending": "...",
           "ban": "Bannir la carte",
           "unban": "Retirer le ban"
-        }
+        },
+        "originalLangLabel": "original"
       },
       "collection": {
         "label": "Collection :",
@@ -574,7 +579,8 @@
           "edit": "Modifier",
           "markdownHint": "Prend en charge Markdown : **gras**, *italique*, [liens](url), ![images](url), tableaux, listes…",
           "source": "Source (facultatif)",
-          "sourcePlaceholder": "https://example.com/rules"
+          "sourcePlaceholder": "https://example.com/rules",
+          "originalLang": "Langue originale"
         },
         "actions": {
           "cancel": "Annuler",
@@ -583,6 +589,35 @@
         },
         "errors": {
           "createError": "Impossible de créer la politique"
+        }
+      },
+      "originalLangLabel": "original",
+      "permalink": "Lien direct vers cette politique",
+      "detail": {
+        "backToList": "← Retour aux politiques de {gameName}"
+      },
+      "editDialog": {
+        "title": "Modifier la politique",
+        "description": "Modifiez le titre, le contenu ou les métadonnées de cette politique.",
+        "error": "Erreur lors de la modification de la politique",
+        "fields": {
+          "title": "Titre",
+          "originalLangBadge": "(langue originale : {lang})",
+          "content": "Contenu (Markdown)",
+          "edit": "Éditer",
+          "preview": "Prévisualiser",
+          "translations": "Traductions",
+          "translationTitlePlaceholder": "Titre traduit (laisser vide si non traduit)...",
+          "translationContentPlaceholder": "Laisser vide si non traduit dans cette langue...",
+          "source": "Source (URL optionnelle)",
+          "sourcePlaceholder": "https://...",
+          "deprecatedAt": "Date de dépréciation (optionnelle)",
+          "removeDeprecation": "Supprimer la dépréciation"
+        },
+        "actions": {
+          "cancel": "Annuler",
+          "submit": "Modifier",
+          "submitting": "Modification..."
         }
       }
     },

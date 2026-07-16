@@ -25,6 +25,7 @@ import { BoosterCard } from "@/lib/types/booster";
 import { Pencil, X } from "lucide-react";
 import ErrataCardsPicker from "@/components/ErrataCardsPicker";
 import { useTranslations } from "next-intl";
+import { Locale, locales, localeLabels } from "@/i18n/config";
 
 export default function EditErrataDialog({
   errata,
@@ -47,6 +48,12 @@ export default function EditErrataDialog({
     errata.deprecatedAt ? new Date(errata.deprecatedAt).toISOString().split("T")[0] : ""
   );
   const [selectedCards, setSelectedCards] = useState<BoosterCard[]>(errata.cards ?? []);
+  const translationLangs = locales.filter((l) => l !== errata.originalLang);
+  const [translationTexts, setTranslationTexts] = useState<Record<Locale, string>>(() =>
+    Object.fromEntries(
+      translationLangs.map((l) => [l, errata.translations?.find((tr) => tr.lang === l)?.details ?? ""])
+    ) as Record<Locale, string>
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,6 +68,9 @@ export default function EditErrataDialog({
 
     try {
       const newCardIds = selectedCards.map((c) => c.id);
+      const translations = translationLangs
+        .map((lang) => ({ lang, details: translationTexts[lang].trim() }))
+        .filter((tr) => tr.details.length > 0);
 
       await updateErrata(
         errata.id,
@@ -71,6 +81,7 @@ export default function EditErrataDialog({
           errataDate: new Date(errataDate),
           deprecatedAt: deprecatedAt ? new Date(deprecatedAt) : null,
           cardIds: newCardIds,
+          translations,
         },
         Array.from(new Set([...errata.cardIds, ...newCardIds, ...(cardId ? [cardId] : [])]))
       );
@@ -151,6 +162,9 @@ export default function EditErrataDialog({
             <div className="grid gap-2">
               <label htmlFor="details" className="text-sm font-medium">
                 {t("cards.detail.editErrata.fields.details")}
+                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  {t("cards.detail.editErrata.fields.originalLangBadge", { lang: localeLabels[errata.originalLang] })}
+                </span>
               </label>
               <textarea
                 id="details"
@@ -159,6 +173,24 @@ export default function EditErrataDialog({
                 onChange={(e) => setDetails(e.target.value)}
                 required
               />
+            </div>
+
+            <div className="grid gap-2">
+              <span className="text-sm font-medium">{t("cards.detail.editErrata.fields.translations")}</span>
+              {translationLangs.map((lang) => (
+                <div key={lang} className="grid gap-1">
+                  <label htmlFor={`translation-${lang}`} className="text-xs text-muted-foreground">
+                    {localeLabels[lang]}
+                  </label>
+                  <textarea
+                    id={`translation-${lang}`}
+                    className="min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    value={translationTexts[lang]}
+                    onChange={(e) => setTranslationTexts((prev) => ({ ...prev, [lang]: e.target.value }))}
+                    placeholder={t("cards.detail.editErrata.fields.translationPlaceholder")}
+                  />
+                </div>
+              ))}
             </div>
 
             <div className="grid gap-2">
