@@ -1,5 +1,4 @@
 import {BoosterCard} from "@/lib/types/booster";
-import ReactMarkdown from "react-markdown";
 import CardSearchBar from "./CardSearchBar";
 import CollectionManager from "./CollectionManager";
 import AddToWishlistButton from "@/components/AddToWishlistButton";
@@ -23,6 +22,9 @@ import {getGameBySlugOrId} from "@/lib/db/games";
 import {ObjectId} from "mongodb";
 import {GameToolsNavBar} from "@/components/games/GameToolsNavBar";
 import {Errata} from "@/lib/types/errata";
+import {getCardsByNames} from "@/lib/db/cards";
+import {extractBracketedMentions, annotateErrataMarkdown} from "@/lib/errata-markdown";
+import ErrataDetailsMarkdown from "@/components/ErrataDetailsMarkdown";
 
 function hasNegativeVoteRatio(errata: Errata): boolean {
   return errata.votes.negative > errata.votes.positive;
@@ -125,6 +127,14 @@ export default async function RiftboundCardDetailPage({
   );
   const userIsAdmin = isAdmin(session?.user?.email);
   const userCanVoteErratas = await hasPermission("erratas:vote");
+
+  const mentionedCardNames = [
+    ...new Set(erratas.flatMap((errata) => extractBracketedMentions(errata.details))),
+  ];
+  const mentionedCards = await getCardsByNames(new ObjectId(game.id), mentionedCardNames);
+  const cardIdByName = new Map(mentionedCards.map((c) => [c.name.toLowerCase(), c.id]));
+  const cardsById = Object.fromEntries(mentionedCards.map((c) => [c.id, c]));
+  const ruleLang = locale === "fr" ? "fr" : "en";
 
   return (
     <div className="container mx-auto p-6">
@@ -260,7 +270,12 @@ export default async function RiftboundCardDetailPage({
                       </span>
                     )}
                     <div className="prose prose-sm dark:prose-invert max-w-none ">
-                      <ReactMarkdown>{errata.details}</ReactMarkdown>
+                      <ErrataDetailsMarkdown
+                        markdown={annotateErrataMarkdown(errata.details, cardIdByName)}
+                        cardsById={cardsById}
+                        gameSlug={game.slug ?? gameSlugOrId}
+                        ruleLang={ruleLang}
+                      />
                     </div>
                     {errata.cards && errata.cards.filter((c) => c.id !== cardId).length > 0 && (
                       <div className="mt-2 pt-2 border-t">

@@ -61,6 +61,33 @@ export function isKeywordEntry(entry: RuleEntry, document: RuleDocument): boolea
   return document === 'CR' && isTitle(entry) && parseInt(entry.id, 10) > KEYWORD_GLOSSARY_HEADER_ID;
 }
 
+export interface KeywordEntry {
+  id: string;
+  name: string;
+}
+
+// All keyword-glossary entries (e.g. "Deathknell", "Backline") across every
+// supported language, deduplicated by id+name. Used to auto-detect keyword
+// mentions in free text (like errata details) that isn't part of the rules
+// corpus itself, regardless of which language it was authored in.
+export function getAllKeywordEntries(): KeywordEntry[] {
+  const langs: RuleLang[] = ['en', 'fr'];
+  const seen = new Set<string>();
+  const result: KeywordEntry[] = [];
+
+  for (const lang of langs) {
+    for (const entry of getRawEntries('CR', lang)) {
+      if (!isKeywordEntry(entry, 'CR')) continue;
+      const key = `${entry.id}:${entry.content.toLowerCase()}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      result.push({ id: entry.id, name: entry.content });
+    }
+  }
+
+  return result;
+}
+
 function getDepth(id: string): number {
   return id.split('.').length;
 }
