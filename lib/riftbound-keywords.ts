@@ -8,6 +8,12 @@ import { getAllKeywordEntries } from "@/lib/rules/riftbound";
 // digits, whitespace and `:rb_xxx:` glyph tags.
 export const KEYWORD_VALUE_SUFFIX_SOURCE = String.raw`(?:[\s\d]|:[a-z0-9_]+:|\[[^\]]*\])*`;
 
+// Some keywords (e.g. Level) are followed by a separate "[>]" bracket marking
+// them as a "pointed" badge (a right-pointing arrow/chevron shape instead of
+// the usual skewed one), e.g. "[Level 3][>]". This is a shape marker, not
+// visible text, so it's captured separately and dropped from the label.
+export const KEYWORD_ARROW_SUFFIX_SOURCE = String.raw`(?:\s*\[>\])?`;
+
 let cache: { idByName: Map<string, string>; namesPattern: string | null } | null = null;
 
 function getCache() {

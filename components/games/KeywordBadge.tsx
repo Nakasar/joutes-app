@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 // Keyword glossary badges (e.g. "BACKLINE", "AMBUSH") — colored pill per keyword,
 // matching the card's official keyword color coding. Keyed by rule id (stable
@@ -61,17 +61,27 @@ export function KeywordBadge({
   size = 'inline',
   asLink = false,
   href,
+  shape,
 }: {
   id: string;
   children: ReactNode;
   size?: 'heading' | 'inline';
   asLink?: boolean;
   href?: string;
+  /** 'arrow' renders a right-pointing chevron badge (e.g. "Level 3") instead of the usual skewed one. */
+  shape?: 'arrow';
 }) {
   const hex = KEYWORD_COLORS[id];
-  const colorStyle = hex ? { backgroundColor: hex, color: contrastTextColor(hex) } : undefined;
   const colorClass = hex ? '' : fallbackPalette(id);
-  const sizeClass = size === 'heading' ? 'text-sm px-2.5 py-0.5' : 'text-[0.7rem] px-1.5 py-px';
+  const isArrow = shape === 'arrow';
+  const sizeClass = size === 'heading'
+    ? (isArrow ? 'pl-2.5 pr-5 py-0.5' : 'px-2.5 py-0.5')
+    : (isArrow ? 'pl-1.5 pr-4 py-px' : 'px-1.5 py-px');
+
+  const style: CSSProperties = hex ? { backgroundColor: hex, color: contrastTextColor(hex) } : {};
+  if (isArrow) {
+    style.clipPath = 'polygon(0 0, 80% 0, 100% 50%, 80% 100%, 0 100%)';
+  }
 
   const Tag = asLink ? 'a' : 'span';
 
@@ -82,10 +92,16 @@ export function KeywordBadge({
           ? { href }
           : { href: `#rule-${id}`, 'data-rule-link': `rule-${id}` }
         : {})}
-      className={`inline-block -skew-x-[12deg] border border-black/15 dark:border-white/15 no-underline ${colorClass}`}
-      style={colorStyle}
+      className={`inline-block no-underline ${
+        isArrow ? '' : '-skew-x-[12deg] border border-black/15 dark:border-white/15'
+      } ${colorClass}`}
+      style={style}
     >
-      <span className={`inline-block skew-x-[12deg] font-bold uppercase tracking-wide leading-[1.5] ${sizeClass}`}>
+      <span
+        className={`inline-block font-bold uppercase tracking-wide leading-[1.5] ${
+          isArrow ? '' : 'skew-x-[12deg]'
+        } ${sizeClass}`}
+      >
         {children}
       </span>
     </Tag>

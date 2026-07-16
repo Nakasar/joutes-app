@@ -1,8 +1,14 @@
-import { getKeywordIdByName, getKeywordNamesPatternSource, KEYWORD_VALUE_SUFFIX_SOURCE } from "@/lib/riftbound-keywords";
+import {
+  getKeywordIdByName,
+  getKeywordNamesPatternSource,
+  KEYWORD_ARROW_SUFFIX_SOURCE,
+  KEYWORD_VALUE_SUFFIX_SOURCE,
+} from "@/lib/riftbound-keywords";
 import { replaceIconTags } from "@/lib/riftbound-icons";
 
-// Either "KeywordName" with an optional associated value (named groups `kw`/`val`,
-// e.g. "[Predict 2]", "[Equip [1]:rb_rune_body:]"), or any other bracketed
+// Either "KeywordName" with an optional associated value and arrow-shape
+// marker (named groups `kw`/`val`/`arrow`, e.g. "[Predict 2]",
+// "[Equip [1]:rb_rune_body:]", "[Level 3][>]"), or any other bracketed
 // mention not already a markdown link (named group `mention`), treated as a
 // plain card-name reference, e.g. "[Leblanc, Deceiver]".
 let combinedBracketRegex: RegExp | undefined;
@@ -12,7 +18,7 @@ function getCombinedBracketRegex(): RegExp {
 
   const namesPattern = getKeywordNamesPatternSource();
   const keywordAlt = namesPattern
-    ? `\\[(?<kw>${namesPattern})(?<val>${KEYWORD_VALUE_SUFFIX_SOURCE})\\]|`
+    ? `\\[(?<kw>${namesPattern})(?<val>${KEYWORD_VALUE_SUFFIX_SOURCE})\\](?<arrow>${KEYWORD_ARROW_SUFFIX_SOURCE})|`
     : "";
 
   combinedBracketRegex = new RegExp(`${keywordAlt}\\[(?<mention>[^[\\]]+)\\](?!\\()`, "g");
@@ -50,6 +56,9 @@ export function extractBracketedMentions(text: string): string[] {
  *   associated value, e.g. `[Deathknell]`, `[Predict 2]`, or
  *   `[Equip [1]:rb_rune_body:]`, becomes `[Deathknell](keyword://808)` —
  *   with the value kept inside the badge;
+ * - a keyword mention followed by a separate `[>]` bracket, e.g.
+ *   `[Level 3][>]`, becomes a single badge rendered with a pointed
+ *   (right-arrow) shape instead of the usual skewed one;
  * - any other bracketed mention, e.g. `[Leblanc, Deceiver]` or
  *   `[Deathknell Bringer]` (a card name that merely starts with a keyword
  *   word, followed by another plain word rather than a value), is treated
@@ -87,8 +96,9 @@ export function annotateErrataMarkdown(text: string, cardIdByName: Map<string, s
     if (match.groups?.kw) {
       const name = match.groups.kw;
       const value = match.groups.val ?? "";
+      const isArrow = !!match.groups.arrow;
       const keywordId = idByName.get(name);
-      result += keywordId ? `[${name}${value}](keyword://${keywordId})` : match[0];
+      result += keywordId ? `[${name}${value}](keyword://${keywordId}${isArrow ? "/arrow" : ""})` : match[0];
     } else {
       const name = (match.groups?.mention ?? "").trim();
       const cardId = cardIdByName.get(name.toLowerCase());
