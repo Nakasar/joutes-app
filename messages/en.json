@@ -238,6 +238,7 @@
       "rules": "Rules",
       "policies": "Policies",
       "deckChecker": "Deck Verifier",
+      "loop": "Magnifier",
       "collection": "My Collection"
     },
     "explorer": {
@@ -688,6 +689,40 @@
         "deprecated": "Deprecated",
         "source": "Source →",
         "errataSectionTitle": "Erratas & Clarifications ({count})"
+      },
+      "errataTypes": {
+        "errata": "Errata",
+        "clarification": "Clarification",
+        "ruling": "Ruling"
+      }
+    },
+    "Loop": {
+      "metadata": {
+        "title": "Joutes - {gameName} Magnifier",
+        "description": "Analyze free-form text and automatically identify every {gameName} card and keyword it mentions.",
+        "notFoundTitle": "Game not found"
+      },
+      "back": "Back to the game portal",
+      "title": "Magnifier — {gameName}",
+      "description": "Paste free-form text (a rule, a judge question, a discussion...) to automatically identify every {gameName} card and keyword it mentions.",
+      "notFoundTitle": "Magnifier unavailable",
+      "notFoundDescription": "This feature requires a card database for this game.",
+      "form": {
+        "label": "Text to analyze",
+        "placeholder": "Paste free-form text to analyze here (a rule, a judge question, a discussion...)",
+        "analyze": "Analyze",
+        "loading": "Analyzing…"
+      },
+      "errors": {
+        "generic": "An error occurred while analyzing the text."
+      },
+      "results": {
+        "annotatedTitle": "Annotated text",
+        "cardsTitle": "{count, plural, one {# card mentioned} other {# cards mentioned}}",
+        "noCards": "No card recognized in this text.",
+        "noErrata": "No errata or clarification for this card.",
+        "deprecated": "Deprecated",
+        "source": "Source"
       },
       "errataTypes": {
         "errata": "Errata",

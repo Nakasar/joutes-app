@@ -238,6 +238,7 @@
       "rules": "Regeln",
       "policies": "Richtlinien",
       "deckChecker": "Deck-Checker",
+      "loop": "Lupe",
       "collection": "Sammlung"
     },
     "explorer": {
@@ -688,6 +689,40 @@
         "deprecated": "Veraltet",
         "source": "Quelle →",
         "errataSectionTitle": "Errata & Klarifizierungen ({count})"
+      },
+      "errataTypes": {
+        "errata": "Errata",
+        "clarification": "Klarifizierung",
+        "ruling": "Entscheidung"
+      }
+    },
+    "Loop": {
+      "metadata": {
+        "title": "Joutes - {gameName}-Lupe",
+        "description": "Analysiere freien Text und identifiziere automatisch alle erwähnten {gameName}-Karten und Schlüsselwörter.",
+        "notFoundTitle": "Spiel nicht gefunden"
+      },
+      "back": "Zurück zum Spielportal",
+      "title": "Lupe — {gameName}",
+      "description": "Füge freien Text ein (eine Regel, eine Judge-Frage, eine Diskussion...), um automatisch alle erwähnten {gameName}-Karten und Schlüsselwörter zu identifizieren.",
+      "notFoundTitle": "Lupe nicht verfügbar",
+      "notFoundDescription": "Diese Funktion benötigt eine Kartendatenbank für dieses Spiel.",
+      "form": {
+        "label": "Zu analysierender Text",
+        "placeholder": "Füge hier freien Text zur Analyse ein (eine Regel, eine Judge-Frage, eine Diskussion...)",
+        "analyze": "Analysieren",
+        "loading": "Analyse läuft…"
+      },
+      "errors": {
+        "generic": "Bei der Analyse ist ein Fehler aufgetreten."
+      },
+      "results": {
+        "annotatedTitle": "Annotierter Text",
+        "cardsTitle": "{count, plural, one {# erwähnte Karte} other {# erwähnte Karten}}",
+        "noCards": "Keine Karte in diesem Text erkannt.",
+        "noErrata": "Kein Errata oder Klarifizierung für diese Karte.",
+        "deprecated": "Veraltet",
+        "source": "Quelle"
       },
       "errataTypes": {
         "errata": "Errata",

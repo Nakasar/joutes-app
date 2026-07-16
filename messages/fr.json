@@ -238,6 +238,7 @@
       "rules": "Règles",
       "policies": "Politiques",
       "deckChecker": "Vérificateur de Deck",
+      "loop": "Loupe",
       "collection": "Ma collection"
     },
     "explorer": {
@@ -689,6 +690,40 @@
         "deprecated": "Déprécié",
         "source": "Source →",
         "errataSectionTitle": "Erratas et clarifications ({count})"
+      },
+      "errataTypes": {
+        "errata": "Errata",
+        "clarification": "Clarification",
+        "ruling": "Ruling"
+      }
+    },
+    "Loop": {
+      "metadata": {
+        "title": "Joutes - Loupe {gameName}",
+        "description": "Analysez un texte libre et identifiez automatiquement les cartes et mots-clés {gameName} qui y sont mentionnés.",
+        "notFoundTitle": "Jeu introuvable"
+      },
+      "back": "Retour au portail du jeu",
+      "title": "Loupe — {gameName}",
+      "description": "Collez un texte libre (règle, question de judge, discussion...) pour identifier automatiquement toutes les cartes et tous les mots-clés {gameName} qui y sont mentionnés.",
+      "notFoundTitle": "Loupe indisponible",
+      "notFoundDescription": "Cette fonctionnalité nécessite une base de cartes pour ce jeu.",
+      "form": {
+        "label": "Texte à analyser",
+        "placeholder": "Collez ici un texte libre à analyser (règle, question de judge, discussion...)",
+        "analyze": "Analyser",
+        "loading": "Analyse en cours…"
+      },
+      "errors": {
+        "generic": "Une erreur est survenue lors de l'analyse."
+      },
+      "results": {
+        "annotatedTitle": "Texte annoté",
+        "cardsTitle": "{count, plural, one {# carte mentionnée} other {# cartes mentionnées}}",
+        "noCards": "Aucune carte reconnue dans ce texte.",
+        "noErrata": "Aucun errata ou clarification pour cette carte.",
+        "deprecated": "Déprécié",
+        "source": "Source"
       },
       "errataTypes": {
         "errata": "Errata",
