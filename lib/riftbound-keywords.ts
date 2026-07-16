@@ -10,9 +10,11 @@ export const KEYWORD_VALUE_SUFFIX_SOURCE = String.raw`(?:[\s\d]|:[a-z0-9_]+:|\[[
 
 // Some keywords (e.g. Level) are followed by a separate "[>]" bracket marking
 // them as a "pointed" badge (a right-pointing arrow/chevron shape instead of
-// the usual skewed one), e.g. "[Level 3][>]". This is a shape marker, not
-// visible text, so it's captured separately and dropped from the label.
-export const KEYWORD_ARROW_SUFFIX_SOURCE = String.raw`(?:\s*\[>\])?`;
+// the usual skewed one), e.g. "[Level 3][>]". Source data sometimes carries
+// this as the HTML entity "[&gt;]" instead of the literal "[>]", so both are
+// accepted. This is a shape marker, not visible text, so it's captured
+// separately and dropped from the label.
+export const KEYWORD_ARROW_SUFFIX_SOURCE = String.raw`(?:\s*\[(?:>|&gt;)\])?`;
 
 let cache: { idByName: Map<string, string>; namesPattern: string | null } | null = null;
 
