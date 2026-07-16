@@ -374,8 +374,26 @@
           "ruling": "Ruling"
         },
         "deprecated": "Déprécié",
+        "negativeReviews": "Avis majoritairement négatifs",
         "source": "Source",
         "deprecatedOn": "Déprécié le {date}",
+        "properties": {
+          "title": "Caractéristiques",
+          "labels": {
+            "type": "Type",
+            "rarity": "Rareté",
+            "cost": "Coût",
+            "hp": "PV",
+            "power": "Puissance",
+            "might": "Force",
+            "mightBonus": "Bonus de Force",
+            "traits": "Traits",
+            "arenas": "Arènes",
+            "domains": "Domaines",
+            "tags": "Tags",
+            "token": "Jeton"
+          }
+        },
         "addErrata": {
           "trigger": "Ajouter un errata",
           "title": "Ajouter un errata",

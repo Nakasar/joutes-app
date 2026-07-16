@@ -26,7 +26,27 @@ export async function getErratasByCardId(cardId: string, userId?: string): Promi
           as: 'votesList',
         },
       },
-      { $sort: { createdAt: -1 } },
+      {
+        $addFields: {
+          positiveCount: {
+            $size: { $filter: { input: '$votesList', as: 'v', cond: { $eq: ['$$v.vote', 'positive'] } } },
+          },
+          negativeCount: {
+            $size: { $filter: { input: '$votesList', as: 'v', cond: { $eq: ['$$v.vote', 'negative'] } } },
+          },
+        },
+      },
+      {
+        $addFields: {
+          isDownranked: {
+            $or: [
+              { $ifNull: ['$deprecatedAt', false] },
+              { $gt: ['$negativeCount', '$positiveCount'] },
+            ],
+          },
+        },
+      },
+      { $sort: { isDownranked: 1, createdAt: -1 } },
     ])
     .toArray();
 

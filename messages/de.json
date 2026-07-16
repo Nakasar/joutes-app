@@ -374,8 +374,26 @@
           "ruling": "Ruling"
         },
         "deprecated": "Veraltet",
+        "negativeReviews": "Überwiegend negative Bewertungen",
         "source": "Quelle",
         "deprecatedOn": "Veraltet am {date}",
+        "properties": {
+          "title": "Eigenschaften",
+          "labels": {
+            "type": "Typ",
+            "rarity": "Seltenheit",
+            "cost": "Kosten",
+            "hp": "Lebenspunkte",
+            "power": "Stärke",
+            "might": "Macht",
+            "mightBonus": "Machtbonus",
+            "traits": "Merkmale",
+            "arenas": "Arenen",
+            "domains": "Domänen",
+            "tags": "Tags",
+            "token": "Token"
+          }
+        },
         "addErrata": {
           "trigger": "Erratum hinzufügen",
           "title": "Erratum hinzufügen",

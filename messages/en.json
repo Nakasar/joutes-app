@@ -374,8 +374,26 @@
           "ruling": "Ruling"
         },
         "deprecated": "Deprecated",
+        "negativeReviews": "Mostly negative reviews",
         "source": "Source",
         "deprecatedOn": "Deprecated on {date}",
+        "properties": {
+          "title": "Properties",
+          "labels": {
+            "type": "Type",
+            "rarity": "Rarity",
+            "cost": "Cost",
+            "hp": "HP",
+            "power": "Power",
+            "might": "Might",
+            "mightBonus": "Might Bonus",
+            "traits": "Traits",
+            "arenas": "Arenas",
+            "domains": "Domains",
+            "tags": "Tags",
+            "token": "Token"
+          }
+        },
         "addErrata": {
           "trigger": "Add errata",
           "title": "Add an errata",
