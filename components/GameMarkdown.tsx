@@ -38,9 +38,14 @@ export default function GameMarkdown({
         },
         a: ({ href, children }) => {
           if (href?.startsWith("keyword://")) {
-            const id = href.slice("keyword://".length);
+            const [id, shape] = href.slice("keyword://".length).split("/");
             return (
-              <KeywordBadge id={id} asLink href={`/games/${gameSlug}/rules/CR?lang=${ruleLang}#rule-${id}`}>
+              <KeywordBadge
+                id={id}
+                shape={shape === "arrow" ? "arrow" : undefined}
+                asLink
+                href={`/games/${gameSlug}/rules/CR?lang=${ruleLang}#rule-${id}`}
+              >
                 {children}
               </KeywordBadge>
             );
