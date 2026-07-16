@@ -367,6 +367,8 @@
         "backToList": "Zurück zur Kartenliste",
         "banned": "Gebannt",
         "cardTextTitle": "Kartentext",
+        "copyCardText": "Text kopieren",
+        "copyCardTextCopied": "Kopiert!",
         "errataSectionTitle": "Errata & Klarstellungen",
         "noErrata": "Kein Erratum oder Klarstellung für diese Karte.",
         "errataTypes": {

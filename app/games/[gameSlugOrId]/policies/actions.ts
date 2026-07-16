@@ -97,7 +97,12 @@ export async function updatePolicy(
 ) {
   await requirePermission("policies:update");
 
-  const existing = await db.collection<PolicyDb>("policies").findOne({ _id: new ObjectId(policyId) });
+  if (!ObjectId.isValid(policyId)) {
+    throw new Error("Identifiant de policy invalide");
+  }
+  const policyObjId = new ObjectId(policyId);
+
+  const existing = await db.collection<PolicyDb>("policies").findOne({ _id: policyObjId });
   const now = new Date();
   let contentUpdatedAt = now;
   if (existing && existing.title === data.title && existing.content === data.content) {
@@ -122,19 +127,19 @@ export async function updatePolicy(
   if (data.deprecatedAt !== undefined) {
     if (data.deprecatedAt === null) {
       await db.collection<PolicyDb>("policies").updateOne(
-        { _id: new ObjectId(policyId) },
+        { _id: policyObjId },
         { $set: updateFields, $unset: { deprecatedAt: "" } }
       );
     } else {
       updateFields.deprecatedAt = data.deprecatedAt;
       await db.collection<PolicyDb>("policies").updateOne(
-        { _id: new ObjectId(policyId) },
+        { _id: policyObjId },
         { $set: updateFields }
       );
     }
   } else {
     await db.collection<PolicyDb>("policies").updateOne(
-      { _id: new ObjectId(policyId) },
+      { _id: policyObjId },
       { $set: updateFields }
     );
   }

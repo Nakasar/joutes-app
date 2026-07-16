@@ -367,6 +367,8 @@
         "backToList": "Back to the card list",
         "banned": "Banned",
         "cardTextTitle": "Card text",
+        "copyCardText": "Copy text",
+        "copyCardTextCopied": "Copied!",
         "errataSectionTitle": "Errata & Clarifications",
         "noErrata": "No errata or clarification for this card.",
         "errataTypes": {

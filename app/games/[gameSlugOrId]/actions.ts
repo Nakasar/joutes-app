@@ -71,7 +71,12 @@ export async function updateErrata(
     throw new Error("Un errata doit être lié à au moins une carte.");
   }
 
-  const existing = await db.collection<ErrataDb>("erratas").findOne({ _id: new ObjectId(errataId) });
+  if (!ObjectId.isValid(errataId)) {
+    throw new Error("Identifiant d'errata invalide");
+  }
+  const errataObjId = new ObjectId(errataId);
+
+  const existing = await db.collection<ErrataDb>("erratas").findOne({ _id: errataObjId });
   const now = new Date();
   let contentUpdatedAt = now;
   if (existing && existing.details === data.details) {
@@ -96,19 +101,19 @@ export async function updateErrata(
   if (data.deprecatedAt !== undefined) {
     if (data.deprecatedAt === null) {
       await db.collection<ErrataDb>("erratas").updateOne(
-        { _id: new ObjectId(errataId) },
+        { _id: errataObjId },
         { $set: updateFields, $unset: { deprecatedAt: "" } }
       );
     } else {
       updateFields.deprecatedAt = data.deprecatedAt;
       await db.collection<ErrataDb>("erratas").updateOne(
-        { _id: new ObjectId(errataId) },
+        { _id: errataObjId },
         { $set: updateFields }
       );
     }
   } else {
     await db.collection<ErrataDb>("erratas").updateOne(
-      { _id: new ObjectId(errataId) },
+      { _id: errataObjId },
       { $set: updateFields }
     );
   }
