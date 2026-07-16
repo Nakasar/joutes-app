@@ -7,8 +7,8 @@ export type ErrataVoteType = "positive" | "negative";
 
 export type Errata = {
   id: string;
-  cardId: string;
-  card?: BoosterCard;
+  cardIds: string[];
+  cards?: BoosterCard[];
   type: ErrataType;
   details: string;
   source?: string;
@@ -24,7 +24,7 @@ export type Errata = {
 };
 
 export type ErrataDb = {
-  cardId: string;
+  cardIds: string[];
   type: ErrataType;
   details: string;
   source?: string;

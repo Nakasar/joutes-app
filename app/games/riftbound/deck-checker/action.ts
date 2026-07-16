@@ -53,7 +53,7 @@ export async function validateDeckList(decklist: DeckList): Promise<DeckList> {
             $lookup: {
               from: 'erratas',
               localField: 'id',
-              foreignField: 'cardId',
+              foreignField: 'cardIds',
               as: 'erratas',
               pipeline: [
                 {

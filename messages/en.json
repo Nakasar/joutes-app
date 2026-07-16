@@ -366,6 +366,7 @@
         "notFoundMessage": "The card with ID {cardId} does not exist.",
         "backToList": "Back to the card list",
         "banned": "Banned",
+        "cardTextTitle": "Card text",
         "errataSectionTitle": "Errata & Clarifications",
         "noErrata": "No errata or clarification for this card.",
         "errataTypes": {
@@ -376,6 +377,7 @@
         "deprecated": "Deprecated",
         "source": "Source",
         "deprecatedOn": "Deprecated on {date}",
+        "alsoAppliesTo": "Also applies to:",
         "addErrata": {
           "trigger": "Add errata",
           "title": "Add an errata",
@@ -386,13 +388,43 @@
             "details": "Details",
             "detailsPlaceholder": "Describe the errata, clarification or ruling... (Markdown supported)",
             "source": "Source (optional)",
-            "sourcePlaceholder": "https://example.com/errata"
+            "sourcePlaceholder": "https://example.com/errata",
+            "additionalCards": "Additional cards (optional)",
+            "additionalCardsSearchPlaceholder": "Search for a card...",
+            "additionalCardsEmpty": "No card found.",
+            "additionalCardsSearching": "Searching...",
+            "removeCard": "Remove {cardName}"
           },
           "actions": {
             "submit": "Add",
             "submitting": "Adding..."
           },
           "error": "Unable to create the errata"
+        },
+        "editErrata": {
+          "title": "Edit errata",
+          "description": "Edit the errata, clarification or ruling information.",
+          "fields": {
+            "linkedCards": "Linked cards",
+            "type": "Type",
+            "date": "Errata date",
+            "details": "Details (Markdown)",
+            "source": "Source (optional URL)",
+            "sourcePlaceholder": "https://...",
+            "deprecatedAt": "Deprecation date (optional)",
+            "removeDeprecation": "Remove deprecation",
+            "additionalCardsSearchPlaceholder": "Search for a card...",
+            "additionalCardsEmpty": "No card found.",
+            "additionalCardsSearching": "Searching...",
+            "removeCard": "Remove {cardName}"
+          },
+          "actions": {
+            "cancel": "Cancel",
+            "submit": "Save",
+            "submitting": "Saving..."
+          },
+          "error": "Failed to update the errata",
+          "minCardsError": "An errata must be linked to at least one card."
         },
         "banButton": {
           "pending": "...",

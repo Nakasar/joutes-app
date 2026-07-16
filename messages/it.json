@@ -366,6 +366,7 @@
         "notFoundMessage": "La carta con l'ID {cardId} non esiste.",
         "backToList": "Torna alla lista delle carte",
         "banned": "Bannata",
+        "cardTextTitle": "Testo della carta",
         "errataSectionTitle": "Errata e Chiarimenti",
         "noErrata": "Nessun errata o chiarimento per questa carta.",
         "errataTypes": {
@@ -376,6 +377,7 @@
         "deprecated": "Deprecato",
         "source": "Fonte",
         "deprecatedOn": "Deprecato il {date}",
+        "alsoAppliesTo": "Si applica anche a:",
         "addErrata": {
           "trigger": "Aggiungi un errata",
           "title": "Aggiungi un errata",
@@ -386,13 +388,43 @@
             "details": "Dettagli",
             "detailsPlaceholder": "Descrivi l'errata, il chiarimento o il ruling... (Markdown supportato)",
             "source": "Fonte (opzionale)",
-            "sourcePlaceholder": "https://example.com/errata"
+            "sourcePlaceholder": "https://example.com/errata",
+            "additionalCards": "Carte aggiuntive (opzionale)",
+            "additionalCardsSearchPlaceholder": "Cerca una carta...",
+            "additionalCardsEmpty": "Nessuna carta trovata.",
+            "additionalCardsSearching": "Ricerca in corso...",
+            "removeCard": "Rimuovi {cardName}"
           },
           "actions": {
             "submit": "Aggiungi",
             "submitting": "Aggiunta in corso..."
           },
           "error": "Impossibile creare l'errata"
+        },
+        "editErrata": {
+          "title": "Modifica errata",
+          "description": "Modifica le informazioni dell'errata, del chiarimento o del ruling.",
+          "fields": {
+            "linkedCards": "Carte collegate",
+            "type": "Tipo",
+            "date": "Data dell'errata",
+            "details": "Dettagli (Markdown)",
+            "source": "Fonte (URL opzionale)",
+            "sourcePlaceholder": "https://...",
+            "deprecatedAt": "Data di deprecazione (opzionale)",
+            "removeDeprecation": "Rimuovi la deprecazione",
+            "additionalCardsSearchPlaceholder": "Cerca una carta...",
+            "additionalCardsEmpty": "Nessuna carta trovata.",
+            "additionalCardsSearching": "Ricerca in corso...",
+            "removeCard": "Rimuovi {cardName}"
+          },
+          "actions": {
+            "cancel": "Annulla",
+            "submit": "Salva",
+            "submitting": "Salvataggio in corso..."
+          },
+          "error": "Impossibile modificare l'errata",
+          "minCardsError": "Un errata deve essere collegato ad almeno una carta."
         },
         "banButton": {
           "pending": "...",

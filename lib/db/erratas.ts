@@ -10,9 +10,17 @@ export async function getErratasByCardId(cardId: string, userId?: string): Promi
     ? await db.collection('cards').find({ name: card.name }, { projection: { id: 1 } }).toArray()
     : null;
 
+  // Matches both the current `cardIds` array field and the legacy scalar `cardId`
+  // field, so erratas still keep working during the deployment window before
+  // `scripts/migrate-errata-cardid-to-cardids.ts` has run against the database.
   const matchFilter = matchingCardIds
-    ? { cardId: { $in: matchingCardIds.map((i) => i.id) } }
-    : { cardId };
+    ? {
+        $or: [
+          { cardIds: { $in: matchingCardIds.map((i) => i.id) } },
+          { cardId: { $in: matchingCardIds.map((i) => i.id) } },
+        ],
+      }
+    : { $or: [{ cardIds: cardId }, { cardId }] };
 
   const erratasDb = await db
     .collection<ErrataDb>("erratas")
@@ -26,13 +34,25 @@ export async function getErratasByCardId(cardId: string, userId?: string): Promi
           as: 'votesList',
         },
       },
+      {
+        $lookup: {
+          from: 'cards',
+          localField: 'cardIds',
+          foreignField: 'id',
+          as: 'cards',
+          pipeline: [
+            { $project: { _id: 0, id: 1, name: 1, setCode: 1, collectorNumber: 1, image: 1 } },
+          ],
+        },
+      },
       { $sort: { createdAt: -1 } },
     ])
     .toArray();
 
   return erratasDb.map((errata) => ({
     id: errata._id.toString(),
-    cardId: errata.cardId,
+    cardIds: errata.cardIds,
+    cards: errata.cards,
     type: errata.type,
     details: errata.details,
     source: errata.source,
@@ -68,7 +88,9 @@ async function buildErrataMatchFilter({
       .collection("cards")
       .find({ name: { $regex: search.trim(), $options: "i" } }, { projection: { id: 1 } })
       .toArray();
-    filter.cardId = { $in: matchingCards.map((c) => c.id) };
+    const ids = matchingCards.map((c) => c.id);
+    // Same legacy `cardId` fallback as getErratasByCardId, see comment there.
+    filter.$or = [{ cardIds: { $in: ids } }, { cardId: { $in: ids } }];
   }
 
   return filter;
@@ -107,22 +129,18 @@ export async function getAllErratas({
       {
         $lookup: {
           from: 'cards',
-          localField: 'cardId',
+          localField: 'cardIds',
           foreignField: 'id',
-          as: 'card',
+          as: 'cards',
           pipeline: [
-            { $limit: 1 },
             { $project: { _id: 0, gameId: 0 } },
           ],
         },
       },
-      {
-        $unwind: {
-          path: '$card',
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      { $sort: { "card.name": sortDir as 1 | -1, errataDate: -1 } },
+      // `$min` (rather than `$arrayElemAt: [..., 0]`) keeps the sort deterministic:
+      // `$lookup` does not guarantee element order for a `cardIds` array match.
+      { $addFields: { primaryCardName: { $min: '$cards.name' } } },
+      { $sort: { primaryCardName: sortDir as 1 | -1, errataDate: -1 } },
       { $skip: offset },
       { $limit: limit },
       {
@@ -138,8 +156,8 @@ export async function getAllErratas({
 
   return erratasDb.map((errata) => ({
     id: errata._id.toString(),
-    cardId: errata.cardId,
-    card: errata.card,
+    cardIds: errata.cardIds,
+    cards: errata.cards,
     type: errata.type,
     details: errata.details,
     source: errata.source,

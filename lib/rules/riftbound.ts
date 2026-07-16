@@ -57,8 +57,42 @@ export function isTitle(entry: RuleEntry): boolean {
 // Ids are stable across languages, so this works regardless of `lang`.
 const KEYWORD_GLOSSARY_HEADER_ID = 804;
 
+// A handful of card-level keyword abilities (referenced via bracket notation
+// on card text, e.g. "[Predict 2]") are defined in their own CR section rather
+// than in the numbered Keyword Glossary above — but should still be treated
+// as keywords for styling/auto-linking purposes.
+const EXTRA_KEYWORD_IDS = new Set(['436']); // Predict / Prédiction
+
 export function isKeywordEntry(entry: RuleEntry, document: RuleDocument): boolean {
-  return document === 'CR' && isTitle(entry) && parseInt(entry.id, 10) > KEYWORD_GLOSSARY_HEADER_ID;
+  if (document !== 'CR' || !isTitle(entry)) return false;
+  return parseInt(entry.id, 10) > KEYWORD_GLOSSARY_HEADER_ID || EXTRA_KEYWORD_IDS.has(entry.id);
+}
+
+export interface KeywordEntry {
+  id: string;
+  name: string;
+}
+
+// All keyword-glossary entries (e.g. "Deathknell", "Backline") across every
+// supported language, deduplicated by id+name. Used to auto-detect keyword
+// mentions in free text (like errata details) that isn't part of the rules
+// corpus itself, regardless of which language it was authored in.
+export function getAllKeywordEntries(): KeywordEntry[] {
+  const langs: RuleLang[] = ['en', 'fr'];
+  const seen = new Set<string>();
+  const result: KeywordEntry[] = [];
+
+  for (const lang of langs) {
+    for (const entry of getRawEntries('CR', lang)) {
+      if (!isKeywordEntry(entry, 'CR')) continue;
+      const key = `${entry.id}:${entry.content.toLowerCase()}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      result.push({ id: entry.id, name: entry.content });
+    }
+  }
+
+  return result;
 }
 
 function getDepth(id: string): number {

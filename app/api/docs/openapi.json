@@ -1710,18 +1710,17 @@
           "id": {
             "type": "string"
           },
-          "cardId": {
-            "type": "string"
+          "cardIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
-          "card": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Card"
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "cards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Card"
+            }
           },
           "type": {
             "type": "string",
@@ -1783,7 +1782,7 @@
         },
         "required": [
           "id",
-          "cardId",
+          "cardIds",
           "type",
           "details",
           "errataDate",

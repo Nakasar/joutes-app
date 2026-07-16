@@ -11,7 +11,7 @@ import {requireAdmin} from "@/lib/middleware/admin";
 import meilisearch, {indexes} from "@/lib/meilisearch";
 
 export async function createErrata(data: {
-  cardId: string;
+  cardIds: string[];
   type: ErrataType;
   details: string;
   source?: string;
@@ -19,13 +19,17 @@ export async function createErrata(data: {
 }) {
   await requirePermission("erratas:update");
 
+  if (data.cardIds.length === 0) {
+    throw new Error("Un errata doit être lié à au moins une carte.");
+  }
+
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
     throw new Error("Utilisateur non authentifié");
   }
 
   const errata: ErrataDb = {
-    cardId: data.cardId,
+    cardIds: data.cardIds,
     type: data.type,
     details: data.details,
     source: data.source,
@@ -36,7 +40,9 @@ export async function createErrata(data: {
 
   await db.collection<ErrataDb>("erratas").insertOne(errata);
 
-  revalidatePath(`/riftbound/cards/${data.cardId}`);
+  for (const cardId of data.cardIds) {
+    revalidatePath(`/games/riftbound/cards/${cardId}`);
+  }
   revalidatePath("/riftbound/erratas");
 }
 
@@ -48,10 +54,15 @@ export async function updateErrata(
     source?: string;
     errataDate: Date;
     deprecatedAt?: Date | null;
+    cardIds?: string[];
   },
-  cardId?: string
+  revalidateCardIds?: string[]
 ) {
   await requirePermission("erratas:update");
+
+  if (data.cardIds && data.cardIds.length === 0) {
+    throw new Error("Un errata doit être lié à au moins une carte.");
+  }
 
   const updateFields: Partial<ErrataDb> = {
     type: data.type,
@@ -59,6 +70,10 @@ export async function updateErrata(
     source: data.source,
     errataDate: data.errataDate,
   };
+
+  if (data.cardIds) {
+    updateFields.cardIds = data.cardIds;
+  }
 
   if (data.deprecatedAt !== undefined) {
     if (data.deprecatedAt === null) {
@@ -81,19 +96,19 @@ export async function updateErrata(
   }
 
   revalidatePath("/riftbound/erratas");
-  if (cardId) {
-    revalidatePath(`/riftbound/cards/${cardId}`);
+  for (const cardId of new Set([...(revalidateCardIds ?? []), ...(data.cardIds ?? [])])) {
+    revalidatePath(`/games/riftbound/cards/${cardId}`);
   }
 }
 
-export async function deleteErrata(errataId: string, cardId?: string) {
+export async function deleteErrata(errataId: string, cardIds?: string[]) {
   await requirePermission("erratas:update");
 
   await db.collection<ErrataDb>("erratas").deleteOne({ _id: new ObjectId(errataId) });
 
   revalidatePath("/riftbound/erratas");
-  if (cardId) {
-    revalidatePath(`/riftbound/cards/${cardId}`);
+  for (const cardId of cardIds ?? []) {
+    revalidatePath(`/games/riftbound/cards/${cardId}`);
   }
 }
 

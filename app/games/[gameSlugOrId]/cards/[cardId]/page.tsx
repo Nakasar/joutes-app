@@ -1,5 +1,4 @@
 import {BoosterCard} from "@/lib/types/booster";
-import ReactMarkdown from "react-markdown";
 import CardSearchBar from "./CardSearchBar";
 import CollectionManager from "./CollectionManager";
 import AddToWishlistButton from "@/components/AddToWishlistButton";
@@ -23,6 +22,10 @@ import {getGameBySlugOrId} from "@/lib/db/games";
 import {ObjectId} from "mongodb";
 import {GameToolsNavBar} from "@/components/games/GameToolsNavBar";
 import {Errata} from "@/lib/types/errata";
+import {getCardsByNames} from "@/lib/db/cards";
+import {extractBracketedMentions, annotateErrataMarkdown} from "@/lib/errata-markdown";
+import {annotateCardText} from "@/lib/card-text-markdown";
+import GameMarkdown from "@/components/GameMarkdown";
 
 function hasNegativeVoteRatio(errata: Errata): boolean {
   return errata.votes.negative > errata.votes.positive;
@@ -72,6 +75,7 @@ export default async function RiftboundCardDetailPage({
 }) {
   const {cardId, gameSlugOrId} = await params;
   const locale = await getLocale();
+  const ruleLang = locale === "fr" ? "fr" : "en";
   const t = await getTranslations("Games");
 
   const session = await auth.api.getSession({headers: await headers()});
@@ -126,6 +130,13 @@ export default async function RiftboundCardDetailPage({
   const userIsAdmin = isAdmin(session?.user?.email);
   const userCanVoteErratas = await hasPermission("erratas:vote");
 
+  const mentionedCardNames = [
+    ...new Set(erratas.flatMap((errata) => extractBracketedMentions(errata.details))),
+  ];
+  const mentionedCards = await getCardsByNames(new ObjectId(game.id), mentionedCardNames);
+  const cardIdByName = new Map(mentionedCards.map((c) => [c.name.toLowerCase(), c.id]));
+  const cardsById = Object.fromEntries(mentionedCards.map((c) => [c.id, c]));
+
   return (
     <div className="container mx-auto p-6">
       <div className="flex flex-row flex-wrap justify-between">
@@ -170,6 +181,21 @@ export default async function RiftboundCardDetailPage({
             )}
           </div>
 
+          {card.text && (
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold mb-2">
+                {t("cards.detail.cardTextTitle")}
+              </h2>
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <GameMarkdown
+                  markdown={annotateCardText(card.text)}
+                  gameSlug={game.slug ?? gameSlugOrId}
+                  ruleLang={ruleLang}
+                />
+              </div>
+            </div>
+          )}
+
           {userId && (
             <div className="mb-6 flex flex-wrap items-center gap-3">
               <CollectionManager
@@ -196,7 +222,16 @@ export default async function RiftboundCardDetailPage({
               <h2 className="text-2xl font-semibold">
                 {t("cards.detail.errataSectionTitle")}
               </h2>
-              {userIsAdmin && <AddErrataButton cardId={cardId}/>}
+              {userIsAdmin && (
+                <AddErrataButton
+                  cardId={cardId}
+                  cardName={card.name}
+                  setCode={card.setCode}
+                  collectorNumber={card.collectorNumber}
+                  image={card.image}
+                  gameSlugOrId={gameSlugOrId}
+                />
+              )}
             </div>
 
             {erratas.length === 0 ? (
@@ -239,8 +274,8 @@ export default async function RiftboundCardDetailPage({
                       </div>
                       {userIsAdmin && (
                         <div className="flex gap-1">
-                          <EditErrataDialog errata={errata} cardId={cardId}/>
-                          <DeleteErrataButton errataId={errata.id} cardId={cardId}/>
+                          <EditErrataDialog errata={errata} cardId={cardId} gameSlugOrId={gameSlugOrId}/>
+                          <DeleteErrataButton errataId={errata.id} cardIds={errata.cardIds}/>
                         </div>
                       )}
                     </div>
@@ -251,8 +286,33 @@ export default async function RiftboundCardDetailPage({
                       </span>
                     )}
                     <div className="prose prose-sm dark:prose-invert max-w-none ">
-                      <ReactMarkdown>{errata.details}</ReactMarkdown>
+                      <GameMarkdown
+                        markdown={annotateErrataMarkdown(errata.details, cardIdByName)}
+                        cardsById={cardsById}
+                        gameSlug={game.slug ?? gameSlugOrId}
+                        ruleLang={ruleLang}
+                      />
                     </div>
+                    {errata.cards && errata.cards.filter((c) => c.id !== cardId).length > 0 && (
+                      <div className="mt-2 pt-2 border-t">
+                        <span className="text-xs text-muted-foreground">
+                          {t("cards.detail.alsoAppliesTo")}{" "}
+                          {errata.cards
+                            .filter((c) => c.id !== cardId)
+                            .map((c, index, arr) => (
+                              <span key={c.id}>
+                                <Link
+                                  href={`/games/${game.slug ?? gameSlugOrId}/cards/${c.id}`}
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  {c.name}
+                                </Link>
+                                {index < arr.length - 1 ? ", " : ""}
+                              </span>
+                            ))}
+                        </span>
+                      </div>
+                    )}
                     {errata.source && (
                       <div className="mt-2 pt-2 border-t">
                         <a

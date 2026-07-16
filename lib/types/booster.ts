@@ -16,6 +16,7 @@ export type BoosterCard = {
   price?: string;
   newInCollection?: boolean;
   banned?: boolean;
+  text?: string;
 };
 
 export type BoosterCardDb = {

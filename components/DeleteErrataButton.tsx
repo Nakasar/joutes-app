@@ -16,10 +16,10 @@ import { Trash2 } from "lucide-react";
 
 export default function DeleteErrataButton({
   errataId,
-  cardId,
+  cardIds,
 }: {
   errataId: string;
-  cardId?: string;
+  cardIds?: string[];
 }) {
   const [open, setOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -28,7 +28,7 @@ export default function DeleteErrataButton({
     setIsDeleting(true);
 
     try {
-      await deleteErrata(errataId, cardId);
+      await deleteErrata(errataId, cardIds);
       setOpen(false);
     } catch (error) {
       console.error("Erreur lors de la suppression de l'errata:", error);
