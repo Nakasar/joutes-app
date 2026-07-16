@@ -24,6 +24,7 @@ import { Errata, ErrataType } from "@/lib/types/errata";
 import { BoosterCard } from "@/lib/types/booster";
 import { Pencil, X } from "lucide-react";
 import ErrataCardsPicker from "@/components/ErrataCardsPicker";
+import { useTranslations } from "next-intl";
 
 export default function EditErrataDialog({
   errata,
@@ -34,6 +35,7 @@ export default function EditErrataDialog({
   cardId?: string;
   gameSlugOrId: string;
 }) {
+  const t = useTranslations("Games");
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<ErrataType>(errata.type);
   const [details, setDetails] = useState(errata.details);
@@ -51,7 +53,7 @@ export default function EditErrataDialog({
     e.preventDefault();
 
     if (selectedCards.length === 0) {
-      alert("Un errata doit être lié à au moins une carte.");
+      alert(t("cards.detail.editErrata.minCardsError"));
       return;
     }
 
@@ -76,7 +78,7 @@ export default function EditErrataDialog({
       setOpen(false);
     } catch (error) {
       console.error("Erreur lors de la modification de l'errata:", error);
-      alert("Erreur lors de la modification de l'errata");
+      alert(t("cards.detail.editErrata.error"));
     } finally {
       setIsSubmitting(false);
     }
@@ -96,42 +98,46 @@ export default function EditErrataDialog({
       <DialogContent className="sm:max-w-[625px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Modifier l'errata</DialogTitle>
+            <DialogTitle>{t("cards.detail.editErrata.title")}</DialogTitle>
             <DialogDescription>
-              Modifiez les informations de l'errata, clarification ou ruling.
+              {t("cards.detail.editErrata.description")}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <label className="text-sm font-medium">
-                Cartes liées
+                {t("cards.detail.editErrata.fields.linkedCards")}
               </label>
               <ErrataCardsPicker
                 gameSlugOrId={gameSlugOrId}
                 selectedCards={selectedCards}
                 onChange={setSelectedCards}
+                searchPlaceholder={t("cards.detail.editErrata.fields.additionalCardsSearchPlaceholder")}
+                emptyMessage={t("cards.detail.editErrata.fields.additionalCardsEmpty")}
+                searchingLabel={t("cards.detail.editErrata.fields.additionalCardsSearching")}
+                getRemoveLabel={(cardName) => t("cards.detail.editErrata.fields.removeCard", { cardName })}
               />
             </div>
 
             <div className="grid gap-2">
               <label htmlFor="type" className="text-sm font-medium">
-                Type
+                {t("cards.detail.editErrata.fields.type")}
               </label>
               <Select value={type} onValueChange={(v) => setType(v as ErrataType)}>
                 <SelectTrigger id="type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="errata">Errata</SelectItem>
-                  <SelectItem value="clarification">Clarification</SelectItem>
-                  <SelectItem value="ruling">Ruling</SelectItem>
+                  <SelectItem value="errata">{t("cards.detail.errataTypes.errata")}</SelectItem>
+                  <SelectItem value="clarification">{t("cards.detail.errataTypes.clarification")}</SelectItem>
+                  <SelectItem value="ruling">{t("cards.detail.errataTypes.ruling")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="grid gap-2">
               <label htmlFor="errataDate" className="text-sm font-medium">
-                Date de l'errata
+                {t("cards.detail.editErrata.fields.date")}
               </label>
               <Input
                 id="errataDate"
@@ -144,7 +150,7 @@ export default function EditErrataDialog({
 
             <div className="grid gap-2">
               <label htmlFor="details" className="text-sm font-medium">
-                Détails (Markdown)
+                {t("cards.detail.editErrata.fields.details")}
               </label>
               <textarea
                 id="details"
@@ -157,12 +163,12 @@ export default function EditErrataDialog({
 
             <div className="grid gap-2">
               <label htmlFor="source" className="text-sm font-medium">
-                Source (URL optionnelle)
+                {t("cards.detail.editErrata.fields.source")}
               </label>
               <Input
                 id="source"
                 type="url"
-                placeholder="https://..."
+                placeholder={t("cards.detail.editErrata.fields.sourcePlaceholder")}
                 value={source}
                 onChange={(e) => setSource(e.target.value)}
               />
@@ -170,7 +176,7 @@ export default function EditErrataDialog({
 
             <div className="grid gap-2">
               <label htmlFor="deprecatedAt" className="text-sm font-medium">
-                Date de dépréciation (optionnelle)
+                {t("cards.detail.editErrata.fields.deprecatedAt")}
               </label>
               <div className="flex gap-2">
                 <Input
@@ -186,7 +192,7 @@ export default function EditErrataDialog({
                     variant="outline"
                     size="icon"
                     onClick={() => setDeprecatedAt("")}
-                    title="Supprimer la dépréciation"
+                    title={t("cards.detail.editErrata.fields.removeDeprecation")}
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -201,10 +207,12 @@ export default function EditErrataDialog({
               onClick={() => setOpen(false)}
               disabled={isSubmitting}
             >
-              Annuler
+              {t("cards.detail.editErrata.actions.cancel")}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Modification..." : "Modifier"}
+              {isSubmitting
+                ? t("cards.detail.editErrata.actions.submitting")
+                : t("cards.detail.editErrata.actions.submit")}
             </Button>
           </DialogFooter>
         </form>

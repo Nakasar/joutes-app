@@ -391,13 +391,39 @@
             "additionalCards": "Additional cards (optional)",
             "additionalCardsSearchPlaceholder": "Search for a card...",
             "additionalCardsEmpty": "No card found.",
-            "additionalCardsSearching": "Searching..."
+            "additionalCardsSearching": "Searching...",
+            "removeCard": "Remove {cardName}"
           },
           "actions": {
             "submit": "Add",
             "submitting": "Adding..."
           },
           "error": "Unable to create the errata"
+        },
+        "editErrata": {
+          "title": "Edit errata",
+          "description": "Edit the errata, clarification or ruling information.",
+          "fields": {
+            "linkedCards": "Linked cards",
+            "type": "Type",
+            "date": "Errata date",
+            "details": "Details (Markdown)",
+            "source": "Source (optional URL)",
+            "sourcePlaceholder": "https://...",
+            "deprecatedAt": "Deprecation date (optional)",
+            "removeDeprecation": "Remove deprecation",
+            "additionalCardsSearchPlaceholder": "Search for a card...",
+            "additionalCardsEmpty": "No card found.",
+            "additionalCardsSearching": "Searching...",
+            "removeCard": "Remove {cardName}"
+          },
+          "actions": {
+            "cancel": "Cancel",
+            "submit": "Save",
+            "submitting": "Saving..."
+          },
+          "error": "Failed to update the errata",
+          "minCardsError": "An errata must be linked to at least one card."
         },
         "banButton": {
           "pending": "...",

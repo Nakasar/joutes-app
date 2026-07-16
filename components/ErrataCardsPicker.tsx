@@ -13,6 +13,7 @@ export default function ErrataCardsPicker({
   searchPlaceholder = "Rechercher une carte...",
   emptyMessage = "Aucune carte trouvée.",
   searchingLabel = "Recherche...",
+  getRemoveLabel = (cardName: string) => `Retirer ${cardName}`,
 }: {
   gameSlugOrId: string;
   selectedCards: BoosterCard[];
@@ -21,6 +22,7 @@ export default function ErrataCardsPicker({
   searchPlaceholder?: string;
   emptyMessage?: string;
   searchingLabel?: string;
+  getRemoveLabel?: (cardName: string) => string;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<BoosterCard[]>([]);
@@ -80,6 +82,8 @@ export default function ErrataCardsPicker({
                 <button
                   type="button"
                   onClick={() => removeCard(card.id)}
+                  aria-label={getRemoveLabel(card.name)}
+                  title={getRemoveLabel(card.name)}
                   className="text-muted-foreground hover:text-foreground"
                 >
                   <X className="h-3 w-3" />

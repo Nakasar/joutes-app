@@ -104,6 +104,7 @@ export default function AddErrataButton({
                 searchPlaceholder={t("cards.detail.addErrata.fields.additionalCardsSearchPlaceholder")}
                 emptyMessage={t("cards.detail.addErrata.fields.additionalCardsEmpty")}
                 searchingLabel={t("cards.detail.addErrata.fields.additionalCardsSearching")}
+                getRemoveLabel={(cardName) => t("cards.detail.addErrata.fields.removeCard", { cardName })}
               />
             </div>
             <div className="grid gap-2">

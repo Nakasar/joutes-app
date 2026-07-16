@@ -10,9 +10,17 @@ export async function getErratasByCardId(cardId: string, userId?: string): Promi
     ? await db.collection('cards').find({ name: card.name }, { projection: { id: 1 } }).toArray()
     : null;
 
+  // Matches both the current `cardIds` array field and the legacy scalar `cardId`
+  // field, so erratas still keep working during the deployment window before
+  // `scripts/migrate-errata-cardid-to-cardids.ts` has run against the database.
   const matchFilter = matchingCardIds
-    ? { cardIds: { $in: matchingCardIds.map((i) => i.id) } }
-    : { cardIds: cardId };
+    ? {
+        $or: [
+          { cardIds: { $in: matchingCardIds.map((i) => i.id) } },
+          { cardId: { $in: matchingCardIds.map((i) => i.id) } },
+        ],
+      }
+    : { $or: [{ cardIds: cardId }, { cardId }] };
 
   const erratasDb = await db
     .collection<ErrataDb>("erratas")
@@ -80,7 +88,9 @@ async function buildErrataMatchFilter({
       .collection("cards")
       .find({ name: { $regex: search.trim(), $options: "i" } }, { projection: { id: 1 } })
       .toArray();
-    filter.cardIds = { $in: matchingCards.map((c) => c.id) };
+    const ids = matchingCards.map((c) => c.id);
+    // Same legacy `cardId` fallback as getErratasByCardId, see comment there.
+    filter.$or = [{ cardIds: { $in: ids } }, { cardId: { $in: ids } }];
   }
 
   return filter;
@@ -127,7 +137,9 @@ export async function getAllErratas({
           ],
         },
       },
-      { $addFields: { primaryCardName: { $arrayElemAt: ['$cards.name', 0] } } },
+      // `$min` (rather than `$arrayElemAt: [..., 0]`) keeps the sort deterministic:
+      // `$lookup` does not guarantee element order for a `cardIds` array match.
+      { $addFields: { primaryCardName: { $min: '$cards.name' } } },
       { $sort: { primaryCardName: sortDir as 1 | -1, errataDate: -1 } },
       { $skip: offset },
       { $limit: limit },

@@ -15,6 +15,7 @@ async function migrateErrataCardIdToCardIds() {
 
   const erratasWithOldFormat = await erratasCollection.find({
     cardId: { $exists: true },
+    cardIds: { $exists: false },
   }).toArray();
 
   console.log(`📍 ${erratasWithOldFormat.length} errata(s) trouvé(s) avec l'ancien format cardId`);

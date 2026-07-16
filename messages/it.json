@@ -391,13 +391,39 @@
             "additionalCards": "Carte aggiuntive (opzionale)",
             "additionalCardsSearchPlaceholder": "Cerca una carta...",
             "additionalCardsEmpty": "Nessuna carta trovata.",
-            "additionalCardsSearching": "Ricerca in corso..."
+            "additionalCardsSearching": "Ricerca in corso...",
+            "removeCard": "Rimuovi {cardName}"
           },
           "actions": {
             "submit": "Aggiungi",
             "submitting": "Aggiunta in corso..."
           },
           "error": "Impossibile creare l'errata"
+        },
+        "editErrata": {
+          "title": "Modifica errata",
+          "description": "Modifica le informazioni dell'errata, del chiarimento o del ruling.",
+          "fields": {
+            "linkedCards": "Carte collegate",
+            "type": "Tipo",
+            "date": "Data dell'errata",
+            "details": "Dettagli (Markdown)",
+            "source": "Fonte (URL opzionale)",
+            "sourcePlaceholder": "https://...",
+            "deprecatedAt": "Data di deprecazione (opzionale)",
+            "removeDeprecation": "Rimuovi la deprecazione",
+            "additionalCardsSearchPlaceholder": "Cerca una carta...",
+            "additionalCardsEmpty": "Nessuna carta trovata.",
+            "additionalCardsSearching": "Ricerca in corso...",
+            "removeCard": "Rimuovi {cardName}"
+          },
+          "actions": {
+            "cancel": "Annulla",
+            "submit": "Salva",
+            "submitting": "Salvataggio in corso..."
+          },
+          "error": "Impossibile modificare l'errata",
+          "minCardsError": "Un errata deve essere collegato ad almeno una carta."
         },
         "banButton": {
           "pending": "...",

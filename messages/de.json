@@ -391,13 +391,39 @@
             "additionalCards": "Zusätzliche Karten (optional)",
             "additionalCardsSearchPlaceholder": "Nach einer Karte suchen...",
             "additionalCardsEmpty": "Keine Karte gefunden.",
-            "additionalCardsSearching": "Suche läuft..."
+            "additionalCardsSearching": "Suche läuft...",
+            "removeCard": "{cardName} entfernen"
           },
           "actions": {
             "submit": "Hinzufügen",
             "submitting": "Wird hinzugefügt..."
           },
           "error": "Erratum konnte nicht erstellt werden"
+        },
+        "editErrata": {
+          "title": "Erratum bearbeiten",
+          "description": "Bearbeite die Informationen des Erratums, der Klarstellung oder des Rulings.",
+          "fields": {
+            "linkedCards": "Verknüpfte Karten",
+            "type": "Typ",
+            "date": "Datum des Erratums",
+            "details": "Details (Markdown)",
+            "source": "Quelle (optionale URL)",
+            "sourcePlaceholder": "https://...",
+            "deprecatedAt": "Datum der Veraltung (optional)",
+            "removeDeprecation": "Veraltung entfernen",
+            "additionalCardsSearchPlaceholder": "Nach einer Karte suchen...",
+            "additionalCardsEmpty": "Keine Karte gefunden.",
+            "additionalCardsSearching": "Suche läuft...",
+            "removeCard": "{cardName} entfernen"
+          },
+          "actions": {
+            "cancel": "Abbrechen",
+            "submit": "Speichern",
+            "submitting": "Wird gespeichert..."
+          },
+          "error": "Erratum konnte nicht aktualisiert werden",
+          "minCardsError": "Ein Erratum muss mit mindestens einer Karte verknüpft sein."
         },
         "banButton": {
           "pending": "...",

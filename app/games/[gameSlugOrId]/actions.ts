@@ -41,7 +41,7 @@ export async function createErrata(data: {
   await db.collection<ErrataDb>("erratas").insertOne(errata);
 
   for (const cardId of data.cardIds) {
-    revalidatePath(`/riftbound/cards/${cardId}`);
+    revalidatePath(`/games/riftbound/cards/${cardId}`);
   }
   revalidatePath("/riftbound/erratas");
 }
@@ -97,7 +97,7 @@ export async function updateErrata(
 
   revalidatePath("/riftbound/erratas");
   for (const cardId of new Set([...(revalidateCardIds ?? []), ...(data.cardIds ?? [])])) {
-    revalidatePath(`/riftbound/cards/${cardId}`);
+    revalidatePath(`/games/riftbound/cards/${cardId}`);
   }
 }
 
@@ -108,7 +108,7 @@ export async function deleteErrata(errataId: string, cardIds?: string[]) {
 
   revalidatePath("/riftbound/erratas");
   for (const cardId of cardIds ?? []) {
-    revalidatePath(`/riftbound/cards/${cardId}`);
+    revalidatePath(`/games/riftbound/cards/${cardId}`);
   }
 }
 
