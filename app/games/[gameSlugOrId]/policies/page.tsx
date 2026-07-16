@@ -10,8 +10,10 @@ import {Button} from "@/components/ui/button";
 import Link from "next/link";
 import {hasPermission} from "@/lib/db/permissions";
 import AddPolicyDialog from "@/app/games/[gameSlugOrId]/policies/AddPolicyDialog";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import {GameToolsNavBar} from "@/components/games/GameToolsNavBar";
+import {ObjectId} from "mongodb";
+import {resolveCardMentions} from "@/lib/game-content-cards";
 
 const PAGE_SIZE = 20;
 
@@ -68,6 +70,9 @@ export default async function GamePoliciesPage({
     hasPermission("policies:update"),
     hasPermission("policies:vote"),
   ]);
+  const {cardIdByName, cardsById} = await resolveCardMentions(new ObjectId(gameId), policies.map((p) => p.content));
+  const locale = await getLocale();
+  const ruleLang = locale === "fr" ? "fr" : "en";
   const t = await getTranslations("Games");
 
   return (
@@ -91,9 +96,12 @@ export default async function GamePoliciesPage({
         initialPolicies={policies}
         initialTotalCount={totalCount}
         initialPage={currentPage}
+        initialCardIdByName={cardIdByName}
+        initialCardsById={cardsById}
         pageSize={PAGE_SIZE}
         gameId={gameId}
         gameSlug={gameSlugOrId}
+        ruleLang={ruleLang}
         userCanUpdatePolicies={userCanUpdatePolicies}
         userCanVotePolicies={userCanVotePolicies}
       />

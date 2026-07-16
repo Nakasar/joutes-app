@@ -1,15 +1,25 @@
 "use client";
 
-import ReactMarkdown from "react-markdown";
+import AnnotatedMarkdown from "@/components/AnnotatedMarkdown";
+import { CardNameMatch } from "@/lib/db/cards";
 
 type NewsContentProps = {
   content: string;
+  cardIdByName: Record<string, string>;
+  cardsById: Record<string, CardNameMatch>;
+  gameSlug: string;
 };
 
-export default function NewsContent({ content }: NewsContentProps) {
+export default function NewsContent({ content, cardIdByName, cardsById, gameSlug }: NewsContentProps) {
   return (
     <div className="prose prose-neutral dark:prose-invert max-w-none">
-      <ReactMarkdown>{content}</ReactMarkdown>
+      <AnnotatedMarkdown
+        content={content}
+        cardIdByName={cardIdByName}
+        cardsById={cardsById}
+        gameSlug={gameSlug}
+        ruleLang="fr"
+      />
     </div>
   );
 }

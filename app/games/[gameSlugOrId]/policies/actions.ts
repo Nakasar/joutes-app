@@ -9,6 +9,8 @@ import { ObjectId } from "bson";
 import { Policy } from "@/lib/types/policies";
 import { requirePermission } from "@/lib/db/permissions";
 import { getAllPolicies, countAllPolicies } from "@/lib/db/policies";
+import { resolveCardMentions } from "@/lib/game-content-cards";
+import { CardNameMatch } from "@/lib/db/cards";
 
 export async function searchPolicies({
   gameId,
@@ -22,7 +24,12 @@ export async function searchPolicies({
   sortOrder?: "asc" | "desc";
   page?: number;
   pageSize?: number;
-}): Promise<{ policies: Policy[]; totalCount: number }> {
+}): Promise<{
+  policies: Policy[];
+  totalCount: number;
+  cardIdByName: Record<string, string>;
+  cardsById: Record<string, CardNameMatch>;
+}> {
   const session = await auth.api.getSession({ headers: await headers() });
   const userId = session?.user?.id;
 
@@ -33,7 +40,12 @@ export async function searchPolicies({
     countAllPolicies({ gameId, search }),
   ]);
 
-  return { policies, totalCount };
+  const { cardIdByName, cardsById } = await resolveCardMentions(
+    new ObjectId(gameId),
+    policies.map((p) => p.content)
+  );
+
+  return { policies, totalCount, cardIdByName, cardsById };
 }
 
 export async function createPolicy(data: {

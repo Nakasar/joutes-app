@@ -2,6 +2,7 @@
 
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import { KeywordBadge } from "@/components/games/KeywordBadge";
 import CardNameHoverPopover from "@/components/CardNameHoverPopover";
 import { CardNameMatch } from "@/lib/db/cards";
@@ -11,15 +12,19 @@ export default function GameMarkdown({
   cardsById = {},
   gameSlug,
   ruleLang,
+  allowRawHtml = false,
 }: {
   markdown: string;
   cardsById?: Record<string, CardNameMatch>;
   gameSlug: string;
   ruleLang: "en" | "fr";
+  /** Renders raw HTML embedded in the markdown (e.g. existing policy content authored with HTML tags). */
+  allowRawHtml?: boolean;
 }) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
+      rehypePlugins={allowRawHtml ? [rehypeRaw] : []}
       // react-markdown's default URL sanitizer only allows a fixed list of
       // "safe" protocols (http/https/mailto/...) and silently blanks out
       // anything else — including our keyword:// and card:// pseudo-links —

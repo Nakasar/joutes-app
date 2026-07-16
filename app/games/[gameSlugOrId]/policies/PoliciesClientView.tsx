@@ -7,9 +7,8 @@ import { Policy } from "@/lib/types/policies";
 import { searchPolicies } from "./actions";
 import { Search, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
+import AnnotatedMarkdown from "@/components/AnnotatedMarkdown";
+import { CardNameMatch } from "@/lib/db/cards";
 import PolicyVoteButtons from "@/components/PolicyVoteButtons";
 import EditPolicyDialog from "@/components/EditPolicyDialog";
 import DeletePolicyButton from "@/components/DeletePolicyButton";
@@ -20,18 +19,24 @@ export default function PoliciesClientView({
   initialPolicies,
   initialTotalCount,
   initialPage,
+  initialCardIdByName,
+  initialCardsById,
   pageSize,
   gameId,
   gameSlug,
+  ruleLang,
   userCanUpdatePolicies,
   userCanVotePolicies,
 }: {
   initialPolicies: Policy[];
   initialTotalCount: number;
   initialPage: number;
+  initialCardIdByName: Record<string, string>;
+  initialCardsById: Record<string, CardNameMatch>;
   pageSize: number;
   gameId: string;
   gameSlug: string;
+  ruleLang: "en" | "fr";
   userCanUpdatePolicies: boolean;
   userCanVotePolicies: boolean;
 }) {
@@ -43,6 +48,8 @@ export default function PoliciesClientView({
   const [policies, setPolicies] = useState(initialPolicies);
   const [totalCount, setTotalCount] = useState(initialTotalCount);
   const [currentPage, setCurrentPage] = useState(initialPage);
+  const [cardIdByName, setCardIdByName] = useState(initialCardIdByName);
+  const [cardsById, setCardsById] = useState(initialCardsById);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [isPending, startTransition] = useTransition();
@@ -66,6 +73,8 @@ export default function PoliciesClientView({
       });
       setPolicies(result.policies);
       setTotalCount(result.totalCount);
+      setCardIdByName(result.cardIdByName);
+      setCardsById(result.cardsById);
       setCurrentPage(params.page);
 
       const urlParams = new URLSearchParams(urlSearchParams.toString());
@@ -179,32 +188,14 @@ export default function PoliciesClientView({
                       )}
 
                       <div className="prose prose-sm dark:prose-invert max-w-none">
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm]}
-                          rehypePlugins={[rehypeRaw]}
-                          components={{
-                            img: ({ ...props }) => (
-                              <img
-                                {...props}
-                                className="max-w-full rounded-md shadow-sm"
-                                alt={props.alt ?? ""}
-                              />
-                            ),
-                            a: ({ href, children, ...props }) => (
-                              <a
-                                href={href}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:underline"
-                                {...props}
-                              >
-                                {children}
-                              </a>
-                            ),
-                          }}
-                        >
-                          {policy.content}
-                        </ReactMarkdown>
+                        <AnnotatedMarkdown
+                          content={policy.content}
+                          cardIdByName={cardIdByName}
+                          cardsById={cardsById}
+                          gameSlug={gameSlug}
+                          ruleLang={ruleLang}
+                          allowRawHtml
+                        />
                       </div>
 
                       <div className="mt-4 pt-4 border-t flex flex-wrap items-center justify-between gap-3">
