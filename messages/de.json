@@ -376,6 +376,7 @@
         "deprecated": "Veraltet",
         "source": "Quelle",
         "deprecatedOn": "Veraltet am {date}",
+        "alsoAppliesTo": "Gilt auch für:",
         "addErrata": {
           "trigger": "Erratum hinzufügen",
           "title": "Erratum hinzufügen",
@@ -386,7 +387,11 @@
             "details": "Details",
             "detailsPlaceholder": "Beschreibe das Erratum, die Klarstellung oder das Ruling... (Markdown unterstützt)",
             "source": "Quelle (optional)",
-            "sourcePlaceholder": "https://example.com/errata"
+            "sourcePlaceholder": "https://example.com/errata",
+            "additionalCards": "Zusätzliche Karten (optional)",
+            "additionalCardsSearchPlaceholder": "Nach einer Karte suchen...",
+            "additionalCardsEmpty": "Keine Karte gefunden.",
+            "additionalCardsSearching": "Suche läuft..."
           },
           "actions": {
             "submit": "Hinzufügen",

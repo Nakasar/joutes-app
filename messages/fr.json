@@ -376,6 +376,7 @@
         "deprecated": "Déprécié",
         "source": "Source",
         "deprecatedOn": "Déprécié le {date}",
+        "alsoAppliesTo": "S'applique également à :",
         "addErrata": {
           "trigger": "Ajouter un errata",
           "title": "Ajouter un errata",
@@ -386,7 +387,11 @@
             "details": "Détails",
             "detailsPlaceholder": "Décrivez l'errata, la clarification ou le ruling... (Markdown supporté)",
             "source": "Source (optionnel)",
-            "sourcePlaceholder": "https://example.com/errata"
+            "sourcePlaceholder": "https://example.com/errata",
+            "additionalCards": "Cartes additionnelles (optionnel)",
+            "additionalCardsSearchPlaceholder": "Rechercher une carte...",
+            "additionalCardsEmpty": "Aucune carte trouvée.",
+            "additionalCardsSearching": "Recherche..."
           },
           "actions": {
             "submit": "Ajouter",

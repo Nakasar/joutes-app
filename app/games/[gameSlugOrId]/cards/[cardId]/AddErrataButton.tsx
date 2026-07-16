@@ -21,9 +21,25 @@ import {
 } from "@/components/ui/select";
 import { createErrata } from "@/app/games/[gameSlugOrId]/actions";
 import { ErrataType } from "@/lib/types/errata";
+import { BoosterCard } from "@/lib/types/booster";
 import { useTranslations } from "next-intl";
+import ErrataCardsPicker from "@/components/ErrataCardsPicker";
 
-export default function AddErrataButton({ cardId }: { cardId: string }) {
+export default function AddErrataButton({
+  cardId,
+  cardName,
+  setCode,
+  collectorNumber,
+  image,
+  gameSlugOrId,
+}: {
+  cardId: string;
+  cardName: string;
+  setCode: string;
+  collectorNumber: string;
+  image: string;
+  gameSlugOrId: string;
+}) {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<ErrataType>("errata");
   const [details, setDetails] = useState("");
@@ -32,6 +48,8 @@ export default function AddErrataButton({ cardId }: { cardId: string }) {
   const [errataDate, setErrataDate] = useState(
     new Date().toISOString().split("T")[0]
   );
+  const currentCard: BoosterCard = { id: cardId, name: cardName, setCode, collectorNumber, image };
+  const [selectedCards, setSelectedCards] = useState<BoosterCard[]>([currentCard]);
   const t = useTranslations("Games");
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -40,7 +58,7 @@ export default function AddErrataButton({ cardId }: { cardId: string }) {
 
     try {
       await createErrata({
-        cardId,
+        cardIds: selectedCards.map((c) => c.id),
         type,
         details,
         source: source.trim() || undefined,
@@ -51,6 +69,7 @@ export default function AddErrataButton({ cardId }: { cardId: string }) {
       setType("errata");
       setDetails("");
       setSource("");
+      setSelectedCards([currentCard]);
     } catch (error) {
       console.error("Erreur lors de la création de l'errata:", error);
       alert(t("cards.detail.addErrata.error"));
@@ -73,6 +92,20 @@ export default function AddErrataButton({ cardId }: { cardId: string }) {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">
+                {t("cards.detail.addErrata.fields.additionalCards")}
+              </label>
+              <ErrataCardsPicker
+                gameSlugOrId={gameSlugOrId}
+                selectedCards={selectedCards}
+                onChange={setSelectedCards}
+                lockedCardIds={[cardId]}
+                searchPlaceholder={t("cards.detail.addErrata.fields.additionalCardsSearchPlaceholder")}
+                emptyMessage={t("cards.detail.addErrata.fields.additionalCardsEmpty")}
+                searchingLabel={t("cards.detail.addErrata.fields.additionalCardsSearching")}
+              />
+            </div>
             <div className="grid gap-2">
               <label htmlFor="type" className="text-sm font-medium">
                 {t("cards.detail.addErrata.fields.type")}

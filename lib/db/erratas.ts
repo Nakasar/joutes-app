@@ -11,8 +11,8 @@ export async function getErratasByCardId(cardId: string, userId?: string): Promi
     : null;
 
   const matchFilter = matchingCardIds
-    ? { cardId: { $in: matchingCardIds.map((i) => i.id) } }
-    : { cardId };
+    ? { cardIds: { $in: matchingCardIds.map((i) => i.id) } }
+    : { cardIds: cardId };
 
   const erratasDb = await db
     .collection<ErrataDb>("erratas")
@@ -26,13 +26,25 @@ export async function getErratasByCardId(cardId: string, userId?: string): Promi
           as: 'votesList',
         },
       },
+      {
+        $lookup: {
+          from: 'cards',
+          localField: 'cardIds',
+          foreignField: 'id',
+          as: 'cards',
+          pipeline: [
+            { $project: { _id: 0, id: 1, name: 1, setCode: 1, collectorNumber: 1, image: 1 } },
+          ],
+        },
+      },
       { $sort: { createdAt: -1 } },
     ])
     .toArray();
 
   return erratasDb.map((errata) => ({
     id: errata._id.toString(),
-    cardId: errata.cardId,
+    cardIds: errata.cardIds,
+    cards: errata.cards,
     type: errata.type,
     details: errata.details,
     source: errata.source,
@@ -68,7 +80,7 @@ async function buildErrataMatchFilter({
       .collection("cards")
       .find({ name: { $regex: search.trim(), $options: "i" } }, { projection: { id: 1 } })
       .toArray();
-    filter.cardId = { $in: matchingCards.map((c) => c.id) };
+    filter.cardIds = { $in: matchingCards.map((c) => c.id) };
   }
 
   return filter;
@@ -107,22 +119,16 @@ export async function getAllErratas({
       {
         $lookup: {
           from: 'cards',
-          localField: 'cardId',
+          localField: 'cardIds',
           foreignField: 'id',
-          as: 'card',
+          as: 'cards',
           pipeline: [
-            { $limit: 1 },
             { $project: { _id: 0, gameId: 0 } },
           ],
         },
       },
-      {
-        $unwind: {
-          path: '$card',
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      { $sort: { "card.name": sortDir as 1 | -1, errataDate: -1 } },
+      { $addFields: { primaryCardName: { $arrayElemAt: ['$cards.name', 0] } } },
+      { $sort: { primaryCardName: sortDir as 1 | -1, errataDate: -1 } },
       { $skip: offset },
       { $limit: limit },
       {
@@ -138,8 +144,8 @@ export async function getAllErratas({
 
   return erratasDb.map((errata) => ({
     id: errata._id.toString(),
-    cardId: errata.cardId,
-    card: errata.card,
+    cardIds: errata.cardIds,
+    cards: errata.cards,
     type: errata.type,
     details: errata.details,
     source: errata.source,

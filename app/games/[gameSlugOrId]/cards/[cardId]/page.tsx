@@ -196,7 +196,16 @@ export default async function RiftboundCardDetailPage({
               <h2 className="text-2xl font-semibold">
                 {t("cards.detail.errataSectionTitle")}
               </h2>
-              {userIsAdmin && <AddErrataButton cardId={cardId}/>}
+              {userIsAdmin && (
+                <AddErrataButton
+                  cardId={cardId}
+                  cardName={card.name}
+                  setCode={card.setCode}
+                  collectorNumber={card.collectorNumber}
+                  image={card.image}
+                  gameSlugOrId={gameSlugOrId}
+                />
+              )}
             </div>
 
             {erratas.length === 0 ? (
@@ -239,8 +248,8 @@ export default async function RiftboundCardDetailPage({
                       </div>
                       {userIsAdmin && (
                         <div className="flex gap-1">
-                          <EditErrataDialog errata={errata} cardId={cardId}/>
-                          <DeleteErrataButton errataId={errata.id} cardId={cardId}/>
+                          <EditErrataDialog errata={errata} cardId={cardId} gameSlugOrId={gameSlugOrId}/>
+                          <DeleteErrataButton errataId={errata.id} cardIds={errata.cardIds}/>
                         </div>
                       )}
                     </div>
@@ -253,6 +262,26 @@ export default async function RiftboundCardDetailPage({
                     <div className="prose prose-sm dark:prose-invert max-w-none ">
                       <ReactMarkdown>{errata.details}</ReactMarkdown>
                     </div>
+                    {errata.cards && errata.cards.filter((c) => c.id !== cardId).length > 0 && (
+                      <div className="mt-2 pt-2 border-t">
+                        <span className="text-xs text-muted-foreground">
+                          {t("cards.detail.alsoAppliesTo")}{" "}
+                          {errata.cards
+                            .filter((c) => c.id !== cardId)
+                            .map((c, index, arr) => (
+                              <span key={c.id}>
+                                <Link
+                                  href={`/games/${game.slug ?? gameSlugOrId}/cards/${c.id}`}
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  {c.name}
+                                </Link>
+                                {index < arr.length - 1 ? ", " : ""}
+                              </span>
+                            ))}
+                        </span>
+                      </div>
+                    )}
                     {errata.source && (
                       <div className="mt-2 pt-2 border-t">
                         <a

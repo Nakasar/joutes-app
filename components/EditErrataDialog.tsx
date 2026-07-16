@@ -21,14 +21,18 @@ import {
 } from "@/components/ui/select";
 import { updateErrata } from "@/app/games/[gameSlugOrId]/actions";
 import { Errata, ErrataType } from "@/lib/types/errata";
+import { BoosterCard } from "@/lib/types/booster";
 import { Pencil, X } from "lucide-react";
+import ErrataCardsPicker from "@/components/ErrataCardsPicker";
 
 export default function EditErrataDialog({
   errata,
   cardId,
+  gameSlugOrId,
 }: {
   errata: Errata;
   cardId?: string;
+  gameSlugOrId: string;
 }) {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<ErrataType>(errata.type);
@@ -40,14 +44,22 @@ export default function EditErrataDialog({
   const [deprecatedAt, setDeprecatedAt] = useState(
     errata.deprecatedAt ? new Date(errata.deprecatedAt).toISOString().split("T")[0] : ""
   );
+  const [selectedCards, setSelectedCards] = useState<BoosterCard[]>(errata.cards ?? []);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (selectedCards.length === 0) {
+      alert("Un errata doit être lié à au moins une carte.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
+      const newCardIds = selectedCards.map((c) => c.id);
+
       await updateErrata(
         errata.id,
         {
@@ -56,8 +68,9 @@ export default function EditErrataDialog({
           source: source.trim() || undefined,
           errataDate: new Date(errataDate),
           deprecatedAt: deprecatedAt ? new Date(deprecatedAt) : null,
+          cardIds: newCardIds,
         },
-        cardId
+        Array.from(new Set([...errata.cardIds, ...newCardIds, ...(cardId ? [cardId] : [])]))
       );
 
       setOpen(false);
@@ -89,6 +102,17 @@ export default function EditErrataDialog({
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">
+                Cartes liées
+              </label>
+              <ErrataCardsPicker
+                gameSlugOrId={gameSlugOrId}
+                selectedCards={selectedCards}
+                onChange={setSelectedCards}
+              />
+            </div>
+
             <div className="grid gap-2">
               <label htmlFor="type" className="text-sm font-medium">
                 Type

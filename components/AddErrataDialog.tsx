@@ -79,7 +79,7 @@ export default function AddErrataDialog() {
 
     try {
       await createErrata({
-        cardId: selectedCard.id,
+        cardIds: [selectedCard.id],
         type,
         details,
         source: source.trim() || undefined,
