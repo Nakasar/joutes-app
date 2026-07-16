@@ -435,7 +435,8 @@
           "ban": "Ban card",
           "unban": "Remove ban"
         },
-        "originalLangLabel": "original"
+        "originalLangLabel": "original",
+        "languagePickerLabel": "Display language"
       },
       "collection": {
         "label": "Collection:",
@@ -592,6 +593,7 @@
         }
       },
       "originalLangLabel": "original",
+      "languagePickerLabel": "Display language",
       "permalink": "Direct link to this policy",
       "detail": {
         "backToList": "← Back to {gameName} policies"

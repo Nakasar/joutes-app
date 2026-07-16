@@ -167,8 +167,8 @@ export default function PoliciesClientView({
               const availableLangs = [policy.originalLang, ...(policy.translations ?? []).map((tr) => tr.lang)];
               const selectedLang = resolvePolicyLang(policy);
               const translation = policy.translations?.find((tr) => tr.lang === selectedLang);
-              const resolvedTitle = selectedLang !== policy.originalLang ? translation?.title ?? policy.title : policy.title;
-              const resolvedContent = selectedLang !== policy.originalLang ? translation?.content ?? policy.content : policy.content;
+              const resolvedTitle = selectedLang !== policy.originalLang ? translation?.title || policy.title : policy.title;
+              const resolvedContent = selectedLang !== policy.originalLang ? translation?.content || policy.content : policy.content;
 
               return (
                 <div
@@ -203,6 +203,7 @@ export default function PoliciesClientView({
                             value={selectedLang}
                             onChange={(lang) => setSelectedLangs((prev) => ({ ...prev, [policy.id]: lang }))}
                             originalLabel={t("policies.originalLangLabel")}
+                            ariaLabel={t("policies.languagePickerLabel")}
                           />
                           <Link
                             href={`/policies/${policy.id}`}

@@ -435,7 +435,8 @@
           "ban": "Bannir la carte",
           "unban": "Retirer le ban"
         },
-        "originalLangLabel": "original"
+        "originalLangLabel": "original",
+        "languagePickerLabel": "Langue d'affichage"
       },
       "collection": {
         "label": "Collection :",
@@ -592,6 +593,7 @@
         }
       },
       "originalLangLabel": "original",
+      "languagePickerLabel": "Langue d'affichage",
       "permalink": "Lien direct vers cette politique",
       "detail": {
         "backToList": "← Retour aux politiques de {gameName}"

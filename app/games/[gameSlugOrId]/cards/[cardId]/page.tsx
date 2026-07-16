@@ -303,6 +303,7 @@ export default async function RiftboundCardDetailPage({
                         translations={errata.translations?.map((tr) => ({lang: tr.lang, content: tr.details}))}
                         interfaceLocale={locale as Locale}
                         originalLabel={t("cards.detail.originalLangLabel")}
+                        languagePickerLabel={t("cards.detail.languagePickerLabel")}
                       />
                     </div>
                     {errata.cards && errata.cards.filter((c) => c.id !== cardId).length > 0 && (

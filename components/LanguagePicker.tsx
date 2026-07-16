@@ -9,14 +9,17 @@ export default function LanguagePicker({
   value,
   onChange,
   originalLabel = "original",
+  ariaLabel = "Language",
 }: {
   availableLangs: Locale[];
   originalLang: Locale;
   value: Locale;
   onChange: (lang: Locale) => void;
   originalLabel?: string;
+  ariaLabel?: string;
 }) {
-  if (availableLangs.length <= 1) return null;
+  const uniqueLangs = [...new Set(availableLangs)];
+  if (uniqueLangs.length <= 1) return null;
 
   return (
     <div className="inline-flex items-center gap-1.5">
@@ -24,9 +27,10 @@ export default function LanguagePicker({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value as Locale)}
+        aria-label={ariaLabel}
         className="text-xs rounded-md border border-input bg-background px-1.5 py-1"
       >
-        {availableLangs.map((lang) => (
+        {uniqueLangs.map((lang) => (
           <option key={lang} value={lang}>
             {localeLabels[lang]}
             {lang === originalLang ? ` · ${originalLabel}` : ""}

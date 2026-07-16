@@ -37,6 +37,7 @@ export default function AnnotatedMarkdown({
   translations,
   interfaceLocale,
   originalLabel,
+  languagePickerLabel,
 }: {
   content: string;
   cardIdByName: Record<string, string>;
@@ -48,6 +49,7 @@ export default function AnnotatedMarkdown({
   translations?: ContentTranslation[];
   interfaceLocale?: Locale;
   originalLabel?: string;
+  languagePickerLabel?: string;
 }) {
   const availableLangs = originalLang
     ? [originalLang, ...(translations ?? []).map((t) => t.lang)]
@@ -62,7 +64,7 @@ export default function AnnotatedMarkdown({
 
   const resolvedContent =
     originalLang && selectedLang && selectedLang !== originalLang
-      ? translations?.find((t) => t.lang === selectedLang)?.content ?? content
+      ? translations?.find((t) => t.lang === selectedLang)?.content || content
       : content;
 
   const markdown = useMemo(
@@ -80,6 +82,7 @@ export default function AnnotatedMarkdown({
             value={selectedLang}
             onChange={setSelectedLang}
             originalLabel={originalLabel}
+            ariaLabel={languagePickerLabel}
           />
         </div>
       )}

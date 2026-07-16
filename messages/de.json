@@ -435,7 +435,8 @@
           "ban": "Karte bannen",
           "unban": "Ban aufheben"
         },
-        "originalLangLabel": "Original"
+        "originalLangLabel": "Original",
+        "languagePickerLabel": "Anzeigesprache"
       },
       "collection": {
         "label": "Sammlung :",
@@ -592,6 +593,7 @@
         }
       },
       "originalLangLabel": "Original",
+      "languagePickerLabel": "Anzeigesprache",
       "permalink": "Direkter Link zu dieser Richtlinie",
       "detail": {
         "backToList": "← Zurück zu den Richtlinien von {gameName}"

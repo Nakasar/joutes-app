@@ -37,8 +37,8 @@ export default function PolicyDetailView({
     availableLangs.includes(interfaceLocale) ? interfaceLocale : policy.originalLang
   );
   const translation = policy.translations?.find((tr) => tr.lang === selectedLang);
-  const resolvedTitle = selectedLang !== policy.originalLang ? translation?.title ?? policy.title : policy.title;
-  const resolvedContent = selectedLang !== policy.originalLang ? translation?.content ?? policy.content : policy.content;
+  const resolvedTitle = selectedLang !== policy.originalLang ? translation?.title || policy.title : policy.title;
+  const resolvedContent = selectedLang !== policy.originalLang ? translation?.content || policy.content : policy.content;
 
   return (
     <div className={`border rounded-lg bg-card shadow-sm p-6 ${policy.deprecatedAt ? "opacity-60" : ""}`}>
@@ -58,6 +58,7 @@ export default function PolicyDetailView({
           value={selectedLang}
           onChange={setSelectedLang}
           originalLabel={t("policies.originalLangLabel")}
+          ariaLabel={t("policies.languagePickerLabel")}
         />
         {userCanUpdatePolicies && (
           <div className="flex gap-1">
