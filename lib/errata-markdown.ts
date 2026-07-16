@@ -1,4 +1,5 @@
 import { getAllKeywordEntries } from "@/lib/rules/riftbound";
+import { replaceIconTags } from "@/lib/riftbound-icons";
 
 // A bracketed mention not immediately followed by "(" — i.e. not already a
 // markdown link — is treated as a plain card-name reference, e.g. "[Leblanc, Deceiver]".
@@ -38,29 +39,45 @@ export function extractBracketedMentions(text: string): string[] {
 
 /**
  * Rewrites errata markdown so that:
- * - known game keyword mentions (Deathknell, Accelerate, ...) become
- *   `[Deathknell](keyword://808)` links, and
- * - bracketed card-name mentions matching `cardIdByName` become
- *   `[Leblanc, Deceiver](card://<id>)` links.
+ * - bracketed mentions, e.g. `[Leblanc, Deceiver]`, that match a card name
+ *   become `[Leblanc, Deceiver](card://<id>)` links — and are never treated
+ *   as keyword mentions, even if the card name happens to contain a keyword
+ *   word, since the brackets mark it as a card reference here, not a keyword;
+ * - keyword mentions (Deathknell, Accelerate, ...) found anywhere else in the
+ *   text become `[Deathknell](keyword://808)` links;
+ * - `:rb_xxx:` glyph tags become inline icon images.
  * The resulting string is still valid markdown; rendering code maps these
  * pseudo-protocols to styled components instead of real anchors.
  */
 export function annotateErrataMarkdown(text: string, cardIdByName: Map<string, string>): string {
   const { regex: keywordRegex, idByName } = getKeywordMatcher();
 
-  let result = text;
-
-  if (keywordRegex) {
-    result = result.replace(keywordRegex, (matched) => {
+  const applyKeywords = (segment: string): string => {
+    if (!keywordRegex) return segment;
+    return segment.replace(keywordRegex, (matched) => {
       const id = idByName.get(matched);
       return id ? `[${matched}](keyword://${id})` : matched;
     });
+  };
+
+  let result = "";
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  BRACKET_MENTION_REGEX.lastIndex = 0;
+  while ((match = BRACKET_MENTION_REGEX.exec(text)) !== null) {
+    result += applyKeywords(text.slice(lastIndex, match.index));
+
+    const name = match[1].trim();
+    const cardId = cardIdByName.get(name.toLowerCase());
+    // Bracketed mentions are always card references here, never keyword
+    // mentions — even when unresolved, keep the plain text instead of
+    // falling back to keyword styling (the bracket is part of a name).
+    result += cardId ? `[${name}](card://${cardId})` : match[0];
+
+    lastIndex = match.index + match[0].length;
   }
+  result += applyKeywords(text.slice(lastIndex));
 
-  result = result.replace(BRACKET_MENTION_REGEX, (full, name: string) => {
-    const cardId = cardIdByName.get(name.trim().toLowerCase());
-    return cardId ? `[${name}](card://${cardId})` : full;
-  });
-
-  return result;
+  return replaceIconTags(result);
 }

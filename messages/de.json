@@ -366,6 +366,7 @@
         "notFoundMessage": "Die Karte mit der ID {cardId} existiert nicht.",
         "backToList": "Zurück zur Kartenliste",
         "banned": "Gebannt",
+        "cardTextTitle": "Kartentext",
         "errataSectionTitle": "Errata & Klarstellungen",
         "noErrata": "Kein Erratum oder Klarstellung für diese Karte.",
         "errataTypes": {

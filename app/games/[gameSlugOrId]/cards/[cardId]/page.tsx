@@ -24,7 +24,8 @@ import {GameToolsNavBar} from "@/components/games/GameToolsNavBar";
 import {Errata} from "@/lib/types/errata";
 import {getCardsByNames} from "@/lib/db/cards";
 import {extractBracketedMentions, annotateErrataMarkdown} from "@/lib/errata-markdown";
-import ErrataDetailsMarkdown from "@/components/ErrataDetailsMarkdown";
+import {annotateCardText} from "@/lib/card-text-markdown";
+import GameMarkdown from "@/components/GameMarkdown";
 
 function hasNegativeVoteRatio(errata: Errata): boolean {
   return errata.votes.negative > errata.votes.positive;
@@ -74,6 +75,7 @@ export default async function RiftboundCardDetailPage({
 }) {
   const {cardId, gameSlugOrId} = await params;
   const locale = await getLocale();
+  const ruleLang = locale === "fr" ? "fr" : "en";
   const t = await getTranslations("Games");
 
   const session = await auth.api.getSession({headers: await headers()});
@@ -134,7 +136,6 @@ export default async function RiftboundCardDetailPage({
   const mentionedCards = await getCardsByNames(new ObjectId(game.id), mentionedCardNames);
   const cardIdByName = new Map(mentionedCards.map((c) => [c.name.toLowerCase(), c.id]));
   const cardsById = Object.fromEntries(mentionedCards.map((c) => [c.id, c]));
-  const ruleLang = locale === "fr" ? "fr" : "en";
 
   return (
     <div className="container mx-auto p-6">
@@ -179,6 +180,21 @@ export default async function RiftboundCardDetailPage({
               <BanCardButton cardId={cardId} banned={card.banned}/>
             )}
           </div>
+
+          {card.text && (
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold mb-2">
+                {t("cards.detail.cardTextTitle")}
+              </h2>
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <GameMarkdown
+                  markdown={annotateCardText(card.text)}
+                  gameSlug={game.slug ?? gameSlugOrId}
+                  ruleLang={ruleLang}
+                />
+              </div>
+            </div>
+          )}
 
           {userId && (
             <div className="mb-6 flex flex-wrap items-center gap-3">
@@ -270,7 +286,7 @@ export default async function RiftboundCardDetailPage({
                       </span>
                     )}
                     <div className="prose prose-sm dark:prose-invert max-w-none ">
-                      <ErrataDetailsMarkdown
+                      <GameMarkdown
                         markdown={annotateErrataMarkdown(errata.details, cardIdByName)}
                         cardsById={cardsById}
                         gameSlug={game.slug ?? gameSlugOrId}

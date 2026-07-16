@@ -6,14 +6,14 @@ import { KeywordBadge } from "@/components/games/KeywordBadge";
 import CardNameHoverPopover from "@/components/CardNameHoverPopover";
 import { CardNameMatch } from "@/lib/db/cards";
 
-export default function ErrataDetailsMarkdown({
+export default function GameMarkdown({
   markdown,
-  cardsById,
+  cardsById = {},
   gameSlug,
   ruleLang,
 }: {
   markdown: string;
-  cardsById: Record<string, CardNameMatch>;
+  cardsById?: Record<string, CardNameMatch>;
   gameSlug: string;
   ruleLang: "en" | "fr";
 }) {
@@ -21,6 +21,14 @@ export default function ErrataDetailsMarkdown({
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       components={{
+        img: ({ src, alt }) => {
+          if (typeof src === "string" && src.includes("/riot-glyphs/")) {
+            return (
+              <img src={src} alt={alt ?? ""} className="inline h-4 w-4 align-middle mx-0.5" />
+            );
+          }
+          return <img src={src} alt={alt ?? ""} className="max-w-full rounded-md" />;
+        },
         a: ({ href, children }) => {
           if (href?.startsWith("keyword://")) {
             const id = href.slice("keyword://".length);
