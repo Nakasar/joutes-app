@@ -84,7 +84,7 @@ export default function EditErrataDialog({
           cardIds: newCardIds,
           translations,
         },
-        Array.from(new Set([...errata.cardIds, ...newCardIds, ...(cardId ? [cardId] : [])]))
+        Array.from(new Set([...errata.cardIds ?? [], ...newCardIds, ...(cardId ? [cardId] : [])]))
       );
 
       setOpen(false);
