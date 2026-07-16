@@ -27,6 +27,7 @@ const KEYWORD_COLORS: Record<string, string> = {
   '824': '#8EAD2A', // Level
   '825': '#6D6C6D', // Unique
   '826': '#C22D6A', // Backline
+  '436': '#6D6C6D', // Predict
 };
 
 // Fallback palette for keywords outside the official mapping above.
