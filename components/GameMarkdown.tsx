@@ -1,6 +1,6 @@
 "use client";
 
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { KeywordBadge } from "@/components/games/KeywordBadge";
 import CardNameHoverPopover from "@/components/CardNameHoverPopover";
@@ -20,6 +20,13 @@ export default function GameMarkdown({
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
+      // react-markdown's default URL sanitizer only allows a fixed list of
+      // "safe" protocols (http/https/mailto/...) and silently blanks out
+      // anything else — including our keyword:// and card:// pseudo-links —
+      // so keywords/card mentions would render as plain unstyled text.
+      urlTransform={(url) =>
+        url.startsWith("keyword://") || url.startsWith("card://") ? url : defaultUrlTransform(url)
+      }
       components={{
         img: ({ src, alt }) => {
           if (typeof src === "string" && src.includes("/riot-glyphs/")) {
