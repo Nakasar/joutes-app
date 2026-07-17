@@ -240,7 +240,8 @@
       "policies": "Richtlinien",
       "deckChecker": "Deck-Checker",
       "loop": "Lupe",
-      "collection": "Sammlung"
+      "collection": "Sammlung",
+      "scanner": "Scanner"
     },
     "explorer": {
       "title": "Spiele entdecken",
@@ -729,6 +730,35 @@
         "errata": "Errata",
         "clarification": "Klarifizierung",
         "ruling": "Entscheidung"
+      }
+    },
+    "Scanner": {
+      "metadata": {
+        "title": "Joutes - {gameName} Scanner",
+        "description": "Scanne eine {gameName}-Karte mit der Kamera deines Telefons, um sie automatisch zu erkennen.",
+        "notFoundTitle": "Spiel nicht gefunden"
+      },
+      "back": "Zurück zum Spielportal",
+      "title": "Scanner — {gameName}",
+      "description": "Nutze die Kamera deines Telefons, um eine {gameName}-Karte zu scannen und automatisch zu erkennen.",
+      "notFoundTitle": "Scanner nicht verfügbar",
+      "notFoundDescription": "Diese Funktion benötigt eine Kartendatenbank für dieses Spiel.",
+      "start": "Scan starten",
+      "starting": "Kamera wird gestartet…",
+      "scanning": "Suche nach einer Karte…",
+      "scanAgain": "Weitere Karte scannen",
+      "cancel": "Abbrechen",
+      "instructions": "Halte eine Karte mit der Vorderseite gut beleuchtet und ohne Reflexionen vor die Kamera.",
+      "errors": {
+        "cameraUnsupported": "Dein Browser unterstützt keinen Kamerazugriff.",
+        "cameraAccess": "Kamerazugriff nicht möglich. Überprüfe die Berechtigungen deines Browsers.",
+        "namesLoad": "Die Kartenliste für dieses Spiel konnte nicht geladen werden.",
+        "cardFetch": "Die Details der erkannten Karte konnten nicht abgerufen werden.",
+        "generic": "Ein Fehler ist aufgetreten."
+      },
+      "card": {
+        "banned": "Verboten",
+        "noErrata": "Kein Errata oder Klarstellung für diese Karte."
       }
     }
   },

@@ -240,7 +240,8 @@
       "policies": "Politiche",
       "deckChecker": "Controllo mazzo",
       "loop": "Lente",
-      "collection": "Collezione"
+      "collection": "Collezione",
+      "scanner": "Scanner"
     },
     "explorer": {
       "title": "Esplora i giochi",
@@ -729,6 +730,35 @@
         "errata": "Errata",
         "clarification": "Chiarimento",
         "ruling": "Decisione"
+      }
+    },
+    "Scanner": {
+      "metadata": {
+        "title": "Joutes - Scanner {gameName}",
+        "description": "Scansiona una carta {gameName} con la fotocamera del tuo telefono per identificarla automaticamente.",
+        "notFoundTitle": "Gioco non trovato"
+      },
+      "back": "Torna al portale del gioco",
+      "title": "Scanner — {gameName}",
+      "description": "Usa la fotocamera del tuo telefono per scansionare una carta {gameName} e identificarla automaticamente.",
+      "notFoundTitle": "Scanner non disponibile",
+      "notFoundDescription": "Questa funzionalità richiede un database di carte per questo gioco.",
+      "start": "Avvia scansione",
+      "starting": "Avvio della fotocamera…",
+      "scanning": "Ricerca di una carta…",
+      "scanAgain": "Scansiona un'altra carta",
+      "cancel": "Annulla",
+      "instructions": "Tieni una carta a faccia in su davanti alla fotocamera, ben illuminata e senza riflessi.",
+      "errors": {
+        "cameraUnsupported": "Il tuo browser non supporta l'accesso alla fotocamera.",
+        "cameraAccess": "Impossibile accedere alla fotocamera. Controlla i permessi del tuo browser.",
+        "namesLoad": "Impossibile caricare l'elenco delle carte per questo gioco.",
+        "cardFetch": "Impossibile recuperare i dettagli della carta rilevata.",
+        "generic": "Si è verificato un errore."
+      },
+      "card": {
+        "banned": "Vietata",
+        "noErrata": "Nessun errata o chiarimento per questa carta."
       }
     }
   },

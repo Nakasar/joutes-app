@@ -240,7 +240,8 @@
       "policies": "Politiques",
       "deckChecker": "Vérificateur de Deck",
       "loop": "Loupe",
-      "collection": "Ma collection"
+      "collection": "Ma collection",
+      "scanner": "Scanner"
     },
     "explorer": {
       "title": "Explorez les jeux",
@@ -730,6 +731,35 @@
         "errata": "Errata",
         "clarification": "Clarification",
         "ruling": "Ruling"
+      }
+    },
+    "Scanner": {
+      "metadata": {
+        "title": "Joutes - Scanner {gameName}",
+        "description": "Scannez une carte {gameName} avec l'appareil photo de votre téléphone pour l'identifier automatiquement.",
+        "notFoundTitle": "Jeu introuvable"
+      },
+      "back": "Retour au portail du jeu",
+      "title": "Scanner — {gameName}",
+      "description": "Utilisez l'appareil photo de votre téléphone pour scanner une carte {gameName} et l'identifier automatiquement.",
+      "notFoundTitle": "Scanner indisponible",
+      "notFoundDescription": "Cette fonctionnalité nécessite une base de cartes pour ce jeu.",
+      "start": "Démarrer le scanner",
+      "starting": "Démarrage de la caméra…",
+      "scanning": "Recherche d'une carte…",
+      "scanAgain": "Scanner une autre carte",
+      "cancel": "Annuler",
+      "instructions": "Placez une carte face visible devant la caméra, bien éclairée et sans reflet.",
+      "errors": {
+        "cameraUnsupported": "Votre navigateur ne permet pas d'accéder à la caméra.",
+        "cameraAccess": "Impossible d'accéder à la caméra. Vérifiez les autorisations de votre navigateur.",
+        "namesLoad": "Impossible de charger la liste des cartes pour ce jeu.",
+        "cardFetch": "Impossible de récupérer les détails de la carte détectée.",
+        "generic": "Une erreur est survenue."
+      },
+      "card": {
+        "banned": "Interdite",
+        "noErrata": "Aucun errata ou clarification pour cette carte."
       }
     }
   },
