@@ -240,7 +240,8 @@
       "policies": "Policies",
       "deckChecker": "Deck Verifier",
       "loop": "Magnifier",
-      "collection": "My Collection"
+      "collection": "My Collection",
+      "scanner": "Scanner"
     },
     "explorer": {
       "title": "Explore the Games",
@@ -729,6 +730,35 @@
         "errata": "Errata",
         "clarification": "Clarification",
         "ruling": "Ruling"
+      }
+    },
+    "Scanner": {
+      "metadata": {
+        "title": "Joutes - {gameName} Scanner",
+        "description": "Scan a {gameName} card with your phone's camera to identify it automatically.",
+        "notFoundTitle": "Game not found"
+      },
+      "back": "Back to game portal",
+      "title": "Scanner — {gameName}",
+      "description": "Use your phone's camera to scan a {gameName} card and identify it automatically.",
+      "notFoundTitle": "Scanner unavailable",
+      "notFoundDescription": "This feature requires a card database for this game.",
+      "start": "Start scanning",
+      "starting": "Starting camera…",
+      "scanning": "Looking for a card…",
+      "scanAgain": "Scan another card",
+      "cancel": "Cancel",
+      "instructions": "Hold a card face up in front of the camera, well lit and without glare.",
+      "errors": {
+        "cameraUnsupported": "Your browser does not support camera access.",
+        "cameraAccess": "Could not access the camera. Check your browser permissions.",
+        "namesLoad": "Could not load the card list for this game.",
+        "cardFetch": "Could not retrieve details for the detected card.",
+        "generic": "An error occurred."
+      },
+      "card": {
+        "banned": "Banned",
+        "noErrata": "No errata or clarification for this card."
       }
     }
   },
