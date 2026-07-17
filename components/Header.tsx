@@ -74,12 +74,12 @@ export default function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <NavigationMenu className="hidden lg:flex">
+          <NavigationMenu className="hidden xl:flex">
             <NavigationMenuList>
               <NavigationMenuItem>
                 <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
                   <Link href="/games">
-                    <Dices className="mr-2 h-4 w-4" />
+                    <Dices className="mr-1.5 h-4 w-4" />
                     {t('menu.Jeux')}
                   </Link>
                 </NavigationMenuLink>
@@ -87,7 +87,7 @@ export default function Header() {
               <NavigationMenuItem>
                 <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
                   <Link href="/events">
-                    <Calendar className="mr-2 h-4 w-4" />
+                    <Calendar className="mr-1.5 h-4 w-4" />
                     {t('menu.Événements')}
                   </Link>
                 </NavigationMenuLink>
@@ -95,7 +95,7 @@ export default function Header() {
               <NavigationMenuItem>
                 <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
                   <Link href="/lairs">
-                    <MapPin className="mr-2 h-4 w-4" />
+                    <MapPin className="mr-1.5 h-4 w-4" />
                     {t('menu.Lieux')}
                   </Link>
                 </NavigationMenuLink>
@@ -103,7 +103,7 @@ export default function Header() {
               <NavigationMenuItem>
                 <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
                   <Link href="/features">
-                    <Sparkles className="mr-2 h-4 w-4" />
+                    <Sparkles className="mr-1.5 h-4 w-4" />
                     {t('menu.Fonctionnalités')}
                   </Link>
                 </NavigationMenuLink>
@@ -112,7 +112,7 @@ export default function Header() {
                 <NavigationMenuItem>
                   <DropdownMenu>
                     <DropdownMenuTrigger className={navigationMenuTriggerStyle()}>
-                      <Library className="mr-2 h-4 w-4" />
+                      <Library className="mr-1.5 h-4 w-4" />
                       {t('menu.Collection')}
                       <ChevronDown className="ml-1 h-3 w-3" />
                     </DropdownMenuTrigger>
@@ -143,7 +143,7 @@ export default function Header() {
                 <NavigationMenuItem>
                   <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
                     <Link href="/friends">
-                      <UserRound className="mr-2 h-4 w-4" />
+                      <UserRound className="mr-1.5 h-4 w-4" />
                       {t('menu.Amis')}
                     </Link>
                   </NavigationMenuLink>
@@ -153,7 +153,7 @@ export default function Header() {
                 <NavigationMenuItem>
                   <DropdownMenu>
                     <DropdownMenuTrigger className={navigationMenuTriggerStyle()}>
-                      <Users className="mr-2 h-4 w-4" />
+                      <Users className="mr-1.5 h-4 w-4" />
                       {t('menu.Groupes')}
                       <ChevronDown className="ml-1 h-3 w-3" />
                     </DropdownMenuTrigger>
@@ -181,7 +181,7 @@ export default function Header() {
                 <NavigationMenuItem>
                   <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
                     <Link href="/admin">
-                      <Shield className="mr-2 h-4 w-4" />
+                      <Shield className="mr-1.5 h-4 w-4" />
                       {t('menu.Administration')}
                     </Link>
                   </NavigationMenuLink>
@@ -191,7 +191,7 @@ export default function Header() {
           </NavigationMenu>
 
           {/* User Menu (Desktop) */}
-          <div className="hidden lg:flex md:items-center md:gap-2">
+          <div className="hidden xl:flex xl:items-center xl:gap-2">
             {isPending ? (
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             ) : session ? (
@@ -242,7 +242,7 @@ export default function Header() {
           </div>
 
           {/* Mobile menu button */}
-          <div className="flex items-center gap-2 lg:hidden">
+          <div className="flex items-center gap-2 xl:hidden">
             {!isPending && session && (
               <>
                 <LocaleSwitcher />
@@ -308,7 +308,7 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div className="border-t py-4 lg:hidden">
+          <div className="border-t py-4 xl:hidden">
             <div className="flex flex-col gap-2">
               <Button variant="ghost" asChild className="justify-start">
                 <Link href="/games" onClick={() => setMobileMenuOpen(false)}>
