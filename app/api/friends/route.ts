@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { getUserById, getUserByUsername, getUsersByIds } from "@/lib/db/users";
+import { getUserById, getUserByUsername, getUsersByIds, toPublicUser } from "@/lib/db/users";
 import { areUsersFriends, createFriendRequest, getPendingRequestBetween } from "@/lib/db/friends";
 import { notifyUser } from "@/lib/services/notifications";
 
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     }
 
     const currentUser = await getUserById(session.user.id);
-    const friends = await getUsersByIds(currentUser?.friends || []);
+    const friends = (await getUsersByIds(currentUser?.friends || [])).map(toPublicUser);
 
     return NextResponse.json({ friends });
   } catch (error) {
@@ -62,10 +62,11 @@ export async function POST(request: NextRequest) {
       recipientId: targetUser.id,
     });
 
+    const requester = await getUserById(session.user.id);
     await notifyUser(
       targetUser.id,
       "Nouvelle demande d'ami",
-      `${session.user.name || session.user.email || "Quelqu'un"} souhaite devenir votre ami`
+      `${requester?.displayName || requester?.username || "Quelqu'un"} souhaite devenir votre ami`
     );
 
     return NextResponse.json({ friendRequest }, { status: 201 });

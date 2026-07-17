@@ -139,6 +139,7 @@ export default function FriendsPageClient() {
           <input
             className="flex-1 rounded-md border border-input bg-background px-3 py-2"
             placeholder={t("page.addPlaceholder")}
+            aria-label={t("page.addPlaceholder")}
             value={username}
             onChange={(event) => setUsername(event.target.value)}
           />
@@ -179,7 +180,7 @@ export default function FriendsPageClient() {
             <div className="flex items-center justify-between gap-4 rounded-lg border p-4" key={friend.id}>
               <div className="flex items-center gap-3 min-w-0">
                 {friend.avatar ? (
-                  <img src={friend.avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
+                  <img src={friend.avatar} alt={displayNameFor(friend)} className="h-10 w-10 rounded-full object-cover" />
                 ) : null}
                 <Link href={`/users/${friend.id}`} className="font-semibold truncate hover:underline">
                   {displayNameFor(friend)}

@@ -109,9 +109,25 @@ export async function getUserByUsername(username: string): Promise<User | null> 
   }
 
   const user = await db.collection(COLLECTION_NAME).findOne({
-    $or: [{ name: username }, { username }, { displayName: username }],
+    $or: [{ name: username }, { username }],
   }, { collation: { locale: 'en', strength: 2 } });
   return user ? toUser(user) : null;
+}
+
+export type PublicUser = Pick<User, "id" | "username" | "displayName" | "discriminator" | "avatar">;
+
+/**
+ * Ne conserve que les champs publics d'un utilisateur, pour éviter d'exposer
+ * des informations sensibles (email, discordId...) à d'autres utilisateurs.
+ */
+export function toPublicUser(user: User): PublicUser {
+  return {
+    id: user.id,
+    username: user.username,
+    displayName: user.displayName,
+    discriminator: user.discriminator,
+    avatar: user.avatar,
+  };
 }
 
 export async function updateUserGames(userId: string, games: string[]): Promise<boolean> {

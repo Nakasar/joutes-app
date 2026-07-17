@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ObjectId } from "mongodb";
 import { auth } from "@/lib/auth";
 import { removeFriend } from "@/lib/db/friends";
 
@@ -9,6 +10,10 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Authentification requise" }, { status: 401 });
+    }
+
+    if (!ObjectId.isValid(friendId)) {
+      return NextResponse.json({ error: "Identifiant d'ami invalide" }, { status: 400 });
     }
 
     const removed = await removeFriend(session.user.id, friendId);

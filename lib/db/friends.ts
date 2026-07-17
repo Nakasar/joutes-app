@@ -40,9 +40,10 @@ export async function getPendingRequestBetween(userId: string, otherUserId: stri
 
 export async function createFriendRequest(input: { requesterId: string; recipientId: string }): Promise<FriendRequest> {
   const now = new Date().toISOString();
+  const id = new ObjectId();
   const request: FriendRequestDocument = {
-    _id: new ObjectId(),
-    id: new ObjectId().toString(),
+    _id: id,
+    id: id.toString(),
     requesterId: input.requesterId,
     recipientId: input.recipientId,
     status: "pending",
@@ -70,7 +71,13 @@ export async function acceptFriendRequest(requestId: string, userId: string): Pr
   }
 
   const now = new Date().toISOString();
-  await friendRequestsCollection.updateOne({ id: requestId }, { $set: { status: "accepted", updatedAt: now } });
+  const updateResult = await friendRequestsCollection.updateOne(
+    { id: requestId, recipientId: userId, status: "pending" },
+    { $set: { status: "accepted", updatedAt: now } }
+  );
+  if (updateResult.modifiedCount === 0) {
+    return null;
+  }
 
   const userCollection = db.collection(USER_COLLECTION);
   await Promise.all([
