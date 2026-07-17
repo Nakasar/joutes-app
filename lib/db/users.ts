@@ -16,6 +16,7 @@ function toUser(doc: WithId<Document>): User {
     avatar: doc.image || doc.avatar || "",
     lairs: doc.lairs || [],
     games: doc.games || [],
+    friends: doc.friends || [],
     isPublicProfile: doc.isPublicProfile || false,
     description: doc.description || undefined,
     website: doc.website || undefined,
@@ -87,6 +88,46 @@ export async function getUserByUsernameAndDiscriminator(
     discriminator,
   }, { collation: { locale: 'en', strength: 2 } });
   return user ? toUser(user) : null;
+}
+
+/**
+ * Récupère un utilisateur par son nom d'utilisateur (username, ou tag displayName#discriminator)
+ * @param username Le nom d'utilisateur ou tag renseigné
+ * @returns L'utilisateur ou null si non trouvé
+ */
+export async function getUserByUsername(username: string): Promise<User | null> {
+  if (!username) {
+    return null;
+  }
+
+  const parts = username.split('#');
+  if (parts.length === 2 && parts[0] && parts[1]) {
+    const byTag = await getUserByUsernameAndDiscriminator(parts[0], parts[1]);
+    if (byTag) {
+      return byTag;
+    }
+  }
+
+  const user = await db.collection(COLLECTION_NAME).findOne({
+    $or: [{ name: username }, { username }],
+  }, { collation: { locale: 'en', strength: 2 } });
+  return user ? toUser(user) : null;
+}
+
+export type PublicUser = Pick<User, "id" | "username" | "displayName" | "discriminator" | "avatar">;
+
+/**
+ * Ne conserve que les champs publics d'un utilisateur, pour éviter d'exposer
+ * des informations sensibles (email, discordId...) à d'autres utilisateurs.
+ */
+export function toPublicUser(user: User): PublicUser {
+  return {
+    id: user.id,
+    username: user.username,
+    displayName: user.displayName,
+    discriminator: user.discriminator,
+    avatar: user.avatar,
+  };
 }
 
 export async function updateUserGames(userId: string, games: string[]): Promise<boolean> {

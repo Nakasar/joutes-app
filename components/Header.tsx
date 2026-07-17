@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSession, signOut } from "@/lib/auth-client";
 import Image from "next/image";
-import {Menu, Calendar, MapPin, User, LogOut, Shield, Trophy, Dices, Library, Heart, Users, ChevronDown, Sparkles, Tag} from "lucide-react";
+import {Menu, Calendar, MapPin, User, UserRound, LogOut, Shield, Trophy, Dices, Library, Heart, Users, ChevronDown, Sparkles, Tag} from "lucide-react";
 import { isAdmin } from "@/lib/config/admins";
 import { Button } from "@/components/ui/button";
 import { NotificationDropdown } from "@/components/NotificationDropdown";
@@ -137,6 +137,16 @@ export default function Header() {
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
+                </NavigationMenuItem>
+              )}
+              {session && (
+                <NavigationMenuItem>
+                  <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                    <Link href="/friends">
+                      <UserRound className="mr-2 h-4 w-4" />
+                      {t('menu.Amis')}
+                    </Link>
+                  </NavigationMenuLink>
                 </NavigationMenuItem>
               )}
               {session && (
@@ -324,6 +334,14 @@ export default function Header() {
                   {t('menu.Fonctionnalités')}
                 </Link>
               </Button>
+              {session && (
+                <Button variant="ghost" asChild className="justify-start">
+                  <Link href="/friends" onClick={() => setMobileMenuOpen(false)}>
+                    <UserRound className="mr-2 h-4 w-4" />
+                    {t('menu.Amis')}
+                  </Link>
+                </Button>
+              )}
               {session && (
                 <>
                   <p className="px-3 pt-2 text-xs font-medium text-muted-foreground">{t('menu.Collection')}</p>

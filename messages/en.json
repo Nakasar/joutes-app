@@ -18,7 +18,8 @@
       "Groupes": "Groups",
       "PlayGroups": "My Play-Groups",
       "Fonctionnalités": "Features",
-      "SellLists": "My Sell List"
+      "SellLists": "My Sell List",
+      "Amis": "Friends"
     }
   },
   "Home": {
@@ -1454,5 +1455,20 @@
           "points": "{count} pts"
         }
       }
+    },
+  "Friends": {
+    "page": {
+      "addTitle": "Add a friend",
+      "addPlaceholder": "Username",
+      "addSubmit": "Send request",
+      "requestSent": "Friend request sent.",
+      "requestsTitle": "Received requests",
+      "accept": "Accept",
+      "decline": "Decline",
+      "friendsTitle": "My friends",
+      "loading": "Loading...",
+      "empty": "You do not have any friends yet.",
+      "remove": "Remove"
     }
+  }
 }

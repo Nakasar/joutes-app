@@ -18,7 +18,8 @@
       "Groupes": "Groupes",
       "PlayGroups": "Mes Groupes de Jeu",
       "Fonctionnalités": "Fonctionnalités",
-      "SellLists": "Ma liste de vente"
+      "SellLists": "Ma liste de vente",
+      "Amis": "Amis"
     }
   },
   "LocaleSwitcher": {
@@ -1455,5 +1456,20 @@
           "points": "{count} pts"
         }
       }
+    },
+  "Friends": {
+    "page": {
+      "addTitle": "Ajouter un ami",
+      "addPlaceholder": "Nom d'utilisateur",
+      "addSubmit": "Envoyer la demande",
+      "requestSent": "Demande d'ami envoyée.",
+      "requestsTitle": "Demandes reçues",
+      "accept": "Accepter",
+      "decline": "Refuser",
+      "friendsTitle": "Mes amis",
+      "loading": "Chargement...",
+      "empty": "Vous n'avez pas encore d'amis.",
+      "remove": "Retirer"
     }
+  }
 }
