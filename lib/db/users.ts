@@ -16,6 +16,7 @@ function toUser(doc: WithId<Document>): User {
     avatar: doc.image || doc.avatar || "",
     lairs: doc.lairs || [],
     games: doc.games || [],
+    friends: doc.friends || [],
     isPublicProfile: doc.isPublicProfile || false,
     description: doc.description || undefined,
     website: doc.website || undefined,
@@ -85,6 +86,30 @@ export async function getUserByUsernameAndDiscriminator(
   const user = await db.collection(COLLECTION_NAME).findOne({
     displayName,
     discriminator,
+  }, { collation: { locale: 'en', strength: 2 } });
+  return user ? toUser(user) : null;
+}
+
+/**
+ * Récupère un utilisateur par son nom d'utilisateur (username, ou tag displayName#discriminator)
+ * @param username Le nom d'utilisateur ou tag renseigné
+ * @returns L'utilisateur ou null si non trouvé
+ */
+export async function getUserByUsername(username: string): Promise<User | null> {
+  if (!username) {
+    return null;
+  }
+
+  const parts = username.split('#');
+  if (parts.length === 2 && parts[0] && parts[1]) {
+    const byTag = await getUserByUsernameAndDiscriminator(parts[0], parts[1]);
+    if (byTag) {
+      return byTag;
+    }
+  }
+
+  const user = await db.collection(COLLECTION_NAME).findOne({
+    $or: [{ name: username }, { username }, { displayName: username }],
   }, { collation: { locale: 'en', strength: 2 } });
   return user ? toUser(user) : null;
 }

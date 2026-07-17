@@ -18,7 +18,8 @@
       "Groupes": "Gruppi",
       "PlayGroups": "I miei gruppi di gioco",
       "Fonctionnalités": "Funzionalità",
-      "SellLists": "La mia lista di vendita"
+      "SellLists": "La mia lista di vendita",
+      "Amis": "Amici"
     }
   },
   "LocaleSwitcher": {
@@ -1396,5 +1397,20 @@
           "points": "{count} pt"
         }
       }
+    },
+  "Friends": {
+    "page": {
+      "addTitle": "Aggiungi un amico",
+      "addPlaceholder": "Nome utente",
+      "addSubmit": "Invia richiesta",
+      "requestSent": "Richiesta di amicizia inviata.",
+      "requestsTitle": "Richieste ricevute",
+      "accept": "Accetta",
+      "decline": "Rifiuta",
+      "friendsTitle": "I miei amici",
+      "loading": "Caricamento...",
+      "empty": "Non hai ancora nessun amico.",
+      "remove": "Rimuovi"
     }
+  }
 }
