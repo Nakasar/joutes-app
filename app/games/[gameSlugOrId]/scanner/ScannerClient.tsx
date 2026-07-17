@@ -2,14 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import Fuse from "fuse.js";
 import type { Worker as TesseractWorker } from "tesseract.js";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { CameraOff, Loader2, ScanLine } from "lucide-react";
 
-type CardNameEntry = { id: string; name: string };
+type CardMatch = { id: string; name: string; score: number };
 
 type ErrataDetails = {
   id: string;
@@ -31,11 +30,10 @@ type MatchedCard = {
   erratas: ErrataDetails[];
 };
 
-type Phase = "idle" | "loading-names" | "starting" | "scanning" | "matched" | "error";
+type Phase = "idle" | "starting" | "scanning" | "matched" | "error";
 
 const SCAN_INTERVAL_MS = 700;
-const MATCH_SCORE_THRESHOLD = 0.45;
-const MIN_LINE_LENGTH = 3;
+const MIN_TEXT_LENGTH = 3;
 // Fraction of the captured frame kept, centered — matches the on-screen guide
 // box so OCR only sees the card, not whatever background surrounds it.
 const CROP_RATIO = 0.82;
@@ -46,7 +44,7 @@ const CONTRAST = 1.5;
 export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
   const t = useTranslations("Games.Scanner");
 
-  const [phase, setPhase] = useState<Phase>("loading-names");
+  const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [matchedCard, setMatchedCard] = useState<MatchedCard | null>(null);
   const [lastReadText, setLastReadText] = useState("");
@@ -55,7 +53,6 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const workerRef = useRef<TesseractWorker | null>(null);
-  const fuseRef = useRef<Fuse<CardNameEntry> | null>(null);
   const stopRef = useRef(true);
 
   const stopCamera = useCallback(() => {
@@ -68,64 +65,30 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadNames() {
-      try {
-        const res = await fetch(`/api/games/${gameSlug}/scanner/names`);
-        const data = await res.json();
-        if (cancelled) return;
-        if (!res.ok) {
-          throw new Error(data?.error?.message ?? t("errors.namesLoad"));
-        }
-        const names: CardNameEntry[] = data.names ?? [];
-        fuseRef.current = new Fuse(names, {
-          keys: ["name"],
-          threshold: MATCH_SCORE_THRESHOLD,
-          ignoreLocation: true,
-          minMatchCharLength: MIN_LINE_LENGTH,
-        });
-        setPhase("idle");
-      } catch (err) {
-        if (cancelled) return;
-        setError(err instanceof Error ? err.message : t("errors.namesLoad"));
-        setPhase("error");
-      }
-    }
-
-    void loadNames();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [gameSlug, t]);
-
-  useEffect(() => {
     return () => {
       stopCamera();
       void workerRef.current?.terminate();
     };
   }, [stopCamera]);
 
-  const findBestMatch = useCallback((text: string): CardNameEntry | null => {
-    const fuse = fuseRef.current;
-    if (!fuse) return null;
-
-    const lines = text
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line.length >= MIN_LINE_LENGTH);
-
-    let best: { item: CardNameEntry; score: number } | null = null;
-    for (const line of lines) {
-      const [top] = fuse.search(line);
-      if (top && top.score !== undefined && (!best || top.score < best.score)) {
-        best = { item: top.item, score: top.score };
+  // Matching happens server-side: a game's full card-name list can be
+  // thousands of entries, far too much to ship to the client just to find
+  // one fuzzy match per OCR frame.
+  const matchCardText = useCallback(
+    async (text: string): Promise<CardMatch | null> => {
+      const res = await fetch(`/api/games/${gameSlug}/scanner/match`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error?.message ?? t("errors.generic"));
       }
-    }
-
-    return best ? best.item : null;
-  }, []);
+      return data.match ?? null;
+    },
+    [gameSlug, t]
+  );
 
   const fetchCardDetails = useCallback(
     async (cardId: string) => {
@@ -190,7 +153,10 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
       const result = await worker.recognize(canvas);
       const text = result.data.text || "";
       setLastReadText(text.replace(/\s+/g, " ").trim());
-      const match = findBestMatch(text);
+
+      if (text.trim().length < MIN_TEXT_LENGTH) return;
+
+      const match = await matchCardText(text);
       if (match && !stopRef.current) {
         stopCamera();
         await fetchCardDetails(match.id);
@@ -198,7 +164,7 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
     } catch (err) {
       console.error("Scanner OCR error", err);
     }
-  }, [prepareCapture, findBestMatch, fetchCardDetails, stopCamera]);
+  }, [prepareCapture, matchCardText, fetchCardDetails, stopCamera]);
 
   const scanLoop = useCallback(async () => {
     while (!stopRef.current) {
@@ -293,13 +259,6 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
 
   return (
     <div className="space-y-6">
-      {phase === "loading-names" && (
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span>{t("starting")}</span>
-        </div>
-      )}
-
       {phase === "idle" && (
         <Card>
           <CardContent className="flex flex-col items-center gap-4 py-10 text-center">

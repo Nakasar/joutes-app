@@ -753,7 +753,6 @@
       "errors": {
         "cameraUnsupported": "Your browser does not support camera access.",
         "cameraAccess": "Could not access the camera. Check your browser permissions.",
-        "namesLoad": "Could not load the card list for this game.",
         "cardFetch": "Could not retrieve details for the detected card.",
         "generic": "An error occurred."
       },

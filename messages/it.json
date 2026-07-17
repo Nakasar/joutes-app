@@ -753,7 +753,6 @@
       "errors": {
         "cameraUnsupported": "Il tuo browser non supporta l'accesso alla fotocamera.",
         "cameraAccess": "Impossibile accedere alla fotocamera. Controlla i permessi del tuo browser.",
-        "namesLoad": "Impossibile caricare l'elenco delle carte per questo gioco.",
         "cardFetch": "Impossibile recuperare i dettagli della carta rilevata.",
         "generic": "Si è verificato un errore."
       },
