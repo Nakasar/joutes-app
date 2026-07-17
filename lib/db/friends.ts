@@ -1,5 +1,5 @@
 import db from "@/lib/mongodb";
-import { ObjectId, WithId } from "mongodb";
+import { MongoServerError, ObjectId, WithId } from "mongodb";
 import type { FriendRequest, FriendRequestDocument } from "@/lib/types/FriendRequest";
 import type { User } from "@/lib/types/User";
 
@@ -7,6 +7,25 @@ const FRIEND_REQUESTS_COLLECTION = "friendRequests";
 const USER_COLLECTION = "user";
 
 const friendRequestsCollection = db.collection<FriendRequestDocument>(FRIEND_REQUESTS_COLLECTION);
+
+export class DuplicateFriendRequestError extends Error {
+  constructor() {
+    super("A pending friend request already exists between these users");
+    this.name = "DuplicateFriendRequestError";
+  }
+}
+
+function computePairKey(userId: string, otherUserId: string): string {
+  return [userId, otherUserId].sort().join(":");
+}
+
+/** Doit être appelée au moins une fois (ex. script de setup) pour garantir l'unicité des demandes en attente entre deux utilisateurs. */
+export async function createFriendRequestIndexes() {
+  await friendRequestsCollection.createIndex(
+    { pairKey: 1 },
+    { unique: true, partialFilterExpression: { status: "pending" } }
+  );
+}
 
 function toFriendRequest(doc: WithId<FriendRequestDocument>): FriendRequest {
   return {
@@ -46,12 +65,21 @@ export async function createFriendRequest(input: { requesterId: string; recipien
     id: id.toString(),
     requesterId: input.requesterId,
     recipientId: input.recipientId,
+    pairKey: computePairKey(input.requesterId, input.recipientId),
     status: "pending",
     createdAt: now,
     updatedAt: now,
   };
 
-  await friendRequestsCollection.insertOne(request);
+  try {
+    await friendRequestsCollection.insertOne(request);
+  } catch (error) {
+    if (error instanceof MongoServerError && error.code === 11000) {
+      throw new DuplicateFriendRequestError();
+    }
+    throw error;
+  }
+
   return toFriendRequest(request);
 }
 
@@ -80,16 +108,25 @@ export async function acceptFriendRequest(requestId: string, userId: string): Pr
   }
 
   const userCollection = db.collection(USER_COLLECTION);
-  await Promise.all([
-    userCollection.updateOne(
-      { _id: ObjectId.createFromHexString(request.requesterId) },
-      { $addToSet: { friends: request.recipientId } }
-    ),
-    userCollection.updateOne(
-      { _id: ObjectId.createFromHexString(request.recipientId) },
-      { $addToSet: { friends: request.requesterId } }
-    ),
-  ]);
+  try {
+    await Promise.all([
+      userCollection.updateOne(
+        { _id: ObjectId.createFromHexString(request.requesterId) },
+        { $addToSet: { friends: request.recipientId } }
+      ),
+      userCollection.updateOne(
+        { _id: ObjectId.createFromHexString(request.recipientId) },
+        { $addToSet: { friends: request.requesterId } }
+      ),
+    ]);
+  } catch (error) {
+    // Les utilisateurs n'ont pas pu être liés : on remet la demande en attente plutôt que de la laisser "accepted" à tort.
+    await friendRequestsCollection.updateOne(
+      { id: requestId, status: "accepted" },
+      { $set: { status: "pending", updatedAt: new Date().toISOString() } }
+    );
+    throw error;
+  }
 
   return toFriendRequest({ ...request, status: "accepted", updatedAt: now });
 }

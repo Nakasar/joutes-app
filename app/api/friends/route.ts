@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getUserById, getUserByUsername, getUsersByIds, toPublicUser } from "@/lib/db/users";
-import { areUsersFriends, createFriendRequest, getPendingRequestBetween } from "@/lib/db/friends";
+import { areUsersFriends, createFriendRequest, DuplicateFriendRequestError, getPendingRequestBetween } from "@/lib/db/friends";
 import { notifyUser } from "@/lib/services/notifications";
 
 export async function GET(request: NextRequest) {
@@ -57,10 +57,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Une demande d'ami est déjà en attente" }, { status: 409 });
     }
 
-    const friendRequest = await createFriendRequest({
-      requesterId: session.user.id,
-      recipientId: targetUser.id,
-    });
+    let friendRequest;
+    try {
+      friendRequest = await createFriendRequest({
+        requesterId: session.user.id,
+        recipientId: targetUser.id,
+      });
+    } catch (error) {
+      if (error instanceof DuplicateFriendRequestError) {
+        return NextResponse.json({ error: "Une demande d'ami est déjà en attente" }, { status: 409 });
+      }
+      throw error;
+    }
 
     const requester = await getUserById(session.user.id);
     await notifyUser(
