@@ -749,6 +749,7 @@
       "scanAgain": "Scan another card",
       "cancel": "Cancel",
       "instructions": "Hold a card face up in front of the camera, well lit and without glare.",
+      "lastRead": "Last read: {text}",
       "errors": {
         "cameraUnsupported": "Your browser does not support camera access.",
         "cameraAccess": "Could not access the camera. Check your browser permissions.",

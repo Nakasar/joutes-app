@@ -749,6 +749,7 @@
       "scanAgain": "Scansiona un'altra carta",
       "cancel": "Annulla",
       "instructions": "Tieni una carta a faccia in su davanti alla fotocamera, ben illuminata e senza riflessi.",
+      "lastRead": "Ultima lettura: {text}",
       "errors": {
         "cameraUnsupported": "Il tuo browser non supporta l'accesso alla fotocamera.",
         "cameraAccess": "Impossibile accedere alla fotocamera. Controlla i permessi del tuo browser.",

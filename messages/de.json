@@ -749,6 +749,7 @@
       "scanAgain": "Weitere Karte scannen",
       "cancel": "Abbrechen",
       "instructions": "Halte eine Karte mit der Vorderseite gut beleuchtet und ohne Reflexionen vor die Kamera.",
+      "lastRead": "Zuletzt gelesen: {text}",
       "errors": {
         "cameraUnsupported": "Dein Browser unterstützt keinen Kamerazugriff.",
         "cameraAccess": "Kamerazugriff nicht möglich. Überprüfe die Berechtigungen deines Browsers.",

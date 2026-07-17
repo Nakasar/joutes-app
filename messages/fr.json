@@ -750,6 +750,7 @@
       "scanAgain": "Scanner une autre carte",
       "cancel": "Annuler",
       "instructions": "Placez une carte face visible devant la caméra, bien éclairée et sans reflet.",
+      "lastRead": "Dernière lecture : {text}",
       "errors": {
         "cameraUnsupported": "Votre navigateur ne permet pas d'accéder à la caméra.",
         "cameraAccess": "Impossible d'accéder à la caméra. Vérifiez les autorisations de votre navigateur.",

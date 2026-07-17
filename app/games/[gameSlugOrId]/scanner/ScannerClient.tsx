@@ -34,8 +34,14 @@ type MatchedCard = {
 type Phase = "idle" | "loading-names" | "starting" | "scanning" | "matched" | "error";
 
 const SCAN_INTERVAL_MS = 700;
-const MATCH_SCORE_THRESHOLD = 0.4;
+const MATCH_SCORE_THRESHOLD = 0.45;
 const MIN_LINE_LENGTH = 3;
+// Fraction of the captured frame kept, centered — matches the on-screen guide
+// box so OCR only sees the card, not whatever background surrounds it.
+const CROP_RATIO = 0.82;
+// Simple contrast boost applied after grayscale conversion; text edges on
+// busy card art come through much cleaner for Tesseract with this than raw color.
+const CONTRAST = 1.5;
 
 export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
   const t = useTranslations("Games.Scanner");
@@ -43,6 +49,7 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
   const [phase, setPhase] = useState<Phase>("loading-names");
   const [error, setError] = useState<string | null>(null);
   const [matchedCard, setMatchedCard] = useState<MatchedCard | null>(null);
+  const [lastReadText, setLastReadText] = useState("");
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -138,25 +145,52 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
     [gameSlug, t]
   );
 
+  // Crops to the centered guide-box region and converts to high-contrast
+  // grayscale in place — both steps measurably improve Tesseract's accuracy
+  // on stylized card-name text sitting on top of busy artwork.
+  const prepareCapture = useCallback((video: HTMLVideoElement, canvas: HTMLCanvasElement): boolean => {
+    const videoWidth = video.videoWidth;
+    const videoHeight = video.videoHeight;
+    if (!videoWidth || !videoHeight) return false;
+
+    const cropWidth = Math.round(videoWidth * CROP_RATIO);
+    const cropHeight = Math.round(videoHeight * CROP_RATIO);
+    const cropX = Math.round((videoWidth - cropWidth) / 2);
+    const cropY = Math.round((videoHeight - cropHeight) / 2);
+
+    canvas.width = cropWidth;
+    canvas.height = cropHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return false;
+
+    ctx.drawImage(video, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+
+    const imageData = ctx.getImageData(0, 0, cropWidth, cropHeight);
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      const adjusted = Math.min(255, Math.max(0, (gray - 128) * CONTRAST + 128));
+      data[i] = adjusted;
+      data[i + 1] = adjusted;
+      data[i + 2] = adjusted;
+    }
+    ctx.putImageData(imageData, 0, 0);
+
+    return true;
+  }, []);
+
   const captureAndRecognize = useCallback(async () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const worker = workerRef.current;
     if (!video || !canvas || !worker || video.readyState < 2) return;
-
-    const width = video.videoWidth;
-    const height = video.videoHeight;
-    if (!width || !height) return;
-
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.drawImage(video, 0, 0, width, height);
+    if (!prepareCapture(video, canvas)) return;
 
     try {
       const result = await worker.recognize(canvas);
-      const match = findBestMatch(result.data.text || "");
+      const text = result.data.text || "";
+      setLastReadText(text.replace(/\s+/g, " ").trim());
+      const match = findBestMatch(text);
       if (match && !stopRef.current) {
         stopCamera();
         await fetchCardDetails(match.id);
@@ -164,7 +198,7 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
     } catch (err) {
       console.error("Scanner OCR error", err);
     }
-  }, [findBestMatch, fetchCardDetails, stopCamera]);
+  }, [prepareCapture, findBestMatch, fetchCardDetails, stopCamera]);
 
   const scanLoop = useCallback(async () => {
     while (!stopRef.current) {
@@ -174,9 +208,57 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
     }
   }, [captureAndRecognize]);
 
+  // Attaches the camera stream and starts OCR only once the <video> element
+  // for the "scanning" phase has actually been mounted by React — requesting
+  // the stream and flipping the phase happen in startScanning(), but if the
+  // browser already has camera permission, getUserMedia() can resolve before
+  // React commits that render, so attaching the stream from inside
+  // startScanning() itself would silently miss the (not-yet-mounted) video
+  // element and leave OCR reading a 0x0 frame forever.
+  useEffect(() => {
+    if (phase !== "scanning") return;
+
+    const video = videoRef.current;
+    const stream = streamRef.current;
+    if (!video || !stream) return;
+
+    let cancelled = false;
+    video.srcObject = stream;
+
+    async function start(videoEl: HTMLVideoElement) {
+      try {
+        await videoEl.play();
+        if (cancelled) return;
+
+        if (!workerRef.current) {
+          const { createWorker, PSM } = await import("tesseract.js");
+          const newWorker = await createWorker("eng");
+          await newWorker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_BLOCK });
+          workerRef.current = newWorker;
+        }
+        if (cancelled) return;
+
+        stopRef.current = false;
+        void scanLoop();
+      } catch (err) {
+        if (cancelled) return;
+        console.error("Scanner start error", err);
+        setError(t("errors.cameraAccess"));
+        setPhase("error");
+      }
+    }
+
+    void start(video);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [phase, scanLoop, t]);
+
   const startScanning = useCallback(async () => {
     setError(null);
     setMatchedCard(null);
+    setLastReadText("");
     setPhase("starting");
 
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -191,25 +273,13 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
         audio: false,
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-
-      if (!workerRef.current) {
-        const { createWorker } = await import("tesseract.js");
-        workerRef.current = await createWorker("eng");
-      }
-
-      stopRef.current = false;
       setPhase("scanning");
-      void scanLoop();
     } catch (err) {
       console.error("Scanner camera error", err);
       setError(t("errors.cameraAccess"));
       setPhase("error");
     }
-  }, [scanLoop, t]);
+  }, [t]);
 
   const handleScanAgain = useCallback(() => {
     setMatchedCard(null);
@@ -254,23 +324,19 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
         <div className="space-y-3">
           <div className="relative mx-auto aspect-[3/4] max-w-sm overflow-hidden rounded-lg border bg-black">
             {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-            <video ref={videoRef} className="h-full w-full object-cover" muted playsInline autoPlay />
+            <video ref={videoRef} className="h-full w-full object-cover" muted playsInline />
             <div className="pointer-events-none absolute inset-6 rounded-lg border-2 border-white/70" />
           </div>
           <canvas ref={canvasRef} className="hidden" />
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            {phase === "starting" ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>{t("starting")}</span>
-              </>
-            ) : (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>{t("scanning")}</span>
-              </>
-            )}
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>{phase === "starting" ? t("starting") : t("scanning")}</span>
           </div>
+          {phase === "scanning" && lastReadText && (
+            <p className="mx-auto max-w-sm truncate text-center text-xs text-muted-foreground">
+              {t("lastRead", { text: lastReadText })}
+            </p>
+          )}
           <div className="flex justify-center">
             <Button variant="outline" onClick={handleCancel}>
               {t("cancel")}
