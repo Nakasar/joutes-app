@@ -1,3 +1,6 @@
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import FriendsPageClient from "@/components/friends/FriendsPageClient";
 import type { Metadata } from "next";
 
@@ -15,7 +18,15 @@ export const metadata: Metadata = {
   },
 };
 
-export default function FriendsPage() {
+export default async function FriendsPage() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
       <div className="space-y-6">

@@ -105,9 +105,9 @@ export async function declineFriendRequest(requestId: string, userId: string): P
 
 export async function removeFriend(userId: string, friendId: string): Promise<boolean> {
   const userCollection = db.collection<User>(USER_COLLECTION);
-  const [result] = await Promise.all([
+  const [userResult, friendResult] = await Promise.all([
     userCollection.updateOne({ _id: ObjectId.createFromHexString(userId) }, { $pull: { friends: friendId } }),
     userCollection.updateOne({ _id: ObjectId.createFromHexString(friendId) }, { $pull: { friends: userId } }),
   ]);
-  return result.modifiedCount > 0;
+  return userResult.modifiedCount > 0 || friendResult.modifiedCount > 0;
 }
