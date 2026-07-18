@@ -39,6 +39,7 @@
     "discord-api-types": "^0.38.48",
     "discord-verify": "^1.2.0",
     "fuse.js": "^7.5.0",
+    "jsqr": "^1.4.0",
     "lucide-react": "^0.548.0",
     "luxon": "^3.7.2",
     "mcp-handler": "^1.0.7",

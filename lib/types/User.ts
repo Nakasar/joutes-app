@@ -14,6 +14,7 @@ export type User = {
   lairs: Lair['id'][];
   games: Game['id'][];
   friends: User['id'][];
+  friendCode?: string; // Code unique partageable (QR code) pour être ajouté en ami instantanément
 
   isPublicProfile?: boolean; // Si true, le profil affiche les jeux et lieux de l'utilisateur
   

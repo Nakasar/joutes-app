@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import FriendCodeQR from "@/components/friends/FriendCodeQR";
+import FriendCodeScanner from "@/components/friends/FriendCodeScanner";
 
 type FriendUser = {
   id: string;
@@ -133,6 +135,15 @@ export default function FriendsPageClient() {
 
   return (
     <div className="space-y-8">
+      <div className="rounded-xl border bg-card p-6 shadow-sm">
+        <h2 className="text-xl font-semibold">{t("qr.sectionTitle")}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{t("qr.sectionDescription")}</p>
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+          <FriendCodeQR />
+          <FriendCodeScanner onFriendAdded={() => void loadData()} />
+        </div>
+      </div>
+
       <div className="rounded-xl border bg-card p-6 shadow-sm">
         <h2 className="text-xl font-semibold">{t("page.addTitle")}</h2>
         <form className="mt-4 flex flex-col gap-3 sm:flex-row" onSubmit={handleAddFriend}>

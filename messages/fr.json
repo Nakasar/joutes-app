@@ -1501,6 +1501,44 @@
       "loading": "Chargement...",
       "empty": "Vous n'avez pas encore d'amis.",
       "remove": "Retirer"
+    },
+    "qr": {
+      "sectionTitle": "Code ami",
+      "sectionDescription": "Affichez votre QR code pour être ajouté instantanément, ou scannez celui d'un ami.",
+      "button": "Mon code ami",
+      "title": "Mon code ami",
+      "description": "Faites scanner ce QR code par un ami pour devenir amis instantanément, sans demande à valider.",
+      "loading": "Génération du code...",
+      "copyLink": "Copier le lien",
+      "copied": "Lien copié !",
+      "errors": {
+        "generic": "Impossible de récupérer votre code ami."
+      }
+    },
+    "scan": {
+      "button": "Scanner un code ami",
+      "title": "Scanner un code ami",
+      "instructions": "Scannez le QR code affiché par un ami pour l'ajouter instantanément.",
+      "start": "Démarrer le scan",
+      "cancel": "Annuler",
+      "adding": "Ajout de l'ami en cours...",
+      "success": "Vous êtes maintenant ami avec {name} !",
+      "successGeneric": "Ami ajouté avec succès !",
+      "scanAgain": "Scanner un autre code",
+      "errors": {
+        "generic": "Impossible d'ajouter cet ami.",
+        "cameraAccess": "Impossible d'accéder à la caméra.",
+        "cameraUnsupported": "La caméra n'est pas disponible sur cet appareil."
+      }
+    },
+    "addByCode": {
+      "pending": "Ajout de l'ami en cours...",
+      "success": "Vous êtes maintenant ami avec {name} !",
+      "successGeneric": "Ami ajouté avec succès !",
+      "backToFriends": "Retour à mes amis",
+      "errors": {
+        "generic": "Impossible d'ajouter cet ami."
+      }
     }
   }
 }
