@@ -190,6 +190,68 @@ export default function Header() {
             </NavigationMenuList>
           </NavigationMenu>
 
+          {/* Medium Navigation (e.g. iPad): a trimmed-down set of entries shown inline
+              between md and xl, where there isn't enough room for the full desktop nav. */}
+          <NavigationMenu className="hidden md:flex xl:hidden">
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                  <Link href="/games">
+                    <Dices className="mr-1.5 h-4 w-4" />
+                    {t('menu.Jeux')}
+                  </Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                  <Link href="/events">
+                    <Calendar className="mr-1.5 h-4 w-4" />
+                    {t('menu.Événements')}
+                  </Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                  <Link href="/lairs">
+                    <MapPin className="mr-1.5 h-4 w-4" />
+                    {t('menu.Lieux')}
+                  </Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+              {session && (
+                <NavigationMenuItem>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className={navigationMenuTriggerStyle()}>
+                      <Library className="mr-1.5 h-4 w-4" />
+                      {t('menu.Collection')}
+                      <ChevronDown className="ml-1 h-3 w-3" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem asChild>
+                        <Link href="/collection" className="flex w-full cursor-pointer">
+                          <Library className="mr-2 h-4 w-4" />
+                          <span>{t('menu.Collection')}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/wishlists" className="flex w-full cursor-pointer">
+                          <Heart className="mr-2 h-4 w-4" />
+                          <span>{t('menu.Wishlists')}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/sell-lists" className="flex w-full cursor-pointer">
+                          <Tag className="mr-2 h-4 w-4" />
+                          <span>{t('menu.SellLists')}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </NavigationMenuItem>
+              )}
+            </NavigationMenuList>
+          </NavigationMenu>
+
           {/* User Menu (Desktop) */}
           <div className="hidden xl:flex xl:items-center xl:gap-2">
             {isPending ? (
@@ -310,19 +372,19 @@ export default function Header() {
         {mobileMenuOpen && (
           <div className="border-t py-4 xl:hidden">
             <div className="flex flex-col gap-2">
-              <Button variant="ghost" asChild className="justify-start">
+              <Button variant="ghost" asChild className="justify-start md:hidden">
                 <Link href="/games" onClick={() => setMobileMenuOpen(false)}>
                   <Dices className="mr-2 h-4 w-4" />
                   {t('menu.Jeux')}
                 </Link>
               </Button>
-              <Button variant="ghost" asChild className="justify-start">
+              <Button variant="ghost" asChild className="justify-start md:hidden">
                 <Link href="/events" onClick={() => setMobileMenuOpen(false)}>
                   <Calendar className="mr-2 h-4 w-4" />
                   {t('menu.Événements')}
                 </Link>
               </Button>
-              <Button variant="ghost" asChild className="justify-start">
+              <Button variant="ghost" asChild className="justify-start md:hidden">
                 <Link href="/lairs" onClick={() => setMobileMenuOpen(false)}>
                   <MapPin className="mr-2 h-4 w-4" />
                   {t('menu.Lieux')}
@@ -343,27 +405,27 @@ export default function Header() {
                 </Button>
               )}
               {session && (
-                <>
+                <div className="flex flex-col gap-2 md:hidden">
                   <p className="px-3 pt-2 text-xs font-medium text-muted-foreground">{t('menu.Collection')}</p>
-                  <Button variant="ghost" asChild className="justify-start">
+                  <Button variant="ghost" asChild className="w-full justify-start">
                     <Link href="/collection" onClick={() => setMobileMenuOpen(false)}>
                       <Library className="mr-2 h-4 w-4" />
                       {t('menu.Collection')}
                     </Link>
                   </Button>
-                  <Button variant="ghost" asChild className="justify-start">
+                  <Button variant="ghost" asChild className="w-full justify-start">
                     <Link href="/wishlists" onClick={() => setMobileMenuOpen(false)}>
                       <Heart className="mr-2 h-4 w-4" />
                       {t('menu.Wishlists')}
                     </Link>
                   </Button>
-                  <Button variant="ghost" asChild className="justify-start">
+                  <Button variant="ghost" asChild className="w-full justify-start">
                     <Link href="/sell-lists" onClick={() => setMobileMenuOpen(false)}>
                       <Tag className="mr-2 h-4 w-4" />
                       {t('menu.SellLists')}
                     </Link>
                   </Button>
-                </>
+                </div>
               )}
               {session && (
                 <>
