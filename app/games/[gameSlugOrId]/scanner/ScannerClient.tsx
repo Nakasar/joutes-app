@@ -34,6 +34,9 @@ type Phase = "idle" | "starting" | "scanning" | "matched" | "error";
 
 const SCAN_INTERVAL_MS = 700;
 const MIN_TEXT_LENGTH = 3;
+// After this many consecutive match-request failures, stop scanning instead
+// of retrying forever every SCAN_INTERVAL_MS against a backend that's down.
+const MAX_CONSECUTIVE_MATCH_ERRORS = 3;
 // Fraction of the captured frame kept, centered — matches the on-screen guide
 // box so OCR only sees the card, not whatever background surrounds it.
 const CROP_RATIO = 0.82;
@@ -54,6 +57,8 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
   const streamRef = useRef<MediaStream | null>(null);
   const workerRef = useRef<TesseractWorker | null>(null);
   const stopRef = useRef(true);
+  const lastSentTextRef = useRef("");
+  const consecutiveMatchErrorsRef = useRef(0);
 
   const stopCamera = useCallback(() => {
     stopRef.current = true;
@@ -152,19 +157,33 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
     try {
       const result = await worker.recognize(canvas);
       const text = result.data.text || "";
-      setLastReadText(text.replace(/\s+/g, " ").trim());
+      const normalizedText = text.replace(/\s+/g, " ").trim();
+      setLastReadText(normalizedText);
 
-      if (text.trim().length < MIN_TEXT_LENGTH) return;
+      // Skip the request entirely if this frame read the same text as the
+      // last one we actually sent — a static or blurry frame would otherwise
+      // hit the match endpoint every SCAN_INTERVAL_MS for no new information.
+      if (normalizedText.length < MIN_TEXT_LENGTH || normalizedText === lastSentTextRef.current) {
+        return;
+      }
+      lastSentTextRef.current = normalizedText;
 
-      const match = await matchCardText(text);
+      const match = await matchCardText(normalizedText);
+      consecutiveMatchErrorsRef.current = 0;
       if (match && !stopRef.current) {
         stopCamera();
         await fetchCardDetails(match.id);
       }
     } catch (err) {
       console.error("Scanner OCR error", err);
+      consecutiveMatchErrorsRef.current += 1;
+      if (consecutiveMatchErrorsRef.current >= MAX_CONSECUTIVE_MATCH_ERRORS) {
+        stopCamera();
+        setError(t("errors.generic"));
+        setPhase("error");
+      }
     }
-  }, [prepareCapture, matchCardText, fetchCardDetails, stopCamera]);
+  }, [prepareCapture, matchCardText, fetchCardDetails, stopCamera, t]);
 
   const scanLoop = useCallback(async () => {
     while (!stopRef.current) {
@@ -225,6 +244,8 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
     setError(null);
     setMatchedCard(null);
     setLastReadText("");
+    lastSentTextRef.current = "";
+    consecutiveMatchErrorsRef.current = 0;
     setPhase("starting");
 
     if (!navigator.mediaDevices?.getUserMedia) {
