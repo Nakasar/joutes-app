@@ -458,9 +458,22 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
           <div className="relative mx-auto aspect-[3/4] max-w-sm overflow-hidden rounded-lg border bg-black">
             {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
             <video ref={videoRef} className="h-full w-full object-cover" muted playsInline />
-            <div className="pointer-events-none absolute inset-6 rounded-lg border-2 border-white/70" />
+            <div className="pointer-events-none absolute inset-6 rounded-lg border-2 border-white/70">
+              <div
+                className="pointer-events-none absolute rounded border-2 border-dashed border-yellow-400"
+                style={{
+                  top: `${NAME_BAND_TOP_MARGIN_RATIO * 100}%`,
+                  left: `${NAME_BAND_SIDE_MARGIN_RATIO * 100}%`,
+                  width: `${(1 - 2 * NAME_BAND_SIDE_MARGIN_RATIO) * 100}%`,
+                  height: `${NAME_BAND_HEIGHT_RATIO * 100}%`,
+                }}
+              />
+            </div>
           </div>
-          <canvas ref={canvasRef} className="hidden" />
+          <div className="mx-auto max-w-sm space-y-1">
+            <p className="text-center text-xs font-medium text-muted-foreground">{t("ocrPreviewLabel")}</p>
+            <canvas ref={canvasRef} className="mx-auto h-auto w-full rounded border bg-black" />
+          </div>
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
             <span>{phase === "starting" ? t("starting") : t("scanning")}</span>

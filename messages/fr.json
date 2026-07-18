@@ -760,6 +760,7 @@
         "langSearchPlaceholder": "Rechercher une langue…",
         "langEmpty": "Aucune langue trouvée."
       },
+      "ocrPreviewLabel": "Image envoyée à l'OCR (après traitement)",
       "lastRead": "Dernière lecture : {text}",
       "errors": {
         "cameraUnsupported": "Votre navigateur ne permet pas d'accéder à la caméra.",
