@@ -754,7 +754,6 @@
       "errors": {
         "cameraUnsupported": "Votre navigateur ne permet pas d'accéder à la caméra.",
         "cameraAccess": "Impossible d'accéder à la caméra. Vérifiez les autorisations de votre navigateur.",
-        "namesLoad": "Impossible de charger la liste des cartes pour ce jeu.",
         "cardFetch": "Impossible de récupérer les détails de la carte détectée.",
         "generic": "Une erreur est survenue."
       },
