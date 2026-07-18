@@ -750,6 +750,16 @@
       "scanAgain": "Scanner une autre carte",
       "cancel": "Annuler",
       "instructions": "Placez une carte face visible devant la caméra, bien éclairée et sans reflet.",
+      "filters": {
+        "setLabel": "Extension",
+        "setPlaceholder": "Toutes les extensions",
+        "setSearchPlaceholder": "Rechercher une extension…",
+        "setEmpty": "Aucune extension trouvée.",
+        "langLabel": "Langue",
+        "langPlaceholder": "Toutes les langues",
+        "langSearchPlaceholder": "Rechercher une langue…",
+        "langEmpty": "Aucune langue trouvée."
+      },
       "lastRead": "Dernière lecture : {text}",
       "errors": {
         "cameraUnsupported": "Votre navigateur ne permet pas d'accéder à la caméra.",

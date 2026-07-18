@@ -29,7 +29,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ gam
   } catch {
     return NextResponse.json({ error: { message: "Invalid JSON body." } }, { status: 400 });
   }
-  const { text } = (body ?? {}) as { text?: unknown };
+  const { text, lang } = (body ?? {}) as { text?: unknown; lang?: unknown };
 
   if (!text || typeof text !== "string" || !text.trim()) {
     return NextResponse.json({ error: { message: "Invalid text in body." } }, { status: 400 });
@@ -47,6 +47,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ gam
   }
 
   const index = meilisearch.index<CardNameHit>(indexConfig.name);
+
+  const filter: string[] = [];
+  if (typeof lang === "string" && lang.trim()) {
+    filter.push(`lang = ${lang.trim()}`);
+  }
 
   // De-duplicate lines and keep the longest ones — they carry the most
   // signal for a card name — then cap how many are queried, so a single OCR
@@ -69,6 +74,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ gam
         attributesToSearchOn: ["name"],
         attributesToRetrieve: ["id", "name"],
         showRankingScore: true,
+        filter: filter.length > 0 ? filter : undefined,
       })
     )
   );

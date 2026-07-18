@@ -749,6 +749,16 @@
       "scanAgain": "Weitere Karte scannen",
       "cancel": "Abbrechen",
       "instructions": "Halte eine Karte mit der Vorderseite gut beleuchtet und ohne Reflexionen vor die Kamera.",
+      "filters": {
+        "setLabel": "Edition",
+        "setPlaceholder": "Alle Editionen",
+        "setSearchPlaceholder": "Edition suchen…",
+        "setEmpty": "Keine Edition gefunden.",
+        "langLabel": "Sprache",
+        "langPlaceholder": "Alle Sprachen",
+        "langSearchPlaceholder": "Sprache suchen…",
+        "langEmpty": "Keine Sprache gefunden."
+      },
       "lastRead": "Zuletzt gelesen: {text}",
       "errors": {
         "cameraUnsupported": "Dein Browser unterstützt keinen Kamerazugriff.",

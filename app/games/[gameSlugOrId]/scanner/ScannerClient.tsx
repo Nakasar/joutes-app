@@ -2,13 +2,16 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import Fuse from "fuse.js";
 import type { Worker as TesseractWorker } from "tesseract.js";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { CameraOff, Loader2, ScanLine } from "lucide-react";
 
 type CardMatch = { id: string; name: string; score: number };
+type CardNameEntry = { id: string; name: string };
 
 type ErrataDetails = {
   id: string;
@@ -34,6 +37,7 @@ type Phase = "idle" | "starting" | "scanning" | "matched" | "error";
 
 const SCAN_INTERVAL_MS = 700;
 const MIN_TEXT_LENGTH = 3;
+const MATCH_SCORE_THRESHOLD = 0.45;
 // After this many consecutive match-request failures, stop scanning instead
 // of retrying forever every SCAN_INTERVAL_MS against a backend that's down.
 const MAX_CONSECUTIVE_MATCH_ERRORS = 3;
@@ -46,11 +50,25 @@ const CONTRAST = 1.5;
 
 export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
   const t = useTranslations("Games.Scanner");
+  const tGames = useTranslations("Games");
+
+  const getLanguageLabel = useCallback(
+    (language: string) => {
+      const translationKey = `cards.collection.languages.${language.toLowerCase()}`;
+      const translated = tGames(translationKey);
+      return translated === translationKey ? language.toUpperCase() : translated;
+    },
+    [tGames]
+  );
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [matchedCard, setMatchedCard] = useState<MatchedCard | null>(null);
   const [lastReadText, setLastReadText] = useState("");
+  const [setCodes, setSetCodes] = useState<string[]>([]);
+  const [languages, setLanguages] = useState<string[]>([]);
+  const [selectedSetCode, setSelectedSetCode] = useState("");
+  const [selectedLang, setSelectedLang] = useState("");
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -59,6 +77,9 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
   const stopRef = useRef(true);
   const lastSentTextRef = useRef("");
   const consecutiveMatchErrorsRef = useRef(0);
+  // Only set once a set is selected: matching then runs against this
+  // in-memory index instead of calling the server on every scan tick.
+  const fuseRef = useRef<Fuse<CardNameEntry> | null>(null);
 
   const stopCamera = useCallback(() => {
     stopRef.current = true;
@@ -76,15 +97,103 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
     };
   }, [stopCamera]);
 
-  // Matching happens server-side with Meilisearch's fuzzy search: shipping a
-  // game's full card-name list to the client just to build a local fuzzy
-  // index doesn't scale for games with thousands of cards.
+  // Populates the set/language comboboxes. Reuses the cards search endpoint
+  // (limit=1) purely for the setCodes/languages it already computes for the
+  // whole game, instead of adding a near-duplicate lookup.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadFilterOptions() {
+      try {
+        const res = await fetch(`/api/games/${gameSlug}/cards?page=1&limit=1`);
+        const data = await res.json();
+        if (cancelled || !res.ok) return;
+        setSetCodes(data.setCodes ?? []);
+        setLanguages(data.languages ?? []);
+      } catch (err) {
+        if (!cancelled) console.error("Scanner filter options load error", err);
+      }
+    }
+
+    void loadFilterOptions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [gameSlug]);
+
+  // A set is small enough (unlike a game's full card list) to ship to the
+  // client and fuzzy-match locally, with zero backend calls per scan tick.
+  useEffect(() => {
+    if (!selectedSetCode) {
+      fuseRef.current = null;
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadSetNames() {
+      try {
+        const params = new URLSearchParams({ setCode: selectedSetCode });
+        if (selectedLang) {
+          params.set("lang", selectedLang);
+        }
+        const res = await fetch(`/api/games/${gameSlug}/scanner/names?${params.toString()}`);
+        const data = await res.json();
+        if (cancelled) return;
+        if (!res.ok) {
+          throw new Error(data?.error?.message ?? t("errors.generic"));
+        }
+        const names: CardNameEntry[] = data.names ?? [];
+        fuseRef.current = new Fuse(names, {
+          keys: ["name"],
+          threshold: MATCH_SCORE_THRESHOLD,
+          ignoreLocation: true,
+          minMatchCharLength: MIN_TEXT_LENGTH,
+        });
+      } catch (err) {
+        if (cancelled) return;
+        console.error("Scanner set names load error", err);
+        fuseRef.current = null;
+      }
+    }
+
+    void loadSetNames();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [gameSlug, selectedSetCode, selectedLang, t]);
+
+  // When a set is selected, matching runs locally against its in-memory Fuse
+  // index. Otherwise it falls back to the server-side Meilisearch match —
+  // narrowed to the selected language if one is set — since shipping a
+  // game's entire card list (or even just one language's worth) to the
+  // client to build a local index doesn't scale.
   const matchCardText = useCallback(
     async (text: string): Promise<CardMatch | null> => {
+      const fuse = fuseRef.current;
+      if (fuse) {
+        const lines = text
+          .split("\n")
+          .map((line) => line.trim())
+          .filter((line) => line.length >= MIN_TEXT_LENGTH);
+
+        let best: { item: CardNameEntry; score: number } | null = null;
+        for (const line of lines) {
+          const [top] = fuse.search(line);
+          if (top && top.score !== undefined && (!best || top.score < best.score)) {
+            best = { item: top.item, score: top.score };
+          }
+        }
+
+        return best ? { ...best.item, score: best.score } : null;
+      }
+
       const res = await fetch(`/api/games/${gameSlug}/scanner/match`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, lang: selectedLang || undefined }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -92,7 +201,7 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
       }
       return data.match ?? null;
     },
-    [gameSlug, t]
+    [gameSlug, selectedLang, t]
   );
 
   const fetchCardDetails = useCallback(
@@ -163,12 +272,14 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
       // Skip the request entirely if this frame read the same text as the
       // last one we actually sent — a static or blurry frame would otherwise
       // hit the match endpoint every SCAN_INTERVAL_MS for no new information.
+      // The comparison uses the whitespace-collapsed text, but the original
+      // multi-line text is what actually gets matched line by line below.
       if (normalizedText.length < MIN_TEXT_LENGTH || normalizedText === lastSentTextRef.current) {
         return;
       }
       lastSentTextRef.current = normalizedText;
 
-      const match = await matchCardText(normalizedText);
+      const match = await matchCardText(text);
       consecutiveMatchErrorsRef.current = 0;
       if (match && !stopRef.current) {
         stopCamera();
@@ -278,8 +389,47 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
     setPhase("idle");
   }, [stopCamera]);
 
+  const setOptions: ComboboxOption[] = [
+    { value: "", label: t("filters.setPlaceholder") },
+    ...setCodes.map((setCode) => ({ value: setCode, label: setCode })),
+  ];
+  const langOptions: ComboboxOption[] = [
+    { value: "", label: t("filters.langPlaceholder") },
+    ...languages.map((language) => ({ value: language, label: getLanguageLabel(language) })),
+  ];
+  const canEditFilters = phase === "idle" || phase === "error";
+
   return (
     <div className="space-y-6">
+      <Card>
+        <CardContent className="flex flex-col gap-3 py-6 sm:flex-row">
+          <div className="flex-1">
+            <label className="mb-1 block text-sm font-medium">{t("filters.setLabel")}</label>
+            <Combobox
+              options={setOptions}
+              value={selectedSetCode}
+              onChange={setSelectedSetCode}
+              placeholder={t("filters.setPlaceholder")}
+              searchPlaceholder={t("filters.setSearchPlaceholder")}
+              emptyMessage={t("filters.setEmpty")}
+              disabled={!canEditFilters}
+            />
+          </div>
+          <div className="flex-1">
+            <label className="mb-1 block text-sm font-medium">{t("filters.langLabel")}</label>
+            <Combobox
+              options={langOptions}
+              value={selectedLang}
+              onChange={setSelectedLang}
+              placeholder={t("filters.langPlaceholder")}
+              searchPlaceholder={t("filters.langSearchPlaceholder")}
+              emptyMessage={t("filters.langEmpty")}
+              disabled={!canEditFilters}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       {phase === "idle" && (
         <Card>
           <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
