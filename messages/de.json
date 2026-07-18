@@ -753,7 +753,6 @@
       "errors": {
         "cameraUnsupported": "Dein Browser unterstützt keinen Kamerazugriff.",
         "cameraAccess": "Kamerazugriff nicht möglich. Überprüfe die Berechtigungen deines Browsers.",
-        "namesLoad": "Die Kartenliste für dieses Spiel konnte nicht geladen werden.",
         "cardFetch": "Die Details der erkannten Karte konnten nicht abgerufen werden.",
         "generic": "Ein Fehler ist aufgetreten."
       },
