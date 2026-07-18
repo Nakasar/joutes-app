@@ -37,13 +37,20 @@ type Phase = "idle" | "starting" | "scanning" | "matched" | "error";
 
 const SCAN_INTERVAL_MS = 700;
 const MIN_TEXT_LENGTH = 3;
-const MATCH_SCORE_THRESHOLD = 0.45;
+const MATCH_SCORE_THRESHOLD = 0.4;
 // After this many consecutive match-request failures, stop scanning instead
 // of retrying forever every SCAN_INTERVAL_MS against a backend that's down.
 const MAX_CONSECUTIVE_MATCH_ERRORS = 3;
 // Fraction of the captured frame kept, centered — matches the on-screen guide
-// box so OCR only sees the card, not whatever background surrounds it.
+// box so the card crop only sees the card, not whatever background surrounds it.
 const CROP_RATIO = 0.82;
+// The name is printed in a horizontal band near the top on virtually every
+// trading card layout. OCR-ing (and matching against) only that band —
+// instead of the whole card — is what keeps rules text, flavor text, and
+// artwork noise from ever being fuzzy-matched against the card-name index.
+const NAME_BAND_TOP_MARGIN_RATIO = 0.03;
+const NAME_BAND_HEIGHT_RATIO = 0.2;
+const NAME_BAND_SIDE_MARGIN_RATIO = 0.06;
 // Simple contrast boost applied after grayscale conversion; text edges on
 // busy card art come through much cleaner for Tesseract with this than raw color.
 const CONTRAST = 1.5;
@@ -174,20 +181,10 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
     async (text: string): Promise<CardMatch | null> => {
       const fuse = fuseRef.current;
       if (fuse) {
-        const lines = text
-          .split("\n")
-          .map((line) => line.trim())
-          .filter((line) => line.length >= MIN_TEXT_LENGTH);
-
-        let best: { item: CardNameEntry; score: number } | null = null;
-        for (const line of lines) {
-          const [top] = fuse.search(line);
-          if (top && top.score !== undefined && (!best || top.score < best.score)) {
-            best = { item: top.item, score: top.score };
-          }
-        }
-
-        return best ? { ...best.item, score: best.score } : null;
+        // OCR is already restricted to the name band, so the text is a
+        // single candidate — no need to search line by line.
+        const [top] = fuse.search(text);
+        return top && top.score !== undefined ? { ...top.item, score: top.score } : null;
       }
 
       const res = await fetch(`/api/games/${gameSlug}/scanner/match`, {
@@ -222,27 +219,33 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
     [gameSlug, t]
   );
 
-  // Crops to the centered guide-box region and converts to high-contrast
-  // grayscale in place — both steps measurably improve Tesseract's accuracy
-  // on stylized card-name text sitting on top of busy artwork.
+  // Crops to the name band within the centered guide-box region (see
+  // NAME_BAND_* constants) and converts to high-contrast grayscale in
+  // place — both steps measurably improve Tesseract's accuracy and keep it
+  // from ever reading rules text, flavor text, or artwork noise.
   const prepareCapture = useCallback((video: HTMLVideoElement, canvas: HTMLCanvasElement): boolean => {
     const videoWidth = video.videoWidth;
     const videoHeight = video.videoHeight;
     if (!videoWidth || !videoHeight) return false;
 
-    const cropWidth = Math.round(videoWidth * CROP_RATIO);
-    const cropHeight = Math.round(videoHeight * CROP_RATIO);
-    const cropX = Math.round((videoWidth - cropWidth) / 2);
-    const cropY = Math.round((videoHeight - cropHeight) / 2);
+    const cardWidth = Math.round(videoWidth * CROP_RATIO);
+    const cardHeight = Math.round(videoHeight * CROP_RATIO);
+    const cardX = Math.round((videoWidth - cardWidth) / 2);
+    const cardY = Math.round((videoHeight - cardHeight) / 2);
 
-    canvas.width = cropWidth;
-    canvas.height = cropHeight;
+    const bandWidth = Math.round(cardWidth * (1 - 2 * NAME_BAND_SIDE_MARGIN_RATIO));
+    const bandHeight = Math.round(cardHeight * NAME_BAND_HEIGHT_RATIO);
+    const bandX = cardX + Math.round(cardWidth * NAME_BAND_SIDE_MARGIN_RATIO);
+    const bandY = cardY + Math.round(cardHeight * NAME_BAND_TOP_MARGIN_RATIO);
+
+    canvas.width = bandWidth;
+    canvas.height = bandHeight;
     const ctx = canvas.getContext("2d");
     if (!ctx) return false;
 
-    ctx.drawImage(video, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+    ctx.drawImage(video, bandX, bandY, bandWidth, bandHeight, 0, 0, bandWidth, bandHeight);
 
-    const imageData = ctx.getImageData(0, 0, cropWidth, cropHeight);
+    const imageData = ctx.getImageData(0, 0, bandWidth, bandHeight);
     const data = imageData.data;
     for (let i = 0; i < data.length; i += 4) {
       const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
@@ -272,14 +275,12 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
       // Skip the request entirely if this frame read the same text as the
       // last one we actually sent — a static or blurry frame would otherwise
       // hit the match endpoint every SCAN_INTERVAL_MS for no new information.
-      // The comparison uses the whitespace-collapsed text, but the original
-      // multi-line text is what actually gets matched line by line below.
       if (normalizedText.length < MIN_TEXT_LENGTH || normalizedText === lastSentTextRef.current) {
         return;
       }
       lastSentTextRef.current = normalizedText;
 
-      const match = await matchCardText(text);
+      const match = await matchCardText(normalizedText);
       consecutiveMatchErrorsRef.current = 0;
       if (match && !stopRef.current) {
         stopCamera();
@@ -329,7 +330,9 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
         if (!workerRef.current) {
           const { createWorker, PSM } = await import("tesseract.js");
           const newWorker = await createWorker("eng");
-          await newWorker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_BLOCK });
+          // The capture is now cropped to a single-line name band rather
+          // than the whole card, so tell Tesseract to expect one line.
+          await newWorker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_LINE });
           workerRef.current = newWorker;
         }
         if (cancelled) return;
