@@ -1500,6 +1500,44 @@
       "loading": "Loading...",
       "empty": "You do not have any friends yet.",
       "remove": "Remove"
+    },
+    "qr": {
+      "sectionTitle": "Friend code",
+      "sectionDescription": "Show your QR code to be added instantly, or scan a friend's.",
+      "button": "My friend code",
+      "title": "My friend code",
+      "description": "Have a friend scan this QR code to become friends instantly, no request to approve.",
+      "loading": "Generating code...",
+      "copyLink": "Copy link",
+      "copied": "Link copied!",
+      "errors": {
+        "generic": "Could not retrieve your friend code."
+      }
+    },
+    "scan": {
+      "button": "Scan a friend code",
+      "title": "Scan a friend code",
+      "instructions": "Scan the QR code shown by a friend to add them instantly.",
+      "start": "Start scanning",
+      "cancel": "Cancel",
+      "adding": "Adding friend...",
+      "success": "You are now friends with {name}!",
+      "successGeneric": "Friend added successfully!",
+      "scanAgain": "Scan another code",
+      "errors": {
+        "generic": "Could not add this friend.",
+        "cameraAccess": "Could not access the camera.",
+        "cameraUnsupported": "Camera is not available on this device."
+      }
+    },
+    "addByCode": {
+      "pending": "Adding friend...",
+      "success": "You are now friends with {name}!",
+      "successGeneric": "Friend added successfully!",
+      "backToFriends": "Back to my friends",
+      "errors": {
+        "generic": "Could not add this friend."
+      }
     }
   }
 }

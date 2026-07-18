@@ -1417,6 +1417,44 @@
       "loading": "Wird geladen...",
       "empty": "Du hast noch keine Freunde.",
       "remove": "Entfernen"
+    },
+    "qr": {
+      "sectionTitle": "Freundescode",
+      "sectionDescription": "Zeige deinen QR-Code, um sofort hinzugefügt zu werden, oder scanne den eines Freundes.",
+      "button": "Mein Freundescode",
+      "title": "Mein Freundescode",
+      "description": "Lass diesen QR-Code von einem Freund scannen, um sofort befreundet zu sein – ohne Anfrage zu bestätigen.",
+      "loading": "Code wird generiert...",
+      "copyLink": "Link kopieren",
+      "copied": "Link kopiert!",
+      "errors": {
+        "generic": "Dein Freundescode konnte nicht abgerufen werden."
+      }
+    },
+    "scan": {
+      "button": "Freundescode scannen",
+      "title": "Freundescode scannen",
+      "instructions": "Scanne den QR-Code eines Freundes, um ihn sofort hinzuzufügen.",
+      "start": "Scan starten",
+      "cancel": "Abbrechen",
+      "adding": "Freund wird hinzugefügt...",
+      "success": "Du bist jetzt mit {name} befreundet!",
+      "successGeneric": "Freund erfolgreich hinzugefügt!",
+      "scanAgain": "Weiteren Code scannen",
+      "errors": {
+        "generic": "Dieser Freund konnte nicht hinzugefügt werden.",
+        "cameraAccess": "Auf die Kamera konnte nicht zugegriffen werden.",
+        "cameraUnsupported": "Die Kamera ist auf diesem Gerät nicht verfügbar."
+      }
+    },
+    "addByCode": {
+      "pending": "Freund wird hinzugefügt...",
+      "success": "Du bist jetzt mit {name} befreundet!",
+      "successGeneric": "Freund erfolgreich hinzugefügt!",
+      "backToFriends": "Zurück zu meinen Freunden",
+      "errors": {
+        "generic": "Dieser Freund konnte nicht hinzugefügt werden."
+      }
     }
   }
 }

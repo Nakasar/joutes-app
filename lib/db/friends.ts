@@ -140,6 +140,30 @@ export async function declineFriendRequest(requestId: string, userId: string): P
   return result.modifiedCount > 0;
 }
 
+/**
+ * Ajoute deux utilisateurs en amis mutuels immédiatement (ex. via un code ami scanné),
+ * sans passer par le flux de demande/acceptation.
+ */
+export async function addFriendsByCode(userId: string, otherUserId: string): Promise<void> {
+  const userCollection = db.collection<User>(USER_COLLECTION);
+  await Promise.all([
+    userCollection.updateOne(
+      { _id: ObjectId.createFromHexString(userId) },
+      { $addToSet: { friends: otherUserId } }
+    ),
+    userCollection.updateOne(
+      { _id: ObjectId.createFromHexString(otherUserId) },
+      { $addToSet: { friends: userId } }
+    ),
+  ]);
+
+  // Résout toute demande en attente entre les deux utilisateurs pour éviter un état incohérent.
+  await friendRequestsCollection.updateOne(
+    { status: "pending", pairKey: computePairKey(userId, otherUserId) },
+    { $set: { status: "accepted", updatedAt: new Date().toISOString() } }
+  );
+}
+
 export async function removeFriend(userId: string, friendId: string): Promise<boolean> {
   const userCollection = db.collection<User>(USER_COLLECTION);
   const [userResult, friendResult] = await Promise.all([

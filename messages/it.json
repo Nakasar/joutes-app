@@ -1442,6 +1442,44 @@
       "loading": "Caricamento...",
       "empty": "Non hai ancora nessun amico.",
       "remove": "Rimuovi"
+    },
+    "qr": {
+      "sectionTitle": "Codice amico",
+      "sectionDescription": "Mostra il tuo QR code per essere aggiunto subito, oppure scansiona quello di un amico.",
+      "button": "Il mio codice amico",
+      "title": "Il mio codice amico",
+      "description": "Fai scansionare questo QR code da un amico per diventare amici subito, senza richieste da approvare.",
+      "loading": "Generazione del codice...",
+      "copyLink": "Copia il link",
+      "copied": "Link copiato!",
+      "errors": {
+        "generic": "Impossibile recuperare il tuo codice amico."
+      }
+    },
+    "scan": {
+      "button": "Scansiona un codice amico",
+      "title": "Scansiona un codice amico",
+      "instructions": "Scansiona il QR code mostrato da un amico per aggiungerlo subito.",
+      "start": "Avvia la scansione",
+      "cancel": "Annulla",
+      "adding": "Aggiunta dell'amico in corso...",
+      "success": "Ora sei amico di {name}!",
+      "successGeneric": "Amico aggiunto con successo!",
+      "scanAgain": "Scansiona un altro codice",
+      "errors": {
+        "generic": "Impossibile aggiungere questo amico.",
+        "cameraAccess": "Impossibile accedere alla fotocamera.",
+        "cameraUnsupported": "La fotocamera non è disponibile su questo dispositivo."
+      }
+    },
+    "addByCode": {
+      "pending": "Aggiunta dell'amico in corso...",
+      "success": "Ora sei amico di {name}!",
+      "successGeneric": "Amico aggiunto con successo!",
+      "backToFriends": "Torna ai miei amici",
+      "errors": {
+        "generic": "Impossibile aggiungere questo amico."
+      }
     }
   }
 }

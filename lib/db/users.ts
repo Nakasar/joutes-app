@@ -1,6 +1,7 @@
 import db from "@/lib/mongodb";
 import { User } from "@/lib/types/User";
 import { WithId, Document, ObjectId } from "mongodb";
+import { generateFriendCode } from "@/lib/utils/friend-codes";
 
 const COLLECTION_NAME = "user";
 
@@ -17,6 +18,7 @@ function toUser(doc: WithId<Document>): User {
     lairs: doc.lairs || [],
     games: doc.games || [],
     friends: doc.friends || [],
+    friendCode: doc.friendCode || undefined,
     isPublicProfile: doc.isPublicProfile || false,
     description: doc.description || undefined,
     website: doc.website || undefined,
@@ -112,6 +114,55 @@ export async function getUserByUsername(username: string): Promise<User | null> 
     $or: [{ name: username }, { username }],
   }, { collation: { locale: 'en', strength: 2 } });
   return user ? toUser(user) : null;
+}
+
+/**
+ * Récupère un utilisateur par son code ami (partagé via QR code).
+ */
+export async function getUserByFriendCode(code: string): Promise<User | null> {
+  if (!code) {
+    return null;
+  }
+
+  const user = await db.collection(COLLECTION_NAME).findOne({ friendCode: code });
+  return user ? toUser(user) : null;
+}
+
+const MAX_FRIEND_CODE_ATTEMPTS = 5;
+
+/**
+ * Récupère le code ami de l'utilisateur, ou lui en génère un s'il n'en a pas encore.
+ */
+export async function getOrCreateFriendCode(userId: string): Promise<string> {
+  const objectId = ObjectId.createFromHexString(userId);
+  const current = await db.collection(COLLECTION_NAME).findOne(
+    { _id: objectId },
+    { projection: { friendCode: 1 } }
+  );
+  if (current?.friendCode) {
+    return current.friendCode;
+  }
+
+  for (let attempt = 0; attempt < MAX_FRIEND_CODE_ATTEMPTS; attempt++) {
+    const code = generateFriendCode();
+    const collision = await db.collection(COLLECTION_NAME).findOne(
+      { friendCode: code },
+      { projection: { _id: 1 } }
+    );
+    if (collision) {
+      continue;
+    }
+
+    await db.collection(COLLECTION_NAME).updateOne({ _id: objectId }, { $set: { friendCode: code } });
+    return code;
+  }
+
+  throw new Error("Impossible de générer un code ami unique");
+}
+
+/** Doit être appelée au moins une fois (ex. script de setup) pour garantir l'unicité des codes ami. */
+export async function createUserFriendCodeIndex() {
+  await db.collection(COLLECTION_NAME).createIndex({ friendCode: 1 }, { unique: true, sparse: true });
 }
 
 export type PublicUser = Pick<User, "id" | "username" | "displayName" | "discriminator" | "avatar">;
