@@ -3,15 +3,14 @@ import { getGameBySlugOrId } from "@/lib/db/games";
 import meilisearch, { indexes } from "@/lib/meilisearch";
 
 const MAX_TEXT_LENGTH = 5000;
-const MIN_LINE_LENGTH = 3;
-// Caps how many distinct OCR lines get queried per request — without this a
-// single noisy frame (lots of short garbage lines) could fire one
-// Meilisearch search per line.
-const MAX_LINES_PER_REQUEST = 3;
+const MIN_TEXT_LENGTH = 3;
+// The client now crops OCR to the card's name band before sending text here,
+// so this is a single, already name-scoped candidate string rather than a
+// full block of card text — one Meilisearch query is enough.
 // Meilisearch's built-in typo tolerance already fuzzy-matches OCR noise, so
-// this only filters out the low-confidence hits it still returns for lines
-// that don't correspond to any card name.
-const RANKING_SCORE_THRESHOLD = 0.5;
+// this only filters out the low-confidence hits it still returns when the
+// text doesn't correspond to any card name.
+const RANKING_SCORE_THRESHOLD = 0.55;
 
 type CardNameHit = { id: string; name: string };
 
@@ -41,6 +40,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ gam
     );
   }
 
+  const trimmedText = text.trim();
+  if (trimmedText.length < MIN_TEXT_LENGTH) {
+    return NextResponse.json({ match: null });
+  }
+
   const indexConfig = game.slug ? indexes[game.slug] : undefined;
   if (!indexConfig) {
     return NextResponse.json({ match: null });
@@ -53,40 +57,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ gam
     filter.push(`lang = ${lang.trim()}`);
   }
 
-  // De-duplicate lines and keep the longest ones — they carry the most
-  // signal for a card name — then cap how many are queried, so a single OCR
-  // frame can only ever fire a bounded number of Meilisearch searches.
-  const lines = Array.from(
-    new Set(
-      text
-        .split("\n")
-        .map((line: string) => line.trim())
-        .filter((line: string) => line.length >= MIN_LINE_LENGTH)
-    )
-  )
-    .sort((a, b) => b.length - a.length)
-    .slice(0, MAX_LINES_PER_REQUEST);
+  const result = await index.search(trimmedText, {
+    limit: 1,
+    attributesToSearchOn: ["name"],
+    attributesToRetrieve: ["id", "name"],
+    showRankingScore: true,
+    filter: filter.length > 0 ? filter : undefined,
+  });
 
-  const results = await Promise.all(
-    lines.map((line) =>
-      index.search(line, {
-        limit: 1,
-        attributesToSearchOn: ["name"],
-        attributesToRetrieve: ["id", "name"],
-        showRankingScore: true,
-        filter: filter.length > 0 ? filter : undefined,
-      })
-    )
-  );
+  const [top] = result.hits;
+  const score = top?._rankingScore;
+  const match =
+    top && score !== undefined && score >= RANKING_SCORE_THRESHOLD ? { id: top.id, name: top.name, score } : null;
 
-  let best: { item: CardNameHit; score: number } | null = null;
-  for (const result of results) {
-    const [top] = result.hits;
-    const score = top?._rankingScore;
-    if (top && score !== undefined && score >= RANKING_SCORE_THRESHOLD && (!best || score > best.score)) {
-      best = { item: { id: top.id, name: top.name }, score };
-    }
-  }
-
-  return NextResponse.json({ match: best ? { ...best.item, score: best.score } : null });
+  return NextResponse.json({ match });
 }
