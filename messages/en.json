@@ -749,6 +749,16 @@
       "scanAgain": "Scan another card",
       "cancel": "Cancel",
       "instructions": "Hold a card face up in front of the camera, well lit and without glare.",
+      "filters": {
+        "setLabel": "Set",
+        "setPlaceholder": "All sets",
+        "setSearchPlaceholder": "Search a set…",
+        "setEmpty": "No set found.",
+        "langLabel": "Language",
+        "langPlaceholder": "All languages",
+        "langSearchPlaceholder": "Search a language…",
+        "langEmpty": "No language found."
+      },
       "lastRead": "Last read: {text}",
       "errors": {
         "cameraUnsupported": "Your browser does not support camera access.",

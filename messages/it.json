@@ -749,6 +749,16 @@
       "scanAgain": "Scansiona un'altra carta",
       "cancel": "Annulla",
       "instructions": "Tieni una carta a faccia in su davanti alla fotocamera, ben illuminata e senza riflessi.",
+      "filters": {
+        "setLabel": "Espansione",
+        "setPlaceholder": "Tutte le espansioni",
+        "setSearchPlaceholder": "Cerca un'espansione…",
+        "setEmpty": "Nessuna espansione trovata.",
+        "langLabel": "Lingua",
+        "langPlaceholder": "Tutte le lingue",
+        "langSearchPlaceholder": "Cerca una lingua…",
+        "langEmpty": "Nessuna lingua trovata."
+      },
       "lastRead": "Ultima lettura: {text}",
       "errors": {
         "cameraUnsupported": "Il tuo browser non supporta l'accesso alla fotocamera.",

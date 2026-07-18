@@ -53,3 +53,28 @@ export async function getAllCardNamesById(gameId: ObjectId): Promise<{ id: strin
     ])
     .toArray();
 }
+
+/**
+ * One representative {id, name} per distinct card name within a single set
+ * (optionally narrowed to one language) — small enough to ship to the client
+ * for an in-memory fuzzy index, unlike the full game card list.
+ */
+export async function getCardNamesBySet(
+  gameId: ObjectId,
+  setCode: string,
+  lang?: string
+): Promise<{ id: string; name: string }[]> {
+  const match: { gameId: ObjectId; setCode: string; lang?: string } = { gameId, setCode };
+  if (lang) {
+    match.lang = lang;
+  }
+
+  return db
+    .collection("cards")
+    .aggregate<{ id: string; name: string }>([
+      { $match: match },
+      { $group: { _id: { $toLower: "$name" }, id: { $first: "$id" }, name: { $first: "$name" } } },
+      { $project: { _id: 0, id: 1, name: 1 } },
+    ])
+    .toArray();
+}
