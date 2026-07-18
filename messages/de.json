@@ -759,6 +759,7 @@
         "langSearchPlaceholder": "Sprache suchen…",
         "langEmpty": "Keine Sprache gefunden."
       },
+      "ocrPreviewLabel": "An die OCR gesendetes Bild (nach Verarbeitung)",
       "lastRead": "Zuletzt gelesen: {text}",
       "errors": {
         "cameraUnsupported": "Dein Browser unterstützt keinen Kamerazugriff.",
