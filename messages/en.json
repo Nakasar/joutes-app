@@ -775,7 +775,8 @@
       },
       "card": {
         "banned": "Banned",
-        "noErrata": "No errata or clarification for this card."
+        "noErrata": "No errata or clarification for this card.",
+        "viewFullCard": "View card page"
       }
     }
   },

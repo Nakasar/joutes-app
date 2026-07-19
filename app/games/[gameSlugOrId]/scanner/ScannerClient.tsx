@@ -1,14 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
+import { DateTime } from "luxon";
 import Fuse from "fuse.js";
 import type { Worker as TesseractWorker } from "tesseract.js";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
-import { CameraOff, Loader2, ScanLine, Sparkles } from "lucide-react";
+import GameMarkdown from "@/components/GameMarkdown";
+import AnnotatedMarkdown from "@/components/AnnotatedMarkdown";
+import ErrataVoteButtons from "@/components/ErrataVoteButtons";
+import { annotateCardText } from "@/lib/card-text-markdown";
+import { CardNameMatch } from "@/lib/db/cards";
+import { Locale } from "@/i18n/config";
+import { CameraOff, ExternalLink, Loader2, ScanLine, Sparkles } from "lucide-react";
 
 type CardMatch = { id: string; name: string; score: number };
 type CardNameEntry = { id: string; name: string };
@@ -24,9 +32,14 @@ type ErrataDetails = {
   id: string;
   type: "errata" | "clarification" | "ruling";
   details: string;
-  errataDate: string;
+  originalLang: Locale;
+  contentUpdatedAt: string;
+  translations?: { lang: Locale; details: string; updatedAt: string }[];
   source?: string;
+  errataDate: string;
   deprecatedAt?: string;
+  cards?: { id: string; name: string }[];
+  votes: { positive: number; negative: number; userVote?: "positive" | "negative" };
 };
 
 type MatchedCard = {
@@ -38,7 +51,13 @@ type MatchedCard = {
   text?: string;
   banned?: boolean;
   erratas: ErrataDetails[];
+  cardIdByName: Record<string, string>;
+  cardsById: Record<string, CardNameMatch>;
 };
+
+function hasNegativeVoteRatio(errata: ErrataDetails): boolean {
+  return errata.votes.negative > errata.votes.positive;
+}
 
 type Phase = "idle" | "starting" | "scanning" | "ai-processing" | "matched" | "error";
 type Mode = "ocr" | "ai";
@@ -66,12 +85,16 @@ const CONTRAST = 1.5;
 export default function ScannerClient({
   gameSlug,
   canUseAiScan = false,
+  userCanVoteErratas = false,
 }: {
   gameSlug: string;
   canUseAiScan?: boolean;
+  userCanVoteErratas?: boolean;
 }) {
   const t = useTranslations("Games.Scanner");
   const tGames = useTranslations("Games");
+  const locale = useLocale();
+  const ruleLang = locale === "fr" ? "fr" : "en";
 
   const getLanguageLabel = useCallback(
     (language: string) => {
@@ -639,7 +662,11 @@ export default function ScannerClient({
               <img
                 src={matchedCard.image}
                 alt={matchedCard.name}
-                className="mx-auto w-48 shrink-0 rounded-lg shadow-lg sm:mx-0"
+                // self-start keeps the image from being stretched to the
+                // height of the (taller) text column next to it in this
+                // flex row — without it the browser fills that stretched
+                // box with the raster image, distorting its aspect ratio.
+                className="mx-auto w-48 shrink-0 self-start rounded-lg shadow-lg sm:mx-0"
               />
             )}
             <div className="min-w-0 flex-1">
@@ -647,21 +674,124 @@ export default function ScannerClient({
                 <h2 className="text-2xl font-bold">{matchedCard.name}</h2>
                 {matchedCard.banned && <Badge variant="destructive">{t("card.banned")}</Badge>}
               </div>
-              <p className="mb-4 text-sm text-muted-foreground">
-                {matchedCard.setCode} #{matchedCard.collectorNumber}
-              </p>
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm text-muted-foreground">
+                  {matchedCard.setCode} #{matchedCard.collectorNumber}
+                </p>
+                <Link
+                  href={`/games/${gameSlug}/cards/${matchedCard.id}`}
+                  className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                >
+                  {t("card.viewFullCard")}
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </Link>
+              </div>
               {matchedCard.text && (
-                <p className="mb-4 whitespace-pre-wrap text-sm">{matchedCard.text}</p>
+                <div className="prose prose-sm dark:prose-invert mb-4 max-w-none">
+                  <GameMarkdown
+                    markdown={annotateCardText(matchedCard.text)}
+                    gameSlug={gameSlug}
+                    ruleLang={ruleLang}
+                  />
+                </div>
               )}
               {matchedCard.erratas.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("card.noErrata")}</p>
               ) : (
-                <div className="space-y-2">
-                  {matchedCard.erratas.map((errata) => (
-                    <div key={errata.id} className={`border-t pt-2 ${errata.deprecatedAt ? "opacity-50" : ""}`}>
-                      <p className="text-sm">{errata.details}</p>
-                    </div>
-                  ))}
+                <div className="space-y-4">
+                  {[...matchedCard.erratas]
+                    .sort((a, b) => Number(hasNegativeVoteRatio(a)) - Number(hasNegativeVoteRatio(b)))
+                    .map((errata) => (
+                      <div
+                        key={errata.id}
+                        className={`rounded-lg border bg-card p-4 ${
+                          errata.deprecatedAt ? "opacity-50" : hasNegativeVoteRatio(errata) ? "opacity-70" : ""
+                        }`}
+                      >
+                        <div className="mb-2 flex items-center gap-2">
+                          <span
+                            className={`rounded px-2 py-1 text-xs font-semibold ${
+                              errata.type === "errata"
+                                ? "bg-red-100 text-red-800"
+                                : errata.type === "clarification"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : "bg-green-100 text-green-800"
+                            }`}
+                          >
+                            {tGames(`cards.detail.errataTypes.${errata.type}`)}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {DateTime.fromJSDate(new Date(errata.errataDate))
+                              .setLocale(locale)
+                              .toLocaleString(DateTime.DATE_MED)}
+                          </span>
+                        </div>
+                        {errata.deprecatedAt && (
+                          <span className="mb-2 inline-block rounded bg-gray-200 px-2 py-0.5 text-xs font-semibold text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                            {tGames("cards.detail.deprecated")}
+                          </span>
+                        )}
+                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                          <AnnotatedMarkdown
+                            content={errata.details}
+                            cardIdByName={matchedCard.cardIdByName}
+                            cardsById={matchedCard.cardsById}
+                            gameSlug={gameSlug}
+                            ruleLang={ruleLang}
+                            originalLang={errata.originalLang}
+                            translations={errata.translations?.map((tr) => ({
+                              lang: tr.lang,
+                              content: tr.details,
+                              updatedAt: new Date(tr.updatedAt),
+                            }))}
+                            interfaceLocale={locale as Locale}
+                            originalLabel={tGames("cards.detail.originalLangLabel")}
+                            languagePickerLabel={tGames("cards.detail.languagePickerLabel")}
+                            contentUpdatedAt={new Date(errata.contentUpdatedAt)}
+                            staleTranslationWarning={tGames("cards.detail.staleTranslationWarning")}
+                          />
+                        </div>
+                        {errata.cards && errata.cards.filter((c) => c.id !== matchedCard.id).length > 0 && (
+                          <div className="mt-2 border-t pt-2">
+                            <span className="text-xs text-muted-foreground">
+                              {tGames("cards.detail.alsoAppliesTo")}{" "}
+                              {errata.cards
+                                .filter((c) => c.id !== matchedCard.id)
+                                .map((c, index, arr) => (
+                                  <span key={c.id}>
+                                    <Link
+                                      href={`/games/${gameSlug}/cards/${c.id}`}
+                                      className="text-blue-600 hover:underline"
+                                    >
+                                      {c.name}
+                                    </Link>
+                                    {index < arr.length - 1 ? ", " : ""}
+                                  </span>
+                                ))}
+                            </span>
+                          </div>
+                        )}
+                        {errata.source && (
+                          <div className="mt-2 border-t pt-2">
+                            <a
+                              href={errata.source}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 hover:underline"
+                            >
+                              {tGames("cards.detail.source")} →
+                            </a>
+                          </div>
+                        )}
+                        <div className="mt-3 border-t pt-3">
+                          <ErrataVoteButtons
+                            errataId={errata.id}
+                            votes={errata.votes}
+                            userCanVote={userCanVoteErratas}
+                          />
+                        </div>
+                      </div>
+                    ))}
                 </div>
               )}
               <div className="mt-6">
