@@ -225,6 +225,15 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             )}
 
             {game.slug === "riftbound" && (
+              <Link href={`/games/${game.slug}/tracker`} className="group">
+                <div className="bg-gradient-to-br from-orange-900/30 to-orange-800/20 backdrop-blur-sm rounded-xl border border-orange-500/20 p-8 hover:border-orange-500/50 transition-all hover:scale-105">
+                  <h3 className="text-xl font-bold text-white mb-2">{t("detail.toolsTracker.title")}</h3>
+                  <p className="text-gray-300">{t("detail.toolsTracker.description")}</p>
+                </div>
+              </Link>
+            )}
+
+            {game.slug === "riftbound" && (
               <Link href={`/games/${game.slug}/developers`} className="group">
                 <div className="bg-gradient-to-br from-violet-900/30 to-fuchsia-800/20 backdrop-blur-sm rounded-xl border border-violet-500/20 p-8 hover:border-violet-500/50 transition-all hover:scale-105">
                   <h3 className="text-xl font-bold text-white mb-2">Développeurs</h3>

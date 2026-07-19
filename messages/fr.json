@@ -289,6 +289,10 @@
         "title": "Vérificateur de deck",
         "description": "Vérifiez la légalité de votre deck et obtenez des informations sur ses cartes"
       },
+      "toolsTracker": {
+        "title": "Suivi de partie",
+        "description": "Suivez le score, l'énergie et le pouvoir de chaque joueur à table"
+      },
       "communityTitle": "Rejoignez la communauté",
       "communityMatches": {
         "title": "Parties en cours",
@@ -664,6 +668,26 @@
       "play": "Faire le quizz",
       "questionsCount": "{count, plural, one {# question} other {# questions}}",
       "pageLabel": "Page {currentPage} sur {totalPages}"
+    },
+    "Tracker": {
+      "title": "Suivi de partie",
+      "description": "Suivez le score, l'énergie et le pouvoir de chaque joueur, et renseignez la légende jouée par chacun.",
+      "back": "Retour au jeu",
+      "addPlayer": "Ajouter un joueur",
+      "removePlayer": "Retirer ce joueur",
+      "resetGame": "Réinitialiser",
+      "resetConfirmTitle": "Réinitialiser la partie ?",
+      "resetConfirmDescription": "Le score, l'énergie et le pouvoir de tous les joueurs seront remis à zéro. Les noms et légendes sont conservés.",
+      "resetConfirmCancel": "Annuler",
+      "resetConfirmAction": "Réinitialiser",
+      "defaultPlayerName": "Joueur {number}",
+      "legend": "Légende",
+      "legendSearchPlaceholder": "Rechercher une légende…",
+      "legendEmpty": "Aucune légende trouvée.",
+      "clearLegend": "Retirer la légende",
+      "score": "Score",
+      "energy": "Énergie",
+      "power": "Pouvoir"
     },
     "DeckChecker": {
       "title": "Vérificateur de deck Riftbound",

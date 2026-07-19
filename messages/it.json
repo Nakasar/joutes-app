@@ -289,6 +289,10 @@
         "title": "Controllo del mazzo",
         "description": "Verifica la legalità del tuo mazzo e ottieni informazioni sulle sue carte"
       },
+      "toolsTracker": {
+        "title": "Tracker di partita",
+        "description": "Tieni traccia del punteggio, dell'energia e del potere di ogni giocatore al tavolo"
+      },
       "communityTitle": "Unisciti alla community",
       "communityMatches": {
         "title": "Partite in corso",
@@ -664,6 +668,26 @@
       "play": "Fai il quiz",
       "questionsCount": "{count, plural, one {# domanda} other {# domande}}",
       "pageLabel": "Pagina {currentPage} di {totalPages}"
+    },
+    "Tracker": {
+      "title": "Tracker di partita",
+      "description": "Tieni traccia del punteggio, dell'energia e del potere di ogni giocatore e indica la leggenda giocata da ciascuno.",
+      "back": "Torna al gioco",
+      "addPlayer": "Aggiungi un giocatore",
+      "removePlayer": "Rimuovi questo giocatore",
+      "resetGame": "Reimposta",
+      "resetConfirmTitle": "Reimpostare la partita?",
+      "resetConfirmDescription": "Il punteggio, l'energia e il potere di tutti i giocatori verranno azzerati. Nomi e leggende vengono conservati.",
+      "resetConfirmCancel": "Annulla",
+      "resetConfirmAction": "Reimposta",
+      "defaultPlayerName": "Giocatore {number}",
+      "legend": "Leggenda",
+      "legendSearchPlaceholder": "Cerca una leggenda…",
+      "legendEmpty": "Nessuna leggenda trovata.",
+      "clearLegend": "Rimuovi leggenda",
+      "score": "Punteggio",
+      "energy": "Energia",
+      "power": "Potere"
     },
     "DeckChecker": {
       "title": "Controllore mazzo Riftbound",
