@@ -42,12 +42,22 @@ export default function QuizPlayer({
   const [answers, setAnswers] = useState<Record<string, QuizAnswerValue>>({});
   const [results, setResults] = useState<Record<string, boolean>>({});
 
-  // A validation button checks every question up to and including its own
-  // block, not just the block it's attached to — matching a quiz built from
-  // several sections, each with its own "check my answers so far" button.
-  const validateUpToBlock = (blockIndex: number) => {
+  // A validation button checks every question since the previous validation
+  // button (or since the start of the quiz, for the first one) — not the
+  // whole quiz over again — so a multi-section quiz can have one button per
+  // section without re-grading earlier sections each time.
+  const validateBlock = (blockIndex: number) => {
+    let startIndex = 0;
+    for (let i = blockIndex - 1; i >= 0; i--) {
+      const previousBlock = blocks[i];
+      if (previousBlock.type === "form" && previousBlock.showSubmitButton) {
+        startIndex = i + 1;
+        break;
+      }
+    }
+
     const nextResults = { ...results };
-    for (let i = 0; i <= blockIndex; i++) {
+    for (let i = startIndex; i <= blockIndex; i++) {
       const block = blocks[i];
       if (block.type !== "form") continue;
       for (const question of block.questions) {
@@ -85,7 +95,7 @@ export default function QuizPlayer({
               />
             ))}
             {block.showSubmitButton && (
-              <Button type="button" onClick={() => validateUpToBlock(index)}>
+              <Button type="button" onClick={() => validateBlock(index)}>
                 Valider
               </Button>
             )}
