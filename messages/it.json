@@ -652,6 +652,19 @@
       "unknownAuthor": "Autore sconosciuto",
       "pageLabel": "Pagina {currentPage} di {totalPages}"
     },
+    "quizz": {
+      "metadata": {
+        "notFoundTitle": "Gioco non trovato",
+        "title": "Quiz — {gameName}",
+        "description": "Trova tutti i quiz relativi a {gameName}."
+      },
+      "title": "Quiz — {gameName}",
+      "back": "Torna al gioco",
+      "empty": "Nessun quiz per questo gioco per il momento.",
+      "play": "Fai il quiz",
+      "questionsCount": "{count, plural, one {# domanda} other {# domande}}",
+      "pageLabel": "Pagina {currentPage} di {totalPages}"
+    },
     "DeckChecker": {
       "title": "Controllore mazzo Riftbound",
       "description": "Verifica la legalità del tuo mazzo e ottieni informazioni sulle sue carte e sui loro ruling",

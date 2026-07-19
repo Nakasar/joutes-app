@@ -652,6 +652,19 @@
       "unknownAuthor": "Auteur inconnu",
       "pageLabel": "Page {currentPage} sur {totalPages}"
     },
+    "quizz": {
+      "metadata": {
+        "notFoundTitle": "Jeu introuvable",
+        "title": "Quizz — {gameName}",
+        "description": "Retrouvez tous les quizz liés à {gameName}."
+      },
+      "title": "Quizz — {gameName}",
+      "back": "Retour au jeu",
+      "empty": "Aucun quizz pour ce jeu pour le moment.",
+      "play": "Faire le quizz",
+      "questionsCount": "{count, plural, one {# question} other {# questions}}",
+      "pageLabel": "Page {currentPage} sur {totalPages}"
+    },
     "DeckChecker": {
       "title": "Vérificateur de deck Riftbound",
       "back": "Retour au portail du jeu",
