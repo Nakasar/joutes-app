@@ -86,13 +86,17 @@ export async function getQuizzes(options: GetQuizzesOptions = {}): Promise<Pagin
 
   const skip = (page - 1) * limit;
 
+  // The $lookup/$addFields in populateLookupStages only need to run on the
+  // page actually being returned, so they live inside the $facet's `data`
+  // branch (after $skip/$limit) rather than before it — otherwise every
+  // matched document would be joined against games/user just to be
+  // discarded by pagination.
   const pipeline = [
     { $match: filter },
     { $sort: { createdAt: -1 } },
-    ...populateLookupStages,
     {
       $facet: {
-        data: [{ $skip: skip }, { $limit: limit }],
+        data: [{ $skip: skip }, { $limit: limit }, ...populateLookupStages],
         total: [{ $count: "count" }],
       },
     },
