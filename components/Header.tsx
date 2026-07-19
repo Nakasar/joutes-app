@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSession, signOut } from "@/lib/auth-client";
 import Image from "next/image";
-import {Menu, Calendar, MapPin, User, UserRound, LogOut, Shield, Trophy, Dices, Library, Heart, Users, ChevronDown, Sparkles, Tag} from "lucide-react";
+import {Menu, Calendar, MapPin, User, UserRound, LogOut, Shield, Trophy, Dices, Library, Heart, Users, ChevronDown, Sparkles, Tag, Gamepad2, Plus, type LucideIcon} from "lucide-react";
 import { isAdmin } from "@/lib/config/admins";
 import { Button } from "@/components/ui/button";
 import { NotificationDropdown } from "@/components/NotificationDropdown";
@@ -55,6 +55,20 @@ export default function Header() {
     };
   }, [userId]);
 
+  const gamesMenuItems: { href: string; label: string }[] = [
+    { href: "/games", label: t('menu.AllGames') },
+    { href: "/games/riftbound", label: "Riftbound" },
+    { href: "/games/mtg", label: "Magic: The Gathering" },
+    { href: "/games/swu", label: "Star Wars Unlimited" },
+  ];
+
+  const eventsMenuItems: { href: string; label: string; icon: LucideIcon }[] = [
+    { href: "/events", label: t('menu.Calendrier'), icon: Calendar },
+    { href: "/leagues", label: t('menu.Ligues'), icon: Trophy },
+    { href: "/game-matches", label: t('menu.Parties'), icon: Gamepad2 },
+    { href: "/events/new", label: t('menu.OrganizeTournament'), icon: Plus },
+  ];
+
   const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
 
   const handleSignOut = async () => {
@@ -77,20 +91,42 @@ export default function Header() {
           <NavigationMenu className="hidden xl:flex">
             <NavigationMenuList>
               <NavigationMenuItem>
-                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
-                  <Link href="/games">
+                <DropdownMenu>
+                  <DropdownMenuTrigger className={navigationMenuTriggerStyle()}>
                     <Dices className="mr-1.5 h-4 w-4" />
                     {t('menu.Jeux')}
-                  </Link>
-                </NavigationMenuLink>
+                    <ChevronDown className="ml-1 h-3 w-3" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    {gamesMenuItems.map((item) => (
+                      <DropdownMenuItem asChild key={item.href}>
+                        <Link href={item.href} className="flex w-full cursor-pointer">
+                          <Dices className="mr-2 h-4 w-4" />
+                          <span>{item.label}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
-                  <Link href="/events">
+                <DropdownMenu>
+                  <DropdownMenuTrigger className={navigationMenuTriggerStyle()}>
                     <Calendar className="mr-1.5 h-4 w-4" />
                     {t('menu.Événements')}
-                  </Link>
-                </NavigationMenuLink>
+                    <ChevronDown className="ml-1 h-3 w-3" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    {eventsMenuItems.map((item) => (
+                      <DropdownMenuItem asChild key={item.href}>
+                        <Link href={item.href} className="flex w-full cursor-pointer">
+                          <item.icon className="mr-2 h-4 w-4" />
+                          <span>{item.label}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
@@ -195,20 +231,42 @@ export default function Header() {
           <NavigationMenu className="hidden md:flex xl:hidden">
             <NavigationMenuList>
               <NavigationMenuItem>
-                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
-                  <Link href="/games">
+                <DropdownMenu>
+                  <DropdownMenuTrigger className={navigationMenuTriggerStyle()}>
                     <Dices className="mr-1.5 h-4 w-4" />
                     {t('menu.Jeux')}
-                  </Link>
-                </NavigationMenuLink>
+                    <ChevronDown className="ml-1 h-3 w-3" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    {gamesMenuItems.map((item) => (
+                      <DropdownMenuItem asChild key={item.href}>
+                        <Link href={item.href} className="flex w-full cursor-pointer">
+                          <Dices className="mr-2 h-4 w-4" />
+                          <span>{item.label}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
-                  <Link href="/events">
+                <DropdownMenu>
+                  <DropdownMenuTrigger className={navigationMenuTriggerStyle()}>
                     <Calendar className="mr-1.5 h-4 w-4" />
                     {t('menu.Événements')}
-                  </Link>
-                </NavigationMenuLink>
+                    <ChevronDown className="ml-1 h-3 w-3" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    {eventsMenuItems.map((item) => (
+                      <DropdownMenuItem asChild key={item.href}>
+                        <Link href={item.href} className="flex w-full cursor-pointer">
+                          <item.icon className="mr-2 h-4 w-4" />
+                          <span>{item.label}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
@@ -372,18 +430,28 @@ export default function Header() {
         {mobileMenuOpen && (
           <div className="border-t py-4 xl:hidden">
             <div className="flex flex-col gap-2">
-              <Button variant="ghost" asChild className="justify-start md:hidden">
-                <Link href="/games" onClick={() => setMobileMenuOpen(false)}>
-                  <Dices className="mr-2 h-4 w-4" />
-                  {t('menu.Jeux')}
-                </Link>
-              </Button>
-              <Button variant="ghost" asChild className="justify-start md:hidden">
-                <Link href="/events" onClick={() => setMobileMenuOpen(false)}>
-                  <Calendar className="mr-2 h-4 w-4" />
-                  {t('menu.Événements')}
-                </Link>
-              </Button>
+              <div className="flex flex-col gap-2 md:hidden">
+                <p className="px-3 pt-2 text-xs font-medium text-muted-foreground">{t('menu.Jeux')}</p>
+                {gamesMenuItems.map((item) => (
+                  <Button variant="ghost" asChild className="w-full justify-start" key={item.href}>
+                    <Link href={item.href} onClick={() => setMobileMenuOpen(false)}>
+                      <Dices className="mr-2 h-4 w-4" />
+                      {item.label}
+                    </Link>
+                  </Button>
+                ))}
+              </div>
+              <div className="flex flex-col gap-2 md:hidden">
+                <p className="px-3 pt-2 text-xs font-medium text-muted-foreground">{t('menu.Événements')}</p>
+                {eventsMenuItems.map((item) => (
+                  <Button variant="ghost" asChild className="w-full justify-start" key={item.href}>
+                    <Link href={item.href} onClick={() => setMobileMenuOpen(false)}>
+                      <item.icon className="mr-2 h-4 w-4" />
+                      {item.label}
+                    </Link>
+                  </Button>
+                ))}
+              </div>
               <Button variant="ghost" asChild className="justify-start md:hidden">
                 <Link href="/lairs" onClick={() => setMobileMenuOpen(false)}>
                   <MapPin className="mr-2 h-4 w-4" />
