@@ -32,6 +32,7 @@ export default async function GameScannerPage({ params }: { params: Promise<{ ga
   const game = await getGameBySlugOrId(gameSlugOrId);
   const t = await getTranslations("Games.Scanner");
   const canUseAiScan = await hasPermission("scanner:ai");
+  const userCanVoteErratas = await hasPermission("erratas:vote");
 
   if (!game?.features?.cards) {
     return (
@@ -67,7 +68,11 @@ export default async function GameScannerPage({ params }: { params: Promise<{ ga
       </div>
       <p className="mb-6 text-muted-foreground">{t("description", { gameName: game.name })}</p>
 
-      <ScannerClient gameSlug={game.slug ?? gameSlugOrId} canUseAiScan={canUseAiScan} />
+      <ScannerClient
+        gameSlug={game.slug ?? gameSlugOrId}
+        canUseAiScan={canUseAiScan}
+        userCanVoteErratas={userCanVoteErratas}
+      />
     </div>
   );
 }

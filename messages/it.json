@@ -775,7 +775,8 @@
       },
       "card": {
         "banned": "Vietata",
-        "noErrata": "Nessun errata o chiarimento per questa carta."
+        "noErrata": "Nessun errata o chiarimento per questa carta.",
+        "viewFullCard": "Vedi la scheda della carta"
       }
     }
   },

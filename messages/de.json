@@ -775,7 +775,8 @@
       },
       "card": {
         "banned": "Verboten",
-        "noErrata": "Kein Errata oder Klarstellung für diese Karte."
+        "noErrata": "Kein Errata oder Klarstellung für diese Karte.",
+        "viewFullCard": "Kartenseite ansehen"
       }
     }
   },
