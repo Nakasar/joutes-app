@@ -2,6 +2,7 @@ import {BoosterCard} from "@/lib/types/booster";
 import CardSearchBar from "./CardSearchBar";
 import CollectionManager from "./CollectionManager";
 import AddToWishlistButton from "@/components/AddToWishlistButton";
+import CardSocialOwnership, {type FriendOwnership, type PlayGroupOwnership} from "./CardSocialOwnership";
 import db from "@/lib/mongodb";
 import {auth} from "@/lib/auth";
 import {headers} from "next/headers";
@@ -23,6 +24,9 @@ import {ObjectId} from "mongodb";
 import {GameToolsNavBar} from "@/components/games/GameToolsNavBar";
 import {Errata} from "@/lib/types/errata";
 import {getCardsByNames} from "@/lib/db/cards";
+import {getCardOwnershipByOwners, type CollectionOwner} from "@/lib/db/collection";
+import {getUserById, getUsersByIds, toPublicUser} from "@/lib/db/users";
+import {getPlayGroupsForUser} from "@/lib/db/play-groups";
 import {extractBracketedMentions} from "@/lib/errata-markdown";
 import {annotateCardText} from "@/lib/card-text-markdown";
 import GameMarkdown from "@/components/GameMarkdown";
@@ -145,6 +149,30 @@ export default async function RiftboundCardDetailPage({
   const cardIdByName = Object.fromEntries(mentionedCards.map((c) => [c.name.toLowerCase(), c.id]));
   const cardsById = Object.fromEntries(mentionedCards.map((c) => [c.id, c]));
 
+  let friendOwnership: FriendOwnership[] = [];
+  let playGroupOwnership: PlayGroupOwnership[] = [];
+  if (userId) {
+    const [me, myPlayGroups] = await Promise.all([getUserById(userId), getPlayGroupsForUser(userId)]);
+    const friendIds = me?.friends ?? [];
+    const owners: CollectionOwner[] = [
+      ...friendIds.map((id): CollectionOwner => ({type: "user", id})),
+      ...myPlayGroups.map((group): CollectionOwner => ({type: "playGroup", id: group.id})),
+    ];
+    const breakdown = owners.length > 0 ? await getCardOwnershipByOwners(owners, card.id) : [];
+    const countByOwnerId = new Map(breakdown.map((b) => [b.owner.id, b.count]));
+
+    const friendUsers = friendIds.length > 0 ? await getUsersByIds(friendIds) : [];
+    friendOwnership = friendUsers
+      .filter((friend) => countByOwnerId.has(friend.id))
+      .map((friend) => ({...toPublicUser(friend), count: countByOwnerId.get(friend.id)!}))
+      .sort((a, b) => b.count - a.count);
+
+    playGroupOwnership = myPlayGroups
+      .filter((group) => countByOwnerId.has(group.id))
+      .map((group) => ({id: group.id, name: group.name, count: countByOwnerId.get(group.id)!}))
+      .sort((a, b) => b.count - a.count);
+  }
+
   return (
     <div className="container mx-auto p-6">
       <div className="flex flex-row flex-wrap justify-between">
@@ -231,6 +259,8 @@ export default async function RiftboundCardDetailPage({
               />
             </div>
           )}
+
+          {userId && <CardSocialOwnership friends={friendOwnership} playGroups={playGroupOwnership} />}
 
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">

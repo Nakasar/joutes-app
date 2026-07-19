@@ -372,6 +372,11 @@
         "cardTextTitle": "Testo della carta",
         "copyCardText": "Copia il testo",
         "copyCardTextCopied": "Copiato!",
+        "social": {
+          "friendsSummary": "{friendCount, plural, one {# amico possiede questa carta} other {# amici possiedono questa carta}}",
+          "playGroupsSummary": "{groupCount, plural, one {# play-group possiede questa carta} other {# play-group possiedono questa carta}}",
+          "copies": "{count, plural, one {# copia} other {# copie}}"
+        },
         "errataSectionTitle": "Errata e Chiarimenti",
         "noErrata": "Nessun errata o chiarimento per questa carta.",
         "errataTypes": {
