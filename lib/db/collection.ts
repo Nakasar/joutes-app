@@ -575,3 +575,39 @@ export async function getCardVariants({
     collectorNumber: String(v.collectorNumber ?? ""),
   })) as CardVariant[];
 }
+
+export type OwnershipBreakdown = { owner: CollectionOwner; count: number };
+
+/**
+ * For a single catalog card id, counts copies owned by each of the given
+ * owners (a mix of individual users and play-groups), e.g. to show "3 of
+ * your friends own this card". Owners with zero copies are simply absent
+ * from the result rather than returned with count 0.
+ */
+export async function getCardOwnershipByOwners(
+  owners: CollectionOwner[],
+  cardId: string
+): Promise<OwnershipBreakdown[]> {
+  const userIds = owners.filter((o) => o.type === "user").map((o) => new ObjectId(o.id));
+  const playGroupIds = owners.filter((o) => o.type === "playGroup").map((o) => new ObjectId(o.id));
+
+  const orClauses: Record<string, unknown>[] = [];
+  if (userIds.length > 0) orClauses.push({ userId: { $in: userIds } });
+  if (playGroupIds.length > 0) orClauses.push({ playGroupId: { $in: playGroupIds } });
+  if (orClauses.length === 0) return [];
+
+  const rows = await db
+    .collection("collection-cards")
+    .aggregate<{ _id: { userId?: ObjectId; playGroupId?: ObjectId }; count: number }>([
+      { $match: { cardId, $or: orClauses } },
+      { $group: { _id: { userId: "$userId", playGroupId: "$playGroupId" }, count: { $sum: 1 } } },
+    ])
+    .toArray();
+
+  return rows.map((row) => ({
+    owner: row._id.userId
+      ? { type: "user" as const, id: row._id.userId.toString() }
+      : { type: "playGroup" as const, id: row._id.playGroupId!.toString() },
+    count: row.count,
+  }));
+}

@@ -372,6 +372,11 @@
         "cardTextTitle": "Card text",
         "copyCardText": "Copy text",
         "copyCardTextCopied": "Copied!",
+        "social": {
+          "friendsSummary": "{friendCount, plural, one {# friend owns this card} other {# friends own this card}}",
+          "playGroupsSummary": "{groupCount, plural, one {# play-group owns this card} other {# play-groups own this card}}",
+          "copies": "{count, plural, one {# copy} other {# copies}}"
+        },
         "errataSectionTitle": "Errata & Clarifications",
         "noErrata": "No errata or clarification for this card.",
         "errataTypes": {
