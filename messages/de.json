@@ -289,6 +289,10 @@
         "title": "Deck-Checker",
         "description": "Überprüfe die Legalität deines Decks und erhalte Informationen zu seinen Karten"
       },
+      "toolsTracker": {
+        "title": "Spielverfolgung",
+        "description": "Verfolge Punktzahl, Energie und Macht jedes Spielers am Tisch"
+      },
       "communityTitle": "Tritt der Community bei",
       "communityMatches": {
         "title": "Laufende Partien",
@@ -664,6 +668,26 @@
       "play": "Quiz starten",
       "questionsCount": "{count, plural, one {# Frage} other {# Fragen}}",
       "pageLabel": "Seite {currentPage} von {totalPages}"
+    },
+    "Tracker": {
+      "title": "Spielverfolgung",
+      "description": "Verfolge Punktzahl, Energie und Macht jedes Spielers und lege fest, welche Legende jeder spielt.",
+      "back": "Zurück zum Spiel",
+      "addPlayer": "Spieler hinzufügen",
+      "removePlayer": "Diesen Spieler entfernen",
+      "resetGame": "Zurücksetzen",
+      "resetConfirmTitle": "Partie zurücksetzen?",
+      "resetConfirmDescription": "Punktzahl, Energie und Macht aller Spieler werden auf null zurückgesetzt. Namen und Legenden bleiben erhalten.",
+      "resetConfirmCancel": "Abbrechen",
+      "resetConfirmAction": "Zurücksetzen",
+      "defaultPlayerName": "Spieler {number}",
+      "legend": "Legende",
+      "legendSearchPlaceholder": "Legende suchen…",
+      "legendEmpty": "Keine Legende gefunden.",
+      "clearLegend": "Legende entfernen",
+      "score": "Punktzahl",
+      "energy": "Energie",
+      "power": "Macht"
     },
     "DeckChecker": {
       "title": "Riftbound-Deck-Checker",

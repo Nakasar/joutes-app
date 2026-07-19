@@ -289,6 +289,10 @@
         "title": "Deck checker",
         "description": "Check the legality of your deck and information about its cards"
       },
+      "toolsTracker": {
+        "title": "Game tracker",
+        "description": "Track each table player's score, energy, and power"
+      },
       "communityTitle": "Join the community",
       "communityMatches": {
         "title": "Current games",
@@ -664,6 +668,26 @@
       "play": "Take the quiz",
       "questionsCount": "{count, plural, one {# question} other {# questions}}",
       "pageLabel": "Page {currentPage} of {totalPages}"
+    },
+    "Tracker": {
+      "title": "Game tracker",
+      "description": "Track each player's score, energy, and power, and set the legend each of them is playing.",
+      "back": "Back to game",
+      "addPlayer": "Add a player",
+      "removePlayer": "Remove this player",
+      "resetGame": "Reset",
+      "resetConfirmTitle": "Reset the game?",
+      "resetConfirmDescription": "Every player's score, energy, and power will be reset to zero. Names and legends are kept.",
+      "resetConfirmCancel": "Cancel",
+      "resetConfirmAction": "Reset",
+      "defaultPlayerName": "Player {number}",
+      "legend": "Legend",
+      "legendSearchPlaceholder": "Search a legend…",
+      "legendEmpty": "No legend found.",
+      "clearLegend": "Remove legend",
+      "score": "Score",
+      "energy": "Energy",
+      "power": "Power"
     },
     "DeckChecker": {
       "title": "Riftbound Deck Checker",
