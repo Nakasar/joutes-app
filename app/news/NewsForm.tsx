@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import MarkdownEditor from "./MarkdownEditor";
+import MarkdownEditor from "@/components/MarkdownEditor";
 import BannerUploader from "./BannerUploader";
 import { toast } from "sonner";
 import { Loader2, X } from "lucide-react";

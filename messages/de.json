@@ -652,6 +652,19 @@
       "unknownAuthor": "Unbekannter Autor",
       "pageLabel": "Seite {currentPage} von {totalPages}"
     },
+    "quizz": {
+      "metadata": {
+        "notFoundTitle": "Spiel nicht gefunden",
+        "title": "Quiz — {gameName}",
+        "description": "Finde alle Quiz zu {gameName}."
+      },
+      "title": "Quiz — {gameName}",
+      "back": "Zurück zum Spiel",
+      "empty": "Noch kein Quiz für dieses Spiel.",
+      "play": "Quiz starten",
+      "questionsCount": "{count, plural, one {# Frage} other {# Fragen}}",
+      "pageLabel": "Seite {currentPage} von {totalPages}"
+    },
     "DeckChecker": {
       "title": "Riftbound-Deck-Checker",
       "description": "Überprüfe die Legalität deines Decks und erhalte Informationen zu seinen Karten und deren Rulings",
