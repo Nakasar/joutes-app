@@ -83,7 +83,10 @@ export async function getCardNamesBySet(
  * Looks up a card from an AI vision identification, most precise tier
  * first: a set + collector number alone pins down a single printing
  * regardless of how well the name itself was read, so it's tried before
- * falling back to an exact (case-insensitive) name match.
+ * falling back to an exact (case-insensitive) name match. The set code and
+ * collector number are the fields the model gets wrong most often, so each
+ * tier that used them is followed by a retry without them rather than
+ * giving up outright.
  */
 export async function findCardByAiIdentification(
   gameId: ObjectId,
@@ -109,9 +112,13 @@ export async function findCardByAiIdentification(
     if (card) return card;
   }
 
+  if (name && setCode) {
+    const card = await collection.findOne({ ...baseFilter, name, setCode }, findOptions);
+    if (card) return card;
+  }
+
   if (name) {
-    const exactFilter = setCode ? { ...baseFilter, name, setCode } : { ...baseFilter, name };
-    const card = await collection.findOne(exactFilter, findOptions);
+    const card = await collection.findOne({ ...baseFilter, name }, findOptions);
     if (card) return card;
   }
 
