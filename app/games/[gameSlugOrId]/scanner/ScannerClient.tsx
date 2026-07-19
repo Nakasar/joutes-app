@@ -8,10 +8,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
-import { CameraOff, Loader2, ScanLine } from "lucide-react";
+import { CameraOff, Loader2, ScanLine, Sparkles } from "lucide-react";
 
 type CardMatch = { id: string; name: string; score: number };
 type CardNameEntry = { id: string; name: string };
+type AiIdentification = {
+  cardName: string | null;
+  game: string | null;
+  collectorNumber: string | null;
+  setCode: string | null;
+  lang: string | null;
+};
 
 type ErrataDetails = {
   id: string;
@@ -33,7 +40,8 @@ type MatchedCard = {
   erratas: ErrataDetails[];
 };
 
-type Phase = "idle" | "starting" | "scanning" | "matched" | "error";
+type Phase = "idle" | "starting" | "scanning" | "ai-processing" | "matched" | "error";
+type Mode = "ocr" | "ai";
 
 const SCAN_INTERVAL_MS = 700;
 const MIN_TEXT_LENGTH = 3;
@@ -55,7 +63,13 @@ const NAME_BAND_SIDE_MARGIN_RATIO = 0.06;
 // busy card art come through much cleaner for Tesseract with this than raw color.
 const CONTRAST = 1.5;
 
-export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
+export default function ScannerClient({
+  gameSlug,
+  canUseAiScan = false,
+}: {
+  gameSlug: string;
+  canUseAiScan?: boolean;
+}) {
   const t = useTranslations("Games.Scanner");
   const tGames = useTranslations("Games");
 
@@ -69,9 +83,11 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
   );
 
   const [phase, setPhase] = useState<Phase>("idle");
+  const [mode, setMode] = useState<Mode>("ocr");
   const [error, setError] = useState<string | null>(null);
   const [matchedCard, setMatchedCard] = useState<MatchedCard | null>(null);
   const [lastReadText, setLastReadText] = useState("");
+  const [aiIdentification, setAiIdentification] = useState<AiIdentification | null>(null);
   const [setCodes, setSetCodes] = useState<string[]>([]);
   const [languages, setLanguages] = useState<string[]>([]);
   const [selectedSetCode, setSelectedSetCode] = useState("");
@@ -305,13 +321,15 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
     }
   }, [captureAndRecognize]);
 
-  // Attaches the camera stream and starts OCR only once the <video> element
-  // for the "scanning" phase has actually been mounted by React — requesting
-  // the stream and flipping the phase happen in startScanning(), but if the
-  // browser already has camera permission, getUserMedia() can resolve before
-  // React commits that render, so attaching the stream from inside
-  // startScanning() itself would silently miss the (not-yet-mounted) video
-  // element and leave OCR reading a 0x0 frame forever.
+  // Attaches the camera stream once the <video> element for the "scanning"
+  // phase has actually been mounted by React — requesting the stream and
+  // flipping the phase happen in startCapture(), but if the browser already
+  // has camera permission, getUserMedia() can resolve before React commits
+  // that render, so attaching the stream from inside startCapture() itself
+  // would silently miss the (not-yet-mounted) video element and leave the
+  // feed reading a 0x0 frame forever. The OCR loop only starts on top of
+  // that for "ocr" mode — "ai" mode just shows the live feed and waits for
+  // the capture button.
   useEffect(() => {
     if (phase !== "scanning") return;
 
@@ -325,7 +343,7 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
     async function start(videoEl: HTMLVideoElement) {
       try {
         await videoEl.play();
-        if (cancelled) return;
+        if (cancelled || mode !== "ocr") return;
 
         if (!workerRef.current) {
           const { createWorker, PSM } = await import("tesseract.js");
@@ -352,40 +370,107 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
     return () => {
       cancelled = true;
     };
-  }, [phase, scanLoop, t]);
+  }, [phase, mode, scanLoop, t]);
 
-  const startScanning = useCallback(async () => {
-    setError(null);
-    setMatchedCard(null);
-    setLastReadText("");
-    lastSentTextRef.current = "";
-    consecutiveMatchErrorsRef.current = 0;
-    setPhase("starting");
+  const startCapture = useCallback(
+    async (nextMode: Mode) => {
+      setMode(nextMode);
+      setError(null);
+      setMatchedCard(null);
+      setLastReadText("");
+      setAiIdentification(null);
+      lastSentTextRef.current = "";
+      consecutiveMatchErrorsRef.current = 0;
+      setPhase("starting");
 
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setError(t("errors.cameraUnsupported"));
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setError(t("errors.cameraUnsupported"));
+        setPhase("error");
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+          audio: false,
+        });
+        streamRef.current = stream;
+        setPhase("scanning");
+      } catch (err) {
+        console.error("Scanner camera error", err);
+        setError(t("errors.cameraAccess"));
+        setPhase("error");
+      }
+    },
+    [t]
+  );
+
+  const startScanning = useCallback(() => startCapture("ocr"), [startCapture]);
+  const startAiScan = useCallback(() => startCapture("ai"), [startCapture]);
+
+  // Captures the full-color card crop (not the grayscale, name-band-only
+  // crop used for OCR) — the AI model benefits from seeing the whole card,
+  // not just its name.
+  const captureCardImageDataUrl = useCallback((): string | null => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth || !video.videoHeight) return null;
+
+    const cardWidth = Math.round(video.videoWidth * CROP_RATIO);
+    const cardHeight = Math.round(video.videoHeight * CROP_RATIO);
+    const cardX = Math.round((video.videoWidth - cardWidth) / 2);
+    const cardY = Math.round((video.videoHeight - cardHeight) / 2);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = cardWidth;
+    canvas.height = cardHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+
+    ctx.drawImage(video, cardX, cardY, cardWidth, cardHeight, 0, 0, cardWidth, cardHeight);
+
+    return canvas.toDataURL("image/jpeg", 0.85);
+  }, []);
+
+  const handleCaptureAiPhoto = useCallback(async () => {
+    const imageDataUrl = captureCardImageDataUrl();
+    if (!imageDataUrl) {
+      setError(t("errors.generic"));
       setPhase("error");
       return;
     }
 
+    stopCamera();
+    setPhase("ai-processing");
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-        audio: false,
+      const res = await fetch(`/api/games/${gameSlug}/scanner/ai-match`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: imageDataUrl }),
       });
-      streamRef.current = stream;
-      setPhase("scanning");
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error?.message ?? t("errors.generic"));
+      }
+
+      setAiIdentification(data.identification ?? null);
+      if (data.match) {
+        await fetchCardDetails(data.match.id);
+      } else {
+        setError(t("errors.aiNoMatch"));
+        setPhase("error");
+      }
     } catch (err) {
-      console.error("Scanner camera error", err);
-      setError(t("errors.cameraAccess"));
+      console.error("Scanner AI match error", err);
+      setError(err instanceof Error ? err.message : t("errors.generic"));
       setPhase("error");
     }
-  }, [t]);
+  }, [captureCardImageDataUrl, stopCamera, gameSlug, fetchCardDetails, t]);
 
   const handleScanAgain = useCallback(() => {
     setMatchedCard(null);
-    void startScanning();
-  }, [startScanning]);
+    void startCapture(mode);
+  }, [startCapture, mode]);
 
   const handleCancel = useCallback(() => {
     stopCamera();
@@ -438,7 +523,15 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
           <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
             <ScanLine className="h-10 w-10 text-muted-foreground" />
             <p className="max-w-md text-sm text-muted-foreground">{t("instructions")}</p>
-            <Button onClick={() => void startScanning()}>{t("start")}</Button>
+            <div className="flex flex-wrap justify-center gap-3">
+              <Button onClick={() => void startScanning()}>{t("start")}</Button>
+              {canUseAiScan && (
+                <Button variant="secondary" onClick={() => void startAiScan()}>
+                  <Sparkles className="h-4 w-4" />
+                  {t("aiStart")}
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
@@ -448,7 +541,30 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
           <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
             <CameraOff className="h-10 w-10 text-destructive" />
             <p className="max-w-md text-sm text-destructive">{error}</p>
-            <Button onClick={() => void startScanning()}>{t("start")}</Button>
+            {aiIdentification && (
+              <p className="max-w-md text-xs text-muted-foreground">
+                {t("aiIdentificationLabel")}{" "}
+                {[
+                  aiIdentification.cardName,
+                  aiIdentification.game,
+                  aiIdentification.setCode,
+                  aiIdentification.collectorNumber,
+                  aiIdentification.lang,
+                ]
+                  .filter(Boolean)
+                  .join(" · ") || t("aiIdentificationEmpty")}
+              </p>
+            )}
+            <Button onClick={() => void startCapture(mode)}>{t("start")}</Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {phase === "ai-processing" && (
+        <Card>
+          <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
+            <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+            <p className="max-w-md text-sm text-muted-foreground">{t("aiProcessing")}</p>
           </CardContent>
         </Card>
       )}
@@ -459,30 +575,54 @@ export default function ScannerClient({ gameSlug }: { gameSlug: string }) {
             {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
             <video ref={videoRef} className="h-full w-full object-cover" muted playsInline />
             <div className="pointer-events-none absolute inset-6 rounded-lg border-2 border-white/70">
-              <div
-                className="pointer-events-none absolute rounded border-2 border-dashed border-yellow-400"
-                style={{
-                  top: `${NAME_BAND_TOP_MARGIN_RATIO * 100}%`,
-                  left: `${NAME_BAND_SIDE_MARGIN_RATIO * 100}%`,
-                  width: `${(1 - 2 * NAME_BAND_SIDE_MARGIN_RATIO) * 100}%`,
-                  height: `${NAME_BAND_HEIGHT_RATIO * 100}%`,
-                }}
-              />
+              {mode === "ocr" && (
+                <div
+                  className="pointer-events-none absolute rounded border-2 border-dashed border-yellow-400"
+                  style={{
+                    top: `${NAME_BAND_TOP_MARGIN_RATIO * 100}%`,
+                    left: `${NAME_BAND_SIDE_MARGIN_RATIO * 100}%`,
+                    width: `${(1 - 2 * NAME_BAND_SIDE_MARGIN_RATIO) * 100}%`,
+                    height: `${NAME_BAND_HEIGHT_RATIO * 100}%`,
+                  }}
+                />
+              )}
             </div>
           </div>
-          <div className="mx-auto max-w-sm space-y-1">
-            <p className="text-center text-xs font-medium text-muted-foreground">{t("ocrPreviewLabel")}</p>
-            <canvas ref={canvasRef} className="mx-auto h-auto w-full rounded border bg-black" />
-          </div>
-          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>{phase === "starting" ? t("starting") : t("scanning")}</span>
-          </div>
-          {phase === "scanning" && lastReadText && (
-            <p className="mx-auto max-w-sm truncate text-center text-xs text-muted-foreground">
-              {t("lastRead", { text: lastReadText })}
-            </p>
+
+          {mode === "ocr" && (
+            <>
+              <div className="mx-auto max-w-sm space-y-1">
+                <p className="text-center text-xs font-medium text-muted-foreground">{t("ocrPreviewLabel")}</p>
+                <canvas ref={canvasRef} className="mx-auto h-auto w-full rounded border bg-black" />
+              </div>
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>{phase === "starting" ? t("starting") : t("scanning")}</span>
+              </div>
+              {phase === "scanning" && lastReadText && (
+                <p className="mx-auto max-w-sm truncate text-center text-xs text-muted-foreground">
+                  {t("lastRead", { text: lastReadText })}
+                </p>
+              )}
+            </>
           )}
+
+          {mode === "ai" && (
+            <div className="flex flex-col items-center gap-3">
+              {phase === "starting" ? (
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>{t("starting")}</span>
+                </div>
+              ) : (
+                <Button onClick={() => void handleCaptureAiPhoto()}>
+                  <Sparkles className="h-4 w-4" />
+                  {t("aiCapture")}
+                </Button>
+              )}
+            </div>
+          )}
+
           <div className="flex justify-center">
             <Button variant="outline" onClick={handleCancel}>
               {t("cancel")}

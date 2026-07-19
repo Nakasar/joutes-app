@@ -78,3 +78,42 @@ export async function getCardNamesBySet(
     ])
     .toArray();
 }
+
+/**
+ * Looks up a card from an AI vision identification, most precise tier
+ * first: a set + collector number alone pins down a single printing
+ * regardless of how well the name itself was read, so it's tried before
+ * falling back to an exact (case-insensitive) name match.
+ */
+export async function findCardByAiIdentification(
+  gameId: ObjectId,
+  identification: {
+    name?: string | null;
+    setCode?: string | null;
+    collectorNumber?: string | null;
+    lang?: string | null;
+  }
+): Promise<{ id: string; name: string } | null> {
+  const { name, setCode, collectorNumber, lang } = identification;
+
+  const baseFilter: Record<string, unknown> = { gameId };
+  if (lang) {
+    baseFilter.lang = lang;
+  }
+
+  const collection = db.collection<{ id: string; name: string }>("cards");
+  const findOptions = { projection: { _id: 0, id: 1, name: 1 }, collation: { locale: "en", strength: 2 } };
+
+  if (setCode && collectorNumber) {
+    const card = await collection.findOne({ ...baseFilter, setCode, collectorNumber }, findOptions);
+    if (card) return card;
+  }
+
+  if (name) {
+    const exactFilter = setCode ? { ...baseFilter, name, setCode } : { ...baseFilter, name };
+    const card = await collection.findOne(exactFilter, findOptions);
+    if (card) return card;
+  }
+
+  return null;
+}

@@ -762,10 +762,16 @@
       },
       "ocrPreviewLabel": "Image envoyée à l'OCR (après traitement)",
       "lastRead": "Dernière lecture : {text}",
+      "aiStart": "Scanner avec l'IA",
+      "aiCapture": "Prendre la photo",
+      "aiProcessing": "Analyse de la carte par l'IA…",
+      "aiIdentificationLabel": "Détecté par l'IA :",
+      "aiIdentificationEmpty": "aucune information exploitable.",
       "errors": {
         "cameraUnsupported": "Votre navigateur ne permet pas d'accéder à la caméra.",
         "cameraAccess": "Impossible d'accéder à la caméra. Vérifiez les autorisations de votre navigateur.",
         "cardFetch": "Impossible de récupérer les détails de la carte détectée.",
+        "aiNoMatch": "L'IA n'a pas trouvé de carte correspondante.",
         "generic": "Une erreur est survenue."
       },
       "card": {

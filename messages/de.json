@@ -761,10 +761,16 @@
       },
       "ocrPreviewLabel": "An die OCR gesendetes Bild (nach Verarbeitung)",
       "lastRead": "Zuletzt gelesen: {text}",
+      "aiStart": "Mit KI scannen",
+      "aiCapture": "Foto aufnehmen",
+      "aiProcessing": "Die KI analysiert die Karte…",
+      "aiIdentificationLabel": "Von der KI erkannt:",
+      "aiIdentificationEmpty": "keine verwertbaren Informationen.",
       "errors": {
         "cameraUnsupported": "Dein Browser unterstützt keinen Kamerazugriff.",
         "cameraAccess": "Kamerazugriff nicht möglich. Überprüfe die Berechtigungen deines Browsers.",
         "cardFetch": "Die Details der erkannten Karte konnten nicht abgerufen werden.",
+        "aiNoMatch": "Die KI konnte keine passende Karte finden.",
         "generic": "Ein Fehler ist aufgetreten."
       },
       "card": {
