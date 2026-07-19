@@ -660,7 +660,7 @@
       },
       "title": "Quizzes — {gameName}",
       "back": "Back to game",
-      "empty": "No quiz for this game yet.",
+      "empty": "No quizzes for this game yet.",
       "play": "Take the quiz",
       "questionsCount": "{count, plural, one {# question} other {# questions}}",
       "pageLabel": "Page {currentPage} of {totalPages}"

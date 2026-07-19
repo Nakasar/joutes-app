@@ -45,6 +45,23 @@ const quizQuestionSchema = z
           path: ["correctOptionIds"],
         });
       }
+      if (question.correctOptionIds && question.correctOptionIds.length > 0) {
+        const optionIds = new Set((question.options ?? []).map((option) => option.id));
+        if (question.correctOptionIds.some((id) => !optionIds.has(id))) {
+          ctx.addIssue({
+            code: "custom",
+            message: "Une bonne réponse doit correspondre à une réponse possible existante",
+            path: ["correctOptionIds"],
+          });
+        }
+        if (new Set(question.correctOptionIds).size !== question.correctOptionIds.length) {
+          ctx.addIssue({
+            code: "custom",
+            message: "Les bonnes réponses ne doivent pas contenir de doublons",
+            path: ["correctOptionIds"],
+          });
+        }
+      }
     }
     if (question.type === "text" && !question.correctText?.trim()) {
       ctx.addIssue({ code: "custom", message: "La bonne réponse est requise", path: ["correctText"] });

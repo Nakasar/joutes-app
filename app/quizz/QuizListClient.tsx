@@ -97,40 +97,43 @@ export default function QuizListClient({ games, canWrite }: QuizListClientProps)
         <div className="text-center py-16 text-muted-foreground">Aucun quizz pour le moment.</div>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {data.quizzes.map((quiz) => (
-            <Card key={quiz.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between gap-2">
-                  <Link href={`/quizz/${quiz.id}`} className="group">
-                    <CardTitle className="text-xl group-hover:text-primary transition-colors">
-                      {quiz.title}
-                    </CardTitle>
-                  </Link>
-                  {canWrite && (
-                    <Button asChild variant="ghost" size="icon" className="shrink-0">
-                      <Link href={`/quizz/${quiz.id}/edit`}>
-                        <Pencil className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="pb-3">
-                <div className="flex flex-wrap gap-2">
-                  {quiz.game && <Badge variant="secondary">{quiz.game.name}</Badge>}
-                  <Badge variant="outline" className="gap-1">
-                    <ListChecks className="h-3 w-3" />
-                    {countQuestions(quiz)} question{countQuestions(quiz) > 1 ? "s" : ""}
-                  </Badge>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button asChild variant="link" className="p-0 h-auto">
-                  <Link href={`/quizz/${quiz.id}`}>Faire le quizz →</Link>
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+          {data.quizzes.map((quiz) => {
+            const questionCount = countQuestions(quiz);
+            return (
+              <Card key={quiz.id} className="hover:shadow-md transition-shadow">
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <Link href={`/quizz/${quiz.id}`} className="group">
+                      <CardTitle className="text-xl group-hover:text-primary transition-colors">
+                        {quiz.title}
+                      </CardTitle>
+                    </Link>
+                    {canWrite && (
+                      <Button asChild variant="ghost" size="icon" className="shrink-0">
+                        <Link href={`/quizz/${quiz.id}/edit`}>
+                          <Pencil className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="pb-3">
+                  <div className="flex flex-wrap gap-2">
+                    {quiz.game && <Badge variant="secondary">{quiz.game.name}</Badge>}
+                    <Badge variant="outline" className="gap-1">
+                      <ListChecks className="h-3 w-3" />
+                      {questionCount} question{questionCount === 1 ? "" : "s"}
+                    </Badge>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button asChild variant="link" className="p-0 h-auto">
+                    <Link href={`/quizz/${quiz.id}`}>Faire le quizz →</Link>
+                  </Button>
+                </CardFooter>
+              </Card>
+            );
+          })}
         </div>
       )}
 
