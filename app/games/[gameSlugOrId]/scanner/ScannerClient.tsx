@@ -14,8 +14,8 @@ import GameMarkdown from "@/components/GameMarkdown";
 import AnnotatedMarkdown from "@/components/AnnotatedMarkdown";
 import ErrataVoteButtons from "@/components/ErrataVoteButtons";
 import { annotateCardText } from "@/lib/card-text-markdown";
-import { CardNameMatch } from "@/lib/db/cards";
-import { Locale } from "@/i18n/config";
+import type { CardNameMatch } from "@/lib/db/cards";
+import type { Locale } from "@/i18n/config";
 import { CameraOff, ExternalLink, Loader2, ScanLine, Sparkles } from "lucide-react";
 
 type CardMatch = { id: string; name: string; score: number };
