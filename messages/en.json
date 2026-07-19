@@ -761,10 +761,16 @@
       },
       "ocrPreviewLabel": "Image sent to OCR (after processing)",
       "lastRead": "Last read: {text}",
+      "aiStart": "Scan with AI",
+      "aiCapture": "Take photo",
+      "aiProcessing": "Analyzing the card with AI…",
+      "aiIdentificationLabel": "AI detected:",
+      "aiIdentificationEmpty": "no usable information.",
       "errors": {
         "cameraUnsupported": "Your browser does not support camera access.",
         "cameraAccess": "Could not access the camera. Check your browser permissions.",
         "cardFetch": "Could not retrieve details for the detected card.",
+        "aiNoMatch": "The AI could not find a matching card.",
         "generic": "An error occurred."
       },
       "card": {

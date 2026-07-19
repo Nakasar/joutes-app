@@ -761,10 +761,16 @@
       },
       "ocrPreviewLabel": "Immagine inviata all'OCR (dopo l'elaborazione)",
       "lastRead": "Ultima lettura: {text}",
+      "aiStart": "Scansiona con l'IA",
+      "aiCapture": "Scatta la foto",
+      "aiProcessing": "Analisi della carta da parte dell'IA…",
+      "aiIdentificationLabel": "Rilevato dall'IA:",
+      "aiIdentificationEmpty": "nessuna informazione utilizzabile.",
       "errors": {
         "cameraUnsupported": "Il tuo browser non supporta l'accesso alla fotocamera.",
         "cameraAccess": "Impossibile accedere alla fotocamera. Controlla i permessi del tuo browser.",
         "cardFetch": "Impossibile recuperare i dettagli della carta rilevata.",
+        "aiNoMatch": "L'IA non ha trovato una carta corrispondente.",
         "generic": "Si è verificato un errore."
       },
       "card": {

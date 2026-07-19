@@ -1,18 +1,9 @@
 import { NextResponse } from "next/server";
 import { getGameBySlugOrId } from "@/lib/db/games";
-import meilisearch, { indexes } from "@/lib/meilisearch";
+import { matchCardNameInMeilisearch } from "@/lib/scanner";
 
 const MAX_TEXT_LENGTH = 5000;
 const MIN_TEXT_LENGTH = 3;
-// The client now crops OCR to the card's name band before sending text here,
-// so this is a single, already name-scoped candidate string rather than a
-// full block of card text — one Meilisearch query is enough.
-// Meilisearch's built-in typo tolerance already fuzzy-matches OCR noise, so
-// this only filters out the low-confidence hits it still returns when the
-// text doesn't correspond to any card name.
-const RANKING_SCORE_THRESHOLD = 0.55;
-
-type CardNameHit = { id: string; name: string };
 
 export async function POST(request: Request, { params }: { params: Promise<{ gameId: string }> }) {
   const { gameId } = await params;
@@ -45,30 +36,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ gam
     return NextResponse.json({ match: null });
   }
 
-  const indexConfig = game.slug ? indexes[game.slug] : undefined;
-  if (!indexConfig) {
-    return NextResponse.json({ match: null });
-  }
-
-  const index = meilisearch.index<CardNameHit>(indexConfig.name);
-
-  const filter: string[] = [];
-  if (typeof lang === "string" && lang.trim()) {
-    filter.push(`lang = ${lang.trim()}`);
-  }
-
-  const result = await index.search(trimmedText, {
-    limit: 1,
-    attributesToSearchOn: ["name"],
-    attributesToRetrieve: ["id", "name"],
-    showRankingScore: true,
-    filter: filter.length > 0 ? filter : undefined,
+  const match = await matchCardNameInMeilisearch(game.slug, trimmedText, {
+    lang: typeof lang === "string" && lang.trim() ? lang.trim() : undefined,
   });
-
-  const [top] = result.hits;
-  const score = top?._rankingScore;
-  const match =
-    top && score !== undefined && score >= RANKING_SCORE_THRESHOLD ? { id: top.id, name: top.name, score } : null;
 
   return NextResponse.json({ match });
 }
