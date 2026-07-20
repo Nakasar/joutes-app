@@ -52,10 +52,22 @@ export async function validateDeckList(decklist: DeckList): Promise<DeckList> {
           {
             $lookup: {
               from: 'erratas',
-              localField: 'id',
-              foreignField: 'cardIds',
-              as: 'erratas',
+              let: {cardId: '$id'},
+              // Matches both the current `cardIds` array field and the legacy scalar
+              // `cardId` field, so erratas still show up during the deployment window
+              // before `scripts/migrate-errata-cardid-to-cardids.ts` has run against
+              // the database (same fallback as lib/db/erratas.ts).
               pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $or: [
+                        {$in: ['$$cardId', {$ifNull: ['$cardIds', []]}]},
+                        {$eq: ['$cardId', '$$cardId']},
+                      ],
+                    },
+                  },
+                },
                 {
                   $addFields: {
                     id: {$toString: '$_id'},
@@ -68,6 +80,7 @@ export async function validateDeckList(decklist: DeckList): Promise<DeckList> {
                   },
                 },
               ],
+              as: 'erratas',
             },
           },
           {
