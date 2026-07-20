@@ -251,7 +251,7 @@ async function handleModifyEventBoardModalSubmit(interaction: APIModalSubmitInte
           }
         );
       } else {
-        await rest.post(Routes.interactionCallback(interaction.id, interaction.token),
+        await rest.post(Routes.webhookMessage(interaction.application_id, interaction.token),
           {
             body: {
               type: 4,
@@ -776,7 +776,7 @@ async function handleComponentButtonInteraction(interaction: APIMessageComponent
           }
         );
       } else {
-        await rest.post(Routes.interactionCallback(interaction.id, interaction.token),
+        await rest.post(Routes.webhookMessage(interaction.application_id, interaction.token),
           {
             body: {
               type: 4,
