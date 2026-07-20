@@ -27,10 +27,11 @@ const langLabel = (code: string) => LANG_LABELS[code.toLowerCase()] ?? code.toUp
 type SearchCard = BoosterCard & { type?: string };
 
 /** Parse in-bar special filters: `e:XXX` / `set:XXX` -> set, `cn:000a` -> collector number. */
-function parseSearch(raw: string): { setCode: string | null; cn: string | null; text: string } {
+function parseSearch(raw: string): { setCode: string | null; cn: string | null; lang: string | null; text: string } {
   let text = ` ${raw} `;
   let setCode: string | null = null;
   let cn: string | null = null;
+  let lang: string | null = null;
   const e = text.match(/(?:^|\s)(?:e|set):([\w*]+)/i);
   if (e) {
     setCode = e[1].toUpperCase();
@@ -41,12 +42,17 @@ function parseSearch(raw: string): { setCode: string | null; cn: string | null; 
     cn = c[1];
     text = text.replace(c[0], " ");
   }
+  const l = text.match(/(?:^|\s)lang:([\w*]+)/i);
+  if (l) {
+    lang = l[1];
+    text = text.replace(l[0], " ");
+  }
   const trimmed = text.trim();
   // A bare number is treated as a collector-number filter.
   if (!cn && /^\d+$/.test(trimmed)) {
-    return { setCode, cn: trimmed, text: "" };
+    return { setCode, cn: trimmed, lang, text: "" };
   }
-  return { setCode, cn, text: trimmed };
+  return { setCode, cn, lang, text: trimmed };
 }
 
 type Props = {
@@ -82,8 +88,8 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
   const [activeIndex, setActiveIndex] = useState(0);
 
   const fetchResults = useCallback(
-    async (searchText: string, setCode: string, pageNum: number) => {
-      const key = `${searchText}|${setCode}|${pageNum}`;
+    async (searchText: string, setCode: string, lang: string, pageNum: number) => {
+      const key = `${searchText}|${setCode}|${lang}|${pageNum}`;
       if (pendingKeyRef.current === key) return;
       controllerRef.current?.abort();
       const controller = new AbortController();
@@ -94,7 +100,7 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
         const params = new URLSearchParams();
         if (searchText) params.set("searchQuery", searchText);
         if (setCode && setCode !== "all") params.set("setCode", setCode);
-        if (booster.lang) params.set("lang", booster.lang);
+        if (lang) params.set("lang", lang);
         params.set("page", String(pageNum));
         params.set("limit", "24");
 
@@ -129,7 +135,7 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
     const effectiveSet = parsed.setCode ?? selectedSet;
     const searchText = [parsed.text, parsed.cn ? `cn:${parsed.cn}` : ""].filter(Boolean).join(" ");
     const delay = parsed.text ? 300 : 0;
-    const timer = window.setTimeout(() => void fetchResults(searchText, effectiveSet, 1), delay);
+    const timer = window.setTimeout(() => void fetchResults(searchText, effectiveSet, parsed.lang ?? booster.lang, 1), delay);
     return () => window.clearTimeout(timer);
   }, [rawQuery, selectedSet, fetchResults]);
 
@@ -138,7 +144,7 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
     const parsed = parseSearch(rawQuery);
     const effectiveSet = parsed.setCode ?? selectedSet;
     const searchText = [parsed.text, parsed.cn ? `cn:${parsed.cn}` : ""].filter(Boolean).join(" ");
-    void fetchResults(searchText, effectiveSet, next);
+    void fetchResults(searchText, effectiveSet, parsed.lang ?? booster.lang, next);
   };
 
   const refetchBooster = useCallback(async () => {
