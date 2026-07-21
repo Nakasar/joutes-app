@@ -5,6 +5,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import { createMcpHandler } from 'mcp-handler';
+import { NextResponse } from "next/server";
 import { getEventsForUser, getAllEvents } from "@/lib/db/events";
 import { getAllLairs, getLairById } from "@/lib/db/lairs";
 import { getAllGames, getGameById } from "@/lib/db/games";
@@ -597,6 +598,30 @@ async function handleGetRule(params: {
     };
 }
 
+// Enveloppe chaque outil MCP pour logger son invocation et catcher les erreurs
+// non gérées par le handler lui-même (certains, comme handleSearchCard ou
+// handleGetRule, ne catchent pas leurs propres erreurs).
+function withToolLogging<Args extends unknown[]>(
+    name: string,
+    handler: (...args: Args) => Promise<{ content: TextContent[]; isError?: boolean }>
+): (...args: Args) => Promise<{ content: TextContent[]; isError?: boolean }> {
+    return async (...args: Args) => {
+        console.log(`[MCP] Appel de l'outil "${name}"`);
+        try {
+            return await handler(...args);
+        } catch (error) {
+            console.error(`[MCP] Erreur lors de l'exécution de l'outil "${name}":`, error);
+            return {
+                content: [{
+                    type: "text",
+                    text: `Erreur lors de l'exécution de l'outil "${name}".`
+                } as TextContent],
+                isError: true
+            };
+        }
+    };
+}
+
 // Route principale MCP
 const handler = createMcpHandler(server => {
     server.tool("search_events", "Rechercher des évènements sur la plateforme Joutes. Supporte la personnalisation pour l'utilisateur authentifié et le filtrage par jeux.", {
@@ -609,10 +634,10 @@ const handler = createMcpHandler(server => {
             longitude: z.number().min(-180).max(180)
         }).optional(),
         maxDistanceKm: z.number().min(0).optional()
-    }, handleSearchEvents);
+    }, withToolLogging("search_events", handleSearchEvents));
     server.tool("search_lairs", "Rechercher des lieux (lairs) sur la plateforme Joutes.", {
         name: z.string().optional()
-    }, handleSearchLairs);
+    }, withToolLogging("search_lairs", handleSearchLairs));
     server.tool("create_event", "Créer un nouvel évènement dans un lieu. Nécessite d'être propriétaire du lieu.", {
         lairId: z.string(),
         name: z.string(),
@@ -621,14 +646,14 @@ const handler = createMcpHandler(server => {
         endDateTime: z.string(),
         url: z.string().optional(),
         price: z.string().transform((val) => parseFloat(val)).optional()
-    }, handleCreateEvent);
+    }, withToolLogging("create_event", handleCreateEvent));
     server.tool("follow_lair", "Suivre un lieu pour recevoir ses évènements.", {
         lairId: z.string()
-    }, handleFollowLair);
+    }, withToolLogging("follow_lair", handleFollowLair));
     server.tool("add_game", "Ajouter un jeu à la liste des jeux suivis par l'utilisateur.", {
         gameId: z.string()
-    }, handleAddGame);
-    server.tool("list_games", "Lister tous les jeux disponibles sur la plateforme.", {}, handleListGames);
+    }, withToolLogging("add_game", handleAddGame));
+    server.tool("list_games", "Lister tous les jeux disponibles sur la plateforme.", {}, withToolLogging("list_games", handleListGames));
     server.registerTool("search_card", {
         title: "Search cards",
         description: "Search for cards and their details, erratas and rulings.",
@@ -636,7 +661,7 @@ const handler = createMcpHandler(server => {
             gameName: z.string().optional(),
             cardName: z.string(),
         },
-    }, handleSearchCard);
+    }, withToolLogging("search_card", handleSearchCard));
     server.registerTool("search_rules", {
         title: "Search rules and policies",
         description: "Search for rules, policies, tournament regulation, keywords...",
@@ -644,7 +669,7 @@ const handler = createMcpHandler(server => {
             gameName: z.string(),
             query: z.string(),
         },
-    }, handleSearchRules);
+    }, withToolLogging("search_rules", handleSearchRules));
     server.registerTool("vote_errata", {
         title: "Vote on errata",
         description: "Vote on the correctness of card erratas or rulings.",
@@ -652,7 +677,7 @@ const handler = createMcpHandler(server => {
             errataId: z.string(),
             vote: z.enum(["upvote", "downvote"]),
         },
-    }, handleVoteErrata);
+    }, withToolLogging("vote_errata", handleVoteErrata));
     server.registerTool("get_rule", {
         title: "Get rule by ID",
         description: "Get the content of a tournament rule (TR) or core rule (CR) by its ID.",
@@ -660,7 +685,7 @@ const handler = createMcpHandler(server => {
             gameName: z.string().describe("Name of the game"),
             id: z.string().describe("ID of the rule. Prefix by type. Example: TR509.4.c.1"),
         },
-    }, handleGetRule);
+    }, withToolLogging("get_rule", handleGetRule));
 }, {
     serverInfo: {
         name: "Joutes APP",
@@ -717,7 +742,16 @@ async function authHandler(req: Request) {
         console.debug("Authentication error:", err);
     }
 
-    return handler(req);
+    console.log(`[MCP] Requête ${req.method} reçue`);
+    try {
+        return await handler(req);
+    } catch (error) {
+        console.error("[MCP] Erreur non gérée lors du traitement de la requête:", error);
+        return NextResponse.json(
+            { error: "Erreur interne lors du traitement de la requête MCP." },
+            { status: 500 }
+        );
+    }
 }
 
 /*
