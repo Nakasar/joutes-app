@@ -59,17 +59,24 @@ export type TournamentRound = {
   completedAt?: Date;
 };
 
+export type TournamentMatchPlayer = {
+  // Tournament player id (not a user id).
+  playerId: string;
+  score: number;
+};
+
 export type TournamentMatch = {
   id: string;
   tournamentId: string;
   phaseId: string;
   roundId: string;
-  // Tournament player ids (not user ids); player2Id null means a BYE.
-  player1Id: string;
-  player2Id: string | null;
-  player1Score: number;
-  player2Score: number;
-  winnerId?: string | null;
+  // 1..N players; a single-player match is a BYE. Swiss/bracket generation
+  // always produces 1-2 players, larger matches support multiplayer formats
+  // (created manually, typically in freeform phases).
+  players: TournamentMatchPlayer[];
+  // Empty while no result; on a completed match, empty means a draw between
+  // all players, otherwise the (co-)winners.
+  winnerIds: string[];
   bracketPosition?: string;
   status: TournamentMatchStatus;
   reportedBy?: string;

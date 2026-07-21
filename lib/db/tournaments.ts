@@ -8,6 +8,7 @@ import {
   TournamentMatch,
   TournamentMatchDb,
   TournamentMatchFormat,
+  TournamentMatchPlayer,
   TournamentPhase,
   TournamentPhaseDb,
   TournamentPlayer,
@@ -19,7 +20,6 @@ import {
   PairingMatch,
   PairingResult,
   PlayerStanding,
-  calculateStandings,
   generateBracketPosition,
   generateEliminationBracket,
   generateNextBracketRound,
@@ -106,11 +106,8 @@ function toMatch(doc: WithId<TournamentMatchDb>): TournamentMatch {
     tournamentId: doc.tournamentId.toString(),
     phaseId: doc.phaseId.toString(),
     roundId: doc.roundId.toString(),
-    player1Id: doc.player1Id,
-    player2Id: doc.player2Id,
-    player1Score: doc.player1Score,
-    player2Score: doc.player2Score,
-    winnerId: doc.winnerId,
+    players: doc.players,
+    winnerIds: doc.winnerIds ?? [],
     bracketPosition: doc.bracketPosition,
     status: doc.status,
     reportedBy: doc.reportedBy,
@@ -120,14 +117,18 @@ function toMatch(doc: WithId<TournamentMatchDb>): TournamentMatch {
   };
 }
 
+// Vue 2-joueurs d'un match, pour la génération de pairings (les phases
+// swiss/bracket ne produisent que des matchs à 1 ou 2 joueurs — un seul
+// joueur étant un BYE). Ne pas utiliser sur des matchs multijoueurs.
 function toPairingMatch(match: TournamentMatch): PairingMatch {
+  const [p1, p2] = match.players;
   return {
     matchId: match.id,
-    player1Id: match.player1Id,
-    player2Id: match.player2Id,
-    player1Score: match.player1Score,
-    player2Score: match.player2Score,
-    winnerId: match.winnerId,
+    player1Id: p1?.playerId ?? "",
+    player2Id: p2?.playerId ?? null,
+    player1Score: p1?.score ?? 0,
+    player2Score: p2?.score ?? 0,
+    winnerId: match.winnerIds[0] ?? null,
     status: match.status,
     bracketPosition: match.bracketPosition,
   };
@@ -386,7 +387,7 @@ export async function removePlayer(tournamentId: string, playerId: string): Prom
 
   const hasMatches = await db.collection<TournamentMatchDb>(MATCHES).findOne({
     tournamentId: tId,
-    $or: [{ player1Id: playerId }, { player2Id: playerId }],
+    "players.playerId": playerId,
   });
   if (hasMatches) {
     throw new TournamentError(
@@ -666,15 +667,18 @@ export async function createNextRound(
 
   const matchDocs: TournamentMatchDb[] = pairings.map((pairing, i) => {
     const isBye = pairing.player2Id === null;
+    const matchPlayers: TournamentMatchPlayer[] = isBye
+      ? [{ playerId: pairing.player1Id, score: byeWinScore(phase.matchFormat) }]
+      : [
+          { playerId: pairing.player1Id, score: 0 },
+          { playerId: pairing.player2Id!, score: 0 },
+        ];
     return {
       tournamentId: tId,
       phaseId: pId,
       roundId: roundResult.insertedId,
-      player1Id: pairing.player1Id,
-      player2Id: pairing.player2Id,
-      player1Score: isBye ? byeWinScore(phase.matchFormat) : 0,
-      player2Score: 0,
-      winnerId: isBye ? pairing.player1Id : undefined,
+      players: matchPlayers,
+      winnerIds: isBye ? [pairing.player1Id] : [],
       bracketPosition: phase.type === "bracket" ? generateBracketPosition(i, pairings.length) : undefined,
       status: isBye ? "completed" : "pending",
       reportedBy: isBye ? createdBy : undefined,
@@ -762,40 +766,38 @@ export async function getMatchById(tournamentId: string, matchId: string): Promi
 }
 
 /**
- * Ajout manuel d'un match dans une ronde (phases freeform, ou correction
- * exceptionnelle par un organisateur).
+ * Ajout manuel d'un match dans une ronde : phases freeform, formats
+ * multijoueurs (3+ joueurs), ou correction exceptionnelle par un
+ * organisateur. Un seul joueur crée un BYE.
  */
 export async function createMatch(
   tournamentId: string,
   roundId: string,
-  data: { player1Id: string; player2Id: string | null; bracketPosition?: string }
+  data: { players: string[]; bracketPosition?: string }
 ): Promise<TournamentMatch> {
   const round = await getRoundById(tournamentId, roundId);
   if (!round) {
     throw new TournamentError("not-found", "Ronde non trouvée");
   }
 
-  const player1 = await getPlayerById(tournamentId, data.player1Id);
-  if (!player1) {
-    throw new TournamentError("invalid", "Joueur 1 non trouvé dans ce tournoi");
-  }
-  if (data.player2Id !== null) {
-    const player2 = await getPlayerById(tournamentId, data.player2Id);
-    if (!player2) {
-      throw new TournamentError("invalid", "Joueur 2 non trouvé dans ce tournoi");
+  const tournamentPlayers = await listPlayers(tournamentId);
+  const knownIds = new Set(tournamentPlayers.map((p) => p.id));
+  for (const playerId of data.players) {
+    if (!knownIds.has(playerId)) {
+      throw new TournamentError("invalid", `Joueur ${playerId} non trouvé dans ce tournoi`);
     }
   }
+
+  const isBye = data.players.length === 1;
 
   const doc: TournamentMatchDb = {
     tournamentId: new ObjectId(tournamentId),
     phaseId: new ObjectId(round.phaseId),
     roundId: new ObjectId(roundId),
-    player1Id: data.player1Id,
-    player2Id: data.player2Id,
-    player1Score: 0,
-    player2Score: 0,
+    players: data.players.map((playerId) => ({ playerId, score: 0 })),
+    winnerIds: isBye ? [data.players[0]] : [],
     bracketPosition: data.bracketPosition,
-    status: "pending",
+    status: isBye ? "completed" : "pending",
     createdAt: new Date(),
   };
 
@@ -803,17 +805,32 @@ export async function createMatch(
   return toMatch({ ...doc, _id: result.insertedId });
 }
 
+// Vérifie que l'utilisateur (via ses inscriptions joueur au tournoi) fait
+// partie du match.
+async function assertUserIsInMatch(
+  tournamentId: string,
+  match: TournamentMatch,
+  userId: string
+): Promise<void> {
+  const players = await listPlayers(tournamentId);
+  const userPlayerIds = new Set(players.filter((p) => p.userId === userId).map((p) => p.id));
+  const isInMatch = match.players.some((p) => userPlayerIds.has(p.playerId));
+  if (!isInMatch) {
+    throw new TournamentError("forbidden", "Vous ne faites pas partie de ce match");
+  }
+}
+
 export async function reportMatchResult(
   tournament: Tournament,
   matchId: string,
-  data: { player1Score: number; player2Score: number },
+  data: { scores: Record<string, number>; winnerIds?: string[] },
   reporterUserId: string
 ): Promise<TournamentMatch> {
   const match = await getMatchById(tournament.id, matchId);
   if (!match) {
     throw new TournamentError("not-found", "Match non trouvé");
   }
-  if (match.player2Id === null) {
+  if (match.players.length === 1) {
     throw new TournamentError("conflict", "Le résultat d'un BYE ne peut pas être modifié");
   }
 
@@ -825,32 +842,43 @@ export async function reportMatchResult(
     if (!tournament.settings.allowSelfReporting) {
       throw new TournamentError("forbidden", "Le rapport de résultat par les joueurs est désactivé");
     }
-    const players = await listPlayers(tournament.id);
-    const reporterPlayerIds = players
-      .filter((p) => p.userId === reporterUserId)
-      .map((p) => p.id);
-    const isInMatch =
-      reporterPlayerIds.includes(match.player1Id) ||
-      (match.player2Id !== null && reporterPlayerIds.includes(match.player2Id));
-    if (!isInMatch) {
-      throw new TournamentError("forbidden", "Vous ne faites pas partie de ce match");
-    }
+    await assertUserIsInMatch(tournament.id, match, reporterUserId);
   }
 
-  const winnerId =
-    data.player1Score > data.player2Score
-      ? match.player1Id
-      : data.player2Score > data.player1Score
-        ? match.player2Id
-        : null;
+  // Les scores doivent couvrir exactement les joueurs du match.
+  const matchPlayerIds = match.players.map((p) => p.playerId);
+  const scoredIds = Object.keys(data.scores);
+  if (
+    scoredIds.length !== matchPlayerIds.length ||
+    !matchPlayerIds.every((id) => id in data.scores)
+  ) {
+    throw new TournamentError("invalid", "Les scores doivent être fournis pour chaque joueur du match");
+  }
+
+  let winnerIds: string[];
+  if (data.winnerIds !== undefined) {
+    if (!data.winnerIds.every((id) => matchPlayerIds.includes(id))) {
+      throw new TournamentError("invalid", "Les vainqueurs doivent être des joueurs du match");
+    }
+    winnerIds = data.winnerIds;
+  } else {
+    // Par défaut : les joueurs au score maximal gagnent ; tous à égalité = nul.
+    const maxScore = Math.max(...matchPlayerIds.map((id) => data.scores[id]));
+    const top = matchPlayerIds.filter((id) => data.scores[id] === maxScore);
+    winnerIds = top.length === matchPlayerIds.length ? [] : top;
+  }
+
+  const updatedPlayers: TournamentMatchPlayer[] = match.players.map((p) => ({
+    playerId: p.playerId,
+    score: data.scores[p.playerId],
+  }));
 
   // Sans confirmation requise (ou pour un organisateur), le résultat est final.
   const needsConfirmation = tournament.settings.requireConfirmation && !organizer;
 
   const set: Record<string, unknown> = {
-    player1Score: data.player1Score,
-    player2Score: data.player2Score,
-    winnerId,
+    players: updatedPlayers,
+    winnerIds,
     reportedBy: reporterUserId,
     status: needsConfirmation ? "in-progress" : "completed",
     updatedAt: new Date(),
@@ -892,16 +920,7 @@ export async function confirmMatchResult(
     if (match.reportedBy === confirmerUserId) {
       throw new TournamentError("forbidden", "Vous ne pouvez pas confirmer votre propre rapport");
     }
-    const players = await listPlayers(tournament.id);
-    const confirmerPlayerIds = players
-      .filter((p) => p.userId === confirmerUserId)
-      .map((p) => p.id);
-    const isInMatch =
-      confirmerPlayerIds.includes(match.player1Id) ||
-      (match.player2Id !== null && confirmerPlayerIds.includes(match.player2Id));
-    if (!isInMatch) {
-      throw new TournamentError("forbidden", "Vous ne faites pas partie de ce match");
-    }
+    await assertUserIsInMatch(tournament.id, match, confirmerUserId);
   }
 
   const result = await db.collection<TournamentMatchDb>(MATCHES).findOneAndUpdate(
@@ -930,16 +949,7 @@ export async function disputeMatchResult(
 
   const organizer = isTournamentOrganizer(tournament, disputerUserId);
   if (!organizer) {
-    const players = await listPlayers(tournament.id);
-    const disputerPlayerIds = players
-      .filter((p) => p.userId === disputerUserId)
-      .map((p) => p.id);
-    const isInMatch =
-      disputerPlayerIds.includes(match.player1Id) ||
-      (match.player2Id !== null && disputerPlayerIds.includes(match.player2Id));
-    if (!isInMatch) {
-      throw new TournamentError("forbidden", "Vous ne faites pas partie de ce match");
-    }
+    await assertUserIsInMatch(tournament.id, match, disputerUserId);
   }
 
   const result = await db.collection<TournamentMatchDb>(MATCHES).findOneAndUpdate(
@@ -976,6 +986,93 @@ export type TournamentStanding = PlayerStanding & {
 };
 
 /**
+ * Classement multijoueur : généralise le calcul 2-joueurs de
+ * lib/utils/pairing.ts (mêmes points et tiebreakers) aux matchs à N joueurs.
+ * Pour un match à 2, le comportement est identique à calculateStandings.
+ * - vainqueurs (winnerIds) : victoire, 3 points ; autres joueurs : défaite ;
+ *   winnerIds vide sur un match terminé : nul pour tous, 1 point chacun.
+ * - BYE (1 seul joueur) : victoire automatique.
+ * - gamesWon = son score ; gamesLost = somme des scores adverses.
+ */
+function calculateMultiplayerStandings(
+  playerIds: string[],
+  matches: TournamentMatch[]
+): PlayerStanding[] {
+  const standings = new Map<string, PlayerStanding>();
+
+  playerIds.forEach((playerId) => {
+    standings.set(playerId, {
+      playerId,
+      wins: 0,
+      losses: 0,
+      draws: 0,
+      matchPoints: 0,
+      gamesWon: 0,
+      gamesLost: 0,
+      gamesDiff: 0,
+    });
+  });
+
+  const completedMatches = matches.filter((m) => m.status === "completed");
+
+  for (const match of completedMatches) {
+    const isBye = match.players.length === 1;
+    const totalScore = match.players.reduce((sum, p) => sum + p.score, 0);
+    const isDraw = !isBye && match.winnerIds.length === 0;
+
+    for (const matchPlayer of match.players) {
+      const standing = standings.get(matchPlayer.playerId);
+      if (!standing) continue;
+
+      standing.gamesWon += matchPlayer.score;
+      standing.gamesLost += totalScore - matchPlayer.score;
+
+      if (isBye || match.winnerIds.includes(matchPlayer.playerId)) {
+        standing.wins++;
+        standing.matchPoints += 3;
+      } else if (isDraw) {
+        standing.draws++;
+        standing.matchPoints += 1;
+      } else {
+        standing.losses++;
+      }
+    }
+  }
+
+  standings.forEach((standing) => {
+    standing.gamesDiff = standing.gamesWon - standing.gamesLost;
+  });
+
+  // Opponent match win percentage (tiebreaker) : moyenne du taux de victoire
+  // de tous les adversaires rencontrés (co-joueurs des matchs terminés).
+  standings.forEach((standing) => {
+    const opponentIds = completedMatches
+      .filter((m) => m.players.some((p) => p.playerId === standing.playerId))
+      .flatMap((m) => m.players.map((p) => p.playerId))
+      .filter((id) => id !== standing.playerId);
+
+    if (opponentIds.length > 0) {
+      const totalOpponentWinPercentage = opponentIds.reduce((sum, oppId) => {
+        const opp = standings.get(oppId);
+        if (!opp) return sum;
+        const totalMatches = opp.wins + opp.losses + opp.draws;
+        return sum + (totalMatches > 0 ? opp.wins / totalMatches : 0);
+      }, 0);
+      standing.opponentMatchWinPercentage = totalOpponentWinPercentage / opponentIds.length;
+    }
+  });
+
+  return Array.from(standings.values()).sort((a, b) => {
+    if (b.matchPoints !== a.matchPoints) return b.matchPoints - a.matchPoints;
+    if ((b.opponentMatchWinPercentage || 0) !== (a.opponentMatchWinPercentage || 0)) {
+      return (b.opponentMatchWinPercentage || 0) - (a.opponentMatchWinPercentage || 0);
+    }
+    if (b.gamesDiff !== a.gamesDiff) return b.gamesDiff - a.gamesDiff;
+    return b.gamesWon - a.gamesWon;
+  });
+}
+
+/**
  * Classement d'une phase (ou du tournoi entier si phaseId est omis), calculé
  * sur les matchs terminés uniquement.
  */
@@ -992,8 +1089,10 @@ export async function getStandings(tournamentId: string, phaseId?: string): Prom
     db.collection<TournamentMatchDb>(MATCHES).find(filter).toArray(),
   ]);
 
-  const matches = matchDocs.map(toMatch).map(toPairingMatch);
-  const standings = calculateStandings(players.map((p) => p.id), matches);
+  const standings = calculateMultiplayerStandings(
+    players.map((p) => p.id),
+    matchDocs.map(toMatch)
+  );
 
   const playersById = new Map(players.map((p) => [p.id, p]));
   return standings.map((standing) => {

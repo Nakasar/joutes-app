@@ -60,7 +60,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       match = await reportMatchResult(
         tournament,
         matchId,
-        { player1Score: validated.player1Score, player2Score: validated.player2Score },
+        { scores: validated.scores, winnerIds: validated.winnerIds },
         user.userId
       );
     } else if (validated.action === "confirm") {

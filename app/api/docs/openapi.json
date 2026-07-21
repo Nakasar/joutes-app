@@ -8140,7 +8140,7 @@
             "apiKeyBearer": []
           }
         ],
-        "description": "Intended for `freeform` phases or exceptional corrections. Player ids are tournament player ids; `player2Id: null` creates a BYE.",
+        "description": "Intended for `freeform` phases, multiplayer formats or exceptional corrections. Player ids are tournament player ids; a single player creates an auto-completed BYE, 3+ players a multiplayer match.",
         "requestBody": {
           "required": true,
           "content": {
@@ -8148,16 +8148,17 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "player1Id",
-                  "player2Id"
+                  "players"
                 ],
                 "properties": {
-                  "player1Id": {
-                    "type": "string"
-                  },
-                  "player2Id": {
-                    "type": "string",
-                    "nullable": true
+                  "players": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1,
+                    "maxItems": 16,
+                    "description": "Tournament player ids, without duplicates."
                   },
                   "bracketPosition": {
                     "type": "string"
@@ -8260,7 +8261,7 @@
             "apiKeyBearer": []
           }
         ],
-        "description": "Discriminated by the `action` field. `report` is allowed for organizers, and for players of the match when the tournament's `allowSelfReporting` is enabled; with `requireConfirmation`, a player report awaits the opponent's `confirm`. `dispute` flags the result for organizer review. BYE results cannot be modified.\n",
+        "description": "Discriminated by the `action` field. `report` is allowed for organizers, and for players of the match when the tournament's `allowSelfReporting` is enabled; with `requireConfirmation`, a player report awaits the opponent's `confirm`. Scores are keyed by tournament player id and must cover every player of the match; without explicit `winnerIds`, players with the highest score win (all tied = draw). `dispute` flags the result for organizer review. BYE results cannot be modified.\n",
         "requestBody": {
           "required": true,
           "content": {
@@ -8271,8 +8272,7 @@
                     "type": "object",
                     "required": [
                       "action",
-                      "player1Score",
-                      "player2Score"
+                      "scores"
                     ],
                     "properties": {
                       "action": {
@@ -8281,13 +8281,20 @@
                           "report"
                         ]
                       },
-                      "player1Score": {
-                        "type": "integer",
-                        "minimum": 0
+                      "scores": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "description": "Score per tournament player id; every player of the match must be present."
                       },
-                      "player2Score": {
-                        "type": "integer",
-                        "minimum": 0
+                      "winnerIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Explicit (co-)winners, subset of the match players. Defaults to highest-score players."
                       }
                     }
                   },
@@ -10792,24 +10799,28 @@
           "roundId": {
             "type": "string"
           },
-          "player1Id": {
-            "type": "string",
-            "description": "Tournament player id (not a user id)."
+          "players": {
+            "type": "array",
+            "description": "1..N players; a single player is a BYE, 3+ players a multiplayer match. Swiss/bracket generation always produces 1-2 players.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "playerId": {
+                  "type": "string",
+                  "description": "Tournament player id (not a user id)."
+                },
+                "score": {
+                  "type": "integer"
+                }
+              }
+            }
           },
-          "player2Id": {
-            "type": "string",
-            "nullable": true,
-            "description": "Tournament player id; null for a BYE."
-          },
-          "player1Score": {
-            "type": "integer"
-          },
-          "player2Score": {
-            "type": "integer"
-          },
-          "winnerId": {
-            "type": "string",
-            "nullable": true
+          "winnerIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Empty while no result; on a completed match, empty means a draw between all players, otherwise the (co-)winners."
           },
           "bracketPosition": {
             "type": "string",

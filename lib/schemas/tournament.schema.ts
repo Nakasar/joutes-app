@@ -62,15 +62,25 @@ export const updateTournamentPhaseSchema = z.object({
 });
 
 export const createTournamentMatchSchema = z.object({
-  player1Id: z.string(),
-  player2Id: z.string().nullable(),
+  // Tournament player ids; a single player creates a BYE, 3+ players a
+  // multiplayer match.
+  players: z
+    .array(z.string())
+    .min(1, "Au moins un joueur est requis")
+    .max(16)
+    .refine((ids) => new Set(ids).size === ids.length, "Un joueur ne peut apparaître qu'une fois dans un match"),
   bracketPosition: z.string().max(20).optional(),
 });
 
 export const reportTournamentMatchSchema = z.object({
   action: z.literal("report"),
-  player1Score: z.number().int().min(0),
-  player2Score: z.number().int().min(0),
+  // Score par joueur du match, indexé par tournament player id. Tous les
+  // joueurs du match doivent être présents.
+  scores: z.record(z.string(), z.number().int().min(0)),
+  // Vainqueurs explicites (sous-ensemble des joueurs du match). Si omis,
+  // les joueurs au score maximal gagnent ; s'ils sont tous à égalité,
+  // le match est nul.
+  winnerIds: z.array(z.string()).optional(),
 });
 
 export const confirmTournamentMatchSchema = z.object({
