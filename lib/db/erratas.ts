@@ -4,6 +4,109 @@ import db from "@/lib/mongodb";
 import { Errata, ErrataDb, ErrataType } from "@/lib/types/errata";
 import { ObjectId } from "bson";
 
+type ErrataAggregateResult = ErrataDb & {
+  _id: ObjectId;
+  cards?: Errata['cards'];
+  votesList?: { userId: ObjectId; vote: string }[];
+};
+
+function toErrata(errata: ErrataAggregateResult, userId?: string): Errata {
+  return {
+    id: errata._id.toString(),
+    cardIds: errata.cardIds,
+    cards: errata.cards,
+    type: errata.type,
+    details: errata.details,
+    originalLang: errata.originalLang ?? "fr",
+    contentUpdatedAt: errata.contentUpdatedAt ?? errata.createdAt,
+    translations: errata.translations,
+    source: errata.source,
+    errataDate: errata.errataDate,
+    createdBy: errata.createdBy.toString(),
+    createdAt: errata.createdAt,
+    deprecatedAt: errata.deprecatedAt,
+    votes: {
+      positive: (errata.votesList ?? []).filter((v) => v.vote === 'positive').length,
+      negative: (errata.votesList ?? []).filter((v) => v.vote === 'negative').length,
+      userVote: userId
+        ? (errata.votesList ?? []).find((v) => v.userId.toString() === userId)?.vote as Errata['votes']['userVote']
+        : undefined,
+    },
+  };
+}
+
+async function getGameCardIds(gameId: ObjectId): Promise<string[]> {
+  const cards = await db.collection<{ id: string }>("cards").find({ gameId }, { projection: { _id: 0, id: 1 } }).toArray();
+  return cards.map((c) => c.id);
+}
+
+// Matches both the current `cardIds` array field and the legacy scalar `cardId`
+// field, so erratas still keep working during the deployment window before
+// `scripts/migrate-errata-cardid-to-cardids.ts` has run against the database.
+function buildErrataCardIdsMatchFilter(cardIds: string[]): Record<string, unknown> {
+  return { $or: [{ cardIds: { $in: cardIds } }, { cardId: { $in: cardIds } }] };
+}
+
+export async function countErratasByGameId(gameId: string): Promise<number> {
+  const cardIds = await getGameCardIds(new ObjectId(gameId));
+  if (cardIds.length === 0) return 0;
+
+  return db.collection<ErrataDb>("erratas").countDocuments(buildErrataCardIdsMatchFilter(cardIds));
+}
+
+export async function getErratasByGameId({
+                                            gameId,
+                                            offset = 0,
+                                            limit = 20,
+                                            userId,
+                                            sortOrder = "asc",
+                                          }: {
+  gameId: string;
+  offset?: number;
+  limit?: number;
+  userId?: string;
+  sortOrder?: "asc" | "desc";
+}): Promise<Errata[]> {
+  const cardIds = await getGameCardIds(new ObjectId(gameId));
+  if (cardIds.length === 0) return [];
+
+  const sortDir = sortOrder === "asc" ? 1 : -1;
+
+  const erratasDb = await db
+    .collection<ErrataDb>("erratas")
+    .aggregate<ErrataAggregateResult>([
+      { $match: buildErrataCardIdsMatchFilter(cardIds) },
+      {
+        $lookup: {
+          from: 'cards',
+          localField: 'cardIds',
+          foreignField: 'id',
+          as: 'cards',
+          pipeline: [
+            { $project: { _id: 0, gameId: 0 } },
+          ],
+        },
+      },
+      // `$min` (rather than `$arrayElemAt: [..., 0]`) keeps the sort deterministic:
+      // `$lookup` does not guarantee element order for a `cardIds` array match.
+      { $addFields: { primaryCardName: { $min: '$cards.name' } } },
+      { $sort: { primaryCardName: sortDir as 1 | -1, errataDate: -1 } },
+      { $skip: offset },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: 'errata-votes',
+          localField: '_id',
+          foreignField: 'errataId',
+          as: 'votesList',
+        },
+      },
+    ])
+    .toArray();
+
+  return erratasDb.map((errata) => toErrata(errata, userId));
+}
+
 export async function getErratasByCardId(cardId: string, userId?: string): Promise<Errata[]> {
   const card = await db.collection("cards").findOne({ id: cardId });
   const matchingCardIds = card
@@ -24,7 +127,7 @@ export async function getErratasByCardId(cardId: string, userId?: string): Promi
 
   const erratasDb = await db
     .collection<ErrataDb>("erratas")
-    .aggregate([
+    .aggregate<ErrataAggregateResult>([
       { $match: matchFilter },
       {
         $lookup: {
@@ -49,28 +152,7 @@ export async function getErratasByCardId(cardId: string, userId?: string): Promi
     ])
     .toArray();
 
-  return erratasDb.map((errata) => ({
-    id: errata._id.toString(),
-    cardIds: errata.cardIds,
-    cards: errata.cards,
-    type: errata.type,
-    details: errata.details,
-    originalLang: errata.originalLang ?? "fr",
-    contentUpdatedAt: errata.contentUpdatedAt ?? errata.createdAt,
-    translations: errata.translations,
-    source: errata.source,
-    errataDate: errata.errataDate,
-    createdBy: errata.createdBy.toString(),
-    createdAt: errata.createdAt,
-    deprecatedAt: errata.deprecatedAt,
-    votes: {
-      positive: (errata.votesList ?? []).filter((v: { vote: string }) => v.vote === 'positive').length,
-      negative: (errata.votesList ?? []).filter((v: { vote: string }) => v.vote === 'negative').length,
-      userVote: userId
-        ? (errata.votesList ?? []).find((v: { userId: ObjectId; vote: string }) => v.userId.toString() === userId)?.vote
-        : undefined,
-    },
-  }));
+  return erratasDb.map((errata) => toErrata(errata, userId));
 }
 
 async function buildErrataMatchFilter({
@@ -127,7 +209,7 @@ export async function getAllErratas({
 
   const erratasDb = await db
     .collection<ErrataDb>("erratas")
-    .aggregate([
+    .aggregate<ErrataAggregateResult>([
       { $match: matchFilter },
       {
         $lookup: {
@@ -157,26 +239,5 @@ export async function getAllErratas({
     ])
     .toArray();
 
-  return erratasDb.map((errata) => ({
-    id: errata._id.toString(),
-    cardIds: errata.cardIds,
-    cards: errata.cards,
-    type: errata.type,
-    details: errata.details,
-    originalLang: errata.originalLang ?? "fr",
-    contentUpdatedAt: errata.contentUpdatedAt ?? errata.createdAt,
-    translations: errata.translations,
-    source: errata.source,
-    errataDate: errata.errataDate,
-    createdBy: errata.createdBy.toString(),
-    createdAt: errata.createdAt,
-    deprecatedAt: errata.deprecatedAt,
-    votes: {
-      positive: (errata.votesList ?? []).filter((v: { vote: string }) => v.vote === 'positive').length,
-      negative: (errata.votesList ?? []).filter((v: { vote: string }) => v.vote === 'negative').length,
-      userVote: userId
-        ? (errata.votesList ?? []).find((v: { userId: ObjectId; vote: string }) => v.userId.toString() === userId)?.vote
-        : undefined,
-    },
-  }));
+  return erratasDb.map((errata) => toErrata(errata, userId));
 }

@@ -2674,6 +2674,128 @@
         }
       }
     },
+    "/games/{gameId}/erratas": {
+      "parameters": [
+        {
+          "name": "gameId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Games"
+        ],
+        "summary": "List a game's erratas/rulings/clarifications",
+        "security": [],
+        "description": "Response body is a raw array; pagination totals are returned via the `x-page`, `x-page-size` and `x-count` response headers instead of the body.\n",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Erratas.",
+            "headers": {
+              "x-page": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "x-page-size": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "x-count": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Errata"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/games/{gameId}/exports": {
+      "parameters": [
+        {
+          "name": "gameId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Games"
+        ],
+        "summary": "Export a game's cards, erratas, policies and rules as a single JSON file",
+        "security": [],
+        "description": "Generates (or reuses, if one was generated less than 24h ago) a JSON export of the game's cards, erratas, policies and rules (in every available language), uploaded to blob storage. Returns the export's URL rather than the export content itself.\n",
+        "responses": {
+          "200": {
+            "description": "Export metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    },
+                    "size": {
+                      "type": "integer",
+                      "description": "Size of the export file in bytes."
+                    },
+                    "generatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
     "/games/{gameId}/loop": {
       "parameters": [
         {
