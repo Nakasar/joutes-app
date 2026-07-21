@@ -634,10 +634,10 @@ const handler = createMcpHandler(server => {
             longitude: z.number().min(-180).max(180)
         }).optional(),
         maxDistanceKm: z.number().min(0).optional()
-    }, withToolLogging("search_events", handleSearchEvents));
+    }, withToolLogging("searchEvents", handleSearchEvents));
     server.tool("search_lairs", "Rechercher des lieux (lairs) sur la plateforme Joutes.", {
         name: z.string().optional()
-    }, withToolLogging("search_lairs", handleSearchLairs));
+    }, withToolLogging("searchLairs", handleSearchLairs));
     server.tool("create_event", "Créer un nouvel évènement dans un lieu. Nécessite d'être propriétaire du lieu.", {
         lairId: z.string(),
         name: z.string(),
@@ -646,14 +646,14 @@ const handler = createMcpHandler(server => {
         endDateTime: z.string(),
         url: z.string().optional(),
         price: z.string().transform((val) => parseFloat(val)).optional()
-    }, withToolLogging("create_event", handleCreateEvent));
+    }, withToolLogging("createEvent", handleCreateEvent));
     server.tool("follow_lair", "Suivre un lieu pour recevoir ses évènements.", {
         lairId: z.string()
-    }, withToolLogging("follow_lair", handleFollowLair));
+    }, withToolLogging("followLair", handleFollowLair));
     server.tool("add_game", "Ajouter un jeu à la liste des jeux suivis par l'utilisateur.", {
         gameId: z.string()
-    }, withToolLogging("add_game", handleAddGame));
-    server.tool("list_games", "Lister tous les jeux disponibles sur la plateforme.", {}, withToolLogging("list_games", handleListGames));
+    }, withToolLogging("addGame", handleAddGame));
+    server.tool("list_games", "Lister tous les jeux disponibles sur la plateforme.", {}, withToolLogging("listGames", handleListGames));
     server.registerTool("search_card", {
         title: "Search cards",
         description: "Search for cards and their details, erratas and rulings.",
@@ -661,7 +661,7 @@ const handler = createMcpHandler(server => {
             gameName: z.string().optional(),
             cardName: z.string(),
         },
-    }, withToolLogging("search_card", handleSearchCard));
+    }, withToolLogging("searchCard", handleSearchCard));
     server.registerTool("search_rules", {
         title: "Search rules and policies",
         description: "Search for rules, policies, tournament regulation, keywords...",
@@ -669,7 +669,7 @@ const handler = createMcpHandler(server => {
             gameName: z.string(),
             query: z.string(),
         },
-    }, withToolLogging("search_rules", handleSearchRules));
+    }, withToolLogging("searchRules", handleSearchRules));
     server.registerTool("vote_errata", {
         title: "Vote on errata",
         description: "Vote on the correctness of card erratas or rulings.",
@@ -677,7 +677,7 @@ const handler = createMcpHandler(server => {
             errataId: z.string(),
             vote: z.enum(["upvote", "downvote"]),
         },
-    }, withToolLogging("vote_errata", handleVoteErrata));
+    }, withToolLogging("voteErrata", handleVoteErrata));
     server.registerTool("get_rule", {
         title: "Get rule by ID",
         description: "Get the content of a tournament rule (TR) or core rule (CR) by its ID.",
@@ -685,7 +685,7 @@ const handler = createMcpHandler(server => {
             gameName: z.string().describe("Name of the game"),
             id: z.string().describe("ID of the rule. Prefix by type. Example: TR509.4.c.1"),
         },
-    }, withToolLogging("get_rule", handleGetRule));
+    }, withToolLogging("getRule", handleGetRule));
 }, {
     serverInfo: {
         name: "Joutes APP",
