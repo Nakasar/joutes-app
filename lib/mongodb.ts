@@ -22,6 +22,20 @@ const options = {
   retryReads: true,
 };
 
+// The driver's topology monitors emit an `error` event on connection
+// failures; left without a listener, Node's default EventEmitter behavior is
+// to throw and crash the whole process, taking every in-flight request down
+// with it instead of just failing the one hitting MongoDB. Attached once per
+// actual client instance (not per module evaluation), so HMR reloads in
+// development don't pile up duplicate listeners on the cached client.
+function createClient(): MongoClient {
+  const newClient = new MongoClient(uri, options);
+  newClient.on('error', (error) => {
+    console.error('MongoDB client error:', error);
+  });
+  return newClient;
+}
+
 let client: MongoClient;
 let db: Db;
 
@@ -33,23 +47,15 @@ if (process.env.NODE_ENV === 'development') {
   };
 
   if (!globalWithMongo._mongoClient) {
-    globalWithMongo._mongoClient = new MongoClient(uri, options);
+    globalWithMongo._mongoClient = createClient();
   }
   client = globalWithMongo._mongoClient;
   db = client.db();
 } else {
   // In production mode, it's best to not use a global variable.
-  client = new MongoClient(uri, options);
+  client = createClient();
   db = client.db();
 }
-
-// The driver's topology monitors emit an `error` event on connection
-// failures; left without a listener, Node's default EventEmitter behavior is
-// to throw and crash the whole process, taking every in-flight request down
-// with it instead of just failing the one hitting MongoDB.
-client.on('error', (error) => {
-  console.error('MongoDB client error:', error);
-});
 
 // Export a module-scoped MongoClient. By doing this in a
 // separate module, the client can be shared across functions.
