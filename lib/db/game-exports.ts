@@ -44,6 +44,35 @@ export async function getRecentGameExport(gameId: string, maxAgeMs: number): Pro
   return doc ? toGameExport(doc) : null;
 }
 
+/**
+ * Latest export for every game that has one, most recent first.
+ */
+export async function getLatestGameExports(): Promise<GameExport[]> {
+  const docs = await db
+    .collection<GameExportDb>(COLLECTION_NAME)
+    .aggregate<WithId<GameExportDb>>([
+      {$sort: {generatedAt: -1}},
+      {$group: {_id: '$gameId', doc: {$first: '$$ROOT'}}},
+      {$replaceRoot: {newRoot: '$doc'}},
+      {$sort: {generatedAt: -1}},
+    ])
+    .toArray();
+
+  return docs.map(toGameExport);
+}
+
+export async function getGameExportById(id: string): Promise<GameExport | null> {
+  if (!ObjectId.isValid(id)) return null;
+
+  const doc = await db.collection<GameExportDb>(COLLECTION_NAME).findOne({_id: new ObjectId(id)});
+  return doc ? toGameExport(doc) : null;
+}
+
+export async function deleteGameExport(id: string): Promise<boolean> {
+  const result = await db.collection<GameExportDb>(COLLECTION_NAME).deleteOne({_id: new ObjectId(id)});
+  return result.deletedCount > 0;
+}
+
 export async function createGameExport(data: {
   gameId: string;
   url: string;
