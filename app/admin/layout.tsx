@@ -49,6 +49,12 @@ export default async function AdminLayout({
               >
                 Succès
               </Link>
+              <Link
+                href="/admin/exports"
+                className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 border-b-2 border-transparent hover:border-blue-500"
+              >
+                Exports
+              </Link>
             </div>
             <div className="flex items-center">
               <span className="text-sm text-gray-500">Espace Admin</span>
