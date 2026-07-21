@@ -83,6 +83,10 @@
     {
       "name": "Cron",
       "description": "Internal scheduled jobs, protected by a shared secret. Not intended for client use."
+    },
+    {
+      "name": "Tournaments",
+      "description": "Standalone tournament management: players, phases, rounds, matches and standings."
     }
   ],
   "paths": {
@@ -6880,6 +6884,1581 @@
           }
         }
       }
+    },
+    "/tournaments": {
+      "get": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "List tournaments organized by the current user",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tournaments.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Tournament"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Create a tournament",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "eventId": {
+                    "type": "string"
+                  },
+                  "gameId": {
+                    "type": "string"
+                  },
+                  "settings": {
+                    "type": "object",
+                    "properties": {
+                      "allowSelfReporting": {
+                        "type": "boolean",
+                        "default": true
+                      },
+                      "requireConfirmation": {
+                        "type": "boolean",
+                        "default": false
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created tournament.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tournament"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/tournaments/{tournamentId}": {
+      "parameters": [
+        {
+          "name": "tournamentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Get a tournament with its phases and players",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "description": "Readable by tournament organizers and registered players.",
+        "responses": {
+          "200": {
+            "description": "Tournament with phases and players.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Tournament"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "phases": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/TournamentPhase"
+                          }
+                        },
+                        "players": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/TournamentPlayer"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Update a tournament (organizers only)",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "draft",
+                      "in-progress",
+                      "completed"
+                    ]
+                  },
+                  "currentPhaseId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "settings": {
+                    "type": "object",
+                    "properties": {
+                      "allowSelfReporting": {
+                        "type": "boolean"
+                      },
+                      "requireConfirmation": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "organizerIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated tournament.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tournament"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Delete a tournament and all its sub-resources (organizers only)",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/tournaments/{tournamentId}/players": {
+      "parameters": [
+        {
+          "name": "tournamentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "List tournament players",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Players.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TournamentPlayer"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Register a player (organizers only)",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "description": "Players can be linked to a user account via `userId`, or be guests with only a display name.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "displayName"
+                ],
+                "properties": {
+                  "displayName": {
+                    "type": "string"
+                  },
+                  "userId": {
+                    "type": "string"
+                  },
+                  "seed": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created player.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentPlayer"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Conflict with the current tournament state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tournaments/{tournamentId}/players/{playerId}": {
+      "parameters": [
+        {
+          "name": "tournamentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "playerId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Get a tournament player",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Player.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentPlayer"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Update a player: rename, reseed, drop (organizers only)",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "displayName": {
+                    "type": "string"
+                  },
+                  "seed": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "active",
+                      "dropped"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated player.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentPlayer"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Remove a player without matches (organizers only)",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "description": "Rejected with 409 if the player already has matches; mark them as `dropped` instead.",
+        "responses": {
+          "200": {
+            "description": "Deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Conflict with the current tournament state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tournaments/{tournamentId}/phases": {
+      "parameters": [
+        {
+          "name": "tournamentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "List tournament phases",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Phases ordered by `order`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TournamentPhase"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Add a phase (organizers only)",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "type"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "freeform",
+                      "swiss",
+                      "bracket"
+                    ]
+                  },
+                  "matchFormat": {
+                    "type": "string",
+                    "enum": [
+                      "BO1",
+                      "BO2",
+                      "BO3",
+                      "BO5"
+                    ],
+                    "default": "BO3"
+                  },
+                  "plannedRounds": {
+                    "type": "integer"
+                  },
+                  "topCut": {
+                    "type": "integer"
+                  },
+                  "order": {
+                    "type": "integer",
+                    "description": "Defaults to the next available order."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created phase.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentPhase"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/tournaments/{tournamentId}/phases/{phaseId}": {
+      "parameters": [
+        {
+          "name": "tournamentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "phaseId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Get a phase with its rounds",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Phase with rounds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/TournamentPhase"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "rounds": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/TournamentRound"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Update a phase (organizers only)",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "description": "The phase `type` can only be changed while the phase has not started.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "freeform",
+                      "swiss",
+                      "bracket"
+                    ]
+                  },
+                  "matchFormat": {
+                    "type": "string",
+                    "enum": [
+                      "BO1",
+                      "BO2",
+                      "BO3",
+                      "BO5"
+                    ]
+                  },
+                  "plannedRounds": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "topCut": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "order": {
+                    "type": "integer"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "not-started",
+                      "in-progress",
+                      "completed"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated phase.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentPhase"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Conflict with the current tournament state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Delete a not-started phase (organizers only)",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Conflict with the current tournament state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tournaments/{tournamentId}/phases/{phaseId}/rounds": {
+      "parameters": [
+        {
+          "name": "tournamentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "phaseId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "List the rounds of a phase",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rounds ordered by number.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TournamentRound"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Create the next round of the phase (organizers only)",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "description": "Generates pairings automatically for `swiss` (standings-based) and `bracket` (seeding from the previous phase for round 1, then winners) phases, auto-completing BYE matches. For `freeform` phases an empty round is created and matches are added manually. Fails with 409 while the previous round is not completed.\n",
+        "responses": {
+          "201": {
+            "description": "Created round with its generated matches.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/TournamentRound"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "matches": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/TournamentMatch"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Conflict with the current tournament state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tournaments/{tournamentId}/rounds/{roundId}": {
+      "parameters": [
+        {
+          "name": "tournamentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "roundId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Get a round with its matches",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Round with matches.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/TournamentRound"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "matches": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/TournamentMatch"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Delete the last round of a phase and its matches (organizers only)",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "description": "Only the most recent round of a phase can be deleted, to keep pairings consistent.",
+        "responses": {
+          "200": {
+            "description": "Deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Conflict with the current tournament state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tournaments/{tournamentId}/rounds/{roundId}/matches": {
+      "parameters": [
+        {
+          "name": "tournamentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "roundId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "List the matches of a round",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matches.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TournamentMatch"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Manually add a match to the round (organizers only)",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "description": "Intended for `freeform` phases or exceptional corrections. Player ids are tournament player ids; `player2Id: null` creates a BYE.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "player1Id",
+                  "player2Id"
+                ],
+                "properties": {
+                  "player1Id": {
+                    "type": "string"
+                  },
+                  "player2Id": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "bracketPosition": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created match.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentMatch"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/tournaments/{tournamentId}/matches/{matchId}": {
+      "parameters": [
+        {
+          "name": "tournamentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "matchId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Get a match",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Match.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentMatch"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Operate on a match: report, confirm or dispute a result",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "description": "Discriminated by the `action` field. `report` is allowed for organizers, and for players of the match when the tournament's `allowSelfReporting` is enabled; with `requireConfirmation`, a player report awaits the opponent's `confirm`. `dispute` flags the result for organizer review. BYE results cannot be modified.\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "action",
+                      "player1Score",
+                      "player2Score"
+                    ],
+                    "properties": {
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "report"
+                        ]
+                      },
+                      "player1Score": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "player2Score": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "action"
+                    ],
+                    "properties": {
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "confirm"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "action"
+                    ],
+                    "properties": {
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "dispute"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated match.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentMatch"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Conflict with the current tournament state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Delete a match (organizers only)",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/tournaments/{tournamentId}/standings": {
+      "parameters": [
+        {
+          "name": "tournamentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Get tournament standings",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "description": "Computed from completed matches only. Pass `?phaseId=` to restrict standings to a single phase.",
+        "parameters": [
+          {
+            "name": "phaseId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Standings, best ranked first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TournamentStanding"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -6894,6 +8473,11 @@
         "type": "http",
         "scheme": "bearer",
         "description": "Shared secret for scheduled jobs. Send as `Authorization: Bearer <CRON_SECRET>`."
+      },
+      "apiKeyBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Personal API key (prefix `jts_`), created from the account page. Send as `Authorization: Bearer jts_...`."
       }
     },
     "responses": {
@@ -9015,6 +10599,289 @@
           "ownedQuantity": {
             "type": "integer",
             "description": "Only populated on the list endpoint, reflecting the current viewer's own collection."
+          }
+        }
+      },
+      "Tournament": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "eventId": {
+            "type": "string"
+          },
+          "gameId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "in-progress",
+              "completed"
+            ]
+          },
+          "currentPhaseId": {
+            "type": "string"
+          },
+          "settings": {
+            "type": "object",
+            "properties": {
+              "allowSelfReporting": {
+                "type": "boolean"
+              },
+              "requireConfirmation": {
+                "type": "boolean"
+              }
+            }
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "organizerIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TournamentPlayer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tournamentId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string",
+            "description": "Linked user account, absent for guest players."
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "seed": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "dropped"
+            ]
+          },
+          "addedBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TournamentPhase": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tournamentId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "freeform",
+              "swiss",
+              "bracket"
+            ]
+          },
+          "matchFormat": {
+            "type": "string",
+            "enum": [
+              "BO1",
+              "BO2",
+              "BO3",
+              "BO5"
+            ]
+          },
+          "plannedRounds": {
+            "type": "integer"
+          },
+          "topCut": {
+            "type": "integer"
+          },
+          "order": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "not-started",
+              "in-progress",
+              "completed"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TournamentRound": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tournamentId": {
+            "type": "string"
+          },
+          "phaseId": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "in-progress",
+              "completed"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TournamentMatch": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tournamentId": {
+            "type": "string"
+          },
+          "phaseId": {
+            "type": "string"
+          },
+          "roundId": {
+            "type": "string"
+          },
+          "player1Id": {
+            "type": "string",
+            "description": "Tournament player id (not a user id)."
+          },
+          "player2Id": {
+            "type": "string",
+            "nullable": true,
+            "description": "Tournament player id; null for a BYE."
+          },
+          "player1Score": {
+            "type": "integer"
+          },
+          "player2Score": {
+            "type": "integer"
+          },
+          "winnerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "bracketPosition": {
+            "type": "string",
+            "description": "Ex: QF1, SF2, F."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "in-progress",
+              "completed",
+              "disputed"
+            ]
+          },
+          "reportedBy": {
+            "type": "string"
+          },
+          "confirmedBy": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TournamentStanding": {
+        "type": "object",
+        "properties": {
+          "playerId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "playerStatus": {
+            "type": "string",
+            "enum": [
+              "active",
+              "dropped"
+            ]
+          },
+          "wins": {
+            "type": "integer"
+          },
+          "losses": {
+            "type": "integer"
+          },
+          "draws": {
+            "type": "integer"
+          },
+          "matchPoints": {
+            "type": "integer"
+          },
+          "gamesWon": {
+            "type": "integer"
+          },
+          "gamesLost": {
+            "type": "integer"
+          },
+          "gamesDiff": {
+            "type": "integer"
+          },
+          "opponentMatchWinPercentage": {
+            "type": "number"
           }
         }
       }

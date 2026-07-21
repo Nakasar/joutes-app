@@ -1,4 +1,16 @@
-import { MatchResult } from "@/lib/schemas/event-portal.schema";
+// Structural view of a match, sufficient for standings and pairing computations.
+// Both the event portal's MatchResult and the tournament domain's matches
+// satisfy this shape, so the pairing logic stays decoupled from either model.
+export type PairingMatch = {
+  matchId: string;
+  player1Id: string;
+  player2Id: string | null;
+  player1Score: number;
+  player2Score: number;
+  winnerId?: string | null;
+  status: string;
+  bracketPosition?: string;
+};
 
 export type PlayerStanding = {
   playerId: string;
@@ -22,7 +34,7 @@ export type PairingResult = {
  */
 export function calculateStandings(
   playerIds: string[],
-  matches: MatchResult[]
+  matches: PairingMatch[]
 ): PlayerStanding[] {
   const standings = new Map<string, PlayerStanding>();
 
@@ -148,7 +160,7 @@ function shuffleArray<T>(array: T[]): T[] {
 function havePlayedTogether(
   player1Id: string,
   player2Id: string,
-  matches: MatchResult[]
+  matches: PairingMatch[]
 ): boolean {
   return matches.some(
     (m) =>
@@ -162,7 +174,7 @@ function havePlayedTogether(
  */
 export function generateSwissPairings(
   playerIds: string[],
-  matches: MatchResult[],
+  matches: PairingMatch[],
   roundNumber: number
 ): PairingResult[] {
   const pairings: PairingResult[] = [];
@@ -237,7 +249,7 @@ export function generateSwissPairings(
  */
 export function generateEliminationBracket(
   playerIds: string[],
-  matches: MatchResult[],
+  matches: PairingMatch[],
   topCut?: number
 ): PairingResult[] {
   // Calculer le classement pour seeder les joueurs
@@ -310,7 +322,7 @@ export function calculateBracketRounds(numPlayers: number): number {
  * @returns Les pairings pour la ronde suivante
  */
 export function generateNextBracketRound(
-  previousRoundMatches: MatchResult[]
+  previousRoundMatches: PairingMatch[]
 ): PairingResult[] {
   // Récupérer les vainqueurs de la ronde précédente dans l'ordre
   const winners = previousRoundMatches
