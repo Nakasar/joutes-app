@@ -6,6 +6,9 @@ import { ObjectId } from "bson";
 
 type ErrataAggregateResult = ErrataDb & {
   _id: ObjectId;
+  // Legacy scalar field, still present on documents not yet migrated by
+  // scripts/migrate-errata-cardid-to-cardids.ts.
+  cardId?: string;
   cards?: Errata['cards'];
   votesList?: { userId: ObjectId; vote: string }[];
 };
@@ -13,7 +16,7 @@ type ErrataAggregateResult = ErrataDb & {
 function toErrata(errata: ErrataAggregateResult, userId?: string): Errata {
   return {
     id: errata._id.toString(),
-    cardIds: errata.cardIds,
+    cardIds: errata.cardIds?.length ? errata.cardIds : (errata.cardId ? [errata.cardId] : []),
     cards: errata.cards,
     type: errata.type,
     details: errata.details,
