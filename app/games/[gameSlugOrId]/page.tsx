@@ -189,7 +189,7 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
             )}
 
             {game.features?.collection && (
-              <Link href={`/games/${game.slug}/collection`} className="group">
+              <Link href={`/collection/${game.slug}`} className="group">
                 <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 backdrop-blur-sm rounded-xl border border-blue-500/20 p-8 hover:border-blue-500/50 transition-all hover:scale-105">
                   <h3 className="text-xl font-bold text-white mb-2">{t("detail.toolsCollection.title")}</h3>
                   <p className="text-gray-300">{t("detail.toolsCollection.description")}</p>
