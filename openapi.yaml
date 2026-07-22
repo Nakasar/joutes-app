@@ -1619,6 +1619,18 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
 
+  /play-groups/{playGroupId}/sell-list:
+    parameters:
+      - { name: playGroupId, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Play Groups]
+      summary: Get a play group's sell list (auto-created for a member landing on an empty group)
+      security: []
+      responses:
+        "200": { description: Sell list., content: { application/json: { schema: { type: object, properties: { sellList: { allOf: [{ $ref: "#/components/schemas/SellList" }], nullable: true }, canEdit: { type: boolean } } } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /play-groups/{playGroupId}/sell-list/items:
     parameters:
       - { name: playGroupId, in: path, required: true, schema: { type: string } }
@@ -1894,6 +1906,16 @@ paths:
         "204": { description: Deleted. }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
+
+  /sell-lists/mine:
+    get:
+      tags: [Sell Lists]
+      summary: Get the caller's own sell list (null if they haven't listed anything yet)
+      security: [{ sessionAuth: [] }]
+      responses:
+        "200": { description: Sell list., content: { application/json: { schema: { type: object, properties: { sellList: { allOf: [{ $ref: "#/components/schemas/SellList" }], nullable: true } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/ServerError" }
 
   /sell-lists/mine/items:
     post:
