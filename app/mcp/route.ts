@@ -697,11 +697,6 @@ const handler = createMcpHandler(server => {
 });
 
 async function authHandler(req: Request) {
-    return NextResponse.json(
-      { error: "MCP is currently disabled for maintenance." },
-      { status: 500 }
-    );
-    /*
     try {
         const authorization = req.headers?.get("authorization") ?? undefined;
         const accessToken = authorization?.startsWith("Bearer ")
@@ -756,7 +751,6 @@ async function authHandler(req: Request) {
             { status: 500 }
         );
     }
-    */
 }
 
 /*
