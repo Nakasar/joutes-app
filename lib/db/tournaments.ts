@@ -1272,21 +1272,12 @@ export async function reportMatchResult(
   const { normalizedGames, gamesWonByPlayer } = tallyGames(data.games, matchPlayerIds, phase.resultMode);
 
   // Vainqueur(s) du match : joueur(s) ayant gagné le plus de parties ; égalité
-  // générale (ou aucune partie gagnée) = match nul.
+  // générale (ou aucune partie gagnée) = match nul. Un résultat partiel est
+  // accepté (tournois timés) : 1 partie jouée = le vainqueur gagne le match,
+  // 2 parties 1-1 = égalité. Le seuil de victoires n'est pas exigé.
   const maxWins = Math.max(0, ...matchPlayerIds.map((id) => gamesWonByPlayer.get(id) ?? 0));
   const leaders = matchPlayerIds.filter((id) => (gamesWonByPlayer.get(id) ?? 0) === maxWins);
   const winnerIds = maxWins > 0 && leaders.length < matchPlayerIds.length ? leaders : [];
-
-  // Le best-of n'est acté que si un joueur a atteint le seuil de victoires,
-  // ou si toutes les parties ont été jouées (ex: BO2 1-1, ou pod complet) :
-  // refuser un résultat partiel (ex: BO3 rapporté sur une seule partie).
-  const decided = maxWins >= winsNeeded(phase.bestOf) || normalizedGames.length >= phase.bestOf;
-  if (!decided) {
-    throw new TournamentError(
-      "invalid",
-      `Résultat incomplet : renseignez toutes les parties du best-of-${phase.bestOf} ou jusqu'à ce qu'un joueur atteigne ${winsNeeded(phase.bestOf)} victoire(s)`
-    );
-  }
 
   const updatedPlayers: TournamentMatchPlayer[] = match.players.map((p) => ({
     playerId: p.playerId,
