@@ -1583,7 +1583,9 @@ export type PhaseHistory = {
  * jusqu'à cette ronde incluse (chaque phase reste ainsi autonome, ce qui
  * respecte les top cut et les méthodes de scoring propres à chaque phase).
  */
-export async function getTournamentRoundHistory(tournamentId: string): Promise<PhaseHistory[]> {
+export async function getTournamentRoundHistory(
+  tournamentId: string
+): Promise<{ phases: PhaseHistory[]; players: TournamentPlayer[] }> {
   const tId = parseObjectId(tournamentId, "Tournoi");
 
   const [players, phases, roundDocs, matchDocs] = await Promise.all([
@@ -1608,30 +1610,40 @@ export async function getTournamentRoundHistory(tournamentId: string): Promise<P
       };
     });
 
+  // Pré-groupe les matchs par ronde pour accumuler le classement cumulé sans
+  // re-filtrer l'ensemble des matchs à chaque ronde.
+  const matchesByRound = new Map<string, TournamentMatch[]>();
+  for (const match of matches) {
+    const list = matchesByRound.get(match.roundId);
+    if (list) list.push(match);
+    else matchesByRound.set(match.roundId, [match]);
+  }
+
   // Les phases sont déjà triées par ordre (order, createdAt) par listPhases.
-  return phases.map((phase) => {
+  const phaseHistories: PhaseHistory[] = phases.map((phase) => {
     const scoring = () => scoringForPhase(phase);
-    const phaseMatches = matches.filter((m) => m.phaseId === phase.id);
     const phaseRounds = rounds
       .filter((r) => r.phaseId === phase.id)
       .sort((a, b) => a.number - b.number);
 
+    // Matchs et participants accumulés au fil des rondes ordonnées.
+    const cumulativeMatches: TournamentMatch[] = [];
+    const participantIds = new Set<string>();
+
     const roundEntries: RoundHistoryEntry[] = phaseRounds.map((round) => {
-      const roundMatches = phaseMatches.filter((m) => m.roundId === round.id);
-      // Matchs de la phase des rondes jusqu'à celle-ci (classement cumulé).
-      const roundIdsUpTo = new Set(
-        phaseRounds.filter((r) => r.number <= round.number).map((r) => r.id)
-      );
-      const cumulativeMatches = phaseMatches.filter((m) => roundIdsUpTo.has(m.roundId));
-      const participantIds = [
-        ...new Set(cumulativeMatches.flatMap((m) => m.players.map((p) => p.playerId))),
-      ];
+      const roundMatches = matchesByRound.get(round.id) ?? [];
+      cumulativeMatches.push(...roundMatches);
+      for (const match of roundMatches) {
+        for (const player of match.players) participantIds.add(player.playerId);
+      }
       const standings = withNames(
-        calculateMultiplayerStandings(participantIds, cumulativeMatches, scoring)
+        calculateMultiplayerStandings([...participantIds], cumulativeMatches, scoring)
       );
       return { round, matches: roundMatches, standings };
     });
 
     return { phase, rounds: roundEntries };
   });
+
+  return { phases: phaseHistories, players };
 }

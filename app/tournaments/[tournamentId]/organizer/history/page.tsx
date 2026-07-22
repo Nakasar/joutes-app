@@ -4,12 +4,10 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   getTournamentById,
   getTournamentRoundHistory,
   isTournamentOrganizer,
-  listPlayers,
 } from "@/lib/db/tournaments";
 import type { TournamentGameResult, TournamentMatch, TournamentPhase } from "@/lib/types/Tournament";
 
@@ -64,10 +62,7 @@ export default async function TournamentHistoryPage({
     redirect("/tournaments");
   }
 
-  const [players, history] = await Promise.all([
-    listPlayers(tournamentId),
-    getTournamentRoundHistory(tournamentId),
-  ]);
+  const { phases: history, players } = await getTournamentRoundHistory(tournamentId);
 
   const playersById = new Map(players.map((p) => [p.id, p]));
   const playerName = (id: string) => playersById.get(id)?.displayName ?? "Inconnu";
