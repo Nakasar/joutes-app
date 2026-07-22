@@ -48,7 +48,7 @@ const ConstructionRules = {
   },
   sideboard: {
     min: 0,
-    max: 8,
+    max: 10,
   },
   runes: {
     min: 12,
