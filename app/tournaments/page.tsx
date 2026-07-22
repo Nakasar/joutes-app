@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,13 @@ type SyncedTournament = {
     createdAt: string;
   };
   player: { id: string; displayName: string; status: string };
+};
+
+type OrganizedTournament = {
+  id: string;
+  name: string;
+  status: "draft" | "in-progress" | "completed";
+  createdAt: string;
 };
 
 type StatusFilter = "all" | "in-progress" | "draft" | "completed";
@@ -36,6 +43,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function TournamentsPage() {
   const [entries, setEntries] = useState<SyncedTournament[]>([]);
+  const [organized, setOrganized] = useState<OrganizedTournament[]>([]);
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [loading, setLoading] = useState(true);
   const [hasKeys, setHasKeys] = useState(false);
@@ -43,25 +51,38 @@ export default function TournamentsPage() {
   useEffect(() => {
     const keys = Object.values(getSyncKeys());
     setHasKeys(keys.length > 0);
-    if (keys.length === 0) {
-      setLoading(false);
-      return;
-    }
 
-    fetch("/api/tournaments/sync", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ keys }),
-    })
+    // Tournois organisés par l'utilisateur connecté. Sans session l'endpoint
+    // répond 401 : on traite tout non-OK comme une liste vide.
+    const organizedPromise = fetch("/api/tournaments")
       .then((res) => (res.ok ? res.json() : []))
-      .then((data: SyncedTournament[]) => setEntries(Array.isArray(data) ? data : []))
-      .catch(() => setEntries([]))
-      .finally(() => setLoading(false));
+      .then((data: OrganizedTournament[]) => setOrganized(Array.isArray(data) ? data : []))
+      .catch(() => setOrganized([]));
+
+    // Tournois synchronisés sur ce navigateur via une clé de joueur.
+    const syncedPromise =
+      keys.length === 0
+        ? Promise.resolve()
+        : fetch("/api/tournaments/sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ keys }),
+          })
+            .then((res) => (res.ok ? res.json() : []))
+            .then((data: SyncedTournament[]) => setEntries(Array.isArray(data) ? data : []))
+            .catch(() => setEntries([]));
+
+    Promise.all([organizedPromise, syncedPromise]).finally(() => setLoading(false));
   }, []);
 
   const filtered = useMemo(
     () => entries.filter((e) => filter === "all" || e.tournament.status === filter),
     [entries, filter]
+  );
+
+  const filteredOrganized = useMemo(
+    () => organized.filter((t) => filter === "all" || t.status === filter),
+    [organized, filter]
   );
 
   const handleRemove = (tournamentId: string) => {
@@ -74,12 +95,20 @@ export default function TournamentsPage() {
 
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">Mes tournois</h1>
-        <p className="text-muted-foreground mt-1">
-          Les tournois synchronisés avec ce navigateur. Scannez le QR code fourni par un
-          organisateur pour en ajouter un.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Mes tournois</h1>
+          <p className="text-muted-foreground mt-1">
+            Les tournois que vous organisez et ceux synchronisés avec ce navigateur. Scannez le
+            QR code fourni par un organisateur pour rejoindre un tournoi comme joueur.
+          </p>
+        </div>
+        <Button asChild>
+          <Link href="/tournaments/new">
+            <Plus className="h-4 w-4 mr-2" />
+            Créer un tournoi
+          </Link>
+        </Button>
       </div>
 
       <div className="flex gap-2">
@@ -94,6 +123,30 @@ export default function TournamentsPage() {
           </Button>
         ))}
       </div>
+
+      {!loading && filteredOrganized.length > 0 && (
+        <section className="space-y-4">
+          <h2 className="text-xl font-semibold">Tournois que j&apos;organise</h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            {filteredOrganized.map((t) => (
+              <Card key={t.id}>
+                <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+                  <CardTitle className="text-lg">{t.name}</CardTitle>
+                  <Badge variant="secondary">{STATUS_LABELS[t.status] ?? t.status}</Badge>
+                </CardHeader>
+                <CardContent>
+                  <Button asChild size="sm">
+                    <Link href={`/tournaments/${t.id}/organizer`}>Gérer</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold">Tournois où je joue</h2>
 
       {loading ? (
         <p className="text-muted-foreground">Chargement...</p>
@@ -142,6 +195,7 @@ export default function TournamentsPage() {
           ))}
         </div>
       )}
+      </section>
     </div>
   );
 }
