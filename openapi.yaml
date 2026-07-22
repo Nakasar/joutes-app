@@ -1625,7 +1625,7 @@ paths:
     get:
       tags: [Play Groups]
       summary: Get a play group's sell list (auto-created for a member landing on an empty group)
-      security: []
+      security: [{}, { sessionAuth: [] }]
       responses:
         "200": { description: Sell list., content: { application/json: { schema: { type: object, properties: { sellList: { allOf: [{ $ref: "#/components/schemas/SellList" }], nullable: true }, canEdit: { type: boolean } } } } } }
         "404": { $ref: "#/components/responses/NotFound" }
