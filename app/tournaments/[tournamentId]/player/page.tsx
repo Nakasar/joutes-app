@@ -259,7 +259,7 @@ export default function TournamentPlayerPage({
       </div>
 
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+        <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">
           {error}
         </div>
       )}
@@ -340,7 +340,7 @@ export default function TournamentPlayerPage({
                 {round.matches.map((match) => (
                   <div
                     key={match.id}
-                    className="bg-white rounded-lg shadow-sm border p-4 flex items-center justify-between"
+                    className="bg-card text-card-foreground rounded-lg shadow-sm border p-4 flex items-center justify-between"
                   >
                     <span className="text-sm">
                       {match.players
@@ -360,22 +360,22 @@ export default function TournamentPlayerPage({
 
           <section>
             <h2 className="text-xl font-semibold mb-4">Classement</h2>
-            <div className="bg-white rounded-lg shadow-md overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+            <div className="bg-card text-card-foreground rounded-lg border shadow-sm overflow-x-auto">
+              <table className="min-w-full divide-y divide-border">
+                <thead className="bg-muted">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Joueur</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Pts</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">V/N/D</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Diff</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">#</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Joueur</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase">Pts</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase">V/N/D</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase">Diff</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-border">
                   {standings.map((standing, index) => (
                     <tr
                       key={standing.playerId}
-                      className={standing.playerId === myPlayerId ? "bg-blue-50" : ""}
+                      className={standing.playerId === myPlayerId ? "bg-accent text-accent-foreground" : ""}
                     >
                       <td className="px-4 py-3 text-sm">{index + 1}</td>
                       <td className="px-4 py-3 text-sm font-medium">
