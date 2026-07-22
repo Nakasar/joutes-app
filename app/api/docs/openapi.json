@@ -7565,28 +7565,65 @@
                     "enum": [
                       "freeform",
                       "swiss",
+                      "elimination",
                       "bracket"
                     ]
                   },
-                  "matchFormat": {
+                  "bestOf": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9,
+                    "default": 1
+                  },
+                  "resultMode": {
                     "type": "string",
                     "enum": [
-                      "BO1",
-                      "BO2",
-                      "BO3",
-                      "BO5"
+                      "points",
+                      "selection"
                     ],
-                    "default": "BO3"
+                    "default": "selection"
+                  },
+                  "scoringMethod": {
+                    "type": "string",
+                    "enum": [
+                      "fixed",
+                      "rank_offset"
+                    ],
+                    "default": "fixed"
+                  },
+                  "fixedScoring": {
+                    "type": "object",
+                    "properties": {
+                      "win": {
+                        "type": "integer"
+                      },
+                      "loss": {
+                        "type": "integer"
+                      },
+                      "draw": {
+                        "type": "integer"
+                      }
+                    }
+                  },
+                  "rankOffsets": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  },
+                  "eliminationSeeding": {
+                    "type": "string",
+                    "enum": [
+                      "standings",
+                      "random"
+                    ],
+                    "default": "standings"
                   },
                   "plannedRounds": {
                     "type": "integer"
                   },
                   "topCut": {
                     "type": "integer"
-                  },
-                  "order": {
-                    "type": "integer",
-                    "description": "Defaults to the next available order."
                   },
                   "minPlayersPerMatch": {
                     "type": "integer",
@@ -7629,7 +7666,7 @@
             "$ref": "#/components/responses/NotFound"
           }
         },
-        "description": "Les matchs générés automatiquement comptent entre `minPlayersPerMatch` et `maxPlayersPerMatch` joueurs (défaut 2-2 = duels ; un intervalle plus large génère des pods multijoueurs en phase suisse). Une phase à élimination directe (`bracket`) n'accepte que 2-2.\n"
+        "description": "Crée une phase. `bestOf` définit le nombre de parties du best-of (défaut 1). `resultMode` : selection (désigner le vainqueur) ou points (saisir les points). `scoringMethod` : fixed (points victoire/défaite/nul) ou rank_offset (N + offset selon le rang). `topCut` limite les joueurs qualifiés à l'entrée. bracket est strictement 2-2.\n"
       }
     },
     "/tournaments/{tournamentId}/phases/{phaseId}": {
@@ -7733,28 +7770,77 @@
                     "enum": [
                       "freeform",
                       "swiss",
+                      "elimination",
                       "bracket"
                     ]
                   },
-                  "matchFormat": {
+                  "bestOf": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9,
+                    "default": 1
+                  },
+                  "resultMode": {
                     "type": "string",
                     "enum": [
-                      "BO1",
-                      "BO2",
-                      "BO3",
-                      "BO5"
-                    ]
+                      "points",
+                      "selection"
+                    ],
+                    "default": "selection"
+                  },
+                  "scoringMethod": {
+                    "type": "string",
+                    "enum": [
+                      "fixed",
+                      "rank_offset"
+                    ],
+                    "default": "fixed"
+                  },
+                  "fixedScoring": {
+                    "type": "object",
+                    "properties": {
+                      "win": {
+                        "type": "integer"
+                      },
+                      "loss": {
+                        "type": "integer"
+                      },
+                      "draw": {
+                        "type": "integer"
+                      }
+                    }
+                  },
+                  "rankOffsets": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  },
+                  "eliminationSeeding": {
+                    "type": "string",
+                    "enum": [
+                      "standings",
+                      "random"
+                    ],
+                    "default": "standings"
                   },
                   "plannedRounds": {
-                    "type": "integer",
-                    "nullable": true
+                    "type": "integer"
                   },
                   "topCut": {
-                    "type": "integer",
-                    "nullable": true
-                  },
-                  "order": {
                     "type": "integer"
+                  },
+                  "minPlayersPerMatch": {
+                    "type": "integer",
+                    "minimum": 2,
+                    "maximum": 16,
+                    "default": 2
+                  },
+                  "maxPlayersPerMatch": {
+                    "type": "integer",
+                    "minimum": 2,
+                    "maximum": 16,
+                    "default": 2
                   },
                   "status": {
                     "type": "string",
@@ -7763,16 +7849,6 @@
                       "in-progress",
                       "completed"
                     ]
-                  },
-                  "minPlayersPerMatch": {
-                    "type": "integer",
-                    "minimum": 2,
-                    "maximum": 16
-                  },
-                  "maxPlayersPerMatch": {
-                    "type": "integer",
-                    "minimum": 2,
-                    "maximum": 16
                   }
                 }
               }
@@ -8314,7 +8390,7 @@
             "playerSyncKeyBearer": []
           }
         ],
-        "description": "Discriminated by the `action` field. `report` is allowed for organizers, and for players of the match when the tournament's `allowSelfReporting` is enabled; with `requireConfirmation`, a player report awaits the opponent's `confirm`. Scores are keyed by tournament player id and must cover every player of the match; without explicit `winnerIds`, players with the highest score win (all tied = draw). `dispute` flags the result for organizer review. BYE results cannot be modified.\n",
+        "description": "Discriminé par `action`. `report` renseigne le résultat partie par partie du best-of (`games`) : selection → winnerId par partie (null = nulle) ; points → `points` par joueur et par partie (le vainqueur en est déduit). `confirm`/`dispute` selon le workflow. BYE non modifiable.\n",
         "requestBody": {
           "required": true,
           "content": {
@@ -8325,7 +8401,7 @@
                     "type": "object",
                     "required": [
                       "action",
-                      "scores"
+                      "games"
                     ],
                     "properties": {
                       "action": {
@@ -8334,20 +8410,25 @@
                           "report"
                         ]
                       },
-                      "scores": {
-                        "type": "object",
-                        "additionalProperties": {
-                          "type": "integer",
-                          "minimum": 0
-                        },
-                        "description": "Score per tournament player id; every player of the match must be present."
-                      },
-                      "winnerIds": {
+                      "games": {
                         "type": "array",
+                        "minItems": 1,
+                        "maxItems": 9,
                         "items": {
-                          "type": "string"
-                        },
-                        "description": "Explicit (co-)winners, subset of the match players. Defaults to highest-score players."
+                          "type": "object",
+                          "properties": {
+                            "winnerId": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "points": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        }
                       }
                     }
                   },
@@ -10879,23 +10960,77 @@
             "enum": [
               "freeform",
               "swiss",
+              "elimination",
               "bracket"
-            ]
+            ],
+            "description": "freeform: pas de génération auto. swiss: rondes suisses appariées au classement. elimination: seuls les vainqueurs avancent, ré-appariés (eliminationSeeding). bracket: arbre d'élimination seedé au classement d'entrée."
           },
-          "matchFormat": {
+          "bestOf": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Nombre de parties du best-of (best-of-n). Défaut 1."
+          },
+          "resultMode": {
             "type": "string",
             "enum": [
-              "BO1",
-              "BO2",
-              "BO3",
-              "BO5"
+              "points",
+              "selection"
+            ],
+            "description": "selection: on désigne le vainqueur de chaque partie. points: les joueurs saisissent leurs points, le vainqueur en est déduit."
+          },
+          "scoringMethod": {
+            "type": "string",
+            "enum": [
+              "fixed",
+              "rank_offset"
             ]
+          },
+          "fixedScoring": {
+            "type": "object",
+            "properties": {
+              "win": {
+                "type": "integer"
+              },
+              "loss": {
+                "type": "integer"
+              },
+              "draw": {
+                "type": "integer"
+              }
+            },
+            "description": "Utilisé quand scoringMethod = fixed. Défaut 3/0/1."
+          },
+          "rankOffsets": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "Utilisé quand scoringMethod = rank_offset : points = N + offset[rang]. Défaut [3,1,-1,-3,-4,-5,-7]."
+          },
+          "eliminationSeeding": {
+            "type": "string",
+            "enum": [
+              "standings",
+              "random"
+            ],
+            "description": "Ré-appariement des vainqueurs pour une phase elimination."
           },
           "plannedRounds": {
             "type": "integer"
           },
           "topCut": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Nombre de joueurs qualifiés à l'entrée de la phase."
+          },
+          "minPlayersPerMatch": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 16
+          },
+          "maxPlayersPerMatch": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 16
           },
           "order": {
             "type": "integer"
@@ -10911,18 +11046,6 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
-          },
-          "minPlayersPerMatch": {
-            "type": "integer",
-            "minimum": 2,
-            "maximum": 16,
-            "description": "Nombre minimal de joueurs par match généré (défaut 2). Toujours 2 pour un bracket."
-          },
-          "maxPlayersPerMatch": {
-            "type": "integer",
-            "minimum": 2,
-            "maximum": 16,
-            "description": "Nombre maximal de joueurs par match généré (défaut 2). Un intervalle > 2 génère des pods multijoueurs en phase suisse. Toujours 2 pour un bracket."
           }
         }
       },
@@ -10975,16 +11098,15 @@
           },
           "players": {
             "type": "array",
-            "description": "1..N players; a single player is a BYE, 3+ players a multiplayer match. Swiss/bracket generation always produces 1-2 players.",
             "items": {
               "type": "object",
               "properties": {
                 "playerId": {
-                  "type": "string",
-                  "description": "Tournament player id (not a user id)."
+                  "type": "string"
                 },
                 "score": {
-                  "type": "integer"
+                  "type": "integer",
+                  "description": "Parties du best-of gagnées."
                 }
               }
             }
@@ -11022,6 +11144,27 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "games": {
+            "type": "array",
+            "description": "Détail des parties du best-of.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "winnerId": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Vainqueur de la partie (null = nulle)."
+                },
+                "points": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "integer"
+                  },
+                  "description": "Mode points : points par joueur de tournoi."
+                }
+              }
+            }
           }
         }
       },

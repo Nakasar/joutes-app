@@ -1,7 +1,15 @@
 import { z } from "zod";
 
-export const tournamentPhaseTypeSchema = z.enum(["freeform", "swiss", "bracket"]);
-export const tournamentMatchFormatSchema = z.enum(["BO1", "BO2", "BO3", "BO5"]);
+export const tournamentPhaseTypeSchema = z.enum(["freeform", "swiss", "elimination", "bracket"]);
+export const tournamentResultModeSchema = z.enum(["points", "selection"]);
+export const tournamentScoringMethodSchema = z.enum(["fixed", "rank_offset"]);
+export const tournamentEliminationSeedingSchema = z.enum(["standings", "random"]);
+
+const fixedScoringSchema = z.object({
+  win: z.number().int(),
+  loss: z.number().int(),
+  draw: z.number().int(),
+});
 
 export const createTournamentSchema = z.object({
   name: z.string().min(1, "Le nom du tournoi est requis").max(200),
@@ -47,8 +55,15 @@ export const createTournamentPhaseSchema = z
   .object({
     name: z.string().min(1, "Le nom de la phase est requis").max(200),
     type: tournamentPhaseTypeSchema,
-    matchFormat: tournamentMatchFormatSchema.default("BO3"),
+    // Best-of-n : nombre de parties (défaut best-of-1).
+    bestOf: z.number().int().min(1).max(9).default(1),
+    resultMode: tournamentResultModeSchema.default("selection"),
+    scoringMethod: tournamentScoringMethodSchema.default("fixed"),
+    fixedScoring: fixedScoringSchema.optional(),
+    rankOffsets: z.array(z.number().int()).min(1).max(64).optional(),
+    eliminationSeeding: tournamentEliminationSeedingSchema.default("standings"),
     plannedRounds: z.number().int().min(1).optional(),
+    // Joueurs qualifiés à l'entrée de la phase.
     topCut: z.number().int().min(2).optional(),
     // Bornes du nombre de joueurs par match généré (défaut : duel 2-2).
     minPlayersPerMatch: z.number().int().min(2).max(16).default(2),
@@ -65,7 +80,12 @@ export const updateTournamentPhaseSchema = z
     name: z.string().min(1).max(200).optional(),
     // Type only editable while the phase has not started (enforced in the domain layer).
     type: tournamentPhaseTypeSchema.optional(),
-    matchFormat: tournamentMatchFormatSchema.optional(),
+    bestOf: z.number().int().min(1).max(9).optional(),
+    resultMode: tournamentResultModeSchema.optional(),
+    scoringMethod: tournamentScoringMethodSchema.optional(),
+    fixedScoring: fixedScoringSchema.optional(),
+    rankOffsets: z.array(z.number().int()).min(1).max(64).optional(),
+    eliminationSeeding: tournamentEliminationSeedingSchema.optional(),
     plannedRounds: z.number().int().min(1).nullable().optional(),
     topCut: z.number().int().min(2).nullable().optional(),
     minPlayersPerMatch: z.number().int().min(2).max(16).optional(),
@@ -97,13 +117,23 @@ export const createTournamentMatchSchema = z.object({
 
 export const reportTournamentMatchSchema = z.object({
   action: z.literal("report"),
-  // Score par joueur du match, indexé par tournament player id. Tous les
-  // joueurs du match doivent être présents.
-  scores: z.record(z.string(), z.number().int().min(0)),
-  // Vainqueurs explicites (sous-ensemble des joueurs du match). Si omis,
-  // les joueurs au score maximal gagnent ; s'ils sont tous à égalité,
-  // le match est nul.
-  winnerIds: z.array(z.string()).optional(),
+  // Résultat partie par partie du best-of. Selon le resultMode de la phase :
+  // - selection : chaque partie fournit un winnerId (null = partie nulle).
+  // - points : chaque partie fournit `points` (points par joueur de tournoi) ;
+  //   le vainqueur en est déduit.
+  games: z
+    .array(
+      z
+        .object({
+          winnerId: z.string().nullable().optional(),
+          points: z.record(z.string(), z.number().int()).optional(),
+        })
+        .refine((g) => g.winnerId !== undefined || g.points !== undefined, {
+          message: "Chaque partie doit renseigner un vainqueur (ou nul) ou des points",
+        })
+    )
+    .min(1, "Au moins une partie doit être renseignée")
+    .max(9),
 });
 
 export const confirmTournamentMatchSchema = z.object({

@@ -20,7 +20,9 @@ import type {
   TournamentPhase,
   TournamentPlayer,
   TournamentPhaseType,
-  TournamentMatchFormat,
+  TournamentResultMode,
+  TournamentScoringMethod,
+  TournamentEliminationSeeding,
 } from "@/lib/types/Tournament";
 import { PlayerSyncQRButton } from "./PlayerSyncQRButton";
 
@@ -33,7 +35,8 @@ const TOURNAMENT_STATUS_LABELS: Record<string, string> = {
 const PHASE_TYPE_LABELS: Record<TournamentPhaseType, string> = {
   freeform: "Format libre",
   swiss: "Rondes suisses",
-  bracket: "Élimination directe",
+  elimination: "Élimination (ré-appariement)",
+  bracket: "Arbre d'élimination",
 };
 
 const PHASE_STATUS_LABELS: Record<string, string> = {
@@ -41,8 +44,6 @@ const PHASE_STATUS_LABELS: Record<string, string> = {
   "in-progress": "En cours",
   completed: "Terminée",
 };
-
-const MATCH_FORMATS: TournamentMatchFormat[] = ["BO1", "BO2", "BO3", "BO5"];
 
 type Props = {
   tournament: Tournament;
@@ -63,7 +64,14 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases }: P
   // Ajout de phase
   const [phaseName, setPhaseName] = useState("");
   const [phaseType, setPhaseType] = useState<TournamentPhaseType>("swiss");
-  const [phaseFormat, setPhaseFormat] = useState<TournamentMatchFormat>("BO3");
+  const [phaseBestOf, setPhaseBestOf] = useState("1");
+  const [phaseResultMode, setPhaseResultMode] = useState<TournamentResultMode>("selection");
+  const [phaseScoringMethod, setPhaseScoringMethod] = useState<TournamentScoringMethod>("fixed");
+  const [phaseWin, setPhaseWin] = useState("3");
+  const [phaseLoss, setPhaseLoss] = useState("0");
+  const [phaseDraw, setPhaseDraw] = useState("1");
+  const [phaseRankOffsets, setPhaseRankOffsets] = useState("3,1,-1,-3,-4,-5,-7");
+  const [phaseSeeding, setPhaseSeeding] = useState<TournamentEliminationSeeding>("standings");
   const [phaseRounds, setPhaseRounds] = useState("");
   const [phaseTopCut, setPhaseTopCut] = useState("");
   const [phaseMinPlayers, setPhaseMinPlayers] = useState("2");
@@ -157,8 +165,30 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases }: P
       const body: Record<string, unknown> = {
         name: phaseName.trim(),
         type: phaseType,
-        matchFormat: phaseFormat,
+        resultMode: phaseResultMode,
+        scoringMethod: phaseScoringMethod,
       };
+      const parsedBestOf = Number.parseInt(phaseBestOf, 10);
+      body.bestOf = Number.isFinite(parsedBestOf) && parsedBestOf >= 1 ? parsedBestOf : 1;
+
+      if (phaseScoringMethod === "fixed") {
+        body.fixedScoring = {
+          win: Number.parseInt(phaseWin, 10) || 0,
+          loss: Number.parseInt(phaseLoss, 10) || 0,
+          draw: Number.parseInt(phaseDraw, 10) || 0,
+        };
+      } else {
+        const offsets = phaseRankOffsets
+          .split(",")
+          .map((s) => Number.parseInt(s.trim(), 10))
+          .filter((n) => Number.isFinite(n));
+        if (offsets.length > 0) body.rankOffsets = offsets;
+      }
+
+      if (phaseType === "elimination") {
+        body.eliminationSeeding = phaseSeeding;
+      }
+
       // N'ajouter le champ que si la saisie donne un entier positif : un NaN
       // (champ vide, "e"…) serait sérialisé en null par JSON.stringify et
       // rejeté par la validation de l'API.
@@ -166,8 +196,9 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases }: P
       if (phaseType === "swiss" && Number.isFinite(parsedRounds) && parsedRounds > 0) {
         body.plannedRounds = parsedRounds;
       }
+      // Top cut à l'entrée de la phase (hors freeform).
       const parsedTopCut = Number.parseInt(phaseTopCut, 10);
-      if (phaseType === "bracket" && Number.isFinite(parsedTopCut) && parsedTopCut > 1) {
+      if (phaseType !== "freeform" && Number.isFinite(parsedTopCut) && parsedTopCut > 1) {
         body.topCut = parsedTopCut;
       }
       // Bornes de joueurs par match. Le bracket est forcé à 2-2.
@@ -192,6 +223,7 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases }: P
       setPhaseTopCut("");
       setPhaseMinPlayers("2");
       setPhaseMaxPlayers("2");
+      setPhaseBestOf("1");
       await refreshPhases();
     });
 
@@ -355,15 +387,21 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases }: P
                   <div>
                     <div className="font-medium">{phase.name}</div>
                     <div className="text-sm text-muted-foreground">
-                      {PHASE_TYPE_LABELS[phase.type]} · {phase.matchFormat}
+                      {PHASE_TYPE_LABELS[phase.type]} · best-of-{phase.bestOf}
+                      {` · ${phase.resultMode === "points" ? "points" : "sélection"}`}
+                      {` · ${phase.scoringMethod === "rank_offset" ? "rang" : "points fixes"}`}
                       {phase.plannedRounds ? ` · ${phase.plannedRounds} rondes` : ""}
                       {phase.topCut ? ` · Top ${phase.topCut}` : ""}
-                      {" · "}
-                      {phase.minPlayersPerMatch === phase.maxPlayersPerMatch
-                        ? phase.minPlayersPerMatch === 2
-                          ? "duels"
-                          : `pods de ${phase.minPlayersPerMatch}`
-                        : `pods ${phase.minPlayersPerMatch}-${phase.maxPlayersPerMatch}`}
+                      {phase.type !== "bracket" && (
+                        <>
+                          {" · "}
+                          {phase.minPlayersPerMatch === phase.maxPlayersPerMatch
+                            ? phase.minPlayersPerMatch === 2
+                              ? "duels"
+                              : `pods de ${phase.minPlayersPerMatch}`
+                            : `pods ${phase.minPlayersPerMatch}-${phase.maxPlayersPerMatch}`}
+                        </>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -412,29 +450,112 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases }: P
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="swiss">Rondes suisses</SelectItem>
-                    <SelectItem value="bracket">Élimination directe</SelectItem>
+                    <SelectItem value="elimination">Élimination (ré-appariement)</SelectItem>
+                    <SelectItem value="bracket">Arbre d&apos;élimination</SelectItem>
                     <SelectItem value="freeform">Format libre</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Format des matchs</Label>
+                <Label htmlFor="phase-bestof">Best-of-n (parties par match)</Label>
+                <Input
+                  id="phase-bestof"
+                  type="number"
+                  min={1}
+                  max={9}
+                  value={phaseBestOf}
+                  onChange={(e) => setPhaseBestOf(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Résultat des parties</Label>
                 <Select
-                  value={phaseFormat}
-                  onValueChange={(v) => setPhaseFormat(v as TournamentMatchFormat)}
+                  value={phaseResultMode}
+                  onValueChange={(v) => setPhaseResultMode(v as TournamentResultMode)}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {MATCH_FORMATS.map((format) => (
-                      <SelectItem key={format} value={format}>
-                        {format}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="selection">Désignation du vainqueur</SelectItem>
+                    <SelectItem value="points">Saisie des points</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label>Méthode de scoring</Label>
+                <Select
+                  value={phaseScoringMethod}
+                  onValueChange={(v) => setPhaseScoringMethod(v as TournamentScoringMethod)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="fixed">Points fixes (victoire/défaite/nul)</SelectItem>
+                    <SelectItem value="rank_offset">Selon le rang (N + offset)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {phaseScoringMethod === "fixed" && (
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Points fixes (victoire / défaite / nul)</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      aria-label="Points de victoire"
+                      type="number"
+                      className="w-20"
+                      value={phaseWin}
+                      onChange={(e) => setPhaseWin(e.target.value)}
+                    />
+                    <Input
+                      aria-label="Points de défaite"
+                      type="number"
+                      className="w-20"
+                      value={phaseLoss}
+                      onChange={(e) => setPhaseLoss(e.target.value)}
+                    />
+                    <Input
+                      aria-label="Points de match nul"
+                      type="number"
+                      className="w-20"
+                      value={phaseDraw}
+                      onChange={(e) => setPhaseDraw(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+              {phaseScoringMethod === "rank_offset" && (
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="phase-offsets">Offsets par rang (séparés par des virgules)</Label>
+                  <Input
+                    id="phase-offsets"
+                    value={phaseRankOffsets}
+                    onChange={(e) => setPhaseRankOffsets(e.target.value)}
+                    placeholder="3,1,-1,-3,-4,-5,-7"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Points = N + offset[rang], N étant le nombre de joueurs du match.
+                  </p>
+                </div>
+              )}
+              {phaseType === "elimination" && (
+                <div className="space-y-2">
+                  <Label>Ré-appariement des vainqueurs</Label>
+                  <Select
+                    value={phaseSeeding}
+                    onValueChange={(v) => setPhaseSeeding(v as TournamentEliminationSeeding)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="standings">Selon le classement</SelectItem>
+                      <SelectItem value="random">Aléatoire</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               {phaseType === "swiss" && (
                 <div className="space-y-2">
                   <Label htmlFor="phase-rounds">Nombre de rondes (optionnel)</Label>
@@ -447,9 +568,9 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases }: P
                   />
                 </div>
               )}
-              {phaseType === "bracket" && (
+              {phaseType !== "freeform" && (
                 <div className="space-y-2">
-                  <Label htmlFor="phase-topcut">Top cut (optionnel)</Label>
+                  <Label htmlFor="phase-topcut">Top cut à l&apos;entrée (optionnel)</Label>
                   <Input
                     id="phase-topcut"
                     type="number"

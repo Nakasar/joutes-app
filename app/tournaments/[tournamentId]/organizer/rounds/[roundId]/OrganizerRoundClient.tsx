@@ -5,8 +5,14 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import type { TournamentMatch, TournamentPlayer, TournamentRound } from "@/lib/types/Tournament";
+import type {
+  TournamentGameResult,
+  TournamentMatch,
+  TournamentPlayer,
+  TournamentResultMode,
+  TournamentRound,
+} from "@/lib/types/Tournament";
+import { MatchGamesEditor } from "../../../MatchGamesEditor";
 
 const MATCH_STATUS_LABELS: Record<string, string> = {
   pending: "À jouer",
@@ -20,26 +26,24 @@ type Props = {
   round: TournamentRound;
   initialMatches: TournamentMatch[];
   players: TournamentPlayer[];
+  resultMode: TournamentResultMode;
+  bestOf: number;
 };
 
-export function OrganizerRoundClient({ tournamentId, round, initialMatches, players }: Props) {
+export function OrganizerRoundClient({
+  tournamentId,
+  round,
+  initialMatches,
+  players,
+  resultMode,
+  bestOf,
+}: Props) {
   const [matches, setMatches] = useState<TournamentMatch[]>(initialMatches);
-  const [scores, setScores] = useState<Record<string, Record<string, string>>>({});
   const [error, setError] = useState<string | null>(null);
   const [busyMatchId, setBusyMatchId] = useState<string | null>(null);
 
-  const playersById = useMemo(
-    () => new Map(players.map((p) => [p.id, p])),
-    [players]
-  );
+  const playersById = useMemo(() => new Map(players.map((p) => [p.id, p])), [players]);
   const playerName = (playerId: string) => playersById.get(playerId)?.displayName ?? "Inconnu";
-
-  const setScore = (matchId: string, playerId: string, value: string) => {
-    setScores((current) => ({
-      ...current,
-      [matchId]: { ...(current[matchId] ?? {}), [playerId]: value },
-    }));
-  };
 
   const refresh = useCallback(async () => {
     const res = await fetch(`/api/tournaments/${tournamentId}/rounds/${round.id}`);
@@ -49,34 +53,27 @@ export function OrganizerRoundClient({ tournamentId, round, initialMatches, play
     }
   }, [tournamentId, round.id]);
 
-  const submitScore = (match: TournamentMatch) => {
+  const submitReport = (match: TournamentMatch, games: TournamentGameResult[]) => {
+    if (games.length === 0) {
+      setError("Renseignez au moins une partie.");
+      return;
+    }
     setBusyMatchId(match.id);
     setError(null);
     (async () => {
       try {
-        const matchScores: Record<string, number> = {};
-        for (const p of match.players) {
-          const raw = scores[match.id]?.[p.playerId];
-          matchScores[p.playerId] = Number.parseInt(raw ?? String(p.score), 10) || 0;
-        }
         const res = await fetch(`/api/tournaments/${tournamentId}/matches/${match.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "report", scores: matchScores }),
+          body: JSON.stringify({ action: "report", games }),
         });
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
-          throw new Error(body.error ?? "Erreur lors de l'enregistrement du score");
+          throw new Error(body.error ?? "Erreur lors de l'enregistrement du résultat");
         }
-        // Purger les scores locaux de ce match : les inputs réafficheront les
-        // valeurs renvoyées par l'API (éventuellement normalisées).
-        setScores((current) => {
-          const { [match.id]: _removed, ...rest } = current;
-          return rest;
-        });
         await refresh();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Erreur lors de l'enregistrement du score");
+        setError(err instanceof Error ? err.message : "Erreur lors de l'enregistrement du résultat");
       } finally {
         setBusyMatchId(null);
       }
@@ -119,34 +116,36 @@ export function OrganizerRoundClient({ tournamentId, round, initialMatches, play
                     <Badge variant="outline">{MATCH_STATUS_LABELS[match.status]}</Badge>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-3">
                   {isBye ? (
                     <p className="text-sm text-muted-foreground">Victoire automatique.</p>
                   ) : (
-                    <div className="flex flex-wrap items-end gap-4">
-                      {match.players.map((p) => {
-                        const inputId = `score-${match.id}-${p.playerId}`;
-                        return (
-                          <div key={p.playerId} className="space-y-1">
-                            <label htmlFor={inputId} className="text-sm block">
-                              {playerName(p.playerId)}
-                              {match.winnerIds.includes(p.playerId) ? " 🏆" : ""}
-                            </label>
-                            <Input
-                              id={inputId}
-                              type="number"
-                              min={0}
-                              className="w-24"
-                              value={scores[match.id]?.[p.playerId] ?? String(p.score)}
-                              onChange={(e) => setScore(match.id, p.playerId, e.target.value)}
-                            />
-                          </div>
-                        );
-                      })}
-                      <Button onClick={() => submitScore(match)} disabled={busyMatchId === match.id}>
-                        Enregistrer
-                      </Button>
-                    </div>
+                    <>
+                      {match.status === "completed" && (
+                        <p className="text-sm">
+                          Résultat :{" "}
+                          {match.players
+                            .map(
+                              (p) =>
+                                `${playerName(p.playerId)} ${p.score}${
+                                  match.winnerIds.includes(p.playerId) ? " 🏆" : ""
+                                }`
+                            )
+                            .join(" · ")}
+                        </p>
+                      )}
+                      <MatchGamesEditor
+                        key={`${match.id}-${match.updatedAt ?? ""}`}
+                        matchId={match.id}
+                        matchPlayerIds={match.players.map((p) => p.playerId)}
+                        playerName={playerName}
+                        resultMode={resultMode}
+                        bestOf={bestOf}
+                        submitting={busyMatchId === match.id}
+                        submitLabel={match.status === "completed" ? "Corriger le résultat" : "Enregistrer"}
+                        onSubmit={(games) => submitReport(match, games)}
+                      />
+                    </>
                   )}
                 </CardContent>
               </Card>
