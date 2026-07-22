@@ -66,7 +66,9 @@ export default function Header() {
     { href: "/events", label: t('menu.Calendrier'), icon: Calendar },
     { href: "/leagues", label: t('menu.Ligues'), icon: Trophy },
     { href: "/game-matches", label: t('menu.Parties'), icon: Gamepad2 },
-    { href: "/events/new", label: t('menu.OrganizeTournament'), icon: Plus },
+    { href: "/tournaments", label: t('menu.Tournois'), icon: Trophy },
+    { href: "/tournaments/new", label: t('menu.OrganizeTournament'), icon: Plus },
+    { href: "/events/new", label: t('menu.OrganizeEvent'), icon: Plus },
   ];
 
   const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
