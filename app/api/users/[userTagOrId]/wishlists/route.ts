@@ -17,11 +17,16 @@ function resolveUserTagOrId(raw: string): string {
 export async function GET(request: Request, { params }: { params: Params }) {
   const { userTagOrId } = await params;
 
-  const user = await getUserByTagOrId(resolveUserTagOrId(decodeURIComponent(userTagOrId)));
-  if (!user) {
-    return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
-  }
+  try {
+    const user = await getUserByTagOrId(resolveUserTagOrId(decodeURIComponent(userTagOrId)));
+    if (!user) {
+      return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
+    }
 
-  const wishlists = await getPublicWishlistsForOwner({ type: "user", id: user.id });
-  return NextResponse.json({ wishlists });
+    const wishlists = await getPublicWishlistsForOwner({ type: "user", id: user.id });
+    return NextResponse.json({ wishlists });
+  } catch (error) {
+    console.error("Error fetching user's public wishlists:", error);
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+  }
 }

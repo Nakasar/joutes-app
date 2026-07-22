@@ -231,9 +231,9 @@ export function toPublicUser(user: User): PublicUser {
 }
 
 export type PublicUserProfile = PublicUser & {
-  description?: string;
-  website?: string;
-  socialLinks?: string[];
+  description: string | null;
+  website: string | null;
+  socialLinks: string[];
   isPublicProfile: boolean;
 };
 
@@ -250,9 +250,9 @@ export function toPublicUserProfile(user: User): PublicUserProfile {
     displayName: user.displayName,
     discriminator: user.discriminator,
     avatar: user.profileImage || user.avatar,
-    description: user.description,
-    website: user.website,
-    socialLinks: user.socialLinks,
+    description: user.description ?? null,
+    website: user.website ?? null,
+    socialLinks: user.socialLinks ?? [],
     isPublicProfile: user.isPublicProfile ?? false,
   };
 }

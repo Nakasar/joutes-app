@@ -46,6 +46,8 @@ tags:
     description: Cards a user or play group is offering for sale.
   - name: Upload
     description: Generic admin file upload to blob storage.
+  - name: Users
+    description: Public user profiles, and a user's public wishlists/sell list.
   - name: Wishlists
     description: Cards a user or play group is looking for.
   - name: Cron
@@ -1974,6 +1976,7 @@ paths:
       responses:
         "200": { description: Public profile., content: { application/json: { schema: { $ref: "#/components/schemas/PublicUserProfile" } } } }
         "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
 
   /users/{userTagOrId}/wishlists:
     parameters:
@@ -1985,6 +1988,7 @@ paths:
       responses:
         "200": { description: Public wishlists., content: { application/json: { schema: { type: object, properties: { wishlists: { type: array, items: { $ref: "#/components/schemas/Wishlist" } } } } } } }
         "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
 
   /users/{userTagOrId}/sell-list:
     parameters:
@@ -1996,6 +2000,7 @@ paths:
       responses:
         "200": { description: Sell list., content: { application/json: { schema: { type: object, properties: { sellList: { allOf: [{ $ref: "#/components/schemas/SellList" }], nullable: true } } } } } }
         "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
 
   # ---------------------------------------------------------------- Wishlists
   /wishlists:
@@ -2304,8 +2309,8 @@ components:
         displayName: { type: string }
         discriminator: { type: string }
         avatar: { type: string }
-        description: { type: string }
-        website: { type: string }
+        description: { type: string, nullable: true }
+        website: { type: string, nullable: true }
         socialLinks: { type: array, items: { type: string } }
         isPublicProfile: { type: boolean }
         games: { type: array, items: { type: object, properties: { id: { type: string }, name: { type: string }, slug: { type: string }, icon: { type: string } } } }
