@@ -60,9 +60,56 @@ export async function getUsersByIds(userIds: string[]): Promise<User[]> {
 }
 
 export async function getUserByEmail(email: string): Promise<User | null> {
-  
+
   const user = await db.collection(COLLECTION_NAME).findOne({ email: email.toLowerCase() });
   return user ? toUser(user) : null;
+}
+
+// Génère un discriminant à 4 chiffres unique pour un displayName donné.
+async function generateUniqueDiscriminator(displayName: string): Promise<string> {
+  const collection = db.collection(COLLECTION_NAME);
+  for (let i = 0; i < 10; i++) {
+    const discriminator = Math.floor(1000 + Math.random() * 9000).toString();
+    const existing = await collection.findOne(
+      { displayName, discriminator },
+      { collation: { locale: "en", strength: 2 } }
+    );
+    if (!existing) {
+      return discriminator;
+    }
+  }
+  return Math.floor(10000 + Math.random() * 90000).toString();
+}
+
+/**
+ * Crée un compte utilisateur « invité » à partir d'un email (ex: joueur ajouté
+ * à un tournoi qui n'a pas encore de compte). Le nom d'utilisateur par défaut
+ * est dérivé de la partie locale de l'email. `createdVia` trace l'origine.
+ */
+export async function createInvitedUserByEmail(
+  email: string,
+  createdVia: string
+): Promise<User> {
+  const normalizedEmail = email.toLowerCase();
+  const username = (normalizedEmail.split("@")[0] || "joueur").slice(0, 100);
+  const discriminator = await generateUniqueDiscriminator(username);
+
+  const newUser = {
+    username,
+    displayName: username,
+    discriminator,
+    email: normalizedEmail,
+    discordId: "",
+    avatar: "",
+    lairs: [],
+    games: [],
+    isPublicProfile: false,
+    createdAt: new Date().toISOString(),
+    createdVia,
+  };
+
+  const result = await db.collection(COLLECTION_NAME).insertOne(newUser);
+  return toUser({ ...newUser, _id: result.insertedId });
 }
 
 export async function searchUsersByUsername(searchTerm: string): Promise<User[]> {

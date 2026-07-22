@@ -57,8 +57,8 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases }: P
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // Ajout de joueur
-  const [newPlayerName, setNewPlayerName] = useState("");
+  // Ajout de joueur : email, username#discriminator, ou simple nom (invité).
+  const [newPlayerIdentifier, setNewPlayerIdentifier] = useState("");
 
   // Ajout de phase
   const [phaseName, setPhaseName] = useState("");
@@ -112,12 +112,12 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases }: P
 
   const addPlayer = () =>
     run(async () => {
-      if (!newPlayerName.trim()) return;
+      if (!newPlayerIdentifier.trim()) return;
       await api(`/api/tournaments/${tournamentId}/players`, {
         method: "POST",
-        body: JSON.stringify({ displayName: newPlayerName.trim() }),
+        body: JSON.stringify({ identifier: newPlayerIdentifier.trim() }),
       });
-      setNewPlayerName("");
+      setNewPlayerIdentifier("");
       await refreshPlayers();
     });
 
@@ -243,23 +243,29 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases }: P
           <CardTitle>Joueurs ({activePlayers.length} actif(s) / {players.length})</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Input
-              value={newPlayerName}
-              onChange={(e) => setNewPlayerName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  addPlayer();
-                }
-              }}
-              placeholder="Nom du joueur (invité)"
-              maxLength={100}
-            />
-            <Button onClick={addPlayer} disabled={busy || !newPlayerName.trim()}>
-              <Plus className="h-4 w-4 mr-2" />
-              Ajouter
-            </Button>
+          <div className="space-y-1">
+            <div className="flex gap-2">
+              <Input
+                value={newPlayerIdentifier}
+                onChange={(e) => setNewPlayerIdentifier(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addPlayer();
+                  }
+                }}
+                placeholder="Email, username#0000, ou nom d'un invité"
+                maxLength={150}
+              />
+              <Button onClick={addPlayer} disabled={busy || !newPlayerIdentifier.trim()}>
+                <Plus className="h-4 w-4 mr-2" />
+                Ajouter
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Un email ou un tag <code>username#0000</code> lie le joueur à son compte ; un
+              email inconnu crée un compte, tout autre texte ajoute un invité.
+            </p>
           </div>
 
           {players.length === 0 ? (
