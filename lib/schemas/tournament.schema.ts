@@ -123,10 +123,14 @@ export const reportTournamentMatchSchema = z.object({
   //   le vainqueur en est déduit.
   games: z
     .array(
-      z.object({
-        winnerId: z.string().nullable().optional(),
-        points: z.record(z.string(), z.number().int()).optional(),
-      })
+      z
+        .object({
+          winnerId: z.string().nullable().optional(),
+          points: z.record(z.string(), z.number().int()).optional(),
+        })
+        .refine((g) => g.winnerId !== undefined || g.points !== undefined, {
+          message: "Chaque partie doit renseigner un vainqueur (ou nul) ou des points",
+        })
     )
     .min(1, "Au moins une partie doit être renseignée")
     .max(9),

@@ -1261,6 +1261,10 @@ export async function reportMatchResult(
       if (!game.points || !matchPlayerIds.every((id) => id in (game.points ?? {}))) {
         throw new TournamentError("invalid", "Les points de chaque joueur sont requis pour chaque partie");
       }
+    } else if (!("winnerId" in game)) {
+      // Mode selection : un vainqueur explicite (ou null pour une partie nulle)
+      // est requis, pour éviter qu'une partie {} soit prise pour un nul.
+      throw new TournamentError("invalid", "Le vainqueur (ou nul) de chaque partie doit être renseigné");
     }
   }
 
@@ -1272,6 +1276,17 @@ export async function reportMatchResult(
   const maxWins = Math.max(0, ...matchPlayerIds.map((id) => gamesWonByPlayer.get(id) ?? 0));
   const leaders = matchPlayerIds.filter((id) => (gamesWonByPlayer.get(id) ?? 0) === maxWins);
   const winnerIds = maxWins > 0 && leaders.length < matchPlayerIds.length ? leaders : [];
+
+  // Le best-of n'est acté que si un joueur a atteint le seuil de victoires,
+  // ou si toutes les parties ont été jouées (ex: BO2 1-1, ou pod complet) :
+  // refuser un résultat partiel (ex: BO3 rapporté sur une seule partie).
+  const decided = maxWins >= winsNeeded(phase.bestOf) || normalizedGames.length >= phase.bestOf;
+  if (!decided) {
+    throw new TournamentError(
+      "invalid",
+      `Résultat incomplet : renseignez toutes les parties du best-of-${phase.bestOf} ou jusqu'à ce qu'un joueur atteigne ${winsNeeded(phase.bestOf)} victoire(s)`
+    );
+  }
 
   const updatedPlayers: TournamentMatchPlayer[] = match.players.map((p) => ({
     playerId: p.playerId,
