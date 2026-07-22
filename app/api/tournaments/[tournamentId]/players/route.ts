@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateApiRequest } from "@/lib/api/authenticate";
 import { addTournamentPlayerSchema } from "@/lib/schemas/tournament.schema";
 import {
-  addPlayer,
+  addPlayerByIdentifier,
   assertIsOrganizer,
   assertPrincipalCanRead,
   listPlayers,
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const body = await request.json();
     const validated = addTournamentPlayerSchema.parse(body);
 
-    const player = await addPlayer(tournamentId, { ...validated, addedBy: user.userId });
+    const player = await addPlayerByIdentifier(tournamentId, { ...validated, addedBy: user.userId });
     return NextResponse.json(player, { status: 201 });
   } catch (error) {
     return tournamentErrorResponse(error);

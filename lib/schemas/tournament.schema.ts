@@ -30,8 +30,10 @@ export const updateTournamentSchema = z.object({
 });
 
 export const addTournamentPlayerSchema = z.object({
-  displayName: z.string().min(1, "Le nom du joueur est requis").max(100),
-  userId: z.string().optional(),
+  // Identifiant du joueur : email, tag `username#discriminator`, ou simple
+  // nom d'utilisateur (ajouté alors comme invité). La résolution est faite
+  // côté domaine (lib/db/tournaments.ts).
+  identifier: z.string().min(1, "Un identifiant de joueur est requis").max(150),
   seed: z.number().int().min(1).optional(),
 });
 

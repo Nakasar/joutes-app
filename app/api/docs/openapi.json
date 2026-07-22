@@ -7238,7 +7238,7 @@
         "tags": [
           "Tournaments"
         ],
-        "summary": "Register a player (organizers only)",
+        "summary": "Register a player by email, username#discriminator, or guest name (organizers only)",
         "security": [
           {
             "sessionAuth": []
@@ -7247,7 +7247,7 @@
             "apiKeyBearer": []
           }
         ],
-        "description": "Players can be linked to a user account via `userId`, or be guests with only a display name.",
+        "description": "The `identifier` is resolved server-side:\n- `username#discriminator` → the matching user is linked by `userId`; if no user matches, the request fails with 404 (an explicit discriminator targets a specific account).\n- an email → the matching user is linked by `userId`; if none exists, a guest account is created for that email before registering the player.\n- any other value → a guest player is registered with that display name, without a linked account.\n",
         "requestBody": {
           "required": true,
           "content": {
@@ -7255,17 +7255,17 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "displayName"
+                  "identifier"
                 ],
                 "properties": {
-                  "displayName": {
-                    "type": "string"
-                  },
-                  "userId": {
-                    "type": "string"
+                  "identifier": {
+                    "type": "string",
+                    "maxLength": 150,
+                    "description": "Email, `username#discriminator` tag, or a guest display name."
                   },
                   "seed": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 1
                   }
                 }
               }

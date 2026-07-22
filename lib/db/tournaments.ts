@@ -26,6 +26,15 @@ import {
   generateNextBracketRound,
   generateSwissPairings,
 } from "@/lib/utils/pairing";
+import {
+  createInvitedUserByEmail,
+  getUserByEmail,
+  getUserByUsernameAndDiscriminator,
+} from "@/lib/db/users";
+
+// Validation d'email volontairement simple : le but est de distinguer un
+// email d'un nom d'utilisateur, pas de valider strictement l'adresse.
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const TOURNAMENTS = "tournaments";
 const PLAYERS = "tournament-players";
@@ -440,6 +449,62 @@ export async function addPlayer(
 
   const result = await db.collection<TournamentPlayerDb>(PLAYERS).insertOne(doc);
   return toPlayer({ ...doc, _id: result.insertedId });
+}
+
+/**
+ * Ajoute un joueur à partir d'un identifiant libre :
+ * - `username#discriminator` → utilisateur recherché par tag ; s'il n'existe
+ *   pas, erreur (un discriminateur explicite désigne un compte précis).
+ * - email → utilisateur recherché par email ; s'il n'existe pas, un compte
+ *   invité est créé avant d'inscrire le joueur.
+ * - sinon (simple nom) → joueur invité sans compte.
+ */
+export async function addPlayerByIdentifier(
+  tournamentId: string,
+  data: { identifier: string; seed?: number; addedBy: string }
+): Promise<TournamentPlayer> {
+  const identifier = data.identifier.trim();
+
+  // Tag username#discriminator : le discriminateur désigne un compte précis.
+  const hashIndex = identifier.indexOf("#");
+  if (hashIndex !== -1) {
+    const displayName = identifier.slice(0, hashIndex).trim();
+    const discriminator = identifier.slice(hashIndex + 1).trim();
+    // Format strict : un seul '#', un discriminateur à exactement 4 chiffres.
+    // Sinon on renvoie une erreur de format claire plutôt qu'un 404 ambigu.
+    if (!displayName || !/^\d{4}$/.test(discriminator)) {
+      throw new TournamentError("invalid", "Tag invalide : utilisez le format username#0000");
+    }
+    const user = await getUserByUsernameAndDiscriminator(displayName, discriminator);
+    if (!user) {
+      throw new TournamentError("not-found", `Utilisateur ${identifier} non trouvé`);
+    }
+    return addPlayer(tournamentId, {
+      displayName: user.displayName || user.username,
+      userId: user.id,
+      seed: data.seed,
+      addedBy: data.addedBy,
+    });
+  }
+
+  // Email : utilisateur existant, ou création d'un compte invité.
+  if (EMAIL_REGEX.test(identifier)) {
+    const existing = await getUserByEmail(identifier);
+    const user = existing ?? (await createInvitedUserByEmail(identifier, "tournament-invite"));
+    return addPlayer(tournamentId, {
+      displayName: user.displayName || user.username,
+      userId: user.id,
+      seed: data.seed,
+      addedBy: data.addedBy,
+    });
+  }
+
+  // Simple nom d'utilisateur → invité sans compte.
+  return addPlayer(tournamentId, {
+    displayName: identifier,
+    seed: data.seed,
+    addedBy: data.addedBy,
+  });
 }
 
 /**
