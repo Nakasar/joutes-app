@@ -44,3 +44,6 @@ next-env.d.ts
 # IDE
 .vscode/
 .idea/
+
+# scratch working files (e.g. source PDFs used for one-off data extraction)
+/tmp/

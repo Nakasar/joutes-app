@@ -23,18 +23,39 @@ function useDebounce<T>(value: T, delay: number): T {
 // {{rule id="107"}}Combat{{/rule}} for section links, {{keyword id="826"}}Backline{{/keyword}}
 // for keyword-glossary mentions, {{match}}text{{/match}} for search-highlighted text.
 // Parse it here so the frontend owns all styling instead of injecting server-authored HTML.
+// The content itself also carries plain markdown emphasis (***bold italic***, **bold**,
+// _italic_) from the source rulebook — those markers are tokenized as toggles right
+// alongside the custom tags, in the same stack, so they nest correctly even when a
+// {{match}} highlight (or a {{rule}}/{{keyword}} link) falls inside a bold/italic run.
 type MarkupNode =
   | { type: 'text'; text: string }
   | { type: 'rule'; id: string; children: MarkupNode[] }
   | { type: 'keyword'; id: string; children: MarkupNode[] }
-  | { type: 'match'; children: MarkupNode[] };
+  | { type: 'match'; children: MarkupNode[] }
+  | { type: 'bold'; children: MarkupNode[] }
+  | { type: 'italic'; children: MarkupNode[] }
+  | { type: 'bolditalic'; children: MarkupNode[] };
+
+type ContainerNode = Extract<MarkupNode, { children: MarkupNode[] }>;
+type StackFrame = { type?: MarkupNode['type']; children: MarkupNode[] };
+
+function openNode(stack: StackFrame[], node: ContainerNode) {
+  stack[stack.length - 1].children.push(node);
+  stack.push(node);
+}
 
 const MARKUP_TAG_REGEX =
-  /\{\{rule id="([^"]*)"\}\}|\{\{\/rule\}\}|\{\{keyword id="([^"]*)"\}\}|\{\{\/keyword\}\}|\{\{match\}\}|\{\{\/match\}\}/g;
+  /\{\{rule id="([^"]*)"\}\}|\{\{\/rule\}\}|\{\{keyword id="([^"]*)"\}\}|\{\{\/keyword\}\}|\{\{match\}\}|\{\{\/match\}\}|\*\*\*|\*\*|_/g;
+
+const EMPHASIS_KIND: Record<string, 'bold' | 'italic' | 'bolditalic'> = {
+  '***': 'bolditalic',
+  '**': 'bold',
+  '_': 'italic',
+};
 
 function parseMarkup(markup: string): MarkupNode[] {
   const root: MarkupNode[] = [];
-  const stack: { children: MarkupNode[] }[] = [{ children: root }];
+  const stack: StackFrame[] = [{ children: root }];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
@@ -49,17 +70,18 @@ function parseMarkup(markup: string): MarkupNode[] {
     const token = match[0];
 
     if (token.startsWith('{{rule')) {
-      const node: MarkupNode = { type: 'rule', id: match[1], children: [] };
-      stack[stack.length - 1].children.push(node);
-      stack.push(node);
+      openNode(stack, { type: 'rule', id: match[1], children: [] });
     } else if (token.startsWith('{{keyword')) {
-      const node: MarkupNode = { type: 'keyword', id: match[2], children: [] };
-      stack[stack.length - 1].children.push(node);
-      stack.push(node);
+      openNode(stack, { type: 'keyword', id: match[2], children: [] });
     } else if (token === '{{match}}') {
-      const node: MarkupNode = { type: 'match', children: [] };
-      stack[stack.length - 1].children.push(node);
-      stack.push(node);
+      openNode(stack, { type: 'match', children: [] });
+    } else if (token in EMPHASIS_KIND) {
+      const kind = EMPHASIS_KIND[token];
+      if (stack[stack.length - 1].type === kind) {
+        stack.pop();
+      } else {
+        openNode(stack, { type: kind, children: [] });
+      }
     } else if (stack.length > 1) {
       // {{/rule}}, {{/keyword}} or {{/match}}
       stack.pop();
@@ -76,6 +98,15 @@ function renderMarkupNodes(nodes: MarkupNode[], keyPrefix: string): ReactNode {
   return nodes.map((node, i) => {
     const key = `${keyPrefix}-${i}`;
     if (node.type === 'text') return <Fragment key={key}>{node.text}</Fragment>;
+    if (node.type === 'bold') return <strong key={key}>{renderMarkupNodes(node.children, key)}</strong>;
+    if (node.type === 'italic') return <em key={key}>{renderMarkupNodes(node.children, key)}</em>;
+    if (node.type === 'bolditalic') {
+      return (
+        <strong key={key}>
+          <em>{renderMarkupNodes(node.children, key)}</em>
+        </strong>
+      );
+    }
     if (node.type === 'rule') {
       return (
         <a
@@ -221,7 +252,7 @@ const RuleNode = memo(function RuleNode({
         <span className="text-muted-foreground font-mono text-xs shrink-0 mt-0.5 min-w-14 text-right">
           {node.id}
         </span>
-        <p className={`flex-1 ${node.depth === 1 ? 'font-semibold text-foreground' : 'text-foreground/90'}`}>
+        <p className={`flex-1 whitespace-pre-line ${node.depth === 1 ? 'font-semibold text-foreground' : 'text-foreground/90'}`}>
           <RuleMarkup markup={markup} keyPrefix={`rule-${node.id}`} />
         </p>
         <CopyLinkButton anchorId={`rule-${node.id}`} />
@@ -297,7 +328,7 @@ function TableOfContents({
                   subItems.length === 0 ? 'ml-0' : ''
                 } ${activeSection === sec.start ? 'text-accent-foreground' : 'text-foreground'}`}
               >
-                {sec.start > 0 ? `${sec.start}–` : ''} {sec.label}
+                {sec.start > 0 ? `${sec.start}–` : ''} <RuleMarkup markup={sec.label} keyPrefix={`toc-label-${sec.start}`} />
               </a>
             </div>
             {!isCollapsed && subItems.length > 0 && (
@@ -313,7 +344,7 @@ function TableOfContents({
                     }}
                     className="block px-2 py-0.5 rounded hover:bg-accent hover:text-foreground transition-colors text-muted-foreground text-xs"
                   >
-                    <span className="font-mono mr-1">{n.id}</span>{n.content}
+                    <span className="font-mono mr-1">{n.id}</span><RuleMarkup markup={n.content} keyPrefix={`toc-${n.id}`} />
                   </a>
                 ))}
               </div>
