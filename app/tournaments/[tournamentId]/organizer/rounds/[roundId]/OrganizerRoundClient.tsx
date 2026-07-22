@@ -68,6 +68,12 @@ export function OrganizerRoundClient({ tournamentId, round, initialMatches, play
           const body = await res.json().catch(() => ({}));
           throw new Error(body.error ?? "Erreur lors de l'enregistrement du score");
         }
+        // Purger les scores locaux de ce match : les inputs réafficheront les
+        // valeurs renvoyées par l'API (éventuellement normalisées).
+        setScores((current) => {
+          const { [match.id]: _removed, ...rest } = current;
+          return rest;
+        });
         await refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Erreur lors de l'enregistrement du score");
@@ -118,21 +124,25 @@ export function OrganizerRoundClient({ tournamentId, round, initialMatches, play
                     <p className="text-sm text-muted-foreground">Victoire automatique.</p>
                   ) : (
                     <div className="flex flex-wrap items-end gap-4">
-                      {match.players.map((p) => (
-                        <div key={p.playerId} className="space-y-1">
-                          <label className="text-sm block">
-                            {playerName(p.playerId)}
-                            {match.winnerIds.includes(p.playerId) ? " 🏆" : ""}
-                          </label>
-                          <Input
-                            type="number"
-                            min={0}
-                            className="w-24"
-                            value={scores[match.id]?.[p.playerId] ?? String(p.score)}
-                            onChange={(e) => setScore(match.id, p.playerId, e.target.value)}
-                          />
-                        </div>
-                      ))}
+                      {match.players.map((p) => {
+                        const inputId = `score-${match.id}-${p.playerId}`;
+                        return (
+                          <div key={p.playerId} className="space-y-1">
+                            <label htmlFor={inputId} className="text-sm block">
+                              {playerName(p.playerId)}
+                              {match.winnerIds.includes(p.playerId) ? " 🏆" : ""}
+                            </label>
+                            <Input
+                              id={inputId}
+                              type="number"
+                              min={0}
+                              className="w-24"
+                              value={scores[match.id]?.[p.playerId] ?? String(p.score)}
+                              onChange={(e) => setScore(match.id, p.playerId, e.target.value)}
+                            />
+                          </div>
+                        );
+                      })}
                       <Button onClick={() => submitScore(match)} disabled={busyMatchId === match.id}>
                         Enregistrer
                       </Button>

@@ -157,8 +157,17 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases }: P
         type: phaseType,
         matchFormat: phaseFormat,
       };
-      if (phaseType === "swiss" && phaseRounds) body.plannedRounds = Number.parseInt(phaseRounds, 10);
-      if (phaseType === "bracket" && phaseTopCut) body.topCut = Number.parseInt(phaseTopCut, 10);
+      // N'ajouter le champ que si la saisie donne un entier positif : un NaN
+      // (champ vide, "e"…) serait sérialisé en null par JSON.stringify et
+      // rejeté par la validation de l'API.
+      const parsedRounds = Number.parseInt(phaseRounds, 10);
+      if (phaseType === "swiss" && Number.isFinite(parsedRounds) && parsedRounds > 0) {
+        body.plannedRounds = parsedRounds;
+      }
+      const parsedTopCut = Number.parseInt(phaseTopCut, 10);
+      if (phaseType === "bracket" && Number.isFinite(parsedTopCut) && parsedTopCut > 1) {
+        body.topCut = parsedTopCut;
+      }
       await api(`/api/tournaments/${tournamentId}/phases`, {
         method: "POST",
         body: JSON.stringify(body),
@@ -292,6 +301,7 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases }: P
                         className="text-red-600 hover:text-red-800"
                         onClick={() => removePlayer(player)}
                         disabled={busy}
+                        aria-label={`Retirer ${player.displayName}`}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -341,6 +351,7 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases }: P
                         className="text-red-600 hover:text-red-800"
                         onClick={() => deletePhase(phase)}
                         disabled={busy}
+                        aria-label={`Supprimer la phase ${phase.name}`}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

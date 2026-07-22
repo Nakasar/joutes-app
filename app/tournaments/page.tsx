@@ -52,8 +52,8 @@ export default function TournamentsPage() {
     const keys = Object.values(getSyncKeys());
     setHasKeys(keys.length > 0);
 
-    // Tournois organisés par l'utilisateur connecté (session ; renvoie [] si
-    // non authentifié).
+    // Tournois organisés par l'utilisateur connecté. Sans session l'endpoint
+    // répond 401 : on traite tout non-OK comme une liste vide.
     const organizedPromise = fetch("/api/tournaments")
       .then((res) => (res.ok ? res.json() : []))
       .then((data: OrganizedTournament[]) => setOrganized(Array.isArray(data) ? data : []))
