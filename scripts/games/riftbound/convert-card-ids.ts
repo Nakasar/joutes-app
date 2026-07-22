@@ -1,4 +1,4 @@
-import db from "@/lib/mongodb";
+import db from "../../../lib/mongodb.ts";
 import {ObjectId} from "mongodb";
 
 async function main() {
@@ -30,7 +30,7 @@ async function main() {
     await db.collection('booster-cards').updateOne({
       _id: card._id,
     }, {
-      $set: { cardId: `${card.setCode}-${card.collectorNumber}` },
+      $set: { cardId: `${card.setCode}${card.collectorNumber}` },
     });
   }
 

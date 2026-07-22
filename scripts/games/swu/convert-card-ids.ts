@@ -1,4 +1,4 @@
-import db from "@/lib/mongodb";
+import db from "../../../lib/mongodb.ts";
 
 async function main() {
   const setCode = 'ASHP';
