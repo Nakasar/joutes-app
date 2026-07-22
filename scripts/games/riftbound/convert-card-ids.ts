@@ -1,7 +1,23 @@
 import db from "../../../lib/mongodb.ts";
+import {ObjectId} from "mongodb";
 
 async function main() {
-  const setCode = 'ASHP';
+  const cardsCursor = db.collection('cards').find({
+    gameId: new ObjectId("69009afea722eab4fa0e55c4"),
+  });
+
+  while (await cardsCursor.hasNext()) {
+    const card = await cardsCursor.next();
+    if (!card) continue;
+
+    await db.collection('cards').updateOne({
+      _id: card._id,
+    }, {
+      $set: { id: `${card.setCode}${card.collectorNumber}` },
+    });
+  }
+
+  const setCode = "OGN";
 
   const cursorBoosters = db.collection('booster-cards').find({
     setCode: setCode,
@@ -14,7 +30,7 @@ async function main() {
     await db.collection('booster-cards').updateOne({
       _id: card._id,
     }, {
-      $set: { cardId: `${card.setCode}-${card.collectorNumber}` },
+      $set: { cardId: `${card.setCode}${card.collectorNumber}` },
     });
   }
 
@@ -29,7 +45,7 @@ async function main() {
     await db.collection('collection-cards').updateOne({
       _id: card._id,
     }, {
-      $set: { cardId: `${card.setCode}-${card.collectorNumber}` },
+      $set: { cardId: `${card.setCode}${card.collectorNumber}` },
     });
   }
 }

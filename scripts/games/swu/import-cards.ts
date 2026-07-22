@@ -1,8 +1,8 @@
 import {readFileSync, writeFileSync} from "node:fs";
 import path from "node:path";
 import {ObjectId} from "mongodb";
-import db from "@/lib/mongodb";
-import meilisearch, {indexes} from "@/lib/meilisearch";
+import db from "../../../lib/mongodb.ts";
+import meilisearch, {indexes} from "../../../lib/meilisearch.ts";
 
 export type Card = {
   id: string;

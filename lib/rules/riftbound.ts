@@ -88,7 +88,7 @@ export function getAllKeywordEntries(): KeywordEntry[] {
       const key = `${entry.id}:${entry.content.toLowerCase()}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      result.push({ id: entry.id, name: entry.content });
+      result.push({ id: entry.id, name: entry.content.replaceAll('**', '') });
     }
   }
 
