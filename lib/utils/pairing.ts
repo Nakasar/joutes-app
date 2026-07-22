@@ -7,6 +7,11 @@ export type PairingMatch = {
   player2Id: string | null;
   player1Score: number;
   player2Score: number;
+  // Absent ou null sur un match "completed" = match nul. Le champ reste
+  // optionnel pour la compatibilité structurelle avec le MatchResult du
+  // portail événement (winnerId optionnel sur les documents existants) —
+  // les nouveaux appelants doivent le renseigner explicitement (null pour
+  // un nul) plutôt que de l'omettre.
   winnerId?: string | null;
   status: string;
   bracketPosition?: string;

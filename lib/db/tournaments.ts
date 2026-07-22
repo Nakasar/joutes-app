@@ -119,8 +119,15 @@ function toMatch(doc: WithId<TournamentMatchDb>): TournamentMatch {
 
 // Vue 2-joueurs d'un match, pour la génération de pairings (les phases
 // swiss/bracket ne produisent que des matchs à 1 ou 2 joueurs — un seul
-// joueur étant un BYE). Ne pas utiliser sur des matchs multijoueurs.
+// joueur étant un BYE). Refuse les matchs multijoueurs plutôt que de les
+// tronquer silencieusement, ce qui fausserait pairings et classements.
 function toPairingMatch(match: TournamentMatch): PairingMatch {
+  if (match.players.length > 2) {
+    throw new TournamentError(
+      "conflict",
+      "Cette phase contient des matchs multijoueurs, incompatibles avec la génération de pairings 2 joueurs"
+    );
+  }
   const [p1, p2] = match.players;
   return {
     matchId: match.id,
@@ -638,18 +645,25 @@ export async function createNextRound(
       }
       pairings = generateNextBracketRound(lastRoundMatches.map(toPairingMatch));
     } else {
-      // Première ronde du bracket : seeding depuis le classement de la phase précédente
-      // s'il y en a une, sinon depuis l'ordre des seeds/inscriptions.
+      // Première ronde du bracket : seeding depuis le classement de la phase
+      // précédente s'il y en a une, sinon depuis l'ordre des seeds/inscriptions.
+      // Le classement est calculé avec la variante multijoueur pour supporter
+      // une phase précédente freeform contenant des matchs à 3+ joueurs.
       if (activePlayerIds.length < 2) {
         throw new TournamentError("invalid", "Au moins 2 joueurs actifs sont requis");
       }
       const phases = await listPhases(tournamentId);
       const phaseIndex = phases.findIndex((p) => p.id === phaseId);
       const previousPhase = phaseIndex > 0 ? phases[phaseIndex - 1] : undefined;
-      const seedingMatches = previousPhase
-        ? (await listPhaseMatches(tId, new ObjectId(previousPhase.id))).map(toPairingMatch)
-        : [];
-      pairings = generateEliminationBracket(activePlayerIds, seedingMatches, phase.topCut);
+      let rankedPlayerIds = activePlayerIds;
+      if (previousPhase) {
+        const previousPhaseMatches = await listPhaseMatches(tId, new ObjectId(previousPhase.id));
+        rankedPlayerIds = calculateMultiplayerStandings(activePlayerIds, previousPhaseMatches).map(
+          (s) => s.playerId
+        );
+      }
+      // Les joueurs étant déjà classés, le bracket est seedé sur cet ordre.
+      pairings = generateEliminationBracket(rankedPlayerIds, [], phase.topCut);
     }
   }
   // freeform: pas de génération, la ronde est créée vide.
@@ -767,8 +781,9 @@ export async function getMatchById(tournamentId: string, matchId: string): Promi
 
 /**
  * Ajout manuel d'un match dans une ronde : phases freeform, formats
- * multijoueurs (3+ joueurs), ou correction exceptionnelle par un
- * organisateur. Un seul joueur crée un BYE.
+ * multijoueurs (3+ joueurs, phases freeform uniquement), ou correction
+ * exceptionnelle par un organisateur. Un seul joueur crée un BYE,
+ * auto-complété avec le score de victoire du format de la phase.
  */
 export async function createMatch(
   tournamentId: string,
@@ -778,6 +793,20 @@ export async function createMatch(
   const round = await getRoundById(tournamentId, roundId);
   if (!round) {
     throw new TournamentError("not-found", "Ronde non trouvée");
+  }
+
+  const phase = await getPhaseById(tournamentId, round.phaseId);
+  if (!phase) {
+    throw new TournamentError("not-found", "Phase non trouvée");
+  }
+
+  // Les pairings et classements des phases swiss/bracket sont strictement
+  // 2 joueurs : les matchs multijoueurs n'y sont pas autorisés.
+  if (data.players.length > 2 && phase.type !== "freeform") {
+    throw new TournamentError(
+      "invalid",
+      "Les matchs à plus de 2 joueurs ne sont autorisés que dans les phases freeform"
+    );
   }
 
   const tournamentPlayers = await listPlayers(tournamentId);
@@ -794,7 +823,12 @@ export async function createMatch(
     tournamentId: new ObjectId(tournamentId),
     phaseId: new ObjectId(round.phaseId),
     roundId: new ObjectId(roundId),
-    players: data.players.map((playerId) => ({ playerId, score: 0 })),
+    // Même score de BYE que les rondes générées, pour garder les
+    // tie-breakers (gamesWon/gamesDiff) cohérents.
+    players: data.players.map((playerId) => ({
+      playerId,
+      score: isBye ? byeWinScore(phase.matchFormat) : 0,
+    })),
     winnerIds: isBye ? [data.players[0]] : [],
     bracketPosition: data.bracketPosition,
     status: isBye ? "completed" : "pending",
