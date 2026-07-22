@@ -87,7 +87,7 @@ export const auth = betterAuth({
       allowUnlinkingAll: true,
     },
   },
-  trustedOrigins: process.env.NEXT_PUBLIC_BASE_URL ? [process.env.NEXT_PUBLIC_BASE_URL] : ["http://localhost:3000", "https://localhost:3000"],
+  trustedOrigins: process.env.NEXT_PUBLIC_BASE_URL ? [process.env.NEXT_PUBLIC_BASE_URL, "http://tauri.localhost", "https://tauri.localhost"] : ["http://localhost:3000", "https://localhost:3000", "http://tauri.localhost", "https://tauri.localhost"],
   baseURL: process.env.NEXT_PUBLIC_BASE_URL || process.env.BETTER_AUTH_URL || "http://localhost:3000",
 });
 
