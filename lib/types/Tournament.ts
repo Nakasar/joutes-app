@@ -1,4 +1,5 @@
 import { ObjectId } from "bson";
+import type { PlayerStanding } from "@/lib/utils/pairing";
 
 export type TournamentStatus = "draft" | "in-progress" | "completed";
 // - freeform : pas de génération automatique des matchs.
@@ -97,12 +98,26 @@ export type TournamentPhase = {
   createdAt: Date;
 };
 
+// Classement figé d'une ronde : snapshot calculé et persisté au moment où
+// l'organisateur valide la ronde, pour ne pas le recalculer à chaque lecture.
+// Réutilise PlayerStanding (source du calcul) et n'ajoute que les champs
+// d'affichage, pour rester aligné si le calcul de classement évolue.
+export type TournamentRoundStanding = PlayerStanding & {
+  displayName: string;
+  userId?: string;
+  playerStatus: TournamentPlayerStatus;
+};
+
 export type TournamentRound = {
   id: string;
   tournamentId: string;
   phaseId: string;
   number: number;
   status: TournamentRoundStatus;
+  // Classement de la phase figé à l'issue de la ronde. Absent tant que
+  // l'organisateur n'a pas validé la ronde ; rafraîchi via un recalcul.
+  standings?: TournamentRoundStanding[];
+  standingsValidatedAt?: Date;
   createdAt: Date;
   completedAt?: Date;
 };

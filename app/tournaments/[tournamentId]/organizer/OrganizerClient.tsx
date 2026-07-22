@@ -636,13 +636,18 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases }: P
         </CardContent>
       </Card>
 
-      <div className="flex justify-between">
+      <div className="flex flex-wrap justify-between gap-2">
         <Button variant="outline" asChild>
           <Link href="/tournaments">Retour à mes tournois</Link>
         </Button>
-        <Button variant="outline" asChild>
-          <Link href={`/tournaments/${tournamentId}/player`}>Voir le portail joueur</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" asChild>
+            <Link href={`/tournaments/${tournamentId}/organizer/history`}>Historique des rondes</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href={`/tournaments/${tournamentId}/player`}>Voir le portail joueur</Link>
+          </Button>
+        </div>
       </div>
     </div>
   );
