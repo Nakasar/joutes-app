@@ -1,0 +1,26 @@
+
+const metadata = [
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.joutes.mobile",
+      "sha256_cert_fingerprints": [
+        "D1:25:BF:D0:C5:5D:6A:2E:CC:5B:D0:97:98:2A:19:F3:AA:C4:8E:4F:FF:0E:33:A2:29:85:23:B1:97:86:44:16"
+      ]
+    }
+  }
+];
+
+export const GET = async () => {
+  return new Response(JSON.stringify(metadata), {
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control":
+        "public, max-age=15, stale-while-revalidate=15, stale-if-error=86400",
+    },
+  });
+};
