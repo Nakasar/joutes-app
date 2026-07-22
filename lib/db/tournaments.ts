@@ -21,10 +21,12 @@ import {
   PairingMatch,
   PairingResult,
   PlayerStanding,
+  chunkIntoPods,
   generateBracketPosition,
   generateEliminationBracket,
   generateNextBracketRound,
   generateSwissPairings,
+  shuffleArray,
 } from "@/lib/utils/pairing";
 import {
   createInvitedUserByEmail,
@@ -122,6 +124,9 @@ function toPhase(doc: WithId<TournamentPhaseDb>): TournamentPhase {
     matchFormat: doc.matchFormat,
     plannedRounds: doc.plannedRounds,
     topCut: doc.topCut,
+    // Défaut 2-2 pour les phases créées avant l'ajout de ces champs.
+    minPlayersPerMatch: doc.minPlayersPerMatch ?? 2,
+    maxPlayersPerMatch: doc.maxPlayersPerMatch ?? 2,
     order: doc.order,
     status: doc.status,
     createdAt: doc.createdAt,
@@ -601,6 +606,21 @@ export async function getPhaseById(tournamentId: string, phaseId: string): Promi
   return doc ? toPhase(doc) : null;
 }
 
+// L'élimination directe est intrinsèquement 2 joueurs : on refuse tout autre
+// intervalle sur une phase bracket.
+function assertPlayerBoundsForType(
+  type: TournamentPhase["type"],
+  min: number,
+  max: number
+): void {
+  if (min < 2 || max < min) {
+    throw new TournamentError("invalid", "Bornes de joueurs par match invalides");
+  }
+  if (type === "bracket" && (min !== 2 || max !== 2)) {
+    throw new TournamentError("invalid", "Une phase à élimination directe n'accepte que des matchs à 2 joueurs");
+  }
+}
+
 export async function addPhase(
   tournamentId: string,
   data: {
@@ -609,10 +629,16 @@ export async function addPhase(
     matchFormat: TournamentMatchFormat;
     plannedRounds?: number;
     topCut?: number;
+    minPlayersPerMatch?: number;
+    maxPlayersPerMatch?: number;
     order?: number;
   }
 ): Promise<TournamentPhase> {
   const _id = parseObjectId(tournamentId, "Tournoi");
+
+  const minPlayersPerMatch = data.minPlayersPerMatch ?? 2;
+  const maxPlayersPerMatch = data.maxPlayersPerMatch ?? 2;
+  assertPlayerBoundsForType(data.type, minPlayersPerMatch, maxPlayersPerMatch);
 
   let order = data.order;
   if (order === undefined) {
@@ -632,6 +658,8 @@ export async function addPhase(
     matchFormat: data.matchFormat,
     plannedRounds: data.plannedRounds,
     topCut: data.topCut,
+    minPlayersPerMatch,
+    maxPlayersPerMatch,
     order,
     status: "not-started",
     createdAt: new Date(),
@@ -650,6 +678,8 @@ export async function updatePhase(
     matchFormat?: TournamentMatchFormat;
     plannedRounds?: number | null;
     topCut?: number | null;
+    minPlayersPerMatch?: number;
+    maxPlayersPerMatch?: number;
     order?: number;
     status?: TournamentPhase["status"];
   }
@@ -661,6 +691,18 @@ export async function updatePhase(
 
   if (updates.type !== undefined && updates.type !== phase.type && phase.status !== "not-started") {
     throw new TournamentError("conflict", "Le type de phase ne peut pas être modifié une fois la phase démarrée");
+  }
+
+  // Valide les bornes de joueurs résultantes contre le type résultant.
+  const nextType = updates.type ?? phase.type;
+  const nextMin = updates.minPlayersPerMatch ?? phase.minPlayersPerMatch;
+  const nextMax = updates.maxPlayersPerMatch ?? phase.maxPlayersPerMatch;
+  if (
+    updates.type !== undefined ||
+    updates.minPlayersPerMatch !== undefined ||
+    updates.maxPlayersPerMatch !== undefined
+  ) {
+    assertPlayerBoundsForType(nextType, nextMin, nextMax);
   }
 
   const set: Record<string, unknown> = {};
@@ -678,6 +720,8 @@ export async function updatePhase(
   } else if (updates.topCut !== undefined) {
     set.topCut = updates.topCut;
   }
+  if (updates.minPlayersPerMatch !== undefined) set.minPlayersPerMatch = updates.minPlayersPerMatch;
+  if (updates.maxPlayersPerMatch !== undefined) set.maxPlayersPerMatch = updates.maxPlayersPerMatch;
   if (updates.order !== undefined) set.order = updates.order;
   if (updates.status !== undefined) set.status = updates.status;
 
@@ -799,20 +843,42 @@ export async function createNextRound(
   const players = await listPlayers(tournamentId);
   const activePlayerIds = players.filter((p) => p.status === "active").map((p) => p.id);
 
-  let pairings: PairingResult[] = [];
+  const minPlayers = phase.minPlayersPerMatch;
+  const maxPlayers = phase.maxPlayersPerMatch;
+
+  // Chaque groupe = les joueurs d'un match à créer ; un groupe de taille 1
+  // est un BYE. Uniformise pairings 2-joueurs (bracket, suisse en duel) et
+  // pods multijoueurs (suisse).
+  const pairingsToGroups = (pairings: PairingResult[]): string[][] =>
+    pairings.map((p) => (p.player2Id === null ? [p.player1Id] : [p.player1Id, p.player2Id]));
+
+  let groups: string[][] = [];
 
   if (phase.type === "swiss") {
-    if (activePlayerIds.length < 2) {
-      throw new TournamentError("invalid", "Au moins 2 joueurs actifs sont requis");
+    if (activePlayerIds.length < minPlayers) {
+      throw new TournamentError("invalid", `Au moins ${minPlayers} joueurs actifs sont requis`);
     }
-    pairings = generateSwissPairings(activePlayerIds, phaseMatches.map(toPairingMatch), roundNumber);
+    if (minPlayers === 2 && maxPlayers === 2) {
+      // Duel : appariement suisse classique (avec évitement des re-matchs).
+      groups = pairingsToGroups(
+        generateSwissPairings(activePlayerIds, phaseMatches.map(toPairingMatch), roundNumber)
+      );
+    } else {
+      // Pods multijoueurs : ordre aléatoire en ronde 1, sinon par classement.
+      const ordered =
+        roundNumber === 1
+          ? shuffleArray([...activePlayerIds])
+          : calculateMultiplayerStandings(activePlayerIds, phaseMatches).map((s) => s.playerId);
+      groups = chunkIntoPods(ordered, minPlayers, maxPlayers);
+    }
   } else if (phase.type === "bracket") {
+    // Bracket : strictement 2 joueurs (garanti par assertPlayerBoundsForType).
     if (lastRound) {
       const lastRoundMatches = phaseMatches.filter((m) => m.roundId === lastRound.id);
       if (lastRoundMatches.length === 1) {
         throw new TournamentError("conflict", "La finale a déjà été jouée, le bracket est complet");
       }
-      pairings = generateNextBracketRound(lastRoundMatches.map(toPairingMatch));
+      groups = pairingsToGroups(generateNextBracketRound(lastRoundMatches.map(toPairingMatch)));
     } else {
       // Première ronde du bracket : seeding depuis le classement de la phase
       // précédente s'il y en a une, sinon depuis l'ordre des seeds/inscriptions.
@@ -832,7 +898,7 @@ export async function createNextRound(
         );
       }
       // Les joueurs étant déjà classés, le bracket est seedé sur cet ordre.
-      pairings = generateEliminationBracket(rankedPlayerIds, [], phase.topCut);
+      groups = pairingsToGroups(generateEliminationBracket(rankedPlayerIds, [], phase.topCut));
     }
   }
   // freeform: pas de génération, la ronde est créée vide.
@@ -860,21 +926,19 @@ export async function createNextRound(
   }
   const round = toRound({ ...roundDoc, _id: roundResult.insertedId });
 
-  const matchDocs: TournamentMatchDb[] = pairings.map((pairing, i) => {
-    const isBye = pairing.player2Id === null;
-    const matchPlayers: TournamentMatchPlayer[] = isBye
-      ? [{ playerId: pairing.player1Id, score: byeWinScore(phase.matchFormat) }]
-      : [
-          { playerId: pairing.player1Id, score: 0 },
-          { playerId: pairing.player2Id!, score: 0 },
-        ];
+  const matchDocs: TournamentMatchDb[] = groups.map((group, i) => {
+    const isBye = group.length === 1;
+    const matchPlayers: TournamentMatchPlayer[] = group.map((playerId) => ({
+      playerId,
+      score: isBye ? byeWinScore(phase.matchFormat) : 0,
+    }));
     return {
       tournamentId: tId,
       phaseId: pId,
       roundId: roundResult.insertedId,
       players: matchPlayers,
-      winnerIds: isBye ? [pairing.player1Id] : [],
-      bracketPosition: phase.type === "bracket" ? generateBracketPosition(i, pairings.length) : undefined,
+      winnerIds: isBye ? [group[0]] : [],
+      bracketPosition: phase.type === "bracket" ? generateBracketPosition(i, groups.length) : undefined,
       status: isBye ? "completed" : "pending",
       reportedBy: isBye ? createdBy : undefined,
       confirmedBy: isBye ? createdBy : undefined,
@@ -981,12 +1045,16 @@ export async function createMatch(
     throw new TournamentError("not-found", "Phase non trouvée");
   }
 
-  // Les pairings et classements des phases swiss/bracket sont strictement
-  // 2 joueurs : les matchs multijoueurs n'y sont pas autorisés.
-  if (data.players.length > 2 && phase.type !== "freeform") {
+  // Hors freeform (où tout est permis), un match manuel respecte les bornes
+  // de joueurs de la phase — un BYE (1 joueur) restant toujours autorisé.
+  if (
+    phase.type !== "freeform" &&
+    data.players.length > 1 &&
+    data.players.length > phase.maxPlayersPerMatch
+  ) {
     throw new TournamentError(
       "invalid",
-      "Les matchs à plus de 2 joueurs ne sont autorisés que dans les phases freeform"
+      `Les matchs de cette phase comptent au plus ${phase.maxPlayersPerMatch} joueurs`
     );
   }
 

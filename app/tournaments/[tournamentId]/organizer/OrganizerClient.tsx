@@ -66,6 +66,8 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases }: P
   const [phaseFormat, setPhaseFormat] = useState<TournamentMatchFormat>("BO3");
   const [phaseRounds, setPhaseRounds] = useState("");
   const [phaseTopCut, setPhaseTopCut] = useState("");
+  const [phaseMinPlayers, setPhaseMinPlayers] = useState("2");
+  const [phaseMaxPlayers, setPhaseMaxPlayers] = useState("2");
 
   const tournamentId = tournament.id;
 
@@ -168,6 +170,19 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases }: P
       if (phaseType === "bracket" && Number.isFinite(parsedTopCut) && parsedTopCut > 1) {
         body.topCut = parsedTopCut;
       }
+      // Bornes de joueurs par match. Le bracket est forcé à 2-2.
+      if (phaseType === "bracket") {
+        body.minPlayersPerMatch = 2;
+        body.maxPlayersPerMatch = 2;
+      } else {
+        const parsedMin = Number.parseInt(phaseMinPlayers, 10);
+        const parsedMax = Number.parseInt(phaseMaxPlayers, 10);
+        body.minPlayersPerMatch = Number.isFinite(parsedMin) && parsedMin >= 2 ? parsedMin : 2;
+        body.maxPlayersPerMatch =
+          Number.isFinite(parsedMax) && parsedMax >= (body.minPlayersPerMatch as number)
+            ? parsedMax
+            : (body.minPlayersPerMatch as number);
+      }
       await api(`/api/tournaments/${tournamentId}/phases`, {
         method: "POST",
         body: JSON.stringify(body),
@@ -175,6 +190,8 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases }: P
       setPhaseName("");
       setPhaseRounds("");
       setPhaseTopCut("");
+      setPhaseMinPlayers("2");
+      setPhaseMaxPlayers("2");
       await refreshPhases();
     });
 
@@ -341,6 +358,12 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases }: P
                       {PHASE_TYPE_LABELS[phase.type]} · {phase.matchFormat}
                       {phase.plannedRounds ? ` · ${phase.plannedRounds} rondes` : ""}
                       {phase.topCut ? ` · Top ${phase.topCut}` : ""}
+                      {" · "}
+                      {phase.minPlayersPerMatch === phase.maxPlayersPerMatch
+                        ? phase.minPlayersPerMatch === 2
+                          ? "duels"
+                          : `pods de ${phase.minPlayersPerMatch}`
+                        : `pods ${phase.minPlayersPerMatch}-${phase.maxPlayersPerMatch}`}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -438,6 +461,52 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases }: P
                 </div>
               )}
             </div>
+
+            {/* Bornes de joueurs par match (le bracket est toujours en duel). */}
+            {phaseType !== "bracket" && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Joueurs par match</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setPhaseMinPlayers("2");
+                      setPhaseMaxPlayers("2");
+                    }}
+                  >
+                    Duel (2-2)
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="phase-min-players"
+                    aria-label="Minimum de joueurs par match"
+                    type="number"
+                    min={2}
+                    max={16}
+                    className="w-24"
+                    value={phaseMinPlayers}
+                    onChange={(e) => setPhaseMinPlayers(e.target.value)}
+                  />
+                  <span className="text-muted-foreground">à</span>
+                  <Input
+                    id="phase-max-players"
+                    aria-label="Maximum de joueurs par match"
+                    type="number"
+                    min={2}
+                    max={16}
+                    className="w-24"
+                    value={phaseMaxPlayers}
+                    onChange={(e) => setPhaseMaxPlayers(e.target.value)}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  2-2 pour des duels ; un intervalle plus large génère des pods multijoueurs.
+                </p>
+              </div>
+            )}
             <Button onClick={addPhase} disabled={busy || !phaseName.trim()}>
               <Plus className="h-4 w-4 mr-2" />
               Ajouter la phase

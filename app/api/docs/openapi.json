@@ -7587,6 +7587,18 @@
                   "order": {
                     "type": "integer",
                     "description": "Defaults to the next available order."
+                  },
+                  "minPlayersPerMatch": {
+                    "type": "integer",
+                    "minimum": 2,
+                    "maximum": 16,
+                    "default": 2
+                  },
+                  "maxPlayersPerMatch": {
+                    "type": "integer",
+                    "minimum": 2,
+                    "maximum": 16,
+                    "default": 2
                   }
                 }
               }
@@ -7616,7 +7628,8 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
-        }
+        },
+        "description": "Les matchs générés automatiquement comptent entre `minPlayersPerMatch` et `maxPlayersPerMatch` joueurs (défaut 2-2 = duels ; un intervalle plus large génère des pods multijoueurs en phase suisse). Une phase à élimination directe (`bracket`) n'accepte que 2-2.\n"
       }
     },
     "/tournaments/{tournamentId}/phases/{phaseId}": {
@@ -7750,6 +7763,16 @@
                       "in-progress",
                       "completed"
                     ]
+                  },
+                  "minPlayersPerMatch": {
+                    "type": "integer",
+                    "minimum": 2,
+                    "maximum": 16
+                  },
+                  "maxPlayersPerMatch": {
+                    "type": "integer",
+                    "minimum": 2,
+                    "maximum": 16
                   }
                 }
               }
@@ -10888,6 +10911,18 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "minPlayersPerMatch": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 16,
+            "description": "Nombre minimal de joueurs par match généré (défaut 2). Toujours 2 pour un bracket."
+          },
+          "maxPlayersPerMatch": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 16,
+            "description": "Nombre maximal de joueurs par match généré (défaut 2). Un intervalle > 2 génère des pods multijoueurs en phase suisse. Toujours 2 pour un bracket."
           }
         }
       },
