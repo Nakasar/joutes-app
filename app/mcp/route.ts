@@ -14,7 +14,6 @@ import { createEvent } from "@/lib/db/events";
 import { Event } from "@/lib/types/Event";
 import { z } from "zod/v3";
 import { DateTime } from "luxon";
-import { mcpHandler } from "@better-auth/oauth-provider";
 import { getErratasByCardId } from "@/lib/db/erratas";
 import { getAllPolicies } from "@/lib/db/policies";
 import db from "@/lib/mongodb";
@@ -698,6 +697,11 @@ const handler = createMcpHandler(server => {
 });
 
 async function authHandler(req: Request) {
+    return NextResponse.json(
+      { error: "MCP is currently disabled for maintenance." },
+      { status: 500 }
+    );
+    /*
     try {
         const authorization = req.headers?.get("authorization") ?? undefined;
         const accessToken = authorization?.startsWith("Bearer ")
@@ -752,6 +756,7 @@ async function authHandler(req: Request) {
             { status: 500 }
         );
     }
+    */
 }
 
 /*
