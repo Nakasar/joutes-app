@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { DateTime } from "luxon";
 import { RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { TournamentRoundStanding } from "@/lib/types/Tournament";
@@ -123,7 +124,7 @@ export function RoundStandingsPanel({
           </div>
           {validatedAt && (
             <p className="text-xs text-muted-foreground">
-              Validé le {new Date(validatedAt).toLocaleString("fr-FR")}
+              Validé le {DateTime.fromISO(validatedAt).setLocale("fr").toFormat("dd/MM/yyyy HH:mm")}
             </p>
           )}
         </>
