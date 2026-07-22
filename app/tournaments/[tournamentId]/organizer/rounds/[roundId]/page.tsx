@@ -2,19 +2,20 @@ import { notFound, redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import {
+  getRoundById,
   getTournamentById,
   isTournamentOrganizer,
-  listPhases,
+  listMatchesByRound,
   listPlayers,
 } from "@/lib/db/tournaments";
-import { OrganizerClient } from "./OrganizerClient";
+import { OrganizerRoundClient } from "./OrganizerRoundClient";
 
-export default async function TournamentOrganizerPage({
+export default async function OrganizerRoundPage({
   params,
 }: {
-  params: Promise<{ tournamentId: string }>;
+  params: Promise<{ tournamentId: string; roundId: string }>;
 }) {
-  const { tournamentId } = await params;
+  const { tournamentId, roundId } = await params;
 
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) {
@@ -29,14 +30,24 @@ export default async function TournamentOrganizerPage({
     redirect("/tournaments");
   }
 
-  const [players, phases] = await Promise.all([
+  const round = await getRoundById(tournamentId, roundId);
+  if (!round) {
+    notFound();
+  }
+
+  const [matches, players] = await Promise.all([
+    listMatchesByRound(tournamentId, roundId),
     listPlayers(tournamentId),
-    listPhases(tournamentId),
   ]);
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
-      <OrganizerClient tournament={tournament} initialPlayers={players} initialPhases={phases} />
+      <OrganizerRoundClient
+        tournamentId={tournamentId}
+        round={round}
+        initialMatches={matches}
+        players={players}
+      />
     </div>
   );
 }
