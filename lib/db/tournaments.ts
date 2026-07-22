@@ -1,5 +1,6 @@
 import 'server-only';
 
+import crypto from "crypto";
 import db from "@/lib/mongodb";
 import { ObjectId, WithId } from "mongodb";
 import {
@@ -68,9 +69,17 @@ function toPlayer(doc: WithId<TournamentPlayerDb>): TournamentPlayer {
     displayName: doc.displayName,
     seed: doc.seed,
     status: doc.status,
+    syncKey: doc.syncKey,
     addedBy: doc.addedBy,
     createdAt: doc.createdAt,
   };
+}
+
+// Retire le secret de synchronisation d'un joueur avant exposition à un
+// non-organisateur.
+export function sanitizePlayer(player: TournamentPlayer): Omit<TournamentPlayer, "syncKey"> {
+  const { syncKey: _syncKey, ...rest } = player;
+  return rest;
 }
 
 function toPhase(doc: WithId<TournamentPhaseDb>): TournamentPhase {
@@ -221,6 +230,53 @@ export async function assertCanReadTournament(tournament: Tournament, userId: st
   throw new TournamentError("forbidden", "Accès non autorisé à ce tournoi");
 }
 
+// Qui adresse l'API tournoi : un utilisateur authentifié (session ou clé API
+// jts_), ou un joueur de tournoi via sa clé de synchronisation tpsk_.
+export type TournamentPrincipal =
+  | { kind: "user"; userId: string }
+  | { kind: "player"; player: TournamentPlayer };
+
+export async function assertPrincipalCanRead(
+  tournament: Tournament,
+  principal: TournamentPrincipal
+): Promise<void> {
+  if (principal.kind === "player") {
+    if (principal.player.tournamentId !== tournament.id) {
+      throw new TournamentError("forbidden", "Accès non autorisé à ce tournoi");
+    }
+    return;
+  }
+  await assertCanReadTournament(tournament, principal.userId);
+}
+
+export function principalIsOrganizer(tournament: Tournament, principal: TournamentPrincipal): boolean {
+  return principal.kind === "user" && isTournamentOrganizer(tournament, principal.userId);
+}
+
+// Acteur d'une opération de match : identité enregistrée dans
+// reportedBy/confirmedBy (userId ou id de joueur pour une clé de sync), et
+// les joueurs de tournoi que cette identité incarne.
+export type MatchActor = {
+  id: string;
+  playerIds: string[];
+  isOrganizer: boolean;
+};
+
+export async function buildMatchActor(
+  tournament: Tournament,
+  principal: TournamentPrincipal
+): Promise<MatchActor> {
+  if (principal.kind === "player") {
+    return { id: principal.player.id, playerIds: [principal.player.id], isOrganizer: false };
+  }
+  const players = await listPlayers(tournament.id);
+  return {
+    id: principal.userId,
+    playerIds: players.filter((p) => p.userId === principal.userId).map((p) => p.id),
+    isOrganizer: isTournamentOrganizer(tournament, principal.userId),
+  };
+}
+
 export function assertIsOrganizer(tournament: Tournament, userId: string): void {
   if (!isTournamentOrganizer(tournament, userId)) {
     throw new TournamentError("forbidden", "Réservé aux organisateurs du tournoi");
@@ -341,12 +397,24 @@ export async function addPlayer(
     displayName: data.displayName,
     seed: data.seed,
     status: "active",
+    syncKey: `tpsk_${crypto.randomBytes(24).toString("hex")}`,
     addedBy: data.addedBy,
     createdAt: new Date(),
   };
 
   const result = await db.collection<TournamentPlayerDb>(PLAYERS).insertOne(doc);
   return toPlayer({ ...doc, _id: result.insertedId });
+}
+
+/**
+ * Résout une clé de synchronisation joueur (tpsk_...) vers le joueur qui la
+ * porte, tous tournois confondus. La clé est le secret : pas d'autre
+ * authentification requise.
+ */
+export async function getPlayerBySyncKey(syncKey: string): Promise<TournamentPlayer | null> {
+  if (!syncKey.startsWith("tpsk_")) return null;
+  const doc = await db.collection<TournamentPlayerDb>(PLAYERS).findOne({ syncKey });
+  return doc ? toPlayer(doc) : null;
 }
 
 export async function updatePlayer(
@@ -839,16 +907,9 @@ export async function createMatch(
   return toMatch({ ...doc, _id: result.insertedId });
 }
 
-// Vérifie que l'utilisateur (via ses inscriptions joueur au tournoi) fait
-// partie du match.
-async function assertUserIsInMatch(
-  tournamentId: string,
-  match: TournamentMatch,
-  userId: string
-): Promise<void> {
-  const players = await listPlayers(tournamentId);
-  const userPlayerIds = new Set(players.filter((p) => p.userId === userId).map((p) => p.id));
-  const isInMatch = match.players.some((p) => userPlayerIds.has(p.playerId));
+// Vérifie que l'acteur incarne un des joueurs du match.
+function assertActorIsInMatch(match: TournamentMatch, actor: MatchActor): void {
+  const isInMatch = match.players.some((p) => actor.playerIds.includes(p.playerId));
   if (!isInMatch) {
     throw new TournamentError("forbidden", "Vous ne faites pas partie de ce match");
   }
@@ -858,7 +919,7 @@ export async function reportMatchResult(
   tournament: Tournament,
   matchId: string,
   data: { scores: Record<string, number>; winnerIds?: string[] },
-  reporterUserId: string
+  actor: MatchActor
 ): Promise<TournamentMatch> {
   const match = await getMatchById(tournament.id, matchId);
   if (!match) {
@@ -868,15 +929,13 @@ export async function reportMatchResult(
     throw new TournamentError("conflict", "Le résultat d'un BYE ne peut pas être modifié");
   }
 
-  const organizer = isTournamentOrganizer(tournament, reporterUserId);
-
   // Un joueur ne peut rapporter que son propre match, et seulement si le
   // self-reporting est activé sur le tournoi.
-  if (!organizer) {
+  if (!actor.isOrganizer) {
     if (!tournament.settings.allowSelfReporting) {
       throw new TournamentError("forbidden", "Le rapport de résultat par les joueurs est désactivé");
     }
-    await assertUserIsInMatch(tournament.id, match, reporterUserId);
+    assertActorIsInMatch(match, actor);
   }
 
   // Les scores doivent couvrir exactement les joueurs du match.
@@ -908,17 +967,17 @@ export async function reportMatchResult(
   }));
 
   // Sans confirmation requise (ou pour un organisateur), le résultat est final.
-  const needsConfirmation = tournament.settings.requireConfirmation && !organizer;
+  const needsConfirmation = tournament.settings.requireConfirmation && !actor.isOrganizer;
 
   const set: Record<string, unknown> = {
     players: updatedPlayers,
     winnerIds,
-    reportedBy: reporterUserId,
+    reportedBy: actor.id,
     status: needsConfirmation ? "in-progress" : "completed",
     updatedAt: new Date(),
   };
   if (!needsConfirmation) {
-    set.confirmedBy = reporterUserId;
+    set.confirmedBy = actor.id;
   }
 
   const result = await db.collection<TournamentMatchDb>(MATCHES).findOneAndUpdate(
@@ -938,7 +997,7 @@ export async function reportMatchResult(
 export async function confirmMatchResult(
   tournament: Tournament,
   matchId: string,
-  confirmerUserId: string
+  actor: MatchActor
 ): Promise<TournamentMatch> {
   const match = await getMatchById(tournament.id, matchId);
   if (!match) {
@@ -948,18 +1007,16 @@ export async function confirmMatchResult(
     throw new TournamentError("conflict", "Ce match n'attend pas de confirmation");
   }
 
-  const organizer = isTournamentOrganizer(tournament, confirmerUserId);
-
-  if (!organizer) {
-    if (match.reportedBy === confirmerUserId) {
+  if (!actor.isOrganizer) {
+    if (match.reportedBy === actor.id) {
       throw new TournamentError("forbidden", "Vous ne pouvez pas confirmer votre propre rapport");
     }
-    await assertUserIsInMatch(tournament.id, match, confirmerUserId);
+    assertActorIsInMatch(match, actor);
   }
 
   const result = await db.collection<TournamentMatchDb>(MATCHES).findOneAndUpdate(
     { _id: new ObjectId(matchId), tournamentId: new ObjectId(tournament.id) },
-    { $set: { confirmedBy: confirmerUserId, status: "completed", updatedAt: new Date() } },
+    { $set: { confirmedBy: actor.id, status: "completed", updatedAt: new Date() } },
     { returnDocument: "after" }
   );
   if (!result) {
@@ -974,16 +1031,15 @@ export async function confirmMatchResult(
 export async function disputeMatchResult(
   tournament: Tournament,
   matchId: string,
-  disputerUserId: string
+  actor: MatchActor
 ): Promise<TournamentMatch> {
   const match = await getMatchById(tournament.id, matchId);
   if (!match) {
     throw new TournamentError("not-found", "Match non trouvé");
   }
 
-  const organizer = isTournamentOrganizer(tournament, disputerUserId);
-  if (!organizer) {
-    await assertUserIsInMatch(tournament.id, match, disputerUserId);
+  if (!actor.isOrganizer) {
+    assertActorIsInMatch(match, actor);
   }
 
   const result = await db.collection<TournamentMatchDb>(MATCHES).findOneAndUpdate(

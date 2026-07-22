@@ -2,32 +2,35 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateApiRequest } from "@/lib/api/authenticate";
 import { updateTournamentPlayerSchema } from "@/lib/schemas/tournament.schema";
 import {
-  assertCanReadTournament,
   assertIsOrganizer,
+  assertPrincipalCanRead,
   getPlayerById,
+  principalIsOrganizer,
   removePlayer,
   requireTournament,
+  sanitizePlayer,
   TournamentError,
   updatePlayer,
 } from "@/lib/db/tournaments";
-import { tournamentErrorResponse, unauthorizedResponse } from "../../../utils";
+import { resolveTournamentPrincipal, tournamentErrorResponse, unauthorizedResponse } from "../../../utils";
 
 type Params = { params: Promise<{ tournamentId: string; playerId: string }> };
 
 export async function GET(request: NextRequest, { params }: Params) {
-  const user = await authenticateApiRequest(request);
-  if (!user) return unauthorizedResponse();
-
   try {
     const { tournamentId, playerId } = await params;
+    const principal = await resolveTournamentPrincipal(request, tournamentId);
+    if (!principal) return unauthorizedResponse();
+
     const tournament = await requireTournament(tournamentId);
-    await assertCanReadTournament(tournament, user.userId);
+    await assertPrincipalCanRead(tournament, principal);
 
     const player = await getPlayerById(tournamentId, playerId);
     if (!player) {
       throw new TournamentError("not-found", "Joueur non trouvé");
     }
-    return NextResponse.json(player);
+    const organizer = principalIsOrganizer(tournament, principal);
+    return NextResponse.json(organizer ? player : sanitizePlayer(player));
   } catch (error) {
     return tournamentErrorResponse(error);
   }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateApiRequest } from "@/lib/api/authenticate";
 import { updateTournamentPhaseSchema } from "@/lib/schemas/tournament.schema";
 import {
-  assertCanReadTournament,
+  assertPrincipalCanRead,
   assertIsOrganizer,
   deletePhase,
   getPhaseById,
@@ -11,18 +11,18 @@ import {
   TournamentError,
   updatePhase,
 } from "@/lib/db/tournaments";
-import { tournamentErrorResponse, unauthorizedResponse } from "../../../utils";
+import { resolveTournamentPrincipal, tournamentErrorResponse, unauthorizedResponse } from "../../../utils";
 
 type Params = { params: Promise<{ tournamentId: string; phaseId: string }> };
 
 export async function GET(request: NextRequest, { params }: Params) {
-  const user = await authenticateApiRequest(request);
-  if (!user) return unauthorizedResponse();
-
   try {
     const { tournamentId, phaseId } = await params;
+    const principal = await resolveTournamentPrincipal(request, tournamentId);
+    if (!principal) return unauthorizedResponse();
+
     const tournament = await requireTournament(tournamentId);
-    await assertCanReadTournament(tournament, user.userId);
+    await assertPrincipalCanRead(tournament, principal);
 
     const phase = await getPhaseById(tournamentId, phaseId);
     if (!phase) {

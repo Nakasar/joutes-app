@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateApiRequest } from "@/lib/api/authenticate";
 import {
-  assertCanReadTournament,
+  assertPrincipalCanRead,
   assertIsOrganizer,
   deleteRound,
   getRoundById,
@@ -9,18 +9,18 @@ import {
   requireTournament,
   TournamentError,
 } from "@/lib/db/tournaments";
-import { tournamentErrorResponse, unauthorizedResponse } from "../../../utils";
+import { resolveTournamentPrincipal, tournamentErrorResponse, unauthorizedResponse } from "../../../utils";
 
 type Params = { params: Promise<{ tournamentId: string; roundId: string }> };
 
 export async function GET(request: NextRequest, { params }: Params) {
-  const user = await authenticateApiRequest(request);
-  if (!user) return unauthorizedResponse();
-
   try {
     const { tournamentId, roundId } = await params;
+    const principal = await resolveTournamentPrincipal(request, tournamentId);
+    if (!principal) return unauthorizedResponse();
+
     const tournament = await requireTournament(tournamentId);
-    await assertCanReadTournament(tournament, user.userId);
+    await assertPrincipalCanRead(tournament, principal);
 
     const round = await getRoundById(tournamentId, roundId);
     if (!round) {

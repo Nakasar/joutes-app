@@ -32,6 +32,11 @@ export type TournamentPlayer = {
   displayName: string;
   seed?: number;
   status: TournamentPlayerStatus;
+  // Secret de synchronisation propre au joueur (préfixe tpsk_), généré à
+  // l'inscription. Utilisable comme Bearer token pour accéder au tournoi en
+  // tant que ce joueur (portail joueur des invités sans compte). Ne doit être
+  // exposé qu'aux organisateurs du tournoi.
+  syncKey: string;
   addedBy: string;
   createdAt: Date;
 };

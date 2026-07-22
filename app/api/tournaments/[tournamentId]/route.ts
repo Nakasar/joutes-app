@@ -2,31 +2,39 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateApiRequest } from "@/lib/api/authenticate";
 import { updateTournamentSchema } from "@/lib/schemas/tournament.schema";
 import {
-  assertCanReadTournament,
   assertIsOrganizer,
+  assertPrincipalCanRead,
   deleteTournament,
   listPhases,
   listPlayers,
+  principalIsOrganizer,
   requireTournament,
+  sanitizePlayer,
   updateTournament,
 } from "@/lib/db/tournaments";
-import { tournamentErrorResponse, unauthorizedResponse } from "../utils";
+import { resolveTournamentPrincipal, tournamentErrorResponse, unauthorizedResponse } from "../utils";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ tournamentId: string }> }) {
-  const user = await authenticateApiRequest(request);
-  if (!user) return unauthorizedResponse();
-
   try {
     const { tournamentId } = await params;
+    const principal = await resolveTournamentPrincipal(request, tournamentId);
+    if (!principal) return unauthorizedResponse();
+
     const tournament = await requireTournament(tournamentId);
-    await assertCanReadTournament(tournament, user.userId);
+    await assertPrincipalCanRead(tournament, principal);
 
     const [phases, players] = await Promise.all([
       listPhases(tournamentId),
       listPlayers(tournamentId),
     ]);
 
-    return NextResponse.json({ ...tournament, phases, players });
+    const organizer = principalIsOrganizer(tournament, principal);
+
+    return NextResponse.json({
+      ...tournament,
+      phases,
+      players: organizer ? players : players.map(sanitizePlayer),
+    });
   } catch (error) {
     return tournamentErrorResponse(error);
   }

@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateApiRequest } from "@/lib/api/authenticate";
 import { updateTournamentMatchSchema } from "@/lib/schemas/tournament.schema";
 import {
-  assertCanReadTournament,
   assertIsOrganizer,
+  assertPrincipalCanRead,
+  buildMatchActor,
   confirmMatchResult,
   deleteMatch,
   disputeMatchResult,
@@ -12,18 +13,18 @@ import {
   requireTournament,
   TournamentError,
 } from "@/lib/db/tournaments";
-import { tournamentErrorResponse, unauthorizedResponse } from "../../../utils";
+import { resolveTournamentPrincipal, tournamentErrorResponse, unauthorizedResponse } from "../../../utils";
 
 type Params = { params: Promise<{ tournamentId: string; matchId: string }> };
 
 export async function GET(request: NextRequest, { params }: Params) {
-  const user = await authenticateApiRequest(request);
-  if (!user) return unauthorizedResponse();
-
   try {
     const { tournamentId, matchId } = await params;
+    const principal = await resolveTournamentPrincipal(request, tournamentId);
+    if (!principal) return unauthorizedResponse();
+
     const tournament = await requireTournament(tournamentId);
-    await assertCanReadTournament(tournament, user.userId);
+    await assertPrincipalCanRead(tournament, principal);
 
     const match = await getMatchById(tournamentId, matchId);
     if (!match) {
@@ -42,18 +43,22 @@ export async function GET(request: NextRequest, { params }: Params) {
  *   tournoi l'exige).
  * - `confirm` : confirmer le score rapporté par l'adversaire.
  * - `dispute` : contester le résultat.
+ * Accessible avec une session, une clé API jts_ ou la clé de synchronisation
+ * tpsk_ d'un joueur du tournoi.
  */
 export async function PATCH(request: NextRequest, { params }: Params) {
-  const user = await authenticateApiRequest(request);
-  if (!user) return unauthorizedResponse();
-
   try {
     const { tournamentId, matchId } = await params;
+    const principal = await resolveTournamentPrincipal(request, tournamentId);
+    if (!principal) return unauthorizedResponse();
+
     const tournament = await requireTournament(tournamentId);
-    await assertCanReadTournament(tournament, user.userId);
+    await assertPrincipalCanRead(tournament, principal);
 
     const body = await request.json();
     const validated = updateTournamentMatchSchema.parse(body);
+
+    const actor = await buildMatchActor(tournament, principal);
 
     let match;
     if (validated.action === "report") {
@@ -61,12 +66,12 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         tournament,
         matchId,
         { scores: validated.scores, winnerIds: validated.winnerIds },
-        user.userId
+        actor
       );
     } else if (validated.action === "confirm") {
-      match = await confirmMatchResult(tournament, matchId, user.userId);
+      match = await confirmMatchResult(tournament, matchId, actor);
     } else {
-      match = await disputeMatchResult(tournament, matchId, user.userId);
+      match = await disputeMatchResult(tournament, matchId, actor);
     }
 
     return NextResponse.json(match);

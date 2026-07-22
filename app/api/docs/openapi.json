@@ -7010,6 +7010,9 @@
           },
           {
             "apiKeyBearer": []
+          },
+          {
+            "playerSyncKeyBearer": []
           }
         ],
         "description": "Readable by tournament organizers and registered players.",
@@ -7201,6 +7204,9 @@
           },
           {
             "apiKeyBearer": []
+          },
+          {
+            "playerSyncKeyBearer": []
           }
         ],
         "responses": {
@@ -7332,6 +7338,9 @@
           },
           {
             "apiKeyBearer": []
+          },
+          {
+            "playerSyncKeyBearer": []
           }
         ],
         "responses": {
@@ -7494,6 +7503,9 @@
           },
           {
             "apiKeyBearer": []
+          },
+          {
+            "playerSyncKeyBearer": []
           }
         ],
         "responses": {
@@ -7637,6 +7649,9 @@
           },
           {
             "apiKeyBearer": []
+          },
+          {
+            "playerSyncKeyBearer": []
           }
         ],
         "responses": {
@@ -7857,6 +7872,9 @@
           },
           {
             "apiKeyBearer": []
+          },
+          {
+            "playerSyncKeyBearer": []
           }
         ],
         "responses": {
@@ -7979,6 +7997,9 @@
           },
           {
             "apiKeyBearer": []
+          },
+          {
+            "playerSyncKeyBearer": []
           }
         ],
         "responses": {
@@ -8100,6 +8121,9 @@
           },
           {
             "apiKeyBearer": []
+          },
+          {
+            "playerSyncKeyBearer": []
           }
         ],
         "responses": {
@@ -8224,6 +8248,9 @@
           },
           {
             "apiKeyBearer": []
+          },
+          {
+            "playerSyncKeyBearer": []
           }
         ],
         "responses": {
@@ -8259,6 +8286,9 @@
           },
           {
             "apiKeyBearer": []
+          },
+          {
+            "playerSyncKeyBearer": []
           }
         ],
         "description": "Discriminated by the `action` field. `report` is allowed for organizers, and for players of the match when the tournament's `allowSelfReporting` is enabled; with `requireConfirmation`, a player report awaits the opponent's `confirm`. Scores are keyed by tournament player id and must cover every player of the match; without explicit `winnerIds`, players with the highest score win (all tied = draw). `dispute` flags the result for organizer review. BYE results cannot be modified.\n",
@@ -8429,6 +8459,9 @@
           },
           {
             "apiKeyBearer": []
+          },
+          {
+            "playerSyncKeyBearer": []
           }
         ],
         "description": "Computed from completed matches only. Pass `?phaseId=` to restrict standings to a single phase.",
@@ -8466,6 +8499,103 @@
           }
         }
       }
+    },
+    "/tournaments/sync": {
+      "post": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Resolve player sync keys to their tournaments",
+        "security": [],
+        "description": "Resolves browser-stored player sync keys (`tpsk_...`) to their tournament and player. The keys themselves act as authentication; unknown keys are silently ignored. Used by the /tournaments page to list synchronized tournaments.\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "keys"
+                ],
+                "properties": {
+                  "keys": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1,
+                    "maxItems": 50
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resolved entries, in the same order as valid keys.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "key": {
+                        "type": "string"
+                      },
+                      "tournament": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "draft",
+                              "in-progress",
+                              "completed"
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      },
+                      "player": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "displayName": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "active",
+                              "dropped"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -8485,6 +8615,11 @@
         "type": "http",
         "scheme": "bearer",
         "description": "Personal API key (prefix `jts_`), created from the account page. Send as `Authorization: Bearer jts_...`."
+      },
+      "playerSyncKeyBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Tournament player sync key (prefix `tpsk_`), generated when the player is registered and shared by the organizer (QR code). Grants read access to that player's tournament and match report/confirm/dispute as that player — including for guest players without an account."
       }
     },
     "responses": {
@@ -10697,6 +10832,10 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "syncKey": {
+            "type": "string",
+            "description": "Player sync secret (prefix `tpsk_`). Only present in responses when the requester is a tournament organizer."
           }
         }
       },
