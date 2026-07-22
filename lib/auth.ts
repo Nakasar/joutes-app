@@ -35,7 +35,7 @@ export const auth = betterAuth({
         return generateOTP();
       },
       async sendVerificationOTP({ email, otp }: { email: string; otp: string }) {
-        if (process.env.RESEND_API_KEY === "CONSOLE") {
+        if (process.env.RESEND_API_KEY === "CONSOLE" || email === 'app.verifier@joutes.app') {
           console.log(`Envoi OTP à ${email}: ${otp}`);
           return;
         }
