@@ -1559,3 +1559,79 @@ export async function getStandings(tournamentId: string, phaseId?: string): Prom
     };
   });
 }
+
+// Récapitulatif d'une ronde : ses matchs (parties comprises) et le classement
+// de la phase à l'issue de cette ronde.
+export type RoundHistoryEntry = {
+  round: TournamentRound;
+  matches: TournamentMatch[];
+  standings: TournamentStanding[];
+};
+
+// Historique d'une phase : ses rondes ordonnées, chacune avec son récapitulatif.
+export type PhaseHistory = {
+  phase: TournamentPhase;
+  rounds: RoundHistoryEntry[];
+};
+
+/**
+ * Historique complet du tournoi pour le portail organisateur : les phases
+ * ordonnées, et pour chacune ses rondes ordonnées avec le récapitulatif des
+ * matchs/parties et le classement de la phase à l'issue de chaque ronde.
+ *
+ * Le classement d'une ronde est calculé sur les matchs terminés de la phase
+ * jusqu'à cette ronde incluse (chaque phase reste ainsi autonome, ce qui
+ * respecte les top cut et les méthodes de scoring propres à chaque phase).
+ */
+export async function getTournamentRoundHistory(tournamentId: string): Promise<PhaseHistory[]> {
+  const tId = parseObjectId(tournamentId, "Tournoi");
+
+  const [players, phases, roundDocs, matchDocs] = await Promise.all([
+    listPlayers(tournamentId),
+    listPhases(tournamentId),
+    db.collection<TournamentRoundDb>(ROUNDS).find({ tournamentId: tId }).sort({ number: 1 }).toArray(),
+    db.collection<TournamentMatchDb>(MATCHES).find({ tournamentId: tId }).sort({ createdAt: 1 }).toArray(),
+  ]);
+
+  const rounds = roundDocs.map(toRound);
+  const matches = matchDocs.map(toMatch);
+  const playersById = new Map(players.map((p) => [p.id, p]));
+
+  const withNames = (standings: PlayerStanding[]): TournamentStanding[] =>
+    standings.map((standing) => {
+      const player = playersById.get(standing.playerId);
+      return {
+        ...standing,
+        displayName: player?.displayName ?? "Inconnu",
+        userId: player?.userId,
+        playerStatus: player?.status ?? "active",
+      };
+    });
+
+  // Les phases sont déjà triées par ordre (order, createdAt) par listPhases.
+  return phases.map((phase) => {
+    const scoring = () => scoringForPhase(phase);
+    const phaseMatches = matches.filter((m) => m.phaseId === phase.id);
+    const phaseRounds = rounds
+      .filter((r) => r.phaseId === phase.id)
+      .sort((a, b) => a.number - b.number);
+
+    const roundEntries: RoundHistoryEntry[] = phaseRounds.map((round) => {
+      const roundMatches = phaseMatches.filter((m) => m.roundId === round.id);
+      // Matchs de la phase des rondes jusqu'à celle-ci (classement cumulé).
+      const roundIdsUpTo = new Set(
+        phaseRounds.filter((r) => r.number <= round.number).map((r) => r.id)
+      );
+      const cumulativeMatches = phaseMatches.filter((m) => roundIdsUpTo.has(m.roundId));
+      const participantIds = [
+        ...new Set(cumulativeMatches.flatMap((m) => m.players.map((p) => p.playerId))),
+      ];
+      const standings = withNames(
+        calculateMultiplayerStandings(participantIds, cumulativeMatches, scoring)
+      );
+      return { round, matches: roundMatches, standings };
+    });
+
+    return { phase, rounds: roundEntries };
+  });
+}
