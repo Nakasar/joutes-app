@@ -1962,6 +1962,41 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/ServerError" }
 
+  # ---------------------------------------------------------------- Users
+  /users/{userTagOrId}:
+    parameters:
+      - { name: userTagOrId, in: path, required: true, description: "Mongo ObjectId, or `{displayName}{discriminator}` (no separator — the discriminator is the last 4 characters).", schema: { type: string } }
+    get:
+      tags: [Users]
+      summary: Get a user's public profile
+      description: Always returns id/username/displayName/discriminator/avatar/description/website/socialLinks. `games`/`lairs`/`achievements` are only populated if the user has enabled `isPublicProfile` (empty arrays otherwise).
+      security: []
+      responses:
+        "200": { description: Public profile., content: { application/json: { schema: { $ref: "#/components/schemas/PublicUserProfile" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /users/{userTagOrId}/wishlists:
+    parameters:
+      - { name: userTagOrId, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Users]
+      summary: List a user's public wishlists
+      security: []
+      responses:
+        "200": { description: Public wishlists., content: { application/json: { schema: { type: object, properties: { wishlists: { type: array, items: { $ref: "#/components/schemas/Wishlist" } } } } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /users/{userTagOrId}/sell-list:
+    parameters:
+      - { name: userTagOrId, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Users]
+      summary: Get a user's sell list (sell lists are always public)
+      security: []
+      responses:
+        "200": { description: Sell list., content: { application/json: { schema: { type: object, properties: { sellList: { allOf: [{ $ref: "#/components/schemas/SellList" }], nullable: true } } } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+
   # ---------------------------------------------------------------- Wishlists
   /wishlists:
     get:
@@ -2260,6 +2295,22 @@ components:
         displayName: { type: string }
         discriminator: { type: string }
         avatar: { type: string }
+
+    PublicUserProfile:
+      type: object
+      properties:
+        id: { type: string }
+        username: { type: string }
+        displayName: { type: string }
+        discriminator: { type: string }
+        avatar: { type: string }
+        description: { type: string }
+        website: { type: string }
+        socialLinks: { type: array, items: { type: string } }
+        isPublicProfile: { type: boolean }
+        games: { type: array, items: { type: object, properties: { id: { type: string }, name: { type: string }, slug: { type: string }, icon: { type: string } } } }
+        lairs: { type: array, items: { type: object, properties: { id: { type: string }, name: { type: string }, address: { type: string } } } }
+        achievements: { type: array, items: { type: object, properties: { id: { type: string }, name: { type: string }, description: { type: string }, icon: { type: string }, points: { type: number }, unlockedAt: { type: string, format: date-time } } } }
 
     GameSummary:
       type: object

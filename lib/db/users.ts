@@ -230,6 +230,33 @@ export function toPublicUser(user: User): PublicUser {
   };
 }
 
+export type PublicUserProfile = PublicUser & {
+  description?: string;
+  website?: string;
+  socialLinks?: string[];
+  isPublicProfile: boolean;
+};
+
+/**
+ * Champs publics d'un profil utilisateur (page `/users/{tag}`). `description`,
+ * `website` et `socialLinks` sont toujours inclus (choix explicite, non gated
+ * par `isPublicProfile`) — c'est à l'appelant de décider s'il affiche aussi
+ * les jeux/lieux suivis et les succès en fonction de `isPublicProfile`.
+ */
+export function toPublicUserProfile(user: User): PublicUserProfile {
+  return {
+    id: user.id,
+    username: user.username,
+    displayName: user.displayName,
+    discriminator: user.discriminator,
+    avatar: user.profileImage || user.avatar,
+    description: user.description,
+    website: user.website,
+    socialLinks: user.socialLinks,
+    isPublicProfile: user.isPublicProfile ?? false,
+  };
+}
+
 export async function updateUserGames(userId: string, games: string[]): Promise<boolean> {
   
   const result = await db.collection(COLLECTION_NAME).updateOne(
