@@ -68,7 +68,9 @@ export async function getUserByEmail(email: string): Promise<User | null> {
 // Génère un discriminant à 4 chiffres unique pour un displayName donné.
 async function generateUniqueDiscriminator(displayName: string): Promise<string> {
   const collection = db.collection(COLLECTION_NAME);
-  for (let i = 0; i < 10; i++) {
+  // On garde toujours le format à 4 chiffres (username#0000) : en cas de
+  // collision on retente, jusqu'à épuisement raisonnable de l'espace.
+  for (let i = 0; i < 50; i++) {
     const discriminator = Math.floor(1000 + Math.random() * 9000).toString();
     const existing = await collection.findOne(
       { displayName, discriminator },
@@ -78,7 +80,7 @@ async function generateUniqueDiscriminator(displayName: string): Promise<string>
       return discriminator;
     }
   }
-  return Math.floor(10000 + Math.random() * 90000).toString();
+  throw new Error(`Impossible de générer un discriminateur unique pour "${displayName}"`);
 }
 
 /**

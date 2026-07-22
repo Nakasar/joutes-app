@@ -470,7 +470,9 @@ export async function addPlayerByIdentifier(
   if (hashIndex !== -1) {
     const displayName = identifier.slice(0, hashIndex).trim();
     const discriminator = identifier.slice(hashIndex + 1).trim();
-    if (!displayName || !discriminator) {
+    // Format strict : un seul '#', un discriminateur à exactement 4 chiffres.
+    // Sinon on renvoie une erreur de format claire plutôt qu'un 404 ambigu.
+    if (!displayName || !/^\d{4}$/.test(discriminator)) {
       throw new TournamentError("invalid", "Tag invalide : utilisez le format username#0000");
     }
     const user = await getUserByUsernameAndDiscriminator(displayName, discriminator);
