@@ -18,7 +18,12 @@ function JoinTournamentInner() {
       return;
     }
 
-    storeSyncKey(tournamentId, key);
+    if (!storeSyncKey(tournamentId, key)) {
+      setError(
+        "Impossible d'enregistrer la clé de synchronisation sur ce navigateur (stockage local indisponible)."
+      );
+      return;
+    }
     router.replace(`/tournaments/${tournamentId}/player`);
   }, [searchParams, router]);
 

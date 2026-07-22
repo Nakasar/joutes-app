@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useSession } from "@/lib/auth-client";
 import { getSyncKey } from "@/lib/tournament-sync-storage";
 
 type ApiPlayer = { id: string; userId?: string; displayName: string; status: string };
@@ -58,6 +59,7 @@ export default function TournamentPlayerPage({
   params: Promise<{ tournamentId: string }>;
 }) {
   const { tournamentId } = use(params);
+  const { data: session } = useSession();
 
   const [syncKey, setSyncKey] = useState<string | null | undefined>(undefined);
   const [tournament, setTournament] = useState<ApiTournament | null>(null);
@@ -112,6 +114,15 @@ export default function TournamentPlayerPage({
       const tournamentData: ApiTournament = await tournamentRes.json();
       setTournament(tournamentData);
 
+      // Sans clé de synchronisation, un joueur inscrit avec son compte est
+      // identifié via sa session (userId présent sur les joueurs du tournoi).
+      if (!syncKey && session?.user?.id) {
+        const sessionPlayer = tournamentData.players.find((p) => p.userId === session.user.id);
+        if (sessionPlayer) {
+          setMyPlayerId(sessionPlayer.id);
+        }
+      }
+
       // Phase active : la phase courante du tournoi, sinon la première en
       // cours, sinon la dernière.
       const phases = [...tournamentData.phases].sort((a, b) => a.order - b.order);
@@ -146,7 +157,7 @@ export default function TournamentPlayerPage({
     } finally {
       setLoading(false);
     }
-  }, [apiFetch, syncKey, tournamentId]);
+  }, [apiFetch, syncKey, tournamentId, session?.user?.id]);
 
   useEffect(() => {
     loadAll();
@@ -296,7 +307,7 @@ export default function TournamentPlayerPage({
                 )}
                 {myMatch.status === "in-progress" && (
                   <div className="flex gap-2">
-                    {myMatch.reportedBy !== myPlayerId && (
+                    {myMatch.reportedBy !== myPlayerId && myMatch.reportedBy !== session?.user?.id && (
                       <Button onClick={() => submitAction("confirm")} disabled={submitting}>
                         Confirmer le résultat
                       </Button>

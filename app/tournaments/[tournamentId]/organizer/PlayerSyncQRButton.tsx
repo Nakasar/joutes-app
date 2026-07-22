@@ -17,7 +17,7 @@ export function PlayerSyncQRButton({ tournamentId, playerName, syncKey }: Player
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
 
   const joinUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/tournaments/join?tournamentId=${tournamentId}&key=${syncKey}`
+    ? `${window.location.origin}/tournaments/join?tournamentId=${encodeURIComponent(tournamentId)}&key=${encodeURIComponent(syncKey)}`
     : "";
 
   useEffect(() => {

@@ -33,6 +33,28 @@ const PHASES = "tournament-phases";
 const ROUNDS = "tournament-rounds";
 const MATCHES = "tournament-matches";
 
+// Index unique (phase, numéro de ronde) : deux créations de ronde
+// concurrentes ne peuvent pas produire deux rondes portant le même numéro
+// dans une phase — la seconde échoue sur duplicate key (E11000), transformé
+// en erreur de conflit dans createNextRound. createIndex est idempotent ;
+// l'échec (ex: base indisponible au chargement) n'est pas bloquant, la
+// création de ronde reste alors possible sans cette protection.
+const roundsIndexReady = db
+  .collection(ROUNDS)
+  .createIndex({ phaseId: 1, number: 1 }, { unique: true })
+  .catch((error) => {
+    console.error("Impossible de créer l'index unique des rondes de tournoi:", error);
+  });
+
+function isDuplicateKeyError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: number }).code === 11000
+  );
+}
+
 // Domain errors carry a stable code so API routes can map them to HTTP statuses
 // without string-matching French messages.
 export class TournamentError extends Error {
@@ -136,6 +158,11 @@ function toPairingMatch(match: TournamentMatch): PairingMatch {
       "conflict",
       "Cette phase contient des matchs multijoueurs, incompatibles avec la génération de pairings 2 joueurs"
     );
+  }
+  if (match.players.length === 0) {
+    // Un match sans joueur est un document corrompu : mieux vaut échouer
+    // explicitement que de fausser silencieusement pairings et classements.
+    throw new TournamentError("conflict", `Le match ${match.id} ne contient aucun joueur`);
   }
   const [p1, p2] = match.players;
   return {
@@ -259,6 +286,11 @@ export function principalIsOrganizer(tournament: Tournament, principal: Tourname
 export type MatchActor = {
   id: string;
   playerIds: string[];
+  // Toutes les identités de la même personne physique (userId et ids de
+  // joueur liés) : le check anti self-confirm compare reportedBy à cet
+  // ensemble, pour qu'un joueur ne puisse pas confirmer son propre rapport
+  // en alternant session et clé de synchronisation.
+  identityIds: string[];
   isOrganizer: boolean;
 };
 
@@ -267,12 +299,16 @@ export async function buildMatchActor(
   principal: TournamentPrincipal
 ): Promise<MatchActor> {
   if (principal.kind === "player") {
-    return { id: principal.player.id, playerIds: [principal.player.id], isOrganizer: false };
+    const identityIds = [principal.player.id];
+    if (principal.player.userId) identityIds.push(principal.player.userId);
+    return { id: principal.player.id, playerIds: [principal.player.id], identityIds, isOrganizer: false };
   }
   const players = await listPlayers(tournament.id);
+  const playerIds = players.filter((p) => p.userId === principal.userId).map((p) => p.id);
   return {
     id: principal.userId,
-    playerIds: players.filter((p) => p.userId === principal.userId).map((p) => p.id),
+    playerIds,
+    identityIds: [principal.userId, ...playerIds],
     isOrganizer: isTournamentOrganizer(tournament, principal.userId),
   };
 }
@@ -744,7 +780,19 @@ export async function createNextRound(
     status: "in-progress",
     createdAt: now,
   };
-  const roundResult = await db.collection<TournamentRoundDb>(ROUNDS).insertOne(roundDoc);
+  await roundsIndexReady;
+  let roundResult;
+  try {
+    roundResult = await db.collection<TournamentRoundDb>(ROUNDS).insertOne(roundDoc);
+  } catch (error) {
+    if (isDuplicateKeyError(error)) {
+      throw new TournamentError(
+        "conflict",
+        `La ronde ${roundNumber} existe déjà pour cette phase (création concurrente)`
+      );
+    }
+    throw error;
+  }
   const round = toRound({ ...roundDoc, _id: roundResult.insertedId });
 
   const matchDocs: TournamentMatchDb[] = pairings.map((pairing, i) => {
@@ -929,13 +977,21 @@ export async function reportMatchResult(
     throw new TournamentError("conflict", "Le résultat d'un BYE ne peut pas être modifié");
   }
 
-  // Un joueur ne peut rapporter que son propre match, et seulement si le
-  // self-reporting est activé sur le tournoi.
+  // Un joueur ne peut rapporter que son propre match, seulement si le
+  // self-reporting est activé sur le tournoi, et pas sur un résultat déjà
+  // acté (terminé ou contesté) : les corrections après coup passent par un
+  // organisateur.
   if (!actor.isOrganizer) {
     if (!tournament.settings.allowSelfReporting) {
       throw new TournamentError("forbidden", "Le rapport de résultat par les joueurs est désactivé");
     }
     assertActorIsInMatch(match, actor);
+    if (match.status === "completed" || match.status === "disputed") {
+      throw new TournamentError(
+        "conflict",
+        "Ce résultat est déjà acté : seul un organisateur peut le modifier"
+      );
+    }
   }
 
   // Les scores doivent couvrir exactement les joueurs du match.
@@ -1008,7 +1064,10 @@ export async function confirmMatchResult(
   }
 
   if (!actor.isOrganizer) {
-    if (match.reportedBy === actor.id) {
+    // Compare reportedBy à toutes les identités de l'acteur (userId et ids
+    // de joueur) : alterner session et clé de synchronisation ne permet pas
+    // de confirmer son propre rapport.
+    if (match.reportedBy && actor.identityIds.includes(match.reportedBy)) {
       throw new TournamentError("forbidden", "Vous ne pouvez pas confirmer votre propre rapport");
     }
     assertActorIsInMatch(match, actor);

@@ -21,14 +21,27 @@ export function getSyncKey(tournamentId: string): string | undefined {
   return getSyncKeys()[tournamentId];
 }
 
-export function storeSyncKey(tournamentId: string, key: string): void {
-  const keys = getSyncKeys();
-  keys[tournamentId] = key;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(keys));
+// localStorage peut être indisponible ou refuser l'écriture (navigation
+// privée stricte, quota, policies) : les écritures signalent leur succès au
+// lieu de laisser l'exception casser le flux appelant.
+export function storeSyncKey(tournamentId: string, key: string): boolean {
+  try {
+    const keys = getSyncKeys();
+    keys[tournamentId] = key;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(keys));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
-export function removeSyncKey(tournamentId: string): void {
-  const keys = getSyncKeys();
-  delete keys[tournamentId];
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(keys));
+export function removeSyncKey(tournamentId: string): boolean {
+  try {
+    const keys = getSyncKeys();
+    delete keys[tournamentId];
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(keys));
+    return true;
+  } catch {
+    return false;
+  }
 }
