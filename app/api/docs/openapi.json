@@ -8190,6 +8190,72 @@
         }
       }
     },
+    "/tournaments/{tournamentId}/rounds/{roundId}/standings": {
+      "parameters": [
+        {
+          "name": "tournamentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "roundId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Validate (freeze) or recompute a round's standings (organizers only)",
+        "description": "Computes the phase standings as of this round (cumulative over completed matches up to and including the round) and persists the snapshot on the round, so it is not recomputed on each read. Idempotent: calling again recomputes and replaces the snapshot (the \"recompute\" button). The round must be completed.",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The round with its frozen standings.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentRound"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The round is not completed yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tournaments/{tournamentId}/rounds/{roundId}/matches": {
       "parameters": [
         {
@@ -11070,6 +11136,18 @@
               "in-progress",
               "completed"
             ]
+          },
+          "standings": {
+            "type": "array",
+            "description": "Classement de la phase figé à l'issue de la ronde, persisté lors de la validation par l'organisateur. Absent tant que la ronde n'est pas validée.",
+            "items": {
+              "$ref": "#/components/schemas/TournamentStanding"
+            }
+          },
+          "standingsValidatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Horodatage de la dernière validation (ou recalcul) du classement de la ronde."
           },
           "createdAt": {
             "type": "string",

@@ -10,6 +10,7 @@ import {
   isTournamentOrganizer,
 } from "@/lib/db/tournaments";
 import type { TournamentGameResult, TournamentMatch, TournamentPhase } from "@/lib/types/Tournament";
+import { RoundStandingsPanel } from "./RoundStandingsPanel";
 
 const PHASE_TYPE_LABELS: Record<TournamentPhase["type"], string> = {
   freeform: "Format libre",
@@ -97,7 +98,7 @@ export default async function TournamentHistoryPage({
             {rounds.length === 0 ? (
               <p className="text-sm text-muted-foreground">Aucune ronde dans cette phase.</p>
             ) : (
-              rounds.map(({ round, matches, standings }) => (
+              rounds.map(({ round, matches }) => (
                 <details key={round.id} className="group rounded-lg border bg-card" open>
                   <summary className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 select-none">
                     <span className="font-medium">Ronde {round.number}</span>
@@ -128,60 +129,18 @@ export default async function TournamentHistoryPage({
                       )}
                     </div>
 
-                    {/* Classement à l'issue de la ronde */}
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                        Classement à l&apos;issue de la ronde
-                      </h3>
-                      <div className="overflow-x-auto rounded-lg border">
-                        <table className="min-w-full divide-y divide-border text-sm">
-                          <thead className="bg-muted">
-                            <tr>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
-                                #
-                              </th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
-                                Joueur
-                              </th>
-                              <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground uppercase">
-                                Pts
-                              </th>
-                              <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground uppercase">
-                                V/N/D
-                              </th>
-                              <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground uppercase">
-                                Diff
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-border">
-                            {standings.map((standing, index) => (
-                              <tr key={standing.playerId}>
-                                <td className="px-3 py-2">{index + 1}</td>
-                                <td className="px-3 py-2 font-medium">
-                                  {standing.displayName}
-                                  {standing.playerStatus === "dropped" ? " (drop)" : ""}
-                                </td>
-                                <td className="px-3 py-2 text-right font-mono">{standing.matchPoints}</td>
-                                <td className="px-3 py-2 text-right font-mono">
-                                  {standing.wins}/{standing.draws}/{standing.losses}
-                                </td>
-                                <td className="px-3 py-2 text-right font-mono">
-                                  {standing.gamesDiff > 0 ? `+${standing.gamesDiff}` : standing.gamesDiff}
-                                </td>
-                              </tr>
-                            ))}
-                            {standings.length === 0 && (
-                              <tr>
-                                <td colSpan={5} className="px-3 py-3 text-center text-muted-foreground">
-                                  Pas encore de classement
-                                </td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
+                    {/* Classement figé à l'issue de la ronde (validation organisateur) */}
+                    <RoundStandingsPanel
+                      tournamentId={tournamentId}
+                      roundId={round.id}
+                      canValidate={round.status === "completed"}
+                      initialStandings={round.standings}
+                      initialValidatedAt={
+                        round.standingsValidatedAt
+                          ? new Date(round.standingsValidatedAt).toISOString()
+                          : undefined
+                      }
+                    />
                   </div>
                 </details>
               ))

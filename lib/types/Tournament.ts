@@ -97,12 +97,33 @@ export type TournamentPhase = {
   createdAt: Date;
 };
 
+// Classement figé d'une ronde : snapshot calculé et persisté au moment où
+// l'organisateur valide la ronde, pour ne pas le recalculer à chaque lecture.
+export type TournamentRoundStanding = {
+  playerId: string;
+  displayName: string;
+  userId?: string;
+  playerStatus: TournamentPlayerStatus;
+  wins: number;
+  losses: number;
+  draws: number;
+  matchPoints: number;
+  gamesWon: number;
+  gamesLost: number;
+  gamesDiff: number;
+  opponentMatchWinPercentage?: number;
+};
+
 export type TournamentRound = {
   id: string;
   tournamentId: string;
   phaseId: string;
   number: number;
   status: TournamentRoundStatus;
+  // Classement de la phase figé à l'issue de la ronde. Absent tant que
+  // l'organisateur n'a pas validé la ronde ; rafraîchi via un recalcul.
+  standings?: TournamentRoundStanding[];
+  standingsValidatedAt?: Date;
   createdAt: Date;
   completedAt?: Date;
 };

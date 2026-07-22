@@ -21,6 +21,7 @@ import {
   TournamentResultMode,
   TournamentRound,
   TournamentRoundDb,
+  TournamentRoundStanding,
   TournamentScoringMethod,
 } from "@/lib/types/Tournament";
 import {
@@ -159,6 +160,8 @@ function toRound(doc: WithId<TournamentRoundDb>): TournamentRound {
     phaseId: doc.phaseId.toString(),
     number: doc.number,
     status: doc.status,
+    standings: doc.standings,
+    standingsValidatedAt: doc.standingsValidatedAt,
     createdAt: doc.createdAt,
     completedAt: doc.completedAt,
   };
@@ -1560,12 +1563,11 @@ export async function getStandings(tournamentId: string, phaseId?: string): Prom
   });
 }
 
-// Récapitulatif d'une ronde : ses matchs (parties comprises) et le classement
-// de la phase à l'issue de cette ronde.
+// Récapitulatif d'une ronde : ses matchs (parties comprises). Le classement
+// figé à l'issue de la ronde est porté par `round.standings`.
 export type RoundHistoryEntry = {
   round: TournamentRound;
   matches: TournamentMatch[];
-  standings: TournamentStanding[];
 };
 
 // Historique d'une phase : ses rondes ordonnées, chacune avec son récapitulatif.
@@ -1577,11 +1579,9 @@ export type PhaseHistory = {
 /**
  * Historique complet du tournoi pour le portail organisateur : les phases
  * ordonnées, et pour chacune ses rondes ordonnées avec le récapitulatif des
- * matchs/parties et le classement de la phase à l'issue de chaque ronde.
- *
- * Le classement d'une ronde est calculé sur les matchs terminés de la phase
- * jusqu'à cette ronde incluse (chaque phase reste ainsi autonome, ce qui
- * respecte les top cut et les méthodes de scoring propres à chaque phase).
+ * matchs/parties. Le classement à l'issue de chaque ronde n'est pas recalculé
+ * ici : il est lu depuis `round.standings`, figé lors de la validation de la
+ * ronde par l'organisateur (voir validateRoundStandings).
  */
 export async function getTournamentRoundHistory(
   tournamentId: string
@@ -1597,21 +1597,8 @@ export async function getTournamentRoundHistory(
 
   const rounds = roundDocs.map(toRound);
   const matches = matchDocs.map(toMatch);
-  const playersById = new Map(players.map((p) => [p.id, p]));
 
-  const withNames = (standings: PlayerStanding[]): TournamentStanding[] =>
-    standings.map((standing) => {
-      const player = playersById.get(standing.playerId);
-      return {
-        ...standing,
-        displayName: player?.displayName ?? "Inconnu",
-        userId: player?.userId,
-        playerStatus: player?.status ?? "active",
-      };
-    });
-
-  // Pré-groupe les matchs par ronde pour accumuler le classement cumulé sans
-  // re-filtrer l'ensemble des matchs à chaque ronde.
+  // Pré-groupe les matchs par ronde.
   const matchesByRound = new Map<string, TournamentMatch[]>();
   for (const match of matches) {
     const list = matchesByRound.get(match.roundId);
@@ -1621,29 +1608,89 @@ export async function getTournamentRoundHistory(
 
   // Les phases sont déjà triées par ordre (order, createdAt) par listPhases.
   const phaseHistories: PhaseHistory[] = phases.map((phase) => {
-    const scoring = () => scoringForPhase(phase);
     const phaseRounds = rounds
       .filter((r) => r.phaseId === phase.id)
       .sort((a, b) => a.number - b.number);
-
-    // Matchs et participants accumulés au fil des rondes ordonnées.
-    const cumulativeMatches: TournamentMatch[] = [];
-    const participantIds = new Set<string>();
-
-    const roundEntries: RoundHistoryEntry[] = phaseRounds.map((round) => {
-      const roundMatches = matchesByRound.get(round.id) ?? [];
-      cumulativeMatches.push(...roundMatches);
-      for (const match of roundMatches) {
-        for (const player of match.players) participantIds.add(player.playerId);
-      }
-      const standings = withNames(
-        calculateMultiplayerStandings([...participantIds], cumulativeMatches, scoring)
-      );
-      return { round, matches: roundMatches, standings };
-    });
-
+    const roundEntries: RoundHistoryEntry[] = phaseRounds.map((round) => ({
+      round,
+      matches: matchesByRound.get(round.id) ?? [],
+    }));
     return { phase, rounds: roundEntries };
   });
 
   return { phases: phaseHistories, players };
+}
+
+/**
+ * Calcule et fige en base le classement de la phase à l'issue d'une ronde.
+ *
+ * Le classement est cumulé sur les matchs terminés de la phase jusqu'à cette
+ * ronde incluse (chaque phase reste autonome, ce qui respecte les top cut et
+ * les méthodes de scoring propres à chaque phase). Idempotent : rappeler la
+ * fonction recalcule et remplace le snapshot (bouton « recalculer »).
+ *
+ * La ronde doit être terminée : on ne fige pas un classement partiel.
+ */
+export async function validateRoundStandings(
+  tournamentId: string,
+  roundId: string
+): Promise<TournamentRound> {
+  const tId = parseObjectId(tournamentId, "Tournoi");
+  const rId = parseObjectId(roundId, "Ronde");
+
+  const round = await getRoundById(tournamentId, roundId);
+  if (!round) {
+    throw new TournamentError("not-found", "Ronde non trouvée");
+  }
+  if (round.status !== "completed") {
+    throw new TournamentError(
+      "conflict",
+      "La ronde doit être terminée avant de valider son classement"
+    );
+  }
+
+  const phase = await getPhaseById(tournamentId, round.phaseId);
+  if (!phase) {
+    throw new TournamentError("not-found", "Phase non trouvée");
+  }
+
+  const [players, phaseRounds, phaseMatches] = await Promise.all([
+    listPlayers(tournamentId),
+    listRounds(tournamentId, round.phaseId),
+    listPhaseMatches(tId, new ObjectId(round.phaseId)),
+  ]);
+  const playersById = new Map(players.map((p) => [p.id, p]));
+
+  // Matchs de la phase des rondes jusqu'à celle validée (classement cumulé).
+  const roundIdsUpTo = new Set(
+    phaseRounds.filter((r) => r.number <= round.number).map((r) => r.id)
+  );
+  const cumulativeMatches = phaseMatches.filter((m) => roundIdsUpTo.has(m.roundId));
+  const participantIds = [
+    ...new Set(cumulativeMatches.flatMap((m) => m.players.map((p) => p.playerId))),
+  ];
+
+  const standings: TournamentRoundStanding[] = calculateMultiplayerStandings(
+    participantIds,
+    cumulativeMatches,
+    () => scoringForPhase(phase)
+  ).map((standing) => {
+    const player = playersById.get(standing.playerId);
+    return {
+      ...standing,
+      displayName: player?.displayName ?? "Inconnu",
+      userId: player?.userId,
+      playerStatus: player?.status ?? "active",
+    };
+  });
+
+  const result = await db.collection<TournamentRoundDb>(ROUNDS).findOneAndUpdate(
+    { _id: rId, tournamentId: tId },
+    { $set: { standings, standingsValidatedAt: new Date() } },
+    { returnDocument: "after" }
+  );
+  if (!result) {
+    throw new TournamentError("not-found", "Ronde non trouvée");
+  }
+  return toRound(result);
 }
