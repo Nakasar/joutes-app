@@ -33,7 +33,7 @@ async function getCardsFromJson(): Promise<{ publicCode: string; name: string; t
 }
 
 async function main() {
-  const cardsRaw = await getCardsFromJson();
+  const cardsRaw = await fetchCardsFromWebsite();
 
   const cards = cardsRaw.map(card => {
     const codeRegex = /(?<set>[A-Z]{3})-(?<cn>[A-Z0-9]{3}[a*]?)(?:\/[0-9]{3})?/;
