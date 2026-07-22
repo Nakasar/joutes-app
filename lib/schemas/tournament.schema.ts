@@ -43,25 +43,46 @@ export const updateTournamentPlayerSchema = z.object({
   status: z.enum(["active", "dropped"]).optional(),
 });
 
-export const createTournamentPhaseSchema = z.object({
-  name: z.string().min(1, "Le nom de la phase est requis").max(200),
-  type: tournamentPhaseTypeSchema,
-  matchFormat: tournamentMatchFormatSchema.default("BO3"),
-  plannedRounds: z.number().int().min(1).optional(),
-  topCut: z.number().int().min(2).optional(),
-  order: z.number().int().min(0).optional(),
-});
+export const createTournamentPhaseSchema = z
+  .object({
+    name: z.string().min(1, "Le nom de la phase est requis").max(200),
+    type: tournamentPhaseTypeSchema,
+    matchFormat: tournamentMatchFormatSchema.default("BO3"),
+    plannedRounds: z.number().int().min(1).optional(),
+    topCut: z.number().int().min(2).optional(),
+    // Bornes du nombre de joueurs par match généré (défaut : duel 2-2).
+    minPlayersPerMatch: z.number().int().min(2).max(16).default(2),
+    maxPlayersPerMatch: z.number().int().min(2).max(16).default(2),
+    order: z.number().int().min(0).optional(),
+  })
+  .refine((v) => v.maxPlayersPerMatch >= v.minPlayersPerMatch, {
+    message: "Le nombre maximal de joueurs doit être supérieur ou égal au minimum",
+    path: ["maxPlayersPerMatch"],
+  });
 
-export const updateTournamentPhaseSchema = z.object({
-  name: z.string().min(1).max(200).optional(),
-  // Type only editable while the phase has not started (enforced in the domain layer).
-  type: tournamentPhaseTypeSchema.optional(),
-  matchFormat: tournamentMatchFormatSchema.optional(),
-  plannedRounds: z.number().int().min(1).nullable().optional(),
-  topCut: z.number().int().min(2).nullable().optional(),
-  order: z.number().int().min(0).optional(),
-  status: z.enum(["not-started", "in-progress", "completed"]).optional(),
-});
+export const updateTournamentPhaseSchema = z
+  .object({
+    name: z.string().min(1).max(200).optional(),
+    // Type only editable while the phase has not started (enforced in the domain layer).
+    type: tournamentPhaseTypeSchema.optional(),
+    matchFormat: tournamentMatchFormatSchema.optional(),
+    plannedRounds: z.number().int().min(1).nullable().optional(),
+    topCut: z.number().int().min(2).nullable().optional(),
+    minPlayersPerMatch: z.number().int().min(2).max(16).optional(),
+    maxPlayersPerMatch: z.number().int().min(2).max(16).optional(),
+    order: z.number().int().min(0).optional(),
+    status: z.enum(["not-started", "in-progress", "completed"]).optional(),
+  })
+  .refine(
+    (v) =>
+      v.minPlayersPerMatch === undefined ||
+      v.maxPlayersPerMatch === undefined ||
+      v.maxPlayersPerMatch >= v.minPlayersPerMatch,
+    {
+      message: "Le nombre maximal de joueurs doit être supérieur ou égal au minimum",
+      path: ["maxPlayersPerMatch"],
+    }
+  );
 
 export const createTournamentMatchSchema = z.object({
   // Tournament player ids; a single player creates a BYE, 3+ players a

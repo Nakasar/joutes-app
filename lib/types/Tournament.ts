@@ -49,6 +49,11 @@ export type TournamentPhase = {
   matchFormat: TournamentMatchFormat;
   plannedRounds?: number;
   topCut?: number;
+  // Nombre de joueurs par match généré automatiquement. Par défaut 2-2 (duel).
+  // Un intervalle plus large (ex: 3-4) génère des « pods » multijoueurs en
+  // phase suisse. Le bracket reste strictement 2-2.
+  minPlayersPerMatch: number;
+  maxPlayersPerMatch: number;
   order: number;
   status: TournamentPhaseStatus;
   createdAt: Date;

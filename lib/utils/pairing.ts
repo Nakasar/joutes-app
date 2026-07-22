@@ -150,13 +150,53 @@ export function calculateStandings(
 /**
  * Mélange un tableau de manière aléatoire (Fisher-Yates shuffle)
  */
-function shuffleArray<T>(array: T[]): T[] {
+export function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   return shuffled;
+}
+
+/**
+ * Répartit `n` joueurs en tailles de pods, chacune dans [min, max]. Les
+ * joueurs qui ne peuvent pas compléter un pod (reste < min) reçoivent chacun
+ * un BYE (taille 1). Exige 1 <= min <= max.
+ * Ex: computePodSizes(10, 3, 4) === [4, 3, 3] ; computePodSizes(5, 2, 2) === [2, 2, 1].
+ */
+export function computePodSizes(n: number, min: number, max: number): number[] {
+  const pods: number[] = [];
+  let remaining = n;
+  while (remaining >= min) {
+    let size = Math.min(max, remaining);
+    // Éviter de laisser un reste ininscriptible (1..min-1) : réduire ce pod.
+    while (size > min && remaining - size > 0 && remaining - size < min) {
+      size--;
+    }
+    pods.push(size);
+    remaining -= size;
+  }
+  // Joueurs restants (< min) : un BYE chacun.
+  for (let i = 0; i < remaining; i++) {
+    pods.push(1);
+  }
+  return pods;
+}
+
+/**
+ * Découpe une liste ordonnée de joueurs en pods dont les tailles respectent
+ * [min, max] (voir computePodSizes). Un pod de taille 1 est un BYE.
+ */
+export function chunkIntoPods(orderedPlayerIds: string[], min: number, max: number): string[][] {
+  const sizes = computePodSizes(orderedPlayerIds.length, min, max);
+  const groups: string[][] = [];
+  let index = 0;
+  for (const size of sizes) {
+    groups.push(orderedPlayerIds.slice(index, index + size));
+    index += size;
+  }
+  return groups;
 }
 
 /**
