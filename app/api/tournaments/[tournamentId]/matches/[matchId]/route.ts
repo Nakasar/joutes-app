@@ -62,12 +62,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
     let match;
     if (validated.action === "report") {
-      match = await reportMatchResult(
-        tournament,
-        matchId,
-        { scores: validated.scores, winnerIds: validated.winnerIds },
-        actor
-      );
+      match = await reportMatchResult(tournament, matchId, { games: validated.games }, actor);
     } else if (validated.action === "confirm") {
       match = await confirmMatchResult(tournament, matchId, actor);
     } else {

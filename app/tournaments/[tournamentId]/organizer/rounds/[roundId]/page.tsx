@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import {
+  getPhaseById,
   getRoundById,
   getTournamentById,
   isTournamentOrganizer,
@@ -35,10 +36,15 @@ export default async function OrganizerRoundPage({
     notFound();
   }
 
-  const [matches, players] = await Promise.all([
+  const [matches, players, phase] = await Promise.all([
     listMatchesByRound(tournamentId, roundId),
     listPlayers(tournamentId),
+    getPhaseById(tournamentId, round.phaseId),
   ]);
+
+  if (!phase) {
+    notFound();
+  }
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
@@ -47,6 +53,8 @@ export default async function OrganizerRoundPage({
         round={round}
         initialMatches={matches}
         players={players}
+        resultMode={phase.resultMode}
+        bestOf={phase.bestOf}
       />
     </div>
   );

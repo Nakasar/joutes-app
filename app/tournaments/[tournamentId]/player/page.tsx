@@ -5,12 +5,21 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { useSession } from "@/lib/auth-client";
 import { getSyncKey } from "@/lib/tournament-sync-storage";
+import type { TournamentGameResult, TournamentResultMode } from "@/lib/types/Tournament";
+import { MatchGamesEditor } from "../MatchGamesEditor";
 
 type ApiPlayer = { id: string; userId?: string; displayName: string; status: string };
-type ApiPhase = { id: string; name: string; type: string; status: string; order: number };
+type ApiPhase = {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  order: number;
+  bestOf: number;
+  resultMode: TournamentResultMode;
+};
 type ApiTournament = {
   id: string;
   name: string;
@@ -65,10 +74,10 @@ export default function TournamentPlayerPage({
   const [tournament, setTournament] = useState<ApiTournament | null>(null);
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
   const [round, setRound] = useState<ApiRound | null>(null);
+  const [activePhase, setActivePhase] = useState<ApiPhase | null>(null);
   const [standings, setStandings] = useState<ApiStanding[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [scores, setScores] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -130,6 +139,7 @@ export default function TournamentPlayerPage({
         phases.find((p) => p.id === tournamentData.currentPhaseId) ??
         phases.find((p) => p.status === "in-progress") ??
         phases[phases.length - 1];
+      setActivePhase(activePhase ?? null);
 
       if (activePhase) {
         const phaseRes = await apiFetch(`/api/tournaments/${tournamentId}/phases/${activePhase.id}`);
@@ -175,26 +185,26 @@ export default function TournamentPlayerPage({
 
   const playerName = (playerId: string) => playersById.get(playerId)?.displayName ?? "Inconnu";
 
-  const submitReport = async () => {
+  const submitReport = async (games: TournamentGameResult[]) => {
     if (!myMatch) return;
+    if (games.length === 0) {
+      setError("Renseignez au moins une partie.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
-      const parsedScores: Record<string, number> = {};
-      for (const p of myMatch.players) {
-        parsedScores[p.playerId] = Number.parseInt(scores[p.playerId] ?? "0", 10) || 0;
-      }
       const res = await apiFetch(`/api/tournaments/${tournamentId}/matches/${myMatch.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ action: "report", scores: parsedScores }),
+        body: JSON.stringify({ action: "report", games }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Erreur lors du rapport du score");
+        throw new Error(body.error ?? "Erreur lors du rapport du résultat");
       }
       await loadAll();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur lors du rapport du score");
+      setError(err instanceof Error ? err.message : "Erreur lors du rapport du résultat");
     } finally {
       setSubmitting(false);
     }
@@ -281,30 +291,28 @@ export default function TournamentPlayerPage({
                           {p.playerId === myPlayerId ? " (moi)" : ""}
                           {myMatch.winnerIds.includes(p.playerId) ? " 🏆" : ""}
                         </span>
-                        {myMatch.status === "pending" && tournament?.settings.allowSelfReporting ? (
-                          <Input
-                            type="number"
-                            min={0}
-                            className="w-20"
-                            value={scores[p.playerId] ?? ""}
-                            placeholder={String(p.score)}
-                            onChange={(e) =>
-                              setScores((s) => ({ ...s, [p.playerId]: e.target.value }))
-                            }
-                          />
-                        ) : (
-                          <span className="text-lg font-mono">{p.score}</span>
-                        )}
+                        <span className="text-lg font-mono">{p.score}</span>
                       </div>
                     ))}
                   </div>
                 )}
 
-                {myMatch.status === "pending" && tournament?.settings.allowSelfReporting && (
-                  <Button onClick={submitReport} disabled={submitting}>
-                    Rapporter le score
-                  </Button>
-                )}
+                {myMatch.players.length > 1 &&
+                  myMatch.status === "pending" &&
+                  tournament?.settings.allowSelfReporting &&
+                  activePhase && (
+                    <MatchGamesEditor
+                      key={`${myMatch.id}-${myMatch.status}`}
+                      matchId={myMatch.id}
+                      matchPlayerIds={myMatch.players.map((p) => p.playerId)}
+                      playerName={playerName}
+                      resultMode={activePhase.resultMode}
+                      bestOf={activePhase.bestOf}
+                      submitting={submitting}
+                      submitLabel="Rapporter le résultat"
+                      onSubmit={submitReport}
+                    />
+                  )}
                 {myMatch.status === "in-progress" && (
                   <div className="flex gap-2">
                     {myMatch.reportedBy !== myPlayerId && myMatch.reportedBy !== session?.user?.id && (

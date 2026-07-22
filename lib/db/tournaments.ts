@@ -4,18 +4,24 @@ import crypto from "crypto";
 import db from "@/lib/mongodb";
 import { ObjectId, WithId } from "mongodb";
 import {
+  DEFAULT_FIXED_SCORING,
+  DEFAULT_RANK_OFFSETS,
   Tournament,
   TournamentDb,
+  TournamentEliminationSeeding,
+  TournamentFixedScoring,
+  TournamentGameResult,
   TournamentMatch,
   TournamentMatchDb,
-  TournamentMatchFormat,
   TournamentMatchPlayer,
   TournamentPhase,
   TournamentPhaseDb,
   TournamentPlayer,
   TournamentPlayerDb,
+  TournamentResultMode,
   TournamentRound,
   TournamentRoundDb,
+  TournamentScoringMethod,
 } from "@/lib/types/Tournament";
 import {
   PairingMatch,
@@ -115,16 +121,29 @@ export function sanitizePlayer(player: TournamentPlayer): Omit<TournamentPlayer,
   return rest;
 }
 
-function toPhase(doc: WithId<TournamentPhaseDb>): TournamentPhase {
+// Convertit l'ancien champ matchFormat (BO1..BO5) en best-of-n pour les phases
+// créées avant l'introduction de bestOf.
+function legacyMatchFormatToBestOf(matchFormat: unknown): number | undefined {
+  if (typeof matchFormat !== "string") return undefined;
+  const map: Record<string, number> = { BO1: 1, BO2: 2, BO3: 3, BO5: 5 };
+  return map[matchFormat];
+}
+
+function toPhase(doc: WithId<TournamentPhaseDb> & { matchFormat?: string }): TournamentPhase {
   return {
     id: doc._id.toString(),
     tournamentId: doc.tournamentId.toString(),
     name: doc.name,
     type: doc.type,
-    matchFormat: doc.matchFormat,
+    // Défauts pour les phases créées avant l'ajout de ces champs.
+    bestOf: doc.bestOf ?? legacyMatchFormatToBestOf(doc.matchFormat) ?? 1,
+    resultMode: doc.resultMode ?? "selection",
+    scoringMethod: doc.scoringMethod ?? "fixed",
+    fixedScoring: doc.fixedScoring ?? DEFAULT_FIXED_SCORING,
+    rankOffsets: doc.rankOffsets ?? DEFAULT_RANK_OFFSETS,
+    eliminationSeeding: doc.eliminationSeeding ?? "standings",
     plannedRounds: doc.plannedRounds,
     topCut: doc.topCut,
-    // Défaut 2-2 pour les phases créées avant l'ajout de ces champs.
     minPlayersPerMatch: doc.minPlayersPerMatch ?? 2,
     maxPlayersPerMatch: doc.maxPlayersPerMatch ?? 2,
     order: doc.order,
@@ -152,6 +171,7 @@ function toMatch(doc: WithId<TournamentMatchDb>): TournamentMatch {
     phaseId: doc.phaseId.toString(),
     roundId: doc.roundId.toString(),
     players: doc.players,
+    games: doc.games ?? [],
     winnerIds: doc.winnerIds ?? [],
     bracketPosition: doc.bracketPosition,
     status: doc.status,
@@ -198,18 +218,57 @@ function parseObjectId(id: string, resource: string): ObjectId {
   return new ObjectId(id);
 }
 
-// Score awarded to the lone player of a BYE match, per match format.
-function byeWinScore(format: TournamentMatchFormat): number {
-  switch (format) {
-    case "BO1":
-      return 1;
-    case "BO2":
-      return 2;
-    case "BO3":
-      return 2;
-    case "BO5":
-      return 3;
-  }
+// Nombre de parties à gagner pour remporter un best-of-n.
+function winsNeeded(bestOf: number): number {
+  return Math.floor(bestOf / 2) + 1;
+}
+
+// Parties créditées au joueur unique d'un BYE (victoire nette du best-of).
+function byeWinScore(bestOf: number): number {
+  return winsNeeded(bestOf);
+}
+
+// Déduit, d'une liste de parties, le vainqueur de chaque partie (mode points :
+// score le plus élevé, égalité = nulle) et le nombre de parties gagnées par
+// chaque joueur du match.
+function tallyGames(
+  games: TournamentGameResult[],
+  matchPlayerIds: string[],
+  resultMode: TournamentResultMode
+): { normalizedGames: TournamentGameResult[]; gamesWonByPlayer: Map<string, number> } {
+  const gamesWonByPlayer = new Map<string, number>(matchPlayerIds.map((id) => [id, 0]));
+  const normalizedGames: TournamentGameResult[] = games.map((game) => {
+    let winnerId: string | null | undefined = game.winnerId ?? null;
+
+    if (resultMode === "points") {
+      const points = game.points ?? {};
+      let best = -Infinity;
+      let leaders: string[] = [];
+      for (const playerId of matchPlayerIds) {
+        const value = points[playerId] ?? 0;
+        if (value > best) {
+          best = value;
+          leaders = [playerId];
+        } else if (value === best) {
+          leaders.push(playerId);
+        }
+      }
+      // Un seul leader = vainqueur ; égalité en tête = partie nulle.
+      winnerId = leaders.length === 1 ? leaders[0] : null;
+      const normalizedPoints: Record<string, number> = {};
+      for (const playerId of matchPlayerIds) normalizedPoints[playerId] = points[playerId] ?? 0;
+      const won = winnerId;
+      if (won) gamesWonByPlayer.set(won, (gamesWonByPlayer.get(won) ?? 0) + 1);
+      return { winnerId, points: normalizedPoints };
+    }
+
+    if (winnerId) {
+      gamesWonByPlayer.set(winnerId, (gamesWonByPlayer.get(winnerId) ?? 0) + 1);
+    }
+    return { winnerId: winnerId ?? null };
+  });
+
+  return { normalizedGames, gamesWonByPlayer };
 }
 
 // =====================
@@ -626,7 +685,12 @@ export async function addPhase(
   data: {
     name: string;
     type: TournamentPhase["type"];
-    matchFormat: TournamentMatchFormat;
+    bestOf?: number;
+    resultMode?: TournamentResultMode;
+    scoringMethod?: TournamentScoringMethod;
+    fixedScoring?: TournamentFixedScoring;
+    rankOffsets?: number[];
+    eliminationSeeding?: TournamentEliminationSeeding;
     plannedRounds?: number;
     topCut?: number;
     minPlayersPerMatch?: number;
@@ -655,7 +719,12 @@ export async function addPhase(
     tournamentId: _id,
     name: data.name,
     type: data.type,
-    matchFormat: data.matchFormat,
+    bestOf: data.bestOf ?? 1,
+    resultMode: data.resultMode ?? "selection",
+    scoringMethod: data.scoringMethod ?? "fixed",
+    fixedScoring: data.fixedScoring ?? DEFAULT_FIXED_SCORING,
+    rankOffsets: data.rankOffsets ?? DEFAULT_RANK_OFFSETS,
+    eliminationSeeding: data.eliminationSeeding ?? "standings",
     plannedRounds: data.plannedRounds,
     topCut: data.topCut,
     minPlayersPerMatch,
@@ -675,7 +744,12 @@ export async function updatePhase(
   updates: {
     name?: string;
     type?: TournamentPhase["type"];
-    matchFormat?: TournamentMatchFormat;
+    bestOf?: number;
+    resultMode?: TournamentResultMode;
+    scoringMethod?: TournamentScoringMethod;
+    fixedScoring?: TournamentFixedScoring;
+    rankOffsets?: number[];
+    eliminationSeeding?: TournamentEliminationSeeding;
     plannedRounds?: number | null;
     topCut?: number | null;
     minPlayersPerMatch?: number;
@@ -709,7 +783,12 @@ export async function updatePhase(
   const unset: Record<string, ""> = {};
   if (updates.name !== undefined) set.name = updates.name;
   if (updates.type !== undefined) set.type = updates.type;
-  if (updates.matchFormat !== undefined) set.matchFormat = updates.matchFormat;
+  if (updates.bestOf !== undefined) set.bestOf = updates.bestOf;
+  if (updates.resultMode !== undefined) set.resultMode = updates.resultMode;
+  if (updates.scoringMethod !== undefined) set.scoringMethod = updates.scoringMethod;
+  if (updates.fixedScoring !== undefined) set.fixedScoring = updates.fixedScoring;
+  if (updates.rankOffsets !== undefined) set.rankOffsets = updates.rankOffsets;
+  if (updates.eliminationSeeding !== undefined) set.eliminationSeeding = updates.eliminationSeeding;
   if (updates.plannedRounds === null) {
     unset.plannedRounds = "";
   } else if (updates.plannedRounds !== undefined) {
@@ -842,37 +921,84 @@ export async function createNextRound(
 
   const players = await listPlayers(tournamentId);
   const activePlayerIds = players.filter((p) => p.status === "active").map((p) => p.id);
+  const activeSet = new Set(activePlayerIds);
 
   const minPlayers = phase.minPlayersPerMatch;
   const maxPlayers = phase.maxPlayersPerMatch;
 
   // Chaque groupe = les joueurs d'un match à créer ; un groupe de taille 1
   // est un BYE. Uniformise pairings 2-joueurs (bracket, suisse en duel) et
-  // pods multijoueurs (suisse).
+  // pods multijoueurs (suisse/élimination).
   const pairingsToGroups = (pairings: PairingResult[]): string[][] =>
     pairings.map((p) => (p.player2Id === null ? [p.player1Id] : [p.player1Id, p.player2Id]));
+
+  // Ordonne un ensemble de joueurs pour l'appariement : soit aléatoirement,
+  // soit selon le classement (multijoueur, scoring de la phase) sur les matchs
+  // déjà joués de la phase.
+  const orderPlayers = (ids: string[], seeding: TournamentEliminationSeeding): string[] =>
+    seeding === "random"
+      ? shuffleArray([...ids])
+      : calculateMultiplayerStandings(ids, phaseMatches, () => scoringForPhase(phase)).map((s) => s.playerId);
+
+  // Ensemble qualifié à l'entrée de la phase : classé par le classement de la
+  // phase précédente (si présente), sinon par seed/inscription, puis limité au
+  // top cut éventuel.
+  const qualifiedEntryPlayers = async (): Promise<string[]> => {
+    const allPhases = await listPhases(tournamentId);
+    const phaseIndex = allPhases.findIndex((p) => p.id === phaseId);
+    const previousPhase = phaseIndex > 0 ? allPhases[phaseIndex - 1] : undefined;
+    let ranked = activePlayerIds; // déjà trié par seed puis inscription
+    if (previousPhase) {
+      const previousPhaseMatches = await listPhaseMatches(tId, new ObjectId(previousPhase.id));
+      ranked = calculateMultiplayerStandings(
+        activePlayerIds,
+        previousPhaseMatches,
+        () => scoringForPhase(previousPhase)
+      ).map((s) => s.playerId);
+    }
+    return phase.topCut && phase.topCut < ranked.length ? ranked.slice(0, phase.topCut) : ranked;
+  };
 
   let groups: string[][] = [];
 
   if (phase.type === "swiss") {
-    if (activePlayerIds.length < minPlayers) {
+    // Champ de la phase : ensemble qualifié en ronde 1, puis les participants
+    // encore actifs pour les rondes suivantes.
+    const field = lastRound
+      ? [...new Set(phaseMatches.flatMap((m) => m.players.map((p) => p.playerId)))].filter((id) =>
+          activeSet.has(id)
+        )
+      : await qualifiedEntryPlayers();
+    if (field.length < minPlayers) {
       throw new TournamentError("invalid", `Au moins ${minPlayers} joueurs actifs sont requis`);
     }
     if (minPlayers === 2 && maxPlayers === 2) {
       // Duel : appariement suisse classique (avec évitement des re-matchs).
-      groups = pairingsToGroups(
-        generateSwissPairings(activePlayerIds, phaseMatches.map(toPairingMatch), roundNumber)
-      );
+      groups = pairingsToGroups(generateSwissPairings(field, phaseMatches.map(toPairingMatch), roundNumber));
     } else {
       // Pods multijoueurs : ordre aléatoire en ronde 1, sinon par classement.
-      const ordered =
-        roundNumber === 1
-          ? shuffleArray([...activePlayerIds])
-          : calculateMultiplayerStandings(activePlayerIds, phaseMatches).map((s) => s.playerId);
+      const ordered = roundNumber === 1 ? shuffleArray([...field]) : orderPlayers(field, "standings");
       groups = chunkIntoPods(ordered, minPlayers, maxPlayers);
     }
+  } else if (phase.type === "elimination") {
+    // Seuls les vainqueurs de la ronde précédente avancent ; ré-appariement
+    // selon le classement ou aléatoire (eliminationSeeding).
+    let field: string[];
+    if (lastRound) {
+      const lastRoundMatches = phaseMatches.filter((m) => m.roundId === lastRound.id);
+      field = [...new Set(lastRoundMatches.flatMap((m) => m.winnerIds))].filter((id) => activeSet.has(id));
+      if (field.length <= 1) {
+        throw new TournamentError("conflict", "Un seul joueur reste en lice : la phase est terminée");
+      }
+    } else {
+      field = await qualifiedEntryPlayers();
+      if (field.length < 2) {
+        throw new TournamentError("invalid", "Au moins 2 joueurs actifs sont requis");
+      }
+    }
+    groups = chunkIntoPods(orderPlayers(field, phase.eliminationSeeding), minPlayers, maxPlayers);
   } else if (phase.type === "bracket") {
-    // Bracket : strictement 2 joueurs (garanti par assertPlayerBoundsForType).
+    // Bracket : arbre figé, strictement 2 joueurs (assertPlayerBoundsForType).
     if (lastRound) {
       const lastRoundMatches = phaseMatches.filter((m) => m.roundId === lastRound.id);
       if (lastRoundMatches.length === 1) {
@@ -880,25 +1006,12 @@ export async function createNextRound(
       }
       groups = pairingsToGroups(generateNextBracketRound(lastRoundMatches.map(toPairingMatch)));
     } else {
-      // Première ronde du bracket : seeding depuis le classement de la phase
-      // précédente s'il y en a une, sinon depuis l'ordre des seeds/inscriptions.
-      // Le classement est calculé avec la variante multijoueur pour supporter
-      // une phase précédente freeform contenant des matchs à 3+ joueurs.
-      if (activePlayerIds.length < 2) {
+      // Première ronde : seedée sur l'ordre qualifié d'entrée (top cut inclus).
+      const seededField = await qualifiedEntryPlayers();
+      if (seededField.length < 2) {
         throw new TournamentError("invalid", "Au moins 2 joueurs actifs sont requis");
       }
-      const phases = await listPhases(tournamentId);
-      const phaseIndex = phases.findIndex((p) => p.id === phaseId);
-      const previousPhase = phaseIndex > 0 ? phases[phaseIndex - 1] : undefined;
-      let rankedPlayerIds = activePlayerIds;
-      if (previousPhase) {
-        const previousPhaseMatches = await listPhaseMatches(tId, new ObjectId(previousPhase.id));
-        rankedPlayerIds = calculateMultiplayerStandings(activePlayerIds, previousPhaseMatches).map(
-          (s) => s.playerId
-        );
-      }
-      // Les joueurs étant déjà classés, le bracket est seedé sur cet ordre.
-      groups = pairingsToGroups(generateEliminationBracket(rankedPlayerIds, [], phase.topCut));
+      groups = pairingsToGroups(generateEliminationBracket(seededField, [], undefined));
     }
   }
   // freeform: pas de génération, la ronde est créée vide.
@@ -930,13 +1043,14 @@ export async function createNextRound(
     const isBye = group.length === 1;
     const matchPlayers: TournamentMatchPlayer[] = group.map((playerId) => ({
       playerId,
-      score: isBye ? byeWinScore(phase.matchFormat) : 0,
+      score: isBye ? byeWinScore(phase.bestOf) : 0,
     }));
     return {
       tournamentId: tId,
       phaseId: pId,
       roundId: roundResult.insertedId,
       players: matchPlayers,
+      games: [],
       winnerIds: isBye ? [group[0]] : [],
       bracketPosition: phase.type === "bracket" ? generateBracketPosition(i, groups.length) : undefined,
       status: isBye ? "completed" : "pending",
@@ -1076,8 +1190,9 @@ export async function createMatch(
     // tie-breakers (gamesWon/gamesDiff) cohérents.
     players: data.players.map((playerId) => ({
       playerId,
-      score: isBye ? byeWinScore(phase.matchFormat) : 0,
+      score: isBye ? byeWinScore(phase.bestOf) : 0,
     })),
+    games: [],
     winnerIds: isBye ? [data.players[0]] : [],
     bracketPosition: data.bracketPosition,
     status: isBye ? "completed" : "pending",
@@ -1099,7 +1214,7 @@ function assertActorIsInMatch(match: TournamentMatch, actor: MatchActor): void {
 export async function reportMatchResult(
   tournament: Tournament,
   matchId: string,
-  data: { scores: Record<string, number>; winnerIds?: string[] },
+  data: { games: TournamentGameResult[] },
   actor: MatchActor
 ): Promise<TournamentMatch> {
   const match = await getMatchById(tournament.id, matchId);
@@ -1108,6 +1223,11 @@ export async function reportMatchResult(
   }
   if (match.players.length === 1) {
     throw new TournamentError("conflict", "Le résultat d'un BYE ne peut pas être modifié");
+  }
+
+  const phase = await getPhaseById(tournament.id, match.phaseId);
+  if (!phase) {
+    throw new TournamentError("not-found", "Phase non trouvée");
   }
 
   // Un joueur ne peut rapporter que son propre match, seulement si le
@@ -1127,32 +1247,35 @@ export async function reportMatchResult(
     }
   }
 
-  // Les scores doivent couvrir exactement les joueurs du match.
   const matchPlayerIds = match.players.map((p) => p.playerId);
-  const scoredIds = Object.keys(data.scores);
-  if (
-    scoredIds.length !== matchPlayerIds.length ||
-    !matchPlayerIds.every((id) => id in data.scores)
-  ) {
-    throw new TournamentError("invalid", "Les scores doivent être fournis pour chaque joueur du match");
+
+  // Au plus bestOf parties ; chaque partie ne concerne que des joueurs du match.
+  if (data.games.length > phase.bestOf) {
+    throw new TournamentError("invalid", `Un best-of-${phase.bestOf} compte au plus ${phase.bestOf} parties`);
+  }
+  for (const game of data.games) {
+    if (game.winnerId != null && !matchPlayerIds.includes(game.winnerId)) {
+      throw new TournamentError("invalid", "Le vainqueur d'une partie doit être un joueur du match");
+    }
+    if (phase.resultMode === "points") {
+      if (!game.points || !matchPlayerIds.every((id) => id in (game.points ?? {}))) {
+        throw new TournamentError("invalid", "Les points de chaque joueur sont requis pour chaque partie");
+      }
+    }
   }
 
-  let winnerIds: string[];
-  if (data.winnerIds !== undefined) {
-    if (!data.winnerIds.every((id) => matchPlayerIds.includes(id))) {
-      throw new TournamentError("invalid", "Les vainqueurs doivent être des joueurs du match");
-    }
-    winnerIds = data.winnerIds;
-  } else {
-    // Par défaut : les joueurs au score maximal gagnent ; tous à égalité = nul.
-    const maxScore = Math.max(...matchPlayerIds.map((id) => data.scores[id]));
-    const top = matchPlayerIds.filter((id) => data.scores[id] === maxScore);
-    winnerIds = top.length === matchPlayerIds.length ? [] : top;
-  }
+  // Déduit le vainqueur de chaque partie et le nombre de parties gagnées.
+  const { normalizedGames, gamesWonByPlayer } = tallyGames(data.games, matchPlayerIds, phase.resultMode);
+
+  // Vainqueur(s) du match : joueur(s) ayant gagné le plus de parties ; égalité
+  // générale (ou aucune partie gagnée) = match nul.
+  const maxWins = Math.max(0, ...matchPlayerIds.map((id) => gamesWonByPlayer.get(id) ?? 0));
+  const leaders = matchPlayerIds.filter((id) => (gamesWonByPlayer.get(id) ?? 0) === maxWins);
+  const winnerIds = maxWins > 0 && leaders.length < matchPlayerIds.length ? leaders : [];
 
   const updatedPlayers: TournamentMatchPlayer[] = match.players.map((p) => ({
     playerId: p.playerId,
-    score: data.scores[p.playerId],
+    score: gamesWonByPlayer.get(p.playerId) ?? 0,
   }));
 
   // Sans confirmation requise (ou pour un organisateur), le résultat est final.
@@ -1160,6 +1283,7 @@ export async function reportMatchResult(
 
   const set: Record<string, unknown> = {
     players: updatedPlayers,
+    games: normalizedGames,
     winnerIds,
     reportedBy: actor.id,
     status: needsConfirmation ? "in-progress" : "completed",
@@ -1267,18 +1391,45 @@ export type TournamentStanding = PlayerStanding & {
   playerStatus: TournamentPlayer["status"];
 };
 
+type MatchScoring = {
+  method: TournamentScoringMethod;
+  fixed: TournamentFixedScoring;
+  rankOffsets: number[];
+};
+
+function scoringForPhase(phase: TournamentPhase): MatchScoring {
+  return { method: phase.scoringMethod, fixed: phase.fixedScoring, rankOffsets: phase.rankOffsets };
+}
+
+const DEFAULT_MATCH_SCORING: MatchScoring = {
+  method: "fixed",
+  fixed: DEFAULT_FIXED_SCORING,
+  rankOffsets: DEFAULT_RANK_OFFSETS,
+};
+
+// Points « rank_offset » d'un joueur : N + offset[rang], N = nombre de joueurs
+// du match, rang déterminé par les parties gagnées (score). Les ex æquo
+// partagent le même rang ; au-delà du tableau, on réutilise le dernier offset.
+function rankOffsetPoints(match: TournamentMatch, playerId: string, offsets: number[]): number {
+  const n = match.players.length;
+  const self = match.players.find((p) => p.playerId === playerId);
+  if (!self) return 0;
+  const rankIndex = match.players.filter((p) => p.score > self.score).length;
+  const offset = offsets[Math.min(rankIndex, offsets.length - 1)] ?? 0;
+  return n + offset;
+}
+
 /**
- * Classement multijoueur : généralise le calcul 2-joueurs de
- * lib/utils/pairing.ts (mêmes points et tiebreakers) aux matchs à N joueurs.
- * Pour un match à 2, le comportement est identique à calculateStandings.
- * - vainqueurs (winnerIds) : victoire, 3 points ; autres joueurs : défaite ;
- *   winnerIds vide sur un match terminé : nul pour tous, 1 point chacun.
- * - BYE (1 seul joueur) : victoire automatique.
- * - gamesWon = son score ; gamesLost = somme des scores adverses.
+ * Classement multijoueur, sensible au scoring de chaque match (résolu via
+ * `scoringFor`). Généralise le calcul 2-joueurs de lib/utils/pairing.ts.
+ * - wins/losses/draws et OMW% dérivent des vainqueurs (winnerIds) ;
+ * - matchPoints selon la méthode de la phase (fixed ou rank_offset) ;
+ * - BYE (1 seul joueur) = victoire automatique.
  */
 function calculateMultiplayerStandings(
   playerIds: string[],
-  matches: TournamentMatch[]
+  matches: TournamentMatch[],
+  scoringFor: (match: TournamentMatch) => MatchScoring = () => DEFAULT_MATCH_SCORING
 ): PlayerStanding[] {
   const standings = new Map<string, PlayerStanding>();
 
@@ -1301,6 +1452,7 @@ function calculateMultiplayerStandings(
     const isBye = match.players.length === 1;
     const totalScore = match.players.reduce((sum, p) => sum + p.score, 0);
     const isDraw = !isBye && match.winnerIds.length === 0;
+    const scoring = scoringFor(match);
 
     for (const matchPlayer of match.players) {
       const standing = standings.get(matchPlayer.playerId);
@@ -1309,14 +1461,23 @@ function calculateMultiplayerStandings(
       standing.gamesWon += matchPlayer.score;
       standing.gamesLost += totalScore - matchPlayer.score;
 
-      if (isBye || match.winnerIds.includes(matchPlayer.playerId)) {
+      const isWinner = isBye || match.winnerIds.includes(matchPlayer.playerId);
+      if (isWinner) {
         standing.wins++;
-        standing.matchPoints += 3;
       } else if (isDraw) {
         standing.draws++;
-        standing.matchPoints += 1;
       } else {
         standing.losses++;
+      }
+
+      if (scoring.method === "rank_offset") {
+        standing.matchPoints += rankOffsetPoints(match, matchPlayer.playerId, scoring.rankOffsets);
+      } else if (isWinner) {
+        standing.matchPoints += scoring.fixed.win;
+      } else if (isDraw) {
+        standing.matchPoints += scoring.fixed.draw;
+      } else {
+        standing.matchPoints += scoring.fixed.loss;
       }
     }
   }
@@ -1366,14 +1527,19 @@ export async function getStandings(tournamentId: string, phaseId?: string): Prom
     filter.phaseId = parseObjectId(phaseId, "Phase");
   }
 
-  const [players, matchDocs] = await Promise.all([
+  const [players, matchDocs, phases] = await Promise.all([
     listPlayers(tournamentId),
     db.collection<TournamentMatchDb>(MATCHES).find(filter).toArray(),
+    listPhases(tournamentId),
   ]);
 
+  // Chaque match est scoré selon la méthode de sa propre phase (le scoring
+  // peut différer d'une phase à l'autre du tournoi).
+  const scoringByPhaseId = new Map(phases.map((p) => [p.id, scoringForPhase(p)]));
   const standings = calculateMultiplayerStandings(
     players.map((p) => p.id),
-    matchDocs.map(toMatch)
+    matchDocs.map(toMatch),
+    (match) => scoringByPhaseId.get(match.phaseId) ?? DEFAULT_MATCH_SCORING
   );
 
   const playersById = new Map(players.map((p) => [p.id, p]));

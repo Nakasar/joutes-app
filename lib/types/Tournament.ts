@@ -1,12 +1,38 @@
 import { ObjectId } from "bson";
 
 export type TournamentStatus = "draft" | "in-progress" | "completed";
-export type TournamentPhaseType = "freeform" | "swiss" | "bracket";
+// - freeform : pas de génération automatique des matchs.
+// - swiss : rondes suisses, appariées selon le classement.
+// - elimination : seuls les vainqueurs passent à la ronde suivante, ré-appariés
+//   selon le classement ou aléatoirement (eliminationSeeding).
+// - bracket : arbre d'élimination figé, seedé selon le classement d'entrée.
+export type TournamentPhaseType = "freeform" | "swiss" | "elimination" | "bracket";
 export type TournamentPhaseStatus = "not-started" | "in-progress" | "completed";
-export type TournamentMatchFormat = "BO1" | "BO2" | "BO3" | "BO5";
 export type TournamentRoundStatus = "in-progress" | "completed";
 export type TournamentPlayerStatus = "active" | "dropped";
 export type TournamentMatchStatus = "pending" | "in-progress" | "completed" | "disputed";
+
+// Comment le résultat d'une partie du best-of est renseigné.
+// - selection : on désigne le vainqueur de chaque partie.
+// - points : les joueurs renseignent leurs points, le vainqueur de la partie
+//   en est déduit (score le plus élevé ; égalité = partie nulle).
+export type TournamentResultMode = "points" | "selection";
+
+// Comment les points de classement d'un match sont attribués.
+// - fixed : points fixes par victoire / défaite / égalité.
+// - rank_offset : points = N + offset[rang], N étant le nombre de joueurs du
+//   match, à partir d'un tableau d'offsets par rang.
+export type TournamentScoringMethod = "fixed" | "rank_offset";
+
+// Ré-appariement des vainqueurs entre rondes d'une phase à élimination.
+export type TournamentEliminationSeeding = "standings" | "random";
+
+export type TournamentFixedScoring = { win: number; loss: number; draw: number };
+
+export const DEFAULT_FIXED_SCORING: TournamentFixedScoring = { win: 3, loss: 0, draw: 1 };
+// Offsets par défaut ajoutés à N (nombre de joueurs du match) selon le rang :
+// 1er = N+3, 2e = N+1, 3e = N-1, 4e = N-3, etc.
+export const DEFAULT_RANK_OFFSETS: number[] = [3, 1, -1, -3, -4, -5, -7];
 
 export type Tournament = {
   id: string;
@@ -46,8 +72,20 @@ export type TournamentPhase = {
   tournamentId: string;
   name: string;
   type: TournamentPhaseType;
-  matchFormat: TournamentMatchFormat;
+  // Nombre de parties du best-of (best-of-n). Défaut 1.
+  bestOf: number;
+  // Méthode de désignation du vainqueur de chaque partie. Défaut "selection".
+  resultMode: TournamentResultMode;
+  // Méthode d'attribution des points de classement. Défaut "fixed".
+  scoringMethod: TournamentScoringMethod;
+  // Utilisé quand scoringMethod === "fixed".
+  fixedScoring: TournamentFixedScoring;
+  // Utilisé quand scoringMethod === "rank_offset".
+  rankOffsets: number[];
+  // Ré-appariement des vainqueurs pour une phase à élimination. Défaut "standings".
+  eliminationSeeding: TournamentEliminationSeeding;
   plannedRounds?: number;
+  // Nombre de joueurs qualifiés à l'entrée de la phase (top cut). Absent = tous.
   topCut?: number;
   // Nombre de joueurs par match généré automatiquement. Par défaut 2-2 (duel).
   // Un intervalle plus large (ex: 3-4) génère des « pods » multijoueurs en
@@ -72,7 +110,18 @@ export type TournamentRound = {
 export type TournamentMatchPlayer = {
   // Tournament player id (not a user id).
   playerId: string;
+  // Nombre de parties du best-of gagnées par ce joueur (agrégat dérivé de games).
   score: number;
+};
+
+// Résultat d'une partie du best-of.
+export type TournamentGameResult = {
+  // Vainqueur de la partie (id de joueur de tournoi). null = partie nulle.
+  // En mode "points", il est déduit des points ; en mode "selection", il est
+  // désigné directement.
+  winnerId?: string | null;
+  // Mode "points" uniquement : points par joueur de tournoi pour cette partie.
+  points?: Record<string, number>;
 };
 
 export type TournamentMatch = {
@@ -84,6 +133,8 @@ export type TournamentMatch = {
   // always produces 1-2 players, larger matches support multiplayer formats
   // (created manually, typically in freeform phases).
   players: TournamentMatchPlayer[];
+  // Détail des parties du best-of jouées. Vide tant qu'aucun résultat.
+  games: TournamentGameResult[];
   // Empty while no result; on a completed match, empty means a draw between
   // all players, otherwise the (co-)winners.
   winnerIds: string[];
