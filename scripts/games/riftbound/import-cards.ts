@@ -5,6 +5,7 @@ import {ObjectId} from "mongodb";
 import {dirname} from 'path';
 import {fileURLToPath} from 'url';
 import meilisearch, {indexes} from "../../../lib/meilisearch.ts";
+import {inspect} from "node:util";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -14,6 +15,7 @@ type WebSiteCard = {
   text?: { label: string; richText: { type: string; body: string } };
   cardType: { label: string; superType: { id: string; label: string }[]; type: { id: string; label: string }[] }
   cardImage: { url: string };
+  tags?: { tags: string[] };
 };
 
 async function fetchCardsFromWebsite(): Promise<WebSiteCard[]> {
@@ -57,10 +59,14 @@ async function main() {
       throw new Error(`Invalid card code: ${card.publicCode}`);
     }
 
+    const isLegend = card.cardType.type?.[0]?.label === 'Legend';
+    const tag = card.tags?.tags?.[0];
+
     return {
       id: `${match.groups?.set}${match.groups?.cn}`,
-      name: card.name,
+      name: (isLegend && tag) ? `${tag}, ${card.name}` : card.name,
       type: card.cardType.type[0]?.label,
+      tags: card.tags?.tags,
       superType: card.cardType.superType?.[0]?.label,
       isToken: card.cardType.superType?.[0]?.label === 'Token',
       image: card.cardImage?.url,
