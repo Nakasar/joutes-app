@@ -44,6 +44,8 @@ type Props = {
   bestOf: number;
   // La suppression de match n'est possible que dans la dernière ronde.
   isLastRound: boolean;
+  // Rouvrir cette ronde annulera aussi les phases démarrées ensuite.
+  reopenCascades: boolean;
 };
 
 export function OrganizerRoundClient({
@@ -54,6 +56,7 @@ export function OrganizerRoundClient({
   resultMode,
   bestOf,
   isLastRound,
+  reopenCascades,
 }: Props) {
   const [matches, setMatches] = useState<TournamentMatch[]>(initialMatches);
   const [error, setError] = useState<string | null>(null);
@@ -597,8 +600,13 @@ export function OrganizerRoundClient({
         open={reopenOpen}
         onOpenChange={(open) => !open && setReopenOpen(false)}
         title="Rouvrir la ronde"
-        description={`Rouvrir la ronde ${round.number} ? Elle redeviendra la ronde courante et ses résultats pourront être modifiés. Pensez à recalculer le classement après vos corrections.`}
+        description={
+          reopenCascades
+            ? `Rouvrir la ronde ${round.number} annulera les phases démarrées ensuite : leurs rondes et matchs seront supprimés et les joueurs éliminés par leur top cut seront restaurés. Cette phase redeviendra la phase courante. Continuer ?`
+            : `Rouvrir la ronde ${round.number} ? Elle redeviendra la ronde courante et ses résultats pourront être modifiés. Pensez à recalculer le classement après vos corrections.`
+        }
         confirmLabel="Rouvrir"
+        destructive={reopenCascades}
         busy={anyBusy}
         onConfirm={reopenRound}
       />
