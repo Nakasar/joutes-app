@@ -15,14 +15,21 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import type { TournamentAnnouncement } from "@/lib/types/Tournament";
+
+// Annonce telle que reçue côté client (dates sérialisées en string).
+export type ApiAnnouncement = {
+  id: string;
+  message: string;
+  level: "info" | "urgent";
+  createdAt: string;
+};
 
 export function AnnouncementsManager({
   tournamentId,
   initialAnnouncements,
 }: {
   tournamentId: string;
-  initialAnnouncements: TournamentAnnouncement[];
+  initialAnnouncements: ApiAnnouncement[];
 }) {
   const [announcements, setAnnouncements] = useState(initialAnnouncements);
   const [message, setMessage] = useState("");
@@ -44,7 +51,7 @@ export function AnnouncementsManager({
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error ?? "Erreur lors de la création de l'annonce");
       }
-      const created: TournamentAnnouncement = await res.json();
+      const created: ApiAnnouncement = await res.json();
       setAnnouncements((current) => [created, ...current]);
       setMessage("");
     } catch (err) {

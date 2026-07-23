@@ -31,7 +31,15 @@ export default async function OrganizerLivePage({
       <OrganizerShell tournamentId={tournamentId} tournamentName={tournament.name} active="live">
         <div className="space-y-6">
           <TimerManager tournamentId={tournamentId} />
-          <AnnouncementsManager tournamentId={tournamentId} initialAnnouncements={announcements} />
+          <AnnouncementsManager
+            tournamentId={tournamentId}
+            initialAnnouncements={announcements.map((a) => ({
+              id: a.id,
+              message: a.message,
+              level: a.level,
+              createdAt: a.createdAt.toISOString(),
+            }))}
+          />
         </div>
       </OrganizerShell>
     </div>

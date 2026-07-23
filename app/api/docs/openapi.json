@@ -8773,7 +8773,7 @@
                     "name": { "type": "string" },
                     "announcements": {
                       "type": "array",
-                      "items": { "$ref": "#/components/schemas/TournamentAnnouncement" }
+                      "items": { "$ref": "#/components/schemas/TournamentAnnouncementPublic" }
                     },
                     "timer": {
                       "type": "object",
@@ -11573,6 +11573,16 @@
           "message": { "type": "string" },
           "level": { "type": "string", "enum": ["info", "urgent"] },
           "createdBy": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TournamentAnnouncementPublic": {
+        "type": "object",
+        "description": "Forme publique minimale d'une annonce, diffusée via /live (sans createdBy ni tournamentId).",
+        "properties": {
+          "id": { "type": "string" },
+          "message": { "type": "string" },
+          "level": { "type": "string", "enum": ["info", "urgent"] },
           "createdAt": { "type": "string", "format": "date-time" }
         }
       },

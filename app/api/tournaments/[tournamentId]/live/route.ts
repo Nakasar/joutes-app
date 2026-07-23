@@ -18,7 +18,13 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const announcements = await listAnnouncements(tournamentId);
     return NextResponse.json({
       name: tournament.name,
-      announcements,
+      // Forme publique minimale : n'expose pas createdBy / tournamentId.
+      announcements: announcements.map((a) => ({
+        id: a.id,
+        message: a.message,
+        level: a.level,
+        createdAt: a.createdAt,
+      })),
       timer: tournament.timer ?? null,
       serverNow: new Date().toISOString(),
     });
