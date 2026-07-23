@@ -24,15 +24,18 @@ export function usePaginatedSearch<T>(
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
 
+  // Borne la taille de page à au moins 1 pour éviter une division par 0.
+  const size = Math.max(1, Math.floor(pageSize));
+
   const normalized = query.trim().toLowerCase();
   const filtered = useMemo(
     () => (normalized ? items.filter((item) => toText(item).toLowerCase().includes(normalized)) : items),
     [items, normalized, toText]
   );
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / size));
   const currentPage = Math.max(0, Math.min(page, totalPages - 1));
-  const pageItems = filtered.slice(currentPage * pageSize, currentPage * pageSize + pageSize);
+  const pageItems = filtered.slice(currentPage * size, currentPage * size + size);
 
   return {
     query,
@@ -45,6 +48,6 @@ export function usePaginatedSearch<T>(
     pageItems,
     totalPages,
     total: filtered.length,
-    pageSize,
+    pageSize: size,
   };
 }

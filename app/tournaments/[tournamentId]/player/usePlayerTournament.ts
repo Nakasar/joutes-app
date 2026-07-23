@@ -63,15 +63,22 @@ export function usePlayerTournament(tournamentId: string) {
     setError(null);
     try {
       // Identité du joueur porté par la clé (les invités n'ont pas de compte).
+      // Best-effort : un échec de résolution n'empêche pas de charger le tournoi.
       if (syncKey) {
-        const syncRes = await fetch("/api/tournaments/sync", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ keys: [syncKey] }),
-        });
-        const syncData = await syncRes.json();
-        if (Array.isArray(syncData) && syncData[0]?.player?.id) {
-          setMyPlayerId(syncData[0].player.id);
+        try {
+          const syncRes = await fetch("/api/tournaments/sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ keys: [syncKey] }),
+          });
+          if (syncRes.ok) {
+            const syncData = await syncRes.json();
+            if (Array.isArray(syncData) && syncData[0]?.player?.id) {
+              setMyPlayerId(syncData[0].player.id);
+            }
+          }
+        } catch {
+          // Ignoré : l'identité pourra être résolue via la session si présente.
         }
       }
 
