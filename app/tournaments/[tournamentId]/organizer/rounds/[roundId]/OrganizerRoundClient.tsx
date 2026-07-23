@@ -23,6 +23,7 @@ import type {
   TournamentRound,
 } from "@/lib/types/Tournament";
 import { MatchGamesEditor } from "../../../MatchGamesEditor";
+import { MatchPlayerName } from "../../../MatchPlayerName";
 import { TablePagination } from "../../../TablePagination";
 
 const MATCH_STATUS_LABELS: Record<string, string> = {
@@ -374,18 +375,27 @@ export function OrganizerRoundClient({
                         <Badge variant="outline">{MATCH_STATUS_LABELS[match.status] ?? match.status}</Badge>
                       </td>
                       <td className="px-3 py-2 text-muted-foreground">
-                        {isBye
-                          ? "Victoire automatique"
-                          : match.status === "completed"
-                            ? match.players
-                                .map(
-                                  (p) =>
-                                    `${playerName(p.playerId)} ${p.score}${
-                                      match.winnerIds.includes(p.playerId) ? " 🏆" : ""
-                                    }`
-                                )
-                                .join(" · ")
-                            : "—"}
+                        {isBye ? (
+                          "Victoire automatique"
+                        ) : match.status === "completed" ? (
+                          <span className="inline-flex flex-wrap items-center gap-x-1 gap-y-1">
+                            {match.players.map((p, i) => (
+                              <span key={p.playerId} className="inline-flex items-center">
+                                {i > 0 && <span className="mr-1 text-muted-foreground">·</span>}
+                                <MatchPlayerName
+                                  isWinner={match.winnerIds.includes(p.playerId)}
+                                  name={
+                                    <>
+                                      {playerName(p.playerId)} <span className="font-mono">{p.score}</span>
+                                    </>
+                                  }
+                                />
+                              </span>
+                            ))}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
                       </td>
                       <td className="px-3 py-2">
                         <div className="flex items-center justify-end gap-1">

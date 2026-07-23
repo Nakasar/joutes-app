@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { TournamentGameResult } from "@/lib/types/Tournament";
 import { MatchGamesEditor } from "../MatchGamesEditor";
+import { MatchPlayerName } from "../MatchPlayerName";
 import { PlayerShell } from "./PlayerShell";
 import { usePlayerTournament, type ApiPhase } from "./usePlayerTournament";
 
@@ -212,9 +213,11 @@ export default function TournamentPlayerMatchPage({
                 {myMatch.players.map((p) => (
                   <div key={p.playerId} className="flex items-center justify-between gap-4">
                     <span className={p.playerId === myPlayerId ? "font-semibold" : ""}>
-                      {playerName(p.playerId)}
+                      <MatchPlayerName
+                        isWinner={myMatch.winnerIds.includes(p.playerId)}
+                        name={playerName(p.playerId)}
+                      />
                       {p.playerId === myPlayerId ? " (moi)" : ""}
-                      {myMatch.winnerIds.includes(p.playerId) ? " 🏆" : ""}
                     </span>
                     <span className="font-mono text-lg">{p.score}</span>
                   </div>
