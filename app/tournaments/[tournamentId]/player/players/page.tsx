@@ -27,6 +27,7 @@ export default function TournamentPlayerPlayersPage({
       active="players"
       tournament={tournament}
       syncKey={syncKey}
+      myPlayerId={myPlayerId}
       loading={loading}
       error={error}
     >
