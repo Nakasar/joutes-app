@@ -8,6 +8,7 @@ import {
   sanitizePlayer,
   TournamentError,
 } from "@/lib/db/tournaments";
+import { getUserById } from "@/lib/db/users";
 import { tournamentErrorResponse } from "../utils";
 
 /**
@@ -29,9 +30,18 @@ export async function POST(request: NextRequest) {
     const session = await auth.api.getSession({ headers: await headers() });
     const userId = session?.user?.id;
 
+    // Pour un joueur connecté, le nom affiché vient de son compte (displayName
+    // ou username), avec repli sur le nom de session — la session better-auth
+    // peut ne pas porter de `name`, ce qui donnait « Joueur » par défaut.
+    let resolvedName = displayName;
+    if (userId) {
+      const user = await getUserById(userId);
+      resolvedName = user?.displayName || user?.username || session?.user?.name || displayName;
+    }
+
     const { player, alreadyJoined } = await joinTournament(tournament, {
       userId,
-      displayName: userId ? session?.user?.name ?? displayName : displayName,
+      displayName: resolvedName,
     });
 
     return NextResponse.json({
