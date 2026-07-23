@@ -11,6 +11,7 @@ function toAchievement(doc: WithId<Document>): Achievement {
     name: doc.name,
     description: doc.description,
     icon: doc.icon,
+    iconImage: doc.iconImage,
     points: doc.points || 0,
     category: doc.category,
     isHidden: doc.isHidden || false,

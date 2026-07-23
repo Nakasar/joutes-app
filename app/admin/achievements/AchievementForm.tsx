@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Achievement } from "@/lib/types/Achievement";
 import { createAchievementAction, updateAchievementAction } from "./actions";
+import { AchievementIconUploader } from "./AchievementIconUploader";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -22,7 +23,7 @@ export function AchievementForm({ initialData }: { initialData?: Achievement }) 
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
     description: initialData?.description || "",
-    icon: initialData?.icon || "🏆",
+    iconImage: initialData?.iconImage || "",
     points: initialData?.points || 10,
     category: initialData?.category || "Général",
     isHidden: initialData?.isHidden || false,
@@ -47,9 +48,15 @@ export function AchievementForm({ initialData }: { initialData?: Achievement }) 
       if (!formData.name || !formData.description) {
         throw new Error("Veuillez remplir tous les champs obligatoires.");
       }
+      // Une image est requise pour un nouveau succès ; en édition, un ancien
+      // succès sans image conserve son emoji d'origine.
+      if (!initialData && !formData.iconImage) {
+        throw new Error("Veuillez importer une image carrée pour l'icône du succès.");
+      }
 
       const data = {
         ...formData,
+        iconImage: formData.iconImage || undefined,
         points: Number(formData.points),
       };
 
@@ -105,30 +112,25 @@ export function AchievementForm({ initialData }: { initialData?: Achievement }) 
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <SimpleLabel htmlFor="icon">Icône (Emoji)</SimpleLabel>
-          <Input
-            id="icon"
-            name="icon"
-            placeholder="👋"
-            value={formData.icon}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <SimpleLabel htmlFor="points">Points</SimpleLabel>
-          <Input
-            id="points"
-            name="points"
-            type="number"
-            value={formData.points}
-            onChange={handleChange}
-            required
-            min={0}
-          />
-        </div>
+      <div className="space-y-2">
+        <SimpleLabel htmlFor="iconImage">Icône (image carrée)</SimpleLabel>
+        <AchievementIconUploader
+          value={formData.iconImage || undefined}
+          onChange={(url) => setFormData((prev) => ({ ...prev, iconImage: url || "" }))}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <SimpleLabel htmlFor="points">Points</SimpleLabel>
+        <Input
+          id="points"
+          name="points"
+          type="number"
+          value={formData.points}
+          onChange={handleChange}
+          required
+          min={0}
+        />
       </div>
 
       <div className="space-y-2">

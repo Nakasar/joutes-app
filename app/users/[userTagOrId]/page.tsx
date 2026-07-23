@@ -8,6 +8,7 @@ import { getSellListForOwner } from "@/lib/db/sell-lists";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Gamepad2, MapPin, Lock, Globe, ExternalLink, Trophy, Heart, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { AchievementIcon } from "@/components/AchievementIcon";
 import { Game } from "@/lib/types/Game";
 import { Lair } from "@/lib/types/Lair";
 import {Achievement, AchievementWithUnlockInfo} from "@/lib/types/Achievement";
@@ -313,12 +314,14 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
                       key={achievement.id}
                       className="flex items-center gap-3 p-3 border rounded-lg bg-muted"
                     >
-                      {achievement.icon && (
-                        <span
-                          className="flex items-center justify-center w-10 h-10 rounded bg-background text-2xl"
-                          aria-hidden="true"
-                        >
-                          {achievement.icon}
+                      {(achievement.iconImage || achievement.icon) && (
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-background">
+                          <AchievementIcon
+                            icon={achievement.icon}
+                            iconImage={achievement.iconImage}
+                            name={achievement.name}
+                            size={40}
+                          />
                         </span>
                       )}
                       <div className="flex-1 min-w-0">
