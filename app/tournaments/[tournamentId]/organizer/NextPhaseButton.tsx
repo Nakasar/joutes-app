@@ -16,6 +16,7 @@ import {
 type Entry = { playerId: string; displayName: string };
 type Transition = {
   currentPhase: { id: string; name: string } | null;
+  currentPhaseComplete: boolean;
   nextPhase: { id: string; name: string; type: string; topCut?: number } | null;
   qualification: { qualified: Entry[]; eliminated: Entry[]; topCut?: number } | null;
 };
@@ -73,6 +74,7 @@ export function NextPhaseButton({ tournamentId }: { tournamentId: string }) {
   const qualified = transition?.qualification?.qualified ?? [];
   const eliminated = transition?.qualification?.eliminated ?? [];
   const hasCut = (transition?.qualification?.topCut ?? 0) > 0 && eliminated.length > 0;
+  const currentIncomplete = transition?.currentPhaseComplete === false;
 
   return (
     <div className="flex flex-col items-end gap-1">
@@ -101,6 +103,13 @@ export function NextPhaseButton({ tournamentId }: { tournamentId: string }) {
             </DialogDescription>
           </DialogHeader>
 
+          {currentIncomplete && (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+              La phase courante n&apos;est pas terminée : tous ses matchs doivent avoir un résultat
+              avant de passer à la phase suivante.
+            </div>
+          )}
+
           {hasCut && (
             <div className="space-y-2">
               <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
@@ -126,7 +135,7 @@ export function NextPhaseButton({ tournamentId }: { tournamentId: string }) {
             <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={busy}>
               Annuler
             </Button>
-            <Button type="button" onClick={confirm} disabled={busy || !next}>
+            <Button type="button" onClick={confirm} disabled={busy || !next || currentIncomplete}>
               Confirmer
             </Button>
           </DialogFooter>

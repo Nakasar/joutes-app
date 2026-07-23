@@ -1817,20 +1817,41 @@ async function computePhaseEntryQualification(
 }
 
 /**
+ * Vrai si tous les matchs d'une phase sont terminés (aucun match non
+ * "completed"). Sert à interdire de clôturer une phase — et donc de figer le
+ * top cut — sur un classement partiel.
+ */
+async function phaseAllMatchesCompleted(tournamentId: string, phaseId: string): Promise<boolean> {
+  const pending = await db.collection<TournamentMatchDb>(MATCHES).findOne({
+    tournamentId: new ObjectId(tournamentId),
+    phaseId: new ObjectId(phaseId),
+    status: { $ne: "completed" },
+  });
+  return !pending;
+}
+
+/**
  * Aperçu du passage à la phase suivante : phase courante (à clôturer), phase à
  * démarrer, et qualification à l'entrée (qualifiés / éliminés par le top cut).
  */
 export async function getNextPhaseTransition(tournamentId: string): Promise<{
   currentPhase: { id: string; name: string } | null;
+  // Faux si la phase courante a encore des matchs non terminés : la transition
+  // est alors refusée (top cut basé sur un classement partiel).
+  currentPhaseComplete: boolean;
   nextPhase: { id: string; name: string; type: TournamentPhase["type"]; topCut?: number } | null;
   qualification: PhaseEntryQualification | null;
 }> {
   const phases = await listPhases(tournamentId);
   const { currentPhase, nextPhase } = resolvePhaseTransition(phases);
+  const currentPhaseComplete = currentPhase
+    ? await phaseAllMatchesCompleted(tournamentId, currentPhase.id)
+    : true;
 
   if (!nextPhase) {
     return {
       currentPhase: currentPhase ? { id: currentPhase.id, name: currentPhase.name } : null,
+      currentPhaseComplete,
       nextPhase: null,
       qualification: null,
     };
@@ -1841,6 +1862,7 @@ export async function getNextPhaseTransition(tournamentId: string): Promise<{
 
   return {
     currentPhase: currentPhase ? { id: currentPhase.id, name: currentPhase.name } : null,
+    currentPhaseComplete,
     nextPhase: { id: nextPhase.id, name: nextPhase.name, type: nextPhase.type, topCut: nextPhase.topCut },
     qualification,
   };
@@ -1861,6 +1883,15 @@ export async function advanceToNextPhase(
     throw new TournamentError("conflict", "Aucune phase suivante à démarrer");
   }
 
+  // La phase courante ne peut être clôturée que si tous ses matchs sont
+  // terminés (sinon le top cut reposerait sur un classement partiel).
+  if (currentPhase && !(await phaseAllMatchesCompleted(tournamentId, currentPhase.id))) {
+    throw new TournamentError(
+      "conflict",
+      "Tous les matchs de la phase courante doivent être terminés avant de passer à la phase suivante"
+    );
+  }
+
   const players = await listPlayers(tournamentId);
   const qualification = await computePhaseEntryQualification(tournamentId, nextPhase, phases, players);
 
@@ -1877,9 +1908,15 @@ export async function advanceToNextPhase(
   if (currentPhase && currentPhase.status !== "completed") {
     await updatePhase(tournamentId, currentPhase.id, { status: "completed" });
   }
-  // Élimine les joueurs non qualifiés.
-  for (const player of qualification.eliminated) {
-    await updatePlayer(tournamentId, player.playerId, { status: "dropped" });
+  // Élimine les joueurs non qualifiés (un seul updateMany plutôt qu'une boucle).
+  if (qualification.eliminated.length > 0) {
+    await db.collection<TournamentPlayerDb>(PLAYERS).updateMany(
+      {
+        _id: { $in: qualification.eliminated.map((p) => new ObjectId(p.playerId)) },
+        tournamentId: new ObjectId(tournamentId),
+      },
+      { $set: { status: "dropped" } }
+    );
   }
   // Bascule la phase courante et crée la première ronde.
   await updateTournament(tournamentId, { currentPhaseId: nextPhase.id });
