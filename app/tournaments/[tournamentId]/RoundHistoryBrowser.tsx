@@ -515,6 +515,9 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
                           V/N/D
                         </th>
                         <th className="px-3 py-2 text-right text-xs font-medium uppercase text-muted-foreground">
+                          OMW%
+                        </th>
+                        <th className="px-3 py-2 text-right text-xs font-medium uppercase text-muted-foreground">
                           Diff
                         </th>
                       </tr>
@@ -532,13 +535,16 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
                             {standing.wins}/{standing.draws}/{standing.losses}
                           </td>
                           <td className="px-3 py-2 text-right font-mono">
+                            {((standing.opponentMatchWinPercentage ?? 0) * 100).toFixed(1)}%
+                          </td>
+                          <td className="px-3 py-2 text-right font-mono">
                             {standing.gamesDiff > 0 ? `+${standing.gamesDiff}` : standing.gamesDiff}
                           </td>
                         </tr>
                       ))}
                       {standingsSearch.pageItems.length === 0 && (
                         <tr>
-                          <td colSpan={5} className="px-3 py-3 text-center text-muted-foreground">
+                          <td colSpan={6} className="px-3 py-3 text-center text-muted-foreground">
                             Aucun joueur ne correspond à la recherche.
                           </td>
                         </tr>

@@ -8575,7 +8575,7 @@
         "tags": [
           "Tournaments"
         ],
-        "summary": "Operate on a match: report, confirm or dispute a result",
+        "summary": "Operate on a match: report, confirm, dispute or clear a result",
         "security": [
           {
             "sessionAuth": []
@@ -8587,7 +8587,7 @@
             "playerSyncKeyBearer": []
           }
         ],
-        "description": "Discriminé par `action`. `report` renseigne le résultat partie par partie du best-of (`games`) : selection → winnerId par partie (null = nulle) ; points → `points` par joueur et par partie (le vainqueur en est déduit). `confirm`/`dispute` selon le workflow. BYE non modifiable.\n",
+        "description": "Discriminé par `action`. `report` renseigne le résultat partie par partie du best-of (`games`) : selection → winnerId par partie (null = nulle) ; points → `points` par joueur et par partie (le vainqueur en est déduit). `confirm` valide un résultat en attente (un organisateur peut valider manuellement) ; `dispute` conteste ; `clear` (organisateur) supprime un résultat rapporté et réinitialise le match. BYE non modifiable.\n",
         "requestBody": {
           "required": true,
           "content": {
@@ -8653,6 +8653,21 @@
                         "type": "string",
                         "enum": [
                           "dispute"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "description": "Supprime un résultat rapporté (organisateur) : réinitialise le match.",
+                    "required": [
+                      "action"
+                    ],
+                    "properties": {
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "clear"
                         ]
                       }
                     }
