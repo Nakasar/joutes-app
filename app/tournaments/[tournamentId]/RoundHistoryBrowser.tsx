@@ -7,6 +7,7 @@ import { DateTime } from "luxon";
 import { ChevronLeft, ChevronRight, Plus, RotateCw, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -96,6 +97,8 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
   const [busy, setBusy] = useState(false);
   // Phase ciblée par la création d'une ronde (organisateur).
   const [createPhaseId, setCreatePhaseId] = useState<string>("");
+  // Confirmation de suppression de la ronde courante (modale).
+  const [deleteRoundOpen, setDeleteRoundOpen] = useState(false);
 
   const authFetch = useCallback(
     (path: string, init?: RequestInit) =>
@@ -155,6 +158,13 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
   const currentIndex = flatRounds.findIndex((r) => r.round.id === selectedRoundId);
   const current = currentIndex >= 0 ? flatRounds[currentIndex] : null;
 
+  // La suppression n'est possible que sur la dernière ronde de la phase courante.
+  const currentIsLastRound = useMemo(() => {
+    if (!current || !history) return false;
+    const rounds = history.phases.find((p) => p.phase.id === current.phase.id)?.rounds ?? [];
+    return rounds[rounds.length - 1]?.round.id === current.round.id;
+  }, [current, history]);
+
   // Classement figé de la ronde courante, avec son rang réel préservé avant
   // recherche/pagination.
   const rankedStandings = useMemo(
@@ -194,7 +204,6 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
   };
 
   const deleteRound = async (roundId: string) => {
-    if (!window.confirm("Supprimer cette ronde et ses matchs ? Cette action est irréversible.")) return;
     setBusy(true);
     setError(null);
     try {
@@ -205,6 +214,7 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error ?? "Erreur lors de la suppression de la ronde");
       }
+      setDeleteRoundOpen(false);
       setSelectedRoundId(null);
       await load();
     } catch (err) {
@@ -385,16 +395,18 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
                     Saisir les résultats
                   </Link>
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-600 hover:text-red-800"
-                  onClick={() => deleteRound(current.round.id)}
-                  disabled={busy}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Supprimer la ronde
-                </Button>
+                {currentIsLastRound && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600 hover:text-red-800"
+                    onClick={() => setDeleteRoundOpen(true)}
+                    disabled={busy}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Supprimer la ronde
+                  </Button>
+                )}
               </div>
             )}
           </div>
@@ -552,6 +564,19 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
             )}
           </div>
         </div>
+      )}
+
+      {current && (
+        <ConfirmDialog
+          open={deleteRoundOpen}
+          onOpenChange={setDeleteRoundOpen}
+          title="Supprimer la ronde"
+          description={`Supprimer la ronde ${current.round.number} et tous ses matchs ? Cette action est irréversible.`}
+          confirmLabel="Supprimer"
+          destructive
+          busy={busy}
+          onConfirm={() => deleteRound(current.round.id)}
+        />
       )}
     </div>
   );

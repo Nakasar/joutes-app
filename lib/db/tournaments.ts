@@ -108,7 +108,8 @@ function toPlayer(doc: WithId<TournamentPlayerDb>): TournamentPlayer {
     userId: doc.userId,
     displayName: doc.displayName,
     seed: doc.seed,
-    status: doc.status,
+    // Normalise l'ancienne valeur "active" (avant renommage) en "registered".
+    status: doc.status === "dropped" ? "dropped" : "registered",
     syncKey: doc.syncKey,
     addedBy: doc.addedBy,
     createdAt: doc.createdAt,
@@ -535,7 +536,7 @@ export async function addPlayer(
     userId: data.userId,
     displayName: data.displayName,
     seed: data.seed,
-    status: "active",
+    status: "registered",
     syncKey: `tpsk_${crypto.randomBytes(24).toString("hex")}`,
     addedBy: data.addedBy,
     createdAt: new Date(),
@@ -615,7 +616,7 @@ export async function getPlayerBySyncKey(syncKey: string): Promise<TournamentPla
 export async function updatePlayer(
   tournamentId: string,
   playerId: string,
-  updates: { displayName?: string; seed?: number | null; status?: "active" | "dropped" }
+  updates: { displayName?: string; seed?: number | null; status?: "registered" | "dropped" }
 ): Promise<TournamentPlayer> {
   const tId = parseObjectId(tournamentId, "Tournoi");
   const pId = parseObjectId(playerId, "Joueur");
@@ -950,7 +951,7 @@ export async function createNextRound(
   }
 
   const players = await listPlayers(tournamentId);
-  const activePlayerIds = players.filter((p) => p.status === "active").map((p) => p.id);
+  const activePlayerIds = players.filter((p) => p.status === "registered").map((p) => p.id);
   const activeSet = new Set(activePlayerIds);
 
   const minPlayers = phase.minPlayersPerMatch;
@@ -1606,7 +1607,7 @@ export async function getStandings(tournamentId: string, phaseId?: string): Prom
       ...standing,
       displayName: player?.displayName ?? "Inconnu",
       userId: player?.userId,
-      playerStatus: player?.status ?? "active",
+      playerStatus: player?.status ?? "registered",
     };
   });
 }
@@ -1728,7 +1729,7 @@ export async function validateRoundStandings(
       ...standing,
       displayName: player?.displayName ?? "Inconnu",
       userId: player?.userId,
-      playerStatus: player?.status ?? "active",
+      playerStatus: player?.status ?? "registered",
     };
   });
 

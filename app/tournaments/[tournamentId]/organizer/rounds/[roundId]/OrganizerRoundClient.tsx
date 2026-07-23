@@ -6,6 +6,7 @@ import { Pencil, Plus, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Dialog,
   DialogContent,
@@ -65,6 +66,9 @@ export function OrganizerRoundClient({
   const [createOpen, setCreateOpen] = useState(false);
   const [createPlayerIds, setCreatePlayerIds] = useState<string[]>([]);
 
+  // Match en attente de confirmation de suppression (modale).
+  const [pendingDelete, setPendingDelete] = useState<TournamentMatch | null>(null);
+
   // Une opération est en cours (suppression/création ou envoi d'un score) :
   // sert à désactiver toutes les actions et éviter des requêtes concurrentes.
   const anyBusy = busy || submitting;
@@ -118,7 +122,6 @@ export function OrganizerRoundClient({
   };
 
   const deleteMatch = (match: TournamentMatch) => {
-    if (!window.confirm("Supprimer ce match et ses résultats ? Cette action est irréversible.")) return;
     setBusy(true);
     setError(null);
     (async () => {
@@ -130,6 +133,7 @@ export function OrganizerRoundClient({
           const body = await res.json().catch(() => ({}));
           throw new Error(body.error ?? "Erreur lors de la suppression du match");
         }
+        setPendingDelete(null);
         await refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Erreur lors de la suppression du match");
@@ -174,7 +178,7 @@ export function OrganizerRoundClient({
   const availableOptions = useMemo(
     () =>
       players
-        .filter((p) => p.status === "active" && !pairedIds.has(p.id) && !createPlayerIds.includes(p.id))
+        .filter((p) => p.status === "registered" && !pairedIds.has(p.id) && !createPlayerIds.includes(p.id))
         .map((p) => ({ value: p.id, label: p.displayName })),
     [players, pairedIds, createPlayerIds]
   );
@@ -276,7 +280,7 @@ export function OrganizerRoundClient({
                               variant="ghost"
                               size="sm"
                               className="text-red-600 hover:text-red-800"
-                              onClick={() => deleteMatch(match)}
+                              onClick={() => setPendingDelete(match)}
                               disabled={anyBusy}
                               aria-label={`Supprimer le match ${matchLabel(match)}`}
                             >
@@ -402,6 +406,22 @@ export function OrganizerRoundClient({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Modale : confirmation de suppression d'un match */}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        title="Supprimer le match"
+        description={
+          pendingDelete
+            ? `Supprimer le match « ${matchLabel(pendingDelete)} » et ses résultats ? Cette action est irréversible.`
+            : undefined
+        }
+        confirmLabel="Supprimer"
+        destructive
+        busy={anyBusy}
+        onConfirm={() => pendingDelete && deleteMatch(pendingDelete)}
+      />
     </div>
   );
 }

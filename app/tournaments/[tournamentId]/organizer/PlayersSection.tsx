@@ -5,6 +5,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { usePaginatedSearch } from "@/lib/use-paginated-search";
 import type { TournamentPlayer } from "@/lib/types/Tournament";
@@ -22,9 +23,10 @@ export function PlayersSection({
   const [newPlayerIdentifier, setNewPlayerIdentifier] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [pendingRemove, setPendingRemove] = useState<TournamentPlayer | null>(null);
 
   const playersSearch = usePaginatedSearch(players, (p) => p.displayName, 25);
-  const activePlayers = players.filter((p) => p.status === "active");
+  const registeredPlayers = players.filter((p) => p.status === "registered");
 
   const api = useCallback(
     async (path: string, init?: RequestInit) => {
@@ -87,14 +89,16 @@ export function PlayersSection({
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error ?? "Erreur lors de la suppression du joueur");
       }
+      setPendingRemove(null);
       await refreshPlayers();
     });
 
-  const reactivatePlayer = (player: TournamentPlayer) =>
+  // Modifie le statut d'inscription d'un joueur (registered / dropped).
+  const setPlayerStatus = (player: TournamentPlayer, status: "registered" | "dropped") =>
     run(async () => {
       await api(`/api/tournaments/${tournamentId}/players/${player.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ status: "active" }),
+        body: JSON.stringify({ status }),
       });
       await refreshPlayers();
     });
@@ -109,7 +113,7 @@ export function PlayersSection({
       <Card>
         <CardHeader>
           <CardTitle>
-            Joueurs ({activePlayers.length} actif(s) / {players.length})
+            Joueurs ({registeredPlayers.length} inscrit(s) / {players.length})
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -156,11 +160,9 @@ export function PlayersSection({
                       {!player.userId && (
                         <span className="ml-2 text-xs text-muted-foreground">Invité</span>
                       )}
-                      {player.status === "dropped" && (
-                        <Badge variant="outline" className="ml-2">
-                          Drop
-                        </Badge>
-                      )}
+                      <Badge variant={player.status === "dropped" ? "outline" : "secondary"} className="ml-2">
+                        {player.status === "dropped" ? "DROPPED" : "REGISTERED"}
+                      </Badge>
                     </div>
                     <div className="flex items-center gap-2">
                       <PlayerSyncQRButton
@@ -172,23 +174,31 @@ export function PlayersSection({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => reactivatePlayer(player)}
+                          onClick={() => setPlayerStatus(player, "registered")}
                           disabled={busy}
                         >
-                          Réactiver
+                          Réinscrire
                         </Button>
                       ) : (
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
-                          className="text-red-600 hover:text-red-800"
-                          onClick={() => removePlayer(player)}
+                          onClick={() => setPlayerStatus(player, "dropped")}
                           disabled={busy}
-                          aria-label={`Retirer ${player.displayName}`}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          Drop
                         </Button>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-800"
+                        onClick={() => setPendingRemove(player)}
+                        disabled={busy}
+                        aria-label={`Supprimer ${player.displayName}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </li>
                 ))}
@@ -208,6 +218,21 @@ export function PlayersSection({
           )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={pendingRemove !== null}
+        onOpenChange={(open) => !open && setPendingRemove(null)}
+        title="Supprimer le joueur"
+        description={
+          pendingRemove
+            ? `Retirer ${pendingRemove.displayName} du tournoi ? S'il a déjà des matchs, il sera marqué comme DROPPED plutôt que supprimé.`
+            : undefined
+        }
+        confirmLabel="Supprimer"
+        destructive
+        busy={busy}
+        onConfirm={() => pendingRemove && removePlayer(pendingRemove)}
+      />
     </div>
   );
 }

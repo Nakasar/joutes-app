@@ -48,7 +48,7 @@ export const addTournamentPlayerSchema = z.object({
 export const updateTournamentPlayerSchema = z.object({
   displayName: z.string().min(1).max(100).optional(),
   seed: z.number().int().min(1).nullable().optional(),
-  status: z.enum(["active", "dropped"]).optional(),
+  status: z.enum(["registered", "dropped"]).optional(),
 });
 
 export const createTournamentPhaseSchema = z
