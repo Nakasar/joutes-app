@@ -50,6 +50,8 @@ export const timerActionSchema = z.discriminatedUnion("action", [
     action: z.literal("start"),
     durationSeconds: z.number().int().min(1).max(86400),
   }),
+  z.object({ action: z.literal("pause") }),
+  z.object({ action: z.literal("resume") }),
   z.object({ action: z.literal("stop") }),
 ]);
 

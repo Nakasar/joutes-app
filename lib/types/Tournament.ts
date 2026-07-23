@@ -50,11 +50,13 @@ export type Tournament = {
   // /t/:code/join. Unique parmi les tournois non terminés.
   joinCode?: string;
   // Minuteur diffusé aux joueurs. `endsAt` (instant de fin absolu) n'est
-  // présent que lorsque le minuteur tourne.
+  // présent que lorsque le minuteur tourne. `remainingSeconds` mémorise le
+  // temps restant lorsqu'il est en pause (permet la reprise).
   timer?: {
     durationSeconds: number;
     endsAt?: Date;
     running: boolean;
+    remainingSeconds?: number;
   };
   settings: {
     allowSelfReporting: boolean;

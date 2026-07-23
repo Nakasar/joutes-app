@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Maximize2, Megaphone } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatDuration, timerRemainingSeconds } from "@/lib/tournament-timer";
+import { formatDuration, timerIsPaused, timerRemainingSeconds } from "@/lib/tournament-timer";
 import { useTournamentLive } from "../useTournamentLive";
 
 // Bannière « live » du portail joueur : annonces et minuteur synchronisé.
@@ -19,6 +19,7 @@ export function PlayerLiveBanner({ tournamentId }: { tournamentId: string }) {
   const announcements = state?.announcements ?? [];
   const remaining = timerRemainingSeconds(state?.timer ?? null, serverOffsetMs);
   const expired = remaining !== null && remaining < 0;
+  const paused = timerIsPaused(state?.timer ?? null);
 
   if (announcements.length === 0 && remaining === null) return null;
 
@@ -46,7 +47,9 @@ export function PlayerLiveBanner({ tournamentId }: { tournamentId: string }) {
             expired && "border-destructive/40 bg-destructive/10"
           )}
         >
-          <span className="text-sm text-muted-foreground">Minuteur</span>
+          <span className="text-sm text-muted-foreground">
+            Minuteur{paused && " (en pause)"}
+          </span>
           <div className="flex items-center gap-3">
             <span
               className={cn(

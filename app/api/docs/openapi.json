@@ -8781,7 +8781,11 @@
                       "properties": {
                         "durationSeconds": { "type": "integer" },
                         "endsAt": { "type": "string", "format": "date-time" },
-                        "running": { "type": "boolean" }
+                        "running": { "type": "boolean" },
+                        "remainingSeconds": {
+                          "type": "number",
+                          "description": "Temps restant figé lorsque le minuteur est en pause."
+                        }
                       }
                     },
                     "serverNow": { "type": "string", "format": "date-time" }
@@ -8891,7 +8895,7 @@
       "post": {
         "tags": ["Tournaments"],
         "summary": "Control the timer (organizers only)",
-        "description": "`start` launches the timer for `durationSeconds` (sets an absolute end instant); `stop` stops it.",
+        "description": "`start` launches the timer for `durationSeconds` (sets an absolute end instant); `pause` freezes the remaining time; `resume` restarts from the frozen time; `stop` stops it.",
         "security": [{ "sessionAuth": [] }, { "apiKeyBearer": [] }],
         "requestBody": {
           "required": true,
@@ -8910,7 +8914,9 @@
                   {
                     "type": "object",
                     "required": ["action"],
-                    "properties": { "action": { "type": "string", "enum": ["stop"] } }
+                    "properties": {
+                      "action": { "type": "string", "enum": ["pause", "resume", "stop"] }
+                    }
                   }
                 ]
               }
@@ -8928,7 +8934,11 @@
                   "properties": {
                     "durationSeconds": { "type": "integer" },
                     "endsAt": { "type": "string", "format": "date-time" },
-                    "running": { "type": "boolean" }
+                    "running": { "type": "boolean" },
+                    "remainingSeconds": {
+                      "type": "number",
+                      "description": "Temps restant figé lorsque le minuteur est en pause."
+                    }
                   }
                 }
               }
@@ -11529,7 +11539,11 @@
             "properties": {
               "durationSeconds": { "type": "integer" },
               "endsAt": { "type": "string", "format": "date-time" },
-              "running": { "type": "boolean" }
+              "running": { "type": "boolean" },
+              "remainingSeconds": {
+                "type": "number",
+                "description": "Temps restant figé lorsque le minuteur est en pause."
+              }
             }
           },
           "settings": {
