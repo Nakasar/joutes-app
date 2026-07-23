@@ -8614,6 +8614,7 @@
           "Tournaments"
         ],
         "summary": "Delete a match (organizers only)",
+        "description": "Only matches of the last round of their phase can be deleted, to keep standings and pairings of later rounds consistent.",
         "security": [
           {
             "sessionAuth": []
@@ -8646,6 +8647,16 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The match is not in the last round of its phase.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }

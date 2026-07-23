@@ -8,6 +8,8 @@ import {
   isTournamentOrganizer,
   listMatchesByRound,
   listPlayers,
+  listRounds,
+  sanitizePlayer,
 } from "@/lib/db/tournaments";
 import { OrganizerRoundClient } from "./OrganizerRoundClient";
 
@@ -36,15 +38,20 @@ export default async function OrganizerRoundPage({
     notFound();
   }
 
-  const [matches, players, phase] = await Promise.all([
+  const [matches, players, phase, phaseRounds] = await Promise.all([
     listMatchesByRound(tournamentId, roundId),
     listPlayers(tournamentId),
     getPhaseById(tournamentId, round.phaseId),
+    listRounds(tournamentId, round.phaseId),
   ]);
 
   if (!phase) {
     notFound();
   }
+
+  // Un match n'est supprimable que dans la dernière ronde de sa phase.
+  const lastRound = phaseRounds[phaseRounds.length - 1];
+  const isLastRound = lastRound?.id === round.id;
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
@@ -52,9 +59,10 @@ export default async function OrganizerRoundPage({
         tournamentId={tournamentId}
         round={round}
         initialMatches={matches}
-        players={players}
+        players={players.map(sanitizePlayer)}
         resultMode={phase.resultMode}
         bestOf={phase.bestOf}
+        isLastRound={isLastRound}
       />
     </div>
   );

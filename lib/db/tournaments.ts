@@ -1411,10 +1411,31 @@ export async function disputeMatchResult(
 export async function deleteMatch(tournamentId: string, matchId: string): Promise<void> {
   const tId = parseObjectId(tournamentId, "Tournoi");
   const mId = parseObjectId(matchId, "Match");
+
+  const match = await getMatchById(tournamentId, matchId);
+  if (!match) {
+    throw new TournamentError("not-found", "Match non trouvé");
+  }
+
+  // Un match ne peut être supprimé que s'il appartient à la dernière ronde de
+  // sa phase, pour ne pas rendre incohérents les classements et pairings des
+  // rondes suivantes.
+  const rounds = await listRounds(tournamentId, match.phaseId);
+  const lastRound = rounds[rounds.length - 1];
+  if (!lastRound || lastRound.id !== match.roundId) {
+    throw new TournamentError(
+      "conflict",
+      "Seuls les matchs de la dernière ronde d'une phase peuvent être supprimés"
+    );
+  }
+
   const result = await db.collection<TournamentMatchDb>(MATCHES).deleteOne({ _id: mId, tournamentId: tId });
   if (result.deletedCount === 0) {
     throw new TournamentError("not-found", "Match non trouvé");
   }
+
+  // La suppression peut compléter la ronde (plus aucun match en attente).
+  await completeRoundIfAllMatchesDone(tId, new ObjectId(match.roundId));
 }
 
 // =====================
