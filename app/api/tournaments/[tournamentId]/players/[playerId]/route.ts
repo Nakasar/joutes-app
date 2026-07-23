@@ -70,7 +70,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (!isSelf) {
       throw new TournamentError("forbidden", "Vous ne pouvez modifier que votre propre inscription");
     }
-    if (validated.status !== "dropped" || validated.displayName !== undefined || validated.seed != null) {
+    if (validated.status !== "dropped" || validated.displayName !== undefined || validated.seed !== undefined) {
       throw new TournamentError("forbidden", "Vous pouvez uniquement vous retirer du tournoi");
     }
 
