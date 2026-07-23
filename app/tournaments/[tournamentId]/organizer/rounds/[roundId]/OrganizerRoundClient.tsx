@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Pencil, Plus, Trash2, X } from "lucide-react";
+import { Check, Eraser, Pencil, Plus, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
@@ -69,6 +69,8 @@ export function OrganizerRoundClient({
 
   // Match en attente de confirmation de suppression (modale).
   const [pendingDelete, setPendingDelete] = useState<TournamentMatch | null>(null);
+  // Résultat rapporté en attente de confirmation de suppression (modale).
+  const [pendingClear, setPendingClear] = useState<TournamentMatch | null>(null);
   // Confirmation de suppression de la ronde entière (modale).
   const [deleteRoundOpen, setDeleteRoundOpen] = useState(false);
   const router = useRouter();
@@ -121,6 +123,55 @@ export function OrganizerRoundClient({
         setError(err instanceof Error ? err.message : "Erreur lors de l'enregistrement du résultat");
       } finally {
         setSubmitting(false);
+      }
+    })();
+  };
+
+  // Valide manuellement un score en attente de confirmation.
+  const confirmMatch = (match: TournamentMatch) => {
+    setBusy(true);
+    setError(null);
+    (async () => {
+      try {
+        const res = await fetch(`/api/tournaments/${tournamentId}/matches/${match.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "confirm" }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error ?? "Erreur lors de la validation du résultat");
+        }
+        await refresh();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Erreur lors de la validation du résultat");
+      } finally {
+        setBusy(false);
+      }
+    })();
+  };
+
+  // Supprime le résultat rapporté d'un match (le remet « à jouer »).
+  const clearMatch = (match: TournamentMatch) => {
+    setBusy(true);
+    setError(null);
+    (async () => {
+      try {
+        const res = await fetch(`/api/tournaments/${tournamentId}/matches/${match.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "clear" }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error ?? "Erreur lors de la suppression du résultat");
+        }
+        setPendingClear(null);
+        await refresh();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Erreur lors de la suppression du résultat");
+      } finally {
+        setBusy(false);
       }
     })();
   };
@@ -303,6 +354,17 @@ export function OrganizerRoundClient({
                       </td>
                       <td className="px-3 py-2">
                         <div className="flex items-center justify-end gap-1">
+                          {match.status === "in-progress" && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => confirmMatch(match)}
+                              disabled={anyBusy}
+                            >
+                              <Check className="mr-2 h-4 w-4" />
+                              Valider
+                            </Button>
+                          )}
                           {!isBye && (
                             <Button
                               variant="outline"
@@ -312,6 +374,17 @@ export function OrganizerRoundClient({
                             >
                               <Pencil className="mr-2 h-4 w-4" />
                               Modifier le score
+                            </Button>
+                          )}
+                          {!isBye && match.status !== "pending" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setPendingClear(match)}
+                              disabled={anyBusy}
+                              aria-label={`Supprimer le résultat de ${matchLabel(match)}`}
+                            >
+                              <Eraser className="h-4 w-4" />
                             </Button>
                           )}
                           {isLastRound && (
@@ -460,6 +533,22 @@ export function OrganizerRoundClient({
         destructive
         busy={anyBusy}
         onConfirm={() => pendingDelete && deleteMatch(pendingDelete)}
+      />
+
+      {/* Modale : confirmation de suppression d'un résultat rapporté */}
+      <ConfirmDialog
+        open={pendingClear !== null}
+        onOpenChange={(open) => !open && setPendingClear(null)}
+        title="Supprimer le résultat"
+        description={
+          pendingClear
+            ? `Supprimer le résultat rapporté du match « ${matchLabel(pendingClear)} » ? Le match repassera « à jouer ».`
+            : undefined
+        }
+        confirmLabel="Supprimer le résultat"
+        destructive
+        busy={anyBusy}
+        onConfirm={() => pendingClear && clearMatch(pendingClear)}
       />
 
       {/* Modale : confirmation de suppression de la ronde */}

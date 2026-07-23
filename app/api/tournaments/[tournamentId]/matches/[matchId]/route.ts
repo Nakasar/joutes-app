@@ -5,6 +5,7 @@ import {
   assertIsOrganizer,
   assertPrincipalCanRead,
   buildMatchActor,
+  clearMatchResult,
   confirmMatchResult,
   deleteMatch,
   disputeMatchResult,
@@ -41,8 +42,10 @@ export async function GET(request: NextRequest, { params }: Params) {
  * - `report` : rapporter un score (organisateur, ou joueur du match si le
  *   self-reporting est activé ; passe en attente de confirmation si le
  *   tournoi l'exige).
- * - `confirm` : confirmer le score rapporté par l'adversaire.
+ * - `confirm` : confirmer le score rapporté par l'adversaire (ou un
+ *   organisateur valide manuellement un score en attente de confirmation).
  * - `dispute` : contester le résultat.
+ * - `clear` : supprimer un résultat rapporté (organisateur) — réinitialise le match.
  * Accessible avec une session, une clé API jts_ ou la clé de synchronisation
  * tpsk_ d'un joueur du tournoi.
  */
@@ -65,6 +68,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       match = await reportMatchResult(tournament, matchId, { games: validated.games }, actor);
     } else if (validated.action === "confirm") {
       match = await confirmMatchResult(tournament, matchId, actor);
+    } else if (validated.action === "clear") {
+      match = await clearMatchResult(tournament, matchId, actor);
     } else {
       match = await disputeMatchResult(tournament, matchId, actor);
     }

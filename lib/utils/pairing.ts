@@ -215,12 +215,17 @@ function havePlayedTogether(
 }
 
 /**
- * Génère les pairings pour une ronde suisse
+ * Génère les pairings pour une ronde suisse.
+ * `rankedOrder` (optionnel) impose l'ordre de classement des joueurs pour
+ * l'appariement (ex : classement cumulé multi-phases). Sans lui, l'ordre est
+ * déduit des `matches` fournis. L'évitement des re-matchs se base toujours sur
+ * `matches`.
  */
 export function generateSwissPairings(
   playerIds: string[],
   matches: PairingMatch[],
-  roundNumber: number
+  roundNumber: number,
+  rankedOrder?: string[]
 ): PairingResult[] {
   const pairings: PairingResult[] = [];
 
@@ -243,9 +248,19 @@ export function generateSwissPairings(
     return pairings;
   }
 
-  // Pour les rondes suivantes, apparier selon le classement
+  // Pour les rondes suivantes, apparier selon le classement.
   const standings = calculateStandings(playerIds, matches);
   const availablePlayers = [...standings];
+  // Ordre de classement imposé (ex : cumul multi-phases) : réordonne les
+  // joueurs disponibles en conséquence, en plaçant les inconnus en fin.
+  if (rankedOrder) {
+    const rankById = new Map(rankedOrder.map((id, index) => [id, index]));
+    availablePlayers.sort(
+      (a, b) =>
+        (rankById.get(a.playerId) ?? Number.POSITIVE_INFINITY) -
+        (rankById.get(b.playerId) ?? Number.POSITIVE_INFINITY)
+    );
+  }
 
   while (availablePlayers.length >= 2) {
     const player1 = availablePlayers.shift()!;

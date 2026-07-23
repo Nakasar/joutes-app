@@ -174,10 +174,16 @@ export const disputeTournamentMatchSchema = z.object({
   action: z.literal("dispute"),
 });
 
+// Suppression d'un résultat rapporté (organisateur) : réinitialise le match.
+export const clearTournamentMatchSchema = z.object({
+  action: z.literal("clear"),
+});
+
 export const updateTournamentMatchSchema = z.discriminatedUnion("action", [
   reportTournamentMatchSchema,
   confirmTournamentMatchSchema,
   disputeTournamentMatchSchema,
+  clearTournamentMatchSchema,
 ]);
 
 export type CreateTournamentInput = z.infer<typeof createTournamentSchema>;

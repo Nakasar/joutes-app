@@ -1238,6 +1238,21 @@ export async function createNextRound(
   const minPlayers = phase.minPlayersPerMatch;
   const maxPlayers = phase.maxPlayersPerMatch;
 
+  // Classement cumulé sur tout le tournoi (toutes phases), chaque match scoré
+  // selon sa propre phase : les points des phases précédentes sont conservés et
+  // pris en compte pour l'appariement, le seeding et la qualification top cut.
+  const allPhases = await listPhases(tournamentId);
+  const scoringByPhaseId = new Map(allPhases.map((p) => [p.id, scoringForPhase(p)]));
+  const allMatches = (
+    await db.collection<TournamentMatchDb>(MATCHES).find({ tournamentId: tId }).toArray()
+  ).map(toMatch);
+  const cumulativeRank = (ids: string[]): string[] =>
+    calculateMultiplayerStandings(
+      ids,
+      allMatches,
+      (match) => scoringByPhaseId.get(match.phaseId) ?? scoringForPhase(phase)
+    ).map((s) => s.playerId);
+
   // Chaque groupe = les joueurs d'un match à créer ; un groupe de taille 1
   // est un BYE. Uniformise pairings 2-joueurs (bracket, suisse en duel) et
   // pods multijoueurs (suisse/élimination).
@@ -1245,29 +1260,14 @@ export async function createNextRound(
     pairings.map((p) => (p.player2Id === null ? [p.player1Id] : [p.player1Id, p.player2Id]));
 
   // Ordonne un ensemble de joueurs pour l'appariement : soit aléatoirement,
-  // soit selon le classement (multijoueur, scoring de la phase) sur les matchs
-  // déjà joués de la phase.
+  // soit selon le classement cumulé multi-phases.
   const orderPlayers = (ids: string[], seeding: TournamentEliminationSeeding): string[] =>
-    seeding === "random"
-      ? shuffleArray([...ids])
-      : calculateMultiplayerStandings(ids, phaseMatches, () => scoringForPhase(phase)).map((s) => s.playerId);
+    seeding === "random" ? shuffleArray([...ids]) : cumulativeRank(ids);
 
-  // Ensemble qualifié à l'entrée de la phase : classé par le classement de la
-  // phase précédente (si présente), sinon par seed/inscription, puis limité au
-  // top cut éventuel.
-  const qualifiedEntryPlayers = async (): Promise<string[]> => {
-    const allPhases = await listPhases(tournamentId);
-    const phaseIndex = allPhases.findIndex((p) => p.id === phaseId);
-    const previousPhase = phaseIndex > 0 ? allPhases[phaseIndex - 1] : undefined;
-    let ranked = activePlayerIds; // déjà trié par seed puis inscription
-    if (previousPhase) {
-      const previousPhaseMatches = await listPhaseMatches(tId, new ObjectId(previousPhase.id));
-      ranked = calculateMultiplayerStandings(
-        activePlayerIds,
-        previousPhaseMatches,
-        () => scoringForPhase(previousPhase)
-      ).map((s) => s.playerId);
-    }
+  // Ensemble qualifié à l'entrée de la phase : classé par le classement cumulé
+  // (points de toutes les phases précédentes), puis limité au top cut éventuel.
+  const qualifiedEntryPlayers = (): string[] => {
+    const ranked = cumulativeRank(activePlayerIds);
     return phase.topCut && phase.topCut < ranked.length ? ranked.slice(0, phase.topCut) : ranked;
   };
 
@@ -1280,13 +1280,16 @@ export async function createNextRound(
       ? [...new Set(phaseMatches.flatMap((m) => m.players.map((p) => p.playerId)))].filter((id) =>
           activeSet.has(id)
         )
-      : await qualifiedEntryPlayers();
+      : qualifiedEntryPlayers();
     if (field.length < minPlayers) {
       throw new TournamentError("invalid", `Au moins ${minPlayers} joueurs actifs sont requis`);
     }
     if (minPlayers === 2 && maxPlayers === 2) {
-      // Duel : appariement suisse classique (avec évitement des re-matchs).
-      groups = pairingsToGroups(generateSwissPairings(field, phaseMatches.map(toPairingMatch), roundNumber));
+      // Duel : appariement suisse classique (évitement des re-matchs sur la
+      // phase, ordre de classement cumulé multi-phases).
+      groups = pairingsToGroups(
+        generateSwissPairings(field, phaseMatches.map(toPairingMatch), roundNumber, cumulativeRank(field))
+      );
     } else {
       // Pods multijoueurs : ordre aléatoire en ronde 1, sinon par classement.
       const ordered = roundNumber === 1 ? shuffleArray([...field]) : orderPlayers(field, "standings");
@@ -1303,7 +1306,7 @@ export async function createNextRound(
         throw new TournamentError("conflict", "Un seul joueur reste en lice : la phase est terminée");
       }
     } else {
-      field = await qualifiedEntryPlayers();
+      field = qualifiedEntryPlayers();
       if (field.length < 2) {
         throw new TournamentError("invalid", "Au moins 2 joueurs actifs sont requis");
       }
@@ -1319,7 +1322,7 @@ export async function createNextRound(
       groups = pairingsToGroups(generateNextBracketRound(lastRoundMatches.map(toPairingMatch)));
     } else {
       // Première ronde : seedée sur l'ordre qualifié d'entrée (top cut inclus).
-      const seededField = await qualifiedEntryPlayers();
+      const seededField = qualifiedEntryPlayers();
       if (seededField.length < 2) {
         throw new TournamentError("invalid", "Au moins 2 joueurs actifs sont requis");
       }
@@ -1690,6 +1693,52 @@ export async function disputeMatchResult(
   return toMatch(result);
 }
 
+/**
+ * Supprime le résultat rapporté d'un match (organisateur) : réinitialise scores,
+ * parties et vainqueurs, repasse le match en « pending » et efface reportedBy /
+ * confirmedBy. La ronde est rouverte si elle était terminée.
+ */
+export async function clearMatchResult(
+  tournament: Tournament,
+  matchId: string,
+  actor: MatchActor
+): Promise<TournamentMatch> {
+  if (!actor.isOrganizer) {
+    throw new TournamentError("forbidden", "Seul un organisateur peut supprimer un résultat");
+  }
+
+  const match = await getMatchById(tournament.id, matchId);
+  if (!match) {
+    throw new TournamentError("not-found", "Match non trouvé");
+  }
+  if (match.players.length === 1) {
+    throw new TournamentError("conflict", "Le résultat d'un BYE ne peut pas être supprimé");
+  }
+
+  const result = await db.collection<TournamentMatchDb>(MATCHES).findOneAndUpdate(
+    { _id: new ObjectId(matchId), tournamentId: new ObjectId(tournament.id) },
+    {
+      $set: {
+        players: match.players.map((p) => ({ playerId: p.playerId, score: 0 })),
+        games: [],
+        winnerIds: [],
+        status: "pending",
+        updatedAt: new Date(),
+      },
+      $unset: { reportedBy: "", confirmedBy: "" },
+    },
+    { returnDocument: "after" }
+  );
+  if (!result) {
+    throw new TournamentError("not-found", "Match non trouvé");
+  }
+
+  // Le match n'est plus terminé : rouvre la ronde si elle l'était.
+  await completeRoundIfAllMatchesDone(new ObjectId(tournament.id), new ObjectId(result.roundId.toString()));
+
+  return toMatch(result);
+}
+
 export async function deleteMatch(tournamentId: string, matchId: string): Promise<void> {
   const tId = parseObjectId(tournamentId, "Tournoi");
   const mId = parseObjectId(matchId, "Match");
@@ -1984,26 +2033,42 @@ export async function validateRoundStandings(
     throw new TournamentError("not-found", "Phase non trouvée");
   }
 
-  const [players, phaseRounds, phaseMatches] = await Promise.all([
+  const [players, allPhases, phaseRounds, allMatchDocs] = await Promise.all([
     listPlayers(tournamentId),
+    listPhases(tournamentId),
     listRounds(tournamentId, round.phaseId),
-    listPhaseMatches(tId, new ObjectId(round.phaseId)),
+    db.collection<TournamentMatchDb>(MATCHES).find({ tournamentId: tId }).toArray(),
   ]);
   const playersById = new Map(players.map((p) => [p.id, p]));
+  const scoringByPhaseId = new Map(allPhases.map((p) => [p.id, scoringForPhase(p)]));
 
-  // Matchs de la phase des rondes jusqu'à celle validée (classement cumulé).
+  // Classement cumulé : matchs de toutes les phases précédentes + les rondes de
+  // la phase courante jusqu'à la ronde validée. Chaque match est scoré selon sa
+  // propre phase — les points des phases précédentes sont conservés.
+  const currentPhaseIndex = allPhases.findIndex((p) => p.id === round.phaseId);
   const roundIdsUpTo = new Set(
     phaseRounds.filter((r) => r.number <= round.number).map((r) => r.id)
   );
-  const cumulativeMatches = phaseMatches.filter((m) => roundIdsUpTo.has(m.roundId));
+  const allMatches = allMatchDocs.map(toMatch);
+  const cumulativeMatches = allMatches.filter((m) => {
+    if (m.phaseId === round.phaseId) return roundIdsUpTo.has(m.roundId);
+    const index = allPhases.findIndex((p) => p.id === m.phaseId);
+    return index >= 0 && index < currentPhaseIndex;
+  });
+  // Ne figer que les joueurs présents dans la phase courante (jusqu'à cette
+  // ronde) ; ils portent toutefois leurs points cumulés des phases précédentes.
   const participantIds = [
-    ...new Set(cumulativeMatches.flatMap((m) => m.players.map((p) => p.playerId))),
+    ...new Set(
+      cumulativeMatches
+        .filter((m) => m.phaseId === round.phaseId)
+        .flatMap((m) => m.players.map((p) => p.playerId))
+    ),
   ];
 
   const standings: TournamentRoundStanding[] = calculateMultiplayerStandings(
     participantIds,
     cumulativeMatches,
-    () => scoringForPhase(phase)
+    (m) => scoringByPhaseId.get(m.phaseId) ?? scoringForPhase(phase)
   ).map((standing) => {
     const player = playersById.get(standing.playerId);
     return {
@@ -2077,7 +2142,9 @@ async function computePhaseEntryQualification(
 
   let rankedIds: string[];
   if (previousPhase) {
-    const standings = await getStandings(tournamentId, previousPhase.id);
+    // Classement cumulé de tout le tournoi (toutes phases précédentes) : la
+    // qualification top cut tient compte des points de l'ensemble des phases.
+    const standings = await getStandings(tournamentId);
     const registeredSet = new Set(registered.map((p) => p.id));
     rankedIds = standings.map((s) => s.playerId).filter((id) => registeredSet.has(id));
     // Inscrits absents du classement (aucun match joué) ajoutés en fin de liste.
