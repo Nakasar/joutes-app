@@ -65,6 +65,10 @@ export function OrganizerRoundClient({
   const [createOpen, setCreateOpen] = useState(false);
   const [createPlayerIds, setCreatePlayerIds] = useState<string[]>([]);
 
+  // Une opération est en cours (suppression/création ou envoi d'un score) :
+  // sert à désactiver toutes les actions et éviter des requêtes concurrentes.
+  const anyBusy = busy || submitting;
+
   const playersById = useMemo(() => new Map(players.map((p) => [p.id, p])), [players]);
   const playerName = useCallback(
     (playerId: string) => playersById.get(playerId)?.displayName ?? "Inconnu",
@@ -203,7 +207,7 @@ export function OrganizerRoundClient({
           placeholder="Rechercher un joueur..."
           className="max-w-xs"
         />
-        <Button onClick={() => setCreateOpen(true)} disabled={busy}>
+        <Button onClick={() => setCreateOpen(true)} disabled={anyBusy}>
           <Plus className="mr-2 h-4 w-4" />
           Créer un match
         </Button>
@@ -261,7 +265,7 @@ export function OrganizerRoundClient({
                               variant="outline"
                               size="sm"
                               onClick={() => setEditMatch(match)}
-                              disabled={busy}
+                              disabled={anyBusy}
                             >
                               <Pencil className="mr-2 h-4 w-4" />
                               Modifier le score
@@ -273,7 +277,7 @@ export function OrganizerRoundClient({
                               size="sm"
                               className="text-red-600 hover:text-red-800"
                               onClick={() => deleteMatch(match)}
-                              disabled={busy}
+                              disabled={anyBusy}
                               aria-label={`Supprimer le match ${matchLabel(match)}`}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -355,7 +359,7 @@ export function OrganizerRoundClient({
                 placeholder="Ajouter un joueur…"
                 searchPlaceholder="Rechercher un joueur…"
                 emptyMessage="Aucun joueur disponible."
-                disabled={busy}
+                disabled={anyBusy}
               />
               <p className="text-xs text-muted-foreground">
                 Seuls les joueurs actifs non déjà appariés dans cette ronde sont proposés. Un seul
@@ -388,10 +392,10 @@ export function OrganizerRoundClient({
             )}
 
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={busy}>
+              <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={anyBusy}>
                 Annuler
               </Button>
-              <Button onClick={createMatch} disabled={busy || createPlayerIds.length === 0}>
+              <Button onClick={createMatch} disabled={anyBusy || createPlayerIds.length === 0}>
                 Créer le match
               </Button>
             </div>
