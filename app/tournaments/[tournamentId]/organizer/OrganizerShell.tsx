@@ -2,13 +2,14 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-export type OrganizerSection = "settings" | "players" | "phases" | "rounds";
+export type OrganizerSection = "settings" | "players" | "phases" | "rounds" | "live";
 
 const SECTIONS: { key: OrganizerSection; label: string; path: string }[] = [
   { key: "settings", label: "Configuration", path: "settings" },
   { key: "players", label: "Joueurs", path: "players" },
   { key: "phases", label: "Phases", path: "phases" },
   { key: "rounds", label: "Rondes", path: "rounds" },
+  { key: "live", label: "Live", path: "live" },
 ];
 
 // Cadre commun aux pages du portail organisateur : en-tête, navigation entre

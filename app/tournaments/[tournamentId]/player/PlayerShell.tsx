@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { PlayerLiveBanner } from "./PlayerLiveBanner";
 import type { ApiTournament } from "./usePlayerTournament";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -84,6 +85,8 @@ export function PlayerShell({
           </Link>
         ))}
       </nav>
+
+      <PlayerLiveBanner tournamentId={tournamentId} />
 
       {error && (
         <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
