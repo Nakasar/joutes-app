@@ -10,7 +10,7 @@ export default async function OrganizerRoundMatchesPage({
   params: Promise<{ tournamentId: string; roundId: string }>;
 }) {
   const { tournamentId, roundId } = await params;
-  const { tournament, round, phase, matches, players, navPhases, isLastRound } =
+  const { tournament, round, phase, matches, players, navPhases, isLastRound, reopenCascades } =
     await loadOrganizerRoundContext(tournamentId, roundId);
 
   return (
@@ -27,6 +27,7 @@ export default async function OrganizerRoundMatchesPage({
             resultMode={phase.resultMode}
             bestOf={phase.bestOf}
             isLastRound={isLastRound}
+            reopenCascades={reopenCascades}
           />
         </div>
       </OrganizerShell>

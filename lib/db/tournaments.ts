@@ -191,6 +191,7 @@ function toPhase(doc: WithId<TournamentPhaseDb> & { matchFormat?: string }): Tou
     maxPlayersPerMatch: doc.maxPlayersPerMatch ?? 2,
     order: doc.order,
     status: doc.status,
+    entryDroppedPlayerIds: doc.entryDroppedPlayerIds,
     createdAt: doc.createdAt,
   };
 }
@@ -1459,6 +1460,13 @@ export async function reopenRound(tournamentId: string, roundId: string): Promis
     throw new TournamentError("conflict", "Cette ronde est déjà en cours");
   }
 
+  const phases = await listPhases(tournamentId);
+  const phaseIndex = phases.findIndex((p) => p.id === round.phaseId);
+  if (phaseIndex === -1) {
+    throw new TournamentError("not-found", "Phase non trouvée");
+  }
+  const phase = phases[phaseIndex];
+
   // Seule la dernière ronde d'une phase peut être rouverte : rouvrir une ronde
   // antérieure rendrait « la ronde courante » ambiguë et incohérents les
   // pairings/classements des rondes suivantes.
@@ -1471,15 +1479,75 @@ export async function reopenRound(tournamentId: string, roundId: string): Promis
     );
   }
 
-  const result = await db.collection<TournamentRoundDb>(ROUNDS).findOneAndUpdate(
-    { _id: rId, tournamentId: tId, status: "completed" },
-    { $set: { status: "in-progress" }, $unset: { completedAt: "" } },
-    { returnDocument: "after" }
-  );
-  if (!result) {
+  // Annulation complète des phases démarrées après celle-ci : on repasse la
+  // phase rouverte « ouverte » (ronde courante), et chaque phase quittée
+  // redevient « à venir » — ses rondes/matchs sont supprimés et les joueurs
+  // qu'elle avait éliminés par top cut sont restaurés en « registered ». Toutes
+  // ces écritures (multi-collections) sont regroupées dans une transaction pour
+  // éviter un état partiellement annulé en cas d'échec intermédiaire.
+  const subsequentStarted = phases.filter((p, i) => i > phaseIndex && p.status !== "not-started");
+
+  const session = db.client.startSession();
+  let reopened: WithId<TournamentRoundDb> | null = null;
+  try {
+    await session.withTransaction(async () => {
+      for (const later of subsequentStarted) {
+        const laterId = new ObjectId(later.id);
+        if (later.entryDroppedPlayerIds && later.entryDroppedPlayerIds.length > 0) {
+          await db.collection<TournamentPlayerDb>(PLAYERS).updateMany(
+            {
+              _id: { $in: later.entryDroppedPlayerIds.map((id) => new ObjectId(id)) },
+              tournamentId: tId,
+              status: "dropped",
+            },
+            { $set: { status: "registered" } },
+            { session }
+          );
+        }
+        await db.collection(MATCHES).deleteMany({ tournamentId: tId, phaseId: laterId }, { session });
+        await db.collection(ROUNDS).deleteMany({ tournamentId: tId, phaseId: laterId }, { session });
+        await db
+          .collection<TournamentPhaseDb>(PHASES)
+          .updateOne(
+            { _id: laterId, tournamentId: tId },
+            { $set: { status: "not-started" }, $unset: { entryDroppedPlayerIds: "" } },
+            { session }
+          );
+      }
+
+      reopened = await db.collection<TournamentRoundDb>(ROUNDS).findOneAndUpdate(
+        { _id: rId, tournamentId: tId, status: "completed" },
+        { $set: { status: "in-progress" }, $unset: { completedAt: "" } },
+        { returnDocument: "after", session }
+      );
+      if (!reopened) {
+        throw new TournamentError("not-found", "Ronde non trouvée");
+      }
+
+      // La phase de la ronde rouverte redevient « ouverte » et la phase courante.
+      if (phase.status !== "in-progress") {
+        await db
+          .collection<TournamentPhaseDb>(PHASES)
+          .updateOne(
+            { _id: new ObjectId(phase.id), tournamentId: tId },
+            { $set: { status: "in-progress" } },
+            { session }
+          );
+      }
+      if (subsequentStarted.length > 0) {
+        await db
+          .collection<TournamentDb>(TOURNAMENTS)
+          .updateOne({ _id: tId }, { $set: { currentPhaseId: phase.id } }, { session });
+      }
+    });
+  } finally {
+    await session.endSession();
+  }
+
+  if (!reopened) {
     throw new TournamentError("not-found", "Ronde non trouvée");
   }
-  return toRound(result);
+  return toRound(reopened);
 }
 
 async function completeRoundIfAllMatchesDone(tournamentId: ObjectId, roundId: ObjectId): Promise<void> {
@@ -2335,22 +2403,48 @@ export async function advanceToNextPhase(
     );
   }
 
-  // Clôture la phase courante.
-  if (currentPhase && currentPhase.status !== "completed") {
-    await updatePhase(tournamentId, currentPhase.id, { status: "completed" });
+  // Regroupe les mutations de transition dans une transaction : clôture de la
+  // phase courante, mémorisation des joueurs éliminés par le top cut
+  // (entryDroppedPlayerIds — seule source pour les restaurer ensuite), drop de
+  // ces joueurs et bascule de currentPhaseId restent ainsi atomiques (pas de
+  // drop sans enregistrement, ni inversement).
+  const eliminatedIds = qualification.eliminated.map((p) => p.playerId);
+  const tObjId = new ObjectId(tournamentId);
+  const session = db.client.startSession();
+  try {
+    await session.withTransaction(async () => {
+      if (currentPhase && currentPhase.status !== "completed") {
+        await db
+          .collection<TournamentPhaseDb>(PHASES)
+          .updateOne(
+            { _id: new ObjectId(currentPhase.id), tournamentId: tObjId },
+            { $set: { status: "completed" } },
+            { session }
+          );
+      }
+      await db
+        .collection<TournamentPhaseDb>(PHASES)
+        .updateOne(
+          { _id: new ObjectId(nextPhase.id), tournamentId: tObjId },
+          { $set: { entryDroppedPlayerIds: eliminatedIds } },
+          { session }
+        );
+      if (eliminatedIds.length > 0) {
+        await db.collection<TournamentPlayerDb>(PLAYERS).updateMany(
+          { _id: { $in: eliminatedIds.map((id) => new ObjectId(id)) }, tournamentId: tObjId },
+          { $set: { status: "dropped" } },
+          { session }
+        );
+      }
+      await db
+        .collection<TournamentDb>(TOURNAMENTS)
+        .updateOne({ _id: tObjId }, { $set: { currentPhaseId: nextPhase.id } }, { session });
+    });
+  } finally {
+    await session.endSession();
   }
-  // Élimine les joueurs non qualifiés (un seul updateMany plutôt qu'une boucle).
-  if (qualification.eliminated.length > 0) {
-    await db.collection<TournamentPlayerDb>(PLAYERS).updateMany(
-      {
-        _id: { $in: qualification.eliminated.map((p) => new ObjectId(p.playerId)) },
-        tournamentId: new ObjectId(tournamentId),
-      },
-      { $set: { status: "dropped" } }
-    );
-  }
-  // Bascule la phase courante et crée la première ronde.
-  await updateTournament(tournamentId, { currentPhaseId: nextPhase.id });
+
+  // Crée la première ronde de la nouvelle phase.
   const { round, matches } = await createNextRound(tournamentId, nextPhase.id, createdBy);
 
   return { round, matches, nextPhaseId: nextPhase.id, eliminatedCount: qualification.eliminated.length };

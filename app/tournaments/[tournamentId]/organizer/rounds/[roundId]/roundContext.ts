@@ -46,6 +46,11 @@ export async function loadOrganizerRoundContext(tournamentId: string, roundId: s
   // Un match n'est supprimable que dans la dernière ronde de sa phase.
   const isLastRound = phaseRounds[phaseRounds.length - 1]?.id === round.id;
 
+  // Rouvrir cette ronde annulera les phases démarrées après la sienne
+  // (suppression de leurs rondes/matchs, restauration des joueurs éliminés).
+  const phaseIndex = phases.findIndex((p) => p.id === round.phaseId);
+  const reopenCascades = phases.some((p, i) => i > phaseIndex && p.status !== "not-started");
+
   const navPhases: RoundsNavPhase[] = phases.map((p) => ({
     phaseId: p.id,
     phaseName: p.name,
@@ -63,5 +68,6 @@ export async function loadOrganizerRoundContext(tournamentId: string, roundId: s
     players: players.map(sanitizePlayer),
     navPhases,
     isLastRound,
+    reopenCascades,
   };
 }

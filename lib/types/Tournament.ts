@@ -118,6 +118,10 @@ export type TournamentPhase = {
   maxPlayersPerMatch: number;
   order: number;
   status: TournamentPhaseStatus;
+  // Joueurs éliminés (passés DROPPED) par le top cut au démarrage de cette
+  // phase. Mémorisés pour pouvoir les restaurer si l'on annule la phase (ronde
+  // rouverte dans une phase antérieure).
+  entryDroppedPlayerIds?: string[];
   createdAt: Date;
 };
 

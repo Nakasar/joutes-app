@@ -8274,7 +8274,7 @@
           "Tournaments"
         ],
         "summary": "Act on a round: reopen it (organizers only)",
-        "description": "`reopen` repasse une ronde terminée « en cours » (ronde courante) pour corriger les résultats. Seule la dernière ronde d'une phase peut être rouverte.",
+        "description": "`reopen` repasse une ronde terminée « en cours » (ronde courante) pour corriger les résultats. Seule la dernière ronde d'une phase peut être rouverte. Si des phases ont été démarrées ensuite, elles sont annulées (rondes/matchs supprimés, joueurs éliminés par leur top cut restaurés) et repassent « à venir ».",
         "security": [
           {
             "sessionAuth": []
@@ -11801,6 +11801,11 @@
               "in-progress",
               "completed"
             ]
+          },
+          "entryDroppedPlayerIds": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Joueurs éliminés (DROPPED) par le top cut au démarrage de cette phase, mémorisés pour pouvoir les restaurer si la phase est annulée."
           },
           "createdAt": {
             "type": "string",
