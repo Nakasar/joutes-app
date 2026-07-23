@@ -22,17 +22,20 @@ export function useTabParam(
 
   const setTab = useCallback(
     (value: string) => {
+      if (!validValues.includes(value)) return;
       setTabState(value);
       const params = new URLSearchParams(window.location.search);
       params.set(paramName, value);
       const query = params.toString();
+      // Préserve un éventuel fragment (#ancre) de l'URL.
+      const hash = window.location.hash;
       window.history.replaceState(
         null,
         "",
-        query ? `${window.location.pathname}?${query}` : window.location.pathname
+        `${window.location.pathname}${query ? `?${query}` : ""}${hash}`
       );
     },
-    [paramName]
+    [paramName, validValues]
   );
 
   return [tab, setTab] as const;

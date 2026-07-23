@@ -188,6 +188,7 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
       router.push(`/tournaments/${tournamentId}/organizer/rounds/${round.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors de la création de la ronde");
+    } finally {
       setBusy(false);
     }
   };

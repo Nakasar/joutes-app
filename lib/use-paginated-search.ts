@@ -31,7 +31,7 @@ export function usePaginatedSearch<T>(
   );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const currentPage = Math.min(page, totalPages - 1);
+  const currentPage = Math.max(0, Math.min(page, totalPages - 1));
   const pageItems = filtered.slice(currentPage * pageSize, currentPage * pageSize + pageSize);
 
   return {
