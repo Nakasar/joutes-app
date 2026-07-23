@@ -9,15 +9,24 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { usePaginatedSearch } from "@/lib/use-paginated-search";
 import type { TournamentPlayer } from "@/lib/types/Tournament";
+import { JoinTournamentCard } from "./JoinTournamentCard";
 import { PlayerSyncQRButton } from "./PlayerSyncQRButton";
 import { TablePagination } from "../TablePagination";
+
+const STATUS_BADGE: Record<string, { label: string; variant: "secondary" | "outline" }> = {
+  registered: { label: "REGISTERED", variant: "secondary" },
+  "pre-registered": { label: "PRE-REGISTERED", variant: "outline" },
+  dropped: { label: "DROPPED", variant: "outline" },
+};
 
 export function PlayersSection({
   tournamentId,
   initialPlayers,
+  joinCode,
 }: {
   tournamentId: string;
   initialPlayers: TournamentPlayer[];
+  joinCode?: string;
 }) {
   const [players, setPlayers] = useState<TournamentPlayer[]>(initialPlayers);
   const [newPlayerIdentifier, setNewPlayerIdentifier] = useState("");
@@ -93,8 +102,8 @@ export function PlayersSection({
       await refreshPlayers();
     });
 
-  // Modifie le statut d'inscription d'un joueur (registered / dropped).
-  const setPlayerStatus = (player: TournamentPlayer, status: "registered" | "dropped") =>
+  // Modifie le statut d'inscription d'un joueur.
+  const setPlayerStatus = (player: TournamentPlayer, status: TournamentPlayer["status"]) =>
     run(async () => {
       await api(`/api/tournaments/${tournamentId}/players/${player.id}`, {
         method: "PATCH",
@@ -110,6 +119,7 @@ export function PlayersSection({
           {error}
         </div>
       )}
+      {joinCode && <JoinTournamentCard code={joinCode} />}
       <Card>
         <CardHeader>
           <CardTitle>
@@ -160,8 +170,11 @@ export function PlayersSection({
                       {!player.userId && (
                         <span className="ml-2 text-xs text-muted-foreground">Invité</span>
                       )}
-                      <Badge variant={player.status === "dropped" ? "outline" : "secondary"} className="ml-2">
-                        {player.status === "dropped" ? "DROPPED" : "REGISTERED"}
+                      <Badge
+                        variant={STATUS_BADGE[player.status]?.variant ?? "secondary"}
+                        className="ml-2"
+                      >
+                        {STATUS_BADGE[player.status]?.label ?? player.status}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2">
@@ -170,6 +183,16 @@ export function PlayersSection({
                         playerName={player.displayName}
                         syncKey={player.syncKey}
                       />
+                      {player.status === "pre-registered" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPlayerStatus(player, "registered")}
+                          disabled={busy}
+                        >
+                          Confirmer
+                        </Button>
+                      )}
                       {player.status === "dropped" ? (
                         <Button
                           variant="outline"

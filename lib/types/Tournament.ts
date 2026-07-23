@@ -11,8 +11,10 @@ export type TournamentPhaseType = "freeform" | "swiss" | "elimination" | "bracke
 export type TournamentPhaseStatus = "not-started" | "in-progress" | "completed";
 export type TournamentRoundStatus = "in-progress" | "completed";
 // REGISTERED : inscrit et apparaillé lors de la génération des rondes.
+// PRE-REGISTERED : pré-inscrit (mode pre-registration), pas encore apparaillé ;
+//   l'organisateur confirme l'inscription (passage en REGISTERED).
 // DROPPED : retiré du tournoi (par l'organisateur ou par le joueur lui-même).
-export type TournamentPlayerStatus = "registered" | "dropped";
+export type TournamentPlayerStatus = "registered" | "pre-registered" | "dropped";
 export type TournamentMatchStatus = "pending" | "in-progress" | "completed" | "disputed";
 
 // Comment le résultat d'une partie du best-of est renseigné.
@@ -44,9 +46,15 @@ export type Tournament = {
   gameId?: string;
   status: TournamentStatus;
   currentPhaseId?: string;
+  // Code court (9 caractères A-Z0-9) permettant de rejoindre le tournoi via
+  // /t/:code/join. Unique parmi les tournois non terminés.
+  joinCode?: string;
   settings: {
     allowSelfReporting: boolean;
     requireConfirmation: boolean;
+    // Mode pré-inscription : les joueurs qui rejoignent sont mis en
+    // PRE-REGISTERED (à confirmer par l'organisateur) plutôt que REGISTERED.
+    preRegistration: boolean;
   };
   createdBy: string;
   organizerIds: string[];

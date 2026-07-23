@@ -19,8 +19,9 @@ export const createTournamentSchema = z.object({
     .object({
       allowSelfReporting: z.boolean().default(true),
       requireConfirmation: z.boolean().default(false),
+      preRegistration: z.boolean().default(false),
     })
-    .default({ allowSelfReporting: true, requireConfirmation: false }),
+    .default({ allowSelfReporting: true, requireConfirmation: false, preRegistration: false }),
 });
 
 export const updateTournamentSchema = z.object({
@@ -31,10 +32,18 @@ export const updateTournamentSchema = z.object({
     .object({
       allowSelfReporting: z.boolean(),
       requireConfirmation: z.boolean(),
+      preRegistration: z.boolean(),
     })
     .partial()
     .optional(),
   organizerIds: z.array(z.string()).optional(),
+});
+
+// Rejoindre un tournoi via son code. Sans session, `displayName` est requis
+// (joueur invité) ; avec session, il est ignoré (nom du compte utilisé).
+export const joinTournamentSchema = z.object({
+  code: z.string().min(1).max(20),
+  displayName: z.string().min(1).max(100).optional(),
 });
 
 export const addTournamentPlayerSchema = z.object({
@@ -48,7 +57,7 @@ export const addTournamentPlayerSchema = z.object({
 export const updateTournamentPlayerSchema = z.object({
   displayName: z.string().min(1).max(100).optional(),
   seed: z.number().int().min(1).nullable().optional(),
-  status: z.enum(["registered", "dropped"]).optional(),
+  status: z.enum(["registered", "pre-registered", "dropped"]).optional(),
 });
 
 export const createTournamentPhaseSchema = z
@@ -158,3 +167,4 @@ export type CreateTournamentPhaseInput = z.infer<typeof createTournamentPhaseSch
 export type UpdateTournamentPhaseInput = z.infer<typeof updateTournamentPhaseSchema>;
 export type CreateTournamentMatchInput = z.infer<typeof createTournamentMatchSchema>;
 export type UpdateTournamentMatchInput = z.infer<typeof updateTournamentMatchSchema>;
+export type JoinTournamentInput = z.infer<typeof joinTournamentSchema>;

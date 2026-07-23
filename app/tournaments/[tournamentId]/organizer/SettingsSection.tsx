@@ -26,9 +26,11 @@ export function SettingsSection({ tournament }: { tournament: Tournament }) {
   const [status, setStatus] = useState<Tournament["status"]>(tournament.status);
   const [allowSelfReporting, setAllowSelfReporting] = useState(tournament.settings.allowSelfReporting);
   const [requireConfirmation, setRequireConfirmation] = useState(tournament.settings.requireConfirmation);
+  const [preRegistration, setPreRegistration] = useState(tournament.settings.preRegistration);
   const [savedSettings, setSavedSettings] = useState({
     allowSelfReporting: tournament.settings.allowSelfReporting,
     requireConfirmation: tournament.settings.requireConfirmation,
+    preRegistration: tournament.settings.preRegistration,
   });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -60,14 +62,15 @@ export function SettingsSection({ tournament }: { tournament: Tournament }) {
   };
 
   const saveSettings = async () => {
-    if (await patch({ settings: { allowSelfReporting, requireConfirmation } })) {
-      setSavedSettings({ allowSelfReporting, requireConfirmation });
+    if (await patch({ settings: { allowSelfReporting, requireConfirmation, preRegistration } })) {
+      setSavedSettings({ allowSelfReporting, requireConfirmation, preRegistration });
     }
   };
 
   const settingsDirty =
     allowSelfReporting !== savedSettings.allowSelfReporting ||
-    requireConfirmation !== savedSettings.requireConfirmation;
+    requireConfirmation !== savedSettings.requireConfirmation ||
+    preRegistration !== savedSettings.preRegistration;
 
   return (
     <div className="space-y-4">
@@ -123,6 +126,21 @@ export function SettingsSection({ tournament }: { tournament: Tournament }) {
                 id="setting-confirmation"
                 checked={requireConfirmation}
                 onCheckedChange={setRequireConfirmation}
+                disabled={busy}
+              />
+            </div>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <Label htmlFor="setting-pre-registration">Pré-inscription</Label>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Les joueurs qui rejoignent le tournoi sont placés en PRE-REGISTERED, à confirmer
+                  par un organisateur avant d&apos;être apparaillés.
+                </p>
+              </div>
+              <Switch
+                id="setting-pre-registration"
+                checked={preRegistration}
+                onCheckedChange={setPreRegistration}
                 disabled={busy}
               />
             </div>

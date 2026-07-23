@@ -6960,6 +6960,10 @@
                       "requireConfirmation": {
                         "type": "boolean",
                         "default": false
+                      },
+                      "preRegistration": {
+                        "type": "boolean",
+                        "default": false
                       }
                     }
                   }
@@ -6984,6 +6988,82 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/tournaments/join": {
+      "post": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Join a tournament by its participation code",
+        "description": "Self-registration via a tournament's join code. With a session, the player is linked to the account; without a session, `displayName` is required and the player is added as a guest and receives their sync key. If pre-registration is enabled, the player is added with status `pre-registered`.",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "code"
+                ],
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "displayName": {
+                    "type": "string",
+                    "description": "Required when not authenticated (guest)."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Joined (or already joined).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "tournamentId": {
+                      "type": "string"
+                    },
+                    "alreadyJoined": {
+                      "type": "boolean"
+                    },
+                    "player": {
+                      "$ref": "#/components/schemas/TournamentPlayer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The tournament is completed (registration closed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
@@ -7144,6 +7224,9 @@
                         "type": "boolean"
                       },
                       "requireConfirmation": {
+                        "type": "boolean"
+                      },
+                      "preRegistration": {
                         "type": "boolean"
                       }
                     }
@@ -7443,6 +7526,7 @@
                     "type": "string",
                     "enum": [
                       "registered",
+                      "pre-registered",
                       "dropped"
                     ]
                   }
@@ -9054,6 +9138,7 @@
                             "type": "string",
                             "enum": [
                               "registered",
+                              "pre-registered",
                               "dropped"
                             ]
                           }
@@ -11244,6 +11329,10 @@
           "currentPhaseId": {
             "type": "string"
           },
+          "joinCode": {
+            "type": "string",
+            "description": "Code de participation (9 caractères A-Z0-9) : /t/{joinCode}/join."
+          },
           "settings": {
             "type": "object",
             "properties": {
@@ -11251,6 +11340,9 @@
                 "type": "boolean"
               },
               "requireConfirmation": {
+                "type": "boolean"
+              },
+              "preRegistration": {
                 "type": "boolean"
               }
             }
@@ -11297,6 +11389,7 @@
             "type": "string",
             "enum": [
               "registered",
+              "pre-registered",
               "dropped"
             ]
           },
@@ -11566,6 +11659,7 @@
             "type": "string",
             "enum": [
               "registered",
+              "pre-registered",
               "dropped"
             ]
           },
