@@ -4,6 +4,7 @@ import { use, useCallback, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { TournamentGameResult } from "@/lib/types/Tournament";
 import { MatchGamesEditor } from "../MatchGamesEditor";
 import { PlayerShell } from "./PlayerShell";
@@ -39,6 +40,32 @@ export default function TournamentPlayerMatchPage({
   const [activePhase, setActivePhase] = useState<ApiPhase | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [dropOpen, setDropOpen] = useState(false);
+  const [dropping, setDropping] = useState(false);
+
+  const myStatus = tournament?.players.find((p) => p.id === myPlayerId)?.status;
+
+  const dropTournament = async () => {
+    if (!myPlayerId) return;
+    setDropping(true);
+    setActionError(null);
+    try {
+      const res = await apiFetch(`/api/tournaments/${tournamentId}/players/${myPlayerId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "dropped" }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? "Erreur lors du retrait du tournoi");
+      }
+      setDropOpen(false);
+      await reload();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Erreur lors du retrait du tournoi");
+    } finally {
+      setDropping(false);
+    }
+  };
 
   // Résout la phase active et charge sa dernière ronde à chaque changement de
   // tournoi (chargement initial et après un rapport de résultat).
@@ -147,6 +174,25 @@ export default function TournamentPlayerMatchPage({
       loading={loading}
       error={error ?? actionError}
     >
+      {/* Statut d'inscription + retrait du tournoi (self-drop). */}
+      {myPlayerId && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Mon inscription :</span>
+            <Badge variant={myStatus === "dropped" ? "outline" : "secondary"}>
+              {myStatus === "dropped" ? "DROPPED" : "REGISTERED"}
+            </Badge>
+          </div>
+          {myStatus === "dropped" ? (
+            <span className="text-sm text-muted-foreground">Vous avez quitté ce tournoi.</span>
+          ) : (
+            <Button variant="destructive" size="sm" onClick={() => setDropOpen(true)} disabled={dropping}>
+              Quitter le tournoi
+            </Button>
+          )}
+        </div>
+      )}
+
       {myMatch && round ? (
         <Card>
           <CardHeader>
@@ -213,6 +259,17 @@ export default function TournamentPlayerMatchPage({
       ) : (
         <p className="text-muted-foreground">Vous n&apos;avez pas de match dans la ronde en cours.</p>
       )}
+
+      <ConfirmDialog
+        open={dropOpen}
+        onOpenChange={(open) => !open && setDropOpen(false)}
+        title="Quitter le tournoi"
+        description="Vous serez marqué comme DROPPED et ne serez plus apparaillé lors des prochaines rondes. Cette action peut être annulée par l'organisateur."
+        confirmLabel="Quitter le tournoi"
+        destructive
+        busy={dropping}
+        onConfirm={dropTournament}
+      />
     </PlayerShell>
   );
 }

@@ -7412,13 +7412,17 @@
         "tags": [
           "Tournaments"
         ],
-        "summary": "Update a player: rename, reseed, drop (organizers only)",
+        "summary": "Update a player: rename, reseed, change status",
+        "description": "Organizers can update any field (rename, reseed, set status registered/dropped). A player themselves (session or player sync key) can only drop out of the tournament, i.e. set their own status to `dropped`.",
         "security": [
           {
             "sessionAuth": []
           },
           {
             "apiKeyBearer": []
+          },
+          {
+            "playerSyncKeyBearer": []
           }
         ],
         "requestBody": {
@@ -7438,7 +7442,7 @@
                   "status": {
                     "type": "string",
                     "enum": [
-                      "active",
+                      "registered",
                       "dropped"
                     ]
                   }
@@ -8890,7 +8894,7 @@
                           "status": {
                             "type": "string",
                             "enum": [
-                              "active",
+                              "registered",
                               "dropped"
                             ]
                           }
@@ -11133,7 +11137,7 @@
           "status": {
             "type": "string",
             "enum": [
-              "active",
+              "registered",
               "dropped"
             ]
           },
@@ -11402,7 +11406,7 @@
           "playerStatus": {
             "type": "string",
             "enum": [
-              "active",
+              "registered",
               "dropped"
             ]
           },

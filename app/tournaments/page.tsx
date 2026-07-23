@@ -6,6 +6,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { getSyncKeys, removeSyncKey } from "@/lib/tournament-sync-storage";
 
 type SyncedTournament = {
@@ -61,6 +62,8 @@ export default function TournamentsPage() {
   const [organized, setOrganized] = useState<OrganizedTournament[]>([]);
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [loading, setLoading] = useState(true);
+  // Tournoi en attente de confirmation de retrait de synchronisation.
+  const [pendingRemove, setPendingRemove] = useState<string | null>(null);
 
   useEffect(() => {
     const keys = Object.values(getSyncKeys());
@@ -126,11 +129,9 @@ export default function TournamentsPage() {
   );
 
   const handleRemove = (tournamentId: string) => {
-    if (!confirm("Retirer ce tournoi de cette page ? La clé de synchronisation sera supprimée de ce navigateur.")) {
-      return;
-    }
     removeSyncKey(tournamentId);
     setEntries((current) => current.filter((e) => e.tournament.id !== tournamentId));
+    setPendingRemove(null);
   };
 
   return (
@@ -228,7 +229,7 @@ export default function TournamentsPage() {
                       variant="ghost"
                       size="sm"
                       className="text-red-600 hover:text-red-800"
-                      onClick={() => handleRemove(entry.tournament.id)}
+                      onClick={() => setPendingRemove(entry.tournament.id)}
                       aria-label="Retirer la synchronisation de ce navigateur"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -241,6 +242,16 @@ export default function TournamentsPage() {
         </div>
       )}
       </section>
+
+      <ConfirmDialog
+        open={pendingRemove !== null}
+        onOpenChange={(open) => !open && setPendingRemove(null)}
+        title="Retirer ce tournoi"
+        description="La clé de synchronisation sera supprimée de ce navigateur. Vous pourrez le rejoindre à nouveau via le QR code de l'organisateur."
+        confirmLabel="Retirer"
+        destructive
+        onConfirm={() => pendingRemove && handleRemove(pendingRemove)}
+      />
     </div>
   );
 }

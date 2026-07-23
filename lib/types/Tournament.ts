@@ -10,7 +10,9 @@ export type TournamentStatus = "draft" | "in-progress" | "completed";
 export type TournamentPhaseType = "freeform" | "swiss" | "elimination" | "bracket";
 export type TournamentPhaseStatus = "not-started" | "in-progress" | "completed";
 export type TournamentRoundStatus = "in-progress" | "completed";
-export type TournamentPlayerStatus = "active" | "dropped";
+// REGISTERED : inscrit et apparaillé lors de la génération des rondes.
+// DROPPED : retiré du tournoi (par l'organisateur ou par le joueur lui-même).
+export type TournamentPlayerStatus = "registered" | "dropped";
 export type TournamentMatchStatus = "pending" | "in-progress" | "completed" | "disputed";
 
 // Comment le résultat d'une partie du best-of est renseigné.
