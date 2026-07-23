@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { formatDuration, timerRemainingSeconds } from "@/lib/tournament-timer";
+import { formatDuration, timerIsPaused, timerRemainingSeconds } from "@/lib/tournament-timer";
 import { useTournamentLive } from "../useTournamentLive";
 
 export default function TournamentTimerPage({
@@ -22,6 +22,7 @@ export default function TournamentTimerPage({
 
   const remaining = timerRemainingSeconds(state?.timer ?? null, serverOffsetMs);
   const expired = remaining !== null && remaining < 0;
+  const paused = timerIsPaused(state?.timer ?? null);
 
   return (
     // Surcouche plein écran (recouvre l'en-tête du site) pour un affichage épuré.
@@ -42,8 +43,15 @@ export default function TournamentTimerPage({
           Aucun minuteur en cours
         </p>
       ) : (
-        <div className="font-mono text-[24vw] font-bold leading-none tabular-nums md:text-[20vw]">
-          {formatDuration(remaining)}
+        <div className="flex flex-col items-center gap-4">
+          <div className="font-mono text-[24vw] font-bold leading-none tabular-nums md:text-[20vw]">
+            {formatDuration(remaining)}
+          </div>
+          {paused && (
+            <p className={cn("text-2xl uppercase tracking-widest", expired ? "text-white/80" : "text-muted-foreground")}>
+              En pause
+            </p>
+          )}
         </div>
       )}
     </div>

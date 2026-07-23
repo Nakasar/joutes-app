@@ -666,6 +666,37 @@ export async function startTimer(tournamentId: string, durationSeconds: number):
   });
 }
 
+// Met le minuteur en pause : mémorise le temps restant et efface l'instant de
+// fin. Sans effet si le minuteur ne tourne pas.
+export async function pauseTimer(tournamentId: string): Promise<Tournament> {
+  const tournament = await requireTournament(tournamentId);
+  const timer = tournament.timer;
+  if (!timer?.running || !timer.endsAt) {
+    return tournament;
+  }
+  const remainingSeconds = (timer.endsAt.getTime() - Date.now()) / 1000;
+  return updateTournamentTimer(tournamentId, {
+    durationSeconds: timer.durationSeconds,
+    running: false,
+    remainingSeconds,
+  });
+}
+
+// Reprend un minuteur en pause : recalcule un instant de fin à partir du temps
+// restant mémorisé. Sans effet s'il n'y a pas de temps mémorisé.
+export async function resumeTimer(tournamentId: string): Promise<Tournament> {
+  const tournament = await requireTournament(tournamentId);
+  const timer = tournament.timer;
+  if (!timer || timer.running || timer.remainingSeconds === undefined) {
+    return tournament;
+  }
+  return updateTournamentTimer(tournamentId, {
+    durationSeconds: timer.durationSeconds,
+    endsAt: new Date(Date.now() + timer.remainingSeconds * 1000),
+    running: true,
+  });
+}
+
 // Arrête le minuteur (conserve la durée configurée).
 export async function stopTimer(tournamentId: string): Promise<Tournament> {
   const tournament = await requireTournament(tournamentId);

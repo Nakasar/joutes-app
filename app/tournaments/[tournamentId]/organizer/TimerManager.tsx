@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Maximize2, Pause, Play } from "lucide-react";
+import { Maximize2, Pause, Play, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { formatDuration, timerRemainingSeconds } from "@/lib/tournament-timer";
+import { formatDuration, timerIsPaused, timerRemainingSeconds } from "@/lib/tournament-timer";
 import { useTournamentLive } from "../useTournamentLive";
 
 export function TimerManager({ tournamentId }: { tournamentId: string }) {
@@ -27,6 +27,7 @@ export function TimerManager({ tournamentId }: { tournamentId: string }) {
   const remaining = timerRemainingSeconds(state?.timer ?? null, serverOffsetMs);
   const expired = remaining !== null && remaining < 0;
   const running = state?.timer?.running ?? false;
+  const paused = timerIsPaused(state?.timer ?? null);
 
   const action = async (body: Record<string, unknown>) => {
     setBusy(true);
@@ -92,7 +93,7 @@ export function TimerManager({ tournamentId }: { tournamentId: string }) {
             {remaining === null ? "—" : formatDuration(remaining)}
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            {running ? "En cours" : "Arrêté"}
+            {running ? "En cours" : paused ? "En pause" : "Arrêté"}
           </p>
         </div>
 
@@ -122,10 +123,29 @@ export function TimerManager({ tournamentId }: { tournamentId: string }) {
           </div>
           <Button onClick={start} disabled={busy}>
             <Play className="mr-2 h-4 w-4" />
-            {running ? "Redémarrer" : "Lancer"}
+            {running || paused ? "Redémarrer" : "Lancer"}
           </Button>
-          <Button variant="outline" onClick={() => action({ action: "stop" })} disabled={busy || !running}>
-            <Pause className="mr-2 h-4 w-4" />
+          {paused ? (
+            <Button variant="outline" onClick={() => action({ action: "resume" })} disabled={busy}>
+              <Play className="mr-2 h-4 w-4" />
+              Reprendre
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={() => action({ action: "pause" })}
+              disabled={busy || !running}
+            >
+              <Pause className="mr-2 h-4 w-4" />
+              Pause
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            onClick={() => action({ action: "stop" })}
+            disabled={busy || (!running && !paused)}
+          >
+            <Square className="mr-2 h-4 w-4" />
             Arrêter
           </Button>
         </div>

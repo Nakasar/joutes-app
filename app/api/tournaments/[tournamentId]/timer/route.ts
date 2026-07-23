@@ -1,14 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateApiRequest } from "@/lib/api/authenticate";
 import { timerActionSchema } from "@/lib/schemas/tournament.schema";
-import { assertIsOrganizer, requireTournament, startTimer, stopTimer } from "@/lib/db/tournaments";
+import {
+  assertIsOrganizer,
+  pauseTimer,
+  requireTournament,
+  resumeTimer,
+  startTimer,
+  stopTimer,
+  TournamentError,
+} from "@/lib/db/tournaments";
 import { tournamentErrorResponse, unauthorizedResponse } from "../../utils";
 
 type Params = { params: Promise<{ tournamentId: string }> };
 
 /**
  * Contrôle du minuteur (organisateurs) : `start` (avec durée) le lance en
- * fixant un instant de fin absolu ; `stop` l'arrête.
+ * fixant un instant de fin absolu ; `pause` mémorise le temps restant ;
+ * `resume` reprend depuis ce temps ; `stop` l'arrête.
  */
 export async function POST(request: NextRequest, { params }: Params) {
   const user = await authenticateApiRequest(request);
@@ -22,10 +31,26 @@ export async function POST(request: NextRequest, { params }: Params) {
     const body = await request.json();
     const validated = timerActionSchema.parse(body);
 
-    const updated =
-      validated.action === "start"
-        ? await startTimer(tournamentId, validated.durationSeconds)
-        : await stopTimer(tournamentId);
+    let updated;
+    switch (validated.action) {
+      case "start":
+        updated = await startTimer(tournamentId, validated.durationSeconds);
+        break;
+      case "pause":
+        updated = await pauseTimer(tournamentId);
+        break;
+      case "resume":
+        updated = await resumeTimer(tournamentId);
+        break;
+      case "stop":
+        updated = await stopTimer(tournamentId);
+        break;
+      default: {
+        // Exhaustivité : toute nouvelle action du schéma doit être gérée ci-dessus.
+        const _exhaustive: never = validated;
+        throw new TournamentError("invalid", `Action de minuteur inconnue: ${JSON.stringify(_exhaustive)}`);
+      }
+    }
 
     return NextResponse.json(updated.timer ?? null);
   } catch (error) {
