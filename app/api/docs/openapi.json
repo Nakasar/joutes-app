@@ -8269,6 +8269,49 @@
           }
         }
       },
+      "patch": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Act on a round: reopen it (organizers only)",
+        "description": "`reopen` repasse une ronde terminée « en cours » (ronde courante) pour corriger les résultats. Seule la dernière ronde d'une phase peut être rouverte.",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["action"],
+                "properties": {
+                  "action": { "type": "string", "enum": ["reopen"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated round.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TournamentRound" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
       "delete": {
         "tags": [
           "Tournaments"

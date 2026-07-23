@@ -11,7 +11,7 @@ export default function TournamentPlayerStandingsPage({
   params: Promise<{ tournamentId: string }>;
 }) {
   const { tournamentId } = use(params);
-  const { syncKey, tournament, error, loading } = usePlayerTournament(tournamentId);
+  const { syncKey, tournament, myPlayerId, error, loading } = usePlayerTournament(tournamentId);
 
   return (
     <PlayerShell
@@ -19,6 +19,7 @@ export default function TournamentPlayerStandingsPage({
       active="standings"
       tournament={tournament}
       syncKey={syncKey}
+      myPlayerId={myPlayerId}
       loading={loading}
       error={error}
     >

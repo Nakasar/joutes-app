@@ -2,16 +2,25 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { UserRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { PlayerLiveBanner } from "./PlayerLiveBanner";
 import type { ApiTournament } from "./usePlayerTournament";
+import { PlayerNameTag } from "../PlayerNameTag";
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "À venir",
   "in-progress": "En cours",
   completed: "Terminé",
+};
+
+// Libellé/variante du statut du joueur, affiché sur l'encadré d'identité.
+const PLAYER_STATUS_BADGE: Record<string, { label: string; variant: "secondary" | "outline" }> = {
+  registered: { label: "Inscrit", variant: "secondary" },
+  "pre-registered": { label: "Pré-inscrit", variant: "outline" },
+  dropped: { label: "Abandon", variant: "outline" },
 };
 
 export type PlayerSection = "match" | "standings" | "players";
@@ -21,6 +30,7 @@ export function PlayerShell({
   active,
   tournament,
   syncKey,
+  myPlayerId,
   loading,
   error,
   children,
@@ -29,6 +39,7 @@ export function PlayerShell({
   active: PlayerSection;
   tournament: ApiTournament | null;
   syncKey: string | null | undefined;
+  myPlayerId?: string | null;
   loading: boolean;
   error: string | null;
   children: ReactNode;
@@ -55,6 +66,10 @@ export function PlayerShell({
     { key: "players", label: "Joueurs", path: "players" },
   ];
   const base = `/tournaments/${tournamentId}/player`;
+
+  // Joueur qui consulte le portail (identité portée par la clé ou la session).
+  const me = myPlayerId ? tournament?.players.find((p) => p.id === myPlayerId) : undefined;
+  const meBadge = me ? PLAYER_STATUS_BADGE[me.status] : undefined;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-8">
@@ -85,6 +100,22 @@ export function PlayerShell({
           </Link>
         ))}
       </nav>
+
+      {me && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/40 p-3">
+          <div className="flex items-center gap-2 text-sm">
+            <UserRound className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <span className="text-muted-foreground">Vous participez en tant que</span>
+            <PlayerNameTag
+              name={me.displayName}
+              discriminator={me.discriminator}
+              className="font-semibold text-foreground"
+            />
+            {!me.userId && <span className="text-xs text-muted-foreground">(invité)</span>}
+          </div>
+          {meBadge && <Badge variant={meBadge.variant}>{meBadge.label}</Badge>}
+        </div>
+      )}
 
       <PlayerLiveBanner tournamentId={tournamentId} />
 

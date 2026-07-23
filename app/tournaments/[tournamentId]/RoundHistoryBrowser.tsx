@@ -19,6 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import { usePaginatedSearch } from "@/lib/use-paginated-search";
 import type { TournamentPhaseType, TournamentResultMode, TournamentRoundStanding } from "@/lib/types/Tournament";
+import { MatchPlayerName } from "./MatchPlayerName";
 import { PlayerNameTag } from "./PlayerNameTag";
 import { TablePagination } from "./TablePagination";
 
@@ -424,14 +425,17 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
                   return (
                     <li key={match.id} className="space-y-2 rounded-lg border p-3">
                       <div className="flex items-start justify-between gap-3">
-                        <div className="text-sm font-medium">
+                        <div className="flex flex-wrap items-center gap-x-1 gap-y-1 text-sm font-medium">
                           {match.bracketPosition ? `${match.bracketPosition} — ` : ""}
-                          {match.players
-                            .map((p) => {
-                              const label = `${playerName(p.playerId)} (${p.score})`;
-                              return match.winnerIds.includes(p.playerId) ? `${label} 🏆` : label;
-                            })
-                            .join(isBye ? "" : " vs ")}
+                          {match.players.map((p, i) => (
+                            <span key={p.playerId} className="inline-flex items-center">
+                              {i > 0 && !isBye && <span className="mr-1 text-muted-foreground">vs</span>}
+                              <MatchPlayerName
+                                isWinner={match.winnerIds.includes(p.playerId)}
+                                name={`${playerName(p.playerId)} (${p.score})`}
+                              />
+                            </span>
+                          ))}
                           {isBye ? " — BYE" : ""}
                         </div>
                         <Badge variant="outline" className="shrink-0">
