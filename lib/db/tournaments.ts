@@ -746,9 +746,25 @@ export async function getPlayerById(tournamentId: string, playerId: string): Pro
 }
 
 // Nombre à 4 chiffres (1000–9999) attribué à un invité pour le distinguer d'un
-// éventuel homonyme.
-function randomGuestDiscriminator(): string {
-  return String(Math.floor(1000 + Math.random() * 9000));
+// éventuel homonyme. On retente quelques fois pour éviter une collision sur un
+// même (displayName, discriminator) dans le tournoi.
+async function generateGuestDiscriminator(
+  tournamentId: ObjectId,
+  displayName: string
+): Promise<string> {
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const candidate = String(Math.floor(1000 + Math.random() * 9000));
+    const clash = await db.collection<TournamentPlayerDb>(PLAYERS).findOne({
+      tournamentId,
+      displayName,
+      discriminator: candidate,
+    });
+    if (!clash) return candidate;
+  }
+  throw new TournamentError(
+    "conflict",
+    "Impossible d'attribuer un identifiant unique à ce joueur invité"
+  );
 }
 
 export async function addPlayer(
@@ -777,7 +793,7 @@ export async function addPlayer(
   // les homonymes).
   const discriminator = data.userId
     ? (await getUserDiscriminator(data.userId)) ?? undefined
-    : randomGuestDiscriminator();
+    : await generateGuestDiscriminator(_id, data.displayName);
 
   const doc: TournamentPlayerDb = {
     tournamentId: _id,

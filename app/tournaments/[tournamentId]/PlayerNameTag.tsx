@@ -1,5 +1,3 @@
-import { cn } from "@/lib/utils";
-
 /**
  * Nom d'un joueur suivi, en plus discret, de son discriminateur à 4 chiffres
  * (compte ou invité) pour différencier les homonymes.
