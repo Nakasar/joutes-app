@@ -69,6 +69,27 @@ const roundsIndexReady = db
     console.error("Impossible de créer l'index unique des rondes de tournoi:", error);
   });
 
+// Index unique partiel : un code de participation ne peut être partagé par deux
+// tournois non terminés (à venir / en cours). Best-effort : un échec (base
+// indisponible, opérateur non supporté par la version) n'est pas bloquant —
+// generateUniqueJoinCode vérifie de toute façon l'unicité avant écriture, et
+// les E11000 concurrents sont gérés par un ré-essai.
+const joinCodeIndexReady = db
+  .collection(TOURNAMENTS)
+  .createIndex(
+    { joinCode: 1 },
+    {
+      unique: true,
+      partialFilterExpression: {
+        joinCode: { $exists: true },
+        status: { $in: ["draft", "in-progress"] },
+      },
+    }
+  )
+  .catch((error) => {
+    console.error("Impossible de créer l'index unique du code de participation:", error);
+  });
+
 function isDuplicateKeyError(error: unknown): boolean {
   return (
     typeof error === "object" &&
@@ -313,41 +334,74 @@ export async function createTournament(data: {
   settings: { allowSelfReporting: boolean; requireConfirmation: boolean; preRegistration: boolean };
   createdBy: string;
 }): Promise<Tournament> {
-  const doc: TournamentDb = {
-    name: data.name,
-    eventId: data.eventId,
-    gameId: data.gameId,
-    status: "draft",
-    joinCode: await generateUniqueJoinCode(),
-    settings: data.settings,
-    createdBy: data.createdBy,
-    organizerIds: [data.createdBy],
-    createdAt: new Date(),
-  };
-
-  const result = await db.collection<TournamentDb>(TOURNAMENTS).insertOne(doc);
-  return toTournament({ ...doc, _id: result.insertedId });
+  await joinCodeIndexReady;
+  // Ré-essaie sur une collision de code (E11000) contre l'index unique partiel :
+  // en pratique quasi impossible, mais garantit l'unicité même en concurrence.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const doc: TournamentDb = {
+      name: data.name,
+      eventId: data.eventId,
+      gameId: data.gameId,
+      status: "draft",
+      joinCode: await generateUniqueJoinCode(),
+      settings: data.settings,
+      createdBy: data.createdBy,
+      organizerIds: [data.createdBy],
+      createdAt: new Date(),
+    };
+    try {
+      const result = await db.collection<TournamentDb>(TOURNAMENTS).insertOne(doc);
+      return toTournament({ ...doc, _id: result.insertedId });
+    } catch (error) {
+      if (isDuplicateKeyError(error)) continue;
+      throw error;
+    }
+  }
+  throw new TournamentError("conflict", "Impossible de générer un code de participation unique");
 }
 
 // Renvoie le tournoi portant ce code de participation, en préférant un tournoi
-// non terminé (le code n'est unique que parmi ceux-là).
+// non terminé (le code n'est unique que parmi ceux-là). Recherche en 2 temps
+// pour éviter de charger d'éventuels doublons ; normalise la casse.
 export async function getTournamentByJoinCode(code: string): Promise<Tournament | null> {
-  const docs = await db.collection<TournamentDb>(TOURNAMENTS).find({ joinCode: code }).toArray();
-  if (docs.length === 0) return null;
-  const active = docs.find((d) => d.status !== "completed");
-  return toTournament(active ?? docs[0]);
+  const joinCode = code.trim().toUpperCase();
+  const coll = db.collection<TournamentDb>(TOURNAMENTS);
+  const active = await coll.findOne({ joinCode, status: { $ne: "completed" } });
+  if (active) return toTournament(active);
+  const any = await coll.findOne({ joinCode });
+  return any ? toTournament(any) : null;
 }
 
 // Garantit qu'un tournoi possède un code de participation (génère et persiste
 // s'il n'en a pas encore — cas des tournois créés avant cette fonctionnalité).
 export async function ensureJoinCode(tournamentId: string): Promise<string> {
   const _id = parseObjectId(tournamentId, "Tournoi");
-  const doc = await db.collection<TournamentDb>(TOURNAMENTS).findOne({ _id });
+  const coll = db.collection<TournamentDb>(TOURNAMENTS);
+  const doc = await coll.findOne({ _id });
   if (!doc) throw new TournamentError("not-found", "Tournoi non trouvé");
   if (doc.joinCode) return doc.joinCode;
-  const code = await generateUniqueJoinCode();
-  await db.collection<TournamentDb>(TOURNAMENTS).updateOne({ _id }, { $set: { joinCode: code } });
-  return code;
+
+  await joinCodeIndexReady;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const code = await generateUniqueJoinCode();
+    try {
+      // Update conditionnel : ne pose le code que s'il est encore absent (évite
+      // d'écraser un code posé par un appel concurrent).
+      const updated = await coll.findOneAndUpdate(
+        { _id, joinCode: { $exists: false } },
+        { $set: { joinCode: code } },
+        { returnDocument: "after" }
+      );
+      if (updated?.joinCode) return updated.joinCode;
+      // Un appel concurrent a déjà posé un code : on le relit.
+      const fresh = await coll.findOne({ _id });
+      if (fresh?.joinCode) return fresh.joinCode;
+    } catch (error) {
+      if (isDuplicateKeyError(error)) continue;
+      throw error;
+    }
+  }
+  throw new TournamentError("conflict", "Impossible de générer un code de participation unique");
 }
 
 export async function getTournamentById(tournamentId: string): Promise<Tournament | null> {

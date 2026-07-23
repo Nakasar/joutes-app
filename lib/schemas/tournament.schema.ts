@@ -42,7 +42,12 @@ export const updateTournamentSchema = z.object({
 // Rejoindre un tournoi via son code. Sans session, `displayName` est requis
 // (joueur invité) ; avec session, il est ignoré (nom du compte utilisé).
 export const joinTournamentSchema = z.object({
-  code: z.string().min(1).max(20),
+  // Normalise (trim + majuscules) puis valide le format : 9 caractères A-Z0-9.
+  code: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-Z0-9]{9}$/, "Code de participation invalide"),
   displayName: z.string().min(1).max(100).optional(),
 });
 
