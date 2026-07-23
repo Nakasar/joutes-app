@@ -5,12 +5,16 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSession } from "@/lib/auth-client";
 import { getSyncKey } from "@/lib/tournament-sync-storage";
+import { usePaginatedSearch } from "@/lib/use-paginated-search";
+import { useTabParam } from "@/lib/use-tab-param";
 import type { TournamentGameResult, TournamentResultMode } from "@/lib/types/Tournament";
 import { MatchGamesEditor } from "../MatchGamesEditor";
 import { RoundHistoryBrowser } from "../RoundHistoryBrowser";
+import { TablePagination } from "../TablePagination";
 
 type ApiPlayer = { id: string; userId?: string; displayName: string; status: string };
 type ApiPhase = {
@@ -70,6 +74,9 @@ export default function TournamentPlayerPage({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  const [tab, setTab] = useTabParam("tab", "match", ["match", "standings", "players"]);
+  const playersSearch = usePaginatedSearch(tournament?.players ?? [], (p) => p.displayName, 25);
 
   useEffect(() => {
     setSyncKey(getSyncKey(tournamentId) ?? null);
@@ -254,7 +261,7 @@ export default function TournamentPlayerPage({
       {loading ? (
         <p className="text-muted-foreground">Chargement...</p>
       ) : (
-        <Tabs defaultValue="match" className="space-y-6">
+        <Tabs value={tab} onValueChange={setTab} className="space-y-6">
           <TabsList>
             <TabsTrigger value="match">Mon match</TabsTrigger>
             <TabsTrigger value="standings">Classement</TabsTrigger>
@@ -346,17 +353,36 @@ export default function TournamentPlayerPage({
               </CardHeader>
               <CardContent>
                 {tournament && tournament.players.length > 0 ? (
-                  <ul className="divide-y">
-                    {tournament.players.map((player) => (
-                      <li key={player.id} className="flex items-center justify-between py-2">
-                        <span className={player.id === myPlayerId ? "font-semibold" : ""}>
-                          {player.displayName}
-                          {player.id === myPlayerId ? " (moi)" : ""}
-                        </span>
-                        {player.status === "dropped" && <Badge variant="outline">Drop</Badge>}
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="space-y-3">
+                    <Input
+                      value={playersSearch.query}
+                      onChange={(e) => playersSearch.setQuery(e.target.value)}
+                      placeholder="Rechercher un joueur..."
+                      className="max-w-xs"
+                    />
+                    <ul className="divide-y">
+                      {playersSearch.pageItems.map((player) => (
+                        <li key={player.id} className="flex items-center justify-between py-2">
+                          <span className={player.id === myPlayerId ? "font-semibold" : ""}>
+                            {player.displayName}
+                            {player.id === myPlayerId ? " (moi)" : ""}
+                          </span>
+                          {player.status === "dropped" && <Badge variant="outline">Drop</Badge>}
+                        </li>
+                      ))}
+                      {playersSearch.pageItems.length === 0 && (
+                        <li className="py-2 text-sm text-muted-foreground">
+                          Aucun joueur ne correspond à la recherche.
+                        </li>
+                      )}
+                    </ul>
+                    <TablePagination
+                      page={playersSearch.page}
+                      totalPages={playersSearch.totalPages}
+                      total={playersSearch.total}
+                      onPage={playersSearch.setPage}
+                    />
+                  </div>
                 ) : (
                   <p className="text-muted-foreground">Aucun joueur inscrit.</p>
                 )}

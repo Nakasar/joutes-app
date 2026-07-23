@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -23,12 +23,14 @@ import type {
   TournamentPlayer,
   TournamentPhaseType,
   TournamentResultMode,
-  TournamentRound,
   TournamentScoringMethod,
   TournamentEliminationSeeding,
 } from "@/lib/types/Tournament";
+import { useTabParam } from "@/lib/use-tab-param";
+import { usePaginatedSearch } from "@/lib/use-paginated-search";
 import { PlayerSyncQRButton } from "./PlayerSyncQRButton";
 import { RoundHistoryBrowser } from "../RoundHistoryBrowser";
+import { TablePagination } from "../TablePagination";
 
 const TOURNAMENT_STATUS_LABELS: Record<string, string> = {
   draft: "À venir",
@@ -53,16 +55,18 @@ type Props = {
   tournament: Tournament;
   initialPlayers: TournamentPlayer[];
   initialPhases: TournamentPhase[];
-  initialRounds: TournamentRound[];
 };
 
-export function OrganizerClient({ tournament, initialPlayers, initialPhases, initialRounds }: Props) {
+export function OrganizerClient({ tournament, initialPlayers, initialPhases }: Props) {
+  const [tab, setTab] = useTabParam("tab", "config", ["config", "players", "phases", "rounds"]);
   const [players, setPlayers] = useState<TournamentPlayer[]>(initialPlayers);
   const [phases, setPhases] = useState<TournamentPhase[]>(initialPhases);
-  const [rounds, setRounds] = useState<TournamentRound[]>(initialRounds);
   const [status, setStatus] = useState<Tournament["status"]>(tournament.status);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // Recherche + pagination (25) de la liste des joueurs.
+  const playersSearch = usePaginatedSearch(players, (p) => p.displayName, 25);
 
   // Réglages du tournoi (onglet Configuration). `savedSettings` sert de
   // référence pour l'état « modifié » : il est mis à jour après un
@@ -248,25 +252,6 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases, ini
     run(async () => {
       await api(`/api/tournaments/${tournamentId}/phases/${phase.id}`, { method: "DELETE" });
       await refreshPhases();
-      setRounds((prev) => prev.filter((r) => r.phaseId !== phase.id));
-    });
-
-  const generateRound = (phase: TournamentPhase) =>
-    run(async () => {
-      const round = await api(`/api/tournaments/${tournamentId}/phases/${phase.id}/rounds`, {
-        method: "POST",
-      });
-      await refreshPhases();
-      window.location.href = `/tournaments/${tournamentId}/organizer/rounds/${round.id}`;
-    });
-
-  // Supprime la dernière ronde d'une phase (seule la plus récente est
-  // supprimable côté domaine, pour garder les pairings cohérents).
-  const deleteLastRound = (round: TournamentRound) =>
-    run(async () => {
-      await api(`/api/tournaments/${tournamentId}/rounds/${round.id}`, { method: "DELETE" });
-      setRounds((prev) => prev.filter((r) => r.id !== round.id));
-      await refreshPhases();
     });
 
   const changeStatus = (next: Tournament["status"]) =>
@@ -294,16 +279,6 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases, ini
 
   const activePlayers = players.filter((p) => p.status === "active");
 
-  // Dernière ronde par phase (celle qui est supprimable).
-  const lastRoundByPhase = useMemo(() => {
-    const map = new Map<string, TournamentRound>();
-    for (const round of rounds) {
-      const current = map.get(round.phaseId);
-      if (!current || round.number > current.number) map.set(round.phaseId, round);
-    }
-    return map;
-  }, [rounds]);
-
   const settingsDirty =
     allowSelfReporting !== savedSettings.allowSelfReporting ||
     requireConfirmation !== savedSettings.requireConfirmation;
@@ -324,12 +299,12 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases, ini
         </div>
       )}
 
-      <Tabs defaultValue="config" className="space-y-6">
+      <Tabs value={tab} onValueChange={setTab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="config">Configuration</TabsTrigger>
           <TabsTrigger value="players">Joueurs</TabsTrigger>
           <TabsTrigger value="phases">Phases</TabsTrigger>
-          <TabsTrigger value="history">Historique</TabsTrigger>
+          <TabsTrigger value="rounds">Rondes</TabsTrigger>
         </TabsList>
 
         {/* Configuration */}
@@ -426,51 +401,70 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases, ini
               {players.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Aucun joueur inscrit pour le moment.</p>
               ) : (
-                <ul className="divide-y">
-                  {players.map((player) => (
-                    <li key={player.id} className="flex items-center justify-between py-3">
-                      <div>
-                        <span className="font-medium">{player.displayName}</span>
-                        {!player.userId && (
-                          <span className="ml-2 text-xs text-muted-foreground">Invité</span>
-                        )}
-                        {player.status === "dropped" && (
-                          <Badge variant="outline" className="ml-2">
-                            Drop
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <PlayerSyncQRButton
-                          tournamentId={tournamentId}
-                          playerName={player.displayName}
-                          syncKey={player.syncKey}
-                        />
-                        {player.status === "dropped" ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => reactivatePlayer(player)}
-                            disabled={busy}
-                          >
-                            Réactiver
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-600 hover:text-red-800"
-                            onClick={() => removePlayer(player)}
-                            disabled={busy}
-                            aria-label={`Retirer ${player.displayName}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                <div className="space-y-3">
+                  <Input
+                    value={playersSearch.query}
+                    onChange={(e) => playersSearch.setQuery(e.target.value)}
+                    placeholder="Rechercher un joueur..."
+                    className="max-w-xs"
+                  />
+                  <ul className="divide-y">
+                    {playersSearch.pageItems.map((player) => (
+                      <li key={player.id} className="flex items-center justify-between py-3">
+                        <div>
+                          <span className="font-medium">{player.displayName}</span>
+                          {!player.userId && (
+                            <span className="ml-2 text-xs text-muted-foreground">Invité</span>
+                          )}
+                          {player.status === "dropped" && (
+                            <Badge variant="outline" className="ml-2">
+                              Drop
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <PlayerSyncQRButton
+                            tournamentId={tournamentId}
+                            playerName={player.displayName}
+                            syncKey={player.syncKey}
+                          />
+                          {player.status === "dropped" ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => reactivatePlayer(player)}
+                              disabled={busy}
+                            >
+                              Réactiver
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-600 hover:text-red-800"
+                              onClick={() => removePlayer(player)}
+                              disabled={busy}
+                              aria-label={`Retirer ${player.displayName}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                    {playersSearch.pageItems.length === 0 && (
+                      <li className="py-3 text-sm text-muted-foreground">
+                        Aucun joueur ne correspond à la recherche.
+                      </li>
+                    )}
+                  </ul>
+                  <TablePagination
+                    page={playersSearch.page}
+                    totalPages={playersSearch.totalPages}
+                    total={playersSearch.total}
+                    onPage={playersSearch.setPage}
+                  />
+                </div>
               )}
             </CardContent>
           </Card>
@@ -487,64 +481,45 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases, ini
                 <p className="text-sm text-muted-foreground">Aucune phase configurée.</p>
               ) : (
                 <ul className="space-y-3">
-                  {phases.map((phase) => {
-                    const lastRound = lastRoundByPhase.get(phase.id);
-                    return (
-                      <li key={phase.id} className="flex items-center justify-between border rounded-lg p-4">
-                        <div>
-                          <div className="font-medium">{phase.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {PHASE_TYPE_LABELS[phase.type]} · best-of-{phase.bestOf}
-                            {` · ${phase.resultMode === "points" ? "points" : "sélection"}`}
-                            {` · ${phase.scoringMethod === "rank_offset" ? "rang" : "points fixes"}`}
-                            {phase.plannedRounds ? ` · ${phase.plannedRounds} rondes` : ""}
-                            {phase.topCut ? ` · Top ${phase.topCut}` : ""}
-                            {phase.type !== "bracket" && (
-                              <>
-                                {" · "}
-                                {phase.minPlayersPerMatch === phase.maxPlayersPerMatch
-                                  ? phase.minPlayersPerMatch === 2
-                                    ? "duels"
-                                    : `pods de ${phase.minPlayersPerMatch}`
-                                  : `pods ${phase.minPlayersPerMatch}-${phase.maxPlayersPerMatch}`}
-                              </>
-                            )}
-                            {lastRound ? ` · ${lastRound.number} ronde(s)` : ""}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">{PHASE_STATUS_LABELS[phase.status]}</Badge>
-                          {lastRound && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => deleteLastRound(lastRound)}
-                              disabled={busy}
-                            >
-                              Supprimer la ronde {lastRound.number}
-                            </Button>
-                          )}
-                          {phase.type !== "freeform" && phase.status !== "completed" && (
-                            <Button size="sm" onClick={() => generateRound(phase)} disabled={busy}>
-                              Générer une ronde
-                            </Button>
-                          )}
-                          {phase.status === "not-started" && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-600 hover:text-red-800"
-                              onClick={() => deletePhase(phase)}
-                              disabled={busy}
-                              aria-label={`Supprimer la phase ${phase.name}`}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                  {phases.map((phase) => (
+                    <li key={phase.id} className="flex items-center justify-between border rounded-lg p-4">
+                      <div>
+                        <div className="font-medium">{phase.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {PHASE_TYPE_LABELS[phase.type]} · best-of-{phase.bestOf}
+                          {` · ${phase.resultMode === "points" ? "points" : "sélection"}`}
+                          {` · ${phase.scoringMethod === "rank_offset" ? "rang" : "points fixes"}`}
+                          {phase.plannedRounds ? ` · ${phase.plannedRounds} rondes` : ""}
+                          {phase.topCut ? ` · Top ${phase.topCut}` : ""}
+                          {phase.type !== "bracket" && (
+                            <>
+                              {" · "}
+                              {phase.minPlayersPerMatch === phase.maxPlayersPerMatch
+                                ? phase.minPlayersPerMatch === 2
+                                  ? "duels"
+                                  : `pods de ${phase.minPlayersPerMatch}`
+                                : `pods ${phase.minPlayersPerMatch}-${phase.maxPlayersPerMatch}`}
+                            </>
                           )}
                         </div>
-                      </li>
-                    );
-                  })}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">{PHASE_STATUS_LABELS[phase.status]}</Badge>
+                        {phase.status === "not-started" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-800"
+                            onClick={() => deletePhase(phase)}
+                            disabled={busy}
+                            aria-label={`Supprimer la phase ${phase.name}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </li>
+                  ))}
                 </ul>
               )}
 
@@ -756,11 +731,11 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases, ini
           </Card>
         </TabsContent>
 
-        {/* Historique */}
-        <TabsContent value="history">
+        {/* Rondes */}
+        <TabsContent value="rounds">
           <Card>
             <CardHeader>
-              <CardTitle>Historique des rondes</CardTitle>
+              <CardTitle>Rondes</CardTitle>
             </CardHeader>
             <CardContent>
               <RoundHistoryBrowser tournamentId={tournamentId} canManage />

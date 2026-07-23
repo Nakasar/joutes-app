@@ -1,12 +1,24 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { DateTime } from "luxon";
-import { ChevronLeft, ChevronRight, RotateCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, RotateCw, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { usePaginatedSearch } from "@/lib/use-paginated-search";
 import type { TournamentPhaseType, TournamentResultMode, TournamentRoundStanding } from "@/lib/types/Tournament";
+import { TablePagination } from "./TablePagination";
 
 const PHASE_TYPE_LABELS: Record<TournamentPhaseType, string> = {
   freeform: "Format libre",
@@ -76,11 +88,14 @@ type Props = {
 };
 
 export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props) {
+  const router = useRouter();
   const [history, setHistory] = useState<ApiHistory | null>(null);
   const [selectedRoundId, setSelectedRoundId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Phase ciblée par la création d'une ronde (organisateur).
+  const [createPhaseId, setCreatePhaseId] = useState<string>("");
 
   const authFetch = useCallback(
     (path: string, init?: RequestInit) =>
@@ -140,6 +155,64 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
   const currentIndex = flatRounds.findIndex((r) => r.round.id === selectedRoundId);
   const current = currentIndex >= 0 ? flatRounds[currentIndex] : null;
 
+  // Classement figé de la ronde courante, avec son rang réel préservé avant
+  // recherche/pagination.
+  const rankedStandings = useMemo(
+    () => (current?.round.standings ?? []).map((standing, index) => ({ ...standing, rank: index + 1 })),
+    [current]
+  );
+  const standingsSearch = usePaginatedSearch(rankedStandings, (s) => s.displayName, 25);
+
+  // Phase par défaut pour la création : celle de la ronde affichée, sinon la
+  // première. N'écrase pas un choix explicite de l'organisateur.
+  useEffect(() => {
+    if (!createPhaseId && history?.phases.length) {
+      setCreatePhaseId(current?.phase.id ?? history.phases[0].phase.id);
+    }
+  }, [history, current, createPhaseId]);
+
+  const createRound = async () => {
+    if (!createPhaseId) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await authFetch(`/api/tournaments/${tournamentId}/phases/${createPhaseId}/rounds`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? "Erreur lors de la création de la ronde");
+      }
+      const round = await res.json();
+      // Redirige vers la saisie des résultats de la nouvelle ronde.
+      router.push(`/tournaments/${tournamentId}/organizer/rounds/${round.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors de la création de la ronde");
+      setBusy(false);
+    }
+  };
+
+  const deleteRound = async (roundId: string) => {
+    if (!window.confirm("Supprimer cette ronde et ses matchs ? Cette action est irréversible.")) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await authFetch(`/api/tournaments/${tournamentId}/rounds/${roundId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? "Erreur lors de la suppression de la ronde");
+      }
+      setSelectedRoundId(null);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors de la suppression de la ronde");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const validate = async (roundId: string) => {
     setBusy(true);
     setError(null);
@@ -195,12 +268,45 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
     );
   }
 
+  // Barre de gestion des rondes (organisateur) : création d'une ronde dans une
+  // phase. Affichée même sans ronde encore jouée.
+  const manageBar =
+    canManage && history && history.phases.length > 0 ? (
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border p-3">
+        <span className="text-sm font-medium">Gérer les rondes :</span>
+        <Select value={createPhaseId} onValueChange={setCreatePhaseId}>
+          <SelectTrigger className="w-[220px]">
+            <SelectValue placeholder="Choisir une phase" />
+          </SelectTrigger>
+          <SelectContent>
+            {history.phases.map(({ phase }) => (
+              <SelectItem key={phase.id} value={phase.id}>
+                {phase.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button size="sm" onClick={createRound} disabled={busy || !createPhaseId}>
+          <Plus className="mr-2 h-4 w-4" />
+          Créer une ronde
+        </Button>
+      </div>
+    ) : null;
+
   if (flatRounds.length === 0) {
-    return <p className="text-muted-foreground">Aucune ronde jouée pour le moment.</p>;
+    return (
+      <div className="space-y-4">
+        {manageBar}
+        {error && <p className="text-sm text-destructive">{error}</p>}
+        <p className="text-muted-foreground">Aucune ronde jouée pour le moment.</p>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
+      {manageBar}
+
       {/* Navigation horizontale entre rondes, groupées par phase. */}
       <div className="flex items-center gap-2">
         <Button
@@ -262,13 +368,34 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
 
       {current && (
         <div className="space-y-6">
-          <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-xl font-semibold">Ronde {current.round.number}</h2>
-            <Badge variant="secondary">{PHASE_TYPE_LABELS[current.phase.type]}</Badge>
-            <span className="text-sm text-muted-foreground">
-              {current.phase.name} · best-of-{current.phase.bestOf} ·{" "}
-              {current.phase.resultMode === "points" ? "points" : "sélection"}
-            </span>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="text-xl font-semibold">Ronde {current.round.number}</h2>
+              <Badge variant="secondary">{PHASE_TYPE_LABELS[current.phase.type]}</Badge>
+              <span className="text-sm text-muted-foreground">
+                {current.phase.name} · best-of-{current.phase.bestOf} ·{" "}
+                {current.phase.resultMode === "points" ? "points" : "sélection"}
+              </span>
+            </div>
+            {canManage && (
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/tournaments/${tournamentId}/organizer/rounds/${current.round.id}`}>
+                    Saisir les résultats
+                  </Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-red-600 hover:text-red-800"
+                  onClick={() => deleteRound(current.round.id)}
+                  disabled={busy}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Supprimer la ronde
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Récapitulatif des matchs */}
@@ -352,6 +479,12 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
               </p>
             ) : (
               <>
+                <Input
+                  value={standingsSearch.query}
+                  onChange={(e) => standingsSearch.setQuery(e.target.value)}
+                  placeholder="Rechercher un joueur..."
+                  className="max-w-xs"
+                />
                 <div className="overflow-x-auto rounded-lg border">
                   <table className="min-w-full divide-y divide-border text-sm">
                     <thead className="bg-muted">
@@ -374,9 +507,9 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {current.round.standings.map((standing, index) => (
+                      {standingsSearch.pageItems.map((standing) => (
                         <tr key={standing.playerId}>
-                          <td className="px-3 py-2">{index + 1}</td>
+                          <td className="px-3 py-2">{standing.rank}</td>
                           <td className="px-3 py-2 font-medium">
                             {standing.displayName}
                             {standing.playerStatus === "dropped" ? " (drop)" : ""}
@@ -390,9 +523,22 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
                           </td>
                         </tr>
                       ))}
+                      {standingsSearch.pageItems.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="px-3 py-3 text-center text-muted-foreground">
+                            Aucun joueur ne correspond à la recherche.
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
+                <TablePagination
+                  page={standingsSearch.page}
+                  totalPages={standingsSearch.totalPages}
+                  total={standingsSearch.total}
+                  onPage={standingsSearch.setPage}
+                />
                 {current.round.standingsValidatedAt && (
                   <p className="text-xs text-muted-foreground">
                     Validé le{" "}
