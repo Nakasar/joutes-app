@@ -155,7 +155,7 @@ export function OrganizerRoundClient({
       </div>
 
       <Button variant="outline" asChild>
-        <Link href={`/tournaments/${tournamentId}/organizer`}>Retour au portail organisateur</Link>
+        <Link href={`/tournaments/${tournamentId}/organizer/rounds`}>Retour aux rondes</Link>
       </Button>
     </div>
   );
