@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { AchievementIcon } from "@/components/AchievementIcon";
 import { DeleteAchievementButton } from "@/app/admin/achievements/DeleteAchievementButton";
 
 export default async function AdminAchievementsPage() {
@@ -29,7 +30,12 @@ export default async function AdminAchievementsPage() {
                 <CardTitle className="text-sm font-medium">
                   {achievement.name}
                 </CardTitle>
-                <div className="text-2xl">{achievement.icon}</div>
+                <AchievementIcon
+                  icon={achievement.icon}
+                  iconImage={achievement.iconImage}
+                  name={achievement.name}
+                  size={32}
+                />
               </CardHeader>
               <CardContent>
                 <p className="text-sm mb-4 h-10 overflow-hidden">{achievement.description}</p>

@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Trophy, Plus, AlertCircle, CheckCircle } from "lucide-react";
 import { Achievement } from "@/lib/types/Achievement";
+import { AchievementIcon } from "@/components/AchievementIcon";
 import { unlockAchievementForUserAction } from "./admin-actions";
 import { useRouter } from "next/navigation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -119,7 +120,12 @@ export function UnlockAchievementButton({
               {availableAchievements.map(achievement => (
                 <SelectItem key={achievement.id} value={achievement.id}>
                   <div className="flex items-center gap-2">
-                    {achievement.icon}
+                    <AchievementIcon
+                      icon={achievement.icon}
+                      iconImage={achievement.iconImage}
+                      name={achievement.name}
+                      size={24}
+                    />
                     <div className="flex flex-col">
                       <span className="font-medium">{achievement.name}</span>
                       <span className="text-xs text-muted-foreground">

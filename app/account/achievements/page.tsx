@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AchievementIcon } from "@/components/AchievementIcon";
 
 export default async function AchievementsPage() {
   const session = await auth.api.getSession({
@@ -62,7 +63,14 @@ export default async function AchievementsPage() {
             <Card key={achievement.id} className={cn("transition-opacity", !isUnlocked && "opacity-70 bg-muted/50")}>
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-start">
-                  <div className="text-4xl mb-2">{achievement.icon}</div>
+                  <div className="mb-2">
+                    <AchievementIcon
+                      icon={achievement.icon}
+                      iconImage={achievement.iconImage}
+                      name={achievement.name}
+                      size={48}
+                    />
+                  </div>
                   {isUnlocked ? (
                     <Badge variant="default" className="bg-green-600 hover:bg-green-700">Débloqué</Badge>
                   ) : (
