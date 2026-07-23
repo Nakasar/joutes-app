@@ -6,6 +6,7 @@ import {
   isTournamentOrganizer,
   listPhases,
   listPlayers,
+  listRounds,
 } from "@/lib/db/tournaments";
 import { OrganizerClient } from "./OrganizerClient";
 
@@ -29,14 +30,20 @@ export default async function TournamentOrganizerPage({
     redirect("/tournaments");
   }
 
-  const [players, phases] = await Promise.all([
+  const [players, phases, rounds] = await Promise.all([
     listPlayers(tournamentId),
     listPhases(tournamentId),
+    listRounds(tournamentId),
   ]);
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
-      <OrganizerClient tournament={tournament} initialPlayers={players} initialPhases={phases} />
+      <OrganizerClient
+        tournament={tournament}
+        initialPlayers={players}
+        initialPhases={phases}
+        initialRounds={rounds}
+      />
     </div>
   );
 }
