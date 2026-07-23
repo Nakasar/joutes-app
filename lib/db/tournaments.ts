@@ -319,6 +319,33 @@ export function isTournamentOrganizer(tournament: Tournament, userId: string): b
   return tournament.createdBy === userId || tournament.organizerIds.includes(userId);
 }
 
+/**
+ * Tournois où l'utilisateur est inscrit comme joueur (via son compte). Permet
+ * au portail « Mes tournois » de lister ses tournois sans dépendre d'une clé
+ * de synchronisation sur ce navigateur : être connecté suffit.
+ */
+export async function listPlayerTournamentsForUser(
+  userId: string
+): Promise<{ tournament: Tournament; player: TournamentPlayer }[]> {
+  const playerDocs = await db.collection<TournamentPlayerDb>(PLAYERS).find({ userId }).toArray();
+  if (playerDocs.length === 0) return [];
+
+  const tournamentIds = playerDocs.map((doc) => doc.tournamentId);
+  const tournamentDocs = await db
+    .collection<TournamentDb>(TOURNAMENTS)
+    .find({ _id: { $in: tournamentIds } })
+    .toArray();
+  const tournamentsById = new Map(tournamentDocs.map((doc) => [doc._id.toString(), toTournament(doc)]));
+
+  return playerDocs
+    .map((doc) => {
+      const tournament = tournamentsById.get(doc.tournamentId.toString());
+      return tournament ? { tournament, player: toPlayer(doc) } : null;
+    })
+    .filter((entry): entry is { tournament: Tournament; player: TournamentPlayer } => entry !== null)
+    .sort((a, b) => b.tournament.createdAt.getTime() - a.tournament.createdAt.getTime());
+}
+
 async function isTournamentPlayer(tournamentId: ObjectId, userId: string): Promise<boolean> {
   const player = await db
     .collection<TournamentPlayerDb>(PLAYERS)

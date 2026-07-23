@@ -26,6 +26,20 @@ type OrganizedTournament = {
   createdAt: string;
 };
 
+type PlayedTournament = {
+  tournament: OrganizedTournament;
+  player: { id: string; displayName: string; status: string };
+};
+
+// Tournoi où l'utilisateur joue, quelle qu'en soit la provenance : clé de
+// synchronisation de ce navigateur (`key` présent, retirable) et/ou compte
+// connecté inscrit comme joueur.
+type PlayerEntry = {
+  tournament: OrganizedTournament;
+  player: { id: string; displayName: string; status: string };
+  key?: string;
+};
+
 type StatusFilter = "all" | "in-progress" | "draft" | "completed";
 
 const FILTERS: { value: StatusFilter; label: string }[] = [
@@ -43,14 +57,13 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function TournamentsPage() {
   const [entries, setEntries] = useState<SyncedTournament[]>([]);
+  const [played, setPlayed] = useState<PlayedTournament[]>([]);
   const [organized, setOrganized] = useState<OrganizedTournament[]>([]);
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [loading, setLoading] = useState(true);
-  const [hasKeys, setHasKeys] = useState(false);
 
   useEffect(() => {
     const keys = Object.values(getSyncKeys());
-    setHasKeys(keys.length > 0);
 
     // Tournois organisés par l'utilisateur connecté. Sans session l'endpoint
     // répond 401 : on traite tout non-OK comme une liste vide.
@@ -58,6 +71,13 @@ export default function TournamentsPage() {
       .then((res) => (res.ok ? res.json() : []))
       .then((data: OrganizedTournament[]) => setOrganized(Array.isArray(data) ? data : []))
       .catch(() => setOrganized([]));
+
+    // Tournois où l'utilisateur connecté est inscrit comme joueur (via son
+    // compte, sans clé de synchronisation). 401 si non connecté → liste vide.
+    const playedPromise = fetch("/api/tournaments/playing")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: PlayedTournament[]) => setPlayed(Array.isArray(data) ? data : []))
+      .catch(() => setPlayed([]));
 
     // Tournois synchronisés sur ce navigateur via une clé de joueur.
     const syncedPromise =
@@ -72,12 +92,32 @@ export default function TournamentsPage() {
             .then((data: SyncedTournament[]) => setEntries(Array.isArray(data) ? data : []))
             .catch(() => setEntries([]));
 
-    Promise.all([organizedPromise, syncedPromise]).finally(() => setLoading(false));
+    Promise.all([organizedPromise, playedPromise, syncedPromise]).finally(() => setLoading(false));
   }, []);
 
+  // Fusionne les tournois joués (compte connecté) et synchronisés (clé de ce
+  // navigateur), dédoublonnés par tournoi. La clé est conservée quand elle
+  // existe, pour permettre le retrait de la synchronisation.
+  const playerEntries = useMemo<PlayerEntry[]>(() => {
+    const byId = new Map<string, PlayerEntry>();
+    for (const entry of played) {
+      byId.set(entry.tournament.id, { tournament: entry.tournament, player: entry.player });
+    }
+    for (const entry of entries) {
+      byId.set(entry.tournament.id, {
+        tournament: entry.tournament,
+        player: entry.player,
+        key: entry.key,
+      });
+    }
+    return Array.from(byId.values()).sort(
+      (a, b) => new Date(b.tournament.createdAt).getTime() - new Date(a.tournament.createdAt).getTime()
+    );
+  }, [entries, played]);
+
   const filtered = useMemo(
-    () => entries.filter((e) => filter === "all" || e.tournament.status === filter),
-    [entries, filter]
+    () => playerEntries.filter((e) => filter === "all" || e.tournament.status === filter),
+    [playerEntries, filter]
   );
 
   const filteredOrganized = useMemo(
@@ -99,8 +139,9 @@ export default function TournamentsPage() {
         <div>
           <h1 className="text-3xl font-bold">Mes tournois</h1>
           <p className="text-muted-foreground mt-1">
-            Les tournois que vous organisez et ceux synchronisés avec ce navigateur. Scannez le
-            QR code fourni par un organisateur pour rejoindre un tournoi comme joueur.
+            Les tournois que vous organisez, ceux où vous êtes inscrit avec votre compte, et ceux
+            synchronisés avec ce navigateur. Scannez le QR code fourni par un organisateur pour
+            rejoindre un tournoi comme joueur.
           </p>
         </div>
         <Button asChild>
@@ -150,10 +191,11 @@ export default function TournamentsPage() {
 
       {loading ? (
         <p className="text-muted-foreground">Chargement...</p>
-      ) : !hasKeys ? (
+      ) : playerEntries.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
-            Aucun tournoi synchronisé sur ce navigateur pour le moment.
+            Vous ne jouez dans aucun tournoi pour le moment. Rejoignez-en un via le QR code d&apos;un
+            organisateur, ou connectez-vous si vous êtes inscrit avec votre compte.
           </CardContent>
         </Card>
       ) : filtered.length === 0 ? (
@@ -181,14 +223,17 @@ export default function TournamentsPage() {
                   <Button asChild size="sm">
                     <Link href={`/tournaments/${entry.tournament.id}/player`}>Portail joueur</Link>
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-600 hover:text-red-800"
-                    onClick={() => handleRemove(entry.tournament.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {entry.key && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-800"
+                      onClick={() => handleRemove(entry.tournament.id)}
+                      aria-label="Retirer la synchronisation de ce navigateur"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
