@@ -5,10 +5,12 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSession } from "@/lib/auth-client";
 import { getSyncKey } from "@/lib/tournament-sync-storage";
 import type { TournamentGameResult, TournamentResultMode } from "@/lib/types/Tournament";
 import { MatchGamesEditor } from "../MatchGamesEditor";
+import { RoundHistoryBrowser } from "../RoundHistoryBrowser";
 
 type ApiPlayer = { id: string; userId?: string; displayName: string; status: string };
 type ApiPhase = {
@@ -38,16 +40,6 @@ type ApiMatch = {
   bracketPosition?: string;
 };
 type ApiRound = { id: string; number: number; status: string; matches: ApiMatch[] };
-type ApiStanding = {
-  playerId: string;
-  displayName: string;
-  playerStatus: string;
-  wins: number;
-  losses: number;
-  draws: number;
-  matchPoints: number;
-  gamesDiff: number;
-};
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "À venir",
@@ -75,7 +67,6 @@ export default function TournamentPlayerPage({
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
   const [round, setRound] = useState<ApiRound | null>(null);
   const [activePhase, setActivePhase] = useState<ApiPhase | null>(null);
-  const [standings, setStandings] = useState<ApiStanding[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -158,10 +149,6 @@ export default function TournamentPlayerPage({
         }
       }
 
-      const standingsRes = await apiFetch(`/api/tournaments/${tournamentId}/standings`);
-      if (standingsRes.ok) {
-        setStandings(await standingsRes.json());
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors du chargement");
     } finally {
@@ -267,142 +254,116 @@ export default function TournamentPlayerPage({
       {loading ? (
         <p className="text-muted-foreground">Chargement...</p>
       ) : (
-        <>
-          {myMatch && round && (
+        <Tabs defaultValue="match" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="match">Mon match</TabsTrigger>
+            <TabsTrigger value="standings">Classement</TabsTrigger>
+            <TabsTrigger value="players">Joueurs</TabsTrigger>
+          </TabsList>
+
+          {/* Mon match */}
+          <TabsContent value="match">
+            {myMatch && round ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>
+                      Mon match — Ronde {round.number}
+                      {myMatch.bracketPosition ? ` (${myMatch.bracketPosition})` : ""}
+                    </span>
+                    <Badge variant="outline">{MATCH_STATUS_LABELS[myMatch.status]}</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {myMatch.players.length === 1 ? (
+                    <p className="text-muted-foreground">BYE — victoire automatique.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {myMatch.players.map((p) => (
+                        <div key={p.playerId} className="flex items-center justify-between gap-4">
+                          <span className={p.playerId === myPlayerId ? "font-semibold" : ""}>
+                            {playerName(p.playerId)}
+                            {p.playerId === myPlayerId ? " (moi)" : ""}
+                            {myMatch.winnerIds.includes(p.playerId) ? " 🏆" : ""}
+                          </span>
+                          <span className="text-lg font-mono">{p.score}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {myMatch.players.length > 1 &&
+                    myMatch.status === "pending" &&
+                    tournament?.settings.allowSelfReporting &&
+                    activePhase && (
+                      <MatchGamesEditor
+                        key={`${myMatch.id}-${myMatch.status}`}
+                        matchId={myMatch.id}
+                        matchPlayerIds={myMatch.players.map((p) => p.playerId)}
+                        playerName={playerName}
+                        resultMode={activePhase.resultMode}
+                        bestOf={activePhase.bestOf}
+                        submitting={submitting}
+                        submitLabel="Rapporter le résultat"
+                        onSubmit={submitReport}
+                      />
+                    )}
+                  {myMatch.status === "in-progress" && (
+                    <div className="flex gap-2">
+                      {myMatch.reportedBy !== myPlayerId && myMatch.reportedBy !== session?.user?.id && (
+                        <Button onClick={() => submitAction("confirm")} disabled={submitting}>
+                          Confirmer le résultat
+                        </Button>
+                      )}
+                      <Button
+                        variant="destructive"
+                        onClick={() => submitAction("dispute")}
+                        disabled={submitting}
+                      >
+                        Contester
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <p className="text-muted-foreground">
+                Vous n&apos;avez pas de match dans la ronde en cours.
+              </p>
+            )}
+          </TabsContent>
+
+          {/* Classement figé + historique */}
+          <TabsContent value="standings">
+            <RoundHistoryBrowser tournamentId={tournamentId} canManage={false} syncKey={syncKey} />
+          </TabsContent>
+
+          {/* Liste des joueurs */}
+          <TabsContent value="players">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>
-                    Mon match — Ronde {round.number}
-                    {myMatch.bracketPosition ? ` (${myMatch.bracketPosition})` : ""}
-                  </span>
-                  <Badge variant="outline">{MATCH_STATUS_LABELS[myMatch.status]}</Badge>
-                </CardTitle>
+                <CardTitle>Joueurs</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {myMatch.players.length === 1 ? (
-                  <p className="text-muted-foreground">BYE — victoire automatique.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {myMatch.players.map((p) => (
-                      <div key={p.playerId} className="flex items-center justify-between gap-4">
-                        <span className={p.playerId === myPlayerId ? "font-semibold" : ""}>
-                          {playerName(p.playerId)}
-                          {p.playerId === myPlayerId ? " (moi)" : ""}
-                          {myMatch.winnerIds.includes(p.playerId) ? " 🏆" : ""}
+              <CardContent>
+                {tournament && tournament.players.length > 0 ? (
+                  <ul className="divide-y">
+                    {tournament.players.map((player) => (
+                      <li key={player.id} className="flex items-center justify-between py-2">
+                        <span className={player.id === myPlayerId ? "font-semibold" : ""}>
+                          {player.displayName}
+                          {player.id === myPlayerId ? " (moi)" : ""}
                         </span>
-                        <span className="text-lg font-mono">{p.score}</span>
-                      </div>
+                        {player.status === "dropped" && <Badge variant="outline">Drop</Badge>}
+                      </li>
                     ))}
-                  </div>
-                )}
-
-                {myMatch.players.length > 1 &&
-                  myMatch.status === "pending" &&
-                  tournament?.settings.allowSelfReporting &&
-                  activePhase && (
-                    <MatchGamesEditor
-                      key={`${myMatch.id}-${myMatch.status}`}
-                      matchId={myMatch.id}
-                      matchPlayerIds={myMatch.players.map((p) => p.playerId)}
-                      playerName={playerName}
-                      resultMode={activePhase.resultMode}
-                      bestOf={activePhase.bestOf}
-                      submitting={submitting}
-                      submitLabel="Rapporter le résultat"
-                      onSubmit={submitReport}
-                    />
-                  )}
-                {myMatch.status === "in-progress" && (
-                  <div className="flex gap-2">
-                    {myMatch.reportedBy !== myPlayerId && myMatch.reportedBy !== session?.user?.id && (
-                      <Button onClick={() => submitAction("confirm")} disabled={submitting}>
-                        Confirmer le résultat
-                      </Button>
-                    )}
-                    <Button
-                      variant="destructive"
-                      onClick={() => submitAction("dispute")}
-                      disabled={submitting}
-                    >
-                      Contester
-                    </Button>
-                  </div>
+                  </ul>
+                ) : (
+                  <p className="text-muted-foreground">Aucun joueur inscrit.</p>
                 )}
               </CardContent>
             </Card>
-          )}
-
-          {round && (
-            <section>
-              <h2 className="text-xl font-semibold mb-4">Ronde {round.number}</h2>
-              <div className="space-y-2">
-                {round.matches.map((match) => (
-                  <div
-                    key={match.id}
-                    className="bg-card text-card-foreground rounded-lg shadow-sm border p-4 flex items-center justify-between"
-                  >
-                    <span className="text-sm">
-                      {match.players
-                        .map((p) => `${playerName(p.playerId)} (${p.score})`)
-                        .join(" vs ")}
-                      {match.players.length === 1 ? " — BYE" : ""}
-                    </span>
-                    <Badge variant="outline">{MATCH_STATUS_LABELS[match.status]}</Badge>
-                  </div>
-                ))}
-                {round.matches.length === 0 && (
-                  <p className="text-muted-foreground">Aucun match dans cette ronde.</p>
-                )}
-              </div>
-            </section>
-          )}
-
-          <section>
-            <h2 className="text-xl font-semibold mb-4">Classement</h2>
-            <div className="bg-card text-card-foreground rounded-lg border shadow-sm overflow-x-auto">
-              <table className="min-w-full divide-y divide-border">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">#</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Joueur</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase">Pts</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase">V/N/D</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase">Diff</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {standings.map((standing, index) => (
-                    <tr
-                      key={standing.playerId}
-                      className={standing.playerId === myPlayerId ? "bg-accent text-accent-foreground" : ""}
-                    >
-                      <td className="px-4 py-3 text-sm">{index + 1}</td>
-                      <td className="px-4 py-3 text-sm font-medium">
-                        {standing.displayName}
-                        {standing.playerStatus === "dropped" ? " (drop)" : ""}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-right font-mono">{standing.matchPoints}</td>
-                      <td className="px-4 py-3 text-sm text-right font-mono">
-                        {standing.wins}/{standing.draws}/{standing.losses}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-right font-mono">
-                        {standing.gamesDiff > 0 ? `+${standing.gamesDiff}` : standing.gamesDiff}
-                      </td>
-                    </tr>
-                  ))}
-                  {standings.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="px-4 py-4 text-center text-muted-foreground">
-                        Pas encore de classement
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        </>
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );

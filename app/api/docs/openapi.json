@@ -8607,6 +8607,93 @@
         }
       }
     },
+    "/tournaments/{tournamentId}/history": {
+      "parameters": [
+        {
+          "name": "tournamentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Get the tournament round history",
+        "description": "Ordered phases, each with its rounds and match recaps, plus the standings frozen at the end of each round (present once an organizer has validated the round). Accessible to organizers and players.",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          },
+          {
+            "playerSyncKeyBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Round history grouped by phase.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "phases": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "phase": {
+                            "$ref": "#/components/schemas/TournamentPhase"
+                          },
+                          "rounds": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "round": {
+                                  "$ref": "#/components/schemas/TournamentRound"
+                                },
+                                "matches": {
+                                  "type": "array",
+                                  "items": {
+                                    "$ref": "#/components/schemas/TournamentMatch"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "players": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TournamentPlayer"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
     "/tournaments/{tournamentId}/standings": {
       "parameters": [
         {
