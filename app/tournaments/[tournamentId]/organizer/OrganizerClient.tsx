@@ -64,9 +64,16 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases, ini
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // Réglages du tournoi (onglet Configuration).
+  // Réglages du tournoi (onglet Configuration). `savedSettings` sert de
+  // référence pour l'état « modifié » : il est mis à jour après un
+  // enregistrement réussi (les props tournament.settings, elles, ne changent
+  // pas côté client).
   const [allowSelfReporting, setAllowSelfReporting] = useState(tournament.settings.allowSelfReporting);
   const [requireConfirmation, setRequireConfirmation] = useState(tournament.settings.requireConfirmation);
+  const [savedSettings, setSavedSettings] = useState({
+    allowSelfReporting: tournament.settings.allowSelfReporting,
+    requireConfirmation: tournament.settings.requireConfirmation,
+  });
 
   // Ajout de joueur : email, username#discriminator, ou simple nom (invité).
   const [newPlayerIdentifier, setNewPlayerIdentifier] = useState("");
@@ -277,6 +284,7 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases, ini
         method: "PATCH",
         body: JSON.stringify({ settings: { allowSelfReporting, requireConfirmation } }),
       });
+      setSavedSettings({ allowSelfReporting, requireConfirmation });
     });
 
   useEffect(() => {
@@ -297,8 +305,8 @@ export function OrganizerClient({ tournament, initialPlayers, initialPhases, ini
   }, [rounds]);
 
   const settingsDirty =
-    allowSelfReporting !== tournament.settings.allowSelfReporting ||
-    requireConfirmation !== tournament.settings.requireConfirmation;
+    allowSelfReporting !== savedSettings.allowSelfReporting ||
+    requireConfirmation !== savedSettings.requireConfirmation;
 
   return (
     <div className="space-y-6">

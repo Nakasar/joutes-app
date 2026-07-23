@@ -1,10 +1,15 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useId, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-type TabsContextValue = { value: string; setValue: (value: string) => void };
+type TabsContextValue = { value: string; setValue: (value: string) => void; baseId: string };
 const TabsContext = createContext<TabsContextValue | null>(null);
+
+// Identifiants stables reliant un déclencheur à son panneau (aria-controls /
+// aria-labelledby), pour que les lecteurs d'écran annoncent la relation.
+const triggerId = (baseId: string, value: string) => `${baseId}-trigger-${value}`;
+const contentId = (baseId: string, value: string) => `${baseId}-content-${value}`;
 
 function useTabsContext(component: string): TabsContextValue {
   const ctx = useContext(TabsContext);
@@ -26,13 +31,14 @@ export function Tabs({
   children: ReactNode;
 }) {
   const [internal, setInternal] = useState(defaultValue ?? "");
+  const baseId = useId();
   const value = controlled ?? internal;
   const setValue = (next: string) => {
     if (controlled === undefined) setInternal(next);
     onValueChange?.(next);
   };
   return (
-    <TabsContext.Provider value={{ value, setValue }}>
+    <TabsContext.Provider value={{ value, setValue, baseId }}>
       <div className={className}>{children}</div>
     </TabsContext.Provider>
   );
@@ -67,7 +73,10 @@ export function TabsTrigger({
     <button
       type="button"
       role="tab"
+      id={triggerId(ctx.baseId, value)}
       aria-selected={active}
+      aria-controls={contentId(ctx.baseId, value)}
+      tabIndex={active ? 0 : -1}
       onClick={() => ctx.setValue(value)}
       className={cn(
         "whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
@@ -94,7 +103,13 @@ export function TabsContent({
   const ctx = useTabsContext("TabsContent");
   if (ctx.value !== value) return null;
   return (
-    <div role="tabpanel" className={className}>
+    <div
+      role="tabpanel"
+      id={contentId(ctx.baseId, value)}
+      aria-labelledby={triggerId(ctx.baseId, value)}
+      tabIndex={0}
+      className={className}
+    >
       {children}
     </div>
   );
