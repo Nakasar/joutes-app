@@ -195,7 +195,7 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
       }
       const round = await res.json();
       // Redirige vers la saisie des résultats de la nouvelle ronde.
-      router.push(`/tournaments/${tournamentId}/organizer/rounds/${round.id}`);
+      router.push(`/tournaments/${tournamentId}/organizer/rounds/${round.id}/matches`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors de la création de la ronde");
     } finally {
@@ -391,7 +391,7 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
             {canManage && (
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" asChild>
-                  <Link href={`/tournaments/${tournamentId}/organizer/rounds/${current.round.id}`}>
+                  <Link href={`/tournaments/${tournamentId}/organizer/rounds/${current.round.id}/matches`}>
                     Saisir les résultats
                   </Link>
                 </Button>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, Eraser, Pencil, Plus, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -268,7 +267,7 @@ export function OrganizerRoundClient({
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-2">
         <div>
-          <h1 className="text-3xl font-bold">Ronde {round.number}</h1>
+          <h2 className="text-2xl font-bold">Ronde {round.number}</h2>
           <p className="mt-1 text-muted-foreground">Saisie des résultats</p>
         </div>
         <div className="flex items-center gap-2">
@@ -422,10 +421,6 @@ export function OrganizerRoundClient({
           />
         </>
       )}
-
-      <Button variant="outline" asChild>
-        <Link href={`/tournaments/${tournamentId}/organizer/rounds`}>Retour aux rondes</Link>
-      </Button>
 
       {/* Modale : modifier le score d'un match */}
       <Dialog open={editMatch !== null} onOpenChange={(open) => !open && setEditMatch(null)}>

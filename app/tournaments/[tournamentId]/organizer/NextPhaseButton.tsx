@@ -63,7 +63,7 @@ export function NextPhaseButton({ tournamentId }: { tournamentId: string }) {
       }
       const round = await res.json();
       // Redirige vers la saisie des résultats de la première ronde créée.
-      router.push(`/tournaments/${tournamentId}/organizer/rounds/${round.id}`);
+      router.push(`/tournaments/${tournamentId}/organizer/rounds/${round.id}/matches`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors du passage à la phase suivante");
       setBusy(false);

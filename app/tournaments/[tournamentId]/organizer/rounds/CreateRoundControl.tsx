@@ -40,7 +40,7 @@ export function CreateRoundControl({
         throw new Error(body.error ?? "Erreur lors de la création de la ronde");
       }
       const round = await res.json();
-      router.push(`/tournaments/${tournamentId}/organizer/rounds/${round.id}`);
+      router.push(`/tournaments/${tournamentId}/organizer/rounds/${round.id}/matches`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors de la création de la ronde");
       setBusy(false);
