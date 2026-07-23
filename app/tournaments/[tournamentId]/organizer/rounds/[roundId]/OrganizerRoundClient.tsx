@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Eraser, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Check, Eraser, LockOpen, Pencil, Plus, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
@@ -72,6 +72,8 @@ export function OrganizerRoundClient({
   const [pendingClear, setPendingClear] = useState<TournamentMatch | null>(null);
   // Confirmation de suppression de la ronde entière (modale).
   const [deleteRoundOpen, setDeleteRoundOpen] = useState(false);
+  // Confirmation de réouverture de la ronde terminée (modale).
+  const [reopenOpen, setReopenOpen] = useState(false);
   const router = useRouter();
 
   // Une opération est en cours (suppression/création ou envoi d'un score) :
@@ -218,6 +220,31 @@ export function OrganizerRoundClient({
     })();
   };
 
+  // Rouvre la ronde terminée (la repasse « en cours », ronde courante).
+  const reopenRound = () => {
+    setBusy(true);
+    setError(null);
+    (async () => {
+      try {
+        const res = await fetch(`/api/tournaments/${tournamentId}/rounds/${round.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "reopen" }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error ?? "Erreur lors de la réouverture de la ronde");
+        }
+        setReopenOpen(false);
+        router.refresh();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Erreur lors de la réouverture de la ronde");
+      } finally {
+        setBusy(false);
+      }
+    })();
+  };
+
   const createMatch = () => {
     if (createPlayerIds.length === 0) return;
     setBusy(true);
@@ -275,6 +302,12 @@ export function OrganizerRoundClient({
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="secondary">{round.status === "completed" ? "Terminée" : "En cours"}</Badge>
+          {round.status === "completed" && (
+            <Button variant="outline" size="sm" onClick={() => setReopenOpen(true)} disabled={anyBusy}>
+              <LockOpen className="mr-2 h-4 w-4" />
+              Rouvrir la ronde
+            </Button>
+          )}
           {isLastRound && (
             <Button
               variant="ghost"
@@ -547,6 +580,17 @@ export function OrganizerRoundClient({
         destructive
         busy={anyBusy}
         onConfirm={() => pendingClear && clearMatch(pendingClear)}
+      />
+
+      {/* Modale : confirmation de réouverture de la ronde */}
+      <ConfirmDialog
+        open={reopenOpen}
+        onOpenChange={(open) => !open && setReopenOpen(false)}
+        title="Rouvrir la ronde"
+        description={`Rouvrir la ronde ${round.number} ? Elle redeviendra la ronde courante et ses résultats pourront être modifiés. Pensez à recalculer le classement après vos corrections.`}
+        confirmLabel="Rouvrir"
+        busy={anyBusy}
+        onConfirm={reopenRound}
       />
 
       {/* Modale : confirmation de suppression de la ronde */}

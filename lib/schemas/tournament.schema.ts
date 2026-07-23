@@ -186,6 +186,11 @@ export const updateTournamentMatchSchema = z.discriminatedUnion("action", [
   clearTournamentMatchSchema,
 ]);
 
+// Action sur une ronde : `reopen` la repasse « en cours » (ronde courante).
+export const updateTournamentRoundSchema = z.object({
+  action: z.literal("reopen"),
+});
+
 export type CreateTournamentInput = z.infer<typeof createTournamentSchema>;
 export type UpdateTournamentInput = z.infer<typeof updateTournamentSchema>;
 export type AddTournamentPlayerInput = z.infer<typeof addTournamentPlayerSchema>;
@@ -194,6 +199,7 @@ export type CreateTournamentPhaseInput = z.infer<typeof createTournamentPhaseSch
 export type UpdateTournamentPhaseInput = z.infer<typeof updateTournamentPhaseSchema>;
 export type CreateTournamentMatchInput = z.infer<typeof createTournamentMatchSchema>;
 export type UpdateTournamentMatchInput = z.infer<typeof updateTournamentMatchSchema>;
+export type UpdateTournamentRoundInput = z.infer<typeof updateTournamentRoundSchema>;
 export type JoinTournamentInput = z.infer<typeof joinTournamentSchema>;
 export type CreateAnnouncementInput = z.infer<typeof createAnnouncementSchema>;
 export type TimerActionInput = z.infer<typeof timerActionSchema>;

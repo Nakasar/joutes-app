@@ -1441,6 +1441,35 @@ export async function deleteRound(tournamentId: string, roundId: string): Promis
   await db.collection(ROUNDS).deleteOne({ _id: rId, tournamentId: tId });
 }
 
+/**
+ * Rouvre une ronde terminée (organisateur) : la repasse « en cours » pour en
+ * redevenir la ronde courante et permettre la correction des résultats. Le
+ * classement figé éventuel est conservé (l'organisateur peut le recalculer
+ * après avoir re-clôturé la ronde).
+ */
+export async function reopenRound(tournamentId: string, roundId: string): Promise<TournamentRound> {
+  const tId = parseObjectId(tournamentId, "Tournoi");
+  const rId = parseObjectId(roundId, "Ronde");
+
+  const round = await getRoundById(tournamentId, roundId);
+  if (!round) {
+    throw new TournamentError("not-found", "Ronde non trouvée");
+  }
+  if (round.status !== "completed") {
+    throw new TournamentError("conflict", "Cette ronde est déjà en cours");
+  }
+
+  const result = await db.collection<TournamentRoundDb>(ROUNDS).findOneAndUpdate(
+    { _id: rId, tournamentId: tId, status: "completed" },
+    { $set: { status: "in-progress" }, $unset: { completedAt: "" } },
+    { returnDocument: "after" }
+  );
+  if (!result) {
+    throw new TournamentError("not-found", "Ronde non trouvée");
+  }
+  return toRound(result);
+}
+
 async function completeRoundIfAllMatchesDone(tournamentId: ObjectId, roundId: ObjectId): Promise<void> {
   const remaining = await db.collection<TournamentMatchDb>(MATCHES).findOne({
     tournamentId,
