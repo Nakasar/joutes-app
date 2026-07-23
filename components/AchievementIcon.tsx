@@ -27,7 +27,6 @@ export function AchievementIcon({
         height={size}
         style={{ width: size, height: size }}
         className={cn("rounded object-cover", className)}
-        unoptimized
       />
     );
   }

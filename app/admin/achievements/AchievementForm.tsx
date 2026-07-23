@@ -54,9 +54,10 @@ export function AchievementForm({ initialData }: { initialData?: Achievement }) 
         throw new Error("Veuillez importer une image carrée pour l'icône du succès.");
       }
 
+      // Transmet iconImage tel quel (URL ou "") : un $set de chaîne vide retire
+      // l'image de façon fiable ; l'affichage retombe alors sur l'emoji.
       const data = {
         ...formData,
-        iconImage: formData.iconImage || undefined,
         points: Number(formData.points),
       };
 
@@ -113,7 +114,7 @@ export function AchievementForm({ initialData }: { initialData?: Achievement }) 
       </div>
 
       <div className="space-y-2">
-        <SimpleLabel htmlFor="iconImage">Icône (image carrée)</SimpleLabel>
+        <SimpleLabel>Icône (image carrée)</SimpleLabel>
         <AchievementIconUploader
           value={formData.iconImage || undefined}
           onChange={(url) => setFormData((prev) => ({ ...prev, iconImage: url || "" }))}

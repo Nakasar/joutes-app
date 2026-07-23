@@ -34,7 +34,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const blob = await put(`achievements/icons/${Date.now()}-${file.name}`, file, {
+    // Nom de fichier normalisé pour la clé Blob (évite espaces/unicode/« / »).
+    const safeName =
+      file.name
+        .toLowerCase()
+        .replace(/[^a-z0-9.]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 80) || "icone";
+    const blob = await put(`achievements/icons/${Date.now()}-${safeName}`, file, {
       access: "public",
     });
 

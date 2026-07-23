@@ -77,20 +77,36 @@ export function AchievementIconUploader({ value, onChange }: Props) {
               size="sm"
               onClick={() => inputRef.current?.click()}
               disabled={isUploading}
+              aria-label="Remplacer l'image"
             >
               {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
             </Button>
-            <Button type="button" variant="destructive" size="sm" onClick={() => onChange(undefined)}>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={() => onChange(undefined)}
+              aria-label="Supprimer l'image"
+            >
               <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
       ) : (
         <div
+          role="button"
+          tabIndex={0}
+          aria-label="Importer une image carrée"
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
           onClick={() => inputRef.current?.click()}
-          className="flex aspect-square h-28 w-28 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed p-2 text-center transition-colors hover:border-primary hover:bg-accent/30"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              inputRef.current?.click();
+            }
+          }}
+          className="flex aspect-square h-28 w-28 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed p-2 text-center transition-colors hover:border-primary hover:bg-accent/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           {isUploading ? (
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
