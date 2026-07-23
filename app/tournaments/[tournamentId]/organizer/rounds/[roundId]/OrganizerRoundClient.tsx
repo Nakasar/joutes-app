@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -68,6 +69,9 @@ export function OrganizerRoundClient({
 
   // Match en attente de confirmation de suppression (modale).
   const [pendingDelete, setPendingDelete] = useState<TournamentMatch | null>(null);
+  // Confirmation de suppression de la ronde entière (modale).
+  const [deleteRoundOpen, setDeleteRoundOpen] = useState(false);
+  const router = useRouter();
 
   // Une opération est en cours (suppression/création ou envoi d'un score) :
   // sert à désactiver toutes les actions et éviter des requêtes concurrentes.
@@ -143,6 +147,27 @@ export function OrganizerRoundClient({
     })();
   };
 
+  const deleteRound = () => {
+    setBusy(true);
+    setError(null);
+    (async () => {
+      try {
+        const res = await fetch(`/api/tournaments/${tournamentId}/rounds/${round.id}`, {
+          method: "DELETE",
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error ?? "Erreur lors de la suppression de la ronde");
+        }
+        router.push(`/tournaments/${tournamentId}/organizer/rounds`);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Erreur lors de la suppression de la ronde");
+        setBusy(false);
+        setDeleteRoundOpen(false);
+      }
+    })();
+  };
+
   const createMatch = () => {
     if (createPlayerIds.length === 0) return;
     setBusy(true);
@@ -190,12 +215,26 @@ export function OrganizerRoundClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <div>
           <h1 className="text-3xl font-bold">Ronde {round.number}</h1>
           <p className="mt-1 text-muted-foreground">Saisie des résultats</p>
         </div>
-        <Badge variant="secondary">{round.status === "completed" ? "Terminée" : "En cours"}</Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary">{round.status === "completed" ? "Terminée" : "En cours"}</Badge>
+          {isLastRound && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-red-600 hover:text-red-800"
+              onClick={() => setDeleteRoundOpen(true)}
+              disabled={anyBusy}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Supprimer la ronde
+            </Button>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -421,6 +460,18 @@ export function OrganizerRoundClient({
         destructive
         busy={anyBusy}
         onConfirm={() => pendingDelete && deleteMatch(pendingDelete)}
+      />
+
+      {/* Modale : confirmation de suppression de la ronde */}
+      <ConfirmDialog
+        open={deleteRoundOpen}
+        onOpenChange={(open) => !open && setDeleteRoundOpen(false)}
+        title="Supprimer la ronde"
+        description={`Supprimer la ronde ${round.number} et tous ses matchs ? Cette action est irréversible.`}
+        confirmLabel="Supprimer"
+        destructive
+        busy={anyBusy}
+        onConfirm={deleteRound}
       />
     </div>
   );
