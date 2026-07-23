@@ -1743,3 +1743,184 @@ export async function validateRoundStandings(
   }
   return toRound(result);
 }
+
+// =====================
+// PHASE TRANSITION
+// =====================
+
+export type PhaseEntryQualification = {
+  qualified: { playerId: string; displayName: string }[];
+  eliminated: { playerId: string; displayName: string }[];
+  // Nombre de qualifiés retenu par le top cut (absent si pas de top cut appliqué).
+  topCut?: number;
+};
+
+// Détermine la phase courante (la plus avancée déjà démarrée) et la prochaine
+// phase à démarrer (la première "not-started" qui la suit).
+function resolvePhaseTransition(phases: TournamentPhase[]): {
+  currentPhase?: TournamentPhase;
+  nextPhase?: TournamentPhase;
+} {
+  let currentIndex = -1;
+  for (let i = phases.length - 1; i >= 0; i--) {
+    if (phases[i].status !== "not-started") {
+      currentIndex = i;
+      break;
+    }
+  }
+  const currentPhase = currentIndex >= 0 ? phases[currentIndex] : undefined;
+  let nextPhase: TournamentPhase | undefined;
+  for (let i = currentIndex + 1; i < phases.length; i++) {
+    if (phases[i].status === "not-started") {
+      nextPhase = phases[i];
+      break;
+    }
+  }
+  return { currentPhase, nextPhase };
+}
+
+// Qualifiés / éliminés à l'entrée d'une phase : classement des joueurs inscrits
+// (par le classement de la phase précédente, sinon par seed/inscription) puis
+// application du top cut de la phase.
+async function computePhaseEntryQualification(
+  tournamentId: string,
+  phase: TournamentPhase,
+  phases: TournamentPhase[],
+  players: TournamentPlayer[]
+): Promise<PhaseEntryQualification> {
+  const registered = players.filter((p) => p.status === "registered");
+  const nameById = new Map(players.map((p) => [p.id, p.displayName]));
+
+  const phaseIndex = phases.findIndex((p) => p.id === phase.id);
+  const previousPhase = phaseIndex > 0 ? phases[phaseIndex - 1] : undefined;
+
+  let rankedIds: string[];
+  if (previousPhase) {
+    const standings = await getStandings(tournamentId, previousPhase.id);
+    const registeredSet = new Set(registered.map((p) => p.id));
+    rankedIds = standings.map((s) => s.playerId).filter((id) => registeredSet.has(id));
+    // Inscrits absents du classement (aucun match joué) ajoutés en fin de liste.
+    for (const p of registered) if (!rankedIds.includes(p.id)) rankedIds.push(p.id);
+  } else {
+    // listPlayers trie déjà par seed puis inscription.
+    rankedIds = registered.map((p) => p.id);
+  }
+
+  const cut = phase.topCut && phase.topCut < rankedIds.length ? phase.topCut : undefined;
+  const qualifiedIds = cut ? rankedIds.slice(0, cut) : rankedIds;
+  const eliminatedIds = cut ? rankedIds.slice(cut) : [];
+
+  const toEntries = (ids: string[]) =>
+    ids.map((id) => ({ playerId: id, displayName: nameById.get(id) ?? "Inconnu" }));
+
+  return { qualified: toEntries(qualifiedIds), eliminated: toEntries(eliminatedIds), topCut: cut };
+}
+
+/**
+ * Vrai si tous les matchs d'une phase sont terminés (aucun match non
+ * "completed"). Sert à interdire de clôturer une phase — et donc de figer le
+ * top cut — sur un classement partiel.
+ */
+async function phaseAllMatchesCompleted(tournamentId: string, phaseId: string): Promise<boolean> {
+  const pending = await db.collection<TournamentMatchDb>(MATCHES).findOne({
+    tournamentId: new ObjectId(tournamentId),
+    phaseId: new ObjectId(phaseId),
+    status: { $ne: "completed" },
+  });
+  return !pending;
+}
+
+/**
+ * Aperçu du passage à la phase suivante : phase courante (à clôturer), phase à
+ * démarrer, et qualification à l'entrée (qualifiés / éliminés par le top cut).
+ */
+export async function getNextPhaseTransition(tournamentId: string): Promise<{
+  currentPhase: { id: string; name: string } | null;
+  // Faux si la phase courante a encore des matchs non terminés : la transition
+  // est alors refusée (top cut basé sur un classement partiel).
+  currentPhaseComplete: boolean;
+  nextPhase: { id: string; name: string; type: TournamentPhase["type"]; topCut?: number } | null;
+  qualification: PhaseEntryQualification | null;
+}> {
+  const phases = await listPhases(tournamentId);
+  const { currentPhase, nextPhase } = resolvePhaseTransition(phases);
+  const currentPhaseComplete = currentPhase
+    ? await phaseAllMatchesCompleted(tournamentId, currentPhase.id)
+    : true;
+
+  if (!nextPhase) {
+    return {
+      currentPhase: currentPhase ? { id: currentPhase.id, name: currentPhase.name } : null,
+      currentPhaseComplete,
+      nextPhase: null,
+      qualification: null,
+    };
+  }
+
+  const players = await listPlayers(tournamentId);
+  const qualification = await computePhaseEntryQualification(tournamentId, nextPhase, phases, players);
+
+  return {
+    currentPhase: currentPhase ? { id: currentPhase.id, name: currentPhase.name } : null,
+    currentPhaseComplete,
+    nextPhase: { id: nextPhase.id, name: nextPhase.name, type: nextPhase.type, topCut: nextPhase.topCut },
+    qualification,
+  };
+}
+
+/**
+ * Clôture la phase courante et démarre la phase suivante : élimine (DROPPED) les
+ * joueurs non qualifiés par le top cut, bascule la phase courante du tournoi et
+ * crée la première ronde de la nouvelle phase.
+ */
+export async function advanceToNextPhase(
+  tournamentId: string,
+  createdBy: string
+): Promise<{ round: TournamentRound; matches: TournamentMatch[]; nextPhaseId: string; eliminatedCount: number }> {
+  const phases = await listPhases(tournamentId);
+  const { currentPhase, nextPhase } = resolvePhaseTransition(phases);
+  if (!nextPhase) {
+    throw new TournamentError("conflict", "Aucune phase suivante à démarrer");
+  }
+
+  // La phase courante ne peut être clôturée que si tous ses matchs sont
+  // terminés (sinon le top cut reposerait sur un classement partiel).
+  if (currentPhase && !(await phaseAllMatchesCompleted(tournamentId, currentPhase.id))) {
+    throw new TournamentError(
+      "conflict",
+      "Tous les matchs de la phase courante doivent être terminés avant de passer à la phase suivante"
+    );
+  }
+
+  const players = await listPlayers(tournamentId);
+  const qualification = await computePhaseEntryQualification(tournamentId, nextPhase, phases, players);
+
+  // Vérifie qu'il restera assez de joueurs avant toute mutation (évite un état
+  // partiel : phase clôturée / joueurs droppés sans ronde créée).
+  if (nextPhase.type !== "freeform" && qualification.qualified.length < nextPhase.minPlayersPerMatch) {
+    throw new TournamentError(
+      "invalid",
+      `Au moins ${nextPhase.minPlayersPerMatch} joueurs qualifiés sont requis pour démarrer cette phase`
+    );
+  }
+
+  // Clôture la phase courante.
+  if (currentPhase && currentPhase.status !== "completed") {
+    await updatePhase(tournamentId, currentPhase.id, { status: "completed" });
+  }
+  // Élimine les joueurs non qualifiés (un seul updateMany plutôt qu'une boucle).
+  if (qualification.eliminated.length > 0) {
+    await db.collection<TournamentPlayerDb>(PLAYERS).updateMany(
+      {
+        _id: { $in: qualification.eliminated.map((p) => new ObjectId(p.playerId)) },
+        tournamentId: new ObjectId(tournamentId),
+      },
+      { $set: { status: "dropped" } }
+    );
+  }
+  // Bascule la phase courante et crée la première ronde.
+  await updateTournament(tournamentId, { currentPhaseId: nextPhase.id });
+  const { round, matches } = await createNextRound(tournamentId, nextPhase.id, createdBy);
+
+  return { round, matches, nextPhaseId: nextPhase.id, eliminatedCount: qualification.eliminated.length };
+}
