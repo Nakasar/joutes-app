@@ -1,7 +1,12 @@
 import { notFound, redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import { getTournamentById, isTournamentOrganizer, listPlayers } from "@/lib/db/tournaments";
+import {
+  ensureJoinCode,
+  getTournamentById,
+  isTournamentOrganizer,
+  listPlayers,
+} from "@/lib/db/tournaments";
 import { OrganizerShell } from "../OrganizerShell";
 import { PlayersSection } from "../PlayersSection";
 
@@ -19,12 +24,15 @@ export default async function OrganizerPlayersPage({
   if (!tournament) notFound();
   if (!isTournamentOrganizer(tournament, session.user.id)) redirect("/tournaments");
 
-  const players = await listPlayers(tournamentId);
+  const [players, joinCode] = await Promise.all([
+    listPlayers(tournamentId),
+    ensureJoinCode(tournamentId),
+  ]);
 
   return (
     <div className="mx-auto max-w-4xl p-8">
       <OrganizerShell tournamentId={tournamentId} tournamentName={tournament.name} active="players">
-        <PlayersSection tournamentId={tournamentId} initialPlayers={players} />
+        <PlayersSection tournamentId={tournamentId} initialPlayers={players} joinCode={joinCode} />
       </OrganizerShell>
     </div>
   );
