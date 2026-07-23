@@ -8,6 +8,7 @@ import {
   resumeTimer,
   startTimer,
   stopTimer,
+  TournamentError,
 } from "@/lib/db/tournaments";
 import { tournamentErrorResponse, unauthorizedResponse } from "../../utils";
 
@@ -44,6 +45,11 @@ export async function POST(request: NextRequest, { params }: Params) {
       case "stop":
         updated = await stopTimer(tournamentId);
         break;
+      default: {
+        // Exhaustivité : toute nouvelle action du schéma doit être gérée ci-dessus.
+        const _exhaustive: never = validated;
+        throw new TournamentError("invalid", `Action de minuteur inconnue: ${JSON.stringify(_exhaustive)}`);
+      }
     }
 
     return NextResponse.json(updated.timer ?? null);
