@@ -19,6 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import { usePaginatedSearch } from "@/lib/use-paginated-search";
 import type { TournamentPhaseType, TournamentResultMode, TournamentRoundStanding } from "@/lib/types/Tournament";
+import { PlayerNameTag } from "./PlayerNameTag";
 import { TablePagination } from "./TablePagination";
 
 const PHASE_TYPE_LABELS: Record<TournamentPhaseType, string> = {
@@ -195,7 +196,7 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
       }
       const round = await res.json();
       // Redirige vers la saisie des résultats de la nouvelle ronde.
-      router.push(`/tournaments/${tournamentId}/organizer/rounds/${round.id}`);
+      router.push(`/tournaments/${tournamentId}/organizer/rounds/${round.id}/matches`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors de la création de la ronde");
     } finally {
@@ -391,7 +392,7 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
             {canManage && (
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" asChild>
-                  <Link href={`/tournaments/${tournamentId}/organizer/rounds/${current.round.id}`}>
+                  <Link href={`/tournaments/${tournamentId}/organizer/rounds/${current.round.id}/matches`}>
                     Saisir les résultats
                   </Link>
                 </Button>
@@ -527,7 +528,10 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
                         <tr key={standing.playerId}>
                           <td className="px-3 py-2">{standing.rank}</td>
                           <td className="px-3 py-2 font-medium">
-                            {standing.displayName}
+                            <PlayerNameTag
+                              name={standing.displayName}
+                              discriminator={standing.discriminator}
+                            />
                             {standing.playerStatus === "dropped" ? " (drop)" : ""}
                           </td>
                           <td className="px-3 py-2 text-right font-mono">{standing.matchPoints}</td>

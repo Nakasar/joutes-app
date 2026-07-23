@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { usePaginatedSearch } from "@/lib/use-paginated-search";
 import { PlayerShell } from "../PlayerShell";
 import { usePlayerTournament } from "../usePlayerTournament";
+import { PlayerNameTag } from "../../PlayerNameTag";
 import { TablePagination } from "../../TablePagination";
 
 export default function TournamentPlayerPlayersPage({
@@ -46,7 +47,7 @@ export default function TournamentPlayerPlayersPage({
                 {search.pageItems.map((player) => (
                   <li key={player.id} className="flex items-center justify-between py-2">
                     <span className={player.id === myPlayerId ? "font-semibold" : ""}>
-                      {player.displayName}
+                      <PlayerNameTag name={player.displayName} discriminator={player.discriminator} />
                       {player.id === myPlayerId ? " (moi)" : ""}
                     </span>
                     {player.status === "dropped" && <Badge variant="outline">Drop</Badge>}

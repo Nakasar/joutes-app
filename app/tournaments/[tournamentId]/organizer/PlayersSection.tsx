@@ -11,6 +11,7 @@ import { usePaginatedSearch } from "@/lib/use-paginated-search";
 import type { TournamentPlayer } from "@/lib/types/Tournament";
 import { JoinTournamentCard } from "./JoinTournamentCard";
 import { PlayerSyncQRButton } from "./PlayerSyncQRButton";
+import { PlayerNameTag } from "../PlayerNameTag";
 import { TablePagination } from "../TablePagination";
 
 const STATUS_BADGE: Record<string, { label: string; variant: "secondary" | "outline" }> = {
@@ -166,7 +167,11 @@ export function PlayersSection({
                 {playersSearch.pageItems.map((player) => (
                   <li key={player.id} className="flex items-center justify-between py-3">
                     <div>
-                      <span className="font-medium">{player.displayName}</span>
+                      <PlayerNameTag
+                        name={player.displayName}
+                        discriminator={player.discriminator}
+                        className="font-medium"
+                      />
                       {!player.userId && (
                         <span className="ml-2 text-xs text-muted-foreground">Invité</span>
                       )}

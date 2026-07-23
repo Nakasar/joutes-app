@@ -11631,6 +11631,10 @@
           "displayName": {
             "type": "string"
           },
+          "discriminator": {
+            "type": "string",
+            "description": "4-digit number shown next to the name to disambiguate homonyms. Taken from the linked account, or randomly generated for guests."
+          },
           "seed": {
             "type": "integer"
           },
@@ -11900,6 +11904,10 @@
           },
           "displayName": {
             "type": "string"
+          },
+          "discriminator": {
+            "type": "string",
+            "description": "4-digit number shown next to the name to disambiguate homonyms."
           },
           "userId": {
             "type": "string"

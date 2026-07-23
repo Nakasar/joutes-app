@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { usePaginatedSearch } from "@/lib/use-paginated-search";
 import type { TournamentRoundStanding } from "@/lib/types/Tournament";
+import { PlayerNameTag } from "../../../PlayerNameTag";
 import { TablePagination } from "../../../TablePagination";
 
 export function RoundStandingsPanel({
@@ -112,7 +113,10 @@ export function RoundStandingsPanel({
                     <tr key={standing.playerId}>
                       <td className="px-3 py-2">{standing.rank}</td>
                       <td className="px-3 py-2 font-medium">
-                        {standing.displayName}
+                        <PlayerNameTag
+                          name={standing.displayName}
+                          discriminator={standing.discriminator}
+                        />
                         {standing.playerStatus === "dropped" ? " (drop)" : ""}
                       </td>
                       <td className="px-3 py-2 text-right font-mono">{standing.matchPoints}</td>
