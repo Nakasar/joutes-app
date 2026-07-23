@@ -252,14 +252,13 @@ export function generateSwissPairings(
   const standings = calculateStandings(playerIds, matches);
   const availablePlayers = [...standings];
   // Ordre de classement imposé (ex : cumul multi-phases) : réordonne les
-  // joueurs disponibles en conséquence, en plaçant les inconnus en fin.
+  // joueurs disponibles en conséquence. Les joueurs absents de `rankedOrder`
+  // sont placés en fin ; deux inconnus comparent à 0 (tri stable → ordre
+  // existant conservé), ce qui évite tout `Infinity - Infinity` (NaN).
   if (rankedOrder) {
     const rankById = new Map(rankedOrder.map((id, index) => [id, index]));
-    availablePlayers.sort(
-      (a, b) =>
-        (rankById.get(a.playerId) ?? Number.POSITIVE_INFINITY) -
-        (rankById.get(b.playerId) ?? Number.POSITIVE_INFINITY)
-    );
+    const rankOf = (playerId: string) => rankById.get(playerId) ?? rankedOrder.length;
+    availablePlayers.sort((a, b) => rankOf(a.playerId) - rankOf(b.playerId));
   }
 
   while (availablePlayers.length >= 2) {

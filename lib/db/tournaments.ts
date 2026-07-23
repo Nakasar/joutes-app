@@ -1714,6 +1714,9 @@ export async function clearMatchResult(
   if (match.players.length === 1) {
     throw new TournamentError("conflict", "Le résultat d'un BYE ne peut pas être supprimé");
   }
+  if (match.status === "pending") {
+    throw new TournamentError("conflict", "Ce match n'a aucun résultat à supprimer");
+  }
 
   const result = await db.collection<TournamentMatchDb>(MATCHES).findOneAndUpdate(
     { _id: new ObjectId(matchId), tournamentId: new ObjectId(tournament.id) },
@@ -2041,19 +2044,23 @@ export async function validateRoundStandings(
   ]);
   const playersById = new Map(players.map((p) => [p.id, p]));
   const scoringByPhaseId = new Map(allPhases.map((p) => [p.id, scoringForPhase(p)]));
+  const phaseIndexById = new Map(allPhases.map((p, index) => [p.id, index]));
 
   // Classement cumulé : matchs de toutes les phases précédentes + les rondes de
   // la phase courante jusqu'à la ronde validée. Chaque match est scoré selon sa
   // propre phase — les points des phases précédentes sont conservés.
-  const currentPhaseIndex = allPhases.findIndex((p) => p.id === round.phaseId);
+  const currentPhaseIndex = phaseIndexById.get(round.phaseId);
+  if (currentPhaseIndex === undefined) {
+    throw new TournamentError("not-found", "Phase non trouvée");
+  }
   const roundIdsUpTo = new Set(
     phaseRounds.filter((r) => r.number <= round.number).map((r) => r.id)
   );
   const allMatches = allMatchDocs.map(toMatch);
   const cumulativeMatches = allMatches.filter((m) => {
     if (m.phaseId === round.phaseId) return roundIdsUpTo.has(m.roundId);
-    const index = allPhases.findIndex((p) => p.id === m.phaseId);
-    return index >= 0 && index < currentPhaseIndex;
+    const index = phaseIndexById.get(m.phaseId);
+    return index !== undefined && index < currentPhaseIndex;
   });
   // Ne figer que les joueurs présents dans la phase courante (jusqu'à cette
   // ronde) ; ils portent toutefois leurs points cumulés des phases précédentes.
