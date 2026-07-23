@@ -39,6 +39,20 @@ export const updateTournamentSchema = z.object({
   organizerIds: z.array(z.string()).optional(),
 });
 
+export const createAnnouncementSchema = z.object({
+  message: z.string().min(1, "Le message est requis").max(500),
+  level: z.enum(["info", "urgent"]).default("info"),
+});
+
+// Contrôle du minuteur : démarrer (avec une durée) ou arrêter.
+export const timerActionSchema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("start"),
+    durationSeconds: z.number().int().min(1).max(86400),
+  }),
+  z.object({ action: z.literal("stop") }),
+]);
+
 // Rejoindre un tournoi via son code. Sans session, `displayName` est requis
 // (joueur invité) ; avec session, il est ignoré (nom du compte utilisé).
 export const joinTournamentSchema = z.object({
@@ -173,3 +187,5 @@ export type UpdateTournamentPhaseInput = z.infer<typeof updateTournamentPhaseSch
 export type CreateTournamentMatchInput = z.infer<typeof createTournamentMatchSchema>;
 export type UpdateTournamentMatchInput = z.infer<typeof updateTournamentMatchSchema>;
 export type JoinTournamentInput = z.infer<typeof joinTournamentSchema>;
+export type CreateAnnouncementInput = z.infer<typeof createAnnouncementSchema>;
+export type TimerActionInput = z.infer<typeof timerActionSchema>;

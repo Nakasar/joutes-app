@@ -49,6 +49,13 @@ export type Tournament = {
   // Code court (9 caractères A-Z0-9) permettant de rejoindre le tournoi via
   // /t/:code/join. Unique parmi les tournois non terminés.
   joinCode?: string;
+  // Minuteur diffusé aux joueurs. `endsAt` (instant de fin absolu) n'est
+  // présent que lorsque le minuteur tourne.
+  timer?: {
+    durationSeconds: number;
+    endsAt?: Date;
+    running: boolean;
+  };
   settings: {
     allowSelfReporting: boolean;
     requireConfirmation: boolean;
@@ -172,6 +179,20 @@ export type TournamentMatch = {
 };
 
 export type TournamentDb = Omit<Tournament, "id">;
+// Annonces diffusées aux joueurs (portail joueur).
+export type TournamentAnnouncementLevel = "info" | "urgent";
+export type TournamentAnnouncement = {
+  id: string;
+  tournamentId: string;
+  message: string;
+  level: TournamentAnnouncementLevel;
+  createdBy: string;
+  createdAt: Date;
+};
+export type TournamentAnnouncementDb = Omit<TournamentAnnouncement, "id" | "tournamentId"> & {
+  tournamentId: ObjectId;
+};
+
 export type TournamentPlayerDb = Omit<TournamentPlayer, "id" | "tournamentId"> & { tournamentId: ObjectId };
 export type TournamentPhaseDb = Omit<TournamentPhase, "id" | "tournamentId"> & { tournamentId: ObjectId };
 export type TournamentRoundDb = Omit<TournamentRound, "id" | "tournamentId" | "phaseId"> & {

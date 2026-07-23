@@ -8749,6 +8749,197 @@
         }
       }
     },
+    "/tournaments/{tournamentId}/live": {
+      "parameters": [
+        {
+          "name": "tournamentId",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string" }
+        }
+      ],
+      "get": {
+        "tags": ["Tournaments"],
+        "summary": "Get the tournament live state (announcements + timer)",
+        "description": "Public read: broadcast announcements, timer, and the server clock (serverNow) used to synchronise the countdown on clients.",
+        "responses": {
+          "200": {
+            "description": "Live state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "announcements": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/TournamentAnnouncement" }
+                    },
+                    "timer": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "durationSeconds": { "type": "integer" },
+                        "endsAt": { "type": "string", "format": "date-time" },
+                        "running": { "type": "boolean" }
+                      }
+                    },
+                    "serverNow": { "type": "string", "format": "date-time" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/tournaments/{tournamentId}/announcements": {
+      "parameters": [
+        {
+          "name": "tournamentId",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string" }
+        }
+      ],
+      "get": {
+        "tags": ["Tournaments"],
+        "summary": "List announcements (organizers only)",
+        "security": [{ "sessionAuth": [] }, { "apiKeyBearer": [] }],
+        "responses": {
+          "200": {
+            "description": "Announcements, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/TournamentAnnouncement" }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      },
+      "post": {
+        "tags": ["Tournaments"],
+        "summary": "Publish an announcement (organizers only)",
+        "security": [{ "sessionAuth": [] }, { "apiKeyBearer": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["message"],
+                "properties": {
+                  "message": { "type": "string", "maxLength": 500 },
+                  "level": { "type": "string", "enum": ["info", "urgent"], "default": "info" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created announcement.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TournamentAnnouncement" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/tournaments/{tournamentId}/announcements/{announcementId}": {
+      "parameters": [
+        { "name": "tournamentId", "in": "path", "required": true, "schema": { "type": "string" } },
+        { "name": "announcementId", "in": "path", "required": true, "schema": { "type": "string" } }
+      ],
+      "delete": {
+        "tags": ["Tournaments"],
+        "summary": "Delete an announcement (organizers only)",
+        "security": [{ "sessionAuth": [] }, { "apiKeyBearer": [] }],
+        "responses": {
+          "200": {
+            "description": "Deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "deleted": { "type": "boolean" } }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/tournaments/{tournamentId}/timer": {
+      "parameters": [
+        { "name": "tournamentId", "in": "path", "required": true, "schema": { "type": "string" } }
+      ],
+      "post": {
+        "tags": ["Tournaments"],
+        "summary": "Control the timer (organizers only)",
+        "description": "`start` launches the timer for `durationSeconds` (sets an absolute end instant); `stop` stops it.",
+        "security": [{ "sessionAuth": [] }, { "apiKeyBearer": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "required": ["action", "durationSeconds"],
+                    "properties": {
+                      "action": { "type": "string", "enum": ["start"] },
+                      "durationSeconds": { "type": "integer", "minimum": 1, "maximum": 86400 }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": ["action"],
+                    "properties": { "action": { "type": "string", "enum": ["stop"] } }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated timer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "nullable": true,
+                  "properties": {
+                    "durationSeconds": { "type": "integer" },
+                    "endsAt": { "type": "string", "format": "date-time" },
+                    "running": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
     "/tournaments/{tournamentId}/next-phase": {
       "parameters": [
         {
@@ -11333,6 +11524,14 @@
             "type": "string",
             "description": "Code de participation (9 caractères A-Z0-9) : /t/{joinCode}/join."
           },
+          "timer": {
+            "type": "object",
+            "properties": {
+              "durationSeconds": { "type": "integer" },
+              "endsAt": { "type": "string", "format": "date-time" },
+              "running": { "type": "boolean" }
+            }
+          },
           "settings": {
             "type": "object",
             "properties": {
@@ -11364,6 +11563,17 @@
             "type": "string",
             "format": "date-time"
           }
+        }
+      },
+      "TournamentAnnouncement": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "tournamentId": { "type": "string" },
+          "message": { "type": "string" },
+          "level": { "type": "string", "enum": ["info", "urgent"] },
+          "createdBy": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
         }
       },
       "TournamentPlayer": {

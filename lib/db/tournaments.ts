@@ -8,6 +8,9 @@ import {
   DEFAULT_FIXED_SCORING,
   DEFAULT_RANK_OFFSETS,
   Tournament,
+  TournamentAnnouncement,
+  TournamentAnnouncementDb,
+  TournamentAnnouncementLevel,
   TournamentDb,
   TournamentEliminationSeeding,
   TournamentFixedScoring,
@@ -51,6 +54,7 @@ const PLAYERS = "tournament-players";
 const PHASES = "tournament-phases";
 const ROUNDS = "tournament-rounds";
 const MATCHES = "tournament-matches";
+const ANNOUNCEMENTS = "tournament-announcements";
 
 // Code de participation : 9 caractères alphanumériques majuscules (nanoid).
 const joinCodeAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -120,6 +124,7 @@ function toTournament(doc: WithId<TournamentDb>): Tournament {
     status: doc.status,
     currentPhaseId: doc.currentPhaseId,
     joinCode: doc.joinCode,
+    timer: doc.timer,
     settings: {
       allowSelfReporting: doc.settings.allowSelfReporting,
       requireConfirmation: doc.settings.requireConfirmation,
@@ -596,7 +601,92 @@ export async function deleteTournament(tournamentId: string): Promise<void> {
     db.collection(PHASES).deleteMany({ tournamentId: _id }),
     db.collection(ROUNDS).deleteMany({ tournamentId: _id }),
     db.collection(MATCHES).deleteMany({ tournamentId: _id }),
+    db.collection(ANNOUNCEMENTS).deleteMany({ tournamentId: _id }),
   ]);
+}
+
+// =====================
+// ANNOUNCEMENTS & TIMER
+// =====================
+
+function toAnnouncement(doc: WithId<TournamentAnnouncementDb>): TournamentAnnouncement {
+  return {
+    id: doc._id.toString(),
+    tournamentId: doc.tournamentId.toString(),
+    message: doc.message,
+    level: doc.level,
+    createdBy: doc.createdBy,
+    createdAt: doc.createdAt,
+  };
+}
+
+export async function listAnnouncements(tournamentId: string): Promise<TournamentAnnouncement[]> {
+  const _id = parseObjectId(tournamentId, "Tournoi");
+  const docs = await db
+    .collection<TournamentAnnouncementDb>(ANNOUNCEMENTS)
+    .find({ tournamentId: _id })
+    .sort({ createdAt: -1 })
+    .toArray();
+  return docs.map(toAnnouncement);
+}
+
+export async function createAnnouncement(
+  tournamentId: string,
+  data: { message: string; level: TournamentAnnouncementLevel; createdBy: string }
+): Promise<TournamentAnnouncement> {
+  const _id = parseObjectId(tournamentId, "Tournoi");
+  const doc: TournamentAnnouncementDb = {
+    tournamentId: _id,
+    message: data.message,
+    level: data.level,
+    createdBy: data.createdBy,
+    createdAt: new Date(),
+  };
+  const result = await db.collection<TournamentAnnouncementDb>(ANNOUNCEMENTS).insertOne(doc);
+  return toAnnouncement({ ...doc, _id: result.insertedId });
+}
+
+export async function deleteAnnouncement(tournamentId: string, announcementId: string): Promise<void> {
+  const tId = parseObjectId(tournamentId, "Tournoi");
+  const aId = parseObjectId(announcementId, "Annonce");
+  const result = await db
+    .collection<TournamentAnnouncementDb>(ANNOUNCEMENTS)
+    .deleteOne({ _id: aId, tournamentId: tId });
+  if (result.deletedCount === 0) {
+    throw new TournamentError("not-found", "Annonce non trouvée");
+  }
+}
+
+// Démarre le minuteur : fixe l'instant de fin absolu (now + durée).
+export async function startTimer(tournamentId: string, durationSeconds: number): Promise<Tournament> {
+  return updateTournamentTimer(tournamentId, {
+    durationSeconds,
+    endsAt: new Date(Date.now() + durationSeconds * 1000),
+    running: true,
+  });
+}
+
+// Arrête le minuteur (conserve la durée configurée).
+export async function stopTimer(tournamentId: string): Promise<Tournament> {
+  const tournament = await requireTournament(tournamentId);
+  return updateTournamentTimer(tournamentId, {
+    durationSeconds: tournament.timer?.durationSeconds ?? 0,
+    running: false,
+  });
+}
+
+async function updateTournamentTimer(
+  tournamentId: string,
+  timer: NonNullable<Tournament["timer"]>
+): Promise<Tournament> {
+  const _id = parseObjectId(tournamentId, "Tournoi");
+  const result = await db
+    .collection<TournamentDb>(TOURNAMENTS)
+    .findOneAndUpdate({ _id }, { $set: { timer } }, { returnDocument: "after" });
+  if (!result) {
+    throw new TournamentError("not-found", "Tournoi non trouvé");
+  }
+  return toTournament(result);
 }
 
 // =====================
