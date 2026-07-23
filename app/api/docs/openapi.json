@@ -8274,7 +8274,7 @@
           "Tournaments"
         ],
         "summary": "Act on a round: reopen it (organizers only)",
-        "description": "`reopen` repasse une ronde terminée « en cours » (ronde courante) pour corriger les résultats.",
+        "description": "`reopen` repasse une ronde terminée « en cours » (ronde courante) pour corriger les résultats. Seule la dernière ronde d'une phase peut être rouverte.",
         "security": [
           {
             "sessionAuth": []

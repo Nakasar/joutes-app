@@ -303,7 +303,7 @@ export function OrganizerRoundClient({
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="secondary">{round.status === "completed" ? "Terminée" : "En cours"}</Badge>
-          {round.status === "completed" && (
+          {round.status === "completed" && isLastRound && (
             <Button variant="outline" size="sm" onClick={() => setReopenOpen(true)} disabled={anyBusy}>
               <LockOpen className="mr-2 h-4 w-4" />
               Rouvrir la ronde

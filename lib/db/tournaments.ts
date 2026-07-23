@@ -1459,6 +1459,18 @@ export async function reopenRound(tournamentId: string, roundId: string): Promis
     throw new TournamentError("conflict", "Cette ronde est déjà en cours");
   }
 
+  // Seule la dernière ronde d'une phase peut être rouverte : rouvrir une ronde
+  // antérieure rendrait « la ronde courante » ambiguë et incohérents les
+  // pairings/classements des rondes suivantes.
+  const phaseRounds = await listRounds(tournamentId, round.phaseId);
+  const lastRound = phaseRounds[phaseRounds.length - 1];
+  if (!lastRound || lastRound.id !== round.id) {
+    throw new TournamentError(
+      "conflict",
+      "Seule la dernière ronde d'une phase peut être rouverte"
+    );
+  }
+
   const result = await db.collection<TournamentRoundDb>(ROUNDS).findOneAndUpdate(
     { _id: rId, tournamentId: tId, status: "completed" },
     { $set: { status: "in-progress" }, $unset: { completedAt: "" } },
