@@ -139,7 +139,8 @@ export function RoundStandingsPanel({
             />
             {validatedAt && (
               <p className="text-xs text-muted-foreground">
-                Validé le {DateTime.fromISO(validatedAt).setLocale("fr").toFormat("dd/MM/yyyy HH:mm")}
+                Validé le{" "}
+                {DateTime.fromISO(validatedAt).toLocal().setLocale("fr").toFormat("dd/MM/yyyy HH:mm")}
               </p>
             )}
           </>
