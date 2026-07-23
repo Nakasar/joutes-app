@@ -32,7 +32,7 @@ const MATCH_STATUS_LABELS: Record<string, string> = {
   disputed: "Contesté",
 };
 
-type RoundPlayer = Pick<TournamentPlayer, "id" | "displayName" | "status">;
+type RoundPlayer = Pick<TournamentPlayer, "id" | "displayName" | "discriminator" | "status">;
 
 type Props = {
   tournamentId: string;
@@ -254,7 +254,10 @@ export function OrganizerRoundClient({
     () =>
       players
         .filter((p) => p.status === "registered" && !pairedIds.has(p.id) && !createPlayerIds.includes(p.id))
-        .map((p) => ({ value: p.id, label: p.displayName })),
+        .map((p) => ({
+          value: p.id,
+          label: p.discriminator ? `${p.displayName} #${p.discriminator}` : p.displayName,
+        })),
     [players, pairedIds, createPlayerIds]
   );
 

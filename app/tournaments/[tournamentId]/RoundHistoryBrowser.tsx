@@ -19,6 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import { usePaginatedSearch } from "@/lib/use-paginated-search";
 import type { TournamentPhaseType, TournamentResultMode, TournamentRoundStanding } from "@/lib/types/Tournament";
+import { PlayerNameTag } from "./PlayerNameTag";
 import { TablePagination } from "./TablePagination";
 
 const PHASE_TYPE_LABELS: Record<TournamentPhaseType, string> = {
@@ -527,7 +528,10 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
                         <tr key={standing.playerId}>
                           <td className="px-3 py-2">{standing.rank}</td>
                           <td className="px-3 py-2 font-medium">
-                            {standing.displayName}
+                            <PlayerNameTag
+                              name={standing.displayName}
+                              discriminator={standing.discriminator}
+                            />
                             {standing.playerStatus === "dropped" ? " (drop)" : ""}
                           </td>
                           <td className="px-3 py-2 text-right font-mono">{standing.matchPoints}</td>

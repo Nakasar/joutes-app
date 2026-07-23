@@ -17,7 +17,7 @@ type SyncedTournament = {
     status: "draft" | "in-progress" | "completed";
     createdAt: string;
   };
-  player: { id: string; displayName: string; status: string };
+  player: { id: string; displayName: string; discriminator?: string; status: string };
 };
 
 type OrganizedTournament = {
@@ -29,7 +29,7 @@ type OrganizedTournament = {
 
 type PlayedTournament = {
   tournament: OrganizedTournament;
-  player: { id: string; displayName: string; status: string };
+  player: { id: string; displayName: string; discriminator?: string; status: string };
 };
 
 // Tournoi où l'utilisateur joue, quelle qu'en soit la provenance : clé de
@@ -37,7 +37,7 @@ type PlayedTournament = {
 // connecté inscrit comme joueur.
 type PlayerEntry = {
   tournament: OrganizedTournament;
-  player: { id: string; displayName: string; status: string };
+  player: { id: string; displayName: string; discriminator?: string; status: string };
   key?: string;
 };
 
@@ -217,7 +217,15 @@ export default function TournamentsPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Inscrit en tant que <span className="font-medium">{entry.player.displayName}</span>
+                  Inscrit en tant que{" "}
+                  <span className="font-medium">
+                    {entry.player.displayName}
+                    {entry.player.discriminator && (
+                      <span className="ml-1 text-xs font-normal text-muted-foreground">
+                        #{entry.player.discriminator}
+                      </span>
+                    )}
+                  </span>
                   {entry.player.status === "dropped" ? " (drop)" : ""}
                 </p>
                 <div className="flex items-center justify-between">

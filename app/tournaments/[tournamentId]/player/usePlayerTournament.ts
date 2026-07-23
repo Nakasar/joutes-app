@@ -5,7 +5,13 @@ import { useSession } from "@/lib/auth-client";
 import { getSyncKey } from "@/lib/tournament-sync-storage";
 import type { TournamentResultMode } from "@/lib/types/Tournament";
 
-export type ApiPlayer = { id: string; userId?: string; displayName: string; status: string };
+export type ApiPlayer = {
+  id: string;
+  userId?: string;
+  displayName: string;
+  discriminator?: string;
+  status: string;
+};
 export type ApiPhase = {
   id: string;
   name: string;

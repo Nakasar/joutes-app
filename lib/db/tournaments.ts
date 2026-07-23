@@ -43,6 +43,7 @@ import {
   createInvitedUserByEmail,
   getUserByEmail,
   getUserByUsernameAndDiscriminator,
+  getUserDiscriminator,
 } from "@/lib/db/users";
 
 // Validation d'email volontairement simple : le but est de distinguer un
@@ -144,6 +145,7 @@ function toPlayer(doc: WithId<TournamentPlayerDb>): TournamentPlayer {
     tournamentId: doc.tournamentId.toString(),
     userId: doc.userId,
     displayName: doc.displayName,
+    discriminator: doc.discriminator,
     seed: doc.seed,
     // Statuts connus conservés ; l'ancienne valeur "active" (avant renommage)
     // et toute valeur inattendue sont normalisées en "registered".
@@ -743,6 +745,12 @@ export async function getPlayerById(tournamentId: string, playerId: string): Pro
   return doc ? toPlayer(doc) : null;
 }
 
+// Nombre à 4 chiffres (1000–9999) attribué à un invité pour le distinguer d'un
+// éventuel homonyme.
+function randomGuestDiscriminator(): string {
+  return String(Math.floor(1000 + Math.random() * 9000));
+}
+
 export async function addPlayer(
   tournamentId: string,
   data: {
@@ -764,10 +772,18 @@ export async function addPlayer(
     }
   }
 
+  // Discriminateur affiché à côté du nom : repris du compte pour un joueur
+  // connecté, sinon nombre à 4 chiffres aléatoire pour un invité (différencie
+  // les homonymes).
+  const discriminator = data.userId
+    ? (await getUserDiscriminator(data.userId)) ?? undefined
+    : randomGuestDiscriminator();
+
   const doc: TournamentPlayerDb = {
     tournamentId: _id,
     userId: data.userId,
     displayName: data.displayName,
+    discriminator,
     seed: data.seed,
     status: data.status ?? "registered",
     syncKey: `tpsk_${crypto.randomBytes(24).toString("hex")}`,
@@ -1778,6 +1794,7 @@ export async function deleteMatch(tournamentId: string, matchId: string): Promis
 
 export type TournamentStanding = PlayerStanding & {
   displayName: string;
+  discriminator?: string;
   userId?: string;
   playerStatus: TournamentPlayer["status"];
 };
@@ -1939,6 +1956,7 @@ export async function getStandings(tournamentId: string, phaseId?: string): Prom
     return {
       ...standing,
       displayName: player?.displayName ?? "Inconnu",
+      discriminator: player?.discriminator,
       userId: player?.userId,
       playerStatus: player?.status ?? "registered",
     };
@@ -2081,6 +2099,7 @@ export async function validateRoundStandings(
     return {
       ...standing,
       displayName: player?.displayName ?? "Inconnu",
+      discriminator: player?.discriminator,
       userId: player?.userId,
       playerStatus: player?.status ?? "registered",
     };

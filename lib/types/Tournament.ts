@@ -76,6 +76,10 @@ export type TournamentPlayer = {
   tournamentId: string;
   userId?: string;
   displayName: string;
+  // Nombre à 4 chiffres affiché à côté du nom pour différencier les homonymes.
+  // Pour un joueur avec compte, repris du discriminateur du compte ; pour un
+  // invité, généré aléatoirement à l'inscription.
+  discriminator?: string;
   seed?: number;
   status: TournamentPlayerStatus;
   // Secret de synchronisation propre au joueur (préfixe tpsk_), généré à
@@ -123,6 +127,7 @@ export type TournamentPhase = {
 // d'affichage, pour rester aligné si le calcul de classement évolue.
 export type TournamentRoundStanding = PlayerStanding & {
   displayName: string;
+  discriminator?: string;
   userId?: string;
   playerStatus: TournamentPlayerStatus;
 };
