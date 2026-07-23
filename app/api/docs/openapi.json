@@ -8665,6 +8665,165 @@
         }
       }
     },
+    "/tournaments/{tournamentId}/next-phase": {
+      "parameters": [
+        {
+          "name": "tournamentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Preview the transition to the next phase (organizers only)",
+        "description": "Returns the current phase (to be closed), the next phase to start, and the entry qualification (players qualified / eliminated by the next phase's top cut).",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transition preview.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "currentPhase": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "id": { "type": "string" },
+                        "name": { "type": "string" }
+                      }
+                    },
+                    "nextPhase": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "id": { "type": "string" },
+                        "name": { "type": "string" },
+                        "type": { "type": "string" },
+                        "topCut": { "type": "integer" }
+                      }
+                    },
+                    "qualification": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "topCut": { "type": "integer" },
+                        "qualified": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "playerId": { "type": "string" },
+                              "displayName": { "type": "string" }
+                            }
+                          }
+                        },
+                        "eliminated": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "playerId": { "type": "string" },
+                              "displayName": { "type": "string" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Advance to the next phase (organizers only)",
+        "description": "Closes the current phase, drops (status DROPPED) the players not qualified by the next phase's top cut, sets the tournament's current phase, and creates the first round of the new phase. Returns the created round with its matches.",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The first round of the new phase, with its matches.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/TournamentRound"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "matches": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/TournamentMatch"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "No next phase to start.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tournaments/{tournamentId}/history": {
       "parameters": [
         {

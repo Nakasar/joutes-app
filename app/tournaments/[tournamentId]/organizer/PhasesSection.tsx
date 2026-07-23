@@ -21,6 +21,7 @@ import type {
   TournamentScoringMethod,
   TournamentEliminationSeeding,
 } from "@/lib/types/Tournament";
+import { NextPhaseButton } from "./NextPhaseButton";
 
 const PHASE_TYPE_LABELS: Record<TournamentPhaseType, string> = {
   freeform: "Format libre",
@@ -177,8 +178,9 @@ export function PhasesSection({
         </div>
       )}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
           <CardTitle>Phases</CardTitle>
+          <NextPhaseButton tournamentId={tournamentId} />
         </CardHeader>
         <CardContent className="space-y-6">
           {phases.length === 0 ? (
