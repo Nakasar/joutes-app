@@ -31,6 +31,10 @@ type AddToWishlistButtonProps = {
   type?: string;
   /** Render a compact circular icon button instead of a labeled one — for overlaying on card thumbnails. */
   iconOnly?: boolean;
+  /** La carte est déjà dans une wishlist de l'utilisateur : cœur rouge rempli. */
+  inWishlist?: boolean;
+  /** Notifié après un ajout réussi (permet au parent de marquer la carte en wishlist). */
+  onAdded?: () => void;
   className?: string;
 };
 
@@ -43,6 +47,8 @@ export default function AddToWishlistButton({
   image,
   type,
   iconOnly = false,
+  inWishlist = false,
+  onAdded,
   className,
 }: AddToWishlistButtonProps) {
   const t = useTranslations("Wishlists");
@@ -58,10 +64,23 @@ export default function AddToWishlistButton({
   async function loadWishlists() {
     setLoading(true);
     try {
-      const res = await fetch("/api/wishlists/mine");
+      // Charge en parallèle mes wishlists et celles qui contiennent déjà cette
+      // carte, pour les afficher cochées à l'ouverture du popover.
+      const [res, containingRes] = await Promise.all([
+        fetch("/api/wishlists/mine"),
+        fetch(
+          `/api/wishlists/mine/containing?gameSlug=${encodeURIComponent(gameSlug)}&cardId=${encodeURIComponent(cardId)}`
+        ),
+      ]);
       if (res.ok) {
         setData(await res.json());
         setLoaded(true);
+      }
+      if (containingRes.ok) {
+        const { wishlistIds }: { wishlistIds?: string[] } = await containingRes.json();
+        if (Array.isArray(wishlistIds) && wishlistIds.length > 0) {
+          setAddedIds((prev) => new Set([...prev, ...wishlistIds]));
+        }
       }
     } finally {
       setLoading(false);
@@ -94,8 +113,18 @@ export default function AddToWishlistButton({
         toast.error(body.error || t("errors.addItem"));
         return;
       }
+      // Ré-ajouter une carte déjà présente incrémente sa quantité : le toast
+      // l'indique via la quantité renvoyée.
+      const item: { quantity?: number } = await res.json().catch(() => ({}));
       setAddedIds((prev) => new Set(prev).add(wishlist.id));
-      toast.success(t("addToWishlist.added", { wishlist: wishlist.name }));
+      if (typeof item.quantity === "number" && item.quantity > 1) {
+        toast.success(
+          t("addToWishlist.quantityIncreased", { wishlist: wishlist.name, quantity: item.quantity })
+        );
+      } else {
+        toast.success(t("addToWishlist.added", { wishlist: wishlist.name }));
+      }
+      onAdded?.();
     } finally {
       setAddingId(null);
     }
@@ -138,17 +167,20 @@ export default function AddToWishlistButton({
             onClick={(e) => e.stopPropagation()}
             className={
               className ??
-              "flex size-7 items-center justify-center rounded-full bg-black/60 text-white shadow transition-colors hover:bg-black/80"
+              (inWishlist
+                ? "flex size-7 items-center justify-center rounded-full bg-rose-600 text-white shadow transition-colors hover:bg-rose-700"
+                : "flex size-7 items-center justify-center rounded-full bg-black/60 text-white shadow transition-colors hover:bg-black/80")
             }
-            aria-label={t("addToWishlist.trigger")}
-            title={t("addToWishlist.trigger")}
+            aria-label={inWishlist ? t("addToWishlist.inWishlist") : t("addToWishlist.trigger")}
+            title={inWishlist ? t("addToWishlist.inWishlist") : t("addToWishlist.trigger")}
           >
-            <Heart className="size-3.5" />
+            <Heart className={inWishlist ? "size-3.5 fill-current" : "size-3.5"} />
           </button>
         ) : (
           <Button variant="outline" size="sm" className={className ?? "gap-1.5"}>
-            <Heart className="size-4" />
+            <Heart className={inWishlist ? "size-4 fill-rose-500 text-rose-500" : "size-4"} />
             {t("addToWishlist.trigger")}
+            {inWishlist && <span className="sr-only">{t("addToWishlist.inWishlist")}</span>}
           </Button>
         )}
       </PopoverTrigger>

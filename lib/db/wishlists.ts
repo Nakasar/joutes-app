@@ -3,7 +3,7 @@ import 'server-only';
 import db from "@/lib/mongodb";
 import { ObjectId, WithId, Document } from "mongodb";
 import { Wishlist, WishlistItem, WishlistOwnerType, WishlistVisibility } from "@/lib/types/Wishlist";
-import { getPlayGroupByIdAndUser, getPlayGroupById } from "@/lib/db/play-groups";
+import { getPlayGroupByIdAndUser, getPlayGroupById, getPlayGroupsForUser } from "@/lib/db/play-groups";
 import { getUserById } from "@/lib/db/users";
 
 const WISHLISTS_COLLECTION = "wishlists";
@@ -346,27 +346,39 @@ export async function addWishlistItem(
   addedByUserId?: string
 ): Promise<WishlistItem> {
   const now = new Date();
-  const document = {
-    wishlistId: new ObjectId(wishlistId),
-    cardId: item.cardId,
-    gameId: new ObjectId(item.gameId),
-    gameName: item.gameName,
-    gameSlug: item.gameSlug,
-    name: item.name,
-    setCode: item.setCode,
-    collectorNumber: item.collectorNumber,
-    image: item.image,
-    ...(item.type !== undefined && { type: item.type }),
-    quantity: item.quantity ?? 1,
-    ...(item.note !== undefined && { note: item.note }),
-    ...(addedByUserId !== undefined && { addedByUserId: new ObjectId(addedByUserId) }),
-    createdAt: now,
-  };
 
-  const result = await db.collection(WISHLIST_ITEMS_COLLECTION).insertOne(document);
+  // Ré-ajouter une carte déjà présente (même impression) incrémente sa
+  // quantité au lieu de créer un doublon dans la liste.
+  const result = await db.collection(WISHLIST_ITEMS_COLLECTION).findOneAndUpdate(
+    {
+      wishlistId: new ObjectId(wishlistId),
+      cardId: item.cardId,
+      setCode: item.setCode,
+      collectorNumber: item.collectorNumber,
+    },
+    {
+      // Sur un upsert, $inc initialise la quantité à la valeur incrémentée.
+      $inc: { quantity: item.quantity ?? 1 },
+      $setOnInsert: {
+        gameId: new ObjectId(item.gameId),
+        gameName: item.gameName,
+        gameSlug: item.gameSlug,
+        name: item.name,
+        image: item.image,
+        ...(item.type !== undefined && { type: item.type }),
+        ...(item.note !== undefined && { note: item.note }),
+        ...(addedByUserId !== undefined && { addedByUserId: new ObjectId(addedByUserId) }),
+        createdAt: now,
+      },
+    },
+    { upsert: true, returnDocument: "after" }
+  );
   await db.collection(WISHLISTS_COLLECTION).updateOne({ _id: new ObjectId(wishlistId) }, { $set: { updatedAt: now } });
 
-  return toWishlistItem({ _id: result.insertedId, ...document });
+  if (!result) {
+    throw new Error("Échec de l'ajout à la wishlist");
+  }
+  return toWishlistItem(result);
 }
 
 export async function updateWishlistItem(
@@ -398,6 +410,73 @@ export async function removeWishlistItem(wishlistId: string, itemId: string): Pr
   });
 
   return result.deletedCount === 1;
+}
+
+/**
+ * Ids (ObjectId) des wishlists de l'utilisateur : personnelles + celles de ses
+ * groupes de jeu. Projection sur _id uniquement — pas de calcul d'itemsCount,
+ * ces helpers étant appelés à chaque chargement des vues de cartes.
+ */
+async function getUserWishlistObjectIds(userId: string): Promise<ObjectId[]> {
+  const playGroups = await getPlayGroupsForUser(userId);
+  const ownerFilters = [
+    ownerQuery({ type: "user", id: userId }),
+    ...playGroups.map((group) => ownerQuery({ type: "playGroup", id: group.id })),
+  ];
+  const docs = await db
+    .collection(WISHLISTS_COLLECTION)
+    .find({ $or: ownerFilters }, { projection: { _id: 1 } })
+    .toArray();
+  return docs.map((doc) => doc._id);
+}
+
+/**
+ * Ids (catalogue) des cartes présentes dans les wishlists de l'utilisateur
+ * (personnelles + celles de ses groupes de jeu), limités à un jeu. Sert à
+ * afficher le cœur « déjà en wishlist » sur les tuiles de cartes.
+ */
+export async function getWishlistedCardIdsForUser(userId: string, gameId: string): Promise<string[]> {
+  if (!ObjectId.isValid(gameId)) {
+    return [];
+  }
+
+  const wishlistIds = await getUserWishlistObjectIds(userId);
+  if (wishlistIds.length === 0) {
+    return [];
+  }
+
+  const cardIds = await db.collection(WISHLIST_ITEMS_COLLECTION).distinct("cardId", {
+    wishlistId: { $in: wishlistIds },
+    gameId: new ObjectId(gameId),
+  });
+  return cardIds.filter((id): id is string => typeof id === "string");
+}
+
+/**
+ * Ids des wishlists de l'utilisateur (personnelles + groupes de jeu) qui
+ * contiennent déjà une carte donnée. Sert à cocher ces listes dans le popover
+ * d'ajout à une wishlist.
+ */
+export async function getWishlistIdsContainingCard(
+  userId: string,
+  gameId: string,
+  cardId: string
+): Promise<string[]> {
+  if (!ObjectId.isValid(gameId)) {
+    return [];
+  }
+
+  const wishlistIds = await getUserWishlistObjectIds(userId);
+  if (wishlistIds.length === 0) {
+    return [];
+  }
+
+  const containing = await db.collection(WISHLIST_ITEMS_COLLECTION).distinct("wishlistId", {
+    wishlistId: { $in: wishlistIds },
+    gameId: new ObjectId(gameId),
+    cardId,
+  });
+  return containing.map((id) => id.toString());
 }
 
 export async function createWishlistIndexes() {
