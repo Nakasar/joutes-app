@@ -641,6 +641,8 @@ paths:
         - { name: userLat, in: query, schema: { type: number } }
         - { name: userLon, in: query, schema: { type: number } }
         - { name: maxDistance, in: query, description: "Max distance in km, must be > 0.", schema: { type: number } }
+        - { name: afterDate, in: query, description: "ISO date-time lower bound on startDateTime, independent of month/year. Only applied for an authenticated request (ignored for the lairId-scoped and anonymous-geospatial branches).", schema: { type: string, format: date-time } }
+        - { name: beforeDate, in: query, description: "ISO date-time upper bound on startDateTime, independent of month/year. Only applied for an authenticated request (ignored for the lairId-scoped and anonymous-geospatial branches).", schema: { type: string, format: date-time } }
       responses:
         "200":
           description: Events.
@@ -650,6 +652,35 @@ paths:
                 type: object
                 properties: { events: { type: array, items: { $ref: "#/components/schemas/Event" } } }
         "400": { $ref: "#/components/responses/ValidationError" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /events/{eventId}:
+    parameters:
+      - { name: eventId, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Events]
+      summary: Get an event's detail
+      description: Resolves an id already known to the caller (e.g. from a previous list call). A private event (no `lairId`) is only visible to its creator or a participant, same access model as the `/events/{eventId}` web page.
+      security: [{ sessionAuth: [] }, {}]
+      responses:
+        "200": { description: Event., content: { application/json: { schema: { $ref: "#/components/schemas/Event" } } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /events/{eventId}/favorite:
+    parameters:
+      - { name: eventId, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [Events]
+      summary: Toggle the caller's favorite on an event
+      description: Same private-event access restriction as `GET /events/{eventId}` — favoriting doesn't grant visibility into an event the caller can't otherwise see.
+      security: [{ sessionAuth: [] }]
+      responses:
+        "200": { description: Updated favorite state., content: { application/json: { schema: { type: object, properties: { favorited: { type: boolean } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
 
   /events/{eventId}/favorited-users:

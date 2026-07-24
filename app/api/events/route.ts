@@ -20,6 +20,35 @@ export async function GET(request: NextRequest) {
     const userLat = searchParams.get("userLat");
     const userLon = searchParams.get("userLon");
     const maxDistance = searchParams.get("maxDistance");
+    // Bornes optionnelles indépendantes du calendrier mois/année, pour un
+    // client qui veut "les prochains événements" sans se limiter au mois en
+    // cours (ex. afterDate=<now ISO>) ou "les événements passés" à la
+    // demande (ex. beforeDate=<now ISO>).
+    const afterDateParam = searchParams.get("afterDate");
+    const beforeDateParam = searchParams.get("beforeDate");
+
+    // Normalisées en UTC ISO avant d'être comparées (en base) à startDateTime,
+    // lui-même stocké en ISO : une entrée non ISO/avec un autre format
+    // produirait sinon une comparaison lexicographique incohérente.
+    let afterDate: string | undefined;
+    let beforeDate: string | undefined;
+    if (afterDateParam) {
+      const parsed = new Date(afterDateParam);
+      if (isNaN(parsed.getTime())) {
+        return NextResponse.json({ error: "Paramètres de date invalides" }, { status: 400 });
+      }
+      afterDate = parsed.toISOString();
+    }
+    if (beforeDateParam) {
+      const parsed = new Date(beforeDateParam);
+      if (isNaN(parsed.getTime())) {
+        return NextResponse.json({ error: "Paramètres de date invalides" }, { status: 400 });
+      }
+      beforeDate = parsed.toISOString();
+    }
+    if (afterDate && beforeDate && afterDate > beforeDate) {
+      return NextResponse.json({ error: "Paramètres de date invalides" }, { status: 400 });
+    }
 
     // Validate month and year
     const monthNum = month ? parseInt(month, 10) : undefined;
@@ -100,7 +129,8 @@ export async function GET(request: NextRequest) {
           monthNum,
           yearNum,
           userLocation,
-          maxDistanceNum
+          maxDistanceNum,
+          { afterDate, beforeDate }
         );
       }
     }
