@@ -1,7 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   getTournamentById,
   isTournamentOrganizer,
@@ -9,8 +8,8 @@ import {
   listRounds,
 } from "@/lib/db/tournaments";
 import { OrganizerShell } from "../OrganizerShell";
-import { CreateRoundControl } from "./CreateRoundControl";
-import { RoundsNav, type RoundsNavPhase } from "./RoundsNav";
+import { RoundsHeader } from "./RoundsHeader";
+import type { RoundsNavPhase } from "./RoundsNav";
 
 export default async function OrganizerRoundsPage({
   params,
@@ -40,18 +39,7 @@ export default async function OrganizerRoundsPage({
   return (
     <div className="mx-auto max-w-4xl p-8">
       <OrganizerShell tournamentId={tournamentId} tournamentName={tournament.name} active="rounds">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
-            <CardTitle>Rondes</CardTitle>
-            <CreateRoundControl
-              tournamentId={tournamentId}
-              phases={phases.map((p) => ({ id: p.id, name: p.name }))}
-            />
-          </CardHeader>
-          <CardContent>
-            <RoundsNav tournamentId={tournamentId} phases={navPhases} />
-          </CardContent>
-        </Card>
+        <RoundsHeader tournamentId={tournamentId} phases={navPhases} />
       </OrganizerShell>
     </div>
   );
