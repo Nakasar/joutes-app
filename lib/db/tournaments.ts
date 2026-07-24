@@ -1386,8 +1386,18 @@ export async function createNextRound(
       if (seededField.length < 2) {
         throw new TournamentError("invalid", "Au moins 2 joueurs actifs sont requis");
       }
-      const entryOrder =
-        phase.bracketSeeding === "random" ? shuffleArray([...seededField]) : seededField;
+      let entryOrder = seededField;
+      if (phase.bracketSeeding === "random") {
+        // Même en aléatoire, les BYE d'un bracket incomplet restent aux têtes
+        // de série : les byeCount premiers du classement sont préservés (ils
+        // recevront les BYE en mode adjacent), seul le reste est mélangé.
+        const bracketSize = 2 ** Math.ceil(Math.log2(seededField.length));
+        const byeCount = bracketSize - seededField.length;
+        entryOrder = [
+          ...seededField.slice(0, byeCount),
+          ...shuffleArray(seededField.slice(byeCount)),
+        ];
+      }
       groups = pairingsToGroups(
         generateEliminationBracket(
           entryOrder,
