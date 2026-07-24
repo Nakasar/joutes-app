@@ -4,7 +4,7 @@ import {headers} from "next/headers";
 import {getGameBySlugOrId} from "@/lib/db/games";
 import {getPolicyById} from "@/lib/db/policies";
 
-export async function GET(request: NextRequest, {params}: { params: Promise<{ gameId: string; policyId: string }> }) {
+export async function GET(_request: NextRequest, {params}: { params: Promise<{ gameId: string; policyId: string }> }) {
   const {gameId, policyId} = await params;
 
   const game = await getGameBySlugOrId(gameId);
@@ -13,9 +13,9 @@ export async function GET(request: NextRequest, {params}: { params: Promise<{ ga
   }
 
   const session = await auth.api.getSession({headers: await headers()});
-  const policy = await getPolicyById(policyId, session?.user?.id);
+  const policy = await getPolicyById(policyId, session?.user?.id, game.id);
 
-  if (!policy || policy.gameId !== game.id) {
+  if (!policy) {
     return NextResponse.json({error: "Policy not found"}, {status: 404});
   }
 
