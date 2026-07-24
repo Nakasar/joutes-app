@@ -20,6 +20,7 @@ import type {
   TournamentResultMode,
   TournamentScoringMethod,
   TournamentEliminationSeeding,
+  TournamentBracketSeeding,
 } from "@/lib/types/Tournament";
 import { NextPhaseButton } from "./NextPhaseButton";
 
@@ -34,6 +35,12 @@ const PHASE_STATUS_LABELS: Record<string, string> = {
   "not-started": "Non démarrée",
   "in-progress": "En cours",
   completed: "Terminée",
+};
+
+const BRACKET_SEEDING_LABELS: Record<TournamentBracketSeeding, string> = {
+  opposite: "classement opposé",
+  adjacent: "classement rapproché",
+  random: "appariement aléatoire",
 };
 
 export function PhasesSection({
@@ -57,6 +64,8 @@ export function PhasesSection({
   const [phaseDraw, setPhaseDraw] = useState("1");
   const [phaseRankOffsets, setPhaseRankOffsets] = useState("3,1,-1,-3,-4,-5,-7");
   const [phaseSeeding, setPhaseSeeding] = useState<TournamentEliminationSeeding>("standings");
+  const [phaseBracketSeeding, setPhaseBracketSeeding] =
+    useState<TournamentBracketSeeding>("opposite");
   const [phaseRounds, setPhaseRounds] = useState("");
   const [phaseTopCut, setPhaseTopCut] = useState("");
   const [phaseMinPlayers, setPhaseMinPlayers] = useState("2");
@@ -124,6 +133,9 @@ export function PhasesSection({
 
       if (phaseType === "elimination") {
         body.eliminationSeeding = phaseSeeding;
+      }
+      if (phaseType === "bracket") {
+        body.bracketSeeding = phaseBracketSeeding;
       }
 
       // N'ajouter le champ que si la saisie donne un entier positif : un NaN
@@ -197,6 +209,9 @@ export function PhasesSection({
                       {` · ${phase.scoringMethod === "rank_offset" ? "rang" : "points fixes"}`}
                       {phase.plannedRounds ? ` · ${phase.plannedRounds} rondes` : ""}
                       {phase.topCut ? ` · Top ${phase.topCut}` : ""}
+                      {phase.type === "bracket"
+                        ? ` · ${BRACKET_SEEDING_LABELS[phase.bracketSeeding]}`
+                        : ""}
                       {phase.type !== "bracket" && (
                         <>
                           {" · "}
@@ -351,6 +366,28 @@ export function PhasesSection({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="standings">Selon le classement</SelectItem>
+                      <SelectItem value="random">Aléatoire</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {phaseType === "bracket" && (
+                <div className="space-y-2">
+                  <Label>Appariement de la première ronde</Label>
+                  <Select
+                    value={phaseBracketSeeding}
+                    onValueChange={(v) => setPhaseBracketSeeding(v as TournamentBracketSeeding)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="opposite">
+                        Classement opposé (1er contre dernier)
+                      </SelectItem>
+                      <SelectItem value="adjacent">
+                        Classement rapproché (1er contre 2e)
+                      </SelectItem>
                       <SelectItem value="random">Aléatoire</SelectItem>
                     </SelectContent>
                   </Select>

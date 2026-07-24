@@ -11,6 +11,7 @@ import {
   TournamentAnnouncement,
   TournamentAnnouncementDb,
   TournamentAnnouncementLevel,
+  TournamentBracketSeeding,
   TournamentDb,
   TournamentEliminationSeeding,
   TournamentFixedScoring,
@@ -185,6 +186,7 @@ function toPhase(doc: WithId<TournamentPhaseDb> & { matchFormat?: string }): Tou
     fixedScoring: doc.fixedScoring ?? DEFAULT_FIXED_SCORING,
     rankOffsets: doc.rankOffsets ?? DEFAULT_RANK_OFFSETS,
     eliminationSeeding: doc.eliminationSeeding ?? "standings",
+    bracketSeeding: doc.bracketSeeding ?? "opposite",
     plannedRounds: doc.plannedRounds,
     topCut: doc.topCut,
     minPlayersPerMatch: doc.minPlayersPerMatch ?? 2,
@@ -1043,6 +1045,7 @@ export async function addPhase(
     fixedScoring?: TournamentFixedScoring;
     rankOffsets?: number[];
     eliminationSeeding?: TournamentEliminationSeeding;
+    bracketSeeding?: TournamentBracketSeeding;
     plannedRounds?: number;
     topCut?: number;
     minPlayersPerMatch?: number;
@@ -1077,6 +1080,7 @@ export async function addPhase(
     fixedScoring: data.fixedScoring ?? DEFAULT_FIXED_SCORING,
     rankOffsets: data.rankOffsets ?? DEFAULT_RANK_OFFSETS,
     eliminationSeeding: data.eliminationSeeding ?? "standings",
+    bracketSeeding: data.bracketSeeding ?? "opposite",
     plannedRounds: data.plannedRounds,
     topCut: data.topCut,
     minPlayersPerMatch,
@@ -1102,6 +1106,7 @@ export async function updatePhase(
     fixedScoring?: TournamentFixedScoring;
     rankOffsets?: number[];
     eliminationSeeding?: TournamentEliminationSeeding;
+    bracketSeeding?: TournamentBracketSeeding;
     plannedRounds?: number | null;
     topCut?: number | null;
     minPlayersPerMatch?: number;
@@ -1141,6 +1146,7 @@ export async function updatePhase(
   if (updates.fixedScoring !== undefined) set.fixedScoring = updates.fixedScoring;
   if (updates.rankOffsets !== undefined) set.rankOffsets = updates.rankOffsets;
   if (updates.eliminationSeeding !== undefined) set.eliminationSeeding = updates.eliminationSeeding;
+  if (updates.bracketSeeding !== undefined) set.bracketSeeding = updates.bracketSeeding;
   if (updates.plannedRounds === null) {
     unset.plannedRounds = "";
   } else if (updates.plannedRounds !== undefined) {
@@ -1372,12 +1378,24 @@ export async function createNextRound(
       }
       groups = pairingsToGroups(generateNextBracketRound(lastRoundMatches.map(toPairingMatch)));
     } else {
-      // Première ronde : seedée sur l'ordre qualifié d'entrée (top cut inclus).
+      // Première ronde : seedée sur l'ordre qualifié d'entrée (top cut inclus),
+      // appariée selon la règle configurée sur la phase (bracketSeeding) :
+      // classement opposé (1er vs dernier), rapproché (1er vs 2e) ou aléatoire
+      // (ordre mélangé puis appariement deux à deux).
       const seededField = qualifiedEntryPlayers();
       if (seededField.length < 2) {
         throw new TournamentError("invalid", "Au moins 2 joueurs actifs sont requis");
       }
-      groups = pairingsToGroups(generateEliminationBracket(seededField, [], undefined));
+      const entryOrder =
+        phase.bracketSeeding === "random" ? shuffleArray([...seededField]) : seededField;
+      groups = pairingsToGroups(
+        generateEliminationBracket(
+          entryOrder,
+          [],
+          undefined,
+          phase.bracketSeeding === "opposite" ? "opposite" : "adjacent"
+        )
+      );
     }
   }
   // freeform: pas de génération, la ronde est créée vide.

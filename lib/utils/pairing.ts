@@ -300,39 +300,64 @@ export function generateSwissPairings(
   return pairings;
 }
 
+// Règle d'appariement de la première ronde d'un bracket, selon l'ordre de
+// classement d'entrée :
+// - opposite : classement opposé, le 1er affronte le dernier, le 2e
+//   l'avant-dernier, etc. (seeding classique).
+// - adjacent : classement rapproché, le 1er affronte le 2e, le 3e le 4e, etc.
+export type BracketSeedingMode = "opposite" | "adjacent";
+
 /**
  * Génère un bracket d'élimination simple
  * @param playerIds - Liste des IDs des joueurs participants
  * @param matches - Matchs existants (pour calculer le classement)
  * @param topCut - Nombre de joueurs à prendre du top du classement (ex: 8 pour un top 8). Si non spécifié, prend tous les joueurs.
+ * @param seeding - Règle d'appariement de la première ronde (défaut : classement opposé)
  */
 export function generateEliminationBracket(
   playerIds: string[],
   matches: PairingMatch[],
-  topCut?: number
+  topCut?: number,
+  seeding: BracketSeedingMode = "opposite"
 ): PairingResult[] {
   // Calculer le classement pour seeder les joueurs
   const standings = calculateStandings(playerIds, matches);
-  
+
   // Si un top cut est spécifié, prendre seulement les N premiers du classement
   let selectedPlayers = standings.map(s => s.playerId);
   if (topCut && topCut > 0 && topCut < selectedPlayers.length) {
     selectedPlayers = selectedPlayers.slice(0, topCut);
   }
-  
+
   const numPlayers = selectedPlayers.length;
-  
+
   // Arrondir à la prochaine puissance de 2 pour le nombre de joueurs
   const bracketSize = Math.pow(2, Math.ceil(Math.log2(numPlayers)));
   const pairings: PairingResult[] = [];
+  const halfSize = bracketSize / 2;
+
+  if (seeding === "adjacent") {
+    // Classement rapproché : les BYE (bracket incomplet) vont aux têtes de
+    // série, puis les joueurs restants s'affrontent deux à deux dans l'ordre.
+    const byeCount = bracketSize - numPlayers;
+    for (let i = 0; i < byeCount; i++) {
+      pairings.push({ player1Id: selectedPlayers[i], player2Id: null });
+    }
+    for (let i = byeCount; i + 1 < numPlayers; i += 2) {
+      pairings.push({
+        player1Id: selectedPlayers[i],
+        player2Id: selectedPlayers[i + 1],
+      });
+    }
+    return pairings;
+  }
 
   // Créer les pairings pour le premier tour avec seeding classique
   // 1 vs 8, 2 vs 7, 3 vs 6, 4 vs 5 pour un top 8
-  const halfSize = bracketSize / 2;
   for (let i = 0; i < halfSize; i++) {
     const topSeed = i;
     const bottomSeed = bracketSize - 1 - i;
-    
+
     // Vérifier que les deux joueurs existent
     if (topSeed < selectedPlayers.length && bottomSeed < selectedPlayers.length) {
       pairings.push({
