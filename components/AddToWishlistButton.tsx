@@ -31,6 +31,10 @@ type AddToWishlistButtonProps = {
   type?: string;
   /** Render a compact circular icon button instead of a labeled one — for overlaying on card thumbnails. */
   iconOnly?: boolean;
+  /** La carte est déjà dans une wishlist de l'utilisateur : cœur rouge rempli. */
+  inWishlist?: boolean;
+  /** Notifié après un ajout réussi (permet au parent de marquer la carte en wishlist). */
+  onAdded?: () => void;
   className?: string;
 };
 
@@ -43,6 +47,8 @@ export default function AddToWishlistButton({
   image,
   type,
   iconOnly = false,
+  inWishlist = false,
+  onAdded,
   className,
 }: AddToWishlistButtonProps) {
   const t = useTranslations("Wishlists");
@@ -96,6 +102,7 @@ export default function AddToWishlistButton({
       }
       setAddedIds((prev) => new Set(prev).add(wishlist.id));
       toast.success(t("addToWishlist.added", { wishlist: wishlist.name }));
+      onAdded?.();
     } finally {
       setAddingId(null);
     }
@@ -138,16 +145,18 @@ export default function AddToWishlistButton({
             onClick={(e) => e.stopPropagation()}
             className={
               className ??
-              "flex size-7 items-center justify-center rounded-full bg-black/60 text-white shadow transition-colors hover:bg-black/80"
+              (inWishlist
+                ? "flex size-7 items-center justify-center rounded-full bg-rose-600 text-white shadow transition-colors hover:bg-rose-700"
+                : "flex size-7 items-center justify-center rounded-full bg-black/60 text-white shadow transition-colors hover:bg-black/80")
             }
-            aria-label={t("addToWishlist.trigger")}
-            title={t("addToWishlist.trigger")}
+            aria-label={inWishlist ? t("addToWishlist.inWishlist") : t("addToWishlist.trigger")}
+            title={inWishlist ? t("addToWishlist.inWishlist") : t("addToWishlist.trigger")}
           >
-            <Heart className="size-3.5" />
+            <Heart className={inWishlist ? "size-3.5 fill-current" : "size-3.5"} />
           </button>
         ) : (
           <Button variant="outline" size="sm" className={className ?? "gap-1.5"}>
-            <Heart className="size-4" />
+            <Heart className={inWishlist ? "size-4 fill-rose-500 text-rose-500" : "size-4"} />
             {t("addToWishlist.trigger")}
           </Button>
         )}

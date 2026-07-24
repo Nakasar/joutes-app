@@ -27,6 +27,7 @@ import {getCardsByNames} from "@/lib/db/cards";
 import {getCardOwnershipByOwners, type CollectionOwner} from "@/lib/db/collection";
 import {getUserById, getUsersByIds, toPublicUser} from "@/lib/db/users";
 import {getPlayGroupsForUser} from "@/lib/db/play-groups";
+import {getWishlistedCardIdsForUser} from "@/lib/db/wishlists";
 import {extractBracketedMentions} from "@/lib/errata-markdown";
 import {annotateCardText} from "@/lib/card-text-markdown";
 import GameMarkdown from "@/components/GameMarkdown";
@@ -130,6 +131,11 @@ export default async function RiftboundCardDetailPage({
       </div>
     );
   }
+
+  // Cœur rouge si la carte est déjà dans une wishlist de l'utilisateur.
+  const cardInWishlist = userId
+    ? (await getWishlistedCardIdsForUser(userId, game.id)).includes(card.id)
+    : false;
 
   const erratas = [...await getErratasByCardId(cardId, userId)].sort(
     (a, b) => Number(hasNegativeVoteRatio(a)) - Number(hasNegativeVoteRatio(b))
@@ -256,6 +262,7 @@ export default async function RiftboundCardDetailPage({
                 setCode={card.setCode}
                 collectorNumber={card.collectorNumber}
                 image={card.image}
+                inWishlist={cardInWishlist}
               />
             </div>
           )}

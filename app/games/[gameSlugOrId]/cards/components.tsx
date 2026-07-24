@@ -61,6 +61,29 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   const activeControllerRef = useRef<AbortController | null>(null);
   const t = useTranslations("Games");
 
+  // Ids des cartes déjà présentes dans une wishlist de l'utilisateur (cœur
+  // rouge sur les tuiles). Chargés une fois par session/jeu.
+  const [wishlistedIds, setWishlistedIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/wishlists/mine/card-ids?gameSlug=${encodeURIComponent(gameSlug)}`);
+        if (!res.ok) return;
+        const data: { cardIds?: string[] } = await res.json();
+        if (!cancelled && Array.isArray(data.cardIds)) {
+          setWishlistedIds(new Set(data.cardIds));
+        }
+      } catch {
+        // Best-effort : sans cette info, les cœurs restent neutres.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [session, gameSlug]);
+
   const fetchCards = useCallback(
     async (query: string, setCode: string, type: string, language: string, pageNumber: number) => {
       const trimmedQuery = query.trim();
@@ -400,6 +423,8 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
                   collectorNumber={String(card.collectorNumber)}
                   image={card.image}
                   type={card.type}
+                  inWishlist={wishlistedIds.has(card.id)}
+                  onAdded={() => setWishlistedIds((prev) => new Set(prev).add(card.id))}
                 />
               </div>
             )}

@@ -3,7 +3,7 @@ import 'server-only';
 import db from "@/lib/mongodb";
 import { ObjectId, WithId, Document } from "mongodb";
 import { Wishlist, WishlistItem, WishlistOwnerType, WishlistVisibility } from "@/lib/types/Wishlist";
-import { getPlayGroupByIdAndUser, getPlayGroupById } from "@/lib/db/play-groups";
+import { getPlayGroupByIdAndUser, getPlayGroupById, getPlayGroupsForUser } from "@/lib/db/play-groups";
 import { getUserById } from "@/lib/db/users";
 
 const WISHLISTS_COLLECTION = "wishlists";
@@ -398,6 +398,35 @@ export async function removeWishlistItem(wishlistId: string, itemId: string): Pr
   });
 
   return result.deletedCount === 1;
+}
+
+/**
+ * Ids (catalogue) des cartes présentes dans les wishlists de l'utilisateur
+ * (personnelles + celles de ses groupes de jeu), limités à un jeu. Sert à
+ * afficher le cœur « déjà en wishlist » sur les tuiles de cartes.
+ */
+export async function getWishlistedCardIdsForUser(userId: string, gameId: string): Promise<string[]> {
+  if (!ObjectId.isValid(gameId)) {
+    return [];
+  }
+
+  const [personal, playGroups] = await Promise.all([
+    getWishlistsForOwner({ type: "user", id: userId }),
+    getPlayGroupsForUser(userId),
+  ]);
+  const groupWishlists = await Promise.all(
+    playGroups.map((group) => getWishlistsForOwner({ type: "playGroup", id: group.id }))
+  );
+  const wishlistIds = [...personal, ...groupWishlists.flat()].map((w) => new ObjectId(w.id));
+  if (wishlistIds.length === 0) {
+    return [];
+  }
+
+  const cardIds = await db.collection(WISHLIST_ITEMS_COLLECTION).distinct("cardId", {
+    wishlistId: { $in: wishlistIds },
+    gameId: new ObjectId(gameId),
+  });
+  return cardIds.filter((id): id is string => typeof id === "string");
 }
 
 export async function createWishlistIndexes() {

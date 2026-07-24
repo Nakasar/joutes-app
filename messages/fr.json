@@ -1239,6 +1239,7 @@
         "empty": "Aucune liste de souhaits pour le moment. Créez-en une ci-dessous.",
         "personalHeading": "Mes listes",
         "newPlaceholder": "Nouvelle liste…",
+        "inWishlist": "Déjà dans une wishlist",
         "added": "Ajoutée à « {wishlist} »"
       },
       "export": {

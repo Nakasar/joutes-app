@@ -1238,6 +1238,7 @@
         "empty": "No wishlists yet. Create one below.",
         "personalHeading": "My wishlists",
         "newPlaceholder": "New wishlist…",
+        "inWishlist": "Already in a wishlist",
         "added": "Added to \"{wishlist}\""
       },
       "export": {

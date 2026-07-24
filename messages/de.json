@@ -1155,6 +1155,7 @@
         "empty": "Noch keine Wunschliste. Erstelle unten eine.",
         "personalHeading": "Meine Wunschlisten",
         "newPlaceholder": "Neue Wunschliste…",
+        "inWishlist": "Bereits auf einer Wunschliste",
         "added": "Zu „{wishlist}“ hinzugefügt"
       },
       "export": {

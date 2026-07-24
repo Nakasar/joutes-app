@@ -87,6 +87,28 @@ export default function GameCollectionBrowser({
   const controllerRef = useRef<AbortController | null>(null);
   const initializedRef = useRef(false);
 
+  // Ids des cartes déjà présentes dans une wishlist de l'utilisateur connecté
+  // (cœur rouge sur les tuiles). Best-effort : ignoré si non connecté.
+  const [wishlistedIds, setWishlistedIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/wishlists/mine/card-ids?gameSlug=${encodeURIComponent(gameSlug)}`);
+        if (!res.ok) return;
+        const data: { cardIds?: string[] } = await res.json();
+        if (!cancelled && Array.isArray(data.cardIds)) {
+          setWishlistedIds(new Set(data.cardIds));
+        }
+      } catch {
+        // Sans cette info, les cœurs restent neutres.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [gameSlug]);
+
   const fetchPage = useCallback(
     async (opts: { search: string; setCode: string; type: string; ownership: "all" | "owned" | "unowned"; page: number }) => {
       controllerRef.current?.abort();
@@ -424,6 +446,8 @@ export default function GameCollectionBrowser({
                     setCode={card.setCode}
                     collectorNumber={String(card.collectorNumber)}
                     image={card.image}
+                    inWishlist={wishlistedIds.has(card.id)}
+                    onAdded={() => setWishlistedIds((prev) => new Set(prev).add(card.id))}
                   />
                 </div>
                 <div className="flex flex-1 flex-col gap-2 p-2">
@@ -531,6 +555,8 @@ export default function GameCollectionBrowser({
                     setCode={manageCard.setCode}
                     collectorNumber={String(manageCard.collectorNumber)}
                     image={manageCard.image}
+                    inWishlist={wishlistedIds.has(manageCard.id)}
+                    onAdded={() => setWishlistedIds((prev) => new Set(prev).add(manageCard.id))}
                   />
                 </div>
                 <div className="flex-1">
