@@ -129,11 +129,16 @@ export async function getAllPolicies({
   }));
 }
 
-export async function getPolicyById(id: string, userId?: string): Promise<Policy | null> {
+export async function getPolicyById(id: string, userId?: string, gameId?: string): Promise<Policy | null> {
   if (!ObjectId.isValid(id)) return null;
 
+  const matchFilter: Record<string, unknown> = { _id: new ObjectId(id) };
+  if (gameId) {
+    matchFilter.gameId = new ObjectId(gameId);
+  }
+
   const pipeline: object[] = [
-    { $match: { _id: new ObjectId(id) } },
+    { $match: matchFilter },
     {
       $lookup: {
         from: "policy-votes",

@@ -1056,6 +1056,23 @@ paths:
         "200": { description: "Stub response, always `{}`." , content: { application/json: { schema: { type: object } } } }
         "404": { $ref: "#/components/responses/NotFound" }
 
+  /games/{gameId}/policies/{policyId}:
+    parameters:
+      - { name: gameId, in: path, required: true, schema: { type: string } }
+      - { name: policyId, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Games]
+      summary: Get a single policy's detail
+      security: []
+      description: Session is optional; if present, `votes.userVote` is populated.
+      responses:
+        "200":
+          description: Policy detail.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Policy" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
   /games/{gameId}/quizzes:
     parameters:
       - { name: gameId, in: path, required: true, schema: { type: string } }
