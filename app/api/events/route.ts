@@ -20,6 +20,12 @@ export async function GET(request: NextRequest) {
     const userLat = searchParams.get("userLat");
     const userLon = searchParams.get("userLon");
     const maxDistance = searchParams.get("maxDistance");
+    // Bornes optionnelles indépendantes du calendrier mois/année, pour un
+    // client qui veut "les prochains événements" sans se limiter au mois en
+    // cours (ex. afterDate=<now ISO>) ou "les événements passés" à la
+    // demande (ex. beforeDate=<now ISO>).
+    const afterDate = searchParams.get("afterDate") || undefined;
+    const beforeDate = searchParams.get("beforeDate") || undefined;
 
     // Validate month and year
     const monthNum = month ? parseInt(month, 10) : undefined;
@@ -100,7 +106,8 @@ export async function GET(request: NextRequest) {
           monthNum,
           yearNum,
           userLocation,
-          maxDistanceNum
+          maxDistanceNum,
+          { afterDate, beforeDate }
         );
       }
     }
