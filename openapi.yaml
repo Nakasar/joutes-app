@@ -1970,7 +1970,7 @@ paths:
       tags: [Users]
       summary: List the caller's own followed games
       description: The caller's `User.games` (followed games), regardless of `isPublicProfile` — unlike `GET /users/{userTagOrId}`, which only reveals this list when the profile is public.
-      security: [{ sessionAuth: [] }, { apiKeyBearer: [] }]
+      security: [{ sessionAuth: [] }]
       responses:
         "200": { description: Followed game ids., content: { application/json: { schema: { type: object, properties: { gameIds: { type: array, items: { type: string } } } } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
