@@ -4,6 +4,7 @@ export const tournamentPhaseTypeSchema = z.enum(["freeform", "swiss", "eliminati
 export const tournamentResultModeSchema = z.enum(["points", "selection"]);
 export const tournamentScoringMethodSchema = z.enum(["fixed", "rank_offset"]);
 export const tournamentEliminationSeedingSchema = z.enum(["standings", "random"]);
+export const tournamentBracketSeedingSchema = z.enum(["opposite", "adjacent", "random"]);
 
 const fixedScoringSchema = z.object({
   win: z.number().int(),
@@ -94,6 +95,7 @@ export const createTournamentPhaseSchema = z
     fixedScoring: fixedScoringSchema.optional(),
     rankOffsets: z.array(z.number().int()).min(1).max(64).optional(),
     eliminationSeeding: tournamentEliminationSeedingSchema.default("standings"),
+    bracketSeeding: tournamentBracketSeedingSchema.default("opposite"),
     plannedRounds: z.number().int().min(1).optional(),
     // Joueurs qualifiés à l'entrée de la phase.
     topCut: z.number().int().min(2).optional(),
@@ -118,6 +120,7 @@ export const updateTournamentPhaseSchema = z
     fixedScoring: fixedScoringSchema.optional(),
     rankOffsets: z.array(z.number().int()).min(1).max(64).optional(),
     eliminationSeeding: tournamentEliminationSeedingSchema.optional(),
+    bracketSeeding: tournamentBracketSeedingSchema.optional(),
     plannedRounds: z.number().int().min(1).nullable().optional(),
     topCut: z.number().int().min(2).nullable().optional(),
     minPlayersPerMatch: z.number().int().min(2).max(16).optional(),

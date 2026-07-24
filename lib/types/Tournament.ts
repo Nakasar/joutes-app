@@ -32,6 +32,13 @@ export type TournamentScoringMethod = "fixed" | "rank_offset";
 // Ré-appariement des vainqueurs entre rondes d'une phase à élimination.
 export type TournamentEliminationSeeding = "standings" | "random";
 
+// Appariement de la première ronde d'un arbre d'élimination (bracket) :
+// - opposite : classement opposé, le 1er affronte le dernier, le 2e
+//   l'avant-dernier, etc. (défaut).
+// - adjacent : classement rapproché, le 1er affronte le 2e, le 3e le 4e, etc.
+// - random : appariement aléatoire.
+export type TournamentBracketSeeding = "opposite" | "adjacent" | "random";
+
 export type TournamentFixedScoring = { win: number; loss: number; draw: number };
 
 export const DEFAULT_FIXED_SCORING: TournamentFixedScoring = { win: 3, loss: 0, draw: 1 };
@@ -108,6 +115,8 @@ export type TournamentPhase = {
   rankOffsets: number[];
   // Ré-appariement des vainqueurs pour une phase à élimination. Défaut "standings".
   eliminationSeeding: TournamentEliminationSeeding;
+  // Appariement de la première ronde d'une phase bracket. Défaut "opposite".
+  bracketSeeding: TournamentBracketSeeding;
   plannedRounds?: number;
   // Nombre de joueurs qualifiés à l'entrée de la phase (top cut). Absent = tous.
   topCut?: number;

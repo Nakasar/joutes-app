@@ -7755,6 +7755,16 @@
                     ],
                     "default": "standings"
                   },
+                  "bracketSeeding": {
+                    "type": "string",
+                    "enum": [
+                      "opposite",
+                      "adjacent",
+                      "random"
+                    ],
+                    "default": "opposite",
+                    "description": "Appariement de la première ronde d'une phase bracket : classement opposé (1er vs dernier), rapproché (1er vs 2e) ou aléatoire."
+                  },
                   "plannedRounds": {
                     "type": "integer"
                   },
@@ -7959,6 +7969,16 @@
                       "random"
                     ],
                     "default": "standings"
+                  },
+                  "bracketSeeding": {
+                    "type": "string",
+                    "enum": [
+                      "opposite",
+                      "adjacent",
+                      "random"
+                    ],
+                    "default": "opposite",
+                    "description": "Appariement de la première ronde d'une phase bracket : classement opposé (1er vs dernier), rapproché (1er vs 2e) ou aléatoire."
                   },
                   "plannedRounds": {
                     "type": "integer"
@@ -11778,6 +11798,15 @@
               "random"
             ],
             "description": "Ré-appariement des vainqueurs pour une phase elimination."
+          },
+          "bracketSeeding": {
+            "type": "string",
+            "enum": [
+              "opposite",
+              "adjacent",
+              "random"
+            ],
+            "description": "Appariement de la première ronde d'une phase bracket : classement opposé (1er vs dernier), rapproché (1er vs 2e) ou aléatoire. Défaut opposite."
           },
           "plannedRounds": {
             "type": "integer"
