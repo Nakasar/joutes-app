@@ -82,24 +82,22 @@ export function NewTournamentForm({ games }: { games: { id: string; name: string
             />
           </div>
 
-          {games.length > 0 && (
-            <div className="space-y-2">
-              <Label htmlFor="tournament-game">Jeu (optionnel)</Label>
-              <Select value={gameId} onValueChange={setGameId}>
-                <SelectTrigger id="tournament-game" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_GAME}>Aucun jeu</SelectItem>
-                  {games.map((game) => (
-                    <SelectItem key={game.id} value={game.id}>
-                      {game.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          <div className="space-y-2">
+            <Label htmlFor="tournament-game">Jeu (optionnel)</Label>
+            <Select value={gameId} onValueChange={setGameId}>
+              <SelectTrigger id="tournament-game" className="w-full" disabled={games.length === 0}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_GAME}>Aucun jeu</SelectItem>
+                {games.map((game) => (
+                  <SelectItem key={game.id} value={game.id}>
+                    {game.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           <div className="flex items-start justify-between gap-4">
             <div>
