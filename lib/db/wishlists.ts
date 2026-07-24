@@ -429,6 +429,40 @@ export async function getWishlistedCardIdsForUser(userId: string, gameId: string
   return cardIds.filter((id): id is string => typeof id === "string");
 }
 
+/**
+ * Ids des wishlists de l'utilisateur (personnelles + groupes de jeu) qui
+ * contiennent déjà une carte donnée. Sert à cocher ces listes dans le popover
+ * d'ajout à une wishlist.
+ */
+export async function getWishlistIdsContainingCard(
+  userId: string,
+  gameId: string,
+  cardId: string
+): Promise<string[]> {
+  if (!ObjectId.isValid(gameId)) {
+    return [];
+  }
+
+  const [personal, playGroups] = await Promise.all([
+    getWishlistsForOwner({ type: "user", id: userId }),
+    getPlayGroupsForUser(userId),
+  ]);
+  const groupWishlists = await Promise.all(
+    playGroups.map((group) => getWishlistsForOwner({ type: "playGroup", id: group.id }))
+  );
+  const wishlistIds = [...personal, ...groupWishlists.flat()].map((w) => new ObjectId(w.id));
+  if (wishlistIds.length === 0) {
+    return [];
+  }
+
+  const containing = await db.collection(WISHLIST_ITEMS_COLLECTION).distinct("wishlistId", {
+    wishlistId: { $in: wishlistIds },
+    gameId: new ObjectId(gameId),
+    cardId,
+  });
+  return containing.map((id) => id.toString());
+}
+
 export async function createWishlistIndexes() {
   await db.collection(WISHLISTS_COLLECTION).createIndex({ ownerType: 1, ownerId: 1, name: 1 }, { unique: true });
   await db.collection(WISHLISTS_COLLECTION).createIndex({ visibility: 1 });

@@ -64,10 +64,23 @@ export default function AddToWishlistButton({
   async function loadWishlists() {
     setLoading(true);
     try {
-      const res = await fetch("/api/wishlists/mine");
+      // Charge en parallèle mes wishlists et celles qui contiennent déjà cette
+      // carte, pour les afficher cochées à l'ouverture du popover.
+      const [res, containingRes] = await Promise.all([
+        fetch("/api/wishlists/mine"),
+        fetch(
+          `/api/wishlists/mine/containing?gameSlug=${encodeURIComponent(gameSlug)}&cardId=${encodeURIComponent(cardId)}`
+        ),
+      ]);
       if (res.ok) {
         setData(await res.json());
         setLoaded(true);
+      }
+      if (containingRes.ok) {
+        const { wishlistIds }: { wishlistIds?: string[] } = await containingRes.json();
+        if (Array.isArray(wishlistIds) && wishlistIds.length > 0) {
+          setAddedIds((prev) => new Set([...prev, ...wishlistIds]));
+        }
       }
     } finally {
       setLoading(false);
@@ -178,7 +191,7 @@ export default function AddToWishlistButton({
                       <CommandItem
                         key={wishlist.id}
                         value={wishlist.id}
-                        disabled={addingId === wishlist.id}
+                        disabled={addingId === wishlist.id || addedIds.has(wishlist.id)}
                         onSelect={() => handleAdd(wishlist)}
                       >
                         {addedIds.has(wishlist.id) ? (
@@ -199,7 +212,7 @@ export default function AddToWishlistButton({
                       <CommandItem
                         key={wishlist.id}
                         value={wishlist.id}
-                        disabled={addingId === wishlist.id}
+                        disabled={addingId === wishlist.id || addedIds.has(wishlist.id)}
                         onSelect={() => handleAdd(wishlist)}
                       >
                         {addedIds.has(wishlist.id) ? (
