@@ -549,6 +549,8 @@ export async function updateTournament(
     name?: string;
     status?: Tournament["status"];
     currentPhaseId?: string | null;
+    // null = retirer le jeu associé.
+    gameId?: string | null;
     settings?: Partial<Tournament["settings"]>;
     organizerIds?: string[];
   }
@@ -564,6 +566,11 @@ export async function updateTournament(
     unset.currentPhaseId = "";
   } else if (updates.currentPhaseId !== undefined) {
     set.currentPhaseId = updates.currentPhaseId;
+  }
+  if (updates.gameId === null) {
+    unset.gameId = "";
+  } else if (updates.gameId !== undefined) {
+    set.gameId = updates.gameId;
   }
   if (updates.settings?.allowSelfReporting !== undefined) {
     set["settings.allowSelfReporting"] = updates.settings.allowSelfReporting;

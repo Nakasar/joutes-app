@@ -1,9 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -21,9 +31,23 @@ const TOURNAMENT_STATUS_LABELS: Record<string, string> = {
   completed: "Terminé",
 };
 
-export function SettingsSection({ tournament }: { tournament: Tournament }) {
+// Valeur sentinelle du Select de jeu (un SelectItem ne peut pas être vide).
+const NO_GAME = "none";
+
+export function SettingsSection({
+  tournament,
+  games,
+}: {
+  tournament: Tournament;
+  games: { id: string; name: string }[];
+}) {
+  const router = useRouter();
   const tournamentId = tournament.id;
   const [status, setStatus] = useState<Tournament["status"]>(tournament.status);
+  const [gameId, setGameId] = useState(tournament.gameId ?? NO_GAME);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [allowSelfReporting, setAllowSelfReporting] = useState(tournament.settings.allowSelfReporting);
   const [requireConfirmation, setRequireConfirmation] = useState(tournament.settings.requireConfirmation);
   const [preRegistration, setPreRegistration] = useState(tournament.settings.preRegistration);
@@ -61,6 +85,26 @@ export function SettingsSection({ tournament }: { tournament: Tournament }) {
     if (await patch({ status: next })) setStatus(next);
   };
 
+  const changeGame = async (next: string) => {
+    if (await patch({ gameId: next === NO_GAME ? null : next })) setGameId(next);
+  };
+
+  const confirmDelete = async () => {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/tournaments/${tournamentId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Erreur lors de la suppression du tournoi");
+      }
+      router.push("/tournaments");
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Erreur lors de la suppression du tournoi");
+      setDeleting(false);
+    }
+  };
+
   const saveSettings = async () => {
     if (await patch({ settings: { allowSelfReporting, requireConfirmation, preRegistration } })) {
       setSavedSettings({ allowSelfReporting, requireConfirmation, preRegistration });
@@ -95,6 +139,26 @@ export function SettingsSection({ tournament }: { tournament: Tournament }) {
                 <SelectItem value="draft">À venir</SelectItem>
                 <SelectItem value="in-progress">En cours</SelectItem>
                 <SelectItem value="completed">Terminé</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="setting-game">Jeu (optionnel)</Label>
+            <Select value={gameId} onValueChange={changeGame}>
+              <SelectTrigger id="setting-game" className="w-[280px]" disabled={busy}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_GAME}>Aucun jeu</SelectItem>
+                {games.map((game) => (
+                  <SelectItem key={game.id} value={game.id}>
+                    {game.name}
+                  </SelectItem>
+                ))}
+                {gameId !== NO_GAME && !games.some((g) => g.id === gameId) && (
+                  <SelectItem value={gameId}>Jeu inconnu</SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -150,6 +214,53 @@ export function SettingsSection({ tournament }: { tournament: Tournament }) {
           </div>
         </CardContent>
       </Card>
+
+      <Card className="border-destructive/40">
+        <CardHeader>
+          <CardTitle className="text-destructive">Zone de danger</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-center justify-between gap-4">
+          <p className="text-sm text-muted-foreground">
+            Supprime définitivement le tournoi, ses joueurs, ses phases, ses rondes, ses matchs et
+            ses annonces.
+          </p>
+          <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
+            <Trash2 className="mr-2 h-4 w-4" />
+            Supprimer le tournoi
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Dialog
+        open={deleteOpen}
+        onOpenChange={(o) => {
+          if (!deleting) setDeleteOpen(o);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Supprimer le tournoi ?</DialogTitle>
+            <DialogDescription>
+              Le tournoi « {tournament.name} » et toutes ses données (joueurs, phases, rondes,
+              matchs, annonces) seront supprimés définitivement. Cette action est irréversible.
+            </DialogDescription>
+          </DialogHeader>
+          {deleteError && <p className="text-sm text-destructive">{deleteError}</p>}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteOpen(false)}
+              disabled={deleting}
+            >
+              Annuler
+            </Button>
+            <Button type="button" variant="destructive" onClick={confirmDelete} disabled={deleting}>
+              {deleting ? "Suppression..." : "Supprimer définitivement"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

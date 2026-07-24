@@ -5,12 +5,23 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export function NewTournamentForm() {
+// Valeur sentinelle du Select (un SelectItem ne peut pas avoir une valeur vide).
+const NO_GAME = "none";
+
+export function NewTournamentForm({ games }: { games: { id: string; name: string }[] }) {
   const router = useRouter();
   const [name, setName] = useState("");
+  const [gameId, setGameId] = useState(NO_GAME);
   const [allowSelfReporting, setAllowSelfReporting] = useState(true);
   const [requireConfirmation, setRequireConfirmation] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -30,6 +41,7 @@ export function NewTournamentForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
+          ...(gameId !== NO_GAME && { gameId }),
           settings: { allowSelfReporting, requireConfirmation },
         }),
       });
@@ -68,6 +80,23 @@ export function NewTournamentForm() {
               maxLength={200}
               autoFocus
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tournament-game">Jeu (optionnel)</Label>
+            <Select value={gameId} onValueChange={setGameId}>
+              <SelectTrigger id="tournament-game" className="w-full" disabled={games.length === 0}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_GAME}>Aucun jeu</SelectItem>
+                {games.map((game) => (
+                  <SelectItem key={game.id} value={game.id}>
+                    {game.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex items-start justify-between gap-4">
