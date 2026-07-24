@@ -1213,12 +1213,23 @@ export async function getRoundById(tournamentId: string, roundId: string): Promi
 }
 
 async function listPhaseMatches(tournamentId: ObjectId, phaseId: ObjectId): Promise<TournamentMatch[]> {
+  // Tiebreak sur _id : les matchs d'une même ronde partagent le même createdAt
+  // (insertMany), l'_id garantit l'ordre d'insertion (ordre du bracket).
   const docs = await db
     .collection<TournamentMatchDb>(MATCHES)
     .find({ tournamentId, phaseId })
-    .sort({ createdAt: 1 })
+    .sort({ createdAt: 1, _id: 1 })
     .toArray();
   return docs.map(toMatch);
+}
+
+export async function listMatchesByPhase(
+  tournamentId: string,
+  phaseId: string
+): Promise<TournamentMatch[]> {
+  const tId = parseObjectId(tournamentId, "Tournoi");
+  const pId = parseObjectId(phaseId, "Phase");
+  return listPhaseMatches(tId, pId);
 }
 
 /**
@@ -1580,7 +1591,7 @@ export async function listMatchesByRound(tournamentId: string, roundId: string):
   const docs = await db
     .collection<TournamentMatchDb>(MATCHES)
     .find({ tournamentId: tId, roundId: rId })
-    .sort({ createdAt: 1 })
+    .sort({ createdAt: 1, _id: 1 })
     .toArray();
   return docs.map(toMatch);
 }

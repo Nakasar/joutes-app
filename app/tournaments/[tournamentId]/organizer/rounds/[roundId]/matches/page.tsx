@@ -1,5 +1,5 @@
 import { OrganizerShell } from "../../../OrganizerShell";
-import { RoundsNav } from "../../RoundsNav";
+import { RoundsHeader } from "../../RoundsHeader";
 import { OrganizerRoundClient } from "../OrganizerRoundClient";
 import { RoundSubNav } from "../RoundSubNav";
 import { loadOrganizerRoundContext } from "../roundContext";
@@ -17,8 +17,13 @@ export default async function OrganizerRoundMatchesPage({
     <div className="mx-auto max-w-4xl p-8">
       <OrganizerShell tournamentId={tournamentId} tournamentName={tournament.name} active="rounds">
         <div className="space-y-6">
-          <RoundsNav tournamentId={tournamentId} phases={navPhases} currentRoundId={roundId} />
-          <RoundSubNav tournamentId={tournamentId} roundId={roundId} active="matches" />
+          <RoundsHeader tournamentId={tournamentId} phases={navPhases} currentRoundId={roundId} />
+          <RoundSubNav
+            tournamentId={tournamentId}
+            roundId={roundId}
+            active="matches"
+            showBracket={phase.type === "bracket"}
+          />
           <OrganizerRoundClient
             tournamentId={tournamentId}
             round={round}
