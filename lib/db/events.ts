@@ -1028,7 +1028,12 @@ export async function getEventById(eventId: string): Promise<Event | null> {
     runningState: event.runningState,
     participants: event.participants,
     participantRegistrations: event.participantRegistrations,
-    registeredParticipantsCount: event.participants?.length ?? 0,
+    // Ne compter que les REGISTERED (cf. joinEventAction) : un participant
+    // sans statut explicite est REGISTERED par défaut (addParticipantToEvent),
+    // mais PRE_REGISTERED/EXCLUDED ne doivent pas compter dans le remplissage.
+    registeredParticipantsCount: (event.participants ?? []).filter(
+      (userId: string) => (event.participantRegistrations?.[userId] ?? 'REGISTERED') === 'REGISTERED'
+    ).length,
     preRegistration: event.preRegistration,
     maxParticipants: event.maxParticipants,
     favoritedBy: event.favoritedBy,

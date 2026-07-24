@@ -24,8 +24,31 @@ export async function GET(request: NextRequest) {
     // client qui veut "les prochains événements" sans se limiter au mois en
     // cours (ex. afterDate=<now ISO>) ou "les événements passés" à la
     // demande (ex. beforeDate=<now ISO>).
-    const afterDate = searchParams.get("afterDate") || undefined;
-    const beforeDate = searchParams.get("beforeDate") || undefined;
+    const afterDateParam = searchParams.get("afterDate");
+    const beforeDateParam = searchParams.get("beforeDate");
+
+    // Normalisées en UTC ISO avant d'être comparées (en base) à startDateTime,
+    // lui-même stocké en ISO : une entrée non ISO/avec un autre format
+    // produirait sinon une comparaison lexicographique incohérente.
+    let afterDate: string | undefined;
+    let beforeDate: string | undefined;
+    if (afterDateParam) {
+      const parsed = new Date(afterDateParam);
+      if (isNaN(parsed.getTime())) {
+        return NextResponse.json({ error: "Paramètres de date invalides" }, { status: 400 });
+      }
+      afterDate = parsed.toISOString();
+    }
+    if (beforeDateParam) {
+      const parsed = new Date(beforeDateParam);
+      if (isNaN(parsed.getTime())) {
+        return NextResponse.json({ error: "Paramètres de date invalides" }, { status: 400 });
+      }
+      beforeDate = parsed.toISOString();
+    }
+    if (afterDate && beforeDate && afterDate > beforeDate) {
+      return NextResponse.json({ error: "Paramètres de date invalides" }, { status: 400 });
+    }
 
     // Validate month and year
     const monthNum = month ? parseInt(month, 10) : undefined;

@@ -19,6 +19,18 @@ export async function POST(request: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "Événement introuvable" }, { status: 404 });
     }
 
+    // Même règle d'accès que GET /events/{eventId} : un favori ne doit pas
+    // permettre de "voir" un événement privé auquel on n'a par ailleurs pas
+    // accès (le favori conditionne sa présence dans la liste de l'utilisateur).
+    const isPrivateEvent = !event.lairId;
+    if (isPrivateEvent) {
+      const isCreator = event.creatorId === session.user.id;
+      const isParticipant = event.participants?.includes(session.user.id);
+      if (!isCreator && !isParticipant) {
+        return NextResponse.json({ error: "Accès non autorisé" }, { status: 403 });
+      }
+    }
+
     const wasFavorited = event.favoritedBy?.includes(session.user.id) ?? false;
     if (wasFavorited) {
       await removeEventFromFavorites(eventId, session.user.id);
@@ -26,7 +38,12 @@ export async function POST(request: NextRequest, { params }: Params) {
       await addEventToFavorites(eventId, session.user.id);
     }
 
-    return NextResponse.json({ favorited: !wasFavorited });
+    // On relit l'état réel plutôt que de supposer que la mutation a réussi
+    // (événement supprimé entre-temps, mise à jour concurrente...).
+    const updated = await getEventById(eventId);
+    const favorited = updated?.favoritedBy?.includes(session.user.id) ?? false;
+
+    return NextResponse.json({ favorited });
   } catch (error) {
     console.error("Error toggling event favorite:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });

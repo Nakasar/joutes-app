@@ -660,10 +660,11 @@ paths:
     get:
       tags: [Events]
       summary: Get an event's detail
-      description: Public, same access model as `GET /events` — resolves an id already known to the caller (e.g. from a previous list call).
-      security: []
+      description: Resolves an id already known to the caller (e.g. from a previous list call). A private event (no `lairId`) is only visible to its creator or a participant, same access model as the `/events/{eventId}` web page.
+      security: [{ sessionAuth: [] }, {}]
       responses:
         "200": { description: Event., content: { application/json: { schema: { $ref: "#/components/schemas/Event" } } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
 
@@ -673,10 +674,12 @@ paths:
     post:
       tags: [Events]
       summary: Toggle the caller's favorite on an event
+      description: Same private-event access restriction as `GET /events/{eventId}` — favoriting doesn't grant visibility into an event the caller can't otherwise see.
       security: [{ sessionAuth: [] }]
       responses:
         "200": { description: Updated favorite state., content: { application/json: { schema: { type: object, properties: { favorited: { type: boolean } } } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
 

@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 import { getEventById } from "@/lib/db/events";
 
 type Params = { params: Promise<{ eventId: string }> };
 
 /**
- * Détail d'un événement. Accès public au même titre que `GET /events` (pas
- * de contrôle par lair suivi ici) : la liste appelante a déjà scopé l'accès,
- * ce endpoint sert à résoudre un id déjà connu du client (ex. `/events/{id}`
- * sur mobile, hors du calendrier mois/année de la liste).
+ * Détail d'un événement, pour résoudre un id déjà connu du client (ex.
+ * `/events/{id}` sur mobile, hors du calendrier mois/année de la liste).
+ *
+ * Même règle d'accès que la page web `/events/{eventId}` : un événement
+ * privé (`lairId` absent) n'est visible que par son créateur ou un
+ * participant — sans ce contrôle, connaître/deviner un id suffirait à lire
+ * un événement privé.
  */
 export async function GET(request: NextRequest, { params }: Params) {
   try {
@@ -16,6 +21,16 @@ export async function GET(request: NextRequest, { params }: Params) {
 
     if (!event) {
       return NextResponse.json({ error: "Événement introuvable" }, { status: 404 });
+    }
+
+    const isPrivateEvent = !event.lairId;
+    if (isPrivateEvent) {
+      const session = await auth.api.getSession({ headers: await headers() });
+      const isCreator = session?.user && event.creatorId === session.user.id;
+      const isParticipant = session?.user && event.participants?.includes(session.user.id);
+      if (!isCreator && !isParticipant) {
+        return NextResponse.json({ error: "Accès non autorisé" }, { status: 403 });
+      }
     }
 
     return NextResponse.json(event);
