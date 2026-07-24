@@ -65,7 +65,11 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   // rouge sur les tuiles). Chargés une fois par session/jeu.
   const [wishlistedIds, setWishlistedIds] = useState<Set<string>>(new Set());
   useEffect(() => {
-    if (!session) return;
+    if (!session) {
+      // Déconnexion / session expirée : plus aucun cœur rouge.
+      setWishlistedIds(new Set());
+      return;
+    }
     let cancelled = false;
     (async () => {
       try {

@@ -113,8 +113,17 @@ export default function AddToWishlistButton({
         toast.error(body.error || t("errors.addItem"));
         return;
       }
+      // Ré-ajouter une carte déjà présente incrémente sa quantité : le toast
+      // l'indique via la quantité renvoyée.
+      const item: { quantity?: number } = await res.json().catch(() => ({}));
       setAddedIds((prev) => new Set(prev).add(wishlist.id));
-      toast.success(t("addToWishlist.added", { wishlist: wishlist.name }));
+      if (typeof item.quantity === "number" && item.quantity > 1) {
+        toast.success(
+          t("addToWishlist.quantityIncreased", { wishlist: wishlist.name, quantity: item.quantity })
+        );
+      } else {
+        toast.success(t("addToWishlist.added", { wishlist: wishlist.name }));
+      }
       onAdded?.();
     } finally {
       setAddingId(null);
@@ -171,6 +180,7 @@ export default function AddToWishlistButton({
           <Button variant="outline" size="sm" className={className ?? "gap-1.5"}>
             <Heart className={inWishlist ? "size-4 fill-rose-500 text-rose-500" : "size-4"} />
             {t("addToWishlist.trigger")}
+            {inWishlist && <span className="sr-only">{t("addToWishlist.inWishlist")}</span>}
           </Button>
         )}
       </PopoverTrigger>
@@ -191,7 +201,7 @@ export default function AddToWishlistButton({
                       <CommandItem
                         key={wishlist.id}
                         value={wishlist.id}
-                        disabled={addingId === wishlist.id || addedIds.has(wishlist.id)}
+                        disabled={addingId === wishlist.id}
                         onSelect={() => handleAdd(wishlist)}
                       >
                         {addedIds.has(wishlist.id) ? (
@@ -212,7 +222,7 @@ export default function AddToWishlistButton({
                       <CommandItem
                         key={wishlist.id}
                         value={wishlist.id}
-                        disabled={addingId === wishlist.id || addedIds.has(wishlist.id)}
+                        disabled={addingId === wishlist.id}
                         onSelect={() => handleAdd(wishlist)}
                       >
                         {addedIds.has(wishlist.id) ? (

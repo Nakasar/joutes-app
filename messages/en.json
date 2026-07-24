@@ -1239,6 +1239,7 @@
         "personalHeading": "My wishlists",
         "newPlaceholder": "New wishlist…",
         "inWishlist": "Already in a wishlist",
+        "quantityIncreased": "Quantity increased in \"{wishlist}\" (×{quantity})",
         "added": "Added to \"{wishlist}\""
       },
       "export": {
