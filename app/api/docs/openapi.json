@@ -7217,6 +7217,11 @@
                     "type": "string",
                     "nullable": true
                   },
+                  "gameId": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Jeu associé au tournoi ; null pour le retirer."
+                  },
                   "settings": {
                     "type": "object",
                     "properties": {

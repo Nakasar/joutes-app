@@ -27,6 +27,8 @@ export const createTournamentSchema = z.object({
 export const updateTournamentSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   status: z.enum(["draft", "in-progress", "completed"]).optional(),
+  // null = retirer le jeu associé au tournoi.
+  gameId: z.string().nullable().optional(),
   currentPhaseId: z.string().nullable().optional(),
   settings: z
     .object({
