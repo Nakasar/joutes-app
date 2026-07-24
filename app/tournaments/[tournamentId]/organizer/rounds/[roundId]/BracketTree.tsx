@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { compareBracketPositions } from "@/lib/utils/pairing";
 import type { TournamentMatch, TournamentRound } from "@/lib/types/Tournament";
 import { PlayerNameTag } from "../../../PlayerNameTag";
 
@@ -33,11 +34,14 @@ function stageLabel(slotCount: number, columnIndex: number): string {
 }
 
 // Ordre des matchs d'une ronde de bracket : reflète generateNextBracketRound
-// (tri par bracketPosition, sinon par id) pour que les vainqueurs des matchs
+// (même comparateur de bracketPosition) pour que les vainqueurs des matchs
 // 2i et 2i+1 alimentent bien le match i de la colonne suivante.
 function sortBracketMatches(matches: TournamentMatch[]): TournamentMatch[] {
   return [...matches].sort((a, b) =>
-    (a.bracketPosition || a.id).localeCompare(b.bracketPosition || b.id)
+    compareBracketPositions(
+      { matchId: a.id, bracketPosition: a.bracketPosition },
+      { matchId: b.id, bracketPosition: b.bracketPosition }
+    )
   );
 }
 

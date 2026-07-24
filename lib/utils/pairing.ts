@@ -375,6 +375,21 @@ export function calculateBracketRounds(numPlayers: number): number {
   return Math.ceil(Math.log2(numPlayers));
 }
 
+// Comparateur des positions de bracket, à tri numérique (R2 avant R10) pour
+// les colonnes de 10 matchs et plus. Partagé entre la génération des rondes et
+// l'affichage de l'arbre pour que les deux ordonnent les matchs à l'identique.
+const bracketPositionCollator = new Intl.Collator("en", { numeric: true });
+
+export function compareBracketPositions(
+  a: Pick<PairingMatch, "matchId" | "bracketPosition">,
+  b: Pick<PairingMatch, "matchId" | "bracketPosition">
+): number {
+  return bracketPositionCollator.compare(
+    a.bracketPosition || a.matchId,
+    b.bracketPosition || b.matchId
+  );
+}
+
 /**
  * Génère les pairings pour la ronde suivante d'un bracket en utilisant les vainqueurs
  * @param previousRoundMatches - Matchs de la ronde précédente
@@ -383,14 +398,9 @@ export function calculateBracketRounds(numPlayers: number): number {
 export function generateNextBracketRound(
   previousRoundMatches: PairingMatch[]
 ): PairingResult[] {
-  // Récupérer les vainqueurs de la ronde précédente dans l'ordre
-  const winners = previousRoundMatches
-    .sort((a, b) => {
-      // Trier par bracketPosition ou matchId pour maintenir l'ordre
-      const posA = a.bracketPosition || a.matchId;
-      const posB = b.bracketPosition || b.matchId;
-      return posA.localeCompare(posB);
-    })
+  // Récupérer les vainqueurs de la ronde précédente dans l'ordre du bracket
+  const winners = [...previousRoundMatches]
+    .sort(compareBracketPositions)
     .map(match => {
       // Si le match a un vainqueur, le retourner
       if (match.winnerId) {
