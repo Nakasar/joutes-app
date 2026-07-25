@@ -1549,6 +1549,28 @@
     }
   },
   "Tournaments": {
+    "eventLink": {
+      "title": "Torneo",
+      "portalButton": "Portale del torneo",
+      "openOrganizerPortal": "Apri il portale organizzatore",
+      "noneLinked": "Nessun torneo è dichiarato per questo evento.",
+      "selectPlaceholder": "Scegli un torneo",
+      "noTournaments": "Non organizzi nessun torneo disponibile.",
+      "linkButton": "Collega il torneo",
+      "unlink": "Scollega il torneo",
+      "importButton": "Importa gli iscritti",
+      "importing": "Importazione in corso...",
+      "importConfirm": "Conferma l'importazione",
+      "importDialogTitle": "Importa gli iscritti dell'evento",
+      "importDialogDescription": "Il torneo ha già dei giocatori. Verifica le aggiunte e i cambi di stato prima di confermare.",
+      "toAddTitle": "Giocatori da aggiungere ({count})",
+      "noneToAdd": "Nessun giocatore da aggiungere.",
+      "toUpdateTitle": "Stati da aggiornare ({count})",
+      "noneToUpdate": "Nessun cambio di stato.",
+      "unchangedCount": "{count} giocatore/i già aggiornato/i.",
+      "importSuccess": "Importazione completata: {added} giocatore/i aggiunto/i, {updated} stato/i aggiornato/i.",
+      "importError": "Errore durante l'importazione degli iscritti"
+    },
     "common": {
       "tournamentStatus": {
         "draft": "In arrivo",

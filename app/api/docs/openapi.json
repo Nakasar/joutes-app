@@ -7222,6 +7222,11 @@
                     "nullable": true,
                     "description": "Jeu associé au tournoi ; null pour le retirer."
                   },
+                  "eventId": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Événement qui déclare ce tournoi (l'appelant doit gérer l'événement) ; null pour détacher."
+                  },
                   "settings": {
                     "type": "object",
                     "properties": {
@@ -7309,6 +7314,159 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/tournaments/{tournamentId}/import-event-players": {
+      "parameters": [
+        {
+          "name": "tournamentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Aperçu de l'import des inscrits de l'événement lié",
+        "description": "Organisateur uniquement. Le tournoi doit être lié à un événement (409 sinon). Renvoie les joueurs qui seront ajoutés (avec leur statut), les joueurs existants dont le statut va changer, et les compteurs.",
+        "responses": {
+          "200": {
+            "description": "Plan d'import",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "event": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "toAdd": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "displayName": {
+                            "type": "string"
+                          },
+                          "userId": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "registered",
+                              "pre-registered",
+                              "dropped"
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "toUpdate": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "playerId": {
+                            "type": "string"
+                          },
+                          "displayName": {
+                            "type": "string"
+                          },
+                          "discriminator": {
+                            "type": "string"
+                          },
+                          "currentStatus": {
+                            "type": "string",
+                            "enum": [
+                              "registered",
+                              "pre-registered",
+                              "dropped"
+                            ]
+                          },
+                          "newStatus": {
+                            "type": "string",
+                            "enum": [
+                              "registered",
+                              "pre-registered",
+                              "dropped"
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "unchangedCount": {
+                      "type": "integer"
+                    },
+                    "existingPlayersCount": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "403": {
+            "description": "Non organisateur"
+          },
+          "409": {
+            "description": "Tournoi lié à aucun événement"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Importe les inscrits de l'événement lié dans le tournoi",
+        "description": "Organisateur uniquement. Inscrit les participants absents avec le statut déduit de leur inscription à l'événement (REGISTERED → registered, PRE_REGISTERED → pre-registered, EXCLUDED → dropped) et aligne le statut des joueurs déjà inscrits.",
+        "responses": {
+          "200": {
+            "description": "Résultat de l'import",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "added": {
+                      "type": "integer"
+                    },
+                    "updated": {
+                      "type": "integer"
+                    },
+                    "unchangedCount": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "403": {
+            "description": "Non organisateur"
+          },
+          "409": {
+            "description": "Tournoi lié à aucun événement"
           }
         }
       }

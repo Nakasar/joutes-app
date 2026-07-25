@@ -21,6 +21,7 @@ import {
   TournamentMatchPlayer,
   TournamentPhase,
   TournamentPhaseDb,
+  TournamentPlayerStatus,
   TournamentPlayer,
   TournamentPlayerDb,
   TournamentResultMode,
@@ -433,6 +434,15 @@ export function isTournamentOrganizer(tournament: Tournament, userId: string): b
   return tournament.createdBy === userId || tournament.organizerIds.includes(userId);
 }
 
+// Tournoi déclaré par un événement (lien via Tournament.eventId). En cas de
+// doublon inattendu, renvoie le plus récent.
+export async function getTournamentByEventId(eventId: string): Promise<Tournament | null> {
+  const doc = await db
+    .collection<TournamentDb>(TOURNAMENTS)
+    .findOne({ eventId }, { sort: { createdAt: -1 } });
+  return doc ? toTournament(doc) : null;
+}
+
 /**
  * Tournois où l'utilisateur est inscrit comme joueur (via son compte). Permet
  * au portail « Mes tournois » de lister ses tournois sans dépendre d'une clé
@@ -553,6 +563,8 @@ export async function updateTournament(
     currentPhaseId?: string | null;
     // null = retirer le jeu associé.
     gameId?: string | null;
+    // null = détacher le tournoi de son événement.
+    eventId?: string | null;
     settings?: Partial<Tournament["settings"]>;
     organizerIds?: string[];
   }
@@ -573,6 +585,11 @@ export async function updateTournament(
     unset.gameId = "";
   } else if (updates.gameId !== undefined) {
     set.gameId = updates.gameId;
+  }
+  if (updates.eventId === null) {
+    unset.eventId = "";
+  } else if (updates.eventId !== undefined) {
+    set.eventId = updates.eventId;
   }
   if (updates.settings?.allowSelfReporting !== undefined) {
     set["settings.allowSelfReporting"] = updates.settings.allowSelfReporting;
@@ -973,6 +990,112 @@ export async function updatePlayer(
     throw new TournamentError("not-found", "Joueur non trouvé");
   }
   return toPlayer(result);
+}
+
+// Participant d'un événement candidat à l'import dans le tournoi lié, avec le
+// statut de joueur de tournoi déduit de son statut d'inscription à l'événement.
+export type EventImportCandidate = {
+  userId?: string;
+  displayName: string;
+  status: TournamentPlayerStatus;
+};
+
+export type EventImportPlan = {
+  // Participants absents du tournoi, à inscrire avec leur statut.
+  toAdd: { displayName: string; userId?: string; status: TournamentPlayerStatus }[];
+  // Joueurs déjà inscrits dont le statut va changer.
+  toUpdate: {
+    playerId: string;
+    displayName: string;
+    discriminator?: string;
+    currentStatus: TournamentPlayerStatus;
+    newStatus: TournamentPlayerStatus;
+  }[];
+  // Joueurs déjà inscrits dont le statut est déjà le bon.
+  unchangedCount: number;
+  // Nombre total de joueurs actuellement inscrits au tournoi.
+  existingPlayersCount: number;
+};
+
+/**
+ * Calcule le plan d'import des participants d'un événement dans le tournoi :
+ * rapprochement par userId (comptes) puis par nom affiché (invités, insensible
+ * à la casse). Ne modifie rien : sert d'aperçu avant applyEventPlayersImport.
+ */
+export async function planEventPlayersImport(
+  tournamentId: string,
+  candidates: EventImportCandidate[]
+): Promise<EventImportPlan> {
+  const players = await listPlayers(tournamentId);
+  const byUserId = new Map(players.filter((p) => p.userId).map((p) => [p.userId as string, p]));
+  const byName = new Map(players.map((p) => [p.displayName.trim().toLowerCase(), p]));
+
+  const plan: EventImportPlan = {
+    toAdd: [],
+    toUpdate: [],
+    unchangedCount: 0,
+    existingPlayersCount: players.length,
+  };
+  const matchedPlayerIds = new Set<string>();
+
+  for (const candidate of candidates) {
+    const existing =
+      (candidate.userId && byUserId.get(candidate.userId)) ||
+      byName.get(candidate.displayName.trim().toLowerCase());
+    if (!existing || matchedPlayerIds.has(existing.id)) {
+      plan.toAdd.push({
+        displayName: candidate.displayName,
+        userId: candidate.userId,
+        status: candidate.status,
+      });
+      continue;
+    }
+    matchedPlayerIds.add(existing.id);
+    if (existing.status === candidate.status) {
+      plan.unchangedCount++;
+    } else {
+      plan.toUpdate.push({
+        playerId: existing.id,
+        displayName: existing.displayName,
+        discriminator: existing.discriminator,
+        currentStatus: existing.status,
+        newStatus: candidate.status,
+      });
+    }
+  }
+
+  return plan;
+}
+
+/**
+ * Applique l'import des participants d'un événement : inscrit les absents avec
+ * leur statut et aligne le statut des joueurs déjà inscrits. Le plan est
+ * recalculé au moment de l'application (l'aperçu peut dater).
+ */
+export async function applyEventPlayersImport(
+  tournamentId: string,
+  candidates: EventImportCandidate[],
+  addedBy: string
+): Promise<{ added: number; updated: number; unchangedCount: number }> {
+  const plan = await planEventPlayersImport(tournamentId, candidates);
+
+  for (const entry of plan.toAdd) {
+    await addPlayer(tournamentId, {
+      displayName: entry.displayName,
+      userId: entry.userId,
+      status: entry.status,
+      addedBy,
+    });
+  }
+  for (const entry of plan.toUpdate) {
+    await updatePlayer(tournamentId, entry.playerId, { status: entry.newStatus });
+  }
+
+  return {
+    added: plan.toAdd.length,
+    updated: plan.toUpdate.length,
+    unchangedCount: plan.unchangedCount,
+  };
 }
 
 export async function removePlayer(tournamentId: string, playerId: string): Promise<void> {

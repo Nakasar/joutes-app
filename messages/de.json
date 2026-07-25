@@ -1524,6 +1524,28 @@
     }
   },
   "Tournaments": {
+    "eventLink": {
+      "title": "Turnier",
+      "portalButton": "Turnierportal",
+      "openOrganizerPortal": "Organisatorportal öffnen",
+      "noneLinked": "Für diese Veranstaltung ist kein Turnier deklariert.",
+      "selectPlaceholder": "Turnier auswählen",
+      "noTournaments": "Sie organisieren kein verfügbares Turnier.",
+      "linkButton": "Turnier verknüpfen",
+      "unlink": "Turnier trennen",
+      "importButton": "Angemeldete importieren",
+      "importing": "Import läuft...",
+      "importConfirm": "Import bestätigen",
+      "importDialogTitle": "Angemeldete der Veranstaltung importieren",
+      "importDialogDescription": "Das Turnier hat bereits Spieler. Prüfen Sie die Ergänzungen und Statusänderungen vor der Bestätigung.",
+      "toAddTitle": "Hinzuzufügende Spieler ({count})",
+      "noneToAdd": "Kein Spieler hinzuzufügen.",
+      "toUpdateTitle": "Zu aktualisierende Status ({count})",
+      "noneToUpdate": "Keine Statusänderung.",
+      "unchangedCount": "{count} Spieler bereits aktuell.",
+      "importSuccess": "Import abgeschlossen: {added} Spieler hinzugefügt, {updated} Status aktualisiert.",
+      "importError": "Fehler beim Importieren der Angemeldeten"
+    },
     "common": {
       "tournamentStatus": {
         "draft": "Bevorstehend",

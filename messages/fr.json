@@ -1608,6 +1608,28 @@
     }
   },
   "Tournaments": {
+    "eventLink": {
+      "title": "Tournoi",
+      "portalButton": "Portail du tournoi",
+      "openOrganizerPortal": "Ouvrir le portail organisateur",
+      "noneLinked": "Aucun tournoi n'est déclaré pour cet événement.",
+      "selectPlaceholder": "Choisir un tournoi",
+      "noTournaments": "Vous n'organisez aucun tournoi disponible.",
+      "linkButton": "Lier le tournoi",
+      "unlink": "Détacher le tournoi",
+      "importButton": "Importer les inscrits",
+      "importing": "Import en cours...",
+      "importConfirm": "Confirmer l'import",
+      "importDialogTitle": "Importer les inscrits de l'événement",
+      "importDialogDescription": "Le tournoi contient déjà des joueurs. Vérifiez les ajouts et les changements de statut avant de confirmer.",
+      "toAddTitle": "Joueurs à ajouter ({count})",
+      "noneToAdd": "Aucun joueur à ajouter.",
+      "toUpdateTitle": "Statuts à mettre à jour ({count})",
+      "noneToUpdate": "Aucun changement de statut.",
+      "unchangedCount": "{count} joueur(s) déjà à jour.",
+      "importSuccess": "Import terminé : {added} joueur(s) ajouté(s), {updated} statut(s) mis à jour.",
+      "importError": "Erreur lors de l'import des inscrits"
+    },
     "common": {
       "tournamentStatus": {
         "draft": "À venir",
