@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateApiRequest } from "@/lib/api/authenticate";
 import {
   advanceToNextPhase,
-  assertIsOrganizer,
+  assertCanManage,
   getNextPhaseTransition,
   requireTournament,
 } from "@/lib/db/tournaments";
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest, { params }: Params) {
   try {
     const { tournamentId } = await params;
     const tournament = await requireTournament(tournamentId);
-    assertIsOrganizer(tournament, user.userId);
+    assertCanManage(tournament, user.userId);
 
     const transition = await getNextPhaseTransition(tournamentId);
     return NextResponse.json(transition);
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest, { params }: Params) {
   try {
     const { tournamentId } = await params;
     const tournament = await requireTournament(tournamentId);
-    assertIsOrganizer(tournament, user.userId);
+    assertCanManage(tournament, user.userId);
 
     const { round, matches } = await advanceToNextPhase(tournamentId, user.userId);
     return NextResponse.json({ ...round, matches }, { status: 201 });

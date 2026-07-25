@@ -73,7 +73,10 @@ export type Tournament = {
     preRegistration: boolean;
   };
   createdBy: string;
+  // Staff du tournoi. Les organisateurs (créateur inclus) ont tous les droits ;
+  // les arbitres ont tous les droits sauf supprimer le tournoi et gérer le staff.
   organizerIds: string[];
+  judgeIds: string[];
   createdAt: Date;
   updatedAt?: Date;
 };

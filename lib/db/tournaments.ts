@@ -44,6 +44,7 @@ import {
 import {
   createInvitedUserByEmail,
   getUserByEmail,
+  getUserById,
   getUserByUsernameAndDiscriminator,
   getUserDiscriminator,
 } from "@/lib/db/users";
@@ -136,6 +137,8 @@ function toTournament(doc: WithId<TournamentDb>): Tournament {
     },
     createdBy: doc.createdBy,
     organizerIds: doc.organizerIds,
+    // Défaut pour les tournois créés avant l'introduction des arbitres.
+    judgeIds: doc.judgeIds ?? [],
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };
@@ -358,6 +361,7 @@ export async function createTournament(data: {
       settings: data.settings,
       createdBy: data.createdBy,
       organizerIds: [data.createdBy],
+      judgeIds: [],
       createdAt: new Date(),
     };
     try {
@@ -434,6 +438,22 @@ export function isTournamentOrganizer(tournament: Tournament, userId: string): b
   return tournament.createdBy === userId || tournament.organizerIds.includes(userId);
 }
 
+export function isTournamentJudge(tournament: Tournament, userId: string): boolean {
+  return tournament.judgeIds.includes(userId);
+}
+
+// Organisateurs et arbitres gèrent le tournoi (rondes, matchs, joueurs,
+// réglages…). Seuls les organisateurs peuvent le supprimer et gérer le staff.
+export function canManageTournament(tournament: Tournament, userId: string): boolean {
+  return isTournamentOrganizer(tournament, userId) || isTournamentJudge(tournament, userId);
+}
+
+export function assertCanManage(tournament: Tournament, userId: string): void {
+  if (!canManageTournament(tournament, userId)) {
+    throw new TournamentError("forbidden", "Réservé aux organisateurs et arbitres du tournoi");
+  }
+}
+
 // Tournoi déclaré par un événement (lien via Tournament.eventId). En cas de
 // doublon inattendu, renvoie le plus récent.
 export async function getTournamentByEventId(eventId: string): Promise<Tournament | null> {
@@ -477,9 +497,9 @@ async function isTournamentPlayer(tournamentId: ObjectId, userId: string): Promi
   return !!player;
 }
 
-// Read access: organizers and registered players.
+// Read access: staff (organisateurs, arbitres) and registered players.
 export async function assertCanReadTournament(tournament: Tournament, userId: string): Promise<void> {
-  if (isTournamentOrganizer(tournament, userId)) return;
+  if (canManageTournament(tournament, userId)) return;
   if (await isTournamentPlayer(new ObjectId(tournament.id), userId)) return;
   throw new TournamentError("forbidden", "Accès non autorisé à ce tournoi");
 }
@@ -503,8 +523,9 @@ export async function assertPrincipalCanRead(
   await assertCanReadTournament(tournament, principal.userId);
 }
 
+// Le principal est-il un membre du staff (organisateur ou arbitre) ?
 export function principalIsOrganizer(tournament: Tournament, principal: TournamentPrincipal): boolean {
-  return principal.kind === "user" && isTournamentOrganizer(tournament, principal.userId);
+  return principal.kind === "user" && canManageTournament(tournament, principal.userId);
 }
 
 // Acteur d'une opération de match : identité enregistrée dans
@@ -536,7 +557,7 @@ export async function buildMatchActor(
     id: principal.userId,
     playerIds,
     identityIds: [principal.userId, ...playerIds],
-    isOrganizer: isTournamentOrganizer(tournament, principal.userId),
+    isOrganizer: canManageTournament(tournament, principal.userId),
   };
 }
 
@@ -544,6 +565,117 @@ export function assertIsOrganizer(tournament: Tournament, userId: string): void 
   if (!isTournamentOrganizer(tournament, userId)) {
     throw new TournamentError("forbidden", "Réservé aux organisateurs du tournoi");
   }
+}
+
+// =====================
+// STAFF (organisateurs / arbitres)
+// =====================
+
+export type TournamentStaffRole = "organizer" | "judge";
+
+export type TournamentStaffEntry = {
+  userId: string;
+  displayName: string;
+  discriminator?: string;
+  role: TournamentStaffRole;
+  isCreator: boolean;
+};
+
+// Staff du tournoi (créateur, organisateurs, arbitres) avec les noms résolus.
+export async function listTournamentStaff(tournament: Tournament): Promise<TournamentStaffEntry[]> {
+  const organizerIds = [...new Set([tournament.createdBy, ...tournament.organizerIds])];
+  const judgeIds = tournament.judgeIds.filter((id) => !organizerIds.includes(id));
+
+  const entries: TournamentStaffEntry[] = [];
+  for (const [ids, role] of [
+    [organizerIds, "organizer"],
+    [judgeIds, "judge"],
+  ] as const) {
+    for (const userId of ids) {
+      const user = await getUserById(userId);
+      entries.push({
+        userId,
+        displayName: user?.displayName || user?.username || "Utilisateur inconnu",
+        discriminator: user?.discriminator,
+        role,
+        isCreator: userId === tournament.createdBy,
+      });
+    }
+  }
+  return entries;
+}
+
+/**
+ * Ajoute (ou change de rôle) un membre du staff, désigné par email ou tag
+ * `username#discriminator`. L'utilisateur doit déjà avoir un compte. Le
+ * créateur reste organisateur quoi qu'il arrive.
+ */
+export async function addTournamentStaff(
+  tournamentId: string,
+  identifier: string,
+  role: TournamentStaffRole
+): Promise<TournamentStaffEntry> {
+  const tournament = await requireTournament(tournamentId);
+  const trimmed = identifier.trim();
+
+  let user;
+  if (trimmed.includes("@")) {
+    user = await getUserByEmail(trimmed);
+  } else if (trimmed.includes("#")) {
+    const hashIndex = trimmed.indexOf("#");
+    const username = trimmed.slice(0, hashIndex).trim();
+    const discriminator = trimmed.slice(hashIndex + 1).trim();
+    if (!username || !/^\d{4}$/.test(discriminator)) {
+      throw new TournamentError("invalid", "Tag invalide : utilisez le format username#0000");
+    }
+    user = await getUserByUsernameAndDiscriminator(username, discriminator);
+  } else {
+    throw new TournamentError(
+      "invalid",
+      "Désignez le membre du staff par email ou par tag username#0000"
+    );
+  }
+  if (!user) {
+    throw new TournamentError("not-found", `Utilisateur ${trimmed} non trouvé`);
+  }
+  if (user.id === tournament.createdBy) {
+    throw new TournamentError("conflict", "Le créateur du tournoi est déjà organisateur");
+  }
+
+  // Change de rôle idempotent : retiré des deux listes puis ajouté à la bonne.
+  const organizerIds = tournament.organizerIds.filter((id) => id !== user.id);
+  const judgeIds = tournament.judgeIds.filter((id) => id !== user.id);
+  (role === "organizer" ? organizerIds : judgeIds).push(user.id);
+
+  await db.collection<TournamentDb>(TOURNAMENTS).updateOne(
+    { _id: new ObjectId(tournamentId) },
+    { $set: { organizerIds, judgeIds, updatedAt: new Date() } }
+  );
+
+  return {
+    userId: user.id,
+    displayName: user.displayName || user.username,
+    discriminator: user.discriminator,
+    role,
+    isCreator: false,
+  };
+}
+
+export async function removeTournamentStaff(tournamentId: string, userId: string): Promise<void> {
+  const tournament = await requireTournament(tournamentId);
+  if (userId === tournament.createdBy) {
+    throw new TournamentError("conflict", "Le créateur du tournoi ne peut pas être retiré du staff");
+  }
+  await db.collection<TournamentDb>(TOURNAMENTS).updateOne(
+    { _id: new ObjectId(tournamentId) },
+    {
+      $set: {
+        organizerIds: tournament.organizerIds.filter((id) => id !== userId),
+        judgeIds: tournament.judgeIds.filter((id) => id !== userId),
+        updatedAt: new Date(),
+      },
+    }
+  );
 }
 
 // Loads the tournament or throws; use this at the top of every sub-resource operation.

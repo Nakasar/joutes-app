@@ -1608,6 +1608,18 @@
     }
   },
   "Tournaments": {
+    "staff": {
+      "title": "Staff du tournoi",
+      "creator": "Créateur",
+      "roleOrganizer": "Organisateur",
+      "roleJudge": "Arbitre",
+      "identifierPlaceholder": "Email ou username#0000",
+      "addButton": "Ajouter",
+      "addHint": "Les organisateurs ont tous les droits sur le tournoi ; les arbitres ne peuvent pas le supprimer ni gérer le staff. L'utilisateur doit déjà avoir un compte.",
+      "addError": "Erreur lors de l'ajout au staff",
+      "removeError": "Erreur lors du retrait du staff",
+      "removeAria": "Retirer {name} du staff"
+    },
     "eventLink": {
       "title": "Tournoi",
       "portalButton": "Portail du tournoi",

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateApiRequest } from "@/lib/api/authenticate";
 import {
   assertPrincipalCanRead,
-  assertIsOrganizer,
+  assertCanManage,
   createNextRound,
   listRounds,
   requireTournament,
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest, { params }: Params) {
   try {
     const { tournamentId, phaseId } = await params;
     const tournament = await requireTournament(tournamentId);
-    assertIsOrganizer(tournament, user.userId);
+    assertCanManage(tournament, user.userId);
 
     const { round, matches } = await createNextRound(tournamentId, phaseId, user.userId);
     return NextResponse.json({ ...round, matches }, { status: 201 });

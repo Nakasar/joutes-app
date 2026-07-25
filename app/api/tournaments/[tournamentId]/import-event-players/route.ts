@@ -5,7 +5,7 @@ import db from "@/lib/mongodb";
 import { getEventById } from "@/lib/db/events";
 import {
   applyEventPlayersImport,
-  assertIsOrganizer,
+  assertCanManage,
   planEventPlayersImport,
   requireTournament,
   type EventImportCandidate,
@@ -71,7 +71,7 @@ async function loadContext(request: NextRequest, tournamentId: string) {
   if (!user) return { error: unauthorizedResponse() };
 
   const tournament = await requireTournament(tournamentId);
-  assertIsOrganizer(tournament, user.userId);
+  assertCanManage(tournament, user.userId);
 
   if (!tournament.eventId) {
     return {

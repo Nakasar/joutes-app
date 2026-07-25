@@ -3,6 +3,7 @@ import { authenticateApiRequest } from "@/lib/api/authenticate";
 import { getEventById } from "@/lib/db/events";
 import { updateTournamentSchema } from "@/lib/schemas/tournament.schema";
 import {
+  assertCanManage,
   assertIsOrganizer,
   assertPrincipalCanRead,
   deleteTournament,
@@ -48,10 +49,16 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   try {
     const { tournamentId } = await params;
     const tournament = await requireTournament(tournamentId);
-    assertIsOrganizer(tournament, user.userId);
+    assertCanManage(tournament, user.userId);
 
     const body = await request.json();
     const validated = updateTournamentSchema.parse(body);
+
+    // La modification du staff reste réservée aux organisateurs : un arbitre
+    // pourrait sinon s'octroyer le rôle d'organisateur (et donc la suppression).
+    if (validated.organizerIds !== undefined) {
+      assertIsOrganizer(tournament, user.userId);
+    }
 
     // Lier le tournoi à un événement requiert de pouvoir gérer cet événement
     // (créateur ou staff organisateur) : le lien fait apparaître le portail du

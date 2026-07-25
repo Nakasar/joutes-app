@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateApiRequest } from "@/lib/api/authenticate";
 import { updateTournamentPlayerSchema } from "@/lib/schemas/tournament.schema";
 import {
-  assertIsOrganizer,
+  assertCanManage,
   assertPrincipalCanRead,
   getPlayerById,
   principalIsOrganizer,
@@ -88,7 +88,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
   try {
     const { tournamentId, playerId } = await params;
     const tournament = await requireTournament(tournamentId);
-    assertIsOrganizer(tournament, user.userId);
+    assertCanManage(tournament, user.userId);
 
     await removePlayer(tournamentId, playerId);
     return NextResponse.json({ deleted: true });

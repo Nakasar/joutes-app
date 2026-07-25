@@ -1524,6 +1524,18 @@
     }
   },
   "Tournaments": {
+    "staff": {
+      "title": "Turnier-Staff",
+      "creator": "Ersteller",
+      "roleOrganizer": "Organisator",
+      "roleJudge": "Schiedsrichter",
+      "identifierPlaceholder": "E-Mail oder username#0000",
+      "addButton": "Hinzufügen",
+      "addHint": "Organisatoren haben alle Rechte am Turnier; Schiedsrichter können es nicht löschen und den Staff nicht verwalten. Der Benutzer muss bereits ein Konto haben.",
+      "addError": "Fehler beim Hinzufügen zum Staff",
+      "removeError": "Fehler beim Entfernen aus dem Staff",
+      "removeAria": "{name} aus dem Staff entfernen"
+    },
     "eventLink": {
       "title": "Turnier",
       "portalButton": "Turnierportal",

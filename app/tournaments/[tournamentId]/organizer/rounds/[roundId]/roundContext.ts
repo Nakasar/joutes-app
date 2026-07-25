@@ -5,7 +5,7 @@ import {
   getPhaseById,
   getRoundById,
   getTournamentById,
-  isTournamentOrganizer,
+  canManageTournament,
   listMatchesByRound,
   listPhases,
   listPlayers,
@@ -25,7 +25,7 @@ export async function loadOrganizerRoundContext(tournamentId: string, roundId: s
 
   const tournament = await getTournamentById(tournamentId);
   if (!tournament) notFound();
-  if (!isTournamentOrganizer(tournament, session.user.id)) redirect("/tournaments");
+  if (!canManageTournament(tournament, session.user.id)) redirect("/tournaments");
 
   const round = await getRoundById(tournamentId, roundId);
   if (!round) notFound();

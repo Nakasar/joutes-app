@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import {
   ensureJoinCode,
   getTournamentById,
-  isTournamentOrganizer,
+  canManageTournament,
   listPlayers,
 } from "@/lib/db/tournaments";
 import { OrganizerShell } from "../OrganizerShell";
@@ -22,7 +22,7 @@ export default async function OrganizerPlayersPage({
 
   const tournament = await getTournamentById(tournamentId);
   if (!tournament) notFound();
-  if (!isTournamentOrganizer(tournament, session.user.id)) redirect("/tournaments");
+  if (!canManageTournament(tournament, session.user.id)) redirect("/tournaments");
 
   const [players, joinCode] = await Promise.all([
     listPlayers(tournamentId),

@@ -3,7 +3,7 @@ import { authenticateApiRequest } from "@/lib/api/authenticate";
 import { addTournamentPlayerSchema } from "@/lib/schemas/tournament.schema";
 import {
   addPlayerByIdentifier,
-  assertIsOrganizer,
+  assertCanManage,
   assertPrincipalCanRead,
   listPlayers,
   principalIsOrganizer,
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try {
     const { tournamentId } = await params;
     const tournament = await requireTournament(tournamentId);
-    assertIsOrganizer(tournament, user.userId);
+    assertCanManage(tournament, user.userId);
 
     const body = await request.json();
     const validated = addTournamentPlayerSchema.parse(body);

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateApiRequest } from "@/lib/api/authenticate";
 import { timerActionSchema } from "@/lib/schemas/tournament.schema";
 import {
-  assertIsOrganizer,
+  assertCanManage,
   pauseTimer,
   requireTournament,
   resumeTimer,
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest, { params }: Params) {
   try {
     const { tournamentId } = await params;
     const tournament = await requireTournament(tournamentId);
-    assertIsOrganizer(tournament, user.userId);
+    assertCanManage(tournament, user.userId);
 
     const body = await request.json();
     const validated = timerActionSchema.parse(body);
