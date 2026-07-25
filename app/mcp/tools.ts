@@ -354,10 +354,10 @@ async function handleGetWishlist(
     const userId = userIdFrom(extra);
 
     const wishlist = await getWishlistById(args.wishlistId);
-    if (!wishlist) return errorResult("Wishlist non trouvée.");
-
-    const access = await getWishlistAccess(wishlist, userId);
-    if (!access.canView) return errorResult("Vous n'avez pas accès à cette wishlist.");
+    // Une wishlist privée inaccessible est indistinguable d'une wishlist
+    // inexistante (anti-énumération d'IDs, comme les routes API).
+    const access = wishlist ? await getWishlistAccess(wishlist, userId) : null;
+    if (!wishlist || !access?.canView) return errorResult("Wishlist non trouvée.");
 
     const page = Math.max(1, args.page ?? 1);
     const items = await getWishlistItems(args.wishlistId, {
@@ -404,10 +404,13 @@ async function requireEditableWishlist(
     userId: string
 ): Promise<{ wishlist: Wishlist } | { error: ToolResult }> {
     const wishlist = await getWishlistById(wishlistId);
-    if (!wishlist) {
+    // Une wishlist privée inaccessible est indistinguable d'une wishlist
+    // inexistante (anti-énumération d'IDs, comme les routes API). Le refus
+    // d'édition n'est explicité que si la wishlist est au moins visible.
+    const access = wishlist ? await getWishlistAccess(wishlist, userId) : null;
+    if (!wishlist || !access?.canView) {
         return { error: errorResult("Wishlist non trouvée.") };
     }
-    const access = await getWishlistAccess(wishlist, userId);
     if (!access.canEdit) {
         return { error: errorResult("Vous n'avez pas le droit de modifier cette wishlist.") };
     }
@@ -469,15 +472,26 @@ async function handleRemoveCardFromWishlist(
         if (!args.cardName) {
             return errorResult("Précisez itemId ou cardName pour retirer une carte.");
         }
-        const doc = await db.collection("wishlist-items").findOne({
-            wishlistId: new ObjectId(args.wishlistId),
-            name: { $regex: `^${escapeRegex(args.cardName)}$`, $options: "i" },
-        });
-        if (!doc) {
+        const docs = await db.collection("wishlist-items")
+            .find({
+                wishlistId: new ObjectId(args.wishlistId),
+                name: { $regex: `^${escapeRegex(args.cardName)}$`, $options: "i" },
+            })
+            .limit(10)
+            .toArray();
+        if (docs.length === 0) {
             return errorResult(`Aucune carte "${args.cardName}" dans cette wishlist.`);
         }
-        itemId = doc._id.toString();
-        itemName = doc.name as string;
+        // Plusieurs items peuvent partager un nom (jeux ou impressions
+        // différents) : on refuse de choisir arbitrairement.
+        if (docs.length > 1) {
+            return errorResult(
+                `Plusieurs cartes "${args.cardName}" dans cette wishlist. Précisez itemId parmi :\n` +
+                docs.map(d => `- ${d.name} (${d.setCode} #${d.collectorNumber}${d.gameName ? `, ${d.gameName}` : ""}) [ID: ${d._id.toString()}]`).join("\n")
+            );
+        }
+        itemId = docs[0]._id.toString();
+        itemName = docs[0].name as string;
     }
 
     const removed = await removeWishlistItem(args.wishlistId, itemId);
@@ -773,7 +787,7 @@ async function handleCheckDeck(args: { deckList: string; gameName?: string }): P
 
     return textResult(
         `Deck vérifié${issues ? ` — problèmes : ${issues}` : " — aucun problème détecté"}.\n\n${sections}\n\n` +
-        `Lien : https://joutes.app/games/riftbound/deck-checker?input=${code}\nCode : ${code}`
+        `Lien : https://joutes.app/games/riftbound/deck-checker?input=${encodeURIComponent(code)}\nCode : ${code}`
     );
 }
 
