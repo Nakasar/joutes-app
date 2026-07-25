@@ -589,6 +589,15 @@ export async function updateTournament(
   if (updates.eventId === null) {
     unset.eventId = "";
   } else if (updates.eventId !== undefined) {
+    // Un événement ne déclare qu'un seul tournoi : refuse la liaison si un
+    // autre tournoi est déjà lié à cet événement.
+    const alreadyLinked = await getTournamentByEventId(updates.eventId);
+    if (alreadyLinked && alreadyLinked.id !== tournamentId) {
+      throw new TournamentError(
+        "conflict",
+        `Un autre tournoi (« ${alreadyLinked.name} ») est déjà lié à cet événement`
+      );
+    }
     set.eventId = updates.eventId;
   }
   if (updates.settings?.allowSelfReporting !== undefined) {
@@ -1037,12 +1046,19 @@ export async function planEventPlayersImport(
     existingPlayersCount: players.length,
   };
   const matchedPlayerIds = new Set<string>();
+  // Candidats déjà planifiés (par compte ou par nom normalisé) : un même
+  // participant présent deux fois (ex. compte + invité) n'est traité qu'une
+  // seule fois au lieu de produire un ajout en doublon qui échouerait.
+  const plannedKeys = new Set<string>();
 
   for (const candidate of candidates) {
-    const existing =
-      (candidate.userId && byUserId.get(candidate.userId)) ||
-      byName.get(candidate.displayName.trim().toLowerCase());
-    if (!existing || matchedPlayerIds.has(existing.id)) {
+    const normalizedName = candidate.displayName.trim().toLowerCase();
+    const candidateKey = candidate.userId ?? `name:${normalizedName}`;
+    if (plannedKeys.has(candidateKey)) continue;
+    plannedKeys.add(candidateKey);
+
+    const existing = (candidate.userId && byUserId.get(candidate.userId)) || byName.get(normalizedName);
+    if (!existing) {
       plan.toAdd.push({
         displayName: candidate.displayName,
         userId: candidate.userId,
@@ -1050,6 +1066,8 @@ export async function planEventPlayersImport(
       });
       continue;
     }
+    // Joueur déjà rapproché par un candidat précédent : doublon, ignoré.
+    if (matchedPlayerIds.has(existing.id)) continue;
     matchedPlayerIds.add(existing.id);
     if (existing.status === candidate.status) {
       plan.unchangedCount++;
