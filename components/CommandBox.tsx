@@ -79,6 +79,9 @@ export function CommandBox() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const trimmed = query.trim();
     if (trimmed.length < 2) {
+      // Invalide aussi les requêtes en vol pour qu'une réponse tardive ne
+      // réinjecte pas de résultats alors que la saisie a été effacée.
+      requestIdRef.current++;
       setResults(EMPTY_RESULTS);
       setLoading(false);
       return;
@@ -104,8 +107,10 @@ export function CommandBox() {
   const onOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
     if (!nextOpen) {
+      requestIdRef.current++;
       setQuery("");
       setResults(EMPTY_RESULTS);
+      setLoading(false);
     }
   };
 
@@ -193,7 +198,7 @@ export function CommandBox() {
               ))}
             </CommandGroup>
           )}
-          {groups.map((group) =>
+          {hasQuery && groups.map((group) =>
             group.items.length > 0 ? (
               <CommandGroup key={group.key} heading={group.heading}>
                 {group.items.map((item) => (
