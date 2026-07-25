@@ -19,6 +19,7 @@ type ApiMatch = {
   status: "pending" | "in-progress" | "completed" | "disputed";
   reportedBy?: string;
   bracketPosition?: string;
+  tableNumber?: number;
 };
 type ApiRound = { id: string; number: number; status: string; matches: ApiMatch[] };
 
@@ -205,7 +206,12 @@ export default function TournamentPlayerMatchPage({
                 {t("player.myMatchRound", { number: round.number })}
                 {myMatch.bracketPosition ? ` (${myMatch.bracketPosition})` : ""}
               </span>
-              <Badge variant="outline">{matchStatusLabels[myMatch.status]}</Badge>
+              <span className="flex items-center gap-2">
+                {typeof myMatch.tableNumber === "number" && (
+                  <Badge>{t("player.tableNumber", { number: myMatch.tableNumber })}</Badge>
+                )}
+                <Badge variant="outline">{matchStatusLabels[myMatch.status]}</Badge>
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">

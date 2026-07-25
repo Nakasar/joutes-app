@@ -1686,6 +1686,7 @@
       "bestOfN": "best-of-{count}"
     },
     "player": {
+      "tableNumber": "Table {number}",
       "myRegistration": "My registration:",
       "statusRegistered": "REGISTERED",
       "statusDropped": "DROPPED",
@@ -1857,6 +1858,8 @@
       "viewPlayerPortal": "View the player portal →"
     },
     "organizerSettings": {
+      "firstTableLabel": "First table number",
+      "firstTableHint": "A round's matches are assigned to tables N, N+1, N+2… Players' fixed tables take precedence.",
       "title": "Settings",
       "statusLabel": "Tournament status",
       "gameLabel": "Game (optional)",
@@ -1879,6 +1882,8 @@
       "deleteError": "Error while deleting the tournament"
     },
     "organizerPlayers": {
+      "fixedTableAria": "Fixed table for {name}",
+      "fixedTableTitle": "Fixed table (kept for the whole tournament, empty = none)",
       "title": "Players ({registered} registered / {total})",
       "addPlaceholder": "Email, username#0000, or a guest name",
       "add": "Add",
@@ -1997,6 +2002,9 @@
       "standingsNotValidated": "Standings not validated"
     },
     "roundClient": {
+      "headerTable": "Table",
+      "tableAria": "Table number for match {match}",
+      "tableError": "Error while updating the table number",
       "totalMatches": "{count, plural, one {# match} other {# matches}}",
       "remainingMatches": "{count, plural, =0 {no missing result} one {# missing result} other {# missing results}}",
       "missingOnlyFilter": "Missing results",

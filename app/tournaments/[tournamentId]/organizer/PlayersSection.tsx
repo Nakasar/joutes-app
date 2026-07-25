@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Table as TableIcon, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -115,6 +115,21 @@ export function PlayersSection({
       await refreshPlayers();
     });
 
+  // Table fixe du joueur (conservée tout le tournoi) : saisie libre, vide =
+  // retirer. Enregistrée à la perte de focus si la valeur a changé.
+  const setFixedTable = (player: TournamentPlayer, raw: string) => {
+    const parsed = Number.parseInt(raw, 10);
+    const next = Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+    if (next === (player.fixedTableNumber ?? null)) return;
+    void run(async () => {
+      await api(`/api/tournaments/${tournamentId}/players/${player.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ fixedTableNumber: next }),
+      });
+      await refreshPlayers();
+    });
+  };
+
   return (
     <div className="space-y-4">
       {error && (
@@ -193,6 +208,27 @@ export function PlayersSection({
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2">
+                      <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <TableIcon className="h-4 w-4" aria-hidden="true" />
+                        <Input
+                          key={`${player.id}-${player.fixedTableNumber ?? ""}`}
+                          type="number"
+                          min={0}
+                          max={9999}
+                          className="h-8 w-20"
+                          defaultValue={player.fixedTableNumber ?? ""}
+                          placeholder="—"
+                          onBlur={(e) => setFixedTable(player, e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                          }}
+                          disabled={busy}
+                          aria-label={t("organizerPlayers.fixedTableAria", {
+                            name: player.displayName,
+                          })}
+                          title={t("organizerPlayers.fixedTableTitle")}
+                        />
+                      </label>
                       <PlayerSyncQRButton
                         tournamentId={tournamentId}
                         playerName={player.displayName}

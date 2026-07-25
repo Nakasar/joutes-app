@@ -112,6 +112,33 @@ export function OrganizerRoundClient({
     15
   );
 
+  // Modification manuelle du numéro de table d'un match (vide = retirer).
+  const setTable = (match: TournamentMatch, raw: string) => {
+    const parsed = Number.parseInt(raw, 10);
+    const next = Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+    if (next === (match.tableNumber ?? null)) return;
+    setBusy(true);
+    setError(null);
+    (async () => {
+      try {
+        const res = await fetch(`/api/tournaments/${tournamentId}/matches/${match.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "set-table", tableNumber: next }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error ?? t("roundClient.tableError"));
+        }
+        await refresh();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t("roundClient.tableError"));
+      } finally {
+        setBusy(false);
+      }
+    })();
+  };
+
   const refresh = useCallback(async () => {
     const res = await fetch(`/api/tournaments/${tournamentId}/rounds/${round.id}`);
     if (res.ok) {
@@ -391,6 +418,9 @@ export function OrganizerRoundClient({
                     {t("roundClient.headerMatch")}
                   </th>
                   <th className="px-3 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
+                    {t("roundClient.headerTable")}
+                  </th>
+                  <th className="px-3 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
                     {t("roundClient.headerStatus")}
                   </th>
                   <th className="px-3 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
@@ -423,6 +453,27 @@ export function OrganizerRoundClient({
                         })}
                         {isBye && (
                           <span className="text-muted-foreground">{` (${t("common.bye")})`}</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2">
+                        {isBye ? (
+                          <span className="text-muted-foreground">—</span>
+                        ) : (
+                          <Input
+                            key={`${match.id}-${match.tableNumber ?? ""}`}
+                            type="number"
+                            min={0}
+                            max={9999}
+                            className="h-8 w-20"
+                            defaultValue={match.tableNumber ?? ""}
+                            placeholder="—"
+                            onBlur={(e) => setTable(match, e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                            }}
+                            disabled={anyBusy}
+                            aria-label={t("roundClient.tableAria", { match: matchLabel(match) })}
+                          />
                         )}
                       </td>
                       <td className="px-3 py-2">
@@ -517,7 +568,7 @@ export function OrganizerRoundClient({
                 })}
                 {search.pageItems.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-3 py-3 text-center text-muted-foreground">
+                    <td colSpan={5} className="px-3 py-3 text-center text-muted-foreground">
                       {t("roundClient.noSearchResults")}
                     </td>
                   </tr>

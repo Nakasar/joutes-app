@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -52,10 +53,12 @@ export function SettingsSection({
   const [allowSelfReporting, setAllowSelfReporting] = useState(tournament.settings.allowSelfReporting);
   const [requireConfirmation, setRequireConfirmation] = useState(tournament.settings.requireConfirmation);
   const [preRegistration, setPreRegistration] = useState(tournament.settings.preRegistration);
+  const [firstTable, setFirstTable] = useState(String(tournament.settings.firstTableNumber ?? 1));
   const [savedSettings, setSavedSettings] = useState({
     allowSelfReporting: tournament.settings.allowSelfReporting,
     requireConfirmation: tournament.settings.requireConfirmation,
     preRegistration: tournament.settings.preRegistration,
+    firstTable: String(tournament.settings.firstTableNumber ?? 1),
   });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -107,15 +110,30 @@ export function SettingsSection({
   };
 
   const saveSettings = async () => {
-    if (await patch({ settings: { allowSelfReporting, requireConfirmation, preRegistration } })) {
-      setSavedSettings({ allowSelfReporting, requireConfirmation, preRegistration });
+    // Numéro de première table : entier ≥ 0, sinon retombe sur 1.
+    const parsedFirstTable = Number.parseInt(firstTable, 10);
+    const firstTableNumber =
+      Number.isFinite(parsedFirstTable) && parsedFirstTable >= 0 ? parsedFirstTable : 1;
+    if (
+      await patch({
+        settings: { allowSelfReporting, requireConfirmation, preRegistration, firstTableNumber },
+      })
+    ) {
+      setFirstTable(String(firstTableNumber));
+      setSavedSettings({
+        allowSelfReporting,
+        requireConfirmation,
+        preRegistration,
+        firstTable: String(firstTableNumber),
+      });
     }
   };
 
   const settingsDirty =
     allowSelfReporting !== savedSettings.allowSelfReporting ||
     requireConfirmation !== savedSettings.requireConfirmation ||
-    preRegistration !== savedSettings.preRegistration;
+    preRegistration !== savedSettings.preRegistration ||
+    firstTable !== savedSettings.firstTable;
 
   return (
     <div className="space-y-4">
@@ -214,6 +232,26 @@ export function SettingsSection({
                 id="setting-pre-registration"
                 checked={preRegistration}
                 onCheckedChange={setPreRegistration}
+                disabled={busy}
+              />
+            </div>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <Label htmlFor="setting-first-table">
+                  {t("organizerSettings.firstTableLabel")}
+                </Label>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t("organizerSettings.firstTableHint")}
+                </p>
+              </div>
+              <Input
+                id="setting-first-table"
+                type="number"
+                min={0}
+                max={9999}
+                className="w-24"
+                value={firstTable}
+                onChange={(e) => setFirstTable(e.target.value)}
                 disabled={busy}
               />
             </div>

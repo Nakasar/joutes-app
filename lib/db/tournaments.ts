@@ -134,6 +134,7 @@ function toTournament(doc: WithId<TournamentDb>): Tournament {
       requireConfirmation: doc.settings.requireConfirmation,
       // Défaut pour les tournois créés avant l'ajout du mode pré-inscription.
       preRegistration: doc.settings.preRegistration ?? false,
+      firstTableNumber: doc.settings.firstTableNumber,
     },
     createdBy: doc.createdBy,
     organizerIds: doc.organizerIds,
@@ -152,6 +153,7 @@ function toPlayer(doc: WithId<TournamentPlayerDb>): TournamentPlayer {
     displayName: doc.displayName,
     discriminator: doc.discriminator,
     seed: doc.seed,
+    fixedTableNumber: doc.fixedTableNumber,
     // Statuts connus conservés ; l'ancienne valeur "active" (avant renommage)
     // et toute valeur inattendue sont normalisées en "registered".
     status:
@@ -226,6 +228,7 @@ function toMatch(doc: WithId<TournamentMatchDb>): TournamentMatch {
     games: doc.games ?? [],
     winnerIds: doc.winnerIds ?? [],
     bracketPosition: doc.bracketPosition,
+    tableNumber: doc.tableNumber,
     status: doc.status,
     reportedBy: doc.reportedBy,
     confirmedBy: doc.confirmedBy,
@@ -744,6 +747,9 @@ export async function updateTournament(
   if (updates.settings?.preRegistration !== undefined) {
     set["settings.preRegistration"] = updates.settings.preRegistration;
   }
+  if (updates.settings?.firstTableNumber !== undefined) {
+    set["settings.firstTableNumber"] = updates.settings.firstTableNumber;
+  }
   if (updates.organizerIds !== undefined) set.organizerIds = updates.organizerIds;
 
   const update: Record<string, unknown> = { $set: set };
@@ -1100,7 +1106,12 @@ export async function joinTournament(
 export async function updatePlayer(
   tournamentId: string,
   playerId: string,
-  updates: { displayName?: string; seed?: number | null; status?: TournamentPlayer["status"] }
+  updates: {
+    displayName?: string;
+    seed?: number | null;
+    fixedTableNumber?: number | null;
+    status?: TournamentPlayer["status"];
+  }
 ): Promise<TournamentPlayer> {
   const tId = parseObjectId(tournamentId, "Tournoi");
   const pId = parseObjectId(playerId, "Joueur");
@@ -1112,6 +1123,11 @@ export async function updatePlayer(
     unset.seed = "";
   } else if (updates.seed !== undefined) {
     set.seed = updates.seed;
+  }
+  if (updates.fixedTableNumber === null) {
+    unset.fixedTableNumber = "";
+  } else if (updates.fixedTableNumber !== undefined) {
+    set.fixedTableNumber = updates.fixedTableNumber;
   }
   if (updates.status !== undefined) set.status = updates.status;
 
@@ -1526,6 +1542,47 @@ export async function listMatchesByPhase(
  * (pairings suisses ou bracket). Pour une phase freeform, crée une ronde vide
  * dans laquelle l'organisateur ajoute ses matchs manuellement.
  */
+/**
+ * Attribue les numéros de table d'une série de matchs (groupes de joueurs) :
+ * les tables fixes des joueurs priment (choix aléatoire si plusieurs joueurs à
+ * table fixe se rencontrent), les autres matchs prennent les numéros
+ * séquentiels à partir de `firstTable` en sautant les numéros déjà pris.
+ * Les BYE (1 joueur) n'ont pas de table.
+ */
+function assignTableNumbers(
+  groups: string[][],
+  playersById: Map<string, TournamentPlayer>,
+  firstTable: number,
+  alreadyUsed: Iterable<number> = []
+): (number | undefined)[] {
+  const used = new Set<number>(alreadyUsed);
+  const tables: (number | undefined)[] = new Array(groups.length).fill(undefined);
+
+  // 1er passage : tables fixes des joueurs.
+  groups.forEach((group, i) => {
+    if (group.length === 1) return;
+    const fixed = group
+      .map((playerId) => playersById.get(playerId)?.fixedTableNumber)
+      .filter((n): n is number => typeof n === "number");
+    if (fixed.length > 0) {
+      const table = fixed[Math.floor(Math.random() * fixed.length)];
+      tables[i] = table;
+      used.add(table);
+    }
+  });
+
+  // 2e passage : numérotation séquentielle en sautant les tables prises.
+  let next = firstTable;
+  groups.forEach((group, i) => {
+    if (group.length === 1 || tables[i] !== undefined) return;
+    while (used.has(next)) next++;
+    tables[i] = next;
+    used.add(next);
+  });
+
+  return tables;
+}
+
 export async function createNextRound(
   tournamentId: string,
   phaseId: string,
@@ -1701,6 +1758,16 @@ export async function createNextRound(
   }
   const round = toRound({ ...roundDoc, _id: roundResult.insertedId });
 
+  // Numéros de table : tables fixes des joueurs, puis séquence à partir du
+  // numéro de première table configuré sur le tournoi.
+  const tournamentForTables = await requireTournament(tournamentId);
+  const playersById = new Map(players.map((p) => [p.id, p]));
+  const tableNumbers = assignTableNumbers(
+    groups,
+    playersById,
+    tournamentForTables.settings.firstTableNumber ?? 1
+  );
+
   const matchDocs: TournamentMatchDb[] = groups.map((group, i) => {
     const isBye = group.length === 1;
     const matchPlayers: TournamentMatchPlayer[] = group.map((playerId) => ({
@@ -1715,6 +1782,7 @@ export async function createNextRound(
       games: [],
       winnerIds: isBye ? [group[0]] : [],
       bracketPosition: phase.type === "bracket" ? generateBracketPosition(i, groups.length) : undefined,
+      tableNumber: tableNumbers[i],
       status: isBye ? "completed" : "pending",
       reportedBy: isBye ? createdBy : undefined,
       confirmedBy: isBye ? createdBy : undefined,
@@ -1952,6 +2020,17 @@ export async function createMatch(
 
   const isBye = data.players.length === 1;
 
+  // Numéro de table : table fixe d'un des joueurs, sinon prochain numéro
+  // libre de la ronde à partir de la première table configurée.
+  const tournament = await requireTournament(tournamentId);
+  const roundMatches = await listMatchesByRound(tournamentId, roundId);
+  const [tableNumber] = assignTableNumbers(
+    [data.players],
+    new Map(tournamentPlayers.map((p) => [p.id, p])),
+    tournament.settings.firstTableNumber ?? 1,
+    roundMatches.map((m) => m.tableNumber).filter((n): n is number => typeof n === "number")
+  );
+
   const doc: TournamentMatchDb = {
     tournamentId: new ObjectId(tournamentId),
     phaseId: new ObjectId(round.phaseId),
@@ -1965,6 +2044,7 @@ export async function createMatch(
     games: [],
     winnerIds: isBye ? [data.players[0]] : [],
     bracketPosition: data.bracketPosition,
+    tableNumber,
     status: isBye ? "completed" : "pending",
     createdAt: new Date(),
   };
@@ -1979,6 +2059,30 @@ function assertActorIsInMatch(match: TournamentMatch, actor: MatchActor): void {
   if (!isInMatch) {
     throw new TournamentError("forbidden", "Vous ne faites pas partie de ce match");
   }
+}
+
+// Modification manuelle du numéro de table d'un match (gestionnaires).
+// null retire le numéro.
+export async function setMatchTable(
+  tournamentId: string,
+  matchId: string,
+  tableNumber: number | null
+): Promise<TournamentMatch> {
+  const tId = parseObjectId(tournamentId, "Tournoi");
+  const mId = parseObjectId(matchId, "Match");
+
+  const update =
+    tableNumber === null
+      ? { $unset: { tableNumber: "" as const }, $set: { updatedAt: new Date() } }
+      : { $set: { tableNumber, updatedAt: new Date() } };
+
+  const result = await db
+    .collection<TournamentMatchDb>(MATCHES)
+    .findOneAndUpdate({ _id: mId, tournamentId: tId }, update, { returnDocument: "after" });
+  if (!result) {
+    throw new TournamentError("not-found", "Match non trouvé");
+  }
+  return toMatch(result);
 }
 
 export async function reportMatchResult(

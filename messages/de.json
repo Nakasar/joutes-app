@@ -1603,6 +1603,7 @@
       "bestOfN": "Best-of-{count}"
     },
     "player": {
+      "tableNumber": "Tisch {number}",
       "myRegistration": "Meine Anmeldung:",
       "statusRegistered": "REGISTERED",
       "statusDropped": "DROPPED",
@@ -1774,6 +1775,8 @@
       "viewPlayerPortal": "Zum Spielerportal →"
     },
     "organizerSettings": {
+      "firstTableLabel": "Nummer des ersten Tisches",
+      "firstTableHint": "Die Matches einer Runde werden den Tischen N, N+1, N+2… zugewiesen. Feste Tische der Spieler haben Vorrang.",
       "title": "Einstellungen",
       "statusLabel": "Turnierstatus",
       "gameLabel": "Spiel (optional)",
@@ -1796,6 +1799,8 @@
       "deleteError": "Fehler beim Löschen des Turniers"
     },
     "organizerPlayers": {
+      "fixedTableAria": "Fester Tisch von {name}",
+      "fixedTableTitle": "Fester Tisch (für das ganze Turnier, leer = keiner)",
       "title": "Spieler ({registered} angemeldet / {total})",
       "addPlaceholder": "E-Mail, username#0000 oder Name eines Gastes",
       "add": "Hinzufügen",
@@ -1914,6 +1919,9 @@
       "standingsNotValidated": "Rangliste nicht bestätigt"
     },
     "roundClient": {
+      "headerTable": "Tisch",
+      "tableAria": "Tischnummer des Matches {match}",
+      "tableError": "Fehler beim Ändern der Tischnummer",
       "totalMatches": "{count, plural, one {# Match} other {# Matches}}",
       "remainingMatches": "{count, plural, =0 {kein fehlendes Ergebnis} one {# fehlendes Ergebnis} other {# fehlende Ergebnisse}}",
       "missingOnlyFilter": "Fehlende Ergebnisse",

@@ -71,6 +71,9 @@ export type Tournament = {
     // Mode pré-inscription : les joueurs qui rejoignent sont mis en
     // PRE-REGISTERED (à confirmer par l'organisateur) plutôt que REGISTERED.
     preRegistration: boolean;
+    // Numéro de la première table : les matchs d'une ronde sont assignés aux
+    // tables N, N+1, N+2… (défaut 1). Les tables fixes des joueurs priment.
+    firstTableNumber?: number;
   };
   createdBy: string;
   // Staff du tournoi. Les organisateurs (créateur inclus) ont tous les droits ;
@@ -91,6 +94,10 @@ export type TournamentPlayer = {
   // invité, généré aléatoirement à l'inscription.
   discriminator?: string;
   seed?: number;
+  // Table fixe conservée pendant tout le tournoi : les matchs de ce joueur
+  // sont assignés à cette table (choix aléatoire si plusieurs joueurs à table
+  // fixe se rencontrent).
+  fixedTableNumber?: number;
   status: TournamentPlayerStatus;
   // Secret de synchronisation propre au joueur (préfixe tpsk_), généré à
   // l'inscription. Utilisable comme Bearer token pour accéder au tournoi en
@@ -194,6 +201,8 @@ export type TournamentMatch = {
   // all players, otherwise the (co-)winners.
   winnerIds: string[];
   bracketPosition?: string;
+  // Table où se joue le match. Absent pour un BYE.
+  tableNumber?: number;
   status: TournamentMatchStatus;
   reportedBy?: string;
   confirmedBy?: string;
