@@ -9,7 +9,7 @@ import {
   deleteTournament,
   listPhases,
   listPlayers,
-  principalIsOrganizer,
+  principalCanManage,
   requireTournament,
   sanitizePlayer,
   updateTournament,
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       listPlayers(tournamentId),
     ]);
 
-    const organizer = principalIsOrganizer(tournament, principal);
+    const organizer = principalCanManage(tournament, principal);
 
     return NextResponse.json({
       ...tournament,

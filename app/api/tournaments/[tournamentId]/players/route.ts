@@ -6,7 +6,7 @@ import {
   assertCanManage,
   assertPrincipalCanRead,
   listPlayers,
-  principalIsOrganizer,
+  principalCanManage,
   requireTournament,
   sanitizePlayer,
 } from "@/lib/db/tournaments";
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     await assertPrincipalCanRead(tournament, principal);
 
     const players = await listPlayers(tournamentId);
-    const organizer = principalIsOrganizer(tournament, principal);
+    const organizer = principalCanManage(tournament, principal);
     return NextResponse.json(organizer ? players : players.map(sanitizePlayer));
   } catch (error) {
     return tournamentErrorResponse(error);

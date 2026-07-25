@@ -5,7 +5,7 @@ import {
   assertCanManage,
   assertPrincipalCanRead,
   getPlayerById,
-  principalIsOrganizer,
+  principalCanManage,
   removePlayer,
   requireTournament,
   sanitizePlayer,
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest, { params }: Params) {
     if (!player) {
       throw new TournamentError("not-found", "Joueur non trouvé");
     }
-    const organizer = principalIsOrganizer(tournament, principal);
+    const organizer = principalCanManage(tournament, principal);
     return NextResponse.json(organizer ? player : sanitizePlayer(player));
   } catch (error) {
     return tournamentErrorResponse(error);
@@ -52,7 +52,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const body = await request.json();
     const validated = updateTournamentPlayerSchema.parse(body);
 
-    if (principalIsOrganizer(tournament, principal)) {
+    if (principalCanManage(tournament, principal)) {
       const player = await updatePlayer(tournamentId, playerId, validated);
       return NextResponse.json(player);
     }

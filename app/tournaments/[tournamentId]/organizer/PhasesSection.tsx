@@ -99,6 +99,9 @@ export function PhasesSection({
   const deletePhase = (phase: TournamentPhase) =>
     run(async () => {
       await api(`/api/tournaments/${tournamentId}/phases/${phase.id}`, { method: "DELETE" });
+      // Réconcilie le sélecteur de phase en cours si la phase supprimée était
+      // la phase courante (le Select pointerait sinon sur une valeur disparue).
+      if (phase.id === currentPhaseId) setCurrentPhaseId(NO_PHASE);
       await refreshPhases();
     });
 

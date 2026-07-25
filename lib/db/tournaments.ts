@@ -524,7 +524,7 @@ export async function assertPrincipalCanRead(
 }
 
 // Le principal est-il un membre du staff (organisateur ou arbitre) ?
-export function principalIsOrganizer(tournament: Tournament, principal: TournamentPrincipal): boolean {
+export function principalCanManage(tournament: Tournament, principal: TournamentPrincipal): boolean {
   return principal.kind === "user" && canManageTournament(tournament, principal.userId);
 }
 
@@ -642,14 +642,18 @@ export async function addTournamentStaff(
     throw new TournamentError("conflict", "Le créateur du tournoi est déjà organisateur");
   }
 
-  // Change de rôle idempotent : retiré des deux listes puis ajouté à la bonne.
-  const organizerIds = tournament.organizerIds.filter((id) => id !== user.id);
-  const judgeIds = tournament.judgeIds.filter((id) => id !== user.id);
-  (role === "organizer" ? organizerIds : judgeIds).push(user.id);
-
+  // Change de rôle idempotent, en opérateurs atomiques ($pull puis $addToSet)
+  // pour ne pas écraser des modifications concurrentes du staff.
+  const _id = new ObjectId(tournamentId);
+  await db
+    .collection<TournamentDb>(TOURNAMENTS)
+    .updateOne({ _id }, { $pull: { organizerIds: user.id, judgeIds: user.id } });
   await db.collection<TournamentDb>(TOURNAMENTS).updateOne(
-    { _id: new ObjectId(tournamentId) },
-    { $set: { organizerIds, judgeIds, updatedAt: new Date() } }
+    { _id },
+    {
+      $addToSet: { [role === "organizer" ? "organizerIds" : "judgeIds"]: user.id },
+      $set: { updatedAt: new Date() },
+    }
   );
 
   return {
@@ -666,14 +670,13 @@ export async function removeTournamentStaff(tournamentId: string, userId: string
   if (userId === tournament.createdBy) {
     throw new TournamentError("conflict", "Le créateur du tournoi ne peut pas être retiré du staff");
   }
+  // $pull atomique : pas de read-modify-write qui écraserait des mises à jour
+  // concurrentes du staff.
   await db.collection<TournamentDb>(TOURNAMENTS).updateOne(
     { _id: new ObjectId(tournamentId) },
     {
-      $set: {
-        organizerIds: tournament.organizerIds.filter((id) => id !== userId),
-        judgeIds: tournament.judgeIds.filter((id) => id !== userId),
-        updatedAt: new Date(),
-      },
+      $pull: { organizerIds: userId, judgeIds: userId },
+      $set: { updatedAt: new Date() },
     }
   );
 }
