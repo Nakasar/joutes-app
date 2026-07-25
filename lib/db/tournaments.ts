@@ -1537,11 +1537,10 @@ export async function listMatchesByPhase(
   return listPhaseMatches(tId, pId);
 }
 
-/**
- * Crée la ronde suivante d'une phase, avec génération automatique des matchs
- * (pairings suisses ou bracket). Pour une phase freeform, crée une ronde vide
- * dans laquelle l'organisateur ajoute ses matchs manuellement.
- */
+// Borne supérieure des numéros de table, alignée sur les validations (schéma
+// Zod et inputs UI) : au-delà, un match reste simplement sans table.
+const MAX_TABLE_NUMBER = 9999;
+
 /**
  * Attribue les numéros de table d'une série de matchs (groupes de joueurs) :
  * les tables fixes des joueurs priment (choix aléatoire si plusieurs joueurs à
@@ -1558,12 +1557,14 @@ function assignTableNumbers(
   const used = new Set<number>(alreadyUsed);
   const tables: (number | undefined)[] = new Array(groups.length).fill(undefined);
 
-  // 1er passage : tables fixes des joueurs.
+  // 1er passage : tables fixes des joueurs. Une table fixe déjà attribuée à un
+  // autre match de la ronde n'est pas réutilisée (pas de doublon) : le match
+  // retombe alors sur la numérotation séquentielle.
   groups.forEach((group, i) => {
     if (group.length === 1) return;
     const fixed = group
       .map((playerId) => playersById.get(playerId)?.fixedTableNumber)
-      .filter((n): n is number => typeof n === "number");
+      .filter((n): n is number => typeof n === "number" && !used.has(n));
     if (fixed.length > 0) {
       const table = fixed[Math.floor(Math.random() * fixed.length)];
       tables[i] = table;
@@ -1571,11 +1572,13 @@ function assignTableNumbers(
     }
   });
 
-  // 2e passage : numérotation séquentielle en sautant les tables prises.
+  // 2e passage : numérotation séquentielle en sautant les tables prises,
+  // bornée à MAX_TABLE_NUMBER (au-delà, pas de table).
   let next = firstTable;
   groups.forEach((group, i) => {
     if (group.length === 1 || tables[i] !== undefined) return;
     while (used.has(next)) next++;
+    if (next > MAX_TABLE_NUMBER) return;
     tables[i] = next;
     used.add(next);
   });
@@ -1583,6 +1586,11 @@ function assignTableNumbers(
   return tables;
 }
 
+/**
+ * Crée la ronde suivante d'une phase, avec génération automatique des matchs
+ * (pairings suisses ou bracket). Pour une phase freeform, crée une ronde vide
+ * dans laquelle l'organisateur ajoute ses matchs manuellement.
+ */
 export async function createNextRound(
   tournamentId: string,
   phaseId: string,
