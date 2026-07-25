@@ -12,6 +12,7 @@ import {
   getMatchById,
   reportMatchResult,
   requireTournament,
+  setMatchTable,
   TournamentError,
 } from "@/lib/db/tournaments";
 import { resolveTournamentPrincipal, tournamentErrorResponse, unauthorizedResponse } from "../../../utils";
@@ -70,6 +71,15 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       match = await confirmMatchResult(tournament, matchId, actor);
     } else if (validated.action === "clear") {
       match = await clearMatchResult(tournament, matchId, actor);
+    } else if (validated.action === "set-table") {
+      // Modification du numéro de table : réservée aux gestionnaires.
+      if (!actor.isOrganizer) {
+        return NextResponse.json(
+          { error: "Réservé aux organisateurs et arbitres du tournoi" },
+          { status: 403 }
+        );
+      }
+      match = await setMatchTable(tournamentId, matchId, validated.tableNumber);
     } else {
       match = await disputeMatchResult(tournament, matchId, actor);
     }

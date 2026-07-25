@@ -6964,6 +6964,10 @@
                       "preRegistration": {
                         "type": "boolean",
                         "default": false
+                      },
+                      "firstTableNumber": {
+                        "type": "integer",
+                        "description": "Première table : les matchs d'une ronde sont assignés aux tables N, N+1, N+2… (défaut 1)."
                       }
                     }
                   }
@@ -7238,6 +7242,10 @@
                       },
                       "preRegistration": {
                         "type": "boolean"
+                      },
+                      "firstTableNumber": {
+                        "type": "integer",
+                        "description": "Première table : les matchs d'une ronde sont assignés aux tables N, N+1, N+2… (défaut 1)."
                       }
                     }
                   },
@@ -7868,6 +7876,11 @@
                   "seed": {
                     "type": "integer",
                     "nullable": true
+                  },
+                  "fixedTableNumber": {
+                    "type": "integer",
+                    "nullable": true,
+                    "description": "Table fixe du joueur, conservée pendant tout le tournoi."
                   },
                   "status": {
                     "type": "string",
@@ -9079,6 +9092,26 @@
                         "enum": [
                           "clear"
                         ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "description": "Modifie le numéro de table du match (gestionnaires ; null = retirer).",
+                    "required": [
+                      "action",
+                      "tableNumber"
+                    ],
+                    "properties": {
+                      "action": {
+                        "type": "string",
+                        "enum": [
+                          "set-table"
+                        ]
+                      },
+                      "tableNumber": {
+                        "type": "integer",
+                        "nullable": true
                       }
                     }
                   }
@@ -10979,6 +11012,10 @@
           "preRegistration": {
             "type": "boolean"
           },
+          "firstTableNumber": {
+            "type": "integer",
+            "description": "Première table : les matchs d'une ronde sont assignés aux tables N, N+1, N+2… (défaut 1)."
+          },
           "participants": {
             "type": "array",
             "items": {
@@ -11982,6 +12019,10 @@
               },
               "preRegistration": {
                 "type": "boolean"
+              },
+              "firstTableNumber": {
+                "type": "integer",
+                "description": "Première table : les matchs d'une ronde sont assignés aux tables N, N+1, N+2… (défaut 1)."
               }
             }
           },
@@ -12054,6 +12095,10 @@
           },
           "seed": {
             "type": "integer"
+          },
+          "fixedTableNumber": {
+            "type": "integer",
+            "description": "Table fixe du joueur, conservée pendant tout le tournoi."
           },
           "status": {
             "type": "string",
@@ -12280,6 +12325,10 @@
           "bracketPosition": {
             "type": "string",
             "description": "Ex: QF1, SF2, F."
+          },
+          "tableNumber": {
+            "type": "integer",
+            "description": "Table où se joue le match (absent pour un BYE)."
           },
           "status": {
             "type": "string",

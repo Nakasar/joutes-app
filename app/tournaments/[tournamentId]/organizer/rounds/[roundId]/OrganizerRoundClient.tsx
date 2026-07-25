@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { usePaginatedSearch } from "@/lib/use-paginated-search";
 import type {
   TournamentGameResult,
@@ -25,6 +26,7 @@ import type {
 } from "@/lib/types/Tournament";
 import { MatchGamesEditor } from "../../../MatchGamesEditor";
 import { MatchPlayerName } from "../../../MatchPlayerName";
+import { PlayerNameTag } from "../../../PlayerNameTag";
 import { TablePagination } from "../../../TablePagination";
 
 const MATCH_STATUS_KEYS: Record<string, string> = {
@@ -92,11 +94,50 @@ export function OrganizerRoundClient({
     [playersById, t]
   );
 
+  // Filtre « résultats manquants » : matchs sans résultat acté (à jouer ou en
+  // attente de confirmation).
+  const [missingOnly, setMissingOnly] = useState(false);
+  const remainingCount = useMemo(
+    () => matches.filter((m) => m.status !== "completed").length,
+    [matches]
+  );
+  const visibleMatches = useMemo(
+    () => (missingOnly ? matches.filter((m) => m.status !== "completed") : matches),
+    [matches, missingOnly]
+  );
+
   const search = usePaginatedSearch(
-    matches,
+    visibleMatches,
     (m) => m.players.map((p) => playerName(p.playerId)).join(" "),
     15
   );
+
+  // Modification manuelle du numéro de table d'un match (vide = retirer).
+  const setTable = (match: TournamentMatch, raw: string) => {
+    const parsed = Number.parseInt(raw, 10);
+    const next = Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+    if (next === (match.tableNumber ?? null)) return;
+    setBusy(true);
+    setError(null);
+    (async () => {
+      try {
+        const res = await fetch(`/api/tournaments/${tournamentId}/matches/${match.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "set-table", tableNumber: next }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error ?? t("roundClient.tableError"));
+        }
+        await refresh();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t("roundClient.tableError"));
+      } finally {
+        setBusy(false);
+      }
+    })();
+  };
 
   const refresh = useCallback(async () => {
     const res = await fetch(`/api/tournaments/${tournamentId}/rounds/${round.id}`);
@@ -305,6 +346,13 @@ export function OrganizerRoundClient({
         <div>
           <h2 className="text-2xl font-bold">{t("common.roundN", { number: round.number })}</h2>
           <p className="mt-1 text-muted-foreground">{t("roundClient.subtitle")}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t("roundClient.totalMatches", { count: matches.length })}
+            {" · "}
+            <span className={remainingCount > 0 ? "font-medium text-amber-600 dark:text-amber-400" : undefined}>
+              {t("roundClient.remainingMatches", { count: remainingCount })}
+            </span>
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="secondary">
@@ -340,12 +388,18 @@ export function OrganizerRoundClient({
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <Input
-          value={search.query}
-          onChange={(e) => search.setQuery(e.target.value)}
-          placeholder={t("roundClient.searchPlayer")}
-          className="max-w-xs"
-        />
+        <div className="flex flex-wrap items-center gap-4">
+          <Input
+            value={search.query}
+            onChange={(e) => search.setQuery(e.target.value)}
+            placeholder={t("roundClient.searchPlayer")}
+            className="max-w-xs"
+          />
+          <label className="flex items-center gap-2 text-sm">
+            <Switch checked={missingOnly} onCheckedChange={setMissingOnly} />
+            {t("roundClient.missingOnlyFilter")}
+          </label>
+        </div>
         <Button onClick={() => setCreateOpen(true)} disabled={anyBusy}>
           <Plus className="mr-2 h-4 w-4" />
           {t("roundClient.createMatch")}
@@ -364,6 +418,9 @@ export function OrganizerRoundClient({
                     {t("roundClient.headerMatch")}
                   </th>
                   <th className="px-3 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
+                    {t("roundClient.headerTable")}
+                  </th>
+                  <th className="px-3 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
                     {t("roundClient.headerStatus")}
                   </th>
                   <th className="px-3 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
@@ -379,7 +436,46 @@ export function OrganizerRoundClient({
                   const isBye = match.players.length === 1;
                   return (
                     <tr key={match.id}>
-                      <td className="px-3 py-2 font-medium">{matchLabel(match)}</td>
+                      <td className="px-3 py-2 font-medium">
+                        {match.players.map((p, i) => {
+                          const player = playersById.get(p.playerId);
+                          return (
+                            <span key={p.playerId}>
+                              {i > 0 && (
+                                <span className="text-muted-foreground">{` ${t("common.vs")} `}</span>
+                              )}
+                              <PlayerNameTag
+                                name={player?.displayName ?? t("roundClient.unknownPlayer")}
+                                discriminator={player?.discriminator}
+                              />
+                            </span>
+                          );
+                        })}
+                        {isBye && (
+                          <span className="text-muted-foreground">{` (${t("common.bye")})`}</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2">
+                        {isBye ? (
+                          <span className="text-muted-foreground">—</span>
+                        ) : (
+                          <Input
+                            key={`${match.id}-${match.tableNumber ?? ""}`}
+                            type="number"
+                            min={0}
+                            max={9999}
+                            className="h-8 w-20"
+                            defaultValue={match.tableNumber ?? ""}
+                            placeholder="—"
+                            onBlur={(e) => setTable(match, e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                            }}
+                            disabled={anyBusy}
+                            aria-label={t("roundClient.tableAria", { match: matchLabel(match) })}
+                          />
+                        )}
+                      </td>
                       <td className="px-3 py-2">
                         <Badge variant="outline">
                           {MATCH_STATUS_KEYS[match.status]
@@ -399,7 +495,11 @@ export function OrganizerRoundClient({
                                   isWinner={match.winnerIds.includes(p.playerId)}
                                   name={
                                     <>
-                                      {playerName(p.playerId)} <span className="font-mono">{p.score}</span>
+                                      <PlayerNameTag
+                                        name={playerName(p.playerId)}
+                                        discriminator={playersById.get(p.playerId)?.discriminator}
+                                      />{" "}
+                                      <span className="font-mono">{p.score}</span>
                                     </>
                                   }
                                 />
@@ -468,7 +568,7 @@ export function OrganizerRoundClient({
                 })}
                 {search.pageItems.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-3 py-3 text-center text-muted-foreground">
+                    <td colSpan={5} className="px-3 py-3 text-center text-muted-foreground">
                       {t("roundClient.noSearchResults")}
                     </td>
                   </tr>

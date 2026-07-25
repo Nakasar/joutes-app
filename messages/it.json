@@ -1628,6 +1628,7 @@
       "bestOfN": "best-of-{count}"
     },
     "player": {
+      "tableNumber": "Tavolo {number}",
       "myRegistration": "La mia iscrizione:",
       "statusRegistered": "REGISTERED",
       "statusDropped": "DROPPED",
@@ -1799,6 +1800,8 @@
       "viewPlayerPortal": "Vedi il portale giocatore →"
     },
     "organizerSettings": {
+      "firstTableLabel": "Numero del primo tavolo",
+      "firstTableHint": "I match di un turno sono assegnati ai tavoli N, N+1, N+2… I tavoli fissi dei giocatori hanno la precedenza.",
       "title": "Configurazione",
       "statusLabel": "Stato del torneo",
       "gameLabel": "Gioco (facoltativo)",
@@ -1821,6 +1824,8 @@
       "deleteError": "Errore durante l'eliminazione del torneo"
     },
     "organizerPlayers": {
+      "fixedTableAria": "Tavolo fisso di {name}",
+      "fixedTableTitle": "Tavolo fisso (mantenuto per tutto il torneo, vuoto = nessuno)",
       "title": "Giocatori ({registered} iscritto/i / {total})",
       "addPlaceholder": "Email, username#0000 o nome di un ospite",
       "add": "Aggiungi",
@@ -1939,6 +1944,12 @@
       "standingsNotValidated": "Classifica non convalidata"
     },
     "roundClient": {
+      "headerTable": "Tavolo",
+      "tableAria": "Numero di tavolo del match {match}",
+      "tableError": "Errore durante la modifica del numero di tavolo",
+      "totalMatches": "{count, plural, one {# match} other {# match}}",
+      "remainingMatches": "{count, plural, =0 {nessun risultato mancante} one {# risultato mancante} other {# risultati mancanti}}",
+      "missingOnlyFilter": "Risultati mancanti",
       "subtitle": "Inserimento dei risultati",
       "unknownPlayer": "Sconosciuto",
       "matchStatus": {

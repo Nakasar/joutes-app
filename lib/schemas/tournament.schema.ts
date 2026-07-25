@@ -38,6 +38,7 @@ export const updateTournamentSchema = z.object({
       allowSelfReporting: z.boolean(),
       requireConfirmation: z.boolean(),
       preRegistration: z.boolean(),
+      firstTableNumber: z.number().int().min(0).max(9999),
     })
     .partial()
     .optional(),
@@ -89,6 +90,8 @@ export const addTournamentPlayerSchema = z.object({
 export const updateTournamentPlayerSchema = z.object({
   displayName: z.string().min(1).max(100).optional(),
   seed: z.number().int().min(1).nullable().optional(),
+  // Table fixe du joueur, conservée pendant tout le tournoi (null = retirer).
+  fixedTableNumber: z.number().int().min(0).max(9999).nullable().optional(),
   status: z.enum(["registered", "pre-registered", "dropped"]).optional(),
 });
 
@@ -192,11 +195,18 @@ export const clearTournamentMatchSchema = z.object({
   action: z.literal("clear"),
 });
 
+// Modification manuelle du numéro de table (gestionnaires ; null = retirer).
+export const setTableTournamentMatchSchema = z.object({
+  action: z.literal("set-table"),
+  tableNumber: z.number().int().min(0).max(9999).nullable(),
+});
+
 export const updateTournamentMatchSchema = z.discriminatedUnion("action", [
   reportTournamentMatchSchema,
   confirmTournamentMatchSchema,
   disputeTournamentMatchSchema,
   clearTournamentMatchSchema,
+  setTableTournamentMatchSchema,
 ]);
 
 // Action sur une ronde : `reopen` la repasse « en cours » (ronde courante).
