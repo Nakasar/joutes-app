@@ -1549,6 +1549,18 @@
     }
   },
   "Tournaments": {
+    "staff": {
+      "title": "Staff del torneo",
+      "creator": "Creatore",
+      "roleOrganizer": "Organizzatore",
+      "roleJudge": "Arbitro",
+      "identifierPlaceholder": "Email o username#0000",
+      "addButton": "Aggiungi",
+      "addHint": "Gli organizzatori hanno tutti i diritti sul torneo; gli arbitri non possono eliminarlo né gestire lo staff. L'utente deve già avere un account.",
+      "addError": "Errore durante l'aggiunta allo staff",
+      "removeError": "Errore durante la rimozione dallo staff",
+      "removeAria": "Rimuovi {name} dallo staff"
+    },
     "eventLink": {
       "title": "Torneo",
       "portalButton": "Portale del torneo",
@@ -1825,6 +1837,11 @@
       "removeError": "Errore durante la rimozione del giocatore"
     },
     "organizerPhases": {
+      "currentPhaseLabel": "Fase corrente",
+      "currentPhaseNone": "Nessuna fase corrente",
+      "editPhaseAria": "Modifica la fase {name}",
+      "editDialogTitle": "Modifica la fase “{name}”",
+      "editSubmit": "Salva le modifiche",
       "title": "Fasi",
       "empty": "Nessuna fase configurata.",
       "addPhase": "Aggiungi una fase",

@@ -3,10 +3,10 @@ import { authenticateApiRequest } from "@/lib/api/authenticate";
 import { addTournamentPlayerSchema } from "@/lib/schemas/tournament.schema";
 import {
   addPlayerByIdentifier,
-  assertIsOrganizer,
+  assertCanManage,
   assertPrincipalCanRead,
   listPlayers,
-  principalIsOrganizer,
+  principalCanManage,
   requireTournament,
   sanitizePlayer,
 } from "@/lib/db/tournaments";
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     await assertPrincipalCanRead(tournament, principal);
 
     const players = await listPlayers(tournamentId);
-    const organizer = principalIsOrganizer(tournament, principal);
+    const organizer = principalCanManage(tournament, principal);
     return NextResponse.json(organizer ? players : players.map(sanitizePlayer));
   } catch (error) {
     return tournamentErrorResponse(error);
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try {
     const { tournamentId } = await params;
     const tournament = await requireTournament(tournamentId);
-    assertIsOrganizer(tournament, user.userId);
+    assertCanManage(tournament, user.userId);
 
     const body = await request.json();
     const validated = addTournamentPlayerSchema.parse(body);

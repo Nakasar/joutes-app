@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import {
   getTournamentById,
-  isTournamentOrganizer,
+  canManageTournament,
   listPhases,
   listRounds,
 } from "@/lib/db/tournaments";
@@ -23,7 +23,7 @@ export default async function OrganizerRoundsPage({
 
   const tournament = await getTournamentById(tournamentId);
   if (!tournament) notFound();
-  if (!isTournamentOrganizer(tournament, session.user.id)) redirect("/tournaments");
+  if (!canManageTournament(tournament, session.user.id)) redirect("/tournaments");
 
   const [phases, rounds] = await Promise.all([listPhases(tournamentId), listRounds(tournamentId)]);
 

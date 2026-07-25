@@ -4,7 +4,7 @@ import { createTournamentPhaseSchema } from "@/lib/schemas/tournament.schema";
 import {
   addPhase,
   assertPrincipalCanRead,
-  assertIsOrganizer,
+  assertCanManage,
   listPhases,
   requireTournament,
 } from "@/lib/db/tournaments";
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try {
     const { tournamentId } = await params;
     const tournament = await requireTournament(tournamentId);
-    assertIsOrganizer(tournament, user.userId);
+    assertCanManage(tournament, user.userId);
 
     const body = await request.json();
     const validated = createTournamentPhaseSchema.parse(body);

@@ -7471,6 +7471,190 @@
         }
       }
     },
+    "/tournaments/{tournamentId}/staff": {
+      "parameters": [
+        {
+          "name": "tournamentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Staff du tournoi (créateur, organisateurs, arbitres)",
+        "description": "Réservé au staff du tournoi.",
+        "responses": {
+          "200": {
+            "description": "Liste du staff",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "userId": {
+                        "type": "string"
+                      },
+                      "displayName": {
+                        "type": "string"
+                      },
+                      "discriminator": {
+                        "type": "string"
+                      },
+                      "role": {
+                        "type": "string",
+                        "enum": [
+                          "organizer",
+                          "judge"
+                        ]
+                      },
+                      "isCreator": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "403": {
+            "description": "Non membre du staff"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Ajoute un membre du staff (ou change son rôle)",
+        "description": "Réservé aux organisateurs. L'utilisateur est désigné par email ou tag username#0000 et doit déjà avoir un compte. Les organisateurs ont tous les droits ; les arbitres ne peuvent ni supprimer le tournoi ni gérer le staff.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "identifier",
+                  "role"
+                ],
+                "properties": {
+                  "identifier": {
+                    "type": "string",
+                    "description": "Email ou tag username#0000"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "organizer",
+                      "judge"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Membre ajouté",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "userId": {
+                      "type": "string"
+                    },
+                    "displayName": {
+                      "type": "string"
+                    },
+                    "discriminator": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "organizer",
+                        "judge"
+                      ]
+                    },
+                    "isCreator": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Identifiant invalide"
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "403": {
+            "description": "Réservé aux organisateurs"
+          },
+          "404": {
+            "description": "Utilisateur non trouvé"
+          },
+          "409": {
+            "description": "Le créateur est déjà organisateur"
+          }
+        }
+      }
+    },
+    "/tournaments/{tournamentId}/staff/{userId}": {
+      "parameters": [
+        {
+          "name": "tournamentId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "userId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "delete": {
+        "tags": [
+          "Tournaments"
+        ],
+        "summary": "Retire un membre du staff",
+        "description": "Réservé aux organisateurs. Le créateur du tournoi ne peut pas être retiré.",
+        "responses": {
+          "200": {
+            "description": "Membre retiré"
+          },
+          "401": {
+            "description": "Non authentifié"
+          },
+          "403": {
+            "description": "Réservé aux organisateurs"
+          },
+          "409": {
+            "description": "Le créateur ne peut pas être retiré"
+          }
+        }
+      }
+    },
     "/tournaments/{tournamentId}/players": {
       "parameters": [
         {
@@ -11809,6 +11993,13 @@
             "items": {
               "type": "string"
             }
+          },
+          "judgeIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Arbitres du tournoi : tous les droits sauf la suppression et la gestion du staff."
           },
           "createdAt": {
             "type": "string",

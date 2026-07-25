@@ -1607,6 +1607,18 @@
     }
   },
   "Tournaments": {
+    "staff": {
+      "title": "Tournament staff",
+      "creator": "Creator",
+      "roleOrganizer": "Organizer",
+      "roleJudge": "Judge",
+      "identifierPlaceholder": "Email or username#0000",
+      "addButton": "Add",
+      "addHint": "Organizers have full rights on the tournament; judges cannot delete it or manage the staff. The user must already have an account.",
+      "addError": "Error while adding to the staff",
+      "removeError": "Error while removing from the staff",
+      "removeAria": "Remove {name} from the staff"
+    },
     "eventLink": {
       "title": "Tournament",
       "portalButton": "Tournament portal",
@@ -1883,6 +1895,11 @@
       "removeError": "Error while removing the player"
     },
     "organizerPhases": {
+      "currentPhaseLabel": "Current phase",
+      "currentPhaseNone": "No current phase",
+      "editPhaseAria": "Edit phase {name}",
+      "editDialogTitle": "Edit phase “{name}”",
+      "editSubmit": "Save changes",
       "title": "Phases",
       "empty": "No phase configured.",
       "addPhase": "Add a phase",

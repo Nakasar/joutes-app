@@ -34,9 +34,12 @@ const TOURNAMENT_STATUSES: Tournament["status"][] = ["draft", "in-progress", "co
 export function SettingsSection({
   tournament,
   games,
+  canDelete = true,
 }: {
   tournament: Tournament;
   games: { id: string; name: string }[];
+  /** La suppression est réservée aux organisateurs (pas aux arbitres). */
+  canDelete?: boolean;
 }) {
   const t = useTranslations("Tournaments");
   const router = useRouter();
@@ -221,20 +224,22 @@ export function SettingsSection({
         </CardContent>
       </Card>
 
-      <Card className="border-destructive/40">
-        <CardHeader>
-          <CardTitle className="text-destructive">{t("organizerSettings.dangerZone")}</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            {t("organizerSettings.dangerDescription")}
-          </p>
-          <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
-            <Trash2 className="mr-2 h-4 w-4" />
-            {t("organizerSettings.deleteTournament")}
-          </Button>
-        </CardContent>
-      </Card>
+      {canDelete && (
+        <Card className="border-destructive/40">
+          <CardHeader>
+            <CardTitle className="text-destructive">{t("organizerSettings.dangerZone")}</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-wrap items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground">
+              {t("organizerSettings.dangerDescription")}
+            </p>
+            <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              {t("organizerSettings.deleteTournament")}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <Dialog
         open={deleteOpen}

@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateApiRequest } from "@/lib/api/authenticate";
-import { createAnnouncementSchema } from "@/lib/schemas/tournament.schema";
+import { addTournamentStaffSchema } from "@/lib/schemas/tournament.schema";
 import {
+  addTournamentStaff,
   assertCanManage,
-  createAnnouncement,
-  listAnnouncements,
+  assertIsOrganizer,
+  listTournamentStaff,
   requireTournament,
 } from "@/lib/db/tournaments";
 import { tournamentErrorResponse, unauthorizedResponse } from "../../utils";
 
-type Params = { params: Promise<{ tournamentId: string }> };
-
-export async function GET(request: NextRequest, { params }: Params) {
+// Staff du tournoi (créateur, organisateurs, arbitres). Lecture ouverte au
+// staff ; l'ajout est réservé aux organisateurs (un arbitre ne peut pas
+// modifier le staff, sinon il pourrait s'octroyer le droit de suppression).
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ tournamentId: string }> }
+) {
   const user = await authenticateApiRequest(request);
   if (!user) return unauthorizedResponse();
 
@@ -20,31 +25,29 @@ export async function GET(request: NextRequest, { params }: Params) {
     const tournament = await requireTournament(tournamentId);
     assertCanManage(tournament, user.userId);
 
-    const announcements = await listAnnouncements(tournamentId);
-    return NextResponse.json(announcements);
+    return NextResponse.json(await listTournamentStaff(tournament));
   } catch (error) {
     return tournamentErrorResponse(error);
   }
 }
 
-export async function POST(request: NextRequest, { params }: Params) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ tournamentId: string }> }
+) {
   const user = await authenticateApiRequest(request);
   if (!user) return unauthorizedResponse();
 
   try {
     const { tournamentId } = await params;
     const tournament = await requireTournament(tournamentId);
-    assertCanManage(tournament, user.userId);
+    assertIsOrganizer(tournament, user.userId);
 
     const body = await request.json();
-    const validated = createAnnouncementSchema.parse(body);
+    const validated = addTournamentStaffSchema.parse(body);
 
-    const announcement = await createAnnouncement(tournamentId, {
-      message: validated.message,
-      level: validated.level,
-      createdBy: user.userId,
-    });
-    return NextResponse.json(announcement, { status: 201 });
+    const entry = await addTournamentStaff(tournamentId, validated.identifier, validated.role);
+    return NextResponse.json(entry, { status: 201 });
   } catch (error) {
     return tournamentErrorResponse(error);
   }

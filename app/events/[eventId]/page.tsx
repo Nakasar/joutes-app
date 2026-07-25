@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { getEventById } from "@/lib/db/events";
-import { getTournamentByEventId, isTournamentOrganizer } from "@/lib/db/tournaments";
+import { getTournamentByEventId, canManageTournament } from "@/lib/db/tournaments";
 import { Metadata } from "next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -137,7 +137,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
   // organisateur pour les organisateurs du tournoi) et carte de gestion.
   const linkedTournament = await getTournamentByEventId(event.id);
   const isLinkedTournamentOrganizer =
-    !!linkedTournament && !!session?.user && isTournamentOrganizer(linkedTournament, session.user.id);
+    !!linkedTournament && !!session?.user && canManageTournament(linkedTournament, session.user.id);
   const tTournaments = await getTranslations("Tournaments");
 
   // Récupérer les participants (utilisateurs et invités)

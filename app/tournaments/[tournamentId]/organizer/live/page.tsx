@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import {
   getTournamentById,
-  isTournamentOrganizer,
+  canManageTournament,
   listAnnouncements,
 } from "@/lib/db/tournaments";
 import { OrganizerShell } from "../OrganizerShell";
@@ -22,7 +22,7 @@ export default async function OrganizerLivePage({
 
   const tournament = await getTournamentById(tournamentId);
   if (!tournament) notFound();
-  if (!isTournamentOrganizer(tournament, session.user.id)) redirect("/tournaments");
+  if (!canManageTournament(tournament, session.user.id)) redirect("/tournaments");
 
   const announcements = await listAnnouncements(tournamentId);
 

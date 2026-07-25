@@ -3,7 +3,7 @@ import { authenticateApiRequest } from "@/lib/api/authenticate";
 import { updateTournamentPhaseSchema } from "@/lib/schemas/tournament.schema";
 import {
   assertPrincipalCanRead,
-  assertIsOrganizer,
+  assertCanManage,
   deletePhase,
   getPhaseById,
   listRounds,
@@ -43,7 +43,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
   try {
     const { tournamentId, phaseId } = await params;
     const tournament = await requireTournament(tournamentId);
-    assertIsOrganizer(tournament, user.userId);
+    assertCanManage(tournament, user.userId);
 
     const body = await request.json();
     const validated = updateTournamentPhaseSchema.parse(body);
@@ -62,7 +62,7 @@ export async function DELETE(request: NextRequest, { params }: Params) {
   try {
     const { tournamentId, phaseId } = await params;
     const tournament = await requireTournament(tournamentId);
-    assertIsOrganizer(tournament, user.userId);
+    assertCanManage(tournament, user.userId);
 
     await deletePhase(tournamentId, phaseId);
     return NextResponse.json({ deleted: true });

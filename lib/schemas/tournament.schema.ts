@@ -72,6 +72,12 @@ export const joinTournamentSchema = z.object({
   displayName: z.string().min(1).max(100).optional(),
 });
 
+// Ajout d'un membre du staff : email ou tag username#0000, et rôle.
+export const addTournamentStaffSchema = z.object({
+  identifier: z.string().min(1, "Un identifiant est requis").max(150),
+  role: z.enum(["organizer", "judge"]),
+});
+
 export const addTournamentPlayerSchema = z.object({
   // Identifiant du joueur : email, tag `username#discriminator`, ou simple
   // nom d'utilisateur (ajouté alors comme invité). La résolution est faite
