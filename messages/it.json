@@ -1939,6 +1939,9 @@
       "standingsNotValidated": "Classifica non convalidata"
     },
     "roundClient": {
+      "totalMatches": "{count, plural, one {# match} other {# match}}",
+      "remainingMatches": "{count, plural, =0 {nessun risultato mancante} one {# risultato mancante} other {# risultati mancanti}}",
+      "missingOnlyFilter": "Risultati mancanti",
       "subtitle": "Inserimento dei risultati",
       "unknownPlayer": "Sconosciuto",
       "matchStatus": {

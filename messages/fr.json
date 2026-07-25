@@ -1998,6 +1998,9 @@
       "standingsNotValidated": "Classement non validé"
     },
     "roundClient": {
+      "totalMatches": "{count, plural, one {# match} other {# matchs}}",
+      "remainingMatches": "{count, plural, =0 {aucun résultat manquant} one {# résultat manquant} other {# résultats manquants}}",
+      "missingOnlyFilter": "Résultats manquants",
       "subtitle": "Saisie des résultats",
       "unknownPlayer": "Inconnu",
       "matchStatus": {

@@ -1914,6 +1914,9 @@
       "standingsNotValidated": "Rangliste nicht bestätigt"
     },
     "roundClient": {
+      "totalMatches": "{count, plural, one {# Match} other {# Matches}}",
+      "remainingMatches": "{count, plural, =0 {kein fehlendes Ergebnis} one {# fehlendes Ergebnis} other {# fehlende Ergebnisse}}",
+      "missingOnlyFilter": "Fehlende Ergebnisse",
       "subtitle": "Ergebniseingabe",
       "unknownPlayer": "Unbekannt",
       "matchStatus": {
