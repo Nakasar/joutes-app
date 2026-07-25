@@ -1607,6 +1607,28 @@
     }
   },
   "Tournaments": {
+    "eventLink": {
+      "title": "Tournament",
+      "portalButton": "Tournament portal",
+      "openOrganizerPortal": "Open the organizer portal",
+      "noneLinked": "No tournament is declared for this event.",
+      "selectPlaceholder": "Choose a tournament",
+      "noTournaments": "You don't organize any available tournament.",
+      "linkButton": "Link the tournament",
+      "unlink": "Unlink the tournament",
+      "importButton": "Import registrants",
+      "importing": "Importing...",
+      "importConfirm": "Confirm import",
+      "importDialogTitle": "Import the event registrants",
+      "importDialogDescription": "The tournament already has players. Review the additions and status changes before confirming.",
+      "toAddTitle": "Players to add ({count})",
+      "noneToAdd": "No player to add.",
+      "toUpdateTitle": "Statuses to update ({count})",
+      "noneToUpdate": "No status change.",
+      "unchangedCount": "{count} player(s) already up to date.",
+      "importSuccess": "Import complete: {added} player(s) added, {updated} status(es) updated.",
+      "importError": "Error while importing registrants"
+    },
     "common": {
       "tournamentStatus": {
         "draft": "Upcoming",

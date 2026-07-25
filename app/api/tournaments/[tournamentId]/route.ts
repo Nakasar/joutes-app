@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateApiRequest } from "@/lib/api/authenticate";
+import { getEventById } from "@/lib/db/events";
 import { updateTournamentSchema } from "@/lib/schemas/tournament.schema";
 import {
   assertIsOrganizer,
@@ -51,6 +52,25 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const body = await request.json();
     const validated = updateTournamentSchema.parse(body);
+
+    // Lier le tournoi à un événement requiert de pouvoir gérer cet événement
+    // (créateur ou staff organisateur) : le lien fait apparaître le portail du
+    // tournoi sur la page de l'événement.
+    if (typeof validated.eventId === "string") {
+      const event = await getEventById(validated.eventId);
+      if (!event) {
+        return NextResponse.json({ error: "Événement non trouvé" }, { status: 404 });
+      }
+      const canManageEvent =
+        event.creatorId === user.userId ||
+        event.staff?.some((s) => s.userId === user.userId && s.role === "organizer");
+      if (!canManageEvent) {
+        return NextResponse.json(
+          { error: "Vous ne pouvez pas lier ce tournoi à un événement que vous ne gérez pas" },
+          { status: 403 }
+        );
+      }
+    }
 
     const updated = await updateTournament(tournamentId, validated);
     return NextResponse.json(updated);

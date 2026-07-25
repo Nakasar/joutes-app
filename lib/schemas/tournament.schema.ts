@@ -30,6 +30,8 @@ export const updateTournamentSchema = z.object({
   status: z.enum(["draft", "in-progress", "completed"]).optional(),
   // null = retirer le jeu associé au tournoi (la chaîne vide est refusée).
   gameId: z.string().min(1).nullable().optional(),
+  // null = détacher le tournoi de son événement (la chaîne vide est refusée).
+  eventId: z.string().min(1).nullable().optional(),
   currentPhaseId: z.string().nullable().optional(),
   settings: z
     .object({

@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { getEventById } from "@/lib/db/events";
+import { getTournamentByEventId, isTournamentOrganizer } from "@/lib/db/tournaments";
 import { Metadata } from "next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +34,8 @@ import PreRegistrationSwitch from "./PreRegistrationSwitch";
 import RunningStateManager from "./RunningStateManager";
 import CancelEventButton from "./CancelEventButton";
 import DeleteEventButton from "./DeleteEventButton";
+import { TournamentLinkCard } from "./TournamentLinkCard";
+import { Trophy } from "lucide-react";
 import { DateTime } from "luxon";
 import { getEventParticipants } from "./portal/participant-actions";
 import ReactMarkdown from "react-markdown";
@@ -129,6 +132,13 @@ export default async function EventPage({ params, searchParams }: EventPageProps
   const startDate = DateTime.fromISO(event.startDateTime, { locale });
   const endDate = DateTime.fromISO(event.endDateTime, { locale });
   const isFavorited = session?.user && event.favoritedBy?.includes(session.user.id);
+
+  // Tournoi déclaré par l'événement : bouton vers son portail (joueur, ou
+  // organisateur pour les organisateurs du tournoi) et carte de gestion.
+  const linkedTournament = await getTournamentByEventId(event.id);
+  const isLinkedTournamentOrganizer =
+    !!linkedTournament && !!session?.user && isTournamentOrganizer(linkedTournament, session.user.id);
+  const tTournaments = await getTranslations("Tournaments");
 
   // Récupérer les participants (utilisateurs et invités)
   const participantsResult = isCreator
@@ -231,6 +241,20 @@ export default async function EventPage({ params, searchParams }: EventPageProps
                 </Link>
               </Button>
             )}
+            {linkedTournament && (
+              <Button asChild variant="outline" className="flex-1">
+                <Link
+                  href={
+                    isLinkedTournamentOrganizer
+                      ? `/tournaments/${linkedTournament.id}/organizer`
+                      : `/tournaments/${linkedTournament.id}/player`
+                  }
+                >
+                  <Trophy className="h-4 w-4 mr-2" />
+                  {tTournaments("eventLink.portalButton")}
+                </Link>
+              </Button>
+            )}
           </div>
         )}
 
@@ -322,6 +346,15 @@ export default async function EventPage({ params, searchParams }: EventPageProps
           </div>
 
           <div className="space-y-6">
+            {isCreator && (
+              <TournamentLinkCard
+                eventId={event.id}
+                tournament={
+                  linkedTournament ? { id: linkedTournament.id, name: linkedTournament.name } : null
+                }
+              />
+            )}
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
