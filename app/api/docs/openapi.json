@@ -4076,6 +4076,74 @@
         }
       }
     },
+    "/search": {
+      "get": {
+        "tags": [
+          "Search"
+        ],
+        "summary": "Global search across games, cards, rules, lairs and events",
+        "description": "Searches the platform by name: games, card catalog, rules and policies, public game venues (plus private venues owned by the caller when authenticated), and upcoming events. Powers the app's command palette. Returns empty groups when the query is shorter than 2 characters.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2
+            },
+            "description": "Search query (minimum 2 characters)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Grouped search results (up to 5 per group).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "games": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SearchResult"
+                      }
+                    },
+                    "cards": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SearchResult"
+                      }
+                    },
+                    "lairs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SearchResult"
+                      }
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SearchResult"
+                      }
+                    },
+                    "rules": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SearchResult"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
     "/play-groups": {
       "get": {
         "tags": [
@@ -9913,6 +9981,28 @@
       }
     },
     "schemas": {
+      "SearchResult": {
+        "type": "object",
+        "required": [
+          "label",
+          "href"
+        ],
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "sublabel": {
+            "type": "string"
+          },
+          "href": {
+            "type": "string",
+            "description": "App-relative link to the matched resource."
+          },
+          "image": {
+            "type": "string"
+          }
+        }
+      },
       "Error": {
         "type": "object",
         "properties": {

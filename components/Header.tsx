@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/navigation-menu";
 import {useTranslations} from "next-intl";
 import LocaleSwitcher from "@/components/locale-switcher";
+import { CommandBox } from "@/components/CommandBox";
 
 export default function Header() {
   const t = useTranslations('Header');
@@ -312,25 +313,81 @@ export default function Header() {
             </NavigationMenuList>
           </NavigationMenu>
 
-          {/* User Menu (Desktop) */}
-          <div className="hidden xl:flex xl:items-center xl:gap-2">
-            {isPending ? (
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            ) : session ? (
-              <>
-                <LocaleSwitcher />
-                <NotificationDropdown userId={session.user.id} />
-                <DropdownMenu>
+          {/* Right side: command box + user menus (desktop and mobile variants) */}
+          <div className="flex items-center gap-2">
+            <CommandBox />
+
+            {/* User Menu (Desktop) */}
+            <div className="hidden xl:flex xl:items-center xl:gap-2">
+              {isPending ? (
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              ) : session ? (
+                <>
+                  <LocaleSwitcher />
+                  <NotificationDropdown userId={session.user.id} />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="gap-2">
+                        <User className="h-4 w-4" />
+                        <span className="max-w-[150px] truncate">
+                          {session.user.email}
+                        </span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel>{t('menu.myAccount')}</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href="/account" className="flex w-full cursor-pointer">
+                          <User className="mr-2 h-4 w-4" />
+                          <span>{t('menu.Mon Profil')}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href="/account/achievements" className="flex w-full cursor-pointer">
+                          <Trophy className="mr-2 h-4 w-4" />
+                          <span>{t('menu.Succès')}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>{t('menu.Déconnexion')}</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              ) : (
+                <>
+                  <LocaleSwitcher />
+                  <Button asChild>
+                    <Link href="/login">{t('menu.Se connecter')}</Link>
+                  </Button>
+                </>
+              )}
+            </div>
+
+            {/* Mobile menu button */}
+            <div className="flex items-center gap-2 xl:hidden">
+              {!isPending && session && (
+                <>
+                  <LocaleSwitcher />
+                  <NotificationDropdown userId={session.user.id} />
+                  <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="gap-2">
-                      <User className="h-4 w-4" />
-                      <span className="max-w-[150px] truncate">
-                        {session.user.email}
-                      </span>
+                    <Button variant="ghost" size="icon">
+                      <User className="h-5 w-5" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>{t('menu.myAccount')}</DropdownMenuLabel>
+                    <DropdownMenuLabel className="font-normal">
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-xs text-muted-foreground truncate">
+                          {session.user.email}
+                        </p>
+                      </div>
+                    </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link href="/account" className="flex w-full cursor-pointer">
@@ -352,79 +409,28 @@ export default function Header() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              </>
-            ) : (
-              <>
-                <LocaleSwitcher />
-                <Button asChild>
-                  <Link href="/login">{t('menu.Se connecter')}</Link>
-                </Button>
-              </>
-            )}
-          </div>
-
-          {/* Mobile menu button */}
-          <div className="flex items-center gap-2 xl:hidden">
-            {!isPending && session && (
-              <>
-                <LocaleSwitcher />
-                <NotificationDropdown userId={session.user.id} />
-                <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <User className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-xs text-muted-foreground truncate">
-                        {session.user.email}
-                      </p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/account" className="flex w-full cursor-pointer">
-                      <User className="mr-2 h-4 w-4" />
-                      <span>{t('menu.Mon Profil')}</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/account/achievements" className="flex w-full cursor-pointer">
-                      <Trophy className="mr-2 h-4 w-4" />
-                      <span>{t('menu.Succès')}</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>{t('menu.Déconnexion')}</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              </>
-            )}
-
-            {!isPending && !session && (
-              <Button size="sm" asChild>
-                <Link href="/login">{t('menu.Connexion')}</Link>
-              </Button>
-            )}
-
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleMobileMenu}
-              aria-label="Menu"
-            >
-              {mobileMenuOpen ? (
-                <Menu className="h-5 w-5 rotate-90 transition-transform" />
-              ) : (
-                <Menu className="h-5 w-5" />
+                </>
               )}
-            </Button>
+
+              {!isPending && !session && (
+                <Button size="sm" asChild>
+                  <Link href="/login">{t('menu.Connexion')}</Link>
+                </Button>
+              )}
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleMobileMenu}
+                aria-label="Menu"
+              >
+                {mobileMenuOpen ? (
+                  <Menu className="h-5 w-5 rotate-90 transition-transform" />
+                ) : (
+                  <Menu className="h-5 w-5" />
+                )}
+              </Button>
+            </div>
           </div>
         </div>
 
