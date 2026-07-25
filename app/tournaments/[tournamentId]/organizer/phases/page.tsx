@@ -24,7 +24,11 @@ export default async function OrganizerPhasesPage({
   return (
     <div className="mx-auto max-w-4xl p-8">
       <OrganizerShell tournamentId={tournamentId} tournamentName={tournament.name} active="phases">
-        <PhasesSection tournamentId={tournamentId} initialPhases={phases} />
+        <PhasesSection
+          tournamentId={tournamentId}
+          initialPhases={phases}
+          initialCurrentPhaseId={tournament.currentPhaseId}
+        />
       </OrganizerShell>
     </div>
   );

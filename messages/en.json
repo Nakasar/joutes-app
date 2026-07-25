@@ -1895,6 +1895,11 @@
       "removeError": "Error while removing the player"
     },
     "organizerPhases": {
+      "currentPhaseLabel": "Current phase",
+      "currentPhaseNone": "No current phase",
+      "editPhaseAria": "Edit phase {name}",
+      "editDialogTitle": "Edit phase “{name}”",
+      "editSubmit": "Save changes",
       "title": "Phases",
       "empty": "No phase configured.",
       "addPhase": "Add a phase",

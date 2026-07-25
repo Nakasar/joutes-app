@@ -1896,6 +1896,11 @@
       "removeError": "Erreur lors de la suppression du joueur"
     },
     "organizerPhases": {
+      "currentPhaseLabel": "Phase en cours",
+      "currentPhaseNone": "Aucune phase en cours",
+      "editPhaseAria": "Modifier la phase {name}",
+      "editDialogTitle": "Modifier la phase « {name} »",
+      "editSubmit": "Enregistrer les modifications",
       "title": "Phases",
       "empty": "Aucune phase configurée.",
       "addPhase": "Ajouter une phase",

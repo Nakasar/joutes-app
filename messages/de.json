@@ -1812,6 +1812,11 @@
       "removeError": "Fehler beim Entfernen des Spielers"
     },
     "organizerPhases": {
+      "currentPhaseLabel": "Aktuelle Phase",
+      "currentPhaseNone": "Keine aktuelle Phase",
+      "editPhaseAria": "Phase {name} bearbeiten",
+      "editDialogTitle": "Phase „{name}“ bearbeiten",
+      "editSubmit": "Änderungen speichern",
       "title": "Phasen",
       "empty": "Keine Phase konfiguriert.",
       "addPhase": "Phase hinzufügen",
