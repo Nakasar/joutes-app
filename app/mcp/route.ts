@@ -21,6 +21,7 @@ import { Game } from "@/lib/types/Game";
 import { getRawEntries } from "@/lib/rules/riftbound";
 import { serverClient } from "@/lib/server-client";
 import { validateApiKey } from "@/lib/db/api-keys";
+import { registerJoutesDataTools, withToolLogging } from "./tools";
 
 // Gestionnaires pour chaque outil
 async function handleSearchEvents(argsRaw: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>): Promise<{ content: TextContent[]; isError?: boolean }> {
@@ -597,30 +598,6 @@ async function handleGetRule(params: {
     };
 }
 
-// Enveloppe chaque outil MCP pour logger son invocation et catcher les erreurs
-// non gérées par le handler lui-même (certains, comme handleSearchCard ou
-// handleGetRule, ne catchent pas leurs propres erreurs).
-function withToolLogging<Args extends unknown[]>(
-    name: string,
-    handler: (...args: Args) => Promise<{ content: TextContent[]; isError?: boolean }>
-): (...args: Args) => Promise<{ content: TextContent[]; isError?: boolean }> {
-    return async (...args: Args) => {
-        console.log(`[MCP] Appel de l'outil "${name}"`);
-        try {
-            return await handler(...args);
-        } catch (error) {
-            console.error(`[MCP] Erreur lors de l'exécution de l'outil "${name}":`, error);
-            return {
-                content: [{
-                    type: "text",
-                    text: `Erreur lors de l'exécution de l'outil "${name}".`
-                } as TextContent],
-                isError: true
-            };
-        }
-    };
-}
-
 // Route principale MCP
 const handler = createMcpHandler(server => {
     server.tool("search_events", "Rechercher des évènements sur la plateforme Joutes. Supporte la personnalisation pour l'utilisateur authentifié et le filtrage par jeux.", {
@@ -685,6 +662,7 @@ const handler = createMcpHandler(server => {
             id: z.string().describe("ID of the rule. Prefix by type. Example: TR509.4.c.1"),
         },
     }, withToolLogging("get_rule", handleGetRule));
+    registerJoutesDataTools(server);
 }, {
     serverInfo: {
         name: "Joutes APP",
