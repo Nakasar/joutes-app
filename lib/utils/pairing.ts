@@ -352,25 +352,31 @@ export function generateEliminationBracket(
     return pairings;
   }
 
-  // Créer les pairings pour le premier tour avec seeding classique
-  // 1 vs 8, 2 vs 7, 3 vs 6, 4 vs 5 pour un top 8
-  for (let i = 0; i < halfSize; i++) {
-    const topSeed = i;
-    const bottomSeed = bracketSize - 1 - i;
-
-    // Vérifier que les deux joueurs existent
-    if (topSeed < selectedPlayers.length && bottomSeed < selectedPlayers.length) {
-      pairings.push({
-        player1Id: selectedPlayers[topSeed],
-        player2Id: selectedPlayers[bottomSeed],
-      });
-    } else if (topSeed < selectedPlayers.length) {
-      // Si seulement le top seed existe, il a un BYE
-      pairings.push({
-        player1Id: selectedPlayers[topSeed],
-        player2Id: null,
-      });
+  // Classement opposé : placement standard des têtes de série (doublement
+  // récursif). L'ordre des matchs garantit — avec l'appariement séquentiel des
+  // vainqueurs — que le 1er et le 2e ne peuvent se rencontrer qu'en finale, le
+  // 3e et le 4e au plus tôt en demi-finale, etc.
+  // Ex. 8 joueurs : 1v8, 4v5, 2v7, 3v6 (demi-finales théoriques 1v4 et 2v3).
+  let seedOrder = [0];
+  while (seedOrder.length < bracketSize) {
+    const doubled = seedOrder.length * 2;
+    const next: number[] = [];
+    for (const seed of seedOrder) {
+      next.push(seed, doubled - 1 - seed);
     }
+    seedOrder = next;
+  }
+
+  for (let i = 0; i < halfSize; i++) {
+    // La première position de chaque paire est toujours la meilleure tête de
+    // série (< halfSize), donc toujours présente ; l'autre reçoit un BYE si le
+    // bracket est incomplet.
+    const topSeed = seedOrder[2 * i];
+    const bottomSeed = seedOrder[2 * i + 1];
+    pairings.push({
+      player1Id: selectedPlayers[topSeed],
+      player2Id: bottomSeed < numPlayers ? selectedPlayers[bottomSeed] : null,
+    });
   }
 
   return pairings;
