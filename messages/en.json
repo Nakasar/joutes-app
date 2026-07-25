@@ -1,5 +1,18 @@
 {
   "Header": {
+    "search": {
+      "title": "Search",
+      "open": "Search…",
+      "placeholder": "Search for a game, card, venue, event…",
+      "empty": "No results.",
+      "loading": "Searching…",
+      "groupNavigation": "Navigation",
+      "groupGames": "Games",
+      "groupCards": "Cards",
+      "groupRules": "Rules and policies",
+      "groupLairs": "Game venues",
+      "groupEvents": "Events"
+    },
     "menu": {
       "Collection": "My collection",
       "Jeux": "Games",

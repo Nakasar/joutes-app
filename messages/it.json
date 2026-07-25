@@ -1,5 +1,18 @@
 {
   "Header": {
+    "search": {
+      "title": "Ricerca",
+      "open": "Cerca…",
+      "placeholder": "Cerca un gioco, una carta, un luogo, un evento…",
+      "empty": "Nessun risultato.",
+      "loading": "Ricerca in corso…",
+      "groupNavigation": "Navigazione",
+      "groupGames": "Giochi",
+      "groupCards": "Carte",
+      "groupRules": "Regole e regolamenti",
+      "groupLairs": "Luoghi di gioco",
+      "groupEvents": "Eventi"
+    },
     "menu": {
       "Collection": "La mia collezione",
       "Jeux": "Giochi",

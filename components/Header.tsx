@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/navigation-menu";
 import {useTranslations} from "next-intl";
 import LocaleSwitcher from "@/components/locale-switcher";
+import { CommandBox } from "@/components/CommandBox";
 
 export default function Header() {
   const t = useTranslations('Header');
@@ -312,6 +313,10 @@ export default function Header() {
             </NavigationMenuList>
           </NavigationMenu>
 
+          {/* Right side: command box + user menus (desktop and mobile variants) */}
+          <div className="flex items-center gap-2">
+          <CommandBox />
+
           {/* User Menu (Desktop) */}
           <div className="hidden xl:flex xl:items-center xl:gap-2">
             {isPending ? (
@@ -425,6 +430,7 @@ export default function Header() {
                 <Menu className="h-5 w-5" />
               )}
             </Button>
+          </div>
           </div>
         </div>
 
