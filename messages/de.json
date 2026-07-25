@@ -1564,7 +1564,9 @@
       "error": "Ein Fehler ist aufgetreten",
       "loading": "Wird geladen...",
       "roundN": "Runde {number}",
-      "bye": "Freilos"
+      "bye": "Freilos",
+      "vs": "vs",
+      "bestOfN": "Best-of-{count}"
     },
     "player": {
       "myRegistration": "Meine Anmeldung:",
@@ -1699,7 +1701,6 @@
       "standingsValidated": "Rangliste bestätigt",
       "standingsNotValidated": "Rangliste nicht bestätigt",
       "roundShort": "R{number}",
-      "bestOfN": "Best-of-{count}",
       "modePoints": "Punkte",
       "modeSelection": "Auswahl",
       "enterResults": "Ergebnisse eintragen",
@@ -1707,7 +1708,6 @@
       "deleteRoundConfirm": "Runde {number} und alle ihre Matches löschen? Diese Aktion ist unwiderruflich.",
       "matchesTitle": "Matches",
       "noMatches": "Keine Matches.",
-      "vs": "vs",
       "gameN": "Partie {number}:",
       "drawSuffix": "(unentschieden)",
       "gameDraw": "Unentschiedene Partie",

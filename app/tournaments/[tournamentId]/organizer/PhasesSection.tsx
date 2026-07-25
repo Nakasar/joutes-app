@@ -187,7 +187,7 @@ export function PhasesSection({
                   <div>
                     <div className="font-medium">{phase.name}</div>
                     <div className="text-sm text-muted-foreground">
-                      {t(`common.phaseType.${phase.type}`)} · best-of-{phase.bestOf}
+                      {t(`common.phaseType.${phase.type}`)} · {t("common.bestOfN", { count: phase.bestOf })}
                       {` · ${
                         phase.resultMode === "points"
                           ? t("organizerPhases.summary.resultPoints")

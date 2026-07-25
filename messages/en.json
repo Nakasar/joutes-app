@@ -1647,7 +1647,9 @@
       "error": "An error occurred",
       "loading": "Loading...",
       "roundN": "Round {number}",
-      "bye": "BYE"
+      "bye": "BYE",
+      "vs": "vs",
+      "bestOfN": "best-of-{count}"
     },
     "player": {
       "myRegistration": "My registration:",
@@ -1782,7 +1784,6 @@
       "standingsValidated": "Standings validated",
       "standingsNotValidated": "Standings not validated",
       "roundShort": "R{number}",
-      "bestOfN": "best-of-{count}",
       "modePoints": "points",
       "modeSelection": "selection",
       "enterResults": "Enter results",
@@ -1790,7 +1791,6 @@
       "deleteRoundConfirm": "Delete round {number} and all its matches? This action is irreversible.",
       "matchesTitle": "Matches",
       "noMatches": "No matches.",
-      "vs": "vs",
       "gameN": "Game {number}:",
       "drawSuffix": "(draw)",
       "gameDraw": "Drawn game",

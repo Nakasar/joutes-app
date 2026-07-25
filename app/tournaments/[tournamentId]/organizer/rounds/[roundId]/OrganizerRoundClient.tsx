@@ -297,7 +297,7 @@ export function OrganizerRoundClient({
   const matchLabel = (match: TournamentMatch) =>
     `${match.bracketPosition ? `${match.bracketPosition} — ` : ""}${match.players
       .map((p) => playerName(p.playerId))
-      .join(" vs ")}${match.players.length === 1 ? ` (${t("common.bye")})` : ""}`;
+      .join(` ${t("common.vs")} `)}${match.players.length === 1 ? ` (${t("common.bye")})` : ""}`;
 
   return (
     <div className="space-y-6">

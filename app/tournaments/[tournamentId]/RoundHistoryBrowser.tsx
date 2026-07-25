@@ -397,7 +397,7 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
               <h2 className="text-xl font-semibold">{t("common.roundN", { number: current.round.number })}</h2>
               <Badge variant="secondary">{t(`common.phaseType.${current.phase.type}`)}</Badge>
               <span className="text-sm text-muted-foreground">
-                {current.phase.name} · {t("history.bestOfN", { count: current.phase.bestOf })} ·{" "}
+                {current.phase.name} · {t("common.bestOfN", { count: current.phase.bestOf })} ·{" "}
                 {current.phase.resultMode === "points" ? t("history.modePoints") : t("history.modeSelection")}
               </span>
             </div>
@@ -440,7 +440,7 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
                           {match.bracketPosition ? `${match.bracketPosition} — ` : ""}
                           {match.players.map((p, i) => (
                             <span key={p.playerId} className="inline-flex items-center">
-                              {i > 0 && !isBye && <span className="mr-1 text-muted-foreground">{t("history.vs")}</span>}
+                              {i > 0 && !isBye && <span className="mr-1 text-muted-foreground">{t("common.vs")}</span>}
                               <MatchPlayerName
                                 isWinner={match.winnerIds.includes(p.playerId)}
                                 name={`${playerName(p.playerId)} (${p.score})`}

@@ -1589,7 +1589,9 @@
       "error": "Si è verificato un errore",
       "loading": "Caricamento...",
       "roundN": "Turno {number}",
-      "bye": "BYE"
+      "bye": "BYE",
+      "vs": "vs",
+      "bestOfN": "best-of-{count}"
     },
     "player": {
       "myRegistration": "La mia iscrizione:",
@@ -1724,7 +1726,6 @@
       "standingsValidated": "Classifica convalidata",
       "standingsNotValidated": "Classifica non convalidata",
       "roundShort": "T{number}",
-      "bestOfN": "best-of-{count}",
       "modePoints": "punti",
       "modeSelection": "selezione",
       "enterResults": "Inserisci i risultati",
@@ -1732,7 +1733,6 @@
       "deleteRoundConfirm": "Eliminare il turno {number} e tutti i suoi match? Questa azione è irreversibile.",
       "matchesTitle": "Match",
       "noMatches": "Nessun match.",
-      "vs": "vs",
       "gameN": "Partita {number}:",
       "drawSuffix": "(pareggio)",
       "gameDraw": "Partita in pareggio",
