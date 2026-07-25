@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { compareBracketPositions } from "@/lib/utils/pairing";
 import type { TournamentMatch, TournamentRound } from "@/lib/types/Tournament";
@@ -16,20 +17,24 @@ const HEADER_H = 48;
 const BASE_SLOT = MATCH_H + ROW_GAP;
 
 // Libellé du tour selon le nombre de matchs restants dans la colonne.
-function stageLabel(slotCount: number, columnIndex: number): string {
+function stageLabel(
+  t: ReturnType<typeof useTranslations>,
+  slotCount: number,
+  columnIndex: number
+): string {
   switch (slotCount) {
     case 1:
-      return "Finale";
+      return t("bracketTree.final");
     case 2:
-      return "Demi-finales";
+      return t("bracketTree.semiFinals");
     case 4:
-      return "Quarts de finale";
+      return t("bracketTree.quarterFinals");
     case 8:
-      return "Huitièmes de finale";
+      return t("bracketTree.roundOf16");
     case 16:
-      return "Seizièmes de finale";
+      return t("bracketTree.roundOf32");
     default:
-      return `Ronde ${columnIndex + 1}`;
+      return t("common.roundN", { number: columnIndex + 1 });
   }
 }
 
@@ -64,6 +69,7 @@ export function BracketTree({
   players: BracketPlayer[];
   currentRoundId?: string;
 }) {
+  const t = useTranslations("Tournaments");
   const sortedRounds = [...rounds].sort((a, b) => a.number - b.number);
   const matchesByRound = new Map<string, TournamentMatch[]>();
   for (const round of sortedRounds) {
@@ -77,9 +83,7 @@ export function BracketTree({
   const firstRoundSlots = matchesByRound.get(sortedRounds[0]?.id ?? "")?.length ?? 0;
   if (firstRoundSlots === 0) {
     return (
-      <p className="text-muted-foreground">
-        L&apos;arbre sera affiché dès que la première ronde de la phase aura été créée.
-      </p>
+      <p className="text-muted-foreground">{t("bracketTree.emptyHint")}</p>
     );
   }
 
@@ -146,10 +150,12 @@ export function BracketTree({
           const header = (
             <>
               <p className={cn("truncate text-sm font-semibold", isCurrent && "text-primary")}>
-                {stageLabel(column.slotCount, c)}
+                {stageLabel(t, column.slotCount, c)}
               </p>
               <p className="text-xs text-muted-foreground">
-                {column.round ? `Ronde ${column.round.number}` : "À venir"}
+                {column.round
+                  ? t("common.roundN", { number: column.round.number })
+                  : t("bracketTree.upcoming")}
               </p>
             </>
           );
@@ -183,7 +189,7 @@ export function BracketTree({
                       className="absolute flex items-center justify-center rounded-lg border border-dashed text-xs text-muted-foreground"
                       style={style}
                     >
-                      À déterminer
+                      {t("bracketTree.toBeDetermined")}
                     </div>
                   );
                 }
@@ -208,7 +214,7 @@ export function BracketTree({
                           )}
                         >
                           <PlayerNameTag
-                            name={player?.displayName ?? "Joueur inconnu"}
+                            name={player?.displayName ?? t("bracketTree.unknownPlayer")}
                             discriminator={player?.discriminator}
                             className="truncate"
                           />
@@ -220,7 +226,7 @@ export function BracketTree({
                     })}
                     {match.players.length === 1 && (
                       <span className="px-1 text-xs italic text-muted-foreground">
-                        BYE — victoire automatique
+                        {t("bracketTree.byeAutoWin")}
                       </span>
                     )}
                   </Link>

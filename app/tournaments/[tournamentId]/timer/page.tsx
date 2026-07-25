@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { formatDuration, timerIsPaused, timerRemainingSeconds } from "@/lib/tournament-timer";
 import { useTournamentLive } from "../useTournamentLive";
@@ -10,6 +11,7 @@ export default function TournamentTimerPage({
 }: {
   params: Promise<{ tournamentId: string }>;
 }) {
+  const t = useTranslations("Tournaments");
   const { tournamentId } = use(params);
   const { state, serverOffsetMs } = useTournamentLive(tournamentId, 5000);
 
@@ -40,7 +42,7 @@ export default function TournamentTimerPage({
 
       {remaining === null ? (
         <p className={cn("text-3xl", expired ? "text-white" : "text-muted-foreground")}>
-          Aucun minuteur en cours
+          {t("timerPage.noTimer")}
         </p>
       ) : (
         <div className="flex flex-col items-center gap-4">
@@ -49,7 +51,7 @@ export default function TournamentTimerPage({
           </div>
           {paused && (
             <p className={cn("text-2xl uppercase tracking-widest", expired ? "text-white/80" : "text-muted-foreground")}>
-              En pause
+              {t("timerPage.paused")}
             </p>
           )}
         </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { LiveTimer } from "@/lib/tournament-timer";
 
 export type LiveAnnouncement = {
@@ -23,6 +24,7 @@ export type LiveState = {
  * décompte synchronisé. Lecture publique (endpoint /live).
  */
 export function useTournamentLive(tournamentId: string, pollMs = 8000) {
+  const t = useTranslations("Tournaments");
   const [state, setState] = useState<LiveState | null>(null);
   const [serverOffsetMs, setServerOffsetMs] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -36,9 +38,9 @@ export function useTournamentLive(tournamentId: string, pollMs = 8000) {
       setServerOffsetMs(new Date(data.serverNow).getTime() - Date.now());
       setError(null);
     } catch {
-      setError("Impossible de charger l'état du tournoi");
+      setError(t("playerLive.loadLiveError"));
     }
-  }, [tournamentId]);
+  }, [tournamentId, t]);
 
   useEffect(() => {
     load();

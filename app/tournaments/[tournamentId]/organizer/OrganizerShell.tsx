@@ -1,15 +1,16 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 export type OrganizerSection = "settings" | "players" | "phases" | "rounds" | "live";
 
-const SECTIONS: { key: OrganizerSection; label: string; path: string }[] = [
-  { key: "settings", label: "Configuration", path: "settings" },
-  { key: "players", label: "Joueurs", path: "players" },
-  { key: "phases", label: "Phases", path: "phases" },
-  { key: "rounds", label: "Rondes", path: "rounds" },
-  { key: "live", label: "Live", path: "live" },
+const SECTIONS: { key: OrganizerSection; path: string }[] = [
+  { key: "settings", path: "settings" },
+  { key: "players", path: "players" },
+  { key: "phases", path: "phases" },
+  { key: "rounds", path: "rounds" },
+  { key: "live", path: "live" },
 ];
 
 // Cadre commun aux pages du portail organisateur : en-tête, navigation entre
@@ -25,12 +26,13 @@ export function OrganizerShell({
   active: OrganizerSection;
   children: ReactNode;
 }) {
+  const t = useTranslations("Tournaments");
   const base = `/tournaments/${tournamentId}/organizer`;
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">{tournamentName}</h1>
-        <p className="text-muted-foreground mt-1">Portail organisateur</p>
+        <p className="text-muted-foreground mt-1">{t("organizerShell.subtitle")}</p>
       </div>
 
       <nav className="flex flex-wrap gap-1 rounded-lg bg-muted p-1">
@@ -46,7 +48,7 @@ export function OrganizerShell({
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            {section.label}
+            {t(`organizerShell.sections.${section.key}`)}
           </Link>
         ))}
       </nav>
@@ -55,13 +57,13 @@ export function OrganizerShell({
 
       <div className="flex flex-wrap justify-between gap-2 border-t pt-4">
         <Link href="/tournaments" className="text-sm text-muted-foreground hover:text-foreground">
-          ← Mes tournois
+          {t("organizerShell.backToTournaments")}
         </Link>
         <Link
           href={`/tournaments/${tournamentId}/player`}
           className="text-sm text-muted-foreground hover:text-foreground"
         >
-          Voir le portail joueur →
+          {t("organizerShell.viewPlayerPortal")}
         </Link>
       </div>
     </div>

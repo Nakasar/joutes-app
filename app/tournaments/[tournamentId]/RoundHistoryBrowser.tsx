@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { DateTime } from "luxon";
 import { ChevronLeft, ChevronRight, Plus, RotateCw, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -22,20 +23,6 @@ import type { TournamentPhaseType, TournamentResultMode, TournamentRoundStanding
 import { MatchPlayerName } from "./MatchPlayerName";
 import { PlayerNameTag } from "./PlayerNameTag";
 import { TablePagination } from "./TablePagination";
-
-const PHASE_TYPE_LABELS: Record<TournamentPhaseType, string> = {
-  freeform: "Format libre",
-  swiss: "Rondes suisses",
-  elimination: "Élimination (ré-appariement)",
-  bracket: "Arbre d'élimination",
-};
-
-const MATCH_STATUS_LABELS: Record<string, string> = {
-  pending: "À jouer",
-  "in-progress": "En attente de confirmation",
-  completed: "Terminé",
-  disputed: "Contesté",
-};
 
 type ApiPlayer = { id: string; userId?: string; displayName: string; status: string };
 type ApiGame = { winnerId?: string | null; points?: Record<string, number> };
@@ -69,16 +56,21 @@ type ApiHistory = { phases: ApiPhaseHistory[]; players: ApiPlayer[] };
 // Une ronde à plat avec le contexte de sa phase, pour la navigation et le rendu.
 type FlatRound = { phase: ApiPhase; round: ApiRound; matches: ApiMatch[] };
 
-function gameSummary(game: ApiGame, resultMode: TournamentResultMode, playerName: (id: string) => string): string {
+function gameSummary(
+  game: ApiGame,
+  resultMode: TournamentResultMode,
+  playerName: (id: string) => string,
+  t: ReturnType<typeof useTranslations>
+): string {
   if (resultMode === "points" && game.points) {
     const detail = Object.entries(game.points)
       .sort(([, a], [, b]) => b - a)
       .map(([id, pts]) => `${playerName(id)} ${pts}`)
       .join(" · ");
-    return game.winnerId ? detail : `${detail} (nulle)`;
+    return game.winnerId ? detail : `${detail} ${t("history.drawSuffix")}`;
   }
   if (game.winnerId) return `${playerName(game.winnerId)} 🏆`;
-  return "Partie nulle";
+  return t("history.gameDraw");
 }
 
 type Props = {
@@ -91,6 +83,8 @@ type Props = {
 };
 
 export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props) {
+  const t = useTranslations("Tournaments");
+  const locale = useLocale();
   const router = useRouter();
   const [history, setHistory] = useState<ApiHistory | null>(null);
   const [selectedRoundId, setSelectedRoundId] = useState<string | null>(null);
@@ -121,15 +115,15 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
       const res = await authFetch(`/api/tournaments/${tournamentId}/history`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Impossible de charger l'historique");
+        throw new Error(body.error ?? t("history.loadError"));
       }
       setHistory(await res.json());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur lors du chargement");
+      setError(err instanceof Error ? err.message : t("history.loadFallbackError"));
     } finally {
       setLoading(false);
     }
-  }, [authFetch, tournamentId]);
+  }, [authFetch, tournamentId, t]);
 
   useEffect(() => {
     load();
@@ -153,9 +147,26 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
 
   const players = history?.players ?? [];
   const playerName = useCallback(
-    (id: string) => players.find((p) => p.id === id)?.displayName ?? "Inconnu",
-    [players]
+    (id: string) => players.find((p) => p.id === id)?.displayName ?? t("history.unknownPlayer"),
+    [players, t]
   );
+
+  // Statuts de match affichés dans l'historique (formulations propres à ce
+  // contexte pour pending / in-progress).
+  const matchStatusLabel = (status: string) => {
+    switch (status) {
+      case "pending":
+        return t("history.matchStatusPending");
+      case "in-progress":
+        return t("history.matchStatusAwaitingConfirmation");
+      case "completed":
+        return t("common.matchStatus.completed");
+      case "disputed":
+        return t("common.matchStatus.disputed");
+      default:
+        return status;
+    }
+  };
 
   const currentIndex = flatRounds.findIndex((r) => r.round.id === selectedRoundId);
   const current = currentIndex >= 0 ? flatRounds[currentIndex] : null;
@@ -193,13 +204,13 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Erreur lors de la création de la ronde");
+        throw new Error(body.error ?? t("history.createRoundError"));
       }
       const round = await res.json();
       // Redirige vers la saisie des résultats de la nouvelle ronde.
       router.push(`/tournaments/${tournamentId}/organizer/rounds/${round.id}/matches`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur lors de la création de la ronde");
+      setError(err instanceof Error ? err.message : t("history.createRoundError"));
     } finally {
       setBusy(false);
     }
@@ -214,13 +225,13 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Erreur lors de la suppression de la ronde");
+        throw new Error(body.error ?? t("history.deleteRoundError"));
       }
       setDeleteRoundOpen(false);
       setSelectedRoundId(null);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur lors de la suppression de la ronde");
+      setError(err instanceof Error ? err.message : t("history.deleteRoundError"));
     } finally {
       setBusy(false);
     }
@@ -235,7 +246,7 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Erreur lors de la validation du classement");
+        throw new Error(body.error ?? t("history.validateError"));
       }
       const round = await res.json();
       // Met à jour la ronde concernée dans l'historique local.
@@ -262,20 +273,20 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
           : prev
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur lors de la validation du classement");
+      setError(err instanceof Error ? err.message : t("history.validateError"));
     } finally {
       setBusy(false);
     }
   };
 
-  if (loading) return <p className="text-muted-foreground">Chargement de l&apos;historique...</p>;
+  if (loading) return <p className="text-muted-foreground">{t("history.loadingHistory")}</p>;
 
   if (error && !history) {
     return (
       <div className="space-y-3">
         <p className="text-sm text-destructive">{error}</p>
         <Button variant="outline" size="sm" onClick={load}>
-          Réessayer
+          {t("history.retry")}
         </Button>
       </div>
     );
@@ -286,10 +297,10 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
   const manageBar =
     canManage && history && history.phases.length > 0 ? (
       <div className="flex flex-wrap items-center gap-2 rounded-lg border p-3">
-        <span className="text-sm font-medium">Gérer les rondes :</span>
+        <span className="text-sm font-medium">{t("history.manageRounds")}</span>
         <Select value={createPhaseId} onValueChange={setCreatePhaseId}>
           <SelectTrigger className="w-[220px]">
-            <SelectValue placeholder="Choisir une phase" />
+            <SelectValue placeholder={t("history.choosePhase")} />
           </SelectTrigger>
           <SelectContent>
             {history.phases.map(({ phase }) => (
@@ -301,7 +312,7 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
         </Select>
         <Button size="sm" onClick={createRound} disabled={busy || !createPhaseId}>
           <Plus className="mr-2 h-4 w-4" />
-          Créer une ronde
+          {t("history.createRound")}
         </Button>
       </div>
     ) : null;
@@ -311,7 +322,7 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
       <div className="space-y-4">
         {manageBar}
         {error && <p className="text-sm text-destructive">{error}</p>}
-        <p className="text-muted-foreground">Aucune ronde jouée pour le moment.</p>
+        <p className="text-muted-foreground">{t("history.noRounds")}</p>
       </div>
     );
   }
@@ -326,7 +337,7 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
           variant="outline"
           size="icon"
           className="shrink-0"
-          aria-label="Ronde précédente"
+          aria-label={t("history.prevRound")}
           disabled={currentIndex <= 0}
           onClick={() => setSelectedRoundId(flatRounds[currentIndex - 1].round.id)}
         >
@@ -347,7 +358,7 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
                       key={round.id}
                       type="button"
                       onClick={() => setSelectedRoundId(round.id)}
-                      title={round.standingsValidatedAt ? "Classement validé" : "Classement non validé"}
+                      title={round.standingsValidatedAt ? t("history.standingsValidated") : t("history.standingsNotValidated")}
                       className={cn(
                         "rounded-md border px-3 py-1 text-sm font-medium whitespace-nowrap transition-colors",
                         active
@@ -356,7 +367,7 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
                         !round.standingsValidatedAt && !active && "border-dashed text-muted-foreground"
                       )}
                     >
-                      R{round.number}
+                      {t("history.roundShort", { number: round.number })}
                     </button>
                   );
                 })}
@@ -369,7 +380,7 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
           variant="outline"
           size="icon"
           className="shrink-0"
-          aria-label="Ronde suivante"
+          aria-label={t("history.nextRound")}
           disabled={currentIndex >= flatRounds.length - 1}
           onClick={() => setSelectedRoundId(flatRounds[currentIndex + 1].round.id)}
         >
@@ -383,18 +394,18 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
         <div className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-xl font-semibold">Ronde {current.round.number}</h2>
-              <Badge variant="secondary">{PHASE_TYPE_LABELS[current.phase.type]}</Badge>
+              <h2 className="text-xl font-semibold">{t("common.roundN", { number: current.round.number })}</h2>
+              <Badge variant="secondary">{t(`common.phaseType.${current.phase.type}`)}</Badge>
               <span className="text-sm text-muted-foreground">
-                {current.phase.name} · best-of-{current.phase.bestOf} ·{" "}
-                {current.phase.resultMode === "points" ? "points" : "sélection"}
+                {current.phase.name} · {t("history.bestOfN", { count: current.phase.bestOf })} ·{" "}
+                {current.phase.resultMode === "points" ? t("history.modePoints") : t("history.modeSelection")}
               </span>
             </div>
             {canManage && (
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" asChild>
                   <Link href={`/tournaments/${tournamentId}/organizer/rounds/${current.round.id}/matches`}>
-                    Saisir les résultats
+                    {t("history.enterResults")}
                   </Link>
                 </Button>
                 {currentIsLastRound && (
@@ -406,7 +417,7 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
                     disabled={busy}
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
-                    Supprimer la ronde
+                    {t("history.deleteRound")}
                   </Button>
                 )}
               </div>
@@ -415,9 +426,9 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
 
           {/* Récapitulatif des matchs */}
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Matchs</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t("history.matchesTitle")}</h3>
             {current.matches.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Aucun match.</p>
+              <p className="text-sm text-muted-foreground">{t("history.noMatches")}</p>
             ) : (
               <ul className="space-y-3">
                 {current.matches.map((match) => {
@@ -429,25 +440,25 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
                           {match.bracketPosition ? `${match.bracketPosition} — ` : ""}
                           {match.players.map((p, i) => (
                             <span key={p.playerId} className="inline-flex items-center">
-                              {i > 0 && !isBye && <span className="mr-1 text-muted-foreground">vs</span>}
+                              {i > 0 && !isBye && <span className="mr-1 text-muted-foreground">{t("history.vs")}</span>}
                               <MatchPlayerName
                                 isWinner={match.winnerIds.includes(p.playerId)}
                                 name={`${playerName(p.playerId)} (${p.score})`}
                               />
                             </span>
                           ))}
-                          {isBye ? " — BYE" : ""}
+                          {isBye ? ` — ${t("common.bye")}` : ""}
                         </div>
                         <Badge variant="outline" className="shrink-0">
-                          {MATCH_STATUS_LABELS[match.status] ?? match.status}
+                          {matchStatusLabel(match.status)}
                         </Badge>
                       </div>
                       {match.games.length > 0 && (
                         <ol className="ml-1 space-y-1 text-xs text-muted-foreground">
                           {match.games.map((game, index) => (
                             <li key={index}>
-                              Partie {index + 1} :{" "}
-                              {gameSummary(game, current.phase.resultMode, playerName)}
+                              {t("history.gameN", { number: index + 1 })}{" "}
+                              {gameSummary(game, current.phase.resultMode, playerName, t)}
                             </li>
                           ))}
                         </ol>
@@ -463,7 +474,7 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
           <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Classement à l&apos;issue de la ronde
+                {t("history.standingsTitle")}
               </h3>
               {canManage &&
                 (current.round.standings ? (
@@ -474,7 +485,7 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
                     disabled={busy || current.round.status !== "completed"}
                   >
                     <RotateCw className="mr-2 h-4 w-4" />
-                    Recalculer
+                    {t("history.recalculate")}
                   </Button>
                 ) : (
                   <Button
@@ -482,7 +493,7 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
                     onClick={() => validate(current.round.id)}
                     disabled={busy || current.round.status !== "completed"}
                   >
-                    Valider le classement
+                    {t("history.validateStandings")}
                   </Button>
                 ))}
             </div>
@@ -491,16 +502,16 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
               <p className="text-sm text-muted-foreground">
                 {canManage
                   ? current.round.status === "completed"
-                    ? "Classement non validé. Validez la ronde pour figer le classement."
-                    : "La ronde doit être terminée pour valider son classement."
-                  : "Le classement de cette ronde n'a pas encore été validé."}
+                    ? t("history.standingsNotValidatedHint")
+                    : t("history.roundMustBeCompleted")
+                  : t("history.standingsNotValidatedPlayer")}
               </p>
             ) : (
               <>
                 <Input
                   value={standingsSearch.query}
                   onChange={(e) => standingsSearch.setQuery(e.target.value)}
-                  placeholder="Rechercher un joueur..."
+                  placeholder={t("history.searchPlayer")}
                   className="max-w-xs"
                 />
                 <div className="overflow-x-auto rounded-lg border">
@@ -511,19 +522,19 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
                           #
                         </th>
                         <th className="px-3 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
-                          Joueur
+                          {t("history.colPlayer")}
                         </th>
                         <th className="px-3 py-2 text-right text-xs font-medium uppercase text-muted-foreground">
-                          Pts
+                          {t("history.colPoints")}
                         </th>
                         <th className="px-3 py-2 text-right text-xs font-medium uppercase text-muted-foreground">
-                          V/N/D
+                          {t("history.colRecord")}
                         </th>
                         <th className="px-3 py-2 text-right text-xs font-medium uppercase text-muted-foreground">
-                          OMW%
+                          {t("history.colOMW")}
                         </th>
                         <th className="px-3 py-2 text-right text-xs font-medium uppercase text-muted-foreground">
-                          Diff
+                          {t("history.colDiff")}
                         </th>
                       </tr>
                     </thead>
@@ -536,7 +547,7 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
                               name={standing.displayName}
                               discriminator={standing.discriminator}
                             />
-                            {standing.playerStatus === "dropped" ? " (drop)" : ""}
+                            {standing.playerStatus === "dropped" ? ` ${t("history.dropped")}` : ""}
                           </td>
                           <td className="px-3 py-2 text-right font-mono">{standing.matchPoints}</td>
                           <td className="px-3 py-2 text-right font-mono">
@@ -553,7 +564,7 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
                       {standingsSearch.pageItems.length === 0 && (
                         <tr>
                           <td colSpan={6} className="px-3 py-3 text-center text-muted-foreground">
-                            Aucun joueur ne correspond à la recherche.
+                            {t("history.noPlayerMatch")}
                           </td>
                         </tr>
                       )}
@@ -568,10 +579,11 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
                 />
                 {current.round.standingsValidatedAt && (
                   <p className="text-xs text-muted-foreground">
-                    Validé le{" "}
-                    {DateTime.fromISO(current.round.standingsValidatedAt)
-                      .setLocale("fr")
-                      .toFormat("dd/MM/yyyy HH:mm")}
+                    {t("history.validatedAt", {
+                      date: DateTime.fromISO(current.round.standingsValidatedAt)
+                        .setLocale(locale)
+                        .toFormat("dd/MM/yyyy HH:mm"),
+                    })}
                   </p>
                 )}
               </>
@@ -584,9 +596,9 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
         <ConfirmDialog
           open={deleteRoundOpen}
           onOpenChange={setDeleteRoundOpen}
-          title="Supprimer la ronde"
-          description={`Supprimer la ronde ${current.round.number} et tous ses matchs ? Cette action est irréversible.`}
-          confirmLabel="Supprimer"
+          title={t("history.deleteRound")}
+          description={t("history.deleteRoundConfirm", { number: current.round.number })}
+          confirmLabel={t("common.delete")}
           destructive
           busy={busy}
           onConfirm={() => deleteRound(current.round.id)}

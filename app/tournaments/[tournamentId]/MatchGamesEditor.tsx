@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -37,9 +38,10 @@ export function MatchGamesEditor({
   resultMode,
   bestOf,
   submitting,
-  submitLabel = "Enregistrer",
+  submitLabel,
   onSubmit,
 }: Props) {
+  const t = useTranslations("Tournaments");
   const gameIndexes = Array.from({ length: bestOf }, (_, i) => i);
 
   // selection : vainqueur choisi par partie ("" = non renseignée, DRAW_VALUE = nul).
@@ -75,14 +77,14 @@ export function MatchGamesEditor({
     <div className="space-y-3">
       {gameIndexes.map((gameIndex) => (
         <div key={gameIndex} className="flex flex-wrap items-center gap-3">
-          <span className="text-sm text-muted-foreground w-20">Partie {gameIndex + 1}</span>
+          <span className="text-sm text-muted-foreground w-20">{t("gamesEditor.gameN", { number: gameIndex + 1 })}</span>
           {resultMode === "selection" ? (
             <Select
               value={winners[gameIndex]}
               onValueChange={(v) => setWinner(gameIndex, v)}
             >
-              <SelectTrigger className="w-56" aria-label={`Vainqueur de la partie ${gameIndex + 1}`}>
-                <SelectValue placeholder="Vainqueur…" />
+              <SelectTrigger className="w-56" aria-label={t("gamesEditor.gameWinnerAria", { number: gameIndex + 1 })}>
+                <SelectValue placeholder={t("gamesEditor.winnerPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {matchPlayerIds.map((id) => (
@@ -90,7 +92,7 @@ export function MatchGamesEditor({
                     {playerName(id)}
                   </SelectItem>
                 ))}
-                <SelectItem value={DRAW_VALUE}>Match nul</SelectItem>
+                <SelectItem value={DRAW_VALUE}>{t("gamesEditor.draw")}</SelectItem>
               </SelectContent>
             </Select>
           ) : (
@@ -101,7 +103,7 @@ export function MatchGamesEditor({
                   <Input
                     type="number"
                     className="w-16"
-                    aria-label={`Points de ${playerName(id)} à la partie ${gameIndex + 1}`}
+                    aria-label={t("gamesEditor.pointsAria", { name: playerName(id), number: gameIndex + 1 })}
                     value={points[gameIndex][id] ?? ""}
                     onChange={(e) => setPoint(gameIndex, id, e.target.value)}
                   />
@@ -112,7 +114,7 @@ export function MatchGamesEditor({
         </div>
       ))}
       <Button onClick={() => onSubmit(buildGames())} disabled={submitting} data-match={matchId}>
-        {submitLabel}
+        {submitLabel ?? t("common.save")}
       </Button>
     </div>
   );

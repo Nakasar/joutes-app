@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useSession } from "@/lib/auth-client";
 import { getSyncKey } from "@/lib/tournament-sync-storage";
 import type { TournamentResultMode } from "@/lib/types/Tournament";
@@ -38,6 +39,7 @@ export type ApiTournament = {
  * navigateur est synchronisé.
  */
 export function usePlayerTournament(tournamentId: string) {
+  const t = useTranslations("Tournaments");
   const { data: session } = useSession();
 
   const [syncKey, setSyncKey] = useState<string | null | undefined>(undefined);
@@ -91,7 +93,7 @@ export function usePlayerTournament(tournamentId: string) {
       const res = await apiFetch(`/api/tournaments/${tournamentId}`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Impossible de charger le tournoi");
+        throw new Error(body.error ?? t("playerLive.loadTournamentError"));
       }
       const data: ApiTournament = await res.json();
       setTournament(data);
@@ -103,11 +105,11 @@ export function usePlayerTournament(tournamentId: string) {
         if (sessionPlayer) setMyPlayerId(sessionPlayer.id);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur lors du chargement");
+      setError(err instanceof Error ? err.message : t("playerLive.loadError"));
     } finally {
       setLoading(false);
     }
-  }, [apiFetch, syncKey, tournamentId, session?.user?.id]);
+  }, [apiFetch, syncKey, tournamentId, session?.user?.id, t]);
 
   useEffect(() => {
     load();

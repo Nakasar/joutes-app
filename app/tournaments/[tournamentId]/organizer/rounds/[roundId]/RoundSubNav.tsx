@@ -1,16 +1,17 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 type RoundSubSection = "matches" | "standings" | "bracket";
 
-const SUB_SECTIONS: { key: RoundSubSection; label: string; path: string }[] = [
-  { key: "matches", label: "Matchs", path: "matches" },
-  { key: "standings", label: "Classement", path: "standings" },
+const SUB_SECTIONS: { key: RoundSubSection; labelKey: string; path: string }[] = [
+  { key: "matches", labelKey: "rounds.tabMatches", path: "matches" },
+  { key: "standings", labelKey: "rounds.tabStandings", path: "standings" },
 ];
 
-const BRACKET_SECTION: { key: RoundSubSection; label: string; path: string } = {
+const BRACKET_SECTION: { key: RoundSubSection; labelKey: string; path: string } = {
   key: "bracket",
-  label: "Arbre",
+  labelKey: "rounds.tabBracket",
   path: "bracket",
 };
 
@@ -27,6 +28,7 @@ export function RoundSubNav({
   active: RoundSubSection;
   showBracket?: boolean;
 }) {
+  const t = useTranslations("Tournaments");
   const base = `/tournaments/${tournamentId}/organizer/rounds/${roundId}`;
   const sections = showBracket ? [...SUB_SECTIONS, BRACKET_SECTION] : SUB_SECTIONS;
   return (
@@ -43,7 +45,7 @@ export function RoundSubNav({
               : "text-muted-foreground hover:text-foreground"
           )}
         >
-          {section.label}
+          {t(section.labelKey)}
         </Link>
       ))}
     </nav>

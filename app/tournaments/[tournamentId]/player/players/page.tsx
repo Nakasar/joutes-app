@@ -1,6 +1,7 @@
 "use client";
 
 import { use } from "react";
+import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ export default function TournamentPlayerPlayersPage({
 }: {
   params: Promise<{ tournamentId: string }>;
 }) {
+  const t = useTranslations("Tournaments");
   const { tournamentId } = use(params);
   const { syncKey, tournament, myPlayerId, error, loading } = usePlayerTournament(tournamentId);
 
@@ -33,7 +35,7 @@ export default function TournamentPlayerPlayersPage({
     >
       <Card>
         <CardHeader>
-          <CardTitle>Joueurs</CardTitle>
+          <CardTitle>{t("player.playersTitle")}</CardTitle>
         </CardHeader>
         <CardContent>
           {players.length > 0 ? (
@@ -41,7 +43,7 @@ export default function TournamentPlayerPlayersPage({
               <Input
                 value={search.query}
                 onChange={(e) => search.setQuery(e.target.value)}
-                placeholder="Rechercher un joueur..."
+                placeholder={t("player.searchPlaceholder")}
                 className="max-w-xs"
               />
               <ul className="divide-y">
@@ -49,14 +51,16 @@ export default function TournamentPlayerPlayersPage({
                   <li key={player.id} className="flex items-center justify-between py-2">
                     <span className={player.id === myPlayerId ? "font-semibold" : ""}>
                       <PlayerNameTag name={player.displayName} discriminator={player.discriminator} />
-                      {player.id === myPlayerId ? " (moi)" : ""}
+                      {player.id === myPlayerId ? ` ${t("player.me")}` : ""}
                     </span>
-                    {player.status === "dropped" && <Badge variant="outline">Drop</Badge>}
+                    {player.status === "dropped" && (
+                      <Badge variant="outline">{t("player.dropBadge")}</Badge>
+                    )}
                   </li>
                 ))}
                 {search.pageItems.length === 0 && (
                   <li className="py-2 text-sm text-muted-foreground">
-                    Aucun joueur ne correspond à la recherche.
+                    {t("player.noSearchResults")}
                   </li>
                 )}
               </ul>
@@ -68,7 +72,7 @@ export default function TournamentPlayerPlayersPage({
               />
             </div>
           ) : (
-            <p className="text-muted-foreground">Aucun joueur inscrit.</p>
+            <p className="text-muted-foreground">{t("player.noPlayers")}</p>
           )}
         </CardContent>
       </Card>

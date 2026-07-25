@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Megaphone, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ export function AnnouncementsManager({
   tournamentId: string;
   initialAnnouncements: ApiAnnouncement[];
 }) {
+  const t = useTranslations("Tournaments");
   const [announcements, setAnnouncements] = useState(initialAnnouncements);
   const [message, setMessage] = useState("");
   const [level, setLevel] = useState<"info" | "urgent">("info");
@@ -49,13 +51,13 @@ export function AnnouncementsManager({
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Erreur lors de la création de l'annonce");
+        throw new Error(body.error ?? t("announcements.createError"));
       }
       const created: ApiAnnouncement = await res.json();
       setAnnouncements((current) => [created, ...current]);
       setMessage("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur lors de la création de l'annonce");
+      setError(err instanceof Error ? err.message : t("announcements.createError"));
     } finally {
       setBusy(false);
     }
@@ -70,11 +72,11 @@ export function AnnouncementsManager({
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Erreur lors de la suppression");
+        throw new Error(body.error ?? t("announcements.deleteError"));
       }
       setAnnouncements((current) => current.filter((a) => a.id !== id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur lors de la suppression");
+      setError(err instanceof Error ? err.message : t("announcements.deleteError"));
     } finally {
       setBusy(false);
     }
@@ -83,7 +85,7 @@ export function AnnouncementsManager({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Annonces</CardTitle>
+        <CardTitle>{t("announcements.title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {error && (
@@ -93,12 +95,12 @@ export function AnnouncementsManager({
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="announcement-message">Nouvelle annonce</Label>
+          <Label htmlFor="announcement-message">{t("announcements.newLabel")}</Label>
           <Textarea
             id="announcement-message"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Message diffusé aux joueurs..."
+            placeholder={t("announcements.messagePlaceholder")}
             maxLength={500}
             rows={2}
           />
@@ -108,19 +110,19 @@ export function AnnouncementsManager({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="info">Info</SelectItem>
-                <SelectItem value="urgent">Urgent</SelectItem>
+                <SelectItem value="info">{t("announcements.levelInfo")}</SelectItem>
+                <SelectItem value="urgent">{t("announcements.levelUrgent")}</SelectItem>
               </SelectContent>
             </Select>
             <Button onClick={create} disabled={busy || !message.trim()}>
               <Megaphone className="mr-2 h-4 w-4" />
-              Publier
+              {t("announcements.publish")}
             </Button>
           </div>
         </div>
 
         {announcements.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Aucune annonce publiée.</p>
+          <p className="text-sm text-muted-foreground">{t("announcements.empty")}</p>
         ) : (
           <ul className="space-y-2">
             {announcements.map((announcement) => (
@@ -133,7 +135,9 @@ export function AnnouncementsManager({
               >
                 <div className="space-y-1">
                   <Badge variant={announcement.level === "urgent" ? "destructive" : "secondary"}>
-                    {announcement.level === "urgent" ? "Urgent" : "Info"}
+                    {announcement.level === "urgent"
+                      ? t("announcements.levelUrgent")
+                      : t("announcements.levelInfo")}
                   </Badge>
                   <p className="whitespace-pre-wrap text-sm">{announcement.message}</p>
                 </div>
@@ -143,7 +147,7 @@ export function AnnouncementsManager({
                   className="text-red-600 hover:text-red-800"
                   onClick={() => remove(announcement.id)}
                   disabled={busy}
-                  aria-label="Supprimer l'annonce"
+                  aria-label={t("announcements.deleteAria")}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>

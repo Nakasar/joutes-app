@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Maximize2, Megaphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDuration, timerIsPaused, timerRemainingSeconds } from "@/lib/tournament-timer";
@@ -9,6 +10,7 @@ import { useTournamentLive } from "../useTournamentLive";
 
 // Bannière « live » du portail joueur : annonces et minuteur synchronisé.
 export function PlayerLiveBanner({ tournamentId }: { tournamentId: string }) {
+  const t = useTranslations("Tournaments");
   const { state, serverOffsetMs } = useTournamentLive(tournamentId);
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -48,7 +50,7 @@ export function PlayerLiveBanner({ tournamentId }: { tournamentId: string }) {
           )}
         >
           <span className="text-sm text-muted-foreground">
-            Minuteur{paused && " (en pause)"}
+            {paused ? t("playerLive.timerPaused") : t("playerLive.timer")}
           </span>
           <div className="flex items-center gap-3">
             <span
@@ -63,7 +65,7 @@ export function PlayerLiveBanner({ tournamentId }: { tournamentId: string }) {
               href={`/tournaments/${tournamentId}/timer`}
               target="_blank"
               className="text-muted-foreground hover:text-foreground"
-              aria-label="Afficher le minuteur en plein écran"
+              aria-label={t("playerLive.fullscreenTimer")}
             >
               <Maximize2 className="h-4 w-4" />
             </Link>
