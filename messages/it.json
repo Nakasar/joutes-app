@@ -1837,6 +1837,8 @@
       "removeError": "Errore durante la rimozione del giocatore"
     },
     "organizerPhases": {
+      "resetStatusTitle": "Riporta a “non iniziata”",
+      "resetStatusAria": "Riporta la fase {name} a non iniziata",
       "currentPhaseLabel": "Fase corrente",
       "currentPhaseNone": "Nessuna fase corrente",
       "editPhaseAria": "Modifica la fase {name}",

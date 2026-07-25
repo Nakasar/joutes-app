@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -93,6 +93,17 @@ export function PhasesSection({
         body: JSON.stringify(body),
       });
       setEditPhase(null);
+      await refreshPhases();
+    });
+
+  // Repasse une phase « en cours » à « non démarrée » (pour la reconfigurer
+  // ou annuler un démarrage prématuré). Ses rondes éventuelles sont conservées.
+  const resetPhaseStatus = (phase: TournamentPhase) =>
+    run(async () => {
+      await api(`/api/tournaments/${tournamentId}/phases/${phase.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "not-started" }),
+      });
       await refreshPhases();
     });
 
@@ -196,6 +207,18 @@ export function PhasesSection({
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline">{t(`common.phaseStatus.${phase.status}`)}</Badge>
+                    {phase.status === "in-progress" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => resetPhaseStatus(phase)}
+                        disabled={busy}
+                        title={t("organizerPhases.resetStatusTitle")}
+                        aria-label={t("organizerPhases.resetStatusAria", { name: phase.name })}
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                      </Button>
+                    )}
                     {phase.status === "not-started" && (
                       <>
                         <Button

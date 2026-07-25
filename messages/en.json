@@ -1895,6 +1895,8 @@
       "removeError": "Error while removing the player"
     },
     "organizerPhases": {
+      "resetStatusTitle": "Set back to “not started”",
+      "resetStatusAria": "Set phase {name} back to not started",
       "currentPhaseLabel": "Current phase",
       "currentPhaseNone": "No current phase",
       "editPhaseAria": "Edit phase {name}",
