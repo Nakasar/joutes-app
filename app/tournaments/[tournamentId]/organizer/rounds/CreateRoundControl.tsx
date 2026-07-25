@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +21,7 @@ export function CreateRoundControl({
   tournamentId: string;
   phases: { id: string; name: string }[];
 }) {
+  const t = useTranslations("Tournaments");
   const router = useRouter();
   const [phaseId, setPhaseId] = useState(phases[0]?.id ?? "");
   const [busy, setBusy] = useState(false);
@@ -37,12 +39,12 @@ export function CreateRoundControl({
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Erreur lors de la création de la ronde");
+        throw new Error(body.error ?? t("rounds.createError"));
       }
       const round = await res.json();
       router.push(`/tournaments/${tournamentId}/organizer/rounds/${round.id}/matches`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur lors de la création de la ronde");
+      setError(err instanceof Error ? err.message : t("rounds.createError"));
       setBusy(false);
     }
   };
@@ -52,7 +54,7 @@ export function CreateRoundControl({
       <div className="flex items-center gap-2">
         <Select value={phaseId} onValueChange={setPhaseId}>
           <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Choisir une phase" />
+            <SelectValue placeholder={t("rounds.choosePhase")} />
           </SelectTrigger>
           <SelectContent>
             {phases.map((phase) => (
@@ -64,7 +66,7 @@ export function CreateRoundControl({
         </Select>
         <Button size="sm" onClick={create} disabled={busy || !phaseId}>
           <Plus className="mr-2 h-4 w-4" />
-          Créer une ronde
+          {t("rounds.createRound")}
         </Button>
       </div>
       {error && <p className="text-xs text-destructive">{error}</p>}

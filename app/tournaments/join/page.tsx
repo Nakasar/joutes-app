@@ -2,9 +2,11 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { storeSyncKey } from "@/lib/tournament-sync-storage";
 
 function JoinTournamentInner() {
+  const t = useTranslations("Tournaments");
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
@@ -14,36 +16,35 @@ function JoinTournamentInner() {
     const key = searchParams.get("key");
 
     if (!tournamentId || !key || !key.startsWith("tpsk_")) {
-      setError("Lien de synchronisation invalide.");
+      setError(t("join.invalidLink"));
       return;
     }
 
     if (!storeSyncKey(tournamentId, key)) {
-      setError(
-        "Impossible d'enregistrer la clé de synchronisation sur ce navigateur (stockage local indisponible)."
-      );
+      setError(t("join.storeError"));
       return;
     }
     router.replace(`/tournaments/${tournamentId}/player`);
-  }, [searchParams, router]);
+  }, [searchParams, router, t]);
 
   return (
     <div className="min-h-[50vh] flex items-center justify-center p-8">
       {error ? (
         <p className="text-red-600">{error}</p>
       ) : (
-        <p className="text-muted-foreground">Synchronisation du tournoi...</p>
+        <p className="text-muted-foreground">{t("join.syncing")}</p>
       )}
     </div>
   );
 }
 
 export default function JoinTournamentPage() {
+  const t = useTranslations("Tournaments");
   return (
     <Suspense
       fallback={
         <div className="min-h-[50vh] flex items-center justify-center p-8">
-          <p className="text-muted-foreground">Chargement...</p>
+          <p className="text-muted-foreground">{t("common.loading")}</p>
         </div>
       }
     >

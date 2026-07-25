@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,20 +44,15 @@ type PlayerEntry = {
 
 type StatusFilter = "all" | "in-progress" | "draft" | "completed";
 
-const FILTERS: { value: StatusFilter; label: string }[] = [
-  { value: "all", label: "Tous" },
-  { value: "in-progress", label: "En cours" },
-  { value: "draft", label: "À venir" },
-  { value: "completed", label: "Passés" },
+const FILTERS: { value: StatusFilter; labelKey: string }[] = [
+  { value: "all", labelKey: "list.filters.all" },
+  { value: "in-progress", labelKey: "list.filters.inProgress" },
+  { value: "draft", labelKey: "list.filters.upcoming" },
+  { value: "completed", labelKey: "list.filters.past" },
 ];
 
-const STATUS_LABELS: Record<string, string> = {
-  draft: "À venir",
-  "in-progress": "En cours",
-  completed: "Terminé",
-};
-
 export default function TournamentsPage() {
+  const t = useTranslations("Tournaments");
   const [entries, setEntries] = useState<SyncedTournament[]>([]);
   const [played, setPlayed] = useState<PlayedTournament[]>([]);
   const [organized, setOrganized] = useState<OrganizedTournament[]>([]);
@@ -138,47 +134,45 @@ export default function TournamentsPage() {
     <div className="p-8 max-w-4xl mx-auto space-y-8">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Mes tournois</h1>
-          <p className="text-muted-foreground mt-1">
-            Les tournois que vous organisez, ceux où vous êtes inscrit avec votre compte, et ceux
-            synchronisés avec ce navigateur. Scannez le QR code fourni par un organisateur pour
-            rejoindre un tournoi comme joueur.
-          </p>
+          <h1 className="text-3xl font-bold">{t("list.title")}</h1>
+          <p className="text-muted-foreground mt-1">{t("list.description")}</p>
         </div>
         <Button asChild>
           <Link href="/tournaments/new">
             <Plus className="h-4 w-4 mr-2" />
-            Créer un tournoi
+            {t("list.createButton")}
           </Link>
         </Button>
       </div>
 
       <div className="flex gap-2">
-        {FILTERS.map(({ value, label }) => (
+        {FILTERS.map(({ value, labelKey }) => (
           <Button
             key={value}
             variant={filter === value ? "default" : "outline"}
             size="sm"
             onClick={() => setFilter(value)}
           >
-            {label}
+            {t(labelKey)}
           </Button>
         ))}
       </div>
 
       {!loading && filteredOrganized.length > 0 && (
         <section className="space-y-4">
-          <h2 className="text-xl font-semibold">Tournois que j&apos;organise</h2>
+          <h2 className="text-xl font-semibold">{t("list.organizedTitle")}</h2>
           <div className="grid gap-4 md:grid-cols-2">
-            {filteredOrganized.map((t) => (
-              <Card key={t.id}>
+            {filteredOrganized.map((tournament) => (
+              <Card key={tournament.id}>
                 <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                  <CardTitle className="text-lg">{t.name}</CardTitle>
-                  <Badge variant="secondary">{STATUS_LABELS[t.status] ?? t.status}</Badge>
+                  <CardTitle className="text-lg">{tournament.name}</CardTitle>
+                  <Badge variant="secondary">
+                    {t(`common.tournamentStatus.${tournament.status}`)}
+                  </Badge>
                 </CardHeader>
                 <CardContent>
                   <Button asChild size="sm">
-                    <Link href={`/tournaments/${t.id}/organizer`}>Gérer</Link>
+                    <Link href={`/tournaments/${tournament.id}/organizer`}>{t("list.manage")}</Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -188,21 +182,20 @@ export default function TournamentsPage() {
       )}
 
       <section className="space-y-4">
-        <h2 className="text-xl font-semibold">Tournois où je joue</h2>
+        <h2 className="text-xl font-semibold">{t("list.playingTitle")}</h2>
 
       {loading ? (
-        <p className="text-muted-foreground">Chargement...</p>
+        <p className="text-muted-foreground">{t("common.loading")}</p>
       ) : playerEntries.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
-            Vous ne jouez dans aucun tournoi pour le moment. Rejoignez-en un via le QR code d&apos;un
-            organisateur, ou connectez-vous si vous êtes inscrit avec votre compte.
+            {t("list.emptyPlaying")}
           </CardContent>
         </Card>
       ) : filtered.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
-            Aucun tournoi ne correspond à ce filtre.
+            {t("list.emptyFilter")}
           </CardContent>
         </Card>
       ) : (
@@ -212,12 +205,12 @@ export default function TournamentsPage() {
               <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
                 <CardTitle className="text-lg">{entry.tournament.name}</CardTitle>
                 <Badge variant="secondary">
-                  {STATUS_LABELS[entry.tournament.status] ?? entry.tournament.status}
+                  {t(`common.tournamentStatus.${entry.tournament.status}`)}
                 </Badge>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Inscrit en tant que{" "}
+                  {t("list.registeredAs")}{" "}
                   <span className="font-medium">
                     {entry.player.displayName}
                     {entry.player.discriminator && (
@@ -226,11 +219,13 @@ export default function TournamentsPage() {
                       </span>
                     )}
                   </span>
-                  {entry.player.status === "dropped" ? " (drop)" : ""}
+                  {entry.player.status === "dropped" ? ` ${t("list.dropped")}` : ""}
                 </p>
                 <div className="flex items-center justify-between">
                   <Button asChild size="sm">
-                    <Link href={`/tournaments/${entry.tournament.id}/player`}>Portail joueur</Link>
+                    <Link href={`/tournaments/${entry.tournament.id}/player`}>
+                      {t("list.playerPortal")}
+                    </Link>
                   </Button>
                   {entry.key && (
                     <Button
@@ -238,7 +233,7 @@ export default function TournamentsPage() {
                       size="sm"
                       className="text-red-600 hover:text-red-800"
                       onClick={() => setPendingRemove(entry.tournament.id)}
-                      aria-label="Retirer la synchronisation de ce navigateur"
+                      aria-label={t("list.removeSyncAria")}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -254,9 +249,9 @@ export default function TournamentsPage() {
       <ConfirmDialog
         open={pendingRemove !== null}
         onOpenChange={(open) => !open && setPendingRemove(null)}
-        title="Retirer ce tournoi"
-        description="La clé de synchronisation sera supprimée de ce navigateur. Vous pourrez le rejoindre à nouveau via le QR code de l'organisateur."
-        confirmLabel="Retirer"
+        title={t("list.removeDialog.title")}
+        description={t("list.removeDialog.description")}
+        confirmLabel={t("list.removeDialog.confirm")}
         destructive
         onConfirm={() => pendingRemove && handleRemove(pendingRemove)}
       />

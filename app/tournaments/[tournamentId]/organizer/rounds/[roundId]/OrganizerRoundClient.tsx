@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Check, Eraser, LockOpen, Pencil, Plus, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,11 +27,11 @@ import { MatchGamesEditor } from "../../../MatchGamesEditor";
 import { MatchPlayerName } from "../../../MatchPlayerName";
 import { TablePagination } from "../../../TablePagination";
 
-const MATCH_STATUS_LABELS: Record<string, string> = {
-  pending: "À jouer",
-  "in-progress": "En attente de confirmation",
-  completed: "Terminé",
-  disputed: "Contesté",
+const MATCH_STATUS_KEYS: Record<string, string> = {
+  pending: "roundClient.matchStatus.pending",
+  "in-progress": "roundClient.matchStatus.inProgress",
+  completed: "roundClient.matchStatus.completed",
+  disputed: "roundClient.matchStatus.disputed",
 };
 
 type RoundPlayer = Pick<TournamentPlayer, "id" | "displayName" | "discriminator" | "status">;
@@ -58,6 +59,7 @@ export function OrganizerRoundClient({
   isLastRound,
   reopenCascades,
 }: Props) {
+  const t = useTranslations("Tournaments");
   const [matches, setMatches] = useState<TournamentMatch[]>(initialMatches);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -86,8 +88,8 @@ export function OrganizerRoundClient({
 
   const playersById = useMemo(() => new Map(players.map((p) => [p.id, p])), [players]);
   const playerName = useCallback(
-    (playerId: string) => playersById.get(playerId)?.displayName ?? "Inconnu",
-    [playersById]
+    (playerId: string) => playersById.get(playerId)?.displayName ?? t("roundClient.unknownPlayer"),
+    [playersById, t]
   );
 
   const search = usePaginatedSearch(
@@ -106,7 +108,7 @@ export function OrganizerRoundClient({
 
   const submitReport = (match: TournamentMatch, games: TournamentGameResult[]) => {
     if (games.length === 0) {
-      setError("Renseignez au moins une partie.");
+      setError(t("roundClient.reportAtLeastOneGame"));
       return;
     }
     setSubmitting(true);
@@ -120,12 +122,12 @@ export function OrganizerRoundClient({
         });
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
-          throw new Error(body.error ?? "Erreur lors de l'enregistrement du résultat");
+          throw new Error(body.error ?? t("roundClient.reportError"));
         }
         await refresh();
         setEditMatch(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Erreur lors de l'enregistrement du résultat");
+        setError(err instanceof Error ? err.message : t("roundClient.reportError"));
       } finally {
         setSubmitting(false);
       }
@@ -145,11 +147,11 @@ export function OrganizerRoundClient({
         });
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
-          throw new Error(body.error ?? "Erreur lors de la validation du résultat");
+          throw new Error(body.error ?? t("roundClient.confirmError"));
         }
         await refresh();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Erreur lors de la validation du résultat");
+        setError(err instanceof Error ? err.message : t("roundClient.confirmError"));
       } finally {
         setBusy(false);
       }
@@ -169,12 +171,12 @@ export function OrganizerRoundClient({
         });
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
-          throw new Error(body.error ?? "Erreur lors de la suppression du résultat");
+          throw new Error(body.error ?? t("roundClient.clearError"));
         }
         setPendingClear(null);
         await refresh();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Erreur lors de la suppression du résultat");
+        setError(err instanceof Error ? err.message : t("roundClient.clearError"));
       } finally {
         setBusy(false);
       }
@@ -191,12 +193,12 @@ export function OrganizerRoundClient({
         });
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
-          throw new Error(body.error ?? "Erreur lors de la suppression du match");
+          throw new Error(body.error ?? t("roundClient.deleteMatchError"));
         }
         setPendingDelete(null);
         await refresh();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Erreur lors de la suppression du match");
+        setError(err instanceof Error ? err.message : t("roundClient.deleteMatchError"));
       } finally {
         setBusy(false);
       }
@@ -213,11 +215,11 @@ export function OrganizerRoundClient({
         });
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
-          throw new Error(body.error ?? "Erreur lors de la suppression de la ronde");
+          throw new Error(body.error ?? t("roundClient.deleteRoundError"));
         }
         router.push(`/tournaments/${tournamentId}/organizer/rounds`);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Erreur lors de la suppression de la ronde");
+        setError(err instanceof Error ? err.message : t("roundClient.deleteRoundError"));
         setBusy(false);
         setDeleteRoundOpen(false);
       }
@@ -237,12 +239,12 @@ export function OrganizerRoundClient({
         });
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
-          throw new Error(body.error ?? "Erreur lors de la réouverture de la ronde");
+          throw new Error(body.error ?? t("roundClient.reopenError"));
         }
         setReopenOpen(false);
         router.refresh();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Erreur lors de la réouverture de la ronde");
+        setError(err instanceof Error ? err.message : t("roundClient.reopenError"));
       } finally {
         setBusy(false);
       }
@@ -262,13 +264,13 @@ export function OrganizerRoundClient({
         });
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
-          throw new Error(body.error ?? "Erreur lors de la création du match");
+          throw new Error(body.error ?? t("roundClient.createMatchError"));
         }
         await refresh();
         setCreateOpen(false);
         setCreatePlayerIds([]);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Erreur lors de la création du match");
+        setError(err instanceof Error ? err.message : t("roundClient.createMatchError"));
       } finally {
         setBusy(false);
       }
@@ -295,21 +297,25 @@ export function OrganizerRoundClient({
   const matchLabel = (match: TournamentMatch) =>
     `${match.bracketPosition ? `${match.bracketPosition} — ` : ""}${match.players
       .map((p) => playerName(p.playerId))
-      .join(" vs ")}${match.players.length === 1 ? " (BYE)" : ""}`;
+      .join(` ${t("common.vs")} `)}${match.players.length === 1 ? ` (${t("common.bye")})` : ""}`;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-2">
         <div>
-          <h2 className="text-2xl font-bold">Ronde {round.number}</h2>
-          <p className="mt-1 text-muted-foreground">Saisie des résultats</p>
+          <h2 className="text-2xl font-bold">{t("common.roundN", { number: round.number })}</h2>
+          <p className="mt-1 text-muted-foreground">{t("roundClient.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary">{round.status === "completed" ? "Terminée" : "En cours"}</Badge>
+          <Badge variant="secondary">
+            {round.status === "completed"
+              ? t("common.roundStatus.completed")
+              : t("common.roundStatus.in-progress")}
+          </Badge>
           {round.status === "completed" && isLastRound && (
             <Button variant="outline" size="sm" onClick={() => setReopenOpen(true)} disabled={anyBusy}>
               <LockOpen className="mr-2 h-4 w-4" />
-              Rouvrir la ronde
+              {t("roundClient.reopenRound")}
             </Button>
           )}
           {isLastRound && (
@@ -321,7 +327,7 @@ export function OrganizerRoundClient({
               disabled={anyBusy}
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              Supprimer la ronde
+              {t("roundClient.deleteRound")}
             </Button>
           )}
         </div>
@@ -337,17 +343,17 @@ export function OrganizerRoundClient({
         <Input
           value={search.query}
           onChange={(e) => search.setQuery(e.target.value)}
-          placeholder="Rechercher un joueur..."
+          placeholder={t("roundClient.searchPlayer")}
           className="max-w-xs"
         />
         <Button onClick={() => setCreateOpen(true)} disabled={anyBusy}>
           <Plus className="mr-2 h-4 w-4" />
-          Créer un match
+          {t("roundClient.createMatch")}
         </Button>
       </div>
 
       {matches.length === 0 ? (
-        <p className="text-muted-foreground">Aucun match dans cette ronde.</p>
+        <p className="text-muted-foreground">{t("roundClient.noMatches")}</p>
       ) : (
         <>
           <div className="overflow-x-auto rounded-lg border">
@@ -355,16 +361,16 @@ export function OrganizerRoundClient({
               <thead className="bg-muted">
                 <tr>
                   <th className="px-3 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
-                    Match
+                    {t("roundClient.headerMatch")}
                   </th>
                   <th className="px-3 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
-                    Statut
+                    {t("roundClient.headerStatus")}
                   </th>
                   <th className="px-3 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
-                    Résultat
+                    {t("roundClient.headerResult")}
                   </th>
                   <th className="px-3 py-2 text-right text-xs font-medium uppercase text-muted-foreground">
-                    Actions
+                    {t("roundClient.headerActions")}
                   </th>
                 </tr>
               </thead>
@@ -375,11 +381,15 @@ export function OrganizerRoundClient({
                     <tr key={match.id}>
                       <td className="px-3 py-2 font-medium">{matchLabel(match)}</td>
                       <td className="px-3 py-2">
-                        <Badge variant="outline">{MATCH_STATUS_LABELS[match.status] ?? match.status}</Badge>
+                        <Badge variant="outline">
+                          {MATCH_STATUS_KEYS[match.status]
+                            ? t(MATCH_STATUS_KEYS[match.status])
+                            : match.status}
+                        </Badge>
                       </td>
                       <td className="px-3 py-2 text-muted-foreground">
                         {isBye ? (
-                          "Victoire automatique"
+                          t("roundClient.autoWin")
                         ) : match.status === "completed" ? (
                           <span className="inline-flex flex-wrap items-center gap-x-1 gap-y-1">
                             {match.players.map((p, i) => (
@@ -410,7 +420,7 @@ export function OrganizerRoundClient({
                               disabled={anyBusy}
                             >
                               <Check className="mr-2 h-4 w-4" />
-                              Valider
+                              {t("roundClient.validate")}
                             </Button>
                           )}
                           {!isBye && (
@@ -421,7 +431,7 @@ export function OrganizerRoundClient({
                               disabled={anyBusy}
                             >
                               <Pencil className="mr-2 h-4 w-4" />
-                              Modifier le score
+                              {t("roundClient.editScore")}
                             </Button>
                           )}
                           {!isBye && match.status !== "pending" && (
@@ -430,7 +440,9 @@ export function OrganizerRoundClient({
                               size="sm"
                               onClick={() => setPendingClear(match)}
                               disabled={anyBusy}
-                              aria-label={`Supprimer le résultat de ${matchLabel(match)}`}
+                              aria-label={t("roundClient.clearResultAria", {
+                                match: matchLabel(match),
+                              })}
                             >
                               <Eraser className="h-4 w-4" />
                             </Button>
@@ -442,7 +454,9 @@ export function OrganizerRoundClient({
                               className="text-red-600 hover:text-red-800"
                               onClick={() => setPendingDelete(match)}
                               disabled={anyBusy}
-                              aria-label={`Supprimer le match ${matchLabel(match)}`}
+                              aria-label={t("roundClient.deleteMatchAria", {
+                                match: matchLabel(match),
+                              })}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -455,7 +469,7 @@ export function OrganizerRoundClient({
                 {search.pageItems.length === 0 && (
                   <tr>
                     <td colSpan={4} className="px-3 py-3 text-center text-muted-foreground">
-                      Aucun match ne correspond à la recherche.
+                      {t("roundClient.noSearchResults")}
                     </td>
                   </tr>
                 )}
@@ -475,7 +489,7 @@ export function OrganizerRoundClient({
       <Dialog open={editMatch !== null} onOpenChange={(open) => !open && setEditMatch(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Modifier le score</DialogTitle>
+            <DialogTitle>{t("roundClient.editScore")}</DialogTitle>
           </DialogHeader>
           {editMatch && (
             <div className="space-y-3">
@@ -488,7 +502,7 @@ export function OrganizerRoundClient({
                 resultMode={resultMode}
                 bestOf={bestOf}
                 submitting={submitting}
-                submitLabel="Enregistrer"
+                submitLabel={t("common.save")}
                 onSubmit={(games) => submitReport(editMatch, games)}
               />
             </div>
@@ -506,7 +520,7 @@ export function OrganizerRoundClient({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Créer un match</DialogTitle>
+            <DialogTitle>{t("roundClient.createMatch")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -516,15 +530,12 @@ export function OrganizerRoundClient({
                 onChange={(id) => {
                   if (id) setCreatePlayerIds((current) => [...current, id]);
                 }}
-                placeholder="Ajouter un joueur…"
-                searchPlaceholder="Rechercher un joueur…"
-                emptyMessage="Aucun joueur disponible."
+                placeholder={t("roundClient.addPlayer")}
+                searchPlaceholder={t("roundClient.searchPlayerCombobox")}
+                emptyMessage={t("roundClient.noPlayerAvailable")}
                 disabled={anyBusy}
               />
-              <p className="text-xs text-muted-foreground">
-                Seuls les joueurs actifs non déjà appariés dans cette ronde sont proposés. Un seul
-                joueur crée un BYE.
-              </p>
+              <p className="text-xs text-muted-foreground">{t("roundClient.createMatchHint")}</p>
             </div>
 
             {createPlayerIds.length > 0 && (
@@ -542,7 +553,7 @@ export function OrganizerRoundClient({
                       onClick={() =>
                         setCreatePlayerIds((current) => current.filter((pid) => pid !== id))
                       }
-                      aria-label={`Retirer ${playerName(id)}`}
+                      aria-label={t("roundClient.removePlayerAria", { name: playerName(id) })}
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -553,10 +564,10 @@ export function OrganizerRoundClient({
 
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={anyBusy}>
-                Annuler
+                {t("common.cancel")}
               </Button>
               <Button onClick={createMatch} disabled={anyBusy || createPlayerIds.length === 0}>
-                Créer le match
+                {t("roundClient.createMatchConfirm")}
               </Button>
             </div>
           </div>
@@ -567,13 +578,13 @@ export function OrganizerRoundClient({
       <ConfirmDialog
         open={pendingDelete !== null}
         onOpenChange={(open) => !open && setPendingDelete(null)}
-        title="Supprimer le match"
+        title={t("roundClient.deleteMatchTitle")}
         description={
           pendingDelete
-            ? `Supprimer le match « ${matchLabel(pendingDelete)} » et ses résultats ? Cette action est irréversible.`
+            ? t("roundClient.deleteMatchDescription", { match: matchLabel(pendingDelete) })
             : undefined
         }
-        confirmLabel="Supprimer"
+        confirmLabel={t("common.delete")}
         destructive
         busy={anyBusy}
         onConfirm={() => pendingDelete && deleteMatch(pendingDelete)}
@@ -583,13 +594,13 @@ export function OrganizerRoundClient({
       <ConfirmDialog
         open={pendingClear !== null}
         onOpenChange={(open) => !open && setPendingClear(null)}
-        title="Supprimer le résultat"
+        title={t("roundClient.clearResultTitle")}
         description={
           pendingClear
-            ? `Supprimer le résultat rapporté du match « ${matchLabel(pendingClear)} » ? Le match repassera « à jouer ».`
+            ? t("roundClient.clearResultDescription", { match: matchLabel(pendingClear) })
             : undefined
         }
-        confirmLabel="Supprimer le résultat"
+        confirmLabel={t("roundClient.clearResultConfirm")}
         destructive
         busy={anyBusy}
         onConfirm={() => pendingClear && clearMatch(pendingClear)}
@@ -599,13 +610,13 @@ export function OrganizerRoundClient({
       <ConfirmDialog
         open={reopenOpen}
         onOpenChange={(open) => !open && setReopenOpen(false)}
-        title="Rouvrir la ronde"
+        title={t("roundClient.reopenRound")}
         description={
           reopenCascades
-            ? `Rouvrir la ronde ${round.number} annulera les phases démarrées ensuite : leurs rondes et matchs seront supprimés et les joueurs éliminés par leur top cut seront restaurés. Cette phase redeviendra la phase courante. Continuer ?`
-            : `Rouvrir la ronde ${round.number} ? Elle redeviendra la ronde courante et ses résultats pourront être modifiés. Pensez à recalculer le classement après vos corrections.`
+            ? t("roundClient.reopenCascadeDescription", { number: round.number })
+            : t("roundClient.reopenDescription", { number: round.number })
         }
-        confirmLabel="Rouvrir"
+        confirmLabel={t("roundClient.reopenConfirm")}
         destructive={reopenCascades}
         busy={anyBusy}
         onConfirm={reopenRound}
@@ -615,9 +626,9 @@ export function OrganizerRoundClient({
       <ConfirmDialog
         open={deleteRoundOpen}
         onOpenChange={(open) => !open && setDeleteRoundOpen(false)}
-        title="Supprimer la ronde"
-        description={`Supprimer la ronde ${round.number} et tous ses matchs ? Cette action est irréversible.`}
-        confirmLabel="Supprimer"
+        title={t("roundClient.deleteRoundTitle")}
+        description={t("roundClient.deleteRoundDescription", { number: round.number })}
+        confirmLabel={t("common.delete")}
         destructive
         busy={anyBusy}
         onConfirm={deleteRound}

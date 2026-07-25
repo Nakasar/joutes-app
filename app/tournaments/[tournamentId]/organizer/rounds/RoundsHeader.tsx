@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { NextPhaseButton } from "../NextPhaseButton";
 import { CreateRoundControl } from "./CreateRoundControl";
 import { RoundsNav, type RoundsNavPhase } from "./RoundsNav";
@@ -16,10 +17,11 @@ export function RoundsHeader({
   phases: RoundsNavPhase[];
   currentRoundId?: string;
 }) {
+  const t = useTranslations("Tournaments");
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <h2 className="text-xl font-semibold">Rondes</h2>
+        <h2 className="text-xl font-semibold">{t("rounds.title")}</h2>
         <div className="flex flex-wrap items-start justify-end gap-2">
           <NextPhaseButton tournamentId={tournamentId} />
           <CreateRoundControl

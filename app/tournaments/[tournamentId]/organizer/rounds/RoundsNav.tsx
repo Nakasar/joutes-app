@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 export type RoundsNavPhase = {
@@ -18,10 +19,11 @@ export function RoundsNav({
   phases: RoundsNavPhase[];
   currentRoundId?: string;
 }) {
+  const t = useTranslations("Tournaments");
   const base = `/tournaments/${tournamentId}/organizer/rounds`;
 
   if (phases.every((p) => p.rounds.length === 0)) {
-    return <p className="text-muted-foreground">Aucune ronde jouée pour le moment.</p>;
+    return <p className="text-muted-foreground">{t("rounds.noRounds")}</p>;
   }
 
   return (
@@ -39,7 +41,11 @@ export function RoundsNav({
                   key={round.id}
                   href={`${base}/${round.id}`}
                   aria-current={active ? "page" : undefined}
-                  title={round.validated ? "Classement validé" : "Classement non validé"}
+                  title={
+                    round.validated
+                      ? t("rounds.standingsValidated")
+                      : t("rounds.standingsNotValidated")
+                  }
                   className={cn(
                     "whitespace-nowrap rounded-md border px-3 py-1 text-sm font-medium transition-colors",
                     active

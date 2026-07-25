@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 const NO_GAME = "none";
 
 export function NewTournamentForm({ games }: { games: { id: string; name: string }[] }) {
+  const t = useTranslations("Tournaments");
   const router = useRouter();
   const [name, setName] = useState("");
   const [gameId, setGameId] = useState(NO_GAME);
@@ -30,7 +32,7 @@ export function NewTournamentForm({ games }: { games: { id: string; name: string
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!name.trim()) {
-      setError("Le nom du tournoi est requis.");
+      setError(t("new.nameRequired"));
       return;
     }
     setSubmitting(true);
@@ -47,12 +49,12 @@ export function NewTournamentForm({ games }: { games: { id: string; name: string
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Erreur lors de la création du tournoi");
+        throw new Error(body.error ?? t("new.createError"));
       }
       const tournament = await res.json();
       router.push(`/tournaments/${tournament.id}/organizer`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur lors de la création du tournoi");
+      setError(err instanceof Error ? err.message : t("new.createError"));
       setSubmitting(false);
     }
   };
@@ -60,7 +62,7 @@ export function NewTournamentForm({ games }: { games: { id: string; name: string
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Nouveau tournoi</CardTitle>
+        <CardTitle>{t("new.cardTitle")}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -71,25 +73,25 @@ export function NewTournamentForm({ games }: { games: { id: string; name: string
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="tournament-name">Nom du tournoi</Label>
+            <Label htmlFor="tournament-name">{t("new.nameLabel")}</Label>
             <Input
               id="tournament-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ex: Tournoi hebdomadaire Riftbound"
+              placeholder={t("new.namePlaceholder")}
               maxLength={200}
               autoFocus
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="tournament-game">Jeu (optionnel)</Label>
+            <Label htmlFor="tournament-game">{t("new.gameLabel")}</Label>
             <Select value={gameId} onValueChange={setGameId}>
               <SelectTrigger id="tournament-game" className="w-full" disabled={games.length === 0}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={NO_GAME}>Aucun jeu</SelectItem>
+                <SelectItem value={NO_GAME}>{t("new.noGame")}</SelectItem>
                 {games.map((game) => (
                   <SelectItem key={game.id} value={game.id}>
                     {game.name}
@@ -101,9 +103,9 @@ export function NewTournamentForm({ games }: { games: { id: string; name: string
 
           <div className="flex items-start justify-between gap-4">
             <div>
-              <Label htmlFor="allow-self-reporting">Rapport de score par les joueurs</Label>
+              <Label htmlFor="allow-self-reporting">{t("new.selfReportingLabel")}</Label>
               <p className="text-sm text-muted-foreground">
-                Les joueurs peuvent saisir eux-mêmes le résultat de leurs matchs.
+                {t("new.selfReportingHelp")}
               </p>
             </div>
             <Switch
@@ -115,9 +117,9 @@ export function NewTournamentForm({ games }: { games: { id: string; name: string
 
           <div className="flex items-start justify-between gap-4">
             <div>
-              <Label htmlFor="require-confirmation">Confirmation par l&apos;adversaire</Label>
+              <Label htmlFor="require-confirmation">{t("new.confirmationLabel")}</Label>
               <p className="text-sm text-muted-foreground">
-                Un résultat rapporté par un joueur doit être confirmé par son adversaire.
+                {t("new.confirmationHelp")}
               </p>
             </div>
             <Switch
@@ -128,7 +130,7 @@ export function NewTournamentForm({ games }: { games: { id: string; name: string
           </div>
 
           <Button type="submit" disabled={submitting}>
-            {submitting ? "Création..." : "Créer le tournoi"}
+            {submitting ? t("new.creating") : t("new.createButton")}
           </Button>
         </form>
       </CardContent>

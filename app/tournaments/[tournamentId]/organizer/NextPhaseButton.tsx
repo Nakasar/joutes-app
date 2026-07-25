@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +23,7 @@ type Transition = {
 };
 
 export function NextPhaseButton({ tournamentId }: { tournamentId: string }) {
+  const t = useTranslations("Tournaments");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -36,17 +38,17 @@ export function NextPhaseButton({ tournamentId }: { tournamentId: string }) {
       const res = await fetch(`/api/tournaments/${tournamentId}/next-phase`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Erreur lors du chargement");
+        throw new Error(body.error ?? t("nextPhase.loadError"));
       }
       const data: Transition = await res.json();
       if (!data.nextPhase) {
-        setError("Aucune phase suivante à démarrer.");
+        setError(t("nextPhase.noNextPhase"));
         return;
       }
       setTransition(data);
       setOpen(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur lors du chargement");
+      setError(err instanceof Error ? err.message : t("nextPhase.loadError"));
     } finally {
       setLoading(false);
     }
@@ -59,13 +61,13 @@ export function NextPhaseButton({ tournamentId }: { tournamentId: string }) {
       const res = await fetch(`/api/tournaments/${tournamentId}/next-phase`, { method: "POST" });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Erreur lors du passage à la phase suivante");
+        throw new Error(body.error ?? t("nextPhase.advanceError"));
       }
       const round = await res.json();
       // Redirige vers la saisie des résultats de la première ronde créée.
       router.push(`/tournaments/${tournamentId}/organizer/rounds/${round.id}/matches`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur lors du passage à la phase suivante");
+      setError(err instanceof Error ? err.message : t("nextPhase.advanceError"));
       setBusy(false);
     }
   };
@@ -80,7 +82,7 @@ export function NextPhaseButton({ tournamentId }: { tournamentId: string }) {
     <div className="flex flex-col items-end gap-1">
       <Button onClick={openDialog} disabled={loading} variant="outline">
         <ArrowRight className="mr-2 h-4 w-4" />
-        Passer à la phase suivante
+        {t("nextPhase.button")}
       </Button>
       {error && !open && <p className="text-xs text-destructive">{error}</p>}
 
@@ -92,32 +94,35 @@ export function NextPhaseButton({ tournamentId }: { tournamentId: string }) {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Passer à la phase suivante</DialogTitle>
+            <DialogTitle>{t("nextPhase.dialogTitle")}</DialogTitle>
             <DialogDescription>
               {transition?.currentPhase
-                ? `La phase « ${transition.currentPhase.name} » sera clôturée. `
+                ? `${t("nextPhase.currentPhaseClosing", {
+                    name: transition.currentPhase.name,
+                  })} `
                 : ""}
-              {next
-                ? `La phase « ${next.name} » va démarrer et sa première ronde sera créée.`
-                : ""}
+              {next ? t("nextPhase.nextPhaseStarting", { name: next.name }) : ""}
             </DialogDescription>
           </DialogHeader>
 
           {currentIncomplete && (
             <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-              La phase courante n&apos;est pas terminée : tous ses matchs doivent avoir un résultat
-              avant de passer à la phase suivante.
+              {t("nextPhase.currentIncomplete")}
             </div>
           )}
 
           {hasCut && (
             <div className="space-y-2">
               <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-                Attention : {eliminated.length} joueur(s) non qualifiés seront éliminés (statut
-                DROPPED) par le top cut ({transition?.qualification?.topCut}).
+                {t("nextPhase.topCutWarning", {
+                  count: eliminated.length,
+                  topCut: transition?.qualification?.topCut ?? 0,
+                })}
               </div>
               <div>
-                <p className="mb-1 text-sm font-medium">Joueurs qualifiés ({qualified.length}) :</p>
+                <p className="mb-1 text-sm font-medium">
+                  {t("nextPhase.qualifiedPlayers", { count: qualified.length })}
+                </p>
                 <ol className="max-h-56 divide-y overflow-y-auto rounded-md border text-sm">
                   {qualified.map((p, i) => (
                     <li key={p.playerId} className="px-3 py-1.5">
@@ -133,10 +138,10 @@ export function NextPhaseButton({ tournamentId }: { tournamentId: string }) {
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={busy}>
-              Annuler
+              {t("common.cancel")}
             </Button>
             <Button type="button" onClick={confirm} disabled={busy || !next || currentIncomplete}>
-              Confirmer
+              {t("common.confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>

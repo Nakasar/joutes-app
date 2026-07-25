@@ -1,13 +1,17 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import type { Metadata } from "next";
+import { getLocale, getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { getAllGames } from "@/lib/db/games";
 import { NewTournamentForm } from "./NewTournamentForm";
 
-export const metadata: Metadata = {
-  title: "Créer un tournoi",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("Tournaments");
+  return {
+    title: t("new.title"),
+  };
+}
 
 export default async function NewTournamentPage() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -15,13 +19,16 @@ export default async function NewTournamentPage() {
     redirect("/login");
   }
 
+  const t = await getTranslations("Tournaments");
+  const locale = await getLocale();
+
   const games = (await getAllGames())
     .map((game) => ({ id: game.id, name: game.name }))
-    .sort((a, b) => a.name.localeCompare(b.name, "fr"));
+    .sort((a, b) => a.name.localeCompare(b.name, locale));
 
   return (
     <div className="p-8 max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Créer un tournoi</h1>
+      <h1 className="text-3xl font-bold mb-6">{t("new.title")}</h1>
       <NewTournamentForm games={games} />
     </div>
   );

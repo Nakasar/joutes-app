@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { DateTime } from "luxon";
 import { RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,8 @@ export function RoundStandingsPanel({
   initialStandings?: TournamentRoundStanding[];
   initialValidatedAt?: string;
 }) {
+  const t = useTranslations("Tournaments");
+  const locale = useLocale();
   const [standings, setStandings] = useState<TournamentRoundStanding[] | undefined>(initialStandings);
   const [validatedAt, setValidatedAt] = useState<string | undefined>(initialValidatedAt);
   const [busy, setBusy] = useState(false);
@@ -42,13 +45,13 @@ export function RoundStandingsPanel({
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Erreur lors de la validation du classement");
+        throw new Error(body.error ?? t("roundStandings.validateError"));
       }
       const round = await res.json();
       setStandings(round.standings ?? []);
       setValidatedAt(round.standingsValidatedAt);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur lors de la validation du classement");
+      setError(err instanceof Error ? err.message : t("roundStandings.validateError"));
     } finally {
       setBusy(false);
     }
@@ -57,15 +60,15 @@ export function RoundStandingsPanel({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
-        <CardTitle>Classement à l&apos;issue de la ronde</CardTitle>
+        <CardTitle>{t("roundStandings.title")}</CardTitle>
         {standings ? (
           <Button variant="outline" size="sm" onClick={validate} disabled={busy || !canValidate}>
             <RotateCw className="mr-2 h-4 w-4" />
-            Recalculer
+            {t("roundStandings.recalculate")}
           </Button>
         ) : (
           <Button size="sm" onClick={validate} disabled={busy || !canValidate}>
-            Valider le classement
+            {t("roundStandings.validateStandings")}
           </Button>
         )}
       </CardHeader>
@@ -75,15 +78,15 @@ export function RoundStandingsPanel({
         {!standings ? (
           <p className="text-sm text-muted-foreground">
             {canValidate
-              ? "Classement non validé. Validez la ronde pour figer le classement."
-              : "La ronde doit être terminée pour valider son classement."}
+              ? t("roundStandings.notValidatedHint")
+              : t("roundStandings.mustBeCompletedHint")}
           </p>
         ) : (
           <>
             <Input
               value={search.query}
               onChange={(e) => search.setQuery(e.target.value)}
-              placeholder="Rechercher un joueur..."
+              placeholder={t("roundStandings.searchPlayer")}
               className="max-w-xs"
             />
             <div className="overflow-x-auto rounded-lg border">
@@ -92,19 +95,19 @@ export function RoundStandingsPanel({
                   <tr>
                     <th className="px-3 py-2 text-left text-xs font-medium uppercase text-muted-foreground">#</th>
                     <th className="px-3 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
-                      Joueur
+                      {t("roundStandings.headerPlayer")}
                     </th>
                     <th className="px-3 py-2 text-right text-xs font-medium uppercase text-muted-foreground">
-                      Pts
+                      {t("roundStandings.headerPoints")}
                     </th>
                     <th className="px-3 py-2 text-right text-xs font-medium uppercase text-muted-foreground">
-                      V/N/D
+                      {t("roundStandings.headerRecord")}
                     </th>
                     <th className="px-3 py-2 text-right text-xs font-medium uppercase text-muted-foreground">
                       OMW%
                     </th>
                     <th className="px-3 py-2 text-right text-xs font-medium uppercase text-muted-foreground">
-                      Diff
+                      {t("roundStandings.headerDiff")}
                     </th>
                   </tr>
                 </thead>
@@ -117,7 +120,7 @@ export function RoundStandingsPanel({
                           name={standing.displayName}
                           discriminator={standing.discriminator}
                         />
-                        {standing.playerStatus === "dropped" ? " (drop)" : ""}
+                        {standing.playerStatus === "dropped" ? ` ${t("roundStandings.dropSuffix")}` : ""}
                       </td>
                       <td className="px-3 py-2 text-right font-mono">{standing.matchPoints}</td>
                       <td className="px-3 py-2 text-right font-mono">
@@ -134,7 +137,7 @@ export function RoundStandingsPanel({
                   {search.pageItems.length === 0 && (
                     <tr>
                       <td colSpan={6} className="px-3 py-3 text-center text-muted-foreground">
-                        Aucun joueur ne correspond à la recherche.
+                        {t("roundStandings.noSearchResults")}
                       </td>
                     </tr>
                   )}
@@ -149,8 +152,12 @@ export function RoundStandingsPanel({
             />
             {validatedAt && (
               <p className="text-xs text-muted-foreground">
-                Validé le{" "}
-                {DateTime.fromISO(validatedAt).toLocal().setLocale("fr").toFormat("dd/MM/yyyy HH:mm")}
+                {t("roundStandings.validatedAt", {
+                  date: DateTime.fromISO(validatedAt)
+                    .toLocal()
+                    .setLocale(locale)
+                    .toFormat("dd/MM/yyyy HH:mm"),
+                })}
               </p>
             )}
           </>

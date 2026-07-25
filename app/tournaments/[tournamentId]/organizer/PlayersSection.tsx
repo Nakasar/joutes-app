@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,10 +15,10 @@ import { PlayerSyncQRButton } from "./PlayerSyncQRButton";
 import { PlayerNameTag } from "../PlayerNameTag";
 import { TablePagination } from "../TablePagination";
 
-const STATUS_BADGE: Record<string, { label: string; variant: "secondary" | "outline" }> = {
-  registered: { label: "REGISTERED", variant: "secondary" },
-  "pre-registered": { label: "PRE-REGISTERED", variant: "outline" },
-  dropped: { label: "DROPPED", variant: "outline" },
+const STATUS_VARIANT: Record<string, "secondary" | "outline"> = {
+  registered: "secondary",
+  "pre-registered": "outline",
+  dropped: "outline",
 };
 
 export function PlayersSection({
@@ -29,6 +30,7 @@ export function PlayersSection({
   initialPlayers: TournamentPlayer[];
   joinCode?: string;
 }) {
+  const t = useTranslations("Tournaments");
   const [players, setPlayers] = useState<TournamentPlayer[]>(initialPlayers);
   const [newPlayerIdentifier, setNewPlayerIdentifier] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -49,11 +51,11 @@ export function PlayersSection({
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Une erreur est survenue");
+        throw new Error(body.error ?? t("common.error"));
       }
       return res.status === 204 ? null : res.json();
     },
-    []
+    [t]
   );
 
   const refreshPlayers = useCallback(async () => {
@@ -66,7 +68,7 @@ export function PlayersSection({
     try {
       await fn();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Une erreur est survenue");
+      setError(err instanceof Error ? err.message : t("common.error"));
     } finally {
       setBusy(false);
     }
@@ -97,7 +99,7 @@ export function PlayersSection({
         });
       } else if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Erreur lors de la suppression du joueur");
+        throw new Error(body.error ?? t("organizerPlayers.removeError"));
       }
       setPendingRemove(null);
       await refreshPlayers();
@@ -124,7 +126,10 @@ export function PlayersSection({
       <Card>
         <CardHeader>
           <CardTitle>
-            Joueurs ({registeredPlayers.length} inscrit(s) / {players.length})
+            {t("organizerPlayers.title", {
+              registered: registeredPlayers.length,
+              total: players.length,
+            })}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -139,28 +144,29 @@ export function PlayersSection({
                     addPlayer();
                   }
                 }}
-                placeholder="Email, username#0000, ou nom d'un invité"
+                placeholder={t("organizerPlayers.addPlaceholder")}
                 maxLength={150}
               />
               <Button onClick={addPlayer} disabled={busy || !newPlayerIdentifier.trim()}>
                 <Plus className="mr-2 h-4 w-4" />
-                Ajouter
+                {t("organizerPlayers.add")}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Un email ou un tag <code>username#0000</code> lie le joueur à son compte ; un email
-              inconnu crée un compte, tout autre texte ajoute un invité.
+              {t.rich("organizerPlayers.addHint", {
+                code: (chunks) => <code>{chunks}</code>,
+              })}
             </p>
           </div>
 
           {players.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Aucun joueur inscrit pour le moment.</p>
+            <p className="text-sm text-muted-foreground">{t("organizerPlayers.empty")}</p>
           ) : (
             <div className="space-y-3">
               <Input
                 value={playersSearch.query}
                 onChange={(e) => playersSearch.setQuery(e.target.value)}
-                placeholder="Rechercher un joueur..."
+                placeholder={t("organizerPlayers.searchPlaceholder")}
                 className="max-w-xs"
               />
               <ul className="divide-y">
@@ -173,13 +179,17 @@ export function PlayersSection({
                         className="font-medium"
                       />
                       {!player.userId && (
-                        <span className="ml-2 text-xs text-muted-foreground">Invité</span>
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          {t("organizerPlayers.guest")}
+                        </span>
                       )}
                       <Badge
-                        variant={STATUS_BADGE[player.status]?.variant ?? "secondary"}
+                        variant={STATUS_VARIANT[player.status] ?? "secondary"}
                         className="ml-2"
                       >
-                        {STATUS_BADGE[player.status]?.label ?? player.status}
+                        {STATUS_VARIANT[player.status]
+                          ? t(`common.playerStatus.${player.status}`)
+                          : player.status}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2">
@@ -195,7 +205,7 @@ export function PlayersSection({
                           onClick={() => setPlayerStatus(player, "registered")}
                           disabled={busy}
                         >
-                          Confirmer
+                          {t("common.confirm")}
                         </Button>
                       )}
                       {player.status === "dropped" ? (
@@ -205,7 +215,7 @@ export function PlayersSection({
                           onClick={() => setPlayerStatus(player, "registered")}
                           disabled={busy}
                         >
-                          Réinscrire
+                          {t("organizerPlayers.reregister")}
                         </Button>
                       ) : (
                         <Button
@@ -214,7 +224,7 @@ export function PlayersSection({
                           onClick={() => setPlayerStatus(player, "dropped")}
                           disabled={busy}
                         >
-                          Drop
+                          {t("organizerPlayers.drop")}
                         </Button>
                       )}
                       <Button
@@ -223,7 +233,9 @@ export function PlayersSection({
                         className="text-red-600 hover:text-red-800"
                         onClick={() => setPendingRemove(player)}
                         disabled={busy}
-                        aria-label={`Supprimer ${player.displayName}`}
+                        aria-label={t("organizerPlayers.removeAria", {
+                          name: player.displayName,
+                        })}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -232,7 +244,7 @@ export function PlayersSection({
                 ))}
                 {playersSearch.pageItems.length === 0 && (
                   <li className="py-3 text-sm text-muted-foreground">
-                    Aucun joueur ne correspond à la recherche.
+                    {t("organizerPlayers.noSearchResults")}
                   </li>
                 )}
               </ul>
@@ -250,13 +262,15 @@ export function PlayersSection({
       <ConfirmDialog
         open={pendingRemove !== null}
         onOpenChange={(open) => !open && setPendingRemove(null)}
-        title="Supprimer le joueur"
+        title={t("organizerPlayers.removeDialogTitle")}
         description={
           pendingRemove
-            ? `Retirer ${pendingRemove.displayName} du tournoi ? S'il a déjà des matchs, il sera marqué comme DROPPED plutôt que supprimé.`
+            ? t("organizerPlayers.removeDialogDescription", {
+                name: pendingRemove.displayName,
+              })
             : undefined
         }
-        confirmLabel="Supprimer"
+        confirmLabel={t("common.delete")}
         destructive
         busy={busy}
         onConfirm={() => pendingRemove && removePlayer(pendingRemove)}

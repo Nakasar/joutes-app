@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,14 +26,10 @@ import {
 import { Switch } from "@/components/ui/switch";
 import type { Tournament } from "@/lib/types/Tournament";
 
-const TOURNAMENT_STATUS_LABELS: Record<string, string> = {
-  draft: "À venir",
-  "in-progress": "En cours",
-  completed: "Terminé",
-};
-
 // Valeur sentinelle du Select de jeu (un SelectItem ne peut pas être vide).
 const NO_GAME = "none";
+
+const TOURNAMENT_STATUSES: Tournament["status"][] = ["draft", "in-progress", "completed"];
 
 export function SettingsSection({
   tournament,
@@ -41,6 +38,7 @@ export function SettingsSection({
   tournament: Tournament;
   games: { id: string; name: string }[];
 }) {
+  const t = useTranslations("Tournaments");
   const router = useRouter();
   const tournamentId = tournament.id;
   const [status, setStatus] = useState<Tournament["status"]>(tournament.status);
@@ -70,11 +68,11 @@ export function SettingsSection({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? "Une erreur est survenue");
+        throw new Error(data.error ?? t("common.error"));
       }
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Une erreur est survenue");
+      setError(err instanceof Error ? err.message : t("common.error"));
       return false;
     } finally {
       setBusy(false);
@@ -96,11 +94,11 @@ export function SettingsSection({
       const res = await fetch(`/api/tournaments/${tournamentId}`, { method: "DELETE" });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? "Erreur lors de la suppression du tournoi");
+        throw new Error(data.error ?? t("organizerSettings.deleteError"));
       }
       router.push("/tournaments");
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : "Erreur lors de la suppression du tournoi");
+      setDeleteError(err instanceof Error ? err.message : t("organizerSettings.deleteError"));
       setDeleting(false);
     }
   };
@@ -125,39 +123,43 @@ export function SettingsSection({
       )}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle>Configuration</CardTitle>
-          <Badge variant="secondary">{TOURNAMENT_STATUS_LABELS[status] ?? status}</Badge>
+          <CardTitle>{t("organizerSettings.title")}</CardTitle>
+          <Badge variant="secondary">
+            {TOURNAMENT_STATUSES.includes(status) ? t(`common.tournamentStatus.${status}`) : status}
+          </Badge>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
-            <Label>Statut du tournoi</Label>
+            <Label>{t("organizerSettings.statusLabel")}</Label>
             <Select value={status} onValueChange={(v) => changeStatus(v as Tournament["status"])}>
               <SelectTrigger className="w-[200px]" disabled={busy}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="draft">À venir</SelectItem>
-                <SelectItem value="in-progress">En cours</SelectItem>
-                <SelectItem value="completed">Terminé</SelectItem>
+                {TOURNAMENT_STATUSES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {t(`common.tournamentStatus.${s}`)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="setting-game">Jeu (optionnel)</Label>
+            <Label htmlFor="setting-game">{t("organizerSettings.gameLabel")}</Label>
             <Select value={gameId} onValueChange={changeGame}>
               <SelectTrigger id="setting-game" className="w-[280px]" disabled={busy}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={NO_GAME}>Aucun jeu</SelectItem>
+                <SelectItem value={NO_GAME}>{t("organizerSettings.noGame")}</SelectItem>
                 {games.map((game) => (
                   <SelectItem key={game.id} value={game.id}>
                     {game.name}
                   </SelectItem>
                 ))}
                 {gameId !== NO_GAME && !games.some((g) => g.id === gameId) && (
-                  <SelectItem value={gameId}>Jeu inconnu</SelectItem>
+                  <SelectItem value={gameId}>{t("organizerSettings.unknownGame")}</SelectItem>
                 )}
               </SelectContent>
             </Select>
@@ -166,9 +168,11 @@ export function SettingsSection({
           <div className="space-y-4 border-t pt-4">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <Label htmlFor="setting-self-reporting">Rapport de résultat par les joueurs</Label>
+                <Label htmlFor="setting-self-reporting">
+                  {t("organizerSettings.selfReportingLabel")}
+                </Label>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Autorise les joueurs à saisir eux-mêmes le résultat de leurs matchs.
+                  {t("organizerSettings.selfReportingHint")}
                 </p>
               </div>
               <Switch
@@ -180,10 +184,11 @@ export function SettingsSection({
             </div>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <Label htmlFor="setting-confirmation">Confirmation par l&apos;adversaire</Label>
+                <Label htmlFor="setting-confirmation">
+                  {t("organizerSettings.confirmationLabel")}
+                </Label>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Un résultat rapporté par un joueur doit être confirmé par l&apos;adversaire avant
-                  d&apos;être acté.
+                  {t("organizerSettings.confirmationHint")}
                 </p>
               </div>
               <Switch
@@ -195,10 +200,11 @@ export function SettingsSection({
             </div>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <Label htmlFor="setting-pre-registration">Pré-inscription</Label>
+                <Label htmlFor="setting-pre-registration">
+                  {t("organizerSettings.preRegistrationLabel")}
+                </Label>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Les joueurs qui rejoignent le tournoi sont placés en PRE-REGISTERED, à confirmer
-                  par un organisateur avant d&apos;être apparaillés.
+                  {t("organizerSettings.preRegistrationHint")}
                 </p>
               </div>
               <Switch
@@ -209,7 +215,7 @@ export function SettingsSection({
               />
             </div>
             <Button onClick={saveSettings} disabled={busy || !settingsDirty}>
-              Enregistrer les réglages
+              {t("organizerSettings.saveSettings")}
             </Button>
           </div>
         </CardContent>
@@ -217,16 +223,15 @@ export function SettingsSection({
 
       <Card className="border-destructive/40">
         <CardHeader>
-          <CardTitle className="text-destructive">Zone de danger</CardTitle>
+          <CardTitle className="text-destructive">{t("organizerSettings.dangerZone")}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            Supprime définitivement le tournoi, ses joueurs, ses phases, ses rondes, ses matchs et
-            ses annonces.
+            {t("organizerSettings.dangerDescription")}
           </p>
           <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
             <Trash2 className="mr-2 h-4 w-4" />
-            Supprimer le tournoi
+            {t("organizerSettings.deleteTournament")}
           </Button>
         </CardContent>
       </Card>
@@ -239,10 +244,9 @@ export function SettingsSection({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Supprimer le tournoi ?</DialogTitle>
+            <DialogTitle>{t("organizerSettings.deleteDialogTitle")}</DialogTitle>
             <DialogDescription>
-              Le tournoi « {tournament.name} » et toutes ses données (joueurs, phases, rondes,
-              matchs, annonces) seront supprimés définitivement. Cette action est irréversible.
+              {t("organizerSettings.deleteDialogDescription", { name: tournament.name })}
             </DialogDescription>
           </DialogHeader>
           {deleteError && <p className="text-sm text-destructive">{deleteError}</p>}
@@ -253,10 +257,12 @@ export function SettingsSection({
               onClick={() => setDeleteOpen(false)}
               disabled={deleting}
             >
-              Annuler
+              {t("common.cancel")}
             </Button>
             <Button type="button" variant="destructive" onClick={confirmDelete} disabled={deleting}>
-              {deleting ? "Suppression..." : "Supprimer définitivement"}
+              {deleting
+                ? t("organizerSettings.deleting")
+                : t("organizerSettings.deleteConfirm")}
             </Button>
           </DialogFooter>
         </DialogContent>

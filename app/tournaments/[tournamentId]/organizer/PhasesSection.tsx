@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,25 +25,6 @@ import type {
 } from "@/lib/types/Tournament";
 import { NextPhaseButton } from "./NextPhaseButton";
 
-const PHASE_TYPE_LABELS: Record<TournamentPhaseType, string> = {
-  freeform: "Format libre",
-  swiss: "Rondes suisses",
-  elimination: "Élimination (ré-appariement)",
-  bracket: "Arbre d'élimination",
-};
-
-const PHASE_STATUS_LABELS: Record<string, string> = {
-  "not-started": "Non démarrée",
-  "in-progress": "En cours",
-  completed: "Terminée",
-};
-
-const BRACKET_SEEDING_LABELS: Record<TournamentBracketSeeding, string> = {
-  opposite: "classement opposé",
-  adjacent: "classement rapproché",
-  random: "appariement aléatoire",
-};
-
 export function PhasesSection({
   tournamentId,
   initialPhases,
@@ -50,6 +32,7 @@ export function PhasesSection({
   tournamentId: string;
   initialPhases: TournamentPhase[];
 }) {
+  const t = useTranslations("Tournaments");
   const [phases, setPhases] = useState<TournamentPhase[]>(initialPhases);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -82,11 +65,11 @@ export function PhasesSection({
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Une erreur est survenue");
+        throw new Error(body.error ?? t("common.error"));
       }
       return res.status === 204 ? null : res.json();
     },
-    []
+    [t]
   );
 
   const refreshPhases = useCallback(async () => {
@@ -99,7 +82,7 @@ export function PhasesSection({
     try {
       await fn();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Une erreur est survenue");
+      setError(err instanceof Error ? err.message : t("common.error"));
     } finally {
       setBusy(false);
     }
@@ -191,12 +174,12 @@ export function PhasesSection({
       )}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
-          <CardTitle>Phases</CardTitle>
+          <CardTitle>{t("organizerPhases.title")}</CardTitle>
           <NextPhaseButton tournamentId={tournamentId} />
         </CardHeader>
         <CardContent className="space-y-6">
           {phases.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Aucune phase configurée.</p>
+            <p className="text-sm text-muted-foreground">{t("organizerPhases.empty")}</p>
           ) : (
             <ul className="space-y-3">
               {phases.map((phase) => (
@@ -204,28 +187,47 @@ export function PhasesSection({
                   <div>
                     <div className="font-medium">{phase.name}</div>
                     <div className="text-sm text-muted-foreground">
-                      {PHASE_TYPE_LABELS[phase.type]} · best-of-{phase.bestOf}
-                      {` · ${phase.resultMode === "points" ? "points" : "sélection"}`}
-                      {` · ${phase.scoringMethod === "rank_offset" ? "rang" : "points fixes"}`}
-                      {phase.plannedRounds ? ` · ${phase.plannedRounds} rondes` : ""}
-                      {phase.topCut ? ` · Top ${phase.topCut}` : ""}
+                      {t(`common.phaseType.${phase.type}`)} · {t("common.bestOfN", { count: phase.bestOf })}
+                      {` · ${
+                        phase.resultMode === "points"
+                          ? t("organizerPhases.summary.resultPoints")
+                          : t("organizerPhases.summary.resultSelection")
+                      }`}
+                      {` · ${
+                        phase.scoringMethod === "rank_offset"
+                          ? t("organizerPhases.summary.scoringRank")
+                          : t("organizerPhases.summary.scoringFixed")
+                      }`}
+                      {phase.plannedRounds
+                        ? ` · ${t("organizerPhases.summary.roundsCount", {
+                            count: phase.plannedRounds,
+                          })}`
+                        : ""}
+                      {phase.topCut
+                        ? ` · ${t("organizerPhases.summary.topN", { count: phase.topCut })}`
+                        : ""}
                       {phase.type === "bracket"
-                        ? ` · ${BRACKET_SEEDING_LABELS[phase.bracketSeeding]}`
+                        ? ` · ${t(`organizerPhases.bracketSeeding.${phase.bracketSeeding}`)}`
                         : ""}
                       {phase.type !== "bracket" && (
                         <>
                           {" · "}
                           {phase.minPlayersPerMatch === phase.maxPlayersPerMatch
                             ? phase.minPlayersPerMatch === 2
-                              ? "duels"
-                              : `pods de ${phase.minPlayersPerMatch}`
-                            : `pods ${phase.minPlayersPerMatch}-${phase.maxPlayersPerMatch}`}
+                              ? t("organizerPhases.summary.duels")
+                              : t("organizerPhases.summary.podsOf", {
+                                  count: phase.minPlayersPerMatch,
+                                })
+                            : t("organizerPhases.summary.podsRange", {
+                                min: phase.minPlayersPerMatch,
+                                max: phase.maxPlayersPerMatch,
+                              })}
                         </>
                       )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline">{PHASE_STATUS_LABELS[phase.status]}</Badge>
+                    <Badge variant="outline">{t(`common.phaseStatus.${phase.status}`)}</Badge>
                     {phase.status === "not-started" && (
                       <Button
                         variant="ghost"
@@ -233,7 +235,7 @@ export function PhasesSection({
                         className="text-red-600 hover:text-red-800"
                         onClick={() => deletePhase(phase)}
                         disabled={busy}
-                        aria-label={`Supprimer la phase ${phase.name}`}
+                        aria-label={t("organizerPhases.deletePhaseAria", { name: phase.name })}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -245,34 +247,34 @@ export function PhasesSection({
           )}
 
           <div className="space-y-4 border-t pt-6">
-            <h3 className="font-medium">Ajouter une phase</h3>
+            <h3 className="font-medium">{t("organizerPhases.addPhase")}</h3>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="phase-name">Nom</Label>
+                <Label htmlFor="phase-name">{t("organizerPhases.nameLabel")}</Label>
                 <Input
                   id="phase-name"
                   value={phaseName}
                   onChange={(e) => setPhaseName(e.target.value)}
-                  placeholder="Ex: Phase de poules"
+                  placeholder={t("organizerPhases.namePlaceholder")}
                   maxLength={200}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Type</Label>
+                <Label>{t("organizerPhases.typeLabel")}</Label>
                 <Select value={phaseType} onValueChange={(v) => setPhaseType(v as TournamentPhaseType)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="swiss">Rondes suisses</SelectItem>
-                    <SelectItem value="elimination">Élimination (ré-appariement)</SelectItem>
-                    <SelectItem value="bracket">Arbre d&apos;élimination</SelectItem>
-                    <SelectItem value="freeform">Format libre</SelectItem>
+                    <SelectItem value="swiss">{t("common.phaseType.swiss")}</SelectItem>
+                    <SelectItem value="elimination">{t("common.phaseType.elimination")}</SelectItem>
+                    <SelectItem value="bracket">{t("common.phaseType.bracket")}</SelectItem>
+                    <SelectItem value="freeform">{t("common.phaseType.freeform")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phase-bestof">Best-of-n (parties par match)</Label>
+                <Label htmlFor="phase-bestof">{t("organizerPhases.bestOfLabel")}</Label>
                 <Input
                   id="phase-bestof"
                   type="number"
@@ -283,7 +285,7 @@ export function PhasesSection({
                 />
               </div>
               <div className="space-y-2">
-                <Label>Résultat des parties</Label>
+                <Label>{t("organizerPhases.resultModeLabel")}</Label>
                 <Select
                   value={phaseResultMode}
                   onValueChange={(v) => setPhaseResultMode(v as TournamentResultMode)}
@@ -292,13 +294,15 @@ export function PhasesSection({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="selection">Désignation du vainqueur</SelectItem>
-                    <SelectItem value="points">Saisie des points</SelectItem>
+                    <SelectItem value="selection">
+                      {t("organizerPhases.resultSelection")}
+                    </SelectItem>
+                    <SelectItem value="points">{t("organizerPhases.resultPoints")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Méthode de scoring</Label>
+                <Label>{t("organizerPhases.scoringMethodLabel")}</Label>
                 <Select
                   value={phaseScoringMethod}
                   onValueChange={(v) => setPhaseScoringMethod(v as TournamentScoringMethod)}
@@ -307,31 +311,33 @@ export function PhasesSection({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="fixed">Points fixes (victoire/défaite/nul)</SelectItem>
-                    <SelectItem value="rank_offset">Selon le rang (N + offset)</SelectItem>
+                    <SelectItem value="fixed">{t("organizerPhases.scoringFixedOption")}</SelectItem>
+                    <SelectItem value="rank_offset">
+                      {t("organizerPhases.scoringRankOption")}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               {phaseScoringMethod === "fixed" && (
                 <div className="space-y-2 md:col-span-2">
-                  <Label>Points fixes (victoire / défaite / nul)</Label>
+                  <Label>{t("organizerPhases.fixedPointsLabel")}</Label>
                   <div className="flex items-center gap-2">
                     <Input
-                      aria-label="Points de victoire"
+                      aria-label={t("organizerPhases.winPointsAria")}
                       type="number"
                       className="w-20"
                       value={phaseWin}
                       onChange={(e) => setPhaseWin(e.target.value)}
                     />
                     <Input
-                      aria-label="Points de défaite"
+                      aria-label={t("organizerPhases.lossPointsAria")}
                       type="number"
                       className="w-20"
                       value={phaseLoss}
                       onChange={(e) => setPhaseLoss(e.target.value)}
                     />
                     <Input
-                      aria-label="Points de match nul"
+                      aria-label={t("organizerPhases.drawPointsAria")}
                       type="number"
                       className="w-20"
                       value={phaseDraw}
@@ -342,7 +348,7 @@ export function PhasesSection({
               )}
               {phaseScoringMethod === "rank_offset" && (
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="phase-offsets">Offsets par rang (séparés par des virgules)</Label>
+                  <Label htmlFor="phase-offsets">{t("organizerPhases.offsetsLabel")}</Label>
                   <Input
                     id="phase-offsets"
                     value={phaseRankOffsets}
@@ -350,13 +356,13 @@ export function PhasesSection({
                     placeholder="3,1,-1,-3,-4,-5,-7"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Points = N + offset[rang], N étant le nombre de joueurs du match.
+                    {t("organizerPhases.offsetsHint")}
                   </p>
                 </div>
               )}
               {phaseType === "elimination" && (
                 <div className="space-y-2">
-                  <Label>Ré-appariement des vainqueurs</Label>
+                  <Label>{t("organizerPhases.eliminationSeedingLabel")}</Label>
                   <Select
                     value={phaseSeeding}
                     onValueChange={(v) => setPhaseSeeding(v as TournamentEliminationSeeding)}
@@ -365,15 +371,17 @@ export function PhasesSection({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="standings">Selon le classement</SelectItem>
-                      <SelectItem value="random">Aléatoire</SelectItem>
+                      <SelectItem value="standings">
+                        {t("organizerPhases.seedingStandings")}
+                      </SelectItem>
+                      <SelectItem value="random">{t("organizerPhases.seedingRandom")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               )}
               {phaseType === "bracket" && (
                 <div className="space-y-2">
-                  <Label>Appariement de la première ronde</Label>
+                  <Label>{t("organizerPhases.bracketSeedingLabel")}</Label>
                   <Select
                     value={phaseBracketSeeding}
                     onValueChange={(v) => setPhaseBracketSeeding(v as TournamentBracketSeeding)}
@@ -383,19 +391,19 @@ export function PhasesSection({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="opposite">
-                        Classement opposé (1er contre dernier)
+                        {t("organizerPhases.bracketOpposite")}
                       </SelectItem>
                       <SelectItem value="adjacent">
-                        Classement rapproché (1er contre 2e)
+                        {t("organizerPhases.bracketAdjacent")}
                       </SelectItem>
-                      <SelectItem value="random">Aléatoire</SelectItem>
+                      <SelectItem value="random">{t("organizerPhases.bracketRandom")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               )}
               {phaseType === "swiss" && (
                 <div className="space-y-2">
-                  <Label htmlFor="phase-rounds">Nombre de rondes (optionnel)</Label>
+                  <Label htmlFor="phase-rounds">{t("organizerPhases.roundsLabel")}</Label>
                   <Input
                     id="phase-rounds"
                     type="number"
@@ -407,14 +415,14 @@ export function PhasesSection({
               )}
               {phaseType !== "freeform" && (
                 <div className="space-y-2">
-                  <Label htmlFor="phase-topcut">Top cut à l&apos;entrée (optionnel)</Label>
+                  <Label htmlFor="phase-topcut">{t("organizerPhases.topCutLabel")}</Label>
                   <Input
                     id="phase-topcut"
                     type="number"
                     min={2}
                     value={phaseTopCut}
                     onChange={(e) => setPhaseTopCut(e.target.value)}
-                    placeholder="Ex: 8"
+                    placeholder={t("organizerPhases.topCutPlaceholder")}
                   />
                 </div>
               )}
@@ -424,7 +432,7 @@ export function PhasesSection({
             {phaseType !== "bracket" && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label>Joueurs par match</Label>
+                  <Label>{t("organizerPhases.playersPerMatchLabel")}</Label>
                   <Button
                     type="button"
                     variant="outline"
@@ -434,13 +442,13 @@ export function PhasesSection({
                       setPhaseMaxPlayers("2");
                     }}
                   >
-                    Duel (2-2)
+                    {t("organizerPhases.duelPreset")}
                   </Button>
                 </div>
                 <div className="flex items-center gap-2">
                   <Input
                     id="phase-min-players"
-                    aria-label="Minimum de joueurs par match"
+                    aria-label={t("organizerPhases.minPlayersAria")}
                     type="number"
                     min={2}
                     max={16}
@@ -448,10 +456,10 @@ export function PhasesSection({
                     value={phaseMinPlayers}
                     onChange={(e) => setPhaseMinPlayers(e.target.value)}
                   />
-                  <span className="text-muted-foreground">à</span>
+                  <span className="text-muted-foreground">{t("organizerPhases.rangeTo")}</span>
                   <Input
                     id="phase-max-players"
-                    aria-label="Maximum de joueurs par match"
+                    aria-label={t("organizerPhases.maxPlayersAria")}
                     type="number"
                     min={2}
                     max={16}
@@ -461,13 +469,13 @@ export function PhasesSection({
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  2-2 pour des duels ; un intervalle plus large génère des pods multijoueurs.
+                  {t("organizerPhases.playersPerMatchHint")}
                 </p>
               </div>
             )}
             <Button onClick={addPhase} disabled={busy || !phaseName.trim()}>
               <Plus className="mr-2 h-4 w-4" />
-              Ajouter la phase
+              {t("organizerPhases.submit")}
             </Button>
           </div>
         </CardContent>

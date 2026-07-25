@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Maximize2, Pause, Play, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +13,7 @@ import { formatDuration, timerIsPaused, timerRemainingSeconds } from "@/lib/tour
 import { useTournamentLive } from "../useTournamentLive";
 
 export function TimerManager({ tournamentId }: { tournamentId: string }) {
+  const t = useTranslations("Tournaments");
   const { state, serverOffsetMs, reload } = useTournamentLive(tournamentId, 5000);
   const [minutes, setMinutes] = useState("50");
   const [seconds, setSeconds] = useState("0");
@@ -40,11 +42,11 @@ export function TimerManager({ tournamentId }: { tournamentId: string }) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? "Erreur sur le minuteur");
+        throw new Error(data.error ?? t("timerManager.timerError"));
       }
       await reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur sur le minuteur");
+      setError(err instanceof Error ? err.message : t("timerManager.timerError"));
     } finally {
       setBusy(false);
     }
@@ -54,7 +56,7 @@ export function TimerManager({ tournamentId }: { tournamentId: string }) {
     const durationSeconds =
       (Number.parseInt(minutes, 10) || 0) * 60 + (Number.parseInt(seconds, 10) || 0);
     if (durationSeconds < 1) {
-      setError("La durée doit être d'au moins 1 seconde.");
+      setError(t("timerManager.minDuration"));
       return;
     }
     action({ action: "start", durationSeconds });
@@ -63,11 +65,11 @@ export function TimerManager({ tournamentId }: { tournamentId: string }) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
-        <CardTitle>Minuteur</CardTitle>
+        <CardTitle>{t("timerManager.title")}</CardTitle>
         <Button variant="outline" size="sm" asChild>
           <Link href={`/tournaments/${tournamentId}/timer`} target="_blank">
             <Maximize2 className="mr-2 h-4 w-4" />
-            Plein écran
+            {t("timerManager.fullscreen")}
           </Link>
         </Button>
       </CardHeader>
@@ -93,13 +95,17 @@ export function TimerManager({ tournamentId }: { tournamentId: string }) {
             {remaining === null ? "—" : formatDuration(remaining)}
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            {running ? "En cours" : paused ? "En pause" : "Arrêté"}
+            {running
+              ? t("timerManager.statusRunning")
+              : paused
+                ? t("timerManager.statusPaused")
+                : t("timerManager.statusStopped")}
           </p>
         </div>
 
         <div className="flex flex-wrap items-end gap-2">
           <div className="space-y-1">
-            <Label htmlFor="timer-min">Minutes</Label>
+            <Label htmlFor="timer-min">{t("timerManager.minutes")}</Label>
             <Input
               id="timer-min"
               type="number"
@@ -110,7 +116,7 @@ export function TimerManager({ tournamentId }: { tournamentId: string }) {
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="timer-sec">Secondes</Label>
+            <Label htmlFor="timer-sec">{t("timerManager.seconds")}</Label>
             <Input
               id="timer-sec"
               type="number"
@@ -123,12 +129,12 @@ export function TimerManager({ tournamentId }: { tournamentId: string }) {
           </div>
           <Button onClick={start} disabled={busy}>
             <Play className="mr-2 h-4 w-4" />
-            {running || paused ? "Redémarrer" : "Lancer"}
+            {running || paused ? t("timerManager.restart") : t("timerManager.start")}
           </Button>
           {paused ? (
             <Button variant="outline" onClick={() => action({ action: "resume" })} disabled={busy}>
               <Play className="mr-2 h-4 w-4" />
-              Reprendre
+              {t("timerManager.resume")}
             </Button>
           ) : (
             <Button
@@ -137,7 +143,7 @@ export function TimerManager({ tournamentId }: { tournamentId: string }) {
               disabled={busy || !running}
             >
               <Pause className="mr-2 h-4 w-4" />
-              Pause
+              {t("timerManager.pause")}
             </Button>
           )}
           <Button
@@ -146,7 +152,7 @@ export function TimerManager({ tournamentId }: { tournamentId: string }) {
             disabled={busy || (!running && !paused)}
           >
             <Square className="mr-2 h-4 w-4" />
-            Arrêter
+            {t("timerManager.stop")}
           </Button>
         </div>
       </CardContent>

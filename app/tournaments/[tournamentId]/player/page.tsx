@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,19 +22,20 @@ type ApiMatch = {
 };
 type ApiRound = { id: string; number: number; status: string; matches: ApiMatch[] };
 
-const MATCH_STATUS_LABELS: Record<string, string> = {
-  pending: "À jouer",
-  "in-progress": "En attente de confirmation",
-  completed: "Terminé",
-  disputed: "Contesté",
-};
-
 export default function TournamentPlayerMatchPage({
   params,
 }: {
   params: Promise<{ tournamentId: string }>;
 }) {
+  const t = useTranslations("Tournaments");
   const { tournamentId } = use(params);
+
+  const matchStatusLabels: Record<string, string> = {
+    pending: t("player.matchStatusPending"),
+    "in-progress": t("player.matchStatusInProgress"),
+    completed: t("player.matchStatusCompleted"),
+    disputed: t("player.matchStatusDisputed"),
+  };
   const { syncKey, tournament, myPlayerId, error, loading, apiFetch, reload, session } =
     usePlayerTournament(tournamentId);
 
@@ -57,12 +59,12 @@ export default function TournamentPlayerMatchPage({
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Erreur lors du retrait du tournoi");
+        throw new Error(body.error ?? t("player.dropError"));
       }
       setDropOpen(false);
       await reload();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Erreur lors du retrait du tournoi");
+      setActionError(err instanceof Error ? err.message : t("player.dropError"));
     } finally {
       setDropping(false);
     }
@@ -110,7 +112,7 @@ export default function TournamentPlayerMatchPage({
     () => new Map((tournament?.players ?? []).map((p) => [p.id, p])),
     [tournament]
   );
-  const playerName = (playerId: string) => playersById.get(playerId)?.displayName ?? "Inconnu";
+  const playerName = (playerId: string) => playersById.get(playerId)?.displayName ?? t("player.unknownPlayer");
 
   const myMatch = useMemo(() => {
     if (!round || !myPlayerId) return null;
@@ -121,7 +123,7 @@ export default function TournamentPlayerMatchPage({
     async (games: TournamentGameResult[]) => {
       if (!myMatch) return;
       if (games.length === 0) {
-        setActionError("Renseignez au moins une partie.");
+        setActionError(t("player.reportGamesRequired"));
         return;
       }
       setSubmitting(true);
@@ -133,16 +135,16 @@ export default function TournamentPlayerMatchPage({
         });
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
-          throw new Error(body.error ?? "Erreur lors du rapport du résultat");
+          throw new Error(body.error ?? t("player.reportError"));
         }
         await reload();
       } catch (err) {
-        setActionError(err instanceof Error ? err.message : "Erreur lors du rapport du résultat");
+        setActionError(err instanceof Error ? err.message : t("player.reportError"));
       } finally {
         setSubmitting(false);
       }
     },
-    [myMatch, apiFetch, tournamentId, reload]
+    [myMatch, apiFetch, tournamentId, reload, t]
   );
 
   const submitAction = async (action: "confirm" | "dispute") => {
@@ -156,11 +158,11 @@ export default function TournamentPlayerMatchPage({
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? "Erreur");
+        throw new Error(body.error ?? t("player.genericError"));
       }
       await reload();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Erreur");
+      setActionError(err instanceof Error ? err.message : t("player.genericError"));
     } finally {
       setSubmitting(false);
     }
@@ -180,16 +182,16 @@ export default function TournamentPlayerMatchPage({
       {myPlayerId && (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3">
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Mon inscription :</span>
+            <span className="text-muted-foreground">{t("player.myRegistration")}</span>
             <Badge variant={myStatus === "dropped" ? "outline" : "secondary"}>
-              {myStatus === "dropped" ? "DROPPED" : "REGISTERED"}
+              {myStatus === "dropped" ? t("player.statusDropped") : t("player.statusRegistered")}
             </Badge>
           </div>
           {myStatus === "dropped" ? (
-            <span className="text-sm text-muted-foreground">Vous avez quitté ce tournoi.</span>
+            <span className="text-sm text-muted-foreground">{t("player.leftTournament")}</span>
           ) : (
             <Button variant="destructive" size="sm" onClick={() => setDropOpen(true)} disabled={dropping}>
-              Quitter le tournoi
+              {t("player.leaveTournament")}
             </Button>
           )}
         </div>
@@ -200,15 +202,15 @@ export default function TournamentPlayerMatchPage({
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>
-                Mon match — Ronde {round.number}
+                {t("player.myMatchRound", { number: round.number })}
                 {myMatch.bracketPosition ? ` (${myMatch.bracketPosition})` : ""}
               </span>
-              <Badge variant="outline">{MATCH_STATUS_LABELS[myMatch.status]}</Badge>
+              <Badge variant="outline">{matchStatusLabels[myMatch.status]}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {myMatch.players.length === 1 ? (
-              <p className="text-muted-foreground">BYE — victoire automatique.</p>
+              <p className="text-muted-foreground">{t("player.byeAutoWin")}</p>
             ) : (
               <div className="space-y-2">
                 {myMatch.players.map((p) => (
@@ -218,7 +220,7 @@ export default function TournamentPlayerMatchPage({
                         isWinner={myMatch.winnerIds.includes(p.playerId)}
                         name={playerName(p.playerId)}
                       />
-                      {p.playerId === myPlayerId ? " (moi)" : ""}
+                      {p.playerId === myPlayerId ? ` ${t("player.me")}` : ""}
                     </span>
                     <span className="font-mono text-lg">{p.score}</span>
                   </div>
@@ -238,7 +240,7 @@ export default function TournamentPlayerMatchPage({
                   resultMode={activePhase.resultMode}
                   bestOf={activePhase.bestOf}
                   submitting={submitting}
-                  submitLabel="Rapporter le résultat"
+                  submitLabel={t("player.reportResult")}
                   onSubmit={submitReport}
                 />
               )}
@@ -246,7 +248,7 @@ export default function TournamentPlayerMatchPage({
               <div className="flex gap-2">
                 {myMatch.reportedBy !== myPlayerId && myMatch.reportedBy !== session?.user?.id && (
                   <Button onClick={() => submitAction("confirm")} disabled={submitting}>
-                    Confirmer le résultat
+                    {t("player.confirmResult")}
                   </Button>
                 )}
                 <Button
@@ -254,22 +256,22 @@ export default function TournamentPlayerMatchPage({
                   onClick={() => submitAction("dispute")}
                   disabled={submitting}
                 >
-                  Contester
+                  {t("player.dispute")}
                 </Button>
               </div>
             )}
           </CardContent>
         </Card>
       ) : (
-        <p className="text-muted-foreground">Vous n&apos;avez pas de match dans la ronde en cours.</p>
+        <p className="text-muted-foreground">{t("player.noCurrentMatch")}</p>
       )}
 
       <ConfirmDialog
         open={dropOpen}
         onOpenChange={(open) => !open && setDropOpen(false)}
-        title="Quitter le tournoi"
-        description="Vous serez marqué comme DROPPED et ne serez plus apparaillé lors des prochaines rondes. Cette action peut être annulée par l'organisateur."
-        confirmLabel="Quitter le tournoi"
+        title={t("player.leaveTournament")}
+        description={t("player.leaveDialogDescription")}
+        confirmLabel={t("player.leaveTournament")}
         destructive
         busy={dropping}
         onConfirm={dropTournament}

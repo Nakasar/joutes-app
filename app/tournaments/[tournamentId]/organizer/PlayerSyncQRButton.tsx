@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { QrCode } from "lucide-react";
@@ -13,6 +14,7 @@ type PlayerSyncQRButtonProps = {
 };
 
 export function PlayerSyncQRButton({ tournamentId, playerName, syncKey }: PlayerSyncQRButtonProps) {
+  const t = useTranslations("Tournaments");
   const [open, setOpen] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
 
@@ -41,17 +43,14 @@ export function PlayerSyncQRButton({ tournamentId, playerName, syncKey }: Player
     <>
       <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
         <QrCode className="h-4 w-4 mr-2" />
-        QR joueur
+        {t("playerSync.button")}
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Synchronisation de {playerName}</DialogTitle>
-            <DialogDescription>
-              Faites scanner ce QR code par le joueur : son navigateur sera lié à ce
-              tournoi et il pourra accéder à son portail joueur, même sans compte.
-            </DialogDescription>
+            <DialogTitle>{t("playerSync.dialogTitle", { name: playerName })}</DialogTitle>
+            <DialogDescription>{t("playerSync.dialogDescription")}</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 py-4">
             {qrCodeUrl ? (
@@ -62,20 +61,20 @@ export function PlayerSyncQRButton({ tournamentId, playerName, syncKey }: Player
                   onClick={() => navigator.clipboard.writeText(joinUrl)}
                   className="mb-2"
                 >
-                  Copier le lien
+                  {t("playerSync.copyLink")}
                 </Button>
                 <img
                   src={qrCodeUrl}
-                  alt={`QR code de synchronisation de ${playerName}`}
+                  alt={t("playerSync.qrAlt", { name: playerName })}
                   className="border-4 border-gray-200 rounded-lg"
                 />
                 <p className="text-xs text-center text-muted-foreground">
-                  Ce lien contient la clé secrète du joueur : ne le partagez qu&apos;avec lui.
+                  {t("playerSync.secretHint")}
                 </p>
               </>
             ) : (
               <div className="flex items-center justify-center h-[300px] w-[300px]">
-                <p className="text-muted-foreground">Génération du QR code...</p>
+                <p className="text-muted-foreground">{t("playerSync.generating")}</p>
               </div>
             )}
           </div>
