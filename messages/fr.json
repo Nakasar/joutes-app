@@ -1896,6 +1896,8 @@
       "removeError": "Erreur lors de la suppression du joueur"
     },
     "organizerPhases": {
+      "resetStatusTitle": "Repasser en « non démarrée »",
+      "resetStatusAria": "Repasser la phase {name} en non démarrée",
       "currentPhaseLabel": "Phase en cours",
       "currentPhaseNone": "Aucune phase en cours",
       "editPhaseAria": "Modifier la phase {name}",

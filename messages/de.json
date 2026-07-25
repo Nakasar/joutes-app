@@ -1812,6 +1812,8 @@
       "removeError": "Fehler beim Entfernen des Spielers"
     },
     "organizerPhases": {
+      "resetStatusTitle": "Auf „nicht gestartet“ zurücksetzen",
+      "resetStatusAria": "Phase {name} auf nicht gestartet zurücksetzen",
       "currentPhaseLabel": "Aktuelle Phase",
       "currentPhaseNone": "Keine aktuelle Phase",
       "editPhaseAria": "Phase {name} bearbeiten",
