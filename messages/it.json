@@ -1345,6 +1345,18 @@
           "customSet": "Usa il codice “{code}”",
           "language": "Lingua",
           "languagePlaceholder": "Scegli una lingua",
+          "type": "Tipo di bustina",
+          "typePlaceholder": "Scegli un tipo",
+          "types": {
+            "other": "Altro",
+            "booster": "Booster",
+            "pre-rift": "Pre-Rift",
+            "carbonite": "Carbonite",
+            "pre-release": "Pre-Release",
+            "play-booster": "Play Booster",
+            "set-booster": "Set Booster",
+            "collector": "Collector"
+          },
           "cancel": "Annulla",
           "cardCount": "{count, plural, =0 {Nessuna carta} one {# carta} other {# carte}}",
           "emptyTitle": "Ancora nessuna bustina",

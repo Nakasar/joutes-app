@@ -383,7 +383,12 @@ paths:
                 gameSlug: { type: string }
                 setCode: { type: string }
                 lang: { type: string }
-                type: { type: string, default: custom }
+                type:
+                  type: string
+                  default: other
+                  description: >-
+                    Booster type. Must be one of the types available for the game
+                    (`other` is always accepted); any other value is rejected.
       responses:
         "200":
           description: Created.
@@ -407,6 +412,32 @@ paths:
           content:
             application/json:
               schema: { type: object, properties: { booster: { $ref: "#/components/schemas/Booster" } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [Collection]
+      summary: Update a booster's details
+      security: [{ sessionAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type]
+              properties:
+                type:
+                  type: string
+                  description: >-
+                    Booster type. Must be one of the types available for the game
+                    (`other` is always accepted); any other value is rejected.
+      responses:
+        "200":
+          description: Updated.
+          content:
+            application/json:
+              schema: { type: object, properties: { success: { type: boolean }, type: { type: string } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
     delete:

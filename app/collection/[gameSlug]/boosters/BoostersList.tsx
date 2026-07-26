@@ -25,7 +25,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Booster } from "@/lib/types/booster";
+import { getBoosterTypes, OTHER_BOOSTER_TYPE } from "@/lib/constants/booster-types";
 import SetCombobox from "./SetCombobox";
+import { useBoosterTypeLabel } from "./useBoosterTypeLabel";
 
 const LANG_LABELS: Record<string, string> = {
   en: "🇬🇧 EN", fr: "🇫🇷 FR", it: "🇮🇹 IT", de: "🇩🇪 DE",
@@ -47,11 +49,14 @@ export default function BoostersList({ gameSlug, gameName, initialBoosters, setC
   const t = useTranslations("Collection");
   const locale = useLocale();
   const router = useRouter();
+  const boosterTypeLabel = useBoosterTypeLabel();
+  const boosterTypes = getBoosterTypes(gameSlug);
 
   const [boosters, setBoosters] = useState<Booster[]>(initialBoosters);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [setCode, setSetCode] = useState(setCodes[0] ?? "");
   const [lang, setLang] = useState(langs[0] ?? "en");
+  const [type, setType] = useState(OTHER_BOOSTER_TYPE);
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -62,7 +67,7 @@ export default function BoostersList({ gameSlug, gameName, initialBoosters, setC
       const res = await fetch(`/api/collection/boosters`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ gameSlug, setCode, lang }),
+        body: JSON.stringify({ gameSlug, setCode, lang, type }),
       });
       if (res.ok) {
         const { id } = await res.json();
@@ -117,6 +122,21 @@ export default function BoostersList({ gameSlug, gameName, initialBoosters, setC
                   <SetCombobox value={setCode} onChange={setSetCode} options={setCodes} />
                 </div>
                 <div className="space-y-1.5">
+                  <Label>{t("boosters.type")}</Label>
+                  <Select value={type} onValueChange={setType}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder={t("boosters.typePlaceholder")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {boosterTypes.map((value) => (
+                        <SelectItem key={value} value={value}>
+                          {boosterTypeLabel(value)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
                   <Label>{t("boosters.language")}</Label>
                   <Select value={lang} onValueChange={setLang}>
                     <SelectTrigger className="w-full">
@@ -166,6 +186,7 @@ export default function BoostersList({ gameSlug, gameName, initialBoosters, setC
                   <div className="flex flex-wrap items-center gap-1.5">
                     <Badge variant="outline" className="font-mono text-[11px]">{booster.setCode}</Badge>
                     <Badge variant="secondary" className="text-[11px]">{langLabel(booster.lang)}</Badge>
+                    <Badge variant="secondary" className="text-[11px]">{boosterTypeLabel(booster.type)}</Badge>
                     {booster.addedToCollection ? (
                       <Badge variant="outline" className="gap-1 border-emerald-500/30 bg-emerald-500/10 text-[11px] text-emerald-600 dark:text-emerald-400">
                         <CheckCircle2 className="size-3" />
