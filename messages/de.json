@@ -2050,23 +2050,41 @@
       "description": "Bereite einen Tausch vor: Gib Karten aus deiner Sammlung ab und erhalte die Karten deines Tauschpartners."
     },
     "title": "Tausch",
-    "subtitle": "Stelle beide Seiten des Tauschs zusammen und übernimm ihn dann in deine Sammlung.",
+    "backToList": "Meine Tausche",
     "backToCollection": "Meine Sammlung",
     "trade": "Tauschen",
+    "noPartner": "Ohne Partner",
+    "withPartner": "Mit {name}",
     "summary": "{offered, plural, =0 {Keine Karten abgegeben} one {# Karte abgegeben} other {# Karten abgegeben}} · {received, plural, =0 {keine Karten erhalten} one {# Karte erhalten} other {# Karten erhalten}}",
-    "success": "Tausch abgeschlossen: {removed, plural, =0 {keine Karten entfernt} one {# Karte entfernt} other {# Karten entfernt}}, {added, plural, =0 {keine Karten hinzugefügt} one {# Karte hinzugefügt} other {# Karten hinzugefügt}}.",
+    "success": "Tausch abgeschlossen: Die Sammlungen wurden aktualisiert.",
+    "hub": {
+      "title": "Tausche",
+      "subtitle": "Stelle einen Tausch zusammen, lade deinen Partner ein und sieh dir vergangene Tausche an.",
+      "create": "Neuer Tausch",
+      "openTitle": "Laufende Tausche",
+      "noOpen": "Kein laufender Tausch.",
+      "historyTitle": "Verlauf",
+      "noHistory": "Noch kein abgeschlossener Tausch.",
+      "badgeOpen": "Laufend",
+      "badgeValidated": "Dein Angebot ist bestätigt",
+      "badgeCompleted": "Abgeschlossen",
+      "badgeCancelled": "Abgebrochen"
+    },
     "offer": {
       "title": "Mein Angebot",
       "subtitle": "Die Karten, die du abgibst – sie werden aus deiner Sammlung entfernt."
     },
     "request": {
       "title": "Was ich erhalte",
-      "subtitle": "Die Karten deines Tauschpartners – sie werden deiner Sammlung hinzugefügt."
+      "titleWithPartner": "Angebot von {name}",
+      "subtitle": "Die Karten, die du erhältst – sie werden deiner Sammlung hinzugefügt.",
+      "subtitlePartner": "Von deinem Partner zusammengestellt: Du erhältst es so, wie es ist."
     },
     "panel": {
       "copies": "{count, plural, =0 {0 Exemplare} one {# Exemplar} other {# Exemplare}}",
       "emptyOffer": "Füge Karten aus deiner Sammlung hinzu, die du abgeben willst.",
       "emptyRequest": "Füge die Karten hinzu, die du im Gegenzug erhältst.",
+      "emptyPartner": "Dein Partner hat noch nichts angeboten.",
       "scopeCollection": "Meine Sammlung",
       "scopeCatalog": "Alle Karten",
       "searchPlaceholder": "Karte suchen…",
@@ -2087,9 +2105,75 @@
       "next": "Weiter",
       "pageOf": "Seite {page} / {totalPages}"
     },
+    "invite": {
+      "button": "Partner einladen",
+      "title": "Partner einladen",
+      "description": "Lass diesen QR-Code scannen, teile den Code oder wähle direkt einen Spieler aus.",
+      "qrAlt": "QR-Code zur Tausch-Einladung",
+      "copyLink": "Link kopieren",
+      "copied": "Kopiert",
+      "codeHint": "Dein Partner öffnet den Link mit seinem Konto, um dem Tausch beizutreten.",
+      "directTitle": "Oder einen Spieler auswählen",
+      "identifierPlaceholder": "name#1234 oder E-Mail-Adresse",
+      "identifierHint": "Der Spieler wird benachrichtigt und kann den Tausch sofort öffnen.",
+      "submit": "Einladen",
+      "invited": "Partner zum Tausch hinzugefügt.",
+      "errors": {
+        "userNotFound": "Kein Spieler passt zu dieser Angabe.",
+        "self": "Du kannst nicht mit dir selbst tauschen.",
+        "taken": "Dieser Tausch hat bereits einen Partner."
+      }
+    },
+    "join": {
+      "metadataTitle": "Tausch beitreten",
+      "pageTitle": "Tausch beitreten",
+      "title": "Tausch beitreten",
+      "description": "Gib den Code eines Tauschs ein, um daran teilzunehmen.",
+      "placeholder": "Tausch-Code",
+      "submit": "Beitreten",
+      "accept": "Dem Tausch beitreten",
+      "invitedBy": "{name} lädt dich zu einem Tausch ein.",
+      "errors": {
+        "notFound": "Kein Tausch passt zu diesem Code.",
+        "taken": "Dieser Tausch hat bereits einen Partner.",
+        "closed": "Dieser Tausch ist beendet."
+      }
+    },
+    "validation": {
+      "validate": "Mein Angebot bestätigen",
+      "revoke": "Bestätigung zurückziehen",
+      "saved": "Angebot bestätigt.",
+      "mine": "Von dir bestätigt",
+      "partner": "Bestätigt",
+      "hint": "Der Tausch wird ausgeführt, sobald beide Spieler ihr Angebot bestätigt haben.",
+      "waitingPartner": "Warten auf die Bestätigung von {name}.",
+      "partnerReady": "{name} hat bestätigt: Bestätige nun deinerseits, um abzuschließen.",
+      "finalizing": "Tausch wird abgeschlossen…"
+    },
+    "partner": {
+      "remove": "Partner entfernen",
+      "leave": "Tausch verlassen",
+      "removed": "Partner aus dem Tausch entfernt.",
+      "removeTitle": "Partner entfernen?",
+      "removeDescription": "Sein Angebot wird gelöscht und die Gegenseite ist wieder frei.",
+      "leaveTitle": "Diesen Tausch verlassen?",
+      "leaveDescription": "Dein Angebot wird gelöscht und du siehst diesen Tausch nicht mehr."
+    },
+    "cancel": {
+      "button": "Tausch abbrechen",
+      "title": "Diesen Tausch abbrechen?",
+      "description": "Keine Karte wechselt die Sammlung. Der Tausch bleibt in deinem Verlauf.",
+      "confirm": "Tausch abbrechen",
+      "done": "Tausch abgebrochen."
+    },
+    "status": {
+      "completed": "Tausch abgeschlossen: Die Karten haben die Sammlung gewechselt.",
+      "cancelled": "Dieser Tausch wurde abgebrochen."
+    },
     "confirm": {
       "title": "Tausch bestätigen",
       "description": "Deine Sammlung wird sofort aktualisiert: Diese Aktion ist endgültig.",
+      "descriptionPartner": "Dein Angebot wird bestätigt. Der Tausch wird erst ausgeführt, wenn beide Angebote bestätigt sind.",
       "given": "Abgegebene Karten",
       "received": "Erhaltene Karten",
       "none": "Keine Karte",
@@ -2098,7 +2182,11 @@
     },
     "errors": {
       "insufficientCopies": "Du besitzt nicht mehr genügend Exemplare: {cards}",
-      "failed": "Der Tausch konnte nicht abgeschlossen werden."
+      "empty": "Füge dem Tausch mindestens eine Karte hinzu.",
+      "changed": "Der Tausch wurde zwischenzeitlich geändert: Prüfe die Angebote vor dem Bestätigen.",
+      "closed": "Dieser Tausch kann nicht mehr geändert werden.",
+      "saveFailed": "Die Änderungen konnten nicht gespeichert werden.",
+      "failed": "Die Aktion konnte nicht ausgeführt werden."
     }
   }
 }

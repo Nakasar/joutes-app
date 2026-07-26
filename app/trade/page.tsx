@@ -3,8 +3,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
-import { listTradeGames } from "@/lib/db/trades";
-import TradeClient from "./TradeClient";
+import { listUserTrades } from "@/lib/db/trades";
+import TradeHubClient from "./TradeHubClient";
 
 export const dynamic = "force-dynamic";
 
@@ -21,18 +21,22 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function TradePage() {
+export default async function TradeHubPage() {
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session?.user?.id) {
     redirect("/login");
   }
 
-  const games = await listTradeGames();
+  const trades = await listUserTrades(session.user.id);
 
   return (
     <div className="container mx-auto p-4 sm:p-6">
-      <TradeClient games={games} />
+      <TradeHubClient
+        initialOpen={trades.open}
+        initialPast={trades.past}
+        currentUserId={session.user.id}
+      />
     </div>
   );
 }
