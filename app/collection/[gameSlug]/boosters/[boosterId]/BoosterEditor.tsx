@@ -5,7 +5,21 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import { ArrowLeft, Search, Plus, X, Loader2, Package, Info, Sparkles, Library, CheckCircle2, Undo2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Search,
+  Plus,
+  X,
+  Loader2,
+  Package,
+  Info,
+  Sparkles,
+  Library,
+  CheckCircle2,
+  Undo2,
+  ArrowDownWideNarrow,
+  ArrowUpNarrowWide,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -24,7 +38,30 @@ const LANG_LABELS: Record<string, string> = {
 };
 const langLabel = (code: string) => LANG_LABELS[code.toLowerCase()] ?? code.toUpperCase();
 
-type SearchCard = BoosterCard & { type?: string };
+type SearchCard = BoosterCard;
+
+const ALL = "all";
+
+type SortKey = "default" | "name" | "collectorNumber" | "type";
+type SortDirection = "asc" | "desc";
+
+const SORT_KEYS: SortKey[] = ["default", "name", "collectorNumber", "type"];
+
+const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+
+/** Comparateur du tri courant, appliqué sur des cartes déjà indexées par leur position d'origine. */
+function compareCards(a: BoosterCard, b: BoosterCard, key: SortKey): number {
+  switch (key) {
+    case "name":
+      return collator.compare(a.name, b.name);
+    case "collectorNumber":
+      return collator.compare(a.collectorNumber ?? "", b.collectorNumber ?? "");
+    case "type":
+      return collator.compare(a.type ?? "", b.type ?? "");
+    default:
+      return 0;
+  }
+}
 
 /** Parse in-bar special filters: `e:XXX` / `set:XXX` -> set, `cn:000a` -> collector number. */
 function parseSearch(raw: string): { setCode: string | null; cn: string | null; lang: string | null; text: string } {
@@ -80,6 +117,10 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
   const [creatingSibling, setCreatingSibling] = useState(false);
   const [addedToCollection, setAddedToCollection] = useState(initialBooster.addedToCollection ?? false);
   const [busyCollection, setBusyCollection] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<string>(ALL);
+  const [domainFilter, setDomainFilter] = useState<string>(ALL);
+  const [sortKey, setSortKey] = useState<SortKey>("default");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   const controllerRef = useRef<AbortController | null>(null);
   const pendingKeyRef = useRef<string | null>(null);
@@ -265,6 +306,58 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
     }
   };
 
+  // Les propriétés de carte dépendent du jeu : on ne propose un filtre que si
+  // les cartes du booster portent effectivement la propriété.
+  const typeOptions = useMemo(
+    () => [...new Set(boosterCards.map((card) => card.type).filter((type): type is string => Boolean(type)))].sort(
+      (a, b) => collator.compare(a, b)
+    ),
+    [boosterCards]
+  );
+
+  const domainOptions = useMemo(
+    () => [...new Set(boosterCards.flatMap((card) => card.domain ?? []).filter(Boolean))].sort(
+      (a, b) => collator.compare(a, b)
+    ),
+    [boosterCards]
+  );
+
+  // Un filtre dont la valeur n'existe plus (dernière carte de ce type retirée)
+  // doit se relâcher, sinon la grille reste vide sans raison visible.
+  useEffect(() => {
+    if (typeFilter !== ALL && !typeOptions.includes(typeFilter)) setTypeFilter(ALL);
+  }, [typeFilter, typeOptions]);
+
+  useEffect(() => {
+    if (domainFilter !== ALL && !domainOptions.includes(domainFilter)) setDomainFilter(ALL);
+  }, [domainFilter, domainOptions]);
+
+  const visibleCards = useMemo(() => {
+    const filtered = boosterCards.filter((card) => {
+      if (typeFilter !== ALL && card.type !== typeFilter) return false;
+      if (domainFilter !== ALL && !(card.domain ?? []).includes(domainFilter)) return false;
+      return true;
+    });
+
+    const direction = sortDirection === "asc" ? 1 : -1;
+    // Indexation préalable : le tri « par défaut » suit l'ordre du booster, et
+    // sert aussi de départage stable pour les autres critères.
+    return filtered
+      .map((card, index) => ({ card, index }))
+      .sort((a, b) => {
+        const compared = compareCards(a.card, b.card, sortKey);
+        return (compared !== 0 ? compared : a.index - b.index) * direction;
+      })
+      .map(({ card }) => card);
+  }, [boosterCards, typeFilter, domainFilter, sortKey, sortDirection]);
+
+  const filtersActive = typeFilter !== ALL || domainFilter !== ALL;
+
+  const resetFilters = () => {
+    setTypeFilter(ALL);
+    setDomainFilter(ALL);
+  };
+
   const setOptions = useMemo(() => {
     const set = new Set<string>([initialBooster.setCode, ...resultSetCodes]);
     return [...set].filter(Boolean).sort();
@@ -361,17 +454,86 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
         {/* Booster contents */}
         <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-muted-foreground">
-            {t("boosters.contents", { count: boosterCards.length })}
-          </h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-sm font-semibold text-muted-foreground">
+              {t("boosters.contents", { count: boosterCards.length })}
+            </h2>
+            {filtersActive ? (
+              <Badge variant="secondary" className="text-[11px]">
+                {t("boosters.filteredCount", { count: visibleCards.length })}
+              </Badge>
+            ) : null}
+          </div>
+
+          {boosterCards.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-2">
+              {typeOptions.length > 0 ? (
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger className="w-auto min-w-[130px]" aria-label={t("boosters.filterByType")}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ALL}>{t("boosters.allTypes")}</SelectItem>
+                    {typeOptions.map((type) => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : null}
+              {domainOptions.length > 0 ? (
+                <Select value={domainFilter} onValueChange={setDomainFilter}>
+                  <SelectTrigger className="w-auto min-w-[130px]" aria-label={t("boosters.filterByDomain")}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ALL}>{t("boosters.allDomains")}</SelectItem>
+                    {domainOptions.map((domain) => (
+                      <SelectItem key={domain} value={domain}>{domain}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : null}
+              <Select value={sortKey} onValueChange={(value) => setSortKey(value as SortKey)}>
+                <SelectTrigger className="w-auto min-w-[150px]" aria-label={t("boosters.sortBy")}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SORT_KEYS.map((key) => (
+                    <SelectItem key={key} value={key}>{t(`boosters.sort.${key}`)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"))}
+                aria-label={sortDirection === "asc" ? t("boosters.sortAscending") : t("boosters.sortDescending")}
+                title={sortDirection === "asc" ? t("boosters.sortAscending") : t("boosters.sortDescending")}
+              >
+                {sortDirection === "asc" ? <ArrowUpNarrowWide className="size-4" /> : <ArrowDownWideNarrow className="size-4" />}
+              </Button>
+              {filtersActive ? (
+                <Button type="button" variant="ghost" size="sm" onClick={resetFilters}>
+                  {t("boosters.resetFilters")}
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
+
           {boosterCards.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-12 text-center">
               <Package className="size-8 text-muted-foreground" />
               <p className="text-sm text-muted-foreground">{t("boosters.emptyBooster")}</p>
             </div>
+          ) : visibleCards.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-12 text-center">
+              <Package className="size-8 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">{t("boosters.noCardMatchesFilters")}</p>
+            </div>
           ) : (
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4">
-              {boosterCards.map((card) => (
+              {visibleCards.map((card) => (
                 <div key={card.id} className="group relative overflow-hidden rounded-lg border bg-card">
                   <div className="relative aspect-[3/4] w-full bg-muted">
                     <Image src={card.image} alt={card.name} fill unoptimized sizes="120px" className="object-cover" />
