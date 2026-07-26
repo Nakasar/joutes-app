@@ -14,6 +14,7 @@
       "groupEvents": "Eventi"
     },
     "menu": {
+      "Trade": "Scambio",
       "Collection": "La mia collezione",
       "Jeux": "Giochi",
       "Événements": "Eventi",
@@ -2066,6 +2067,151 @@
       "deleteAria": "Elimina l'annuncio",
       "createError": "Errore durante la creazione dell'annuncio",
       "deleteError": "Errore durante l'eliminazione"
+    }
+  },
+  "Trade": {
+    "metadata": {
+      "title": "Scambio di carte",
+      "description": "Prepara uno scambio: cedi carte della tua collezione e ricevi quelle del tuo partner."
+    },
+    "title": "Scambio",
+    "backToList": "I miei scambi",
+    "backToCollection": "La mia collezione",
+    "trade": "Scambia",
+    "noPartner": "Senza partner",
+    "withPartner": "Con {name}",
+    "summary": "{offered, plural, =0 {Nessuna carta ceduta} one {# carta ceduta} other {# carte cedute}} · {received, plural, =0 {nessuna carta ricevuta} one {# carta ricevuta} other {# carte ricevute}}",
+    "success": "Scambio completato: le collezioni sono state aggiornate.",
+    "hub": {
+      "title": "Scambi",
+      "subtitle": "Prepara uno scambio, invita il tuo partner e consulta gli scambi passati.",
+      "create": "Nuovo scambio",
+      "openTitle": "Scambi in corso",
+      "noOpen": "Nessuno scambio in corso.",
+      "historyTitle": "Cronologia",
+      "noHistory": "Nessuno scambio completato per ora.",
+      "badgeOpen": "In corso",
+      "badgeValidated": "La tua offerta è confermata",
+      "badgeCompleted": "Completato",
+      "badgeCancelled": "Annullato"
+    },
+    "offer": {
+      "title": "La mia offerta",
+      "subtitle": "Le carte che cedi, rimosse dalla tua collezione."
+    },
+    "request": {
+      "title": "Quello che ricevo",
+      "titleWithPartner": "L'offerta di {name}",
+      "subtitle": "Le carte che ricevi, aggiunte alla tua collezione.",
+      "subtitlePartner": "Composta dal tuo partner: la ricevi così com'è."
+    },
+    "panel": {
+      "copies": "{count, plural, =0 {0 copie} one {# copia} other {# copie}}",
+      "emptyOffer": "Aggiungi le carte della tua collezione da cedere.",
+      "emptyRequest": "Aggiungi le carte che ricevi in cambio.",
+      "emptyPartner": "Il tuo partner non ha ancora proposto nulla.",
+      "scopeCollection": "La mia collezione",
+      "scopeCatalog": "Tutte le carte",
+      "searchPlaceholder": "Cerca una carta…",
+      "allGames": "Tutti i giochi",
+      "typeToSearch": "Digita almeno 2 caratteri per cercare tra tutte le carte.",
+      "results": "{count, plural, =0 {Nessun risultato} one {# risultato} other {# risultati}}",
+      "emptyCollection": "La tua collezione è vuota.",
+      "noResults": "Nessuna carta corrisponde alla tua ricerca.",
+      "owned": "{count, plural, one {# copia posseduta} other {# copie possedute}}",
+      "add": "Aggiungi",
+      "notOwned": "Non possiedi questa carta.",
+      "notInCatalog": "Questa carta non è più nel catalogo.",
+      "allCopiesSelected": "Tutte le tue copie sono già nell'offerta.",
+      "increase": "Aggiungi una copia di {name}",
+      "decrease": "Rimuovi una copia di {name}",
+      "remove": "Rimuovi {name} dallo scambio",
+      "previous": "Precedente",
+      "next": "Successivo",
+      "pageOf": "Pagina {page} / {totalPages}"
+    },
+    "invite": {
+      "button": "Invita un partner",
+      "title": "Invita un partner",
+      "description": "Fai scansionare questo codice QR, condividi il codice o scegli direttamente un giocatore.",
+      "qrAlt": "Codice QR di invito allo scambio",
+      "copyLink": "Copia il link",
+      "copied": "Copiato",
+      "codeHint": "Il tuo partner apre il link con il suo account per unirsi allo scambio.",
+      "directTitle": "Oppure scegli un giocatore",
+      "identifierPlaceholder": "nome#1234 o indirizzo e-mail",
+      "identifierHint": "Il giocatore riceve una notifica e può aprire subito lo scambio.",
+      "submit": "Invita",
+      "invited": "Partner aggiunto allo scambio.",
+      "errors": {
+        "userNotFound": "Nessun giocatore corrisponde a questo identificativo.",
+        "self": "Non puoi scambiare con te stesso.",
+        "taken": "Questo scambio ha già un partner."
+      }
+    },
+    "join": {
+      "metadataTitle": "Unisciti a uno scambio",
+      "pageTitle": "Unisciti a uno scambio",
+      "title": "Unisciti a uno scambio",
+      "description": "Inserisci il codice di uno scambio per partecipare.",
+      "placeholder": "Codice scambio",
+      "submit": "Unisciti",
+      "accept": "Unisciti allo scambio",
+      "invitedBy": "{name} ti invita a uno scambio.",
+      "errors": {
+        "notFound": "Nessuno scambio corrisponde a questo codice.",
+        "taken": "Questo scambio ha già un partner.",
+        "closed": "Questo scambio è concluso."
+      }
+    },
+    "validation": {
+      "validate": "Conferma la mia offerta",
+      "revoke": "Ritira la mia conferma",
+      "saved": "Offerta confermata.",
+      "mine": "Hai confermato",
+      "partner": "Confermata",
+      "hint": "Lo scambio si applica quando entrambi i giocatori hanno confermato la propria offerta.",
+      "waitingPartner": "In attesa della conferma di {name}.",
+      "partnerReady": "{name} ha confermato: conferma a tua volta per finalizzare.",
+      "finalizing": "Finalizzazione dello scambio…"
+    },
+    "partner": {
+      "remove": "Rimuovi il partner",
+      "leave": "Abbandona lo scambio",
+      "removed": "Partner rimosso dallo scambio.",
+      "removeTitle": "Rimuovere il partner?",
+      "removeDescription": "La sua offerta sarà cancellata e la controparte tornerà libera.",
+      "leaveTitle": "Abbandonare questo scambio?",
+      "leaveDescription": "La tua offerta sarà cancellata e non vedrai più questo scambio."
+    },
+    "cancel": {
+      "button": "Annulla lo scambio",
+      "title": "Annullare questo scambio?",
+      "description": "Nessuna carta cambia collezione. Lo scambio resterà nella tua cronologia.",
+      "confirm": "Annulla lo scambio",
+      "done": "Scambio annullato."
+    },
+    "status": {
+      "completed": "Scambio completato: le carte hanno cambiato collezione.",
+      "cancelled": "Questo scambio è stato annullato."
+    },
+    "confirm": {
+      "title": "Conferma lo scambio",
+      "description": "La tua collezione sarà aggiornata immediatamente: l'azione è definitiva.",
+      "descriptionPartner": "La tua offerta sarà confermata. Lo scambio si applica solo quando entrambe le offerte sono confermate.",
+      "given": "Carte cedute",
+      "received": "Carte ricevute",
+      "none": "Nessuna carta",
+      "cancel": "Annulla",
+      "confirm": "Conferma lo scambio"
+    },
+    "errors": {
+      "insufficientCopies": "Non possiedi più abbastanza copie: {cards}",
+      "empty": "Aggiungi almeno una carta allo scambio.",
+      "changed": "Lo scambio è stato modificato nel frattempo: controlla le offerte prima di confermare.",
+      "closed": "Questo scambio non è più modificabile.",
+      "saveFailed": "Non è stato possibile salvare le modifiche.",
+      "failed": "Non è stato possibile completare l'azione."
     }
   }
 }

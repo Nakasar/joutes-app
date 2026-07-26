@@ -14,6 +14,7 @@
       "groupEvents": "Events"
     },
     "menu": {
+      "Trade": "Trade",
       "Collection": "My collection",
       "Jeux": "Games",
       "Événements": "Events",
@@ -2124,6 +2125,151 @@
       "deleteAria": "Delete the announcement",
       "createError": "Error while creating the announcement",
       "deleteError": "Error while deleting"
+    }
+  },
+  "Trade": {
+    "metadata": {
+      "title": "Card trade",
+      "description": "Set up a trade: give away cards from your collection and receive your partner's cards."
+    },
+    "title": "Trade",
+    "backToList": "My trades",
+    "backToCollection": "My collection",
+    "trade": "Trade",
+    "noPartner": "No partner",
+    "withPartner": "With {name}",
+    "summary": "{offered, plural, =0 {No cards given} one {# card given} other {# cards given}} · {received, plural, =0 {no cards received} one {# card received} other {# cards received}}",
+    "success": "Trade completed: the collections have been updated.",
+    "hub": {
+      "title": "Trades",
+      "subtitle": "Set up a trade, invite your partner and browse your past trades.",
+      "create": "New trade",
+      "openTitle": "Trades in progress",
+      "noOpen": "No trade in progress.",
+      "historyTitle": "History",
+      "noHistory": "No completed trade yet.",
+      "badgeOpen": "In progress",
+      "badgeValidated": "Your offer is validated",
+      "badgeCompleted": "Completed",
+      "badgeCancelled": "Cancelled"
+    },
+    "offer": {
+      "title": "My offer",
+      "subtitle": "The cards you give away, removed from your collection."
+    },
+    "request": {
+      "title": "What I receive",
+      "titleWithPartner": "{name}'s offer",
+      "subtitle": "The cards you receive, added to your collection.",
+      "subtitlePartner": "Composed by your partner: you receive it as is."
+    },
+    "panel": {
+      "copies": "{count, plural, =0 {0 copies} one {# copy} other {# copies}}",
+      "emptyOffer": "Add cards from your collection to give away.",
+      "emptyRequest": "Add the cards you receive in return.",
+      "emptyPartner": "Your partner has not offered anything yet.",
+      "scopeCollection": "My collection",
+      "scopeCatalog": "All cards",
+      "searchPlaceholder": "Search for a card…",
+      "allGames": "All games",
+      "typeToSearch": "Type at least 2 characters to search all cards.",
+      "results": "{count, plural, =0 {No results} one {# result} other {# results}}",
+      "emptyCollection": "Your collection is empty.",
+      "noResults": "No card matches your search.",
+      "owned": "{count, plural, one {# copy owned} other {# copies owned}}",
+      "add": "Add",
+      "notOwned": "You do not own this card.",
+      "notInCatalog": "This card is no longer in the catalog.",
+      "allCopiesSelected": "All your copies are already in the offer.",
+      "increase": "Add one copy of {name}",
+      "decrease": "Remove one copy of {name}",
+      "remove": "Remove {name} from the trade",
+      "previous": "Previous",
+      "next": "Next",
+      "pageOf": "Page {page} / {totalPages}"
+    },
+    "invite": {
+      "button": "Invite a partner",
+      "title": "Invite a partner",
+      "description": "Have this QR code scanned, share the code, or pick a player directly.",
+      "qrAlt": "Trade invitation QR code",
+      "copyLink": "Copy link",
+      "copied": "Copied",
+      "codeHint": "Your partner opens the link with their account to join the trade.",
+      "directTitle": "Or pick a player",
+      "identifierPlaceholder": "name#1234 or email address",
+      "identifierHint": "The player gets a notification and can open the trade right away.",
+      "submit": "Invite",
+      "invited": "Partner added to the trade.",
+      "errors": {
+        "userNotFound": "No player matches this identifier.",
+        "self": "You cannot trade with yourself.",
+        "taken": "This trade already has a partner."
+      }
+    },
+    "join": {
+      "metadataTitle": "Join a trade",
+      "pageTitle": "Join a trade",
+      "title": "Join a trade",
+      "description": "Enter a trade code to take part in it.",
+      "placeholder": "Trade code",
+      "submit": "Join",
+      "accept": "Join the trade",
+      "invitedBy": "{name} invites you to a trade.",
+      "errors": {
+        "notFound": "No trade matches this code.",
+        "taken": "This trade already has a partner.",
+        "closed": "This trade is over."
+      }
+    },
+    "validation": {
+      "validate": "Validate my offer",
+      "revoke": "Withdraw my validation",
+      "saved": "Offer validated.",
+      "mine": "You validated",
+      "partner": "Validated",
+      "hint": "The trade applies once both players have validated their offer.",
+      "waitingPartner": "Waiting for {name} to validate.",
+      "partnerReady": "{name} validated: validate in turn to complete the trade.",
+      "finalizing": "Completing the trade…"
+    },
+    "partner": {
+      "remove": "Remove partner",
+      "leave": "Leave the trade",
+      "removed": "Partner removed from the trade.",
+      "removeTitle": "Remove the partner?",
+      "removeDescription": "Their offer will be cleared and the counterparty will be open again.",
+      "leaveTitle": "Leave this trade?",
+      "leaveDescription": "Your offer will be cleared and you will no longer see this trade."
+    },
+    "cancel": {
+      "button": "Cancel trade",
+      "title": "Cancel this trade?",
+      "description": "No card changes collection. The trade stays in your history.",
+      "confirm": "Cancel trade",
+      "done": "Trade cancelled."
+    },
+    "status": {
+      "completed": "Trade completed: the cards have changed collection.",
+      "cancelled": "This trade was cancelled."
+    },
+    "confirm": {
+      "title": "Confirm the trade",
+      "description": "Your collection will be updated right away: this action cannot be undone.",
+      "descriptionPartner": "Your offer will be validated. The trade only applies once both offers are validated.",
+      "given": "Cards given",
+      "received": "Cards received",
+      "none": "No card",
+      "cancel": "Cancel",
+      "confirm": "Confirm trade"
+    },
+    "errors": {
+      "insufficientCopies": "You no longer own enough copies: {cards}",
+      "empty": "Add at least one card to the trade.",
+      "changed": "The trade changed in the meantime: check both offers before validating.",
+      "closed": "This trade can no longer be edited.",
+      "saveFailed": "Your changes could not be saved.",
+      "failed": "The action could not be completed."
     }
   }
 }
