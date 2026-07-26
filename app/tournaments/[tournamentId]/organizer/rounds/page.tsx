@@ -7,6 +7,7 @@ import {
   listPhases,
   listRounds,
 } from "@/lib/db/tournaments";
+import { MatchExportActions } from "../MatchExportActions";
 import { OrganizerShell } from "../OrganizerShell";
 import { RoundsHeader } from "./RoundsHeader";
 import type { RoundsNavPhase } from "./RoundsNav";
@@ -39,7 +40,10 @@ export default async function OrganizerRoundsPage({
   return (
     <div className="mx-auto max-w-4xl p-8">
       <OrganizerShell tournamentId={tournamentId} tournamentName={tournament.name} active="rounds">
-        <RoundsHeader tournamentId={tournamentId} phases={navPhases} />
+        <div className="space-y-6">
+          <RoundsHeader tournamentId={tournamentId} phases={navPhases} />
+          <MatchExportActions tournamentId={tournamentId} />
+        </div>
       </OrganizerShell>
     </div>
   );

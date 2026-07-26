@@ -180,3 +180,35 @@
   }
 }
 
+
+/*
+ * Impression.
+ *
+ * Les pages conçues pour le papier (feuilles de match, liste des matchs) sont
+ * des surcouches plein écran : elles portent `data-print-page` pour être
+ * remises dans le flux à l'impression, une boîte `fixed` ne sortant que sur la
+ * première page. Le chrome de l'application (en-tête, pied de page,
+ * décorations, barres d'actions) porte `data-print-hidden`.
+ */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+  }
+
+  [data-print-hidden] {
+    display: none !important;
+  }
+
+  [data-print-page] {
+    position: static !important;
+    overflow: visible !important;
+    height: auto !important;
+    padding: 0 !important;
+  }
+}

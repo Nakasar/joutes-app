@@ -1537,6 +1537,17 @@ export async function listMatchesByPhase(
   return listPhaseMatches(tId, pId);
 }
 
+/** Tous les matchs du tournoi, toutes phases et rondes confondues (export, impression). */
+export async function listMatchesByTournament(tournamentId: string): Promise<TournamentMatch[]> {
+  const tId = parseObjectId(tournamentId, "Tournoi");
+  const docs = await db
+    .collection<TournamentMatchDb>(MATCHES)
+    .find({ tournamentId: tId })
+    .sort({ createdAt: 1, _id: 1 })
+    .toArray();
+  return docs.map(toMatch);
+}
+
 // Borne supérieure des numéros de table, alignée sur les validations (schéma
 // Zod et inputs UI) : au-delà, un match reste simplement sans table.
 const MAX_TABLE_NUMBER = 9999;

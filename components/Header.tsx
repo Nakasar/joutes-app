@@ -79,7 +79,10 @@ export default function Header() {
   };
 
   return (
-    <header className="top-0 z-50 w-full border-b backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header
+      data-print-hidden
+      className="top-0 z-50 w-full border-b backdrop-blur supports-[backdrop-filter]:bg-background/60"
+    >
       <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}

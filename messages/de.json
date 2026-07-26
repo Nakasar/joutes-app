@@ -1538,6 +1538,41 @@
     }
   },
   "Tournaments": {
+    "matchExport": {
+      "sheetsButton": "Matchzettel",
+      "listButton": "Liste (Druck)",
+      "csvButton": "Liste (CSV)",
+      "print": "Drucken",
+      "back": "Zurück",
+      "roundLabel": "Runde {number}",
+      "allRounds": "Alle Runden",
+      "sheetsTitle": "Matchzettel",
+      "sheetsSubtitle": "{tournament} · Runde {round} · {count, plural, =0 {keine Zettel} one {# Zettel} other {# Zettel}}",
+      "listTitle": "Matchliste",
+      "listSubtitle": "{tournament} · {count, plural, =0 {keine Matches} one {# Match} other {# Matches}}",
+      "listSubtitleRound": "{tournament} · Runde {round} · {count, plural, =0 {keine Matches} one {# Match} other {# Matches}}",
+      "noPrintableMatches": "Für diese Runde gibt es nichts zu drucken (Freilose haben keinen Zettel).",
+      "noMatches": "Keine Matches vorhanden.",
+      "columns": {
+        "phase": "Phase",
+        "round": "Runde",
+        "table": "Tisch",
+        "status": "Status",
+        "player": "Spieler",
+        "players": "Spieler",
+        "games": "Partien",
+        "score": "Ergebnis",
+        "winners": "Sieger"
+      },
+      "sheet": {
+        "game": "Partie",
+        "points": "Punkte",
+        "gameNumber": "Partie {number}",
+        "gamesWon": "Gewonnene Partien",
+        "winner": "Sieger:",
+        "signature": "Unterschrift {name}:"
+      }
+    },
     "staff": {
       "title": "Turnier-Staff",
       "creator": "Ersteller",

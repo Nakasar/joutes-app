@@ -1622,6 +1622,41 @@
     }
   },
   "Tournaments": {
+    "matchExport": {
+      "sheetsButton": "Feuilles de match",
+      "listButton": "Liste (impression)",
+      "csvButton": "Liste (CSV)",
+      "print": "Imprimer",
+      "back": "Retour",
+      "roundLabel": "Ronde {number}",
+      "allRounds": "Toutes les rondes",
+      "sheetsTitle": "Feuilles de match",
+      "sheetsSubtitle": "{tournament} · ronde {round} · {count, plural, =0 {aucune feuille} one {# feuille} other {# feuilles}}",
+      "listTitle": "Liste des matchs",
+      "listSubtitle": "{tournament} · {count, plural, =0 {aucun match} one {# match} other {# matchs}}",
+      "listSubtitleRound": "{tournament} · ronde {round} · {count, plural, =0 {aucun match} one {# match} other {# matchs}}",
+      "noPrintableMatches": "Aucun match à imprimer pour cette ronde (les BYE n'ont pas de feuille).",
+      "noMatches": "Aucun match à afficher.",
+      "columns": {
+        "phase": "Phase",
+        "round": "Ronde",
+        "table": "Table",
+        "status": "Statut",
+        "player": "Joueur",
+        "players": "Joueurs",
+        "games": "Parties",
+        "score": "Score",
+        "winners": "Vainqueur(s)"
+      },
+      "sheet": {
+        "game": "Partie",
+        "points": "Points",
+        "gameNumber": "Partie {number}",
+        "gamesWon": "Parties gagnées",
+        "winner": "Vainqueur :",
+        "signature": "Signature {name} :"
+      }
+    },
     "staff": {
       "title": "Staff du tournoi",
       "creator": "Créateur",
