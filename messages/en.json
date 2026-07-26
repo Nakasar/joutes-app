@@ -1423,7 +1423,23 @@
           "addToCollection": "Add to collection",
           "removeFromCollection": "Remove from collection",
           "inCollection": "In collection",
-          "removeCard": "Remove card"
+          "removeCard": "Remove card",
+          "filterByType": "Filter by type",
+          "filterByDomain": "Filter by domain",
+          "allTypes": "All types",
+          "allDomains": "All domains",
+          "sortBy": "Sort cards",
+          "sort": {
+            "default": "Booster order",
+            "name": "Name",
+            "collectorNumber": "Collector number",
+            "type": "Type"
+          },
+          "sortAscending": "Ascending order",
+          "sortDescending": "Descending order",
+          "resetFilters": "Reset",
+          "noCardMatchesFilters": "No card matches the filters.",
+          "filteredCount": "{count, plural, =0 {No card shown} one {# card shown} other {# cards shown}}"
         }
     },
     "Features": {

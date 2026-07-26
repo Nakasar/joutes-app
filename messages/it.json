@@ -1365,7 +1365,23 @@
           "addToCollection": "Aggiungi alla collezione",
           "removeFromCollection": "Rimuovi dalla collezione",
           "inCollection": "Nella collezione",
-          "removeCard": "Rimuovi carta"
+          "removeCard": "Rimuovi carta",
+          "filterByType": "Filtra per tipo",
+          "filterByDomain": "Filtra per dominio",
+          "allTypes": "Tutti i tipi",
+          "allDomains": "Tutti i domini",
+          "sortBy": "Ordina le carte",
+          "sort": {
+            "default": "Ordine del booster",
+            "name": "Nome",
+            "collectorNumber": "Numero da collezione",
+            "type": "Tipo"
+          },
+          "sortAscending": "Ordine crescente",
+          "sortDescending": "Ordine decrescente",
+          "resetFilters": "Reimposta",
+          "noCardMatchesFilters": "Nessuna carta corrisponde ai filtri.",
+          "filteredCount": "{count, plural, =0 {Nessuna carta mostrata} one {# carta mostrata} other {# carte mostrate}}"
         }
     },
     "Features": {

@@ -1,8 +1,88 @@
 import 'server-only';
 import db from "@/lib/mongodb";
 import {Booster, BoosterCard, BoosterCardDb, BoosterDb} from "@/lib/types/booster";
+import {CARD_ATTRIBUTE_KEYS, CardAttributes} from "@/lib/types/card";
 import {ObjectId} from "bson";
 import {removeSellListItemsByCollectionEntryIds} from "@/lib/db/sell-lists";
+
+type CardAttributesDoc = CardAttributes & { id?: string; setCode?: string; collectorNumber?: string };
+
+const CARD_ATTRIBUTES_PROJECTION: Record<string, 0 | 1> = {
+  _id: 0,
+  id: 1,
+  setCode: 1,
+  collectorNumber: 1,
+  ...Object.fromEntries(CARD_ATTRIBUTE_KEYS.map((key) => [key, 1])),
+};
+
+const printKey = (setCode?: string, collectorNumber?: string) => `${setCode ?? ''}#${collectorNumber ?? ''}`;
+
+function pickCardAttributes(doc: CardAttributesDoc): CardAttributes {
+  const attributes: Record<string, unknown> = {};
+  for (const key of CARD_ATTRIBUTE_KEYS) {
+    const value = doc[key];
+    if (value !== undefined && value !== null) {
+      attributes[key] = value;
+    }
+  }
+  return attributes as CardAttributes;
+}
+
+/**
+ * Les entrées de `booster-cards` ne stockent que l'identité d'une carte : les
+ * propriétés de jeu (type, domaine, rareté…) sont relues depuis `cards` à
+ * l'affichage. Cela couvre aussi les boosters saisis avant l'ajout de ces
+ * propriétés, sans migration. Les cartes sans correspondance sont renvoyées
+ * telles quelles.
+ */
+async function withCardAttributes(gameId: ObjectId, cards: BoosterCard[]): Promise<BoosterCard[]> {
+  if (cards.length === 0) {
+    return cards;
+  }
+
+  const cardIds = [...new Set(cards.map((card) => card.cardId).filter((id): id is string => Boolean(id)))];
+  const prints = [
+    ...new Map(
+      cards
+        .filter((card) => !card.cardId)
+        .map((card) => [printKey(card.setCode, card.collectorNumber), {setCode: card.setCode, collectorNumber: card.collectorNumber}]),
+    ).values(),
+  ];
+
+  const or: Record<string, unknown>[] = [];
+  if (cardIds.length > 0) {
+    or.push({id: {$in: cardIds}});
+  }
+  or.push(...prints);
+  if (or.length === 0) {
+    return cards;
+  }
+
+  const docs = await db
+    .collection<CardAttributesDoc & { gameId: ObjectId }>('cards')
+    .find({gameId, $or: or}, {projection: CARD_ATTRIBUTES_PROJECTION})
+    .toArray();
+
+  const byId = new Map<string, CardAttributes>();
+  const byPrint = new Map<string, CardAttributes>();
+  for (const doc of docs) {
+    const attributes = pickCardAttributes(doc);
+    if (doc.id && !byId.has(doc.id)) {
+      byId.set(doc.id, attributes);
+    }
+    const key = printKey(doc.setCode, doc.collectorNumber);
+    if (!byPrint.has(key)) {
+      byPrint.set(key, attributes);
+    }
+  }
+
+  return cards.map((card) => {
+    const attributes = (card.cardId ? byId.get(card.cardId) : undefined) ?? byPrint.get(printKey(card.setCode, card.collectorNumber));
+    // `cards` fait foi : les propriétés relues écrasent celles éventuellement
+    // stockées sur l'entrée `booster-cards` (boosters saisis avant migration).
+    return attributes ? {...card, ...attributes} : card;
+  });
+}
 
 export async function createBooster(booster: Omit<Booster, 'id' | 'createdAt'>): Promise<Booster> {
   const result = await db.collection<BoosterDb>('boosters').insertOne({
@@ -115,6 +195,14 @@ export async function getBooster(boosterId: string): Promise<Booster | null> {
 
   const game = await db.collection('games').findOne({_id: booster.gameId}, {projection: {slug: 1}});
 
+  const boosterCards = await withCardAttributes(booster.gameId, cards.map((card) => ({
+    ...card,
+    id: card._id.toString(),
+    boosterId: undefined,
+    _id: undefined,
+    userId: undefined,
+  })) as BoosterCard[]);
+
   return {
     gameId: booster.gameId.toString(),
     game: game ? {
@@ -125,13 +213,7 @@ export async function getBooster(boosterId: string): Promise<Booster | null> {
     setCode: booster.setCode,
     lang: booster.lang,
     type: booster.type,
-    cards: cards.map((card) => ({
-      ...card,
-      id: card._id.toString(),
-      boosterId: undefined,
-      _id: undefined,
-      userId: undefined,
-    })),
+    cards: boosterCards,
     value: booster.price,
     archived: booster.archived,
     addedToCollection: booster.addedToCollection ?? false,

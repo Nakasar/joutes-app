@@ -9,6 +9,9 @@ import {inspect} from "node:util";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+type WebSiteValue = { label: string; value?: { id: string | number; label: string } };
+type WebSiteValues = { label: string; values?: { id: string; label: string }[] };
+
 type WebSiteCard = {
   publicCode: string;
   name: string;
@@ -16,7 +19,29 @@ type WebSiteCard = {
   cardType: { label: string; superType: { id: string; label: string }[]; type: { id: string; label: string }[] }
   cardImage: { url: string };
   tags?: { tags: string[] };
+  rarity?: WebSiteValue;
+  energy?: WebSiteValue;
+  power?: WebSiteValue;
+  might?: WebSiteValue;
+  domain?: WebSiteValues;
+  illustrator?: WebSiteValues;
 };
+
+/** `{ value: { id: 3, label: "3" } }` -> 3, en ignorant les valeurs non numériques. */
+function numericValue(field?: WebSiteValue): number | undefined {
+  const raw = field?.value?.id ?? field?.value?.label;
+  if (raw === undefined || raw === null || raw === '') {
+    return undefined;
+  }
+  const parsed = Number(raw);
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
+
+/** `{ values: [{ label: "Chaos" }] }` -> ["Chaos"], `undefined` si la liste est vide. */
+function labels(field?: WebSiteValues): string[] | undefined {
+  const values = field?.values?.map((value) => value.label).filter(Boolean);
+  return values && values.length > 0 ? values : undefined;
+}
 
 async function fetchCardsFromWebsite(): Promise<WebSiteCard[]> {
   const res = await fetch('https://riftbound.leagueoflegends.com/en-us/card-gallery/#card-gallery--unl-132-219');
@@ -66,9 +91,16 @@ async function main() {
       id: `${match.groups?.set}${match.groups?.cn}`,
       name: (isLegend && tag) ? `${tag}, ${card.name}` : card.name,
       type: card.cardType.type[0]?.label,
+      types: card.cardType.type?.map((type) => type.label).filter(Boolean),
       tags: card.tags?.tags,
       superType: card.cardType.superType?.[0]?.label,
       isToken: card.cardType.superType?.[0]?.label === 'Token',
+      rarity: card.rarity?.value?.label,
+      domain: labels(card.domain),
+      illustrator: labels(card.illustrator),
+      energy: numericValue(card.energy),
+      power: numericValue(card.power),
+      might: numericValue(card.might),
       image: card.cardImage?.url,
       text: card.text?.richText.body.replaceAll('<p>', '').replaceAll('</p>', '').replaceAll('<br />', '\n'),
       setCode: match.groups?.set,
@@ -87,11 +119,15 @@ async function main() {
     cardId: c.id,
   })));
   for (const card of cards) {
+    // Une propriété absente de la source (une carte sans énergie, sans domaine…)
+    // ne doit pas être écrite en `null` sur le document existant.
+    const fields = Object.fromEntries(Object.entries(card).filter(([, value]) => value !== undefined));
+
     await db.collection('cards').updateOne({
       id: card.id,
       gameId: new ObjectId('69009afea722eab4fa0e55c4'),
     }, {
-      $set: card,
+      $set: fields,
     }, { upsert: true });
   }
 }

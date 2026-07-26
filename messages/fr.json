@@ -1424,7 +1424,23 @@
           "addToCollection": "Ajouter à ma collection",
           "removeFromCollection": "Retirer de la collection",
           "inCollection": "Dans la collection",
-          "removeCard": "Retirer la carte"
+          "removeCard": "Retirer la carte",
+          "filterByType": "Filtrer par type",
+          "filterByDomain": "Filtrer par domaine",
+          "allTypes": "Tous les types",
+          "allDomains": "Tous les domaines",
+          "sortBy": "Trier les cartes",
+          "sort": {
+            "default": "Ordre du booster",
+            "name": "Nom",
+            "collectorNumber": "Numéro de collection",
+            "type": "Type"
+          },
+          "sortAscending": "Tri croissant",
+          "sortDescending": "Tri décroissant",
+          "resetFilters": "Réinitialiser",
+          "noCardMatchesFilters": "Aucune carte ne correspond aux filtres.",
+          "filteredCount": "{count, plural, =0 {Aucune carte affichée} one {# carte affichée} other {# cartes affichées}}"
         }
     },
     "Features": {

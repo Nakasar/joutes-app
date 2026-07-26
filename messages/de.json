@@ -1340,7 +1340,23 @@
           "addToCollection": "Zur Sammlung hinzufügen",
           "removeFromCollection": "Aus Sammlung entfernen",
           "inCollection": "In der Sammlung",
-          "removeCard": "Karte entfernen"
+          "removeCard": "Karte entfernen",
+          "filterByType": "Nach Typ filtern",
+          "filterByDomain": "Nach Domäne filtern",
+          "allTypes": "Alle Typen",
+          "allDomains": "Alle Domänen",
+          "sortBy": "Karten sortieren",
+          "sort": {
+            "default": "Booster-Reihenfolge",
+            "name": "Name",
+            "collectorNumber": "Sammlernummer",
+            "type": "Typ"
+          },
+          "sortAscending": "Aufsteigend",
+          "sortDescending": "Absteigend",
+          "resetFilters": "Zurücksetzen",
+          "noCardMatchesFilters": "Keine Karte entspricht den Filtern.",
+          "filteredCount": "{count, plural, =0 {Keine Karte angezeigt} one {# Karte angezeigt} other {# Karten angezeigt}}"
         }
     },
     "Features": {

@@ -1,8 +1,9 @@
 import {Game} from "@/lib/types/Game";
 import {User} from "@/lib/types/User";
+import {CardAttributes} from "@/lib/types/card";
 import {ObjectId} from "bson";
 
-export type BoosterCard = {
+export type BoosterCard = CardAttributes & {
   id: string;
   lang?: string;
   cardId?: string;
