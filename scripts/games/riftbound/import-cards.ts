@@ -106,6 +106,9 @@ async function main() {
       setCode: match.groups?.set,
       collectorNumber: match.groups?.cn,
       lang: 'en',
+      // Distingue les cartes importées de celles ajoutées à la main depuis
+      // l'administration (`source: 'manual'`).
+      source: 'import',
       gameId: new ObjectId('69009afea722eab4fa0e55c4'),
     };
   });

@@ -1,19 +1,27 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { buildCardId } from "@/lib/constants/card-ids";
-import type { CardAttributeField, CardAttributeFieldType, CardAttributeValue } from "@/lib/db/cards";
-import { checkCardIdAvailability, createGameCard } from "./actions";
+import type {
+  CardAttributeField,
+  CardAttributeFieldType,
+  CardAttributeValue,
+  GameCardDetail,
+} from "@/lib/db/cards";
+import { checkCardIdAvailability, createGameCard, updateGameCard } from "./actions";
 
 type Props = {
   gameId: string;
   gameName: string;
   gameSlug?: string;
   attributeFields: CardAttributeField[];
+  /** Carte en cours de modification ; absente, le formulaire crée une carte. */
+  card?: GameCardDetail;
 };
 
-type CustomAttribute = { key: string; type: CardAttributeFieldType; value: string };
+type CustomAttribute = { key: string; type: CardAttributeFieldType; value: string | boolean };
 
 type Availability = "idle" | "checking" | "free" | "taken";
 
@@ -30,7 +38,7 @@ const inputClass =
 /** Une valeur saisie -> la valeur stockée, selon le type du champ. `null` = champ laissé vide. */
 function toAttributeValue(type: CardAttributeFieldType, raw: string | boolean): CardAttributeValue | null {
   if (type === "boolean") {
-    return raw === true ? true : null;
+    return raw === true || raw === "true" ? true : null;
   }
   const value = String(raw).trim();
   if (!value) {
@@ -47,24 +55,58 @@ function toAttributeValue(type: CardAttributeFieldType, raw: string | boolean): 
   return value;
 }
 
-export default function CardForm({ gameId, gameName, gameSlug, attributeFields }: Props) {
+/** Une valeur stockée -> sa saisie dans le formulaire. */
+function toFormValue(value: CardAttributeValue): string | boolean {
+  if (typeof value === "boolean") return value;
+  if (Array.isArray(value)) return value.join(", ");
+  return String(value);
+}
+
+function attributeTypeOf(value: CardAttributeValue): CardAttributeFieldType {
+  if (typeof value === "boolean") return "boolean";
+  if (typeof value === "number") return "number";
+  if (Array.isArray(value)) return "list";
+  return "string";
+}
+
+export default function CardForm({ gameId, gameName, gameSlug, attributeFields, card }: Props) {
+  const router = useRouter();
+  const isEdit = Boolean(card);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  const [setCode, setSetCode] = useState("");
-  const [collectorNumber, setCollectorNumber] = useState("");
-  const [cardId, setCardId] = useState("");
-  const [cardIdTouched, setCardIdTouched] = useState(false);
-  const [name, setName] = useState("");
-  const [lang, setLang] = useState("en");
-  const [image, setImage] = useState("");
-  const [text, setText] = useState("");
-  const [attributes, setAttributes] = useState<Record<string, string | boolean>>({});
-  const [customAttributes, setCustomAttributes] = useState<CustomAttribute[]>([]);
+  const [setCode, setSetCode] = useState(card?.setCode ?? "");
+  const [collectorNumber, setCollectorNumber] = useState(card?.collectorNumber ?? "");
+  const [cardId, setCardId] = useState(card?.id ?? "");
+  // En édition, l'identifiant est celui de la carte : il n'est pas redéduit
+  // tant que l'admin ne le remet pas explicitement en phase.
+  const [cardIdTouched, setCardIdTouched] = useState(isEdit);
+  const [name, setName] = useState(card?.name ?? "");
+  const [lang, setLang] = useState(card?.lang ?? "en");
+  const [image, setImage] = useState(card?.image ?? "");
+  const [text, setText] = useState(card?.text ?? "");
   const [availability, setAvailability] = useState<Availability>("idle");
+
+  const knownKeys = useMemo(() => new Set(attributeFields.map((field) => field.key)), [attributeFields]);
+
+  const [attributes, setAttributes] = useState<Record<string, string | boolean>>(() =>
+    Object.fromEntries(
+      Object.entries(card?.attributes ?? {})
+        .filter(([key]) => knownKeys.has(key))
+        .map(([key, value]) => [key, toFormValue(value)])
+    )
+  );
+
+  // Les attributs de la carte absents des champs relevés (jeu hétérogène, champ
+  // propre à cette carte) restent éditables comme attributs libres.
+  const [customAttributes, setCustomAttributes] = useState<CustomAttribute[]>(() =>
+    Object.entries(card?.attributes ?? {})
+      .filter(([key]) => !knownKeys.has(key))
+      .map(([key, value]) => ({ key, type: attributeTypeOf(value), value: toFormValue(value) }))
+  );
 
   const derivedId = useMemo(
     () => buildCardId(gameSlug, setCode, collectorNumber),
@@ -86,7 +128,7 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields }
     setAvailability("checking");
     const timeout = setTimeout(async () => {
       try {
-        const { available } = await checkCardIdAvailability(gameId, effectiveId);
+        const { available } = await checkCardIdAvailability(gameId, effectiveId, card?.id);
         if (sequence === checkSequence.current) {
           setAvailability(available ? "free" : "taken");
         }
@@ -98,7 +140,7 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields }
     }, 400);
 
     return () => clearTimeout(timeout);
-  }, [gameId, effectiveId]);
+  }, [gameId, effectiveId, card?.id]);
 
   const resetAfterCreate = () => {
     // Le code d'extension et la langue sont conservés : les cartes s'ajoutent
@@ -156,31 +198,68 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields }
       }
     }
 
-    startTransition(async () => {
-      const result = await createGameCard(gameId, {
-        id: effectiveId,
-        name,
-        setCode,
-        collectorNumber,
-        lang,
-        image: image || undefined,
-        text: text || undefined,
-        attributes: payloadAttributes,
-      });
+    const payload = {
+      id: effectiveId,
+      name,
+      setCode,
+      collectorNumber,
+      lang,
+      image: image || undefined,
+      text: text || undefined,
+      attributes: payloadAttributes,
+    };
 
-      if (result.success) {
-        setSuccess(`Carte « ${result.cardId} » ajoutée à ${gameName}.`);
-        setWarning(result.warning ?? null);
-        resetAfterCreate();
+    startTransition(async () => {
+      const result = card
+        ? await updateGameCard(gameId, card.id, payload)
+        : await createGameCard(gameId, payload);
+
+      if (!result.success) {
+        setError(result.error ?? "Erreur lors de l'enregistrement de la carte");
+        return;
+      }
+
+      setWarning(result.warning ?? null);
+      if (card) {
+        setSuccess(`Carte « ${result.cardId} » modifiée.`);
+        if (result.cardId && result.cardId !== card.id) {
+          router.replace(`/admin/cards?gameId=${gameId}&cardId=${encodeURIComponent(result.cardId)}`);
+        } else {
+          router.refresh();
+        }
       } else {
-        setError(result.error ?? "Erreur lors de la création de la carte");
+        setSuccess(`Carte « ${result.cardId} » ajoutée à ${gameName}.`);
+        resetAfterCreate();
       }
     });
   };
 
   return (
     <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6 space-y-4">
-      <h2 className="text-lg font-semibold text-gray-900">Nouvelle carte — {gameName}</h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-lg font-semibold text-gray-900">
+          {card ? `Modifier la carte ${card.id}` : `Nouvelle carte — ${gameName}`}
+        </h2>
+        {card && (
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span
+              className={`rounded-full px-2 py-0.5 ${
+                card.source === "manual" ? "bg-indigo-50 text-indigo-700" : "bg-gray-100 text-gray-600"
+              }`}
+            >
+              {card.source === "manual" ? "Ajoutée manuellement" : "Importée"}
+            </span>
+            {card.manuallyEditedAt && (
+              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-amber-700">
+                Modifiée manuellement le {new Date(card.manuallyEditedAt).toLocaleDateString("fr-FR")}
+              </span>
+            )}
+            <a href={`/admin/cards?gameId=${gameId}`} className="text-blue-600 hover:underline">
+              Ajouter une carte
+            </a>
+          </div>
+        )}
+      </div>
 
       {error && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>
@@ -248,12 +327,12 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields }
             <button
               type="button"
               onClick={() => {
-                setCardIdTouched(false);
-                setCardId("");
+                setCardIdTouched(true);
+                setCardId(derivedId);
               }}
               className="text-blue-600 hover:underline"
             >
-              Revenir à « {derivedId} »
+              Utiliser « {derivedId} »
             </button>
           )}
           {availability === "checking" && <span className="text-gray-500">Vérification…</span>}
@@ -313,7 +392,7 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields }
           <h3 className="text-sm font-semibold text-gray-900">Attributs du jeu</h3>
           <p className="text-xs text-gray-500">
             {attributeFields.length > 0
-              ? "Relevés sur les cartes existantes de ce jeu. Les champs laissés vides ne sont pas enregistrés."
+              ? "Relevés sur les cartes existantes de ce jeu. Un champ laissé vide n'est pas enregistré ; vidé sur une carte existante, l'attribut est retiré."
               : "Aucun attribut détecté sur les cartes de ce jeu : ajoutez-les ci-dessous."}
           </p>
         </div>
@@ -380,7 +459,7 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields }
                 onChange={(e) =>
                   setCustomAttributes((prev) =>
                     prev.map((item, i) =>
-                      i === index ? { ...item, type: e.target.value as CardAttributeFieldType } : item
+                      i === index ? { ...item, type: e.target.value as CardAttributeFieldType, value: "" } : item
                     )
                   )
                 }
@@ -396,12 +475,10 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields }
                 <label className="flex items-center gap-2 text-sm text-gray-700">
                   <input
                     type="checkbox"
-                    checked={attribute.value === "true"}
+                    checked={attribute.value === true}
                     onChange={(e) =>
                       setCustomAttributes((prev) =>
-                        prev.map((item, i) =>
-                          i === index ? { ...item, value: e.target.checked ? "true" : "" } : item
-                        )
+                        prev.map((item, i) => (i === index ? { ...item, value: e.target.checked } : item))
                       )
                     }
                   />
@@ -410,7 +487,7 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields }
               ) : (
                 <input
                   type={attribute.type === "number" ? "number" : "text"}
-                  value={attribute.value}
+                  value={String(attribute.value)}
                   placeholder={attribute.type === "list" ? "Valeurs séparées par des virgules" : "Valeur"}
                   onChange={(e) =>
                     setCustomAttributes((prev) =>
@@ -441,7 +518,13 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields }
 
       <div className="flex justify-end pt-4 border-t">
         <Button type="submit" disabled={isPending || uploading || availability === "taken" || !effectiveId}>
-          {isPending ? "Ajout en cours…" : "Ajouter la carte"}
+          {isPending
+            ? isEdit
+              ? "Enregistrement…"
+              : "Ajout en cours…"
+            : isEdit
+              ? "Enregistrer les modifications"
+              : "Ajouter la carte"}
         </Button>
       </div>
     </form>

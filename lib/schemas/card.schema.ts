@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isReservedCardKey } from "@/lib/constants/cards";
 
 /** Valeur d'un attribut de jeu : texte, nombre, booléen ou liste de textes. */
 export const cardAttributeValueSchema = z.union([
@@ -7,6 +8,25 @@ export const cardAttributeValueSchema = z.union([
   z.boolean(),
   z.array(z.string().max(200)).max(50),
 ]);
+
+/**
+ * Les attributs sont écrits à la racine du document Mongo : leur nom doit donc
+ * rester un nom de champ sain (ni `.`, ni `$` en tête, qui rendraient le
+ * document difficile à requêter) et ne pas empiéter sur les champs communs,
+ * qui ont leur propre saisie.
+ */
+export const cardAttributeKeySchema = z
+  .string()
+  .trim()
+  .min(1, "Le nom d'un attribut est requis")
+  .max(60, "Le nom d'un attribut est trop long")
+  .regex(
+    /^[A-Za-z][A-Za-z0-9_]*$/,
+    "Un nom d'attribut doit commencer par une lettre et ne contenir que des lettres, chiffres et « _ »"
+  )
+  .refine((key) => !isReservedCardKey(key), {
+    message: "ce nom est réservé aux champs communs de la carte",
+  });
 
 export const cardSchema = z.object({
   id: z
@@ -25,7 +45,23 @@ export const cardSchema = z.object({
   lang: z.string().trim().min(2, "La langue est requise").max(5, "La langue est trop longue"),
   image: z.union([z.url("L'URL de l'image doit être valide"), z.literal("")]).optional(),
   text: z.string().max(5000, "Le texte de la carte est trop long").optional(),
-  attributes: z.record(z.string().min(1).max(60), cardAttributeValueSchema).optional(),
+  attributes: z
+    .record(z.string(), cardAttributeValueSchema)
+    .optional()
+    // Les clés sont validées ici plutôt que par `z.record(cardAttributeKeySchema, …)`,
+    // qui remonterait un « Invalid key in record » sans dire laquelle ni pourquoi.
+    .superRefine((attributes, ctx) => {
+      for (const key of Object.keys(attributes ?? {})) {
+        const result = cardAttributeKeySchema.safeParse(key);
+        if (!result.success) {
+          ctx.addIssue({
+            code: "custom",
+            message: `Attribut « ${key} » : ${result.error.issues[0]?.message}`,
+            path: [key],
+          });
+        }
+      }
+    }),
 });
 
 export type CardInput = z.infer<typeof cardSchema>;

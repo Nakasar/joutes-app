@@ -2,6 +2,7 @@ import 'server-only';
 
 import db from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import { isReservedCardKey, RESERVED_CARD_KEYS, type CardSource } from "@/lib/constants/cards";
 
 export type CardNameMatch = {
   id: string;
@@ -12,20 +13,6 @@ export type CardNameMatch = {
   type?: string;
   text?: string;
 };
-
-/** Champs portés par toutes les cartes, saisis à part des attributs de jeu. */
-const CORE_CARD_KEYS = new Set([
-  "_id",
-  "gameId",
-  "id",
-  "cardId",
-  "name",
-  "setCode",
-  "collectorNumber",
-  "lang",
-  "image",
-  "text",
-]);
 
 export type CardAttributeFieldType = "string" | "number" | "boolean" | "list";
 
@@ -63,7 +50,7 @@ export async function getGameCardAttributeFields(gameId: ObjectId, sampleSize = 
       { $limit: sampleSize },
       { $project: { fields: { $objectToArray: "$$ROOT" } } },
       { $unwind: "$fields" },
-      { $match: { "fields.k": { $nin: [...CORE_CARD_KEYS] } } },
+      { $match: { "fields.k": { $nin: [...RESERVED_CARD_KEYS] } } },
       {
         $group: {
           _id: "$fields.k",
@@ -119,10 +106,59 @@ export async function cardIdExists(gameId: ObjectId, id: string): Promise<boolea
   return card !== null;
 }
 
-export async function createCard(gameId: ObjectId, card: NewCard): Promise<void> {
+/** Les champs vides ne sont pas écrits : le pilote Mongo les stockerait en `null`. */
+function definedEntries(core: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(core).filter(([, value]) => value !== undefined));
+}
+
+export async function createCard(gameId: ObjectId, card: NewCard, createdBy: string): Promise<void> {
   const { attributes, ...core } = card;
   // Les champs communs priment : un attribut ne peut pas redéfinir l'identité de la carte.
-  await db.collection("cards").insertOne({ ...attributes, ...core, gameId });
+  await db.collection("cards").insertOne({
+    ...attributes,
+    ...definedEntries(core),
+    gameId,
+    source: "manual" satisfies CardSource,
+    createdBy,
+    createdAt: new Date(),
+  });
+}
+
+/**
+ * Modification manuelle d'une carte : les champs communs et les attributs
+ * fournis sont écrits, les attributs vidés dans le formulaire sont retirés du
+ * document, et la carte est marquée comme retouchée à la main (les scripts
+ * d'import écrasent les champs qu'ils connaissent mais laissent ces marqueurs).
+ */
+export async function updateCard(
+  gameId: ObjectId,
+  currentId: string,
+  card: NewCard,
+  { removedAttributes, editedBy }: { removedAttributes: string[]; editedBy: string }
+): Promise<void> {
+  const { attributes, ...core } = card;
+
+  // Un champ commun vidé (image, texte) est retiré du document, comme un
+  // attribut vidé — plutôt que stocké en `null`.
+  const clearedCoreKeys = Object.entries(core)
+    .filter(([, value]) => value === undefined)
+    .map(([key]) => key);
+  const unset = Object.fromEntries(
+    [...removedAttributes.filter((key) => !isReservedCardKey(key)), ...clearedCoreKeys].map((key) => [key, ""])
+  );
+
+  await db.collection("cards").updateOne(
+    { gameId, id: currentId },
+    {
+      $set: {
+        ...attributes,
+        ...definedEntries(core),
+        manuallyEditedAt: new Date(),
+        manuallyEditedBy: editedBy,
+      },
+      ...(Object.keys(unset).length > 0 ? { $unset: unset } : {}),
+    }
+  );
 }
 
 export type GameCardSummary = {
@@ -132,16 +168,101 @@ export type GameCardSummary = {
   collectorNumber?: string;
   lang?: string;
   image?: string;
+  source?: CardSource;
+  manuallyEditedAt?: string;
 };
+
+export type GameCardDetail = GameCardSummary & {
+  text?: string;
+  attributes: Record<string, CardAttributeValue>;
+};
+
+const CARD_SUMMARY_PROJECTION = {
+  _id: 0,
+  id: 1,
+  name: 1,
+  setCode: 1,
+  collectorNumber: 1,
+  lang: 1,
+  image: 1,
+  source: 1,
+  manuallyEditedAt: 1,
+} as const;
+
+type CardSummaryDoc = Omit<GameCardSummary, "manuallyEditedAt"> & { manuallyEditedAt?: Date };
+
+function toSummary(doc: CardSummaryDoc): GameCardSummary {
+  return { ...doc, manuallyEditedAt: doc.manuallyEditedAt?.toISOString() };
+}
 
 /** Dernières cartes ajoutées à un jeu (ordre d'insertion), pour l'écran d'administration. */
 export async function getRecentGameCards(gameId: ObjectId, limit = 10): Promise<GameCardSummary[]> {
-  return db
-    .collection<GameCardSummary & { gameId: ObjectId }>("cards")
-    .find({ gameId }, { projection: { _id: 0, id: 1, name: 1, setCode: 1, collectorNumber: 1, lang: 1, image: 1 } })
+  const docs = await db
+    .collection<CardSummaryDoc & { gameId: ObjectId }>("cards")
+    .find({ gameId }, { projection: CARD_SUMMARY_PROJECTION })
     .sort({ _id: -1 })
     .limit(limit)
     .toArray();
+
+  return docs.map(toSummary);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Recherche d'une carte à modifier : par identifiant, nom ou numéro de collection. */
+export async function searchGameCards(gameId: ObjectId, query: string, limit = 20): Promise<GameCardSummary[]> {
+  const trimmed = query.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  const pattern = new RegExp(escapeRegExp(trimmed), "i");
+  const docs = await db
+    .collection<CardSummaryDoc & { gameId: ObjectId }>("cards")
+    .find(
+      { gameId, $or: [{ id: pattern }, { name: pattern }, { collectorNumber: trimmed }] },
+      { projection: CARD_SUMMARY_PROJECTION }
+    )
+    .sort({ id: 1 })
+    .limit(limit)
+    .toArray();
+
+  return docs.map(toSummary);
+}
+
+/** Carte complète pour l'édition : champs communs d'un côté, attributs de jeu de l'autre. */
+export async function getGameCard(gameId: ObjectId, id: string): Promise<GameCardDetail | null> {
+  const doc = await db.collection("cards").findOne({ gameId, id });
+  if (!doc) {
+    return null;
+  }
+
+  const attributes: Record<string, CardAttributeValue> = {};
+  for (const [key, value] of Object.entries(doc)) {
+    if (isReservedCardKey(key)) continue;
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      attributes[key] = value;
+    } else if (Array.isArray(value) && value.every((item) => typeof item === "string")) {
+      attributes[key] = value as string[];
+    }
+    // Les autres formes (objets, tableaux hétérogènes) ne sont pas éditables
+    // dans le formulaire : elles sont laissées telles quelles en base.
+  }
+
+  return {
+    id: doc.id,
+    name: doc.name,
+    setCode: doc.setCode,
+    collectorNumber: doc.collectorNumber,
+    lang: doc.lang,
+    image: doc.image,
+    text: doc.text,
+    source: doc.source,
+    manuallyEditedAt: doc.manuallyEditedAt instanceof Date ? doc.manuallyEditedAt.toISOString() : undefined,
+    attributes,
+  };
 }
 
 export async function getCardsByNames(gameId: ObjectId, names: string[]): Promise<CardNameMatch[]> {

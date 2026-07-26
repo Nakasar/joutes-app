@@ -63,6 +63,9 @@ export async function importCardDatabase() {
       hp: cardRaw.hp,
       power: cardRaw.power,
       token: cardRaw.token,
+      // Distingue les cartes importées de celles ajoutées à la main depuis
+      // l'administration (`source: 'manual'`).
+      source: 'import',
     });
 
     if (cards.length >= batchSize) {

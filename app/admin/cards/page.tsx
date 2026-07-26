@@ -1,34 +1,39 @@
 import { ObjectId } from "mongodb";
 import Link from "next/link";
 import { getAllGames } from "@/lib/db/games";
-import { getGameCardAttributeFields, getRecentGameCards } from "@/lib/db/cards";
+import { getGameCard, getGameCardAttributeFields, getRecentGameCards } from "@/lib/db/cards";
 import CardForm from "./CardForm";
+import CardOriginBadges from "./CardOriginBadges";
+import CardSearch from "./CardSearch";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminCardsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ gameId?: string }>;
+  searchParams: Promise<{ gameId?: string; cardId?: string }>;
 }) {
-  const { gameId } = await searchParams;
+  const { gameId, cardId } = await searchParams;
 
   const games = (await getAllGames()).sort((a, b) => a.name.localeCompare(b.name));
   const selectedGame = games.find((game) => game.id === gameId);
 
-  const [attributeFields, recentCards] = selectedGame
+  const [attributeFields, recentCards, card] = selectedGame
     ? await Promise.all([
         getGameCardAttributeFields(new ObjectId(selectedGame.id)),
         getRecentGameCards(new ObjectId(selectedGame.id)),
+        cardId ? getGameCard(new ObjectId(selectedGame.id), cardId) : Promise.resolve(null),
       ])
-    : [[], []];
+    : [[], [], null];
 
   return (
     <div className="bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Gestion des cartes</h1>
-          <p className="text-gray-600">Ajoutez une carte à un jeu, avec ses attributs propres au jeu.</p>
+          <p className="text-gray-600">
+            Ajoutez une carte à un jeu ou modifiez une carte existante, avec ses attributs propres au jeu.
+          </p>
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-6">
@@ -53,11 +58,21 @@ export default async function AdminCardsPage({
 
         {selectedGame ? (
           <>
+            <CardSearch gameId={selectedGame.id} selectedCardId={card?.id} />
+
+            {cardId && !card && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                Aucune carte « {cardId} » pour ce jeu.
+              </div>
+            )}
+
             <CardForm
+              key={card?.id ?? "new"}
               gameId={selectedGame.id}
               gameName={selectedGame.name}
               gameSlug={selectedGame.slug}
               attributeFields={attributeFields}
+              card={card ?? undefined}
             />
 
             <div className="bg-white rounded-lg shadow-md p-6">
@@ -66,21 +81,30 @@ export default async function AdminCardsPage({
                 <p className="text-sm text-gray-500">Aucune carte pour ce jeu pour l&apos;instant.</p>
               ) : (
                 <ul className="divide-y divide-gray-100">
-                  {recentCards.map((card) => (
-                    <li key={card.id} className="flex items-center justify-between gap-4 py-2 text-sm">
+                  {recentCards.map((recent) => (
+                    <li key={recent.id} className="flex flex-wrap items-center justify-between gap-3 py-2 text-sm">
                       <div className="min-w-0">
                         <Link
-                          href={`/games/${selectedGame.slug ?? selectedGame.id}/cards/${card.id}`}
+                          href={`/games/${selectedGame.slug ?? selectedGame.id}/cards/${recent.id}`}
                           className="font-medium text-blue-600 hover:underline"
                         >
-                          {card.name}
+                          {recent.name}
                         </Link>
-                        <span className="ml-2 font-mono text-xs text-gray-500">{card.id}</span>
+                        <span className="ml-2 font-mono text-xs text-gray-500">{recent.id}</span>
                       </div>
-                      <span className="shrink-0 text-xs text-gray-500">
-                        {card.setCode} #{card.collectorNumber}
-                        {card.lang ? ` · ${card.lang.toUpperCase()}` : ""}
-                      </span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-gray-500">
+                          {recent.setCode} #{recent.collectorNumber}
+                          {recent.lang ? ` · ${recent.lang.toUpperCase()}` : ""}
+                        </span>
+                        <CardOriginBadges card={recent} />
+                        <Link
+                          href={`/admin/cards?gameId=${selectedGame.id}&cardId=${encodeURIComponent(recent.id)}`}
+                          className="text-sm text-blue-600 hover:underline"
+                        >
+                          Modifier
+                        </Link>
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -89,7 +113,7 @@ export default async function AdminCardsPage({
           </>
         ) : (
           <div className="bg-white rounded-lg shadow-md p-6 text-sm text-gray-600">
-            Choisissez un jeu pour ajouter une carte.
+            Choisissez un jeu pour ajouter ou modifier une carte.
           </div>
         )}
       </div>
