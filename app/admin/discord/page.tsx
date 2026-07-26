@@ -14,7 +14,7 @@ export default function AdminDiscordPage() {
       <div className="w-full max-w-xl rounded-2xl border bg-card p-8 text-center shadow-xl shadow-black/20 backdrop-blur-sm">
         <h1 className="mb-4 text-2xl font-bold text-foreground">Discord</h1>
         <p className="mb-6 text-muted-foreground">
-          Administration des commandes Discord Nexus Tools.
+          Administration des commandes Discord Joutes Tools.
         </p>
         <Button onClick={registerDiscordCommands}>Update commands</Button>
       </div>
