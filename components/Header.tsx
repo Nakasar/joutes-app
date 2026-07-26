@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSession, signOut } from "@/lib/auth-client";
 import Image from "next/image";
-import {Menu, Calendar, MapPin, User, UserRound, LogOut, Shield, Trophy, Dices, Library, Heart, Users, ChevronDown, Sparkles, Tag, Gamepad2, Plus, type LucideIcon} from "lucide-react";
+import {Menu, Calendar, MapPin, User, UserRound, LogOut, Shield, Trophy, Dices, Library, Heart, Users, ChevronDown, Sparkles, Tag, Gamepad2, Plus, ArrowLeftRight, type LucideIcon} from "lucide-react";
 import { isAdmin } from "@/lib/config/admins";
 import { Button } from "@/components/ui/button";
 import { NotificationDropdown } from "@/components/NotificationDropdown";
@@ -174,6 +174,12 @@ export default function Header() {
                           <span>{t('menu.SellLists')}</span>
                         </Link>
                       </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/trade" className="flex w-full cursor-pointer">
+                          <ArrowLeftRight className="mr-2 h-4 w-4" />
+                          <span>{t('menu.Trade')}</span>
+                        </Link>
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </NavigationMenuItem>
@@ -304,6 +310,12 @@ export default function Header() {
                         <Link href="/sell-lists" className="flex w-full cursor-pointer">
                           <Tag className="mr-2 h-4 w-4" />
                           <span>{t('menu.SellLists')}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/trade" className="flex w-full cursor-pointer">
+                          <ArrowLeftRight className="mr-2 h-4 w-4" />
+                          <span>{t('menu.Trade')}</span>
                         </Link>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -499,6 +511,12 @@ export default function Header() {
                     <Link href="/sell-lists" onClick={() => setMobileMenuOpen(false)}>
                       <Tag className="mr-2 h-4 w-4" />
                       {t('menu.SellLists')}
+                    </Link>
+                  </Button>
+                  <Button variant="ghost" asChild className="w-full justify-start">
+                    <Link href="/trade" onClick={() => setMobileMenuOpen(false)}>
+                      <ArrowLeftRight className="mr-2 h-4 w-4" />
+                      {t('menu.Trade')}
                     </Link>
                   </Button>
                 </div>

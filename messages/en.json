@@ -14,6 +14,7 @@
       "groupEvents": "Events"
     },
     "menu": {
+      "Trade": "Trade",
       "Collection": "My collection",
       "Jeux": "Games",
       "Événements": "Events",
@@ -2124,6 +2125,63 @@
       "deleteAria": "Delete the announcement",
       "createError": "Error while creating the announcement",
       "deleteError": "Error while deleting"
+    }
+  },
+  "Trade": {
+    "metadata": {
+      "title": "Card trade",
+      "description": "Set up a trade: give away cards from your collection and receive your partner's cards."
+    },
+    "title": "Trade",
+    "subtitle": "Build both sides of the trade, then apply it to your collection.",
+    "backToCollection": "My collection",
+    "trade": "Trade",
+    "summary": "{offered, plural, =0 {No card given} one {# card given} other {# cards given}} · {received, plural, =0 {no card received} one {# card received} other {# cards received}}",
+    "success": "Trade completed: {removed, plural, =0 {no card removed} one {# card removed} other {# cards removed}}, {added, plural, =0 {no card added} one {# card added} other {# cards added}}.",
+    "offer": {
+      "title": "My offer",
+      "subtitle": "The cards you give away, removed from your collection."
+    },
+    "request": {
+      "title": "What I receive",
+      "subtitle": "Your partner's cards, added to your collection."
+    },
+    "panel": {
+      "copies": "{count, plural, =0 {0 copies} one {# copy} other {# copies}}",
+      "emptyOffer": "Add cards from your collection to give away.",
+      "emptyRequest": "Add the cards you receive in return.",
+      "scopeCollection": "My collection",
+      "scopeCatalog": "All cards",
+      "searchPlaceholder": "Search for a card…",
+      "allGames": "All games",
+      "typeToSearch": "Type at least 2 characters to search all cards.",
+      "results": "{count, plural, =0 {No result} one {# result} other {# results}}",
+      "emptyCollection": "Your collection is empty.",
+      "noResults": "No card matches your search.",
+      "owned": "{count, plural, one {# copy owned} other {# copies owned}}",
+      "add": "Add",
+      "notOwned": "You do not own this card.",
+      "notInCatalog": "This card is no longer in the catalog.",
+      "allCopiesSelected": "All your copies are already in the offer.",
+      "increase": "Add one copy of {name}",
+      "decrease": "Remove one copy of {name}",
+      "remove": "Remove {name} from the trade",
+      "previous": "Previous",
+      "next": "Next",
+      "pageOf": "Page {page} / {totalPages}"
+    },
+    "confirm": {
+      "title": "Confirm the trade",
+      "description": "Your collection will be updated right away: this action cannot be undone.",
+      "given": "Cards given",
+      "received": "Cards received",
+      "none": "No card",
+      "cancel": "Cancel",
+      "confirm": "Confirm trade"
+    },
+    "errors": {
+      "insufficientCopies": "You no longer own enough copies: {cards}",
+      "failed": "The trade could not be completed."
     }
   }
 }

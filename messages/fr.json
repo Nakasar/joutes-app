@@ -14,6 +14,7 @@
       "groupEvents": "Événements"
     },
     "menu": {
+      "Trade": "Échange",
       "Collection": "Ma collection",
       "Jeux": "Jeux",
       "Événements": "Événements",
@@ -2125,6 +2126,63 @@
       "deleteAria": "Supprimer l'annonce",
       "createError": "Erreur lors de la création de l'annonce",
       "deleteError": "Erreur lors de la suppression"
+    }
+  },
+  "Trade": {
+    "metadata": {
+      "title": "Échange de cartes",
+      "description": "Préparez un échange : cédez des cartes de votre collection et recevez celles de votre partenaire."
+    },
+    "title": "Échange",
+    "subtitle": "Composez les deux faces de l'échange, puis appliquez-le à votre collection.",
+    "backToCollection": "Ma collection",
+    "trade": "Échanger",
+    "summary": "{offered, plural, =0 {Aucune carte cédée} one {# carte cédée} other {# cartes cédées}} · {received, plural, =0 {aucune carte reçue} one {# carte reçue} other {# cartes reçues}}",
+    "success": "Échange effectué : {removed, plural, =0 {aucune carte retirée} one {# carte retirée} other {# cartes retirées}}, {added, plural, =0 {aucune carte ajoutée} one {# carte ajoutée} other {# cartes ajoutées}}.",
+    "offer": {
+      "title": "Mon offre",
+      "subtitle": "Les cartes que vous cédez, retirées de votre collection."
+    },
+    "request": {
+      "title": "Ce que je reçois",
+      "subtitle": "Les cartes de votre partenaire, ajoutées à votre collection."
+    },
+    "panel": {
+      "copies": "{count, plural, =0 {0 exemplaire} one {# exemplaire} other {# exemplaires}}",
+      "emptyOffer": "Ajoutez des cartes de votre collection à céder.",
+      "emptyRequest": "Ajoutez les cartes que vous recevez en échange.",
+      "scopeCollection": "Ma collection",
+      "scopeCatalog": "Toutes les cartes",
+      "searchPlaceholder": "Rechercher une carte…",
+      "allGames": "Tous les jeux",
+      "typeToSearch": "Saisissez au moins 2 caractères pour chercher dans toutes les cartes.",
+      "results": "{count, plural, =0 {Aucun résultat} one {# résultat} other {# résultats}}",
+      "emptyCollection": "Votre collection est vide.",
+      "noResults": "Aucune carte ne correspond à votre recherche.",
+      "owned": "{count, plural, one {# exemplaire possédé} other {# exemplaires possédés}}",
+      "add": "Ajouter",
+      "notOwned": "Vous ne possédez pas cette carte.",
+      "notInCatalog": "Cette carte n'est plus au catalogue.",
+      "allCopiesSelected": "Tous vos exemplaires sont déjà dans l'offre.",
+      "increase": "Ajouter un exemplaire de {name}",
+      "decrease": "Retirer un exemplaire de {name}",
+      "remove": "Retirer {name} de l'échange",
+      "previous": "Précédent",
+      "next": "Suivant",
+      "pageOf": "Page {page} / {totalPages}"
+    },
+    "confirm": {
+      "title": "Confirmer l'échange",
+      "description": "Votre collection sera mise à jour immédiatement : cette action est définitive.",
+      "given": "Cartes cédées",
+      "received": "Cartes reçues",
+      "none": "Aucune carte",
+      "cancel": "Annuler",
+      "confirm": "Confirmer l'échange"
+    },
+    "errors": {
+      "insufficientCopies": "Vous ne possédez plus assez d'exemplaires : {cards}",
+      "failed": "L'échange n'a pas pu être effectué."
     }
   }
 }

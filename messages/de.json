@@ -14,6 +14,7 @@
       "groupEvents": "Events"
     },
     "menu": {
+      "Trade": "Tausch",
       "Collection": "Meine Sammlung",
       "Jeux": "Spiele",
       "Événements": "Events",
@@ -2041,6 +2042,63 @@
       "deleteAria": "Ankündigung löschen",
       "createError": "Fehler beim Erstellen der Ankündigung",
       "deleteError": "Fehler beim Löschen"
+    }
+  },
+  "Trade": {
+    "metadata": {
+      "title": "Kartentausch",
+      "description": "Bereite einen Tausch vor: Gib Karten aus deiner Sammlung ab und erhalte die Karten deines Tauschpartners."
+    },
+    "title": "Tausch",
+    "subtitle": "Stelle beide Seiten des Tauschs zusammen und übernimm ihn dann in deine Sammlung.",
+    "backToCollection": "Meine Sammlung",
+    "trade": "Tauschen",
+    "summary": "{offered, plural, =0 {Keine Karte abgegeben} one {# Karte abgegeben} other {# Karten abgegeben}} · {received, plural, =0 {keine Karte erhalten} one {# Karte erhalten} other {# Karten erhalten}}",
+    "success": "Tausch abgeschlossen: {removed, plural, =0 {keine Karte entfernt} one {# Karte entfernt} other {# Karten entfernt}}, {added, plural, =0 {keine Karte hinzugefügt} one {# Karte hinzugefügt} other {# Karten hinzugefügt}}.",
+    "offer": {
+      "title": "Mein Angebot",
+      "subtitle": "Die Karten, die du abgibst – sie werden aus deiner Sammlung entfernt."
+    },
+    "request": {
+      "title": "Was ich erhalte",
+      "subtitle": "Die Karten deines Tauschpartners – sie werden deiner Sammlung hinzugefügt."
+    },
+    "panel": {
+      "copies": "{count, plural, =0 {0 Exemplare} one {# Exemplar} other {# Exemplare}}",
+      "emptyOffer": "Füge Karten aus deiner Sammlung hinzu, die du abgeben willst.",
+      "emptyRequest": "Füge die Karten hinzu, die du im Gegenzug erhältst.",
+      "scopeCollection": "Meine Sammlung",
+      "scopeCatalog": "Alle Karten",
+      "searchPlaceholder": "Karte suchen…",
+      "allGames": "Alle Spiele",
+      "typeToSearch": "Gib mindestens 2 Zeichen ein, um alle Karten zu durchsuchen.",
+      "results": "{count, plural, =0 {Kein Ergebnis} one {# Ergebnis} other {# Ergebnisse}}",
+      "emptyCollection": "Deine Sammlung ist leer.",
+      "noResults": "Keine Karte entspricht deiner Suche.",
+      "owned": "{count, plural, one {# Exemplar im Besitz} other {# Exemplare im Besitz}}",
+      "add": "Hinzufügen",
+      "notOwned": "Du besitzt diese Karte nicht.",
+      "notInCatalog": "Diese Karte ist nicht mehr im Katalog.",
+      "allCopiesSelected": "Alle deine Exemplare sind bereits im Angebot.",
+      "increase": "Ein Exemplar von {name} hinzufügen",
+      "decrease": "Ein Exemplar von {name} entfernen",
+      "remove": "{name} aus dem Tausch entfernen",
+      "previous": "Zurück",
+      "next": "Weiter",
+      "pageOf": "Seite {page} / {totalPages}"
+    },
+    "confirm": {
+      "title": "Tausch bestätigen",
+      "description": "Deine Sammlung wird sofort aktualisiert: Diese Aktion ist endgültig.",
+      "given": "Abgegebene Karten",
+      "received": "Erhaltene Karten",
+      "none": "Keine Karte",
+      "cancel": "Abbrechen",
+      "confirm": "Tausch bestätigen"
+    },
+    "errors": {
+      "insufficientCopies": "Du besitzt nicht mehr genügend Exemplare: {cards}",
+      "failed": "Der Tausch konnte nicht abgeschlossen werden."
     }
   }
 }
