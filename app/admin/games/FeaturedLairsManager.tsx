@@ -89,7 +89,7 @@ export function FeaturedLairsManager({ game }: { game: Game }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <label className="text-sm font-medium text-gray-700">
+        <label className="text-sm font-medium text-foreground">
           Lieux mis en avant
         </label>
         <Dialog open={open} onOpenChange={setOpen}>
@@ -109,7 +109,7 @@ export function FeaturedLairsManager({ game }: { game: Game }) {
             </DialogHeader>
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">
                 {error}
               </div>
             )}
@@ -120,15 +120,15 @@ export function FeaturedLairsManager({ game }: { game: Game }) {
                 placeholder="Rechercher un lieu..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
               />
 
               {loading ? (
-                <p className="text-center py-4 text-gray-500">
+                <p className="text-center py-4 text-muted-foreground">
                   Chargement des lieux...
                 </p>
               ) : filteredLairs.length === 0 ? (
-                <p className="text-center py-4 text-gray-500">
+                <p className="text-center py-4 text-muted-foreground">
                   Aucun lieu trouvé pour ce jeu
                 </p>
               ) : (
@@ -139,20 +139,20 @@ export function FeaturedLairsManager({ game }: { game: Game }) {
                       onClick={() => handleToggleLair(lair.id)}
                       className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
                         selectedLairs.includes(lair.id)
-                          ? "bg-blue-50 border-blue-300"
-                          : "bg-white border-gray-200 hover:border-gray-300"
+                          ? "bg-blue-500/10 border-blue-300"
+                          : "bg-card border-border hover:border-input"
                       }`}
                     >
                       <input
                         type="checkbox"
                         checked={selectedLairs.includes(lair.id)}
                         onChange={() => {}}
-                        className="h-4 w-4 text-blue-600 rounded"
+                        className="h-4 w-4 text-blue-600 dark:text-blue-400 rounded"
                       />
                       <div className="flex-1">
-                        <p className="font-medium text-gray-900">{lair.name}</p>
+                        <p className="font-medium text-foreground">{lair.name}</p>
                         {lair.address && (
-                          <p className="text-sm text-gray-500">{lair.address}</p>
+                          <p className="text-sm text-muted-foreground">{lair.address}</p>
                         )}
                       </div>
                       {lair.isPrivate && (
@@ -191,7 +191,7 @@ export function FeaturedLairsManager({ game }: { game: Game }) {
 
       <div className="flex flex-wrap gap-2">
         {featuredLairsData.length === 0 ? (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted-foreground">
             Aucun lieu mis en avant
           </p>
         ) : (

@@ -11,13 +11,13 @@ export default function CardOriginBadges({ card }: { card: Pick<GameCardSummary,
     <span className="flex flex-wrap items-center gap-1 text-[11px]">
       <span
         className={`rounded-full px-2 py-0.5 ${
-          card.source === "manual" ? "bg-indigo-50 text-indigo-700" : "bg-gray-100 text-gray-600"
+          card.source === "manual" ? "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300" : "bg-muted text-muted-foreground"
         }`}
       >
         {card.source === "manual" ? "Manuelle" : "Importée"}
       </span>
       {card.manuallyEditedAt && (
-        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-amber-700">Modifiée</span>
+        <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-amber-700 dark:text-amber-300">Modifiée</span>
       )}
     </span>
   );

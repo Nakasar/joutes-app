@@ -2,23 +2,23 @@ import Link from "next/link";
 
 export default function AdminDashboard() {
   return (
-    <div className="bg-gray-50 p-8">
+    <div className="bg-muted/50 p-8">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">
+        <h1 className="text-3xl font-bold text-foreground mb-8">
           Tableau de bord administrateur
         </h1>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Link
             href="/admin/games"
-            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+            className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
           >
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                <h2 className="text-xl font-semibold text-foreground mb-2">
                   Gestion des Jeux
                 </h2>
-                <p className="text-gray-600">
+                <p className="text-muted-foreground">
                   Voir et gérer les jeux supportés sur la plateforme
                 </p>
               </div>
@@ -40,14 +40,14 @@ export default function AdminDashboard() {
 
           <Link
             href="/admin/cards"
-            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+            className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
           >
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                <h2 className="text-xl font-semibold text-foreground mb-2">
                   Gestion des Cartes
                 </h2>
-                <p className="text-gray-600">
+                <p className="text-muted-foreground">
                   Ajouter une carte à un jeu avec ses attributs, son texte et son image
                 </p>
               </div>
@@ -69,14 +69,14 @@ export default function AdminDashboard() {
 
           <Link
             href="/admin/lairs"
-            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+            className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
           >
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                <h2 className="text-xl font-semibold text-foreground mb-2">
                   Gestion des Lieux
                 </h2>
-                <p className="text-gray-600">
+                <p className="text-muted-foreground">
                   Voir et gérer les lieux de jeu sur la plateforme
                 </p>
               </div>
@@ -104,14 +104,14 @@ export default function AdminDashboard() {
 
           <Link
             href="/admin/achievements"
-            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+            className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
           >
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                <h2 className="text-xl font-semibold text-foreground mb-2">
                   Gestion des Succès
                 </h2>
-                <p className="text-gray-600">
+                <p className="text-muted-foreground">
                   Créer et modifier les succès et trophées
                 </p>
               </div>
@@ -133,14 +133,14 @@ export default function AdminDashboard() {
 
           <Link
             href="/admin/exports"
-            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+            className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
           >
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                <h2 className="text-xl font-semibold text-foreground mb-2">
                   Exports de données
                 </h2>
-                <p className="text-gray-600">
+                <p className="text-muted-foreground">
                   Consulter, télécharger et supprimer les derniers exports de chaque jeu
                 </p>
               </div>
@@ -161,11 +161,11 @@ export default function AdminDashboard() {
           </Link>
         </div>
 
-        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-blue-900 mb-2">
+        <div className="mt-8 bg-blue-500/10 border border-blue-500/30 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-2">
             Bienvenue dans l&apos;espace administrateur
           </h3>
-          <p className="text-blue-800">
+          <p className="text-blue-800 dark:text-blue-300">
             Ici, vous pouvez gérer tous les aspects de la plateforme de joutes.
             Utilisez les liens ci-dessus pour accéder aux différentes sections.
           </p>

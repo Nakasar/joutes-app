@@ -51,40 +51,40 @@ export function LairList({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
+    <div className="bg-card rounded-lg shadow-md overflow-hidden">
       {error && (
-        <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+        <div className="m-4 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">
           {error}
         </div>
       )}
       
       {success && (
-        <div className="m-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+        <div className="m-4 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-emerald-700 dark:text-emerald-300 text-sm">
           {success}
         </div>
       )}
       
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+      <table className="min-w-full divide-y divide-border">
+        <thead className="bg-muted/50">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Bannière
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Nom
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Jeux supportés
             </th>
-            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Actions
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-card divide-y divide-border">
           {lairs.length === 0 ? (
             <tr>
-              <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
+              <td colSpan={4} className="px-6 py-4 text-center text-muted-foreground">
                 Aucun lieu pour le moment
               </td>
             </tr>
@@ -98,7 +98,7 @@ export function LairList({
                     alt={lair.name}
                     className="h-16 w-24 rounded object-cover"
                   /> : (
-                    <div className="h-16 w-24 rounded bg-gray-200 flex items-center justify-center text-gray-400">
+                    <div className="h-16 w-24 rounded bg-muted flex items-center justify-center text-muted-foreground">
                       <span className="text-lg font-semibold">
                         {lair.name.charAt(0).toUpperCase()}
                       </span>
@@ -106,19 +106,19 @@ export function LairList({
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
+                  <div className="text-sm font-medium text-foreground">
                     {lair.name}
                   </div>
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex flex-wrap gap-1">
                     {lair.games.length === 0 ? (
-                      <span className="text-sm text-gray-500">Aucun jeu</span>
+                      <span className="text-sm text-muted-foreground">Aucun jeu</span>
                     ) : (
                       lair.games.map((gameId) => (
                         <span
                           key={gameId}
-                          className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800"
+                          className="px-2 py-1 text-xs font-semibold rounded-full bg-emerald-500/15 text-emerald-800 dark:text-emerald-300"
                         >
                           {getGameName(gameId)}
                         </span>
@@ -132,7 +132,7 @@ export function LairList({
                       <button
                         onClick={() => handleRefreshEvents(lair.id)}
                         disabled={isPending}
-                        className="text-blue-600 hover:text-blue-900 disabled:opacity-50"
+                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-50"
                         title="Rafraîchir les événements"
                       >
                         🔄 Rafraîchir
@@ -145,7 +145,7 @@ export function LairList({
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="text-blue-600 hover:text-blue-900"
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                         >
                           Modifier
                         </Button>
@@ -154,7 +154,7 @@ export function LairList({
                     <button
                       onClick={() => handleDelete(lair.id)}
                       disabled={isPending}
-                      className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                      className="text-destructive hover:text-destructive/80 disabled:opacity-50"
                     >
                       Supprimer
                     </button>

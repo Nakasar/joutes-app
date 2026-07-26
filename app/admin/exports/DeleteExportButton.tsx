@@ -28,11 +28,11 @@ export function DeleteExportButton({ id }: { id: string }) {
       <button
         onClick={handleDelete}
         disabled={isPending}
-        className="text-red-600 hover:text-red-900 disabled:opacity-50"
+        className="text-destructive hover:text-destructive/80 disabled:opacity-50"
       >
         Supprimer
       </button>
-      {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+      {error && <p className="text-xs text-destructive mt-1">{error}</p>}
     </>
   );
 }
