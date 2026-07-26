@@ -6,6 +6,7 @@ import {
   assertPrincipalCanRead,
   getPlayerById,
   principalCanManage,
+  recordActivity,
   removePlayer,
   requireTournament,
   sanitizePlayer,
@@ -54,6 +55,12 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
     if (principalCanManage(tournament, principal)) {
       const player = await updatePlayer(tournamentId, playerId, validated);
+      if (validated.checkedIn === true) {
+        await recordActivity(tournamentId, "player-checked-in", { player: player.displayName });
+      }
+      if (validated.status === "dropped") {
+        await recordActivity(tournamentId, "player-dropped", { player: player.displayName });
+      }
       return NextResponse.json(player);
     }
 
@@ -70,11 +77,21 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (!isSelf) {
       throw new TournamentError("forbidden", "Vous ne pouvez modifier que votre propre inscription");
     }
-    if (validated.status !== "dropped" || validated.displayName !== undefined || validated.seed !== undefined) {
+    // Seul le retrait est autorisé : toute autre clé du corps (nom, seed, table
+    // fixe, pointage) est refusée plutôt qu'ignorée, pour qu'un joueur ne puisse
+    // pas se pointer présent ou se réattribuer une table au passage.
+    const selfDropOnly =
+      validated.status === "dropped" &&
+      validated.displayName === undefined &&
+      validated.seed === undefined &&
+      validated.fixedTableNumber === undefined &&
+      validated.checkedIn === undefined;
+    if (!selfDropOnly) {
       throw new TournamentError("forbidden", "Vous pouvez uniquement vous retirer du tournoi");
     }
 
     const player = await updatePlayer(tournamentId, playerId, { status: "dropped" });
+    await recordActivity(tournamentId, "player-dropped", { player: player.displayName });
     return NextResponse.json(sanitizePlayer(player));
   } catch (error) {
     return tournamentErrorResponse(error);

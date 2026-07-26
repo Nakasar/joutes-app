@@ -1761,7 +1761,22 @@
       "searchPlaceholder": "Cerca un giocatore...",
       "dropBadge": "Drop",
       "noSearchResults": "Nessun giocatore corrisponde alla ricerca.",
-      "noPlayers": "Nessun giocatore iscritto."
+      "noPlayers": "Nessun giocatore iscritto.",
+      "yourTable": "Il tuo tavolo",
+      "against": "contro",
+      "record": "{wins}V · {losses}S · {draws}P",
+      "extensionGranted": "Prolungamento concesso dall'arbitro: +{minutes} min",
+      "resultSent": "Risultato inviato: {mine} – {theirs}",
+      "correct": "Correggi",
+      "awaitingConfirmationFrom": "In attesa di conferma da {name}.",
+      "myRank": "La mia posizione",
+      "myScore": "Il mio punteggio",
+      "rankOf": "{rank}° su {total}",
+      "progressTitle": "Svolgimento",
+      "roundsCompleted": "{count} turno/i completato/i",
+      "roundInProgress": "Turno {number} — in corso",
+      "noRoundsYet": "Il torneo non è ancora iniziato.",
+      "myMatchesTitle": "I miei match"
     },
     "playerShell": {
       "notSyncedTitle": "Torneo non sincronizzato",
@@ -1774,7 +1789,8 @@
       "subtitle": "Portale giocatore",
       "participatingAs": "Partecipi come",
       "guest": "(ospite)",
-      "droppedBadge": "Ritirato"
+      "droppedBadge": "Ritirato",
+      "remaining": "rimanente"
     },
     "playerLive": {
       "timer": "Timer",
@@ -1807,7 +1823,15 @@
         "title": "Rimuovi questo torneo",
         "description": "La chiave di sincronizzazione sarà rimossa da questo browser. Potrai unirti di nuovo tramite il codice QR dell'organizzatore.",
         "confirm": "Rimuovi"
-      }
+      },
+      "joinWithQr": "Unisciti con un QR",
+      "pilot": "Gestisci il torneo",
+      "liveRound": "In corso · Turno {number} su {total}",
+      "timeRemaining": "tempo rimanente",
+      "playersCount": "{count} giocatori",
+      "noDetails": "Non ancora configurato",
+      "finishSetup": "Completa la configurazione",
+      "seeResults": "Vedi i risultati"
     },
     "new": {
       "title": "Crea un torneo",
@@ -1900,10 +1924,16 @@
         "players": "Giocatori",
         "phases": "Fasi",
         "rounds": "Turni",
-        "live": "Live"
+        "live": "Live",
+        "standings": "Classifica"
       },
       "backToTournaments": "← I miei tornei",
-      "viewPlayerPortal": "Vedi il portale giocatore →"
+      "viewPlayerPortal": "Vedi il portale giocatore →",
+      "tournamentLabel": "Torneo",
+      "groupLive": "Durante il torneo",
+      "groupPrep": "Preparazione",
+      "helpTitle": "Serve aiuto?",
+      "helpBody": "«Svizzero» = tutti giocano ogni turno, contro un avversario con lo stesso punteggio."
     },
     "organizerSettings": {
       "firstTableLabel": "Numero del primo tavolo",
@@ -1927,7 +1957,27 @@
       "deleteDialogDescription": "Il torneo “{name}” e tutti i suoi dati (giocatori, fasi, turni, match, annunci) saranno eliminati definitivamente. Questa azione è irreversibile.",
       "deleting": "Eliminazione...",
       "deleteConfirm": "Elimina definitivamente",
-      "deleteError": "Errore durante l'eliminazione del torneo"
+      "deleteError": "Errore durante l'eliminazione del torneo",
+      "pageTitle": "Impostazioni del torneo",
+      "pageDescription": "Ogni impostazione spiega cosa cambia per i giocatori.",
+      "infoTitle": "Informazioni",
+      "nameLabel": "Nome del torneo",
+      "locationLabel": "Luogo",
+      "locationPlaceholder": "Negozio, città…",
+      "dateLabel": "Data",
+      "timeLabel": "Ora",
+      "capacityLabel": "Posti",
+      "reportingTitle": "Come i giocatori comunicano i risultati",
+      "reportingDescription": "Questo blocco decide il carico di lavoro del tuo tavolo arbitrale.",
+      "summaryTitle": "Riepilogo per i giocatori",
+      "summaryFormat": "Formato",
+      "summaryMatch": "Match",
+      "summaryRegistered": "Iscritti",
+      "summaryLocation": "Luogo",
+      "summaryStart": "Inizio",
+      "summaryNoPhase": "Nessuna fase configurata",
+      "firstTimeTitle": "È la prima volta?",
+      "firstTimeBody": "Le impostazioni predefinite vanno bene per la maggior parte dei tornei in negozio. Puoi partire senza cambiare nulla."
     },
     "organizerPlayers": {
       "fixedTableAria": "Tavolo fisso di {name}",
@@ -1945,7 +1995,15 @@
       "noSearchResults": "Nessun giocatore corrisponde alla ricerca.",
       "removeDialogTitle": "Rimuovi il giocatore",
       "removeDialogDescription": "Rimuovere {name} dal torneo? Se ha già dei match, sarà contrassegnato come DROPPED invece di essere eliminato.",
-      "removeError": "Errore durante la rimozione del giocatore"
+      "removeError": "Errore durante la rimozione del giocatore",
+      "pageTitle": "Giocatori",
+      "checkInSummary": "{checked} presenti su {total} iscritti · registra i giocatori al loro arrivo",
+      "checkInAria": "Registra {name} come presente",
+      "present": "Presente",
+      "notCheckedIn": "Non ancora registrato",
+      "hasPenalties": "{count} sanzione/i",
+      "openSheet": "Scheda",
+      "joinQr": "QR d'iscrizione"
     },
     "organizerPhases": {
       "resetStatusTitle": "Riporta a “non iniziata”",
@@ -2007,7 +2065,11 @@
         "duels": "duelli",
         "podsOf": "pod da {count}",
         "podsRange": "pod {min}-{max}"
-      }
+      },
+      "pageTitle": "Formato e fasi",
+      "pageDescription": "Le tappe si susseguono in ordine. Puoi ancora modificare ciò che non è iniziato.",
+      "stepLabel": "Tappa {index} · {status}",
+      "willFillWithTop": "Si riempirà con i primi {count} della classifica."
     },
     "nextPhase": {
       "button": "Passa alla fase successiva",
@@ -2019,7 +2081,32 @@
       "nextPhaseStarting": "La fase “{name}” inizierà e il suo primo turno sarà creato.",
       "currentIncomplete": "La fase corrente non è conclusa: tutti i suoi match devono avere un risultato prima di passare alla fase successiva.",
       "topCutWarning": "Attenzione: {count} giocatore/i non qualificato/i sarà/saranno eliminato/i (stato DROPPED) dal top cut ({topCut}).",
-      "qualifiedPlayers": "Giocatori qualificati ({count}):"
+      "qualifiedPlayers": "Giocatori qualificati ({count}):",
+      "back": "Indietro",
+      "stepChecks": "Verifiche",
+      "stepTopCut": "Top cut",
+      "stepPairings": "Accoppiamenti",
+      "checksTitle": "È tutto pronto?",
+      "checksDescription": "Verifichiamo prima di congelare la classifica. Una volta avviata la fase successiva, i risultati non sono più modificabili.",
+      "checks": {
+        "currentComplete": "Tutti i risultati della fase in corso sono arrivati",
+        "hasNextPhase": "È configurata una fase successiva",
+        "hasQualified": "Ci sono giocatori qualificati"
+      },
+      "topCutTitle": "Quanti giocatori passano alla fase finale?",
+      "topCutDescription": "I qualificati sono presi nell'ordine della classifica finale della fase in corso.",
+      "topCutConfigured": "Top cut configurato sulla fase: {count} giocatori.",
+      "eliminatedLabel": "Eliminati",
+      "eliminatedCount": "{count} giocatori",
+      "eliminatedHint": "Mantengono la classifica finale e vedono il risultato sul loro portale.",
+      "pairingsTitle": "Accoppiamenti della fase finale",
+      "pairingsDescription": "Testa di serie 1 contro l'ultimo qualificato, e così via. Anteprima indicativa: l'accoppiamento reale segue l'impostazione della fase.",
+      "pairingsUnavailable": "Nessun accoppiamento da mostrare.",
+      "matchN": "Match {number}",
+      "launchNotice": "All'avvio: i qualificati ricevono il nuovo tavolo e la classifica della fase precedente viene archiviata.",
+      "toTopCut": "Scegli il top cut",
+      "toPairings": "Vedi gli accoppiamenti",
+      "launch": "Avvia {name}"
     },
     "organizerJoin": {
       "title": "Invita giocatori",
@@ -2047,7 +2134,8 @@
       "createError": "Errore durante la creazione del turno",
       "noRounds": "Nessun turno giocato per il momento.",
       "standingsValidated": "Classifica convalidata",
-      "standingsNotValidated": "Classifica non convalidata"
+      "standingsNotValidated": "Classifica non convalidata",
+      "emptyDescription": "Nessun turno creato. Scegli una fase per avviare il primo."
     },
     "roundClient": {
       "headerTable": "Tavolo",
@@ -2102,7 +2190,51 @@
       "reopenCascadeDescription": "Riaprire il turno {number} annullerà le fasi avviate successivamente: i loro turni e match saranno eliminati e i giocatori eliminati dal loro top cut saranno ripristinati. Questa fase tornerà a essere la fase corrente. Continuare?",
       "deleteRound": "Elimina il turno",
       "deleteRoundTitle": "Elimina il turno",
-      "deleteRoundDescription": "Eliminare il turno {number} e tutti i suoi match? Questa azione è irreversibile."
+      "deleteRoundDescription": "Eliminare il turno {number} e tutti i suoi match? Questa azione è irreversibile.",
+      "resultsIn": "risultati consegnati",
+      "filterAll": "Tutti i tavoli",
+      "filterPending": "In attesa · {count}",
+      "filterDisputed": "Contestazioni · {count}",
+      "viewGrid": "Griglia",
+      "viewTable": "Tabella",
+      "tableShort": "Tavolo",
+      "quickEntryTitle": "Inserimento rapido",
+      "quickEntryUnavailable": "Questo formato si inserisce partita per partita.",
+      "detailedEntry": "Inserimento dettagliato",
+      "enterResult": "Inserisci",
+      "correct": "Correggi",
+      "arbitrate": "Arbitra",
+      "extendShort": "+3 min",
+      "extendTitle": "Concedi 3 minuti di prolungamento",
+      "extendError": "Prolungamento non riuscito",
+      "extensionGranted": "Prolungamento {minutes} min",
+      "extensionShort": "+{minutes} min",
+      "extensionRemove": "Rimuovi",
+      "extensionEnd": "Fine",
+      "extensionsTitle": "Prolungamenti · {count}",
+      "extensionTable": "Tavolo {table} · +{minutes} min",
+      "toHandle": "Da gestire",
+      "disputesToArbitrate": "{count} contestazione/i da arbitrare",
+      "disputeHint": "Tavolo {table}: i due giocatori hanno riportato risultati diversi.",
+      "tablesWithoutResult": "{count} tavolo/i senza risultato",
+      "tablesList": "Tavoli {tables}",
+      "showThem": "Mostrali",
+      "readyTitle": "Tutti i risultati sono arrivati",
+      "readySubtitle": "Puoi chiudere il turno.",
+      "notReadyTitle": "Turno in corso",
+      "notReadySubtitle": "{pending} tavolo/i senza risultato, {disputed} contestazione/i.",
+      "closeAndStartNext": "Chiudi e avvia il turno {number}",
+      "closeConfirm": "Chiudi",
+      "closeDescription": "La classifica al termine del turno {number} sarà congelata, poi verrà generato il turno successivo.",
+      "closeError": "Impossibile chiudere il turno",
+      "closeCreateError": "La classifica è stata congelata, ma il turno successivo non è stato creato.",
+      "cardStatus": {
+        "pending": "In attesa del risultato",
+        "awaitingConfirmation": "In attesa di conferma",
+        "completed": "Consegnato e confermato",
+        "completedShort": "Consegnato",
+        "disputed": "Contestazione — risultati discordanti"
+      }
     },
     "roundStandings": {
       "title": "Classifica alla fine del turno",
@@ -2146,7 +2278,11 @@
       "restart": "Riavvia",
       "resume": "Riprendi",
       "pause": "Pausa",
-      "stop": "Ferma"
+      "stop": "Ferma",
+      "running": "In corso",
+      "paused": "In pausa",
+      "stopped": "Fermo",
+      "expired": "Tempo scaduto"
     },
     "announcements": {
       "title": "Annunci",
@@ -2159,6 +2295,144 @@
       "deleteAria": "Elimina l'annuncio",
       "createError": "Errore durante la creazione dell'annuncio",
       "deleteError": "Errore durante l'eliminazione"
+    },
+    "roundHeader": {
+      "ofRounds": "su {total}",
+      "phaseAndTables": "{phase} · {count} tavoli",
+      "addTwoMinutes": "+2 min",
+      "announce": "Annuncio in sala"
+    },
+    "standings": {
+      "pageTitle": "Classifica",
+      "tiebreakers": "Spareggio: punti, poi OMW%, poi GW%.",
+      "currentTab": "Attuale",
+      "afterRound": "Dopo R{number}",
+      "browseHint": "Sfoglia lo storico dei turni",
+      "frozen": "Classifica congelata",
+      "live": "Classifica in diretta",
+      "exportCsv": "Esporta CSV",
+      "showOnScreen": "Mostra sullo schermo",
+      "statRanked": "Giocatori in classifica",
+      "statDropped": "Ritiri",
+      "statPerfect": "Punteggio pieno",
+      "statCutLine": "Linea di taglio",
+      "columnPlayer": "Giocatore",
+      "columnPoints": "Punti",
+      "columnRecord": "V-S-P",
+      "columnStatus": "Stato",
+      "cutLine": "Linea di taglio · top {count}",
+      "empty": "Nessuna classifica disponibile."
+    },
+    "standingsExport": {
+      "columns": {
+        "rank": "Posizione",
+        "player": "Giocatore",
+        "points": "Punti",
+        "record": "V-S-P",
+        "opponentMatchWin": "OMW%",
+        "gameWin": "GW%",
+        "status": "Stato"
+      }
+    },
+    "live": {
+      "pageTitle": "Parlare alla sala",
+      "pageDescription": "Ciò che invii qui appare sul telefono di ogni giocatore e sullo schermo di proiezione.",
+      "presetsTitle": "Messaggi pronti",
+      "customPlaceholder": "Oppure scrivi il tuo messaggio…",
+      "urgentLabel": "Messaggio urgente (in rosso)",
+      "postedTitle": "Annunci esposti",
+      "projectionTitle": "Schermo di proiezione",
+      "resetTimer": "Reimposta",
+      "tablesReported": "{done} / {total} tavoli consegnati",
+      "openProjection": "Apri a schermo intero",
+      "presets": {
+        "fiveMinutes": {
+          "label": "5 minuti alla fine",
+          "text": "Mancano 5 minuti al termine del turno. Finite la partita in corso."
+        },
+        "roundEnd": {
+          "label": "Fine turno",
+          "text": "Fine del turno: comunicate il risultato dal telefono."
+        },
+        "pairingsPosted": {
+          "label": "Accoppiamenti esposti",
+          "text": "Gli accoppiamenti del turno successivo sono esposti, raggiungete il vostro tavolo."
+        },
+        "break": {
+          "label": "Pausa 15 min",
+          "text": "Pausa di 15 minuti."
+        }
+      }
+    },
+    "activity": {
+      "title": "Attività",
+      "empty": "Nessuna attività per ora.",
+      "staffActor": "l'organizzazione",
+      "types": {
+        "match-reported": "Tavolo {table} — risultato consegnato da {actor}",
+        "match-confirmed": "Tavolo {table} — risultato confermato",
+        "match-disputed": "Tavolo {table} — contestazione segnalata",
+        "match-cleared": "Tavolo {table} — risultato cancellato",
+        "match-extended": "Tavolo {table} — prolungamento di {minutes} min concesso",
+        "announcement-sent": "Annuncio inviato alla sala",
+        "round-created": "Turno {round} avviato · {matches} tavoli",
+        "round-validated": "Classifica del turno {round} congelata",
+        "phase-advanced": "Fase successiva avviata · {matches} tavoli",
+        "player-checked-in": "{player} registrato presente",
+        "player-dropped": "{player} ritirato dal torneo",
+        "penalty-issued": "Sanzione inflitta a {player}"
+      }
+    },
+    "playerSheet": {
+      "backToList": "Torna all'elenco dei giocatori",
+      "summaryWithRank": "{rank}° · {points} pt · {record}",
+      "summaryNoRank": "Non ancora in classifica",
+      "dropPlayer": "Far ritirare",
+      "addPenalty": "Assegnare una sanzione",
+      "add": "Aggiungi",
+      "remove": "Rimuovi",
+      "currentMatch": "Match in corso",
+      "against": "contro {name}",
+      "goToTable": "Vai al tavolo",
+      "tableN": "tavolo {table}",
+      "roundHistory": "Storico dei turni",
+      "noHistory": "Nessun match giocato.",
+      "outcome": {
+        "win": "Vittoria",
+        "loss": "Sconfitta",
+        "draw": "Pareggio",
+        "pending": "In corso"
+      },
+      "decklist": "Decklist",
+      "decklistChecked": "Verificata dall'arbitraggio",
+      "decklistUnchecked": "Non verificata",
+      "decklistPlaceholder": "Una carta per riga…",
+      "decklistHint": "Modificare la lista annulla la verifica precedente.",
+      "decklistMarkChecked": "Segna come verificata",
+      "decklistMarkUnchecked": "Annulla la verifica",
+      "penalties": "Sanzioni · {count}",
+      "noPenalties": "Nessuna sanzione.",
+      "penaltyType": "Tipo di sanzione",
+      "penaltyReasonPlaceholder": "Motivo (gioco lento, errore di mazzo…)",
+      "applyPenalty": "Applica",
+      "penaltyHint": "Una squalifica ritira anche il giocatore dal torneo.",
+      "penaltyTypes": {
+        "warning": "Avvertimento",
+        "game-loss": "Partita persa",
+        "match-loss": "Match perso",
+        "disqualification": "Squalifica"
+      },
+      "notes": "Note interne · {count}",
+      "notesHint": "Visibili solo allo staff organizzativo.",
+      "notePlaceholder": "Aggiungi una nota…",
+      "saveNote": "Salva la nota",
+      "removeNoteAria": "Elimina la nota"
+    },
+    "playerReport": {
+      "whoWon": "Chi ha vinto?",
+      "tableAndOpponent": "Tavolo {table} · contro {name}",
+      "iWon": "Ho vinto",
+      "opponentWon": "{name} ha vinto"
     }
   },
   "Trade": {

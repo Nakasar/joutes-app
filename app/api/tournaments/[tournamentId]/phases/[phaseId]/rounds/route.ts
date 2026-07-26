@@ -5,6 +5,7 @@ import {
   assertCanManage,
   createNextRound,
   listRounds,
+  recordActivity,
   requireTournament,
 } from "@/lib/db/tournaments";
 import { resolveTournamentPrincipal, tournamentErrorResponse, unauthorizedResponse } from "../../../../utils";
@@ -41,6 +42,10 @@ export async function POST(request: NextRequest, { params }: Params) {
     assertCanManage(tournament, user.userId);
 
     const { round, matches } = await createNextRound(tournamentId, phaseId, user.userId);
+    await recordActivity(tournamentId, "round-created", {
+      round: round.number,
+      matches: matches.length,
+    });
     return NextResponse.json({ ...round, matches }, { status: 201 });
   } catch (error) {
     return tournamentErrorResponse(error);

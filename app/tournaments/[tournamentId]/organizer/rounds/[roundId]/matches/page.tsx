@@ -1,7 +1,5 @@
-import { MatchExportActions } from "../../../MatchExportActions";
-import { OrganizerShell } from "../../../OrganizerShell";
-import { RoundsHeader } from "../../RoundsHeader";
 import { OrganizerRoundClient } from "../OrganizerRoundClient";
+import { RoundHeaderBar } from "../RoundHeaderBar";
 import { RoundSubNav } from "../RoundSubNav";
 import { loadOrganizerRoundContext } from "../roundContext";
 
@@ -11,33 +9,38 @@ export default async function OrganizerRoundMatchesPage({
   params: Promise<{ tournamentId: string; roundId: string }>;
 }) {
   const { tournamentId, roundId } = await params;
-  const { tournament, round, phase, matches, players, navPhases, isLastRound, reopenCascades } =
+  const { round, phase, matches, players, isLastRound, reopenCascades } =
     await loadOrganizerRoundContext(tournamentId, roundId);
 
   return (
-    <div className="mx-auto max-w-4xl p-8">
-      <OrganizerShell tournamentId={tournamentId} tournamentName={tournament.name} active="rounds">
-        <div className="space-y-6">
-          <RoundsHeader tournamentId={tournamentId} phases={navPhases} currentRoundId={roundId} />
-          <RoundSubNav
-            tournamentId={tournamentId}
-            roundId={roundId}
-            active="matches"
-            showBracket={phase.type === "bracket"}
-          />
-          <MatchExportActions tournamentId={tournamentId} roundId={roundId} />
-          <OrganizerRoundClient
-            tournamentId={tournamentId}
-            round={round}
-            initialMatches={matches}
-            players={players}
-            resultMode={phase.resultMode}
-            bestOf={phase.bestOf}
-            isLastRound={isLastRound}
-            reopenCascades={reopenCascades}
-          />
-        </div>
-      </OrganizerShell>
-    </div>
+    <>
+      <RoundHeaderBar
+        tournamentId={tournamentId}
+        roundId={roundId}
+        roundNumber={round.number}
+        plannedRounds={phase.plannedRounds}
+        phaseName={phase.name}
+        tableCount={matches.length}
+      />
+      <div className="px-6 pt-4">
+        <RoundSubNav
+          tournamentId={tournamentId}
+          roundId={roundId}
+          active="matches"
+          showBracket={phase.type === "bracket"}
+        />
+      </div>
+      <OrganizerRoundClient
+        tournamentId={tournamentId}
+        round={round}
+        initialMatches={matches}
+        players={players}
+        resultMode={phase.resultMode}
+        bestOf={phase.bestOf}
+        phaseId={phase.id}
+        isLastRound={isLastRound}
+        reopenCascades={reopenCascades}
+      />
+    </>
   );
 }

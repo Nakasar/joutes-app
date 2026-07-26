@@ -1736,7 +1736,22 @@
       "searchPlaceholder": "Spieler suchen...",
       "dropBadge": "Drop",
       "noSearchResults": "Kein Spieler entspricht der Suche.",
-      "noPlayers": "Keine Spieler angemeldet."
+      "noPlayers": "Keine Spieler angemeldet.",
+      "yourTable": "Ihr Tisch",
+      "against": "gegen",
+      "record": "{wins}S · {losses}N · {draws}U",
+      "extensionGranted": "Vom Schiedsrichter gewährte Verlängerung: +{minutes} Min",
+      "resultSent": "Ergebnis gesendet: {mine} – {theirs}",
+      "correct": "Korrigieren",
+      "awaitingConfirmationFrom": "Warte auf Bestätigung von {name}.",
+      "myRank": "Mein Platz",
+      "myScore": "Meine Bilanz",
+      "rankOf": "Platz {rank} von {total}",
+      "progressTitle": "Ablauf",
+      "roundsCompleted": "{count} Runde(n) beendet",
+      "roundInProgress": "Runde {number} — läuft",
+      "noRoundsYet": "Das Turnier hat noch nicht begonnen.",
+      "myMatchesTitle": "Meine Matches"
     },
     "playerShell": {
       "notSyncedTitle": "Turnier nicht synchronisiert",
@@ -1749,7 +1764,8 @@
       "subtitle": "Spielerportal",
       "participatingAs": "Sie nehmen teil als",
       "guest": "(Gast)",
-      "droppedBadge": "Ausgeschieden"
+      "droppedBadge": "Ausgeschieden",
+      "remaining": "verbleibend"
     },
     "playerLive": {
       "timer": "Timer",
@@ -1782,7 +1798,15 @@
         "title": "Dieses Turnier entfernen",
         "description": "Der Synchronisierungsschlüssel wird von diesem Browser entfernt. Sie können über den QR-Code des Organisators erneut beitreten.",
         "confirm": "Entfernen"
-      }
+      },
+      "joinWithQr": "Mit QR beitreten",
+      "pilot": "Turnier steuern",
+      "liveRound": "Läuft · Runde {number} von {total}",
+      "timeRemaining": "verbleibende Zeit",
+      "playersCount": "{count} Spieler",
+      "noDetails": "Noch nicht konfiguriert",
+      "finishSetup": "Einrichtung abschließen",
+      "seeResults": "Ergebnisse ansehen"
     },
     "new": {
       "title": "Turnier erstellen",
@@ -1875,10 +1899,16 @@
         "players": "Spieler",
         "phases": "Phasen",
         "rounds": "Runden",
-        "live": "Live"
+        "live": "Live",
+        "standings": "Tabelle"
       },
       "backToTournaments": "← Meine Turniere",
-      "viewPlayerPortal": "Zum Spielerportal →"
+      "viewPlayerPortal": "Zum Spielerportal →",
+      "tournamentLabel": "Turnier",
+      "groupLive": "Während des Turniers",
+      "groupPrep": "Vorbereitung",
+      "helpTitle": "Hilfe nötig?",
+      "helpBody": "„Schweizer System“ = alle spielen jede Runde, gegen einen Gegner mit gleichem Punktestand."
     },
     "organizerSettings": {
       "firstTableLabel": "Nummer des ersten Tisches",
@@ -1902,7 +1932,27 @@
       "deleteDialogDescription": "Das Turnier „{name}“ und alle seine Daten (Spieler, Phasen, Runden, Matches, Ankündigungen) werden endgültig gelöscht. Diese Aktion ist unwiderruflich.",
       "deleting": "Wird gelöscht...",
       "deleteConfirm": "Endgültig löschen",
-      "deleteError": "Fehler beim Löschen des Turniers"
+      "deleteError": "Fehler beim Löschen des Turniers",
+      "pageTitle": "Turniereinstellungen",
+      "pageDescription": "Jede Einstellung erklärt, was sie für die Spieler ändert.",
+      "infoTitle": "Informationen",
+      "nameLabel": "Turniername",
+      "locationLabel": "Ort",
+      "locationPlaceholder": "Laden, Stadt…",
+      "dateLabel": "Datum",
+      "timeLabel": "Uhrzeit",
+      "capacityLabel": "Plätze",
+      "reportingTitle": "Wie Spieler ihre Ergebnisse melden",
+      "reportingDescription": "Dieser Block bestimmt die Arbeitslast Ihrer Schiedsrichter.",
+      "summaryTitle": "Zusammenfassung für Spieler",
+      "summaryFormat": "Format",
+      "summaryMatch": "Match",
+      "summaryRegistered": "Angemeldet",
+      "summaryLocation": "Ort",
+      "summaryStart": "Beginn",
+      "summaryNoPhase": "Keine Phase konfiguriert",
+      "firstTimeTitle": "Zum ersten Mal?",
+      "firstTimeBody": "Die Voreinstellungen passen für die meisten Ladenturniere. Sie können ohne Änderungen starten."
     },
     "organizerPlayers": {
       "fixedTableAria": "Fester Tisch von {name}",
@@ -1920,7 +1970,15 @@
       "noSearchResults": "Kein Spieler entspricht der Suche.",
       "removeDialogTitle": "Spieler entfernen",
       "removeDialogDescription": "{name} aus dem Turnier entfernen? Wenn bereits Matches vorliegen, wird der Spieler als DROPPED markiert statt gelöscht.",
-      "removeError": "Fehler beim Entfernen des Spielers"
+      "removeError": "Fehler beim Entfernen des Spielers",
+      "pageTitle": "Spieler",
+      "checkInSummary": "{checked} von {total} angemeldeten anwesend · erfassen Sie Spieler bei ihrer Ankunft",
+      "checkInAria": "{name} als anwesend erfassen",
+      "present": "Anwesend",
+      "notCheckedIn": "Noch nicht erfasst",
+      "hasPenalties": "{count} Strafe(n)",
+      "openSheet": "Blatt",
+      "joinQr": "Anmelde-QR"
     },
     "organizerPhases": {
       "resetStatusTitle": "Auf „nicht gestartet“ zurücksetzen",
@@ -1982,7 +2040,11 @@
         "duels": "Duelle",
         "podsOf": "Pods mit {count}",
         "podsRange": "Pods {min}-{max}"
-      }
+      },
+      "pageTitle": "Format & Phasen",
+      "pageDescription": "Die Schritte laufen der Reihe nach. Was noch nicht begonnen hat, lässt sich ändern.",
+      "stepLabel": "Schritt {index} · {status}",
+      "willFillWithTop": "Wird mit den ersten {count} der Tabelle gefüllt."
     },
     "nextPhase": {
       "button": "Zur nächsten Phase übergehen",
@@ -1994,7 +2056,32 @@
       "nextPhaseStarting": "Die Phase „{name}“ startet und ihre erste Runde wird erstellt.",
       "currentIncomplete": "Die aktuelle Phase ist nicht beendet: Alle ihre Matches müssen ein Ergebnis haben, bevor zur nächsten Phase übergegangen wird.",
       "topCutWarning": "Achtung: {count} nicht qualifizierte(r) Spieler wird/werden durch den Top Cut ({topCut}) eliminiert (Status DROPPED).",
-      "qualifiedPlayers": "Qualifizierte Spieler ({count}):"
+      "qualifiedPlayers": "Qualifizierte Spieler ({count}):",
+      "back": "Zurück",
+      "stepChecks": "Prüfungen",
+      "stepTopCut": "Top Cut",
+      "stepPairings": "Paarungen",
+      "checksTitle": "Ist alles bereit?",
+      "checksDescription": "Wir prüfen, bevor die Tabelle eingefroren wird. Nach dem Start der nächsten Phase sind Ergebnisse nicht mehr änderbar.",
+      "checks": {
+        "currentComplete": "Alle Ergebnisse der laufenden Phase sind da",
+        "hasNextPhase": "Eine nächste Phase ist konfiguriert",
+        "hasQualified": "Es gibt qualifizierte Spieler"
+      },
+      "topCutTitle": "Wie viele Spieler kommen in die Endphase?",
+      "topCutDescription": "Die qualifizierten Spieler werden in der Reihenfolge der Abschlusstabelle genommen.",
+      "topCutConfigured": "Top Cut der Phase: {count} Spieler.",
+      "eliminatedLabel": "Ausgeschieden",
+      "eliminatedCount": "{count} Spieler",
+      "eliminatedHint": "Sie behalten ihre Endplatzierung und sehen ihr Ergebnis in ihrem Portal.",
+      "pairingsTitle": "Paarungen der Endphase",
+      "pairingsDescription": "Gesetzter 1 gegen den letzten Qualifizierten und so weiter. Nur eine Vorschau: die echte Paarung folgt der Phaseneinstellung.",
+      "pairingsUnavailable": "Keine Paarung zur Vorschau.",
+      "matchN": "Match {number}",
+      "launchNotice": "Beim Start erhalten die qualifizierten Spieler ihren neuen Tisch, und die Tabelle der vorherigen Phase wird archiviert.",
+      "toTopCut": "Top Cut wählen",
+      "toPairings": "Paarungen ansehen",
+      "launch": "{name} starten"
     },
     "organizerJoin": {
       "title": "Spieler einladen",
@@ -2022,7 +2109,8 @@
       "createError": "Fehler beim Erstellen der Runde",
       "noRounds": "Noch keine Runde gespielt.",
       "standingsValidated": "Rangliste bestätigt",
-      "standingsNotValidated": "Rangliste nicht bestätigt"
+      "standingsNotValidated": "Rangliste nicht bestätigt",
+      "emptyDescription": "Noch keine Runde erstellt. Wählen Sie eine Phase, um die erste zu starten."
     },
     "roundClient": {
       "headerTable": "Tisch",
@@ -2077,7 +2165,51 @@
       "reopenCascadeDescription": "Das Wiedereröffnen von Runde {number} bricht die danach gestarteten Phasen ab: Ihre Runden und Matches werden gelöscht und die durch ihren Top Cut eliminierten Spieler wiederhergestellt. Diese Phase wird wieder zur aktuellen Phase. Fortfahren?",
       "deleteRound": "Runde löschen",
       "deleteRoundTitle": "Runde löschen",
-      "deleteRoundDescription": "Runde {number} und alle ihre Matches löschen? Diese Aktion ist unwiderruflich."
+      "deleteRoundDescription": "Runde {number} und alle ihre Matches löschen? Diese Aktion ist unwiderruflich.",
+      "resultsIn": "Ergebnisse gemeldet",
+      "filterAll": "Alle Tische",
+      "filterPending": "Ausstehend · {count}",
+      "filterDisputed": "Streitfälle · {count}",
+      "viewGrid": "Raster",
+      "viewTable": "Tabelle",
+      "tableShort": "Tisch",
+      "quickEntryTitle": "Schnelleingabe",
+      "quickEntryUnavailable": "Dieses Format wird Spiel für Spiel erfasst.",
+      "detailedEntry": "Detaillierte Eingabe",
+      "enterResult": "Erfassen",
+      "correct": "Korrigieren",
+      "arbitrate": "Schlichten",
+      "extendShort": "+3 Min",
+      "extendTitle": "3 Minuten Verlängerung gewähren",
+      "extendError": "Verlängerung fehlgeschlagen",
+      "extensionGranted": "Verlängerung {minutes} Min",
+      "extensionShort": "+{minutes} Min",
+      "extensionRemove": "Entfernen",
+      "extensionEnd": "Ende",
+      "extensionsTitle": "Verlängerungen · {count}",
+      "extensionTable": "Tisch {table} · +{minutes} Min",
+      "toHandle": "Zu erledigen",
+      "disputesToArbitrate": "{count} Streitfall/-fälle zu schlichten",
+      "disputeHint": "Tisch {table}: Beide Spieler haben ein anderes Ergebnis gemeldet.",
+      "tablesWithoutResult": "{count} Tisch(e) ohne Ergebnis",
+      "tablesList": "Tische {tables}",
+      "showThem": "Anzeigen",
+      "readyTitle": "Alle Ergebnisse sind da",
+      "readySubtitle": "Sie können die Runde abschließen.",
+      "notReadyTitle": "Runde läuft",
+      "notReadySubtitle": "{pending} Tisch(e) ohne Ergebnis, {disputed} Streitfall/-fälle.",
+      "closeAndStartNext": "Abschließen und Runde {number} starten",
+      "closeConfirm": "Abschließen",
+      "closeDescription": "Die Tabelle nach Runde {number} wird eingefroren, danach wird die nächste Runde erzeugt.",
+      "closeError": "Runde konnte nicht abgeschlossen werden",
+      "closeCreateError": "Die Tabelle wurde eingefroren, die nächste Runde konnte aber nicht erstellt werden.",
+      "cardStatus": {
+        "pending": "Warte auf das Ergebnis",
+        "awaitingConfirmation": "Warte auf Bestätigung",
+        "completed": "Gemeldet und bestätigt",
+        "completedShort": "Gemeldet",
+        "disputed": "Streitfall — widersprüchliche Ergebnisse"
+      }
     },
     "roundStandings": {
       "title": "Rangliste am Ende der Runde",
@@ -2121,7 +2253,11 @@
       "restart": "Neu starten",
       "resume": "Fortsetzen",
       "pause": "Pause",
-      "stop": "Stoppen"
+      "stop": "Stoppen",
+      "running": "Läuft",
+      "paused": "Pausiert",
+      "stopped": "Gestoppt",
+      "expired": "Zeit abgelaufen"
     },
     "announcements": {
       "title": "Ankündigungen",
@@ -2134,6 +2270,144 @@
       "deleteAria": "Ankündigung löschen",
       "createError": "Fehler beim Erstellen der Ankündigung",
       "deleteError": "Fehler beim Löschen"
+    },
+    "roundHeader": {
+      "ofRounds": "von {total}",
+      "phaseAndTables": "{phase} · {count} Tische",
+      "addTwoMinutes": "+2 Min",
+      "announce": "Saalansage"
+    },
+    "standings": {
+      "pageTitle": "Tabelle",
+      "tiebreakers": "Entscheidung: Punkte, dann OMW%, dann GW%.",
+      "currentTab": "Aktuell",
+      "afterRound": "Nach R{number}",
+      "browseHint": "Rundenverlauf durchsehen",
+      "frozen": "Eingefrorene Tabelle",
+      "live": "Live-Tabelle",
+      "exportCsv": "CSV exportieren",
+      "showOnScreen": "Auf dem Bildschirm zeigen",
+      "statRanked": "Platzierte Spieler",
+      "statDropped": "Aufgaben",
+      "statPerfect": "Perfekte Bilanz",
+      "statCutLine": "Schnittlinie",
+      "columnPlayer": "Spieler",
+      "columnPoints": "Punkte",
+      "columnRecord": "S-N-U",
+      "columnStatus": "Status",
+      "cutLine": "Schnittlinie · Top {count}",
+      "empty": "Noch keine Tabelle verfügbar."
+    },
+    "standingsExport": {
+      "columns": {
+        "rank": "Rang",
+        "player": "Spieler",
+        "points": "Punkte",
+        "record": "S-N-U",
+        "opponentMatchWin": "OMW%",
+        "gameWin": "GW%",
+        "status": "Status"
+      }
+    },
+    "live": {
+      "pageTitle": "Zum Saal sprechen",
+      "pageDescription": "Was Sie hier senden, erscheint auf dem Handy jedes Spielers und auf der Leinwand.",
+      "presetsTitle": "Vorgefertigte Nachrichten",
+      "customPlaceholder": "Oder schreiben Sie Ihre Nachricht…",
+      "urgentLabel": "Dringende Nachricht (in Rot)",
+      "postedTitle": "Angezeigte Ansagen",
+      "projectionTitle": "Leinwand",
+      "resetTimer": "Zurücksetzen",
+      "tablesReported": "{done} / {total} Tische gemeldet",
+      "openProjection": "Vollbild öffnen",
+      "presets": {
+        "fiveMinutes": {
+          "label": "Noch 5 Minuten",
+          "text": "Noch 5 Minuten in der Runde. Beenden Sie das laufende Spiel."
+        },
+        "roundEnd": {
+          "label": "Rundenende",
+          "text": "Rundenende: Melden Sie Ihr Ergebnis über Ihr Handy."
+        },
+        "pairingsPosted": {
+          "label": "Paarungen ausgehängt",
+          "text": "Die Paarungen der nächsten Runde hängen aus, gehen Sie an Ihren Tisch."
+        },
+        "break": {
+          "label": "15 Min Pause",
+          "text": "15 Minuten Pause."
+        }
+      }
+    },
+    "activity": {
+      "title": "Aktivität",
+      "empty": "Noch keine Aktivität.",
+      "staffActor": "die Organisation",
+      "types": {
+        "match-reported": "Tisch {table} — Ergebnis gemeldet von {actor}",
+        "match-confirmed": "Tisch {table} — Ergebnis bestätigt",
+        "match-disputed": "Tisch {table} — Streitfall gemeldet",
+        "match-cleared": "Tisch {table} — Ergebnis gelöscht",
+        "match-extended": "Tisch {table} — {minutes} Min Verlängerung gewährt",
+        "announcement-sent": "Ansage an den Saal gesendet",
+        "round-created": "Runde {round} gestartet · {matches} Tische",
+        "round-validated": "Tabelle der Runde {round} eingefroren",
+        "phase-advanced": "Nächste Phase gestartet · {matches} Tische",
+        "player-checked-in": "{player} als anwesend erfasst",
+        "player-dropped": "{player} aus dem Turnier genommen",
+        "penalty-issued": "Strafe gegen {player} verhängt"
+      }
+    },
+    "playerSheet": {
+      "backToList": "Zurück zur Spielerliste",
+      "summaryWithRank": "Platz {rank} · {points} Pkt · {record}",
+      "summaryNoRank": "Noch nicht platziert",
+      "dropPlayer": "Aufgeben lassen",
+      "addPenalty": "Strafe verhängen",
+      "add": "Hinzufügen",
+      "remove": "Entfernen",
+      "currentMatch": "Aktuelles Match",
+      "against": "gegen {name}",
+      "goToTable": "Zum Tisch",
+      "tableN": "Tisch {table}",
+      "roundHistory": "Rundenverlauf",
+      "noHistory": "Noch kein Match gespielt.",
+      "outcome": {
+        "win": "Sieg",
+        "loss": "Niederlage",
+        "draw": "Unentschieden",
+        "pending": "Läuft"
+      },
+      "decklist": "Deckliste",
+      "decklistChecked": "Von der Turnierleitung geprüft",
+      "decklistUnchecked": "Nicht geprüft",
+      "decklistPlaceholder": "Eine Karte pro Zeile…",
+      "decklistHint": "Das Ändern der Liste hebt die vorherige Prüfung auf.",
+      "decklistMarkChecked": "Als geprüft markieren",
+      "decklistMarkUnchecked": "Prüfung aufheben",
+      "penalties": "Strafen · {count}",
+      "noPenalties": "Keine Strafe.",
+      "penaltyType": "Art der Strafe",
+      "penaltyReasonPlaceholder": "Grund (langsames Spiel, Deckfehler…)",
+      "applyPenalty": "Anwenden",
+      "penaltyHint": "Eine Disqualifikation nimmt den Spieler auch aus dem Turnier.",
+      "penaltyTypes": {
+        "warning": "Verwarnung",
+        "game-loss": "Spielverlust",
+        "match-loss": "Matchverlust",
+        "disqualification": "Disqualifikation"
+      },
+      "notes": "Interne Notizen · {count}",
+      "notesHint": "Nur für das Organisationsteam sichtbar.",
+      "notePlaceholder": "Notiz hinzufügen…",
+      "saveNote": "Notiz speichern",
+      "removeNoteAria": "Notiz löschen"
+    },
+    "playerReport": {
+      "whoWon": "Wer hat gewonnen?",
+      "tableAndOpponent": "Tisch {table} · gegen {name}",
+      "iWon": "Ich habe gewonnen",
+      "opponentWon": "{name} hat gewonnen"
     }
   },
   "Trade": {

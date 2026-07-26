@@ -12,10 +12,25 @@ const fixedScoringSchema = z.object({
   draw: z.number().int(),
 });
 
+// Informations pratiques. `startsAt` est reçu en ISO 8601 et converti en Date.
+// À la création les champs sont simplement omis ; à la mise à jour, null les
+// retire explicitement (une chaîne vide ne suffit pas à distinguer les deux).
+const tournamentDetailsShape = {
+  location: z.string().max(200).optional(),
+  startsAt: z.coerce.date().optional(),
+  capacity: z.number().int().min(1).max(100000).optional(),
+};
+const tournamentDetailsUpdateShape = {
+  location: z.string().max(200).nullable().optional(),
+  startsAt: z.coerce.date().nullable().optional(),
+  capacity: z.number().int().min(1).max(100000).nullable().optional(),
+};
+
 export const createTournamentSchema = z.object({
   name: z.string().min(1, "Le nom du tournoi est requis").max(200),
   eventId: z.string().optional(),
   gameId: z.string().optional(),
+  ...tournamentDetailsShape,
   settings: z
     .object({
       allowSelfReporting: z.boolean().default(true),
@@ -33,6 +48,7 @@ export const updateTournamentSchema = z.object({
   // null = détacher le tournoi de son événement (la chaîne vide est refusée).
   eventId: z.string().min(1).nullable().optional(),
   currentPhaseId: z.string().nullable().optional(),
+  ...tournamentDetailsUpdateShape,
   settings: z
     .object({
       allowSelfReporting: z.boolean(),
@@ -93,6 +109,9 @@ export const updateTournamentPlayerSchema = z.object({
   // Table fixe du joueur, conservée pendant tout le tournoi (null = retirer).
   fixedTableNumber: z.number().int().min(0).max(9999).nullable().optional(),
   status: z.enum(["registered", "pre-registered", "dropped"]).optional(),
+  // Pointage à l'arrivée : true marque le joueur présent, false annule le
+  // pointage. Indépendant du statut d'inscription.
+  checkedIn: z.boolean().optional(),
 });
 
 export const createTournamentPhaseSchema = z
@@ -201,13 +220,48 @@ export const setTableTournamentMatchSchema = z.object({
   tableNumber: z.number().int().min(0).max(9999).nullable(),
 });
 
+// Prolongation accordée à une table. `seconds` s'ajoute à la prolongation en
+// cours (valeur négative pour la réduire) ; 0 la retire entièrement.
+export const extendTournamentMatchSchema = z.object({
+  action: z.literal("extend"),
+  seconds: z.number().int().min(-7200).max(7200),
+});
+
 export const updateTournamentMatchSchema = z.discriminatedUnion("action", [
   reportTournamentMatchSchema,
   confirmTournamentMatchSchema,
   disputeTournamentMatchSchema,
   clearTournamentMatchSchema,
   setTableTournamentMatchSchema,
+  extendTournamentMatchSchema,
 ]);
+
+export const tournamentPenaltyTypeSchema = z.enum([
+  "warning",
+  "game-loss",
+  "match-loss",
+  "disqualification",
+]);
+
+export const createTournamentPenaltySchema = z.object({
+  type: tournamentPenaltyTypeSchema,
+  reason: z.string().max(300).optional(),
+});
+
+export const createTournamentNoteSchema = z.object({
+  content: z.string().min(1, "La note ne peut pas être vide").max(2000),
+});
+
+// Liste de deck : `content` remplace la liste, `checked` bascule la vérification
+// par l'arbitrage. Les deux sont indépendants (au moins un est requis).
+export const updateTournamentDecklistSchema = z
+  .object({
+    content: z.string().max(20000).optional(),
+    checked: z.boolean().optional(),
+  })
+  .refine((v) => v.content !== undefined || v.checked !== undefined, {
+    message: "Renseignez la liste ou son état de vérification",
+  });
 
 // Action sur une ronde : `reopen` la repasse « en cours » (ronde courante).
 export const updateTournamentRoundSchema = z.object({
@@ -226,3 +280,6 @@ export type UpdateTournamentRoundInput = z.infer<typeof updateTournamentRoundSch
 export type JoinTournamentInput = z.infer<typeof joinTournamentSchema>;
 export type CreateAnnouncementInput = z.infer<typeof createAnnouncementSchema>;
 export type TimerActionInput = z.infer<typeof timerActionSchema>;
+export type CreateTournamentPenaltyInput = z.infer<typeof createTournamentPenaltySchema>;
+export type CreateTournamentNoteInput = z.infer<typeof createTournamentNoteSchema>;
+export type UpdateTournamentDecklistInput = z.infer<typeof updateTournamentDecklistSchema>;

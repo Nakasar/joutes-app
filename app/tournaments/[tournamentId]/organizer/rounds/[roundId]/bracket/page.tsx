@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
-import { listMatchesByPhase, listRounds } from "@/lib/db/tournaments";
-import { OrganizerShell } from "../../../OrganizerShell";
-import { RoundsHeader } from "../../RoundsHeader";
+import { listMatchesByPhase, listMatchesByRound, listRounds } from "@/lib/db/tournaments";
 import { BracketTree } from "../BracketTree";
+import { RoundHeaderBar } from "../RoundHeaderBar";
 import { RoundSubNav } from "../RoundSubNav";
 import { loadOrganizerRoundContext } from "../roundContext";
 
@@ -12,36 +11,39 @@ export default async function OrganizerRoundBracketPage({
   params: Promise<{ tournamentId: string; roundId: string }>;
 }) {
   const { tournamentId, roundId } = await params;
-  const { tournament, phase, players, navPhases } = await loadOrganizerRoundContext(
-    tournamentId,
-    roundId
-  );
+  const { round, phase, players } = await loadOrganizerRoundContext(tournamentId, roundId);
 
   // L'arbre n'a de sens que pour les phases en arbre d'élimination.
   if (phase.type !== "bracket") {
     redirect(`/tournaments/${tournamentId}/organizer/rounds/${roundId}/matches`);
   }
 
-  const [phaseRounds, phaseMatches] = await Promise.all([
+  const [phaseRounds, phaseMatches, roundMatches] = await Promise.all([
     listRounds(tournamentId, phase.id),
     listMatchesByPhase(tournamentId, phase.id),
+    listMatchesByRound(tournamentId, roundId),
   ]);
 
   return (
-    <div className="mx-auto max-w-4xl p-8">
-      <OrganizerShell tournamentId={tournamentId} tournamentName={tournament.name} active="rounds">
-        <div className="space-y-6">
-          <RoundsHeader tournamentId={tournamentId} phases={navPhases} currentRoundId={roundId} />
-          <RoundSubNav tournamentId={tournamentId} roundId={roundId} active="bracket" showBracket />
-          <BracketTree
-            tournamentId={tournamentId}
-            rounds={phaseRounds}
-            matches={phaseMatches}
-            players={players}
-            currentRoundId={roundId}
-          />
-        </div>
-      </OrganizerShell>
-    </div>
+    <>
+      <RoundHeaderBar
+        tournamentId={tournamentId}
+        roundId={roundId}
+        roundNumber={round.number}
+        plannedRounds={phase.plannedRounds}
+        phaseName={phase.name}
+        tableCount={roundMatches.length}
+      />
+      <div className="space-y-4 p-6">
+        <RoundSubNav tournamentId={tournamentId} roundId={roundId} active="bracket" showBracket />
+        <BracketTree
+          tournamentId={tournamentId}
+          rounds={phaseRounds}
+          matches={phaseMatches}
+          players={players}
+          currentRoundId={roundId}
+        />
+      </div>
+    </>
   );
 }

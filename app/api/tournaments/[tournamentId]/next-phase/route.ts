@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateApiRequest } from "@/lib/api/authenticate";
 import {
   advanceToNextPhase,
+  recordActivity,
   assertCanManage,
   getNextPhaseTransition,
   requireTournament,
@@ -46,6 +47,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     assertCanManage(tournament, user.userId);
 
     const { round, matches } = await advanceToNextPhase(tournamentId, user.userId);
+    await recordActivity(tournamentId, "phase-advanced", { matches: matches.length });
     return NextResponse.json({ ...round, matches }, { status: 201 });
   } catch (error) {
     return tournamentErrorResponse(error);
