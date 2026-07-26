@@ -885,7 +885,7 @@
             "name": "type",
             "in": "query",
             "required": false,
-            "description": "Filter on a booster type available for the game (`other` also matches boosters stored without a type); any other value is rejected.",
+            "description": "Filter on a booster type available for the game. `other` also matches boosters stored without a type, and the legacy value `custom` is accepted as an alias of `other`; any other value is rejected.",
             "schema": {
               "type": "string"
             }

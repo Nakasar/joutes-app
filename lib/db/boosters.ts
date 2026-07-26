@@ -146,8 +146,14 @@ export async function countBoosters(filters: BoosterFilters): Promise<number> {
 
 /** Types de boosters présents chez l'utilisateur pour un jeu, pour ne proposer que des filtres qui donnent des résultats. */
 export async function getBoosterTypesInUse({userId, gameId}: BoosterFilters): Promise<string[]> {
-  const values = await db.collection<BoosterDb>('boosters').distinct('type', boostersQuery({userId, gameId}));
-  const types = new Set(values.map((value) => normalizeBoosterType(typeof value === 'string' ? value : undefined)));
+  // `$group` plutôt que `distinct` : ce dernier ignore les documents sans champ
+  // `type`, alors que ces boosters comptent comme des « Autre ».
+  const rows = await db.collection<BoosterDb>('boosters').aggregate<{_id: unknown}>([
+    {$match: boostersQuery({userId, gameId})},
+    {$group: {_id: '$type'}},
+  ]).toArray();
+
+  const types = new Set(rows.map((row) => normalizeBoosterType(typeof row._id === 'string' ? row._id : undefined)));
 
   return [...types].sort();
 }
