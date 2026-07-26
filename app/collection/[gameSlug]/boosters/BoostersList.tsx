@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { DateTime } from "luxon";
 import {
   ArrowLeft,
+  BarChart3,
   ChevronLeft,
   ChevronRight,
   Package,
@@ -163,6 +164,13 @@ export default function BoostersList({
             <h1 className="text-3xl font-bold tracking-tight">{t("boosters.title")}</h1>
             <p className="text-muted-foreground">{t("boosters.subtitle", { game: gameName })}</p>
           </div>
+          <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" className="gap-2" asChild>
+            <Link href={`/collection/${gameSlug}/boosters/stats`}>
+              <BarChart3 className="size-4" />
+              {t("boosters.stats.link")}
+            </Link>
+          </Button>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2">
@@ -221,6 +229,7 @@ export default function BoostersList({
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
       </div>
 
