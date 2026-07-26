@@ -442,8 +442,6 @@ export async function executeTrade({
   try {
     if (entriesToRemove.length > 0) {
       await db.collection("collection-cards").deleteMany({ userId: userObjId, _id: { $in: entriesToRemove } });
-      // Une carte cédée ne peut plus être proposée à la vente.
-      await removeSellListItemsByCollectionEntryIds(entriesToRemove);
     }
   } catch (error) {
     if (insertedIds.length > 0) {
@@ -453,6 +451,15 @@ export async function executeTrade({
         .catch((cleanupError) => console.error("Failed to roll back traded-in cards:", cleanupError));
     }
     throw error;
+  }
+
+  // Une carte cédée ne peut plus être proposée à la vente. Nettoyage au mieux :
+  // les exemplaires sont déjà retirés à ce stade, l'échange n'est plus annulable,
+  // et un échec ici ne doit donc pas le faire échouer.
+  if (entriesToRemove.length > 0) {
+    await removeSellListItemsByCollectionEntryIds(entriesToRemove).catch((error) =>
+      console.error("Failed to unlist traded-away cards:", error)
+    );
   }
 
   return { ok: true, removed: entriesToRemove.length, added: documents.length };

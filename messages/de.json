@@ -2053,8 +2053,8 @@
     "subtitle": "Stelle beide Seiten des Tauschs zusammen und übernimm ihn dann in deine Sammlung.",
     "backToCollection": "Meine Sammlung",
     "trade": "Tauschen",
-    "summary": "{offered, plural, =0 {Keine Karte abgegeben} one {# Karte abgegeben} other {# Karten abgegeben}} · {received, plural, =0 {keine Karte erhalten} one {# Karte erhalten} other {# Karten erhalten}}",
-    "success": "Tausch abgeschlossen: {removed, plural, =0 {keine Karte entfernt} one {# Karte entfernt} other {# Karten entfernt}}, {added, plural, =0 {keine Karte hinzugefügt} one {# Karte hinzugefügt} other {# Karten hinzugefügt}}.",
+    "summary": "{offered, plural, =0 {Keine Karten abgegeben} one {# Karte abgegeben} other {# Karten abgegeben}} · {received, plural, =0 {keine Karten erhalten} one {# Karte erhalten} other {# Karten erhalten}}",
+    "success": "Tausch abgeschlossen: {removed, plural, =0 {keine Karten entfernt} one {# Karte entfernt} other {# Karten entfernt}}, {added, plural, =0 {keine Karten hinzugefügt} one {# Karte hinzugefügt} other {# Karten hinzugefügt}}.",
     "offer": {
       "title": "Mein Angebot",
       "subtitle": "Die Karten, die du abgibst – sie werden aus deiner Sammlung entfernt."
@@ -2072,7 +2072,7 @@
       "searchPlaceholder": "Karte suchen…",
       "allGames": "Alle Spiele",
       "typeToSearch": "Gib mindestens 2 Zeichen ein, um alle Karten zu durchsuchen.",
-      "results": "{count, plural, =0 {Kein Ergebnis} one {# Ergebnis} other {# Ergebnisse}}",
+      "results": "{count, plural, =0 {Keine Ergebnisse} one {# Ergebnis} other {# Ergebnisse}}",
       "emptyCollection": "Deine Sammlung ist leer.",
       "noResults": "Keine Karte entspricht deiner Suche.",
       "owned": "{count, plural, one {# Exemplar im Besitz} other {# Exemplare im Besitz}}",
