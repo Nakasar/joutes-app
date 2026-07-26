@@ -1451,6 +1451,14 @@
           "sortAscending": "Tri croissant",
           "sortDescending": "Tri décroissant",
           "resetFilters": "Réinitialiser",
+          "sortBoosters": "Trier les boosters",
+          "sortNewest": "Plus récents d'abord",
+          "sortOldest": "Plus anciens d'abord",
+          "boosterCount": "{count, plural, =0 {Aucun booster} one {# booster} other {# boosters}}",
+          "noBoosterMatchesFilters": "Aucun booster ne correspond aux filtres.",
+          "previousPage": "Précédent",
+          "nextPage": "Suivant",
+          "pageOf": "Page {page} sur {totalPages}",
           "noCardMatchesFilters": "Aucune carte ne correspond aux filtres.",
           "filteredCount": "{count, plural, =0 {Aucune carte affichée} one {# carte affichée} other {# cartes affichées}}"
         }

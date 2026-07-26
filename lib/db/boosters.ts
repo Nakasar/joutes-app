@@ -2,6 +2,7 @@ import 'server-only';
 import db from "@/lib/mongodb";
 import {Booster, BoosterCard, BoosterCardDb, BoosterDb} from "@/lib/types/booster";
 import {CARD_ATTRIBUTE_KEYS, CardAttributes} from "@/lib/types/card";
+import {boosterTypeStoredValues, normalizeBoosterType, OTHER_BOOSTER_TYPE} from "@/lib/constants/booster-types";
 import {ObjectId} from "bson";
 import {removeSellListItemsByCollectionEntryIds} from "@/lib/db/sell-lists";
 
@@ -111,47 +112,65 @@ export async function updateBooster(boosterId: string, details: { type: string }
   );
 }
 
-export async function countBoosters({userId, gameId}: {
+export type BoosterFilters = {
   userId?: string;
   gameId?: string;
-}): Promise<number> {
-  const query: {
-    gameId?: ObjectId;
-    userId?: ObjectId;
-  } = {};
+  /** Type affiché (`other` couvre aussi le `custom` historique). */
+  type?: string;
+};
+
+export type BoosterSort = 'newest' | 'oldest';
+
+function boostersQuery({userId, gameId, type}: BoosterFilters): Record<string, unknown> {
+  const query: Record<string, unknown> = {};
   if (gameId) {
     query['gameId'] = new ObjectId(gameId);
   }
   if (userId) {
     query['userId'] = new ObjectId(userId);
   }
+  if (type) {
+    const values = boosterTypeStoredValues(type);
+    // Un booster sans type est un « Autre » qui s'ignore : il doit sortir avec eux.
+    query['$or'] = type === OTHER_BOOSTER_TYPE
+      ? [{type: {$in: values}}, {type: {$exists: false}}]
+      : [{type: {$in: values}}];
+  }
 
-  return await db.collection<BoosterDb>('boosters').countDocuments(query);
+  return query;
 }
 
-export async function getBoosters({userId, gameId, page = 0, limit = 20, offset = 0,}: {
-  userId?: string;
-  gameId?: string;
+export async function countBoosters(filters: BoosterFilters): Promise<number> {
+  return await db.collection<BoosterDb>('boosters').countDocuments(boostersQuery(filters));
+}
+
+/** Types de boosters présents chez l'utilisateur pour un jeu, pour ne proposer que des filtres qui donnent des résultats. */
+export async function getBoosterTypesInUse({userId, gameId}: BoosterFilters): Promise<string[]> {
+  // `$group` plutôt que `distinct` : ce dernier ignore les documents sans champ
+  // `type`, alors que ces boosters comptent comme des « Autre ».
+  const rows = await db.collection<BoosterDb>('boosters').aggregate<{_id: unknown}>([
+    {$match: boostersQuery({userId, gameId})},
+    {$group: {_id: '$type'}},
+  ]).toArray();
+
+  const types = new Set(rows.map((row) => normalizeBoosterType(typeof row._id === 'string' ? row._id : undefined)));
+
+  return [...types].sort();
+}
+
+export async function getBoosters({userId, gameId, type, page = 0, limit = 20, offset = 0, sort = 'newest'}: BoosterFilters & {
   page?: number;
   limit?: number;
   offset?: number;
+  sort?: BoosterSort;
 }): Promise<Booster[]> {
-  const query: {
-    gameId?: ObjectId;
-    userId?: ObjectId;
-  } = {};
-  if (gameId) {
-    query['gameId'] = new ObjectId(gameId);
-  }
-  if (userId) {
-    query['userId'] = new ObjectId(userId);
-  }
+  const query = boostersQuery({userId, gameId, type});
 
   const skip = page * limit + offset;
 
   const boosters = await db.collection<BoosterDb>('boosters').aggregate([
     {$match: query},
-    {$sort: {createdAt: -1}},
+    {$sort: {createdAt: sort === 'oldest' ? 1 : -1}},
     {$skip: skip},
     {$limit: limit},
     {

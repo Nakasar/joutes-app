@@ -33,6 +33,15 @@ export function normalizeBoosterType(type?: string): string {
   return trimmed;
 }
 
+/**
+ * Valeurs stockées correspondant à un type affiché : « Autre » recouvre aussi
+ * le `custom` des boosters créés avant l'ajout des types, filtrer dessus doit
+ * donc les inclure.
+ */
+export function boosterTypeStoredValues(type: string): string[] {
+  return type === OTHER_BOOSTER_TYPE ? [OTHER_BOOSTER_TYPE, "custom"] : [type];
+}
+
 /** Types proposés pour un jeu, `other` compris. */
 export function getBoosterTypes(gameSlug?: string): string[] {
   return [...(BOOSTER_TYPES_BY_GAME[gameSlug ?? ""] ?? []), OTHER_BOOSTER_TYPE];

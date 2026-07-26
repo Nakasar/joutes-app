@@ -6,10 +6,13 @@ import { Metadata } from "next/types";
 import { ObjectId } from "mongodb";
 import db from "@/lib/mongodb";
 import { getGameBySlugOrId } from "@/lib/db/games";
-import { getBoosters } from "@/lib/db/boosters";
+import { countBoosters, getBoosterTypesInUse, getBoosters, type BoosterSort } from "@/lib/db/boosters";
+import { isBoosterType, normalizeBoosterType } from "@/lib/constants/booster-types";
 import BoostersList from "./BoostersList";
 
 export const dynamic = "force-dynamic";
+
+const PAGE_SIZE = 24;
 
 export async function generateMetadata({
   params,
@@ -24,10 +27,13 @@ export async function generateMetadata({
 
 export default async function BoostersPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ gameSlug: string }>;
+  searchParams: Promise<{ page?: string; type?: string; sort?: string }>;
 }) {
   const { gameSlug } = await params;
+  const { page: pageParam, type: typeParam, sort: sortParam } = await searchParams;
 
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
@@ -39,8 +45,21 @@ export default async function BoostersPage({
     notFound();
   }
 
-  const [boosters, setCodesRaw, langsRaw] = await Promise.all([
-    getBoosters({ userId: session.user.id, gameId: game.id, limit: 100 }),
+  const sort: BoosterSort = sortParam === "oldest" ? "oldest" : "newest";
+  // Un type inconnu du jeu (URL bricolée, type retiré depuis) est ignoré plutôt
+  // que d'afficher une liste vide sans raison visible.
+  const normalizedType = typeParam ? normalizeBoosterType(typeParam) : undefined;
+  const type = normalizedType && isBoosterType(game.slug, normalizedType) ? normalizedType : undefined;
+  const requestedPage = Math.max(1, Number.parseInt(pageParam ?? "1", 10) || 1);
+
+  const filters = { userId: session.user.id, gameId: game.id, type };
+  const total = await countBoosters(filters);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const page = Math.min(requestedPage, totalPages);
+
+  const [boosters, typesInUse, setCodesRaw, langsRaw] = await Promise.all([
+    getBoosters({ ...filters, page: page - 1, limit: PAGE_SIZE, sort }),
+    getBoosterTypesInUse({ userId: session.user.id, gameId: game.id }),
     db.collection("cards").distinct("setCode", { gameId: new ObjectId(game.id) }),
     db.collection("cards").distinct("lang", { gameId: new ObjectId(game.id) }),
   ]);
@@ -59,6 +78,12 @@ export default async function BoostersPage({
         initialBoosters={boosters}
         setCodes={setCodes}
         langs={langs}
+        typesInUse={typesInUse}
+        typeFilter={type}
+        sort={sort}
+        page={page}
+        totalPages={totalPages}
+        total={total}
       />
     </div>
   );

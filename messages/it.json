@@ -1392,6 +1392,14 @@
           "sortAscending": "Ordine crescente",
           "sortDescending": "Ordine decrescente",
           "resetFilters": "Reimposta",
+          "sortBoosters": "Ordina le bustine",
+          "sortNewest": "Più recenti prima",
+          "sortOldest": "Più vecchie prima",
+          "boosterCount": "{count, plural, =0 {Nessuna bustina} one {# bustina} other {# bustine}}",
+          "noBoosterMatchesFilters": "Nessuna bustina corrisponde ai filtri.",
+          "previousPage": "Precedente",
+          "nextPage": "Successiva",
+          "pageOf": "Pagina {page} di {totalPages}",
           "noCardMatchesFilters": "Nessuna carta corrisponde ai filtri.",
           "filteredCount": "{count, plural, =0 {Nessuna carta mostrata} one {# carta mostrata} other {# carte mostrate}}"
         }
