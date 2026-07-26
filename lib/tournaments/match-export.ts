@@ -100,9 +100,27 @@ export type MatchCsvLabels = {
   statusLabels: Record<TournamentMatchStatus, string>;
 };
 
-/** Échappement CSV : guillemets doublés, champ cité dès qu'il porte un séparateur. */
+/**
+ * Une cellule qui commence par l'un de ces caractères est interprétée comme une
+ * formule par Excel et LibreOffice à l'ouverture du fichier. Les pseudos étant
+ * saisis librement, ils pourraient déclencher l'exécution d'une formule chez
+ * l'organisateur qui ouvre l'export.
+ */
+const CSV_FORMULA_PREFIX = /^[=+\-@\t\r]/;
+
+/**
+ * Échappement CSV : neutralisation des formules, guillemets doublés, champ cité
+ * dès qu'il porte un séparateur.
+ */
 function escapeCsvValue(value: string | number | undefined): string {
-  const text = value === undefined || value === null ? "" : String(value);
+  if (value === undefined || value === null) return "";
+  // Les nombres viennent du modèle, jamais d'une saisie : rien à neutraliser.
+  if (typeof value === "number") return String(value);
+
+  // L'apostrophe force le tableur à lire la cellule comme du texte ; elle n'est
+  // pas affichée dans la cellule une fois le fichier ouvert.
+  const text = CSV_FORMULA_PREFIX.test(value) ? `'${value}` : value;
+
   if (/[";\n\r]/.test(text)) {
     return `"${text.replace(/"/g, '""')}"`;
   }

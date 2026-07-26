@@ -60,6 +60,11 @@ Le nombre de colonnes joueur s'adapte au match le plus peuplé de l'export : les
 phases multijoueurs dépassent les deux joueurs habituels, un BYE laisse les
 colonnes suivantes vides.
 
+Les valeurs textuelles commençant par `=`, `+`, `-`, `@` ou une tabulation sont
+préfixées d'une apostrophe : un pseudo est saisi librement, et sans cette
+neutralisation Excel ou LibreOffice l'exécuteraient comme une formule à
+l'ouverture du fichier. L'apostrophe n'apparaît pas dans la cellule.
+
 Nom du fichier : dérivé du nom du tournoi (`coupe-d-ete-matchs.csv`,
 `coupe-d-ete-ronde-3-matchs.csv`).
 
