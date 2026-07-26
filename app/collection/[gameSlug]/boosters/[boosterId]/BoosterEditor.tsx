@@ -31,6 +31,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Booster, BoosterCard } from "@/lib/types/booster";
+import { getBoosterTypeOptions, normalizeBoosterType } from "@/lib/constants/booster-types";
+import { useBoosterTypeLabel } from "../useBoosterTypeLabel";
 
 const LANG_LABELS: Record<string, string> = {
   en: "🇬🇧 EN", fr: "🇫🇷 FR", it: "🇮🇹 IT", de: "🇩🇪 DE",
@@ -102,6 +104,7 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
   const t = useTranslations("Collection");
   const router = useRouter();
   const booster = initialBooster;
+  const boosterTypeLabel = useBoosterTypeLabel();
 
   const [boosterCards, setBoosterCards] = useState<BoosterCard[]>(initialBooster.cards ?? []);
   const [rawQuery, setRawQuery] = useState("");
@@ -117,6 +120,8 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
   const [creatingSibling, setCreatingSibling] = useState(false);
   const [addedToCollection, setAddedToCollection] = useState(initialBooster.addedToCollection ?? false);
   const [busyCollection, setBusyCollection] = useState(false);
+  const [boosterType, setBoosterType] = useState(normalizeBoosterType(initialBooster.type));
+  const [savingBoosterType, setSavingBoosterType] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string>(ALL);
   const [domainFilter, setDomainFilter] = useState<string>(ALL);
   const [sortKey, setSortKey] = useState<SortKey>("default");
@@ -287,13 +292,33 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
     }
   };
 
+  // Modification des détails : le type est enregistré dès la sélection, et la
+  // valeur précédente est restaurée si l'appel échoue.
+  const updateBoosterType = async (next: string) => {
+    const previous = boosterType;
+    setBoosterType(next);
+    setSavingBoosterType(true);
+    try {
+      const res = await fetch(`/api/collection/boosters/${booster.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: next }),
+      });
+      if (!res.ok) setBoosterType(previous);
+    } catch {
+      setBoosterType(previous);
+    } finally {
+      setSavingBoosterType(false);
+    }
+  };
+
   const createSibling = async () => {
     setCreatingSibling(true);
     try {
       const res = await fetch(`/api/collection/boosters`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ gameSlug, setCode: booster.setCode, lang: booster.lang }),
+        body: JSON.stringify({ gameSlug, setCode: booster.setCode, lang: booster.lang, type: boosterType }),
       });
       if (res.ok) {
         const { id } = await res.json();
@@ -313,6 +338,11 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
       (a, b) => collator.compare(a, b)
     ),
     [boosterCards]
+  );
+
+  const boosterTypeOptions = useMemo(
+    () => getBoosterTypeOptions(gameSlug, boosterType),
+    [gameSlug, boosterType]
   );
 
   const domainOptions = useMemo(
@@ -425,6 +455,19 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
             <div className="mt-1 flex flex-wrap items-center gap-1.5">
               <Badge variant="outline" className="font-mono text-[11px]">{booster.setCode}</Badge>
               <Badge variant="secondary" className="text-[11px]">{langLabel(booster.lang)}</Badge>
+              <Select value={boosterType} onValueChange={updateBoosterType} disabled={savingBoosterType}>
+                <SelectTrigger size="sm" className="h-6 gap-1 px-2 text-[11px]" aria-label={t("boosters.type")}>
+                  <SelectValue placeholder={t("boosters.typePlaceholder")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {boosterTypeOptions.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {boosterTypeLabel(value)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {savingBoosterType ? <Loader2 className="size-3 animate-spin text-muted-foreground" /> : null}
               <span className="text-xs text-muted-foreground">{gameName}</span>
             </div>
           </div>

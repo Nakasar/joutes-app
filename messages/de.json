@@ -1320,6 +1320,18 @@
           "customSet": "Code „{code}“ verwenden",
           "language": "Sprache",
           "languagePlaceholder": "Sprache auswählen",
+          "type": "Booster-Typ",
+          "typePlaceholder": "Typ auswählen",
+          "types": {
+            "other": "Andere",
+            "booster": "Booster",
+            "pre-rift": "Pre-Rift",
+            "carbonite": "Carbonite",
+            "pre-release": "Pre-Release",
+            "play-booster": "Play Booster",
+            "set-booster": "Set Booster",
+            "collector": "Collector"
+          },
           "cancel": "Abbrechen",
           "cardCount": "{count, plural, =0 {Keine Karten} one {# Karte} other {# Karten}}",
           "emptyTitle": "Noch keine Booster",

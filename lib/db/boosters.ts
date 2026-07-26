@@ -103,6 +103,14 @@ export async function createBooster(booster: Omit<Booster, 'id' | 'createdAt'>):
   };
 }
 
+/** Modification des détails d'un booster (seul le type est éditable pour l'instant). */
+export async function updateBooster(boosterId: string, details: { type: string }): Promise<void> {
+  await db.collection<BoosterDb>('boosters').updateOne(
+    {_id: new ObjectId(boosterId)},
+    {$set: {type: details.type}},
+  );
+}
+
 export async function countBoosters({userId, gameId}: {
   userId?: string;
   gameId?: string;
