@@ -975,15 +975,32 @@ export async function validateTradeSide({
   }
 
   // Pose du verrou : seule la requête qui l'obtient applique l'échange, même si
-  // les deux participants valident au même instant.
+  // les deux participants valident au même instant. Le filtre réaffirme que
+  // toutes les faces concernées sont encore validées : une révocation glissée
+  // entre la lecture ci-dessus et la pose du verrou ne change pas la révision,
+  // et appliquerait sinon un échange qui ne l'est plus.
+  const claimFilter: Record<string, unknown> = {
+    _id: doc._id,
+    status: "open",
+    revision,
+    applying: { $ne: true },
+  };
+  for (const side of sidesRequiringValidation(validated)) {
+    claimFilter[`sides.${validated.sides.indexOf(side)}.validatedAt`] = { $ne: null };
+  }
+
   const claimed = await db.collection<TradeDocument>(TRADES_COLLECTION).findOneAndUpdate(
-    { _id: doc._id, status: "open", revision, applying: { $ne: true } },
+    claimFilter,
     { $set: { applying: true } },
     { returnDocument: "after" }
   );
 
   if (!claimed) {
-    return { ok: true, trade: (await hydrateTrades([validated]))[0], applied: false };
+    // Soit une autre requête applique déjà l'échange, soit il n'est plus
+    // entièrement validé : on renvoie l'état frais plutôt que celui qu'on
+    // venait de lire.
+    const current = (await findTradeDoc(tradeId)) ?? validated;
+    return { ok: true, trade: (await hydrateTrades([current]))[0], applied: false };
   }
 
   let applyResult: TradeApplyResult;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -36,19 +36,19 @@ export default function TradeInviteDialog({
 
   const [open, setOpen] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState("");
-  const [joinUrl, setJoinUrl] = useState("");
   const [copied, setCopied] = useState(false);
   const [identifier, setIdentifier] = useState("");
   const [inviting, setInviting] = useState(false);
+
+  // Construite à la demande plutôt que gardée en état : la copie ne dépend donc
+  // pas de l'exécution préalable de l'effet qui produit le QR code.
+  const buildJoinUrl = useCallback(() => `${window.location.origin}/trade/join/${code}`, [code]);
 
   useEffect(() => {
     if (!open) return;
 
     let cancelled = false;
-    const url = `${window.location.origin}/trade/join/${code}`;
-    setJoinUrl(url);
-
-    QRCode.toDataURL(url, { width: 300, margin: 2, color: { dark: "#000000", light: "#FFFFFF" } })
+    QRCode.toDataURL(buildJoinUrl(), { width: 300, margin: 2, color: { dark: "#000000", light: "#FFFFFF" } })
       .then((dataUrl) => {
         if (!cancelled) setQrDataUrl(dataUrl);
       })
@@ -59,11 +59,11 @@ export default function TradeInviteDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, code]);
+  }, [open, buildJoinUrl]);
 
   const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(joinUrl);
+      await navigator.clipboard.writeText(buildJoinUrl());
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch (error) {
