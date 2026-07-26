@@ -157,14 +157,14 @@ export function GameForm({
         </DialogHeader>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <div className="mb-4 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Nom du jeu
             </label>
             <input
@@ -174,12 +174,12 @@ export function GameForm({
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               ID du jeu
             </label>
             <input
@@ -188,12 +188,12 @@ export function GameForm({
               onChange={(e) =>
                 setFormData({ ...formData, slug: e.target.value })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Type de jeu
             </label>
             <select
@@ -204,7 +204,7 @@ export function GameForm({
                   type: e.target.value as GameType,
                 })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
             >
               {GAME_TYPE_OPTIONS.map(({ value, label }) => (
                 <option key={value} value={value}>
@@ -215,7 +215,7 @@ export function GameForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Icône du jeu
             </label>
             <div className="space-y-2">
@@ -227,10 +227,10 @@ export function GameForm({
                   if (file) handleFileUpload(file, "icon");
                 }}
                 disabled={uploading.icon}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
               />
               {uploading.icon && (
-                <p className="text-sm text-gray-500">Upload en cours...</p>
+                <p className="text-sm text-muted-foreground">Upload en cours...</p>
               )}
               {formData.icon && !uploading.icon && (
                 <div className="flex items-center gap-2">
@@ -244,7 +244,7 @@ export function GameForm({
                     onClick={() =>
                       setFormData({ ...formData, icon: "" })
                     }
-                    className="text-sm text-red-600 hover:text-red-700"
+                    className="text-sm text-destructive hover:text-destructive/80"
                   >
                     Supprimer
                   </button>
@@ -254,7 +254,7 @@ export function GameForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Bannière du jeu
             </label>
             <div className="space-y-2">
@@ -266,10 +266,10 @@ export function GameForm({
                   if (file) handleFileUpload(file, "banner");
                 }}
                 disabled={uploading.banner}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
               />
               {uploading.banner && (
-                <p className="text-sm text-gray-500">Upload en cours...</p>
+                <p className="text-sm text-muted-foreground">Upload en cours...</p>
               )}
               {formData.banner && !uploading.banner && (
                 <div className="flex items-center gap-2">
@@ -283,7 +283,7 @@ export function GameForm({
                     onClick={() =>
                       setFormData({ ...formData, banner: "" })
                     }
-                    className="text-sm text-red-600 hover:text-red-700"
+                    className="text-sm text-destructive hover:text-destructive/80"
                   >
                     Supprimer
                   </button>
@@ -293,7 +293,7 @@ export function GameForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Description
             </label>
             <textarea
@@ -303,7 +303,7 @@ export function GameForm({
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
             />
           </div>
 

@@ -34,8 +34,8 @@ export function CalendarModeSwitch({ lair }: CalendarModeSwitchProps) {
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
-        <Calendar className="h-4 w-4 text-gray-600" />
-        <label className="text-sm font-medium text-gray-700">
+        <Calendar className="h-4 w-4 text-muted-foreground" />
+        <label className="text-sm font-medium text-foreground">
           Vue du calendrier
         </label>
       </div>
@@ -74,11 +74,11 @@ export function CalendarModeSwitch({ lair }: CalendarModeSwitchProps) {
       </div>
 
       {error && (
-        <p className="text-xs text-red-600">{error}</p>
+        <p className="text-xs text-destructive">{error}</p>
       )}
       
       {isPending && (
-        <p className="text-xs text-gray-500">Mise à jour en cours...</p>
+        <p className="text-xs text-muted-foreground">Mise à jour en cours...</p>
       )}
     </div>
   );

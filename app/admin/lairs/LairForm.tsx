@@ -197,14 +197,14 @@ export function LairForm({
         </DialogHeader>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <div className="mb-4 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Nom du lieu
             </label>
             <input
@@ -214,12 +214,12 @@ export function LairForm({
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Bannière du lieu
             </label>
             <div className="space-y-2">
@@ -231,10 +231,10 @@ export function LairForm({
                   if (file) handleFileUpload(file);
                 }}
                 disabled={uploading}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
               />
               {uploading && (
-                <p className="text-sm text-gray-500">Upload en cours...</p>
+                <p className="text-sm text-muted-foreground">Upload en cours...</p>
               )}
               {formData.banner && !uploading && (
                 <div className="flex items-center gap-2">
@@ -248,7 +248,7 @@ export function LairForm({
                     onClick={() =>
                       setFormData({ ...formData, banner: "" })
                     }
-                    className="text-sm text-red-600 hover:text-red-700"
+                    className="text-sm text-destructive hover:text-destructive/80"
                   >
                     Supprimer
                   </button>
@@ -258,7 +258,7 @@ export function LairForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Adresse (optionnel)
             </label>
             <input
@@ -268,12 +268,12 @@ export function LairForm({
                 setFormData({ ...formData, address: e.target.value })
               }
               placeholder="123 rue de la Joute, 75001 Paris"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Site web (optionnel)
             </label>
             <input
@@ -283,12 +283,12 @@ export function LairForm({
                 setFormData({ ...formData, website: e.target.value })
               }
               placeholder="https://exemple.com"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Coordonnées GPS (optionnel)
             </label>
             <input
@@ -298,26 +298,26 @@ export function LairForm({
                 setFormData({ ...formData, coordinates: e.target.value })
               }
               placeholder="48.8566, 2.3522"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Format : latitude, longitude (exemple : 48.8566, 2.3522 pour Paris)
             </p>
           </div>
 
           {lair && (
-            <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <div className="p-4 bg-muted/50 border border-border rounded-lg">
               <CalendarModeSwitch lair={lair} />
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Jeux supportés
             </label>
-            <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
+            <div className="space-y-2 max-h-48 overflow-y-auto border border-border rounded-lg p-3">
               {games.length === 0 ? (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   Aucun jeu disponible. Ajoutez-en d&apos;abord dans la section
                   Jeux.
                 </p>
@@ -331,9 +331,9 @@ export function LairForm({
                       type="checkbox"
                       checked={formData.games.includes(game.id)}
                       onChange={() => toggleGame(game.id)}
-                      className="rounded text-blue-600 focus:ring-blue-500"
+                      className="rounded text-blue-600 dark:text-blue-400 focus:ring-ring"
                     />
-                    <span className="text-sm text-gray-700">
+                    <span className="text-sm text-foreground">
                       {game.name}
                     </span>
                   </label>
@@ -343,28 +343,28 @@ export function LairForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Sources d&apos;événements
             </label>
             <div className="space-y-4">
               {formData.eventsSourceUrls.map((source, index) => (
-                <div key={index} className="p-4 border border-gray-300 rounded-lg space-y-3">
+                <div key={index} className="p-4 border border-input rounded-lg space-y-3">
                   <div className="flex justify-between items-start">
-                    <span className="text-sm font-medium text-gray-700">Source #{index + 1}</span>
+                    <span className="text-sm font-medium text-foreground">Source #{index + 1}</span>
                     <button
                       type="button"
                       onClick={() => {
                         const newSources = formData.eventsSourceUrls.filter((_, i) => i !== index);
                         setFormData({ ...formData, eventsSourceUrls: newSources });
                       }}
-                      className="text-sm text-red-600 hover:text-red-700"
+                      className="text-sm text-destructive hover:text-destructive/80"
                     >
                       Retirer
                     </button>
                   </div>
                   
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                    <label className="block text-xs font-medium text-muted-foreground mb-1">
                       URL de la source
                     </label>
                     <input
@@ -376,12 +376,12 @@ export function LairForm({
                         setFormData({ ...formData, eventsSourceUrls: newSources });
                       }}
                       placeholder="https://exemple.com/evenements"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-sm"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                    <label className="block text-xs font-medium text-muted-foreground mb-1">
                       Type de source
                     </label>
                     <select
@@ -397,7 +397,7 @@ export function LairForm({
                         };
                         setFormData({ ...formData, eventsSourceUrls: newSources });
                       }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-sm"
                     >
                       <option value="IA">IA (extraction intelligente)</option>
                       <option value="MAPPING">MAPPING (configuration JSON)</option>
@@ -406,7 +406,7 @@ export function LairForm({
 
                   {source.type === 'IA' && (
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">
                         Consignes pour l&apos;IA (optionnel)
                       </label>
                       <textarea
@@ -418,7 +418,7 @@ export function LairForm({
                         }}
                         placeholder="Instructions pour aider l&apos;IA à extraire les événements..."
                         rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-vertical"
+                        className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-sm resize-vertical"
                       />
                     </div>
                   )}
@@ -426,7 +426,7 @@ export function LairForm({
                   {source.type === 'MAPPING' && (
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                        <label className="block text-xs font-medium text-muted-foreground mb-1">
                           Chemin vers les événements (JSONPath)
                         </label>
                         <input
@@ -445,11 +445,11 @@ export function LairForm({
                             setFormData({ ...formData, eventsSourceUrls: newSources });
                           }}
                           placeholder="events.data"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-sm"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                        <label className="block text-xs font-medium text-muted-foreground mb-1">
                           Préfixe de base d&apos;URL (optionnel)
                         </label>
                         <input
@@ -467,15 +467,15 @@ export function LairForm({
                             setFormData({ ...formData, eventsSourceUrls: newSources });
                           }}
                           placeholder="https://joutes.app/events/"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-sm"
                         />
                       </div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-muted-foreground">
                         <p className="mb-1 font-medium">Configuration du mapping des champs :</p>
                         <div className="grid grid-cols-2 gap-2">
                           {['id', 'name', 'startDateTime', 'endDateTime', 'gameName', 'price', 'status', 'url'].map((field) => (
                             <div key={field}>
-                              <label className="block text-xs text-gray-600 mb-1">
+                              <label className="block text-xs text-muted-foreground mb-1">
                                 {field}
                               </label>
                               <input
@@ -497,18 +497,18 @@ export function LairForm({
                                   setFormData({ ...formData, eventsSourceUrls: newSources });
                                 }}
                                 placeholder={field}
-                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                                className="w-full px-2 py-1 border border-input rounded text-xs"
                               />
                             </div>
                           ))}
                         </div>
                       </div>
-                      <div className="pt-2 border-t border-gray-200">
-                        <p className="mb-2 text-xs font-medium text-gray-700">Valeurs par défaut (override) :</p>
+                      <div className="pt-2 border-t border-border">
+                        <p className="mb-2 text-xs font-medium text-foreground">Valeurs par défaut (override) :</p>
                         <div className="space-y-2">
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <label className="block text-xs text-gray-600 mb-1">
+                              <label className="block text-xs text-muted-foreground mb-1">
                                 name
                               </label>
                               <input
@@ -530,11 +530,11 @@ export function LairForm({
                                   setFormData({ ...formData, eventsSourceUrls: newSources });
                                 }}
                                 placeholder="Nom par défaut"
-                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                                className="w-full px-2 py-1 border border-input rounded text-xs"
                               />
                             </div>
                             <div>
-                              <label className="block text-xs text-gray-600 mb-1">
+                              <label className="block text-xs text-muted-foreground mb-1">
                                 gameName
                               </label>
                               <input
@@ -556,13 +556,13 @@ export function LairForm({
                                   setFormData({ ...formData, eventsSourceUrls: newSources });
                                 }}
                                 placeholder="Jeu par défaut"
-                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                                className="w-full px-2 py-1 border border-input rounded text-xs"
                               />
                             </div>
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <label className="block text-xs text-gray-600 mb-1">
+                              <label className="block text-xs text-muted-foreground mb-1">
                                 startDateTime
                               </label>
                               <input
@@ -584,11 +584,11 @@ export function LairForm({
                                   setFormData({ ...formData, eventsSourceUrls: newSources });
                                 }}
                                 placeholder="Date/heure début"
-                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                                className="w-full px-2 py-1 border border-input rounded text-xs"
                               />
                             </div>
                             <div>
-                              <label className="block text-xs text-gray-600 mb-1">
+                              <label className="block text-xs text-muted-foreground mb-1">
                                 endDateTime
                               </label>
                               <input
@@ -610,13 +610,13 @@ export function LairForm({
                                   setFormData({ ...formData, eventsSourceUrls: newSources });
                                 }}
                                 placeholder="Date/heure fin"
-                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                                className="w-full px-2 py-1 border border-input rounded text-xs"
                               />
                             </div>
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <label className="block text-xs text-gray-600 mb-1">
+                              <label className="block text-xs text-muted-foreground mb-1">
                                 price
                               </label>
                               <input
@@ -639,11 +639,11 @@ export function LairForm({
                                   setFormData({ ...formData, eventsSourceUrls: newSources });
                                 }}
                                 placeholder="Prix par défaut"
-                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                                className="w-full px-2 py-1 border border-input rounded text-xs"
                               />
                             </div>
                             <div>
-                              <label className="block text-xs text-gray-600 mb-1">
+                              <label className="block text-xs text-muted-foreground mb-1">
                                 status
                               </label>
                               <select
@@ -663,7 +663,7 @@ export function LairForm({
                                   };
                                   setFormData({ ...formData, eventsSourceUrls: newSources });
                                 }}
-                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                                className="w-full px-2 py-1 border border-input rounded text-xs"
                               >
                                 <option value="">-- Aucun --</option>
                                 <option value="available">available</option>
@@ -673,7 +673,7 @@ export function LairForm({
                             </div>
                           </div>
                           <div>
-                            <label className="block text-xs text-gray-600 mb-1">
+                            <label className="block text-xs text-muted-foreground mb-1">
                               url
                             </label>
                             <input
@@ -695,11 +695,11 @@ export function LairForm({
                                 setFormData({ ...formData, eventsSourceUrls: newSources });
                               }}
                               placeholder="URL par défaut"
-                              className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              className="w-full px-2 py-1 border border-input rounded text-xs"
                             />
                           </div>
                         </div>
-                        <p className="text-xs text-gray-500 mt-2 italic">
+                        <p className="text-xs text-muted-foreground mt-2 italic">
                           Ces valeurs remplaceront celles issues du mapping JSON
                         </p>
                       </div>
@@ -718,7 +718,7 @@ export function LairForm({
                     ],
                   });
                 }}
-                className="text-sm text-blue-600 hover:text-blue-700"
+                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
               >
                 + Ajouter une source
               </button>

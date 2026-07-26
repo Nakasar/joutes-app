@@ -34,7 +34,7 @@ const ATTRIBUTE_TYPE_LABELS: Record<CardAttributeFieldType, string> = {
 };
 
 const inputClass =
-  "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent";
+  "w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent";
 
 /** Une valeur saisie -> la valeur stockée, selon le type du champ. `null` = champ laissé vide. */
 function toAttributeValue(type: CardAttributeFieldType, raw: string | boolean): CardAttributeValue | null {
@@ -236,27 +236,27 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6 space-y-4">
+    <form onSubmit={handleSubmit} className="bg-card rounded-lg shadow-md p-6 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold text-gray-900">
+        <h2 className="text-lg font-semibold text-foreground">
           {card ? `Modifier la carte ${card.id}` : `Nouvelle carte — ${gameName}`}
         </h2>
         {card && (
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <span
               className={`rounded-full px-2 py-0.5 ${
-                card.source === "manual" ? "bg-indigo-50 text-indigo-700" : "bg-gray-100 text-gray-600"
+                card.source === "manual" ? "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300" : "bg-muted text-muted-foreground"
               }`}
             >
               {card.source === "manual" ? "Ajoutée manuellement" : "Importée"}
             </span>
             {card.manuallyEditedAt && (
-              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-amber-700">
+              <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-amber-700 dark:text-amber-300">
                 Modifiée manuellement le{" "}
                 {DateTime.fromISO(card.manuallyEditedAt).setLocale("fr").toLocaleString(DateTime.DATE_MED)}
               </span>
             )}
-            <a href={`/admin/cards?gameId=${gameId}`} className="text-blue-600 hover:underline">
+            <a href={`/admin/cards?gameId=${gameId}`} className="text-blue-600 dark:text-blue-400 hover:underline">
               Ajouter une carte
             </a>
           </div>
@@ -264,18 +264,18 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
       </div>
 
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>
+        <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">{error}</div>
       )}
       {success && (
-        <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">{success}</div>
+        <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-emerald-700 dark:text-emerald-300 text-sm">{success}</div>
       )}
       {warning && (
-        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm">{warning}</div>
+        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-800 dark:text-amber-300 text-sm">{warning}</div>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Code d&apos;extension</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Code d&apos;extension</label>
           <input
             type="text"
             required
@@ -286,7 +286,7 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Numéro de collection</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Numéro de collection</label>
           <input
             type="text"
             required
@@ -297,7 +297,7 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Langue</label>
+          <label className="block text-sm font-medium text-foreground mb-1">Langue</label>
           <input
             type="text"
             required
@@ -310,7 +310,7 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Identifiant de la carte</label>
+        <label className="block text-sm font-medium text-foreground mb-1">Identifiant de la carte</label>
         <input
           type="text"
           required
@@ -322,7 +322,7 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
           className={`${inputClass} font-mono`}
         />
         <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-          <span className="text-gray-500">
+          <span className="text-muted-foreground">
             Déduit du code d&apos;extension et du numéro de collection ; modifiable si besoin.
           </span>
           {cardIdTouched && derivedId && derivedId !== effectiveId && (
@@ -334,21 +334,21 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
                 setCardIdTouched(false);
                 setCardId("");
               }}
-              className="text-blue-600 hover:underline"
+              className="text-blue-600 dark:text-blue-400 hover:underline"
             >
               Utiliser « {derivedId} »
             </button>
           )}
-          {availability === "checking" && <span className="text-gray-500">Vérification…</span>}
-          {availability === "free" && <span className="text-green-600">Identifiant disponible.</span>}
+          {availability === "checking" && <span className="text-muted-foreground">Vérification…</span>}
+          {availability === "free" && <span className="text-emerald-600 dark:text-emerald-400">Identifiant disponible.</span>}
           {availability === "taken" && (
-            <span className="text-red-600">Une carte « {effectiveId} » existe déjà pour ce jeu.</span>
+            <span className="text-destructive">Une carte « {effectiveId} » existe déjà pour ce jeu.</span>
           )}
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+        <label className="block text-sm font-medium text-foreground mb-1">Nom</label>
         <input
           type="text"
           required
@@ -359,7 +359,7 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+        <label className="block text-sm font-medium text-foreground mb-1">Image</label>
         <div className="space-y-2">
           <input
             type="url"
@@ -378,7 +378,7 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
             }}
             className={inputClass}
           />
-          {uploading && <p className="text-sm text-gray-500">Upload en cours…</p>}
+          {uploading && <p className="text-sm text-muted-foreground">Upload en cours…</p>}
           {image && !uploading && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={image} alt="Aperçu de la carte" className="h-40 w-auto rounded border object-contain" />
@@ -387,14 +387,14 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Texte de la carte</label>
+        <label className="block text-sm font-medium text-foreground mb-1">Texte de la carte</label>
         <textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} className={inputClass} />
       </div>
 
       <div className="pt-4 border-t space-y-4">
         <div>
-          <h3 className="text-sm font-semibold text-gray-900">Attributs du jeu</h3>
-          <p className="text-xs text-gray-500">
+          <h3 className="text-sm font-semibold text-foreground">Attributs du jeu</h3>
+          <p className="text-xs text-muted-foreground">
             {attributeFields.length > 0
               ? "Relevés sur les cartes existantes de ce jeu. Un champ laissé vide n'est pas enregistré ; vidé sur une carte existante, l'attribut est retiré."
               : "Aucun attribut détecté sur les cartes de ce jeu : ajoutez-les ci-dessous."}
@@ -405,14 +405,14 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {attributeFields.map((field) => (
               <div key={field.key}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-foreground mb-1">
                   {field.key}
-                  <span className="ml-1 text-xs font-normal text-gray-400">
+                  <span className="ml-1 text-xs font-normal text-muted-foreground">
                     {ATTRIBUTE_TYPE_LABELS[field.type].toLowerCase()}
                   </span>
                 </label>
                 {field.type === "boolean" ? (
-                  <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <label className="flex items-center gap-2 text-sm text-foreground">
                     <input
                       type="checkbox"
                       checked={attributes[field.key] === true}
@@ -476,7 +476,7 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
                 ))}
               </select>
               {attribute.type === "boolean" ? (
-                <label className="flex items-center gap-2 text-sm text-gray-700">
+                <label className="flex items-center gap-2 text-sm text-foreground">
                   <input
                     type="checkbox"
                     checked={attribute.value === true}
@@ -504,7 +504,7 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
               <button
                 type="button"
                 onClick={() => setCustomAttributes((prev) => prev.filter((_, i) => i !== index))}
-                className="text-sm text-red-600 hover:text-red-700"
+                className="text-sm text-destructive hover:text-destructive/80"
               >
                 Retirer
               </button>
