@@ -357,6 +357,16 @@ paths:
       security: [{ sessionAuth: [] }]
       parameters:
         - { name: gameSlug, in: query, required: true, schema: { type: string } }
+        - name: type
+          in: query
+          required: false
+          description: >-
+            Filter on a booster type available for the game (`other` also
+            matches boosters stored without a type); any other value is rejected.
+          schema: { type: string }
+        - { name: sort, in: query, required: false, schema: { type: string, enum: [newest, oldest], default: newest } }
+        - { name: page, in: query, required: false, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100, default: 100 } }
       responses:
         "200":
           description: Boosters.
@@ -364,7 +374,12 @@ paths:
             application/json:
               schema:
                 type: object
-                properties: { boosters: { type: array, items: { $ref: "#/components/schemas/Booster" } } }
+                properties:
+                  boosters: { type: array, items: { $ref: "#/components/schemas/Booster" } }
+                  total: { type: integer }
+                  page: { type: integer }
+                  limit: { type: integer }
+                  totalPages: { type: integer }
         "400": { $ref: "#/components/responses/ValidationError" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }

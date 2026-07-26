@@ -1,11 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { DateTime } from "luxon";
-import { ArrowLeft, Package, Plus, Trash2, Loader2, PackagePlus, CheckCircle2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Package,
+  Plus,
+  Trash2,
+  Loader2,
+  PackagePlus,
+  CheckCircle2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -37,28 +47,74 @@ function langLabel(code: string): string {
   return LANG_LABELS[code.toLowerCase()] ?? code.toUpperCase();
 }
 
+const ALL = "all";
+
 type Props = {
   gameSlug: string;
   gameName: string;
   initialBoosters: Booster[];
   setCodes: string[];
   langs: string[];
+  /** Types réellement présents dans les boosters de l'utilisateur pour ce jeu. */
+  typesInUse: string[];
+  typeFilter?: string;
+  sort: "newest" | "oldest";
+  page: number;
+  totalPages: number;
+  total: number;
 };
 
-export default function BoostersList({ gameSlug, gameName, initialBoosters, setCodes, langs }: Props) {
+export default function BoostersList({
+  gameSlug,
+  gameName,
+  initialBoosters,
+  setCodes,
+  langs,
+  typesInUse,
+  typeFilter,
+  sort,
+  page,
+  totalPages,
+  total,
+}: Props) {
   const t = useTranslations("Collection");
   const locale = useLocale();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const boosterTypeLabel = useBoosterTypeLabel();
   const boosterTypes = getBoosterTypes(gameSlug);
 
   const [boosters, setBoosters] = useState<Booster[]>(initialBoosters);
+
+  // La liste est paginée côté serveur : chaque navigation (page, filtre, tri)
+  // remplace les boosters affichés.
+  useEffect(() => setBoosters(initialBoosters), [initialBoosters]);
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [setCode, setSetCode] = useState(setCodes[0] ?? "");
   const [lang, setLang] = useState(langs[0] ?? "en");
   const [type, setType] = useState(OTHER_BOOSTER_TYPE);
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  /** Les filtres et le tri vivent dans l'URL : la page est partageable et le retour arrière fonctionne. */
+  const urlWith = (changes: Record<string, string | undefined>) => {
+    const params = new URLSearchParams(searchParams.toString());
+    for (const [key, value] of Object.entries(changes)) {
+      if (value) {
+        params.set(key, value);
+      } else {
+        params.delete(key);
+      }
+    }
+    const query = params.toString();
+    return query ? `${pathname}?${query}` : pathname;
+  };
+
+  // Changer de filtre ou de tri renvoie en première page : le numéro de page
+  // courant n'a plus de sens sur un autre jeu de résultats.
+  const goTo = (changes: Record<string, string | undefined>) => router.push(urlWith({ ...changes, page: undefined }));
 
   const create = async () => {
     if (!setCode || !lang) return;
@@ -84,6 +140,8 @@ export default function BoostersList({ gameSlug, gameName, initialBoosters, setC
       const res = await fetch(`/api/collection/boosters/${id}`, { method: "DELETE" });
       if (res.ok) {
         setBoosters((prev) => prev.filter((b) => b.id !== id));
+        // Le total et le nombre de pages sont calculés côté serveur.
+        router.refresh();
       }
     } finally {
       setDeletingId(null);
@@ -166,12 +224,53 @@ export default function BoostersList({ gameSlug, gameName, initialBoosters, setC
         </div>
       </div>
 
+      {total > 0 || typeFilter ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {typesInUse.length > 1 ? (
+            <Select value={typeFilter ?? ALL} onValueChange={(value) => goTo({ type: value === ALL ? undefined : value })}>
+              <SelectTrigger className="w-auto min-w-[150px]" aria-label={t("boosters.filterByType")}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>{t("boosters.allTypes")}</SelectItem>
+                {typesInUse.map((value) => (
+                  <SelectItem key={value} value={value}>
+                    {boosterTypeLabel(value)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : null}
+          <Select value={sort} onValueChange={(value) => goTo({ sort: value === "newest" ? undefined : value })}>
+            <SelectTrigger className="w-auto min-w-[170px]" aria-label={t("boosters.sortBoosters")}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">{t("boosters.sortNewest")}</SelectItem>
+              <SelectItem value="oldest">{t("boosters.sortOldest")}</SelectItem>
+            </SelectContent>
+          </Select>
+          <span className="text-sm text-muted-foreground">{t("boosters.boosterCount", { count: total })}</span>
+          {typeFilter ? (
+            <Button type="button" variant="ghost" size="sm" onClick={() => goTo({ type: undefined })}>
+              {t("boosters.resetFilters")}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
       {boosters.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed py-16 text-center">
           <PackagePlus className="size-10 text-muted-foreground" />
           <div>
-            <p className="font-semibold">{t("boosters.emptyTitle")}</p>
-            <p className="text-sm text-muted-foreground">{t("boosters.emptyDescription")}</p>
+            {typeFilter ? (
+              <p className="font-semibold">{t("boosters.noBoosterMatchesFilters")}</p>
+            ) : (
+              <>
+                <p className="font-semibold">{t("boosters.emptyTitle")}</p>
+                <p className="text-sm text-muted-foreground">{t("boosters.emptyDescription")}</p>
+              </>
+            )}
           </div>
         </div>
       ) : (
@@ -216,6 +315,38 @@ export default function BoostersList({ gameSlug, gameName, initialBoosters, setC
           ))}
         </div>
       )}
+
+      {totalPages > 1 ? (
+        <div className="flex items-center justify-center gap-3">
+          <Button variant="outline" size="sm" className="gap-1" asChild={page > 1} disabled={page <= 1}>
+            {page > 1 ? (
+              <Link href={urlWith({ page: page - 1 === 1 ? undefined : String(page - 1) })}>
+                <ChevronLeft className="size-4" />
+                {t("boosters.previousPage")}
+              </Link>
+            ) : (
+              <span>
+                <ChevronLeft className="size-4" />
+                {t("boosters.previousPage")}
+              </span>
+            )}
+          </Button>
+          <span className="text-sm text-muted-foreground">{t("boosters.pageOf", { page, totalPages })}</span>
+          <Button variant="outline" size="sm" className="gap-1" asChild={page < totalPages} disabled={page >= totalPages}>
+            {page < totalPages ? (
+              <Link href={urlWith({ page: String(page + 1) })}>
+                {t("boosters.nextPage")}
+                <ChevronRight className="size-4" />
+              </Link>
+            ) : (
+              <span>
+                {t("boosters.nextPage")}
+                <ChevronRight className="size-4" />
+              </span>
+            )}
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }

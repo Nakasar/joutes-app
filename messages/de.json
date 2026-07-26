@@ -1367,6 +1367,14 @@
           "sortAscending": "Aufsteigend",
           "sortDescending": "Absteigend",
           "resetFilters": "Zurücksetzen",
+          "sortBoosters": "Booster sortieren",
+          "sortNewest": "Neueste zuerst",
+          "sortOldest": "Älteste zuerst",
+          "boosterCount": "{count, plural, =0 {Keine Booster} one {# Booster} other {# Booster}}",
+          "noBoosterMatchesFilters": "Kein Booster entspricht den Filtern.",
+          "previousPage": "Zurück",
+          "nextPage": "Weiter",
+          "pageOf": "Seite {page} von {totalPages}",
           "noCardMatchesFilters": "Keine Karte entspricht den Filtern.",
           "filteredCount": "{count, plural, =0 {Keine Karte angezeigt} one {# Karte angezeigt} other {# Karten angezeigt}}"
         }

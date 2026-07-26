@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { createBooster, getBoosters } from "@/lib/db/boosters";
+import { countBoosters, createBooster, getBoosters } from "@/lib/db/boosters";
 import { getGameBySlugOrId } from "@/lib/db/games";
 import { isBoosterType, normalizeBoosterType } from "@/lib/constants/booster-types";
 
@@ -21,8 +21,29 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Game not found" }, { status: 404 });
   }
 
-  const boosters = await getBoosters({ userId: session.user.id, gameId: game.id, limit: 100 });
-  return NextResponse.json({ boosters });
+  const searchParams = request.nextUrl.searchParams;
+  const typeParam = searchParams.get("type");
+  const normalizedType = typeParam ? normalizeBoosterType(typeParam) : undefined;
+  if (normalizedType && !isBoosterType(game.slug, normalizedType)) {
+    return NextResponse.json({ error: "Invalid booster type" }, { status: 400 });
+  }
+  const sort = searchParams.get("sort") === "oldest" ? "oldest" : "newest";
+  const page = Math.max(1, Number.parseInt(searchParams.get("page") ?? "1", 10) || 1);
+  const limit = Math.max(1, Math.min(100, Number.parseInt(searchParams.get("limit") ?? "100", 10) || 100));
+
+  const filters = { userId: session.user.id, gameId: game.id, type: normalizedType };
+  const [boosters, total] = await Promise.all([
+    getBoosters({ ...filters, page: page - 1, limit, sort }),
+    countBoosters(filters),
+  ]);
+
+  return NextResponse.json({
+    boosters,
+    total,
+    page,
+    limit,
+    totalPages: Math.max(1, Math.ceil(total / limit)),
+  });
 }
 
 export async function POST(request: NextRequest) {
