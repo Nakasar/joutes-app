@@ -17,7 +17,9 @@ export const cardAttributeValueSchema = z.union([
  */
 export const cardAttributeKeySchema = z
   .string()
-  .trim()
+  // Pas de `.trim()` : la clé validée doit être exactement celle écrite en base,
+  // sinon un « domain » entouré d'espaces passerait la validation et créerait un
+  // champ Mongo difficile à requêter.
   .min(1, "Le nom d'un attribut est requis")
   .max(60, "Le nom d'un attribut est trop long")
   .regex(

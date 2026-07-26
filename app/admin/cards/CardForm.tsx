@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { DateTime } from "luxon";
 import { Button } from "@/components/ui/button";
 import { buildCardId } from "@/lib/constants/card-ids";
 import type {
@@ -251,7 +252,8 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
             </span>
             {card.manuallyEditedAt && (
               <span className="rounded-full bg-amber-50 px-2 py-0.5 text-amber-700">
-                Modifiée manuellement le {new Date(card.manuallyEditedAt).toLocaleDateString("fr-FR")}
+                Modifiée manuellement le{" "}
+                {DateTime.fromISO(card.manuallyEditedAt).setLocale("fr").toLocaleString(DateTime.DATE_MED)}
               </span>
             )}
             <a href={`/admin/cards?gameId=${gameId}`} className="text-blue-600 hover:underline">
@@ -327,8 +329,10 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
             <button
               type="button"
               onClick={() => {
-                setCardIdTouched(true);
-                setCardId(derivedId);
+                // Remettre l'identifiant en phase, y compris pour les
+                // modifications suivantes du code d'extension et du numéro.
+                setCardIdTouched(false);
+                setCardId("");
               }}
               className="text-blue-600 hover:underline"
             >

@@ -67,7 +67,9 @@ export default async function AdminCardsPage({
             )}
 
             <CardForm
-              key={card?.id ?? "new"}
+              // Le formulaire garde son état localement : changer de jeu ou de
+              // carte doit le remonter à neuf, pas mélanger les saisies.
+              key={`${selectedGame.id}:${card?.id ?? "new"}`}
               gameId={selectedGame.id}
               gameName={selectedGame.name}
               gameSlug={selectedGame.slug}

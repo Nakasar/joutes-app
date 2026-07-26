@@ -2,8 +2,9 @@ import type { GameCardSummary } from "@/lib/db/cards";
 
 /**
  * Origine d'une carte : ajoutée à la main depuis cet écran, ou issue d'un
- * script d'import (les cartes importées n'ont pas de champ `source`), et
- * marquage d'une éventuelle retouche manuelle.
+ * script d'import — les cartes importées avant l'ajout du champ `source` ne le
+ * portent pas et sont donc affichées comme importées —, et marquage d'une
+ * éventuelle retouche manuelle.
  */
 export default function CardOriginBadges({ card }: { card: Pick<GameCardSummary, "source" | "manuallyEditedAt"> }) {
   return (

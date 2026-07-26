@@ -18,9 +18,10 @@ export const CORE_CARD_KEYS = [
 
 /**
  * Provenance d'une carte, écrite par l'application : `source` distingue une
- * carte ajoutée à la main d'une carte issue d'un script d'import (les cartes
- * importées n'ont pas le champ), et les marqueurs d'édition disent si et quand
- * une carte a été retouchée à la main.
+ * carte ajoutée à la main (`manual`) d'une carte issue d'un script d'import
+ * (`import`) — les cartes importées avant l'ajout de ce champ ne le portent
+ * pas et comptent comme importées —, et les marqueurs d'édition disent si et
+ * quand une carte a été retouchée à la main.
  */
 export const CARD_PROVENANCE_KEYS = [
   "source",
