@@ -56,7 +56,8 @@ export default function WinterDecorations() {
   }, [prefersReducedMotion]);
 
   return (
-    <>
+    // Décor : jamais imprimé (voir la section impression de globals.css).
+    <div data-print-hidden>
       {/* Icy Stalagmites at the top */}
       <div className="fixed top-0 left-0 right-0 pointer-events-none z-30 opacity-80 text-blue-300/80">
         <IcyStalagmites className="w-full h-24 md:h-32 lg:h-40" />
@@ -131,7 +132,7 @@ export default function WinterDecorations() {
           animation-timing-function: linear;
         }
       `}</style>
-    </>
+    </div>
   );
 }
 

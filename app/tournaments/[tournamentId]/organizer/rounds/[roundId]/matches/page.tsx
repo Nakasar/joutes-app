@@ -1,3 +1,4 @@
+import { MatchExportActions } from "../../../MatchExportActions";
 import { OrganizerShell } from "../../../OrganizerShell";
 import { RoundsHeader } from "../../RoundsHeader";
 import { OrganizerRoundClient } from "../OrganizerRoundClient";
@@ -24,6 +25,7 @@ export default async function OrganizerRoundMatchesPage({
             active="matches"
             showBracket={phase.type === "bracket"}
           />
+          <MatchExportActions tournamentId={tournamentId} roundId={roundId} />
           <OrganizerRoundClient
             tournamentId={tournamentId}
             round={round}

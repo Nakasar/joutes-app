@@ -1621,6 +1621,41 @@
     }
   },
   "Tournaments": {
+    "matchExport": {
+      "sheetsButton": "Match slips",
+      "listButton": "List (print)",
+      "csvButton": "List (CSV)",
+      "print": "Print",
+      "back": "Back",
+      "roundLabel": "Round {number}",
+      "allRounds": "All rounds",
+      "sheetsTitle": "Match slips",
+      "sheetsSubtitle": "{tournament} · round {round} · {count, plural, =0 {no slips} one {# slip} other {# slips}}",
+      "listTitle": "Match list",
+      "listSubtitle": "{tournament} · {count, plural, =0 {no matches} one {# match} other {# matches}}",
+      "listSubtitleRound": "{tournament} · round {round} · {count, plural, =0 {no matches} one {# match} other {# matches}}",
+      "noPrintableMatches": "No match to print for this round (byes have no slip).",
+      "noMatches": "No match to display.",
+      "columns": {
+        "phase": "Phase",
+        "round": "Round",
+        "table": "Table",
+        "status": "Status",
+        "player": "Player",
+        "players": "Players",
+        "games": "Games",
+        "score": "Score",
+        "winners": "Winner(s)"
+      },
+      "sheet": {
+        "game": "Game",
+        "points": "Points",
+        "gameNumber": "Game {number}",
+        "gamesWon": "Games won",
+        "winner": "Winner:",
+        "signature": "{name} signature:"
+      }
+    },
     "staff": {
       "title": "Tournament staff",
       "creator": "Creator",

@@ -73,7 +73,7 @@ export default function RootLayout({
               <main className="flex-1">
                 {children}
               </main>
-              <footer className="border-t py-8 mt-auto bg-muted/30">
+              <footer data-print-hidden className="border-t py-8 mt-auto bg-muted/30">
                 <div className="container mx-auto px-4">
                   <div className="flex flex-col md:flex-row justify-between items-center gap-6">
                     {/* Liens sociaux et externes */}

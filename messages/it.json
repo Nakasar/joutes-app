@@ -1563,6 +1563,41 @@
     }
   },
   "Tournaments": {
+    "matchExport": {
+      "sheetsButton": "Schede match",
+      "listButton": "Elenco (stampa)",
+      "csvButton": "Elenco (CSV)",
+      "print": "Stampa",
+      "back": "Indietro",
+      "roundLabel": "Turno {number}",
+      "allRounds": "Tutti i turni",
+      "sheetsTitle": "Schede match",
+      "sheetsSubtitle": "{tournament} · turno {round} · {count, plural, =0 {nessuna scheda} one {# scheda} other {# schede}}",
+      "listTitle": "Elenco dei match",
+      "listSubtitle": "{tournament} · {count, plural, =0 {nessun match} one {# match} other {# match}}",
+      "listSubtitleRound": "{tournament} · turno {round} · {count, plural, =0 {nessun match} one {# match} other {# match}}",
+      "noPrintableMatches": "Nessun match da stampare per questo turno (i BYE non hanno scheda).",
+      "noMatches": "Nessun match da mostrare.",
+      "columns": {
+        "phase": "Fase",
+        "round": "Turno",
+        "table": "Tavolo",
+        "status": "Stato",
+        "player": "Giocatore",
+        "players": "Giocatori",
+        "games": "Partite",
+        "score": "Punteggio",
+        "winners": "Vincitore/i"
+      },
+      "sheet": {
+        "game": "Partita",
+        "points": "Punti",
+        "gameNumber": "Partita {number}",
+        "gamesWon": "Partite vinte",
+        "winner": "Vincitore:",
+        "signature": "Firma {name}:"
+      }
+    },
     "staff": {
       "title": "Staff del torneo",
       "creator": "Creatore",
