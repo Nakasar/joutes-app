@@ -39,6 +39,35 @@ export default function AdminDashboard() {
           </Link>
 
           <Link
+            href="/admin/cards"
+            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  Gestion des Cartes
+                </h2>
+                <p className="text-gray-600">
+                  Ajouter une carte à un jeu avec ses attributs, son texte et son image
+                </p>
+              </div>
+              <svg
+                className="h-12 w-12 text-indigo-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-3-3v6m-7 5h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
+          </Link>
+
+          <Link
             href="/admin/lairs"
             className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
           >

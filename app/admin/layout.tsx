@@ -38,6 +38,12 @@ export default async function AdminLayout({
                 Jeux
               </Link>
               <Link
+                href="/admin/cards"
+                className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 border-b-2 border-transparent hover:border-blue-500"
+              >
+                Cartes
+              </Link>
+              <Link
                 href="/admin/lairs"
                 className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 border-b-2 border-transparent hover:border-blue-500"
               >
