@@ -2,6 +2,7 @@ import 'server-only';
 
 import db from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import { isReservedCardKey, RESERVED_CARD_KEYS, type CardSource } from "@/lib/constants/cards";
 
 export type CardNameMatch = {
   id: string;
@@ -12,6 +13,257 @@ export type CardNameMatch = {
   type?: string;
   text?: string;
 };
+
+export type CardAttributeFieldType = "string" | "number" | "boolean" | "list";
+
+export type CardAttributeField = {
+  key: string;
+  type: CardAttributeFieldType;
+  /** Valeurs déjà utilisées, proposées en autocomplétion quand elles sont peu nombreuses. */
+  suggestions?: string[];
+};
+
+/** `$type` Mongo -> type de champ du formulaire, le plus permissif l'emportant. */
+function attributeFieldType(mongoTypes: string[]): CardAttributeFieldType | null {
+  const types = mongoTypes.filter((type) => type !== "null" && type !== "missing");
+  if (types.length === 0 || types.every((type) => type === "object")) {
+    return null;
+  }
+  if (types.includes("array")) return "list";
+  if (types.every((type) => type === "bool")) return "boolean";
+  if (types.every((type) => ["int", "long", "double", "decimal"].includes(type))) return "number";
+  return "string";
+}
+
+/**
+ * Attributs réellement portés par les cartes d'un jeu : chaque jeu a les siens
+ * (domaine et énergie sur Riftbound, arènes et coût sur Star Wars Unlimited…)
+ * et rien ne les décrit en base, on les déduit donc d'un échantillon de cartes
+ * plutôt que de figer une liste par jeu dans le code. Les champs communs
+ * (nom, image, texte…) sont exclus : ils ont leur propre saisie.
+ */
+export async function getGameCardAttributeFields(gameId: ObjectId, sampleSize = 500): Promise<CardAttributeField[]> {
+  const rows = await db
+    .collection("cards")
+    .aggregate<{ _id: string; types: string[]; count: number; values: unknown[] }>([
+      { $match: { gameId } },
+      { $limit: sampleSize },
+      { $project: { fields: { $objectToArray: "$$ROOT" } } },
+      { $unwind: "$fields" },
+      { $match: { "fields.k": { $nin: [...RESERVED_CARD_KEYS] } } },
+      {
+        $group: {
+          _id: "$fields.k",
+          types: { $addToSet: { $type: "$fields.v" } },
+          count: { $sum: 1 },
+          values: { $addToSet: "$fields.v" },
+        },
+      },
+      { $sort: { count: -1, _id: 1 } },
+    ])
+    .toArray();
+
+  return rows.flatMap((row) => {
+    const type = attributeFieldType(row.types);
+    if (!type) {
+      return [];
+    }
+
+    const suggestions = [
+      ...new Set(
+        row.values
+          .flatMap((value) => (Array.isArray(value) ? value : [value]))
+          .filter((value): value is string => typeof value === "string" && value.length > 0 && value.length <= 40)
+      ),
+    ].sort();
+
+    return [{
+      key: row._id,
+      type,
+      // Au-delà, il ne s'agit plus d'une liste de valeurs possibles (illustrateurs,
+      // textes courts…) et l'autocomplétion n'aiderait pas.
+      suggestions: suggestions.length > 0 && suggestions.length <= 40 ? suggestions : undefined,
+    }];
+  });
+}
+
+export type CardAttributeValue = string | number | boolean | string[];
+
+export type NewCard = {
+  id: string;
+  name: string;
+  setCode: string;
+  collectorNumber: string;
+  lang: string;
+  image?: string;
+  text?: string;
+  attributes?: Record<string, CardAttributeValue>;
+};
+
+/** Une carte est identifiée par son `id` au sein d'un jeu (`SFD125`, `SOR-001`…). */
+export async function cardIdExists(gameId: ObjectId, id: string): Promise<boolean> {
+  const card = await db.collection("cards").findOne({ gameId, id }, { projection: { _id: 1 } });
+  return card !== null;
+}
+
+/** Les champs vides ne sont pas écrits : le pilote Mongo les stockerait en `null`. */
+function definedEntries(core: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(core).filter(([, value]) => value !== undefined));
+}
+
+export async function createCard(gameId: ObjectId, card: NewCard, createdBy: string): Promise<void> {
+  const { attributes, ...core } = card;
+  // Les champs communs priment : un attribut ne peut pas redéfinir l'identité de la carte.
+  await db.collection("cards").insertOne({
+    ...attributes,
+    ...definedEntries(core),
+    gameId,
+    source: "manual" satisfies CardSource,
+    createdBy,
+    createdAt: new Date(),
+  });
+}
+
+/**
+ * Modification manuelle d'une carte : les champs communs et les attributs
+ * fournis sont écrits, les attributs vidés dans le formulaire sont retirés du
+ * document, et la carte est marquée comme retouchée à la main (les scripts
+ * d'import écrasent les champs qu'ils connaissent mais laissent ces marqueurs).
+ */
+export async function updateCard(
+  gameId: ObjectId,
+  currentId: string,
+  card: NewCard,
+  { removedAttributes, editedBy }: { removedAttributes: string[]; editedBy: string }
+): Promise<void> {
+  const { attributes, ...core } = card;
+
+  // Un champ commun vidé (image, texte) est retiré du document, comme un
+  // attribut vidé — plutôt que stocké en `null`.
+  const clearedCoreKeys = Object.entries(core)
+    .filter(([, value]) => value === undefined)
+    .map(([key]) => key);
+  const unset = Object.fromEntries(
+    [...removedAttributes.filter((key) => !isReservedCardKey(key)), ...clearedCoreKeys].map((key) => [key, ""])
+  );
+
+  await db.collection("cards").updateOne(
+    { gameId, id: currentId },
+    {
+      $set: {
+        ...attributes,
+        ...definedEntries(core),
+        manuallyEditedAt: new Date(),
+        manuallyEditedBy: editedBy,
+      },
+      ...(Object.keys(unset).length > 0 ? { $unset: unset } : {}),
+    }
+  );
+}
+
+export type GameCardSummary = {
+  id: string;
+  name: string;
+  setCode?: string;
+  collectorNumber?: string;
+  lang?: string;
+  image?: string;
+  source?: CardSource;
+  manuallyEditedAt?: string;
+};
+
+export type GameCardDetail = GameCardSummary & {
+  text?: string;
+  attributes: Record<string, CardAttributeValue>;
+};
+
+const CARD_SUMMARY_PROJECTION = {
+  _id: 0,
+  id: 1,
+  name: 1,
+  setCode: 1,
+  collectorNumber: 1,
+  lang: 1,
+  image: 1,
+  source: 1,
+  manuallyEditedAt: 1,
+} as const;
+
+type CardSummaryDoc = Omit<GameCardSummary, "manuallyEditedAt"> & { manuallyEditedAt?: Date };
+
+function toSummary(doc: CardSummaryDoc): GameCardSummary {
+  return { ...doc, manuallyEditedAt: doc.manuallyEditedAt?.toISOString() };
+}
+
+/** Dernières cartes ajoutées à un jeu (ordre d'insertion), pour l'écran d'administration. */
+export async function getRecentGameCards(gameId: ObjectId, limit = 10): Promise<GameCardSummary[]> {
+  const docs = await db
+    .collection<CardSummaryDoc & { gameId: ObjectId }>("cards")
+    .find({ gameId }, { projection: CARD_SUMMARY_PROJECTION })
+    .sort({ _id: -1 })
+    .limit(limit)
+    .toArray();
+
+  return docs.map(toSummary);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Recherche d'une carte à modifier : par identifiant, nom ou numéro de collection. */
+export async function searchGameCards(gameId: ObjectId, query: string, limit = 20): Promise<GameCardSummary[]> {
+  const trimmed = query.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  const pattern = new RegExp(escapeRegExp(trimmed), "i");
+  const docs = await db
+    .collection<CardSummaryDoc & { gameId: ObjectId }>("cards")
+    .find(
+      { gameId, $or: [{ id: pattern }, { name: pattern }, { collectorNumber: trimmed }] },
+      { projection: CARD_SUMMARY_PROJECTION }
+    )
+    .sort({ id: 1 })
+    .limit(limit)
+    .toArray();
+
+  return docs.map(toSummary);
+}
+
+/** Carte complète pour l'édition : champs communs d'un côté, attributs de jeu de l'autre. */
+export async function getGameCard(gameId: ObjectId, id: string): Promise<GameCardDetail | null> {
+  const doc = await db.collection("cards").findOne({ gameId, id });
+  if (!doc) {
+    return null;
+  }
+
+  const attributes: Record<string, CardAttributeValue> = {};
+  for (const [key, value] of Object.entries(doc)) {
+    if (isReservedCardKey(key)) continue;
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      attributes[key] = value;
+    } else if (Array.isArray(value) && value.every((item) => typeof item === "string")) {
+      attributes[key] = value as string[];
+    }
+    // Les autres formes (objets, tableaux hétérogènes) ne sont pas éditables
+    // dans le formulaire : elles sont laissées telles quelles en base.
+  }
+
+  return {
+    id: doc.id,
+    name: doc.name,
+    setCode: doc.setCode,
+    collectorNumber: doc.collectorNumber,
+    lang: doc.lang,
+    image: doc.image,
+    text: doc.text,
+    source: doc.source,
+    manuallyEditedAt: doc.manuallyEditedAt instanceof Date ? doc.manuallyEditedAt.toISOString() : undefined,
+    attributes,
+  };
+}
 
 export async function getCardsByNames(gameId: ObjectId, names: string[]): Promise<CardNameMatch[]> {
   if (names.length === 0) return [];
