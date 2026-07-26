@@ -78,7 +78,9 @@ async function withCardAttributes(gameId: ObjectId, cards: BoosterCard[]): Promi
 
   return cards.map((card) => {
     const attributes = (card.cardId ? byId.get(card.cardId) : undefined) ?? byPrint.get(printKey(card.setCode, card.collectorNumber));
-    return attributes ? {...attributes, ...card} : card;
+    // `cards` fait foi : les propriétés relues écrasent celles éventuellement
+    // stockées sur l'entrée `booster-cards` (boosters saisis avant migration).
+    return attributes ? {...card, ...attributes} : card;
   });
 }
 

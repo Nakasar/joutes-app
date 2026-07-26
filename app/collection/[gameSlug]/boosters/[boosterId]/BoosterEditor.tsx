@@ -345,8 +345,11 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
     return filtered
       .map((card, index) => ({ card, index }))
       .sort((a, b) => {
-        const compared = compareCards(a.card, b.card, sortKey);
-        return (compared !== 0 ? compared : a.index - b.index) * direction;
+        if (sortKey === "default") return (a.index - b.index) * direction;
+        const compared = compareCards(a.card, b.card, sortKey) * direction;
+        // Le départage garde l'ordre du booster même en décroissant : seul le
+        // critère principal est inversé, deux ex-aequo ne permutent pas.
+        return compared !== 0 ? compared : a.index - b.index;
       })
       .map(({ card }) => card);
   }, [boosterCards, typeFilter, domainFilter, sortKey, sortDirection]);
