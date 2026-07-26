@@ -1466,7 +1466,7 @@
             "bySetTitle": "Par extension",
             "rarityDistribution": "Raretés",
             "perBooster": "{rate} / booster",
-            "unknownRarity": "Rareté inconnue",
+            "noKnownRarity": "Aucune rareté connue sur ces cartes.",
             "noCards": "Aucune carte",
             "cardsWithoutRarity": "{count, plural, one {# carte sans rareté connue, exclue des taux} other {# cartes sans rareté connue, exclues des taux}}",
             "emptyTitle": "Aucune statistique",

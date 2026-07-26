@@ -1465,7 +1465,7 @@
             "bySetTitle": "By set",
             "rarityDistribution": "Rarities",
             "perBooster": "{rate} / booster",
-            "unknownRarity": "Unknown rarity",
+            "noKnownRarity": "No known rarity on these cards.",
             "noCards": "No cards",
             "cardsWithoutRarity": "{count, plural, one {# card with no known rarity, excluded from the rates} other {# cards with no known rarity, excluded from the rates}}",
             "emptyTitle": "No statistics yet",

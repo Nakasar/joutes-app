@@ -1,10 +1,10 @@
 import 'server-only';
 import db from "@/lib/mongodb";
 import {ObjectId} from "bson";
-import {normalizeBoosterType} from "@/lib/constants/booster-types";
+import {normalizeBoosterType, OTHER_BOOSTER_TYPE} from "@/lib/constants/booster-types";
 
 export type RarityCount = {
-  rarity: string | null;
+  rarity: string;
   cards: number;
 };
 
@@ -16,7 +16,10 @@ export type BoosterGroupStats = {
   /** Nombre moyen de cartes par booster du groupe. */
   cardsPerBooster: number;
   foils: number;
-  /** Cartes du groupe par rareté ; `null` = rareté inconnue (carte absente de `cards`). */
+  /** Cartes du groupe dont la rareté est connue : dénominateur des parts. */
+  knownCards: number;
+  cardsWithoutRarity: number;
+  /** Cartes du groupe par rareté, de la plus fréquente à la plus rare. */
   rarities: RarityCount[];
 };
 
@@ -25,6 +28,8 @@ export type BoosterStats = {
   cards: number;
   cardsPerBooster: number;
   foils: number;
+  /** Cartes dont la rareté est connue : dénominateur des parts. */
+  knownCards: number;
   /** Cartes dont la rareté n'a pas pu être retrouvée : elles ne comptent pas dans les taux. */
   cardsWithoutRarity: number;
   /** Raretés rencontrées, de la plus fréquente à la plus rare. */
@@ -36,7 +41,7 @@ export type BoosterStats = {
 
 type FacetGroup = {
   _id: string | null;
-  boosters: unknown[];
+  boosters: number;
   cards: number;
   foils: number;
 };
@@ -94,47 +99,58 @@ const RARITY_LOOKUP = {
   },
 };
 
+/**
+ * Comptage d'un regroupement : on dédoublonne d'abord par booster (une ligne
+ * par carte en entrée), puis on agrège par clé. Compter les boosters par
+ * `$addToSet` des identifiants ferait grossir le document du `$facet` avec le
+ * nombre de boosters, jusqu'à sa limite de 16 Mo.
+ */
+function groupStages(key: string) {
+  return [
+    {$group: {_id: {key, boosterId: '$_id'}, cards: {$sum: '$hasCard'}, foils: {$sum: '$foil'}}},
+    {$group: {_id: '$_id.key', boosters: {$sum: 1}, cards: {$sum: '$cards'}, foils: {$sum: '$foils'}}},
+  ];
+}
+
+function rarityStages(key: string) {
+  return [
+    {$match: {hasCard: 1}},
+    {$group: {_id: {key, rarity: {$ifNull: ['$rarity', null]}}, cards: {$sum: 1}}},
+  ];
+}
+
 function toGroups(
   groups: FacetGroup[],
   rarities: FacetRarity[],
   normalizeKey: (key: string | null) => string
 ): BoosterGroupStats[] {
-  const byKey = new Map<string, BoosterGroupStats>();
-  const boosterIds = new Map<string, Set<string>>();
-
-  for (const group of groups) {
-    const key = normalizeKey(group._id);
-    const existing = byKey.get(key) ?? {key, boosters: 0, cards: 0, cardsPerBooster: 0, foils: 0, rarities: []};
-    // Deux valeurs stockées peuvent se ramener au même groupe (`custom` et
-    // `other`) : les boosters sont dédupliqués avant d'être comptés.
-    const ids = boosterIds.get(key) ?? new Set<string>();
-    for (const id of group.boosters) {
-      ids.add(String(id));
-    }
-    boosterIds.set(key, ids);
-
-    existing.cards += group.cards;
-    existing.foils += group.foils;
-    byKey.set(key, existing);
-  }
-
-  const rarityByKey = new Map<string, Map<string | null, number>>();
+  const rarityByKey = new Map<string, FacetRarity[]>();
   for (const row of rarities) {
     const key = normalizeKey(row._id.key);
-    const counts = rarityByKey.get(key) ?? new Map<string | null, number>();
-    counts.set(row._id.rarity, (counts.get(row._id.rarity) ?? 0) + row.cards);
-    rarityByKey.set(key, counts);
+    rarityByKey.set(key, [...(rarityByKey.get(key) ?? []), row]);
   }
 
-  for (const [key, group] of byKey) {
-    group.boosters = boosterIds.get(key)?.size ?? 0;
-    group.cardsPerBooster = group.boosters > 0 ? group.cards / group.boosters : 0;
-    group.rarities = [...(rarityByKey.get(key) ?? new Map())]
-      .map(([rarity, cards]) => ({rarity, cards}))
-      .sort((a, b) => b.cards - a.cards);
-  }
+  return groups
+    .map((group) => {
+      const key = normalizeKey(group._id);
+      const rows = rarityByKey.get(key) ?? [];
+      const cardsWithoutRarity = rows.filter((row) => row._id.rarity === null).reduce((sum, row) => sum + row.cards, 0);
 
-  return [...byKey.values()].sort((a, b) => b.boosters - a.boosters || a.key.localeCompare(b.key));
+      return {
+        key,
+        boosters: group.boosters,
+        cards: group.cards,
+        cardsPerBooster: group.boosters > 0 ? group.cards / group.boosters : 0,
+        foils: group.foils,
+        knownCards: group.cards - cardsWithoutRarity,
+        cardsWithoutRarity,
+        rarities: rows
+          .filter((row): row is FacetRarity & { _id: { key: string | null; rarity: string } } => row._id.rarity !== null)
+          .map((row) => ({rarity: row._id.rarity, cards: row.cards}))
+          .sort((a, b) => b.cards - a.cards),
+      };
+    })
+    .sort((a, b) => b.boosters - a.boosters || a.key.localeCompare(b.key));
 }
 
 /**
@@ -153,7 +169,7 @@ export async function getBoosterStats({userId, gameId}: {
     bySet: FacetGroup[];
     rarityByType: FacetRarity[];
     rarityBySet: FacetRarity[];
-    totals: { boosters: unknown[]; cards: number; foils: number }[];
+    totals: { boosters: number; cards: number; foils: number }[];
     overall: { _id: string | null; cards: number }[];
   }>([
     {$match: {userId: new ObjectId(userId), gameId: new ObjectId(gameId)}},
@@ -174,7 +190,14 @@ export async function getBoosterStats({userId, gameId}: {
     {
       $project: {
         _id: 1,
-        type: 1,
+        // Le type est normalisé ici : les boosters historiques (`custom` ou sans
+        // type) tombent dans le même groupe que les « Autre ».
+        typeKey: {
+          $let: {
+            vars: {type: {$ifNull: ['$type', OTHER_BOOSTER_TYPE]}},
+            in: {$cond: [{$in: ['$$type', ['custom', '']]}, OTHER_BOOSTER_TYPE, '$$type']},
+          },
+        },
         setCode: 1,
         hasCard: {$cond: [{$ifNull: ['$card', false]}, 1, 0]},
         foil: {$cond: [{$eq: ['$card.foil', true]}, 1, 0]},
@@ -184,48 +207,42 @@ export async function getBoosterStats({userId, gameId}: {
     {
       $facet: {
         totals: [
-          {$group: {_id: null, boosters: {$addToSet: '$_id'}, cards: {$sum: '$hasCard'}, foils: {$sum: '$foil'}}},
+          {$group: {_id: '$_id', cards: {$sum: '$hasCard'}, foils: {$sum: '$foil'}}},
+          {$group: {_id: null, boosters: {$sum: 1}, cards: {$sum: '$cards'}, foils: {$sum: '$foils'}}},
         ],
         overall: [
           {$match: {hasCard: 1}},
           {$group: {_id: {$ifNull: ['$rarity', null]}, cards: {$sum: 1}}},
         ],
-        byType: [
-          {$group: {_id: '$type', boosters: {$addToSet: '$_id'}, cards: {$sum: '$hasCard'}, foils: {$sum: '$foil'}}},
-        ],
-        bySet: [
-          {$group: {_id: '$setCode', boosters: {$addToSet: '$_id'}, cards: {$sum: '$hasCard'}, foils: {$sum: '$foil'}}},
-        ],
-        rarityByType: [
-          {$match: {hasCard: 1}},
-          {$group: {_id: {key: '$type', rarity: {$ifNull: ['$rarity', null]}}, cards: {$sum: 1}}},
-        ],
-        rarityBySet: [
-          {$match: {hasCard: 1}},
-          {$group: {_id: {key: '$setCode', rarity: {$ifNull: ['$rarity', null]}}, cards: {$sum: 1}}},
-        ],
+        byType: groupStages('$typeKey'),
+        bySet: groupStages('$setCode'),
+        rarityByType: rarityStages('$typeKey'),
+        rarityBySet: rarityStages('$setCode'),
       },
     },
   ]).toArray();
 
   const totals = result?.totals?.[0];
-  const boosters = totals?.boosters?.length ?? 0;
+  const boosters = totals?.boosters ?? 0;
   const cards = totals?.cards ?? 0;
 
-  const overall = (result?.overall ?? [])
-    .map((row) => ({rarity: row._id, cards: row.cards}))
-    .sort((a, b) => b.cards - a.cards);
+  const overall = (result?.overall ?? []).sort((a, b) => b.cards - a.cards);
+  const cardsWithoutRarity = overall.find((row) => row._id === null)?.cards ?? 0;
+  const knownRarities = overall
+    .filter((row): row is { _id: string; cards: number } => row._id !== null)
+    .map((row) => ({rarity: row._id, cards: row.cards}));
 
   return {
     boosters,
     cards,
     cardsPerBooster: boosters > 0 ? cards / boosters : 0,
     foils: totals?.foils ?? 0,
-    cardsWithoutRarity: overall.find((row) => row.rarity === null)?.cards ?? 0,
+    knownCards: cards - cardsWithoutRarity,
+    cardsWithoutRarity,
     // De la rareté la plus fréquente à la plus rare : l'ordre « officiel » des
     // raretés dépend du jeu et n'est décrit nulle part en base.
-    rarities: overall.filter((row): row is {rarity: string; cards: number} => row.rarity !== null).map((row) => row.rarity),
-    overall,
+    rarities: knownRarities.map((row) => row.rarity),
+    overall: knownRarities,
     byType: toGroups(result?.byType ?? [], result?.rarityByType ?? [], (key) =>
       normalizeBoosterType(typeof key === 'string' ? key : undefined)
     ),

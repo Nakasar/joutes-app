@@ -26,8 +26,7 @@ const RARITY_COLORS = [
 ];
 const UNKNOWN_RARITY_COLOR = "bg-muted-foreground/40";
 
-function rarityColor(rarities: string[], rarity: string | null): string {
-  if (rarity === null) return UNKNOWN_RARITY_COLOR;
+function rarityColor(rarities: string[], rarity: string): string {
   const index = rarities.indexOf(rarity);
   return index >= 0 ? RARITY_COLORS[index % RARITY_COLORS.length] : UNKNOWN_RARITY_COLOR;
 }
@@ -41,8 +40,6 @@ export default function BoosterStatsView({ gameSlug, gameName, stats }: Props) {
   const integer = new Intl.NumberFormat(locale);
   const percent = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 });
 
-  const rarityLabel = (rarity: string | null) => rarity ?? t("boosters.stats.unknownRarity");
-
   const summary = [
     { icon: Package, label: t("boosters.stats.boosters"), value: integer.format(stats.boosters) },
     { icon: Layers, label: t("boosters.stats.cards"), value: integer.format(stats.cards) },
@@ -55,16 +52,16 @@ export default function BoosterStatsView({ gameSlug, gameName, stats }: Props) {
     },
   ];
 
-  /** Barre segmentée d'une distribution de raretés. */
+  /** Barre segmentée d'une distribution de raretés, sur les seules cartes de rareté connue. */
   const RarityBar = ({ counts, total }: { counts: RarityCount[]; total: number }) => (
     <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-muted">
       {total > 0
         ? counts.map((count) => (
             <div
-              key={count.rarity ?? "unknown"}
+              key={count.rarity}
               className={rarityColor(stats.rarities, count.rarity)}
               style={{ width: `${(count.cards / total) * 100}%` }}
-              title={`${rarityLabel(count.rarity)} · ${percent.format(count.cards / total)}`}
+              title={`${count.rarity} · ${percent.format(count.cards / total)}`}
             />
           ))
         : null}
@@ -102,20 +99,27 @@ export default function BoosterStatsView({ gameSlug, gameName, stats }: Props) {
                     <span className="text-xs text-muted-foreground">{t("boosters.stats.noCards")}</span>
                   ) : (
                     <div className="space-y-1.5">
-                      <RarityBar counts={group.rarities} total={group.cards} />
+                      <RarityBar counts={group.rarities} total={group.knownCards} />
                       <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                         {group.rarities.map((count) => (
-                          <span key={count.rarity ?? "unknown"} className="inline-flex items-center gap-1">
+                          <span key={count.rarity} className="inline-flex items-center gap-1">
                             <span className={`size-2 rounded-full ${rarityColor(stats.rarities, count.rarity)}`} />
-                            {rarityLabel(count.rarity)}
+                            {count.rarity}
                             <span className="tabular-nums text-foreground">
                               {t("boosters.stats.perBooster", {
                                 rate: decimal.format(group.boosters > 0 ? count.cards / group.boosters : 0),
                               })}
                             </span>
-                            <span className="tabular-nums">({percent.format(count.cards / group.cards)})</span>
+                            {/* Part calculée sur les cartes de rareté connue, cohérente avec leur exclusion des taux. */}
+                            <span className="tabular-nums">({percent.format(count.cards / group.knownCards)})</span>
                           </span>
                         ))}
+                        {group.cardsWithoutRarity > 0 ? (
+                          <span className="inline-flex items-center gap-1">
+                            <span className={`size-2 rounded-full ${UNKNOWN_RARITY_COLOR}`} />
+                            {t("boosters.stats.cardsWithoutRarity", { count: group.cardsWithoutRarity })}
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                   )}
@@ -167,26 +171,27 @@ export default function BoosterStatsView({ gameSlug, gameName, stats }: Props) {
 
           <section className="space-y-3">
             <h2 className="text-sm font-semibold text-muted-foreground">{t("boosters.stats.overallTitle")}</h2>
-            {stats.cards === 0 ? (
+            {stats.knownCards === 0 ? (
               <p className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
-                {t("boosters.stats.noCards")}
+                {stats.cards === 0 ? t("boosters.stats.noCards") : t("boosters.stats.noKnownRarity")}
               </p>
             ) : (
               <div className="space-y-3 rounded-xl border bg-card p-4">
-                <RarityBar counts={stats.overall} total={stats.cards} />
+                <RarityBar counts={stats.overall} total={stats.knownCards} />
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {stats.overall.map((count) => (
-                    <div key={count.rarity ?? "unknown"} className="flex items-center justify-between gap-3 text-sm">
+                    <div key={count.rarity} className="flex items-center justify-between gap-3 text-sm">
                       <span className="inline-flex min-w-0 items-center gap-2">
                         <span className={`size-2.5 shrink-0 rounded-full ${rarityColor(stats.rarities, count.rarity)}`} />
-                        <span className="truncate">{rarityLabel(count.rarity)}</span>
+                        <span className="truncate">{count.rarity}</span>
                       </span>
                       <span className="shrink-0 tabular-nums text-muted-foreground">
                         {t("boosters.stats.perBooster", {
                           rate: decimal.format(stats.boosters > 0 ? count.cards / stats.boosters : 0),
                         })}
                         {" · "}
-                        {percent.format(count.cards / stats.cards)}
+                        {/* Part des cartes de rareté connue : les autres sont annoncées à part. */}
+                        {percent.format(count.cards / stats.knownCards)}
                       </span>
                     </div>
                   ))}

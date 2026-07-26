@@ -1407,7 +1407,7 @@
             "bySetTitle": "Per set",
             "rarityDistribution": "Rarità",
             "perBooster": "{rate} / bustina",
-            "unknownRarity": "Rarità sconosciuta",
+            "noKnownRarity": "Nessuna rarità nota su queste carte.",
             "noCards": "Nessuna carta",
             "cardsWithoutRarity": "{count, plural, one {# carta senza rarità nota, esclusa dai tassi} other {# carte senza rarità nota, escluse dai tassi}}",
             "emptyTitle": "Ancora nessuna statistica",

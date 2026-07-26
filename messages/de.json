@@ -1382,7 +1382,7 @@
             "bySetTitle": "Nach Set",
             "rarityDistribution": "Seltenheiten",
             "perBooster": "{rate} / Booster",
-            "unknownRarity": "Unbekannte Seltenheit",
+            "noKnownRarity": "Keine bekannte Seltenheit bei diesen Karten.",
             "noCards": "Keine Karten",
             "cardsWithoutRarity": "{count, plural, one {# Karte ohne bekannte Seltenheit, nicht in den Raten enthalten} other {# Karten ohne bekannte Seltenheit, nicht in den Raten enthalten}}",
             "emptyTitle": "Noch keine Statistiken",
