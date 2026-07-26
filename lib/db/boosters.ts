@@ -189,6 +189,9 @@ export async function getBoosters({userId, gameId, page = 0, limit = 20, offset 
 }
 
 export async function getBooster(boosterId: string): Promise<Booster | null> {
+  if (!ObjectId.isValid(boosterId)) {
+    return null;
+  }
   const booster = await db.collection<BoosterDb>('boosters').findOne({
     _id: new ObjectId(boosterId),
   });
