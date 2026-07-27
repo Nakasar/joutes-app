@@ -92,7 +92,6 @@ export function PlayerSheet({
   const [penaltyReason, setPenaltyReason] = useState("");
   const [noteText, setNoteText] = useState("");
   const [decklistDraft, setDecklistDraft] = useState(player.decklist?.content ?? "");
-  const [fixedTable, setFixedTable] = useState(player.fixedTableNumber);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -181,13 +180,15 @@ export function PlayerSheet({
 
   // Table fixe, conservée tout le tournoi : les appariements la respectent tant
   // qu'elle n'est pas déjà prise par une autre table de la ronde. Vide = aucune.
+  // La valeur affichée sort directement de la prop, jamais d'un état local : un
+  // autre arbitre peut la changer, et `router.refresh()` doit pouvoir corriger
+  // le champ.
   const saveFixedTable = (raw: string) => {
     const parsed = Number.parseInt(raw, 10);
     const next = Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
-    if (next === (fixedTable ?? null)) return;
+    if (next === (player.fixedTableNumber ?? null)) return;
     void run(async () => {
       await call(base, { method: "PATCH", body: JSON.stringify({ fixedTableNumber: next }) });
-      setFixedTable(next ?? undefined);
       router.refresh();
     });
   };
@@ -246,12 +247,12 @@ export function PlayerSheet({
             <TableIcon className="size-4" aria-hidden="true" />
             {t("playerSheet.fixedTableLabel")}
             <Input
-              key={`fixed-${fixedTable ?? ""}`}
+              key={`fixed-${player.fixedTableNumber ?? ""}`}
               type="number"
               min={0}
               max={9999}
               className="h-9 w-20"
-              defaultValue={fixedTable ?? ""}
+              defaultValue={player.fixedTableNumber ?? ""}
               placeholder="—"
               onBlur={(e) => saveFixedTable(e.target.value)}
               onKeyDown={(e) => {
