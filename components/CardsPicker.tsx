@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { BoosterCard } from "@/lib/types/booster";
 import { X } from "lucide-react";
 
-export default function ErrataCardsPicker({
+export default function CardsPicker({
   gameSlugOrId,
   selectedCards,
   onChange,

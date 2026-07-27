@@ -365,6 +365,16 @@ paths:
             boosters stored without a type, and the legacy value `custom` is
             accepted as an alias of `other`; any other value is rejected.
           schema: { type: string }
+        - name: cards
+          in: query
+          required: false
+          description: >-
+            Comma-separated card ids. Only boosters containing **every** listed
+            card are returned. An id absent from the game's cards stays an active
+            filter and simply matches nothing; duplicates are collapsed, and at
+            most 10 ids are kept.
+          schema: { type: string }
+          example: OGN001,OGN042
         - { name: sort, in: query, required: false, schema: { type: string, enum: [newest, oldest], default: newest } }
         - { name: page, in: query, required: false, schema: { type: integer, minimum: 1, default: 1 } }
         - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100, default: 100 } }

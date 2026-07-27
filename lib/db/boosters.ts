@@ -5,6 +5,7 @@ import {CARD_ATTRIBUTE_KEYS, CardAttributes} from "@/lib/types/card";
 import {boosterTypeStoredValues, normalizeBoosterType, OTHER_BOOSTER_TYPE} from "@/lib/constants/booster-types";
 import {ObjectId} from "bson";
 import {removeSellListItemsByCollectionEntryIds} from "@/lib/db/sell-lists";
+import {getCardsByIds} from "@/lib/db/cards";
 
 type CardAttributesDoc = CardAttributes & { id?: string; setCode?: string; collectorNumber?: string };
 
@@ -137,16 +138,57 @@ export async function updateBooster(boosterId: string, details: { type?: string;
   );
 }
 
+/**
+ * Carte recherchée dans le contenu des boosters. L'impression (extension +
+ * numéro) accompagne l'identifiant car les entrées `booster-cards` saisies
+ * avant l'ajout de `cardId` n'en portent pas : sans elle, ces boosters
+ * resteraient introuvables.
+ */
+export type BoosterCardFilter = {
+  cardId: string;
+  setCode?: string;
+  collectorNumber?: string;
+};
+
 export type BoosterFilters = {
   userId?: string;
   gameId?: string;
   /** Type affiché (`other` couvre aussi le `custom` historique). */
   type?: string;
+  /** Cartes que le booster doit **toutes** contenir. */
+  cards?: BoosterCardFilter[];
 };
 
 export type BoosterSort = 'newest' | 'oldest';
 
-function boostersQuery({userId, gameId, type}: BoosterFilters): Record<string, unknown> {
+/**
+ * Identifiants des boosters contenant toutes les cartes demandées. Une requête
+ * par carte puis intersection : `$all` ne s'applique pas ici, les cartes vivant
+ * dans une collection séparée et non dans un tableau du booster.
+ */
+async function boosterIdsContainingCards(userId: string | undefined, cards: BoosterCardFilter[]): Promise<ObjectId[]> {
+  const boosterIdsPerCard = await Promise.all(cards.map(async (card) => {
+    const or: Record<string, unknown>[] = [{cardId: card.cardId}];
+    if (card.setCode && card.collectorNumber) {
+      or.push({setCode: card.setCode, collectorNumber: card.collectorNumber});
+    }
+
+    const match: Record<string, unknown> = {$or: or};
+    if (userId) {
+      match.userId = new ObjectId(userId);
+    }
+
+    const ids = await db.collection<BoosterCardDb>('booster-cards').distinct('boosterId', match);
+    return new Set(ids.filter((id): id is ObjectId => Boolean(id)).map((id) => id.toString()));
+  }));
+
+  const [first, ...rest] = boosterIdsPerCard;
+  const common = [...first].filter((id) => rest.every((ids) => ids.has(id)));
+
+  return common.map((id) => new ObjectId(id));
+}
+
+async function boostersQuery({userId, gameId, type, cards}: BoosterFilters): Promise<Record<string, unknown>> {
   const query: Record<string, unknown> = {};
   if (gameId) {
     query['gameId'] = new ObjectId(gameId);
@@ -161,12 +203,55 @@ function boostersQuery({userId, gameId, type}: BoosterFilters): Record<string, u
       ? [{type: {$in: values}}, {type: {$exists: false}}]
       : [{type: {$in: values}}];
   }
+  if (cards && cards.length > 0) {
+    query['_id'] = {$in: await boosterIdsContainingCards(userId, cards)};
+  }
 
   return query;
 }
 
+/** Carte du filtre, telle qu'affichée au-dessus des résultats. */
+export type BoosterFilterCard = {
+  id: string;
+  name: string;
+  image: string;
+  setCode: string;
+  collectorNumber: string;
+};
+
+/**
+ * Cartes correspondant aux identifiants demandés, dans l'ordre reçu. Un
+ * identifiant absent de `cards` (carte supprimée depuis, URL bricolée) reste un
+ * filtre à part entière, faute de quoi il disparaîtrait en silence et la liste
+ * s'afficherait sans filtre du tout ; seul son libellé retombe sur l'identifiant
+ * brut.
+ */
+export async function getBoosterFilterCards(gameId: string, cardIds: string[]): Promise<BoosterFilterCard[]> {
+  if (cardIds.length === 0) {
+    return [];
+  }
+
+  const cards = await getCardsByIds(new ObjectId(gameId), cardIds);
+  const byId = new Map(cards.map((card) => [card.id, card]));
+
+  return cardIds.map((id) => {
+    const card = byId.get(id);
+    return {
+      id,
+      name: card?.name ?? id,
+      image: card?.image ?? '',
+      setCode: card?.setCode ?? '',
+      collectorNumber: card?.collectorNumber ?? '',
+    };
+  });
+}
+
+export function toBoosterCardFilters(cards: BoosterFilterCard[]): BoosterCardFilter[] {
+  return cards.map((card) => ({cardId: card.id, setCode: card.setCode, collectorNumber: card.collectorNumber}));
+}
+
 export async function countBoosters(filters: BoosterFilters): Promise<number> {
-  return await db.collection<BoosterDb>('boosters').countDocuments(boostersQuery(filters));
+  return await db.collection<BoosterDb>('boosters').countDocuments(await boostersQuery(filters));
 }
 
 /** Types de boosters présents chez l'utilisateur pour un jeu, pour ne proposer que des filtres qui donnent des résultats. */
@@ -174,7 +259,7 @@ export async function getBoosterTypesInUse({userId, gameId}: BoosterFilters): Pr
   // `$group` plutôt que `distinct` : ce dernier ignore les documents sans champ
   // `type`, alors que ces boosters comptent comme des « Autre ».
   const rows = await db.collection<BoosterDb>('boosters').aggregate<{_id: unknown}>([
-    {$match: boostersQuery({userId, gameId})},
+    {$match: await boostersQuery({userId, gameId})},
     {$group: {_id: '$type'}},
   ]).toArray();
 
@@ -183,13 +268,13 @@ export async function getBoosterTypesInUse({userId, gameId}: BoosterFilters): Pr
   return [...types].sort();
 }
 
-export async function getBoosters({userId, gameId, type, page = 0, limit = 20, offset = 0, sort = 'newest'}: BoosterFilters & {
+export async function getBoosters({userId, gameId, type, cards, page = 0, limit = 20, offset = 0, sort = 'newest'}: BoosterFilters & {
   page?: number;
   limit?: number;
   offset?: number;
   sort?: BoosterSort;
 }): Promise<Booster[]> {
-  const query = boostersQuery({userId, gameId, type});
+  const query = await boostersQuery({userId, gameId, type, cards});
 
   const skip = page * limit + offset;
 

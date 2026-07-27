@@ -23,7 +23,7 @@ import { updateErrata } from "@/app/games/[gameSlugOrId]/actions";
 import { Errata, ErrataType } from "@/lib/types/errata";
 import { BoosterCard } from "@/lib/types/booster";
 import { Pencil, X } from "lucide-react";
-import ErrataCardsPicker from "@/components/ErrataCardsPicker";
+import CardsPicker from "@/components/CardsPicker";
 import { useTranslations } from "next-intl";
 import { Locale, locales, localeLabels } from "@/i18n/config";
 
@@ -120,7 +120,7 @@ export default function EditErrataDialog({
               <label className="text-sm font-medium">
                 {t("cards.detail.editErrata.fields.linkedCards")}
               </label>
-              <ErrataCardsPicker
+              <CardsPicker
                 gameSlugOrId={gameSlugOrId}
                 selectedCards={selectedCards}
                 onChange={setSelectedCards}

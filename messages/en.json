@@ -1485,7 +1485,15 @@
           "notePlaceholder": "Where and when you opened it, who you were with, anything worth remembering…",
           "noteHint": "Only visible to you.",
           "noteError": "The note could not be saved. Please try again.",
-          "saveNote": "Save note"
+          "saveNote": "Save note",
+          "filterByCards": "Search by card",
+          "filterByCardsTitle": "Find boosters by card",
+          "filterByCardsHint": "Only boosters containing every selected card are shown.",
+          "applyCardFilter": "Apply",
+          "containsCards": "Contains:",
+          "removeCardFilter": "Remove {name} from the filter",
+          "searching": "Searching…",
+          "cardFilterLimit": "At most {count} cards in a filter."
         }
     },
     "Features": {

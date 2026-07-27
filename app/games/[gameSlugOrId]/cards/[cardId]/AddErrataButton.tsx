@@ -23,7 +23,7 @@ import { createErrata } from "@/app/games/[gameSlugOrId]/actions";
 import { ErrataType } from "@/lib/types/errata";
 import { BoosterCard } from "@/lib/types/booster";
 import { useLocale, useTranslations } from "next-intl";
-import ErrataCardsPicker from "@/components/ErrataCardsPicker";
+import CardsPicker from "@/components/CardsPicker";
 import { Locale, locales, localeLabels } from "@/i18n/config";
 
 export default function AddErrataButton({
@@ -100,7 +100,7 @@ export default function AddErrataButton({
               <label className="text-sm font-medium">
                 {t("cards.detail.addErrata.fields.additionalCards")}
               </label>
-              <ErrataCardsPicker
+              <CardsPicker
                 gameSlugOrId={gameSlugOrId}
                 selectedCards={selectedCards}
                 onChange={setSelectedCards}
