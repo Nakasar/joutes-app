@@ -12535,13 +12535,11 @@
           },
           "packsCount": {
             "type": "integer",
-            "description": "Recomputed on read",
-            "never stored on the cube.": null
+            "description": "Recomputed on read, never stored on the cube."
           },
           "cardsCount": {
             "type": "integer",
-            "description": "Recomputed on read",
-            "never stored on the cube.": null
+            "description": "Recomputed on read, never stored on the cube."
           },
           "createdAt": {
             "type": "string",

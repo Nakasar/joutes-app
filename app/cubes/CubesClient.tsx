@@ -116,7 +116,8 @@ export default function CubesClient({ initialCubes, publicCubes, games }: Props)
         }),
       });
       if (res.ok) {
-        const cube: Cube = await res.json();
+        // Les dates du corps JSON sont des chaînes : on ne type que ce qui sert.
+        const cube: { id: string } = await res.json();
         router.push(`/cubes/${cube.id}`);
         return;
       }

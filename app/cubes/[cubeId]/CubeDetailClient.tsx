@@ -105,7 +105,8 @@ export default function CubeDetailClient({ cube, packs, canEdit, ownerLabel, own
         }),
       });
       if (res.ok) {
-        const pack: CubePack = await res.json();
+        // Les dates du corps JSON sont des chaînes : on ne type que ce qui sert.
+        const pack: { id: string } = await res.json();
         router.push(`/cubes/${cube.id}/packs/${pack.id}`);
       }
     } finally {

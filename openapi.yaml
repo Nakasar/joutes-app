@@ -3141,8 +3141,12 @@ components:
         name: { type: string }
         description: { type: string }
         visibility: { type: string, enum: [private, unlisted, public] }
-        packsCount: { type: integer, description: Recomputed on read, never stored on the cube. }
-        cardsCount: { type: integer, description: Recomputed on read, never stored on the cube. }
+        packsCount:
+          type: integer
+          description: Recomputed on read, never stored on the cube.
+        cardsCount:
+          type: integer
+          description: Recomputed on read, never stored on the cube.
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
 

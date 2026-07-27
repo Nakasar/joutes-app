@@ -45,7 +45,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     );
   }
 
+  // `updateCube` relit le cube après écriture : il rend `null` si le cube a
+  // disparu entre le contrôle d'accès et la mise à jour.
   const updated = await updateCube(cubeId, validation.data);
+  if (!updated) {
+    return NextResponse.json({ error: "Cube introuvable" }, { status: 404 });
+  }
+
   return NextResponse.json(updated);
 }
 

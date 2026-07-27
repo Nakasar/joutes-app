@@ -70,8 +70,10 @@ export default function PackEditor({ cube, pack, packLabel, initialCards, canEdi
         }),
       });
       if (res.ok) {
-        const created: CubeCard = await res.json();
-        setCards((prev) => [...prev, created]);
+        // Le corps JSON sérialise `createdAt` en chaîne : la date est reconstruite
+        // avant d'entrer dans l'état, qui reçoit sinon des `Date` côté serveur.
+        const created = (await res.json()) as Omit<CubeCard, "createdAt"> & { createdAt: string };
+        setCards((prev) => [...prev, { ...created, createdAt: new Date(created.createdAt) }]);
         router.refresh();
       }
     } finally {
