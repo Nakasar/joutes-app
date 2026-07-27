@@ -12,7 +12,7 @@ import { getAllGames, getGameById } from "@/lib/db/games";
 import { addGameToUser, addLairToUser } from "@/lib/db/users";
 import { createEvent } from "@/lib/db/events";
 import { Event } from "@/lib/types/Event";
-import { z } from "zod/v3";
+import { z } from "zod";
 import { DateTime } from "luxon";
 import { getErratasByCardId } from "@/lib/db/erratas";
 import { getAllPolicies } from "@/lib/db/policies";
@@ -598,6 +598,10 @@ async function handleGetRule(params: {
     };
 }
 
+// Marge sous `maxDuration` (60s, exporté plus bas) pour que le garde-fou
+// réponde avant que la plateforme ne coupe la fonction.
+const HANDLER_TIMEOUT_MS = 55_000;
+
 // Route principale MCP
 const handler = createMcpHandler(server => {
     server.tool("search_events", "Rechercher des évènements sur la plateforme Joutes. Supporte la personnalisation pour l'utilisateur authentifié et le filtrage par jeux.", {
@@ -674,6 +678,27 @@ const handler = createMcpHandler(server => {
     maxDuration: 60,
 });
 
+// Durée max de la fonction serverless. Sans cet export, Vercel applique sa
+// limite de plateforme (300s) : une requête bloquée y restait jusqu'au 504.
+export const maxDuration = 60;
+
+// mcp-handler construit sa Response depuis un faux ServerResponse Node et
+// appelle le handler interne en `void fn(res)` : si l'enregistrement des outils
+// échoue, le rejet est avalé et la promesse retournée n'est jamais résolue —
+// la requête reste pendante jusqu'au timeout de la plateforme. On borne donc
+// l'attente pour renvoyer une erreur explicite plutôt que de laisser filer.
+// Aucune route ici n'est longue durée : GET et DELETE répondent 405 et POST est
+// une requête/réponse JSON-RPC unitaire.
+function withTimeout(promise: Promise<Response>): Promise<Response> {
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+            reject(new Error(`[MCP] Aucune réponse après ${HANDLER_TIMEOUT_MS}ms.`));
+        }, HANDLER_TIMEOUT_MS);
+
+        promise.then(resolve, reject).finally(() => clearTimeout(timer));
+    });
+}
+
 async function authHandler(req: Request) {
     try {
         const authorization = req.headers?.get("authorization") ?? undefined;
@@ -721,7 +746,7 @@ async function authHandler(req: Request) {
 
     console.log(`[MCP] Requête ${req.method} reçue`);
     try {
-        return await handler(req);
+        return await withTimeout(handler(req));
     } catch (error) {
         console.error("[MCP] Erreur non gérée lors du traitement de la requête:", error);
         return NextResponse.json(

@@ -6,7 +6,7 @@ import {
 import { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ObjectId } from "mongodb";
-import { z } from "zod/v3";
+import { z } from "zod";
 import db from "@/lib/mongodb";
 import {
     CollectionOwner,
