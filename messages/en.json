@@ -851,8 +851,8 @@
       "title": "{gameName} cubes",
       "description": "Public cubes shared by the community for {gameName}.",
       "notFoundTitle": "Game not found",
-      "notFoundDescription": "Cubes are not enabled for this game.",
-      "empty": "No public cube",
+      "notFoundDescription": "The game you are looking for does not exist or has no cubes on Joutes.",
+      "empty": "No public cubes",
       "emptyDescription": "Nobody has shared a cube for this game yet. Be the first.",
       "signInToCreate": "Sign in to create a cube"
     }

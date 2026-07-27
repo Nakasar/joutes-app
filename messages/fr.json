@@ -852,7 +852,7 @@
       "title": "Cubes de {gameName}",
       "description": "Les cubes publics partagés par la communauté pour {gameName}.",
       "notFoundTitle": "Jeu non trouvé",
-      "notFoundDescription": "Les cubes ne sont pas activés pour ce jeu.",
+      "notFoundDescription": "Le jeu que vous recherchez n'existe pas ou ne propose pas de cubes sur Joutes.",
       "empty": "Aucun cube public",
       "emptyDescription": "Personne n'a encore partagé de cube pour ce jeu. Créez le premier.",
       "signInToCreate": "Connectez-vous pour créer un cube"

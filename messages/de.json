@@ -851,7 +851,7 @@
       "title": "Cubes für {gameName}",
       "description": "Öffentliche Cubes, die die Community für {gameName} teilt.",
       "notFoundTitle": "Spiel nicht gefunden",
-      "notFoundDescription": "Cubes sind für dieses Spiel nicht aktiviert.",
+      "notFoundDescription": "Das gesuchte Spiel existiert nicht oder hat keine Cubes auf Joutes.",
       "empty": "Kein öffentlicher Cube",
       "emptyDescription": "Für dieses Spiel wurde noch kein Cube geteilt. Sei die erste Person.",
       "signInToCreate": "Zum Erstellen eines Cubes anmelden"
