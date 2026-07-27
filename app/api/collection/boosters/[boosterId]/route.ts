@@ -56,11 +56,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (body.note !== null && typeof body.note !== "string") {
       return NextResponse.json({ error: "Invalid note" }, { status: 400 });
     }
-    const trimmed = typeof body.note === "string" ? body.note.trim() : "";
-    if (trimmed.length > BOOSTER_NOTE_MAX_LENGTH) {
+    // La longueur est mesurée sur la chaîne reçue, pas sur sa version rognée :
+    // sinon une note faite de milliers d'espaces passerait la limite en étant
+    // ramenée à une chaîne vide.
+    const raw = typeof body.note === "string" ? body.note : "";
+    if (raw.length > BOOSTER_NOTE_MAX_LENGTH) {
       return NextResponse.json({ error: "Note too long" }, { status: 400 });
     }
-    note = trimmed || null;
+    note = raw.trim() || null;
   }
 
   await updateBooster(boosterId, { type, note });

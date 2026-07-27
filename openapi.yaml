@@ -441,6 +441,9 @@ paths:
           application/json:
             schema:
               type: object
+              anyOf:
+                - required: [type]
+                - required: [note]
               properties:
                 type:
                   type: string
