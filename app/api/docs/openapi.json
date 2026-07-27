@@ -25,6 +25,10 @@
       "description": "Personal card collection, booster/pack tracking and collection completion stats."
     },
     {
+      "name": "Cubes",
+      "description": "User-built cubes - packs of cards with visibility rules and distribution statistics."
+    },
+    {
       "name": "Decks",
       "description": "Public and private deck lists linked to a game."
     },
@@ -1478,6 +1482,654 @@
                 }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/cubes": {
+      "get": {
+        "tags": [
+          "Cubes"
+        ],
+        "summary": "List the caller's cubes",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cubes owned by the caller, whatever their visibility.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "cubes": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Cube"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Cubes"
+        ],
+        "summary": "Create a cube",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "gameSlug"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "gameSlug": {
+                    "type": "string",
+                    "description": "Game the cube belongs to. It fixes which cards can be added and cannot be changed afterwards."
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "visibility": {
+                    "type": "string",
+                    "enum": [
+                      "private",
+                      "unlisted",
+                      "public"
+                    ],
+                    "default": "private"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cube"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/cubes/{cubeId}": {
+      "parameters": [
+        {
+          "name": "cubeId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Cubes"
+        ],
+        "summary": "Get a cube and its packs",
+        "description": "A private cube answers 404 to anyone but its owner, so that the response does not reveal its existence.",
+        "responses": {
+          "200": {
+            "description": "Cube.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "cube": {
+                      "$ref": "#/components/schemas/Cube"
+                    },
+                    "packs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CubePack"
+                      }
+                    },
+                    "canEdit": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Cubes"
+        ],
+        "summary": "Update a cube",
+        "description": "At least one field must be provided. The game is not editable.",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "anyOf": [
+                  {
+                    "required": [
+                      "name"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "description"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "visibility"
+                    ]
+                  }
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "description": "An empty string clears the existing description."
+                  },
+                  "visibility": {
+                    "type": "string",
+                    "enum": [
+                      "private",
+                      "unlisted",
+                      "public"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Cube"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Cubes"
+        ],
+        "summary": "Delete a cube, its packs and their cards",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/cubes/{cubeId}/packs": {
+      "parameters": [
+        {
+          "name": "cubeId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Cubes"
+        ],
+        "summary": "List a cube's packs",
+        "responses": {
+          "200": {
+            "description": "Packs, oldest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "packs": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CubePack"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Cubes"
+        ],
+        "summary": "Add a pack to a cube",
+        "description": "Both fields are optional - a pack with no name is displayed by its position.",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "type": {
+                    "type": "string",
+                    "maxLength": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CubePack"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/cubes/{cubeId}/packs/{packId}": {
+      "parameters": [
+        {
+          "name": "cubeId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "packId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Cubes"
+        ],
+        "summary": "Get a pack and its cards",
+        "responses": {
+          "200": {
+            "description": "Pack.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "pack": {
+                      "$ref": "#/components/schemas/CubePack"
+                    },
+                    "cards": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CubeCard"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Cubes"
+        ],
+        "summary": "Update a pack's name or type",
+        "description": "An empty string clears the corresponding field.",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "anyOf": [
+                  {
+                    "required": [
+                      "name"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "type"
+                    ]
+                  }
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "type": {
+                    "type": "string",
+                    "maxLength": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CubePack"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Cubes"
+        ],
+        "summary": "Delete a pack and its cards",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/cubes/{cubeId}/packs/{packId}/cards": {
+      "parameters": [
+        {
+          "name": "cubeId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "packId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "tags": [
+          "Cubes"
+        ],
+        "summary": "Add a card to a pack",
+        "description": "The same card may be added several times: a pack holds copies, not a set.",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "cardId",
+                  "name",
+                  "setCode",
+                  "collectorNumber",
+                  "image"
+                ],
+                "properties": {
+                  "cardId": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "setCode": {
+                    "type": "string"
+                  },
+                  "collectorNumber": {
+                    "type": "string"
+                  },
+                  "image": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CubeCard"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Cubes"
+        ],
+        "summary": "Remove one card entry from a pack",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entryId",
+            "in": "query",
+            "required": true,
+            "description": "Id of the card entry to remove, not the card id - a pack may hold several copies.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -11842,6 +12494,115 @@
           },
           "addedToCollection": {
             "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Cube": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "ownerId": {
+            "type": "string"
+          },
+          "gameId": {
+            "type": "string"
+          },
+          "gameName": {
+            "type": "string"
+          },
+          "gameSlug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "private",
+              "unlisted",
+              "public"
+            ]
+          },
+          "packsCount": {
+            "type": "integer",
+            "description": "Recomputed on read, never stored on the cube."
+          },
+          "cardsCount": {
+            "type": "integer",
+            "description": "Recomputed on read, never stored on the cube."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CubePack": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "cubeId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "Absent when the pack was created without one."
+          },
+          "type": {
+            "type": "string"
+          },
+          "cardsCount": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CubeCard": {
+        "type": "object",
+        "description": "One copy of a card in a pack. Only the card's identity is stored; game properties are read back from the game's cards for the statistics.",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "cubeId": {
+            "type": "string"
+          },
+          "packId": {
+            "type": "string"
+          },
+          "cardId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "setCode": {
+            "type": "string"
+          },
+          "collectorNumber": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
           },
           "createdAt": {
             "type": "string",

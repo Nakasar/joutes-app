@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSession, signOut } from "@/lib/auth-client";
 import Image from "next/image";
-import {Menu, Calendar, MapPin, User, UserRound, LogOut, Shield, Trophy, Dices, Library, Heart, Users, ChevronDown, Sparkles, Tag, Gamepad2, Plus, ArrowLeftRight, type LucideIcon} from "lucide-react";
+import {Menu, Calendar, MapPin, User, UserRound, LogOut, Shield, Trophy, Dices, Library, Heart, Users, ChevronDown, Sparkles, Tag, Gamepad2, Plus, ArrowLeftRight, Boxes, type LucideIcon} from "lucide-react";
 import { isAdmin } from "@/lib/config/admins";
 import { Button } from "@/components/ui/button";
 import { NotificationDropdown } from "@/components/NotificationDropdown";
@@ -172,6 +172,12 @@ export default function Header() {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
+                        <Link href="/cubes" className="flex w-full cursor-pointer">
+                          <Boxes className="mr-2 h-4 w-4" />
+                          <span>{t('menu.Cubes')}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
                         <Link href="/sell-lists" className="flex w-full cursor-pointer">
                           <Tag className="mr-2 h-4 w-4" />
                           <span>{t('menu.SellLists')}</span>
@@ -307,6 +313,12 @@ export default function Header() {
                         <Link href="/wishlists" className="flex w-full cursor-pointer">
                           <Heart className="mr-2 h-4 w-4" />
                           <span>{t('menu.Wishlists')}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/cubes" className="flex w-full cursor-pointer">
+                          <Boxes className="mr-2 h-4 w-4" />
+                          <span>{t('menu.Cubes')}</span>
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
@@ -508,6 +520,12 @@ export default function Header() {
                     <Link href="/wishlists" onClick={() => setMobileMenuOpen(false)}>
                       <Heart className="mr-2 h-4 w-4" />
                       {t('menu.Wishlists')}
+                    </Link>
+                  </Button>
+                  <Button variant="ghost" asChild className="w-full justify-start">
+                    <Link href="/cubes" onClick={() => setMobileMenuOpen(false)}>
+                      <Boxes className="mr-2 h-4 w-4" />
+                      {t('menu.Cubes')}
                     </Link>
                   </Button>
                   <Button variant="ghost" asChild className="w-full justify-start">
