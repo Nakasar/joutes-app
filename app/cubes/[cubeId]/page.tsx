@@ -3,6 +3,8 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { Metadata } from "next/types";
 import { getCubeAccess, getCubeById, getCubeOwnerInfo, getCubePacks } from "@/lib/db/cubes";
+import { getCubeAttributeOptions } from "@/lib/db/cube-draw";
+import { DEFAULT_CUBE_DRAW } from "@/lib/constants/cubes";
 import CubeDetailClient from "./CubeDetailClient";
 
 export const dynamic = "force-dynamic";
@@ -37,9 +39,12 @@ export default async function CubePage({ params }: { params: Promise<{ cubeId: s
     notFound();
   }
 
-  const [packs, owner] = await Promise.all([
+  const [packs, owner, attributeOptions] = await Promise.all([
     getCubePacks(cubeId),
     access.canEdit ? Promise.resolve(null) : getCubeOwnerInfo(cube),
+    // Les attributs disponibles ne servent qu'au formulaire de tirage : inutile
+    // de les calculer pour un visiteur qui ne peut pas configurer le cube.
+    access.canEdit ? getCubeAttributeOptions(cubeId, cube.gameId) : Promise.resolve([]),
   ]);
 
   return (
@@ -50,6 +55,8 @@ export default async function CubePage({ params }: { params: Promise<{ cubeId: s
         canEdit={access.canEdit}
         ownerLabel={owner?.label}
         ownerHref={owner?.href}
+        drawConfig={cube.draw ?? DEFAULT_CUBE_DRAW}
+        attributeOptions={attributeOptions}
       />
     </div>
   );
