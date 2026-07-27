@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { LiveTimer } from "@/lib/tournament-timer";
+import type { TournamentLiveDisplay } from "@/lib/types/Tournament";
 
 export type LiveAnnouncement = {
   id: string;
@@ -11,11 +12,32 @@ export type LiveAnnouncement = {
   createdAt: string;
 };
 
+export type LiveStanding = {
+  rank: number;
+  name: string;
+  matchPoints: number;
+  record: string;
+  dropped: boolean;
+};
+
+export type LiveMatch = {
+  id: string;
+  tableNumber: number | null;
+  players: string[];
+  done: boolean;
+};
+
 export type LiveState = {
   name: string;
   announcements: LiveAnnouncement[];
   timer: LiveTimer;
   serverNow: string;
+  // Panneau demandé par l'organisateur pour l'écran de la salle. Les deux
+  // listes ne sont servies que par le panneau qui les affiche.
+  display: TournamentLiveDisplay;
+  roundNumber: number | null;
+  standings: LiveStanding[] | null;
+  matches: LiveMatch[] | null;
 };
 
 /**

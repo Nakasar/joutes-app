@@ -151,6 +151,7 @@ function toTournament(doc: WithId<TournamentDb>): Tournament {
     currentPhaseId: doc.currentPhaseId,
     joinCode: doc.joinCode,
     timer: doc.timer,
+    liveDisplay: doc.liveDisplay,
     location: doc.location,
     startsAt: doc.startsAt,
     capacity: doc.capacity,
@@ -874,6 +875,7 @@ export async function updateTournament(
     capacity?: number | null;
     settings?: Partial<Tournament["settings"]>;
     organizerIds?: string[];
+    liveDisplay?: Tournament["liveDisplay"];
   }
 ): Promise<Tournament> {
   const _id = parseObjectId(tournamentId, "Tournoi");
@@ -883,6 +885,7 @@ export async function updateTournament(
 
   if (updates.name !== undefined) set.name = updates.name;
   if (updates.status !== undefined) set.status = updates.status;
+  if (updates.liveDisplay !== undefined) set.liveDisplay = updates.liveDisplay;
   if (updates.currentPhaseId === null) {
     unset.currentPhaseId = "";
   } else if (updates.currentPhaseId !== undefined) {

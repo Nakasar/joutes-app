@@ -46,6 +46,17 @@ export const DEFAULT_FIXED_SCORING: TournamentFixedScoring = { win: 3, loss: 0, 
 // 1er = N+3, 2e = N+1, 3e = N-1, 4e = N-3, etc.
 export const DEFAULT_RANK_OFFSETS: number[] = [3, 1, -1, -3, -4, -5, -7];
 
+// Panneau montré sur l'écran de projection de la salle. L'organisateur le
+// choisit depuis « Salle & annonces » ; l'écran suit sans intervention.
+export type TournamentLiveDisplay = "timer" | "announcements" | "standings" | "matches";
+
+export const TOURNAMENT_LIVE_DISPLAYS: TournamentLiveDisplay[] = [
+  "timer",
+  "announcements",
+  "standings",
+  "matches",
+];
+
 export type Tournament = {
   id: string;
   name: string;
@@ -65,6 +76,9 @@ export type Tournament = {
     running: boolean;
     remainingSeconds?: number;
   };
+  // Panneau affiché sur l'écran de projection. Absent = minuteur, l'affichage
+  // par défaut et le seul qui existait avant.
+  liveDisplay?: TournamentLiveDisplay;
   settings: {
     allowSelfReporting: boolean;
     requireConfirmation: boolean;

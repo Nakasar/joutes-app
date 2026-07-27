@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { formatDuration, timerIsPaused, timerRemainingSeconds } from "@/lib/tournament-timer";
+import { TOURNAMENT_LIVE_DISPLAYS, type TournamentLiveDisplay } from "@/lib/types/Tournament";
 import { OrganizerPageHeader } from "./OrganizerPageHeader";
 import { TimerTimeEditor } from "./TimerTimeEditor";
 import { useTournamentLive } from "../useTournamentLive";
@@ -53,12 +54,20 @@ export function LiveSection({
   const [urgent, setUrgent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [displayOverride, setDisplayOverride] = useState<TournamentLiveDisplay | null>(null);
 
   const [, setTick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setTick((n) => n + 1), 500);
     return () => clearInterval(id);
   }, []);
+
+  // L'optimisme s'efface dès que le serveur confirme, sinon un changement fait
+  // depuis un autre poste ne se verrait plus jamais ici.
+  const serverDisplay = state?.display;
+  useEffect(() => {
+    setDisplayOverride((current) => (current && current === serverDisplay ? null : current));
+  }, [serverDisplay]);
 
   const timer = state?.timer ?? null;
   const remaining = timerRemainingSeconds(timer, serverOffsetMs);
@@ -163,7 +172,37 @@ export function LiveSection({
     if (!wasRunning) await timerAction({ action: "pause" });
   };
 
-  const joinUrl = `joutes.app/t/${joinCode}`;
+  // Panneau montré sur l'écran de la salle. Optimiste : le bouton s'allume tout
+  // de suite, l'écran suit à son prochain sondage.
+  const setDisplay = async (next: TournamentLiveDisplay) => {
+    setDisplayOverride(next);
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/tournaments/${tournamentId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ liveDisplay: next }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? t("live.displayError"));
+      }
+      await reload();
+    } catch (err) {
+      setDisplayOverride(null);
+      setError(err instanceof Error ? err.message : t("live.displayError"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // L'état serveur fait foi dès qu'il est revenu : l'optimisme ne sert qu'à
+  // couvrir l'aller-retour.
+  const currentDisplay: TournamentLiveDisplay = displayOverride ?? state?.display ?? "timer";
+
+  const projectionPath = `/t/${joinCode}`;
+  const projectionUrl = `joutes.app${projectionPath}`;
 
   return (
     <div>
@@ -278,6 +317,29 @@ export function LiveSection({
               </span>
             </div>
 
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-neutral-500">
+              {t("live.displaysTitle")}
+            </p>
+            <div className="mb-4 flex flex-wrap gap-1.5 rounded-lg bg-neutral-900 p-1">
+              {TOURNAMENT_LIVE_DISPLAYS.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setDisplay(option)}
+                  disabled={busy}
+                  aria-pressed={currentDisplay === option}
+                  className={cn(
+                    "flex-1 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors disabled:opacity-50",
+                    currentDisplay === option
+                      ? "bg-white text-neutral-950"
+                      : "text-neutral-400 hover:text-white"
+                  )}
+                >
+                  {t(`live.displays.${option}`)}
+                </button>
+              ))}
+            </div>
+
             <div className="py-4 text-center">
               <p
                 className={cn(
@@ -335,12 +397,12 @@ export function LiveSection({
 
             <div className="mt-5 flex items-center justify-between border-t border-neutral-800 pt-4 text-[13px] text-neutral-400">
               <span>{t("live.tablesReported", { done: reportedMatches, total: totalMatches })}</span>
-              <span className="font-mono">{joinUrl}</span>
+              <span className="font-mono">{projectionUrl}</span>
             </div>
           </div>
 
           <Button variant="outline" className="mt-3 w-full" asChild>
-            <Link href={`/tournaments/${tournamentId}/timer`} target="_blank">
+            <Link href={projectionPath} target="_blank">
               <Maximize2 className="size-4" />
               {t("live.openProjection")}
             </Link>

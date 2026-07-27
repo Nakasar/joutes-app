@@ -2412,6 +2412,10 @@
         "status": "Statut"
       }
     },
+    "projection": {
+      "noStandings": "Classement indisponible",
+      "noMatches": "Aucune table en cours"
+    },
     "live": {
       "pageTitle": "Parler à la salle",
       "pageDescription": "Ce que vous envoyez ici s'affiche sur le téléphone de chaque joueur et sur l'écran de projection.",
@@ -2423,6 +2427,14 @@
       "resetTimer": "Réinitialiser",
       "tablesReported": "{done} / {total} tables rendues",
       "openProjection": "Ouvrir en plein écran",
+      "displayError": "Impossible de changer l'affichage de l'écran.",
+      "displaysTitle": "Afficher sur l'écran",
+      "displays": {
+        "timer": "Minuteur",
+        "announcements": "Annonces",
+        "standings": "Classement",
+        "matches": "Tables"
+      },
       "presets": {
         "fiveMinutes": {
           "label": "5 minutes restantes",

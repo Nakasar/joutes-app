@@ -2328,6 +2328,10 @@
         "status": "Status"
       }
     },
+    "projection": {
+      "noStandings": "Tabelle nicht verfügbar",
+      "noMatches": "Kein Tisch im Spiel"
+    },
     "live": {
       "pageTitle": "Zum Saal sprechen",
       "pageDescription": "Was Sie hier senden, erscheint auf dem Handy jedes Spielers und auf der Leinwand.",
@@ -2339,6 +2343,14 @@
       "resetTimer": "Zurücksetzen",
       "tablesReported": "{done} / {total} Tische gemeldet",
       "openProjection": "Vollbild öffnen",
+      "displayError": "Anzeige des Bildschirms konnte nicht geändert werden.",
+      "displaysTitle": "Auf dem Bildschirm zeigen",
+      "displays": {
+        "timer": "Timer",
+        "announcements": "Ansagen",
+        "standings": "Tabelle",
+        "matches": "Tische"
+      },
       "presets": {
         "fiveMinutes": {
           "label": "Noch 5 Minuten",
