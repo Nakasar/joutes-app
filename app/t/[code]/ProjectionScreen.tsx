@@ -19,19 +19,22 @@ export function ProjectionScreen({ tournamentId }: { tournamentId: string }) {
   const t = useTranslations("Tournaments");
   const { state, serverOffsetMs } = useTournamentLive(tournamentId, 5000);
 
-  // Décompte fluide : le sondage rafraîchit les données, ce tick rafraîchit
-  // l'affichage entre deux sondages.
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setTick((n) => n + 1), 250);
-    return () => clearInterval(id);
-  }, []);
-
   const timer = state?.timer ?? null;
   const remaining = timerRemainingSeconds(timer, serverOffsetMs);
   const expired = remaining !== null && remaining < 0;
   const paused = timerIsPaused(timer);
   const display = state?.display ?? "timer";
+
+  // Décompte fluide : le sondage rafraîchit les données, ce tick rafraîchit
+  // l'affichage entre deux sondages. Réservé au minuteur — c'est le seul
+  // panneau dont l'affichage change sans nouvelle donnée, et la machine de
+  // projection n'a pas à redessiner un classement quatre fois par seconde.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (display !== "timer") return;
+    const id = setInterval(() => setTick((n) => n + 1), 250);
+    return () => clearInterval(id);
+  }, [display]);
 
   return (
     <div

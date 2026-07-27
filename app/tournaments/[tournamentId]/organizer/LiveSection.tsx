@@ -402,7 +402,7 @@ export function LiveSection({
           </div>
 
           <Button variant="outline" className="mt-3 w-full" asChild>
-            <Link href={projectionPath} target="_blank">
+            <Link href={projectionPath} target="_blank" rel="noopener noreferrer">
               <Maximize2 className="size-4" />
               {t("live.openProjection")}
             </Link>
