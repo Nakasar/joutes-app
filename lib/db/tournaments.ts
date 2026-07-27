@@ -30,6 +30,7 @@ import {
   TournamentPenaltyType,
   TournamentPhase,
   TournamentPhaseDb,
+  TournamentPhaseType,
   TournamentPlayerStatus,
   TournamentPlayer,
   TournamentPlayerDb,
@@ -50,6 +51,10 @@ import {
   generateSwissPairings,
   shuffleArray,
 } from "@/lib/utils/pairing";
+import {
+  resolveCurrentRound,
+  resolveDisplayPhase,
+} from "@/lib/tournaments/current-round";
 import {
   createInvitedUserByEmail,
   getUserByEmail,
@@ -464,6 +469,125 @@ export async function listTournamentsForUser(userId: string): Promise<Tournament
     .sort({ createdAt: -1 })
     .toArray();
   return docs.map(toTournament);
+}
+
+export type TournamentListSummary = {
+  playersCount: number;
+  phases: { type: TournamentPhaseType; plannedRounds?: number; topCut?: number }[];
+  currentRound: {
+    id: string;
+    number: number;
+    plannedRounds?: number;
+    reportedMatches: number;
+    totalMatches: number;
+  } | null;
+};
+
+/**
+ * Résumés d'avancement pour une liste de tournois (participants, format, ronde
+ * en cours). Volontairement en lot : la liste des tournois d'un organisateur
+ * peut être longue, et un aller-retour par tournoi ferait un N+1. Ici le coût
+ * reste de quatre requêtes quel que soit le nombre de tournois.
+ */
+export async function listTournamentSummaries(
+  tournaments: Tournament[]
+): Promise<Map<string, TournamentListSummary>> {
+  const summaries = new Map<string, TournamentListSummary>();
+  if (tournaments.length === 0) return summaries;
+
+  const ids = tournaments.map((t) => new ObjectId(t.id));
+
+  const [playerCounts, phaseDocs, roundDocs] = await Promise.all([
+    db
+      .collection<TournamentPlayerDb>(PLAYERS)
+      .aggregate<{ _id: ObjectId; count: number }>([
+        { $match: { tournamentId: { $in: ids }, status: { $ne: "dropped" } } },
+        { $group: { _id: "$tournamentId", count: { $sum: 1 } } },
+      ])
+      .toArray(),
+    db
+      .collection<TournamentPhaseDb>(PHASES)
+      .find({ tournamentId: { $in: ids } })
+      .sort({ order: 1, createdAt: 1 })
+      .toArray(),
+    db
+      .collection<TournamentRoundDb>(ROUNDS)
+      .find({ tournamentId: { $in: ids } })
+      .sort({ createdAt: 1 })
+      .toArray(),
+  ]);
+
+  const playersByTournament = new Map(playerCounts.map((row) => [row._id.toString(), row.count]));
+  const phasesByTournament = new Map<string, TournamentPhase[]>();
+  for (const doc of phaseDocs) {
+    const key = doc.tournamentId.toString();
+    const list = phasesByTournament.get(key) ?? [];
+    list.push(toPhase(doc));
+    phasesByTournament.set(key, list);
+  }
+  const roundsByTournament = new Map<string, TournamentRound[]>();
+  for (const doc of roundDocs) {
+    const key = doc.tournamentId.toString();
+    const list = roundsByTournament.get(key) ?? [];
+    list.push(toRound(doc));
+    roundsByTournament.set(key, list);
+  }
+
+  // Les rondes courantes une fois toutes identifiées : leurs matchs se comptent
+  // en une seule agrégation plutôt qu'une lecture par tournoi.
+  const currentRounds = new Map<string, TournamentRound>();
+  for (const tournament of tournaments) {
+    const phases = phasesByTournament.get(tournament.id) ?? [];
+    const rounds = roundsByTournament.get(tournament.id) ?? [];
+    const activePhase = resolveDisplayPhase(phases, tournament.currentPhaseId);
+    const currentRound = resolveCurrentRound(rounds, activePhase?.id);
+    if (currentRound) currentRounds.set(tournament.id, currentRound);
+  }
+
+  const matchCounts =
+    currentRounds.size > 0
+      ? await db
+          .collection<TournamentMatchDb>(MATCHES)
+          .aggregate<{ _id: ObjectId; total: number; reported: number }>([
+            {
+              $match: {
+                roundId: { $in: [...currentRounds.values()].map((r) => new ObjectId(r.id)) },
+              },
+            },
+            {
+              $group: {
+                _id: "$roundId",
+                total: { $sum: 1 },
+                reported: { $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] } },
+              },
+            },
+          ])
+          .toArray()
+      : [];
+  const matchesByRound = new Map(matchCounts.map((row) => [row._id.toString(), row]));
+
+  for (const tournament of tournaments) {
+    const phases = phasesByTournament.get(tournament.id) ?? [];
+    const currentRound = currentRounds.get(tournament.id) ?? null;
+    const currentPhase = currentRound ? phases.find((p) => p.id === currentRound.phaseId) : undefined;
+    const counts = currentRound ? matchesByRound.get(currentRound.id) : undefined;
+
+    summaries.set(tournament.id, {
+      playersCount: playersByTournament.get(tournament.id) ?? 0,
+      phases: phases.map((p) => ({ type: p.type, plannedRounds: p.plannedRounds, topCut: p.topCut })),
+      currentRound: currentRound
+        ? {
+            id: currentRound.id,
+            number: currentRound.number,
+            plannedRounds: currentPhase?.plannedRounds,
+            reportedMatches: counts?.reported ?? 0,
+            totalMatches: counts?.total ?? 0,
+          }
+        : null,
+    });
+  }
+
+  return summaries;
 }
 
 export function isTournamentOrganizer(tournament: Tournament, userId: string): boolean {

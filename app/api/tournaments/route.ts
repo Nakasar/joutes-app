@@ -4,10 +4,7 @@ import { createTournamentSchema } from "@/lib/schemas/tournament.schema";
 import { getEventById } from "@/lib/db/events";
 import {
   createTournament,
-  listMatchesByRound,
-  listPhases,
-  listPlayers,
-  listRounds,
+  listTournamentSummaries,
   listTournamentsForUser,
 } from "@/lib/db/tournaments";
 import { tournamentErrorResponse, unauthorizedResponse } from "./utils";
@@ -22,44 +19,14 @@ export async function GET(request: NextRequest) {
     // La liste des tournois affiche l'avancement de chacun (ronde en cours,
     // format, participants) : on l'assemble ici plutôt que de faire faire une
     // requête par tournoi au client.
-    const summaries = await Promise.all(
-      tournaments.map(async (tournament) => {
-        const [players, phases, rounds] = await Promise.all([
-          listPlayers(tournament.id),
-          listPhases(tournament.id),
-          listRounds(tournament.id),
-        ]);
+    const summaries = await listTournamentSummaries(tournaments);
 
-        const ordered = [...rounds].sort((a, b) => a.number - b.number);
-        const currentRound =
-          ordered.filter((r) => r.status === "in-progress").pop() ?? ordered[ordered.length - 1];
-        const currentPhase = currentRound
-          ? phases.find((p) => p.id === currentRound.phaseId)
-          : undefined;
-        const matches = currentRound
-          ? await listMatchesByRound(tournament.id, currentRound.id)
-          : [];
-
-        return {
-          ...tournament,
-          summary: {
-            playersCount: players.filter((p) => p.status !== "dropped").length,
-            phases: phases.map((p) => ({ type: p.type, plannedRounds: p.plannedRounds, topCut: p.topCut })),
-            currentRound: currentRound
-              ? {
-                  id: currentRound.id,
-                  number: currentRound.number,
-                  plannedRounds: currentPhase?.plannedRounds,
-                  reportedMatches: matches.filter((m) => m.status === "completed").length,
-                  totalMatches: matches.length,
-                }
-              : null,
-          },
-        };
-      })
+    return NextResponse.json(
+      tournaments.map((tournament) => ({
+        ...tournament,
+        summary: summaries.get(tournament.id) ?? null,
+      }))
     );
-
-    return NextResponse.json(summaries);
   } catch (error) {
     return tournamentErrorResponse(error);
   }

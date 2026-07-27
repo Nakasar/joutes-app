@@ -1,4 +1,5 @@
 import { getStandings } from "@/lib/db/tournaments";
+import { resolveDisplayPhase } from "@/lib/tournaments/current-round";
 import { loadOrganizerContext } from "../organizerContext";
 import { StandingsBoard, type StandingsSnapshot } from "./StandingsBoard";
 
@@ -8,11 +9,12 @@ export default async function OrganizerStandingsPage({
   params: Promise<{ tournamentId: string }>;
 }) {
   const { tournamentId } = await params;
-  const { rounds, activePhase, phases } = await loadOrganizerContext(tournamentId);
+  const { rounds, tournament, phases } = await loadOrganizerContext(tournamentId);
 
   // Le classement se lit dans la phase en cours : ses rondes validées portent
-  // chacune un classement figé, et le classement courant clôt la série.
-  const phase = activePhase ?? phases[phases.length - 1] ?? null;
+  // chacune un classement figé, et le classement courant clôt la série. Même
+  // résolution que l'export CSV, pour que le fichier corresponde au tableau.
+  const phase = resolveDisplayPhase(phases, tournament.currentPhaseId);
   const phaseRounds = phase ? rounds.filter((r) => r.phaseId === phase.id) : [];
 
   const snapshots: StandingsSnapshot[] = phaseRounds

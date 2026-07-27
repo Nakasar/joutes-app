@@ -9,6 +9,11 @@ import {
   listPlayers,
   listRounds,
 } from "@/lib/db/tournaments";
+import {
+  resolveActivePhase,
+  resolveCurrentRound,
+  sortRoundsByCreation,
+} from "@/lib/tournaments/current-round";
 
 export type OrganizerNavCounts = {
   // Matchs de la ronde courante sans résultat acté, et matchs en litige :
@@ -39,23 +44,11 @@ export async function loadOrganizerContext(tournamentId: string) {
     listPlayers(tournamentId),
   ]);
 
-  const activePhase =
-    phases.find((p) => p.id === tournament.currentPhaseId) ??
-    phases.find((p) => p.status === "in-progress") ??
-    null;
+  const activePhase = resolveActivePhase(phases, tournament.currentPhaseId);
 
-  // Ronde courante, cible du lien « Ronde en cours ». Les numéros de ronde
-  // repartent à 1 à chaque phase : on ne peut pas les trier globalement. On
-  // cherche donc d'abord dans la phase active, puis à défaut la ronde la plus
-  // récemment créée — `createdAt` est le seul ordre valable d'une phase à l'autre.
-  const byCreation = [...rounds].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-  const inPhase = activePhase ? byCreation.filter((r) => r.phaseId === activePhase.id) : [];
-  const currentRound =
-    inPhase.filter((r) => r.status === "in-progress").pop() ??
-    inPhase[inPhase.length - 1] ??
-    byCreation.filter((r) => r.status === "in-progress").pop() ??
-    byCreation[byCreation.length - 1] ??
-    null;
+  // Ronde courante, cible du lien « Ronde en cours ».
+  const byCreation = sortRoundsByCreation(rounds);
+  const currentRound = resolveCurrentRound(byCreation, activePhase?.id);
 
   const currentMatches = currentRound ? await listMatchesByRound(tournamentId, currentRound.id) : [];
 

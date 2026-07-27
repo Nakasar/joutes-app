@@ -7,7 +7,9 @@ import {
   getRoundById,
   getStandings,
   getTournamentById,
+  listPhases,
 } from "@/lib/db/tournaments";
+import { resolveDisplayPhase } from "@/lib/tournaments/current-round";
 import {
   buildStandingsCsv,
   buildStandingsCsvFileName,
@@ -47,8 +49,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const [t, locale] = await Promise.all([getTranslations("Tournaments"), getLocale()]);
 
     // Une ronde validée porte son classement figé ; sinon on calcule le
-    // classement courant du tournoi.
-    const rows = round?.standings ?? (await getStandings(tournamentId));
+    // classement courant. Il est cadré sur la phase affichée par l'écran de
+    // classement, sans quoi le CSV « courant » ne correspondrait pas au tableau
+    // que l'organisateur a sous les yeux.
+    let rows = round?.standings;
+    if (!rows) {
+      const phases = await listPhases(tournamentId);
+      const phase = resolveDisplayPhase(phases, tournament.currentPhaseId);
+      rows = await getStandings(tournamentId, phase?.id);
+    }
 
     const entries: StandingsExportEntry[] = rows.map((row, index) => ({
       rank: index + 1,
