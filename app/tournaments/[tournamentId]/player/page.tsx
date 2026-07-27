@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { cn } from "@/lib/utils";
 import type { TournamentGameResult } from "@/lib/types/Tournament";
 import { MatchGamesEditor } from "../MatchGamesEditor";
+import { playerTag } from "../PlayerNameTag";
 import { buildQuickResults, type QuickResult } from "../quickResults";
 import { PlayerShell } from "./PlayerShell";
 import { ReportSheet } from "./ReportSheet";
@@ -103,8 +104,12 @@ export default function TournamentPlayerMatchPage({
     () => new Map((tournament?.players ?? []).map((p) => [p.id, p])),
     [tournament]
   );
-  const playerName = (playerId: string) =>
-    playersById.get(playerId)?.displayName ?? t("player.unknownPlayer");
+  // Le discriminateur accompagne le pseudo partout côté joueur : c'est le seul
+  // moyen de distinguer deux homonymes quand on cherche son adversaire en salle.
+  const playerName = (playerId: string) => {
+    const player = playersById.get(playerId);
+    return player ? playerTag(player.displayName, player.discriminator) : t("player.unknownPlayer");
+  };
 
   const myMatch = useMemo(() => {
     if (!round || !myPlayerId) return null;
@@ -112,6 +117,7 @@ export default function TournamentPlayerMatchPage({
   }, [round, myPlayerId]);
 
   const opponent = myMatch?.players.find((p) => p.playerId !== myPlayerId);
+  const opponentPlayer = opponent ? playersById.get(opponent.playerId) : undefined;
   const opponentName = opponent ? playerName(opponent.playerId) : t("common.bye");
 
   const myRankIndex = standings.findIndex((s) => s.playerId === myPlayerId);
@@ -247,7 +253,16 @@ export default function TournamentPlayerMatchPage({
             ) : (
               <>
                 <p className="text-[13px] text-muted-foreground">{t("player.against")}</p>
-                <p className="mt-0.5 text-[22px] font-bold tracking-tight">{opponentName}</p>
+                {/* Le discriminateur est lisible, pas décoratif : c'est lui qui
+                    départage deux joueurs de même pseudo à la table. */}
+                <p className="mt-0.5 text-[22px] font-bold tracking-tight">
+                  {opponentPlayer?.displayName ?? opponentName}
+                  {opponentPlayer?.discriminator && (
+                    <span className="ml-1.5 font-mono text-base font-semibold text-muted-foreground">
+                      #{opponentPlayer.discriminator}
+                    </span>
+                  )}
+                </p>
                 {opponentStanding && (
                   <p className="mt-1 text-[13px] text-muted-foreground">
                     {t("player.record", {

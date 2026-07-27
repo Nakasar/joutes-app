@@ -7,6 +7,7 @@ import { Megaphone, Pause, Play, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatDuration, timerIsPaused, timerRemainingSeconds } from "@/lib/tournament-timer";
+import { TimerTimeEditor } from "../../TimerTimeEditor";
 import { useTournamentLive } from "../../../useTournamentLive";
 
 // Ajout de temps par appui sur « + 2 min », en secondes.
@@ -86,6 +87,15 @@ export function RoundHeaderBar({
     return action({ action: "start", durationSeconds: timer?.durationSeconds ?? 3000 });
   };
 
+  // Régler le temps ne doit pas lancer la ronde à l'insu de l'organisateur :
+  // l'API ne sait que « démarrer une durée », on remet donc en pause aussitôt
+  // quand le minuteur ne tournait pas.
+  const setTime = async (seconds: number) => {
+    const wasRunning = running;
+    await action({ action: "start", durationSeconds: seconds });
+    if (!wasRunning) await action({ action: "pause" });
+  };
+
   const base = `/tournaments/${tournamentId}/organizer`;
 
   return (
@@ -134,6 +144,7 @@ export function RoundHeaderBar({
             <Button variant="outline" size="sm" onClick={addTime} disabled={busy}>
               {t("roundHeader.addTwoMinutes")}
             </Button>
+            <TimerTimeEditor currentSeconds={remaining} disabled={busy} onApply={setTime} />
           </div>
 
           <Button variant="outline" size="sm" asChild>

@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { formatDuration, timerIsPaused, timerRemainingSeconds } from "@/lib/tournament-timer";
 import { OrganizerPageHeader } from "./OrganizerPageHeader";
+import { TimerTimeEditor } from "./TimerTimeEditor";
 import { useTournamentLive } from "../useTournamentLive";
 
 export type ApiAnnouncement = {
@@ -152,6 +153,14 @@ export function LiveSection({
   const addTime = () => {
     const base = remaining ?? timer?.durationSeconds ?? 0;
     timerAction({ action: "start", durationSeconds: Math.max(1, Math.round(base) + ADD_SECONDS) });
+  };
+
+  // Régler le temps ne relance pas un minuteur à l'arrêt : on le remet en pause
+  // sur la nouvelle valeur, l'organisateur lance quand il l'a annoncé en salle.
+  const setTime = async (seconds: number) => {
+    const wasRunning = running;
+    await timerAction({ action: "start", durationSeconds: seconds });
+    if (!wasRunning) await timerAction({ action: "pause" });
   };
 
   const joinUrl = `joutes.app/t/${joinCode}`;
@@ -302,6 +311,12 @@ export function LiveSection({
               >
                 {t("roundHeader.addTwoMinutes")}
               </Button>
+              <TimerTimeEditor
+                currentSeconds={remaining}
+                disabled={busy}
+                className="h-9 border-neutral-700 bg-transparent px-4 text-white hover:bg-neutral-800 hover:text-white"
+                onApply={setTime}
+              />
               <Button
                 variant="outline"
                 className="border-neutral-700 bg-transparent text-white hover:bg-neutral-800 hover:text-white"

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { DateTime } from "luxon";
-import { Trash2 } from "lucide-react";
+import { CalendarDays, CalendarPlus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -41,6 +42,14 @@ type PhaseSummary = {
   topCut?: number;
 };
 
+/** Événement auquel le tournoi est rattaché : il porte la date et le lieu. */
+export type LinkedEvent = {
+  id: string;
+  name: string;
+  startDateTime: string;
+  location?: string;
+};
+
 export function SettingsSection({
   tournament,
   games,
@@ -48,6 +57,7 @@ export function SettingsSection({
   joinCode,
   phases = [],
   registeredCount = 0,
+  event = null,
 }: {
   tournament: Tournament;
   games: { id: string; name: string }[];
@@ -56,6 +66,7 @@ export function SettingsSection({
   joinCode?: string;
   phases?: PhaseSummary[];
   registeredCount?: number;
+  event?: LinkedEvent | null;
 }) {
   const t = useTranslations("Tournaments");
   const router = useRouter();
@@ -67,21 +78,15 @@ export function SettingsSection({
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  // Informations pratiques. `startsAt` est édité en deux champs (jour et heure)
-  // et recomposé en instant à l'enregistrement.
-  const initialStart = tournament.startsAt ? DateTime.fromJSDate(new Date(tournament.startsAt)) : null;
+  // Informations pratiques. La date et le lieu ne sont pas éditables ici :
+  // c'est l'événement lié qui les porte, pour qu'un tournoi et sa page publique
+  // ne puissent pas annoncer deux choses différentes.
   const [name, setName] = useState(tournament.name);
-  const [location, setLocation] = useState(tournament.location ?? "");
-  const [startDate, setStartDate] = useState(initialStart?.toFormat("yyyy-MM-dd") ?? "");
-  const [startTime, setStartTime] = useState(initialStart?.toFormat("HH:mm") ?? "");
   const [capacity, setCapacity] = useState(
     tournament.capacity !== undefined ? String(tournament.capacity) : ""
   );
   const [savedDetails, setSavedDetails] = useState({
     name: tournament.name,
-    location: tournament.location ?? "",
-    startDate: initialStart?.toFormat("yyyy-MM-dd") ?? "",
-    startTime: initialStart?.toFormat("HH:mm") ?? "",
     capacity: tournament.capacity !== undefined ? String(tournament.capacity) : "",
   });
 
@@ -130,21 +135,14 @@ export function SettingsSection({
   };
 
   const saveDetails = async () => {
-    // La date seule suffit (heure optionnelle, minuit par défaut) ; sans date,
-    // l'instant est retiré.
-    const startsAt = startDate
-      ? DateTime.fromISO(`${startDate}T${startTime || "00:00"}`).toJSDate().toISOString()
-      : null;
     const parsedCapacity = Number.parseInt(capacity, 10);
 
     const ok = await patch({
       name: name.trim() || tournament.name,
-      location: location.trim() ? location.trim() : null,
-      startsAt,
       capacity: Number.isFinite(parsedCapacity) && parsedCapacity > 0 ? parsedCapacity : null,
     });
     if (ok) {
-      setSavedDetails({ name, location, startDate, startTime, capacity });
+      setSavedDetails({ name, capacity });
       router.refresh();
     }
   };
@@ -185,12 +183,7 @@ export function SettingsSection({
     }
   };
 
-  const detailsDirty =
-    name !== savedDetails.name ||
-    location !== savedDetails.location ||
-    startDate !== savedDetails.startDate ||
-    startTime !== savedDetails.startTime ||
-    capacity !== savedDetails.capacity;
+  const detailsDirty = name !== savedDetails.name || capacity !== savedDetails.capacity;
 
   const settingsDirty =
     allowSelfReporting !== savedSettings.allowSelfReporting ||
@@ -292,40 +285,6 @@ export function SettingsSection({
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="setting-location">{t("organizerSettings.locationLabel")}</Label>
-                  <Input
-                    id="setting-location"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder={t("organizerSettings.locationPlaceholder")}
-                    maxLength={200}
-                    disabled={busy}
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="setting-date">{t("organizerSettings.dateLabel")}</Label>
-                  <Input
-                    id="setting-date"
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    disabled={busy}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="setting-time">{t("organizerSettings.timeLabel")}</Label>
-                  <Input
-                    id="setting-time"
-                    type="time"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    disabled={busy || !startDate}
-                  />
-                </div>
-                <div className="space-y-1.5">
                   <Label htmlFor="setting-capacity">{t("organizerSettings.capacityLabel")}</Label>
                   <Input
                     id="setting-capacity"
@@ -360,6 +319,54 @@ export function SettingsSection({
                 {t("common.save")}
               </Button>
             </div>
+          </section>
+
+          {/* Date et lieu appartiennent à l'événement : le tournoi les affiche,
+              il ne les saisit pas. Sans événement lié, l'organisateur n'a pas un
+              champ à remplir mais un événement à créer. */}
+          <section className="rounded-xl border bg-card p-4">
+            <h2 className="text-sm font-semibold">{t("organizerSettings.eventTitle")}</h2>
+            <p className="mb-3.5 mt-0.5 text-[13px] text-muted-foreground">
+              {t("organizerSettings.eventDescription")}
+            </p>
+
+            {event ? (
+              <div className="rounded-lg border p-3">
+                <p className="text-sm font-semibold">{event.name}</p>
+                <dl className="mt-1.5 text-[13px]">
+                  <div className="flex justify-between gap-3 py-0.5">
+                    <dt className="text-muted-foreground">{t("organizerSettings.dateLabel")}</dt>
+                    <dd className="text-right font-medium">
+                      {DateTime.fromISO(event.startDateTime).toFormat("dd/MM/yyyy HH:mm")}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-3 py-0.5">
+                    <dt className="text-muted-foreground">
+                      {t("organizerSettings.locationLabel")}
+                    </dt>
+                    <dd className="text-right font-medium">{event.location ?? "—"}</dd>
+                  </div>
+                </dl>
+                <Button variant="outline" size="sm" className="mt-3" asChild>
+                  <Link href={`/events/${event.id}`}>
+                    <CalendarDays className="size-4" />
+                    {t("organizerSettings.eventOpen")}
+                  </Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-dashed p-3">
+                <p className="text-[13px] text-muted-foreground">
+                  {t("organizerSettings.eventNoneBody")}
+                </p>
+                <Button variant="outline" size="sm" className="mt-3" asChild>
+                  <Link href={`/events/new?tournamentId=${tournamentId}`}>
+                    <CalendarPlus className="size-4" />
+                    {t("organizerSettings.eventCreateCta")}
+                  </Link>
+                </Button>
+              </div>
+            )}
           </section>
 
           <section className="rounded-xl border bg-card p-4">
@@ -453,17 +460,24 @@ export function SettingsSection({
                     : registeredCount}
                 </dd>
               </div>
-              {tournament.location && (
+              {/* L'événement fait foi quand il existe ; sans lui, restent les
+                  valeurs portées par le tournoi (créé avant ce rattachement). */}
+              {(event?.location ?? tournament.location) && (
                 <div className="flex justify-between gap-3 py-1">
                   <dt className="text-muted-foreground">{t("organizerSettings.summaryLocation")}</dt>
-                  <dd className="text-right font-semibold">{tournament.location}</dd>
+                  <dd className="text-right font-semibold">
+                    {event?.location ?? tournament.location}
+                  </dd>
                 </div>
               )}
-              {tournament.startsAt && (
+              {(event?.startDateTime ?? tournament.startsAt) && (
                 <div className="flex justify-between gap-3 py-1">
                   <dt className="text-muted-foreground">{t("organizerSettings.summaryStart")}</dt>
                   <dd className="text-right font-semibold">
-                    {DateTime.fromJSDate(new Date(tournament.startsAt)).toFormat("dd/MM/yyyy HH:mm")}
+                    {(event
+                      ? DateTime.fromISO(event.startDateTime)
+                      : DateTime.fromJSDate(new Date(tournament.startsAt!))
+                    ).toFormat("dd/MM/yyyy HH:mm")}
                   </dd>
                 </div>
               )}

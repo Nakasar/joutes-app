@@ -53,6 +53,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const body = await request.json();
     const validated = updateTournamentSchema.parse(body);
+    const details = { ...validated };
 
     // La modification du staff reste réservée aux organisateurs : un arbitre
     // pourrait sinon s'octroyer le rôle d'organisateur (et donc la suppression).
@@ -77,9 +78,19 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
           { status: 403 }
         );
       }
+
+      // La date et le lieu d'un tournoi rattaché viennent de son événement : le
+      // rattachement les reprend, comme le fait déjà la création. Une valeur
+      // envoyée explicitement dans la même requête reste prioritaire.
+      details.location ??= event.lair?.name ?? event.lair?.address ?? undefined;
+      details.capacity ??= event.maxParticipants ?? undefined;
+      const startsAt = new Date(event.startDateTime);
+      if (details.startsAt === undefined && !Number.isNaN(startsAt.getTime())) {
+        details.startsAt = startsAt;
+      }
     }
 
-    const updated = await updateTournament(tournamentId, validated);
+    const updated = await updateTournament(tournamentId, details);
     return NextResponse.json(updated);
   } catch (error) {
     return tournamentErrorResponse(error);

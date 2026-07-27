@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { usePaginatedSearch } from "@/lib/use-paginated-search";
 import { PlayerShell } from "../PlayerShell";
 import { usePlayerTournament } from "../usePlayerTournament";
-import { PlayerNameTag } from "../../PlayerNameTag";
+import { PlayerNameTag, playerTag } from "../../PlayerNameTag";
 import { TablePagination } from "../../TablePagination";
 
 type ApiMatch = {
@@ -76,7 +76,12 @@ export default function TournamentPlayerInfoPage({
         played.push({
           round: round.number,
           opponent: theirs
-            ? (players.find((p) => p.id === theirs.playerId)?.displayName ?? t("player.unknownPlayer"))
+            ? (() => {
+                const player = players.find((p) => p.id === theirs.playerId);
+                return player
+                  ? playerTag(player.displayName, player.discriminator)
+                  : t("player.unknownPlayer");
+              })()
             : t("common.bye"),
           label: `${mine?.score ?? 0}–${theirs?.score ?? 0}`,
           outcome: won ? "win" : drew ? "draw" : "loss",

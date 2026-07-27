@@ -1,4 +1,5 @@
 import { getAllGames } from "@/lib/db/games";
+import { getEventById } from "@/lib/db/events";
 import { ensureJoinCode, isTournamentOrganizer, listTournamentStaff } from "@/lib/db/tournaments";
 import { SettingsSection } from "../SettingsSection";
 import { StaffManager } from "../StaffManager";
@@ -16,7 +17,7 @@ export default async function OrganizerSettingsPage({
   // les arbitres voient la configuration et la liste du staff en lecture seule.
   const isOrganizer = isTournamentOrganizer(tournament, session.user.id);
 
-  const [games, staff, joinCode] = await Promise.all([
+  const [games, staff, joinCode, event] = await Promise.all([
     getAllGames().then((all) =>
       all
         .map((game) => ({ id: game.id, name: game.name }))
@@ -24,6 +25,9 @@ export default async function OrganizerSettingsPage({
     ),
     listTournamentStaff(tournament),
     ensureJoinCode(tournamentId),
+    // Un événement supprimé ou devenu illisible ne doit pas casser les réglages :
+    // l'écran retombe alors sur l'invitation à en créer un.
+    tournament.eventId ? getEventById(tournament.eventId).catch(() => null) : Promise.resolve(null),
   ]);
 
   return (
@@ -41,6 +45,16 @@ export default async function OrganizerSettingsPage({
           topCut: p.topCut,
         }))}
         registeredCount={players.filter((p) => p.status !== "dropped").length}
+        event={
+          event
+            ? {
+                id: event.id,
+                name: event.name,
+                startDateTime: event.startDateTime,
+                location: event.lair?.name ?? event.lair?.address ?? undefined,
+              }
+            : null
+        }
       />
       <div className="mt-4">
         <StaffManager tournamentId={tournamentId} initialStaff={staff} canEdit={isOrganizer} />
