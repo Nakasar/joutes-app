@@ -135,8 +135,12 @@ export default function PackEditor({ cube, pack, packLabel, initialCards, canEdi
       } catch (error) {
         if (!controller.signal.aborted) console.error("Card search failed:", error);
       } finally {
-        if (pendingKeyRef.current === key) pendingKeyRef.current = null;
-        setLoading(false);
+        // Une requête annulée passe aussi par ici : sans ce garde, elle
+        // éteindrait le chargement de celle qui l'a remplacée.
+        if (pendingKeyRef.current === key) {
+          pendingKeyRef.current = null;
+          setLoading(false);
+        }
       }
     },
     [gameSlug],
@@ -468,7 +472,7 @@ export default function PackEditor({ cube, pack, packLabel, initialCards, canEdi
                       tabIndex={index === activeIndex ? 0 : -1}
                       onClick={() => addFromSearch(found)}
                       onFocus={() => setActiveIndex(index)}
-                      disabled={busyCardId === found.id}
+                      disabled={busy}
                       aria-label={t("addCard", { name: found.name })}
                       className="group relative block w-full overflow-hidden rounded-lg border bg-card text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >

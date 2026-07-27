@@ -145,8 +145,12 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
       } catch (error) {
         if (!controller.signal.aborted) console.error("Card search failed:", error);
       } finally {
-        if (pendingKeyRef.current === key) pendingKeyRef.current = null;
-        setLoading(false);
+        // Une requête annulée passe aussi par ici : sans ce garde, elle
+        // éteindrait le chargement de celle qui l'a remplacée.
+        if (pendingKeyRef.current === key) {
+          pendingKeyRef.current = null;
+          setLoading(false);
+        }
       }
     },
     [gameSlug, booster.lang]
