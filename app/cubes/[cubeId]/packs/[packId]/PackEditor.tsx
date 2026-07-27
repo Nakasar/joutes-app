@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { ArrowLeft, Layers, Loader2, Pencil, X } from "lucide-react";
+import { ArrowLeft, Info, Layers, Loader2, Minus, Pencil, Plus, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -18,79 +18,172 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import CardsPicker from "@/components/CardsPicker";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { parseCardSearch } from "@/lib/cards/search-query";
+import { CUBE_PACK_CARD_MAX_QUANTITY } from "@/lib/constants/cubes";
 import type { BoosterCard } from "@/lib/types/booster";
-import type { Cube, CubeCard, CubePack } from "@/lib/types/Cube";
+import type { Cube, CubePack } from "@/lib/types/Cube";
+
+/** Carte du paquet, réduite à ce que l'interface affiche. */
+export type PackCard = {
+  id: string;
+  cardId: string;
+  name: string;
+  setCode: string;
+  collectorNumber: string;
+  image: string;
+};
 
 type Props = {
   cube: Cube;
   pack: CubePack;
   packLabel: string;
-  initialCards: CubeCard[];
+  initialCards: PackCard[];
   canEdit: boolean;
 };
+
+/** Une ligne par carte distincte : le paquet stocke un document par exemplaire. */
+type GroupedCard = { card: PackCard; quantity: number };
+
+const ALL_SETS = "all";
 
 export default function PackEditor({ cube, pack, packLabel, initialCards, canEdit }: Props) {
   const t = useTranslations("Cubes");
   const router = useRouter();
+  const gameSlug = cube.gameSlug ?? cube.gameId;
 
-  const [cards, setCards] = useState<CubeCard[]>(initialCards);
+  const [cards, setCards] = useState<PackCard[]>(initialCards);
   // Les ajouts et retraits sont appliqués localement pour rester immédiats ; ce
   // rattrapage réaligne la liste sur le serveur après un `router.refresh()`.
   useEffect(() => setCards(initialCards), [initialCards]);
 
-  const [adding, setAdding] = useState(false);
-  const [removingId, setRemovingId] = useState<string | null>(null);
+  // Une seule modification de quantité à la fois : chaque réponse renvoie le
+  // paquet entier, et deux écritures concurrentes se renverraient des
+  // instantanés calculés avant l'autre.
+  const [busyCardId, setBusyCardId] = useState<string | null>(null);
+  const busy = busyCardId !== null;
+
+  const [rawQuery, setRawQuery] = useState("");
+  const [selectedSet, setSelectedSet] = useState(ALL_SETS);
+  const [results, setResults] = useState<BoosterCard[]>([]);
+  const [resultSetCodes, setResultSetCodes] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [name, setName] = useState(pack.name ?? "");
   const [type, setType] = useState(pack.type ?? "");
   const [savingDetails, setSavingDetails] = useState(false);
 
-  /**
-   * Le sélecteur retient les cartes choisies ; ici chaque choix part
-   * immédiatement au serveur et la sélection est vidée, pour qu'un même
-   * exemplaire puisse être ajouté plusieurs fois à un paquet.
-   */
-  const addCards = async (picked: BoosterCard[]) => {
-    const card = picked[picked.length - 1];
-    if (!card) return;
+  const controllerRef = useRef<AbortController | null>(null);
+  const pendingKeyRef = useRef<string | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const cardRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
-    setAdding(true);
+  const grouped = useMemo(() => {
+    const byCardId = new Map<string, GroupedCard>();
+    for (const card of cards) {
+      const entry = byCardId.get(card.cardId);
+      if (entry) {
+        entry.quantity += 1;
+      } else {
+        byCardId.set(card.cardId, { card, quantity: 1 });
+      }
+    }
+    return [...byCardId.values()];
+  }, [cards]);
+
+  const quantityOf = (cardId: string) => grouped.find((entry) => entry.card.cardId === cardId)?.quantity ?? 0;
+
+  const fetchResults = useCallback(
+    async (searchText: string, setCode: string, lang: string, pageNum: number) => {
+      const key = `${searchText}|${setCode}|${lang}|${pageNum}`;
+      if (pendingKeyRef.current === key) return;
+      controllerRef.current?.abort();
+      const controller = new AbortController();
+      controllerRef.current = controller;
+      pendingKeyRef.current = key;
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (searchText) params.set("searchQuery", searchText);
+        if (setCode && setCode !== ALL_SETS) params.set("setCode", setCode);
+        params.set("lang", lang);
+        params.set("page", String(pageNum));
+        params.set("limit", "24");
+
+        const res = await fetch(`/api/games/${gameSlug}/cards?${params.toString()}`, { signal: controller.signal });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (controller.signal.aborted) return;
+        const found: BoosterCard[] = Array.isArray(data) ? data : data.cards ?? [];
+        setResults(found);
+        setActiveIndex(0);
+        if (!Array.isArray(data)) {
+          if (Array.isArray(data.setCodes) && data.setCodes.length) setResultSetCodes(data.setCodes);
+          setTotalPages(data.totalPages ?? 1);
+        }
+        setPage(pageNum);
+      } catch (error) {
+        if (!controller.signal.aborted) console.error("Card search failed:", error);
+      } finally {
+        if (pendingKeyRef.current === key) pendingKeyRef.current = null;
+        setLoading(false);
+      }
+    },
+    [gameSlug],
+  );
+
+  // Recherche différée ; les filtres écrits dans la barre pilotent l'extension.
+  useEffect(() => {
+    const parsed = parseCardSearch(rawQuery);
+    if (parsed.setCode && parsed.setCode !== selectedSet) {
+      setSelectedSet(parsed.setCode);
+    }
+    const effectiveSet = parsed.setCode ?? selectedSet;
+    const searchText = [parsed.text, parsed.cn ? `cn:${parsed.cn}` : ""].filter(Boolean).join(" ");
+    const delay = parsed.text ? 300 : 0;
+    const timer = window.setTimeout(() => void fetchResults(searchText, effectiveSet, parsed.lang ?? "all", 1), delay);
+    return () => window.clearTimeout(timer);
+  }, [rawQuery, selectedSet, fetchResults]);
+
+  const goToPage = (next: number) => {
+    if (next < 1 || next > totalPages || loading) return;
+    const parsed = parseCardSearch(rawQuery);
+    const effectiveSet = parsed.setCode ?? selectedSet;
+    const searchText = [parsed.text, parsed.cn ? `cn:${parsed.cn}` : ""].filter(Boolean).join(" ");
+    void fetchResults(searchText, effectiveSet, parsed.lang ?? "all", next);
+  };
+
+  /** Fixe le nombre d'exemplaires d'une carte ; le serveur renvoie le paquet à jour. */
+  const setQuantity = async (card: PackCard, quantity: number) => {
+    if (busy || quantity < 0 || quantity > CUBE_PACK_CARD_MAX_QUANTITY) return;
+    setBusyCardId(card.cardId);
+    const snapshot = cards;
     try {
       const res = await fetch(`/api/cubes/${cube.id}/packs/${pack.id}/cards`, {
-        method: "POST",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          cardId: card.id,
+          cardId: card.cardId,
           name: card.name,
           setCode: card.setCode,
-          collectorNumber: String(card.collectorNumber),
+          collectorNumber: card.collectorNumber,
           image: card.image,
+          quantity,
         }),
       });
       if (res.ok) {
-        // Le corps JSON sérialise `createdAt` en chaîne : la date est reconstruite
-        // avant d'entrer dans l'état, qui reçoit sinon des `Date` côté serveur.
-        const created = (await res.json()) as Omit<CubeCard, "createdAt"> & { createdAt: string };
-        setCards((prev) => [...prev, { ...created, createdAt: new Date(created.createdAt) }]);
-        router.refresh();
-      }
-    } finally {
-      setAdding(false);
-    }
-  };
-
-  const removeCard = async (entryId: string) => {
-    setRemovingId(entryId);
-    const snapshot = cards;
-    setCards((prev) => prev.filter((card) => card.id !== entryId));
-    try {
-      const res = await fetch(
-        `/api/cubes/${cube.id}/packs/${pack.id}/cards?entryId=${encodeURIComponent(entryId)}`,
-        { method: "DELETE" },
-      );
-      if (res.ok) {
+        const data: { cards: PackCard[] } = await res.json();
+        setCards(data.cards);
         router.refresh();
       } else {
         setCards(snapshot);
@@ -98,8 +191,24 @@ export default function PackEditor({ cube, pack, packLabel, initialCards, canEdi
     } catch {
       setCards(snapshot);
     } finally {
-      setRemovingId(null);
+      setBusyCardId(null);
     }
+  };
+
+  const addFromSearch = (found: BoosterCard) => {
+    if (busy) return;
+    const card: PackCard = {
+      id: found.id,
+      cardId: found.id,
+      name: found.name,
+      setCode: found.setCode,
+      collectorNumber: String(found.collectorNumber),
+      image: found.image,
+    };
+    void setQuantity(card, quantityOf(card.cardId) + 1);
+    // La recherche est vidée et reprend le focus, prête pour la carte suivante.
+    setRawQuery("");
+    requestAnimationFrame(() => searchRef.current?.focus());
   };
 
   const saveDetails = async () => {
@@ -116,6 +225,44 @@ export default function PackEditor({ cube, pack, packLabel, initialCards, canEdi
       }
     } finally {
       setSavingDetails(false);
+    }
+  };
+
+  const setOptions = useMemo(
+    () => [ALL_SETS, ...[...new Set(resultSetCodes)].filter(Boolean).sort()],
+    [resultSetCodes],
+  );
+
+  const focusCardAt = (index: number) => {
+    if (results.length === 0) return;
+    const clamped = Math.max(0, Math.min(index, results.length - 1));
+    setActiveIndex(clamped);
+    cardRefs.current[clamped]?.focus();
+  };
+
+  const handleGridKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (results.length === 0) return;
+    const cols = window.innerWidth >= 640 ? 4 : 3; // suit grid-cols-3 sm:grid-cols-4
+    switch (e.key) {
+      case "ArrowRight":
+        e.preventDefault();
+        focusCardAt(activeIndex + 1);
+        break;
+      case "ArrowLeft":
+        e.preventDefault();
+        focusCardAt(activeIndex - 1);
+        break;
+      case "ArrowDown":
+        e.preventDefault();
+        focusCardAt(activeIndex + cols);
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        if (activeIndex - cols < 0) searchRef.current?.focus();
+        else focusCardAt(activeIndex - cols);
+        break;
+      default:
+        break;
     }
   };
 
@@ -138,6 +285,11 @@ export default function PackEditor({ cube, pack, packLabel, initialCards, canEdi
             <div className="mt-1 flex flex-wrap items-center gap-1.5">
               {pack.type ? <Badge variant="secondary" className="text-[11px]">{pack.type}</Badge> : null}
               <span className="text-xs text-muted-foreground">{t("cardCount", { count: cards.length })}</span>
+              {grouped.length !== cards.length ? (
+                <span className="text-xs text-muted-foreground">
+                  {t("distinctCardCount", { count: grouped.length })}
+                </span>
+              ) : null}
             </div>
           </div>
           {canEdit ? (
@@ -176,62 +328,197 @@ export default function PackEditor({ cube, pack, packLabel, initialCards, canEdi
         </div>
       </div>
 
-      {canEdit ? (
-        <section className="space-y-2 rounded-xl border bg-card p-4">
-          <h2 className="text-sm font-semibold text-muted-foreground">{t("addCards")}</h2>
-          <CardsPicker
-            gameSlugOrId={cube.gameSlug ?? cube.gameId}
-            selectedCards={[]}
-            onChange={addCards}
-            searchPlaceholder={t("searchCardPlaceholder")}
-            emptyMessage={t("noCardFound")}
-            searchingLabel={t("searching")}
-          />
-          <p className="text-xs text-muted-foreground">
-            {adding ? t("addingCard") : t("addCardsHint")}
-          </p>
-        </section>
-      ) : null}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+        {/* Contenu du paquet */}
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold text-muted-foreground">{t("packContents")}</h2>
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-muted-foreground">{t("packContents")}</h2>
-        {cards.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-12 text-center">
-            <Layers className="size-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">{canEdit ? t("emptyPackEditable") : t("emptyPack")}</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
-            {cards.map((card) => (
-              <div key={card.id} className="group relative overflow-hidden rounded-lg border bg-card">
-                <div className="relative aspect-[3/4] w-full bg-muted">
-                  {card.image ? (
-                    <Image src={card.image} alt={card.name} fill unoptimized sizes="120px" className="object-cover" />
-                  ) : null}
-                  {canEdit ? (
-                    <Button
-                      variant="destructive"
-                      size="icon-sm"
-                      className="absolute right-1 top-1 size-6 opacity-0 transition-opacity group-hover:opacity-100"
-                      disabled={removingId === card.id}
-                      onClick={() => removeCard(card.id)}
-                      aria-label={t("removeCard", { name: card.name })}
-                    >
-                      {removingId === card.id ? <Loader2 className="size-3 animate-spin" /> : <X className="size-3" />}
-                    </Button>
-                  ) : null}
+          {grouped.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-12 text-center">
+              <Layers className="size-8 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">{canEdit ? t("emptyPackEditable") : t("emptyPack")}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4">
+              {grouped.map(({ card, quantity }) => (
+                <div key={card.cardId} className="group relative overflow-hidden rounded-lg border bg-card">
+                  <div className="relative aspect-[3/4] w-full bg-muted">
+                    {card.image ? (
+                      <Image src={card.image} alt={card.name} fill unoptimized sizes="120px" className="object-cover" />
+                    ) : null}
+                    {quantity > 1 ? (
+                      <span className="absolute left-1 top-1 rounded-full bg-background/90 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums">
+                        ×{quantity}
+                      </span>
+                    ) : null}
+                    {canEdit ? (
+                      <Button
+                        variant="destructive"
+                        size="icon-sm"
+                        className="absolute right-1 top-1 size-6 opacity-0 transition-opacity group-hover:opacity-100"
+                        disabled={busy}
+                        onClick={() => setQuantity(card, 0)}
+                        aria-label={t("removeCard", { name: card.name })}
+                      >
+                        <X className="size-3" />
+                      </Button>
+                    ) : null}
+                  </div>
+                  <div className="p-1.5">
+                    <p className="truncate text-[11px] font-medium leading-tight" title={card.name}>{card.name}</p>
+                    <p className="truncate text-[10px] text-muted-foreground">
+                      {card.setCode} #{card.collectorNumber}
+                    </p>
+                    {canEdit ? (
+                      <div className="mt-1 flex items-center justify-between gap-1">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon-sm"
+                          className="size-6"
+                          disabled={busy}
+                          onClick={() => setQuantity(card, quantity - 1)}
+                          aria-label={t("decreaseQuantity", { name: card.name })}
+                        >
+                          <Minus className="size-3" />
+                        </Button>
+                        <span className="text-[11px] font-semibold tabular-nums">
+                          {busyCardId === card.cardId ? <Loader2 className="size-3 animate-spin" /> : quantity}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon-sm"
+                          className="size-6"
+                          disabled={busy || quantity >= CUBE_PACK_CARD_MAX_QUANTITY}
+                          onClick={() => setQuantity(card, quantity + 1)}
+                          aria-label={t("increaseQuantity", { name: card.name })}
+                        >
+                          <Plus className="size-3" />
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
-                <div className="p-1.5">
-                  <p className="truncate text-[11px] font-medium leading-tight" title={card.name}>{card.name}</p>
-                  <p className="truncate text-[10px] text-muted-foreground">
-                    {card.setCode} #{card.collectorNumber}
-                  </p>
-                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Recherche et ajout */}
+        {canEdit ? (
+          <section className="space-y-3">
+            <h2 className="text-sm font-semibold text-muted-foreground">{t("addCards")}</h2>
+
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  ref={searchRef}
+                  value={rawQuery}
+                  onChange={(e) => setRawQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (results.length === 0) return;
+                    if (e.key === "ArrowDown") {
+                      e.preventDefault();
+                      focusCardAt(0);
+                    } else if (e.key === "Enter") {
+                      // Entrée depuis la barre valide la première carte.
+                      e.preventDefault();
+                      addFromSearch(results[0]);
+                    }
+                  }}
+                  placeholder={t("searchCardPlaceholder")}
+                  className="pl-9"
+                />
               </div>
-            ))}
-          </div>
-        )}
-      </section>
+              <Select value={selectedSet} onValueChange={setSelectedSet}>
+                <SelectTrigger className="w-full sm:w-[150px]" aria-label={t("filterBySet")}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {setOptions.map((code) => (
+                    <SelectItem key={code} value={code}>
+                      {code === ALL_SETS ? t("allSets") : code}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Info className="size-3.5 shrink-0" />
+              {t("searchHint")}
+            </p>
+
+            {results.length === 0 && !loading ? (
+              <div className="flex items-center justify-center rounded-xl border border-dashed py-12 text-center text-sm text-muted-foreground">
+                {t("noCardFound")}
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4" role="grid" onKeyDown={handleGridKeyDown}>
+                {results.map((found, index) => {
+                  const inPack = quantityOf(found.id);
+                  return (
+                    <button
+                      key={`${found.id}-${found.setCode}-${found.collectorNumber}`}
+                      type="button"
+                      ref={(el) => {
+                        cardRefs.current[index] = el;
+                      }}
+                      tabIndex={index === activeIndex ? 0 : -1}
+                      onClick={() => addFromSearch(found)}
+                      onFocus={() => setActiveIndex(index)}
+                      disabled={busyCardId === found.id}
+                      aria-label={t("addCard", { name: found.name })}
+                      className="group relative block w-full overflow-hidden rounded-lg border bg-card text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <div className="relative aspect-[3/4] w-full bg-muted">
+                        {found.image ? (
+                          <Image src={found.image} alt={found.name} fill unoptimized sizes="120px" className="object-cover" />
+                        ) : null}
+                        {inPack > 0 ? (
+                          <span className="absolute left-1 top-1 rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-primary-foreground">
+                            ×{inPack}
+                          </span>
+                        ) : null}
+                        <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/40 group-hover:opacity-100 group-focus-within:bg-black/40 group-focus-within:opacity-100">
+                          <span className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
+                            {busyCardId === found.id ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-5" />}
+                          </span>
+                        </span>
+                      </div>
+                      <div className="p-1.5">
+                        <p className="truncate text-[11px] font-medium leading-tight" title={found.name}>{found.name}</p>
+                        <p className="truncate text-[10px] text-muted-foreground">
+                          {found.setCode} #{found.collectorNumber}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {loading ? (
+              <div className="flex justify-center py-2">
+                <Loader2 className="size-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : null}
+
+            {totalPages > 1 ? (
+              <div className="flex items-center justify-center gap-2">
+                <Button variant="outline" size="sm" disabled={page === 1 || loading} onClick={() => goToPage(page - 1)}>
+                  {t("previousPage")}
+                </Button>
+                <span className="text-sm text-muted-foreground">{t("pageOf", { page, totalPages })}</span>
+                <Button variant="outline" size="sm" disabled={page === totalPages || loading} onClick={() => goToPage(page + 1)}>
+                  {t("nextPage")}
+                </Button>
+              </div>
+            ) : null}
+          </section>
+        ) : null}
+      </div>
     </div>
   );
 }

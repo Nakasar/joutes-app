@@ -367,6 +367,45 @@ export async function addCardToCubePack(
   return toCubeCard({ _id: result.insertedId, ...document });
 }
 
+/**
+ * Aligne le nombre d'exemplaires d'une carte dans un paquet sur la quantité
+ * visée. Le paquet stocke une entrée par exemplaire : on complète ou on retire
+ * la différence, en commençant par les entrées les plus récentes, plutôt que de
+ * tout supprimer et réinsérer.
+ */
+export async function setCubeCardQuantity(
+  cubeId: string,
+  packId: string,
+  card: { cardId: string; name: string; setCode: string; collectorNumber: string; image: string },
+  quantity: number,
+): Promise<CubeCard[]> {
+  const packObjectId = new ObjectId(packId);
+  const existing = await db
+    .collection(CUBE_CARDS_COLLECTION)
+    .find({ packId: packObjectId, cardId: card.cardId })
+    .sort({ createdAt: 1 })
+    .toArray();
+
+  if (quantity > existing.length) {
+    const now = new Date();
+    await db.collection(CUBE_CARDS_COLLECTION).insertMany(
+      Array.from({ length: quantity - existing.length }, () => ({
+        cubeId: new ObjectId(cubeId),
+        packId: packObjectId,
+        ...card,
+        createdAt: now,
+      })),
+    );
+  } else if (quantity < existing.length) {
+    const removed = existing.slice(quantity).map((doc) => doc._id);
+    await db.collection(CUBE_CARDS_COLLECTION).deleteMany({ _id: { $in: removed } });
+  }
+
+  await touchCube(cubeId);
+
+  return getCubePackCards(packId);
+}
+
 export async function removeCardFromCubePack(cubeId: string, packId: string, cardEntryId: string): Promise<boolean> {
   if (!ObjectId.isValid(cardEntryId)) {
     return false;
