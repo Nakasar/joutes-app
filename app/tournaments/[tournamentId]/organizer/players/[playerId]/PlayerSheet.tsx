@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { DateTime } from "luxon";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft, Table as TableIcon, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -170,10 +170,28 @@ export function PlayerSheet({
       if (saved) setDecklistDraft(saved.content);
     });
 
-  const drop = () => run(async () => {
-    await call(base, { method: "PATCH", body: JSON.stringify({ status: "dropped" }) });
-    router.refresh();
-  });
+  // Statut d'inscription. Un drop se défait : le joueur revenu reprend sa place
+  // sans repasser par la liste.
+  const setStatus = (status: "registered" | "dropped") =>
+    run(async () => {
+      await call(base, { method: "PATCH", body: JSON.stringify({ status }) });
+      router.refresh();
+    });
+
+  // Table fixe, conservée tout le tournoi : les appariements la respectent tant
+  // qu'elle n'est pas déjà prise par une autre table de la ronde. Vide = aucune.
+  // La valeur affichée sort directement de la prop, jamais d'un état local : un
+  // autre arbitre peut la changer, et `router.refresh()` doit pouvoir corriger
+  // le champ.
+  const saveFixedTable = (raw: string) => {
+    const parsed = Number.parseInt(raw, 10);
+    const next = Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+    if (next === (player.fixedTableNumber ?? null)) return;
+    void run(async () => {
+      await call(base, { method: "PATCH", body: JSON.stringify({ fixedTableNumber: next }) });
+      router.refresh();
+    });
+  };
 
   const initial = player.displayName.slice(0, 1).toUpperCase();
 
@@ -224,9 +242,33 @@ export function PlayerSheet({
             </p>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {player.status !== "dropped" && (
-            <Button variant="outline" onClick={drop} disabled={busy}>
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <TableIcon className="size-4" aria-hidden="true" />
+            {t("playerSheet.fixedTableLabel")}
+            <Input
+              key={`fixed-${player.fixedTableNumber ?? ""}`}
+              type="number"
+              min={0}
+              max={9999}
+              className="h-9 w-20"
+              defaultValue={player.fixedTableNumber ?? ""}
+              placeholder="—"
+              onBlur={(e) => saveFixedTable(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+              }}
+              disabled={busy}
+              aria-label={t("organizerPlayers.fixedTableAria", { name: player.displayName })}
+              title={t("organizerPlayers.fixedTableTitle")}
+            />
+          </label>
+          {player.status === "dropped" ? (
+            <Button variant="outline" onClick={() => setStatus("registered")} disabled={busy}>
+              {t("playerSheet.reregisterPlayer")}
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={() => setStatus("dropped")} disabled={busy}>
               {t("playerSheet.dropPlayer")}
             </Button>
           )}

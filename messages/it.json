@@ -2399,6 +2399,7 @@
         "phase-advanced": "Fase successiva avviata · {matches} tavoli",
         "player-checked-in": "{player} registrato presente",
         "player-dropped": "{player} ritirato dal torneo",
+        "player-reregistered": "{player} reintegrato",
         "penalty-issued": "Sanzione inflitta a {player}"
       }
     },
@@ -2407,6 +2408,8 @@
       "summaryWithRank": "{rank}° · {points} pt · {record}",
       "summaryNoRank": "Non ancora in classifica",
       "dropPlayer": "Far ritirare",
+      "reregisterPlayer": "Reintegra nel torneo",
+      "fixedTableLabel": "Tavolo fisso",
       "addPenalty": "Assegnare una sanzione",
       "add": "Aggiungi",
       "remove": "Rimuovi",

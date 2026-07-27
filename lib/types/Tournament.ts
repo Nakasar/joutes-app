@@ -284,6 +284,7 @@ export type TournamentActivityType =
   | "phase-advanced"
   | "player-checked-in"
   | "player-dropped"
+  | "player-reregistered"
   | "penalty-issued";
 
 export type TournamentActivity = {

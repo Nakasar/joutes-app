@@ -28,6 +28,7 @@ const TONE: Record<TournamentActivityType, string> = {
   "phase-advanced": "bg-sky-500",
   "player-checked-in": "bg-emerald-500",
   "player-dropped": "bg-amber-500",
+  "player-reregistered": "bg-emerald-500",
   "penalty-issued": "bg-destructive",
 };
 

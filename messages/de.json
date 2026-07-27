@@ -2374,6 +2374,7 @@
         "phase-advanced": "Nächste Phase gestartet · {matches} Tische",
         "player-checked-in": "{player} als anwesend erfasst",
         "player-dropped": "{player} aus dem Turnier genommen",
+        "player-reregistered": "{player} wieder zugelassen",
         "penalty-issued": "Strafe gegen {player} verhängt"
       }
     },
@@ -2382,6 +2383,8 @@
       "summaryWithRank": "Platz {rank} · {points} Pkt · {record}",
       "summaryNoRank": "Noch nicht platziert",
       "dropPlayer": "Aufgeben lassen",
+      "reregisterPlayer": "Wieder zulassen",
+      "fixedTableLabel": "Fester Tisch",
       "addPenalty": "Strafe verhängen",
       "add": "Hinzufügen",
       "remove": "Entfernen",

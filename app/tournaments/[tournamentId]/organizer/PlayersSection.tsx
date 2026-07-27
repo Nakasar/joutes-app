@@ -126,6 +126,12 @@ export function PlayersSection({
       await refreshPlayers();
     });
 
+  // Statut d'inscription : confirmer une pré-inscription, retirer un joueur du
+  // tournoi, ou le réinscrire après coup. Un drop n'est pas définitif — un
+  // joueur parti puis revenu doit pouvoir reprendre sa place.
+  const setPlayerStatus = (player: TournamentPlayer, status: TournamentPlayer["status"]) =>
+    patchPlayer(player, { status });
+
   // Table fixe du joueur (conservée tout le tournoi) : saisie libre, vide =
   // retirer. Enregistrée à la perte de focus si la valeur a changé.
   const setFixedTable = (player: TournamentPlayer, raw: string) => {
@@ -287,10 +293,29 @@ export function PlayersSection({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => patchPlayer(player, { status: "registered" })}
+                        onClick={() => setPlayerStatus(player, "registered")}
                         disabled={busy}
                       >
                         {t("common.confirm")}
+                      </Button>
+                    )}
+                    {player.status === "dropped" ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPlayerStatus(player, "registered")}
+                        disabled={busy}
+                      >
+                        {t("organizerPlayers.reregister")}
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPlayerStatus(player, "dropped")}
+                        disabled={busy}
+                      >
+                        {t("organizerPlayers.drop")}
                       </Button>
                     )}
                     <Button variant="outline" size="sm" asChild>
