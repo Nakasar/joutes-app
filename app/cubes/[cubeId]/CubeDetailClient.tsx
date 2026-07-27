@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   BarChart3,
   Boxes,
+  Dices,
   Layers,
   Loader2,
   Pencil,
@@ -35,8 +36,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import type { Cube, CubePack, CubeVisibility } from "@/lib/types/Cube";
+import type { CubeAttributeOption } from "@/lib/db/cube-draw";
+import type { Cube, CubeDrawConfig, CubePack, CubeVisibility } from "@/lib/types/Cube";
 import { VISIBILITY_ICONS } from "../CubesClient";
+import DrawSettingsDialog from "./DrawSettingsDialog";
 
 type Props = {
   cube: Cube;
@@ -44,9 +47,20 @@ type Props = {
   canEdit: boolean;
   ownerLabel?: string;
   ownerHref?: string;
+  drawConfig: CubeDrawConfig;
+  /** Vide pour les visiteurs : les options ne servent qu'à la configuration. */
+  attributeOptions: CubeAttributeOption[];
 };
 
-export default function CubeDetailClient({ cube, packs, canEdit, ownerLabel, ownerHref }: Props) {
+export default function CubeDetailClient({
+  cube,
+  packs,
+  canEdit,
+  ownerLabel,
+  ownerHref,
+  drawConfig,
+  attributeOptions,
+}: Props) {
   const t = useTranslations("Cubes");
   const router = useRouter();
 
@@ -174,6 +188,12 @@ export default function CubeDetailClient({ cube, packs, canEdit, ownerLabel, own
             </div>
           </div>
           <div className="ml-auto flex flex-wrap items-center gap-2">
+            <Button className="gap-2" asChild>
+              <Link href={`/cubes/${cube.id}/play`}>
+                <Dices className="size-4" />
+                {t("draw.play")}
+              </Link>
+            </Button>
             <Button variant="outline" className="gap-2" asChild>
               <Link href={`/cubes/${cube.id}/stats`}>
                 <BarChart3 className="size-4" />
@@ -182,6 +202,7 @@ export default function CubeDetailClient({ cube, packs, canEdit, ownerLabel, own
             </Button>
             {canEdit ? (
               <>
+                <DrawSettingsDialog cubeId={cube.id} config={drawConfig} attributeOptions={attributeOptions} />
                 <Dialog open={editOpen} onOpenChange={setEditOpen}>
                   <DialogTrigger asChild>
                     <Button variant="outline" className="gap-2">

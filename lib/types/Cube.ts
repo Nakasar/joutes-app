@@ -1,5 +1,27 @@
 export type CubeVisibility = "private" | "unlisted" | "public";
 
+export type CubeDrawMode = "packs" | "random";
+
+/** Composition imposée d'un tirage : « X cartes de rareté A », « Y cartes de type Unité »… */
+export type CubeDrawRule = {
+  /** Clé d'attribut de carte (`rarity`, `type`, `domain`…). */
+  attribute: string;
+  value: string;
+  count: number;
+};
+
+export type CubeDrawConfig = {
+  mode: CubeDrawMode;
+  /** Mode « paquets » : nombre de paquets tirés pour chaque joueur. */
+  packsPerPlayer: number;
+  /** Mode « aléatoire » : nombre total de cartes tirées pour chaque joueur. */
+  cardsPerPlayer: number;
+  /** Mode « aléatoire » : règles de composition, dans la limite du total. */
+  rules: CubeDrawRule[];
+  /** Autorise un même paquet ou une même carte dans plusieurs tirages. */
+  allowDuplicates: boolean;
+};
+
 export type Cube = {
   id: string;
   ownerId: string;
@@ -9,6 +31,8 @@ export type Cube = {
   name: string;
   description?: string;
   visibility: CubeVisibility;
+  /** Absente tant que le propriétaire n'a rien configuré : le tirage retombe alors sur les valeurs par défaut. */
+  draw?: CubeDrawConfig;
   packsCount: number;
   cardsCount: number;
   createdAt: Date;

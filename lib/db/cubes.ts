@@ -2,7 +2,7 @@ import 'server-only';
 
 import db from "@/lib/mongodb";
 import { ObjectId, WithId, Document } from "mongodb";
-import { Cube, CubeCard, CubePack, CubeVisibility } from "@/lib/types/Cube";
+import { Cube, CubeCard, CubeDrawConfig, CubePack, CubeVisibility } from "@/lib/types/Cube";
 import { getUserById } from "@/lib/db/users";
 
 export const CUBES_COLLECTION = "cubes";
@@ -19,6 +19,7 @@ function toCube(doc: WithId<Document>, packsCount = 0, cardsCount = 0): Cube {
     name: doc.name,
     description: doc.description || undefined,
     visibility: doc.visibility || "private",
+    draw: doc.draw || undefined,
     packsCount,
     cardsCount,
     createdAt: doc.createdAt,
@@ -158,7 +159,7 @@ export async function createCube(
 
 export async function updateCube(
   cubeId: string,
-  updates: { name?: string; description?: string; visibility?: CubeVisibility },
+  updates: { name?: string; description?: string; visibility?: CubeVisibility; draw?: CubeDrawConfig },
 ): Promise<Cube | null> {
   if (!ObjectId.isValid(cubeId)) {
     return null;
@@ -170,6 +171,9 @@ export async function updateCube(
   }
   if (updates.visibility !== undefined) {
     set.visibility = updates.visibility;
+  }
+  if (updates.draw !== undefined) {
+    set.draw = updates.draw;
   }
 
   const unset: Record<string, ''> = {};

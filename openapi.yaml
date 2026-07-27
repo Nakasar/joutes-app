@@ -659,6 +659,7 @@ paths:
                 - required: [name]
                 - required: [description]
                 - required: [visibility]
+                - required: [draw]
               properties:
                 name: { type: string, minLength: 1, maxLength: 100 }
                 description:
@@ -666,6 +667,7 @@ paths:
                   maxLength: 2000
                   description: An empty string clears the existing description.
                 visibility: { type: string, enum: [private, unlisted, public] }
+                draw: { $ref: "#/components/schemas/CubeDrawConfig" }
       responses:
         "200":
           description: Updated.
@@ -823,6 +825,35 @@ paths:
         "200": { description: Removed., content: { application/json: { schema: { type: object, properties: { success: { type: boolean } } } } } }
         "400": { $ref: "#/components/responses/ValidationError" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /cubes/{cubeId}/draw:
+    parameters:
+      - { name: cubeId, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [Cubes]
+      summary: Draw the cube for a number of players
+      description: >-
+        Open to anonymous callers: only the cube's visibility gates access. The
+        cube's stored configuration is used, falling back to the defaults (one
+        pack per player, no duplicates) when it has none. Nothing is persisted -
+        each call is an independent draw.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [players]
+              properties:
+                players: { type: integer, minimum: 1, maximum: 16 }
+      responses:
+        "200":
+          description: One draw per player.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CubeDrawResult" }
+        "400": { $ref: "#/components/responses/ValidationError" }
         "404": { $ref: "#/components/responses/NotFound" }
 
   /decks:
@@ -3141,6 +3172,10 @@ components:
         name: { type: string }
         description: { type: string }
         visibility: { type: string, enum: [private, unlisted, public] }
+        draw:
+          allOf:
+            - $ref: "#/components/schemas/CubeDrawConfig"
+          description: Absent until the owner configures the draw; the defaults apply then.
         packsCount:
           type: integer
           description: Recomputed on read, never stored on the cube.
@@ -3175,6 +3210,91 @@ components:
         collectorNumber: { type: string }
         image: { type: string }
         createdAt: { type: string, format: date-time }
+
+    CubeDrawRule:
+      type: object
+      description: One composition requirement, e.g. "3 cards of rarity Rare".
+      properties:
+        attribute:
+          type: string
+          description: Card attribute key as stored on the game's cards (`rarity`, `type`, `domain`...).
+        value: { type: string }
+        count: { type: integer, minimum: 1 }
+
+    CubeDrawConfig:
+      type: object
+      required: [mode, packsPerPlayer, cardsPerPlayer, rules, allowDuplicates]
+      properties:
+        mode:
+          type: string
+          enum: [packs, random]
+          description: >-
+            `packs` hands out whole packs; `random` hands out loose cards taken
+            from the whole cube.
+        packsPerPlayer: { type: integer, minimum: 1, maximum: 20 }
+        cardsPerPlayer: { type: integer, minimum: 1, maximum: 200 }
+        rules:
+          type: array
+          maxItems: 12
+          description: >-
+            `random` mode only. Rules are served first and their total may not
+            exceed `cardsPerPlayer`; the remainder is filled at random.
+          items: { $ref: "#/components/schemas/CubeDrawRule" }
+        allowDuplicates:
+          type: boolean
+          description: >-
+            Lets the same pack or card entry reach several players. A single
+            player never receives the same copy twice, whatever this value.
+
+    CubeDrawnCard:
+      type: object
+      description: >-
+        A card as handed out by a draw. Lighter than CubeCard: the draw only
+        carries the card's identity, not its cube, pack or creation date.
+      properties:
+        id: { type: string, description: Id of the cube's card entry the copy comes from. }
+        cardId: { type: string }
+        name: { type: string }
+        setCode: { type: string }
+        collectorNumber: { type: string }
+        image: { type: string }
+
+    CubeDrawnPack:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string, description: Absent when the pack has no name. }
+        type: { type: string }
+        index:
+          type: integer
+          description: The pack's rank in the cube, used to label unnamed packs.
+        cards: { type: array, items: { $ref: "#/components/schemas/CubeDrawnCard" } }
+
+    CubeDrawResult:
+      type: object
+      properties:
+        config: { $ref: "#/components/schemas/CubeDrawConfig" }
+        players:
+          type: array
+          items:
+            type: object
+            properties:
+              player: { type: integer, description: 1-based position of the player. }
+              packs: { type: array, items: { $ref: "#/components/schemas/CubeDrawnPack" } }
+              cards: { type: array, items: { $ref: "#/components/schemas/CubeDrawnCard" } }
+        shortfalls:
+          type: array
+          description: >-
+            What the cube could not supply. The draw is still returned, short of
+            the request, rather than failing.
+          items:
+            type: object
+            properties:
+              reason: { type: string, enum: [packs, cards, rule] }
+              attribute: { type: string }
+              value: { type: string }
+              requested: { type: integer }
+              provided: { type: integer }
 
     SetCompletion:
       type: object
