@@ -296,7 +296,8 @@ export default function BoostersList({
                 <CardsPicker
                   gameSlugOrId={gameSlug}
                   selectedCards={draftCards}
-                  onChange={(cards) => setDraftCards(cards.slice(0, BOOSTER_CARD_FILTER_MAX))}
+                  onChange={setDraftCards}
+                  maxCards={BOOSTER_CARD_FILTER_MAX}
                   searchPlaceholder={t("boosters.searchPlaceholder")}
                   emptyMessage={t("boosters.noResults")}
                   searchingLabel={t("boosters.searching")}

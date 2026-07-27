@@ -178,8 +178,10 @@ async function boosterIdsContainingCards(userId: string | undefined, cards: Boos
       match.userId = new ObjectId(userId);
     }
 
+    // `distinct` n'est pas typé : on valide la forme des valeurs plutôt que de
+    // l'affirmer, sinon un `boosterId` inattendu ferait échouer `new ObjectId`.
     const ids = await db.collection<BoosterCardDb>('booster-cards').distinct('boosterId', match);
-    return new Set(ids.filter((id): id is ObjectId => Boolean(id)).map((id) => id.toString()));
+    return new Set(ids.map((id) => (id ? String(id) : '')).filter((id) => ObjectId.isValid(id)));
   }));
 
   const [first, ...rest] = boosterIdsPerCard;

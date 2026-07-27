@@ -14,6 +14,7 @@ export default function CardsPicker({
   emptyMessage = "Aucune carte trouvée.",
   searchingLabel = "Recherche...",
   getRemoveLabel = (cardName: string) => `Retirer ${cardName}`,
+  maxCards,
 }: {
   gameSlugOrId: string;
   selectedCards: BoosterCard[];
@@ -23,6 +24,8 @@ export default function CardsPicker({
   emptyMessage?: string;
   searchingLabel?: string;
   getRemoveLabel?: (cardName: string) => string;
+  /** Nombre de cartes au-delà duquel l'ajout est refusé. Sans borne par défaut. */
+  maxCards?: number;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<BoosterCard[]>([]);
@@ -52,7 +55,10 @@ export default function CardsPicker({
     return () => clearTimeout(timer);
   }, [searchQuery, gameSlugOrId]);
 
+  const atMaxCards = maxCards !== undefined && selectedCards.length >= maxCards;
+
   const addCard = (card: BoosterCard) => {
+    if (atMaxCards) return;
     if (selectedCards.some((c) => c.id === card.id)) return;
     onChange([...selectedCards, card]);
     setSearchQuery("");
@@ -64,9 +70,11 @@ export default function CardsPicker({
     onChange(selectedCards.filter((c) => c.id !== cardId));
   };
 
-  const selectableResults = results.filter(
-    (card) => !selectedCards.some((c) => c.id === card.id)
-  );
+  // À la limite, les résultats disparaissent : des vignettes cliquables sans
+  // effet laisseraient croire à un ajout qui n'a pas eu lieu.
+  const selectableResults = atMaxCards
+    ? []
+    : results.filter((card) => !selectedCards.some((c) => c.id === card.id));
 
   return (
     <div className="grid gap-2">
@@ -98,11 +106,14 @@ export default function CardsPicker({
         placeholder={searchPlaceholder}
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
+        disabled={atMaxCards}
       />
-      {isSearching && (
+      {isSearching && !atMaxCards && (
         <p className="text-sm text-muted-foreground">{searchingLabel}</p>
       )}
-      {!isSearching && searchQuery.trim().length > 2 && selectableResults.length === 0 && (
+      {/* « Aucune carte trouvée » ne doit pas s'afficher quand c'est la limite,
+          et non la recherche, qui vide les résultats. */}
+      {!isSearching && !atMaxCards && searchQuery.trim().length > 2 && selectableResults.length === 0 && (
         <p className="text-sm text-muted-foreground">{emptyMessage}</p>
       )}
       {selectableResults.length > 0 && (
