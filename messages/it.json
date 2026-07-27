@@ -1427,7 +1427,15 @@
           "notePlaceholder": "Dove e quando l'hai aperto, con chi, cosa conteneva di interessante…",
           "noteHint": "Visibile solo a te.",
           "noteError": "Impossibile salvare la nota. Riprova.",
-          "saveNote": "Salva la nota"
+          "saveNote": "Salva la nota",
+          "filterByCards": "Cerca per carta",
+          "filterByCardsTitle": "Trova i boosters per carta",
+          "filterByCardsHint": "Vengono mostrati solo i boosters che contengono tutte le carte selezionate.",
+          "applyCardFilter": "Applica",
+          "containsCards": "Contiene:",
+          "removeCardFilter": "Rimuovi {name} dal filtro",
+          "searching": "Ricerca in corso…",
+          "cardFilterLimit": "Al massimo {count} carte in un filtro."
         }
     },
     "Features": {

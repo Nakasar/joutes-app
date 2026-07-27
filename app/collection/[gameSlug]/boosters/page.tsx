@@ -6,8 +6,16 @@ import { Metadata } from "next/types";
 import { ObjectId } from "mongodb";
 import db from "@/lib/mongodb";
 import { getGameBySlugOrId } from "@/lib/db/games";
-import { countBoosters, getBoosterTypesInUse, getBoosters, type BoosterSort } from "@/lib/db/boosters";
+import {
+  countBoosters,
+  getBoosterFilterCards,
+  getBoosterTypesInUse,
+  getBoosters,
+  toBoosterCardFilters,
+  type BoosterSort,
+} from "@/lib/db/boosters";
 import { isBoosterType, normalizeBoosterType } from "@/lib/constants/booster-types";
+import { parseBoosterCardIds } from "@/lib/constants/boosters";
 import BoostersList from "./BoostersList";
 
 export const dynamic = "force-dynamic";
@@ -30,10 +38,10 @@ export default async function BoostersPage({
   searchParams,
 }: {
   params: Promise<{ gameSlug: string }>;
-  searchParams: Promise<{ page?: string; type?: string; sort?: string }>;
+  searchParams: Promise<{ page?: string; type?: string; sort?: string; cards?: string }>;
 }) {
   const { gameSlug } = await params;
-  const { page: pageParam, type: typeParam, sort: sortParam } = await searchParams;
+  const { page: pageParam, type: typeParam, sort: sortParam, cards: cardsParam } = await searchParams;
 
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
@@ -52,7 +60,11 @@ export default async function BoostersPage({
   const type = normalizedType && isBoosterType(game.slug, normalizedType) ? normalizedType : undefined;
   const requestedPage = Math.max(1, Number.parseInt(pageParam ?? "1", 10) || 1);
 
-  const filters = { userId: session.user.id, gameId: game.id, type };
+  // Les cartes filtrées sont résolues avant la requête : la liste sert à la fois
+  // à filtrer et à afficher les cartes retenues au-dessus des résultats.
+  const filterCards = await getBoosterFilterCards(game.id, parseBoosterCardIds(cardsParam));
+
+  const filters = { userId: session.user.id, gameId: game.id, type, cards: toBoosterCardFilters(filterCards) };
   const total = await countBoosters(filters);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const page = Math.min(requestedPage, totalPages);
@@ -80,6 +92,7 @@ export default async function BoostersPage({
         langs={langs}
         typesInUse={typesInUse}
         typeFilter={type}
+        cardFilter={filterCards}
         sort={sort}
         page={page}
         totalPages={totalPages}

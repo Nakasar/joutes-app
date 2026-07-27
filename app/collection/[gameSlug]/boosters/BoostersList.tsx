@@ -16,6 +16,8 @@ import {
   Loader2,
   PackagePlus,
   CheckCircle2,
+  Search,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,8 +37,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Booster } from "@/lib/types/booster";
+import type { Booster, BoosterCard } from "@/lib/types/booster";
 import { getBoosterTypes, OTHER_BOOSTER_TYPE } from "@/lib/constants/booster-types";
+import { BOOSTER_CARD_FILTER_MAX } from "@/lib/constants/boosters";
+import CardsPicker from "@/components/CardsPicker";
 import SetCombobox from "./SetCombobox";
 import { useBoosterTypeLabel } from "./useBoosterTypeLabel";
 
@@ -59,6 +63,8 @@ type Props = {
   /** Types réellement présents dans les boosters de l'utilisateur pour ce jeu. */
   typesInUse: string[];
   typeFilter?: string;
+  /** Cartes que les boosters affichés contiennent toutes. */
+  cardFilter: BoosterCard[];
   sort: "newest" | "oldest";
   page: number;
   totalPages: number;
@@ -73,6 +79,7 @@ export default function BoostersList({
   langs,
   typesInUse,
   typeFilter,
+  cardFilter,
   sort,
   page,
   totalPages,
@@ -98,6 +105,10 @@ export default function BoostersList({
   const [type, setType] = useState(OTHER_BOOSTER_TYPE);
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [cardDialogOpen, setCardDialogOpen] = useState(false);
+  // Sélection de travail : le filtre n'est appliqué qu'à la validation, pour
+  // pouvoir choisir plusieurs cartes sans recharger la liste à chaque ajout.
+  const [draftCards, setDraftCards] = useState<BoosterCard[]>(cardFilter);
 
   /** Les filtres et le tri vivent dans l'URL : la page est partageable et le retour arrière fonctionne. */
   const urlWith = (changes: Record<string, string | undefined>) => {
@@ -116,6 +127,10 @@ export default function BoostersList({
   // Changer de filtre ou de tri renvoie en première page : le numéro de page
   // courant n'a plus de sens sur un autre jeu de résultats.
   const goTo = (changes: Record<string, string | undefined>) => router.push(urlWith({ ...changes, page: undefined }));
+
+  const goToCards = (cards: BoosterCard[]) => goTo({ cards: cards.map((card) => card.id).join(",") || undefined });
+
+  const filtersActive = Boolean(typeFilter) || cardFilter.length > 0;
 
   const create = async () => {
     if (!setCode || !lang) return;
@@ -233,7 +248,7 @@ export default function BoostersList({
         </div>
       </div>
 
-      {total > 0 || typeFilter ? (
+      {total > 0 || filtersActive ? (
         <div className="flex flex-wrap items-center gap-2">
           {typesInUse.length > 1 ? (
             <Select value={typeFilter ?? ALL} onValueChange={(value) => goTo({ type: value === ALL ? undefined : value })}>
@@ -259,11 +274,81 @@ export default function BoostersList({
               <SelectItem value="oldest">{t("boosters.sortOldest")}</SelectItem>
             </SelectContent>
           </Select>
+          <Dialog
+            open={cardDialogOpen}
+            onOpenChange={(open) => {
+              if (open) setDraftCards(cardFilter);
+              setCardDialogOpen(open);
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button type="button" variant="outline" className="gap-2">
+                <Search className="size-4" />
+                {t("boosters.filterByCards")}
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{t("boosters.filterByCardsTitle")}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-2 pt-2">
+                <p className="text-sm text-muted-foreground">{t("boosters.filterByCardsHint")}</p>
+                <CardsPicker
+                  gameSlugOrId={gameSlug}
+                  selectedCards={draftCards}
+                  onChange={setDraftCards}
+                  maxCards={BOOSTER_CARD_FILTER_MAX}
+                  searchPlaceholder={t("boosters.searchPlaceholder")}
+                  emptyMessage={t("boosters.noResults")}
+                  searchingLabel={t("boosters.searching")}
+                  getRemoveLabel={(name) => t("boosters.removeCardFilter", { name })}
+                />
+                {draftCards.length >= BOOSTER_CARD_FILTER_MAX ? (
+                  <p className="text-xs text-muted-foreground">
+                    {t("boosters.cardFilterLimit", { count: BOOSTER_CARD_FILTER_MAX })}
+                  </p>
+                ) : null}
+              </div>
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setCardDialogOpen(false)}>
+                  {t("boosters.cancel")}
+                </Button>
+                <Button
+                  onClick={() => {
+                    setCardDialogOpen(false);
+                    goToCards(draftCards);
+                  }}
+                >
+                  {t("boosters.applyCardFilter")}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           <span className="text-sm text-muted-foreground">{t("boosters.boosterCount", { count: total })}</span>
-          {typeFilter ? (
-            <Button type="button" variant="ghost" size="sm" onClick={() => goTo({ type: undefined })}>
+          {filtersActive ? (
+            <Button type="button" variant="ghost" size="sm" onClick={() => goTo({ type: undefined, cards: undefined })}>
               {t("boosters.resetFilters")}
             </Button>
+          ) : null}
+          {/* `w-full` : les cartes filtrées passent sur leur propre ligne sous les filtres. */}
+          {cardFilter.length > 0 ? (
+            <div className="flex w-full flex-wrap items-center gap-1.5">
+              <span className="text-xs text-muted-foreground">{t("boosters.containsCards")}</span>
+              {cardFilter.map((card) => (
+                <Badge key={card.id} variant="secondary" className="gap-1 py-0.5 pr-1 text-[11px]">
+                  {card.name}
+                  <button
+                    type="button"
+                    onClick={() => goToCards(cardFilter.filter((c) => c.id !== card.id))}
+                    aria-label={t("boosters.removeCardFilter", { name: card.name })}
+                    title={t("boosters.removeCardFilter", { name: card.name })}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
           ) : null}
         </div>
       ) : null}
@@ -272,7 +357,7 @@ export default function BoostersList({
         <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed py-16 text-center">
           <PackagePlus className="size-10 text-muted-foreground" />
           <div>
-            {typeFilter ? (
+            {filtersActive ? (
               <p className="font-semibold">{t("boosters.noBoosterMatchesFilters")}</p>
             ) : (
               <>

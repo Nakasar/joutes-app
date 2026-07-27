@@ -1402,7 +1402,15 @@
           "notePlaceholder": "Wo und wann du ihn geöffnet hast, mit wem, was bemerkenswert war…",
           "noteHint": "Nur für dich sichtbar.",
           "noteError": "Die Notiz konnte nicht gespeichert werden. Bitte erneut versuchen.",
-          "saveNote": "Notiz speichern"
+          "saveNote": "Notiz speichern",
+          "filterByCards": "Nach Karte suchen",
+          "filterByCardsTitle": "Booster nach Karte finden",
+          "filterByCardsHint": "Es werden nur Booster angezeigt, die alle ausgewählten Karten enthalten.",
+          "applyCardFilter": "Anwenden",
+          "containsCards": "Enthält:",
+          "removeCardFilter": "{name} aus dem Filter entfernen",
+          "searching": "Suche läuft…",
+          "cardFilterLimit": "Höchstens {count} Karten in einem Filter."
         }
     },
     "Features": {

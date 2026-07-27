@@ -891,6 +891,16 @@
             }
           },
           {
+            "name": "cards",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated card ids. Only boosters containing **every** listed card are returned. An id absent from the game's cards stays an active filter and simply matches nothing; duplicates are collapsed, and at most 10 ids are kept.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "OGN001,OGN042"
+          },
+          {
             "name": "sort",
             "in": "query",
             "required": false,

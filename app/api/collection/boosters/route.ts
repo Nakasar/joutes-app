@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { countBoosters, createBooster, getBoosters } from "@/lib/db/boosters";
+import { countBoosters, createBooster, getBoosterFilterCards, getBoosters, toBoosterCardFilters } from "@/lib/db/boosters";
 import { getGameBySlugOrId } from "@/lib/db/games";
 import { isBoosterType, normalizeBoosterType } from "@/lib/constants/booster-types";
+import { parseBoosterCardIds } from "@/lib/constants/boosters";
 
 export async function GET(request: NextRequest) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -31,7 +32,14 @@ export async function GET(request: NextRequest) {
   const page = Math.max(1, Number.parseInt(searchParams.get("page") ?? "1", 10) || 1);
   const limit = Math.max(1, Math.min(100, Number.parseInt(searchParams.get("limit") ?? "100", 10) || 100));
 
-  const filters = { userId: session.user.id, gameId: game.id, type: normalizedType };
+  const filterCards = await getBoosterFilterCards(game.id, parseBoosterCardIds(searchParams.get("cards")));
+
+  const filters = {
+    userId: session.user.id,
+    gameId: game.id,
+    type: normalizedType,
+    cards: toBoosterCardFilters(filterCards),
+  };
   const [boosters, total] = await Promise.all([
     getBoosters({ ...filters, page: page - 1, limit, sort }),
     countBoosters(filters),
