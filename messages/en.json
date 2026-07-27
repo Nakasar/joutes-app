@@ -1819,7 +1819,22 @@
       "searchPlaceholder": "Search for a player...",
       "dropBadge": "Drop",
       "noSearchResults": "No player matches your search.",
-      "noPlayers": "No players registered."
+      "noPlayers": "No players registered.",
+      "yourTable": "Your table",
+      "against": "against",
+      "record": "{wins}W · {losses}L · {draws}D",
+      "extensionGranted": "Extension granted by the judge: +{minutes} min",
+      "resultSent": "Result sent: {mine} – {theirs}",
+      "correct": "Correct",
+      "awaitingConfirmationFrom": "Awaiting confirmation from {name}.",
+      "myRank": "My rank",
+      "myScore": "My score",
+      "rankOf": "#{rank} of {total}",
+      "progressTitle": "Progress",
+      "roundsCompleted": "{count} round(s) completed",
+      "roundInProgress": "Round {number} — in progress",
+      "noRoundsYet": "The tournament has not started yet.",
+      "myMatchesTitle": "My matches"
     },
     "playerShell": {
       "notSyncedTitle": "Tournament not synced",
@@ -1832,7 +1847,8 @@
       "subtitle": "Player portal",
       "participatingAs": "You are participating as",
       "guest": "(guest)",
-      "droppedBadge": "Dropped"
+      "droppedBadge": "Dropped",
+      "remaining": "left"
     },
     "playerLive": {
       "timer": "Timer",
@@ -1865,7 +1881,15 @@
         "title": "Remove this tournament",
         "description": "The sync key will be removed from this browser. You can join again via the organizer's QR code.",
         "confirm": "Remove"
-      }
+      },
+      "joinWithQr": "Join with a QR",
+      "pilot": "Run the tournament",
+      "liveRound": "Live · Round {number} of {total}",
+      "timeRemaining": "time remaining",
+      "playersCount": "{count} players",
+      "noDetails": "Not configured yet",
+      "finishSetup": "Finish the setup",
+      "seeResults": "See the results"
     },
     "new": {
       "title": "Create a tournament",
@@ -1958,10 +1982,16 @@
         "players": "Players",
         "phases": "Phases",
         "rounds": "Rounds",
-        "live": "Live"
+        "live": "Room & announcements",
+        "standings": "Standings"
       },
       "backToTournaments": "← My tournaments",
-      "viewPlayerPortal": "View the player portal →"
+      "viewPlayerPortal": "View the player portal →",
+      "tournamentLabel": "Tournament",
+      "groupLive": "During the tournament",
+      "groupPrep": "Preparation",
+      "helpTitle": "Need help?",
+      "helpBody": "\"Swiss\" = everyone plays every round, against an opponent on the same score."
     },
     "organizerSettings": {
       "firstTableLabel": "First table number",
@@ -1985,7 +2015,30 @@
       "deleteDialogDescription": "The tournament “{name}” and all its data (players, phases, rounds, matches, announcements) will be permanently deleted. This action is irreversible.",
       "deleting": "Deleting...",
       "deleteConfirm": "Delete permanently",
-      "deleteError": "Error while deleting the tournament"
+      "deleteError": "Error while deleting the tournament",
+      "pageTitle": "Tournament settings",
+      "pageDescription": "Each setting explains what it changes for players.",
+      "infoTitle": "Information",
+      "nameLabel": "Tournament name",
+      "locationLabel": "Venue",
+      "dateLabel": "Date",
+      "capacityLabel": "Seats",
+      "eventTitle": "Date and venue",
+      "eventDescription": "They come from the event this tournament is linked to, so the public page and the portal announce the same thing.",
+      "eventOpen": "View event",
+      "eventNoneBody": "This tournament isn't linked to any event, so it has no announced date or venue.",
+      "eventCreateCta": "Create an event for this tournament",
+      "reportingTitle": "How players report their results",
+      "reportingDescription": "This block decides how much work lands on your judges.",
+      "summaryTitle": "Summary for players",
+      "summaryFormat": "Format",
+      "summaryMatch": "Match",
+      "summaryRegistered": "Registered",
+      "summaryLocation": "Venue",
+      "summaryStart": "Start",
+      "summaryNoPhase": "No phase configured",
+      "firstTimeTitle": "First time?",
+      "firstTimeBody": "The defaults suit most store tournaments. You can start without changing anything here."
     },
     "organizerPlayers": {
       "fixedTableAria": "Fixed table for {name}",
@@ -2003,7 +2056,15 @@
       "noSearchResults": "No player matches the search.",
       "removeDialogTitle": "Remove the player",
       "removeDialogDescription": "Remove {name} from the tournament? If they already have matches, they will be marked as DROPPED instead of deleted.",
-      "removeError": "Error while removing the player"
+      "removeError": "Error while removing the player",
+      "pageTitle": "Players",
+      "checkInSummary": "{checked} present of {total} registered · check players in as they arrive",
+      "checkInAria": "Check {name} in",
+      "present": "Present",
+      "notCheckedIn": "Not checked in",
+      "hasPenalties": "{count} penalty/penalties",
+      "openSheet": "Sheet",
+      "joinQr": "Registration QR"
     },
     "organizerPhases": {
       "resetStatusTitle": "Set back to “not started”",
@@ -2065,7 +2126,11 @@
         "duels": "duels",
         "podsOf": "pods of {count}",
         "podsRange": "pods {min}-{max}"
-      }
+      },
+      "pageTitle": "Format & phases",
+      "pageDescription": "Steps run in order. You can still edit anything that has not started.",
+      "stepLabel": "Step {index} · {status}",
+      "willFillWithTop": "Will be filled with the top {count} of the standings."
     },
     "nextPhase": {
       "button": "Advance to the next phase",
@@ -2077,7 +2142,32 @@
       "nextPhaseStarting": "The phase “{name}” will start and its first round will be created.",
       "currentIncomplete": "The current phase is not finished: all its matches must have a result before advancing to the next phase.",
       "topCutWarning": "Warning: {count} unqualified player(s) will be eliminated (DROPPED status) by the top cut ({topCut}).",
-      "qualifiedPlayers": "Qualified players ({count}):"
+      "qualifiedPlayers": "Qualified players ({count}):",
+      "back": "Back",
+      "stepChecks": "Checks",
+      "stepTopCut": "Top cut",
+      "stepPairings": "Pairings",
+      "checksTitle": "Is everything ready?",
+      "checksDescription": "We check before freezing the standings. Once the next phase starts, results can no longer be edited.",
+      "checks": {
+        "currentComplete": "All results of the current phase are in",
+        "hasNextPhase": "A next phase is configured",
+        "hasQualified": "Players are qualified"
+      },
+      "topCutTitle": "How many players move on to the final phase?",
+      "topCutDescription": "Qualified players are taken in the order of the current phase's final standings.",
+      "topCutConfigured": "Top cut configured on the phase: {count} players.",
+      "eliminatedLabel": "Eliminated",
+      "eliminatedCount": "{count} players",
+      "eliminatedHint": "They keep their final ranking and see their result on their portal.",
+      "pairingsTitle": "Final phase pairings",
+      "pairingsDescription": "Seed 1 against the last qualifier, and so on. Indicative preview: real pairing follows the phase setting.",
+      "pairingsUnavailable": "No pairing to preview.",
+      "matchN": "Match {number}",
+      "launchNotice": "On start: qualified players get their new table, and the previous phase's standings are archived.",
+      "toTopCut": "Choose the top cut",
+      "toPairings": "See the pairings",
+      "launch": "Start {name}"
     },
     "organizerJoin": {
       "title": "Invite players",
@@ -2105,7 +2195,8 @@
       "createError": "Error while creating the round",
       "noRounds": "No round played yet.",
       "standingsValidated": "Standings validated",
-      "standingsNotValidated": "Standings not validated"
+      "standingsNotValidated": "Standings not validated",
+      "emptyDescription": "No round created yet. Pick a phase to start the first one."
     },
     "roundClient": {
       "headerTable": "Table",
@@ -2160,7 +2251,51 @@
       "reopenCascadeDescription": "Reopening round {number} will cancel the phases started afterwards: their rounds and matches will be deleted and the players eliminated by their top cut will be restored. This phase will become the current phase again. Continue?",
       "deleteRound": "Delete the round",
       "deleteRoundTitle": "Delete the round",
-      "deleteRoundDescription": "Delete round {number} and all its matches? This action is irreversible."
+      "deleteRoundDescription": "Delete round {number} and all its matches? This action is irreversible.",
+      "resultsIn": "results in",
+      "filterAll": "All tables",
+      "filterPending": "Pending · {count}",
+      "filterDisputed": "Disputes · {count}",
+      "viewGrid": "Grid",
+      "viewTable": "Table",
+      "tableShort": "Table",
+      "quickEntryTitle": "Quick entry",
+      "quickEntryUnavailable": "This format is entered game by game.",
+      "detailedEntry": "Detailed entry",
+      "enterResult": "Enter",
+      "correct": "Correct",
+      "arbitrate": "Arbitrate",
+      "extendShort": "+3 min",
+      "extendTitle": "Grant a 3-minute extension",
+      "extendError": "Extension failed",
+      "extensionGranted": "Extension {minutes} min",
+      "extensionShort": "+{minutes} min",
+      "extensionRemove": "Remove",
+      "extensionEnd": "End",
+      "extensionsTitle": "Extensions · {count}",
+      "extensionTable": "Table {table} · +{minutes} min",
+      "toHandle": "To handle",
+      "disputesToArbitrate": "{count} dispute(s) to arbitrate",
+      "disputeHint": "Table {table}: both players reported a different result.",
+      "tablesWithoutResult": "{count} table(s) without a result",
+      "tablesList": "Tables {tables}",
+      "showThem": "Show them",
+      "readyTitle": "All results are in",
+      "readySubtitle": "You can close the round.",
+      "notReadyTitle": "Round in progress",
+      "notReadySubtitle": "{pending} table(s) without a result, {disputed} dispute(s).",
+      "closeAndStartNext": "Close and start round {number}",
+      "closeConfirm": "Close",
+      "closeDescription": "Standings after round {number} will be frozen, then the next round will be generated.",
+      "closeError": "Failed to close the round",
+      "closeCreateError": "Standings were frozen, but the next round could not be created.",
+      "cardStatus": {
+        "pending": "Waiting for the result",
+        "awaitingConfirmation": "Awaiting confirmation",
+        "completed": "Reported and confirmed",
+        "completedShort": "Reported",
+        "disputed": "Dispute — conflicting results"
+      }
     },
     "roundStandings": {
       "title": "Standings at the end of the round",
@@ -2200,11 +2335,18 @@
       "statusStopped": "Stopped",
       "minutes": "Minutes",
       "seconds": "Seconds",
+      "setTime": "Set time",
+      "setTimeTitle": "Set the timer",
+      "setTimeDescription": "Replaces the time shown in the room. A stopped timer stays stopped — you start it when you're ready.",
       "start": "Start",
       "restart": "Restart",
       "resume": "Resume",
       "pause": "Pause",
-      "stop": "Stop"
+      "stop": "Stop",
+      "running": "Running",
+      "paused": "Paused",
+      "stopped": "Stopped",
+      "expired": "Time is up"
     },
     "announcements": {
       "title": "Announcements",
@@ -2217,6 +2359,144 @@
       "deleteAria": "Delete the announcement",
       "createError": "Error while creating the announcement",
       "deleteError": "Error while deleting"
+    },
+    "roundHeader": {
+      "ofRounds": "of {total}",
+      "phaseAndTables": "{phase} · {count} tables",
+      "addTwoMinutes": "+2 min",
+      "announce": "Room announcement"
+    },
+    "standings": {
+      "pageTitle": "Standings",
+      "tiebreakers": "Tiebreakers: points, then OMW%, then GW%.",
+      "currentTab": "Current",
+      "afterRound": "After R{number}",
+      "browseHint": "Browse the round history",
+      "frozen": "Frozen standings",
+      "live": "Live standings",
+      "exportCsv": "Export CSV",
+      "showOnScreen": "Show on screen",
+      "statRanked": "Ranked players",
+      "statDropped": "Drops",
+      "statPerfect": "Perfect score",
+      "statCutLine": "Cut line",
+      "columnPlayer": "Player",
+      "columnPoints": "Points",
+      "columnRecord": "W-L-D",
+      "columnStatus": "Status",
+      "cutLine": "Cut line · top {count}",
+      "empty": "No standings available yet."
+    },
+    "standingsExport": {
+      "columns": {
+        "rank": "Rank",
+        "player": "Player",
+        "points": "Points",
+        "record": "W-L-D",
+        "opponentMatchWin": "OMW%",
+        "gameWin": "GW%",
+        "status": "Status"
+      }
+    },
+    "live": {
+      "pageTitle": "Talk to the room",
+      "pageDescription": "What you send here appears on every player's phone and on the projection screen.",
+      "presetsTitle": "Ready-made messages",
+      "customPlaceholder": "Or write your message…",
+      "urgentLabel": "Urgent message (in red)",
+      "postedTitle": "Posted announcements",
+      "projectionTitle": "Projection screen",
+      "resetTimer": "Reset",
+      "tablesReported": "{done} / {total} tables reported",
+      "openProjection": "Open fullscreen",
+      "presets": {
+        "fiveMinutes": {
+          "label": "5 minutes left",
+          "text": "5 minutes left in the round. Finish the current game."
+        },
+        "roundEnd": {
+          "label": "End of round",
+          "text": "End of round: report your result from your phone."
+        },
+        "pairingsPosted": {
+          "label": "Pairings posted",
+          "text": "Next round pairings are posted, head to your table."
+        },
+        "break": {
+          "label": "15 min break",
+          "text": "15-minute break."
+        }
+      }
+    },
+    "activity": {
+      "title": "Activity",
+      "empty": "No activity yet.",
+      "staffActor": "the organisers",
+      "types": {
+        "match-reported": "Table {table} — result reported by {actor}",
+        "match-confirmed": "Table {table} — result confirmed",
+        "match-disputed": "Table {table} — dispute raised",
+        "match-cleared": "Table {table} — result cleared",
+        "match-extended": "Table {table} — {minutes} min extension granted",
+        "announcement-sent": "Announcement sent to the room",
+        "round-created": "Round {round} started · {matches} tables",
+        "round-validated": "Round {round} standings frozen",
+        "phase-advanced": "Next phase started · {matches} tables",
+        "player-checked-in": "{player} checked in",
+        "player-dropped": "{player} dropped from the tournament",
+        "penalty-issued": "Penalty issued to {player}"
+      }
+    },
+    "playerSheet": {
+      "backToList": "Back to the player list",
+      "summaryWithRank": "#{rank} · {points} pts · {record}",
+      "summaryNoRank": "Not ranked yet",
+      "dropPlayer": "Drop player",
+      "addPenalty": "Issue a penalty",
+      "add": "Add",
+      "remove": "Remove",
+      "currentMatch": "Current match",
+      "against": "against {name}",
+      "goToTable": "Go to the table",
+      "tableN": "table {table}",
+      "roundHistory": "Round history",
+      "noHistory": "No match played yet.",
+      "outcome": {
+        "win": "Win",
+        "loss": "Loss",
+        "draw": "Draw",
+        "pending": "In progress"
+      },
+      "decklist": "Decklist",
+      "decklistChecked": "Checked by judges",
+      "decklistUnchecked": "Not checked",
+      "decklistPlaceholder": "One card per line…",
+      "decklistHint": "Editing the list clears the previous check.",
+      "decklistMarkChecked": "Mark as checked",
+      "decklistMarkUnchecked": "Clear the check",
+      "penalties": "Penalties · {count}",
+      "noPenalties": "No penalty.",
+      "penaltyType": "Penalty type",
+      "penaltyReasonPlaceholder": "Reason (slow play, deck error…)",
+      "applyPenalty": "Apply",
+      "penaltyHint": "A disqualification also drops the player from the tournament.",
+      "penaltyTypes": {
+        "warning": "Warning",
+        "game-loss": "Game loss",
+        "match-loss": "Match loss",
+        "disqualification": "Disqualification"
+      },
+      "notes": "Internal notes · {count}",
+      "notesHint": "Visible to the organising team only.",
+      "notePlaceholder": "Add a note…",
+      "saveNote": "Save the note",
+      "removeNoteAria": "Delete the note"
+    },
+    "playerReport": {
+      "whoWon": "Who won?",
+      "tableAndOpponent": "Table {table} · against {name}",
+      "iWon": "I won",
+      "opponentWon": "{name} won"
     }
   },
   "Trade": {

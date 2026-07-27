@@ -3,20 +3,13 @@
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Check, Eraser, LockOpen, Pencil, Plus, Trash2, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Check, LayoutGrid, List, LockOpen, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { usePaginatedSearch } from "@/lib/use-paginated-search";
+import { cn } from "@/lib/utils";
 import type {
   TournamentGameResult,
   TournamentMatch,
@@ -25,18 +18,17 @@ import type {
   TournamentRound,
 } from "@/lib/types/Tournament";
 import { MatchGamesEditor } from "../../../MatchGamesEditor";
-import { MatchPlayerName } from "../../../MatchPlayerName";
 import { PlayerNameTag } from "../../../PlayerNameTag";
-import { TablePagination } from "../../../TablePagination";
+import { buildQuickResults, shortName, type QuickResult } from "../../../quickResults";
+import { MatchCard } from "./MatchCard";
+import { RoundSidePanel } from "./RoundSidePanel";
 
-const MATCH_STATUS_KEYS: Record<string, string> = {
-  pending: "roundClient.matchStatus.pending",
-  "in-progress": "roundClient.matchStatus.inProgress",
-  completed: "roundClient.matchStatus.completed",
-  disputed: "roundClient.matchStatus.disputed",
-};
+// Durée d'une prolongation accordée en un appui, en secondes.
+const EXTENSION_STEP = 180;
 
 type RoundPlayer = Pick<TournamentPlayer, "id" | "displayName" | "discriminator" | "status">;
+type Filter = "all" | "pending" | "disputed";
+type View = "grid" | "table";
 
 type Props = {
   tournamentId: string;
@@ -45,6 +37,7 @@ type Props = {
   players: RoundPlayer[];
   resultMode: TournamentResultMode;
   bestOf: number;
+  phaseId: string;
   // La suppression de match n'est possible que dans la dernière ronde.
   isLastRound: boolean;
   // Rouvrir cette ronde annulera aussi les phases démarrées ensuite.
@@ -58,34 +51,31 @@ export function OrganizerRoundClient({
   players,
   resultMode,
   bestOf,
+  phaseId,
   isLastRound,
   reopenCascades,
 }: Props) {
   const t = useTranslations("Tournaments");
+  const router = useRouter();
+
   const [matches, setMatches] = useState<TournamentMatch[]>(initialMatches);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-
-  // Match dont le score est en cours d'édition (modale).
-  const [editMatch, setEditMatch] = useState<TournamentMatch | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Création de match (modale) : joueurs sélectionnés et valeur du combobox.
+  const [filter, setFilter] = useState<Filter>("all");
+  const [view, setView] = useState<View>("grid");
+  const [openMatchId, setOpenMatchId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+
+  const [editMatch, setEditMatch] = useState<TournamentMatch | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [createPlayerIds, setCreatePlayerIds] = useState<string[]>([]);
-
-  // Match en attente de confirmation de suppression (modale).
   const [pendingDelete, setPendingDelete] = useState<TournamentMatch | null>(null);
-  // Résultat rapporté en attente de confirmation de suppression (modale).
-  const [pendingClear, setPendingClear] = useState<TournamentMatch | null>(null);
-  // Confirmation de suppression de la ronde entière (modale).
   const [deleteRoundOpen, setDeleteRoundOpen] = useState(false);
-  // Confirmation de réouverture de la ronde terminée (modale).
   const [reopenOpen, setReopenOpen] = useState(false);
-  const router = useRouter();
+  const [closeRoundOpen, setCloseRoundOpen] = useState(false);
 
-  // Une opération est en cours (suppression/création ou envoi d'un score) :
-  // sert à désactiver toutes les actions et éviter des requêtes concurrentes.
   const anyBusy = busy || submitting;
 
   const playersById = useMemo(() => new Map(players.map((p) => [p.id, p])), [players]);
@@ -93,51 +83,29 @@ export function OrganizerRoundClient({
     (playerId: string) => playersById.get(playerId)?.displayName ?? t("roundClient.unknownPlayer"),
     [playersById, t]
   );
-
-  // Filtre « résultats manquants » : matchs sans résultat acté (à jouer ou en
-  // attente de confirmation).
-  const [missingOnly, setMissingOnly] = useState(false);
-  const remainingCount = useMemo(
-    () => matches.filter((m) => m.status !== "completed").length,
-    [matches]
-  );
-  const visibleMatches = useMemo(
-    () => (missingOnly ? matches.filter((m) => m.status !== "completed") : matches),
-    [matches, missingOnly]
+  const cardPlayers = useMemo(
+    () => players.map((p) => ({ id: p.id, name: p.displayName, discriminator: p.discriminator })),
+    [players]
   );
 
-  const search = usePaginatedSearch(
-    visibleMatches,
-    (m) => m.players.map((p) => playerName(p.playerId)).join(" "),
-    15
-  );
+  const doneCount = matches.filter((m) => m.status === "completed").length;
+  const disputedCount = matches.filter((m) => m.status === "disputed").length;
+  const pendingCount = matches.filter((m) => m.status === "pending").length;
+  const awaitingCount = matches.filter((m) => m.status === "in-progress").length;
+  const total = matches.length;
+  const ready = pendingCount === 0 && disputedCount === 0 && awaitingCount === 0 && total > 0;
 
-  // Modification manuelle du numéro de table d'un match (vide = retirer).
-  const setTable = (match: TournamentMatch, raw: string) => {
-    const parsed = Number.parseInt(raw, 10);
-    const next = Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
-    if (next === (match.tableNumber ?? null)) return;
-    setBusy(true);
-    setError(null);
-    (async () => {
-      try {
-        const res = await fetch(`/api/tournaments/${tournamentId}/matches/${match.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "set-table", tableNumber: next }),
-        });
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body.error ?? t("roundClient.tableError"));
-        }
-        await refresh();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : t("roundClient.tableError"));
-      } finally {
-        setBusy(false);
-      }
-    })();
-  };
+  const visibleMatches = useMemo(() => {
+    const byFilter = matches.filter((m) =>
+      filter === "all" ? true : filter === "pending" ? m.status === "pending" : m.status === "disputed"
+    );
+    const query = search.trim().toLowerCase();
+    if (!query) return byFilter;
+    return byFilter.filter((m) => {
+      const names = m.players.map((p) => playerName(p.playerId).toLowerCase()).join(" ");
+      return names.includes(query) || String(m.tableNumber ?? "").includes(query);
+    });
+  }, [matches, filter, search, playerName]);
 
   const refresh = useCallback(async () => {
     const res = await fetch(`/api/tournaments/${tournamentId}/rounds/${round.id}`);
@@ -147,7 +115,45 @@ export function OrganizerRoundClient({
     }
   }, [tournamentId, round.id]);
 
-  const submitReport = (match: TournamentMatch, games: TournamentGameResult[]) => {
+  // Toutes les mutations de match passent par ici : même gestion d'erreur, même
+  // rafraîchissement, et une seule opération à la fois pour éviter que deux
+  // saisies concurrentes se marchent dessus.
+  const mutateMatch = useCallback(
+    async (matchId: string, body: Record<string, unknown>, errorKey: string) => {
+      setBusy(true);
+      setError(null);
+      try {
+        const res = await fetch(`/api/tournaments/${tournamentId}/matches/${matchId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error ?? t(errorKey));
+        }
+        await refresh();
+        return true;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t(errorKey));
+        return false;
+      } finally {
+        setBusy(false);
+      }
+    },
+    [tournamentId, refresh, t]
+  );
+
+  const applyQuickResult = async (match: TournamentMatch, result: QuickResult) => {
+    const ok = await mutateMatch(
+      match.id,
+      { action: "report", games: result.games },
+      "roundClient.reportError"
+    );
+    if (ok) setOpenMatchId(null);
+  };
+
+  const submitDetailed = (match: TournamentMatch, games: TournamentGameResult[]) => {
     if (games.length === 0) {
       setError(t("roundClient.reportAtLeastOneGame"));
       return;
@@ -162,11 +168,12 @@ export function OrganizerRoundClient({
           body: JSON.stringify({ action: "report", games }),
         });
         if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body.error ?? t("roundClient.reportError"));
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error ?? t("roundClient.reportError"));
         }
         await refresh();
         setEditMatch(null);
+        setOpenMatchId(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : t("roundClient.reportError"));
       } finally {
@@ -175,159 +182,129 @@ export function OrganizerRoundClient({
     })();
   };
 
-  // Valide manuellement un score en attente de confirmation.
-  const confirmMatch = (match: TournamentMatch) => {
-    setBusy(true);
-    setError(null);
-    (async () => {
-      try {
-        const res = await fetch(`/api/tournaments/${tournamentId}/matches/${match.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "confirm" }),
-        });
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body.error ?? t("roundClient.confirmError"));
-        }
-        await refresh();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : t("roundClient.confirmError"));
-      } finally {
-        setBusy(false);
-      }
-    })();
+  const setTable = (match: TournamentMatch, raw: string) => {
+    const parsed = Number.parseInt(raw, 10);
+    const next = Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+    if (next === (match.tableNumber ?? null)) return;
+    mutateMatch(match.id, { action: "set-table", tableNumber: next }, "roundClient.tableError");
   };
 
-  // Supprime le résultat rapporté d'un match (le remet « à jouer »).
-  const clearMatch = (match: TournamentMatch) => {
+  const deleteMatch = async (match: TournamentMatch) => {
     setBusy(true);
     setError(null);
-    (async () => {
-      try {
-        const res = await fetch(`/api/tournaments/${tournamentId}/matches/${match.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "clear" }),
-        });
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body.error ?? t("roundClient.clearError"));
-        }
-        setPendingClear(null);
-        await refresh();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : t("roundClient.clearError"));
-      } finally {
-        setBusy(false);
+    try {
+      const res = await fetch(`/api/tournaments/${tournamentId}/matches/${match.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? t("roundClient.deleteMatchError"));
       }
-    })();
+      setPendingDelete(null);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("roundClient.deleteMatchError"));
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const deleteMatch = (match: TournamentMatch) => {
+  const roundAction = async (
+    body: Record<string, unknown> | null,
+    method: "PATCH" | "DELETE",
+    errorKey: string,
+    onDone: () => void
+  ) => {
     setBusy(true);
     setError(null);
-    (async () => {
-      try {
-        const res = await fetch(`/api/tournaments/${tournamentId}/matches/${match.id}`, {
-          method: "DELETE",
-        });
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body.error ?? t("roundClient.deleteMatchError"));
-        }
-        setPendingDelete(null);
-        await refresh();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : t("roundClient.deleteMatchError"));
-      } finally {
-        setBusy(false);
+    try {
+      const res = await fetch(`/api/tournaments/${tournamentId}/rounds/${round.id}`, {
+        method,
+        ...(body ? { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {}),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? t(errorKey));
       }
-    })();
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t(errorKey));
+      setBusy(false);
+    }
   };
 
-  const deleteRound = () => {
+  /**
+   * Clôture la ronde : fige son classement puis génère la ronde suivante de la
+   * phase, et bascule dessus. Les deux gestes sont enchaînés parce qu'ils n'ont
+   * de sens qu'ensemble — un classement figé sans ronde suivante laisserait le
+   * tournoi en suspens.
+   */
+  const closeRound = async () => {
     setBusy(true);
     setError(null);
-    (async () => {
-      try {
-        const res = await fetch(`/api/tournaments/${tournamentId}/rounds/${round.id}`, {
-          method: "DELETE",
-        });
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body.error ?? t("roundClient.deleteRoundError"));
-        }
-        router.push(`/tournaments/${tournamentId}/organizer/rounds`);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : t("roundClient.deleteRoundError"));
-        setBusy(false);
-        setDeleteRoundOpen(false);
+    try {
+      const validateRes = await fetch(
+        `/api/tournaments/${tournamentId}/rounds/${round.id}/standings`,
+        { method: "POST" }
+      );
+      if (!validateRes.ok) {
+        const data = await validateRes.json().catch(() => ({}));
+        throw new Error(data.error ?? t("roundStandings.validateError"));
       }
-    })();
+
+      const createRes = await fetch(`/api/tournaments/${tournamentId}/phases/${phaseId}/rounds`, {
+        method: "POST",
+      });
+      if (!createRes.ok) {
+        const data = await createRes.json().catch(() => ({}));
+        // Le classement est déjà figé : on le dit, pour que l'organisateur
+        // sache que seule la création de la ronde a échoué.
+        throw new Error(data.error ?? t("roundClient.closeCreateError"));
+      }
+      const next = await createRes.json();
+      setCloseRoundOpen(false);
+      router.push(`/tournaments/${tournamentId}/organizer/rounds/${next.id}/matches`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("roundClient.closeError"));
+      setBusy(false);
+      setCloseRoundOpen(false);
+    }
   };
 
-  // Rouvre la ronde terminée (la repasse « en cours », ronde courante).
-  const reopenRound = () => {
-    setBusy(true);
-    setError(null);
-    (async () => {
-      try {
-        const res = await fetch(`/api/tournaments/${tournamentId}/rounds/${round.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "reopen" }),
-        });
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body.error ?? t("roundClient.reopenError"));
-        }
-        setReopenOpen(false);
-        router.refresh();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : t("roundClient.reopenError"));
-      } finally {
-        setBusy(false);
-      }
-    })();
-  };
-
-  const createMatch = () => {
+  const createMatch = async () => {
     if (createPlayerIds.length === 0) return;
     setBusy(true);
     setError(null);
-    (async () => {
-      try {
-        const res = await fetch(`/api/tournaments/${tournamentId}/rounds/${round.id}/matches`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ players: createPlayerIds }),
-        });
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body.error ?? t("roundClient.createMatchError"));
-        }
-        await refresh();
-        setCreateOpen(false);
-        setCreatePlayerIds([]);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : t("roundClient.createMatchError"));
-      } finally {
-        setBusy(false);
+    try {
+      const res = await fetch(`/api/tournaments/${tournamentId}/rounds/${round.id}/matches`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ players: createPlayerIds }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? t("roundClient.createMatchError"));
       }
-    })();
+      await refresh();
+      setCreateOpen(false);
+      setCreatePlayerIds([]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("roundClient.createMatchError"));
+    } finally {
+      setBusy(false);
+    }
   };
 
-  // Joueurs déjà appariés dans cette ronde (dans un match existant).
   const pairedIds = useMemo(
     () => new Set(matches.flatMap((m) => m.players.map((p) => p.playerId))),
     [matches]
   );
-  // Options du combobox : joueurs actifs non appariés et non déjà sélectionnés.
   const availableOptions = useMemo(
     () =>
       players
-        .filter((p) => p.status === "registered" && !pairedIds.has(p.id) && !createPlayerIds.includes(p.id))
+        .filter(
+          (p) => p.status === "registered" && !pairedIds.has(p.id) && !createPlayerIds.includes(p.id)
+        )
         .map((p) => ({
           value: p.id,
           label: p.discriminator ? `${p.displayName} #${p.discriminator}` : p.displayName,
@@ -340,121 +317,188 @@ export function OrganizerRoundClient({
       .map((p) => playerName(p.playerId))
       .join(` ${t("common.vs")} `)}${match.players.length === 1 ? ` (${t("common.bye")})` : ""}`;
 
+  // Part des tables rendues et en litige, pour la jauge de progression.
+  const donePercent = total > 0 ? (doneCount / total) * 100 : 0;
+  const disputedPercent = total > 0 ? (disputedCount / total) * 100 : 0;
+
+  const quickResultsFor = (match: TournamentMatch) =>
+    resultMode === "selection" ? buildQuickResults(bestOf, match.players.map((p) => p.playerId)) : [];
+
+  const filterChips: { key: Filter; label: string; tone?: "alert" }[] = [
+    { key: "all", label: t("roundClient.filterAll") },
+    { key: "pending", label: t("roundClient.filterPending", { count: pendingCount }) },
+    ...(disputedCount > 0
+      ? [{ key: "disputed" as const, label: t("roundClient.filterDisputed", { count: disputedCount }), tone: "alert" as const }]
+      : []),
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <h2 className="text-2xl font-bold">{t("common.roundN", { number: round.number })}</h2>
-          <p className="mt-1 text-muted-foreground">{t("roundClient.subtitle")}</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {t("roundClient.totalMatches", { count: matches.length })}
-            {" · "}
-            <span className={remainingCount > 0 ? "font-medium text-amber-600 dark:text-amber-400" : undefined}>
-              {t("roundClient.remainingMatches", { count: remainingCount })}
-            </span>
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary">
-            {round.status === "completed"
-              ? t("common.roundStatus.completed")
-              : t("common.roundStatus.in-progress")}
-          </Badge>
-          {round.status === "completed" && isLastRound && (
-            <Button variant="outline" size="sm" onClick={() => setReopenOpen(true)} disabled={anyBusy}>
-              <LockOpen className="mr-2 h-4 w-4" />
-              {t("roundClient.reopenRound")}
-            </Button>
-          )}
-          {isLastRound && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-red-600 hover:text-red-800"
-              onClick={() => setDeleteRoundOpen(true)}
-              disabled={anyBusy}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              {t("roundClient.deleteRound")}
-            </Button>
-          )}
-        </div>
-      </div>
+    <div className="flex min-h-0 flex-1 flex-col xl:flex-row">
+      <div className="min-w-0 flex-1 p-6 pb-28">
+        {error && (
+          <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
 
-      {error && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
-        </div>
-      )}
+        <div className="mb-4 rounded-xl border bg-card p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-baseline gap-2.5">
+              <span className="text-[22px] font-bold tabular-nums">
+                {doneCount}
+                <span className="font-medium text-muted-foreground">/{total}</span>
+              </span>
+              <span className="text-sm text-muted-foreground">{t("roundClient.resultsIn")}</span>
+            </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center gap-2">
+              {filterChips.map((chip) => (
+                <button
+                  key={chip.key}
+                  type="button"
+                  onClick={() => setFilter(chip.key)}
+                  aria-pressed={filter === chip.key}
+                  className={cn(
+                    "rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors",
+                    filter === chip.key
+                      ? "border-transparent bg-foreground text-background"
+                      : chip.tone === "alert"
+                        ? "border-destructive/40 bg-destructive/10 text-destructive"
+                        : "bg-card hover:bg-accent"
+                  )}
+                >
+                  {chip.label}
+                </button>
+              ))}
+
+              <div className="ml-1 flex gap-0.5 rounded-lg bg-muted p-[3px]">
+                {(
+                  [
+                    { key: "grid" as const, label: t("roundClient.viewGrid"), Icon: LayoutGrid },
+                    { key: "table" as const, label: t("roundClient.viewTable"), Icon: List },
+                  ]
+                ).map(({ key, label, Icon }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setView(key)}
+                    aria-pressed={view === key}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition-colors",
+                      view === key
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <Icon className="size-3.5" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex h-2 overflow-hidden rounded-full bg-muted">
+            <div className="bg-emerald-600" style={{ width: `${donePercent}%` }} />
+            <div className="bg-destructive" style={{ width: `${disputedPercent}%` }} />
+          </div>
+        </div>
+
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <Input
-            value={search.query}
-            onChange={(e) => search.setQuery(e.target.value)}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             placeholder={t("roundClient.searchPlayer")}
             className="max-w-xs"
           />
-          <label className="flex items-center gap-2 text-sm">
-            <Switch checked={missingOnly} onCheckedChange={setMissingOnly} />
-            {t("roundClient.missingOnlyFilter")}
-          </label>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setCreateOpen(true)} disabled={anyBusy}>
+              <Plus className="size-4" />
+              {t("roundClient.createMatch")}
+            </Button>
+            {round.status === "completed" && isLastRound && (
+              <Button variant="outline" size="sm" onClick={() => setReopenOpen(true)} disabled={anyBusy}>
+                <LockOpen className="size-4" />
+                {t("roundClient.reopenRound")}
+              </Button>
+            )}
+            {isLastRound && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:text-destructive"
+                onClick={() => setDeleteRoundOpen(true)}
+                disabled={anyBusy}
+              >
+                <Trash2 className="size-4" />
+                {t("roundClient.deleteRound")}
+              </Button>
+            )}
+          </div>
         </div>
-        <Button onClick={() => setCreateOpen(true)} disabled={anyBusy}>
-          <Plus className="mr-2 h-4 w-4" />
-          {t("roundClient.createMatch")}
-        </Button>
-      </div>
 
-      {matches.length === 0 ? (
-        <p className="text-muted-foreground">{t("roundClient.noMatches")}</p>
-      ) : (
-        <>
-          <div className="overflow-x-auto rounded-lg border">
-            <table className="min-w-full divide-y divide-border text-sm">
-              <thead className="bg-muted">
-                <tr>
-                  <th className="px-3 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
-                    {t("roundClient.headerMatch")}
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
+        {matches.length === 0 ? (
+          <p className="text-muted-foreground">{t("roundClient.noMatches")}</p>
+        ) : visibleMatches.length === 0 ? (
+          <p className="text-muted-foreground">{t("roundClient.noSearchResults")}</p>
+        ) : view === "grid" ? (
+          <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
+            {visibleMatches.map((match) => (
+              <MatchCard
+                key={match.id}
+                match={match}
+                players={cardPlayers}
+                quickResults={quickResultsFor(match)}
+                open={openMatchId === match.id}
+                busy={anyBusy}
+                onToggle={() => setOpenMatchId((id) => (id === match.id ? null : match.id))}
+                onQuickResult={(result) => applyQuickResult(match, result)}
+                onDetailedEntry={() => setEditMatch(match)}
+                onExtend={() =>
+                  mutateMatch(
+                    match.id,
+                    { action: "extend", seconds: EXTENSION_STEP },
+                    "roundClient.extendError"
+                  )
+                }
+                onClearExtension={() =>
+                  mutateMatch(match.id, { action: "extend", seconds: 0 }, "roundClient.extendError")
+                }
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border bg-card">
+            <table className="min-w-[760px] w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/50 text-[11px] uppercase tracking-[0.06em] text-muted-foreground">
+                  <th className="w-16 px-3 py-2.5 text-left font-semibold">
                     {t("roundClient.headerTable")}
                   </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
-                    {t("roundClient.headerStatus")}
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
+                  <th className="px-3 py-2.5 text-left font-semibold">{t("roundClient.headerMatch")}</th>
+                  <th className="w-20 px-3 py-2.5 text-center font-semibold">
                     {t("roundClient.headerResult")}
                   </th>
-                  <th className="px-3 py-2 text-right text-xs font-medium uppercase text-muted-foreground">
-                    {t("roundClient.headerActions")}
+                  <th className="w-28 px-3 py-2.5 text-left font-semibold">
+                    {t("roundClient.headerStatus")}
+                  </th>
+                  <th className="px-3 py-2.5 text-right font-semibold">
+                    {t("roundClient.quickEntryTitle")}
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
-                {search.pageItems.map((match) => {
+              <tbody>
+                {visibleMatches.map((match) => {
                   const isBye = match.players.length === 1;
+                  const done = match.status === "completed";
+                  const disputed = match.status === "disputed";
+                  const quick = quickResultsFor(match);
+                  const extensionMinutes = Math.round((match.extensionSeconds ?? 0) / 60);
                   return (
-                    <tr key={match.id}>
-                      <td className="px-3 py-2 font-medium">
-                        {match.players.map((p, i) => {
-                          const player = playersById.get(p.playerId);
-                          return (
-                            <span key={p.playerId}>
-                              {i > 0 && (
-                                <span className="text-muted-foreground">{` ${t("common.vs")} `}</span>
-                              )}
-                              <PlayerNameTag
-                                name={player?.displayName ?? t("roundClient.unknownPlayer")}
-                                discriminator={player?.discriminator}
-                              />
-                            </span>
-                          );
-                        })}
-                        {isBye && (
-                          <span className="text-muted-foreground">{` (${t("common.bye")})`}</span>
-                        )}
-                      </td>
+                    <tr
+                      key={match.id}
+                      className={cn("border-b last:border-b-0", disputed && "bg-destructive/5")}
+                    >
                       <td className="px-3 py-2">
                         {isBye ? (
                           <span className="text-muted-foreground">—</span>
@@ -464,7 +508,7 @@ export function OrganizerRoundClient({
                             type="number"
                             min={0}
                             max={9999}
-                            className="h-8 w-20"
+                            className="h-8 w-16 font-mono"
                             defaultValue={match.tableNumber ?? ""}
                             placeholder="—"
                             onBlur={(e) => setTable(match, e.target.value)}
@@ -476,116 +520,185 @@ export function OrganizerRoundClient({
                           />
                         )}
                       </td>
-                      <td className="px-3 py-2">
-                        <Badge variant="outline">
-                          {MATCH_STATUS_KEYS[match.status]
-                            ? t(MATCH_STATUS_KEYS[match.status])
-                            : match.status}
-                        </Badge>
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground">
-                        {isBye ? (
-                          t("roundClient.autoWin")
-                        ) : match.status === "completed" ? (
-                          <span className="inline-flex flex-wrap items-center gap-x-1 gap-y-1">
-                            {match.players.map((p, i) => (
-                              <span key={p.playerId} className="inline-flex items-center">
-                                {i > 0 && <span className="mr-1 text-muted-foreground">·</span>}
-                                <MatchPlayerName
-                                  isWinner={match.winnerIds.includes(p.playerId)}
-                                  name={
-                                    <>
-                                      <PlayerNameTag
-                                        name={playerName(p.playerId)}
-                                        discriminator={playersById.get(p.playerId)?.discriminator}
-                                      />{" "}
-                                      <span className="font-mono">{p.score}</span>
-                                    </>
-                                  }
+                      <td className="max-w-0 truncate px-3 py-2">
+                        {match.players.map((p, i) => {
+                          const player = playersById.get(p.playerId);
+                          const isWinner = match.winnerIds.includes(p.playerId);
+                          return (
+                            <span key={p.playerId}>
+                              {i > 0 && (
+                                <span className="text-muted-foreground">{` ${t("common.vs")} `}</span>
+                              )}
+                              <span className={isWinner ? "font-bold" : undefined}>
+                                <PlayerNameTag
+                                  name={player?.displayName ?? t("roundClient.unknownPlayer")}
+                                  discriminator={player?.discriminator}
                                 />
                               </span>
-                            ))}
+                            </span>
+                          );
+                        })}
+                        {isBye && <span className="text-muted-foreground">{` (${t("common.bye")})`}</span>}
+                      </td>
+                      <td className="px-3 py-2 text-center font-mono font-semibold">
+                        {done ? match.players.map((p) => p.score).join("–") : <span className="text-muted-foreground/50">–</span>}
+                      </td>
+                      <td className="px-3 py-2">
+                        <span
+                          className={cn(
+                            "text-xs font-semibold",
+                            disputed
+                              ? "text-destructive"
+                              : done
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : "text-muted-foreground"
+                          )}
+                        >
+                          {disputed
+                            ? t("roundClient.cardStatus.disputed")
+                            : done
+                              ? t("roundClient.cardStatus.completedShort")
+                              : match.status === "in-progress"
+                                ? t("roundClient.cardStatus.awaitingConfirmation")
+                                : t("roundClient.cardStatus.pending")}
+                        </span>
+                        {extensionMinutes > 0 && (
+                          <span className="block text-[11px] text-sky-700 dark:text-sky-400">
+                            {t("roundClient.extensionShort", { minutes: extensionMinutes })}
                           </span>
-                        ) : (
-                          "—"
                         )}
                       </td>
                       <td className="px-3 py-2">
-                        <div className="flex items-center justify-end gap-1">
-                          {match.status === "in-progress" && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => confirmMatch(match)}
-                              disabled={anyBusy}
-                            >
-                              <Check className="mr-2 h-4 w-4" />
-                              {t("roundClient.validate")}
-                            </Button>
-                          )}
-                          {!isBye && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setEditMatch(match)}
-                              disabled={anyBusy}
-                            >
-                              <Pencil className="mr-2 h-4 w-4" />
-                              {t("roundClient.editScore")}
-                            </Button>
-                          )}
-                          {!isBye && match.status !== "pending" && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setPendingClear(match)}
-                              disabled={anyBusy}
-                              aria-label={t("roundClient.clearResultAria", {
-                                match: matchLabel(match),
+                        <div className="flex flex-wrap items-center justify-end gap-1">
+                          {isBye ? (
+                            <span className="text-xs text-muted-foreground">{t("roundClient.autoWin")}</span>
+                          ) : (
+                            <>
+                              {quick.map((result) => {
+                                const winnerId =
+                                  result.winnerIndex === null
+                                    ? null
+                                    : match.players[result.winnerIndex]?.playerId;
+                                const winner = winnerId ? playersById.get(winnerId) : undefined;
+                                return (
+                                  <Button
+                                    key={result.key}
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7 px-2 text-[11px]"
+                                    disabled={anyBusy}
+                                    onClick={() => applyQuickResult(match, result)}
+                                  >
+                                    {winner ? `${shortName(winner.displayName)} ` : ""}
+                                    <span className="font-mono">
+                                      {result.winnerIndex === null
+                                        ? t("gamesEditor.draw")
+                                        : `${result.scores[0]}–${result.scores[1]}`}
+                                    </span>
+                                  </Button>
+                                );
                               })}
-                            >
-                              <Eraser className="h-4 w-4" />
-                            </Button>
-                          )}
-                          {isLastRound && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-600 hover:text-red-800"
-                              onClick={() => setPendingDelete(match)}
-                              disabled={anyBusy}
-                              aria-label={t("roundClient.deleteMatchAria", {
-                                match: matchLabel(match),
-                              })}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 px-2 text-[11px]"
+                                title={t("roundClient.extendTitle")}
+                                disabled={anyBusy}
+                                onClick={() =>
+                                  mutateMatch(
+                                    match.id,
+                                    { action: "extend", seconds: EXTENSION_STEP },
+                                    "roundClient.extendError"
+                                  )
+                                }
+                              >
+                                {t("roundClient.extendShort")}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-[11px]"
+                                disabled={anyBusy}
+                                onClick={() => setEditMatch(match)}
+                              >
+                                {t("roundClient.detailedEntry")}
+                              </Button>
+                              {isLastRound && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2 text-destructive hover:text-destructive"
+                                  disabled={anyBusy}
+                                  onClick={() => setPendingDelete(match)}
+                                  aria-label={t("roundClient.deleteMatchAria", {
+                                    match: matchLabel(match),
+                                  })}
+                                >
+                                  <Trash2 className="size-3.5" />
+                                </Button>
+                              )}
+                            </>
                           )}
                         </div>
                       </td>
                     </tr>
                   );
                 })}
-                {search.pageItems.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-3 py-3 text-center text-muted-foreground">
-                      {t("roundClient.noSearchResults")}
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>
-          <TablePagination
-            page={search.page}
-            totalPages={search.totalPages}
-            total={search.total}
-            onPage={search.setPage}
-          />
-        </>
-      )}
+        )}
+      </div>
 
-      {/* Modale : modifier le score d'un match */}
+      <RoundSidePanel
+        tournamentId={tournamentId}
+        matches={matches}
+        busy={anyBusy}
+        onShowDisputes={() => setFilter("disputed")}
+        onShowPending={() => setFilter("pending")}
+        onClearExtension={(match) =>
+          mutateMatch(match.id, { action: "extend", seconds: 0 }, "roundClient.extendError")
+        }
+      />
+
+      {/* Barre de clôture : rappelle ce qui reste à faire et enchaîne sur la
+          ronde suivante quand tout est rendu. */}
+      <div
+        data-print-hidden
+        className="fixed inset-x-0 bottom-0 z-30 border-t bg-card/95 px-6 py-3 backdrop-blur xl:right-[300px]"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <span
+              className={cn(
+                "flex size-5.5 items-center justify-center rounded-full text-xs font-bold text-white",
+                ready ? "bg-emerald-600" : "bg-amber-500"
+              )}
+            >
+              {ready ? "✓" : "!"}
+            </span>
+            <div>
+              <p className="text-sm font-semibold">
+                {ready ? t("roundClient.readyTitle") : t("roundClient.notReadyTitle")}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {ready
+                  ? t("roundClient.readySubtitle")
+                  : t("roundClient.notReadySubtitle", {
+                      pending: pendingCount + awaitingCount,
+                      disputed: disputedCount,
+                    })}
+              </p>
+            </div>
+          </div>
+          <Button onClick={() => setCloseRoundOpen(true)} disabled={anyBusy || !ready}>
+            <Check className="size-4" />
+            {t("roundClient.closeAndStartNext", { number: round.number + 1 })}
+          </Button>
+        </div>
+      </div>
+
+      {/* Modale : saisie détaillée partie par partie */}
       <Dialog open={editMatch !== null} onOpenChange={(open) => !open && setEditMatch(null)}>
         <DialogContent>
           <DialogHeader>
@@ -603,8 +716,25 @@ export function OrganizerRoundClient({
                 bestOf={bestOf}
                 submitting={submitting}
                 submitLabel={t("common.save")}
-                onSubmit={(games) => submitReport(editMatch, games)}
+                onSubmit={(games) => submitDetailed(editMatch, games)}
               />
+              {editMatch.status !== "pending" && (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  disabled={anyBusy}
+                  onClick={async () => {
+                    const ok = await mutateMatch(
+                      editMatch.id,
+                      { action: "clear" },
+                      "roundClient.clearError"
+                    );
+                    if (ok) setEditMatch(null);
+                  }}
+                >
+                  {t("roundClient.clearResultConfirm")}
+                </Button>
+              )}
             </div>
           )}
         </DialogContent>
@@ -649,13 +779,11 @@ export function OrganizerRoundClient({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 w-6 p-0"
-                      onClick={() =>
-                        setCreatePlayerIds((current) => current.filter((pid) => pid !== id))
-                      }
+                      className="size-6 p-0"
+                      onClick={() => setCreatePlayerIds((c) => c.filter((pid) => pid !== id))}
                       aria-label={t("roundClient.removePlayerAria", { name: playerName(id) })}
                     >
-                      <X className="h-4 w-4" />
+                      <X className="size-4" />
                     </Button>
                   </li>
                 ))}
@@ -674,7 +802,16 @@ export function OrganizerRoundClient({
         </DialogContent>
       </Dialog>
 
-      {/* Modale : confirmation de suppression d'un match */}
+      <ConfirmDialog
+        open={closeRoundOpen}
+        onOpenChange={(open) => !open && setCloseRoundOpen(false)}
+        title={t("roundClient.closeAndStartNext", { number: round.number + 1 })}
+        description={t("roundClient.closeDescription", { number: round.number })}
+        confirmLabel={t("roundClient.closeConfirm")}
+        busy={anyBusy}
+        onConfirm={closeRound}
+      />
+
       <ConfirmDialog
         open={pendingDelete !== null}
         onOpenChange={(open) => !open && setPendingDelete(null)}
@@ -690,23 +827,6 @@ export function OrganizerRoundClient({
         onConfirm={() => pendingDelete && deleteMatch(pendingDelete)}
       />
 
-      {/* Modale : confirmation de suppression d'un résultat rapporté */}
-      <ConfirmDialog
-        open={pendingClear !== null}
-        onOpenChange={(open) => !open && setPendingClear(null)}
-        title={t("roundClient.clearResultTitle")}
-        description={
-          pendingClear
-            ? t("roundClient.clearResultDescription", { match: matchLabel(pendingClear) })
-            : undefined
-        }
-        confirmLabel={t("roundClient.clearResultConfirm")}
-        destructive
-        busy={anyBusy}
-        onConfirm={() => pendingClear && clearMatch(pendingClear)}
-      />
-
-      {/* Modale : confirmation de réouverture de la ronde */}
       <ConfirmDialog
         open={reopenOpen}
         onOpenChange={(open) => !open && setReopenOpen(false)}
@@ -719,10 +839,14 @@ export function OrganizerRoundClient({
         confirmLabel={t("roundClient.reopenConfirm")}
         destructive={reopenCascades}
         busy={anyBusy}
-        onConfirm={reopenRound}
+        onConfirm={() =>
+          roundAction({ action: "reopen" }, "PATCH", "roundClient.reopenError", () => {
+            setReopenOpen(false);
+            router.refresh();
+          })
+        }
       />
 
-      {/* Modale : confirmation de suppression de la ronde */}
       <ConfirmDialog
         open={deleteRoundOpen}
         onOpenChange={(open) => !open && setDeleteRoundOpen(false)}
@@ -731,7 +855,11 @@ export function OrganizerRoundClient({
         confirmLabel={t("common.delete")}
         destructive
         busy={anyBusy}
-        onConfirm={deleteRound}
+        onConfirm={() =>
+          roundAction(null, "DELETE", "roundClient.deleteRoundError", () =>
+            router.push(`/tournaments/${tournamentId}/organizer/rounds`)
+          )
+        }
       />
     </div>
   );

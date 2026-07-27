@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateApiRequest } from "@/lib/api/authenticate";
 import {
   assertCanManage,
+  recordActivity,
   requireTournament,
   validateRoundStandings,
 } from "@/lib/db/tournaments";
@@ -25,6 +26,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     assertCanManage(tournament, user.userId);
 
     const round = await validateRoundStandings(tournamentId, roundId);
+    await recordActivity(tournamentId, "round-validated", { round: round.number });
     return NextResponse.json(round);
   } catch (error) {
     return tournamentErrorResponse(error);

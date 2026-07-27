@@ -5,6 +5,7 @@ import {
   assertCanManage,
   createAnnouncement,
   listAnnouncements,
+  recordActivity,
   requireTournament,
 } from "@/lib/db/tournaments";
 import { tournamentErrorResponse, unauthorizedResponse } from "../../utils";
@@ -44,6 +45,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       level: validated.level,
       createdBy: user.userId,
     });
+    await recordActivity(tournamentId, "announcement-sent", { level: validated.level });
     return NextResponse.json(announcement, { status: 201 });
   } catch (error) {
     return tournamentErrorResponse(error);

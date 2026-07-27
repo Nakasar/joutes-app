@@ -75,6 +75,13 @@ export type Tournament = {
     // tables N, N+1, N+2… (défaut 1). Les tables fixes des joueurs priment.
     firstTableNumber?: number;
   };
+  // Informations pratiques affichées aux joueurs. Pré-remplies depuis
+  // l'événement lié à la création quand `eventId` est renseigné, puis
+  // modifiables indépendamment (le tournoi peut exister sans événement).
+  location?: string;
+  startsAt?: Date;
+  // Nombre de places. Absent = pas de limite affichée.
+  capacity?: number;
   createdBy: string;
   // Staff du tournoi. Les organisateurs (créateur inclus) ont tous les droits ;
   // les arbitres ont tous les droits sauf supprimer le tournoi et gérer le staff.
@@ -82,6 +89,18 @@ export type Tournament = {
   judgeIds: string[];
   createdAt: Date;
   updatedAt?: Date;
+};
+
+// Liste de deck d'un joueur pour le tournoi. Le contenu reste du texte libre :
+// l'application ne valide pas la légalité, elle sert de support à l'arbitrage.
+export type TournamentDecklist = {
+  // Contenu brut de la liste, une carte par ligne.
+  content: string;
+  // Vérifiée par l'arbitrage. `checkedBy` est un id utilisateur du staff.
+  checked: boolean;
+  checkedBy?: string;
+  checkedAt?: Date;
+  updatedAt: Date;
 };
 
 export type TournamentPlayer = {
@@ -99,6 +118,12 @@ export type TournamentPlayer = {
   // fixe se rencontrent).
   fixedTableNumber?: number;
   status: TournamentPlayerStatus;
+  // Pointage à l'arrivée : instant auquel le joueur a été marqué présent par
+  // l'organisation. Absent = pas encore pointé. Indépendant de `status`, qui
+  // porte l'inscription (le pointage constate la présence physique).
+  checkedInAt?: Date;
+  // Liste de deck déclarée pour le tournoi, saisie par l'organisation.
+  decklist?: TournamentDecklist;
   // Secret de synchronisation propre au joueur (préfixe tpsk_), généré à
   // l'inscription. Utilisable comme Bearer token pour accéder au tournoi en
   // tant que ce joueur (portail joueur des invités sans compte). Ne doit être
@@ -203,11 +228,75 @@ export type TournamentMatch = {
   bracketPosition?: string;
   // Table où se joue le match. Absent pour un BYE.
   tableNumber?: number;
+  // Prolongation accordée par l'arbitrage à cette table, en secondes, qui
+  // s'ajoute au minuteur de la ronde pour ce match seul. 0 ou absent = aucune.
+  extensionSeconds?: number;
   status: TournamentMatchStatus;
   reportedBy?: string;
   confirmedBy?: string;
   createdAt: Date;
   updatedAt?: Date;
+};
+
+// Sanction infligée à un joueur par l'arbitrage.
+// - warning : avertissement simple.
+// - game-loss / match-loss : partie ou match perdu.
+// - disqualification : joueur disqualifié (l'organisation le passe DROPPED).
+export type TournamentPenaltyType = "warning" | "game-loss" | "match-loss" | "disqualification";
+
+export type TournamentPenalty = {
+  id: string;
+  tournamentId: string;
+  playerId: string;
+  type: TournamentPenaltyType;
+  // Motif libre (jeu lent, erreur de deck…).
+  reason?: string;
+  // Ronde pendant laquelle la sanction a été prononcée, quand elle est connue.
+  roundId?: string;
+  roundNumber?: number;
+  createdBy: string;
+  createdAt: Date;
+};
+
+// Note interne sur un joueur, visible du staff du tournoi uniquement.
+export type TournamentNote = {
+  id: string;
+  tournamentId: string;
+  playerId: string;
+  content: string;
+  roundNumber?: number;
+  createdBy: string;
+  createdAt: Date;
+};
+
+// Événements du journal d'activité du tournoi, alimenté par les actions de
+// l'organisation et des joueurs. Purement informatif : aucune logique métier
+// ne s'appuie dessus, un échec d'écriture ne doit pas faire échouer l'action.
+export type TournamentActivityType =
+  | "match-reported"
+  | "match-confirmed"
+  | "match-disputed"
+  | "match-cleared"
+  | "match-extended"
+  | "announcement-sent"
+  | "round-created"
+  | "round-validated"
+  | "phase-advanced"
+  | "player-checked-in"
+  | "player-dropped"
+  | "penalty-issued";
+
+export type TournamentActivity = {
+  id: string;
+  tournamentId: string;
+  type: TournamentActivityType;
+  // Paramètres d'affichage du message (numéro de table, nom de joueur…),
+  // interpolés côté client dans la langue de l'utilisateur.
+  params: Record<string, string | number>;
+  // Auteur de l'action : id utilisateur du staff, ou id de joueur de tournoi
+  // pour une action venue du portail joueur.
+  actorLabel?: string;
+  createdAt: Date;
 };
 
 export type TournamentDb = Omit<Tournament, "id">;
@@ -222,6 +311,18 @@ export type TournamentAnnouncement = {
   createdAt: Date;
 };
 export type TournamentAnnouncementDb = Omit<TournamentAnnouncement, "id" | "tournamentId"> & {
+  tournamentId: ObjectId;
+};
+
+export type TournamentPenaltyDb = Omit<TournamentPenalty, "id" | "tournamentId" | "playerId"> & {
+  tournamentId: ObjectId;
+  playerId: ObjectId;
+};
+export type TournamentNoteDb = Omit<TournamentNote, "id" | "tournamentId" | "playerId"> & {
+  tournamentId: ObjectId;
+  playerId: ObjectId;
+};
+export type TournamentActivityDb = Omit<TournamentActivity, "id" | "tournamentId"> & {
   tournamentId: ObjectId;
 };
 

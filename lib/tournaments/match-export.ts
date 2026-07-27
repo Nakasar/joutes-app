@@ -159,7 +159,17 @@ export function buildMatchesCsv(entries: MatchExportEntry[], labels: MatchCsvLab
     return row;
   });
 
-  const lines = [header, ...rows].map((row) => row.map(escapeCsvValue).join(";"));
+  return buildCsvDocument([header, ...rows]);
+}
+
+/**
+ * Assemble un document CSV complet \u00e0 partir de ses lignes (en-t\u00eate inclus).
+ *
+ * S\u00e9parateur `;` et BOM UTF-8 : c'est ce qu'attend Excel en configuration
+ * fran\u00e7aise, o\u00f9 un `,` casserait les colonnes et l'absence de BOM les accents.
+ */
+export function buildCsvDocument(rows: (string | number | undefined)[][]): string {
+  const lines = rows.map((row) => row.map(escapeCsvValue).join(";"));
   // BOM : sans lui, Excel lit le fichier en ANSI et mange les accents.
   return `\ufeff${lines.join("\r\n")}\r\n`;
 }

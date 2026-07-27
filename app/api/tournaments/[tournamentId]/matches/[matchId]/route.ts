@@ -9,7 +9,9 @@ import {
   confirmMatchResult,
   deleteMatch,
   disputeMatchResult,
+  extendMatch,
   getMatchById,
+  recordActivity,
   reportMatchResult,
   requireTournament,
   setMatchTable,
@@ -67,10 +69,13 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     let match;
     if (validated.action === "report") {
       match = await reportMatchResult(tournament, matchId, { games: validated.games }, actor);
+      await recordActivity(tournamentId, "match-reported", { table: match.tableNumber ?? 0 }, actor.label);
     } else if (validated.action === "confirm") {
       match = await confirmMatchResult(tournament, matchId, actor);
+      await recordActivity(tournamentId, "match-confirmed", { table: match.tableNumber ?? 0 }, actor.label);
     } else if (validated.action === "clear") {
       match = await clearMatchResult(tournament, matchId, actor);
+      await recordActivity(tournamentId, "match-cleared", { table: match.tableNumber ?? 0 }, actor.label);
     } else if (validated.action === "set-table") {
       // Modification du numéro de table : réservée aux gestionnaires.
       if (!actor.isOrganizer) {
@@ -80,8 +85,27 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         );
       }
       match = await setMatchTable(tournamentId, matchId, validated.tableNumber);
+    } else if (validated.action === "extend") {
+      // Prolongation d'une table : réservée aux gestionnaires.
+      if (!actor.isOrganizer) {
+        return NextResponse.json(
+          { error: "Réservé aux organisateurs et arbitres du tournoi" },
+          { status: 403 }
+        );
+      }
+      match = await extendMatch(tournamentId, matchId, validated.seconds);
+      await recordActivity(
+        tournamentId,
+        "match-extended",
+        {
+          table: match.tableNumber ?? 0,
+          minutes: Math.round((match.extensionSeconds ?? 0) / 60),
+        },
+        actor.label
+      );
     } else {
       match = await disputeMatchResult(tournament, matchId, actor);
+      await recordActivity(tournamentId, "match-disputed", { table: match.tableNumber ?? 0 }, actor.label);
     }
 
     return NextResponse.json(match);

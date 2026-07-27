@@ -3,33 +3,45 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, QrCode, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { cn } from "@/lib/utils";
 import { getSyncKeys, removeSyncKey } from "@/lib/tournament-sync-storage";
+import type { TournamentPhaseType } from "@/lib/types/Tournament";
+import { TournamentClock } from "./TournamentClock";
 
-type SyncedTournament = {
-  key: string;
-  tournament: {
+type TournamentSummary = {
+  playersCount: number;
+  phases: { type: TournamentPhaseType; plannedRounds?: number; topCut?: number }[];
+  currentRound: {
     id: string;
-    name: string;
-    status: "draft" | "in-progress" | "completed";
-    createdAt: string;
-  };
-  player: { id: string; displayName: string; discriminator?: string; status: string };
+    number: number;
+    plannedRounds?: number;
+    reportedMatches: number;
+    totalMatches: number;
+  } | null;
 };
 
-type OrganizedTournament = {
+type BaseTournament = {
   id: string;
   name: string;
   status: "draft" | "in-progress" | "completed";
   createdAt: string;
+  location?: string;
+};
+
+type OrganizedTournament = BaseTournament & { summary?: TournamentSummary };
+
+type SyncedTournament = {
+  key: string;
+  tournament: BaseTournament;
+  player: { id: string; displayName: string; discriminator?: string; status: string };
 };
 
 type PlayedTournament = {
-  tournament: OrganizedTournament;
+  tournament: BaseTournament;
   player: { id: string; displayName: string; discriminator?: string; status: string };
 };
 
@@ -37,7 +49,7 @@ type PlayedTournament = {
 // synchronisation de ce navigateur (`key` présent, retirable) et/ou compte
 // connecté inscrit comme joueur.
 type PlayerEntry = {
-  tournament: OrganizedTournament;
+  tournament: BaseTournament;
   player: { id: string; displayName: string; discriminator?: string; status: string };
   key?: string;
 };
@@ -114,15 +126,20 @@ export default function TournamentsPage() {
     );
   }, [entries, played]);
 
-  const filtered = useMemo(
+  const filteredPlayer = useMemo(
     () => playerEntries.filter((e) => filter === "all" || e.tournament.status === filter),
     [playerEntries, filter]
   );
 
   const filteredOrganized = useMemo(
-    () => organized.filter((t) => filter === "all" || t.status === filter),
+    () => organized.filter((o) => filter === "all" || o.status === filter),
     [organized, filter]
   );
+
+  // Tournoi mis en avant : celui qui tourne. C'est le seul sur lequel
+  // l'organisateur a une action à mener dans l'instant.
+  const featured = filteredOrganized.find((o) => o.status === "in-progress") ?? null;
+  const others = filteredOrganized.filter((o) => o.id !== featured?.id);
 
   const handleRemove = (tournamentId: string) => {
     removeSyncKey(tournamentId);
@@ -130,121 +147,193 @@ export default function TournamentsPage() {
     setPendingRemove(null);
   };
 
+  // Résumé « 64 joueurs · Suisse + top 8 · Le Repaire » d'un tournoi.
+  const describe = (tournament: OrganizedTournament) => {
+    const parts: string[] = [];
+    const summary = tournament.summary;
+    if (summary) {
+      parts.push(t("list.playersCount", { count: summary.playersCount }));
+      const format = summary.phases
+        .map((p) => {
+          const cut = p.topCut ? ` ${t("organizerPhases.summary.topN", { count: p.topCut })}` : "";
+          return `${t(`common.phaseType.${p.type}`)}${cut}`;
+        })
+        .join(" + ");
+      if (format) parts.push(format);
+    }
+    if (tournament.location) parts.push(tournament.location);
+    return parts.join(" · ");
+  };
+
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-8">
-      <div className="flex items-start justify-between gap-4">
+    <div className="mx-auto max-w-5xl p-6 sm:p-8">
+      <div className="mb-7 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">{t("list.title")}</h1>
-          <p className="text-muted-foreground mt-1">{t("list.description")}</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t("list.title")}</h1>
+          <p className="mt-1.5 max-w-xl text-sm text-muted-foreground [text-wrap:pretty]">
+            {t("list.description")}
+          </p>
         </div>
-        <Button asChild>
-          <Link href="/tournaments/new">
-            <Plus className="h-4 w-4 mr-2" />
-            {t("list.createButton")}
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/tournaments/join">
+              <QrCode className="size-4" />
+              {t("list.joinWithQr")}
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/tournaments/new">
+              <Plus className="size-4" />
+              {t("list.createButton")}
+            </Link>
+          </Button>
+        </div>
       </div>
 
-      <div className="flex gap-2">
+      <div className="mb-6 flex flex-wrap gap-2">
         {FILTERS.map(({ value, labelKey }) => (
-          <Button
+          <button
             key={value}
-            variant={filter === value ? "default" : "outline"}
-            size="sm"
+            type="button"
             onClick={() => setFilter(value)}
+            aria-pressed={filter === value}
+            className={cn(
+              "rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors",
+              filter === value
+                ? "border-transparent bg-foreground text-background"
+                : "bg-card hover:bg-accent"
+            )}
           >
             {t(labelKey)}
-          </Button>
+          </button>
         ))}
       </div>
 
-      {!loading && filteredOrganized.length > 0 && (
-        <section className="space-y-4">
-          <h2 className="text-xl font-semibold">{t("list.organizedTitle")}</h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            {filteredOrganized.map((tournament) => (
-              <Card key={tournament.id}>
-                <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                  <CardTitle className="text-lg">{tournament.name}</CardTitle>
-                  <Badge variant="secondary">
-                    {t(`common.tournamentStatus.${tournament.status}`)}
-                  </Badge>
-                </CardHeader>
-                <CardContent>
-                  <Button asChild size="sm">
-                    <Link href={`/tournaments/${tournament.id}/organizer`}>{t("list.manage")}</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
-      )}
-
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold">{t("list.playingTitle")}</h2>
-
       {loading ? (
         <p className="text-muted-foreground">{t("common.loading")}</p>
-      ) : playerEntries.length === 0 ? (
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            {t("list.emptyPlaying")}
-          </CardContent>
-        </Card>
-      ) : filtered.length === 0 ? (
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            {t("list.emptyFilter")}
-          </CardContent>
-        </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {filtered.map((entry) => (
-            <Card key={entry.tournament.id}>
-              <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                <CardTitle className="text-lg">{entry.tournament.name}</CardTitle>
-                <Badge variant="secondary">
-                  {t(`common.tournamentStatus.${entry.tournament.status}`)}
-                </Badge>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  {t("list.registeredAs")}{" "}
-                  <span className="font-medium">
-                    {entry.player.displayName}
-                    {entry.player.discriminator && (
-                      <span className="ml-1 text-xs font-normal text-muted-foreground">
-                        #{entry.player.discriminator}
-                      </span>
-                    )}
-                  </span>
-                  {entry.player.status === "dropped" ? ` ${t("list.dropped")}` : ""}
-                </p>
-                <div className="flex items-center justify-between">
-                  <Button asChild size="sm">
-                    <Link href={`/tournaments/${entry.tournament.id}/player`}>
-                      {t("list.playerPortal")}
+        <>
+          {featured && (
+            <div className="mb-4 flex items-stretch overflow-hidden rounded-xl bg-neutral-950 text-white">
+              <div className="w-1.5 shrink-0 bg-sky-500" />
+              <div className="flex flex-1 flex-wrap items-center justify-between gap-5 p-5">
+                <div className="min-w-0">
+                  <div className="mb-1.5 flex items-center gap-2.5">
+                    <span className="size-2 animate-pulse rounded-full bg-emerald-500" />
+                    <span className="text-xs font-semibold uppercase tracking-[0.08em] text-sky-300">
+                      {featured.summary?.currentRound
+                        ? t("list.liveRound", {
+                            number: featured.summary.currentRound.number,
+                            total: featured.summary.currentRound.plannedRounds ?? "—",
+                          })
+                        : t("common.tournamentStatus.in-progress")}
+                    </span>
+                  </div>
+                  <p className="text-2xl font-bold tracking-tight">{featured.name}</p>
+                  <p className="mt-1 text-[13px] text-neutral-400">{describe(featured)}</p>
+                </div>
+                <div className="flex items-center gap-5">
+                  <div className="text-right">
+                    <TournamentClock tournamentId={featured.id} />
+                    <p className="text-xs text-neutral-400">{t("list.timeRemaining")}</p>
+                  </div>
+                  <Button variant="secondary" asChild>
+                    <Link href={`/tournaments/${featured.id}/organizer`}>{t("list.pilot")}</Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {others.length > 0 && (
+            <div className="mb-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {others.map((tournament) => (
+                <div key={tournament.id} className="rounded-xl border bg-card p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-base font-semibold">{tournament.name}</p>
+                    <Badge variant="secondary" className="shrink-0">
+                      {t(`common.tournamentStatus.${tournament.status}`)}
+                    </Badge>
+                  </div>
+                  <p className="mb-4 mt-2 text-[13px] text-muted-foreground">
+                    {describe(tournament) || t("list.noDetails")}
+                  </p>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/tournaments/${tournament.id}/organizer`}>
+                      {tournament.status === "draft"
+                        ? t("list.finishSetup")
+                        : tournament.status === "completed"
+                          ? t("list.seeResults")
+                          : t("list.manage")}
                     </Link>
                   </Button>
-                  {entry.key && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-600 hover:text-red-800"
-                      onClick={() => setPendingRemove(entry.tournament.id)}
-                      aria-label={t("list.removeSyncAria")}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              ))}
+            </div>
+          )}
+
+          {filteredOrganized.length === 0 && organized.length > 0 && (
+            <p className="mb-9 text-sm text-muted-foreground">{t("list.emptyFilter")}</p>
+          )}
+
+          <h2 className="mb-3 text-[15px] font-semibold text-muted-foreground">
+            {t("list.playingTitle")}
+          </h2>
+
+          {playerEntries.length === 0 ? (
+            <div className="rounded-xl border bg-card p-6 text-center text-muted-foreground">
+              {t("list.emptyPlaying")}
+            </div>
+          ) : filteredPlayer.length === 0 ? (
+            <div className="rounded-xl border bg-card p-6 text-center text-muted-foreground">
+              {t("list.emptyFilter")}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {filteredPlayer.map((entry) => (
+                <div
+                  key={entry.tournament.id}
+                  className="flex flex-wrap items-center justify-between gap-4 rounded-xl border bg-card p-4"
+                >
+                  <div className="min-w-0">
+                    <p className="text-base font-semibold">{entry.tournament.name}</p>
+                    <p className="mt-1 text-[13px] text-muted-foreground">
+                      {t("list.registeredAs")}{" "}
+                      <span className="font-medium text-foreground">
+                        {entry.player.displayName}
+                        {entry.player.discriminator && (
+                          <span className="ml-1 text-xs font-normal text-muted-foreground">
+                            #{entry.player.discriminator}
+                          </span>
+                        )}
+                      </span>
+                      {entry.player.status === "dropped" ? ` ${t("list.dropped")}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button asChild>
+                      <Link href={`/tournaments/${entry.tournament.id}/player`}>
+                        {t("list.playerPortal")}
+                      </Link>
+                    </Button>
+                    {entry.key && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setPendingRemove(entry.tournament.id)}
+                        aria-label={t("list.removeSyncAria")}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
-      </section>
 
       <ConfirmDialog
         open={pendingRemove !== null}

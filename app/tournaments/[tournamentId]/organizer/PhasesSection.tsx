@@ -22,7 +22,9 @@ import {
 } from "@/components/ui/select";
 import type { TournamentPhase } from "@/lib/types/Tournament";
 import { NextPhaseButton } from "./NextPhaseButton";
+import { OrganizerPageHeader } from "./OrganizerPageHeader";
 import { PhaseForm } from "./PhaseForm";
+import { PhaseTimeline, type TimelineRound } from "./PhaseTimeline";
 
 // Valeur sentinelle du Select de phase en cours (SelectItem ne peut pas être vide).
 const NO_PHASE = "none";
@@ -31,10 +33,14 @@ export function PhasesSection({
   tournamentId,
   initialPhases,
   initialCurrentPhaseId,
+  rounds,
+  activePlayerCount,
 }: {
   tournamentId: string;
   initialPhases: TournamentPhase[];
   initialCurrentPhaseId?: string;
+  rounds: TimelineRound[];
+  activePlayerCount: number;
 }) {
   const t = useTranslations("Tournaments");
   const [phases, setPhases] = useState<TournamentPhase[]>(initialPhases);
@@ -165,15 +171,22 @@ export function PhasesSection({
 
   return (
     <div className="space-y-4">
+      <OrganizerPageHeader
+        title={t("organizerPhases.pageTitle")}
+        description={t("organizerPhases.pageDescription")}
+        actions={<NextPhaseButton tournamentId={tournamentId} />}
+      />
+
+      <PhaseTimeline phases={phases} rounds={rounds} activePlayerCount={activePlayerCount} />
+
       {error && (
         <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
+        <CardHeader>
           <CardTitle>{t("organizerPhases.title")}</CardTitle>
-          <NextPhaseButton tournamentId={tournamentId} />
         </CardHeader>
         <CardContent className="space-y-6">
           {phases.length > 0 && (

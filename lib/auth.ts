@@ -88,7 +88,17 @@ export const auth = betterAuth({
     },
   },
   trustedOrigins: process.env.NEXT_PUBLIC_BASE_URL ? [process.env.NEXT_PUBLIC_BASE_URL, "http://tauri.localhost", "https://tauri.localhost"] : ["http://localhost:3000", "https://localhost:3000", "http://tauri.localhost", "https://tauri.localhost"],
-  baseURL: process.env.NEXT_PUBLIC_BASE_URL || process.env.BETTER_AUTH_URL || "http://localhost:3000",
+  baseURL: {
+    allowedHosts: [
+			"joutes.app",
+			"*.joutes.app",
+			"*.vercel.app",
+      process.env.BETTER_AUTH_URL ?? 'joutes.app',
+      process.env.NEXT_PUBLIC_BASE_URL ?? 'joutes.app',
+		],
+		protocol: process.env.NODE_ENV === "development" ? "http" : "https",
+		fallback: "https://www.joutes.app",
+  },
 });
 
 export type Session = typeof auth.$Infer.Session.session;

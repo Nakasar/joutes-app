@@ -1,16 +1,10 @@
-import { notFound, redirect } from "next/navigation";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
-import {
-  getTournamentById,
-  canManageTournament,
-  listPhases,
-  listRounds,
-} from "@/lib/db/tournaments";
+import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { MatchExportActions } from "../MatchExportActions";
-import { OrganizerShell } from "../OrganizerShell";
-import { RoundsHeader } from "./RoundsHeader";
-import type { RoundsNavPhase } from "./RoundsNav";
+import { OrganizerPageHeader } from "../OrganizerPageHeader";
+import { loadOrganizerContext } from "../organizerContext";
+import { CreateRoundControl } from "./CreateRoundControl";
+import { RoundsNav, type RoundsNavPhase } from "./RoundsNav";
 
 export default async function OrganizerRoundsPage({
   params,
@@ -18,33 +12,40 @@ export default async function OrganizerRoundsPage({
   params: Promise<{ tournamentId: string }>;
 }) {
   const { tournamentId } = await params;
+  const { phases, rounds, currentRound } = await loadOrganizerContext(tournamentId);
 
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) redirect("/login");
+  // Le portail s'ouvre sur la ronde en cours : cette page ne sert qu'à créer la
+  // première ronde, quand il n'y en a encore aucune.
+  if (currentRound) {
+    redirect(`/tournaments/${tournamentId}/organizer/rounds/${currentRound.id}/matches`);
+  }
 
-  const tournament = await getTournamentById(tournamentId);
-  if (!tournament) notFound();
-  if (!canManageTournament(tournament, session.user.id)) redirect("/tournaments");
-
-  const [phases, rounds] = await Promise.all([listPhases(tournamentId), listRounds(tournamentId)]);
+  const t = await getTranslations("Tournaments");
 
   const navPhases: RoundsNavPhase[] = phases.map((phase) => ({
     phaseId: phase.id,
     phaseName: phase.name,
     rounds: rounds
       .filter((r) => r.phaseId === phase.id)
-      .sort((a, b) => a.number - b.number)
       .map((r) => ({ id: r.id, number: r.number, validated: !!r.standingsValidatedAt })),
   }));
 
   return (
-    <div className="mx-auto max-w-4xl p-8">
-      <OrganizerShell tournamentId={tournamentId} tournamentName={tournament.name} active="rounds">
-        <div className="space-y-6">
-          <RoundsHeader tournamentId={tournamentId} phases={navPhases} />
-          <MatchExportActions tournamentId={tournamentId} />
-        </div>
-      </OrganizerShell>
+    <div className="p-6">
+      <OrganizerPageHeader
+        title={t("rounds.title")}
+        description={t("rounds.emptyDescription")}
+        actions={
+          <CreateRoundControl
+            tournamentId={tournamentId}
+            phases={phases.map((p) => ({ id: p.id, name: p.name }))}
+          />
+        }
+      />
+      <div className="space-y-4">
+        <RoundsNav tournamentId={tournamentId} phases={navPhases} />
+        <MatchExportActions tournamentId={tournamentId} />
+      </div>
     </div>
   );
 }

@@ -2,14 +2,16 @@
 
 import { use, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 import type { TournamentGameResult } from "@/lib/types/Tournament";
 import { MatchGamesEditor } from "../MatchGamesEditor";
-import { MatchPlayerName } from "../MatchPlayerName";
+import { playerTag } from "../PlayerNameTag";
+import { buildQuickResults, type QuickResult } from "../quickResults";
 import { PlayerShell } from "./PlayerShell";
+import { ReportSheet } from "./ReportSheet";
 import { usePlayerTournament, type ApiPhase } from "./usePlayerTournament";
 
 type ApiMatch = {
@@ -20,8 +22,16 @@ type ApiMatch = {
   reportedBy?: string;
   bracketPosition?: string;
   tableNumber?: number;
+  extensionSeconds?: number;
 };
 type ApiRound = { id: string; number: number; status: string; matches: ApiMatch[] };
+type ApiStanding = {
+  playerId: string;
+  matchPoints: number;
+  wins: number;
+  losses: number;
+  draws: number;
+};
 
 export default function TournamentPlayerMatchPage({
   params,
@@ -31,45 +41,19 @@ export default function TournamentPlayerMatchPage({
   const t = useTranslations("Tournaments");
   const { tournamentId } = use(params);
 
-  const matchStatusLabels: Record<string, string> = {
-    pending: t("player.matchStatusPending"),
-    "in-progress": t("player.matchStatusInProgress"),
-    completed: t("player.matchStatusCompleted"),
-    disputed: t("player.matchStatusDisputed"),
-  };
   const { syncKey, tournament, myPlayerId, error, loading, apiFetch, reload, session } =
     usePlayerTournament(tournamentId);
 
   const [round, setRound] = useState<ApiRound | null>(null);
   const [activePhase, setActivePhase] = useState<ApiPhase | null>(null);
+  const [standings, setStandings] = useState<ApiStanding[]>([]);
   const [actionError, setActionError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [detailedOpen, setDetailedOpen] = useState(false);
   const [dropOpen, setDropOpen] = useState(false);
-  const [dropping, setDropping] = useState(false);
 
   const myStatus = tournament?.players.find((p) => p.id === myPlayerId)?.status;
-
-  const dropTournament = async () => {
-    if (!myPlayerId) return;
-    setDropping(true);
-    setActionError(null);
-    try {
-      const res = await apiFetch(`/api/tournaments/${tournamentId}/players/${myPlayerId}`, {
-        method: "PATCH",
-        body: JSON.stringify({ status: "dropped" }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? t("player.dropError"));
-      }
-      setDropOpen(false);
-      await reload();
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : t("player.dropError"));
-    } finally {
-      setDropping(false);
-    }
-  };
 
   // Résout la phase active et charge sa dernière ronde à chaque changement de
   // tournoi (chargement initial et après un rapport de résultat).
@@ -103,6 +87,13 @@ export default function TournamentPlayerMatchPage({
       }
       const roundRes = await apiFetch(`/api/tournaments/${tournamentId}/rounds/${lastRound.id}`);
       if (roundRes.ok && !cancelled) setRound(await roundRes.json());
+
+      // Classement courant : sert le rang et le bilan affichés sous le match.
+      const standingsRes = await apiFetch(`/api/tournaments/${tournamentId}/standings`);
+      if (standingsRes.ok && !cancelled) {
+        const data = await standingsRes.json();
+        if (Array.isArray(data)) setStandings(data);
+      }
     })();
     return () => {
       cancelled = true;
@@ -113,14 +104,29 @@ export default function TournamentPlayerMatchPage({
     () => new Map((tournament?.players ?? []).map((p) => [p.id, p])),
     [tournament]
   );
-  const playerName = (playerId: string) => playersById.get(playerId)?.displayName ?? t("player.unknownPlayer");
+  // Le discriminateur accompagne le pseudo partout côté joueur : c'est le seul
+  // moyen de distinguer deux homonymes quand on cherche son adversaire en salle.
+  const playerName = (playerId: string) => {
+    const player = playersById.get(playerId);
+    return player ? playerTag(player.displayName, player.discriminator) : t("player.unknownPlayer");
+  };
 
   const myMatch = useMemo(() => {
     if (!round || !myPlayerId) return null;
     return round.matches.find((m) => m.players.some((p) => p.playerId === myPlayerId)) ?? null;
   }, [round, myPlayerId]);
 
-  const submitReport = useCallback(
+  const opponent = myMatch?.players.find((p) => p.playerId !== myPlayerId);
+  const opponentPlayer = opponent ? playersById.get(opponent.playerId) : undefined;
+  const opponentName = opponent ? playerName(opponent.playerId) : t("common.bye");
+
+  const myRankIndex = standings.findIndex((s) => s.playerId === myPlayerId);
+  const myStanding = myRankIndex >= 0 ? standings[myRankIndex] : null;
+  const opponentStanding = opponent
+    ? standings.find((s) => s.playerId === opponent.playerId)
+    : undefined;
+
+  const report = useCallback(
     async (games: TournamentGameResult[]) => {
       if (!myMatch) return;
       if (games.length === 0) {
@@ -138,6 +144,8 @@ export default function TournamentPlayerMatchPage({
           const body = await res.json().catch(() => ({}));
           throw new Error(body.error ?? t("player.reportError"));
         }
+        setSheetOpen(false);
+        setDetailedOpen(false);
         await reload();
       } catch (err) {
         setActionError(err instanceof Error ? err.message : t("player.reportError"));
@@ -148,7 +156,7 @@ export default function TournamentPlayerMatchPage({
     [myMatch, apiFetch, tournamentId, reload, t]
   );
 
-  const submitAction = async (action: "confirm" | "dispute") => {
+  const submitAction = async (action: "confirm" | "dispute" | "clear") => {
     if (!myMatch) return;
     setSubmitting(true);
     setActionError(null);
@@ -169,6 +177,53 @@ export default function TournamentPlayerMatchPage({
     }
   };
 
+  const dropTournament = async () => {
+    if (!myPlayerId) return;
+    setSubmitting(true);
+    setActionError(null);
+    try {
+      const res = await apiFetch(`/api/tournaments/${tournamentId}/players/${myPlayerId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "dropped" }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? t("player.dropError"));
+      }
+      setDropOpen(false);
+      await reload();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : t("player.dropError"));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const isBye = myMatch?.players.length === 1;
+  const canSelfReport = tournament?.settings.allowSelfReporting && !isBye;
+  const notReported = myMatch?.status === "pending";
+  const awaitingConfirmation = myMatch?.status === "in-progress";
+  const quickResults =
+    myMatch && activePhase && activePhase.resultMode === "selection"
+      ? buildQuickResults(activePhase.bestOf, myMatch.players.map((p) => p.playerId))
+      : [];
+  const extensionMinutes = Math.round((myMatch?.extensionSeconds ?? 0) / 60);
+
+  const myScore = myMatch?.players.find((p) => p.playerId === myPlayerId)?.score ?? 0;
+  const theirScore = opponent?.score ?? 0;
+
+  const statusLabel = !myMatch
+    ? ""
+    : myMatch.status === "completed"
+      ? t("player.matchStatusCompleted")
+      : myMatch.status === "disputed"
+        ? t("player.matchStatusDisputed")
+        : myMatch.status === "in-progress"
+          ? t("player.matchStatusInProgress")
+          : t("player.matchStatusPending");
+
+  const pickQuickResult = (result: QuickResult) => report(result.games);
+
   return (
     <PlayerShell
       tournamentId={tournamentId}
@@ -178,99 +233,202 @@ export default function TournamentPlayerMatchPage({
       myPlayerId={myPlayerId}
       loading={loading}
       error={error ?? actionError}
+      roundLabel={
+        round && activePhase
+          ? `${t("common.roundN", { number: round.number })} · ${activePhase.name}`
+          : undefined
+      }
     >
-      {/* Statut d'inscription + retrait du tournoi (self-drop). */}
-      {myPlayerId && (
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">{t("player.myRegistration")}</span>
-            <Badge variant={myStatus === "dropped" ? "outline" : "secondary"}>
-              {myStatus === "dropped" ? t("player.statusDropped") : t("player.statusRegistered")}
-            </Badge>
-          </div>
-          {myStatus === "dropped" ? (
-            <span className="text-sm text-muted-foreground">{t("player.leftTournament")}</span>
-          ) : (
-            <Button variant="destructive" size="sm" onClick={() => setDropOpen(true)} disabled={dropping}>
-              {t("player.leaveTournament")}
-            </Button>
-          )}
-        </div>
-      )}
-
       {myMatch && round ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>
-                {t("player.myMatchRound", { number: round.number })}
-                {myMatch.bracketPosition ? ` (${myMatch.bracketPosition})` : ""}
-              </span>
-              <span className="flex items-center gap-2">
-                {typeof myMatch.tableNumber === "number" && (
-                  <Badge>{t("player.tableNumber", { number: myMatch.tableNumber })}</Badge>
-                )}
-                <Badge variant="outline">{matchStatusLabels[myMatch.status]}</Badge>
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {myMatch.players.length === 1 ? (
-              <p className="text-muted-foreground">{t("player.byeAutoWin")}</p>
+        <div className="space-y-4">
+          <div className="rounded-2xl border bg-card p-6 text-center shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+              {t("player.yourTable")}
+            </p>
+            <p className="my-1.5 font-mono text-[92px] font-bold leading-none tracking-tighter">
+              {myMatch.tableNumber ?? "—"}
+            </p>
+            {isBye ? (
+              <p className="text-sm text-muted-foreground">{t("player.byeAutoWin")}</p>
             ) : (
-              <div className="space-y-2">
-                {myMatch.players.map((p) => (
-                  <div key={p.playerId} className="flex items-center justify-between gap-4">
-                    <span className={p.playerId === myPlayerId ? "font-semibold" : ""}>
-                      <MatchPlayerName
-                        isWinner={myMatch.winnerIds.includes(p.playerId)}
-                        name={playerName(p.playerId)}
-                      />
-                      {p.playerId === myPlayerId ? ` ${t("player.me")}` : ""}
+              <>
+                <p className="text-[13px] text-muted-foreground">{t("player.against")}</p>
+                {/* Le discriminateur est lisible, pas décoratif : c'est lui qui
+                    départage deux joueurs de même pseudo à la table. */}
+                <p className="mt-0.5 text-[22px] font-bold tracking-tight">
+                  {opponentPlayer?.displayName ?? opponentName}
+                  {opponentPlayer?.discriminator && (
+                    <span className="ml-1.5 font-mono text-base font-semibold text-muted-foreground">
+                      #{opponentPlayer.discriminator}
                     </span>
-                    <span className="font-mono text-lg">{p.score}</span>
-                  </div>
-                ))}
-              </div>
+                  )}
+                </p>
+                {opponentStanding && (
+                  <p className="mt-1 text-[13px] text-muted-foreground">
+                    {t("player.record", {
+                      wins: opponentStanding.wins,
+                      losses: opponentStanding.losses,
+                      draws: opponentStanding.draws,
+                    })}
+                  </p>
+                )}
+              </>
             )}
 
-            {myMatch.players.length > 1 &&
-              myMatch.status === "pending" &&
-              tournament?.settings.allowSelfReporting &&
-              activePhase && (
-                <MatchGamesEditor
-                  key={`${myMatch.id}-${myMatch.status}`}
-                  matchId={myMatch.id}
-                  matchPlayerIds={myMatch.players.map((p) => p.playerId)}
-                  playerName={playerName}
-                  resultMode={activePhase.resultMode}
-                  bestOf={activePhase.bestOf}
-                  submitting={submitting}
-                  submitLabel={t("player.reportResult")}
-                  onSubmit={submitReport}
-                />
+            <span
+              className={cn(
+                "mt-3.5 inline-flex items-center rounded-full px-3 py-1.5 text-[13px] font-semibold",
+                myMatch.status === "completed"
+                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
+                  : myMatch.status === "disputed"
+                    ? "bg-destructive/10 text-destructive"
+                    : "bg-muted text-muted-foreground"
               )}
-            {myMatch.status === "in-progress" && (
-              <div className="flex gap-2">
+            >
+              {statusLabel}
+            </span>
+
+            {extensionMinutes > 0 && (
+              <p className="mt-3 rounded-xl border border-sky-300 bg-sky-50 p-2.5 text-[13px] font-semibold text-sky-800 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300">
+                {t("player.extensionGranted", { minutes: extensionMinutes })}
+              </p>
+            )}
+          </div>
+
+          {canSelfReport && notReported && (
+            <Button
+              className="h-auto w-full py-4 text-base font-bold"
+              onClick={() => (quickResults.length > 0 ? setSheetOpen(true) : setDetailedOpen(true))}
+              disabled={submitting || myStatus === "dropped"}
+            >
+              {t("player.reportResult")}
+            </Button>
+          )}
+
+          {myMatch.status === "completed" && !isBye && (
+            <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-center dark:border-emerald-900 dark:bg-emerald-950">
+              <p className="text-[15px] font-bold text-emerald-800 dark:text-emerald-300">
+                {t("player.resultSent", { mine: myScore, theirs: theirScore })}
+              </p>
+              {canSelfReport && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2.5"
+                  onClick={() => setDetailedOpen(true)}
+                  disabled={submitting}
+                >
+                  {t("player.correct")}
+                </Button>
+              )}
+            </div>
+          )}
+
+          {awaitingConfirmation && (
+            <div className="rounded-xl border p-4">
+              <p className="text-sm text-muted-foreground">
+                {t("player.awaitingConfirmationFrom", { name: opponentName })}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
                 {myMatch.reportedBy !== myPlayerId && myMatch.reportedBy !== session?.user?.id && (
                   <Button onClick={() => submitAction("confirm")} disabled={submitting}>
                     {t("player.confirmResult")}
                   </Button>
                 )}
                 <Button
-                  variant="destructive"
+                  variant="outline"
+                  className="text-destructive"
                   onClick={() => submitAction("dispute")}
                   disabled={submitting}
                 >
                   {t("player.dispute")}
                 </Button>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          )}
+
+          <dl className="rounded-xl border bg-muted/40 p-4 text-[13px]">
+            <div className="flex justify-between py-1">
+              <dt className="text-muted-foreground">{t("player.myRank")}</dt>
+              <dd className="font-semibold">
+                {myStanding
+                  ? t("player.rankOf", { rank: myRankIndex + 1, total: standings.length })
+                  : "—"}
+              </dd>
+            </div>
+            <div className="flex justify-between py-1">
+              <dt className="text-muted-foreground">{t("player.myScore")}</dt>
+              <dd className="font-semibold">
+                {myStanding
+                  ? t("player.record", {
+                      wins: myStanding.wins,
+                      losses: myStanding.losses,
+                      draws: myStanding.draws,
+                    })
+                  : "—"}
+              </dd>
+            </div>
+            <div className="flex justify-between py-1">
+              <dt className="text-muted-foreground">{t("player.myRegistration")}</dt>
+              <dd className="font-semibold">
+                {myStatus === "dropped"
+                  ? t("player.statusDropped")
+                  : t("player.statusRegistered")}
+              </dd>
+            </div>
+          </dl>
+
+          {myStatus !== "dropped" && myPlayerId && (
+            <Button
+              variant="outline"
+              className="w-full text-destructive"
+              onClick={() => setDropOpen(true)}
+              disabled={submitting}
+            >
+              {t("player.leaveTournament")}
+            </Button>
+          )}
+        </div>
       ) : (
         <p className="text-muted-foreground">{t("player.noCurrentMatch")}</p>
       )}
+
+      {myMatch && myPlayerId && (
+        <ReportSheet
+          open={sheetOpen}
+          myPlayerId={myPlayerId}
+          opponentName={opponentName}
+          tableNumber={myMatch.tableNumber}
+          quickResults={quickResults}
+          matchPlayerIds={myMatch.players.map((p) => p.playerId)}
+          busy={submitting}
+          onClose={() => setSheetOpen(false)}
+          onPick={pickQuickResult}
+        />
+      )}
+
+      {/* Saisie détaillée : formats en points, corrections, et repli quand les
+          raccourcis ne s'appliquent pas (match multijoueur). */}
+      <Dialog open={detailedOpen} onOpenChange={(open) => !open && setDetailedOpen(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("player.reportResult")}</DialogTitle>
+          </DialogHeader>
+          {myMatch && activePhase && (
+            <MatchGamesEditor
+              key={`${myMatch.id}-${myMatch.status}`}
+              matchId={myMatch.id}
+              matchPlayerIds={myMatch.players.map((p) => p.playerId)}
+              playerName={playerName}
+              resultMode={activePhase.resultMode}
+              bestOf={activePhase.bestOf}
+              submitting={submitting}
+              submitLabel={t("player.reportResult")}
+              onSubmit={report}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={dropOpen}
@@ -279,7 +437,7 @@ export default function TournamentPlayerMatchPage({
         description={t("player.leaveDialogDescription")}
         confirmLabel={t("player.leaveTournament")}
         destructive
-        busy={dropping}
+        busy={submitting}
         onConfirm={dropTournament}
       />
     </PlayerShell>

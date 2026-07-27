@@ -8,19 +8,29 @@ import {
   DEFAULT_FIXED_SCORING,
   DEFAULT_RANK_OFFSETS,
   Tournament,
+  TournamentActivity,
+  TournamentActivityDb,
+  TournamentActivityType,
   TournamentAnnouncement,
   TournamentAnnouncementDb,
   TournamentAnnouncementLevel,
   TournamentBracketSeeding,
   TournamentDb,
+  TournamentDecklist,
   TournamentEliminationSeeding,
   TournamentFixedScoring,
   TournamentGameResult,
   TournamentMatch,
   TournamentMatchDb,
   TournamentMatchPlayer,
+  TournamentNote,
+  TournamentNoteDb,
+  TournamentPenalty,
+  TournamentPenaltyDb,
+  TournamentPenaltyType,
   TournamentPhase,
   TournamentPhaseDb,
+  TournamentPhaseType,
   TournamentPlayerStatus,
   TournamentPlayer,
   TournamentPlayerDb,
@@ -42,6 +52,10 @@ import {
   shuffleArray,
 } from "@/lib/utils/pairing";
 import {
+  resolveCurrentRound,
+  resolveDisplayPhase,
+} from "@/lib/tournaments/current-round";
+import {
   createInvitedUserByEmail,
   getUserByEmail,
   getUserById,
@@ -59,6 +73,14 @@ const PHASES = "tournament-phases";
 const ROUNDS = "tournament-rounds";
 const MATCHES = "tournament-matches";
 const ANNOUNCEMENTS = "tournament-announcements";
+const PENALTIES = "tournament-penalties";
+const NOTES = "tournament-notes";
+const ACTIVITY = "tournament-activity";
+
+// Nombre d'événements conservés dans le journal d'activité d'un tournoi. Les
+// plus anciens sont purgés à l'écriture : le journal est un fil de suivi en
+// direct, pas un historique exhaustif.
+const ACTIVITY_KEEP = 200;
 
 // Code de participation : 9 caractères alphanumériques majuscules (nanoid).
 const joinCodeAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -129,6 +151,9 @@ function toTournament(doc: WithId<TournamentDb>): Tournament {
     currentPhaseId: doc.currentPhaseId,
     joinCode: doc.joinCode,
     timer: doc.timer,
+    location: doc.location,
+    startsAt: doc.startsAt,
+    capacity: doc.capacity,
     settings: {
       allowSelfReporting: doc.settings.allowSelfReporting,
       requireConfirmation: doc.settings.requireConfirmation,
@@ -158,6 +183,8 @@ function toPlayer(doc: WithId<TournamentPlayerDb>): TournamentPlayer {
     // et toute valeur inattendue sont normalisées en "registered".
     status:
       doc.status === "dropped" || doc.status === "pre-registered" ? doc.status : "registered",
+    checkedInAt: doc.checkedInAt,
+    decklist: doc.decklist,
     syncKey: doc.syncKey,
     addedBy: doc.addedBy,
     createdAt: doc.createdAt,
@@ -229,6 +256,7 @@ function toMatch(doc: WithId<TournamentMatchDb>): TournamentMatch {
     winnerIds: doc.winnerIds ?? [],
     bracketPosition: doc.bracketPosition,
     tableNumber: doc.tableNumber,
+    extensionSeconds: doc.extensionSeconds,
     status: doc.status,
     reportedBy: doc.reportedBy,
     confirmedBy: doc.confirmedBy,
@@ -348,6 +376,9 @@ export async function createTournament(data: {
   name: string;
   eventId?: string;
   gameId?: string;
+  location?: string;
+  startsAt?: Date;
+  capacity?: number;
   settings: { allowSelfReporting: boolean; requireConfirmation: boolean; preRegistration: boolean };
   createdBy: string;
 }): Promise<Tournament> {
@@ -359,6 +390,9 @@ export async function createTournament(data: {
       name: data.name,
       eventId: data.eventId,
       gameId: data.gameId,
+      location: data.location,
+      startsAt: data.startsAt,
+      capacity: data.capacity,
       status: "draft",
       joinCode: await generateUniqueJoinCode(),
       settings: data.settings,
@@ -435,6 +469,125 @@ export async function listTournamentsForUser(userId: string): Promise<Tournament
     .sort({ createdAt: -1 })
     .toArray();
   return docs.map(toTournament);
+}
+
+export type TournamentListSummary = {
+  playersCount: number;
+  phases: { type: TournamentPhaseType; plannedRounds?: number; topCut?: number }[];
+  currentRound: {
+    id: string;
+    number: number;
+    plannedRounds?: number;
+    reportedMatches: number;
+    totalMatches: number;
+  } | null;
+};
+
+/**
+ * Résumés d'avancement pour une liste de tournois (participants, format, ronde
+ * en cours). Volontairement en lot : la liste des tournois d'un organisateur
+ * peut être longue, et un aller-retour par tournoi ferait un N+1. Ici le coût
+ * reste de quatre requêtes quel que soit le nombre de tournois.
+ */
+export async function listTournamentSummaries(
+  tournaments: Tournament[]
+): Promise<Map<string, TournamentListSummary>> {
+  const summaries = new Map<string, TournamentListSummary>();
+  if (tournaments.length === 0) return summaries;
+
+  const ids = tournaments.map((t) => new ObjectId(t.id));
+
+  const [playerCounts, phaseDocs, roundDocs] = await Promise.all([
+    db
+      .collection<TournamentPlayerDb>(PLAYERS)
+      .aggregate<{ _id: ObjectId; count: number }>([
+        { $match: { tournamentId: { $in: ids }, status: { $ne: "dropped" } } },
+        { $group: { _id: "$tournamentId", count: { $sum: 1 } } },
+      ])
+      .toArray(),
+    db
+      .collection<TournamentPhaseDb>(PHASES)
+      .find({ tournamentId: { $in: ids } })
+      .sort({ order: 1, createdAt: 1 })
+      .toArray(),
+    db
+      .collection<TournamentRoundDb>(ROUNDS)
+      .find({ tournamentId: { $in: ids } })
+      .sort({ createdAt: 1 })
+      .toArray(),
+  ]);
+
+  const playersByTournament = new Map(playerCounts.map((row) => [row._id.toString(), row.count]));
+  const phasesByTournament = new Map<string, TournamentPhase[]>();
+  for (const doc of phaseDocs) {
+    const key = doc.tournamentId.toString();
+    const list = phasesByTournament.get(key) ?? [];
+    list.push(toPhase(doc));
+    phasesByTournament.set(key, list);
+  }
+  const roundsByTournament = new Map<string, TournamentRound[]>();
+  for (const doc of roundDocs) {
+    const key = doc.tournamentId.toString();
+    const list = roundsByTournament.get(key) ?? [];
+    list.push(toRound(doc));
+    roundsByTournament.set(key, list);
+  }
+
+  // Les rondes courantes une fois toutes identifiées : leurs matchs se comptent
+  // en une seule agrégation plutôt qu'une lecture par tournoi.
+  const currentRounds = new Map<string, TournamentRound>();
+  for (const tournament of tournaments) {
+    const phases = phasesByTournament.get(tournament.id) ?? [];
+    const rounds = roundsByTournament.get(tournament.id) ?? [];
+    const activePhase = resolveDisplayPhase(phases, tournament.currentPhaseId);
+    const currentRound = resolveCurrentRound(rounds, activePhase?.id);
+    if (currentRound) currentRounds.set(tournament.id, currentRound);
+  }
+
+  const matchCounts =
+    currentRounds.size > 0
+      ? await db
+          .collection<TournamentMatchDb>(MATCHES)
+          .aggregate<{ _id: ObjectId; total: number; reported: number }>([
+            {
+              $match: {
+                roundId: { $in: [...currentRounds.values()].map((r) => new ObjectId(r.id)) },
+              },
+            },
+            {
+              $group: {
+                _id: "$roundId",
+                total: { $sum: 1 },
+                reported: { $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] } },
+              },
+            },
+          ])
+          .toArray()
+      : [];
+  const matchesByRound = new Map(matchCounts.map((row) => [row._id.toString(), row]));
+
+  for (const tournament of tournaments) {
+    const phases = phasesByTournament.get(tournament.id) ?? [];
+    const currentRound = currentRounds.get(tournament.id) ?? null;
+    const currentPhase = currentRound ? phases.find((p) => p.id === currentRound.phaseId) : undefined;
+    const counts = currentRound ? matchesByRound.get(currentRound.id) : undefined;
+
+    summaries.set(tournament.id, {
+      playersCount: playersByTournament.get(tournament.id) ?? 0,
+      phases: phases.map((p) => ({ type: p.type, plannedRounds: p.plannedRounds, topCut: p.topCut })),
+      currentRound: currentRound
+        ? {
+            id: currentRound.id,
+            number: currentRound.number,
+            plannedRounds: currentPhase?.plannedRounds,
+            reportedMatches: counts?.reported ?? 0,
+            totalMatches: counts?.total ?? 0,
+          }
+        : null,
+    });
+  }
+
+  return summaries;
 }
 
 export function isTournamentOrganizer(tournament: Tournament, userId: string): boolean {
@@ -543,6 +696,10 @@ export type MatchActor = {
   // en alternant session et clé de synchronisation.
   identityIds: string[];
   isOrganizer: boolean;
+  // Nom affichable de l'acteur pour le journal d'activité. Absent lorsque
+  // l'identité n'est pas inscrite comme joueur (staff sans participation) :
+  // le journal se rabat alors sur une mention générique.
+  label?: string;
 };
 
 export async function buildMatchActor(
@@ -552,15 +709,23 @@ export async function buildMatchActor(
   if (principal.kind === "player") {
     const identityIds = [principal.player.id];
     if (principal.player.userId) identityIds.push(principal.player.userId);
-    return { id: principal.player.id, playerIds: [principal.player.id], identityIds, isOrganizer: false };
+    return {
+      id: principal.player.id,
+      playerIds: [principal.player.id],
+      identityIds,
+      isOrganizer: false,
+      label: principal.player.displayName,
+    };
   }
   const players = await listPlayers(tournament.id);
-  const playerIds = players.filter((p) => p.userId === principal.userId).map((p) => p.id);
+  const own = players.filter((p) => p.userId === principal.userId);
+  const playerIds = own.map((p) => p.id);
   return {
     id: principal.userId,
     playerIds,
     identityIds: [principal.userId, ...playerIds],
     isOrganizer: canManageTournament(tournament, principal.userId),
+    label: own[0]?.displayName,
   };
 }
 
@@ -703,6 +868,10 @@ export async function updateTournament(
     gameId?: string | null;
     // null = détacher le tournoi de son événement.
     eventId?: string | null;
+    // Informations pratiques ; null retire la valeur.
+    location?: string | null;
+    startsAt?: Date | null;
+    capacity?: number | null;
     settings?: Partial<Tournament["settings"]>;
     organizerIds?: string[];
   }
@@ -737,6 +906,14 @@ export async function updateTournament(
       );
     }
     set.eventId = updates.eventId;
+  }
+  for (const field of ["location", "startsAt", "capacity"] as const) {
+    const value = updates[field];
+    if (value === null) {
+      unset[field] = "";
+    } else if (value !== undefined) {
+      set[field] = value;
+    }
   }
   if (updates.settings?.allowSelfReporting !== undefined) {
     set["settings.allowSelfReporting"] = updates.settings.allowSelfReporting;
@@ -781,6 +958,9 @@ export async function deleteTournament(tournamentId: string): Promise<void> {
     db.collection(ROUNDS).deleteMany({ tournamentId: _id }),
     db.collection(MATCHES).deleteMany({ tournamentId: _id }),
     db.collection(ANNOUNCEMENTS).deleteMany({ tournamentId: _id }),
+    db.collection(PENALTIES).deleteMany({ tournamentId: _id }),
+    db.collection(NOTES).deleteMany({ tournamentId: _id }),
+    db.collection(ACTIVITY).deleteMany({ tournamentId: _id }),
   ]);
 }
 
@@ -834,6 +1014,251 @@ export async function deleteAnnouncement(tournamentId: string, announcementId: s
   if (result.deletedCount === 0) {
     throw new TournamentError("not-found", "Annonce non trouvée");
   }
+}
+
+// ==================================
+// JOURNAL D'ACTIVITÉ
+// ==================================
+
+function toActivity(doc: WithId<TournamentActivityDb>): TournamentActivity {
+  return {
+    id: doc._id.toString(),
+    tournamentId: doc.tournamentId.toString(),
+    type: doc.type,
+    params: doc.params ?? {},
+    actorLabel: doc.actorLabel,
+    createdAt: doc.createdAt,
+  };
+}
+
+/**
+ * Enregistre un événement dans le journal d'activité du tournoi.
+ *
+ * Volontairement tolérant aux pannes : le journal est un confort d'affichage
+ * pour l'organisation, jamais une source de vérité. Une écriture en échec est
+ * tracée mais n'interrompt pas l'action métier qui l'a déclenchée — appeler
+ * cette fonction ne peut donc pas faire échouer un rapport de résultat.
+ */
+export async function recordActivity(
+  tournamentId: string,
+  type: TournamentActivityType,
+  params: Record<string, string | number> = {},
+  actorLabel?: string
+): Promise<void> {
+  try {
+    const _id = parseObjectId(tournamentId, "Tournoi");
+    const coll = db.collection<TournamentActivityDb>(ACTIVITY);
+    await coll.insertOne({
+      tournamentId: _id,
+      type,
+      params,
+      actorLabel,
+      createdAt: new Date(),
+    });
+    // Purge des événements au-delà de la fenêtre conservée.
+    const stale = await coll
+      .find({ tournamentId: _id }, { projection: { _id: 1 } })
+      .sort({ createdAt: -1 })
+      .skip(ACTIVITY_KEEP)
+      .toArray();
+    if (stale.length > 0) {
+      await coll.deleteMany({ _id: { $in: stale.map((d) => d._id) } });
+    }
+  } catch (error) {
+    console.error("Impossible d'enregistrer l'activité du tournoi:", error);
+  }
+}
+
+export async function listActivity(tournamentId: string, limit = 30): Promise<TournamentActivity[]> {
+  const _id = parseObjectId(tournamentId, "Tournoi");
+  const docs = await db
+    .collection<TournamentActivityDb>(ACTIVITY)
+    .find({ tournamentId: _id })
+    .sort({ createdAt: -1 })
+    .limit(Math.min(Math.max(limit, 1), ACTIVITY_KEEP))
+    .toArray();
+  return docs.map(toActivity);
+}
+
+// ==================================
+// PÉNALITÉS ET NOTES INTERNES
+// ==================================
+
+function toPenalty(doc: WithId<TournamentPenaltyDb>): TournamentPenalty {
+  return {
+    id: doc._id.toString(),
+    tournamentId: doc.tournamentId.toString(),
+    playerId: doc.playerId.toString(),
+    type: doc.type,
+    reason: doc.reason,
+    roundId: doc.roundId,
+    roundNumber: doc.roundNumber,
+    createdBy: doc.createdBy,
+    createdAt: doc.createdAt,
+  };
+}
+
+function toNote(doc: WithId<TournamentNoteDb>): TournamentNote {
+  return {
+    id: doc._id.toString(),
+    tournamentId: doc.tournamentId.toString(),
+    playerId: doc.playerId.toString(),
+    content: doc.content,
+    roundNumber: doc.roundNumber,
+    createdBy: doc.createdBy,
+    createdAt: doc.createdAt,
+  };
+}
+
+// Pénalités du tournoi entier, ou d'un seul joueur quand `playerId` est fourni.
+// La liste complète alimente le drapeau ⚑ de la liste des joueurs sans avoir à
+// interroger la fiche de chacun.
+export async function listPenalties(
+  tournamentId: string,
+  playerId?: string
+): Promise<TournamentPenalty[]> {
+  const tId = parseObjectId(tournamentId, "Tournoi");
+  const filter: Record<string, unknown> = { tournamentId: tId };
+  if (playerId) filter.playerId = parseObjectId(playerId, "Joueur");
+  const docs = await db
+    .collection<TournamentPenaltyDb>(PENALTIES)
+    .find(filter)
+    .sort({ createdAt: -1 })
+    .toArray();
+  return docs.map(toPenalty);
+}
+
+export async function createPenalty(
+  tournamentId: string,
+  playerId: string,
+  data: {
+    type: TournamentPenaltyType;
+    reason?: string;
+    roundId?: string;
+    roundNumber?: number;
+    createdBy: string;
+  }
+): Promise<TournamentPenalty> {
+  const tId = parseObjectId(tournamentId, "Tournoi");
+  const pId = parseObjectId(playerId, "Joueur");
+
+  const player = await getPlayerById(tournamentId, playerId);
+  if (!player) {
+    throw new TournamentError("not-found", "Joueur non trouvé");
+  }
+
+  const doc: TournamentPenaltyDb = {
+    tournamentId: tId,
+    playerId: pId,
+    type: data.type,
+    reason: data.reason,
+    roundId: data.roundId,
+    roundNumber: data.roundNumber,
+    createdBy: data.createdBy,
+    createdAt: new Date(),
+  };
+  const result = await db.collection<TournamentPenaltyDb>(PENALTIES).insertOne(doc);
+
+  // Une disqualification retire le joueur du tournoi : il ne doit plus être
+  // apparié aux rondes suivantes.
+  if (data.type === "disqualification" && player.status !== "dropped") {
+    await updatePlayer(tournamentId, playerId, { status: "dropped" });
+  }
+
+  return toPenalty({ ...doc, _id: result.insertedId });
+}
+
+export async function deletePenalty(tournamentId: string, penaltyId: string): Promise<void> {
+  const tId = parseObjectId(tournamentId, "Tournoi");
+  const id = parseObjectId(penaltyId, "Pénalité");
+  const result = await db
+    .collection<TournamentPenaltyDb>(PENALTIES)
+    .deleteOne({ _id: id, tournamentId: tId });
+  if (result.deletedCount === 0) {
+    throw new TournamentError("not-found", "Pénalité non trouvée");
+  }
+}
+
+export async function listNotes(tournamentId: string, playerId: string): Promise<TournamentNote[]> {
+  const tId = parseObjectId(tournamentId, "Tournoi");
+  const pId = parseObjectId(playerId, "Joueur");
+  const docs = await db
+    .collection<TournamentNoteDb>(NOTES)
+    .find({ tournamentId: tId, playerId: pId })
+    .sort({ createdAt: -1 })
+    .toArray();
+  return docs.map(toNote);
+}
+
+export async function createNote(
+  tournamentId: string,
+  playerId: string,
+  data: { content: string; roundNumber?: number; createdBy: string }
+): Promise<TournamentNote> {
+  const tId = parseObjectId(tournamentId, "Tournoi");
+  const pId = parseObjectId(playerId, "Joueur");
+
+  const player = await getPlayerById(tournamentId, playerId);
+  if (!player) {
+    throw new TournamentError("not-found", "Joueur non trouvé");
+  }
+
+  const doc: TournamentNoteDb = {
+    tournamentId: tId,
+    playerId: pId,
+    content: data.content,
+    roundNumber: data.roundNumber,
+    createdBy: data.createdBy,
+    createdAt: new Date(),
+  };
+  const result = await db.collection<TournamentNoteDb>(NOTES).insertOne(doc);
+  return toNote({ ...doc, _id: result.insertedId });
+}
+
+export async function deleteNote(tournamentId: string, noteId: string): Promise<void> {
+  const tId = parseObjectId(tournamentId, "Tournoi");
+  const id = parseObjectId(noteId, "Note");
+  const result = await db.collection<TournamentNoteDb>(NOTES).deleteOne({ _id: id, tournamentId: tId });
+  if (result.deletedCount === 0) {
+    throw new TournamentError("not-found", "Note non trouvée");
+  }
+}
+
+// Liste de deck d'un joueur. Modifier le contenu invalide la vérification
+// précédente : une liste retouchée doit être revérifiée par l'arbitrage.
+export async function updateDecklist(
+  tournamentId: string,
+  playerId: string,
+  updates: { content?: string; checked?: boolean },
+  actorUserId: string
+): Promise<TournamentPlayer> {
+  const player = await getPlayerById(tournamentId, playerId);
+  if (!player) {
+    throw new TournamentError("not-found", "Joueur non trouvé");
+  }
+
+  const now = new Date();
+  const content = updates.content ?? player.decklist?.content ?? "";
+  const contentChanged = updates.content !== undefined && updates.content !== player.decklist?.content;
+  const checked = contentChanged && updates.checked === undefined ? false : updates.checked ?? player.decklist?.checked ?? false;
+
+  const decklist: TournamentDecklist = {
+    content,
+    checked,
+    checkedBy: checked ? actorUserId : undefined,
+    checkedAt: checked ? now : undefined,
+    updatedAt: now,
+  };
+
+  const tId = parseObjectId(tournamentId, "Tournoi");
+  const pId = parseObjectId(playerId, "Joueur");
+  const result = await db
+    .collection<TournamentPlayerDb>(PLAYERS)
+    .findOneAndUpdate({ _id: pId, tournamentId: tId }, { $set: { decklist } }, { returnDocument: "after" });
+  if (!result) {
+    throw new TournamentError("not-found", "Joueur non trouvé");
+  }
+  return toPlayer(result);
 }
 
 // Démarre le minuteur : fixe l'instant de fin absolu (now + durée).
@@ -1111,6 +1536,8 @@ export async function updatePlayer(
     seed?: number | null;
     fixedTableNumber?: number | null;
     status?: TournamentPlayer["status"];
+    // true pointe le joueur présent (horodaté maintenant), false annule.
+    checkedIn?: boolean;
   }
 ): Promise<TournamentPlayer> {
   const tId = parseObjectId(tournamentId, "Tournoi");
@@ -1130,6 +1557,11 @@ export async function updatePlayer(
     set.fixedTableNumber = updates.fixedTableNumber;
   }
   if (updates.status !== undefined) set.status = updates.status;
+  if (updates.checkedIn === true) {
+    set.checkedInAt = new Date();
+  } else if (updates.checkedIn === false) {
+    unset.checkedInAt = "";
+  }
 
   const update: Record<string, unknown> = {};
   if (Object.keys(set).length > 0) update.$set = set;
@@ -2094,6 +2526,37 @@ export async function setMatchTable(
     tableNumber === null
       ? { $unset: { tableNumber: "" as const }, $set: { updatedAt: new Date() } }
       : { $set: { tableNumber, updatedAt: new Date() } };
+
+  const result = await db
+    .collection<TournamentMatchDb>(MATCHES)
+    .findOneAndUpdate({ _id: mId, tournamentId: tId }, update, { returnDocument: "after" });
+  if (!result) {
+    throw new TournamentError("not-found", "Match non trouvé");
+  }
+  return toMatch(result);
+}
+
+// Prolongation accordée à une table (gestionnaires). `seconds` s'ajoute à la
+// prolongation en cours ; 0 la retire. Le total est borné à zéro pour qu'une
+// valeur négative ne puisse pas produire un temps de jeu négatif.
+export async function extendMatch(
+  tournamentId: string,
+  matchId: string,
+  seconds: number
+): Promise<TournamentMatch> {
+  const tId = parseObjectId(tournamentId, "Tournoi");
+  const mId = parseObjectId(matchId, "Match");
+
+  const match = await getMatchById(tournamentId, matchId);
+  if (!match) {
+    throw new TournamentError("not-found", "Match non trouvé");
+  }
+  const next = seconds === 0 ? 0 : Math.max(0, (match.extensionSeconds ?? 0) + seconds);
+
+  const update =
+    next === 0
+      ? { $unset: { extensionSeconds: "" as const }, $set: { updatedAt: new Date() } }
+      : { $set: { extensionSeconds: next, updatedAt: new Date() } };
 
   const result = await db
     .collection<TournamentMatchDb>(MATCHES)

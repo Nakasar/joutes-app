@@ -16,15 +16,21 @@ import { useTranslations } from "next-intl";
 type EventFormProps = {
   ownedLairs: Lair[];
   games: Game[];
+  /**
+   * Création lancée depuis un tournoi : l'événement créé lui est rattaché dans
+   * la foulée, et l'organisateur revient à ses réglages plutôt que d'atterrir
+   * sur une page d'événement sans lien avec ce qu'il faisait.
+   */
+  linkTournament?: { id: string; name: string } | null;
 };
 
-export default function EventForm({ ownedLairs, games }: EventFormProps) {
+export default function EventForm({ ownedLairs, games, linkTournament = null }: EventFormProps) {
   const router = useRouter();
   const t = useTranslations("EventCreate");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    name: "",
+    name: linkTournament?.name ?? "",
     startDateTime: "",
     endDateTime: "",
     gameName: "",
@@ -54,6 +60,23 @@ export default function EventForm({ ownedLairs, games }: EventFormProps) {
       });
 
       if (result.success) {
+        // Le rattachement est le but de la manœuvre : s'il échoue, on le dit et
+        // on reste sur place, sinon l'organisateur croirait son tournoi daté.
+        if (linkTournament && result.eventId) {
+          const link = await fetch(`/api/tournaments/${linkTournament.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ eventId: result.eventId }),
+          });
+          if (!link.ok) {
+            const body = await link.json().catch(() => ({}));
+            setError(body.error ?? t("form.errors.generic"));
+            return;
+          }
+          router.push(`/tournaments/${linkTournament.id}/organizer/settings`);
+          router.refresh();
+          return;
+        }
         router.push(`/events/${result.eventId}`);
         router.refresh();
       } else {

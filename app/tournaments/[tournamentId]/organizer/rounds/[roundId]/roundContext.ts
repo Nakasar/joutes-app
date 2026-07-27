@@ -12,7 +12,6 @@ import {
   listRounds,
   sanitizePlayer,
 } from "@/lib/db/tournaments";
-import type { RoundsNavPhase } from "../RoundsNav";
 
 /**
  * Chargement commun aux sous-pages de détail d'une ronde (matchs / classement) :
@@ -51,22 +50,12 @@ export async function loadOrganizerRoundContext(tournamentId: string, roundId: s
   const phaseIndex = phases.findIndex((p) => p.id === round.phaseId);
   const reopenCascades = phases.some((p, i) => i > phaseIndex && p.status !== "not-started");
 
-  const navPhases: RoundsNavPhase[] = phases.map((p) => ({
-    phaseId: p.id,
-    phaseName: p.name,
-    rounds: allRounds
-      .filter((r) => r.phaseId === p.id)
-      .sort((a, b) => a.number - b.number)
-      .map((r) => ({ id: r.id, number: r.number, validated: !!r.standingsValidatedAt })),
-  }));
-
   return {
     tournament,
     round,
     phase,
     matches,
     players: players.map(sanitizePlayer),
-    navPhases,
     isLastRound,
     reopenCascades,
   };

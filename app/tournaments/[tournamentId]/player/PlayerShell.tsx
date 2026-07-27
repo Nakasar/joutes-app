@@ -1,18 +1,31 @@
 "use client";
 
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import type { ReactNode } from "react";
-import { UserRound } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Badge } from "@/components/ui/badge";
+import { ClipboardList, Megaphone, Target, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { PlayerLiveBanner } from "./PlayerLiveBanner";
+import { formatDuration, timerRemainingSeconds } from "@/lib/tournament-timer";
 import type { ApiTournament } from "./usePlayerTournament";
-import { PlayerNameTag } from "../PlayerNameTag";
+import { useTournamentLive } from "../useTournamentLive";
 
 export type PlayerSection = "match" | "standings" | "players";
 
+const SECTIONS: { key: PlayerSection; path: string; labelKey: string; Icon: typeof Target }[] = [
+  { key: "match", path: "", labelKey: "playerShell.navMatch", Icon: Target },
+  { key: "standings", path: "standings", labelKey: "playerShell.navStandings", Icon: Trophy },
+  { key: "players", path: "players", labelKey: "playerShell.navPlayers", Icon: ClipboardList },
+];
+
+/**
+ * Cadre du portail joueur, pensé pour un téléphone tenu en salle : un en-tête
+ * sombre qui ne bouge pas (tournoi, ronde, minuteur, dernière annonce), le
+ * contenu de la section, et une barre d'onglets au pouce. L'annonce vit dans
+ * l'en-tête parce que c'est la seule information qu'un joueur ne doit jamais
+ * rater, quelle que soit la page ouverte.
+ */
 export function PlayerShell({
   tournamentId,
   active,
@@ -21,6 +34,7 @@ export function PlayerShell({
   myPlayerId,
   loading,
   error,
+  roundLabel,
   children,
 }: {
   tournamentId: string;
@@ -30,23 +44,18 @@ export function PlayerShell({
   myPlayerId?: string | null;
   loading: boolean;
   error: string | null;
+  roundLabel?: string;
   children: ReactNode;
 }) {
   const t = useTranslations("Tournaments");
+  const pathname = usePathname();
+  const { state, serverOffsetMs } = useTournamentLive(tournamentId);
 
-  // Libellé du statut du tournoi affiché dans l'en-tête.
-  const statusLabels: Record<string, string> = {
-    draft: t("common.tournamentStatus.draft"),
-    "in-progress": t("common.tournamentStatus.in-progress"),
-    completed: t("common.tournamentStatus.completed"),
-  };
-
-  // Libellé/variante du statut du joueur, affiché sur l'encadré d'identité.
-  const playerStatusBadge: Record<string, { label: string; variant: "secondary" | "outline" }> = {
-    registered: { label: t("common.playerStatus.registered"), variant: "secondary" },
-    "pre-registered": { label: t("common.playerStatus.pre-registered"), variant: "outline" },
-    dropped: { label: t("playerShell.droppedBadge"), variant: "outline" },
-  };
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((n) => n + 1), 500);
+    return () => clearInterval(id);
+  }, []);
 
   // Ce navigateur n'est pas synchronisé et l'utilisateur n'est pas identifié.
   if (syncKey === null && !loading && !tournament) {
@@ -61,72 +70,105 @@ export function PlayerShell({
     );
   }
 
-  const sections: { key: PlayerSection; label: string; path: string }[] = [
-    { key: "match", label: t("playerShell.navMatch"), path: "" },
-    { key: "standings", label: t("playerShell.navStandings"), path: "standings" },
-    { key: "players", label: t("playerShell.navPlayers"), path: "players" },
-  ];
   const base = `/tournaments/${tournamentId}/player`;
-
-  // Joueur qui consulte le portail (identité portée par la clé ou la session).
   const me = myPlayerId ? tournament?.players.find((p) => p.id === myPlayerId) : undefined;
-  const meBadge = me ? playerStatusBadge[me.status] : undefined;
+
+  const remaining = timerRemainingSeconds(state?.timer ?? null, serverOffsetMs);
+  const expired = remaining !== null && remaining < 0;
+  const low = remaining !== null && remaining >= 0 && remaining < 300;
+  const lastAnnouncement = state?.announcements?.[0];
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">{tournament?.name ?? t("playerShell.tournamentFallback")}</h1>
-          <p className="mt-1 text-muted-foreground">{t("playerShell.subtitle")}</p>
+    <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-2xl flex-col pb-24">
+      <header className="bg-neutral-950 px-5 pb-7 pt-4 text-white">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="truncate text-[15px] font-semibold">
+              {tournament?.name ?? t("playerShell.tournamentFallback")}
+            </p>
+            <p className="mt-0.5 text-xs text-neutral-400">
+              {roundLabel ?? t("playerShell.subtitle")}
+            </p>
+          </div>
+          {remaining !== null && (
+            <div className="shrink-0 text-right">
+              <p
+                className={cn(
+                  "font-mono text-xl font-semibold tabular-nums",
+                  expired ? "text-red-400" : low ? "text-amber-300" : "text-white"
+                )}
+              >
+                {formatDuration(remaining)}
+              </p>
+              <p className="text-[11px] text-neutral-400">{t("playerShell.remaining")}</p>
+            </div>
+          )}
         </div>
-        {tournament && (
-          <Badge variant="secondary">{statusLabels[tournament.status] ?? tournament.status}</Badge>
-        )}
-      </div>
 
-      <nav className="flex flex-wrap gap-1 rounded-lg bg-muted p-1">
-        {sections.map((section) => (
-          <Link
-            key={section.key}
-            href={section.path ? `${base}/${section.path}` : base}
-            aria-current={active === section.key ? "page" : undefined}
+        {lastAnnouncement && (
+          <div
             className={cn(
-              "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-              active === section.key
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+              "mt-3.5 flex items-start gap-2.5 rounded-xl border p-3",
+              lastAnnouncement.level === "urgent"
+                ? "border-red-800 bg-red-950/80"
+                : "border-neutral-800 bg-neutral-900"
             )}
           >
-            {section.label}
-          </Link>
-        ))}
-      </nav>
-
-      {me && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/40 p-3">
-          <div className="flex items-center gap-2 text-sm">
-            <UserRound className="h-4 w-4 shrink-0 text-muted-foreground" />
-            <span className="text-muted-foreground">{t("playerShell.participatingAs")}</span>
-            <PlayerNameTag
-              name={me.displayName}
-              discriminator={me.discriminator}
-              className="font-semibold text-foreground"
+            <Megaphone
+              className={cn(
+                "mt-0.5 size-4 shrink-0",
+                lastAnnouncement.level === "urgent" ? "text-red-300" : "text-sky-300"
+              )}
             />
-            {!me.userId && <span className="text-xs text-muted-foreground">{t("playerShell.guest")}</span>}
+            <p
+              className={cn(
+                "whitespace-pre-wrap text-[13px] leading-snug",
+                lastAnnouncement.level === "urgent" ? "text-red-200" : "text-neutral-200"
+              )}
+            >
+              {lastAnnouncement.message}
+            </p>
           </div>
-          {meBadge && <Badge variant={meBadge.variant}>{meBadge.label}</Badge>}
-        </div>
-      )}
+        )}
 
-      <PlayerLiveBanner tournamentId={tournamentId} />
+        {me && (
+          <p className="mt-3 text-xs text-neutral-400">
+            {t("playerShell.participatingAs")}{" "}
+            <span className="font-semibold text-white">{me.displayName}</span>
+            {me.discriminator && <span className="ml-0.5 text-neutral-500">#{me.discriminator}</span>}
+          </p>
+        )}
+      </header>
 
-      {error && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
-        </div>
-      )}
+      <div className="-mt-4 flex-1 px-4">
+        {error && (
+          <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+        {loading ? <p className="text-muted-foreground">{t("common.loading")}</p> : children}
+      </div>
 
-      {loading ? <p className="text-muted-foreground">{t("common.loading")}</p> : children}
+      <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-2xl border-t bg-card/95 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-1.5 backdrop-blur">
+        {SECTIONS.map(({ key, path, labelKey, Icon }) => {
+          const href = path ? `${base}/${path}` : base;
+          const isActive = active === key || pathname === href;
+          return (
+            <Link
+              key={key}
+              href={href}
+              aria-current={isActive ? "page" : undefined}
+              className={cn(
+                "flex flex-1 flex-col items-center justify-center gap-0.5 rounded-lg py-2 text-[11px] font-semibold transition-colors",
+                isActive ? "text-foreground" : "text-muted-foreground"
+              )}
+            >
+              <Icon className={cn("size-5", isActive && "text-foreground")} strokeWidth={isActive ? 2.4 : 1.9} />
+              {t(labelKey)}
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }
