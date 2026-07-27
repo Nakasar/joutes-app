@@ -145,10 +145,19 @@ export async function drawCube(
   const shortfalls: CubeDrawShortfall[] = [];
 
   if (config.mode === "packs") {
+    // `packId` sert au regroupement mais ne sort pas du tirage : la carte est
+    // recopiée sans lui, comme en mode aléatoire.
     const cardsByPack = new Map<string, CubeDrawnCard[]>();
     for (const card of cards) {
       const list = cardsByPack.get(card.packId) ?? [];
-      list.push(card);
+      list.push({
+        id: card.id,
+        cardId: card.cardId,
+        name: card.name,
+        setCode: card.setCode,
+        collectorNumber: card.collectorNumber,
+        image: card.image,
+      });
       cardsByPack.set(card.packId, list);
     }
 

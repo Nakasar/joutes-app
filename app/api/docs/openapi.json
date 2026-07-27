@@ -12742,6 +12742,31 @@
           }
         }
       },
+      "CubeDrawnCard": {
+        "type": "object",
+        "description": "A card as handed out by a draw. Lighter than CubeCard: the draw only carries the card's identity, not its cube, pack or creation date.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Id of the cube's card entry the copy comes from."
+          },
+          "cardId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "setCode": {
+            "type": "string"
+          },
+          "collectorNumber": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          }
+        }
+      },
       "CubeDrawnPack": {
         "type": "object",
         "properties": {
@@ -12762,7 +12787,7 @@
           "cards": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/CubeCard"
+              "$ref": "#/components/schemas/CubeDrawnCard"
             }
           }
         }
@@ -12791,7 +12816,7 @@
                 "cards": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/CubeCard"
+                    "$ref": "#/components/schemas/CubeDrawnCard"
                   }
                 }
               }

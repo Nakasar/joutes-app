@@ -3246,6 +3246,19 @@ components:
             Lets the same pack or card entry reach several players. A single
             player never receives the same copy twice, whatever this value.
 
+    CubeDrawnCard:
+      type: object
+      description: >-
+        A card as handed out by a draw. Lighter than CubeCard: the draw only
+        carries the card's identity, not its cube, pack or creation date.
+      properties:
+        id: { type: string, description: Id of the cube's card entry the copy comes from. }
+        cardId: { type: string }
+        name: { type: string }
+        setCode: { type: string }
+        collectorNumber: { type: string }
+        image: { type: string }
+
     CubeDrawnPack:
       type: object
       properties:
@@ -3255,7 +3268,7 @@ components:
         index:
           type: integer
           description: The pack's rank in the cube, used to label unnamed packs.
-        cards: { type: array, items: { $ref: "#/components/schemas/CubeCard" } }
+        cards: { type: array, items: { $ref: "#/components/schemas/CubeDrawnCard" } }
 
     CubeDrawResult:
       type: object
@@ -3268,7 +3281,7 @@ components:
             properties:
               player: { type: integer, description: 1-based position of the player. }
               packs: { type: array, items: { $ref: "#/components/schemas/CubeDrawnPack" } }
-              cards: { type: array, items: { $ref: "#/components/schemas/CubeCard" } }
+              cards: { type: array, items: { $ref: "#/components/schemas/CubeDrawnCard" } }
         shortfalls:
           type: array
           description: >-
