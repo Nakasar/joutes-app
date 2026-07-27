@@ -1481,7 +1481,12 @@
           "nextPage": "Suivant",
           "pageOf": "Page {page} sur {totalPages}",
           "noCardMatchesFilters": "Aucune carte ne correspond aux filtres.",
-          "filteredCount": "{count, plural, =0 {Aucune carte affichée} one {# carte affichée} other {# cartes affichées}}"
+          "filteredCount": "{count, plural, =0 {Aucune carte affichée} one {# carte affichée} other {# cartes affichées}}",
+          "note": "Note",
+          "notePlaceholder": "Où et quand l'avez-vous ouvert, avec qui, ce qu'il contenait d'intéressant…",
+          "noteHint": "Visible uniquement par vous.",
+          "noteError": "La note n'a pas pu être enregistrée. Réessayez.",
+          "saveNote": "Enregistrer la note"
         }
     },
     "Features": {

@@ -308,6 +308,11 @@ export default function BoostersList({
                   <p className="text-xs text-muted-foreground">
                     {DateTime.fromISO(booster.createdAt).setLocale(locale).toLocaleString(DateTime.DATE_MED)}
                   </p>
+                  {booster.note ? (
+                    <p className="mt-1.5 line-clamp-2 text-xs whitespace-pre-line text-muted-foreground" title={booster.note}>
+                      {booster.note}
+                    </p>
+                  ) : null}
                 </div>
               </Link>
               <Button

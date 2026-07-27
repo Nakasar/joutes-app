@@ -56,6 +56,8 @@ export type Booster = {
   type: string;
   id: string;
   cards: BoosterCard[];
+  /** Note libre saisie par le propriétaire du booster. */
+  note?: string;
   value?: string;
   archived: boolean;
   addedToCollection?: boolean;
@@ -68,6 +70,7 @@ export type BoosterDb = {
   setCode: string;
   lang: string;
   type: string;
+  note?: string;
   price?: string;
   archived: boolean;
   addedToCollection?: boolean;

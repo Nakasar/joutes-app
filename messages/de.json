@@ -1397,7 +1397,12 @@
           "nextPage": "Weiter",
           "pageOf": "Seite {page} von {totalPages}",
           "noCardMatchesFilters": "Keine Karte entspricht den Filtern.",
-          "filteredCount": "{count, plural, =0 {Keine Karte angezeigt} one {# Karte angezeigt} other {# Karten angezeigt}}"
+          "filteredCount": "{count, plural, =0 {Keine Karte angezeigt} one {# Karte angezeigt} other {# Karten angezeigt}}",
+          "note": "Notiz",
+          "notePlaceholder": "Wo und wann du ihn geöffnet hast, mit wem, was bemerkenswert war…",
+          "noteHint": "Nur für dich sichtbar.",
+          "noteError": "Die Notiz konnte nicht gespeichert werden. Bitte erneut versuchen.",
+          "saveNote": "Notiz speichern"
         }
     },
     "Features": {

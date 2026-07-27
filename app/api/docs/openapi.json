@@ -1086,6 +1086,7 @@
           "Collection"
         ],
         "summary": "Update a booster's details",
+        "description": "At least one of `type` or `note` must be provided; omitted fields are left unchanged.",
         "security": [
           {
             "sessionAuth": []
@@ -1097,13 +1098,16 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "type"
-                ],
                 "properties": {
                   "type": {
                     "type": "string",
                     "description": "Booster type. Must be one of the types available for the game (`other` is always accepted); any other value is rejected."
+                  },
+                  "note": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 500,
+                    "description": "Free-form note, trimmed before storage. `null` or an empty string clears the existing note."
                   }
                 }
               }
@@ -1122,7 +1126,13 @@
                       "type": "boolean"
                     },
                     "type": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "Present only when the type was updated."
+                    },
+                    "note": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Present only when the note was updated; `null` when it was cleared."
                     }
                   }
                 }
@@ -11797,6 +11807,10 @@
             "items": {
               "$ref": "#/components/schemas/BoosterCard"
             }
+          },
+          "note": {
+            "type": "string",
+            "description": "Free-form note written by the booster's owner."
           },
           "value": {
             "type": "string"
