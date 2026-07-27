@@ -215,6 +215,15 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
               </Link>
             )}
 
+            {game.features?.cubes && (
+              <Link href={`/games/${game.slug}/cubes`} className="group">
+                <div className="bg-gradient-to-br from-teal-900/30 to-teal-800/20 backdrop-blur-sm rounded-xl border border-teal-500/20 p-8 hover:border-teal-500/50 transition-all hover:scale-105">
+                  <h3 className="text-xl font-bold text-white mb-2">{t("detail.toolsCubes.title")}</h3>
+                  <p className="text-gray-300">{t("detail.toolsCubes.description")}</p>
+                </div>
+              </Link>
+            )}
+
             {game.features?.deckChecker && (
               <Link href={`/games/${game.slug}/deck-checker`} className="group">
                 <div className="bg-gradient-to-br from-cyan-900/30 to-cyan-800/20 backdrop-blur-sm rounded-xl border border-cyan-500/20 p-8 hover:border-cyan-500/50 transition-all hover:scale-105">

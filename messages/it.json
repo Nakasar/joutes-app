@@ -261,7 +261,8 @@
       "deckChecker": "Controllo mazzo",
       "loop": "Lente",
       "collection": "Collezione",
-      "scanner": "Scanner"
+      "scanner": "Scanner",
+      "cubes": "Cubi"
     },
     "explorer": {
       "title": "Esplora i giochi",
@@ -351,6 +352,10 @@
         "notFoundTitle": "Gioco non trovato - Joutes",
         "title": "{gameName} - Joutes",
         "ogDescription": "Segui gli eventi di {gameName} intorno a te!"
+      },
+      "toolsCubes": {
+        "title": "Cubi",
+        "description": "Sfoglia i cubi pubblici della community e componi il tuo"
       }
     },
     "cards": {
@@ -840,6 +845,16 @@
         "noErrata": "Nessun errata o chiarimento per questa carta.",
         "viewFullCard": "Vedi la scheda della carta"
       }
+    },
+    "cubes": {
+      "back": "Torna al gioco",
+      "title": "Cubi di {gameName}",
+      "description": "I cubi pubblici condivisi dalla community per {gameName}.",
+      "notFoundTitle": "Gioco non trovato",
+      "notFoundDescription": "I cubi non sono attivi per questo gioco.",
+      "empty": "Nessun cubo pubblico",
+      "emptyDescription": "Nessuno ha ancora condiviso un cubo per questo gioco. Crea il primo.",
+      "signInToCreate": "Accedi per creare un cubo"
     }
   },
   "Login": {

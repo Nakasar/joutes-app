@@ -50,6 +50,13 @@ export async function GameToolsNavBar({gameSlug, currentTab}: { gameSlug: string
             </Link>
           </Button>
         }
+        {game.features?.cubes && currentTab !== 'cubes' &&
+          <Button variant="secondary" asChild>
+            <Link href={`/games/${gameSlug}/cubes`} className="hover:underline">
+              {t("cubes")}
+            </Link>
+          </Button>
+        }
         {game.features?.cards && currentTab !== 'loop' &&
           <Button variant="secondary" asChild>
             <Link href={`/games/${gameSlug}/loop`} className="hover:underline">
@@ -106,6 +113,13 @@ export async function GameToolsNavBar({gameSlug, currentTab}: { gameSlug: string
               <DropdownMenuItem asChild>
                 <Link href={`/games/${gameSlug}/deck-checker`}>
                   {t("deckChecker")}
+                </Link>
+              </DropdownMenuItem>
+            }
+            {game.features?.cubes &&
+              <DropdownMenuItem asChild>
+                <Link href={`/games/${gameSlug}/cubes`}>
+                  {t("cubes")}
                 </Link>
               </DropdownMenuItem>
             }

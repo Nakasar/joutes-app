@@ -95,13 +95,19 @@ export async function getCubesForOwner(ownerId: string): Promise<Cube[]> {
 }
 
 /**
- * Cubes publics, tous propriétaires confondus. Les cubes « non référencés »
- * en sont exclus : c'est précisément ce qui les distingue des publics.
+ * Cubes publics, tous propriétaires confondus, éventuellement restreints à un
+ * jeu. Les cubes « non référencés » en sont exclus : c'est précisément ce qui
+ * les distingue des publics.
  */
-export async function getPublicCubes(limit = 50): Promise<Cube[]> {
+export async function getPublicCubes({ gameId, limit = 50 }: { gameId?: string; limit?: number } = {}): Promise<Cube[]> {
+  const query: Record<string, unknown> = { visibility: "public" };
+  if (gameId) {
+    query.gameId = new ObjectId(gameId);
+  }
+
   const docs = await db
     .collection(CUBES_COLLECTION)
-    .find({ visibility: "public" })
+    .find(query)
     .sort({ updatedAt: -1 })
     .limit(limit)
     .toArray();

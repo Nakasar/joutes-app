@@ -261,7 +261,8 @@
       "deckChecker": "Deck-Checker",
       "loop": "Lupe",
       "collection": "Sammlung",
-      "scanner": "Scanner"
+      "scanner": "Scanner",
+      "cubes": "Cubes"
     },
     "explorer": {
       "title": "Spiele entdecken",
@@ -351,6 +352,10 @@
         "notFoundTitle": "Spiel nicht gefunden - Joutes",
         "title": "{gameName} - Joutes",
         "ogDescription": "Verfolge {gameName} Events in deiner Nähe!"
+      },
+      "toolsCubes": {
+        "title": "Cubes",
+        "description": "Durchstöbere die öffentlichen Cubes der Community und baue deinen eigenen"
       }
     },
     "cards": {
@@ -840,6 +845,16 @@
         "noErrata": "Kein Errata oder Klarstellung für diese Karte.",
         "viewFullCard": "Kartenseite ansehen"
       }
+    },
+    "cubes": {
+      "back": "Zurück zum Spiel",
+      "title": "Cubes für {gameName}",
+      "description": "Öffentliche Cubes, die die Community für {gameName} teilt.",
+      "notFoundTitle": "Spiel nicht gefunden",
+      "notFoundDescription": "Cubes sind für dieses Spiel nicht aktiviert.",
+      "empty": "Kein öffentlicher Cube",
+      "emptyDescription": "Für dieses Spiel wurde noch kein Cube geteilt. Sei die erste Person.",
+      "signInToCreate": "Zum Erstellen eines Cubes anmelden"
     }
   },
   "Login": {

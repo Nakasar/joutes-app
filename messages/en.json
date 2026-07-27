@@ -261,7 +261,8 @@
       "deckChecker": "Deck Verifier",
       "loop": "Magnifier",
       "collection": "My Collection",
-      "scanner": "Scanner"
+      "scanner": "Scanner",
+      "cubes": "Cubes"
     },
     "explorer": {
       "title": "Explore the Games",
@@ -351,6 +352,10 @@
         "notFoundTitle": "Game not found - Joutes",
         "title": "{gameName} - Joutes",
         "ogDescription": "Follow the {gameName} events around you!"
+      },
+      "toolsCubes": {
+        "title": "Cubes",
+        "description": "Browse the community's public cubes and build your own"
       }
     },
     "cards": {
@@ -840,6 +845,16 @@
         "noErrata": "No errata or clarification for this card.",
         "viewFullCard": "View card page"
       }
+    },
+    "cubes": {
+      "back": "Back to the game",
+      "title": "{gameName} cubes",
+      "description": "Public cubes shared by the community for {gameName}.",
+      "notFoundTitle": "Game not found",
+      "notFoundDescription": "Cubes are not enabled for this game.",
+      "empty": "No public cube",
+      "emptyDescription": "Nobody has shared a cube for this game yet. Be the first.",
+      "signInToCreate": "Sign in to create a cube"
     }
   },
   "Login": {
