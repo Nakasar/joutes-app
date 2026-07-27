@@ -2412,6 +2412,10 @@
         "status": "Status"
       }
     },
+    "projection": {
+      "noStandings": "Standings unavailable",
+      "noMatches": "No table in play"
+    },
     "live": {
       "pageTitle": "Talk to the room",
       "pageDescription": "What you send here appears on every player's phone and on the projection screen.",
@@ -2423,6 +2427,14 @@
       "resetTimer": "Reset",
       "tablesReported": "{done} / {total} tables reported",
       "openProjection": "Open fullscreen",
+      "displayError": "Could not change what the screen shows.",
+      "displaysTitle": "Show on screen",
+      "displays": {
+        "timer": "Timer",
+        "announcements": "Announcements",
+        "standings": "Standings",
+        "matches": "Tables"
+      },
       "presets": {
         "fiveMinutes": {
           "label": "5 minutes left",

@@ -48,6 +48,8 @@ export const updateTournamentSchema = z.object({
   // null = détacher le tournoi de son événement (la chaîne vide est refusée).
   eventId: z.string().min(1).nullable().optional(),
   currentPhaseId: z.string().nullable().optional(),
+  // Panneau montré sur l'écran de projection de la salle.
+  liveDisplay: z.enum(["timer", "announcements", "standings", "matches"]).optional(),
   ...tournamentDetailsUpdateShape,
   settings: z
     .object({

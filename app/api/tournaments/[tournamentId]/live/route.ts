@@ -1,11 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getTournamentById, listAnnouncements, TournamentError } from "@/lib/db/tournaments";
+import {
+  getStandings,
+  getTournamentById,
+  listAnnouncements,
+  listMatchesByRound,
+  listPhases,
+  listPlayers,
+  listRounds,
+  TournamentError,
+} from "@/lib/db/tournaments";
+import { resolveCurrentRound, resolveDisplayPhase } from "@/lib/tournaments/current-round";
 import { tournamentErrorResponse } from "../../utils";
 
 /**
- * État « live » d'un tournoi diffusé aux joueurs et à la page timer : annonces
- * et minuteur, avec l'horloge serveur (`serverNow`) pour synchroniser le
- * décompte côté client malgré un éventuel décalage d'horloge. Lecture publique.
+ * État « live » d'un tournoi diffusé aux joueurs, à la page timer et à l'écran
+ * de projection : annonces, minuteur et panneau demandé par l'organisateur,
+ * avec l'horloge serveur (`serverNow`) pour synchroniser le décompte côté
+ * client malgré un éventuel décalage d'horloge. Lecture publique.
+ *
+ * Le classement et la liste des tables ne sont assemblés que lorsque l'écran
+ * les demande : ils coûtent plusieurs lectures, et cet endpoint est interrogé
+ * toutes les quelques secondes par chaque téléphone de la salle.
  */
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ tournamentId: string }> }) {
   try {
@@ -15,9 +30,62 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       throw new TournamentError("not-found", "Tournoi non trouvé");
     }
 
-    const announcements = await listAnnouncements(tournamentId);
+    const display = tournament.liveDisplay ?? "timer";
+    const needsRound = display === "matches" || display === "standings";
+
+    const [announcements, phases, rounds] = await Promise.all([
+      listAnnouncements(tournamentId),
+      needsRound ? listPhases(tournamentId) : Promise.resolve([]),
+      needsRound ? listRounds(tournamentId) : Promise.resolve([]),
+    ]);
+
+    const activePhase = needsRound ? resolveDisplayPhase(phases, tournament.currentPhaseId) : null;
+    const currentRound = needsRound ? resolveCurrentRound(rounds, activePhase?.id) : null;
+
+    let standings: unknown[] | null = null;
+    let matches: unknown[] | null = null;
+
+    if (display === "standings") {
+      const rows = await getStandings(tournamentId, activePhase?.id);
+      standings = rows.map((row, index) => ({
+        rank: index + 1,
+        name: row.discriminator ? `${row.displayName} #${row.discriminator}` : row.displayName,
+        matchPoints: row.matchPoints,
+        record: `${row.wins}-${row.losses}-${row.draws}`,
+        dropped: row.playerStatus === "dropped",
+      }));
+    }
+
+    if (display === "matches" && currentRound) {
+      const [roundMatches, players] = await Promise.all([
+        listMatchesByRound(tournamentId, currentRound.id),
+        listPlayers(tournamentId),
+      ]);
+      const nameById = new Map(
+        players.map((p) => [
+          p.id,
+          p.discriminator ? `${p.displayName} #${p.discriminator}` : p.displayName,
+        ])
+      );
+      matches = roundMatches
+        // Les tables se lisent dans l'ordre de la salle, pas dans l'ordre de
+        // création : un match sans table (BYE) passe en fin de liste.
+        .sort(
+          (a, b) =>
+            (a.tableNumber ?? Number.MAX_SAFE_INTEGER) - (b.tableNumber ?? Number.MAX_SAFE_INTEGER)
+        )
+        .map((match) => ({
+          id: match.id,
+          tableNumber: match.tableNumber ?? null,
+          players: match.players.map((p) => nameById.get(p.playerId) ?? "?"),
+          done: match.status === "completed",
+        }));
+    }
+
     return NextResponse.json({
       name: tournament.name,
+      display,
+      roundNumber: currentRound?.number ?? null,
       // Forme publique minimale : n'expose pas createdBy / tournamentId.
       announcements: announcements.map((a) => ({
         id: a.id,
@@ -26,6 +94,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         createdAt: a.createdAt,
       })),
       timer: tournament.timer ?? null,
+      standings,
+      matches,
       serverNow: new Date().toISOString(),
     });
   } catch (error) {

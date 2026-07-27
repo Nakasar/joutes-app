@@ -2354,6 +2354,10 @@
         "status": "Stato"
       }
     },
+    "projection": {
+      "noStandings": "Classifica non disponibile",
+      "noMatches": "Nessun tavolo in gioco"
+    },
     "live": {
       "pageTitle": "Parlare alla sala",
       "pageDescription": "Ciò che invii qui appare sul telefono di ogni giocatore e sullo schermo di proiezione.",
@@ -2365,6 +2369,14 @@
       "resetTimer": "Reimposta",
       "tablesReported": "{done} / {total} tavoli consegnati",
       "openProjection": "Apri a schermo intero",
+      "displayError": "Impossibile cambiare ciò che mostra lo schermo.",
+      "displaysTitle": "Mostra sullo schermo",
+      "displays": {
+        "timer": "Timer",
+        "announcements": "Annunci",
+        "standings": "Classifica",
+        "matches": "Tavoli"
+      },
       "presets": {
         "fiveMinutes": {
           "label": "5 minuti alla fine",
