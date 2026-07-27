@@ -33,14 +33,14 @@ const DEFAULT_ROUND_SECONDS = 3000;
  */
 export function LiveSection({
   tournamentId,
-  joinCode,
+  liveCode,
   roundNumber,
   reportedMatches,
   totalMatches,
   initialAnnouncements,
 }: {
   tournamentId: string;
-  joinCode: string;
+  liveCode: string;
   roundNumber?: number;
   reportedMatches: number;
   totalMatches: number;
@@ -201,7 +201,7 @@ export function LiveSection({
   // couvrir l'aller-retour.
   const currentDisplay: TournamentLiveDisplay = displayOverride ?? state?.display ?? "timer";
 
-  const projectionPath = `/t/${joinCode}`;
+  const projectionPath = `/t/${liveCode}`;
   const projectionUrl = `joutes.app${projectionPath}`;
 
   return (

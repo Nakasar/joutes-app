@@ -86,6 +86,13 @@ const ACTIVITY_KEEP = 200;
 const joinCodeAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const generateJoinCodeValue = customAlphabet(joinCodeAlphabet, 9);
 
+// Code de l'écran de salle : 6 caractères, sur le même alphabet. La longueur
+// diffère volontairement de celle du code de participation — les deux se
+// résolvent depuis /t/:code, et deux longueurs disjointes garantissent qu'un
+// code ne peut jamais désigner les deux à la fois, sans arbitrage à écrire.
+// Plus court aussi parce qu'il se tape sur la machine du vidéoprojecteur.
+const generateLiveCodeValue = customAlphabet(joinCodeAlphabet, 6);
+
 // Index unique (phase, numéro de ronde) : deux créations de ronde
 // concurrentes ne peuvent pas produire deux rondes portant le même numéro
 // dans une phase — la seconde échoue sur duplicate key (E11000), transformé
@@ -120,6 +127,23 @@ const joinCodeIndexReady = db
     console.error("Impossible de créer l'index unique du code de participation:", error);
   });
 
+// Même garantie pour le code de l'écran de salle, sur les mêmes bases.
+const liveCodeIndexReady = db
+  .collection(TOURNAMENTS)
+  .createIndex(
+    { liveCode: 1 },
+    {
+      unique: true,
+      partialFilterExpression: {
+        liveCode: { $exists: true },
+        status: { $in: ["draft", "in-progress"] },
+      },
+    }
+  )
+  .catch((error) => {
+    console.error("Impossible de créer l'index unique du code d'écran:", error);
+  });
+
 function isDuplicateKeyError(error: unknown): boolean {
   return (
     typeof error === "object" &&
@@ -150,6 +174,7 @@ function toTournament(doc: WithId<TournamentDb>): Tournament {
     status: doc.status,
     currentPhaseId: doc.currentPhaseId,
     joinCode: doc.joinCode,
+    liveCode: doc.liveCode,
     timer: doc.timer,
     liveDisplay: doc.liveDisplay,
     location: doc.location,
@@ -373,6 +398,20 @@ async function generateUniqueJoinCode(): Promise<string> {
   throw new TournamentError("conflict", "Impossible de générer un code de participation unique");
 }
 
+// Code d'écran unique parmi les tournois non terminés. L'espace est plus petit
+// que celui du code de participation (36^6 ≈ 2,2 milliards) : la vérification
+// avant écriture compte donc davantage, et l'index tranche les concurrents.
+async function generateUniqueLiveCode(): Promise<string> {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const code = generateLiveCodeValue();
+    const clash = await db
+      .collection<TournamentDb>(TOURNAMENTS)
+      .findOne({ liveCode: code, status: { $ne: "completed" } });
+    if (!clash) return code;
+  }
+  throw new TournamentError("conflict", "Impossible de générer un code d'écran unique");
+}
+
 export async function createTournament(data: {
   name: string;
   eventId?: string;
@@ -383,7 +422,7 @@ export async function createTournament(data: {
   settings: { allowSelfReporting: boolean; requireConfirmation: boolean; preRegistration: boolean };
   createdBy: string;
 }): Promise<Tournament> {
-  await joinCodeIndexReady;
+  await Promise.all([joinCodeIndexReady, liveCodeIndexReady]);
   // Ré-essaie sur une collision de code (E11000) contre l'index unique partiel :
   // en pratique quasi impossible, mais garantit l'unicité même en concurrence.
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -396,6 +435,7 @@ export async function createTournament(data: {
       capacity: data.capacity,
       status: "draft",
       joinCode: await generateUniqueJoinCode(),
+      liveCode: await generateUniqueLiveCode(),
       settings: data.settings,
       createdBy: data.createdBy,
       organizerIds: [data.createdBy],
@@ -455,6 +495,50 @@ export async function ensureJoinCode(tournamentId: string): Promise<string> {
     }
   }
   throw new TournamentError("conflict", "Impossible de générer un code de participation unique");
+}
+
+// Tournoi portant ce code d'écran, en préférant un tournoi non terminé (le code
+// n'est unique que parmi ceux-là). Même forme que la résolution du code de
+// participation, dont il partage l'alphabet mais pas la longueur.
+export async function getTournamentByLiveCode(code: string): Promise<Tournament | null> {
+  const liveCode = code.trim().toUpperCase();
+  const coll = db.collection<TournamentDb>(TOURNAMENTS);
+  const active = await coll.findOne({ liveCode, status: { $ne: "completed" } });
+  if (active) return toTournament(active);
+  const any = await coll.findOne({ liveCode });
+  return any ? toTournament(any) : null;
+}
+
+// Garantit qu'un tournoi possède un code d'écran (génère et persiste s'il n'en
+// a pas encore — cas des tournois créés avant cette fonctionnalité).
+export async function ensureLiveCode(tournamentId: string): Promise<string> {
+  const _id = parseObjectId(tournamentId, "Tournoi");
+  const coll = db.collection<TournamentDb>(TOURNAMENTS);
+  const doc = await coll.findOne({ _id });
+  if (!doc) throw new TournamentError("not-found", "Tournoi non trouvé");
+  if (doc.liveCode) return doc.liveCode;
+
+  await liveCodeIndexReady;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const code = await generateUniqueLiveCode();
+    try {
+      // Update conditionnel : ne pose le code que s'il est encore absent (évite
+      // d'écraser un code posé par un appel concurrent).
+      const updated = await coll.findOneAndUpdate(
+        { _id, liveCode: { $exists: false } },
+        { $set: { liveCode: code } },
+        { returnDocument: "after" }
+      );
+      if (updated?.liveCode) return updated.liveCode;
+      // Un appel concurrent a déjà posé un code : on le relit.
+      const fresh = await coll.findOne({ _id });
+      if (fresh?.liveCode) return fresh.liveCode;
+    } catch (error) {
+      if (isDuplicateKeyError(error)) continue;
+      throw error;
+    }
+  }
+  throw new TournamentError("conflict", "Impossible de générer un code d'écran unique");
 }
 
 export async function getTournamentById(tournamentId: string): Promise<Tournament | null> {

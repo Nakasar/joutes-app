@@ -67,6 +67,10 @@ export type Tournament = {
   // Code court (9 caractères A-Z0-9) permettant de rejoindre le tournoi via
   // /t/:code/join. Unique parmi les tournois non terminés.
   joinCode?: string;
+  // Code court (6 caractères A-Z0-9) de l'écran de salle, /t/:code. Distinct du
+  // code de participation, et volontairement d'une autre longueur : les deux
+  // vivent sous /t/, une longueur différente rend toute confusion impossible.
+  liveCode?: string;
   // Minuteur diffusé aux joueurs. `endsAt` (instant de fin absolu) n'est
   // présent que lorsque le minuteur tourne. `remainingSeconds` mémorise le
   // temps restant lorsqu'il est en pause (permet la reprise).

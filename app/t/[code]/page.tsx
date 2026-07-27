@@ -1,5 +1,5 @@
-import { notFound } from "next/navigation";
-import { getTournamentByJoinCode } from "@/lib/db/tournaments";
+import { notFound, redirect } from "next/navigation";
+import { getTournamentByJoinCode, getTournamentByLiveCode } from "@/lib/db/tournaments";
 import { ProjectionScreen } from "./ProjectionScreen";
 
 /**
@@ -8,8 +8,10 @@ import { ProjectionScreen } from "./ProjectionScreen";
  * vidéoprojecteur n'a besoin d'aucune session, et le contenu est piloté à
  * distance depuis « Salle & annonces ».
  *
- * Même code court que `/t/:code/join` : l'organisateur n'a qu'un code à
- * communiquer, celui déjà porté par le QR et la carte de participation.
+ * Le code d'écran (6 caractères) est distinct du code de participation
+ * (9 caractères). Les deux se saisissent sous /t/, donc un code de
+ * participation tapé sans `/join` est redirigé plutôt que rejeté : les deux
+ * codes circulent dans la même salle, la confusion est le cas courant.
  */
 export default async function TournamentProjectionPage({
   params,
@@ -18,10 +20,15 @@ export default async function TournamentProjectionPage({
 }) {
   const { code } = await params;
 
-  const tournament = await getTournamentByJoinCode(code);
-  if (!tournament) {
-    notFound();
+  const tournament = await getTournamentByLiveCode(code);
+  if (tournament) {
+    return <ProjectionScreen tournamentId={tournament.id} />;
   }
 
-  return <ProjectionScreen tournamentId={tournament.id} />;
+  const joining = await getTournamentByJoinCode(code);
+  if (joining) {
+    redirect(`/t/${code}/join`);
+  }
+
+  notFound();
 }
