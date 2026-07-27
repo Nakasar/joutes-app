@@ -47,7 +47,7 @@ type Props = {
  * de la liste, il serait recréé — et la grille de cubes remontée — à chaque
  * frappe dans le formulaire de création.
  */
-function CubeCard({ cube }: { cube: Cube }) {
+export function CubeCard({ cube }: { cube: Cube }) {
   const t = useTranslations("Cubes");
   const locale = useLocale();
 

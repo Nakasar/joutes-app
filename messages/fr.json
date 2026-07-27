@@ -261,7 +261,8 @@
       "deckChecker": "Vérificateur de Deck",
       "loop": "Loupe",
       "collection": "Ma collection",
-      "scanner": "Scanner"
+      "scanner": "Scanner",
+      "cubes": "Cubes"
     },
     "explorer": {
       "title": "Explorez les jeux",
@@ -351,6 +352,10 @@
         "notFoundTitle": "Jeu non trouvé - Joutes",
         "title": "{gameName} - Joutes",
         "ogDescription": "Suivez les événements {gameName} autour de vous !"
+      },
+      "toolsCubes": {
+        "title": "Cubes",
+        "description": "Parcourez les cubes publics de la communauté et composez le vôtre"
       }
     },
     "cards": {
@@ -841,6 +846,16 @@
         "noErrata": "Aucun errata ou clarification pour cette carte.",
         "viewFullCard": "Voir la fiche de la carte"
       }
+    },
+    "cubes": {
+      "back": "Retour au jeu",
+      "title": "Cubes de {gameName}",
+      "description": "Les cubes publics partagés par la communauté pour {gameName}.",
+      "notFoundTitle": "Jeu non trouvé",
+      "notFoundDescription": "Le jeu que vous recherchez n'existe pas ou ne propose pas de cubes sur Joutes.",
+      "empty": "Aucun cube public",
+      "emptyDescription": "Personne n'a encore partagé de cube pour ce jeu. Créez le premier.",
+      "signInToCreate": "Connectez-vous pour créer un cube"
     }
   },
   "Login": {
