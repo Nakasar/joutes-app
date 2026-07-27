@@ -1480,7 +1480,12 @@
           "nextPage": "Next",
           "pageOf": "Page {page} of {totalPages}",
           "noCardMatchesFilters": "No card matches the filters.",
-          "filteredCount": "{count, plural, =0 {No card shown} one {# card shown} other {# cards shown}}"
+          "filteredCount": "{count, plural, =0 {No card shown} one {# card shown} other {# cards shown}}",
+          "note": "Note",
+          "notePlaceholder": "Where and when you opened it, who you were with, anything worth remembering…",
+          "noteHint": "Only visible to you.",
+          "noteError": "The note could not be saved. Please try again.",
+          "saveNote": "Save note"
         }
     },
     "Features": {

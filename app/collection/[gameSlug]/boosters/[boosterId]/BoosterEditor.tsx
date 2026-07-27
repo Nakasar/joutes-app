@@ -19,10 +19,13 @@ import {
   Undo2,
   ArrowDownWideNarrow,
   ArrowUpNarrowWide,
+  NotebookPen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -32,6 +35,7 @@ import {
 } from "@/components/ui/select";
 import type { Booster, BoosterCard } from "@/lib/types/booster";
 import { getBoosterTypeOptions, normalizeBoosterType } from "@/lib/constants/booster-types";
+import { BOOSTER_NOTE_MAX_LENGTH } from "@/lib/constants/boosters";
 import { useBoosterTypeLabel } from "../useBoosterTypeLabel";
 
 const LANG_LABELS: Record<string, string> = {
@@ -122,6 +126,10 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
   const [busyCollection, setBusyCollection] = useState(false);
   const [boosterType, setBoosterType] = useState(normalizeBoosterType(initialBooster.type));
   const [savingBoosterType, setSavingBoosterType] = useState(false);
+  const [note, setNote] = useState(initialBooster.note ?? "");
+  const [savedNote, setSavedNote] = useState(initialBooster.note ?? "");
+  const [savingNote, setSavingNote] = useState(false);
+  const [noteError, setNoteError] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string>(ALL);
   const [domainFilter, setDomainFilter] = useState<string>(ALL);
   const [sortKey, setSortKey] = useState<SortKey>("default");
@@ -312,6 +320,33 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
     }
   };
 
+  // La note est enregistrée explicitement : contrairement au type, le texte saisi
+  // n'est pas restauré en cas d'échec, pour ne pas faire perdre la saisie.
+  const saveNote = async () => {
+    const trimmed = note.trim();
+    setSavingNote(true);
+    setNoteError(false);
+    try {
+      const res = await fetch(`/api/collection/boosters/${booster.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note: trimmed }),
+      });
+      if (res.ok) {
+        setNote(trimmed);
+        setSavedNote(trimmed);
+      } else {
+        setNoteError(true);
+      }
+    } catch {
+      setNoteError(true);
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
+  const noteDirty = note.trim() !== savedNote;
+
   const createSibling = async () => {
     setCreatingSibling(true);
     try {
@@ -496,6 +531,55 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
           </div>
         </div>
       </div>
+
+      {/* Note libre du booster */}
+      <section className="space-y-2 rounded-xl border bg-card p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <NotebookPen className="size-4 text-muted-foreground" />
+          <Label htmlFor="booster-note" className="text-sm font-semibold">{t("boosters.note")}</Label>
+          <span className="ml-auto text-xs tabular-nums text-muted-foreground">
+            {note.length}/{BOOSTER_NOTE_MAX_LENGTH}
+          </span>
+        </div>
+        <Textarea
+          id="booster-note"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          maxLength={BOOSTER_NOTE_MAX_LENGTH}
+          rows={3}
+          placeholder={t("boosters.notePlaceholder")}
+          aria-describedby="booster-note-hint"
+        />
+        <div className="flex flex-wrap items-center gap-2">
+          <p id="booster-note-hint" className="text-xs text-muted-foreground">
+            {noteError ? (
+              <span className="text-destructive">{t("boosters.noteError")}</span>
+            ) : (
+              t("boosters.noteHint")
+            )}
+          </p>
+          <div className="ml-auto flex items-center gap-2">
+            {noteDirty ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={savingNote}
+                onClick={() => {
+                  setNote(savedNote);
+                  setNoteError(false);
+                }}
+              >
+                {t("boosters.cancel")}
+              </Button>
+            ) : null}
+            <Button type="button" size="sm" className="gap-2" onClick={saveNote} disabled={savingNote || !noteDirty}>
+              {savingNote ? <Loader2 className="size-4 animate-spin" /> : null}
+              {t("boosters.saveNote")}
+            </Button>
+          </div>
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
         {/* Booster contents */}

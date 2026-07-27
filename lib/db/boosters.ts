@@ -104,11 +104,36 @@ export async function createBooster(booster: Omit<Booster, 'id' | 'createdAt'>):
   };
 }
 
-/** Modification des détails d'un booster (seul le type est éditable pour l'instant). */
-export async function updateBooster(boosterId: string, details: { type: string }): Promise<void> {
+/**
+ * Modification des détails d'un booster. Seuls les champs fournis sont touchés :
+ * une note à `null` est effacée du document plutôt que stockée vide, pour que
+ * les boosters sans note restent tous équivalents.
+ */
+export async function updateBooster(boosterId: string, details: { type?: string; note?: string | null }): Promise<void> {
+  const set: Record<string, unknown> = {};
+  const unset: Record<string, ''> = {};
+
+  if (details.type !== undefined) {
+    set.type = details.type;
+  }
+  if (details.note !== undefined) {
+    if (details.note === null) {
+      unset.note = '';
+    } else {
+      set.note = details.note;
+    }
+  }
+
+  if (Object.keys(set).length === 0 && Object.keys(unset).length === 0) {
+    return;
+  }
+
   await db.collection<BoosterDb>('boosters').updateOne(
     {_id: new ObjectId(boosterId)},
-    {$set: {type: details.type}},
+    {
+      ...(Object.keys(set).length > 0 ? {$set: set} : {}),
+      ...(Object.keys(unset).length > 0 ? {$unset: unset} : {}),
+    },
   );
 }
 
@@ -198,6 +223,7 @@ export async function getBoosters({userId, gameId, type, page = 0, limit = 20, o
     lang: booster.lang,
     type: booster.type,
     cards: booster.cards,
+    note: booster.note,
     value: booster.price,
     archived: booster.archived,
     addedToCollection: booster.addedToCollection ?? false,
@@ -244,6 +270,7 @@ export async function getBooster(boosterId: string): Promise<Booster | null> {
     lang: booster.lang,
     type: booster.type,
     cards: boosterCards,
+    note: booster.note,
     value: booster.price,
     archived: booster.archived,
     addedToCollection: booster.addedToCollection ?? false,

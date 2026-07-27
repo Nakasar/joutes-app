@@ -1422,7 +1422,12 @@
           "nextPage": "Successiva",
           "pageOf": "Pagina {page} di {totalPages}",
           "noCardMatchesFilters": "Nessuna carta corrisponde ai filtri.",
-          "filteredCount": "{count, plural, =0 {Nessuna carta mostrata} one {# carta mostrata} other {# carte mostrate}}"
+          "filteredCount": "{count, plural, =0 {Nessuna carta mostrata} one {# carta mostrata} other {# carte mostrate}}",
+          "note": "Nota",
+          "notePlaceholder": "Dove e quando l'hai aperto, con chi, cosa conteneva di interessante…",
+          "noteHint": "Visibile solo a te.",
+          "noteError": "Impossibile salvare la nota. Riprova.",
+          "saveNote": "Salva la nota"
         }
     },
     "Features": {
