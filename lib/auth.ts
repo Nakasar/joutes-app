@@ -93,10 +93,10 @@ export const auth = betterAuth({
 			"joutes.app",
 			"*.joutes.app",
 			"*.vercel.app",
-      process.env.BETTER_AUTH_URL,
-      process.env.NEXT_PUBLIC_BASE_URL,
+      process.env.BETTER_AUTH_URL ?? 'joutes.app',
+      process.env.NEXT_PUBLIC_BASE_URL ?? 'joutes.app',
 		],
-		protocol: "https",
+		protocol: process.env.NODE_ENV === "development" ? "http" : "https",
 		fallback: "https://www.joutes.app",
   },
 });
