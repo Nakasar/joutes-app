@@ -54,12 +54,23 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const validated = updateTournamentPlayerSchema.parse(body);
 
     if (principalCanManage(tournament, principal)) {
+      // Le statut d'avant n'est lu que pour distinguer une réinscription d'une
+      // simple confirmation de pré-inscription, qui ne se journalise pas.
+      const before =
+        validated.status === "registered"
+          ? await getPlayerById(tournamentId, playerId)
+          : null;
       const player = await updatePlayer(tournamentId, playerId, validated);
       if (validated.checkedIn === true) {
         await recordActivity(tournamentId, "player-checked-in", { player: player.displayName });
       }
       if (validated.status === "dropped") {
         await recordActivity(tournamentId, "player-dropped", { player: player.displayName });
+      }
+      // Un retour dans le tournoi se journalise comme le départ : sinon le
+      // journal laisse croire que le joueur est encore retiré.
+      if (validated.status === "registered" && before?.status === "dropped") {
+        await recordActivity(tournamentId, "player-reregistered", { player: player.displayName });
       }
       return NextResponse.json(player);
     }

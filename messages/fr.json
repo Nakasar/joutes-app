@@ -2450,6 +2450,7 @@
         "phase-advanced": "Phase suivante lancée · {matches} tables",
         "player-checked-in": "{player} pointé présent",
         "player-dropped": "{player} retiré du tournoi",
+        "player-reregistered": "{player} réintégré au tournoi",
         "penalty-issued": "Sanction infligée à {player}"
       }
     },
@@ -2458,6 +2459,8 @@
       "summaryWithRank": "{rank}e · {points} pts · {record}",
       "summaryNoRank": "Pas encore classé",
       "dropPlayer": "Faire abandonner",
+      "reregisterPlayer": "Réintégrer au tournoi",
+      "fixedTableLabel": "Table fixe",
       "addPenalty": "Attribuer une pénalité",
       "add": "Ajouter",
       "remove": "Retirer",
