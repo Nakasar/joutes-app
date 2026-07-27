@@ -2727,11 +2727,8 @@
     "emptyPack": "Ce paquet ne contient aucune carte.",
     "emptyPackEditable": "Ce paquet est vide. Recherchez des cartes à y ajouter.",
     "addCards": "Ajouter des cartes",
-    "addCardsHint": "Chaque carte choisie est ajoutée immédiatement ; la même carte peut être ajoutée plusieurs fois.",
-    "addingCard": "Ajout en cours…",
     "searchCardPlaceholder": "Rechercher une carte…",
     "noCardFound": "Aucune carte trouvée.",
-    "searching": "Recherche…",
     "removeCard": "Retirer {name}",
     "confirmDeleteCubeTitle": "Supprimer ce cube ?",
     "confirmDeleteCubeDescription": "« {name} » et ses {count, plural, =0 {paquets} one {# carte} other {# cartes}} seront définitivement supprimés.",
@@ -2829,6 +2826,16 @@
       "shortfallPacks": "Paquets : {provided} distribués sur {requested} demandés.",
       "shortfallCards": "Cartes : {provided} distribuées sur {requested} demandées.",
       "shortfallRule": "« {value} » : {provided} cartes sur {requested} demandées."
-    }
+    },
+    "distinctCardCount": "{count, plural, one {# carte distincte} other {# cartes distinctes}}",
+    "increaseQuantity": "Ajouter un exemplaire de {name}",
+    "decreaseQuantity": "Retirer un exemplaire de {name}",
+    "addCard": "Ajouter {name}",
+    "filterBySet": "Filtrer par extension",
+    "allSets": "Toutes les extensions",
+    "searchHint": "Astuce : « e:OGN » filtre l'extension, « cn:001 » filtre le numéro.",
+    "previousPage": "Précédent",
+    "nextPage": "Suivant",
+    "pageOf": "Page {page} sur {totalPages}"
   }
 }

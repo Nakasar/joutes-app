@@ -7,8 +7,9 @@ import {
   getCubeById,
   getCubePack,
   removeCardFromCubePack,
+  setCubeCardQuantity,
 } from "@/lib/db/cubes";
-import { cubeCardSchema } from "@/lib/schemas/cube.schema";
+import { cubeCardQuantitySchema, cubeCardSchema } from "@/lib/schemas/cube.schema";
 
 async function editablePack(cubeId: string, packId: string, userId?: string) {
   if (!userId) {
@@ -48,6 +49,40 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const card = await addCardToCubePack(cubeId, packId, validation.data);
   return NextResponse.json(card, { status: 201 });
+}
+
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ cubeId: string; packId: string }> }) {
+  const { cubeId, packId } = await params;
+  const session = await auth.api.getSession({ headers: await headers() });
+
+  const { error } = await editablePack(cubeId, packId, session?.user?.id);
+  if (error) {
+    return error;
+  }
+
+  const body = await request.json().catch(() => null);
+  const validation = cubeCardQuantitySchema.safeParse(body);
+  if (!validation.success) {
+    return NextResponse.json(
+      { error: validation.error.issues[0]?.message || "Données invalides" },
+      { status: 400 },
+    );
+  }
+
+  const { quantity, ...card } = validation.data;
+  const cards = await setCubeCardQuantity(cubeId, packId, card, quantity);
+
+  return NextResponse.json({
+    // Le paquet complet évite au client de recalculer les exemplaires restants.
+    cards: cards.map(({ id, cardId, name, setCode, collectorNumber, image }) => ({
+      id,
+      cardId,
+      name,
+      setCode,
+      collectorNumber,
+      image,
+    })),
+  });
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ cubeId: string; packId: string }> }) {

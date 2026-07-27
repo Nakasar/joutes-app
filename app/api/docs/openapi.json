@@ -2099,6 +2099,87 @@
           }
         }
       },
+      "put": {
+        "tags": [
+          "Cubes"
+        ],
+        "summary": "Set how many copies of a card a pack holds",
+        "description": "Reconciles the pack with the wanted quantity by adding or removing entries, rather than clearing and reinserting them. A quantity of 0 removes the card from the pack. Copies are matched by `cardId`.",
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "cardId",
+                  "name",
+                  "setCode",
+                  "collectorNumber",
+                  "image",
+                  "quantity"
+                ],
+                "properties": {
+                  "cardId": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "setCode": {
+                    "type": "string"
+                  },
+                  "collectorNumber": {
+                    "type": "string"
+                  },
+                  "image": {
+                    "type": "string"
+                  },
+                  "quantity": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 99
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The pack's cards after the change, one entry per copy.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "cards": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CubeDrawnCard"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
       "delete": {
         "tags": [
           "Cubes"

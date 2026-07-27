@@ -2726,11 +2726,8 @@
     "emptyPack": "This pack has no card.",
     "emptyPackEditable": "This pack is empty. Search for cards to add.",
     "addCards": "Add cards",
-    "addCardsHint": "Every card you pick is added right away; the same card can be added several times.",
-    "addingCard": "Adding…",
     "searchCardPlaceholder": "Search for a card…",
     "noCardFound": "No card found.",
-    "searching": "Searching…",
     "removeCard": "Remove {name}",
     "confirmDeleteCubeTitle": "Delete this cube?",
     "confirmDeleteCubeDescription": "“{name}” and its {count, plural, =0 {packs} one {# card} other {# cards}} will be permanently deleted.",
@@ -2828,6 +2825,16 @@
       "shortfallPacks": "Packs: {provided} handed out of {requested} requested.",
       "shortfallCards": "Cards: {provided} handed out of {requested} requested.",
       "shortfallRule": "“{value}”: {provided} cards out of {requested} requested."
-    }
+    },
+    "distinctCardCount": "{count, plural, one {# distinct card} other {# distinct cards}}",
+    "increaseQuantity": "Add a copy of {name}",
+    "decreaseQuantity": "Remove a copy of {name}",
+    "addCard": "Add {name}",
+    "filterBySet": "Filter by set",
+    "allSets": "All sets",
+    "searchHint": "Tip: “e:OGN” filters the set, “cn:001” filters the number.",
+    "previousPage": "Previous",
+    "nextPage": "Next",
+    "pageOf": "Page {page} of {totalPages}"
   }
 }

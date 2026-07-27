@@ -5,6 +5,7 @@ import {
   CUBE_DRAW_MAX_PLAYERS,
   CUBE_DRAW_MAX_RULES,
   CUBE_DRAW_MIN_PLAYERS,
+  CUBE_PACK_CARD_MAX_QUANTITY,
 } from "@/lib/constants/cubes";
 
 export const cubeVisibilitySchema = z.enum(["private", "unlisted", "public"]);
@@ -68,6 +69,11 @@ export const cubeCardSchema = z.strictObject({
   setCode: z.string().min(1).max(100),
   collectorNumber: z.string().min(1).max(100),
   image: z.string(),
+});
+
+/** Quantité visée pour une carte dans un paquet ; zéro la retire entièrement. */
+export const cubeCardQuantitySchema = cubeCardSchema.extend({
+  quantity: z.number().int().min(0).max(CUBE_PACK_CARD_MAX_QUANTITY),
 });
 
 export const cubeIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID du cube doit être un ObjectId MongoDB valide");

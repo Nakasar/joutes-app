@@ -2668,11 +2668,8 @@
     "emptyPack": "Questo pacchetto non contiene carte.",
     "emptyPackEditable": "Questo pacchetto è vuoto. Cerca delle carte da aggiungere.",
     "addCards": "Aggiungi carte",
-    "addCardsHint": "Ogni carta scelta viene aggiunta subito; la stessa carta può essere aggiunta più volte.",
-    "addingCard": "Aggiunta in corso…",
     "searchCardPlaceholder": "Cerca una carta…",
     "noCardFound": "Nessuna carta trovata.",
-    "searching": "Ricerca in corso…",
     "removeCard": "Rimuovi {name}",
     "confirmDeleteCubeTitle": "Eliminare questo cubo?",
     "confirmDeleteCubeDescription": "“{name}” e {count, plural, =0 {i suoi pacchetti} one {# carta} other {# carte}} saranno eliminati definitivamente.",
@@ -2770,6 +2767,16 @@
       "shortfallPacks": "Pacchetti: {provided} distribuiti su {requested} richiesti.",
       "shortfallCards": "Carte: {provided} distribuite su {requested} richieste.",
       "shortfallRule": "“{value}”: {provided} carte su {requested} richieste."
-    }
+    },
+    "distinctCardCount": "{count, plural, one {# carta distinta} other {# carte distinte}}",
+    "increaseQuantity": "Aggiungi una copia di {name}",
+    "decreaseQuantity": "Rimuovi una copia di {name}",
+    "addCard": "Aggiungi {name}",
+    "filterBySet": "Filtra per espansione",
+    "allSets": "Tutte le espansioni",
+    "searchHint": "Suggerimento: “e:OGN” filtra l'espansione, “cn:001” il numero.",
+    "previousPage": "Precedente",
+    "nextPage": "Successivo",
+    "pageOf": "Pagina {page} di {totalPages}"
   }
 }

@@ -2643,11 +2643,8 @@
     "emptyPack": "Dieses Pack enthält keine Karte.",
     "emptyPackEditable": "Dieses Pack ist leer. Suche nach Karten zum Hinzufügen.",
     "addCards": "Karten hinzufügen",
-    "addCardsHint": "Jede ausgewählte Karte wird sofort hinzugefügt; dieselbe Karte kann mehrfach hinzugefügt werden.",
-    "addingCard": "Wird hinzugefügt…",
     "searchCardPlaceholder": "Nach einer Karte suchen…",
     "noCardFound": "Keine Karte gefunden.",
-    "searching": "Suche läuft…",
     "removeCard": "{name} entfernen",
     "confirmDeleteCubeTitle": "Diesen Cube löschen?",
     "confirmDeleteCubeDescription": "„{name}“ und {count, plural, =0 {seine Packs} one {# Karte} other {# Karten}} werden endgültig gelöscht.",
@@ -2745,6 +2742,16 @@
       "shortfallPacks": "Packs: {provided} von {requested} angeforderten verteilt.",
       "shortfallCards": "Karten: {provided} von {requested} angeforderten verteilt.",
       "shortfallRule": "„{value}“: {provided} von {requested} angeforderten Karten."
-    }
+    },
+    "distinctCardCount": "{count, plural, one {# verschiedene Karte} other {# verschiedene Karten}}",
+    "increaseQuantity": "Ein Exemplar von {name} hinzufügen",
+    "decreaseQuantity": "Ein Exemplar von {name} entfernen",
+    "addCard": "{name} hinzufügen",
+    "filterBySet": "Nach Edition filtern",
+    "allSets": "Alle Editionen",
+    "searchHint": "Tipp: „e:OGN“ filtert die Edition, „cn:001“ die Nummer.",
+    "previousPage": "Zurück",
+    "nextPage": "Weiter",
+    "pageOf": "Seite {page} von {totalPages}"
   }
 }

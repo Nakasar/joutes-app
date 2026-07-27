@@ -20,3 +20,6 @@ export const CUBE_DRAW_MAX_RULES = 12;
 /** Bornes du nombre de joueurs d'un tirage, côté saisie comme côté serveur. */
 export const CUBE_DRAW_MIN_PLAYERS = 1;
 export const CUBE_DRAW_MAX_PLAYERS = 16;
+
+/** Exemplaires d'une même carte dans un paquet, borne partagée saisie/serveur. */
+export const CUBE_PACK_CARD_MAX_QUANTITY = 99;

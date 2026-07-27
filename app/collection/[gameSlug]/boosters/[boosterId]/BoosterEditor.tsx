@@ -36,6 +36,7 @@ import {
 import type { Booster, BoosterCard } from "@/lib/types/booster";
 import { getBoosterTypeOptions, normalizeBoosterType } from "@/lib/constants/booster-types";
 import { BOOSTER_NOTE_MAX_LENGTH } from "@/lib/constants/boosters";
+import { parseCardSearch } from "@/lib/cards/search-query";
 import { useBoosterTypeLabel } from "../useBoosterTypeLabel";
 
 const LANG_LABELS: Record<string, string> = {
@@ -67,35 +68,6 @@ function compareCards(a: BoosterCard, b: BoosterCard, key: SortKey): number {
     default:
       return 0;
   }
-}
-
-/** Parse in-bar special filters: `e:XXX` / `set:XXX` -> set, `cn:000a` -> collector number. */
-function parseSearch(raw: string): { setCode: string | null; cn: string | null; lang: string | null; text: string } {
-  let text = ` ${raw} `;
-  let setCode: string | null = null;
-  let cn: string | null = null;
-  let lang: string | null = null;
-  const e = text.match(/(?:^|\s)(?:e|set):([\w*]+)/i);
-  if (e) {
-    setCode = e[1].toUpperCase();
-    text = text.replace(e[0], " ");
-  }
-  const c = text.match(/(?:^|\s)cn:([\w*]+)/i);
-  if (c) {
-    cn = c[1];
-    text = text.replace(c[0], " ");
-  }
-  const l = text.match(/(?:^|\s)lang:([\w*]+)/i);
-  if (l) {
-    lang = l[1];
-    text = text.replace(l[0], " ");
-  }
-  const trimmed = text.trim();
-  // A bare number is treated as a collector-number filter.
-  if (!cn && /^\d+$/.test(trimmed)) {
-    return { setCode, cn: trimmed, lang, text: "" };
-  }
-  return { setCode, cn, lang, text: trimmed };
 }
 
 type Props = {
@@ -173,8 +145,12 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
       } catch (error) {
         if (!controller.signal.aborted) console.error("Card search failed:", error);
       } finally {
-        if (pendingKeyRef.current === key) pendingKeyRef.current = null;
-        setLoading(false);
+        // Une requête annulée passe aussi par ici : sans ce garde, elle
+        // éteindrait le chargement de celle qui l'a remplacée.
+        if (pendingKeyRef.current === key) {
+          pendingKeyRef.current = null;
+          setLoading(false);
+        }
       }
     },
     [gameSlug, booster.lang]
@@ -182,7 +158,7 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
 
   // Debounced search; special filters in the bar drive the set dropdown + collector-number filter.
   useEffect(() => {
-    const parsed = parseSearch(rawQuery);
+    const parsed = parseCardSearch(rawQuery);
     if (parsed.setCode && parsed.setCode !== selectedSet) {
       setSelectedSet(parsed.setCode);
     }
@@ -195,7 +171,7 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
 
   const goToPage = (next: number) => {
     if (next < 1 || next > totalPages || loading) return;
-    const parsed = parseSearch(rawQuery);
+    const parsed = parseCardSearch(rawQuery);
     const effectiveSet = parsed.setCode ?? selectedSet;
     const searchText = [parsed.text, parsed.cn ? `cn:${parsed.cn}` : ""].filter(Boolean).join(" ");
     void fetchResults(searchText, effectiveSet, parsed.lang ?? booster.lang, next);

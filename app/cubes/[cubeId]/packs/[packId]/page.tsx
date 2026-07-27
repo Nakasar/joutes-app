@@ -45,7 +45,16 @@ export default async function CubePackPage({
         cube={cube}
         pack={pack}
         packLabel={packLabel}
-        initialCards={cards}
+        // L'éditeur n'affiche que l'identité des cartes : la date de création
+        // reste côté serveur plutôt que de traverser sous deux formes.
+        initialCards={cards.map(({ id, cardId, name, setCode, collectorNumber, image }) => ({
+          id,
+          cardId,
+          name,
+          setCode,
+          collectorNumber,
+          image,
+        }))}
         canEdit={access.canEdit}
       />
     </div>
