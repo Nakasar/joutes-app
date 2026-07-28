@@ -15,7 +15,6 @@ type GroupMember = {
     id: string;
     username?: string;
     displayName?: string;
-    email?: string;
     avatar?: string;
   } | null;
 };
@@ -167,7 +166,7 @@ export default function PlayGroupMembersClient() {
         {!loading && data?.members.length === 0 ? <p className="mt-4 text-sm text-muted-foreground">{t("page.noMembers")}</p> : null}
         <div className="mt-4 space-y-3">
           {data?.members.map((member) => {
-            const displayName = member.user?.displayName || member.user?.username || member.user?.email || member.userId;
+            const displayName = member.user?.displayName || member.user?.username || member.userId;
             return (
               <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between" key={member.userId}>
                 <div>

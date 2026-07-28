@@ -17,7 +17,6 @@ type PlayGroupMember = {
     id: string;
     username?: string;
     displayName?: string;
-    email?: string;
     avatar?: string;
   } | null;
 };
@@ -118,7 +117,7 @@ export default function PlayGroupPortalClient() {
             </div>
             <div className="mt-4 space-y-3">
               {group.members.map((member) => {
-                const displayName = member.user?.displayName || member.user?.username || member.user?.email || member.userId;
+                const displayName = member.user?.displayName || member.user?.username || member.userId;
                 return (
                   <div className="rounded-lg border p-3" key={member.userId}>
                     <p className="font-medium">{displayName}</p>
