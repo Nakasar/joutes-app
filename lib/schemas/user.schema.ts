@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { httpUrlSchema } from "./url.schema";
+
 // Schéma pour le nom d'utilisateur (displayName)
 // Le nom d'utilisateur doit contenir uniquement des lettres, chiffres, underscores et tirets
 // Il doit faire entre 3 et 20 caractères
@@ -38,16 +40,12 @@ export const descriptionSchema = z
   .optional();
 
 // Schéma pour le site web
-export const websiteSchema = z
-  .string()
-  .url("L'URL du site web n'est pas valide")
+export const websiteSchema = httpUrlSchema("L'URL du site web n'est pas valide")
   .optional()
   .or(z.literal(""));
 
 // Schéma pour un lien de réseau social
-export const socialLinkSchema = z
-  .string()
-  .url("L'URL n'est pas valide");
+export const socialLinkSchema = httpUrlSchema();
 
 // Schéma pour la mise à jour des informations du profil
 export const updateProfileInfoSchema = z.object({

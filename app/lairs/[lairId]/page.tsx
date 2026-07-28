@@ -18,6 +18,7 @@ import EventsCalendarClient from "@/components/EventsCalendarClient";
 import EventsAgendaList from "./EventsAgendaList";
 import EventsConferenceView from "./EventsConferenceView";
 import { getTranslations } from "next-intl/server";
+import { safeExternalUrl } from "@/lib/utils";
 
 export async function generateMetadata({
   params
@@ -64,6 +65,10 @@ export default async function LairDetailPage({
   if (!lair) {
     notFound();
   }
+
+  // Filtre le schéma d'URI : une valeur `javascript:` enregistrée avant la
+  // validation du formulaire ne doit pas atterrir dans un `href`.
+  const safeWebsite = safeExternalUrl(lair.website);
 
   // Vérifier si l'utilisateur est connecté et s'il suit ce lair
   const session = await auth.api.getSession({
@@ -161,16 +166,16 @@ export default async function LairDetailPage({
                   <span className="text-sm">{lair.address}</span>
                 </div>
               )}
-              {lair.website && (
+              {safeWebsite && (
                 <div className="flex items-start gap-3">
                   <span className="text-sm font-medium text-muted-foreground min-w-[100px]">{t("detail.website")}</span>
                   <a
-                    href={lair.website}
+                    href={safeWebsite}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-primary hover:underline"
                   >
-                    {lair.website}
+                    {safeWebsite}
                   </a>
                 </div>
               )}
