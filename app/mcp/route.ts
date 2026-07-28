@@ -257,7 +257,6 @@ async function handleCreateEvent(argsRaw: Record<string, unknown>, extra: Reques
 
 async function handleFollowLair(argsRaw: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>): Promise<{ content: TextContent[]; isError?: boolean }> {
     try {
-        console.info(extra.authInfo);
         const userId: string = extra.authInfo?.extra?.userId as string;
 
         if (!userId) {
@@ -720,7 +719,6 @@ async function authHandler(req: Request) {
                     };
                 }
             } else {
-                console.log(accessToken);
                 const payload = await serverClient.verifyAccessToken(
                     accessToken, {
                     jwksUrl: "https://www.joutes.app/api/auth/jwks",
