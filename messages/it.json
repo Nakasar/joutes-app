@@ -2486,6 +2486,7 @@
       "decklistPlaceholder": "Incolla la lista, un link Piltover Archive o un codice mazzo",
       "decklistPlaceholderRaw": "Incolla la lista del mazzo",
       "decklistNoParsing": "La lista sarà conservata così com'è: questo gioco non permette di analizzarla.",
+      "decklistResolvedNotice": "Un link o un codice viene sostituito dalla lista delle carte recuperate al salvataggio.",
       "decklistGameUnsupported": "Il gioco di questo torneo non permette di analizzare le liste: saranno conservate così come inserite.",
       "decklistNoGame": "Associa un gioco al torneo perché le liste vengano analizzate.",
       "decklistViewList": "Lista",
