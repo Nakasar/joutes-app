@@ -190,9 +190,9 @@ export type TournamentParsedDecklist = {
   bannedCards: number;
 };
 
-// Réponse à un champ « decklist ». `input` est toujours conservé tel que le
-// joueur l'a saisi (texte, lien Piltover Archive ou code) ; l'analyse n'est
-// tentée que si le jeu du tournoi la supporte.
+// Réponse à un champ « decklist ». L'analyse n'est tentée que si le jeu du
+// tournoi la supporte : sinon la saisie est conservée telle quelle, quel qu'en
+// soit le format.
 export type TournamentFormDecklistAnswer = {
   // Contenu retenu comme réponse. Une liste écrite est conservée telle quelle ;
   // un lien ou un code est remplacé par les cartes récupérées, sauf si la

@@ -11,6 +11,7 @@ import {
   getDeckFromPiltoverCode,
   validateDeckList,
   type DeckList,
+  type DeckListCard,
 } from "@/app/games/riftbound/deck-checker/action";
 import { parseDeckList, stringifyDeckList } from "@/app/games/riftbound/deck-checker/utils";
 
@@ -118,7 +119,7 @@ export async function parseDecklistAnswer(
       fetched = false;
     }
 
-    const validated = await validateDeckList(deck);
+    const validated = await validateDeckList(fetched ? sortDeckList(deck) : deck);
     // Un deck récupéré vide ne remplace rien : sans cartes à mettre à la place,
     // garder le lien ou le code laisse au moins de quoi retrouver la liste.
     const content = fetched ? stringifyDeckList(validated) : trimmed;
@@ -136,6 +137,25 @@ export async function parseDecklistAnswer(
       parsedAt: new Date(),
     };
   }
+}
+
+/**
+ * Range les cartes d'un deck récupéré par nom, section par section. Le contenu
+ * enregistré ne doit pas dépendre de l'ordre dans lequel la source a renvoyé
+ * les cartes : sans cela, un deck inchangé renvoyé dans un autre ordre passerait
+ * pour une réponse modifiée. Une liste écrite par le joueur garde son ordre :
+ * c'est son classement, il n'y a rien à canoniser.
+ */
+function sortDeckList(deck: DeckList): DeckList {
+  const byName = (a: DeckListCard, b: DeckListCard) => a.name.localeCompare(b.name, "en");
+  return {
+    champions: [...deck.champions].sort(byName),
+    legends: [...deck.legends].sort(byName),
+    maindeck: [...deck.maindeck].sort(byName),
+    sideboard: [...deck.sideboard].sort(byName),
+    battlefields: [...deck.battlefields].sort(byName),
+    runes: [...deck.runes].sort(byName),
+  };
 }
 
 function toParsedDecklist(deck: DeckList): TournamentParsedDecklist {
