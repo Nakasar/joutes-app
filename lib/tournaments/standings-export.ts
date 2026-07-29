@@ -14,6 +14,8 @@ export type StandingsExportEntry = {
   opponentMatchWin: string;
   gameWin: string;
   status: string;
+  // Statistiques secondaires du preset, dans l'ordre des colonnes demandées.
+  stats?: (number | string)[];
 };
 
 export type StandingsCsvLabels = {
@@ -46,15 +48,22 @@ export function formatTiebreaker(value: number | null | undefined, locale: strin
   })} %`;
 }
 
+/**
+ * Classement au format CSV. `statLabels` insère les colonnes de statistiques du
+ * preset entre le bilan et les pourcentages de départage, dans le même ordre
+ * que le tableau à l'écran : le fichier doit se relire comme la page.
+ */
 export function buildStandingsCsv(
   entries: StandingsExportEntry[],
-  labels: StandingsCsvLabels
+  labels: StandingsCsvLabels,
+  statLabels: string[] = []
 ): string {
   const header = [
     labels.rank,
     labels.player,
     labels.points,
     labels.record,
+    ...statLabels,
     labels.opponentMatchWin,
     labels.gameWin,
     labels.status,
@@ -64,6 +73,7 @@ export function buildStandingsCsv(
     entry.name,
     entry.matchPoints,
     `${entry.wins}-${entry.losses}-${entry.draws}`,
+    ...statLabels.map((_, index) => entry.stats?.[index] ?? 0),
     entry.opponentMatchWin,
     entry.gameWin,
     entry.status,

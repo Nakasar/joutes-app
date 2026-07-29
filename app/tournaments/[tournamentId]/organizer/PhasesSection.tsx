@@ -23,7 +23,7 @@ import {
 import type { TournamentPhase } from "@/lib/types/Tournament";
 import { NextPhaseButton } from "./NextPhaseButton";
 import { OrganizerPageHeader } from "./OrganizerPageHeader";
-import { PhaseForm } from "./PhaseForm";
+import { PhaseForm, type PhasePresetOption } from "./PhaseForm";
 import { PhaseTimeline, type TimelineRound } from "./PhaseTimeline";
 
 // Valeur sentinelle du Select de phase en cours (SelectItem ne peut pas être vide).
@@ -33,12 +33,15 @@ export function PhasesSection({
   tournamentId,
   initialPhases,
   initialCurrentPhaseId,
+  presets,
   rounds,
   activePlayerCount,
 }: {
   tournamentId: string;
   initialPhases: TournamentPhase[];
   initialCurrentPhaseId?: string;
+  // Presets de format proposés par le jeu du tournoi. Vide = aucun.
+  presets: PhasePresetOption[];
   rounds: TimelineRound[];
   activePlayerCount: number;
 }) {
@@ -264,6 +267,7 @@ export function PhasesSection({
           <div className="space-y-4 border-t pt-6">
             <h3 className="font-medium">{t("organizerPhases.addPhase")}</h3>
             <PhaseForm
+              presets={presets}
               busy={busy}
               submitLabel={
                 <>
@@ -290,6 +294,7 @@ export function PhasesSection({
             <PhaseForm
               key={editPhase.id}
               initial={editPhase}
+              presets={presets}
               busy={busy}
               submitLabel={t("organizerPhases.editSubmit")}
               onSubmit={(body) => updatePhase(editPhase.id, body)}

@@ -32,6 +32,45 @@ export type TournamentScoringMethod = "fixed" | "rank_offset";
 // Ré-appariement des vainqueurs entre rondes d'une phase à élimination.
 export type TournamentEliminationSeeding = "standings" | "random";
 
+// Rythme des rondes d'une phase.
+// - live : rondes jouées sur place, minuteur commun et numéros de table
+//   (comportement historique, seul existant avant les ligues).
+// - asynchronous : chaque ronde est un intervalle de plusieurs jours. Les
+//   joueurs planifient eux-mêmes leur partie et rapportent le résultat avant
+//   l'échéance ; ni minuteur ni table.
+export type TournamentPhasePacing = "live" | "asynchronous";
+
+// Appariement suisse à l'intérieur d'un même total de points de classement.
+// - ranked : ordre du classement (comportement historique).
+// - random-in-bracket : tirage au sort dans chaque groupe de points, le joueur
+//   en trop flottant vers le groupe inférieur. Règle des ligues Shatterpoint.
+export type TournamentSwissPairing = "ranked" | "random-in-bracket";
+
+// Sort des matchs encore ouverts quand l'organisateur clôt un intervalle.
+// - double-loss : les deux joueurs perdent (règle par défaut des ligues).
+// - manual : rien n'est appliqué, l'organisateur tranche match par match.
+export type TournamentDeadlineResolution = "double-loss" | "manual";
+
+// Comment un match s'est conclu.
+// - played : partie(s) réellement jouée(s) (défaut, et seul cas historique).
+// - forfeit : un joueur l'emporte sans jouer (adversaire injoignable) ; il est
+//   crédité des statistiques de BYE du preset de la phase.
+// - double-loss : intervalle expiré sans partie, les deux joueurs perdent.
+//   Indispensable à distinguer du match nul : les deux ont `winnerIds` vide.
+export type TournamentMatchResolution = "played" | "forfeit" | "double-loss";
+
+// Scénario (ou mission) joué pendant une ronde. Le pool est défini sur la phase
+// et attribué aux rondes dans l'ordre ; `description` porte les éventuelles
+// contraintes de composition de liste propres au scénario.
+export type TournamentScenario = {
+  id: string;
+  name: string;
+  description?: string;
+};
+
+// Durée par défaut d'un intervalle de ligue : une semaine.
+export const DEFAULT_INTERVAL_HOURS = 168;
+
 // Appariement de la première ronde d'un arbre d'élimination (bracket) :
 // - opposite : classement opposé, le 1er affronte le dernier, le 2e
 //   l'avant-dernier, etc. (défaut).
@@ -287,6 +326,21 @@ export type TournamentPhase = {
   eliminationSeeding: TournamentEliminationSeeding;
   // Appariement de la première ronde d'une phase bracket. Défaut "opposite".
   bracketSeeding: TournamentBracketSeeding;
+  // Appariement au sein d'un même total de points en phase suisse. Défaut "ranked".
+  swissPairing: TournamentSwissPairing;
+  // Rythme des rondes. Défaut "live".
+  pacing: TournamentPhasePacing;
+  // Durée d'un intervalle, en heures. Utilisé quand pacing === "asynchronous"
+  // pour poser l'échéance des rondes créées. Défaut DEFAULT_INTERVAL_HOURS.
+  intervalHours: number;
+  // Sort des matchs non joués à la clôture d'un intervalle. Défaut "double-loss".
+  deadlineResolution: TournamentDeadlineResolution;
+  // Preset de jeu appliqué à la phase (statistiques secondaires et départages).
+  // Absent = aucune statistique relevée, départages historiques.
+  statsPresetKey?: string;
+  // Pool de scénarios attribués aux rondes dans l'ordre (cyclique). Absent ou
+  // vide = les rondes n'ont pas de scénario.
+  scenarios?: TournamentScenario[];
   plannedRounds?: number;
   // Nombre de joueurs qualifiés à l'entrée de la phase (top cut). Absent = tous.
   topCut?: number;
@@ -325,6 +379,16 @@ export type TournamentRound = {
   // l'organisateur n'a pas validé la ronde ; rafraîchi via un recalcul.
   standings?: TournamentRoundStanding[];
   standingsValidatedAt?: Date;
+  // Intervalle de jeu d'une ronde asynchrone. Absent sur une ronde jouée en
+  // direct, où c'est le minuteur du tournoi qui fait foi.
+  opensAt?: Date;
+  deadlineAt?: Date;
+  // Dernière relance envoyée aux joueurs pour cette ronde. Empêche le cron
+  // d'échéance de renvoyer la même relance à chaque passage.
+  remindersSentAt?: Date;
+  // Scénario joué pendant la ronde, repris du pool de la phase à la création
+  // et modifiable par l'organisateur.
+  scenario?: TournamentScenario;
   createdAt: Date;
   completedAt?: Date;
 };
@@ -344,6 +408,10 @@ export type TournamentGameResult = {
   winnerId?: string | null;
   // Mode "points" uniquement : points par joueur de tournoi pour cette partie.
   points?: Record<string, number>;
+  // Statistiques secondaires de la partie, par joueur de tournoi puis par clé
+  // de statistique du preset de la phase. Elles ne désignent pas le vainqueur
+  // (c'est le jeu qui le fait) : elles ne servent qu'aux départages.
+  stats?: Record<string, Record<string, number>>;
 };
 
 export type TournamentMatch = {
@@ -358,8 +426,11 @@ export type TournamentMatch = {
   // Détail des parties du best-of jouées. Vide tant qu'aucun résultat.
   games: TournamentGameResult[];
   // Empty while no result; on a completed match, empty means a draw between
-  // all players, otherwise the (co-)winners.
+  // all players, otherwise the (co-)winners. Une double défaite laisse aussi
+  // `winnerIds` vide : c'est `resolution` qui la distingue d'un nul.
   winnerIds: string[];
+  // Comment le match s'est conclu. Absent = "played" (documents antérieurs).
+  resolution?: TournamentMatchResolution;
   bracketPosition?: string;
   // Table où se joue le match. Absent pour un BYE.
   tableNumber?: number;
@@ -413,8 +484,11 @@ export type TournamentActivityType =
   | "match-disputed"
   | "match-cleared"
   | "match-extended"
+  | "match-forfeited"
   | "announcement-sent"
   | "round-created"
+  | "round-deadline-set"
+  | "round-closed-on-deadline"
   | "round-validated"
   | "phase-advanced"
   | "player-checked-in"

@@ -1624,6 +1624,25 @@
     }
   },
   "Tournaments": {
+                   "matchStats": {
+                     "presets": {
+                       "swpLeague": "Shatterpoint-Liga (Kampfkarten, Wunden)",
+                       "victoryPoints": "Siegpunkte",
+                       "bloodBowl": "Blood Bowl (Touchdowns, Ausfälle)"
+                     },
+                     "stats": {
+                       "struggles": "Beanspruchte Kampfkarten",
+                       "strugglesShort": "Kampf",
+                       "wounds": "Zugefügte Wunden",
+                       "woundsShort": "Wunden",
+                       "victoryPoints": "Siegpunkte",
+                       "victoryPointsShort": "SP",
+                       "touchdowns": "Touchdowns",
+                       "touchdownsShort": "TD",
+                       "casualties": "Zugefügte Ausfälle",
+                       "casualtiesShort": "Ausf."
+                     }
+                   },
     "matchExport": {
       "sheetsButton": "Matchzettel",
       "listButton": "Liste (Druck)",
@@ -1738,6 +1757,8 @@
       "bestOfN": "Best-of-{count}"
     },
     "player": {
+                "playBefore": "Zu spielen bis",
+                "scenario": "Szenario",
       "tableNumber": "Tisch {number}",
       "myRegistration": "Meine Anmeldung:",
       "statusRegistered": "REGISTERED",
@@ -1783,6 +1804,7 @@
       "myMatchesTitle": "Meine Matches"
     },
     "playerShell": {
+                     "deadline": "Frist",
       "notSyncedTitle": "Turnier nicht synchronisiert",
       "notSyncedDescription": "Dieser Browser ist nicht mit diesem Turnier synchronisiert. Scannen Sie den vom Organisator bereitgestellten QR-Code oder melden Sie sich an, falls Sie sich mit Ihrem Konto registriert haben.",
       "myTournaments": "Meine Turniere",
@@ -1870,6 +1892,8 @@
       "next": "Weiter"
     },
     "gamesEditor": {
+                     "statAria": "{stat} von {name} für Partie {number}",
+                     "statsHint": "Nach jeder Partie erfasst: {stats}.",
       "gameN": "Partie {number}",
       "gameWinnerAria": "Sieger der Partie {number}",
       "winnerPlaceholder": "Sieger…",
@@ -2015,6 +2039,25 @@
       "joinQr": "Anmelde-QR"
     },
     "organizerPhases": {
+                         "swissPairingLabel": "Paarung bei gleicher Punktzahl",
+                         "swissPairingRanked": "Nach Tabelle",
+                         "swissPairingRandom": "Zufällig innerhalb der Gruppe",
+                         "swissPairingHint": "Die Zufallspaarung ist die offizielle Ligaregel: bei Punktgleichheit werden die Gegner ausgelost.",
+                         "pacingLabel": "Rhythmus der Runden",
+                         "pacingLive": "Vor Ort (Timer und Tische)",
+                         "pacingAsync": "In Intervallen (Liga)",
+                         "pacingHint": "In Intervallen vereinbaren die Spieler ihre Partie selbst und melden das Ergebnis vor Fristablauf.",
+                         "intervalLabel": "Länge eines Intervalls (Tage)",
+                         "intervalHint": "Ein bis zwei Wochen geben den Spielern Zeit, einen Termin zu finden.",
+                         "deadlineResolutionLabel": "Nicht gespielte Partien bei Fristablauf",
+                         "deadlineDoubleLoss": "Doppelte Niederlage",
+                         "deadlineManual": "Die Organisation entscheiden lassen",
+                         "statsPresetLabel": "Match-Statistiken",
+                         "statsPresetNone": "Keine",
+                         "statsPresetHint": "Pro Partie erfasst und zur Entscheidung von Gleichständen genutzt. Sie bestimmen nie den Sieger.",
+                         "scenariosLabel": "Szenarien (eines pro Zeile)",
+                         "scenariosPlaceholder": "Kleiner Konflikt | Nur eine Einheit\nWechselnde Priorität | Zwei Einheiten",
+                         "scenariosHint": "Werden den Runden der Reihe nach zugewiesen. Nach dem „|“ die Aufstellungsvorgaben für die Spieler.",
       "resetStatusTitle": "Auf „nicht gestartet“ zurücksetzen",
       "resetStatusAria": "Phase {name} auf nicht gestartet zurücksetzen",
       "currentPhaseLabel": "Aktuelle Phase",
@@ -2147,6 +2190,11 @@
       "emptyDescription": "Noch keine Runde erstellt. Wählen Sie eine Phase, um die erste zu starten."
     },
     "roundClient": {
+                     "forfeitTitle": "Nicht gespielte Partie",
+                     "forfeitHint": "Ein Sieg durch Forfait zählt wie ein Freilos. Eine doppelte Niederlage ist kein Unentschieden.",
+                     "forfeitWin": "Sieg von {name}",
+                     "forfeitDoubleLoss": "Doppelte Niederlage",
+                     "forfeitError": "Forfait konnte nicht eingetragen werden",
       "headerTable": "Tisch",
       "tableAria": "Tischnummer des Matches {match}",
       "tableError": "Fehler beim Ändern der Tischnummer",
@@ -2309,6 +2357,11 @@
       "deleteError": "Fehler beim Löschen"
     },
     "roundHeader": {
+                     "phaseOnly": "{phase}",
+                     "deadlineIn": "Frist {when}",
+                     "deadlinePassed": "Abgelaufen {when}",
+                     "extendOneDay": "+ 1 Tag",
+                     "closeInterval": "Intervall schließen",
       "ofRounds": "von {total}",
       "phaseAndTables": "{phase} · {count} Tische",
       "addTwoMinutes": "+2 Min",
@@ -2393,6 +2446,9 @@
       "empty": "Noch keine Aktivität.",
       "staffActor": "die Organisation",
       "types": {
+                 "match-forfeited": "{actor} hat ein Forfait an Tisch {table} eingetragen",
+                 "round-deadline-set": "Frist der Runde {round} geändert",
+                 "round-closed-on-deadline": "Runde {round} bei Fristablauf geschlossen ({matches} Partie(n) geregelt)",
         "match-reported": "Tisch {table} — Ergebnis gemeldet von {actor}",
         "match-confirmed": "Tisch {table} — Ergebnis bestätigt",
         "match-disputed": "Tisch {table} — Streitfall gemeldet",

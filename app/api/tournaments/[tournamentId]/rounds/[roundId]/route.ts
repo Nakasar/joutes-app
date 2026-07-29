@@ -4,11 +4,15 @@ import { updateTournamentRoundSchema } from "@/lib/schemas/tournament.schema";
 import {
   assertPrincipalCanRead,
   assertCanManage,
+  closeRoundOnDeadline,
   deleteRound,
   getRoundById,
   listMatchesByRound,
+  recordActivity,
   reopenRound,
   requireTournament,
+  setRoundDeadline,
+  setRoundScenario,
   TournamentError,
 } from "@/lib/db/tournaments";
 import { resolveTournamentPrincipal, tournamentErrorResponse, unauthorizedResponse } from "../../../utils";
@@ -37,9 +41,13 @@ export async function GET(request: NextRequest, { params }: Params) {
 }
 
 /**
- * Action sur une ronde (organisateur) : `reopen` rouvre une ronde terminée
- * (retour « en cours ») pour en refaire la ronde courante et corriger les
- * résultats.
+ * Actions sur une ronde (organisateur) :
+ * - `reopen` : rouvre une ronde terminée (retour « en cours ») pour en refaire
+ *   la ronde courante et corriger les résultats.
+ * - `set-deadline` : déplace l'échéance d'un intervalle, ou la retire.
+ * - `set-scenario` : change le scénario joué pendant la ronde.
+ * - `close-deadline` : clôt l'intervalle, en appliquant aux matchs restés sans
+ *   résultat la règle configurée sur la phase.
  */
 export async function PATCH(request: NextRequest, { params }: Params) {
   const user = await authenticateApiRequest(request);
@@ -58,6 +66,22 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       case "reopen":
         round = await reopenRound(tournamentId, roundId);
         break;
+      case "set-deadline":
+        round = await setRoundDeadline(tournamentId, roundId, validated.deadlineAt);
+        await recordActivity(tournamentId, "round-deadline-set", { round: round.number });
+        break;
+      case "set-scenario":
+        round = await setRoundScenario(tournamentId, roundId, validated.scenario);
+        break;
+      case "close-deadline": {
+        const closed = await closeRoundOnDeadline(tournamentId, roundId);
+        round = closed.round;
+        await recordActivity(tournamentId, "round-closed-on-deadline", {
+          round: round.number,
+          matches: closed.resolvedMatchIds.length,
+        });
+        break;
+      }
     }
 
     return NextResponse.json(round);

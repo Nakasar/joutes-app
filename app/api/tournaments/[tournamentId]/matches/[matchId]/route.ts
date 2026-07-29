@@ -10,6 +10,7 @@ import {
   deleteMatch,
   disputeMatchResult,
   extendMatch,
+  forfeitMatch,
   getMatchById,
   recordActivity,
   reportMatchResult,
@@ -49,6 +50,8 @@ export async function GET(request: NextRequest, { params }: Params) {
  *   organisateur valide manuellement un score en attente de confirmation).
  * - `dispute` : contester le résultat.
  * - `clear` : supprimer un résultat rapporté (organisateur) — réinitialise le match.
+ * - `forfeit` : conclure un match non joué (organisateur) — victoire d'un
+ *   joueur comptée comme un bye, ou double défaite si aucun vainqueur.
  * Accessible avec une session, une clé API jts_ ou la clé de synchronisation
  * tpsk_ d'un joueur du tournoi.
  */
@@ -101,6 +104,14 @@ export async function PATCH(request: NextRequest, { params }: Params) {
           table: match.tableNumber ?? 0,
           minutes: Math.round((match.extensionSeconds ?? 0) / 60),
         },
+        actor.label
+      );
+    } else if (validated.action === "forfeit") {
+      match = await forfeitMatch(tournament, matchId, { winnerId: validated.winnerId }, actor);
+      await recordActivity(
+        tournamentId,
+        "match-forfeited",
+        { table: match.tableNumber ?? 0, doubleLoss: validated.winnerId ? 0 : 1 },
         actor.label
       );
     } else {

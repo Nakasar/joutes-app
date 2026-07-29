@@ -22,6 +22,8 @@ export default async function OrganizerRoundStandingsPage({
         plannedRounds={phase.plannedRounds}
         phaseName={phase.name}
         tableCount={roundMatches.length}
+        deadlineAt={round.deadlineAt?.toISOString()}
+        scenarioName={round.scenario?.name}
       />
       <div className="space-y-4 p-6">
         <RoundSubNav

@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { MatchStatDefinition } from "@/lib/tournaments/game-presets";
 import type { TournamentGameResult, TournamentResultMode } from "@/lib/types/Tournament";
 
 const DRAW_VALUE = "__draw__";
@@ -21,6 +22,9 @@ type Props = {
   playerName: (id: string) => string;
   resultMode: TournamentResultMode;
   bestOf: number;
+  // Statistiques secondaires relevées par le jeu, saisies après le vainqueur.
+  // Vide = la phase n'en relève pas.
+  stats?: MatchStatDefinition[];
   submitting: boolean;
   submitLabel?: string;
   onSubmit: (games: TournamentGameResult[]) => void;
@@ -30,6 +34,10 @@ type Props = {
  * Saisie partie par partie d'un best-of-n. En mode "selection", on désigne le
  * vainqueur de chaque partie (ou nul) ; en mode "points", on saisit les points
  * de chaque joueur. Seules les parties renseignées sont envoyées.
+ *
+ * Les statistiques secondaires (cartes d'objectif, blessures, points de
+ * victoire…) se saisissent en plus du résultat : elles ne désignent jamais le
+ * vainqueur, elles servent aux départages du classement.
  */
 export function MatchGamesEditor({
   matchId,
@@ -37,6 +45,7 @@ export function MatchGamesEditor({
   playerName,
   resultMode,
   bestOf,
+  stats = [],
   submitting,
   submitLabel,
   onSubmit,
@@ -48,6 +57,10 @@ export function MatchGamesEditor({
   const [winners, setWinners] = useState<string[]>(() => gameIndexes.map(() => ""));
   // points : points par joueur et par partie (chaîne pour l'input).
   const [points, setPoints] = useState<Record<string, string>[]>(() => gameIndexes.map(() => ({})));
+  // stats : valeur par partie, joueur et clé de statistique (chaîne pour l'input).
+  const [statValues, setStatValues] = useState<Record<string, Record<string, string>>[]>(() =>
+    gameIndexes.map(() => ({}))
+  );
 
   const setWinner = (gameIndex: number, value: string) =>
     setWinners((current) => current.map((w, i) => (i === gameIndex ? value : w)));
@@ -57,19 +70,51 @@ export function MatchGamesEditor({
       current.map((row, i) => (i === gameIndex ? { ...row, [playerId]: value } : row))
     );
 
+  const setStat = (gameIndex: number, playerId: string, key: string, value: string) =>
+    setStatValues((current) =>
+      current.map((row, i) =>
+        i === gameIndex ? { ...row, [playerId]: { ...(row[playerId] ?? {}), [key]: value } } : row
+      )
+    );
+
+  // Statistiques d'une partie, envoyées seulement si au moins une case est
+  // remplie : une partie sans saisie ne doit pas créditer des zéros.
+  const gameStats = (gameIndex: number): TournamentGameResult["stats"] => {
+    if (stats.length === 0) return undefined;
+    const row = statValues[gameIndex] ?? {};
+    const filled = matchPlayerIds.some((id) => stats.some((stat) => (row[id]?.[stat.key] ?? "") !== ""));
+    if (!filled) return undefined;
+    const result: Record<string, Record<string, number>> = {};
+    for (const id of matchPlayerIds) {
+      result[id] = Object.fromEntries(
+        stats.map((stat) => [stat.key, Number.parseInt(row[id]?.[stat.key] ?? "", 10) || 0])
+      );
+    }
+    return result;
+  };
+
   const buildGames = (): TournamentGameResult[] => {
     if (resultMode === "selection") {
       return winners
-        .filter((w) => w !== "")
-        .map((w) => ({ winnerId: w === DRAW_VALUE ? null : w }));
+        .map((w, gameIndex) => ({ w, gameIndex }))
+        .filter(({ w }) => w !== "")
+        .map(({ w, gameIndex }) => {
+          const gameStat = gameStats(gameIndex);
+          return {
+            winnerId: w === DRAW_VALUE ? null : w,
+            ...(gameStat ? { stats: gameStat } : {}),
+          };
+        });
     }
     // points : on envoie les parties où au moins un point a été saisi.
     return points
-      .filter((row) => matchPlayerIds.some((id) => (row[id] ?? "") !== ""))
-      .map((row) => {
+      .map((row, gameIndex) => ({ row, gameIndex }))
+      .filter(({ row }) => matchPlayerIds.some((id) => (row[id] ?? "") !== ""))
+      .map(({ row, gameIndex }) => {
         const gamePoints: Record<string, number> = {};
         for (const id of matchPlayerIds) gamePoints[id] = Number.parseInt(row[id] ?? "", 10) || 0;
-        return { points: gamePoints };
+        const gameStat = gameStats(gameIndex);
+        return { points: gamePoints, ...(gameStat ? { stats: gameStat } : {}) };
       });
   };
 
@@ -111,8 +156,41 @@ export function MatchGamesEditor({
               ))}
             </div>
           )}
+          {stats.length > 0 && (
+            <div className="flex w-full flex-wrap items-center gap-3 pl-20">
+              {matchPlayerIds.map((id) => (
+                <div key={id} className="flex items-center gap-1.5">
+                  <span className="text-xs text-muted-foreground">{playerName(id)}</span>
+                  {stats.map((stat) => (
+                    <Input
+                      key={stat.key}
+                      type="number"
+                      min={0}
+                      max={stat.max}
+                      className="w-16"
+                      placeholder={t(`matchStats.stats.${stat.labelKey}Short`)}
+                      aria-label={t("gamesEditor.statAria", {
+                        stat: t(`matchStats.stats.${stat.labelKey}`),
+                        name: playerName(id),
+                        number: gameIndex + 1,
+                      })}
+                      value={statValues[gameIndex]?.[id]?.[stat.key] ?? ""}
+                      onChange={(e) => setStat(gameIndex, id, stat.key, e.target.value)}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       ))}
+      {stats.length > 0 && (
+        <p className="text-xs text-muted-foreground">
+          {t("gamesEditor.statsHint", {
+            stats: stats.map((stat) => t(`matchStats.stats.${stat.labelKey}`)).join(", "),
+          })}
+        </p>
+      )}
       <Button onClick={() => onSubmit(buildGames())} disabled={submitting} data-match={matchId}>
         {submitLabel ?? t("common.save")}
       </Button>

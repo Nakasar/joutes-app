@@ -10,6 +10,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import type { MatchStatDefinition } from "@/lib/tournaments/game-presets";
 import type {
   TournamentGameResult,
   TournamentMatch,
@@ -37,6 +38,8 @@ type Props = {
   players: RoundPlayer[];
   resultMode: TournamentResultMode;
   bestOf: number;
+  // Statistiques secondaires du preset de la phase. Vide = aucune.
+  stats: MatchStatDefinition[];
   phaseId: string;
   // La suppression de match n'est possible que dans la dernière ronde.
   isLastRound: boolean;
@@ -51,6 +54,7 @@ export function OrganizerRoundClient({
   players,
   resultMode,
   bestOf,
+  stats,
   phaseId,
   isLastRound,
   reopenCascades,
@@ -714,10 +718,56 @@ export function OrganizerRoundClient({
                 playerName={playerName}
                 resultMode={resultMode}
                 bestOf={bestOf}
+                stats={stats}
                 submitting={submitting}
                 submitLabel={t("common.save")}
                 onSubmit={(games) => submitDetailed(editMatch, games)}
               />
+
+              {/* Match non joué : forfait d'un côté, ou double défaite. Le
+                  vainqueur d'un forfait est crédité comme s'il avait eu un BYE. */}
+              {editMatch.players.length === 2 && (
+                <div className="space-y-2 border-t pt-3">
+                  <p className="text-sm font-medium">{t("roundClient.forfeitTitle")}</p>
+                  <p className="text-xs text-muted-foreground">{t("roundClient.forfeitHint")}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {editMatch.players.map((p) => (
+                      <Button
+                        key={p.playerId}
+                        variant="outline"
+                        size="sm"
+                        disabled={anyBusy}
+                        onClick={async () => {
+                          const ok = await mutateMatch(
+                            editMatch.id,
+                            { action: "forfeit", winnerId: p.playerId },
+                            "roundClient.forfeitError"
+                          );
+                          if (ok) setEditMatch(null);
+                        }}
+                      >
+                        {t("roundClient.forfeitWin", { name: playerName(p.playerId) })}
+                      </Button>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={anyBusy}
+                      onClick={async () => {
+                        const ok = await mutateMatch(
+                          editMatch.id,
+                          { action: "forfeit", winnerId: null },
+                          "roundClient.forfeitError"
+                        );
+                        if (ok) setEditMatch(null);
+                      }}
+                    >
+                      {t("roundClient.forfeitDoubleLoss")}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {editMatch.status !== "pending" && (
                 <Button
                   variant="outline"

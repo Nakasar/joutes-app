@@ -1,5 +1,6 @@
 import { getStandings } from "@/lib/db/tournaments";
 import { resolveDisplayPhase } from "@/lib/tournaments/current-round";
+import { getPreset } from "@/lib/tournaments/game-presets";
 import { loadOrganizerContext } from "../organizerContext";
 import { StandingsBoard, type StandingsSnapshot } from "./StandingsBoard";
 
@@ -34,6 +35,7 @@ export default async function OrganizerStandingsPage({
         gamesWon: row.gamesWon,
         gamesLost: row.gamesLost,
         opponentMatchWinPercentage: row.opponentMatchWinPercentage,
+        stats: row.stats,
         playerStatus: row.playerStatus,
       })),
     }));
@@ -53,6 +55,7 @@ export default async function OrganizerStandingsPage({
       gamesWon: row.gamesWon,
       gamesLost: row.gamesLost,
       opponentMatchWinPercentage: row.opponentMatchWinPercentage,
+      stats: row.stats,
       playerStatus: row.playerStatus,
     })),
   });
@@ -64,7 +67,12 @@ export default async function OrganizerStandingsPage({
 
   return (
     <div className="p-6">
-      <StandingsBoard tournamentId={tournamentId} snapshots={snapshots} topCut={topCut} />
+      <StandingsBoard
+        tournamentId={tournamentId}
+        snapshots={snapshots}
+        statColumns={getPreset(phase?.statsPresetKey)?.stats ?? []}
+        topCut={topCut}
+      />
     </div>
   );
 }
