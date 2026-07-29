@@ -20,7 +20,7 @@ export default async function OrganizerPlayerSheetPage({
   params: Promise<{ tournamentId: string; playerId: string }>;
 }) {
   const { tournamentId, playerId } = await params;
-  const { players, rounds } = await loadOrganizerContext(tournamentId);
+  const { tournament, players, rounds } = await loadOrganizerContext(tournamentId);
 
   const player = await getPlayerById(tournamentId, playerId);
   if (!player) notFound();
@@ -95,6 +95,7 @@ export default async function OrganizerPlayerSheetPage({
         fixedTableNumber: player.fixedTableNumber,
         decklist: player.decklist,
       }}
+      hasForm={(tournament.registrationForm?.fields.length ?? 0) > 0}
       standing={standing}
       history={history}
       currentMatch={

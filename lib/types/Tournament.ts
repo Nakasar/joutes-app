@@ -107,6 +107,117 @@ export type Tournament = {
   judgeIds: string[];
   createdAt: Date;
   updatedAt?: Date;
+  // Formulaire d'inscription personnalisable. Absent = aucun formulaire.
+  registrationForm?: TournamentForm;
+};
+
+// Types de champs du formulaire d'inscription. Les quatre premiers sont les
+// formats habituels ; « decklist » et « card » sont adossés au jeu du tournoi
+// (analyse de liste de deck, recherche dans les cartes).
+export type TournamentFormFieldType =
+  | "text"
+  | "long-text"
+  | "number"
+  | "single-choice"
+  | "multiple-choice"
+  | "decklist"
+  | "card";
+
+export const TOURNAMENT_FORM_FIELD_TYPES: TournamentFormFieldType[] = [
+  "text",
+  "long-text",
+  "number",
+  "single-choice",
+  "multiple-choice",
+  "decklist",
+  "card",
+];
+
+export type TournamentFormField = {
+  // Identifiant stable : les réponses déjà données y sont rattachées, il ne
+  // change jamais même si l'organisateur réordonne ou renomme le champ.
+  id: string;
+  type: TournamentFormFieldType;
+  label: string;
+  // Consigne affichée sous le libellé (format attendu, précisions…).
+  description?: string;
+  required: boolean;
+  // Choix proposés, pour single-choice et multiple-choice uniquement.
+  options?: string[];
+};
+
+export type TournamentForm = {
+  fields: TournamentFormField[];
+  // Le joueur peut modifier ses réponses depuis son portail. false = réponses
+  // figées côté joueur ; l'organisation reste libre de les corriger.
+  playerEditable: boolean;
+  // Instant après lequel les réponses des joueurs ne sont plus acceptées.
+  // Absent = pas de date limite.
+  closesAt?: Date;
+  // Réponses tardives acceptées : les joueurs répondent encore une fois la
+  // saisie normale close (modification désactivée ou date limite dépassée),
+  // mais leurs réponses sont signalées comme tardives.
+  lateSubmissions: boolean;
+};
+
+// Carte choisie dans un champ « card ». Le nom et l'image sont recopiés au
+// moment du choix : la fiche reste lisible même si la carte disparaît de
+// l'index de recherche.
+export type TournamentFormCard = {
+  cardId: string;
+  name: string;
+  image?: string;
+  setCode?: string;
+  collectorNumber?: string;
+};
+
+export type TournamentDecklistCard = {
+  name: string;
+  quantity: number;
+  cardId?: string;
+  image?: string;
+  // Carte absente de la base du jeu : nom mal orthographié, ou carte inconnue.
+  recognized?: boolean;
+  banned?: boolean;
+};
+
+// Liste de deck analysée. Les sections sont laissées telles que le jeu les
+// nomme (maindeck, sideboard, runes…) : rien ici n'est propre à un jeu.
+export type TournamentParsedDecklist = {
+  sections: { key: string; cards: TournamentDecklistCard[] }[];
+  totalCards: number;
+  unrecognizedCards: number;
+  bannedCards: number;
+};
+
+// Réponse à un champ « decklist ». `input` est toujours conservé tel que le
+// joueur l'a saisi (texte, lien Piltover Archive ou code) ; l'analyse n'est
+// tentée que si le jeu du tournoi la supporte.
+export type TournamentFormDecklistAnswer = {
+  input: string;
+  parsed?: TournamentParsedDecklist;
+  // Analyse tentée mais échouée (lien mort, code invalide…). Renseigné pour
+  // que l'arbitrage sache que la liste brute n'a pas été vérifiée.
+  parseError?: string;
+  parsedAt?: Date;
+};
+
+// Réponse à un champ du formulaire. Un seul des champs de valeur est renseigné,
+// selon le type du champ ; `choices` sert aux deux types de choix (un seul
+// élément pour un choix unique).
+export type TournamentFormAnswer = {
+  fieldId: string;
+  text?: string;
+  number?: number;
+  choices?: string[];
+  card?: TournamentFormCard;
+  decklist?: TournamentFormDecklistAnswer;
+  updatedAt: Date;
+  // Réponse donnée par le joueur après la fermeture de la saisie normale,
+  // acceptée au titre des réponses tardives. Portée par la réponse et non par
+  // le joueur : réécrire une seule réponse hors délai ne rend pas tardives
+  // celles déjà données dans les temps.
+  late?: boolean;
 };
 
 // Liste de deck d'un joueur pour le tournoi. Le contenu reste du texte libre :
@@ -142,6 +253,9 @@ export type TournamentPlayer = {
   checkedInAt?: Date;
   // Liste de deck déclarée pour le tournoi, saisie par l'organisation.
   decklist?: TournamentDecklist;
+  // Réponses au formulaire d'inscription du tournoi. Privées : elles ne sont
+  // exposées qu'au joueur concerné et à l'organisation.
+  formAnswers?: TournamentFormAnswer[];
   // Secret de synchronisation propre au joueur (préfixe tpsk_), généré à
   // l'inscription. Utilisable comme Bearer token pour accéder au tournoi en
   // tant que ce joueur (portail joueur des invités sans compte). Ne doit être

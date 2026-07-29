@@ -30,6 +30,9 @@ export type ApiTournament = {
   settings: { allowSelfReporting: boolean; requireConfirmation: boolean };
   phases: ApiPhase[];
   players: ApiPlayer[];
+  // Formulaire d'inscription. Seule sa présence intéresse le portail : les
+  // réponses du joueur sont servies par la route dédiée.
+  registrationForm?: { fields: { id: string }[] };
 };
 
 /**

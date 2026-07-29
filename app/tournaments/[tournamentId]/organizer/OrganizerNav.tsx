@@ -12,6 +12,7 @@ export type OrganizerNavSection =
   | "live"
   | "players"
   | "phases"
+  | "form"
   | "settings";
 
 type NavItem = {
@@ -68,6 +69,7 @@ export function OrganizerNav({
       },
     },
     { key: "phases", href: `${base}/phases` },
+    { key: "form", href: `${base}/form` },
     { key: "settings", href: `${base}/settings` },
   ];
 
@@ -86,7 +88,9 @@ export function OrganizerNav({
             ? "players"
             : pathname.startsWith(`${base}/phases`)
               ? "phases"
-              : "settings";
+              : pathname.startsWith(`${base}/form`)
+                ? "form"
+                : "settings";
 
   const renderItem = (item: NavItem) => {
     const active = item.key === activeKey;
