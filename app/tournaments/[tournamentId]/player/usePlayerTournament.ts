@@ -21,6 +21,8 @@ export type ApiPhase = {
   order: number;
   bestOf: number;
   resultMode: TournamentResultMode;
+  // Preset de statistiques du jeu appliqué à la phase, s'il y en a un.
+  statsPresetKey?: string;
 };
 export type ApiTournament = {
   id: string;

@@ -7,6 +7,7 @@ import { Download, Maximize2, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatTiebreaker, gameWinPercentage } from "@/lib/tournaments/standings-export";
+import type { MatchStatDefinition } from "@/lib/tournaments/game-presets";
 import { OrganizerPageHeader } from "../OrganizerPageHeader";
 
 export type StandingsRow = {
@@ -20,6 +21,8 @@ export type StandingsRow = {
   gamesWon: number;
   gamesLost: number;
   opponentMatchWinPercentage?: number;
+  // Cumul des statistiques secondaires du preset, par clé. Absent hors preset.
+  stats?: Record<string, number>;
   playerStatus: string;
 };
 
@@ -41,10 +44,13 @@ export type StandingsSnapshot = {
 export function StandingsBoard({
   tournamentId,
   snapshots,
+  statColumns = [],
   topCut,
 }: {
   tournamentId: string;
   snapshots: StandingsSnapshot[];
+  // Colonnes de statistiques du preset, dans l'ordre de départage.
+  statColumns?: MatchStatDefinition[];
   topCut?: number;
 }) {
   const t = useTranslations("Tournaments");
@@ -166,6 +172,11 @@ export function StandingsBoard({
               <th className="w-24 px-4 py-2.5 text-right font-semibold">
                 {t("standings.columnRecord")}
               </th>
+              {statColumns.map((column) => (
+                <th key={column.key} className="w-24 px-4 py-2.5 text-right font-semibold">
+                  {t(`matchStats.stats.${column.labelKey}Short`)}
+                </th>
+              ))}
               <th className="w-24 px-4 py-2.5 text-right font-semibold">OMW%</th>
               <th className="w-24 px-4 py-2.5 text-right font-semibold">GW%</th>
               <th className="w-24 px-4 py-2.5 text-right font-semibold">
@@ -197,6 +208,14 @@ export function StandingsBoard({
                   <td className="px-4 py-2.5 text-right font-mono text-[13px] text-muted-foreground">
                     {row.wins}-{row.losses}-{row.draws}
                   </td>
+                  {statColumns.map((column) => (
+                    <td
+                      key={column.key}
+                      className="px-4 py-2.5 text-right font-mono text-[13px] text-muted-foreground"
+                    >
+                      {row.stats?.[column.key] ?? 0}
+                    </td>
+                  ))}
                   <td className="px-4 py-2.5 text-right font-mono text-[13px] text-muted-foreground">
                     {formatTiebreaker(row.opponentMatchWinPercentage, locale)}
                   </td>
@@ -213,7 +232,7 @@ export function StandingsBoard({
                     la phase finale, là où elle tombe dans le classement. */}
                 {topCut !== undefined && index + 1 === topCut && index + 1 < rows.length && (
                   <tr className="border-b bg-muted/40">
-                    <td colSpan={7} className="px-4 py-1.5">
+                    <td colSpan={7 + statColumns.length} className="px-4 py-1.5">
                       <div className="flex items-center gap-2.5">
                         <span className="h-px flex-1 bg-border" />
                         <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
@@ -228,7 +247,7 @@ export function StandingsBoard({
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-4 text-center text-muted-foreground">
+                <td colSpan={7 + statColumns.length} className="px-4 py-4 text-center text-muted-foreground">
                   {t("standings.empty")}
                 </td>
               </tr>

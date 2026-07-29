@@ -2,10 +2,12 @@
 
 import { use, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
+import { DateTime } from "luxon";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { getPreset } from "@/lib/tournaments/game-presets";
 import type { TournamentGameResult } from "@/lib/types/Tournament";
 import { MatchGamesEditor } from "../MatchGamesEditor";
 import { playerTag } from "../PlayerNameTag";
@@ -24,7 +26,15 @@ type ApiMatch = {
   tableNumber?: number;
   extensionSeconds?: number;
 };
-type ApiRound = { id: string; number: number; status: string; matches: ApiMatch[] };
+type ApiRound = {
+  id: string;
+  number: number;
+  status: string;
+  matches: ApiMatch[];
+  // Échéance de l'intervalle, sur une ronde asynchrone. Absente en direct.
+  deadlineAt?: string;
+  scenario?: { id: string; name: string; description?: string };
+};
 type ApiStanding = {
   playerId: string;
   matchPoints: number;
@@ -208,6 +218,10 @@ export default function TournamentPlayerMatchPage({
       ? buildQuickResults(activePhase.bestOf, myMatch.players.map((p) => p.playerId))
       : [];
   const extensionMinutes = Math.round((myMatch?.extensionSeconds ?? 0) / 60);
+  // Statistiques secondaires à relever. Quand il y en a, les raccourcis de
+  // saisie ne suffisent plus : le joueur passe directement par la saisie
+  // détaillée, seule à proposer les champs.
+  const phaseStats = getPreset(activePhase?.statsPresetKey)?.stats ?? [];
 
   const myScore = myMatch?.players.find((p) => p.playerId === myPlayerId)?.score ?? 0;
   const theirScore = opponent?.score ?? 0;
@@ -238,16 +252,35 @@ export default function TournamentPlayerMatchPage({
           ? `${t("common.roundN", { number: round.number })} · ${activePhase.name}`
           : undefined
       }
+      deadlineAt={round?.deadlineAt}
     >
       {myMatch && round ? (
         <div className="space-y-4">
           <div className="rounded-2xl border bg-card p-6 text-center shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-              {t("player.yourTable")}
-            </p>
-            <p className="my-1.5 font-mono text-[92px] font-bold leading-none tracking-tighter">
-              {myMatch.tableNumber ?? "—"}
-            </p>
+            {/* Sur un intervalle de ligue, il n'y a pas de table : ce qui
+                compte est la date avant laquelle la partie doit être jouée. */}
+            {round.deadlineAt ? (
+              <>
+                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                  {t("player.playBefore")}
+                </p>
+                <p className="my-1.5 text-[26px] font-bold leading-tight tracking-tight">
+                  {DateTime.fromISO(round.deadlineAt).toFormat("cccc d LLLL")}
+                </p>
+                <p className="mb-2 text-[13px] text-muted-foreground">
+                  {DateTime.fromISO(round.deadlineAt).toRelative()}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                  {t("player.yourTable")}
+                </p>
+                <p className="my-1.5 font-mono text-[92px] font-bold leading-none tracking-tighter">
+                  {myMatch.tableNumber ?? "—"}
+                </p>
+              </>
+            )}
             {isBye ? (
               <p className="text-sm text-muted-foreground">{t("player.byeAutoWin")}</p>
             ) : (
@@ -288,6 +321,20 @@ export default function TournamentPlayerMatchPage({
               {statusLabel}
             </span>
 
+            {round.scenario && (
+              <div className="mt-3.5 rounded-xl border bg-muted/40 p-3 text-left">
+                <p className="text-xs font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+                  {t("player.scenario")}
+                </p>
+                <p className="mt-0.5 text-[15px] font-semibold">{round.scenario.name}</p>
+                {round.scenario.description && (
+                  <p className="mt-1 whitespace-pre-wrap text-[13px] text-muted-foreground">
+                    {round.scenario.description}
+                  </p>
+                )}
+              </div>
+            )}
+
             {extensionMinutes > 0 && (
               <p className="mt-3 rounded-xl border border-sky-300 bg-sky-50 p-2.5 text-[13px] font-semibold text-sky-800 dark:border-sky-900 dark:bg-sky-950 dark:text-sky-300">
                 {t("player.extensionGranted", { minutes: extensionMinutes })}
@@ -298,7 +345,11 @@ export default function TournamentPlayerMatchPage({
           {canSelfReport && notReported && (
             <Button
               className="h-auto w-full py-4 text-base font-bold"
-              onClick={() => (quickResults.length > 0 ? setSheetOpen(true) : setDetailedOpen(true))}
+              onClick={() =>
+                quickResults.length > 0 && phaseStats.length === 0
+                  ? setSheetOpen(true)
+                  : setDetailedOpen(true)
+              }
               disabled={submitting || myStatus === "dropped"}
             >
               {t("player.reportResult")}
@@ -422,6 +473,7 @@ export default function TournamentPlayerMatchPage({
               playerName={playerName}
               resultMode={activePhase.resultMode}
               bestOf={activePhase.bestOf}
+              stats={phaseStats}
               submitting={submitting}
               submitLabel={t("player.reportResult")}
               onSubmit={report}

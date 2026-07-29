@@ -625,7 +625,14 @@ async function handleGetTournament(
         getStandings(tournament.id),
     ]);
 
-    const phasesText = phases.map(p => `- ${p.name} (${p.type}, ${p.status})`).join("\n");
+    const phasesText = phases.map(p => {
+        // Le rythme d'une phase change complètement la lecture du tournoi : en
+        // asynchrone, chaque ronde est un intervalle de plusieurs jours.
+        const pacing = p.pacing === "asynchronous"
+            ? `, intervalles de ${Math.round(p.intervalHours / 24)} j`
+            : "";
+        return `- ${p.name} (${p.type}, ${p.status}${pacing})`;
+    }).join("\n");
     const playersText = players.map(p => {
         const sanitized = sanitizePlayer(p);
         return `- ${sanitized.displayName}${sanitized.discriminator ? `#${sanitized.discriminator}` : ""} (${sanitized.status})`;

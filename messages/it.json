@@ -1649,6 +1649,25 @@
     }
   },
   "Tournaments": {
+                   "matchStats": {
+                     "presets": {
+                       "swpLeague": "Lega Shatterpoint (carte lotta, ferite)",
+                       "victoryPoints": "Punti vittoria",
+                       "bloodBowl": "Blood Bowl (touchdown, infortuni)"
+                     },
+                     "stats": {
+                       "struggles": "Carte lotta reclamate",
+                       "strugglesShort": "Lotta",
+                       "wounds": "Ferite inflitte",
+                       "woundsShort": "Ferite",
+                       "victoryPoints": "Punti vittoria",
+                       "victoryPointsShort": "PV",
+                       "touchdowns": "Touchdown",
+                       "touchdownsShort": "TD",
+                       "casualties": "Infortuni inflitti",
+                       "casualtiesShort": "Inf."
+                     }
+                   },
     "matchExport": {
       "sheetsButton": "Schede match",
       "listButton": "Elenco (stampa)",
@@ -1763,6 +1782,8 @@
       "bestOfN": "best-of-{count}"
     },
     "player": {
+                "playBefore": "Da giocare entro il",
+                "scenario": "Scenario",
       "tableNumber": "Tavolo {number}",
       "myRegistration": "La mia iscrizione:",
       "statusRegistered": "REGISTERED",
@@ -1808,6 +1829,7 @@
       "myMatchesTitle": "I miei match"
     },
     "playerShell": {
+                     "deadline": "scadenza",
       "notSyncedTitle": "Torneo non sincronizzato",
       "notSyncedDescription": "Questo browser non è sincronizzato con questo torneo. Scansiona il codice QR fornito dall'organizzatore, oppure accedi se ti sei iscritto con il tuo account.",
       "myTournaments": "I miei tornei",
@@ -1895,6 +1917,8 @@
       "next": "Successiva"
     },
     "gamesEditor": {
+                     "statAria": "{stat} di {name} per la partita {number}",
+                     "statsHint": "Rilevato dopo ogni partita: {stats}.",
       "gameN": "Partita {number}",
       "gameWinnerAria": "Vincitore della partita {number}",
       "winnerPlaceholder": "Vincitore…",
@@ -2040,6 +2064,25 @@
       "joinQr": "QR d'iscrizione"
     },
     "organizerPhases": {
+                         "swissPairingLabel": "Accoppiamento a parità di punti",
+                         "swissPairingRanked": "Secondo la classifica",
+                         "swissPairingRandom": "Sorteggio nel gruppo",
+                         "swissPairingHint": "Il sorteggio è la regola delle leghe ufficiali: a parità di punti gli avversari sono estratti a sorte.",
+                         "pacingLabel": "Ritmo dei turni",
+                         "pacingLive": "In sede (timer e tavoli)",
+                         "pacingAsync": "A intervalli (lega)",
+                         "pacingHint": "Con gli intervalli i giocatori organizzano da soli la partita e riportano il risultato entro la scadenza.",
+                         "intervalLabel": "Durata di un intervallo (giorni)",
+                         "intervalHint": "Una o due settimane danno ai giocatori il tempo di accordarsi su una data.",
+                         "deadlineResolutionLabel": "Partite non giocate alla scadenza",
+                         "deadlineDoubleLoss": "Doppia sconfitta",
+                         "deadlineManual": "Lasciare decidere all'organizzazione",
+                         "statsPresetLabel": "Statistiche di partita",
+                         "statsPresetNone": "Nessuna",
+                         "statsPresetHint": "Rilevate a ogni partita e usate come spareggio in classifica. Non designano mai il vincitore.",
+                         "scenariosLabel": "Scenari (uno per riga)",
+                         "scenariosPlaceholder": "Conflitto minore | Una sola squadra\nPriorità mutevole | Due squadre",
+                         "scenariosHint": "Assegnati ai turni in ordine. Dopo la « | », le indicazioni di composizione mostrate ai giocatori.",
       "resetStatusTitle": "Riporta a “non iniziata”",
       "resetStatusAria": "Riporta la fase {name} a non iniziata",
       "currentPhaseLabel": "Fase corrente",
@@ -2172,6 +2215,11 @@
       "emptyDescription": "Nessun turno creato. Scegli una fase per avviare il primo."
     },
     "roundClient": {
+                     "forfeitTitle": "Partita non giocata",
+                     "forfeitHint": "Una vittoria a tavolino conta come un bye. La doppia sconfitta non è un pareggio.",
+                     "forfeitWin": "Vittoria di {name}",
+                     "forfeitDoubleLoss": "Doppia sconfitta",
+                     "forfeitError": "Impossibile registrare la vittoria a tavolino",
       "headerTable": "Tavolo",
       "tableAria": "Numero di tavolo del match {match}",
       "tableError": "Errore durante la modifica del numero di tavolo",
@@ -2334,6 +2382,11 @@
       "deleteError": "Errore durante l'eliminazione"
     },
     "roundHeader": {
+                     "phaseOnly": "{phase}",
+                     "deadlineIn": "Scadenza {when}",
+                     "deadlinePassed": "Scaduta {when}",
+                     "extendOneDay": "+ 1 giorno",
+                     "closeInterval": "Chiudere l'intervallo",
       "ofRounds": "su {total}",
       "phaseAndTables": "{phase} · {count} tavoli",
       "addTwoMinutes": "+2 min",
@@ -2418,6 +2471,9 @@
       "empty": "Nessuna attività per ora.",
       "staffActor": "l'organizzazione",
       "types": {
+                 "match-forfeited": "{actor} ha registrato una vittoria a tavolino al tavolo {table}",
+                 "round-deadline-set": "Scadenza del turno {round} modificata",
+                 "round-closed-on-deadline": "Turno {round} chiuso alla scadenza ({matches} partita/e regolate)",
         "match-reported": "Tavolo {table} — risultato consegnato da {actor}",
         "match-confirmed": "Tavolo {table} — risultato confermato",
         "match-disputed": "Tavolo {table} — contestazione segnalata",

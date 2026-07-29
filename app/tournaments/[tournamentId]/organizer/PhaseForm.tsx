@@ -12,14 +12,51 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { DEFAULT_INTERVAL_HOURS } from "@/lib/types/Tournament";
 import type {
   TournamentBracketSeeding,
+  TournamentDeadlineResolution,
   TournamentEliminationSeeding,
   TournamentPhase,
+  TournamentPhasePacing,
   TournamentPhaseType,
   TournamentResultMode,
   TournamentScoringMethod,
+  TournamentSwissPairing,
 } from "@/lib/types/Tournament";
+
+// Preset de format proposé par le jeu du tournoi, résolu côté serveur.
+export type PhasePresetOption = { key: string; labelKey: string };
+
+// Valeur sentinelle du Select de preset (SelectItem ne peut pas être vide).
+const NO_PRESET = "none";
+
+/**
+ * Sérialise le pool de scénarios en texte : une ligne par scénario, au format
+ * « Nom | consignes ». Un éditeur en champ libre reste le plus rapide pour
+ * saisir trois missions d'affilée, et se relit d'un coup d'œil.
+ */
+function scenariosToText(phase?: TournamentPhase): string {
+  return (phase?.scenarios ?? [])
+    .map((s) => (s.description ? `${s.name} | ${s.description}` : s.name))
+    .join("\n");
+}
+
+function scenariosFromText(text: string): { id: string; name: string; description?: string }[] {
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line, index) => {
+      const separator = line.indexOf("|");
+      const name = (separator === -1 ? line : line.slice(0, separator)).trim();
+      const description = separator === -1 ? undefined : line.slice(separator + 1).trim() || undefined;
+      // L'identifiant est dérivé du rang : les rondes déjà créées portent une
+      // copie du scénario, elles ne sont donc pas affectées par une renumérotation.
+      return { id: `s${index + 1}`, name, description };
+    });
+}
 
 /**
  * Formulaire de configuration d'une phase, partagé entre l'ajout et l'édition
@@ -29,11 +66,13 @@ import type {
  */
 export function PhaseForm({
   initial,
+  presets,
   submitLabel,
   busy,
   onSubmit,
 }: {
   initial?: TournamentPhase;
+  presets: PhasePresetOption[];
   submitLabel: ReactNode;
   busy: boolean;
   onSubmit: (body: Record<string, unknown>) => void | Promise<void>;
@@ -68,6 +107,19 @@ export function PhaseForm({
   const [topCut, setTopCut] = useState(initial?.topCut ? String(initial.topCut) : "");
   const [minPlayers, setMinPlayers] = useState(String(initial?.minPlayersPerMatch ?? 2));
   const [maxPlayers, setMaxPlayers] = useState(String(initial?.maxPlayersPerMatch ?? 2));
+  const [swissPairing, setSwissPairing] = useState<TournamentSwissPairing>(
+    initial?.swissPairing ?? "ranked"
+  );
+  const [pacing, setPacing] = useState<TournamentPhasePacing>(initial?.pacing ?? "live");
+  // L'organisateur raisonne en jours d'intervalle, le domaine en heures.
+  const [intervalDays, setIntervalDays] = useState(
+    String(Math.max(1, Math.round((initial?.intervalHours ?? DEFAULT_INTERVAL_HOURS) / 24)))
+  );
+  const [deadlineResolution, setDeadlineResolution] = useState<TournamentDeadlineResolution>(
+    initial?.deadlineResolution ?? "double-loss"
+  );
+  const [statsPresetKey, setStatsPresetKey] = useState(initial?.statsPresetKey ?? NO_PRESET);
+  const [scenariosText, setScenariosText] = useState(scenariosToText(initial));
 
   const submit = () => {
     if (!name.trim()) return;
@@ -99,6 +151,33 @@ export function PhaseForm({
     }
     if (type === "bracket") {
       body.bracketSeeding = bracketSeeding;
+    }
+    if (type === "swiss") {
+      body.swissPairing = swissPairing;
+    }
+
+    // Rythme et intervalle. `intervalHours` est toujours envoyé en asynchrone
+    // (le schéma l'exige) et laissé de côté en direct, où il ne sert à rien.
+    body.pacing = pacing;
+    if (pacing === "asynchronous") {
+      const parsedDays = Number.parseInt(intervalDays, 10);
+      body.intervalHours = (Number.isFinite(parsedDays) && parsedDays > 0 ? parsedDays : 7) * 24;
+      body.deadlineResolution = deadlineResolution;
+    }
+
+    // À la création, le champ est simplement omis quand aucun preset n'est
+    // choisi ; en édition, null le retire explicitement de la phase.
+    if (statsPresetKey !== NO_PRESET) {
+      body.statsPresetKey = statsPresetKey;
+    } else if (isEdit) {
+      body.statsPresetKey = null;
+    }
+
+    const scenarios = scenariosFromText(scenariosText);
+    if (scenarios.length > 0) {
+      body.scenarios = scenarios;
+    } else if (isEdit) {
+      body.scenarios = null;
     }
 
     // N'ajouter le champ que si la saisie donne un entier valide ; en édition,
@@ -286,6 +365,26 @@ export function PhaseForm({
             />
           </div>
         )}
+        {type === "swiss" && (
+          <div className="space-y-2">
+            <Label>{t("organizerPhases.swissPairingLabel")}</Label>
+            <Select
+              value={swissPairing}
+              onValueChange={(v) => setSwissPairing(v as TournamentSwissPairing)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ranked">{t("organizerPhases.swissPairingRanked")}</SelectItem>
+                <SelectItem value="random-in-bracket">
+                  {t("organizerPhases.swissPairingRandom")}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">{t("organizerPhases.swissPairingHint")}</p>
+          </div>
+        )}
         {type !== "freeform" && (
           <div className="space-y-2">
             <Label htmlFor="phase-topcut">{t("organizerPhases.topCutLabel")}</Label>
@@ -344,6 +443,94 @@ export function PhaseForm({
           <p className="text-xs text-muted-foreground">{t("organizerPhases.playersPerMatchHint")}</p>
         </div>
       )}
+
+      {/* Rythme des rondes : sur place, ou par intervalles de plusieurs jours
+          (ligues, où les joueurs planifient eux-mêmes leur partie). */}
+      <div className="space-y-4 border-t pt-4">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label>{t("organizerPhases.pacingLabel")}</Label>
+            <Select value={pacing} onValueChange={(v) => setPacing(v as TournamentPhasePacing)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="live">{t("organizerPhases.pacingLive")}</SelectItem>
+                <SelectItem value="asynchronous">{t("organizerPhases.pacingAsync")}</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">{t("organizerPhases.pacingHint")}</p>
+          </div>
+          {pacing === "asynchronous" && (
+            <div className="space-y-2">
+              <Label htmlFor="phase-interval">{t("organizerPhases.intervalLabel")}</Label>
+              <Input
+                id="phase-interval"
+                type="number"
+                min={1}
+                max={365}
+                value={intervalDays}
+                onChange={(e) => setIntervalDays(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">{t("organizerPhases.intervalHint")}</p>
+            </div>
+          )}
+          {pacing === "asynchronous" && (
+            <div className="space-y-2 md:col-span-2">
+              <Label>{t("organizerPhases.deadlineResolutionLabel")}</Label>
+              <Select
+                value={deadlineResolution}
+                onValueChange={(v) => setDeadlineResolution(v as TournamentDeadlineResolution)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="double-loss">
+                    {t("organizerPhases.deadlineDoubleLoss")}
+                  </SelectItem>
+                  <SelectItem value="manual">{t("organizerPhases.deadlineManual")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Statistiques de match livrées par le jeu (départages officiels). */}
+      {presets.length > 0 && (
+        <div className="space-y-2 border-t pt-4">
+          <Label>{t("organizerPhases.statsPresetLabel")}</Label>
+          <Select value={statsPresetKey} onValueChange={setStatsPresetKey}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NO_PRESET}>{t("organizerPhases.statsPresetNone")}</SelectItem>
+              {presets.map((preset) => (
+                <SelectItem key={preset.key} value={preset.key}>
+                  {t(`matchStats.presets.${preset.labelKey}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">{t("organizerPhases.statsPresetHint")}</p>
+        </div>
+      )}
+
+      {/* Pool de scénarios, attribués aux rondes dans l'ordre. */}
+      <div className="space-y-2 border-t pt-4">
+        <Label htmlFor="phase-scenarios">{t("organizerPhases.scenariosLabel")}</Label>
+        <Textarea
+          id="phase-scenarios"
+          rows={4}
+          value={scenariosText}
+          onChange={(e) => setScenariosText(e.target.value)}
+          placeholder={t("organizerPhases.scenariosPlaceholder")}
+        />
+        <p className="text-xs text-muted-foreground">{t("organizerPhases.scenariosHint")}</p>
+      </div>
+
       <Button onClick={submit} disabled={busy || !name.trim()}>
         {submitLabel}
       </Button>

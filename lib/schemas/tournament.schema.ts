@@ -5,6 +5,21 @@ export const tournamentResultModeSchema = z.enum(["points", "selection"]);
 export const tournamentScoringMethodSchema = z.enum(["fixed", "rank_offset"]);
 export const tournamentEliminationSeedingSchema = z.enum(["standings", "random"]);
 export const tournamentBracketSeedingSchema = z.enum(["opposite", "adjacent", "random"]);
+export const tournamentSwissPairingSchema = z.enum(["ranked", "random-in-bracket"]);
+export const tournamentPhasePacingSchema = z.enum(["live", "asynchronous"]);
+export const tournamentDeadlineResolutionSchema = z.enum(["double-loss", "manual"]);
+
+// Scénario du pool d'une phase. `id` est stable : la ronde qui l'a reçu le
+// conserve même si l'organisateur renomme ou réordonne le pool ensuite.
+export const tournamentScenarioSchema = z.object({
+  id: z.string().min(1).max(40),
+  name: z.string().min(1, "Le nom du scénario est requis").max(200),
+  description: z.string().max(2000).optional(),
+});
+
+// Durée d'un intervalle : d'une heure à un an, ce qui couvre aussi bien une
+// ronde jouée le soir même qu'une ligue de club étalée sur une saison.
+const intervalHoursSchema = z.number().int().min(1).max(8760);
 
 const fixedScoringSchema = z.object({
   win: z.number().int(),
@@ -128,6 +143,12 @@ export const createTournamentPhaseSchema = z
     rankOffsets: z.array(z.number().int()).min(1).max(64).optional(),
     eliminationSeeding: tournamentEliminationSeedingSchema.default("standings"),
     bracketSeeding: tournamentBracketSeedingSchema.default("opposite"),
+    swissPairing: tournamentSwissPairingSchema.default("ranked"),
+    pacing: tournamentPhasePacingSchema.default("live"),
+    intervalHours: intervalHoursSchema.optional(),
+    deadlineResolution: tournamentDeadlineResolutionSchema.default("double-loss"),
+    statsPresetKey: z.string().min(1).max(60).optional(),
+    scenarios: z.array(tournamentScenarioSchema).max(50).optional(),
     plannedRounds: z.number().int().min(1).optional(),
     // Joueurs qualifiés à l'entrée de la phase.
     topCut: z.number().int().min(2).optional(),
@@ -139,6 +160,10 @@ export const createTournamentPhaseSchema = z
   .refine((v) => v.maxPlayersPerMatch >= v.minPlayersPerMatch, {
     message: "Le nombre maximal de joueurs doit être supérieur ou égal au minimum",
     path: ["maxPlayersPerMatch"],
+  })
+  .refine((v) => v.pacing !== "asynchronous" || v.intervalHours !== undefined, {
+    message: "La durée d'un intervalle est requise pour une phase asynchrone",
+    path: ["intervalHours"],
   });
 
 export const updateTournamentPhaseSchema = z
@@ -153,6 +178,15 @@ export const updateTournamentPhaseSchema = z
     rankOffsets: z.array(z.number().int()).min(1).max(64).optional(),
     eliminationSeeding: tournamentEliminationSeedingSchema.optional(),
     bracketSeeding: tournamentBracketSeedingSchema.optional(),
+    swissPairing: tournamentSwissPairingSchema.optional(),
+    pacing: tournamentPhasePacingSchema.optional(),
+    intervalHours: intervalHoursSchema.optional(),
+    deadlineResolution: tournamentDeadlineResolutionSchema.optional(),
+    // null retire le preset : la phase ne relève plus de statistiques et
+    // retombe sur les départages historiques.
+    statsPresetKey: z.string().min(1).max(60).nullable().optional(),
+    // null vide le pool de scénarios (les rondes déjà créées gardent le leur).
+    scenarios: z.array(tournamentScenarioSchema).max(50).nullable().optional(),
     plannedRounds: z.number().int().min(1).nullable().optional(),
     topCut: z.number().int().min(2).nullable().optional(),
     minPlayersPerMatch: z.number().int().min(2).max(16).optional(),
@@ -194,6 +228,12 @@ export const reportTournamentMatchSchema = z.object({
         .object({
           winnerId: z.string().nullable().optional(),
           points: z.record(z.string(), z.number().int()).optional(),
+          // Statistiques secondaires de la partie : joueur → clé de statistique
+          // → valeur. Les clés autorisées dépendent du preset de la phase, que
+          // seul le domaine connaît : la validation fine est faite là-bas.
+          stats: z
+            .record(z.string(), z.record(z.string(), z.number().int().min(0).max(9999)))
+            .optional(),
         })
         .refine((g) => g.winnerId !== undefined || g.points !== undefined, {
           message: "Chaque partie doit renseigner un vainqueur (ou nul) ou des points",
@@ -201,6 +241,13 @@ export const reportTournamentMatchSchema = z.object({
     )
     .min(1, "Au moins une partie doit être renseignée")
     .max(9),
+});
+
+// Forfait prononcé par l'arbitrage : `winnerId` désigne le joueur qui l'emporte
+// sans avoir joué, null fait perdre les deux (intervalle expiré sans partie).
+export const forfeitTournamentMatchSchema = z.object({
+  action: z.literal("forfeit"),
+  winnerId: z.string().min(1).nullable(),
 });
 
 export const confirmTournamentMatchSchema = z.object({
@@ -236,6 +283,7 @@ export const updateTournamentMatchSchema = z.discriminatedUnion("action", [
   clearTournamentMatchSchema,
   setTableTournamentMatchSchema,
   extendTournamentMatchSchema,
+  forfeitTournamentMatchSchema,
 ]);
 
 export const tournamentPenaltyTypeSchema = z.enum([
@@ -329,10 +377,24 @@ export const submitTournamentFormSchema = z.object({
   answers: z.array(tournamentFormAnswerSchema).max(50),
 });
 
-// Action sur une ronde : `reopen` la repasse « en cours » (ronde courante).
-export const updateTournamentRoundSchema = z.object({
-  action: z.literal("reopen"),
-});
+// Actions sur une ronde :
+// - reopen : repasse la ronde « en cours » (ronde courante).
+// - set-deadline : déplace l'échéance de l'intervalle (null la retire).
+// - set-scenario : change le scénario joué (null le retire).
+// - close-deadline : clôt l'intervalle en appliquant la règle de la phase aux
+//   matchs restés sans résultat.
+export const updateTournamentRoundSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("reopen") }),
+  z.object({
+    action: z.literal("set-deadline"),
+    deadlineAt: z.coerce.date().nullable(),
+  }),
+  z.object({
+    action: z.literal("set-scenario"),
+    scenario: tournamentScenarioSchema.nullable(),
+  }),
+  z.object({ action: z.literal("close-deadline") }),
+]);
 
 export type CreateTournamentInput = z.infer<typeof createTournamentSchema>;
 export type UpdateTournamentInput = z.infer<typeof updateTournamentSchema>;

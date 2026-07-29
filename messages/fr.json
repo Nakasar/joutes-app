@@ -1708,6 +1708,25 @@
     }
   },
   "Tournaments": {
+                   "matchStats": {
+                     "presets": {
+                       "swpLeague": "Ligue Shatterpoint (cartes de lutte, blessures)",
+                       "victoryPoints": "Points de victoire",
+                       "bloodBowl": "Blood Bowl (touchdowns, sorties)"
+                     },
+                     "stats": {
+                       "struggles": "Cartes de lutte revendiquées",
+                       "strugglesShort": "Lutte",
+                       "wounds": "Blessures infligées",
+                       "woundsShort": "Bless.",
+                       "victoryPoints": "Points de victoire",
+                       "victoryPointsShort": "PV",
+                       "touchdowns": "Touchdowns",
+                       "touchdownsShort": "TD",
+                       "casualties": "Sorties adverses",
+                       "casualtiesShort": "Sorties"
+                     }
+                   },
     "matchExport": {
       "sheetsButton": "Feuilles de match",
       "listButton": "Liste (impression)",
@@ -1822,6 +1841,8 @@
       "bestOfN": "best-of-{count}"
     },
     "player": {
+                "playBefore": "À jouer avant le",
+                "scenario": "Scénario",
       "tableNumber": "Table {number}",
       "myRegistration": "Mon inscription :",
       "statusRegistered": "REGISTERED",
@@ -1867,6 +1888,7 @@
       "myMatchesTitle": "Mes matchs"
     },
     "playerShell": {
+                     "deadline": "échéance",
       "notSyncedTitle": "Tournoi non synchronisé",
       "notSyncedDescription": "Ce navigateur n'est pas synchronisé avec ce tournoi. Scannez le QR code fourni par l'organisateur, ou connectez-vous si vous êtes inscrit avec votre compte.",
       "myTournaments": "Mes tournois",
@@ -1954,6 +1976,8 @@
       "next": "Suivant"
     },
     "gamesEditor": {
+                     "statAria": "{stat} de {name} pour la partie {number}",
+                     "statsHint": "Relevé après chaque partie : {stats}.",
       "gameN": "Partie {number}",
       "gameWinnerAria": "Vainqueur de la partie {number}",
       "winnerPlaceholder": "Vainqueur…",
@@ -2099,6 +2123,25 @@
       "joinQr": "QR d'inscription"
     },
     "organizerPhases": {
+                         "swissPairingLabel": "Appariement dans un même total de points",
+                         "swissPairingRanked": "Selon le classement",
+                         "swissPairingRandom": "Tirage au sort dans le groupe",
+                         "swissPairingHint": "Le tirage au sort est la règle des ligues officielles : à points égaux, les adversaires sont désignés au hasard.",
+                         "pacingLabel": "Rythme des rondes",
+                         "pacingLive": "Sur place (minuteur et tables)",
+                         "pacingAsync": "Par intervalles (ligue)",
+                         "pacingHint": "En intervalles, les joueurs planifient eux-mêmes leur partie et rapportent le résultat avant l'échéance.",
+                         "intervalLabel": "Durée d'un intervalle (jours)",
+                         "intervalHint": "Une à deux semaines laissent aux joueurs le temps de se caler une date.",
+                         "deadlineResolutionLabel": "Matchs non joués à l'échéance",
+                         "deadlineDoubleLoss": "Double défaite",
+                         "deadlineManual": "Laisser l'organisation trancher",
+                         "statsPresetLabel": "Statistiques de match",
+                         "statsPresetNone": "Aucune",
+                         "statsPresetHint": "Relevées à chaque partie et utilisées pour départager le classement. Elles ne désignent jamais le vainqueur.",
+                         "scenariosLabel": "Scénarios (un par ligne)",
+                         "scenariosPlaceholder": "Conflit mineur | Une seule escouade\nPriorité changeante | Deux escouades",
+                         "scenariosHint": "Attribués aux rondes dans l'ordre. Après le « | », les consignes de composition affichées aux joueurs.",
       "resetStatusTitle": "Repasser en « non démarrée »",
       "resetStatusAria": "Repasser la phase {name} en non démarrée",
       "currentPhaseLabel": "Phase en cours",
@@ -2231,6 +2274,11 @@
       "emptyDescription": "Aucune ronde n'a encore été créée. Choisissez une phase pour lancer la première."
     },
     "roundClient": {
+                     "forfeitTitle": "Match non joué",
+                     "forfeitHint": "Une victoire par forfait est comptée comme un bye. La double défaite ne vaut pas match nul.",
+                     "forfeitWin": "Victoire de {name}",
+                     "forfeitDoubleLoss": "Double défaite",
+                     "forfeitError": "Impossible de prononcer le forfait",
       "headerTable": "Table",
       "tableAria": "Numéro de table du match {match}",
       "tableError": "Erreur lors de la modification du numéro de table",
@@ -2393,6 +2441,11 @@
       "deleteError": "Erreur lors de la suppression"
     },
     "roundHeader": {
+                     "phaseOnly": "{phase}",
+                     "deadlineIn": "Échéance {when}",
+                     "deadlinePassed": "Échue {when}",
+                     "extendOneDay": "+ 1 jour",
+                     "closeInterval": "Clore l'intervalle",
       "ofRounds": "sur {total}",
       "phaseAndTables": "{phase} · {count} tables",
       "addTwoMinutes": "+2 min",
@@ -2477,6 +2530,9 @@
       "empty": "Aucune activité pour le moment.",
       "staffActor": "l'organisation",
       "types": {
+                 "match-forfeited": "{actor} a prononcé un forfait à la table {table}",
+                 "round-deadline-set": "Échéance de la ronde {round} modifiée",
+                 "round-closed-on-deadline": "Ronde {round} close à l'échéance ({matches} match(s) réglés)",
         "match-reported": "Table {table} — résultat rendu par {actor}",
         "match-confirmed": "Table {table} — résultat confirmé",
         "match-disputed": "Table {table} — litige signalé",

@@ -1,3 +1,4 @@
+import { getPreset } from "@/lib/tournaments/game-presets";
 import { OrganizerRoundClient } from "../OrganizerRoundClient";
 import { RoundHeaderBar } from "../RoundHeaderBar";
 import { RoundSubNav } from "../RoundSubNav";
@@ -21,6 +22,8 @@ export default async function OrganizerRoundMatchesPage({
         plannedRounds={phase.plannedRounds}
         phaseName={phase.name}
         tableCount={matches.length}
+        deadlineAt={round.deadlineAt?.toISOString()}
+        scenarioName={round.scenario?.name}
       />
       <div className="px-6 pt-4">
         <RoundSubNav
@@ -37,6 +40,7 @@ export default async function OrganizerRoundMatchesPage({
         players={players}
         resultMode={phase.resultMode}
         bestOf={phase.bestOf}
+        stats={getPreset(phase.statsPresetKey)?.stats ?? []}
         phaseId={phase.id}
         isLastRound={isLastRound}
         reopenCascades={reopenCascades}

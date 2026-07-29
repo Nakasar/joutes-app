@@ -27,6 +27,10 @@ export type PlayerStanding = {
   gamesLost: number;
   gamesDiff: number;
   opponentMatchWinPercentage?: number; // Pour le tiebreaker
+  // Cumul des statistiques secondaires du preset de la phase (cartes d'objectif,
+  // points de victoire…), par clé de statistique. Absent quand la phase n'en
+  // utilise pas.
+  stats?: Record<string, number>;
 };
 
 export type PairingResult = {
@@ -215,21 +219,80 @@ function havePlayedTogether(
 }
 
 /**
- * Génère les pairings pour une ronde suisse.
- * `rankedOrder` (optionnel) impose l'ordre de classement des joueurs pour
- * l'appariement (ex : classement cumulé multi-phases). Sans lui, l'ordre est
- * déduit des `matches` fournis. L'évitement des re-matchs se base toujours sur
- * `matches`.
+ * Choisit le joueur qui reçoit le BYE dans une liste ordonnée par classement
+ * (meilleur en premier) : le moins bien classé n'en ayant pas encore reçu. Si
+ * tous en ont déjà eu un, le moins bien classé le reprend — un joueur doit
+ * bien être exempté quand l'effectif est impair.
+ */
+export function pickByePlayer(orderedPlayerIds: string[], playersWithBye?: Set<string>): string | null {
+  if (orderedPlayerIds.length === 0) return null;
+  if (playersWithBye) {
+    for (let i = orderedPlayerIds.length - 1; i >= 0; i--) {
+      if (!playersWithBye.has(orderedPlayerIds[i])) return orderedPlayerIds[i];
+    }
+  }
+  return orderedPlayerIds[orderedPlayerIds.length - 1];
+}
+
+// Règle d'appariement au sein d'un même total de points, en phase suisse :
+// - ranked : ordre du classement.
+// - random-in-bracket : tirage au sort dans chaque groupe de points.
+// Miroir de `TournamentSwissPairing`, déclaré ici pour que ce module reste
+// indépendant du modèle de tournoi (comme `BracketSeedingMode` plus bas).
+export type SwissPairingMode = "ranked" | "random-in-bracket";
+
+export type SwissPairingOptions = {
+  // Ordre de classement imposé (ex : classement cumulé multi-phases). Sans lui,
+  // l'ordre est déduit des `matches` fournis.
+  rankedOrder?: string[];
+  // Appariement au sein d'un même total de points. Défaut "ranked".
+  mode?: SwissPairingMode;
+  // Points de classement d'un joueur, pour constituer les groupes du tirage au
+  // sort en mode "random-in-bracket". Fournis par le domaine, qui seul connaît
+  // le barème de la phase. Sans eux, le mode retombe sur "ranked".
+  matchPointsOf?: (playerId: string) => number;
+  // Joueurs ayant déjà reçu un BYE pendant le tournoi : le BYE va en priorité
+  // à quelqu'un d'autre.
+  playersWithBye?: Set<string>;
+};
+
+/**
+ * Réordonne une liste classée en tirant au sort à l'intérieur de chaque groupe
+ * de joueurs à égalité de points. Les groupes restent ordonnés par points
+ * décroissants : le joueur en trop d'un groupe impair sera donc apparié au
+ * premier tiré du groupe suivant, ce qui est exactement le flottement attendu.
+ */
+function shuffleWithinPointGroups(
+  orderedPlayerIds: string[],
+  matchPointsOf: (playerId: string) => number
+): string[] {
+  const groups = new Map<number, string[]>();
+  for (const playerId of orderedPlayerIds) {
+    const points = matchPointsOf(playerId);
+    const group = groups.get(points);
+    if (group) group.push(playerId);
+    else groups.set(points, [playerId]);
+  }
+  return [...groups.entries()]
+    .sort((a, b) => b[0] - a[0])
+    .flatMap(([, group]) => shuffleArray(group));
+}
+
+/**
+ * Génère les pairings pour une ronde suisse. L'évitement des re-matchs se base
+ * toujours sur `matches`.
  */
 export function generateSwissPairings(
   playerIds: string[],
   matches: PairingMatch[],
   roundNumber: number,
-  rankedOrder?: string[]
+  options: SwissPairingOptions = {}
 ): PairingResult[] {
+  const { rankedOrder, mode = "ranked", matchPointsOf, playersWithBye } = options;
   const pairings: PairingResult[] = [];
 
-  // Si c'est la première ronde, apparier aléatoirement
+  // Première ronde : appariement entièrement aléatoire. Le BYE, s'il y en a un,
+  // revient donc lui aussi au hasard, comme le veut le format.
   if (roundNumber === 1) {
     const shuffled = shuffleArray([...playerIds]);
     for (let i = 0; i < shuffled.length - 1; i += 2) {
@@ -250,7 +313,7 @@ export function generateSwissPairings(
 
   // Pour les rondes suivantes, apparier selon le classement.
   const standings = calculateStandings(playerIds, matches);
-  const availablePlayers = [...standings];
+  let orderedIds = standings.map((standing) => standing.playerId);
   // Ordre de classement imposé (ex : cumul multi-phases) : réordonne les
   // joueurs disponibles en conséquence. Les joueurs absents de `rankedOrder`
   // sont placés en fin ; deux inconnus comparent à 0 (tri stable → ordre
@@ -258,8 +321,24 @@ export function generateSwissPairings(
   if (rankedOrder) {
     const rankById = new Map(rankedOrder.map((id, index) => [id, index]));
     const rankOf = (playerId: string) => rankById.get(playerId) ?? rankedOrder.length;
-    availablePlayers.sort((a, b) => rankOf(a.playerId) - rankOf(b.playerId));
+    orderedIds = [...orderedIds].sort((a, b) => rankOf(a) - rankOf(b));
   }
+
+  // Le BYE est attribué avant tout appariement : le retirer d'abord évite qu'il
+  // échoie mécaniquement au dernier joueur non apparié, qui n'est pas forcément
+  // celui qui doit le recevoir.
+  if (orderedIds.length % 2 === 1) {
+    const byePlayerId = pickByePlayer(orderedIds, playersWithBye);
+    if (byePlayerId) {
+      pairings.push({ player1Id: byePlayerId, player2Id: null });
+      orderedIds = orderedIds.filter((id) => id !== byePlayerId);
+    }
+  }
+
+  const availablePlayers =
+    mode === "random-in-bracket" && matchPointsOf
+      ? shuffleWithinPointGroups(orderedIds, matchPointsOf)
+      : orderedIds;
 
   while (availablePlayers.length >= 2) {
     const player1 = availablePlayers.shift()!;
@@ -268,11 +347,8 @@ export function generateSwissPairings(
     // Essayer de trouver un adversaire qui n'a pas encore joué contre player1
     for (let i = 0; i < availablePlayers.length; i++) {
       const player2 = availablePlayers[i];
-      if (!havePlayedTogether(player1.playerId, player2.playerId, matches)) {
-        pairings.push({
-          player1Id: player1.playerId,
-          player2Id: player2.playerId,
-        });
+      if (!havePlayedTogether(player1, player2, matches)) {
+        pairings.push({ player1Id: player1, player2Id: player2 });
         availablePlayers.splice(i, 1);
         paired = true;
         break;
@@ -282,17 +358,14 @@ export function generateSwissPairings(
     // Si aucun adversaire n'a été trouvé (tous ont déjà joué), prendre le premier disponible
     if (!paired && availablePlayers.length > 0) {
       const player2 = availablePlayers.shift()!;
-      pairings.push({
-        player1Id: player1.playerId,
-        player2Id: player2.playerId,
-      });
+      pairings.push({ player1Id: player1, player2Id: player2 });
     }
   }
 
-  // S'il reste un joueur impair, il a un "bye"
+  // Effectif pair au départ mais un joueur reste isolé : il prend le BYE.
   if (availablePlayers.length === 1) {
     pairings.push({
-      player1Id: availablePlayers[0].playerId,
+      player1Id: availablePlayers[0],
       player2Id: null,
     });
   }

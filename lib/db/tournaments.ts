@@ -1,11 +1,13 @@
 import 'server-only';
 
 import crypto from "crypto";
+import { DateTime } from "luxon";
 import { customAlphabet } from "nanoid";
 import db from "@/lib/mongodb";
 import { ObjectId, WithId } from "mongodb";
 import {
   DEFAULT_FIXED_SCORING,
+  DEFAULT_INTERVAL_HOURS,
   DEFAULT_RANK_OFFSETS,
   Tournament,
   TournamentActivity,
@@ -16,6 +18,7 @@ import {
   TournamentAnnouncementLevel,
   TournamentBracketSeeding,
   TournamentDb,
+  TournamentDeadlineResolution,
   TournamentDecklist,
   TournamentEliminationSeeding,
   TournamentFixedScoring,
@@ -33,6 +36,7 @@ import {
   TournamentPenaltyType,
   TournamentPhase,
   TournamentPhaseDb,
+  TournamentPhasePacing,
   TournamentPhaseType,
   TournamentPlayerStatus,
   TournamentPlayer,
@@ -41,7 +45,9 @@ import {
   TournamentRound,
   TournamentRoundDb,
   TournamentRoundStanding,
+  TournamentScenario,
   TournamentScoringMethod,
+  TournamentSwissPairing,
 } from "@/lib/types/Tournament";
 import {
   PairingMatch,
@@ -54,6 +60,12 @@ import {
   generateSwissPairings,
   shuffleArray,
 } from "@/lib/utils/pairing";
+import { type GameTournamentPreset, getPreset, presetStatKeys } from "@/lib/tournaments/game-presets";
+import {
+  DEFAULT_MATCH_SCORING,
+  calculateMultiplayerStandings,
+  scoringForPhase,
+} from "@/lib/tournaments/standings";
 import {
   resolveCurrentRound,
   resolveDisplayPhase,
@@ -261,6 +273,12 @@ function toPhase(doc: WithId<TournamentPhaseDb> & { matchFormat?: string }): Tou
     rankOffsets: doc.rankOffsets ?? DEFAULT_RANK_OFFSETS,
     eliminationSeeding: doc.eliminationSeeding ?? "standings",
     bracketSeeding: doc.bracketSeeding ?? "opposite",
+    swissPairing: doc.swissPairing ?? "ranked",
+    pacing: doc.pacing ?? "live",
+    intervalHours: doc.intervalHours ?? DEFAULT_INTERVAL_HOURS,
+    deadlineResolution: doc.deadlineResolution ?? "double-loss",
+    statsPresetKey: doc.statsPresetKey,
+    scenarios: doc.scenarios,
     plannedRounds: doc.plannedRounds,
     topCut: doc.topCut,
     minPlayersPerMatch: doc.minPlayersPerMatch ?? 2,
@@ -281,6 +299,10 @@ function toRound(doc: WithId<TournamentRoundDb>): TournamentRound {
     status: doc.status,
     standings: doc.standings,
     standingsValidatedAt: doc.standingsValidatedAt,
+    opensAt: doc.opensAt,
+    deadlineAt: doc.deadlineAt,
+    remindersSentAt: doc.remindersSentAt,
+    scenario: doc.scenario,
     createdAt: doc.createdAt,
     completedAt: doc.completedAt,
   };
@@ -295,6 +317,7 @@ function toMatch(doc: WithId<TournamentMatchDb>): TournamentMatch {
     players: doc.players,
     games: doc.games ?? [],
     winnerIds: doc.winnerIds ?? [],
+    resolution: doc.resolution ?? "played",
     bracketPosition: doc.bracketPosition,
     tableNumber: doc.tableNumber,
     extensionSeconds: doc.extensionSeconds,
@@ -358,11 +381,31 @@ function byeWinScore(bestOf: number): number {
 function tallyGames(
   games: TournamentGameResult[],
   matchPlayerIds: string[],
-  resultMode: TournamentResultMode
+  resultMode: TournamentResultMode,
+  statKeys: string[] = []
 ): { normalizedGames: TournamentGameResult[]; gamesWonByPlayer: Map<string, number> } {
   const gamesWonByPlayer = new Map<string, number>(matchPlayerIds.map((id) => [id, 0]));
+
+  // Statistiques secondaires d'une partie, réduites aux joueurs du match et aux
+  // clés du preset. Absentes = la phase n'en relève pas, ou rien n'a été saisi.
+  const normalizeStats = (
+    stats: Record<string, Record<string, number>> | undefined
+  ): Record<string, Record<string, number>> | undefined => {
+    if (statKeys.length === 0 || !stats) return undefined;
+    const normalized: Record<string, Record<string, number>> = {};
+    for (const playerId of matchPlayerIds) {
+      const playerStats = stats[playerId];
+      if (!playerStats) continue;
+      normalized[playerId] = Object.fromEntries(
+        statKeys.map((key) => [key, playerStats[key] ?? 0])
+      );
+    }
+    return Object.keys(normalized).length > 0 ? normalized : undefined;
+  };
+
   const normalizedGames: TournamentGameResult[] = games.map((game) => {
     let winnerId: string | null | undefined = game.winnerId ?? null;
+    const stats = normalizeStats(game.stats);
 
     if (resultMode === "points") {
       const points = game.points ?? {};
@@ -383,13 +426,13 @@ function tallyGames(
       for (const playerId of matchPlayerIds) normalizedPoints[playerId] = points[playerId] ?? 0;
       const won = winnerId;
       if (won) gamesWonByPlayer.set(won, (gamesWonByPlayer.get(won) ?? 0) + 1);
-      return { winnerId, points: normalizedPoints };
+      return { winnerId, points: normalizedPoints, ...(stats ? { stats } : {}) };
     }
 
     if (winnerId) {
       gamesWonByPlayer.set(winnerId, (gamesWonByPlayer.get(winnerId) ?? 0) + 1);
     }
-    return { winnerId: winnerId ?? null };
+    return { winnerId: winnerId ?? null, ...(stats ? { stats } : {}) };
   });
 
   return { normalizedGames, gamesWonByPlayer };
@@ -2132,6 +2175,12 @@ export async function addPhase(
     rankOffsets?: number[];
     eliminationSeeding?: TournamentEliminationSeeding;
     bracketSeeding?: TournamentBracketSeeding;
+    swissPairing?: TournamentSwissPairing;
+    pacing?: TournamentPhasePacing;
+    intervalHours?: number;
+    deadlineResolution?: TournamentDeadlineResolution;
+    statsPresetKey?: string;
+    scenarios?: TournamentScenario[];
     plannedRounds?: number;
     topCut?: number;
     minPlayersPerMatch?: number;
@@ -2167,6 +2216,12 @@ export async function addPhase(
     rankOffsets: data.rankOffsets ?? DEFAULT_RANK_OFFSETS,
     eliminationSeeding: data.eliminationSeeding ?? "standings",
     bracketSeeding: data.bracketSeeding ?? "opposite",
+    swissPairing: data.swissPairing ?? "ranked",
+    pacing: data.pacing ?? "live",
+    intervalHours: data.intervalHours ?? DEFAULT_INTERVAL_HOURS,
+    deadlineResolution: data.deadlineResolution ?? "double-loss",
+    statsPresetKey: data.statsPresetKey,
+    scenarios: data.scenarios,
     plannedRounds: data.plannedRounds,
     topCut: data.topCut,
     minPlayersPerMatch,
@@ -2193,6 +2248,12 @@ export async function updatePhase(
     rankOffsets?: number[];
     eliminationSeeding?: TournamentEliminationSeeding;
     bracketSeeding?: TournamentBracketSeeding;
+    swissPairing?: TournamentSwissPairing;
+    pacing?: TournamentPhasePacing;
+    intervalHours?: number;
+    deadlineResolution?: TournamentDeadlineResolution;
+    statsPresetKey?: string | null;
+    scenarios?: TournamentScenario[] | null;
     plannedRounds?: number | null;
     topCut?: number | null;
     minPlayersPerMatch?: number;
@@ -2233,6 +2294,20 @@ export async function updatePhase(
   if (updates.rankOffsets !== undefined) set.rankOffsets = updates.rankOffsets;
   if (updates.eliminationSeeding !== undefined) set.eliminationSeeding = updates.eliminationSeeding;
   if (updates.bracketSeeding !== undefined) set.bracketSeeding = updates.bracketSeeding;
+  if (updates.swissPairing !== undefined) set.swissPairing = updates.swissPairing;
+  if (updates.pacing !== undefined) set.pacing = updates.pacing;
+  if (updates.intervalHours !== undefined) set.intervalHours = updates.intervalHours;
+  if (updates.deadlineResolution !== undefined) set.deadlineResolution = updates.deadlineResolution;
+  if (updates.statsPresetKey === null) {
+    unset.statsPresetKey = "";
+  } else if (updates.statsPresetKey !== undefined) {
+    set.statsPresetKey = updates.statsPresetKey;
+  }
+  if (updates.scenarios === null) {
+    unset.scenarios = "";
+  } else if (updates.scenarios !== undefined) {
+    set.scenarios = updates.scenarios;
+  }
   if (updates.plannedRounds === null) {
     unset.plannedRounds = "";
   } else if (updates.plannedRounds !== undefined) {
@@ -2392,6 +2467,17 @@ function assignTableNumbers(
 }
 
 /**
+ * Scénario attribué à une ronde : le pool de la phase est parcouru dans l'ordre
+ * et recommence au début s'il y a plus de rondes que de scénarios (une ligue
+ * peut tourner sur trois missions pendant six intervalles).
+ */
+function scenarioForRound(phase: TournamentPhase, roundNumber: number): TournamentScenario | undefined {
+  const scenarios = phase.scenarios;
+  if (!scenarios || scenarios.length === 0) return undefined;
+  return scenarios[(roundNumber - 1) % scenarios.length];
+}
+
+/**
  * Crée la ronde suivante d'une phase, avec génération automatique des matchs
  * (pairings suisses ou bracket). Pour une phase freeform, crée une ronde vide
  * dans laquelle l'organisateur ajoute ses matchs manuellement.
@@ -2449,12 +2535,23 @@ export async function createNextRound(
   const allMatches = (
     await db.collection<TournamentMatchDb>(MATCHES).find({ tournamentId: tId }).toArray()
   ).map(toMatch);
-  const cumulativeRank = (ids: string[]): string[] =>
+  const phasePreset = getPreset(phase.statsPresetKey);
+  const cumulativeStandings = (ids: string[]): PlayerStanding[] =>
     calculateMultiplayerStandings(
       ids,
       allMatches,
-      (match) => scoringByPhaseId.get(match.phaseId) ?? scoringForPhase(phase)
-    ).map((s) => s.playerId);
+      (match) => scoringByPhaseId.get(match.phaseId) ?? scoringForPhase(phase),
+      phasePreset
+    );
+  const cumulativeRank = (ids: string[]): string[] =>
+    cumulativeStandings(ids).map((s) => s.playerId);
+
+  // Joueurs déjà exemptés au moins une fois : le BYE va en priorité à ceux qui
+  // n'en ont pas encore eu. Les BYE de toutes les phases comptent — un joueur
+  // exempté en phase suisse ne doit pas l'être à nouveau juste après.
+  const playersWithBye = new Set(
+    allMatches.filter((m) => m.players.length === 1).map((m) => m.players[0].playerId)
+  );
 
   // Chaque groupe = les joueurs d'un match à créer ; un groupe de taille 1
   // est un BYE. Uniformise pairings 2-joueurs (bracket, suisse en duel) et
@@ -2489,9 +2586,18 @@ export async function createNextRound(
     }
     if (minPlayers === 2 && maxPlayers === 2) {
       // Duel : appariement suisse classique (évitement des re-matchs sur la
-      // phase, ordre de classement cumulé multi-phases).
+      // phase, ordre de classement cumulé multi-phases). En mode
+      // « random-in-bracket », les points cumulés servent à constituer les
+      // groupes dans lesquels l'appariement est tiré au sort.
+      const standings = cumulativeStandings(field);
+      const matchPointsById = new Map(standings.map((s) => [s.playerId, s.matchPoints]));
       groups = pairingsToGroups(
-        generateSwissPairings(field, phaseMatches.map(toPairingMatch), roundNumber, cumulativeRank(field))
+        generateSwissPairings(field, phaseMatches.map(toPairingMatch), roundNumber, {
+          rankedOrder: standings.map((s) => s.playerId),
+          mode: phase.swissPairing,
+          matchPointsOf: (playerId) => matchPointsById.get(playerId) ?? 0,
+          playersWithBye,
+        })
       );
     } else {
       // Pods multijoueurs : ordre aléatoire en ronde 1, sinon par classement.
@@ -2549,11 +2655,22 @@ export async function createNextRound(
   // freeform: pas de génération, la ronde est créée vide.
 
   const now = new Date();
+  const isAsync = phase.pacing === "asynchronous";
+  const scenario = scenarioForRound(phase, roundNumber);
   const roundDoc: TournamentRoundDb = {
     tournamentId: tId,
     phaseId: pId,
     number: roundNumber,
     status: "in-progress",
+    // Intervalle de jeu : la ronde s'ouvre à sa création et court jusqu'à
+    // l'échéance. En direct, c'est le minuteur du tournoi qui rythme la ronde.
+    ...(isAsync
+      ? {
+          opensAt: now,
+          deadlineAt: DateTime.fromJSDate(now).plus({ hours: phase.intervalHours }).toJSDate(),
+        }
+      : {}),
+    ...(scenario ? { scenario } : {}),
     createdAt: now,
   };
   await roundsIndexReady;
@@ -2572,14 +2689,17 @@ export async function createNextRound(
   const round = toRound({ ...roundDoc, _id: roundResult.insertedId });
 
   // Numéros de table : tables fixes des joueurs, puis séquence à partir du
-  // numéro de première table configuré sur le tournoi.
+  // numéro de première table configuré sur le tournoi. Une ronde asynchrone
+  // n'en a pas : les joueurs se retrouvent où ils veulent, quand ils veulent.
   const tournamentForTables = await requireTournament(tournamentId);
   const playersById = new Map(players.map((p) => [p.id, p]));
-  const tableNumbers = assignTableNumbers(
-    groups,
-    playersById,
-    tournamentForTables.settings.firstTableNumber ?? 1
-  );
+  const tableNumbers = isAsync
+    ? groups.map(() => undefined)
+    : assignTableNumbers(
+        groups,
+        playersById,
+        tournamentForTables.settings.firstTableNumber ?? 1
+      );
 
   const matchDocs: TournamentMatchDb[] = groups.map((group, i) => {
     const isBye = group.length === 1;
@@ -2763,6 +2883,182 @@ async function completeRoundIfAllMatchesDone(tournamentId: ObjectId, roundId: Ob
       { $set: { status: "in-progress" }, $unset: { completedAt: "" } }
     );
   }
+}
+
+/**
+ * Déplace l'échéance d'un intervalle. Le document de ligue autorise
+ * explicitement l'organisateur à accorder du temps supplémentaire quand des
+ * joueurs n'ont pas pu se rencontrer ; c'est le geste qui l'implémente.
+ * `deadlineAt` à null retire l'échéance (l'intervalle court alors sans limite).
+ */
+export async function setRoundDeadline(
+  tournamentId: string,
+  roundId: string,
+  deadlineAt: Date | null
+): Promise<TournamentRound> {
+  const tId = parseObjectId(tournamentId, "Tournoi");
+  const rId = parseObjectId(roundId, "Ronde");
+
+  const result = await db.collection<TournamentRoundDb>(ROUNDS).findOneAndUpdate(
+    { _id: rId, tournamentId: tId },
+    deadlineAt
+      ? // Repousser l'échéance relance le cycle de relances : la relance déjà
+        // envoyée portait sur l'ancienne date et n'a plus lieu d'être.
+        { $set: { deadlineAt }, $unset: { remindersSentAt: "" } }
+      : { $unset: { deadlineAt: "", remindersSentAt: "" } },
+    { returnDocument: "after" }
+  );
+  if (!result) {
+    throw new TournamentError("not-found", "Ronde non trouvée");
+  }
+  return toRound(result);
+}
+
+/**
+ * Rondes asynchrones encore ouvertes dont l'échéance approche ou est dépassée,
+ * avec les matchs restés sans résultat. Alimente le cron de relance : c'est la
+ * seule lecture transverse à tous les tournois, d'où le filtre sur `deadlineAt`
+ * plutôt qu'un balayage complet.
+ */
+export async function listRoundsNeedingDeadlineNotice(
+  before: Date
+): Promise<{ round: TournamentRound; pendingMatches: TournamentMatch[] }[]> {
+  const roundDocs = await db
+    .collection<TournamentRoundDb>(ROUNDS)
+    .find({ status: "in-progress", deadlineAt: { $lte: before }, remindersSentAt: { $exists: false } })
+    .sort({ deadlineAt: 1 })
+    .limit(200)
+    .toArray();
+
+  const rounds = roundDocs.map(toRound);
+  if (rounds.length === 0) return [];
+
+  const pendingDocs = await db
+    .collection<TournamentMatchDb>(MATCHES)
+    .find({
+      roundId: { $in: roundDocs.map((doc) => doc._id) },
+      status: { $ne: "completed" },
+    })
+    .toArray();
+  const pendingByRoundId = new Map<string, TournamentMatch[]>();
+  for (const doc of pendingDocs) {
+    const key = doc.roundId.toString();
+    const list = pendingByRoundId.get(key);
+    if (list) list.push(toMatch(doc));
+    else pendingByRoundId.set(key, [toMatch(doc)]);
+  }
+
+  return rounds
+    .map((round) => ({ round, pendingMatches: pendingByRoundId.get(round.id) ?? [] }))
+    .filter((entry) => entry.pendingMatches.length > 0);
+}
+
+/** Marque une ronde comme relancée, pour ne pas renvoyer le même message. */
+export async function markRoundReminded(roundId: string): Promise<void> {
+  await db
+    .collection<TournamentRoundDb>(ROUNDS)
+    .updateOne({ _id: parseObjectId(roundId, "Ronde") }, { $set: { remindersSentAt: new Date() } });
+}
+
+/** Change (ou retire) le scénario joué pendant une ronde. */
+export async function setRoundScenario(
+  tournamentId: string,
+  roundId: string,
+  scenario: TournamentScenario | null
+): Promise<TournamentRound> {
+  const tId = parseObjectId(tournamentId, "Tournoi");
+  const rId = parseObjectId(roundId, "Ronde");
+
+  const result = await db.collection<TournamentRoundDb>(ROUNDS).findOneAndUpdate(
+    { _id: rId, tournamentId: tId },
+    scenario ? { $set: { scenario } } : { $unset: { scenario: "" } },
+    { returnDocument: "after" }
+  );
+  if (!result) {
+    throw new TournamentError("not-found", "Ronde non trouvée");
+  }
+  return toRound(result);
+}
+
+/**
+ * Clôt un intervalle : applique la règle de la phase aux matchs encore ouverts,
+ * puis termine la ronde.
+ *
+ * En `double-loss` (règle par défaut des ligues), les deux joueurs d'un match
+ * non joué perdent. La ronde est ensuite fermée par
+ * `completeRoundIfAllMatchesDone`, comme après le dernier résultat rentré.
+ *
+ * En `manual`, rien n'est appliqué : la fonction se contente de constater qu'il
+ * reste des matchs ouverts et le dit — l'organisateur tranche match par match
+ * (forfait d'un côté, prolongation, résultat saisi à la main).
+ */
+export async function closeRoundOnDeadline(
+  tournamentId: string,
+  roundId: string
+): Promise<{ round: TournamentRound; resolvedMatchIds: string[] }> {
+  const tId = parseObjectId(tournamentId, "Tournoi");
+  const rId = parseObjectId(roundId, "Ronde");
+
+  const round = await getRoundById(tournamentId, roundId);
+  if (!round) {
+    throw new TournamentError("not-found", "Ronde non trouvée");
+  }
+  if (round.status === "completed") {
+    throw new TournamentError("conflict", "Cette ronde est déjà terminée");
+  }
+
+  const phase = await getPhaseById(tournamentId, round.phaseId);
+  if (!phase) {
+    throw new TournamentError("not-found", "Phase non trouvée");
+  }
+
+  const openMatches = (
+    await db
+      .collection<TournamentMatchDb>(MATCHES)
+      .find({ tournamentId: tId, roundId: rId, status: { $ne: "completed" } })
+      .toArray()
+  ).map(toMatch);
+
+  // Un match rapporté mais pas encore confirmé, ou contesté, porte un résultat :
+  // la clôture ne doit jamais l'écraser. L'organisateur tranche d'abord.
+  const awaitingArbitration = openMatches.filter((m) => m.status !== "pending");
+  if (awaitingArbitration.length > 0) {
+    throw new TournamentError(
+      "conflict",
+      `${awaitingArbitration.length} match(s) attendent une confirmation ou un arbitrage : traitez-les avant de clore l'intervalle`
+    );
+  }
+
+  const unplayedMatches = openMatches.filter((m) => m.status === "pending");
+  if (phase.deadlineResolution === "manual") {
+    if (unplayedMatches.length > 0) {
+      throw new TournamentError(
+        "conflict",
+        `${unplayedMatches.length} match(s) sans résultat : renseignez-les ou accordez un forfait avant de clore l'intervalle`
+      );
+    }
+  } else if (unplayedMatches.length > 0) {
+    await db.collection<TournamentMatchDb>(MATCHES).updateMany(
+      { tournamentId: tId, roundId: rId, status: "pending" },
+      {
+        $set: {
+          status: "completed",
+          resolution: "double-loss",
+          winnerIds: [],
+          games: [],
+          updatedAt: new Date(),
+        },
+      }
+    );
+  }
+
+  await completeRoundIfAllMatchesDone(tId, rId);
+
+  const closed = await getRoundById(tournamentId, roundId);
+  if (!closed) {
+    throw new TournamentError("not-found", "Ronde non trouvée");
+  }
+  return { round: closed, resolvedMatchIds: unplayedMatches.map((m) => m.id) };
 }
 
 // =====================
@@ -2966,6 +3262,7 @@ export async function reportMatchResult(
   }
 
   const matchPlayerIds = match.players.map((p) => p.playerId);
+  const statKeys = presetStatKeys(getPreset(phase.statsPresetKey));
 
   // Au plus bestOf parties ; chaque partie ne concerne que des joueurs du match.
   if (data.games.length > phase.bestOf) {
@@ -2974,6 +3271,24 @@ export async function reportMatchResult(
   for (const game of data.games) {
     if (game.winnerId != null && !matchPlayerIds.includes(game.winnerId)) {
       throw new TournamentError("invalid", "Le vainqueur d'une partie doit être un joueur du match");
+    }
+    if (game.stats) {
+      if (statKeys.length === 0) {
+        throw new TournamentError(
+          "invalid",
+          "Cette phase ne relève aucune statistique de match"
+        );
+      }
+      for (const [playerId, playerStats] of Object.entries(game.stats)) {
+        if (!matchPlayerIds.includes(playerId)) {
+          throw new TournamentError("invalid", "Les statistiques doivent porter sur un joueur du match");
+        }
+        for (const key of Object.keys(playerStats)) {
+          if (!statKeys.includes(key)) {
+            throw new TournamentError("invalid", `Statistique inconnue pour cette phase : ${key}`);
+          }
+        }
+      }
     }
     if (phase.resultMode === "points") {
       if (!game.points || !matchPlayerIds.every((id) => id in (game.points ?? {}))) {
@@ -2987,7 +3302,12 @@ export async function reportMatchResult(
   }
 
   // Déduit le vainqueur de chaque partie et le nombre de parties gagnées.
-  const { normalizedGames, gamesWonByPlayer } = tallyGames(data.games, matchPlayerIds, phase.resultMode);
+  const { normalizedGames, gamesWonByPlayer } = tallyGames(
+    data.games,
+    matchPlayerIds,
+    phase.resultMode,
+    statKeys
+  );
 
   // Vainqueur(s) du match : joueur(s) ayant gagné le plus de parties ; égalité
   // générale (ou aucune partie gagnée) = match nul. Un résultat partiel est
@@ -3009,6 +3329,9 @@ export async function reportMatchResult(
     players: updatedPlayers,
     games: normalizedGames,
     winnerIds,
+    // Un résultat rapporté est toujours un match joué : cela remet aussi à
+    // « joué » un match précédemment clos en forfait ou en double défaite.
+    resolution: "played",
     reportedBy: actor.id,
     status: needsConfirmation ? "in-progress" : "completed",
     updatedAt: new Date(),
@@ -3097,6 +3420,76 @@ export async function disputeMatchResult(
 }
 
 /**
+ * Conclut un match sans qu'il ait été joué, à la main de l'arbitrage.
+ *
+ * `winnerId` renseigné : l'adversaire ne s'est pas présenté ou n'a pas répondu
+ * aux sollicitations. Le vainqueur est crédité comme s'il avait reçu un BYE —
+ * victoire nette du best-of et statistiques de bye du preset — ce que le
+ * document de ligue demande explicitement (« scored as a bye »).
+ *
+ * `winnerId` à null : personne n'a joué, les deux joueurs perdent. C'est le cas
+ * que `resolution: "double-loss"` distingue du match nul.
+ */
+export async function forfeitMatch(
+  tournament: Tournament,
+  matchId: string,
+  data: { winnerId: string | null },
+  actor: MatchActor
+): Promise<TournamentMatch> {
+  if (!actor.isOrganizer) {
+    throw new TournamentError("forbidden", "Seul un organisateur peut prononcer un forfait");
+  }
+
+  const match = await getMatchById(tournament.id, matchId);
+  if (!match) {
+    throw new TournamentError("not-found", "Match non trouvé");
+  }
+  if (match.players.length === 1) {
+    throw new TournamentError("conflict", "Un BYE ne peut pas être mis en forfait");
+  }
+  if (data.winnerId && !match.players.some((p) => p.playerId === data.winnerId)) {
+    throw new TournamentError("invalid", "Le vainqueur doit être un joueur du match");
+  }
+
+  const phase = await getPhaseById(tournament.id, match.phaseId);
+  if (!phase) {
+    throw new TournamentError("not-found", "Phase non trouvée");
+  }
+
+  const winnerId = data.winnerId;
+  const players: TournamentMatchPlayer[] = match.players.map((p) => ({
+    playerId: p.playerId,
+    score: winnerId && p.playerId === winnerId ? byeWinScore(phase.bestOf) : 0,
+  }));
+
+  const result = await db.collection<TournamentMatchDb>(MATCHES).findOneAndUpdate(
+    { _id: new ObjectId(matchId), tournamentId: new ObjectId(tournament.id) },
+    {
+      $set: {
+        players,
+        // Aucune partie n'a été jouée : les statistiques de bye sont dérivées du
+        // preset au calcul du classement, pas recopiées ici.
+        games: [],
+        winnerIds: winnerId ? [winnerId] : [],
+        resolution: winnerId ? "forfeit" : "double-loss",
+        status: "completed",
+        reportedBy: actor.id,
+        confirmedBy: actor.id,
+        updatedAt: new Date(),
+      },
+    },
+    { returnDocument: "after" }
+  );
+  if (!result) {
+    throw new TournamentError("not-found", "Match non trouvé");
+  }
+
+  await completeRoundIfAllMatchesDone(new ObjectId(tournament.id), new ObjectId(result.roundId.toString()));
+
+  return toMatch(result);
+}
+
+/**
  * Supprime le résultat rapporté d'un match (organisateur) : réinitialise scores,
  * parties et vainqueurs, repasse le match en « pending » et efface reportedBy /
  * confirmedBy. La ronde est rouverte si elle était terminée.
@@ -3128,6 +3521,7 @@ export async function clearMatchResult(
         players: match.players.map((p) => ({ playerId: p.playerId, score: 0 })),
         games: [],
         winnerIds: [],
+        resolution: "played",
         status: "pending",
         updatedAt: new Date(),
       },
@@ -3186,128 +3580,26 @@ export type TournamentStanding = PlayerStanding & {
   playerStatus: TournamentPlayer["status"];
 };
 
-type MatchScoring = {
-  method: TournamentScoringMethod;
-  fixed: TournamentFixedScoring;
-  rankOffsets: number[];
-};
-
-function scoringForPhase(phase: TournamentPhase): MatchScoring {
-  return { method: phase.scoringMethod, fixed: phase.fixedScoring, rankOffsets: phase.rankOffsets };
-}
-
-const DEFAULT_MATCH_SCORING: MatchScoring = {
-  method: "fixed",
-  fixed: DEFAULT_FIXED_SCORING,
-  rankOffsets: DEFAULT_RANK_OFFSETS,
-};
-
-// Points « rank_offset » d'un joueur : N + offset[rang], N = nombre de joueurs
-// du match, rang déterminé par les parties gagnées (score). Les ex æquo
-// partagent le même rang ; au-delà du tableau, on réutilise le dernier offset.
-function rankOffsetPoints(match: TournamentMatch, playerId: string, offsets: number[]): number {
-  const n = match.players.length;
-  const self = match.players.find((p) => p.playerId === playerId);
-  if (!self) return 0;
-  const rankIndex = match.players.filter((p) => p.score > self.score).length;
-  const offset = offsets[Math.min(rankIndex, offsets.length - 1)] ?? 0;
-  return n + offset;
-}
-
 /**
- * Classement multijoueur, sensible au scoring de chaque match (résolu via
- * `scoringFor`). Généralise le calcul 2-joueurs de lib/utils/pairing.ts.
- * - wins/losses/draws et OMW% dérivent des vainqueurs (winnerIds) ;
- * - matchPoints selon la méthode de la phase (fixed ou rank_offset) ;
- * - BYE (1 seul joueur) = victoire automatique.
+ * Preset qui gouverne les colonnes et les départages d'un classement. Pour une
+ * phase donnée, c'est le sien. Pour le classement cumulé du tournoi, c'est
+ * celui de la dernière phase qui en déclare un : les statistiques se cumulent
+ * d'une phase à l'autre, et un tournoi mélangeant des phases avec et sans
+ * preset garde ainsi des colonnes lisibles jusqu'au bout.
  */
-function calculateMultiplayerStandings(
-  playerIds: string[],
-  matches: TournamentMatch[],
-  scoringFor: (match: TournamentMatch) => MatchScoring = () => DEFAULT_MATCH_SCORING
-): PlayerStanding[] {
-  const standings = new Map<string, PlayerStanding>();
-
-  playerIds.forEach((playerId) => {
-    standings.set(playerId, {
-      playerId,
-      wins: 0,
-      losses: 0,
-      draws: 0,
-      matchPoints: 0,
-      gamesWon: 0,
-      gamesLost: 0,
-      gamesDiff: 0,
-    });
-  });
-
-  const completedMatches = matches.filter((m) => m.status === "completed");
-
-  for (const match of completedMatches) {
-    const isBye = match.players.length === 1;
-    const totalScore = match.players.reduce((sum, p) => sum + p.score, 0);
-    const isDraw = !isBye && match.winnerIds.length === 0;
-    const scoring = scoringFor(match);
-
-    for (const matchPlayer of match.players) {
-      const standing = standings.get(matchPlayer.playerId);
-      if (!standing) continue;
-
-      standing.gamesWon += matchPlayer.score;
-      standing.gamesLost += totalScore - matchPlayer.score;
-
-      const isWinner = isBye || match.winnerIds.includes(matchPlayer.playerId);
-      if (isWinner) {
-        standing.wins++;
-      } else if (isDraw) {
-        standing.draws++;
-      } else {
-        standing.losses++;
-      }
-
-      if (scoring.method === "rank_offset") {
-        standing.matchPoints += rankOffsetPoints(match, matchPlayer.playerId, scoring.rankOffsets);
-      } else if (isWinner) {
-        standing.matchPoints += scoring.fixed.win;
-      } else if (isDraw) {
-        standing.matchPoints += scoring.fixed.draw;
-      } else {
-        standing.matchPoints += scoring.fixed.loss;
-      }
-    }
+function resolveStandingsPreset(
+  phases: TournamentPhase[],
+  phaseId?: string
+): GameTournamentPreset | undefined {
+  if (phaseId) {
+    return getPreset(phases.find((phase) => phase.id === phaseId)?.statsPresetKey);
   }
-
-  standings.forEach((standing) => {
-    standing.gamesDiff = standing.gamesWon - standing.gamesLost;
-  });
-
-  // Opponent match win percentage (tiebreaker) : moyenne du taux de victoire
-  // de tous les adversaires rencontrés (co-joueurs des matchs terminés).
-  standings.forEach((standing) => {
-    const opponentIds = completedMatches
-      .filter((m) => m.players.some((p) => p.playerId === standing.playerId))
-      .flatMap((m) => m.players.map((p) => p.playerId))
-      .filter((id) => id !== standing.playerId);
-
-    if (opponentIds.length > 0) {
-      const totalOpponentWinPercentage = opponentIds.reduce((sum, oppId) => {
-        const opp = standings.get(oppId);
-        if (!opp) return sum;
-        const totalMatches = opp.wins + opp.losses + opp.draws;
-        return sum + (totalMatches > 0 ? opp.wins / totalMatches : 0);
-      }, 0);
-      standing.opponentMatchWinPercentage = totalOpponentWinPercentage / opponentIds.length;
-    }
-  });
-
-  return Array.from(standings.values()).sort((a, b) => {
-    if (b.matchPoints !== a.matchPoints) return b.matchPoints - a.matchPoints;
-    if ((b.opponentMatchWinPercentage || 0) !== (a.opponentMatchWinPercentage || 0)) {
-      return (b.opponentMatchWinPercentage || 0) - (a.opponentMatchWinPercentage || 0);
-    }
-    if (b.gamesDiff !== a.gamesDiff) return b.gamesDiff - a.gamesDiff;
-    return b.gamesWon - a.gamesWon;
-  });
+  const ordered = [...phases].sort((a, b) => a.order - b.order);
+  for (let i = ordered.length - 1; i >= 0; i--) {
+    const preset = getPreset(ordered[i].statsPresetKey);
+    if (preset) return preset;
+  }
+  return undefined;
 }
 
 /**
@@ -3334,7 +3626,8 @@ export async function getStandings(tournamentId: string, phaseId?: string): Prom
   const standings = calculateMultiplayerStandings(
     players.map((p) => p.id),
     matchDocs.map(toMatch),
-    (match) => scoringByPhaseId.get(match.phaseId) ?? DEFAULT_MATCH_SCORING
+    (match) => scoringByPhaseId.get(match.phaseId) ?? DEFAULT_MATCH_SCORING,
+    resolveStandingsPreset(phases, phaseId)
   );
 
   const playersById = new Map(players.map((p) => [p.id, p]));
@@ -3480,7 +3773,8 @@ export async function validateRoundStandings(
   const standings: TournamentRoundStanding[] = calculateMultiplayerStandings(
     participantIds,
     cumulativeMatches,
-    (m) => scoringByPhaseId.get(m.phaseId) ?? scoringForPhase(phase)
+    (m) => scoringByPhaseId.get(m.phaseId) ?? scoringForPhase(phase),
+    resolveStandingsPreset(allPhases, round.phaseId)
   ).map((standing) => {
     const player = playersById.get(standing.playerId);
     return {

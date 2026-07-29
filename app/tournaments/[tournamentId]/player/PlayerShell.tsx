@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { DateTime } from "luxon";
 import { ClipboardList, ListChecks, Megaphone, Target, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,7 @@ export function PlayerShell({
   loading,
   error,
   roundLabel,
+  deadlineAt,
   children,
 }: {
   tournamentId: string;
@@ -46,6 +48,9 @@ export function PlayerShell({
   loading: boolean;
   error: string | null;
   roundLabel?: string;
+  // Échéance de l'intervalle en cours (ronde asynchrone). Prend la place du
+  // minuteur, qui n'a pas de sens quand la partie se joue sur plusieurs jours.
+  deadlineAt?: string;
   children: ReactNode;
 }) {
   const t = useTranslations("Tournaments");
@@ -91,18 +96,32 @@ export function PlayerShell({
               {roundLabel ?? t("playerShell.subtitle")}
             </p>
           </div>
-          {remaining !== null && (
+          {deadlineAt ? (
             <div className="shrink-0 text-right">
               <p
                 className={cn(
-                  "font-mono text-xl font-semibold tabular-nums",
-                  expired ? "text-red-400" : low ? "text-amber-300" : "text-white"
+                  "text-sm font-semibold",
+                  DateTime.fromISO(deadlineAt) < DateTime.now() ? "text-red-400" : "text-white"
                 )}
               >
-                {formatDuration(remaining)}
+                {DateTime.fromISO(deadlineAt).toRelative()}
               </p>
-              <p className="text-[11px] text-neutral-400">{t("playerShell.remaining")}</p>
+              <p className="text-[11px] text-neutral-400">{t("playerShell.deadline")}</p>
             </div>
+          ) : (
+            remaining !== null && (
+              <div className="shrink-0 text-right">
+                <p
+                  className={cn(
+                    "font-mono text-xl font-semibold tabular-nums",
+                    expired ? "text-red-400" : low ? "text-amber-300" : "text-white"
+                  )}
+                >
+                  {formatDuration(remaining)}
+                </p>
+                <p className="text-[11px] text-neutral-400">{t("playerShell.remaining")}</p>
+              </div>
+            )
           )}
         </div>
 

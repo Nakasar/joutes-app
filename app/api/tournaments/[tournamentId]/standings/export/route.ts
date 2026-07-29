@@ -10,6 +10,7 @@ import {
   listPhases,
 } from "@/lib/db/tournaments";
 import { resolveDisplayPhase } from "@/lib/tournaments/current-round";
+import { getPreset } from "@/lib/tournaments/game-presets";
 import {
   buildStandingsCsv,
   buildStandingsCsvFileName,
@@ -52,12 +53,19 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // classement courant. Il est cadré sur la phase affichée par l'écran de
     // classement, sans quoi le CSV « courant » ne correspondrait pas au tableau
     // que l'organisateur a sous les yeux.
+    const phases = await listPhases(tournamentId);
+    const displayPhase = round
+      ? phases.find((phase) => phase.id === round.phaseId)
+      : resolveDisplayPhase(phases, tournament.currentPhaseId);
+
     let rows = round?.standings;
     if (!rows) {
-      const phases = await listPhases(tournamentId);
-      const phase = resolveDisplayPhase(phases, tournament.currentPhaseId);
-      rows = await getStandings(tournamentId, phase?.id);
+      rows = await getStandings(tournamentId, displayPhase?.id);
     }
+
+    // Colonnes de statistiques du preset de la phase exportée, dans l'ordre
+    // dans lequel elles départagent.
+    const statColumns = getPreset(displayPhase?.statsPresetKey)?.stats ?? [];
 
     const entries: StandingsExportEntry[] = rows.map((row, index) => ({
       rank: index + 1,
@@ -69,6 +77,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       opponentMatchWin: formatTiebreaker(row.opponentMatchWinPercentage, locale),
       gameWin: formatTiebreaker(gameWinPercentage(row.gamesWon, row.gamesLost), locale),
       status: row.playerStatus === "dropped" ? t("common.playerStatus.dropped") : "",
+      stats: statColumns.map((column) => row.stats?.[column.key] ?? 0),
     }));
 
     const csv = buildStandingsCsv(entries, {
@@ -79,7 +88,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       opponentMatchWin: t("standingsExport.columns.opponentMatchWin"),
       gameWin: t("standingsExport.columns.gameWin"),
       status: t("standingsExport.columns.status"),
-    });
+    }, statColumns.map((column) => t(`matchStats.stats.${column.labelKey}`)));
 
     const fileName = buildStandingsCsvFileName(tournament.name, round?.number);
 
