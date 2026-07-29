@@ -19,6 +19,9 @@ import {
   TournamentDecklist,
   TournamentEliminationSeeding,
   TournamentFixedScoring,
+  TournamentForm,
+  TournamentFormAnswer,
+  TournamentFormField,
   TournamentGameResult,
   TournamentMatch,
   TournamentMatchDb,
@@ -55,6 +58,7 @@ import {
   resolveCurrentRound,
   resolveDisplayPhase,
 } from "@/lib/tournaments/current-round";
+import { parseDecklistAnswer } from "@/lib/tournaments/decklist-parsing";
 import {
   createInvitedUserByEmail,
   getUserByEmail,
@@ -193,6 +197,7 @@ function toTournament(doc: WithId<TournamentDb>): Tournament {
     judgeIds: doc.judgeIds ?? [],
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
+    registrationForm: doc.registrationForm,
   };
 }
 
@@ -211,16 +216,20 @@ function toPlayer(doc: WithId<TournamentPlayerDb>): TournamentPlayer {
       doc.status === "dropped" || doc.status === "pre-registered" ? doc.status : "registered",
     checkedInAt: doc.checkedInAt,
     decklist: doc.decklist,
+    formAnswers: doc.formAnswers,
     syncKey: doc.syncKey,
     addedBy: doc.addedBy,
     createdAt: doc.createdAt,
   };
 }
 
-// Retire le secret de synchronisation d'un joueur avant exposition à un
-// non-organisateur.
-export function sanitizePlayer(player: TournamentPlayer): Omit<TournamentPlayer, "syncKey"> {
-  const { syncKey: _syncKey, ...rest } = player;
+// Retire d'un joueur ce qui ne doit pas sortir vers un non-organisateur : le
+// secret de synchronisation, et les réponses au formulaire d'inscription
+// (privées — un joueur ne voit que les siennes, servies par la route dédiée).
+export function sanitizePlayer(
+  player: TournamentPlayer
+): Omit<TournamentPlayer, "syncKey" | "formAnswers"> {
+  const { syncKey: _syncKey, formAnswers: _formAnswers, ...rest } = player;
   return rest;
 }
 
@@ -1346,6 +1355,215 @@ export async function updateDecklist(
     throw new TournamentError("not-found", "Joueur non trouvé");
   }
   return toPlayer(result);
+}
+
+// ── Formulaire d'inscription ────────────────────────────────────────────────
+
+const generateFormFieldId = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 10);
+
+/**
+ * Enregistre la configuration du formulaire. Les champs déjà existants gardent
+ * leur identifiant — c'est lui qui rattache les réponses déjà données, un
+ * renommage ou un réordonnancement ne doit rien perdre.
+ */
+export async function saveTournamentForm(
+  tournamentId: string,
+  input: {
+    fields: {
+      id?: string;
+      type: TournamentFormField["type"];
+      label: string;
+      description?: string;
+      required: boolean;
+      options?: string[];
+    }[];
+    playerEditable: boolean;
+    closesAt?: Date | null;
+  }
+): Promise<TournamentForm> {
+  const _id = parseObjectId(tournamentId, "Tournoi");
+
+  const seen = new Set<string>();
+  const fields: TournamentFormField[] = input.fields.map((field) => {
+    // Un identifiant absent ou déjà pris (copier-coller d'un champ) en reçoit
+    // un neuf : deux champs partageant un id mélangeraient leurs réponses.
+    const id = field.id && !seen.has(field.id) ? field.id : generateFormFieldId();
+    seen.add(id);
+    const choices = field.type === "single-choice" || field.type === "multiple-choice";
+    return {
+      id,
+      type: field.type,
+      label: field.label.trim(),
+      description: field.description?.trim() || undefined,
+      required: field.required,
+      options: choices ? field.options?.map((option) => option.trim()).filter(Boolean) : undefined,
+    };
+  });
+
+  const form: TournamentForm = {
+    fields,
+    playerEditable: input.playerEditable,
+    closesAt: input.closesAt ?? undefined,
+  };
+
+  const result = await db
+    .collection<TournamentDb>(TOURNAMENTS)
+    .findOneAndUpdate(
+      { _id },
+      { $set: { registrationForm: form, updatedAt: new Date() } },
+      { returnDocument: "after" }
+    );
+  if (!result) {
+    throw new TournamentError("not-found", "Tournoi non trouvé");
+  }
+  return form;
+}
+
+/**
+ * Le joueur peut-il encore modifier ses réponses ? Deux verrous indépendants :
+ * l'organisateur peut fermer la modification, et poser une date limite.
+ */
+export function formIsOpenForPlayer(tournament: Tournament, now = new Date()): boolean {
+  const form = tournament.registrationForm;
+  if (!form || form.fields.length === 0) return false;
+  if (!form.playerEditable) return false;
+  return !form.closesAt || form.closesAt.getTime() > now.getTime();
+}
+
+export function assertFormOpenForPlayer(tournament: Tournament): void {
+  const form = tournament.registrationForm;
+  if (!form || form.fields.length === 0) {
+    throw new TournamentError("not-found", "Ce tournoi n'a pas de formulaire");
+  }
+  if (!form.playerEditable) {
+    throw new TournamentError("forbidden", "Les réponses ne sont plus modifiables");
+  }
+  if (form.closesAt && form.closesAt.getTime() <= Date.now()) {
+    throw new TournamentError("forbidden", "La date limite de réponse est dépassée");
+  }
+}
+
+/**
+ * Enregistre les réponses d'un joueur. L'envoi porte le formulaire entier :
+ * un champ absent de l'envoi voit sa réponse effacée.
+ *
+ * `enforceRequired` n'est levé que pour les saisies venues de l'organisation :
+ * elle recopie parfois un formulaire papier incomplet, et refuser la saisie
+ * lui ferait perdre ce qu'elle a. Un joueur, lui, doit répondre à tout.
+ */
+export async function saveFormAnswers(
+  tournament: Tournament,
+  playerId: string,
+  answers: {
+    fieldId: string;
+    text?: string;
+    number?: number;
+    choices?: string[];
+    card?: TournamentFormAnswer["card"];
+    decklist?: string;
+  }[],
+  { enforceRequired }: { enforceRequired: boolean }
+): Promise<TournamentFormAnswer[]> {
+  const form = tournament.registrationForm;
+  if (!form || form.fields.length === 0) {
+    throw new TournamentError("not-found", "Ce tournoi n'a pas de formulaire");
+  }
+
+  const player = await getPlayerById(tournament.id, playerId);
+  if (!player) {
+    throw new TournamentError("not-found", "Joueur non trouvé");
+  }
+
+  const submitted = new Map(answers.map((answer) => [answer.fieldId, answer]));
+  const previous = new Map((player.formAnswers ?? []).map((answer) => [answer.fieldId, answer]));
+  const now = new Date();
+
+  const saved: TournamentFormAnswer[] = [];
+  for (const field of form.fields) {
+    const answer = submitted.get(field.id);
+    const value = answer
+      ? await normalizeAnswer(field, answer, previous.get(field.id), tournament.gameId, now)
+      : null;
+
+    if (!value) {
+      if (field.required && enforceRequired) {
+        throw new TournamentError("invalid", `« ${field.label} » est obligatoire`);
+      }
+      continue;
+    }
+    saved.push(value);
+  }
+
+  const tId = parseObjectId(tournament.id, "Tournoi");
+  const pId = parseObjectId(playerId, "Joueur");
+  const result = await db
+    .collection<TournamentPlayerDb>(PLAYERS)
+    .findOneAndUpdate(
+      { _id: pId, tournamentId: tId },
+      { $set: { formAnswers: saved } },
+      { returnDocument: "after" }
+    );
+  if (!result) {
+    throw new TournamentError("not-found", "Joueur non trouvé");
+  }
+  return saved;
+}
+
+/**
+ * Réponse retenue pour un champ, ou null si le joueur n'a rien répondu. Chaque
+ * type ne lit que la clé qui le concerne : une réponse envoyée dans la
+ * mauvaise clé est ignorée plutôt que stockée sous un type qui ne l'affichera
+ * jamais.
+ */
+async function normalizeAnswer(
+  field: TournamentFormField,
+  answer: {
+    text?: string;
+    number?: number;
+    choices?: string[];
+    card?: TournamentFormAnswer["card"];
+    decklist?: string;
+  },
+  previous: TournamentFormAnswer | undefined,
+  gameId: string | undefined,
+  now: Date
+): Promise<TournamentFormAnswer | null> {
+  const base = { fieldId: field.id, updatedAt: now };
+
+  switch (field.type) {
+    case "text":
+    case "long-text": {
+      const text = answer.text?.trim();
+      return text ? { ...base, text } : null;
+    }
+    case "number": {
+      return typeof answer.number === "number" && Number.isFinite(answer.number)
+        ? { ...base, number: answer.number }
+        : null;
+    }
+    case "single-choice":
+    case "multiple-choice": {
+      // Les choix hors options sont écartés : l'organisateur a pu retirer une
+      // option depuis, et un formulaire ouvert reste modifiable côté client.
+      const options = new Set(field.options ?? []);
+      const choices = (answer.choices ?? []).filter((choice) => options.has(choice));
+      const kept = field.type === "single-choice" ? choices.slice(0, 1) : choices;
+      return kept.length > 0 ? { ...base, choices: kept } : null;
+    }
+    case "card": {
+      return answer.card ? { ...base, card: answer.card } : null;
+    }
+    case "decklist": {
+      const input = answer.decklist?.trim();
+      if (!input) return null;
+      // Liste inchangée : l'analyse précédente est conservée telle quelle,
+      // inutile de rappeler Piltover Archive à chaque enregistrement.
+      if (previous?.decklist && previous.decklist.input === input) {
+        return { ...base, decklist: previous.decklist };
+      }
+      return { ...base, decklist: await parseDecklistAnswer(gameId, input) };
+    }
+  }
 }
 
 // Démarre le minuteur : fixe l'instant de fin absolu (now + durée).

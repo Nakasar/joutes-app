@@ -16,6 +16,7 @@ import type {
   TournamentPenalty,
   TournamentPenaltyType,
 } from "@/lib/types/Tournament";
+import { TournamentFormEditor } from "../../../TournamentFormEditor";
 
 const PENALTY_TYPES: TournamentPenaltyType[] = [
   "warning",
@@ -66,6 +67,7 @@ export type SheetStanding = { rank: number; matchPoints: number; record: string 
 export function PlayerSheet({
   tournamentId,
   player,
+  hasForm,
   standing,
   history,
   currentMatch,
@@ -74,6 +76,8 @@ export function PlayerSheet({
 }: {
   tournamentId: string;
   player: SheetPlayer;
+  /** Le tournoi a un formulaire d'inscription : la fiche montre les réponses. */
+  hasForm: boolean;
   standing: SheetStanding;
   history: SheetHistoryEntry[];
   currentMatch: { roundId: string; tableNumber?: number; opponentName: string; status: string } | null;
@@ -392,6 +396,18 @@ export function PlayerSheet({
               </Button>
             </div>
           </section>
+
+          {/* Réponses au formulaire d'inscription. L'organisation les corrige
+              même quand elles sont figées côté joueur : c'est elle qui tranche
+              en cas d'erreur de saisie en salle. */}
+          {hasForm && (
+            <section className="rounded-xl border bg-card p-4">
+              <h2 className="mb-3 text-sm font-semibold">{t("form.answersTitle")}</h2>
+              <TournamentFormEditor
+                endpoint={`/api/tournaments/${tournamentId}/players/${player.id}/form`}
+              />
+            </section>
+          )}
         </div>
 
         <div className="flex w-full shrink-0 flex-col gap-4 xl:w-[340px]">

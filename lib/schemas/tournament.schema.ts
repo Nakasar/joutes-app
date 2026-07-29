@@ -265,6 +265,68 @@ export const updateTournamentDecklistSchema = z
     message: "Renseignez la liste ou son état de vérification",
   });
 
+// ── Formulaire d'inscription ────────────────────────────────────────────────
+
+export const tournamentFormFieldTypeSchema = z.enum([
+  "text",
+  "long-text",
+  "number",
+  "single-choice",
+  "multiple-choice",
+  "decklist",
+  "card",
+]);
+
+const CHOICE_TYPES = ["single-choice", "multiple-choice"] as const;
+
+export const tournamentFormFieldSchema = z
+  .object({
+    // Absent à la création d'un champ : le domaine en génère un.
+    id: z.string().min(1).max(40).optional(),
+    type: tournamentFormFieldTypeSchema,
+    label: z.string().min(1, "Le libellé de la question est requis").max(200),
+    description: z.string().max(500).optional(),
+    required: z.boolean().default(false),
+    options: z.array(z.string().min(1).max(200)).max(50).optional(),
+  })
+  .refine((field) => !CHOICE_TYPES.includes(field.type as (typeof CHOICE_TYPES)[number]) || (field.options?.length ?? 0) >= 1, {
+    message: "Une question à choix doit proposer au moins une option",
+    path: ["options"],
+  });
+
+export const updateTournamentFormSchema = z.object({
+  fields: z.array(tournamentFormFieldSchema).max(50),
+  playerEditable: z.boolean().default(true),
+  // null retire la date limite (une chaîne vide ne suffit pas à distinguer
+  // « pas de limite » de « champ non envoyé »).
+  closesAt: z.coerce.date().nullable().optional(),
+});
+
+// Réponse à un champ. Le type du champ décide de la clé attendue ; la
+// cohérence est vérifiée côté domaine, qui seul connaît le formulaire.
+export const tournamentFormAnswerSchema = z.object({
+  fieldId: z.string().min(1).max(40),
+  text: z.string().max(5000).optional(),
+  number: z.number().optional(),
+  choices: z.array(z.string().max(200)).max(50).optional(),
+  card: z
+    .object({
+      cardId: z.string().min(1).max(100),
+      name: z.string().min(1).max(200),
+      image: z.string().max(500).optional(),
+      setCode: z.string().max(20).optional(),
+      collectorNumber: z.string().max(20).optional(),
+    })
+    .optional(),
+  // Saisie brute d'une liste de deck : texte, lien ou code. L'analyse est
+  // refaite côté serveur, jamais reprise du client.
+  decklist: z.string().max(20000).optional(),
+});
+
+export const submitTournamentFormSchema = z.object({
+  answers: z.array(tournamentFormAnswerSchema).max(50),
+});
+
 // Action sur une ronde : `reopen` la repasse « en cours » (ronde courante).
 export const updateTournamentRoundSchema = z.object({
   action: z.literal("reopen"),
@@ -285,3 +347,7 @@ export type TimerActionInput = z.infer<typeof timerActionSchema>;
 export type CreateTournamentPenaltyInput = z.infer<typeof createTournamentPenaltySchema>;
 export type CreateTournamentNoteInput = z.infer<typeof createTournamentNoteSchema>;
 export type UpdateTournamentDecklistInput = z.infer<typeof updateTournamentDecklistSchema>;
+export type TournamentFormFieldInput = z.infer<typeof tournamentFormFieldSchema>;
+export type UpdateTournamentFormInput = z.infer<typeof updateTournamentFormSchema>;
+export type TournamentFormAnswerInput = z.infer<typeof tournamentFormAnswerSchema>;
+export type SubmitTournamentFormInput = z.infer<typeof submitTournamentFormSchema>;

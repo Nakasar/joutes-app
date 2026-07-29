@@ -4,19 +4,20 @@ import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { ClipboardList, Megaphone, Target, Trophy } from "lucide-react";
+import { ClipboardList, ListChecks, Megaphone, Target, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatDuration, timerRemainingSeconds } from "@/lib/tournament-timer";
 import type { ApiTournament } from "./usePlayerTournament";
 import { useTournamentLive } from "../useTournamentLive";
 
-export type PlayerSection = "match" | "standings" | "players";
+export type PlayerSection = "match" | "standings" | "players" | "form";
 
 const SECTIONS: { key: PlayerSection; path: string; labelKey: string; Icon: typeof Target }[] = [
   { key: "match", path: "", labelKey: "playerShell.navMatch", Icon: Target },
   { key: "standings", path: "standings", labelKey: "playerShell.navStandings", Icon: Trophy },
   { key: "players", path: "players", labelKey: "playerShell.navPlayers", Icon: ClipboardList },
+  { key: "form", path: "form", labelKey: "playerShell.navForm", Icon: ListChecks },
 ];
 
 /**
@@ -150,7 +151,12 @@ export function PlayerShell({
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-2xl border-t bg-card/95 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-1.5 backdrop-blur">
-        {SECTIONS.map(({ key, path, labelKey, Icon }) => {
+        {/* L'onglet du formulaire n'apparaît que si l'organisateur en a posé
+            un : sans question, il n'y a rien à y répondre. */}
+        {SECTIONS.filter(
+          (section) =>
+            section.key !== "form" || (tournament?.registrationForm?.fields.length ?? 0) > 0
+        ).map(({ key, path, labelKey, Icon }) => {
           const href = path ? `${base}/${path}` : base;
           const isActive = active === key || pathname === href;
           return (
