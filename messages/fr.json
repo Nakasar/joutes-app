@@ -2545,6 +2545,7 @@
       "decklistPlaceholder": "Collez votre liste, un lien Piltover Archive ou un code de deck",
       "decklistPlaceholderRaw": "Collez votre liste de deck",
       "decklistNoParsing": "La liste sera conservée telle quelle : ce jeu ne permet pas de l'analyser.",
+      "decklistResolvedNotice": "Un lien ou un code est remplacé par la liste des cartes récupérées à l'enregistrement.",
       "decklistGameUnsupported": "Le jeu de ce tournoi ne permet pas d'analyser les listes : elles seront conservées telles que saisies.",
       "decklistNoGame": "Associez un jeu au tournoi pour que les listes soient analysées.",
       "decklistViewList": "Liste",

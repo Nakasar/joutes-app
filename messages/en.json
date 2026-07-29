@@ -2544,6 +2544,7 @@
       "decklistPlaceholder": "Paste your list, a Piltover Archive link or a deck code",
       "decklistPlaceholderRaw": "Paste your decklist",
       "decklistNoParsing": "The list is kept as typed: this game cannot be parsed.",
+      "decklistResolvedNotice": "A link or a code is replaced by the retrieved card list when saved.",
       "decklistGameUnsupported": "This tournament's game cannot parse decklists: they are kept exactly as typed.",
       "decklistNoGame": "Attach a game to the tournament to have decklists parsed.",
       "decklistViewList": "List",

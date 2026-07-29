@@ -2461,6 +2461,7 @@
       "decklistPlaceholder": "Liste, Piltover-Archive-Link oder Deck-Code einfügen",
       "decklistPlaceholderRaw": "Deckliste einfügen",
       "decklistNoParsing": "Die Liste wird unverändert gespeichert: dieses Spiel kann nicht ausgewertet werden.",
+      "decklistResolvedNotice": "Ein Link oder ein Code wird beim Speichern durch die abgerufene Kartenliste ersetzt.",
       "decklistGameUnsupported": "Das Spiel dieses Turniers kann Decklisten nicht auswerten: sie werden unverändert gespeichert.",
       "decklistNoGame": "Ordnen Sie dem Turnier ein Spiel zu, damit Decklisten ausgewertet werden.",
       "decklistViewList": "Liste",

@@ -194,6 +194,9 @@ export type TournamentParsedDecklist = {
 // joueur l'a saisi (texte, lien Piltover Archive ou code) ; l'analyse n'est
 // tentée que si le jeu du tournoi la supporte.
 export type TournamentFormDecklistAnswer = {
+  // Contenu retenu comme réponse. Une liste écrite est conservée telle quelle ;
+  // un lien ou un code est remplacé par les cartes récupérées, sauf si la
+  // récupération a échoué (la saisie reste alors la seule trace).
   input: string;
   parsed?: TournamentParsedDecklist;
   // Analyse tentée mais échouée (lien mort, code invalide…). Renseigné pour

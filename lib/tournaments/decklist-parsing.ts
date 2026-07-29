@@ -12,7 +12,7 @@ import {
   validateDeckList,
   type DeckList,
 } from "@/app/games/riftbound/deck-checker/action";
-import { parseDeckList } from "@/app/games/riftbound/deck-checker/utils";
+import { parseDeckList, stringifyDeckList } from "@/app/games/riftbound/deck-checker/utils";
 
 // Jeux dont une liste de deck peut être analysée. Ailleurs la saisie du joueur
 // est conservée telle quelle : mieux vaut une liste brute lisible qu'une
@@ -80,8 +80,14 @@ export async function resolveGameSlug(gameId?: string): Promise<string | null> {
  * liste écrite en clair. L'analyse est faite ici, jamais reprise du client :
  * c'est elle qui sert à l'arbitrage.
  *
- * Un échec n'est pas une erreur de saisie : la liste brute est conservée et
- * le motif est mémorisé, à charge de l'arbitrage de trancher.
+ * Un lien ou un code n'est pas conservé comme réponse : c'est la liste de
+ * cartes récupérée qui est enregistrée à sa place. La réponse dit ce que le
+ * joueur a déclaré au moment où il l'a déclaré, alors qu'un deck en ligne peut
+ * être modifié ou supprimé après coup.
+ *
+ * Un échec n'est pas une erreur de saisie : la saisie est conservée telle
+ * quelle — c'est la seule trace qui reste, lien ou code compris — et le motif
+ * est mémorisé, à charge de l'arbitrage de trancher.
  */
 export async function parseDecklistAnswer(
   gameId: string | undefined,
@@ -98,6 +104,9 @@ export async function parseDecklistAnswer(
 
   try {
     let deck: DeckList;
+    // Une liste écrite est déjà la réponse ; un lien ou un code ne fait que
+    // désigner un deck, qu'il faut recopier pour le figer.
+    let fetched = true;
     if (trimmed.startsWith(PILTOVER_DECK_URL)) {
       const deckId = trimmed.slice(PILTOVER_DECK_URL.length).split(/[/?#]/)[0];
       if (!deckId) throw new Error("Lien de deck incomplet");
@@ -106,11 +115,17 @@ export async function parseDecklistAnswer(
       deck = await getDeckFromPiltoverCode(trimmed);
     } else {
       deck = parseDeckList(trimmed);
+      fetched = false;
     }
 
+    const validated = await validateDeckList(deck);
+    // Un deck récupéré vide ne remplace rien : sans cartes à mettre à la place,
+    // garder le lien ou le code laisse au moins de quoi retrouver la liste.
+    const content = fetched ? stringifyDeckList(validated) : trimmed;
+
     return {
-      ...answer,
-      parsed: toParsedDecklist(await validateDeckList(deck)),
+      input: content || trimmed,
+      parsed: toParsedDecklist(validated),
       parsedAt: new Date(),
     };
   } catch (error) {

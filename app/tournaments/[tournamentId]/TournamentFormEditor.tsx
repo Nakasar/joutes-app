@@ -362,7 +362,9 @@ function FieldInput({
       {/* Saisie d'une liste de deck : texte, lien Piltover Archive ou code.
           L'analyse est faite à l'enregistrement, côté serveur ; celle de la
           dernière liste enregistrée reste affichée tant que la saisie ne
-          change pas, pour que le joueur voie ce qui a été reconnu. */}
+          change pas, pour que le joueur voie ce qui a été reconnu. Un lien ou
+          un code y est remplacé par les cartes récupérées : la saisie montre
+          alors la liste effectivement enregistrée. */}
       {field.type === "decklist" && (
         <>
           <Textarea
@@ -376,9 +378,9 @@ function FieldInput({
             }
             className="min-h-36 font-mono text-[13px]"
           />
-          {!decklistSupported && (
-            <p className="text-xs text-muted-foreground">{t("form.decklistNoParsing")}</p>
-          )}
+          <p className="text-xs text-muted-foreground">
+            {decklistSupported ? t("form.decklistResolvedNotice") : t("form.decklistNoParsing")}
+          </p>
           {savedAnswer?.decklist &&
             savedAnswer.decklist.input === value.decklist.trim() &&
             (savedAnswer.decklist.parsed || savedAnswer.decklist.parseError) && (

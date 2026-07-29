@@ -1546,7 +1546,10 @@ export async function saveFormAnswers(
 /**
  * Deux réponses portent-elles la même valeur ? Un champ n'en porte qu'une
  * sorte, il suffit donc de comparer chaque clé : identifiant pour une carte,
- * saisie brute pour une liste de deck (le résultat de l'analyse en découle).
+ * contenu retenu pour une liste de deck (le résultat de l'analyse en découle).
+ * Deux envois du même lien se comparent donc sur les cartes récupérées : un
+ * deck inchangé chez Piltover Archive ne compte pas comme une nouvelle
+ * réponse, un deck modifié entre-temps si.
  */
 function sameAnswerValue(a: TournamentFormAnswer, b: TournamentFormAnswer): boolean {
   const choicesA = a.choices ?? [];
@@ -1609,7 +1612,9 @@ async function normalizeAnswer(
       const input = answer.decklist?.trim();
       if (!input) return null;
       // Liste inchangée : l'analyse précédente est conservée telle quelle,
-      // inutile de rappeler Piltover Archive à chaque enregistrement.
+      // inutile de rappeler Piltover Archive à chaque enregistrement. Un lien
+      // ou un code renvoyé ne correspond jamais à ce qui est stocké (des
+      // cartes) : il est relu, et c'est le deck du moment qui fait foi.
       if (previous?.decklist && previous.decklist.input === input) {
         return { ...base, decklist: previous.decklist };
       }
