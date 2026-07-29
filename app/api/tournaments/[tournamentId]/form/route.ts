@@ -4,6 +4,7 @@ import { updateTournamentFormSchema } from "@/lib/schemas/tournament.schema";
 import {
   assertCanManage,
   assertPrincipalCanRead,
+  formIsInLateWindow,
   formIsOpenForPlayer,
   requireTournament,
   saveTournamentForm,
@@ -37,6 +38,7 @@ export async function GET(request: NextRequest, { params }: Params) {
       gameSlug,
       decklistSupported,
       openForPlayers: formIsOpenForPlayer(tournament),
+      lateWindow: formIsInLateWindow(tournament),
     });
   } catch (error) {
     return tournamentErrorResponse(error);

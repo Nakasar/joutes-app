@@ -32,8 +32,9 @@ export function FormAnswersView({
         const answer = byField.get(field.id);
         return (
           <div key={field.id}>
-            <dt className="text-xs font-semibold uppercase tracking-[0.04em] text-muted-foreground">
+            <dt className="flex flex-wrap items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.04em] text-muted-foreground">
               {field.label}
+              {answer?.late && <LateBadge />}
             </dt>
             <dd className="mt-1 text-sm">
               {!answer ? (
@@ -69,6 +70,23 @@ export function FormAnswersView({
         );
       })}
     </dl>
+  );
+}
+
+/**
+ * Réponse enregistrée après la fermeture de la saisie, au titre des réponses
+ * tardives. Rouge et à côté de la réponse : l'arbitrage doit voir d'un coup
+ * d'œil ce qui est arrivé hors délai.
+ */
+export function LateBadge() {
+  const t = useTranslations("Tournaments");
+  return (
+    <span
+      title={t("form.lateBadgeTitle")}
+      className="rounded bg-destructive px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none tracking-[0.06em] text-white"
+    >
+      {t("form.lateBadge")}
+    </span>
   );
 }
 

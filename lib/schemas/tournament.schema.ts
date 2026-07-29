@@ -300,6 +300,8 @@ export const updateTournamentFormSchema = z.object({
   // null retire la date limite (une chaîne vide ne suffit pas à distinguer
   // « pas de limite » de « champ non envoyé »).
   closesAt: z.coerce.date().nullable().optional(),
+  // Réponses tardives acceptées une fois la saisie normale close.
+  lateSubmissions: z.boolean().default(false),
 });
 
 // Réponse à un champ. Le type du champ décide de la clé attendue ; la

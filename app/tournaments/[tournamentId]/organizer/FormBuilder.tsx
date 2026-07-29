@@ -81,6 +81,7 @@ export function FormBuilder({
       ? DateTime.fromJSDate(new Date(initialForm.closesAt)).toFormat("yyyy-MM-dd'T'HH:mm")
       : ""
   );
+  const [lateSubmissions, setLateSubmissions] = useState(initialForm?.lateSubmissions ?? false);
   const [newType, setNewType] = useState<TournamentFormFieldType>("text");
   // Compteur des champs neufs : leur clé de rendu doit être unique et stable
   // le temps de la saisie, avant que le serveur ne leur donne un identifiant.
@@ -154,6 +155,7 @@ export function FormBuilder({
           })),
           playerEditable,
           closesAt: parsedClosesAt?.isValid ? parsedClosesAt.toISO() : null,
+          lateSubmissions,
         }),
       });
       const body = await res.json().catch(() => ({}));
@@ -246,6 +248,24 @@ export function FormBuilder({
             </div>
             <p className="mt-1 text-xs text-muted-foreground">{t("form.closesAtHint")}</p>
           </div>
+          {/* Soupape des deux verrous ci-dessus : le joueur en retard répond
+              quand même, et sa réponse porte la marque. */}
+          <label className="flex items-start justify-between gap-4">
+            <span className="min-w-0">
+              <span className="block text-sm font-medium">{t("form.lateSubmissions")}</span>
+              <span className="block text-xs text-muted-foreground">
+                {t("form.lateSubmissionsHint")}
+              </span>
+            </span>
+            <Switch
+              checked={lateSubmissions}
+              onCheckedChange={(checked) => {
+                touched();
+                setLateSubmissions(checked);
+              }}
+              disabled={busy}
+            />
+          </label>
         </div>
       </section>
 

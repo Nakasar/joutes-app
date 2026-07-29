@@ -154,6 +154,10 @@ export type TournamentForm = {
   // Instant après lequel les réponses des joueurs ne sont plus acceptées.
   // Absent = pas de date limite.
   closesAt?: Date;
+  // Réponses tardives acceptées : les joueurs répondent encore une fois la
+  // saisie normale close (modification désactivée ou date limite dépassée),
+  // mais leurs réponses sont signalées comme tardives.
+  lateSubmissions: boolean;
 };
 
 // Carte choisie dans un champ « card ». Le nom et l'image sont recopiés au
@@ -209,6 +213,11 @@ export type TournamentFormAnswer = {
   card?: TournamentFormCard;
   decklist?: TournamentFormDecklistAnswer;
   updatedAt: Date;
+  // Réponse donnée par le joueur après la fermeture de la saisie normale,
+  // acceptée au titre des réponses tardives. Portée par la réponse et non par
+  // le joueur : réécrire une seule réponse hors délai ne rend pas tardives
+  // celles déjà données dans les temps.
+  late?: boolean;
 };
 
 // Liste de deck d'un joueur pour le tournoi. Le contenu reste du texte libre :

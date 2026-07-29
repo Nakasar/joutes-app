@@ -197,7 +197,13 @@ function toTournament(doc: WithId<TournamentDb>): Tournament {
     judgeIds: doc.judgeIds ?? [],
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
-    registrationForm: doc.registrationForm,
+    // Défauts pour les formulaires enregistrés avant l'ajout d'un réglage :
+    // le document en base peut être plus ancien que le type.
+    registrationForm: doc.registrationForm && {
+      ...doc.registrationForm,
+      playerEditable: doc.registrationForm.playerEditable ?? true,
+      lateSubmissions: doc.registrationForm.lateSubmissions ?? false,
+    },
   };
 }
 
@@ -1379,6 +1385,7 @@ export async function saveTournamentForm(
     }[];
     playerEditable: boolean;
     closesAt?: Date | null;
+    lateSubmissions: boolean;
   }
 ): Promise<TournamentForm> {
   const _id = parseObjectId(tournamentId, "Tournoi");
@@ -1404,6 +1411,7 @@ export async function saveTournamentForm(
     fields,
     playerEditable: input.playerEditable,
     closesAt: input.closesAt ?? undefined,
+    lateSubmissions: input.lateSubmissions,
   };
 
   const result = await db
@@ -1430,17 +1438,31 @@ export function formIsOpenForPlayer(tournament: Tournament, now = new Date()): b
   return !form.closesAt || form.closesAt.getTime() > now.getTime();
 }
 
-export function assertFormOpenForPlayer(tournament: Tournament): void {
+/**
+ * La saisie normale est close, mais l'organisateur accepte encore les réponses
+ * tardives : le joueur peut répondre, et ce qu'il enregistre est marqué.
+ */
+export function formIsInLateWindow(tournament: Tournament, now = new Date()): boolean {
+  const form = tournament.registrationForm;
+  if (!form || form.fields.length === 0) return false;
+  return form.lateSubmissions && !formIsOpenForPlayer(tournament, now);
+}
+
+/** Le joueur peut-il enregistrer une réponse, dans les temps ou tardivement ? */
+export function formAcceptsPlayerAnswers(tournament: Tournament, now = new Date()): boolean {
+  return formIsOpenForPlayer(tournament, now) || formIsInLateWindow(tournament, now);
+}
+
+export function assertFormAcceptsPlayerAnswers(tournament: Tournament): void {
   const form = tournament.registrationForm;
   if (!form || form.fields.length === 0) {
     throw new TournamentError("not-found", "Ce tournoi n'a pas de formulaire");
   }
+  if (formAcceptsPlayerAnswers(tournament)) return;
   if (!form.playerEditable) {
     throw new TournamentError("forbidden", "Les réponses ne sont plus modifiables");
   }
-  if (form.closesAt && form.closesAt.getTime() <= Date.now()) {
-    throw new TournamentError("forbidden", "La date limite de réponse est dépassée");
-  }
+  throw new TournamentError("forbidden", "La date limite de réponse est dépassée");
 }
 
 /**
@@ -1450,6 +1472,10 @@ export function assertFormOpenForPlayer(tournament: Tournament): void {
  * `enforceRequired` n'est levé que pour les saisies venues de l'organisation :
  * elle recopie parfois un formulaire papier incomplet, et refuser la saisie
  * lui ferait perdre ce qu'elle a. Un joueur, lui, doit répondre à tout.
+ *
+ * `markLate` signale les réponses enregistrées hors délai. Une réponse dont la
+ * valeur n'a pas bougé est reconduite telle quelle : rouvrir le formulaire
+ * hors délai ne doit pas rendre tardif ce qui a été répondu dans les temps.
  */
 export async function saveFormAnswers(
   tournament: Tournament,
@@ -1462,7 +1488,7 @@ export async function saveFormAnswers(
     card?: TournamentFormAnswer["card"];
     decklist?: string;
   }[],
-  { enforceRequired }: { enforceRequired: boolean }
+  { enforceRequired, markLate = false }: { enforceRequired: boolean; markLate?: boolean }
 ): Promise<TournamentFormAnswer[]> {
   const form = tournament.registrationForm;
   if (!form || form.fields.length === 0) {
@@ -1481,8 +1507,9 @@ export async function saveFormAnswers(
   const saved: TournamentFormAnswer[] = [];
   for (const field of form.fields) {
     const answer = submitted.get(field.id);
+    const before = previous.get(field.id);
     const value = answer
-      ? await normalizeAnswer(field, answer, previous.get(field.id), tournament.gameId, now)
+      ? await normalizeAnswer(field, answer, before, tournament.gameId, now)
       : null;
 
     if (!value) {
@@ -1491,7 +1518,14 @@ export async function saveFormAnswers(
       }
       continue;
     }
-    saved.push(value);
+
+    // Valeur inchangée : on garde la réponse d'origine, avec sa date et son
+    // éventuelle marque de retard.
+    if (before && sameAnswerValue(before, value)) {
+      saved.push(before);
+      continue;
+    }
+    saved.push(markLate ? { ...value, late: true } : value);
   }
 
   const tId = parseObjectId(tournament.id, "Tournoi");
@@ -1507,6 +1541,21 @@ export async function saveFormAnswers(
     throw new TournamentError("not-found", "Joueur non trouvé");
   }
   return saved;
+}
+
+/**
+ * Deux réponses portent-elles la même valeur ? Un champ n'en porte qu'une
+ * sorte, il suffit donc de comparer chaque clé : identifiant pour une carte,
+ * saisie brute pour une liste de deck (le résultat de l'analyse en découle).
+ */
+function sameAnswerValue(a: TournamentFormAnswer, b: TournamentFormAnswer): boolean {
+  return (
+    a.text === b.text &&
+    a.number === b.number &&
+    (a.choices ?? []).join(" ") === (b.choices ?? []).join(" ") &&
+    (a.card?.cardId ?? null) === (b.card?.cardId ?? null) &&
+    (a.decklist?.input ?? null) === (b.decklist?.input ?? null)
+  );
 }
 
 /**

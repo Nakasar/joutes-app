@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { submitTournamentFormSchema } from "@/lib/schemas/tournament.schema";
 import {
-  assertFormOpenForPlayer,
-  formIsOpenForPlayer,
+  assertFormAcceptsPlayerAnswers,
+  formAcceptsPlayerAnswers,
+  formIsInLateWindow,
   getPlayerById,
   principalCanManage,
   requireTournament,
@@ -63,9 +64,12 @@ async function formPayload(
   return {
     form: tournament.registrationForm ?? null,
     answers: player.formAnswers ?? [],
-    // L'organisation corrige les réponses à tout moment ; le joueur seulement
-    // tant que le formulaire lui est ouvert.
-    canEdit: canManage || formIsOpenForPlayer(tournament),
+    // L'organisation corrige les réponses à tout moment ; le joueur tant que
+    // le formulaire lui est ouvert, ou au titre des réponses tardives.
+    canEdit: canManage || formAcceptsPlayerAnswers(tournament),
+    // La saisie normale est close mais les réponses tardives sont acceptées :
+    // ce que le joueur enregistre maintenant sera marqué.
+    lateWindow: formIsInLateWindow(tournament),
     closesAt: tournament.registrationForm?.closesAt ?? null,
     gameSlug,
     decklistSupported,
@@ -92,7 +96,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
     const { tournament, player, canManage } = context;
 
     if (!canManage) {
-      assertFormOpenForPlayer(tournament);
+      assertFormAcceptsPlayerAnswers(tournament);
     }
 
     const body = await request.json();
@@ -100,6 +104,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
     const answers = await saveFormAnswers(tournament, player.id, validated.answers, {
       enforceRequired: !canManage,
+      // Seule une réponse de joueur est tardive : une correction de
+      // l'organisation n'est pas une soumission hors délai.
+      markLate: !canManage && formIsInLateWindow(tournament),
     });
 
     return NextResponse.json({

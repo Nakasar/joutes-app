@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { DateTime } from "luxon";
-import { Check, Lock, Search, X } from "lucide-react";
+import { AlertTriangle, Check, Lock, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,12 +15,15 @@ import type {
   TournamentFormCard,
   TournamentFormField,
 } from "@/lib/types/Tournament";
-import { CardAnswer, DecklistAnswer, FormAnswersView } from "./TournamentFormAnswers";
+import { CardAnswer, DecklistAnswer, FormAnswersView, LateBadge } from "./TournamentFormAnswers";
 
 type FormPayload = {
   form: TournamentForm | null;
   answers: TournamentFormAnswer[];
   canEdit: boolean;
+  // La saisie normale est close, mais les réponses tardives sont acceptées :
+  // ce qui est enregistré maintenant par le joueur sera marqué tardif.
+  lateWindow: boolean;
   closesAt: string | null;
   gameSlug: string | null;
   decklistSupported: boolean;
@@ -196,10 +199,17 @@ export function TournamentFormEditor({
           {error}
         </p>
       )}
-      {closesAt && (
-        <p className="text-[13px] text-muted-foreground">
-          {t("form.closesAtNotice", { date: DateTime.fromISO(closesAt).toFormat("dd/MM HH:mm") })}
+      {payload.lateWindow ? (
+        <p className="flex items-start gap-1.5 rounded-lg border border-destructive/30 bg-destructive/10 p-2.5 text-[13px] text-destructive">
+          <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+          {t("form.lateWindowNotice")}
         </p>
+      ) : (
+        closesAt && (
+          <p className="text-[13px] text-muted-foreground">
+            {t("form.closesAtNotice", { date: DateTime.fromISO(closesAt).toFormat("dd/MM HH:mm") })}
+          </p>
+        )
       )}
 
       {form.fields.map((field) => (
@@ -263,9 +273,15 @@ function FieldInput({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-semibold" htmlFor={`field-${field.id}`}>
-        {field.label}
-        {field.required && <span className="ml-1 text-destructive">*</span>}
+      <label
+        className="flex flex-wrap items-center gap-1.5 text-sm font-semibold"
+        htmlFor={`field-${field.id}`}
+      >
+        <span>
+          {field.label}
+          {field.required && <span className="ml-1 text-destructive">*</span>}
+        </span>
+        {savedAnswer?.late && <LateBadge />}
       </label>
       {field.description && (
         <p className="text-xs text-muted-foreground">{field.description}</p>
