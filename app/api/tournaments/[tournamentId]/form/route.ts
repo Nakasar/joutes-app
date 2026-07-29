@@ -9,7 +9,7 @@ import {
   requireTournament,
   saveTournamentForm,
 } from "@/lib/db/tournaments";
-import { gameSupportsDecklistParsing, resolveGameSlug } from "@/lib/tournaments/decklist-parsing";
+import { resolveFormGameContext } from "@/lib/tournaments/decklist-parsing";
 import { resolveTournamentPrincipal, tournamentErrorResponse, unauthorizedResponse } from "../../utils";
 
 type Params = { params: Promise<{ tournamentId: string }> };
@@ -28,15 +28,11 @@ export async function GET(request: NextRequest, { params }: Params) {
     const tournament = await requireTournament(tournamentId);
     await assertPrincipalCanRead(tournament, principal);
 
-    const [gameSlug, decklistSupported] = await Promise.all([
-      resolveGameSlug(tournament.gameId),
-      gameSupportsDecklistParsing(tournament.gameId),
-    ]);
+    const game = await resolveFormGameContext(tournament.gameId);
 
     return NextResponse.json({
       form: tournament.registrationForm ?? null,
-      gameSlug,
-      decklistSupported,
+      ...game,
       openForPlayers: formIsOpenForPlayer(tournament),
       lateWindow: formIsInLateWindow(tournament),
     });

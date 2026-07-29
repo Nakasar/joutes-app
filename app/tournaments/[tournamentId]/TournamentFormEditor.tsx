@@ -87,6 +87,14 @@ export function TournamentFormEditor({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
+  // Indexé une fois par rendu : chaque champ va chercher sa réponse enregistrée
+  // (marque de retard, analyse de liste), et un formulaire peut porter
+  // cinquante questions.
+  const savedByField = useMemo(
+    () => new Map((payload?.answers ?? []).map((answer) => [answer.fieldId, answer])),
+    [payload]
+  );
+
   const applyPayload = useCallback((data: FormPayload) => {
     setPayload(data);
     setDraft(data.form ? buildDraft(data.form, data.answers) : {});
@@ -217,7 +225,7 @@ export function TournamentFormEditor({
           key={field.id}
           field={field}
           value={draft[field.id] ?? EMPTY_DRAFT}
-          savedAnswer={payload.answers.find((answer) => answer.fieldId === field.id)}
+          savedAnswer={savedByField.get(field.id)}
           gameSlug={payload.gameSlug}
           decklistSupported={payload.decklistSupported}
           disabled={busy}

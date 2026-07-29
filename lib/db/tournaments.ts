@@ -1549,10 +1549,13 @@ export async function saveFormAnswers(
  * saisie brute pour une liste de deck (le résultat de l'analyse en découle).
  */
 function sameAnswerValue(a: TournamentFormAnswer, b: TournamentFormAnswer): boolean {
+  const choicesA = a.choices ?? [];
+  const choicesB = b.choices ?? [];
   return (
     a.text === b.text &&
     a.number === b.number &&
-    (a.choices ?? []).join(" ") === (b.choices ?? []).join(" ") &&
+    choicesA.length === choicesB.length &&
+    choicesA.every((choice, index) => choice === choicesB[index]) &&
     (a.card?.cardId ?? null) === (b.card?.cardId ?? null) &&
     (a.decklist?.input ?? null) === (b.decklist?.input ?? null)
   );

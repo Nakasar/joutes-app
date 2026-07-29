@@ -12,7 +12,7 @@ import {
   type TournamentPrincipal,
 } from "@/lib/db/tournaments";
 import type { Tournament, TournamentPlayer } from "@/lib/types/Tournament";
-import { gameSupportsDecklistParsing, resolveGameSlug } from "@/lib/tournaments/decklist-parsing";
+import { resolveFormGameContext } from "@/lib/tournaments/decklist-parsing";
 import {
   resolveTournamentPrincipal,
   tournamentErrorResponse,
@@ -56,10 +56,7 @@ async function formPayload(
   player: TournamentPlayer,
   canManage: boolean
 ) {
-  const [gameSlug, decklistSupported] = await Promise.all([
-    resolveGameSlug(tournament.gameId),
-    gameSupportsDecklistParsing(tournament.gameId),
-  ]);
+  const game = await resolveFormGameContext(tournament.gameId);
 
   return {
     form: tournament.registrationForm ?? null,
@@ -71,8 +68,7 @@ async function formPayload(
     // ce que le joueur enregistre maintenant sera marqué.
     lateWindow: formIsInLateWindow(tournament),
     closesAt: tournament.registrationForm?.closesAt ?? null,
-    gameSlug,
-    decklistSupported,
+    ...game,
   };
 }
 

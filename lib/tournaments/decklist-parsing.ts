@@ -6,7 +6,13 @@ import type {
   TournamentFormDecklistAnswer,
   TournamentParsedDecklist,
 } from "@/lib/types/Tournament";
-import type { DeckList } from "@/app/games/riftbound/deck-checker/action";
+import {
+  getDeckFromPiltover,
+  getDeckFromPiltoverCode,
+  validateDeckList,
+  type DeckList,
+} from "@/app/games/riftbound/deck-checker/action";
+import { parseDeckList } from "@/app/games/riftbound/deck-checker/utils";
 
 // Jeux dont une liste de deck peut être analysée. Ailleurs la saisie du joueur
 // est conservée telle quelle : mieux vaut une liste brute lisible qu'une
@@ -32,6 +38,26 @@ const SECTION_ORDER: (keyof DeckList)[] = [
  */
 export async function gameSupportsDecklistParsing(gameId?: string): Promise<boolean> {
   const slug = await resolveGameSlug(gameId);
+  return supportsDecklistParsing(slug);
+}
+
+export type FormGameContext = {
+  // Slug du jeu, nécessaire à la recherche de cartes côté client.
+  gameSlug: string | null;
+  decklistSupported: boolean;
+};
+
+/**
+ * Les deux informations que le formulaire tire du jeu du tournoi, en une seule
+ * lecture : elles sortent de la même fiche de jeu, la chercher deux fois par
+ * requête ne rapporte rien.
+ */
+export async function resolveFormGameContext(gameId?: string): Promise<FormGameContext> {
+  const gameSlug = await resolveGameSlug(gameId);
+  return { gameSlug, decklistSupported: supportsDecklistParsing(gameSlug) };
+}
+
+function supportsDecklistParsing(slug: string | null): boolean {
   return slug !== null && PARSABLE_GAME_SLUGS.has(slug);
 }
 
@@ -71,15 +97,6 @@ export async function parseDecklistAnswer(
   }
 
   try {
-    // Chargé à la demande : l'analyse Riftbound tire tout le vérificateur de
-    // deck (et le SDK d'analyse d'images), qui n'a rien à faire dans le
-    // bundle de toutes les routes tournoi.
-    const [{ getDeckFromPiltover, getDeckFromPiltoverCode, validateDeckList }, { parseDeckList }] =
-      await Promise.all([
-        import("@/app/games/riftbound/deck-checker/action"),
-        import("@/app/games/riftbound/deck-checker/utils"),
-      ]);
-
     let deck: DeckList;
     if (trimmed.startsWith(PILTOVER_DECK_URL)) {
       const deckId = trimmed.slice(PILTOVER_DECK_URL.length).split(/[/?#]/)[0];
