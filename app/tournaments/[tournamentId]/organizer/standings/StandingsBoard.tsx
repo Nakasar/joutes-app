@@ -213,7 +213,10 @@ export function StandingsBoard({
                       key={column.key}
                       className="px-4 py-2.5 text-right font-mono text-[13px] text-muted-foreground"
                     >
-                      {row.stats?.[column.key] ?? 0}
+                      {/* « — » et non « 0 » : un classement figé avant l'ajout
+                          du preset ne porte pas la statistique, et le zéro s'y
+                          lirait comme une contre-performance. */}
+                      {row.stats?.[column.key] ?? "—"}
                     </td>
                   ))}
                   <td className="px-4 py-2.5 text-right font-mono text-[13px] text-muted-foreground">

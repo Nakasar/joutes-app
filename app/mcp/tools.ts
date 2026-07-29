@@ -627,9 +627,13 @@ async function handleGetTournament(
 
     const phasesText = phases.map(p => {
         // Le rythme d'une phase change complètement la lecture du tournoi : en
-        // asynchrone, chaque ronde est un intervalle de plusieurs jours.
+        // asynchrone, chaque ronde est un intervalle. Exprimé en jours quand il
+        // en fait au moins un, en heures sinon — arrondir un intervalle de 6 h
+        // afficherait « 0 j ».
         const pacing = p.pacing === "asynchronous"
-            ? `, intervalles de ${Math.round(p.intervalHours / 24)} j`
+            ? p.intervalHours >= 24
+                ? `, intervalles de ${Math.round(p.intervalHours / 24)} j`
+                : `, intervalles de ${p.intervalHours} h`
             : "";
         return `- ${p.name} (${p.type}, ${p.status}${pacing})`;
     }).join("\n");

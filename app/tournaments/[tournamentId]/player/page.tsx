@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useCallback, useEffect, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { DateTime } from "luxon";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -49,6 +49,9 @@ export default function TournamentPlayerMatchPage({
   params: Promise<{ tournamentId: string }>;
 }) {
   const t = useTranslations("Tournaments");
+  // Luxon suit la locale du runtime par défaut : la date et le délai de
+  // l'échéance doivent parler la langue du portail.
+  const locale = useLocale();
   const { tournamentId } = use(params);
 
   const { syncKey, tournament, myPlayerId, error, loading, apiFetch, reload, session } =
@@ -264,11 +267,13 @@ export default function TournamentPlayerMatchPage({
                 <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                   {t("player.playBefore")}
                 </p>
-                <p className="my-1.5 text-[26px] font-bold leading-tight tracking-tight">
-                  {DateTime.fromISO(round.deadlineAt).toFormat("cccc d LLLL")}
-                </p>
-                <p className="mb-2 text-[13px] text-muted-foreground">
-                  {DateTime.fromISO(round.deadlineAt).toRelative()}
+                {/* La carte dit quand ; le délai restant vit dans l'en-tête,
+                    qui seul connaît l'heure du serveur. Deux décomptes qui
+                    peuvent diverger valent moins qu'un seul qui fait foi. */}
+                <p className="my-1.5 mb-3 text-[26px] font-bold leading-tight tracking-tight">
+                  {DateTime.fromISO(round.deadlineAt)
+                    .setLocale(locale)
+                    .toFormat("cccc d LLLL, HH'h'mm")}
                 </p>
               </>
             ) : (

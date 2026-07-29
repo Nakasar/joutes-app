@@ -77,7 +77,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       opponentMatchWin: formatTiebreaker(row.opponentMatchWinPercentage, locale),
       gameWin: formatTiebreaker(gameWinPercentage(row.gamesWon, row.gamesLost), locale),
       status: row.playerStatus === "dropped" ? t("common.playerStatus.dropped") : "",
-      stats: statColumns.map((column) => row.stats?.[column.key] ?? 0),
+      // Cellule vide plutôt que zéro quand la statistique est absente : dans
+      // un tableur, un 0 fabriqué fausserait moyennes et totaux.
+      stats: statColumns.map((column) => row.stats?.[column.key] ?? ""),
     }));
 
     const csv = buildStandingsCsv(entries, {

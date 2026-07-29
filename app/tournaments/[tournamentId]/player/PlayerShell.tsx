@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { DateTime } from "luxon";
 import { ClipboardList, ListChecks, Megaphone, Target, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -54,6 +54,9 @@ export function PlayerShell({
   children: ReactNode;
 }) {
   const t = useTranslations("Tournaments");
+  // Luxon suit la locale du runtime par défaut : sans elle, l'échéance
+  // s'afficherait dans une autre langue que le reste du portail.
+  const locale = useLocale();
   const pathname = usePathname();
   const { state, serverOffsetMs } = useTournamentLive(tournamentId);
 
@@ -80,6 +83,10 @@ export function PlayerShell({
   const me = myPlayerId ? tournament?.players.find((p) => p.id === myPlayerId) : undefined;
 
   const remaining = timerRemainingSeconds(state?.timer ?? null, serverOffsetMs);
+  // Instant de référence des échéances : l'heure du serveur, corrigée du
+  // décalage du poste. Une machine mal réglée afficherait sinon un intervalle
+  // déjà expiré — le minuteur applique la même correction.
+  const serverNow = DateTime.now().plus({ milliseconds: serverOffsetMs });
   const expired = remaining !== null && remaining < 0;
   const low = remaining !== null && remaining >= 0 && remaining < 300;
   const lastAnnouncement = state?.announcements?.[0];
@@ -101,10 +108,10 @@ export function PlayerShell({
               <p
                 className={cn(
                   "text-sm font-semibold",
-                  DateTime.fromISO(deadlineAt) < DateTime.now() ? "text-red-400" : "text-white"
+                  DateTime.fromISO(deadlineAt) < serverNow ? "text-red-400" : "text-white"
                 )}
               >
-                {DateTime.fromISO(deadlineAt).toRelative()}
+                {DateTime.fromISO(deadlineAt).setLocale(locale).toRelative({ base: serverNow })}
               </p>
               <p className="text-[11px] text-neutral-400">{t("playerShell.deadline")}</p>
             </div>
