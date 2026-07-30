@@ -3,6 +3,8 @@
 import {ErrataDb, ErrataTranslationInput, ErrataType, ErrataVoteDb, ErrataVoteType} from "@/lib/types/errata";
 import {Locale} from "@/i18n/config";
 import {requirePermission} from "@/lib/db/permissions";
+import {deleteErrataById} from "@/lib/db/erratas";
+import {deleteReportsForContent} from "@/lib/db/reports";
 import {headers} from "next/headers";
 import {auth} from "@/lib/auth";
 import {ObjectId} from "mongodb";
@@ -12,6 +14,62 @@ import {requireAdmin} from "@/lib/middleware/admin";
 import meilisearch, {indexes} from "@/lib/meilisearch";
 import {mergeTranslationTimestamps} from "@/lib/translations";
 
+// La création étant ouverte à tous, un errata ne peut pas viser une liste de
+// cartes arbitrairement longue (chaque carte entraîne une revalidation de page).
+const MAX_ERRATA_CARDS = 20;
+
+/**
+ * Normalise et valide les cartes d'un errata : au moins une carte, pas plus de
+ * `MAX_ERRATA_CARDS`, et uniquement des cartes existantes.
+ */
+async function checkErrataCardIds(cardIds: string[]): Promise<string[]> {
+  const uniqueCardIds = [...new Set(cardIds)];
+
+  if (uniqueCardIds.length === 0) {
+    throw new Error("Un errata doit être lié à au moins une carte.");
+  }
+
+  if (uniqueCardIds.length > MAX_ERRATA_CARDS) {
+    throw new Error(`Un errata ne peut pas être lié à plus de ${MAX_ERRATA_CARDS} cartes.`);
+  }
+
+  const knownCardIds = await db.collection("cards").distinct("id", { id: { $in: uniqueCardIds } });
+  if (knownCardIds.length !== uniqueCardIds.length) {
+    throw new Error("Un errata ne peut être lié qu'à des cartes existantes.");
+  }
+
+  return uniqueCardIds;
+}
+
+/**
+ * Autorise la modification et la suppression d'un errata : son auteur, ou un
+ * modérateur (permission `erratas:manage`). Renvoie l'errata pour éviter de le
+ * relire ensuite.
+ */
+async function requireErrataEditRights(errataId: ObjectId) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user?.id) {
+    throw new Error("Utilisateur non authentifié");
+  }
+
+  const errata = await db.collection<ErrataDb>("erratas").findOne({ _id: errataId });
+  if (!errata) {
+    throw new Error("Errata introuvable");
+  }
+
+  if (errata.createdBy?.toString() === session.user.id) {
+    return errata;
+  }
+
+  await requirePermission("erratas:manage");
+
+  return errata;
+}
+
+/**
+ * Création ouverte à tout utilisateur connecté : les erratas sont un contenu
+ * communautaire, arbitré par les votes et les signalements.
+ */
 export async function createErrata(data: {
   cardIds: string[];
   type: ErrataType;
@@ -20,20 +78,20 @@ export async function createErrata(data: {
   source?: string;
   errataDate: Date;
 }) {
-  await requirePermission("erratas:update");
-
-  if (data.cardIds.length === 0) {
-    throw new Error("Un errata doit être lié à au moins une carte.");
-  }
-
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
     throw new Error("Utilisateur non authentifié");
   }
 
+  if (!data.details.trim()) {
+    throw new Error("Le contenu de l'errata est requis.");
+  }
+
+  const cardIds = await checkErrataCardIds(data.cardIds);
+
   const now = new Date();
   const errata: ErrataDb = {
-    cardIds: data.cardIds,
+    cardIds,
     type: data.type,
     details: data.details,
     originalLang: data.originalLang,
@@ -46,7 +104,7 @@ export async function createErrata(data: {
 
   await db.collection<ErrataDb>("erratas").insertOne(errata);
 
-  for (const cardId of data.cardIds) {
+  for (const cardId of cardIds) {
     revalidatePath(`/games/riftbound/cards/${cardId}`);
   }
   revalidatePath("/riftbound/erratas");
@@ -65,18 +123,19 @@ export async function updateErrata(
   },
   revalidateCardIds?: string[]
 ) {
-  await requirePermission("erratas:update");
-
-  if (data.cardIds && data.cardIds.length === 0) {
-    throw new Error("Un errata doit être lié à au moins une carte.");
-  }
-
   if (!ObjectId.isValid(errataId)) {
     throw new Error("Identifiant d'errata invalide");
   }
   const errataObjId = new ObjectId(errataId);
 
-  const existing = await db.collection<ErrataDb>("erratas").findOne({ _id: errataObjId });
+  const existing = await requireErrataEditRights(errataObjId);
+
+  if (!data.details.trim()) {
+    throw new Error("Le contenu de l'errata est requis.");
+  }
+
+  const cardIds = data.cardIds ? await checkErrataCardIds(data.cardIds) : undefined;
+
   const now = new Date();
   let contentUpdatedAt = now;
   if (existing && existing.details === data.details) {
@@ -94,8 +153,8 @@ export async function updateErrata(
       : undefined,
   };
 
-  if (data.cardIds) {
-    updateFields.cardIds = data.cardIds;
+  if (cardIds) {
+    updateFields.cardIds = cardIds;
   }
 
   if (data.deprecatedAt !== undefined) {
@@ -119,15 +178,22 @@ export async function updateErrata(
   }
 
   revalidatePath("/riftbound/erratas");
-  for (const cardId of new Set([...(revalidateCardIds ?? []), ...(data.cardIds ?? [])])) {
+  for (const cardId of new Set([...(revalidateCardIds ?? []), ...(cardIds ?? [])])) {
     revalidatePath(`/games/riftbound/cards/${cardId}`);
   }
 }
 
 export async function deleteErrata(errataId: string, cardIds?: string[]) {
-  await requirePermission("erratas:update");
+  if (!ObjectId.isValid(errataId)) {
+    throw new Error("Identifiant d'errata invalide");
+  }
+  const errataObjId = new ObjectId(errataId);
 
-  await db.collection<ErrataDb>("erratas").deleteOne({ _id: new ObjectId(errataId) });
+  await requireErrataEditRights(errataObjId);
+
+  await deleteErrataById(errataId);
+  // L'errata a disparu : ses éventuels signalements n'ont plus d'objet.
+  await deleteReportsForContent({ contentType: "errata", contentId: errataId });
 
   revalidatePath("/riftbound/erratas");
   for (const cardId of cardIds ?? []) {

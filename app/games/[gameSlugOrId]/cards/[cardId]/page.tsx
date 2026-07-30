@@ -144,6 +144,9 @@ export default async function RiftboundCardDetailPage({
   );
   const userIsAdmin = isAdmin(session?.user?.email);
   const userCanVoteErratas = await hasPermission("erratas:vote");
+  // Un errata se modifie et se supprime par son auteur ; les modérateurs
+  // (`erratas:manage`) peuvent agir sur tous.
+  const userCanManageErratas = await hasPermission("erratas:manage");
 
   const mentionedCardNames = [
     ...new Set(
@@ -276,7 +279,7 @@ export default async function RiftboundCardDetailPage({
               <h2 className="text-2xl font-semibold">
                 {t("cards.detail.errataSectionTitle")}
               </h2>
-              {userIsAdmin && (
+              {userId && (
                 <AddErrataButton
                   cardId={cardId}
                   cardName={card.name}
@@ -326,7 +329,7 @@ export default async function RiftboundCardDetailPage({
                           {DateTime.fromJSDate(new Date(errata.errataDate)).setLocale(locale).toLocaleString(DateTime.DATE_MED)}
                         </span>
                       </div>
-                      {userIsAdmin && (
+                      {(userCanManageErratas || errata.createdBy === userId) && (
                         <div className="flex gap-1">
                           <EditErrataDialog errata={errata} cardId={cardId} gameSlugOrId={gameSlugOrId}/>
                           <DeleteErrataButton errataId={errata.id} cardIds={errata.cardIds}/>

@@ -40,3 +40,9 @@ Pour plus de détails, voir [docs/GAME_MATCHES.md](docs/GAME_MATCHES.md).
 Les utilisateurs connectés peuvent signaler les contenus créés par d'autres utilisateurs (bouton drapeau). Les administrateurs les traitent depuis `/admin/reports`.
 
 Pour plus de détails, voir [docs/REPORTS.md](docs/REPORTS.md).
+
+### Erratas
+
+Tout utilisateur connecté peut créer un errata ; chacun ne peut modifier ou supprimer que les siens, sauf permission `erratas:manage`.
+
+Pour plus de détails, voir [docs/ERRATAS.md](docs/ERRATAS.md).
