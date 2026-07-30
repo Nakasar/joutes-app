@@ -196,3 +196,20 @@ export async function getPolicyById(id: string, userId?: string, gameId?: string
     },
   };
 }
+/**
+ * Suppression d'une policy et de ses votes (modération).
+ */
+export async function deletePolicyById(policyId: string): Promise<boolean> {
+  if (!ObjectId.isValid(policyId)) {
+    return false;
+  }
+
+  const _id = new ObjectId(policyId);
+  const result = await db.collection<PolicyDb>("policies").deleteOne({ _id });
+  if (result.deletedCount === 0) {
+    return false;
+  }
+
+  await db.collection("policy-votes").deleteMany({ policyId: _id });
+  return true;
+}

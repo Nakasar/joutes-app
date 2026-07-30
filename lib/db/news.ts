@@ -278,3 +278,13 @@ export async function getAllTags(): Promise<string[]> {
     .toArray();
   return results.map((r) => r._id as string).filter(Boolean);
 }
+
+/** Suppression d'une actualité (modération). */
+export async function deleteNews(id: string): Promise<boolean> {
+  if (!ObjectId.isValid(id)) {
+    return false;
+  }
+
+  const result = await db.collection(COLLECTION_NAME).deleteOne({ _id: new ObjectId(id) });
+  return result.deletedCount === 1;
+}

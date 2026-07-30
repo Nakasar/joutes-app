@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { DateTime } from "luxon";
 import { ClipboardList, ListChecks, Megaphone, Target, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import ReportButton from "@/components/ReportButton";
 import { cn } from "@/lib/utils";
 import { formatDuration, timerRemainingSeconds } from "@/lib/tournament-timer";
 import type { ApiTournament } from "./usePlayerTournament";
@@ -158,13 +159,22 @@ export function PlayerShell({
           </div>
         )}
 
-        {me && (
-          <p className="mt-3 text-xs text-neutral-400">
-            {t("playerShell.participatingAs")}{" "}
-            <span className="font-semibold text-white">{me.displayName}</span>
-            {me.discriminator && <span className="ml-0.5 text-neutral-500">#{me.discriminator}</span>}
-          </p>
-        )}
+        <div className="mt-3 flex items-center justify-between gap-2">
+          {me ? (
+            <p className="text-xs text-neutral-400">
+              {t("playerShell.participatingAs")}{" "}
+              <span className="font-semibold text-white">{me.displayName}</span>
+              {me.discriminator && <span className="ml-0.5 text-neutral-500">#{me.discriminator}</span>}
+            </p>
+          ) : (
+            <span />
+          )}
+          <ReportButton
+            contentType="tournament"
+            contentId={tournamentId}
+            className="text-neutral-400 hover:bg-neutral-800 hover:text-red-400"
+          />
+        </div>
       </header>
 
       <div className="-mt-4 flex-1 px-4">

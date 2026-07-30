@@ -14,6 +14,7 @@ import { Lair } from "@/lib/types/Lair";
 import {Achievement, AchievementWithUnlockInfo} from "@/lib/types/Achievement";
 import { checkAdmin } from "@/lib/middleware/admin";
 import { UnlockAchievementButton } from "@/app/users/UnlockAchievementButton";
+import ReportButton from "@/components/ReportButton";
 import { Metadata } from "next";
 
 interface UserProfilePageProps {
@@ -144,14 +145,17 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
                       )}
                     </h1>
 
-                    {/* Bouton admin pour débloquer un succès */}
-                    {isAdmin && (
-                      <UnlockAchievementButton
-                        userId={user.id}
-                        userTag={userTag}
-                        availableAchievements={availableToUnlock}
-                      />
-                    )}
+                    <div className="flex items-center gap-2">
+                      {/* Bouton admin pour débloquer un succès */}
+                      {isAdmin && (
+                        <UnlockAchievementButton
+                          userId={user.id}
+                          userTag={userTag}
+                          availableAchievements={availableToUnlock}
+                        />
+                      )}
+                      <ReportButton contentType="user" contentId={user.id} />
+                    </div>
                   </div>
 
                   {/* Description */}

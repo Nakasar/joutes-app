@@ -14,6 +14,7 @@ import BanCardButton from "@/app/games/[gameSlugOrId]/cards/[cardId]/BanCardButt
 import EditErrataDialog from "@/components/EditErrataDialog";
 import DeleteErrataButton from "@/components/DeleteErrataButton";
 import ErrataVoteButtons from "@/components/ErrataVoteButtons";
+import ReportButton from "@/components/ReportButton";
 import {isAdmin} from "@/lib/config/admins";
 import {hasPermission} from "@/lib/db/permissions";
 import AddErrataButton from "@/app/games/[gameSlugOrId]/cards/[cardId]/AddErrataButton";
@@ -393,12 +394,13 @@ export default async function RiftboundCardDetailPage({
                         </span>
                       </div>
                     )}
-                    <div className="mt-3 pt-3 border-t">
+                    <div className="mt-3 pt-3 border-t flex items-center justify-between gap-2">
                       <ErrataVoteButtons
                         errataId={errata.id}
                         votes={errata.votes}
                         userCanVote={userCanVoteErratas}
                       />
+                      <ReportButton contentType="errata" contentId={errata.id} />
                     </div>
                   </div>
                 ))}

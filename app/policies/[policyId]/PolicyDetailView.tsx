@@ -10,6 +10,7 @@ import StaleTranslationWarning from "@/components/StaleTranslationWarning";
 import EditPolicyDialog from "@/components/EditPolicyDialog";
 import DeletePolicyButton from "@/components/DeletePolicyButton";
 import PolicyVoteButtons from "@/components/PolicyVoteButtons";
+import ReportButton from "@/components/ReportButton";
 import { useTranslations } from "next-intl";
 import { DateTime } from "luxon";
 
@@ -111,12 +112,15 @@ export default function PolicyDetailView({
           )}
         </div>
 
-        <PolicyVoteButtons
-          policyId={policy.id}
-          gameSlug={gameSlug}
-          votes={policy.votes}
-          userCanVote={userCanVotePolicies}
-        />
+        <div className="flex items-center gap-2">
+          <PolicyVoteButtons
+            policyId={policy.id}
+            gameSlug={gameSlug}
+            votes={policy.votes}
+            userCanVote={userCanVotePolicies}
+          />
+          <ReportButton contentType="policy" contentId={policy.id} />
+        </div>
       </div>
     </div>
   );

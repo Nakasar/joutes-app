@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { ObjectId } from "mongodb";
 import { resolveCardMentions } from "@/lib/game-content-cards";
 import QuizPlayer from "./QuizPlayer";
+import ReportButton from "@/components/ReportButton";
 
 type Props = { params: Promise<{ quizId: string }> };
 
@@ -61,14 +62,17 @@ export default async function QuizzDetailPage({ params }: Props) {
             Retour aux quizz
           </Link>
         </Button>
-        {canWrite && (
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/quizz/${quizId}/edit`}>
-              <Pencil className="h-4 w-4 mr-2" />
-              Modifier
-            </Link>
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {canWrite && (
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/quizz/${quizId}/edit`}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Modifier
+              </Link>
+            </Button>
+          )}
+          <ReportButton contentType="quiz" contentId={quiz.id} />
+        </div>
       </div>
 
       <article className="space-y-6">

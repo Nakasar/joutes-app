@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Gamepad2, Calendar, Settings } from "lucide-react";
 import EventsCalendarClient from "@/components/EventsCalendarClient";
 import EventsAgendaList from "./EventsAgendaList";
+import ReportButton from "@/components/ReportButton";
 import EventsConferenceView from "./EventsConferenceView";
 import { getTranslations } from "next-intl/server";
 
@@ -144,6 +145,7 @@ export default async function LairDetailPage({
                   </Link>
                 </Button>
               )}
+              <ReportButton contentType="lair" contentId={lairId} variant="outline" size="sm" withLabel />
             </div>
           </div>
         </div>

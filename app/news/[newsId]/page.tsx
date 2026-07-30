@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import LikeButton from "./LikeButton";
+import ReportButton from "@/components/ReportButton";
 import NewsContent from "./NewsContent";
 import { ObjectId } from "mongodb";
 import { resolveCardMentions } from "@/lib/game-content-cards";
@@ -147,6 +148,7 @@ export default async function NewsDetailPage({ params }: Props) {
             initialCount={news.likesCount}
             isLoggedIn={!!session?.user}
           />
+          <ReportButton contentType="news" contentId={news.id} withLabel />
         </footer>
       </article>
     </div>

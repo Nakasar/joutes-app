@@ -340,3 +340,13 @@ export async function createDeckIndexes() {
   await db.collection(COLLECTION_NAME).createIndex({ updatedAt: -1 });
   await db.collection(COLLECTION_NAME).createIndex({ createdAt: -1 });
 }
+
+/** Suppression d'un deck sans contrôle du propriétaire (modération). */
+export async function deleteDeckAsModerator(deckId: string): Promise<boolean> {
+  if (!ObjectId.isValid(deckId)) {
+    return false;
+  }
+
+  const result = await db.collection(COLLECTION_NAME).deleteOne({ _id: new ObjectId(deckId) });
+  return result.deletedCount === 1;
+}

@@ -13,6 +13,7 @@ import LanguagePicker from "@/components/LanguagePicker";
 import StaleTranslationWarning from "@/components/StaleTranslationWarning";
 import { CardNameMatch } from "@/lib/db/cards";
 import PolicyVoteButtons from "@/components/PolicyVoteButtons";
+import ReportButton from "@/components/ReportButton";
 import EditPolicyDialog from "@/components/EditPolicyDialog";
 import DeletePolicyButton from "@/components/DeletePolicyButton";
 import { useLocale, useTranslations } from "next-intl";
@@ -265,12 +266,15 @@ export default function PoliciesClientView({
                           )}
                         </div>
 
-                        <PolicyVoteButtons
-                          policyId={policy.id}
-                          gameSlug={gameSlug}
-                          votes={policy.votes}
-                          userCanVote={userCanVotePolicies}
-                        />
+                        <div className="flex items-center gap-2">
+                          <PolicyVoteButtons
+                            policyId={policy.id}
+                            gameSlug={gameSlug}
+                            votes={policy.votes}
+                            userCanVote={userCanVotePolicies}
+                          />
+                          <ReportButton contentType="policy" contentId={policy.id} />
+                        </div>
                       </div>
                     </div>
                   )}
