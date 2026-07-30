@@ -461,3 +461,37 @@ export async function createSellListIndexes() {
   await db.collection(SELL_LIST_ITEMS_COLLECTION).createIndex({ sellListId: 1 });
   await db.collection(SELL_LIST_ITEMS_COLLECTION).createIndex({ sellListId: 1, gameId: 1 });
 }
+
+/** Suppression d'une liste de vente sans contrôle du propriétaire (modération). */
+export async function deleteSellListAsModerator(sellListId: string): Promise<boolean> {
+  if (!ObjectId.isValid(sellListId)) {
+    return false;
+  }
+
+  const _id = new ObjectId(sellListId);
+  const result = await db.collection(SELL_LISTS_COLLECTION).deleteOne({ _id });
+  if (result.deletedCount === 0) {
+    return false;
+  }
+
+  await db.collection(SELL_LIST_ITEMS_COLLECTION).deleteMany({ sellListId: _id });
+  return true;
+}
+
+/** Supprime toutes les listes de vente d'un groupe de jeu (et leurs cartes). */
+export async function deleteSellListsForPlayGroup(playGroupId: string): Promise<number> {
+  const sellLists = await db
+    .collection(SELL_LISTS_COLLECTION)
+    .find({ ownerType: "playGroup", ownerId: playGroupId }, { projection: { _id: 1 } })
+    .toArray();
+
+  if (sellLists.length === 0) {
+    return 0;
+  }
+
+  const ids = sellLists.map((sellList) => sellList._id);
+  await db.collection(SELL_LIST_ITEMS_COLLECTION).deleteMany({ sellListId: { $in: ids } });
+  const result = await db.collection(SELL_LISTS_COLLECTION).deleteMany({ _id: { $in: ids } });
+
+  return result.deletedCount;
+}

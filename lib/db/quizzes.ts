@@ -174,3 +174,13 @@ export async function updateQuiz(id: string, input: UpdateQuizInput): Promise<bo
     return false;
   }
 }
+
+/** Suppression d'un quizz (modération). */
+export async function deleteQuiz(id: string): Promise<boolean> {
+  if (!ObjectId.isValid(id)) {
+    return false;
+  }
+
+  const result = await db.collection(COLLECTION_NAME).deleteOne({ _id: new ObjectId(id) });
+  return result.deletedCount === 1;
+}

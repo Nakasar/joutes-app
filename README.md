@@ -35,3 +35,8 @@ Les utilisateurs peuvent enregistrer et consulter l'historique de leurs parties 
 
 Pour plus de détails, voir [docs/GAME_MATCHES.md](docs/GAME_MATCHES.md).
 
+### Signalement de contenus
+
+Les utilisateurs connectés peuvent signaler les contenus créés par d'autres utilisateurs (bouton drapeau). Les administrateurs les traitent depuis `/admin/reports`.
+
+Pour plus de détails, voir [docs/REPORTS.md](docs/REPORTS.md).

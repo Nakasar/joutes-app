@@ -485,3 +485,37 @@ export async function createWishlistIndexes() {
   await db.collection(WISHLIST_ITEMS_COLLECTION).createIndex({ wishlistId: 1 });
   await db.collection(WISHLIST_ITEMS_COLLECTION).createIndex({ wishlistId: 1, gameId: 1 });
 }
+
+/** Suppression d'une liste de souhaits sans contrôle du propriétaire (modération). */
+export async function deleteWishlistAsModerator(wishlistId: string): Promise<boolean> {
+  if (!ObjectId.isValid(wishlistId)) {
+    return false;
+  }
+
+  const _id = new ObjectId(wishlistId);
+  const result = await db.collection(WISHLISTS_COLLECTION).deleteOne({ _id });
+  if (result.deletedCount === 0) {
+    return false;
+  }
+
+  await db.collection(WISHLIST_ITEMS_COLLECTION).deleteMany({ wishlistId: _id });
+  return true;
+}
+
+/** Supprime toutes les listes de souhaits d'un groupe de jeu (et leurs cartes). */
+export async function deleteWishlistsForPlayGroup(playGroupId: string): Promise<number> {
+  const wishlists = await db
+    .collection(WISHLISTS_COLLECTION)
+    .find({ ownerType: "playGroup", ownerId: playGroupId }, { projection: { _id: 1 } })
+    .toArray();
+
+  if (wishlists.length === 0) {
+    return 0;
+  }
+
+  const ids = wishlists.map((wishlist) => wishlist._id);
+  await db.collection(WISHLIST_ITEMS_COLLECTION).deleteMany({ wishlistId: { $in: ids } });
+  const result = await db.collection(WISHLISTS_COLLECTION).deleteMany({ _id: { $in: ids } });
+
+  return result.deletedCount;
+}

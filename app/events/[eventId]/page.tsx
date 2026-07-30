@@ -35,6 +35,7 @@ import RunningStateManager from "./RunningStateManager";
 import CancelEventButton from "./CancelEventButton";
 import DeleteEventButton from "./DeleteEventButton";
 import { TournamentLinkCard } from "./TournamentLinkCard";
+import ReportButton from "@/components/ReportButton";
 import { Trophy } from "lucide-react";
 import { DateTime } from "luxon";
 import { getEventParticipants } from "./portal/participant-actions";
@@ -198,19 +199,22 @@ export default async function EventPage({ params, searchParams }: EventPageProps
               <span>{event.gameName}</span>
             </div>
           </div>
-          <Badge
-            variant={
-              event.status === "available"
-                ? "default"
-                : event.status === "cancelled"
-                ? "destructive"
-                : "secondary"
-            }
-          >
-            {event.status === "available" && t("status.available")}
-            {event.status === "sold-out" && t("status.soldOut")}
-            {event.status === "cancelled" && t("status.cancelled")}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge
+              variant={
+                event.status === "available"
+                  ? "default"
+                  : event.status === "cancelled"
+                  ? "destructive"
+                  : "secondary"
+              }
+            >
+              {event.status === "available" && t("status.available")}
+              {event.status === "sold-out" && t("status.soldOut")}
+              {event.status === "cancelled" && t("status.cancelled")}
+            </Badge>
+            <ReportButton contentType="event" contentId={event.id} />
+          </div>
         </div>
 
         {isPrivateEvent && (

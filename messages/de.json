@@ -2882,5 +2882,18 @@
     "previousPage": "Zurück",
     "nextPage": "Weiter",
     "pageOf": "Seite {page} von {totalPages}"
+  },
+  "Reports": {
+    "button": "Melden",
+    "dialogTitle": "Diesen Inhalt melden",
+    "dialogDescription": "Der Inhalt wird den Administratoren zur Überprüfung übermittelt. Missbräuchliche Meldungen können Sanktionen nach sich ziehen.",
+    "reasonLabel": "Grund (optional)",
+    "reasonPlaceholder": "Erkläre, warum dieser Inhalt problematisch ist...",
+    "cancel": "Abbrechen",
+    "submit": "Melden",
+    "submitting": "Wird gesendet...",
+    "success": "Danke, dieser Inhalt wurde den Administratoren gemeldet.",
+    "alreadyReported": "Du hast diesen Inhalt bereits gemeldet.",
+    "error": "Die Meldung konnte nicht gespeichert werden."
   }
 }

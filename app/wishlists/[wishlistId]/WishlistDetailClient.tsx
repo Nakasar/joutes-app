@@ -52,6 +52,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import ReportButton from "@/components/ReportButton";
 import type { Wishlist, WishlistItem, WishlistVisibility } from "@/lib/types/Wishlist";
 import type { PaginatedWishlistItems, WishlistOwnerInfo } from "@/lib/db/wishlists";
 import type { Game } from "@/lib/types/Game";
@@ -231,6 +232,7 @@ export default function WishlistDetailClient({
               <AddItemDialog wishlistId={wishlist.id} games={games} onAdded={handleItemAdded} />
             </>
           )}
+          <ReportButton contentType="wishlist" contentId={wishlist.id} />
         </div>
       </div>
 

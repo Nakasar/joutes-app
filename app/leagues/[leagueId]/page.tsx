@@ -25,6 +25,7 @@ import LeaveLeagueButton from "./LeaveLeagueButton";
 import KillerTargetsClient from "./KillerTargetsClient";
 import PointsMatchReportingClient from "./PointsMatchReportingClient";
 import LeagueRankingClient from "./LeagueRankingClient";
+import ReportButton from "@/components/ReportButton";
 
 const STATUS_LABELS: Record<LeagueStatus, string> = {
   DRAFT: "Brouillon",
@@ -181,6 +182,7 @@ export default async function LeagueDetailPage({
                 </Link>
               </Button>
             )}
+            <ReportButton contentType="league" contentId={leagueId} />
           </div>
         </div>
 

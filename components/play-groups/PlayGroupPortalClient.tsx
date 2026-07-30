@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth-client";
 import { PlayGroupToolsNavBar } from "@/components/play-groups/PlayGroupToolsNavBar";
+import ReportButton from "@/components/ReportButton";
 
 type PlayGroupMember = {
   userId: string;
@@ -84,7 +85,10 @@ export default function PlayGroupPortalClient() {
             <Link href="/play-groups">{t("page.back")}</Link>
           </Button>
           {group ? (
-            <PlayGroupToolsNavBar playGroupId={group.id} currentTab="portal" canManageSettings={canManageSettings} />
+            <>
+              <PlayGroupToolsNavBar playGroupId={group.id} currentTab="portal" canManageSettings={canManageSettings} />
+              <ReportButton contentType="play-group" contentId={group.id} />
+            </>
           ) : null}
         </div>
       </div>

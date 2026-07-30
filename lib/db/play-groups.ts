@@ -195,3 +195,18 @@ export async function acceptPlayGroupInvitation(invitationId: string, userId: st
 
   return getPlayGroupById(invitation.playGroupId);
 }
+
+/**
+ * Suppression d'un groupe de jeu et de ses invitations (modération). Les
+ * listes possédées par le groupe sont supprimées par l'appelant
+ * (`lib/db/reportable-content.ts`) pour éviter un cycle d'imports.
+ */
+export async function deletePlayGroup(playGroupId: string): Promise<boolean> {
+  const result = await playGroupsCollection.deleteOne({ id: playGroupId });
+  if (result.deletedCount === 0) {
+    return false;
+  }
+
+  await playGroupInvitationsCollection.deleteMany({ playGroupId });
+  return true;
+}

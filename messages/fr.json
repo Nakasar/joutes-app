@@ -2966,5 +2966,18 @@
     "previousPage": "Précédent",
     "nextPage": "Suivant",
     "pageOf": "Page {page} sur {totalPages}"
+  },
+  "Reports": {
+    "button": "Signaler",
+    "dialogTitle": "Signaler ce contenu",
+    "dialogDescription": "Le contenu sera transmis aux administrateurs pour vérification. Les signalements abusifs peuvent entraîner des sanctions.",
+    "reasonLabel": "Motif (facultatif)",
+    "reasonPlaceholder": "Expliquez pourquoi ce contenu pose problème...",
+    "cancel": "Annuler",
+    "submit": "Signaler",
+    "submitting": "Envoi...",
+    "success": "Merci, ce contenu a été signalé aux administrateurs.",
+    "alreadyReported": "Vous avez déjà signalé ce contenu.",
+    "error": "Impossible d'enregistrer le signalement."
   }
 }

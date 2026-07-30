@@ -2907,5 +2907,18 @@
     "previousPage": "Precedente",
     "nextPage": "Successivo",
     "pageOf": "Pagina {page} di {totalPages}"
+  },
+  "Reports": {
+    "button": "Segnala",
+    "dialogTitle": "Segnala questo contenuto",
+    "dialogDescription": "Il contenuto sarà trasmesso agli amministratori per verifica. Le segnalazioni abusive possono comportare sanzioni.",
+    "reasonLabel": "Motivo (facoltativo)",
+    "reasonPlaceholder": "Spiega perché questo contenuto è problematico...",
+    "cancel": "Annulla",
+    "submit": "Segnala",
+    "submitting": "Invio...",
+    "success": "Grazie, questo contenuto è stato segnalato agli amministratori.",
+    "alreadyReported": "Hai già segnalato questo contenuto.",
+    "error": "Impossibile salvare la segnalazione."
   }
 }

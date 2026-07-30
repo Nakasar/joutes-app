@@ -12,6 +12,7 @@ import Link from "next/link";
 import { DateTime } from "luxon";
 import DeleteDeckButton from "./DeleteDeckButton";
 import FavoriteDeckButton from "../FavoriteDeckButton";
+import ReportButton from "@/components/ReportButton";
 
 type Params = Promise<{ deckId: string }>;
 
@@ -124,6 +125,7 @@ export default async function DeckPage({ params }: { params: Params }) {
                 <DeleteDeckButton deckId={deck.id} />
               </>
             )}
+            <ReportButton contentType="deck" contentId={deck.id} />
           </div>
         </div>
 

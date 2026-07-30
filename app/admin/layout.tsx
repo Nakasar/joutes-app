@@ -61,6 +61,12 @@ export default async function AdminLayout({
               >
                 Exports
               </Link>
+              <Link
+                href="/admin/reports"
+                className="inline-flex items-center px-1 pt-1 text-sm font-medium text-foreground border-b-2 border-transparent hover:border-blue-500"
+              >
+                Signalements
+              </Link>
             </div>
             <div className="flex items-center">
               <span className="text-sm text-muted-foreground">Espace Admin</span>

@@ -244,3 +244,21 @@ export async function getAllErratas({
 
   return erratasDb.map((errata) => toErrata(errata, userId));
 }
+
+/**
+ * Suppression d'un errata et de ses votes (modération).
+ */
+export async function deleteErrataById(errataId: string): Promise<boolean> {
+  if (!ObjectId.isValid(errataId)) {
+    return false;
+  }
+
+  const _id = new ObjectId(errataId);
+  const result = await db.collection<ErrataDb>("erratas").deleteOne({ _id });
+  if (result.deletedCount === 0) {
+    return false;
+  }
+
+  await db.collection("errata-votes").deleteMany({ errataId: _id });
+  return true;
+}

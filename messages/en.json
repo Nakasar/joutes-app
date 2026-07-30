@@ -2965,5 +2965,18 @@
     "previousPage": "Previous",
     "nextPage": "Next",
     "pageOf": "Page {page} of {totalPages}"
+  },
+  "Reports": {
+    "button": "Report",
+    "dialogTitle": "Report this content",
+    "dialogDescription": "The content will be sent to the administrators for review. Abusive reports may lead to sanctions.",
+    "reasonLabel": "Reason (optional)",
+    "reasonPlaceholder": "Explain why this content is problematic...",
+    "cancel": "Cancel",
+    "submit": "Report",
+    "submitting": "Sending...",
+    "success": "Thanks, this content has been reported to the administrators.",
+    "alreadyReported": "You have already reported this content.",
+    "error": "The report could not be saved."
   }
 }

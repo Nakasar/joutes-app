@@ -505,3 +505,21 @@ export async function getUsersFollowingLair(lairId: string): Promise<User[]> {
   return users.map(toUser);
 }
 
+
+/**
+ * Remplace la description publique d'un profil par un texte de modération.
+ * Utilisé par l'espace d'administration des signalements : le profil d'un
+ * utilisateur n'est jamais supprimé, seule sa biographie est modérée.
+ */
+export async function moderateUserDescription(userId: string, moderatedText: string): Promise<boolean> {
+  if (!ObjectId.isValid(userId)) {
+    return false;
+  }
+
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: ObjectId.createFromHexString(userId) },
+    { $set: { description: moderatedText } }
+  );
+
+  return result.matchedCount > 0;
+}

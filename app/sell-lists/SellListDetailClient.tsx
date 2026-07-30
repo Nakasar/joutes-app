@@ -34,6 +34,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import ReportButton from "@/components/ReportButton";
 import type { SellList, SellListItem } from "@/lib/types/SellList";
 import type { PaginatedSellListItems, SellListOwnerInfo } from "@/lib/db/sell-lists";
 
@@ -182,17 +183,20 @@ export default function SellListDetailClient({
           {sellList.description && <p className="text-muted-foreground whitespace-pre-wrap">{sellList.description}</p>}
         </div>
 
-        {canEdit && (
-          <div className="flex items-center gap-2">
-            <EditSellListDialog sellList={sellList} onSaved={setSellList} />
-            <Button asChild variant="outline" size="sm" className="gap-1.5">
-              <Link href="/collection">
-                <Tag className="size-3.5" />
-                {t("detail.addFromCollection")}
-              </Link>
-            </Button>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {canEdit && (
+            <>
+              <EditSellListDialog sellList={sellList} onSaved={setSellList} />
+              <Button asChild variant="outline" size="sm" className="gap-1.5">
+                <Link href="/collection">
+                  <Tag className="size-3.5" />
+                  {t("detail.addFromCollection")}
+                </Link>
+              </Button>
+            </>
+          )}
+          <ReportButton contentType="sell-list" contentId={sellList.id} />
+        </div>
       </div>
 
       {/* Filters */}
