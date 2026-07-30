@@ -67,7 +67,9 @@ Deux actions sont disponibles :
   ou re-signalement par un utilisateur dont le signalement avait été ignoré).
 - **Supprimer** : le contenu est supprimé et ses signalements effacés. Pour un
   profil utilisateur, le compte est conservé et la biographie est remplacée par
-  « Contenu modéré ».
+  « Contenu modéré ». Si la suppression échoue alors que le contenu existe
+  toujours, les signalements restent en attente ; ils ne sont clos que lorsque
+  le contenu a effectivement disparu.
 
 ## Ajouter un nouveau type de contenu signalable
 

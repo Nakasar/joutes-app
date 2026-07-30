@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { ObjectId } from "mongodb";
+import { MongoServerError, ObjectId } from "mongodb";
 import db from "@/lib/mongodb";
 import {
   ReportDb,
@@ -12,16 +12,28 @@ import { getReportedContentPreview } from "@/lib/db/reportable-content";
 
 const COLLECTION_NAME = "reports";
 
-// `createIndex` est idempotent : la promesse est créée une fois par instance et
-// attendue avant les écritures qui en dépendent. L'index unique garantit qu'un
-// utilisateur ne peut signaler deux fois le même contenu, même en cas
-// d'appels concurrents.
-const reportIndexesReady = Promise.all([
-  db.collection(COLLECTION_NAME).createIndex({ contentType: 1, contentId: 1, reportedBy: 1 }, { unique: true }),
-  db.collection(COLLECTION_NAME).createIndex({ status: 1, createdAt: -1 }),
-]).catch((error) => {
-  console.error("Impossible de créer les index des signalements:", error);
-});
+// `createIndex` est idempotent : la promesse est mémorisée pour n'être jouée
+// qu'une fois par instance, et attendue avant les écritures qui en dépendent.
+// L'index unique est ce qui garantit qu'un utilisateur ne signale pas deux fois
+// le même contenu en cas d'appels concurrents : un échec de création n'est donc
+// ni avalé (l'écriture échoue plutôt que de laisser passer un doublon) ni
+// mémorisé (l'appel suivant retente).
+let reportIndexesReady: Promise<unknown> | null = null;
+
+function ensureReportIndexes(): Promise<unknown> {
+  if (!reportIndexesReady) {
+    reportIndexesReady = Promise.all([
+      db.collection(COLLECTION_NAME).createIndex({ contentType: 1, contentId: 1, reportedBy: 1 }, { unique: true }),
+      db.collection(COLLECTION_NAME).createIndex({ status: 1, createdAt: -1 }),
+    ]).catch((error) => {
+      console.error("Impossible de créer les index des signalements:", error);
+      reportIndexesReady = null;
+      throw error;
+    });
+  }
+
+  return reportIndexesReady;
+}
 
 type ReporterDoc = {
   _id: ObjectId;
@@ -65,7 +77,7 @@ export async function createReport({
   reportedBy: string;
   reason?: string;
 }): Promise<boolean> {
-  await reportIndexesReady;
+  await ensureReportIndexes();
 
   const now = new Date();
   const filter = {
@@ -79,19 +91,29 @@ export async function createReport({
     return false;
   }
 
-  await db.collection<ReportDb>(COLLECTION_NAME).updateOne(
-    filter,
-    {
-      $set: {
-        status: "pending",
-        reason,
-        createdAt: now,
-        updatedAt: now,
+  try {
+    await db.collection<ReportDb>(COLLECTION_NAME).updateOne(
+      filter,
+      {
+        $set: {
+          status: "pending",
+          reason,
+          createdAt: now,
+          updatedAt: now,
+        },
+        $unset: { ignoredAt: "", ignoredBy: "" },
       },
-      $unset: { ignoredAt: "", ignoredBy: "" },
-    },
-    { upsert: true }
-  );
+      { upsert: true }
+    );
+  } catch (error) {
+    // Deux signalements simultanés du même utilisateur : l'index unique en
+    // rejette un (E11000). Le contenu est bien signalé, rien à ajouter.
+    if (error instanceof MongoServerError && error.code === 11000) {
+      return false;
+    }
+
+    throw error;
+  }
 
   return true;
 }

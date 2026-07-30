@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/middleware/admin";
 import { deleteReportsForContent, ignoreReportsForContent } from "@/lib/db/reports";
-import { moderateReportedContent } from "@/lib/db/reportable-content";
+import { getReportedContentPreview, moderateReportedContent } from "@/lib/db/reportable-content";
 import { moderateReportSchema } from "@/lib/schemas/report.schema";
 import { ReportableContentType } from "@/lib/types/Report";
 
@@ -55,15 +55,26 @@ export async function deleteReportedContentAction(input: ModerationInput): Promi
     const { contentType, contentId } = parsed.data;
     const moderated = await moderateReportedContent(contentType, contentId);
 
-    // Un contenu déjà supprimé par ailleurs n'a plus lieu d'apparaître dans la
-    // liste : on nettoie ses signalements dans tous les cas.
+    if (!moderated) {
+      // La modération peut échouer parce que le contenu n'existe plus (le
+      // signalement n'a alors plus lieu d'être) ou parce que la suppression
+      // s'est mal passée : dans ce second cas le signalement doit rester en
+      // attente plutôt que d'être clos sans modération.
+      const preview = await getReportedContentPreview(contentType, contentId);
+
+      if (preview.exists) {
+        return { success: false, error: "Le contenu n'a pas pu être supprimé, le signalement reste en attente." };
+      }
+
+      await deleteReportsForContent({ contentType, contentId });
+      revalidatePath("/admin/reports");
+
+      return { success: true, error: "Le contenu n'existait plus, le signalement a été clos." };
+    }
+
     await deleteReportsForContent({ contentType, contentId });
 
     revalidatePath("/admin/reports");
-
-    if (!moderated) {
-      return { success: true, error: "Le contenu n'existait plus, le signalement a été clos." };
-    }
 
     return { success: true };
   } catch (error) {
