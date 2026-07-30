@@ -21,6 +21,13 @@ Les administrateurs disposent implicitement de toutes les permissions.
 honorée (`PERMISSION_ALIASES` dans `lib/db/permissions.ts`) : les comptes qui
 la portent conservent leurs droits de modération sans migration de base.
 
+## Contraintes de contenu
+
+- Le contenu (`details`) ne peut pas être vide, à la création comme à la
+  modification.
+- Un errata vise entre 1 et 20 cartes, qui doivent toutes exister ; les
+  doublons sont supprimés.
+
 ## Implémentation
 
 - `app/games/[gameSlugOrId]/actions.ts` : `createErrata` n'exige qu'une session
