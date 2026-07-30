@@ -3,6 +3,8 @@
 import {ErrataDb, ErrataTranslationInput, ErrataType, ErrataVoteDb, ErrataVoteType} from "@/lib/types/errata";
 import {Locale} from "@/i18n/config";
 import {requirePermission} from "@/lib/db/permissions";
+import {deleteErrataById} from "@/lib/db/erratas";
+import {deleteReportsForContent} from "@/lib/db/reports";
 import {headers} from "next/headers";
 import {auth} from "@/lib/auth";
 import {ObjectId} from "mongodb";
@@ -12,6 +14,35 @@ import {requireAdmin} from "@/lib/middleware/admin";
 import meilisearch, {indexes} from "@/lib/meilisearch";
 import {mergeTranslationTimestamps} from "@/lib/translations";
 
+/**
+ * Autorise la modification et la suppression d'un errata : son auteur, ou un
+ * modérateur (permission `erratas:manage`). Renvoie l'errata pour éviter de le
+ * relire ensuite.
+ */
+async function requireErrataEditRights(errataId: ObjectId) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user?.id) {
+    throw new Error("Utilisateur non authentifié");
+  }
+
+  const errata = await db.collection<ErrataDb>("erratas").findOne({ _id: errataId });
+  if (!errata) {
+    throw new Error("Errata introuvable");
+  }
+
+  if (errata.createdBy?.toString() === session.user.id) {
+    return errata;
+  }
+
+  await requirePermission("erratas:manage");
+
+  return errata;
+}
+
+/**
+ * Création ouverte à tout utilisateur connecté : les erratas sont un contenu
+ * communautaire, arbitré par les votes et les signalements.
+ */
 export async function createErrata(data: {
   cardIds: string[];
   type: ErrataType;
@@ -20,15 +51,17 @@ export async function createErrata(data: {
   source?: string;
   errataDate: Date;
 }) {
-  await requirePermission("erratas:update");
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user?.id) {
+    throw new Error("Utilisateur non authentifié");
+  }
 
   if (data.cardIds.length === 0) {
     throw new Error("Un errata doit être lié à au moins une carte.");
   }
 
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user?.id) {
-    throw new Error("Utilisateur non authentifié");
+  if (!data.details.trim()) {
+    throw new Error("Le contenu de l'errata est requis.");
   }
 
   const now = new Date();
@@ -65,8 +98,6 @@ export async function updateErrata(
   },
   revalidateCardIds?: string[]
 ) {
-  await requirePermission("erratas:update");
-
   if (data.cardIds && data.cardIds.length === 0) {
     throw new Error("Un errata doit être lié à au moins une carte.");
   }
@@ -76,7 +107,7 @@ export async function updateErrata(
   }
   const errataObjId = new ObjectId(errataId);
 
-  const existing = await db.collection<ErrataDb>("erratas").findOne({ _id: errataObjId });
+  const existing = await requireErrataEditRights(errataObjId);
   const now = new Date();
   let contentUpdatedAt = now;
   if (existing && existing.details === data.details) {
@@ -125,9 +156,16 @@ export async function updateErrata(
 }
 
 export async function deleteErrata(errataId: string, cardIds?: string[]) {
-  await requirePermission("erratas:update");
+  if (!ObjectId.isValid(errataId)) {
+    throw new Error("Identifiant d'errata invalide");
+  }
+  const errataObjId = new ObjectId(errataId);
 
-  await db.collection<ErrataDb>("erratas").deleteOne({ _id: new ObjectId(errataId) });
+  await requireErrataEditRights(errataObjId);
+
+  await deleteErrataById(errataId);
+  // L'errata a disparu : ses éventuels signalements n'ont plus d'objet.
+  await deleteReportsForContent({ contentType: "errata", contentId: errataId });
 
   revalidatePath("/riftbound/erratas");
   for (const cardId of cardIds ?? []) {
