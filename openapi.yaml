@@ -352,6 +352,43 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
 
+  /collection/games/{gameSlug}/ownership:
+    parameters:
+      - { name: gameSlug, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Collection]
+      summary: Count owned copies of the given card names, broken down by printing
+      description: >-
+        For each requested card name, the number of copies the caller owns, in total
+        (every catalog printing sharing that name) and per printing. Names owned in
+        zero copies are simply absent from the response.
+      security: [{ sessionAuth: [] }]
+      parameters:
+        - { name: names, in: query, required: true, description: "Exact card name; repeat the parameter for several cards (120 max).", schema: { type: array, items: { type: string } } }
+        - { name: excludeBooster, in: query, required: false, description: "Booster id whose copies are left out of the counts (they are already listed by the caller).", schema: { type: string } }
+      responses:
+        "200":
+          description: Owned copies keyed by card name.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ownership:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        total: { type: integer, description: "Copies owned, every printing of that name included." }
+                        printings:
+                          type: object
+                          description: "Copies owned per printing, keyed by `setCode|collectorNumber`."
+                          additionalProperties: { type: integer }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /collection/boosters:
     get:
       tags: [Collection]

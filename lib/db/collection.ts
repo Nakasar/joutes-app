@@ -2,6 +2,7 @@ import 'server-only';
 import db from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { Game } from "@/lib/types/Game";
+import { printingKey, type OwnershipSnapshot } from "@/lib/collection/ownership";
 
 /**
  * Collection completion model.
@@ -574,6 +575,80 @@ export async function getCardVariants({
     ...v,
     collectorNumber: String(v.collectorNumber ?? ""),
   })) as CardVariant[];
+}
+
+/**
+ * Exemplaires possédés pour une liste de noms de cartes, détaillés par
+ * impression. Comme `getVariantsOwnedByKey`, la possession est lue directement
+ * sur `collection-cards` (nom + extension + numéro y sont dénormalisés à
+ * l'écriture) plutôt qu'en joignant `cards.id`, cet identifiant n'étant pas
+ * strictement unique.
+ *
+ * Le catalogue du jeu délimite ce que « toutes variantes confondues » recouvre :
+ * seules les impressions qu'il connaît sont comptées, ce qui évite qu'un
+ * homonyme d'un autre jeu ne gonfle le total.
+ */
+export async function getOwnershipByName(
+  owner: CollectionOwner,
+  gameId: string,
+  names: string[],
+  { excludeBoosterId }: { excludeBoosterId?: string } = {}
+): Promise<OwnershipSnapshot> {
+  const uniqueNames = [...new Set(names)].filter(Boolean);
+  if (uniqueNames.length === 0) return {};
+
+  const match: Record<string, unknown> = { ...ownerMatch(owner), name: { $in: uniqueNames } };
+  // Une fois le booster versé à la collection, ses cartes y comptent déjà.
+  // L'appelant rajoutant le contenu du booster par-dessus, les compter ici
+  // aussi les ferait apparaître en double.
+  if (excludeBoosterId && ObjectId.isValid(excludeBoosterId)) {
+    match.fromBoosterId = { $ne: new ObjectId(excludeBoosterId) };
+  }
+
+  const [catalogPrintings, ownedGroups] = await Promise.all([
+    db
+      .collection("cards")
+      .find(
+        { gameId: new ObjectId(gameId), name: { $in: uniqueNames } },
+        { projection: { _id: 0, name: 1, setCode: 1, collectorNumber: 1 } }
+      )
+      .toArray(),
+    db
+      .collection("collection-cards")
+      .aggregate<{ _id: { name: string; setCode: string; collectorNumber: string }; count: number }>([
+        { $match: match },
+        {
+          // `collection-cards` porte des numéros de collection tantôt en
+          // nombre, tantôt en chaîne : sans conversion, la clé groupée ne
+          // correspondrait pas à celle construite depuis le catalogue.
+          $group: {
+            _id: {
+              name: "$name",
+              setCode: "$setCode",
+              collectorNumber: { $toString: "$collectorNumber" },
+            },
+            count: { $sum: 1 },
+          },
+        },
+      ])
+      .toArray(),
+  ]);
+
+  const catalogKeys = new Set(
+    catalogPrintings.map((p) => `${p.name}|${p.setCode}|${String(p.collectorNumber ?? "")}`)
+  );
+
+  const snapshot: OwnershipSnapshot = {};
+  for (const group of ownedGroups) {
+    const { name, setCode, collectorNumber } = group._id;
+    if (!catalogKeys.has(`${name}|${setCode}|${collectorNumber}`)) continue;
+    const entry = (snapshot[name] ??= { total: 0, printings: {} });
+    const key = printingKey({ setCode, collectorNumber });
+    entry.total += group.count;
+    entry.printings[key] = (entry.printings[key] ?? 0) + group.count;
+  }
+
+  return snapshot;
 }
 
 export type OwnershipBreakdown = { owner: CollectionOwner; count: number };
