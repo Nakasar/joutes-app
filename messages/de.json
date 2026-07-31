@@ -1366,7 +1366,7 @@
           "addFoil": "{name} als Foil hinzufügen",
           "toggleFoil": "Foil-Status umschalten",
           "copiesOwned": "{count, plural, =0 {Kein Exemplar dieser Auflage} one {# Exemplar dieser Auflage} other {# Exemplare dieser Auflage}}",
-          "variantCopiesOwned": "{count, plural, =0 {keines über alle Varianten} one {# über alle Varianten} other {# über alle Varianten}}",
+          "variantCopiesOwned": "{count, plural, =0 {kein Exemplar über alle Varianten} one {# Exemplar über alle Varianten} other {# Exemplare über alle Varianten}}",
           "firstCopy": "Erste",
           "firstCopyHint": "Erstes Exemplar dieser Karte in deiner Sammlung, alle Varianten eingeschlossen!",
           "firstCopyAvailable": "Du besitzt noch kein Exemplar dieser Karte, alle Varianten eingeschlossen.",

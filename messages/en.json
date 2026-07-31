@@ -1449,7 +1449,7 @@
           "addFoil": "Add {name} as foil",
           "toggleFoil": "Toggle foil status",
           "copiesOwned": "{count, plural, =0 {No copy of this printing} one {# copy of this printing} other {# copies of this printing}}",
-          "variantCopiesOwned": "{count, plural, =0 {none across all variants} one {# across all variants} other {# across all variants}}",
+          "variantCopiesOwned": "{count, plural, =0 {no copy across all variants} one {# copy across all variants} other {# copies across all variants}}",
           "firstCopy": "First",
           "firstCopyHint": "First copy of this card in your collection, all variants included!",
           "firstCopyAvailable": "You don't own any copy of this card yet, all variants included.",

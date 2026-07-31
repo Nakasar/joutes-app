@@ -618,8 +618,15 @@ export async function getOwnershipByName(
       .aggregate<{ _id: { name: string; setCode: string; collectorNumber: string }; count: number }>([
         { $match: match },
         {
+          // `collection-cards` porte des numéros de collection tantôt en
+          // nombre, tantôt en chaîne : sans conversion, la clé groupée ne
+          // correspondrait pas à celle construite depuis le catalogue.
           $group: {
-            _id: { name: "$name", setCode: "$setCode", collectorNumber: "$collectorNumber" },
+            _id: {
+              name: "$name",
+              setCode: "$setCode",
+              collectorNumber: { $toString: "$collectorNumber" },
+            },
             count: { $sum: 1 },
           },
         },

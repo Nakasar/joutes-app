@@ -1391,7 +1391,7 @@
           "addFoil": "Aggiungi {name} come foil",
           "toggleFoil": "Attiva/disattiva foil",
           "copiesOwned": "{count, plural, =0 {Nessuna copia di questa stampa} one {# copia di questa stampa} other {# copie di questa stampa}}",
-          "variantCopiesOwned": "{count, plural, =0 {nessuna tra tutte le varianti} one {# tra tutte le varianti} other {# tra tutte le varianti}}",
+          "variantCopiesOwned": "{count, plural, =0 {nessuna copia tra tutte le varianti} one {# copia tra tutte le varianti} other {# copie tra tutte le varianti}}",
           "firstCopy": "Prima",
           "firstCopyHint": "Prima copia di questa carta nella tua collezione, tutte le varianti incluse!",
           "firstCopyAvailable": "Non possiedi ancora nessuna copia di questa carta, tutte le varianti incluse.",
