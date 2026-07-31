@@ -178,6 +178,96 @@
       rgba(255, 255, 255, 0.1) 100%);
     backdrop-filter: blur(8px);
   }
+
+  /*
+   * Ouverture de booster.
+   *
+   * Le premier exemplaire d'une carte (toutes variantes confondues) est
+   * entouré d'un halo pulsé, et les cartes foil portent un reflet qui balaie
+   * l'illustration. Le halo garde une ombre à l'arrêt : mouvement coupé, la
+   * carte doit rester repérable.
+   */
+  @keyframes first-copy-halo {
+    0%, 100% {
+      box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.75), 0 0 10px 0 rgba(251, 191, 36, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.95), 0 0 20px 4px rgba(251, 191, 36, 0.55);
+    }
+  }
+
+  .first-copy-halo {
+    box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.75), 0 0 10px 0 rgba(251, 191, 36, 0.3);
+    animation: first-copy-halo 2.2s ease-in-out infinite;
+  }
+
+  @keyframes foil-shine {
+    0% {
+      transform: translateX(0) rotate(18deg);
+    }
+    100% {
+      transform: translateX(500%) rotate(18deg);
+    }
+  }
+
+  /*
+   * À appliquer sur l'élément `relative` qui porte l'illustration. Le voile
+   * irisé (`::before`) marque le foil en permanence, le reflet (`::after`) le
+   * balaie ; tous deux se glissent entre l'illustration et les commandes de la
+   * carte, qui restent cliquables au-dessus.
+   */
+  .foil-shine {
+    overflow: hidden;
+  }
+
+  .foil-shine::before,
+  .foil-shine::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+
+  .foil-shine::before {
+    inset: 0;
+    z-index: 1;
+    background-image: linear-gradient(135deg,
+      rgba(255, 170, 240, 0.18),
+      rgba(140, 220, 255, 0.18) 35%,
+      rgba(255, 240, 150, 0.18) 70%,
+      rgba(180, 255, 220, 0.18));
+  }
+
+  .foil-shine::after {
+    top: -50%;
+    bottom: -50%;
+    left: -60%;
+    width: 35%;
+    z-index: 2;
+    background-image: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.28),
+      rgba(140, 220, 255, 0.42),
+      rgba(255, 170, 240, 0.42),
+      rgba(255, 240, 150, 0.32),
+      transparent);
+    filter: blur(2px);
+    animation: foil-shine 3s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .first-copy-halo,
+    .foil-shine::after {
+      animation: none;
+    }
+
+    /* Reflet immobile posé sur l'illustration plutôt qu'un balayage. */
+    .foil-shine::after {
+      left: 20%;
+      opacity: 0.6;
+      transform: rotate(18deg);
+    }
+  }
 }
 
 

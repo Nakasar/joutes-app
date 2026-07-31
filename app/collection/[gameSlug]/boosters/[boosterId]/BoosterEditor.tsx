@@ -34,6 +34,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Booster, BoosterCard } from "@/lib/types/booster";
+import {
+  addCards,
+  annotateBoosterCards,
+  ownedCopies,
+  type CardPrinting,
+  type OwnershipSnapshot,
+} from "@/lib/collection/ownership";
 import { getBoosterTypeOptions, normalizeBoosterType } from "@/lib/constants/booster-types";
 import { BOOSTER_NOTE_MAX_LENGTH } from "@/lib/constants/boosters";
 import { parseCardSearch } from "@/lib/cards/search-query";
@@ -55,6 +62,20 @@ type SortDirection = "asc" | "desc";
 const SORT_KEYS: SortKey[] = ["default", "name", "collectorNumber", "type"];
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+
+/** Une requête de possession par écran de résultats : inutile de les découper plus fin. */
+const OWNERSHIP_BATCH_SIZE = 100;
+
+/**
+ * Le numéro de collection remonte tantôt en nombre, tantôt en chaîne selon la
+ * source (catalogue ou entrée de booster) : le décompte de possession compare
+ * des clés, il lui faut une forme unique.
+ */
+const printingOf = (card: { name: string; setCode: string; collectorNumber: string | number }): CardPrinting => ({
+  name: card.name,
+  setCode: card.setCode,
+  collectorNumber: String(card.collectorNumber ?? ""),
+});
 
 /** Comparateur du tri courant, appliqué sur des cartes déjà indexées par leur position d'origine. */
 function compareCards(a: BoosterCard, b: BoosterCard, key: SortKey): number {
@@ -106,6 +127,15 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
   const [domainFilter, setDomainFilter] = useState<string>(ALL);
   const [sortKey, setSortKey] = useState<SortKey>("default");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+
+  // Possession hors de ce booster, par nom de carte. `known` retient les noms
+  // dont la réponse est arrivée : sans lui, une carte encore inconnue passerait
+  // pour une carte jamais possédée et déclencherait une fausse « première ».
+  const [ownership, setOwnership] = useState<{ snapshot: OwnershipSnapshot; known: Set<string> }>({
+    snapshot: {},
+    known: new Set(),
+  });
+  const requestedNamesRef = useRef<Set<string>>(new Set());
 
   const controllerRef = useRef<AbortController | null>(null);
   const pendingKeyRef = useRef<string | null>(null);
@@ -176,6 +206,59 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
     const searchText = [parsed.text, parsed.cn ? `cn:${parsed.cn}` : ""].filter(Boolean).join(" ");
     void fetchResults(searchText, effectiveSet, parsed.lang ?? booster.lang, next);
   };
+
+  // Noms dont la possession est affichée : le contenu du booster et les cartes
+  // proposées à l'ajout.
+  const trackedNames = useMemo(() => {
+    const names = new Set<string>();
+    for (const card of boosterCards) if (card.name) names.add(card.name);
+    for (const card of results) if (card.name) names.add(card.name);
+    return [...names];
+  }, [boosterCards, results]);
+
+  // Chaque nom n'est demandé qu'une fois : la possession affichée n'évolue
+  // ensuite que par les cartes ajoutées au booster, comptées côté client.
+  useEffect(() => {
+    const missing = trackedNames.filter((name) => !requestedNamesRef.current.has(name));
+    if (missing.length === 0) return;
+    for (const name of missing) requestedNamesRef.current.add(name);
+
+    const batches: string[][] = [];
+    for (let i = 0; i < missing.length; i += OWNERSHIP_BATCH_SIZE) {
+      batches.push(missing.slice(i, i + OWNERSHIP_BATCH_SIZE));
+    }
+
+    void (async () => {
+      try {
+        const snapshots = await Promise.all(
+          batches.map(async (names) => {
+            const params = new URLSearchParams();
+            for (const name of names) params.append("names", name);
+            // Les cartes déjà versées à la collection depuis ce booster sont
+            // exclues : elles sont recomptées à partir de son contenu.
+            params.set("excludeBooster", booster.id);
+            const res = await fetch(`/api/collection/games/${gameSlug}/ownership?${params.toString()}`);
+            if (!res.ok) throw new Error("Ownership request failed");
+            const data = await res.json();
+            return (data.ownership ?? {}) as OwnershipSnapshot;
+          })
+        );
+        // Une recherche partie entre-temps ne rend pas cette réponse caduque :
+        // elle est fusionnée telle quelle, la possession d'un nom ne dépendant
+        // pas des cartes affichées.
+        setOwnership((prev) => {
+          const known = new Set(prev.known);
+          for (const name of missing) known.add(name);
+          return { snapshot: Object.assign({}, prev.snapshot, ...snapshots), known };
+        });
+      } catch (error) {
+        // Une possession inconnue n'affiche aucun compteur : on rouvre la
+        // demande pour qu'un rendu suivant la retente.
+        for (const name of missing) requestedNamesRef.current.delete(name);
+        console.error("Card ownership fetch failed:", error);
+      }
+    })();
+  }, [trackedNames, gameSlug, booster.id]);
 
   const refetchBooster = useCallback(async () => {
     const res = await fetch(`/api/collection/boosters/${booster.id}`);
@@ -394,6 +477,24 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
       })
       .map(({ card }) => card);
   }, [boosterCards, typeFilter, domainFilter, sortKey, sortDirection]);
+
+  // Le contenu du booster compte comme possédé : les cartes viennent d'être
+  // ouvertes, même si elles ne sont pas encore versées à la collection.
+  const boosterPrintings = useMemo(() => boosterCards.map(printingOf), [boosterCards]);
+
+  const boosterCopies = useMemo(
+    () => annotateBoosterCards(ownership.snapshot, boosterCards.map((card) => ({ ...printingOf(card), id: card.id }))),
+    [ownership.snapshot, boosterCards]
+  );
+
+  const searchSnapshot = useMemo(
+    () => addCards(ownership.snapshot, boosterPrintings),
+    [ownership.snapshot, boosterPrintings]
+  );
+
+  /** Libellé détaillé du compteur : impression exacte, puis toutes variantes. */
+  const copiesTitle = (copies: number, variantCopies: number) =>
+    `${t("boosters.copiesOwned", { count: copies })} · ${t("boosters.variantCopiesOwned", { count: variantCopies })}`;
 
   const filtersActive = typeFilter !== ALL || domainFilter !== ALL;
 
@@ -639,45 +740,73 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4">
-              {visibleCards.map((card) => (
-                <div key={card.id} className="group relative overflow-hidden rounded-lg border bg-card">
-                  <div className="relative aspect-[3/4] w-full bg-muted">
-                    <Image src={card.image} alt={card.name} fill unoptimized sizes="120px" className="object-cover" />
-                    <Button
-                      type="button"
-                      size="icon-sm"
-                      className={`absolute left-1 top-1 size-6 ${
-                        card.foil
-                          ? "bg-amber-500 text-white hover:bg-amber-500/90"
-                          : "bg-background/80 text-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-background"
-                      }`}
-                      disabled={busyFoilId === card.id || card.id.startsWith("tmp-")}
-                      onClick={() => toggleFoil(card)}
-                      aria-label={t("boosters.toggleFoil")}
-                      title={t("boosters.foil")}
-                    >
-                      {busyFoilId === card.id ? <Loader2 className="size-3 animate-spin" /> : <Sparkles className="size-3" />}
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="icon-sm"
-                      className="absolute right-1 top-1 size-6 opacity-0 transition-opacity group-hover:opacity-100"
-                      disabled={busyRemoveId === card.id || card.id.startsWith("tmp-")}
-                      onClick={() => removeCard(card.id)}
-                      aria-label={t("boosters.removeCard")}
-                    >
-                      {busyRemoveId === card.id ? <Loader2 className="size-3 animate-spin" /> : <X className="size-3" />}
-                    </Button>
+              {visibleCards.map((card) => {
+                // Tant que la possession n'est pas connue, aucun compteur : une
+                // « première » affichée par erreur vaut moins que rien.
+                const copies = ownership.known.has(card.name) ? boosterCopies[card.id] : undefined;
+                return (
+                  <div
+                    key={card.id}
+                    className={`group relative overflow-hidden rounded-lg border bg-card ${
+                      copies?.first ? "first-copy-halo border-amber-400/70" : ""
+                    }`}
+                  >
+                    <div className={`relative aspect-[3/4] w-full bg-muted ${card.foil ? "foil-shine" : ""}`}>
+                      <Image src={card.image} alt={card.name} fill unoptimized sizes="120px" className="object-cover" />
+                      <Button
+                        type="button"
+                        size="icon-sm"
+                        className={`absolute left-1 top-1 size-6 ${
+                          card.foil
+                            ? "bg-amber-500 text-white hover:bg-amber-500/90"
+                            : "bg-background/80 text-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-background"
+                        }`}
+                        disabled={busyFoilId === card.id || card.id.startsWith("tmp-")}
+                        onClick={() => toggleFoil(card)}
+                        aria-label={t("boosters.toggleFoil")}
+                        title={t("boosters.foil")}
+                      >
+                        {busyFoilId === card.id ? <Loader2 className="size-3 animate-spin" /> : <Sparkles className="size-3" />}
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="icon-sm"
+                        className="absolute right-1 top-1 size-6 opacity-0 transition-opacity group-hover:opacity-100"
+                        disabled={busyRemoveId === card.id || card.id.startsWith("tmp-")}
+                        onClick={() => removeCard(card.id)}
+                        aria-label={t("boosters.removeCard")}
+                      >
+                        {busyRemoveId === card.id ? <Loader2 className="size-3 animate-spin" /> : <X className="size-3" />}
+                      </Button>
+                      {copies?.first ? (
+                        <span
+                          className="absolute bottom-1 left-1 z-10 inline-flex items-center gap-0.5 rounded-full bg-amber-400 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-950 shadow"
+                          title={t("boosters.firstCopyHint")}
+                        >
+                          <Sparkles className="size-2.5" />
+                          {t("boosters.firstCopy")}
+                        </span>
+                      ) : null}
+                      {copies ? (
+                        <span
+                          className="absolute bottom-1 right-1 z-10 rounded-full bg-background/85 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums shadow"
+                          title={copiesTitle(copies.copies, copies.variantCopies)}
+                        >
+                          <span aria-hidden="true">×{copies.copies}</span>
+                          <span className="sr-only">{copiesTitle(copies.copies, copies.variantCopies)}</span>
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="p-1.5">
+                      <p className="truncate text-[11px] font-medium leading-tight" title={card.name}>{card.name}</p>
+                      <p className="truncate text-[10px] text-muted-foreground">
+                        {card.setCode} #{card.collectorNumber}
+                        {card.foil ? <span className="ml-1 font-semibold text-amber-500">· {t("boosters.foil")}</span> : null}
+                      </p>
+                    </div>
                   </div>
-                  <div className="p-1.5">
-                    <p className="truncate text-[11px] font-medium leading-tight" title={card.name}>{card.name}</p>
-                    <p className="truncate text-[10px] text-muted-foreground">
-                      {card.setCode} #{card.collectorNumber}
-                      {card.foil ? <span className="ml-1 font-semibold text-amber-500">· {t("boosters.foil")}</span> : null}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>
@@ -734,47 +863,77 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
               role="grid"
               onKeyDown={handleGridKeyDown}
             >
-              {results.map((card, i) => (
-                <div key={`${card.id}-${card.setCode}-${card.collectorNumber}`} className="group relative">
-                  <button
-                    type="button"
-                    ref={(el) => {
-                      cardRefs.current[i] = el;
-                    }}
-                    tabIndex={i === activeIndex ? 0 : -1}
-                    onClick={() => addCard(card)}
-                    onFocus={() => setActiveIndex(i)}
-                    disabled={busyAddId === card.id}
-                    aria-label={t("boosters.addCard", { name: card.name })}
-                    className="block w-full overflow-hidden rounded-lg border bg-card text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <div className="relative aspect-[3/4] w-full bg-muted">
-                      <Image src={card.image} alt={card.name} fill unoptimized sizes="120px" className="object-cover" />
-                      <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/40 group-hover:opacity-100 group-focus-within:bg-black/40 group-focus-within:opacity-100">
-                        <span className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
-                          {busyAddId === card.id ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-5" />}
+              {results.map((card, i) => {
+                // Compteur booster inclus : la carte ajoutée à l'instant est
+                // déjà possédée, même si elle n'est pas encore en collection.
+                const owned = ownership.known.has(card.name) ? ownedCopies(searchSnapshot, printingOf(card)) : undefined;
+                return (
+                  <div key={`${card.id}-${card.setCode}-${card.collectorNumber}`} className="group relative">
+                    <button
+                      type="button"
+                      ref={(el) => {
+                        cardRefs.current[i] = el;
+                      }}
+                      tabIndex={i === activeIndex ? 0 : -1}
+                      onClick={() => addCard(card)}
+                      onFocus={() => setActiveIndex(i)}
+                      disabled={busyAddId === card.id}
+                      // Le compteur et la mention « première » sont posés dans
+                      // le bouton : son libellé les reprend, l'`aria-label`
+                      // masquant tout ce qu'il contient.
+                      aria-label={[
+                        t("boosters.addCard", { name: card.name }),
+                        owned ? copiesTitle(owned.copies, owned.variantCopies) : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                      className="block w-full overflow-hidden rounded-lg border bg-card text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <div className="relative aspect-[3/4] w-full bg-muted">
+                        <Image src={card.image} alt={card.name} fill unoptimized sizes="120px" className="object-cover" />
+                        <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/40 group-hover:opacity-100 group-focus-within:bg-black/40 group-focus-within:opacity-100">
+                          <span className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
+                            {busyAddId === card.id ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-5" />}
+                          </span>
                         </span>
-                      </span>
-                    </div>
-                    <div className="p-1.5">
-                      <p className="truncate text-[11px] font-medium leading-tight" title={card.name}>{card.name}</p>
-                      <p className="truncate text-[10px] text-muted-foreground">{card.setCode} #{card.collectorNumber}</p>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    tabIndex={-1}
-                    onClick={() => addCard(card, true)}
-                    disabled={busyAddId === card.id}
-                    aria-label={t("boosters.addFoil", { name: card.name })}
-                    title={t("boosters.foil")}
-                    className="absolute right-1 top-1 z-10 flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold text-white opacity-0 shadow transition-opacity hover:bg-amber-500/90 group-hover:opacity-100 group-focus-within:opacity-100"
-                  >
-                    <Sparkles className="size-3" />
-                    {t("boosters.foil")}
-                  </button>
-                </div>
-              ))}
+                        {owned && owned.variantCopies === 0 ? (
+                          <span
+                            className="absolute bottom-1 left-1 z-10 inline-flex items-center gap-0.5 rounded-full bg-amber-400 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-950 shadow"
+                            title={t("boosters.firstCopyAvailable")}
+                          >
+                            <Sparkles className="size-2.5" />
+                            {t("boosters.firstCopy")}
+                          </span>
+                        ) : null}
+                        {owned ? (
+                          <span
+                            className="absolute bottom-1 right-1 z-10 rounded-full bg-background/85 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums shadow"
+                            title={copiesTitle(owned.copies, owned.variantCopies)}
+                          >
+                            ×{owned.copies}
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="p-1.5">
+                        <p className="truncate text-[11px] font-medium leading-tight" title={card.name}>{card.name}</p>
+                        <p className="truncate text-[10px] text-muted-foreground">{card.setCode} #{card.collectorNumber}</p>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      onClick={() => addCard(card, true)}
+                      disabled={busyAddId === card.id}
+                      aria-label={t("boosters.addFoil", { name: card.name })}
+                      title={t("boosters.foil")}
+                      className="absolute right-1 top-1 z-10 flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold text-white opacity-0 shadow transition-opacity hover:bg-amber-500/90 group-hover:opacity-100 group-focus-within:opacity-100"
+                    >
+                      <Sparkles className="size-3" />
+                      {t("boosters.foil")}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
 
