@@ -407,7 +407,10 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
             className="relative overflow-hidden rounded-lg border hover:shadow-lg transition-shadow"
           >
             <Link href={`/games/${gameSlug}/cards/${card.id}`} className="block cursor-pointer p-4">
-              <Image src={card.image} alt={card.name} width={600} height={400} unoptimized className="w-full rounded-md mb-2" />
+              {/* Une carte toujours foil se reconnaît dans la liste comme sur sa fiche. */}
+              <div className={`relative overflow-hidden rounded-md mb-2 ${card.foil ? "foil-shine" : ""}`}>
+                <Image src={card.image} alt={card.name} width={600} height={400} unoptimized className="w-full" />
+              </div>
               <h3 className="font-semibold">{card.name}</h3>
               <p className="text-sm text-muted-foreground">
                 {card.setCode} #{card.collectorNumber}

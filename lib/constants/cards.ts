@@ -14,6 +14,8 @@ export const CORE_CARD_KEYS = [
   "lang",
   "image",
   "text",
+  "foil",
+  "printings",
 ] as const;
 
 /**

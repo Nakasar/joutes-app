@@ -24,3 +24,42 @@ export function buildCardId(gameSlug: string | undefined, setCode: string, colle
   }
   return `${set}${cardIdSeparator(gameSlug)}${number}`;
 }
+
+/**
+ * Identifiant d'une variante d'impression, dérivé de son nom (« Promo Pack
+ * Nexus » -> `promo-pack-nexus`). Il n'a de sens qu'au sein d'une carte, et
+ * reste stable si la variante est renommée : il n'est calculé qu'à la création
+ * de la variante.
+ */
+export function buildPrintingId(name: string): string {
+  const slug = name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+
+  return slug || "variante";
+}
+
+/**
+ * Complète les identifiants manquants et lève les collisions, pour que deux
+ * variantes d'une même carte ne partagent jamais le même identifiant.
+ */
+export function withUniquePrintingIds<T extends { id?: string; name: string }>(
+  printings: T[]
+): (T & { id: string })[] {
+  const used = new Set<string>();
+
+  return printings.map((printing) => {
+    const base = printing.id?.trim() || buildPrintingId(printing.name);
+    let id = base;
+    for (let suffix = 2; used.has(id); suffix++) {
+      id = `${base}-${suffix}`;
+    }
+    used.add(id);
+
+    return { ...printing, id };
+  });
+}

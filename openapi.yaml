@@ -2861,13 +2861,24 @@ components:
         subtitle: { type: string }
         setCode: { type: string }
         collectorNumber: { type: string }
-        foil: { type: boolean }
+        foil: { type: boolean, description: "Card printed only in foil, or foil copy in a collection." }
+        printings: { type: array, items: { $ref: "#/components/schemas/CardPrinting" } }
         image: { type: string }
         price: { type: number }
         newInCollection: { type: boolean }
         banned: { type: boolean }
         text: { type: string }
         type: { type: string }
+
+    CardPrinting:
+      type: object
+      description: "Print variant of a card (normal, foil, promo pack, pre-release, judge...). Without `image`, the card's own artwork is used."
+      required: [id, name]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        foil: { type: boolean }
+        image: { type: string }
 
     CardNameMatch:
       type: object

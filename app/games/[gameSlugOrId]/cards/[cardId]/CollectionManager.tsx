@@ -74,6 +74,8 @@ type CollectionManagerProps = {
   setCode: string;
   collectorNumber: string;
   image: string;
+  /** Carte qui n'existe qu'en foil : les exemplaires ajoutés le sont toujours. */
+  alwaysFoil?: boolean;
   onChange?: (quantity: number) => void;
   /** API prefix to use for reads/writes — override to manage a play-group's shared collection instead of the current user's. */
   apiBasePath?: string;
@@ -88,6 +90,7 @@ export default function CollectionManager({
   setCode,
   collectorNumber,
   image,
+  alwaysFoil = false,
   onChange,
   apiBasePath = "/api/collection",
   playGroupId,
@@ -100,7 +103,7 @@ export default function CollectionManager({
   const [dialogOpen, setDialogOpen] = useState(false);
 
   // Add form state
-  const [foil, setFoil] = useState(false);
+  const [foil, setFoil] = useState(alwaysFoil);
   const [language, setLanguage] = useState<LanguageCode | "">("");
   const [condition, setCondition] = useState<Condition | "">("");
   const [grade, setGrade] = useState("");
@@ -202,7 +205,7 @@ export default function CollectionManager({
           onChange?.(next.length);
           return next;
         });
-        setFoil(false);
+        setFoil(alwaysFoil);
         setLanguage("");
         setCondition("");
         setGrade("");
@@ -346,6 +349,7 @@ export default function CollectionManager({
                 <Checkbox
                   id="foil"
                   checked={foil}
+                  disabled={alwaysFoil}
                   onCheckedChange={(v) => setFoil(!!v)}
                 />
                 <Label htmlFor="foil">Foil</Label>

@@ -35,6 +35,7 @@ import GameMarkdown from "@/components/GameMarkdown";
 import AnnotatedMarkdown from "@/components/AnnotatedMarkdown";
 import CopyCardTextButton from "@/components/CopyCardTextButton";
 import {Locale} from "@/i18n/config";
+import type {CardPrinting} from "@/lib/types/card";
 
 function hasNegativeVoteRatio(errata: Errata): boolean {
   return errata.votes.negative > errata.votes.positive;
@@ -111,7 +112,11 @@ export default async function RiftboundCardDetailPage({
     );
   }
 
-  const card = await db.collection<BoosterCard>("cards").findOne({id: cardId, gameId: new ObjectId(game.id)});
+  // `BoosterCard` décrit une carte de collection ; le document de catalogue
+  // porte en plus ses variantes d'impression.
+  const card = await db
+    .collection<BoosterCard & { printings?: CardPrinting[] }>("cards")
+    .findOne({id: cardId, gameId: new ObjectId(game.id)});
 
   if (!card) {
     return (
@@ -138,6 +143,8 @@ export default async function RiftboundCardDetailPage({
   const cardInWishlist = userId
     ? (await getWishlistIdsContainingCard(userId, game.id, card.id)).length > 0
     : false;
+
+  const printings = card.printings ?? [];
 
   const erratas = [...await getErratasByCardId(cardId, userId)].sort(
     (a, b) => Number(hasNegativeVoteRatio(a)) - Number(hasNegativeVoteRatio(b))
@@ -202,17 +209,53 @@ export default async function RiftboundCardDetailPage({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div>
-          <img
-            src={card.image}
-            alt={card.name}
-            className="w-full rounded-lg shadow-lg"
-          />
+        <div className="space-y-6">
+          {/* Une carte toujours foil est présentée comme telle : voile irisé sur
+              l'illustration, comme dans la collection. */}
+          <div className={`relative overflow-hidden rounded-lg shadow-lg ${card.foil ? "foil-shine" : ""}`}>
+            <img
+              src={card.image}
+              alt={card.name}
+              className="w-full"
+            />
+          </div>
+
+          {printings.length > 0 && (
+            <div>
+              <h2 className="text-lg font-semibold mb-2">{t("cards.detail.printingsTitle")}</h2>
+              <ul className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {printings.map((printing) => (
+                  <li key={printing.id} className="space-y-1">
+                    <div
+                      className={`relative overflow-hidden rounded-md border ${printing.foil ? "foil-shine" : ""}`}
+                    >
+                      <img
+                        src={printing.image || card.image}
+                        alt={`${card.name} — ${printing.name}`}
+                        className="w-full"
+                      />
+                    </div>
+                    <p className="text-sm font-medium">{printing.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {printing.foil ? t("cards.detail.foil") : null}
+                      {printing.foil && !printing.image ? " · " : null}
+                      {!printing.image ? t("cards.detail.printingsBaseImage") : null}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
         <div>
           <div className="flex items-center gap-3 mb-4 flex-wrap">
             <h1 className="text-3xl font-bold">{card.name}</h1>
+            {card.foil && (
+              <span className="bg-amber-500/15 text-amber-700 dark:text-amber-300 text-sm font-semibold px-2 py-1 rounded">
+                {t("cards.detail.foil")}
+              </span>
+            )}
             {card.banned && (
               <span className="bg-red-600 text-white text-sm font-semibold px-2 py-1 rounded">
                 {t("cards.detail.banned")}
@@ -259,6 +302,7 @@ export default async function RiftboundCardDetailPage({
                 setCode={card.setCode}
                 collectorNumber={card.collectorNumber}
                 image={card.image}
+                alwaysFoil={card.foil === true}
               />
               <AddToWishlistButton
                 cardId={card.id}

@@ -16,6 +16,7 @@ import {
 import { getGameById } from "@/lib/db/games";
 import { cardSchema } from "@/lib/schemas/card.schema";
 import { gameIdSchema } from "@/lib/schemas/game.schema";
+import { withUniquePrintingIds } from "@/lib/constants/card-ids";
 import meilisearch, { indexes } from "@/lib/meilisearch";
 
 export type SaveCardResult = {
@@ -34,8 +35,36 @@ type CardPayload = {
   lang: string;
   image?: string;
   text?: string;
+  foil?: boolean;
+  printings?: { id?: string; name: string; foil?: boolean; image?: string }[];
   attributes?: Record<string, CardAttributeValue>;
 };
+
+/**
+ * Champs communs écrits en base à partir du formulaire. `foil` et `printings`
+ * ne sont écrits que s'ils portent une information : sinon ils valent
+ * `undefined`, ce qui les retire du document à la modification.
+ */
+function toCoreCardFields(card: z.infer<typeof cardSchema>) {
+  const printings = withUniquePrintingIds(card.printings ?? []).map((printing) => ({
+    id: printing.id,
+    name: printing.name,
+    ...(printing.foil ? { foil: true } : {}),
+    ...(printing.image ? { image: printing.image } : {}),
+  }));
+
+  return {
+    id: card.id,
+    name: card.name,
+    setCode: card.setCode,
+    collectorNumber: card.collectorNumber,
+    lang: card.lang,
+    image: card.image || undefined,
+    text: card.text || undefined,
+    foil: card.foil ? true : undefined,
+    printings: printings.length > 0 ? printings : undefined,
+  };
+}
 
 /**
  * L'identifiant d'un document Meilisearch n'accepte pas `*` (utilisé par
@@ -59,6 +88,7 @@ function toSearchDocument(
     lang: card.lang,
     image: card.image || undefined,
     text: card.text || undefined,
+    foil: card.foil || undefined,
     [indexConfig.keys.set]: card.setCode,
     [indexConfig.keys.collectorNumber]: card.collectorNumber,
   };
@@ -148,16 +178,7 @@ export async function createGameCard(gameId: string, data: CardPayload): Promise
 
     await createCard(
       new ObjectId(validatedGameId),
-      {
-        id: card.id,
-        name: card.name,
-        setCode: card.setCode,
-        collectorNumber: card.collectorNumber,
-        lang: card.lang,
-        image: card.image || undefined,
-        text: card.text || undefined,
-        attributes: card.attributes,
-      },
+      { ...toCoreCardFields(card), attributes: card.attributes },
       session.user.id
     );
 
@@ -208,16 +229,7 @@ export async function updateGameCard(
     await updateCard(
       new ObjectId(validatedGameId),
       currentCardId,
-      {
-        id: card.id,
-        name: card.name,
-        setCode: card.setCode,
-        collectorNumber: card.collectorNumber,
-        lang: card.lang,
-        image: card.image || undefined,
-        text: card.text || undefined,
-        attributes: card.attributes,
-      },
+      { ...toCoreCardFields(card), attributes: card.attributes },
       { removedAttributes, editedBy: session.user.id }
     );
 
