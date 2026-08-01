@@ -13,6 +13,9 @@ export type BoosterCard = CardAttributes & {
   setCode: string;
   collectorNumber: string;
   foil?: boolean;
+  /** Variante d'impression de cet exemplaire ; absente = version de base. */
+  printingId?: string;
+  printingName?: string;
   image: string;
   price?: string;
   newInCollection?: boolean;
@@ -31,6 +34,8 @@ export type BoosterCardDb = {
   setCode: string;
   collectorNumber: string;
   foil?: boolean;
+  printingId?: string;
+  printingName?: string;
   image: string;
   price?: string;
   newInCollection?: boolean;

@@ -34,6 +34,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Booster, BoosterCard } from "@/lib/types/booster";
+import { resolvePrinting } from "@/lib/cards/printings";
+import type { CardPrinting as CardPrintVariant } from "@/lib/types/card";
 import {
   addCards,
   annotateBoosterCards,
@@ -52,7 +54,9 @@ const LANG_LABELS: Record<string, string> = {
 };
 const langLabel = (code: string) => LANG_LABELS[code.toLowerCase()] ?? code.toUpperCase();
 
-type SearchCard = BoosterCard;
+// La recherche renvoie le document de catalogue : il porte les variantes
+// d'impression, qu'un exemplaire de booster ne connaît pas.
+type SearchCard = BoosterCard & { printings?: CardPrintVariant[] };
 
 const ALL = "all";
 
@@ -99,6 +103,7 @@ type Props = {
 
 export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Props) {
   const t = useTranslations("Collection");
+  const tPrintings = useTranslations("Printings");
   const router = useRouter();
   const booster = initialBooster;
   const boosterTypeLabel = useBoosterTypeLabel();
@@ -112,6 +117,9 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [busyAddId, setBusyAddId] = useState<string | null>(null);
+  // Variante d'impression choisie pour chaque carte du résultat de recherche ;
+  // vide = version de base.
+  const [printingByCardId, setPrintingByCardId] = useState<Record<string, string>>({});
   const [busyRemoveId, setBusyRemoveId] = useState<string | null>(null);
   const [busyFoilId, setBusyFoilId] = useState<string | null>(null);
   const [creatingSibling, setCreatingSibling] = useState(false);
@@ -270,10 +278,20 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
 
   const addCard = async (card: SearchCard, foil = false) => {
     setBusyAddId(card.id);
+    const printing = resolvePrinting(card, printingByCardId[card.id] || undefined);
+    const isFoil = printing.foil || foil;
     const tempId = `tmp-${Date.now()}`;
     setBoosterCards((prev) => [
       ...prev,
-      { ...card, id: tempId, collectorNumber: String(card.collectorNumber), foil: foil || undefined },
+      {
+        ...card,
+        id: tempId,
+        collectorNumber: String(card.collectorNumber),
+        foil: isFoil || undefined,
+        printingId: printing.printingId,
+        printingName: printing.printingName,
+        image: printing.image ?? card.image,
+      },
     ]);
     // Clear the search and return focus to it, ready for the next card.
     setRawQuery("");
@@ -287,9 +305,13 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
           name: card.name,
           setCode: card.setCode,
           collectorNumber: String(card.collectorNumber),
-          image: card.image,
+          image: printing.image ?? card.image,
           lang: card.lang,
-          foil,
+          foil: isFoil,
+          ...(printing.printingId !== undefined && {
+            printingId: printing.printingId,
+            printingName: printing.printingName,
+          }),
         }),
       });
       if (res.ok) await refetchBooster();
@@ -802,6 +824,7 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
                       <p className="truncate text-[10px] text-muted-foreground">
                         {card.setCode} #{card.collectorNumber}
                         {card.foil ? <span className="ml-1 font-semibold text-amber-500">· {t("boosters.foil")}</span> : null}
+                        {card.printingName ? <span className="ml-1 text-amber-600 dark:text-amber-400">· {card.printingName}</span> : null}
                       </p>
                     </div>
                   </div>
@@ -919,6 +942,24 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
                         <p className="truncate text-[10px] text-muted-foreground">{card.setCode} #{card.collectorNumber}</p>
                       </div>
                     </button>
+                    {card.printings && card.printings.length > 0 ? (
+                      <select
+                        value={printingByCardId[card.id] ?? ""}
+                        onChange={(event) =>
+                          setPrintingByCardId((prev) => ({ ...prev, [card.id]: event.target.value }))
+                        }
+                        aria-label={tPrintings("label")}
+                        title={tPrintings("label")}
+                        className="mt-1 w-full rounded-md border bg-background px-1 py-0.5 text-[10px]"
+                      >
+                        <option value="">{tPrintings("base")}</option>
+                        {card.printings.map((printing) => (
+                          <option key={printing.id} value={printing.id}>
+                            {printing.foil ? tPrintings("foilOption", { name: printing.name }) : printing.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : null}
                     <button
                       type="button"
                       tabIndex={-1}

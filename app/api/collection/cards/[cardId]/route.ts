@@ -31,6 +31,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       cards: cards.map((c) => ({
         id: c._id.toString(),
         foil: c.foil,
+        printingId: c.printingId,
+        printingName: c.printingName,
         language: c.language,
         condition: c.condition,
         grade: c.grade,

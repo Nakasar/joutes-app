@@ -11,6 +11,9 @@ export const collectionCardSchema = z.strictObject({
     collectorNumber: z.string().min(1).max(100),
     image: z.string(),
     foil: z.boolean().optional(),
+    /** Variante d'impression choisie ; absente = version de base de la carte. */
+    printingId: z.string().min(1).max(64).optional(),
+    printingName: z.string().min(1).max(100).optional(),
     language: collectionLanguage.optional(),
     condition: cardCondition.optional(),
     grade: z.number().min(0).max(10).optional(),

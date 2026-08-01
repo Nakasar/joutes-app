@@ -39,6 +39,36 @@ type CardPrinting = {
 - Une carte accepte au plus 30 variantes ; une ligne sans nom n'est pas
   enregistrée.
 
+## Choisir une variante à l'ajout
+
+Partout où un utilisateur enregistre un exemplaire, il choisit la variante ;
+la version de base reste le choix par défaut :
+
+| Écran | Où |
+| --- | --- |
+| Collection (fiche carte, collection d'un jeu, collection d'un groupe) | `CollectionManager`, dialogue d'ajout |
+| Booster | `BoosterEditor`, sélecteur sous chaque carte du résultat de recherche |
+| Liste de souhaits | `AddToWishlistButton` et le dialogue d'ajout d'une wishlist |
+| Liste de vente | héritée de l'exemplaire de collection mis en vente |
+
+La variante retenue est résolue par `resolvePrinting` (`lib/cards/printings.ts`) :
+
+- une variante imprimée en foil **impose** le foil sur l'exemplaire — la case
+  « Foil » est alors cochée et verrouillée, comme pour une carte toujours foil ;
+- l'exemplaire reprend l'illustration de la variante quand elle en a une ;
+- un identifiant de variante inconnu (variante supprimée depuis) retombe sur la
+  version de base plutôt que d'échouer.
+
+L'exemplaire enregistre `printingId` et `printingName` : le libellé est
+recopié pour pouvoir l'afficher sans relire la carte. Deux variantes d'une même
+carte comptent pour deux souhaits distincts dans une wishlist (la
+déduplication inclut la variante).
+
+Les variantes n'étant saisies que par le formulaire d'administration, qui
+réindexe la carte, elles sont aussi présentes dans les résultats de recherche
+Meilisearch — c'est ce qui permet de les proposer dans les écrans qui ajoutent
+une carte depuis une recherche.
+
 ## Implémentation
 
 - `lib/types/card.ts` : type `CardPrinting`.
@@ -51,3 +81,7 @@ type CardPrinting = {
   « Variantes d'impression » (nom, foil, image avec téléversement).
 - `app/games/[gameSlugOrId]/cards/[cardId]/page.tsx` et
   `app/games/[gameSlugOrId]/cards/components.tsx` : affichage.
+- `lib/cards/printings.ts` : `resolvePrinting` / `isFoilForced`, couverts par
+  `lib/cards/printings.test.ts`.
+- `components/PrintingPicker.tsx` : sélecteur partagé (n'affiche rien si la
+  carte n'a pas de variante).

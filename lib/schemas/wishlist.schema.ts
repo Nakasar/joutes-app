@@ -25,6 +25,10 @@ export const wishlistItemSchema = z.strictObject({
   collectorNumber: z.string().min(1).max(100),
   image: z.string(),
   type: z.string().optional(),
+  /** Variante d'impression souhaitée ; absente = version de base de la carte. */
+  printingId: z.string().min(1).max(64).optional(),
+  printingName: z.string().min(1).max(100).optional(),
+  foil: z.boolean().optional(),
   quantity: z.number().min(1).max(99).optional(),
   note: z.string().max(300).optional(),
 });

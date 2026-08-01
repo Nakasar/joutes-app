@@ -72,6 +72,8 @@ export async function POST(request: NextRequest) {
     image: card.image,
     userId: new ObjectId(session.user.id),
     ...(card.foil !== undefined && { foil: card.foil }),
+    ...(card.printingId !== undefined && { printingId: card.printingId }),
+    ...(card.printingName !== undefined && { printingName: card.printingName }),
     ...(card.language !== undefined && { language: card.language }),
     ...(card.condition !== undefined && { condition: card.condition }),
     ...(card.grade !== undefined && { grade: card.grade }),

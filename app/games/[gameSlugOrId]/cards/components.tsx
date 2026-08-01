@@ -17,8 +17,11 @@ import { useTranslations } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import AddToWishlistButton from "@/components/AddToWishlistButton";
+import type { CardPrinting } from "@/lib/types/card";
 
-type CardWithType = BoosterCard & { type?: string };
+// La recherche renvoie le document de catalogue : il porte aussi les variantes
+// d'impression de la carte, absentes d'un simple exemplaire de collection.
+type CardWithType = BoosterCard & { type?: string; printings?: CardPrinting[] };
 type CardsApiResponse = {
   cards: CardWithType[];
   total: number;
@@ -430,6 +433,8 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
                   collectorNumber={String(card.collectorNumber)}
                   image={card.image}
                   type={card.type}
+                  cardFoil={card.foil === true}
+                  printings={card.printings}
                   inWishlist={wishlistedIds.has(card.id)}
                   onAdded={() => setWishlistedIds((prev) => new Set(prev).add(card.id))}
                 />

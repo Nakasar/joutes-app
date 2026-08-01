@@ -53,6 +53,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import ReportButton from "@/components/ReportButton";
+import PrintingPicker from "@/components/PrintingPicker";
+import { resolvePrinting } from "@/lib/cards/printings";
+import type { CardPrinting } from "@/lib/types/card";
 import type { Wishlist, WishlistItem, WishlistVisibility } from "@/lib/types/Wishlist";
 import type { PaginatedWishlistItems, WishlistOwnerInfo } from "@/lib/db/wishlists";
 import type { Game } from "@/lib/types/Game";
@@ -65,7 +68,7 @@ const VISIBILITY_ICONS: Record<WishlistVisibility, React.ReactNode> = {
   public: <Globe className="size-3.5" />,
 };
 
-type SearchCard = BoosterCard & { type?: string };
+type SearchCard = BoosterCard & { type?: string; printings?: CardPrinting[] };
 
 export default function WishlistDetailClient({
   wishlist: initialWishlist,
@@ -346,6 +349,11 @@ export default function WishlistDetailClient({
                   <p className="truncate text-xs text-muted-foreground">
                     {item.setCode} #{item.collectorNumber}
                   </p>
+                  {item.printingName && (
+                    <p className="truncate text-xs font-medium text-amber-600 dark:text-amber-400" title={item.printingName}>
+                      {item.printingName}
+                    </p>
+                  )}
                   {isLoggedIn && item.ownedQuantity !== undefined && (
                     <p
                       className={`text-xs font-medium ${
@@ -641,6 +649,8 @@ function AddItemDialog({
   const [results, setResults] = useState<SearchCard[]>([]);
   const [searching, setSearching] = useState(false);
   const [addingCardId, setAddingCardId] = useState<string | null>(null);
+  // Variante choisie par carte affichée ; vide = version de base.
+  const [printingByCardId, setPrintingByCardId] = useState<Record<string, string>>({});
 
   async function handleSearch() {
     if (!gameSlug) return;
@@ -661,6 +671,7 @@ function AddItemDialog({
 
   async function handleAdd(card: SearchCard) {
     setAddingCardId(card.id);
+    const printing = resolvePrinting(card, printingByCardId[card.id] || undefined);
     try {
       const res = await fetch(`/api/wishlists/${wishlistId}/items`, {
         method: "POST",
@@ -671,8 +682,13 @@ function AddItemDialog({
           name: card.name,
           setCode: card.setCode,
           collectorNumber: String(card.collectorNumber ?? ""),
-          image: card.image,
+          image: printing.image ?? card.image,
           type: card.type,
+          ...(printing.printingId !== undefined && {
+            printingId: printing.printingId,
+            printingName: printing.printingName,
+          }),
+          ...(printing.foil && { foil: true }),
         }),
       });
       if (!res.ok) {
@@ -739,6 +755,12 @@ function AddItemDialog({
                     <p className="truncate text-xs font-medium" title={card.name}>
                       {card.name}
                     </p>
+                    <PrintingPicker
+                      printings={card.printings}
+                      value={printingByCardId[card.id] ?? ""}
+                      onChange={(value) => setPrintingByCardId((prev) => ({ ...prev, [card.id]: value }))}
+                      id={`wishlist-add-printing-${card.id}`}
+                    />
                     <Button
                       size="sm"
                       className="h-7 gap-1 text-xs"

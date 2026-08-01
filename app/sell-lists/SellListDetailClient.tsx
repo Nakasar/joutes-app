@@ -315,6 +315,9 @@ export default function SellListDetailClient({
                   </p>
                   <div className="mt-1 flex flex-wrap gap-1">
                     {item.foil && <Badge variant="secondary" className="text-[10px]">Foil</Badge>}
+                    {item.printingName && (
+                      <Badge variant="secondary" className="text-[10px]">{item.printingName}</Badge>
+                    )}
                     {item.condition && <Badge variant="outline" className="text-[10px]">{item.condition}</Badge>}
                     {item.language && <Badge variant="outline" className="text-[10px]">{item.language}</Badge>}
                   </div>

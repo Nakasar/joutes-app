@@ -2987,5 +2987,11 @@
     "success": "Merci, ce contenu a été signalé aux administrateurs.",
     "alreadyReported": "Vous avez déjà signalé ce contenu.",
     "error": "Impossible d'enregistrer le signalement."
+  },
+  "Printings": {
+    "label": "Variante d'impression",
+    "base": "Version de base",
+    "foilOption": "{name} (foil)",
+    "variantBadge": "Variante : {name}"
   }
 }

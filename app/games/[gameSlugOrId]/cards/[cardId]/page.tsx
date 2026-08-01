@@ -303,6 +303,7 @@ export default async function RiftboundCardDetailPage({
                 collectorNumber={card.collectorNumber}
                 image={card.image}
                 alwaysFoil={card.foil === true}
+                printings={printings}
               />
               <AddToWishlistButton
                 cardId={card.id}
@@ -311,6 +312,8 @@ export default async function RiftboundCardDetailPage({
                 setCode={card.setCode}
                 collectorNumber={card.collectorNumber}
                 image={card.image}
+                cardFoil={card.foil === true}
+                printings={printings}
                 inWishlist={cardInWishlist}
               />
             </div>

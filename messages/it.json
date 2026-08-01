@@ -2928,5 +2928,11 @@
     "success": "Grazie, questo contenuto è stato segnalato agli amministratori.",
     "alreadyReported": "Hai già segnalato questo contenuto.",
     "error": "Impossibile salvare la segnalazione."
+  },
+  "Printings": {
+    "label": "Variante di stampa",
+    "base": "Versione base",
+    "foilOption": "{name} (foil)",
+    "variantBadge": "Variante: {name}"
   }
 }

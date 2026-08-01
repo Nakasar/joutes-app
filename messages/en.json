@@ -2986,5 +2986,11 @@
     "success": "Thanks, this content has been reported to the administrators.",
     "alreadyReported": "You have already reported this content.",
     "error": "The report could not be saved."
+  },
+  "Printings": {
+    "label": "Print variant",
+    "base": "Base version",
+    "foilOption": "{name} (foil)",
+    "variantBadge": "Variant: {name}"
   }
 }

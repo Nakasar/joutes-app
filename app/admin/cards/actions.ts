@@ -89,6 +89,10 @@ function toSearchDocument(
     image: card.image || undefined,
     text: card.text || undefined,
     foil: card.foil || undefined,
+    // Les variantes ne sont saisies que par ce formulaire, qui réindexe la
+    // carte : la recherche est donc une source fiable pour les écrans qui
+    // ajoutent un exemplaire depuis un résultat de recherche.
+    printings: card.printings?.length ? withUniquePrintingIds(card.printings) : undefined,
     [indexConfig.keys.set]: card.setCode,
     [indexConfig.keys.collectorNumber]: card.collectorNumber,
   };

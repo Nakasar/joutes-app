@@ -2863,6 +2863,8 @@ components:
         collectorNumber: { type: string }
         foil: { type: boolean, description: "Card printed only in foil, or foil copy in a collection." }
         printings: { type: array, items: { $ref: "#/components/schemas/CardPrinting" } }
+        printingId: { type: string, description: "Print variant of this copy; absent means the card's base version." }
+        printingName: { type: string }
         image: { type: string }
         price: { type: number }
         newInCollection: { type: boolean }

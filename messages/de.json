@@ -2903,5 +2903,11 @@
     "success": "Danke, dieser Inhalt wurde den Administratoren gemeldet.",
     "alreadyReported": "Du hast diesen Inhalt bereits gemeldet.",
     "error": "Die Meldung konnte nicht gespeichert werden."
+  },
+  "Printings": {
+    "label": "Druckvariante",
+    "base": "Standardversion",
+    "foilOption": "{name} (Foil)",
+    "variantBadge": "Variante: {name}"
   }
 }
