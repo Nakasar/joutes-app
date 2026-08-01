@@ -187,6 +187,22 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
     setPrintings((prev) => prev.map((printing, i) => (i === index ? { ...printing, ...changes } : printing)));
   };
 
+  /**
+   * Fige l'identifiant d'une variante dès que son nom est saisi : le renommer
+   * ensuite ne doit pas le changer, sous peine de casser les exemplaires qui
+   * s'y réfèrent (collection, wishlists, listes de vente).
+   */
+  const freezePrintingId = (index: number) => {
+    setPrintings((prev) =>
+      prev.map((printing, i) => {
+        if (i !== index || printing.id || !printing.name.trim()) {
+          return printing;
+        }
+        return { ...printing, id: buildPrintingId(printing.name.trim()) };
+      })
+    );
+  };
+
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
@@ -439,6 +455,7 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
                   value={printing.name}
                   placeholder="Nom de la variante (Promo Pack Nexus…)"
                   onChange={(e) => updatePrinting(index, { name: e.target.value })}
+                  onBlur={() => freezePrintingId(index)}
                   className={`${inputClass} flex-1 min-w-[14rem]`}
                 />
                 <label className="flex items-center gap-2 text-sm text-foreground">

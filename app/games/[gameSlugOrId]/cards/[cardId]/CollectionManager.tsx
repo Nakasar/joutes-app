@@ -114,7 +114,7 @@ export default function CollectionManager({
   const [printingId, setPrintingId] = useState("");
   // La variante décide du foil : une variante imprimée en foil le verrouille,
   // comme une carte qui n'existe qu'en foil.
-  const printingChoice = resolvePrinting({ foil: alwaysFoil, printings }, printingId || undefined);
+  const printingChoice = resolvePrinting({ foil: alwaysFoil, image, printings }, printingId || undefined);
   const foilLocked = printingChoice.foil;
   const [foil, setFoil] = useState(alwaysFoil);
   const effectiveFoil = foilLocked || foil;
@@ -180,12 +180,12 @@ export default function CollectionManager({
         name: cardName,
         setCode,
         collectorNumber,
-        image,
+        image: printingChoice.image ?? image,
       };
       if (effectiveFoil) body.foil = true;
       if (printingChoice.printingId) {
         body.printingId = printingChoice.printingId;
-        body.printingName = printingChoice.printingName;
+        if (printingChoice.printingName) body.printingName = printingChoice.printingName;
       }
       if (language.trim()) body.language = language.trim();
       if (condition) body.condition = condition;

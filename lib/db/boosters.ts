@@ -412,7 +412,8 @@ export async function addBoosterToCollection(userId: string, boosterId: string):
       name: c.name,
       image: c.image,
       ...(c.foil ? {foil: true} : {}),
-      ...(c.printingId ? {printingId: c.printingId, printingName: c.printingName} : {}),
+      ...(c.printingId ? {printingId: c.printingId} : {}),
+      ...(c.printingId && c.printingName ? {printingName: c.printingName} : {}),
       fromBoosterId: _id,
     })));
   }

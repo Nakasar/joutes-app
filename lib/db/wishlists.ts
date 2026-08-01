@@ -358,6 +358,10 @@ export async function addWishlistItem(
   // variantes d'une même carte restent en revanche deux souhaits distincts.
   // `null` couvre les items enregistrés avant les variantes, qui n'ont pas le
   // champ.
+  //
+  // `printingId` n'est pas repris dans `$setOnInsert` : à l'insertion, Mongo
+  // construit le document de base à partir des égalités du filtre, qui le
+  // portent déjà — l'y ajouter provoquerait un conflit de chemin.
   const result = await db.collection(WISHLIST_ITEMS_COLLECTION).findOneAndUpdate(
     {
       wishlistId: new ObjectId(wishlistId),
