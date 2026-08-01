@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { DateTime } from "luxon";
 import { Button } from "@/components/ui/button";
-import { buildCardId } from "@/lib/constants/card-ids";
+import { buildCardId, buildPrintingId } from "@/lib/constants/card-ids";
+import type { CardPrinting } from "@/lib/types/card";
 import type {
   CardAttributeField,
   CardAttributeFieldType,
@@ -89,6 +90,8 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
   const [lang, setLang] = useState(card?.lang ?? "en");
   const [image, setImage] = useState(card?.image ?? "");
   const [text, setText] = useState(card?.text ?? "");
+  const [foil, setFoil] = useState(card?.foil === true);
+  const [printings, setPrintings] = useState<CardPrinting[]>(card?.printings ?? []);
   const [availability, setAvailability] = useState<Availability>("idle");
 
   const knownKeys = useMemo(() => new Set(attributeFields.map((field) => field.key)), [attributeFields]);
@@ -152,12 +155,15 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
     setName("");
     setImage("");
     setText("");
+    setFoil(false);
+    setPrintings([]);
     setAttributes({});
     setCustomAttributes([]);
     setAvailability("idle");
   };
 
-  const handleUpload = async (file: File) => {
+  /** Téléverse un fichier et remet son URL à l'appelant (image de la carte ou d'une variante). */
+  const handleUpload = async (file: File, onUploaded: (url: string) => void) => {
     setUploading(true);
     setError(null);
     try {
@@ -169,12 +175,32 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
         throw new Error(data?.error || "Erreur lors de l'upload");
       }
       const data = await response.json();
-      setImage(data.url);
+      onUploaded(data.url);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors de l'upload du fichier");
     } finally {
       setUploading(false);
     }
+  };
+
+  const updatePrinting = (index: number, changes: Partial<CardPrinting>) => {
+    setPrintings((prev) => prev.map((printing, i) => (i === index ? { ...printing, ...changes } : printing)));
+  };
+
+  /**
+   * Fige l'identifiant d'une variante dès que son nom est saisi : le renommer
+   * ensuite ne doit pas le changer, sous peine de casser les exemplaires qui
+   * s'y réfèrent (collection, wishlists, listes de vente).
+   */
+  const freezePrintingId = (index: number) => {
+    setPrintings((prev) =>
+      prev.map((printing, i) => {
+        if (i !== index || printing.id || !printing.name.trim()) {
+          return printing;
+        }
+        return { ...printing, id: buildPrintingId(printing.name.trim()) };
+      })
+    );
   };
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -207,6 +233,16 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
       lang,
       image: image || undefined,
       text: text || undefined,
+      foil: foil || undefined,
+      // Une variante sans nom est une ligne laissée en plan : elle n'est pas envoyée.
+      printings: printings
+        .filter((printing) => printing.name.trim())
+        .map((printing) => ({
+          id: printing.id || buildPrintingId(printing.name),
+          name: printing.name.trim(),
+          foil: printing.foil || undefined,
+          image: printing.image || undefined,
+        })),
       attributes: payloadAttributes,
     };
 
@@ -374,7 +410,7 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
             disabled={uploading}
             onChange={(e) => {
               const file = e.target.files?.[0];
-              if (file) void handleUpload(file);
+              if (file) void handleUpload(file, setImage);
             }}
             className={inputClass}
           />
@@ -389,6 +425,92 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
       <div>
         <label className="block text-sm font-medium text-foreground mb-1">Texte de la carte</label>
         <textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} className={inputClass} />
+      </div>
+
+      <div>
+        <label className="flex items-center gap-2 text-sm font-medium text-foreground">
+          <input type="checkbox" checked={foil} onChange={(e) => setFoil(e.target.checked)} />
+          Carte toujours foil
+        </label>
+        <p className="mt-1 text-xs text-muted-foreground">
+          À cocher pour une carte qui n&apos;existe qu&apos;en foil : elle est alors affichée comme telle partout.
+        </p>
+      </div>
+
+      <div className="pt-4 border-t space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Variantes d&apos;impression</h3>
+          <p className="text-xs text-muted-foreground">
+            Tirages d&apos;une même carte (version normale, foil, promo pack, pre-release, judge…). L&apos;image est
+            facultative : sans elle, la variante reprend l&apos;illustration de la carte.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          {printings.map((printing, index) => (
+            <div key={index} className="rounded-lg border p-3 space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="text"
+                  value={printing.name}
+                  placeholder="Nom de la variante (Promo Pack Nexus…)"
+                  onChange={(e) => updatePrinting(index, { name: e.target.value })}
+                  onBlur={() => freezePrintingId(index)}
+                  className={`${inputClass} flex-1 min-w-[14rem]`}
+                />
+                <label className="flex items-center gap-2 text-sm text-foreground">
+                  <input
+                    type="checkbox"
+                    checked={printing.foil === true}
+                    onChange={(e) => updatePrinting(index, { foil: e.target.checked })}
+                  />
+                  Foil
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setPrintings((prev) => prev.filter((_, i) => i !== index))}
+                  className="text-sm text-destructive hover:text-destructive/80"
+                >
+                  Retirer
+                </button>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="url"
+                  value={printing.image ?? ""}
+                  placeholder="Image de la variante (facultative)"
+                  onChange={(e) => updatePrinting(index, { image: e.target.value })}
+                  className={`${inputClass} flex-1 min-w-[14rem]`}
+                />
+                <input
+                  type="file"
+                  accept="image/*"
+                  disabled={uploading}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) void handleUpload(file, (url) => updatePrinting(index, { image: url }));
+                  }}
+                  className={`${inputClass} w-64`}
+                />
+              </div>
+              {printing.image && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={printing.image}
+                  alt={`Aperçu de la variante ${printing.name}`}
+                  className="h-28 w-auto rounded border object-contain"
+                />
+              )}
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setPrintings((prev) => [...prev, { id: "", name: "" }])}
+          >
+            Ajouter une variante
+          </Button>
+        </div>
       </div>
 
       <div className="pt-4 border-t space-y-4">

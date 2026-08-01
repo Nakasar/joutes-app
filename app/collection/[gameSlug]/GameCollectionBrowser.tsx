@@ -52,7 +52,10 @@ type Props = {
   playGroupId?: string;
 };
 
-type ManageableCard = Pick<CollectionItem, "id" | "name" | "setCode" | "collectorNumber" | "image" | "quantity">;
+type ManageableCard = Pick<
+  CollectionItem,
+  "id" | "name" | "setCode" | "collectorNumber" | "image" | "quantity" | "foil" | "printings"
+>;
 
 export default function GameCollectionBrowser({
   gameSlug,
@@ -446,6 +449,8 @@ export default function GameCollectionBrowser({
                     setCode={card.setCode}
                     collectorNumber={String(card.collectorNumber)}
                     image={card.image}
+                    cardFoil={card.foil === true}
+                    printings={card.printings}
                     inWishlist={wishlistedIds.has(card.id)}
                     onAdded={() => setWishlistedIds((prev) => new Set(prev).add(card.id))}
                   />
@@ -555,6 +560,8 @@ export default function GameCollectionBrowser({
                     setCode={manageCard.setCode}
                     collectorNumber={String(manageCard.collectorNumber)}
                     image={manageCard.image}
+                    cardFoil={manageCard.foil === true}
+                    printings={manageCard.printings}
                     inWishlist={wishlistedIds.has(manageCard.id)}
                     onAdded={() => setWishlistedIds((prev) => new Set(prev).add(manageCard.id))}
                   />
@@ -567,6 +574,8 @@ export default function GameCollectionBrowser({
                     setCode={manageCard.setCode}
                     collectorNumber={String(manageCard.collectorNumber)}
                     image={manageCard.image}
+                    alwaysFoil={manageCard.foil === true}
+                    printings={manageCard.printings}
                     onChange={(quantity) => setQuantity(manageCard.id, quantity)}
                     apiBasePath={apiBasePath}
                     playGroupId={playGroupId}

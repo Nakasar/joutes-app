@@ -398,6 +398,9 @@
         "notFoundMessage": "La carte avec l'ID {cardId} n'existe pas.",
         "backToList": "Retour à la liste des cartes",
         "banned": "Bannie",
+        "foil": "Foil",
+        "printingsTitle": "Variantes d'impression",
+        "printingsBaseImage": "Illustration de la carte",
         "cardTextTitle": "Texte de la carte",
         "copyCardText": "Copier le texte",
         "copyCardTextCopied": "Copié !",
@@ -2984,5 +2987,11 @@
     "success": "Merci, ce contenu a été signalé aux administrateurs.",
     "alreadyReported": "Vous avez déjà signalé ce contenu.",
     "error": "Impossible d'enregistrer le signalement."
+  },
+  "Printings": {
+    "label": "Variante d'impression",
+    "base": "Version de base",
+    "foilOption": "{name} (foil)",
+    "variantBadge": "Variante : {name}"
   }
 }

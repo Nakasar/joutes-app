@@ -28,6 +28,9 @@ export type SellListItem = {
   image: string;
   type?: string;
   foil?: boolean;
+  /** Variante d'impression de l'exemplaire mis en vente. */
+  printingId?: string;
+  printingName?: string;
   language?: SellListLanguage;
   condition?: SellListCondition;
   grade?: number;

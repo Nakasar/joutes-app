@@ -29,6 +29,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       lang: typeof body.lang === "string" ? body.lang : undefined,
       subtitle: typeof body.subtitle === "string" ? body.subtitle : undefined,
       ...(body.foil === true ? { foil: true } : {}),
+      ...(typeof body.printingId === "string" && body.printingId
+        ? {
+            printingId: body.printingId,
+            ...(typeof body.printingName === "string" && body.printingName
+              ? { printingName: body.printingName }
+              : {}),
+          }
+        : {}),
     });
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -26,6 +26,9 @@ import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@
 import { ChevronDown, ChevronUp, HandHelping, Loader2, Plus, Tag, Trash2, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useSession } from "@/lib/auth-client";
+import PrintingPicker from "@/components/PrintingPicker";
+import { resolvePrinting } from "@/lib/cards/printings";
+import type { CardPrinting } from "@/lib/types/card";
 
 const CONDITIONS = ["Damaged", "Played", "Good", "Near Mint", "Mint"] as const;
 const PRIMARY_LANGUAGES = [
@@ -57,6 +60,8 @@ type ForSaleInfo = {
 type CollectionEntry = {
   id: string;
   foil?: boolean;
+  printingId?: string;
+  printingName?: string;
   language?: LanguageCode;
   condition?: Condition;
   grade?: number;
@@ -74,6 +79,10 @@ type CollectionManagerProps = {
   setCode: string;
   collectorNumber: string;
   image: string;
+  /** Carte qui n'existe qu'en foil : les exemplaires ajoutés le sont toujours. */
+  alwaysFoil?: boolean;
+  /** Variantes d'impression de la carte, proposées au moment de l'ajout. */
+  printings?: CardPrinting[];
   onChange?: (quantity: number) => void;
   /** API prefix to use for reads/writes — override to manage a play-group's shared collection instead of the current user's. */
   apiBasePath?: string;
@@ -88,6 +97,8 @@ export default function CollectionManager({
   setCode,
   collectorNumber,
   image,
+  alwaysFoil = false,
+  printings,
   onChange,
   apiBasePath = "/api/collection",
   playGroupId,
@@ -100,7 +111,13 @@ export default function CollectionManager({
   const [dialogOpen, setDialogOpen] = useState(false);
 
   // Add form state
-  const [foil, setFoil] = useState(false);
+  const [printingId, setPrintingId] = useState("");
+  // La variante décide du foil : une variante imprimée en foil le verrouille,
+  // comme une carte qui n'existe qu'en foil.
+  const printingChoice = resolvePrinting({ foil: alwaysFoil, image, printings }, printingId || undefined);
+  const foilLocked = printingChoice.foil;
+  const [foil, setFoil] = useState(alwaysFoil);
+  const effectiveFoil = foilLocked || foil;
   const [language, setLanguage] = useState<LanguageCode | "">("");
   const [condition, setCondition] = useState<Condition | "">("");
   const [grade, setGrade] = useState("");
@@ -163,9 +180,13 @@ export default function CollectionManager({
         name: cardName,
         setCode,
         collectorNumber,
-        image,
+        image: printingChoice.image ?? image,
       };
-      if (foil) body.foil = true;
+      if (effectiveFoil) body.foil = true;
+      if (printingChoice.printingId) {
+        body.printingId = printingChoice.printingId;
+        if (printingChoice.printingName) body.printingName = printingChoice.printingName;
+      }
       if (language.trim()) body.language = language.trim();
       if (condition) body.condition = condition;
       if (grade !== "") body.grade = parseFloat(grade);
@@ -188,7 +209,9 @@ export default function CollectionManager({
             ...prev,
             {
               id: data.id,
-              foil: foil || undefined,
+              foil: effectiveFoil || undefined,
+              printingId: printingChoice.printingId,
+              printingName: printingChoice.printingName,
               language: language || undefined,
               condition: condition || undefined,
               grade: grade !== "" ? parseFloat(grade) : undefined,
@@ -202,7 +225,8 @@ export default function CollectionManager({
           onChange?.(next.length);
           return next;
         });
-        setFoil(false);
+        setFoil(alwaysFoil);
+        setPrintingId("");
         setLanguage("");
         setCondition("");
         setGrade("");
@@ -342,10 +366,13 @@ export default function CollectionManager({
               <DialogTitle>{t("cards.collection.dialog.title")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-2">
+              <PrintingPicker printings={printings} value={printingId} onChange={setPrintingId} />
+
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="foil"
-                  checked={foil}
+                  checked={effectiveFoil}
+                  disabled={foilLocked}
                   onCheckedChange={(v) => setFoil(!!v)}
                 />
                 <Label htmlFor="foil">Foil</Label>
@@ -502,6 +529,7 @@ export default function CollectionManager({
                     </Badge>
                   )}
                   {entry.foil && <Badge variant="secondary">{t("cards.collection.badges.foil")}</Badge>}
+                  {entry.printingName && <Badge variant="secondary">{entry.printingName}</Badge>}
                   {entry.condition && (
                     <Badge variant="outline">{entry.condition}</Badge>
                   )}
@@ -524,6 +552,7 @@ export default function CollectionManager({
                     </Badge>
                   )}
                   {!entry.foil &&
+                    !entry.printingName &&
                     !entry.language &&
                     !entry.condition &&
                     entry.grade === undefined &&

@@ -3,6 +3,7 @@ import 'server-only';
 import db from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { isReservedCardKey, RESERVED_CARD_KEYS, type CardSource } from "@/lib/constants/cards";
+import type { CardPrinting } from "@/lib/types/card";
 
 export type CardNameMatch = {
   id: string;
@@ -97,6 +98,9 @@ export type NewCard = {
   lang: string;
   image?: string;
   text?: string;
+  /** Carte qui n'existe qu'en foil. */
+  foil?: boolean;
+  printings?: CardPrinting[];
   attributes?: Record<string, CardAttributeValue>;
 };
 
@@ -174,6 +178,8 @@ export type GameCardSummary = {
 
 export type GameCardDetail = GameCardSummary & {
   text?: string;
+  foil?: boolean;
+  printings?: CardPrinting[];
   attributes: Record<string, CardAttributeValue>;
 };
 
@@ -259,6 +265,8 @@ export async function getGameCard(gameId: ObjectId, id: string): Promise<GameCar
     lang: doc.lang,
     image: doc.image,
     text: doc.text,
+    foil: doc.foil === true ? true : undefined,
+    printings: Array.isArray(doc.printings) ? (doc.printings as CardPrinting[]) : undefined,
     source: doc.source,
     manuallyEditedAt: doc.manuallyEditedAt instanceof Date ? doc.manuallyEditedAt.toISOString() : undefined,
     attributes,

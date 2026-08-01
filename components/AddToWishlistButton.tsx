@@ -14,6 +14,9 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import PrintingPicker from "@/components/PrintingPicker";
+import { resolvePrinting } from "@/lib/cards/printings";
+import type { CardPrinting } from "@/lib/types/card";
 import type { Wishlist } from "@/lib/types/Wishlist";
 
 type MyWishlists = {
@@ -29,6 +32,10 @@ type AddToWishlistButtonProps = {
   collectorNumber: string;
   image: string;
   type?: string;
+  /** Carte qui n'existe qu'en foil. */
+  cardFoil?: boolean;
+  /** Variantes d'impression de la carte : le souhait porte sur l'une d'elles. */
+  printings?: CardPrinting[];
   /** Render a compact circular icon button instead of a labeled one — for overlaying on card thumbnails. */
   iconOnly?: boolean;
   /** La carte est déjà dans une wishlist de l'utilisateur : cœur rouge rempli. */
@@ -46,6 +53,8 @@ export default function AddToWishlistButton({
   collectorNumber,
   image,
   type,
+  cardFoil = false,
+  printings,
   iconOnly = false,
   inWishlist = false,
   onAdded,
@@ -60,6 +69,8 @@ export default function AddToWishlistButton({
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
+  const [printingId, setPrintingId] = useState("");
+  const printingChoice = resolvePrinting({ foil: cardFoil, image, printings }, printingId || undefined);
 
   async function loadWishlists() {
     setLoading(true);
@@ -104,8 +115,13 @@ export default function AddToWishlistButton({
           name: cardName,
           setCode,
           collectorNumber,
-          image,
+          image: printingChoice.image ?? image,
           ...(type !== undefined && { type }),
+          ...(printingChoice.printingId !== undefined && {
+            printingId: printingChoice.printingId,
+            printingName: printingChoice.printingName,
+          }),
+          ...(printingChoice.foil && { foil: true }),
         }),
       });
       if (!res.ok) {
@@ -194,6 +210,16 @@ export default function AddToWishlistButton({
               </div>
             ) : (
               <>
+                {printings && printings.length > 0 && (
+                  <div className="border-b p-2">
+                    <PrintingPicker
+                      printings={printings}
+                      value={printingId}
+                      onChange={setPrintingId}
+                      id={`wishlist-printing-${cardId}`}
+                    />
+                  </div>
+                )}
                 {loaded && !hasAnyWishlist && <CommandEmpty>{t("addToWishlist.empty")}</CommandEmpty>}
                 {data && data.personal.length > 0 && (
                   <CommandGroup heading={t("addToWishlist.personalHeading")}>

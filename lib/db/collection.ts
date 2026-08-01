@@ -3,6 +3,7 @@ import db from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { Game } from "@/lib/types/Game";
 import { printingKey, type OwnershipSnapshot } from "@/lib/collection/ownership";
+import type { CardPrinting } from "@/lib/types/card";
 
 /**
  * Collection completion model.
@@ -328,6 +329,10 @@ export type CollectionItem = {
   collectorNumber: string;
   image: string;
   type?: string;
+  /** Carte qui n'existe qu'en foil. */
+  foil?: boolean;
+  /** Variantes d'impression, proposées au moment d'ajouter un exemplaire. */
+  printings?: CardPrinting[];
   quantity: number;
   /** Number of *other* printings of this same card name the user owns at least one copy of. */
   variantsOwned: number;
@@ -454,7 +459,9 @@ export async function getGameCollection({
     { $limit: limit },
   ];
   const project = {
-    $project: { _id: 0, id: 1, name: 1, setCode: 1, collectorNumber: 1, image: 1, type: 1, quantity: 1 },
+    $project: {
+      _id: 0, id: 1, name: 1, setCode: 1, collectorNumber: 1, image: 1, type: 1, foil: 1, printings: 1, quantity: 1,
+    },
   };
 
   const cards = db.collection("cards");

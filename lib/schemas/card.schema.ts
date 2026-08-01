@@ -30,6 +30,27 @@ export const cardAttributeKeySchema = z
     message: "ce nom est réservé aux champs communs de la carte",
   });
 
+/**
+ * Variante d'impression d'une carte. L'identifiant est facultatif à la saisie :
+ * il est dérivé du nom puis rendu unique par `withUniquePrintingIds` avant
+ * l'écriture.
+ */
+export const cardPrintingSchema = z.object({
+  id: z
+    .string()
+    .trim()
+    .max(64, "L'identifiant de la variante est trop long")
+    .regex(/^[a-z0-9-]*$/, "L'identifiant d'une variante ne peut contenir que des minuscules, chiffres et « - »")
+    .optional(),
+  name: z
+    .string()
+    .trim()
+    .min(1, "Le nom de la variante est requis")
+    .max(100, "Le nom de la variante est trop long"),
+  foil: z.boolean().optional(),
+  image: z.union([z.url("L'URL de l'image d'une variante doit être valide"), z.literal("")]).optional(),
+});
+
 export const cardSchema = z.object({
   id: z
     .string()
@@ -47,6 +68,9 @@ export const cardSchema = z.object({
   lang: z.string().trim().min(2, "La langue est requise").max(5, "La langue est trop longue"),
   image: z.union([z.url("L'URL de l'image doit être valide"), z.literal("")]).optional(),
   text: z.string().max(5000, "Le texte de la carte est trop long").optional(),
+  /** La carte n'existe qu'en foil : elle est toujours affichée comme telle. */
+  foil: z.boolean().optional(),
+  printings: z.array(cardPrintingSchema).max(30, "Une carte ne peut pas avoir plus de 30 variantes").optional(),
   attributes: z
     .record(z.string(), cardAttributeValueSchema)
     .optional()

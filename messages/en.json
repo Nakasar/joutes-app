@@ -398,6 +398,9 @@
         "notFoundMessage": "The card with ID {cardId} does not exist.",
         "backToList": "Back to the card list",
         "banned": "Banned",
+        "foil": "Foil",
+        "printingsTitle": "Print variants",
+        "printingsBaseImage": "Card artwork",
         "cardTextTitle": "Card text",
         "copyCardText": "Copy text",
         "copyCardTextCopied": "Copied!",
@@ -2983,5 +2986,11 @@
     "success": "Thanks, this content has been reported to the administrators.",
     "alreadyReported": "You have already reported this content.",
     "error": "The report could not be saved."
+  },
+  "Printings": {
+    "label": "Print variant",
+    "base": "Base version",
+    "foilOption": "{name} (foil)",
+    "variantBadge": "Variant: {name}"
   }
 }

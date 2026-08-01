@@ -46,3 +46,9 @@ Pour plus de détails, voir [docs/REPORTS.md](docs/REPORTS.md).
 Tout utilisateur connecté peut créer un errata ; chacun ne peut modifier ou supprimer que les siens, sauf permission `erratas:manage`.
 
 Pour plus de détails, voir [docs/ERRATAS.md](docs/ERRATAS.md).
+
+### Foil et variantes d'impression
+
+Une carte peut être marquée « toujours foil » et porter une liste de variantes d'impression (promo pack, pre-release, judge…), avec une image propre optionnelle.
+
+Pour plus de détails, voir [docs/CARD_PRINTINGS.md](docs/CARD_PRINTINGS.md).

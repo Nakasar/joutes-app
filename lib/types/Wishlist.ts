@@ -26,6 +26,10 @@ export type WishlistItem = {
   collectorNumber: string;
   image: string;
   type?: string;
+  /** Variante d'impression souhaitée ; absente = version de base de la carte. */
+  printingId?: string;
+  printingName?: string;
+  foil?: boolean;
   quantity: number;
   note?: string;
   /** Which member added this item — mainly meaningful for play-group wishlists. */

@@ -42,6 +42,9 @@ function toWishlistItem(doc: WithId<Document>): WishlistItem {
     collectorNumber: doc.collectorNumber,
     image: doc.image,
     type: doc.type || undefined,
+    printingId: doc.printingId || undefined,
+    printingName: doc.printingName || undefined,
+    foil: doc.foil || undefined,
     quantity: doc.quantity || 1,
     note: doc.note || undefined,
     addedByUserId: doc.addedByUserId ? doc.addedByUserId.toString() : undefined,
@@ -340,6 +343,9 @@ export async function addWishlistItem(
     collectorNumber: string;
     image: string;
     type?: string;
+    printingId?: string;
+    printingName?: string;
+    foil?: boolean;
     quantity?: number;
     note?: string;
   },
@@ -347,14 +353,22 @@ export async function addWishlistItem(
 ): Promise<WishlistItem> {
   const now = new Date();
 
-  // Ré-ajouter une carte déjà présente (même impression) incrémente sa
-  // quantité au lieu de créer un doublon dans la liste.
+  // Ré-ajouter une carte déjà présente (même impression, même variante)
+  // incrémente sa quantité au lieu de créer un doublon dans la liste ; deux
+  // variantes d'une même carte restent en revanche deux souhaits distincts.
+  // `null` couvre les items enregistrés avant les variantes, qui n'ont pas le
+  // champ.
+  //
+  // `printingId` n'est pas repris dans `$setOnInsert` : à l'insertion, Mongo
+  // construit le document de base à partir des égalités du filtre, qui le
+  // portent déjà — l'y ajouter provoquerait un conflit de chemin.
   const result = await db.collection(WISHLIST_ITEMS_COLLECTION).findOneAndUpdate(
     {
       wishlistId: new ObjectId(wishlistId),
       cardId: item.cardId,
       setCode: item.setCode,
       collectorNumber: item.collectorNumber,
+      printingId: item.printingId ?? null,
     },
     {
       // Sur un upsert, $inc initialise la quantité à la valeur incrémentée.
@@ -366,6 +380,8 @@ export async function addWishlistItem(
         name: item.name,
         image: item.image,
         ...(item.type !== undefined && { type: item.type }),
+        ...(item.printingName !== undefined && { printingName: item.printingName }),
+        ...(item.foil !== undefined && { foil: item.foil }),
         ...(item.note !== undefined && { note: item.note }),
         ...(addedByUserId !== undefined && { addedByUserId: new ObjectId(addedByUserId) }),
         createdAt: now,
