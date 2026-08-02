@@ -195,6 +195,54 @@ export function isTranslationStale(translation: QuizTranslation, contentUpdatedA
   return new Date(translation.updatedAt) < new Date(contentUpdatedAt);
 }
 
+/** Un texte saisi dans l'éditeur, rattaché au nœud qu'il traduit. */
+export type EditedTranslationField = {
+  id: string;
+  entryField: keyof QuizTranslationEntry;
+  value: string;
+};
+
+/**
+ * Traduction à enregistrer : la saisie de l'éditeur posée sur les entrées déjà
+ * en base.
+ *
+ * Repartir des entrées existantes n'est pas une précaution de style. L'éditeur
+ * ne montre que les textes du quizz *actuel* : une entrée dont le bloc a été
+ * retiré n'y figure pas, et reconstruire la traduction à partir du seul
+ * formulaire l'effacerait — alors que tout le modèle repose sur le fait qu'elle
+ * survit et redevient utile si le bloc revient.
+ *
+ * Un champ vidé dans l'éditeur est bien retiré : seul ce qui n'était pas
+ * éditable est reconduit tel quel.
+ */
+export function mergeTranslationEntries(
+  previous: Record<string, QuizTranslationEntry> | undefined,
+  edited: EditedTranslationField[]
+): Record<string, QuizTranslationEntry> {
+  const entries: Record<string, QuizTranslationEntry> = Object.fromEntries(
+    Object.entries(previous ?? {}).map(([id, entry]) => [id, { ...entry }])
+  );
+
+  for (const { id, entryField, value } of edited) {
+    const entry = { ...(entries[id] ?? {}) };
+    const trimmed = value.trim();
+
+    if (trimmed) {
+      entry[entryField] = trimmed;
+    } else {
+      delete entry[entryField];
+    }
+
+    if (Object.keys(entry).length > 0) {
+      entries[id] = entry;
+    } else {
+      delete entries[id];
+    }
+  }
+
+  return entries;
+}
+
 /** Part des textes effectivement traduits, pour annoncer l'avancement d'une langue. */
 export function translationProgress(
   blocks: QuizBlock[],

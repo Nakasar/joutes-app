@@ -5,6 +5,7 @@ import {
   collectTranslatableSections,
   isTranslationStale,
   localizeQuiz,
+  mergeTranslationEntries,
   translationProgress,
 } from "./translate";
 import type { QuizBlock } from "@/lib/types/Quiz";
@@ -175,6 +176,58 @@ describe("localizeQuiz", () => {
 
     assert.equal(localized.blocks.length, 1);
     assert.equal(localized.blocks[0].type === "markdown" && localized.blocks[0].content, "Rule context.");
+  });
+});
+
+describe("mergeTranslationEntries", () => {
+  it("conserve les entrées dont le bloc a disparu du quizz", () => {
+    // L'éditeur ne montre que les textes du quizz actuel : ré-enregistrer ne
+    // doit pas effacer une traduction devenue orpheline, qui resservira si le
+    // bloc revient.
+    const merged = mergeTranslationEntries(
+      { b1: { content: "Rule context." }, disparu: { prompt: "Old question" } },
+      [{ id: "b1", entryField: "content", value: "New context." }]
+    );
+
+    assert.deepEqual(merged, {
+      b1: { content: "New context." },
+      disparu: { prompt: "Old question" },
+    });
+  });
+
+  it("conserve les champs d'un nœud qui ne sont plus éditables", () => {
+    // Une question passée de « réponse libre » à « choix unique » n'expose plus
+    // sa réponse attendue : elle n'est pas pour autant à jeter.
+    const merged = mergeTranslationEntries(
+      { q1: { prompt: "Which rule?", correctText: "three fifty-nine" } },
+      [{ id: "q1", entryField: "prompt", value: "Which rule applies?" }]
+    );
+
+    assert.deepEqual(merged, { q1: { prompt: "Which rule applies?", correctText: "three fifty-nine" } });
+  });
+
+  it("retire un champ vidé dans l'éditeur", () => {
+    const merged = mergeTranslationEntries({ q1: { prompt: "Question", correctFeedback: "Bien" } }, [
+      { id: "q1", entryField: "prompt", value: "   " },
+    ]);
+
+    assert.deepEqual(merged, { q1: { correctFeedback: "Bien" } });
+  });
+
+  it("retire l'entrée quand son dernier champ est vidé", () => {
+    assert.deepEqual(
+      mergeTranslationEntries({ b1: { content: "Rule context." } }, [
+        { id: "b1", entryField: "content", value: "" },
+      ]),
+      {}
+    );
+  });
+
+  it("ne modifie pas les entrées reçues", () => {
+    const previous = { b1: { content: "Rule context." } };
+    mergeTranslationEntries(previous, [{ id: "b1", entryField: "content", value: "New." }]);
+
+    assert.deepEqual(previous, { b1: { content: "Rule context." } });
   });
 });
 

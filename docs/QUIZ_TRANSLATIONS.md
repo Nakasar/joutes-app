@@ -12,14 +12,21 @@ traduction ne recopie donc pas la structure : elle range ses textes **sous
 l'identifiant du nœud** qu'ils traduisent.
 
 ```ts
+/** Champs présents selon le nœud traduit : bloc de texte, question, ou proposition. */
+type QuizTranslationEntry = {
+  content?: string; // bloc de texte
+  prompt?: string; // question
+  correctText?: string;
+  correctFeedback?: string;
+  incorrectFeedback?: string;
+  text?: string; // proposition
+};
+
 type QuizTranslation = {
   lang: Locale;
   title: string;
-  entries: Record<string, {
-    content?;            // bloc de texte
-    prompt?; correctText?; correctFeedback?; incorrectFeedback?;  // question
-    text?;               // proposition
-  }>;
+  /** Indexé par l'identifiant du bloc, de la question ou de la proposition. */
+  entries: Record<string, QuizTranslationEntry>;
   updatedAt: Date;
 };
 ```
@@ -28,7 +35,10 @@ Indexer par identifiant plutôt que par position a deux conséquences voulues :
 
 - **réordonner ou insérer un bloc ne déplace aucune traduction** ;
 - **retirer un bloc laisse une entrée orpheline**, simplement ignorée à
-  l'affichage — elle redeviendra utile si le bloc revient.
+  l'affichage — elle redeviendra utile si le bloc revient. L'éditeur ne montrant
+  que les textes du quizz actuel, il repose sa saisie sur les entrées déjà
+  enregistrées (`mergeTranslationEntries`) plutôt que de les reconstruire : sans
+  cela, ré-enregistrer une traduction effacerait ses orphelines.
 
 Les identifiants sont des `nanoid` (`[A-Za-z0-9_-]`), donc des noms de champ
 Mongo sains : ni point, ni `$`.

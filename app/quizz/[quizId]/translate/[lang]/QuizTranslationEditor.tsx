@@ -12,6 +12,7 @@ import { localeLabels, type Locale } from "@/i18n/config";
 import type { Quiz, QuizTranslationEntry } from "@/lib/types/Quiz";
 import {
   collectTranslatableSections,
+  mergeTranslationEntries,
   translationProgress,
   type QuizFieldKind,
   type QuizTranslatableField,
@@ -64,18 +65,23 @@ export default function QuizTranslationEditor({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  /** Les valeurs saisies, remises sous la forme indexée par identifiant attendue par l'API. */
-  const toEntries = (): Record<string, QuizTranslationEntry> => {
-    const entries: Record<string, QuizTranslationEntry> = {};
-    for (const section of sections) {
-      for (const field of section.fields) {
-        const value = values[keyOf(field)]?.trim();
-        if (!value) continue;
-        entries[field.id] = { ...entries[field.id], [field.entryField]: value };
-      }
-    }
-    return entries;
-  };
+  /**
+   * Les valeurs saisies, posées sur les entrées déjà enregistrées. L'éditeur ne
+   * montre que les textes du quizz actuel : reconstruire la traduction à partir
+   * du seul formulaire effacerait les entrées dont le bloc a été retiré, que le
+   * modèle conserve justement pour le cas où il reviendrait.
+   */
+  const toEntries = (): Record<string, QuizTranslationEntry> =>
+    mergeTranslationEntries(
+      initialEntries,
+      sections.flatMap((section) =>
+        section.fields.map((field) => ({
+          id: field.id,
+          entryField: field.entryField,
+          value: values[keyOf(field)] ?? "",
+        }))
+      )
+    );
 
   const progress = translationProgress(quiz.blocks, toEntries());
 
