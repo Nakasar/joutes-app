@@ -3,7 +3,8 @@ import "server-only";
 import db from "@/lib/mongodb";
 import { ObjectId, WithId, Document } from "mongodb";
 import { Quiz } from "@/lib/types/Quiz";
-import { CreateQuizInput, UpdateQuizInput } from "@/lib/schemas/quiz.schema";
+import { CreateQuizInput, QuizTranslationPayload, UpdateQuizInput } from "@/lib/schemas/quiz.schema";
+import { defaultLocale, type Locale } from "@/i18n/config";
 
 const COLLECTION_NAME = "quizzes";
 
@@ -14,6 +15,10 @@ function toQuiz(doc: WithId<Document>): Quiz {
     gameId: doc.gameId ? doc.gameId.toString() : undefined,
     game: doc.game ?? undefined,
     blocks: doc.blocks ?? [],
+    // Les quizz écrits avant les traductions n'ont pas de langue d'origine :
+    // ils sont en français, la langue par défaut de l'application.
+    originalLang: doc.originalLang ?? defaultLocale,
+    translations: doc.translations ?? undefined,
     authorId: doc.authorId?.toString?.() ?? doc.authorId,
     author: doc.author ?? undefined,
     createdAt: doc.createdAt,
@@ -134,6 +139,7 @@ export async function createQuiz(input: CreateQuizInput, authorId: string): Prom
   const doc = {
     title: input.title,
     ...(input.gameId ? { gameId: new ObjectId(input.gameId) } : {}),
+    originalLang: input.originalLang,
     blocks: input.blocks,
     authorId: new ObjectId(authorId),
     createdAt: now,
@@ -154,6 +160,7 @@ export async function updateQuiz(id: string, input: UpdateQuizInput): Promise<bo
   const updateDoc: Record<string, unknown> = { updatedAt: new Date() };
   if (input.title !== undefined) updateDoc.title = input.title;
   if (input.blocks !== undefined) updateDoc.blocks = input.blocks;
+  if (input.originalLang !== undefined) updateDoc.originalLang = input.originalLang;
 
   const unset: Record<string, ""> = {};
   if (input.gameId !== undefined) {
@@ -173,6 +180,57 @@ export async function updateQuiz(id: string, input: UpdateQuizInput): Promise<bo
   } catch {
     return false;
   }
+}
+
+/**
+ * Enregistre la traduction d'un quizz dans une langue, en remplaçant celle qui
+ * s'y trouvait. `updatedAt` du quizz n'est volontairement pas touché : il
+ * marque la dernière modification du *contenu*, ce qui permet de repérer les
+ * traductions devenues obsolètes.
+ */
+export async function upsertQuizTranslation(
+  id: string,
+  lang: Locale,
+  payload: QuizTranslationPayload
+): Promise<boolean> {
+  if (!ObjectId.isValid(id)) return false;
+
+  const translation = { lang, title: payload.title, entries: payload.entries, updatedAt: new Date() };
+
+  // Remplacement en une seule écriture, par pipeline : la langue est retirée du
+  // tableau puis rajoutée dans la même opération. Un `$pull` suivi d'un `$push`
+  // laisserait une fenêtre où la traduction n'existe plus, et la perdrait tout
+  // à fait si la seconde écriture échouait.
+  const result = await db.collection(COLLECTION_NAME).updateOne({ _id: new ObjectId(id) }, [
+    {
+      $set: {
+        translations: {
+          $concatArrays: [
+            {
+              $filter: {
+                input: { $ifNull: ["$translations", []] },
+                cond: { $ne: ["$$this.lang", lang] },
+              },
+            },
+            [translation],
+          ],
+        },
+      },
+    },
+  ]);
+
+  return result.matchedCount > 0;
+}
+
+/** Retire la traduction d'une langue. */
+export async function deleteQuizTranslation(id: string, lang: Locale): Promise<boolean> {
+  if (!ObjectId.isValid(id)) return false;
+
+  const result = await db
+    .collection(COLLECTION_NAME)
+    .updateOne({ _id: new ObjectId(id) }, { $pull: { translations: { lang } } as never });
+
+  return result.matchedCount > 0;
 }
 
 /** Suppression d'un quizz (modération). */

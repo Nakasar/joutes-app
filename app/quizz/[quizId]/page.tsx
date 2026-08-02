@@ -3,12 +3,15 @@ import { getQuizById } from "@/lib/db/quizzes";
 import { hasPermission } from "@/lib/db/permissions";
 import { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Pencil, Gamepad2 } from "lucide-react";
+import { ArrowLeft, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ObjectId } from "mongodb";
 import { resolveCardMentions } from "@/lib/game-content-cards";
+import { getLocale } from "next-intl/server";
+import { localizeQuiz } from "@/lib/quizzes/translate";
+import type { Locale } from "@/i18n/config";
 import QuizPlayer from "./QuizPlayer";
+import QuizTranslateMenu from "./QuizTranslateMenu";
 import ReportButton from "@/components/ReportButton";
 
 type Props = { params: Promise<{ quizId: string }> };
@@ -17,10 +20,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { quizId } = await params;
   const quiz = await getQuizById(quizId);
   if (!quiz) return { title: "Quizz introuvable" };
+
+  const title = localizeQuiz(quiz, (await getLocale()) as Locale).title;
   return {
-    title: quiz.title,
+    title,
     openGraph: {
-      title: quiz.title,
+      title,
     },
   };
 }
@@ -47,11 +52,18 @@ export default async function QuizzDetailPage({ params }: Props) {
           question.incorrectFeedback ?? "",
         ])
   );
+  // Les traductions sont jointes à la résolution : le lecteur change de langue
+  // sans aller-retour serveur, les cartes qu'elles mentionnent doivent donc
+  // être connues d'avance.
+  const translatedTexts = (quiz.translations ?? []).flatMap((translation) =>
+    Object.values(translation.entries ?? {}).flatMap((entry) => Object.values(entry).filter(Boolean))
+  );
 
   const { cardIdByName, cardsById } = quiz.gameId
-    ? await resolveCardMentions(new ObjectId(quiz.gameId), texts)
+    ? await resolveCardMentions(new ObjectId(quiz.gameId), [...texts, ...translatedTexts])
     : { cardIdByName: {}, cardsById: {} };
   const gameSlug = quiz.game?.slug ?? "riftbound";
+  const locale = (await getLocale()) as Locale;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -64,29 +76,33 @@ export default async function QuizzDetailPage({ params }: Props) {
         </Button>
         <div className="flex items-center gap-2">
           {canWrite && (
-            <Button asChild variant="outline" size="sm">
-              <Link href={`/quizz/${quizId}/edit`}>
-                <Pencil className="h-4 w-4 mr-2" />
-                Modifier
-              </Link>
-            </Button>
+            <>
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/quizz/${quizId}/edit`}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Modifier
+                </Link>
+              </Button>
+              <QuizTranslateMenu
+                quizId={quiz.id}
+                originalLang={quiz.originalLang}
+                translatedLangs={(quiz.translations ?? []).map((translation) => translation.lang)}
+              />
+            </>
           )}
           <ReportButton contentType="quiz" contentId={quiz.id} />
         </div>
       </div>
 
       <article className="space-y-6">
-        <header className="space-y-4">
-          <h1 className="text-4xl font-bold tracking-tight">{quiz.title}</h1>
-          {quiz.game && (
-            <Badge variant="secondary" className="gap-1">
-              <Gamepad2 className="h-3 w-3" />
-              {quiz.game.name}
-            </Badge>
-          )}
-        </header>
-
-        <QuizPlayer blocks={quiz.blocks} cardIdByName={cardIdByName} cardsById={cardsById} gameSlug={gameSlug} />
+        <QuizPlayer
+          quiz={quiz}
+          interfaceLocale={locale}
+          gameName={quiz.game?.name}
+          cardIdByName={cardIdByName}
+          cardsById={cardsById}
+          gameSlug={gameSlug}
+        />
       </article>
     </div>
   );

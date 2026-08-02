@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { defaultLocale, locales } from "@/i18n/config";
 
 const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID doit être un ObjectId MongoDB valide");
 // "" explicitly means "no game linked" — distinct from the field being absent
@@ -86,14 +87,44 @@ const quizFormBlockSchema = z.object({
 
 const quizBlockSchema = z.discriminatedUnion("type", [quizMarkdownBlockSchema, quizFormBlockSchema]);
 
+const localeSchema = z.enum(locales);
+
 const quizBaseSchema = z.object({
   title: z.string().min(1, "Le titre est requis").max(200, "Le titre est trop long"),
   gameId: gameIdSchema.optional(),
+  originalLang: localeSchema.optional(),
   blocks: z.array(quizBlockSchema).min(1, "Le quizz doit contenir au moins un bloc"),
 });
 
 export const createQuizSchema = quizBaseSchema.extend({
   gameId: gameIdSchema.default(""),
+  originalLang: localeSchema.default(defaultLocale),
+});
+
+/**
+ * Traduction d'un quizz. Les textes sont indexés par l'identifiant du bloc, de
+ * la question ou de la proposition qu'ils traduisent — jamais par leur
+ * position, qui bouge dès qu'on réordonne le contenu.
+ */
+const quizTranslationEntrySchema = z.object({
+  content: z.string().max(5000).optional(),
+  prompt: z.string().max(1000).optional(),
+  text: z.string().max(300).optional(),
+  correctText: z.string().max(300).optional(),
+  correctFeedback: z.string().max(2000).optional(),
+  incorrectFeedback: z.string().max(2000).optional(),
+});
+
+export const quizTranslationSchema = z.object({
+  title: z.string().max(200, "Le titre est trop long"),
+  entries: z
+    .record(
+      // Un identifiant est un nanoid : ni point ni `$`, qui feraient un nom de
+      // champ Mongo difficile à requêter.
+      z.string().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/, "Identifiant de bloc invalide"),
+      quizTranslationEntrySchema
+    )
+    .default({}),
 });
 
 export const updateQuizSchema = quizBaseSchema.partial().refine(
@@ -102,4 +133,5 @@ export const updateQuizSchema = quizBaseSchema.partial().refine(
 );
 
 export type CreateQuizInput = z.infer<typeof createQuizSchema>;
+export type QuizTranslationPayload = z.infer<typeof quizTranslationSchema>;
 export type UpdateQuizInput = z.infer<typeof updateQuizSchema>;
