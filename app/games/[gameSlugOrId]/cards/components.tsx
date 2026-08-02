@@ -17,8 +17,7 @@ import { useTranslations } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import AddToWishlistButton from "@/components/AddToWishlistButton";
-import { Checkbox } from "@/components/ui/checkbox";
-import { SlidersHorizontal } from "lucide-react";
+import { Check, LayoutGrid, Link2, List, Minus, Plus, Search, SlidersHorizontal, X } from "lucide-react";
 import type { CardPrinting } from "@/lib/types/card";
 import {
   EMPTY_CRITERIA,
@@ -49,6 +48,51 @@ type CardsApiResponse = {
 
 const PAGE_SIZE = 24;
 
+/**
+ * Largeur minimale d'une tuile, du plus dense au plus large. Parcourir un
+ * catalogue et détailler une illustration ne demandent pas la même taille : le
+ * réglage reste à portée de main au-dessus des résultats.
+ */
+const TILE_WIDTHS = [120, 152, 190, 240];
+const DEFAULT_DENSITY = 2;
+
+/** Une section de la barre latérale : un intitulé discret, puis ses contrôles. */
+function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</span>
+      {children}
+    </div>
+  );
+}
+
+/** Valeur d'attribut à cocher. Un bouton plutôt qu'une case : plus compact, et la liste en compte souvent une dizaine. */
+function FacetChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors ${
+        active
+          ? "border-primary bg-primary text-primary-foreground"
+          : "bg-background hover:bg-muted"
+      }`}
+    >
+      {active ? <Check className="h-3 w-3" /> : null}
+      {children}
+    </button>
+  );
+}
+
 export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -65,8 +109,12 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   // attributs du jeu et bornent ce que les critères peuvent demander.
   const [facets, setFacets] = useState<CardFilterFacet[]>([]);
   const [criteria, setCriteria] = useState<CardSearchCriteria>(EMPTY_CRITERIA);
+  // La barre latérale est toujours là sur bureau ; sur mobile elle se déplie.
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [filtersUnavailable, setFiltersUnavailable] = useState(false);
+  const [layout, setLayout] = useState<"grid" | "list">("grid");
+  const [density, setDensity] = useState(DEFAULT_DENSITY);
+  const [linkCopied, setLinkCopied] = useState(false);
   // Critères lus de l'URL avant de connaître les facettes : ils sont transmis
   // tels quels à la première requête, puis relus dès que les facettes arrivent,
   // pour qu'un lien partagé s'ouvre bien sur ses filtres.
@@ -431,6 +479,35 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
 
   const clearFacetFilters = () => applyCriteria({ ...criteria, ranges: {}, values: {} });
 
+  const removeRange = (key: string) => {
+    const next = { ...criteria, ranges: { ...criteria.ranges } };
+    delete next.ranges[key];
+    applyCriteria(next);
+  };
+
+  /** Remet tout à zéro d'un geste : listes déroulantes, attributs et saisie. */
+  const resetAll = () => {
+    setSelectedSetCode("all");
+    setSelectedType("all");
+    setSelectedLanguage("all");
+    setSearchQuery("");
+    setCurrentPage(1);
+    const next = { ...criteria, ranges: {}, values: {} };
+    setCriteria(next);
+    void fetchCards("", "all", "all", "all", 1, next);
+    updateURL("", "all", "all", "all", 1, next);
+  };
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setLinkCopied(true);
+      window.setTimeout(() => setLinkCopied(false), 2000);
+    } catch {
+      // Presse-papiers refusé par le navigateur : l'URL reste celle de la barre d'adresse.
+    }
+  };
+
   const activeFilterCount = countActiveFacetFilters(criteria);
   // Un attribut se lit mieux capitalisé : les clés sont brutes en base (`energy`).
   const facetLabel = (key: string) => key.charAt(0).toUpperCase() + key.slice(1);
@@ -445,286 +522,458 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
     return translated === translationKey ? language.toUpperCase() : translated;
   };
 
+  // Ce qui est filtré, dit d'un coup d'œil et retirable d'un clic — sans avoir
+  // à rouvrir la liste déroulante ou la section d'où le filtre vient.
+  const activeChips: { key: string; label: string; remove: () => void }[] = [];
+  if (selectedSetCode !== "all") {
+    activeChips.push({
+      key: "set",
+      label: `${t("cards.search.filters.setCode")} · ${selectedSetCode}`,
+      remove: () => handleSetCodeChange("all"),
+    });
+  }
+  if (selectedType !== "all") {
+    activeChips.push({
+      key: "type",
+      label: `${t("cards.search.filters.type")} · ${selectedType}`,
+      remove: () => handleTypeChange("all"),
+    });
+  }
+  if (selectedLanguage !== "all") {
+    activeChips.push({
+      key: "lang",
+      label: `${t("cards.search.filters.language")} · ${getLanguageLabel(selectedLanguage)}`,
+      remove: () => handleLanguageChange("all"),
+    });
+  }
+  for (const [key, range] of Object.entries(criteria.ranges)) {
+    const bounds =
+      range.min !== undefined && range.max !== undefined
+        ? `${range.min}–${range.max}`
+        : range.min !== undefined
+          ? `≥ ${range.min}`
+          : `≤ ${range.max}`;
+    activeChips.push({ key: `range-${key}`, label: `${facetLabel(key)} ${bounds}`, remove: () => removeRange(key) });
+  }
+  for (const [key, values] of Object.entries(criteria.values)) {
+    for (const value of values) {
+      activeChips.push({
+        key: `value-${key}-${value}`,
+        label: `${facetLabel(key)} · ${value}`,
+        remove: () => toggleValue(key, value),
+      });
+    }
+  }
+
+  // Les attributs numériques font aussi de bonnes colonnes en vue liste — sans
+  // rien coder par jeu, puisqu'ils viennent des facettes.
+  const listColumns = facets.filter((facet) => facet.type === "number").slice(0, 3);
+  const cardAttribute = (card: CardWithType, key: string) => {
+    const value = (card as unknown as Record<string, unknown>)[key];
+    return typeof value === "number" || typeof value === "string" ? String(value) : "—";
+  };
+
+  const cardRef = (card: CardWithType) => `#${card.setCode}-${card.collectorNumber}`;
+
+  const wishlistButton = (card: CardWithType) =>
+    session ? (
+      <AddToWishlistButton
+        iconOnly
+        cardId={card.id}
+        gameSlug={gameSlug}
+        cardName={card.name}
+        setCode={card.setCode}
+        collectorNumber={String(card.collectorNumber)}
+        image={card.image}
+        type={card.type}
+        cardFoil={card.foil === true}
+        printings={card.printings}
+        inWishlist={wishlistedIds.has(card.id)}
+        onAdded={() => setWishlistedIds((prev) => new Set(prev).add(card.id))}
+      />
+    ) : null;
+
+  const sidebar = (
+    <div className="flex flex-col gap-5 rounded-xl border bg-card p-4 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-semibold">{t("cards.search.filters.title")}</span>
+        {activeChips.length > 0 || searchQuery.trim() ? (
+          <button
+            type="button"
+            onClick={resetAll}
+            className="text-xs text-muted-foreground hover:text-foreground"
+          >
+            {t("cards.search.filters.reset")}
+          </button>
+        ) : null}
+      </div>
+
+      {filtersUnavailable ? (
+        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300">
+          {t("cards.search.filters.unavailable")}
+        </p>
+      ) : null}
+
+      <FilterSection title={t("cards.search.filters.setCode")}>
+        <Select value={selectedSetCode} onValueChange={handleSetCodeChange}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder={t("cards.search.filters.allSets")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("cards.search.filters.allSets")}</SelectItem>
+            {setCodes.map((setCode) => (
+              <SelectItem key={setCode} value={setCode}>
+                {setCode}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </FilterSection>
+
+      <FilterSection title={t("cards.search.filters.type")}>
+        <Select value={selectedType} onValueChange={handleTypeChange}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder={t("cards.search.filters.allTypes")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("cards.search.filters.allTypes")}</SelectItem>
+            {types.map((type) => (
+              <SelectItem key={type} value={type}>
+                {type}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </FilterSection>
+
+      <FilterSection title={t("cards.search.filters.language")}>
+        <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder={t("cards.search.filters.allLanguages")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("cards.search.filters.allLanguages")}</SelectItem>
+            {languages.map((language) => (
+              <SelectItem key={language} value={language}>
+                {getLanguageLabel(language)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </FilterSection>
+
+      {facets.map((facet) => (
+        <FilterSection key={facet.key} title={facetLabel(facet.key)}>
+          {facet.type === "number" ? (
+            <>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  min={facet.min}
+                  max={facet.max}
+                  placeholder={String(facet.min)}
+                  aria-label={t("cards.search.filters.min", { field: facetLabel(facet.key) })}
+                  value={criteria.ranges[facet.key]?.min ?? ""}
+                  onChange={(e) => setRange(facet.key, "min", e.target.value)}
+                  className="h-8"
+                />
+                <span className="text-muted-foreground">–</span>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  min={facet.min}
+                  max={facet.max}
+                  placeholder={String(facet.max)}
+                  aria-label={t("cards.search.filters.max", { field: facetLabel(facet.key) })}
+                  value={criteria.ranges[facet.key]?.max ?? ""}
+                  onChange={(e) => setRange(facet.key, "max", e.target.value)}
+                  className="h-8"
+                />
+              </div>
+              <span className="text-[11px] text-muted-foreground">
+                {t("cards.search.filters.range", { min: facet.min, max: facet.max })}
+              </span>
+            </>
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {facet.values.map((value) => (
+                <FacetChip
+                  key={value}
+                  active={(criteria.values[facet.key] ?? []).includes(value)}
+                  onClick={() => toggleValue(facet.key, value)}
+                >
+                  {value}
+                </FacetChip>
+              ))}
+            </div>
+          )}
+        </FilterSection>
+      ))}
+
+      {activeFilterCount > 0 ? (
+        <Button variant="outline" size="sm" onClick={clearFacetFilters}>
+          {t("cards.search.filters.clear")}
+        </Button>
+      ) : null}
+    </div>
+  );
+
   return (
-    <>
-      <div className="mb-6 mt-6 flex flex-col gap-4 lg:flex-row lg:items-end">
-        <div className="flex-1">
-          <Input
-            type="text"
-            placeholder={t("cards.search.placeholder")}
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleSearch();
-              }
-            }}
-            className="w-full"
-          />
-        </div>
+    <div className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-start">
+      {/* Sur bureau la recherche vit dans une colonne à demeure : les filtres
+          restent lisibles pendant qu'on parcourt les résultats, au lieu de
+          replier un panneau à chaque essai. Sur mobile, elle se déplie. */}
+      <aside className={`${filtersOpen ? "block" : "hidden"} lg:block lg:w-72 lg:shrink-0`}>{sidebar}</aside>
 
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <div className="w-full sm:w-44">
-            <label className="mb-1 block text-sm font-medium">
-              {t("cards.search.filters.setCode")}
-            </label>
-            <Select value={selectedSetCode} onValueChange={handleSetCodeChange}>
-              <SelectTrigger>
-                <SelectValue placeholder={t("cards.search.filters.allSets")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("cards.search.filters.allSets")}</SelectItem>
-                {setCodes.map((setCode) => (
-                  <SelectItem key={setCode} value={setCode}>
-                    {setCode}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      <div className="flex min-w-0 flex-1 flex-col gap-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex min-w-[240px] flex-1 items-center">
+            <Search className="pointer-events-none absolute left-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder={t("cards.search.placeholder")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleSearch();
+                }
+              }}
+              className="h-10 w-full pl-9"
+            />
           </div>
 
-          <div className="w-full sm:w-44">
-            <label className="mb-1 block text-sm font-medium">
-              {t("cards.search.filters.type")}
-            </label>
-            <Select value={selectedType} onValueChange={handleTypeChange}>
-              <SelectTrigger>
-                <SelectValue placeholder={t("cards.search.filters.allTypes")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("cards.search.filters.allTypes")}</SelectItem>
-                {types.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setFiltersOpen((open) => !open)}
+            className="h-10 lg:hidden"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            {t("cards.search.filters.title")}
+            {activeFilterCount > 0 ? (
+              <span className="rounded-full bg-primary/10 px-1.5 text-xs text-primary">{activeFilterCount}</span>
+            ) : null}
+          </Button>
+
+          <Select
+            value={criteria.sort ? `${criteria.sort.key}:${criteria.sort.direction}` : "default"}
+            onValueChange={changeSort}
+          >
+            <SelectTrigger className="h-10 w-full sm:w-52" aria-label={t("cards.search.filters.sort")}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="default">{t("cards.search.filters.sortRelevance")}</SelectItem>
+              {sortableKeys(facets).flatMap((key) => [
+                <SelectItem key={`${key}:asc`} value={`${key}:asc`}>
+                  {t("cards.search.filters.sortAsc", { field: facetLabel(key) })}
+                </SelectItem>,
+                <SelectItem key={`${key}:desc`} value={`${key}:desc`}>
+                  {t("cards.search.filters.sortDesc", { field: facetLabel(key) })}
+                </SelectItem>,
+              ])}
+            </SelectContent>
+          </Select>
+
+          <div className="flex h-10 items-center gap-1 rounded-md border p-1">
+            <button
+              type="button"
+              onClick={() => setLayout("grid")}
+              aria-pressed={layout === "grid"}
+              title={t("cards.search.filters.viewGrid")}
+              className={`flex h-8 items-center gap-1.5 rounded px-2 text-xs ${
+                layout === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <LayoutGrid className="h-4 w-4" />
+              <span className="hidden sm:inline">{t("cards.search.filters.viewGrid")}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setLayout("list")}
+              aria-pressed={layout === "list"}
+              title={t("cards.search.filters.viewList")}
+              className={`flex h-8 items-center gap-1.5 rounded px-2 text-xs ${
+                layout === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <List className="h-4 w-4" />
+              <span className="hidden sm:inline">{t("cards.search.filters.viewList")}</span>
+            </button>
           </div>
 
-          <div className="w-full sm:w-44">
-            <label className="mb-1 block text-sm font-medium">
-              {t("cards.search.filters.language")}
-            </label>
-            <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
-              <SelectTrigger>
-                <SelectValue placeholder={t("cards.search.filters.allLanguages")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("cards.search.filters.allLanguages")}</SelectItem>
-                {languages.map((language) => (
-                  <SelectItem key={language} value={language}>
-                    {getLanguageLabel(language)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="w-full sm:w-52">
-            <label className="mb-1 block text-sm font-medium">
-              {t("cards.search.filters.sort")}
-            </label>
-            <Select value={criteria.sort ? `${criteria.sort.key}:${criteria.sort.direction}` : "default"} onValueChange={changeSort}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="default">{t("cards.search.filters.sortRelevance")}</SelectItem>
-                {sortableKeys(facets).flatMap((key) => [
-                  <SelectItem key={`${key}:asc`} value={`${key}:asc`}>
-                    {t("cards.search.filters.sortAsc", { field: facetLabel(key) })}
-                  </SelectItem>,
-                  <SelectItem key={`${key}:desc`} value={`${key}:desc`}>
-                    {t("cards.search.filters.sortDesc", { field: facetLabel(key) })}
-                  </SelectItem>,
-                ])}
-              </SelectContent>
-            </Select>
-          </div>
+          {layout === "grid" ? (
+            <div className="flex h-10 items-center gap-1 rounded-md border px-2">
+              <button
+                type="button"
+                onClick={() => setDensity((value) => Math.max(0, value - 1))}
+                disabled={density === 0}
+                aria-label={t("cards.search.filters.densitySmaller")}
+                className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted disabled:opacity-40"
+              >
+                <Minus className="h-3.5 w-3.5" />
+              </button>
+              <span className="w-4 text-center font-mono text-[11px] text-muted-foreground">{density + 1}</span>
+              <button
+                type="button"
+                onClick={() => setDensity((value) => Math.min(TILE_WIDTHS.length - 1, value + 1))}
+                disabled={density === TILE_WIDTHS.length - 1}
+                aria-label={t("cards.search.filters.densityBigger")}
+                className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted disabled:opacity-40"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ) : null}
 
           <Button onClick={handleSearch} disabled={isLoading} className="h-10">
             {isLoading ? t("cards.search.searching") : t("cards.search.search")}
           </Button>
         </div>
 
-        {facets.length > 0 ? (
-          <div className="rounded-lg border">
+        <div className="flex min-h-6 flex-wrap items-center gap-2">
+          <span className="text-sm text-muted-foreground">
+            {t("cards.search.resultCount", { count: pagination.total })}
+          </span>
+          {activeChips.map((chip) => (
             <button
+              key={chip.key}
               type="button"
-              onClick={() => setFiltersOpen((open) => !open)}
-              className="flex w-full items-center justify-between gap-2 px-4 py-3 text-sm font-medium"
-              aria-expanded={filtersOpen}
+              onClick={chip.remove}
+              className="inline-flex items-center gap-1.5 rounded-full border bg-muted px-2.5 py-1 text-xs hover:bg-muted/70"
             >
-              <span className="flex items-center gap-2">
-                <SlidersHorizontal className="h-4 w-4" />
-                {t("cards.search.filters.attributes")}
-                {activeFilterCount > 0 ? (
-                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                    {activeFilterCount}
-                  </span>
-                ) : null}
-              </span>
-              <span className="text-muted-foreground">{filtersOpen ? "\u2212" : "+"}</span>
+              {chip.label}
+              <X className="h-3 w-3 text-muted-foreground" />
             </button>
+          ))}
+          <div className="flex-1" />
+          <button
+            type="button"
+            onClick={copyLink}
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <Link2 className="h-3.5 w-3.5" />
+            {linkCopied ? t("cards.search.linkCopied") : t("cards.search.copyLink")}
+          </button>
+        </div>
 
-            {filtersOpen ? (
-              <div className="space-y-4 border-t px-4 py-4">
-                {filtersUnavailable ? (
-                  <p className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-300">
-                    {t("cards.search.filters.unavailable")}
-                  </p>
-                ) : null}
+        {isLoading && cards.length === 0 ? (
+          <p className="mt-8 text-center text-muted-foreground">{t("cards.search.searching")}</p>
+        ) : null}
 
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {facets.map((facet) =>
-                    facet.type === "number" ? (
-                      <div key={facet.key}>
-                        <label className="mb-1 block text-sm font-medium">{facetLabel(facet.key)}</label>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            inputMode="numeric"
-                            min={facet.min}
-                            max={facet.max}
-                            placeholder={String(facet.min)}
-                            aria-label={t("cards.search.filters.min", { field: facetLabel(facet.key) })}
-                            value={criteria.ranges[facet.key]?.min ?? ""}
-                            onChange={(e) => setRange(facet.key, "min", e.target.value)}
-                          />
-                          <span className="text-muted-foreground">–</span>
-                          <Input
-                            type="number"
-                            inputMode="numeric"
-                            min={facet.min}
-                            max={facet.max}
-                            placeholder={String(facet.max)}
-                            aria-label={t("cards.search.filters.max", { field: facetLabel(facet.key) })}
-                            value={criteria.ranges[facet.key]?.max ?? ""}
-                            onChange={(e) => setRange(facet.key, "max", e.target.value)}
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <div key={facet.key}>
-                        <span className="mb-1 block text-sm font-medium">{facetLabel(facet.key)}</span>
-                        <div className="flex flex-wrap gap-x-4 gap-y-2">
-                          {facet.values.map((value) => (
-                            <label key={value} className="flex items-center gap-2 text-sm">
-                              <Checkbox
-                                checked={(criteria.values[facet.key] ?? []).includes(value)}
-                                onCheckedChange={() => toggleValue(facet.key, value)}
-                              />
-                              {value}
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    )
-                  )}
-                </div>
-
-                {activeFilterCount > 0 ? (
-                  <Button variant="outline" size="sm" onClick={clearFacetFilters}>
-                    {t("cards.search.filters.clear")}
-                  </Button>
-                ) : null}
+        {layout === "grid" ? (
+          <div
+            className="grid gap-3"
+            style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${TILE_WIDTHS[density]}px, 1fr))` }}
+          >
+            {cards.map((card) => (
+              <div
+                key={`${card.cardId}-${card.setCode}-${card.collectorNumber}`}
+                className="relative overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-md"
+              >
+                <Link href={`/games/${gameSlug}/cards/${card.id}`} className="block">
+                  {/* Une carte toujours foil se reconnaît dans la liste comme sur sa fiche. */}
+                  <div className={`relative overflow-hidden ${card.foil ? "foil-shine" : ""}`}>
+                    <Image src={card.image} alt={card.name} width={600} height={840} unoptimized className="w-full" />
+                  </div>
+                  <div className="flex flex-col gap-0.5 px-2.5 py-2">
+                    <span className="text-[13px] font-semibold leading-tight">{card.name}</span>
+                    <span className="font-mono text-[10px] text-muted-foreground">{cardRef(card)}</span>
+                    {card.type ? (
+                      <span className="truncate text-[11px] text-muted-foreground">{card.type}</span>
+                    ) : null}
+                  </div>
+                </Link>
+                {session ? <div className="absolute right-1.5 top-1.5 z-10">{wishlistButton(card)}</div> : null}
               </div>
-            ) : null}
+            ))}
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-xl border">
+            <div className="hidden items-center gap-3 border-b bg-muted/50 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:flex">
+              <span className="w-8" />
+              <span className="flex-1">{t("cards.search.columns.name")}</span>
+              <span className="w-28">{t("cards.search.columns.type")}</span>
+              {listColumns.map((facet) => (
+                <span key={facet.key} className="w-16 text-right">
+                  {facetLabel(facet.key)}
+                </span>
+              ))}
+              <span className="w-8" />
+            </div>
+            {cards.map((card) => (
+              <div
+                key={`${card.cardId}-${card.setCode}-${card.collectorNumber}`}
+                className="flex items-center gap-3 border-b px-3 py-2 last:border-b-0 hover:bg-muted/40"
+              >
+                <Link
+                  href={`/games/${gameSlug}/cards/${card.id}`}
+                  className="flex min-w-0 flex-1 items-center gap-3"
+                >
+                  <span className={`relative w-8 shrink-0 overflow-hidden rounded ${card.foil ? "foil-shine" : ""}`}>
+                    <Image src={card.image} alt={card.name} width={64} height={90} unoptimized className="w-full" />
+                  </span>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate text-sm font-medium">{card.name}</span>
+                    <span className="font-mono text-[10px] text-muted-foreground">{cardRef(card)}</span>
+                  </span>
+                  <span className="hidden w-28 truncate text-xs text-muted-foreground sm:block">{card.type ?? "—"}</span>
+                  {listColumns.map((facet) => (
+                    <span key={facet.key} className="hidden w-16 text-right font-mono text-xs sm:block">
+                      {cardAttribute(card, facet.key)}
+                    </span>
+                  ))}
+                </Link>
+                <span className="w-8 shrink-0">{wishlistButton(card)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!isLoading && cards.length === 0 ? (
+          <p className="mt-8 text-center text-muted-foreground">
+            {searchQuery.trim()
+              ? t("cards.search.noResults", { query: searchQuery })
+              : t("cards.search.emptyState")}
+          </p>
+        ) : null}
+
+        {pagination.totalPages > 1 ? (
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              {t("cards.search.pagination.results", {
+                start: pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1,
+                end: Math.min(pagination.page * pagination.limit, pagination.total),
+                total: pagination.total,
+              })}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1 || isLoading}
+              >
+                {t("cards.search.pagination.previous")}
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                {t("cards.search.pagination.page", {
+                  currentPage,
+                  totalPages: pagination.totalPages,
+                })}
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === pagination.totalPages || isLoading}
+              >
+                {t("cards.search.pagination.next")}
+              </Button>
+            </div>
           </div>
         ) : null}
       </div>
-
-      {isLoading && cards.length === 0 ? (
-        <p className="text-center text-muted-foreground mt-8">
-          {t("cards.search.searching")}
-        </p>
-      ) : null}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {cards.map((card) => (
-          <div
-            key={`${card.cardId}-${card.setCode}-${card.collectorNumber}`}
-            className="relative overflow-hidden rounded-lg border hover:shadow-lg transition-shadow"
-          >
-            <Link href={`/games/${gameSlug}/cards/${card.id}`} className="block cursor-pointer p-4">
-              {/* Une carte toujours foil se reconnaît dans la liste comme sur sa fiche. */}
-              <div className={`relative overflow-hidden rounded-md mb-2 ${card.foil ? "foil-shine" : ""}`}>
-                <Image src={card.image} alt={card.name} width={600} height={400} unoptimized className="w-full" />
-              </div>
-              <h3 className="font-semibold">{card.name}</h3>
-              <p className="text-sm text-muted-foreground">
-                {card.setCode} #{card.collectorNumber}
-              </p>
-              {card.type ? (
-                <p className="text-xs text-muted-foreground mt-1">{card.type}</p>
-              ) : null}
-            </Link>
-            {session && (
-              <div className="absolute right-2 top-2 z-10">
-                <AddToWishlistButton
-                  iconOnly
-                  cardId={card.id}
-                  gameSlug={gameSlug}
-                  cardName={card.name}
-                  setCode={card.setCode}
-                  collectorNumber={String(card.collectorNumber)}
-                  image={card.image}
-                  type={card.type}
-                  cardFoil={card.foil === true}
-                  printings={card.printings}
-                  inWishlist={wishlistedIds.has(card.id)}
-                  onAdded={() => setWishlistedIds((prev) => new Set(prev).add(card.id))}
-                />
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {!isLoading && cards.length === 0 ? (
-        <p className="text-center text-muted-foreground mt-8">
-          {searchQuery.trim()
-            ? t("cards.search.noResults", { query: searchQuery })
-            : t("cards.search.emptyState")}
-        </p>
-      ) : null}
-
-      {pagination.totalPages > 1 ? (
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">
-            {t("cards.search.pagination.results", {
-              start: pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1,
-              end: Math.min(pagination.page * pagination.limit, pagination.total),
-              total: pagination.total,
-            })}
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1 || isLoading}
-            >
-              {t("cards.search.pagination.previous")}
-            </Button>
-            <span className="text-sm text-muted-foreground">
-              {t("cards.search.pagination.page", {
-                currentPage,
-                totalPages: pagination.totalPages,
-              })}
-            </span>
-            <Button
-              variant="outline"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === pagination.totalPages || isLoading}
-            >
-              {t("cards.search.pagination.next")}
-            </Button>
-          </div>
-        </div>
-      ) : null}
-    </>
+    </div>
   );
 }

@@ -372,6 +372,13 @@
         "searching": "Suchen...",
         "noResults": "Keine Karte gefunden für \"{query}\"",
         "emptyState": "Noch keine Karten verfügbar.",
+        "resultCount": "{count} Karten",
+        "copyLink": "Link kopieren",
+        "linkCopied": "Link kopiert",
+        "columns": {
+          "name": "Name",
+          "type": "Typ"
+        },
         "filters": {
           "setCode": "Set",
           "allSets": "Alle Sets",
@@ -383,7 +390,13 @@
           "sortRelevance": "Relevanz",
           "sortAsc": "{field} aufsteigend",
           "sortDesc": "{field} absteigend",
-          "attributes": "Erweiterte Filter",
+          "title": "Filter",
+          "reset": "Alles zurücksetzen",
+          "range": "{min} bis {max}",
+          "viewGrid": "Raster",
+          "viewList": "Liste",
+          "densitySmaller": "Kleinere Vorschaubilder",
+          "densityBigger": "Größere Vorschaubilder",
           "min": "{field} Minimum",
           "max": "{field} Maximum",
           "clear": "Filter zurücksetzen",
@@ -419,6 +432,11 @@
           "copies": "{count, plural, one {# Exemplar} other {# Exemplare}}"
         },
         "errataSectionTitle": "Errata & Klarstellungen",
+        "consensus": "{percent} % Zustimmung",
+        "errataFilterAll": "Alle",
+        "errataNoneForFilter": "Kein Eintrag dieser Art.",
+        "errataShowMuted": "Ausgeblendete Einträge anzeigen — veraltet oder überwiegend abgelehnt",
+        "errataHideMuted": "Ausgeblendete Einträge verbergen",
         "noErrata": "Kein Erratum oder Klarstellung für diese Karte.",
         "errataTypes": {
           "errata": "Erratum",

@@ -372,6 +372,13 @@
         "searching": "Ricerca in corso...",
         "noResults": "Nessuna carta trovata per \"{query}\"",
         "emptyState": "Nessuna carta disponibile al momento.",
+        "resultCount": "{count} carte",
+        "copyLink": "Copia link",
+        "linkCopied": "Link copiato",
+        "columns": {
+          "name": "Nome",
+          "type": "Tipo"
+        },
         "filters": {
           "setCode": "Set",
           "allSets": "Tutti i set",
@@ -383,7 +390,13 @@
           "sortRelevance": "Pertinenza",
           "sortAsc": "{field} crescente",
           "sortDesc": "{field} decrescente",
-          "attributes": "Filtri avanzati",
+          "title": "Filtri",
+          "reset": "Reimposta tutto",
+          "range": "da {min} a {max}",
+          "viewGrid": "Griglia",
+          "viewList": "Elenco",
+          "densitySmaller": "Miniature più piccole",
+          "densityBigger": "Miniature più grandi",
           "min": "{field} minimo",
           "max": "{field} massimo",
           "clear": "Cancella i filtri",
@@ -419,6 +432,11 @@
           "copies": "{count, plural, one {# copia} other {# copie}}"
         },
         "errataSectionTitle": "Errata e Chiarimenti",
+        "consensus": "{percent}% d'accordo",
+        "errataFilterAll": "Tutto",
+        "errataNoneForFilter": "Nessuna voce di questo tipo.",
+        "errataShowMuted": "Mostra le voci escluse — deprecate o per lo più bocciate",
+        "errataHideMuted": "Nascondi le voci escluse",
         "noErrata": "Nessun errata o chiarimento per questa carta.",
         "errataTypes": {
           "errata": "Errata",

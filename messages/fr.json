@@ -372,6 +372,13 @@
         "searching": "Recherche...",
         "noResults": "Aucune carte trouvée pour \"{query}\"",
         "emptyState": "Aucune carte disponible pour le moment.",
+        "resultCount": "{count} cartes",
+        "copyLink": "Copier le lien",
+        "linkCopied": "Lien copié",
+        "columns": {
+          "name": "Nom",
+          "type": "Type"
+        },
         "filters": {
           "setCode": "Édition",
           "allSets": "Toutes les éditions",
@@ -383,7 +390,13 @@
           "sortRelevance": "Pertinence",
           "sortAsc": "{field} croissant",
           "sortDesc": "{field} décroissant",
-          "attributes": "Filtres avancés",
+          "title": "Filtres",
+          "reset": "Tout réinitialiser",
+          "range": "de {min} à {max}",
+          "viewGrid": "Grille",
+          "viewList": "Liste",
+          "densitySmaller": "Réduire les vignettes",
+          "densityBigger": "Agrandir les vignettes",
           "min": "{field} minimum",
           "max": "{field} maximum",
           "clear": "Effacer les filtres",
@@ -419,6 +432,11 @@
           "copies": "{count, plural, one {# exemplaire} other {# exemplaires}}"
         },
         "errataSectionTitle": "Erratas & Clarifications",
+        "consensus": "{percent} % d'accord",
+        "errataFilterAll": "Tout",
+        "errataNoneForFilter": "Aucune entrée de ce type.",
+        "errataShowMuted": "Afficher les entrées écartées — dépréciées ou majoritairement rejetées",
+        "errataHideMuted": "Masquer les entrées écartées",
         "noErrata": "Aucun errata ou clarification pour cette carte.",
         "errataTypes": {
           "errata": "Errata",
