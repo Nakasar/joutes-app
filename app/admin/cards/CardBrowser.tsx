@@ -41,7 +41,10 @@ function CardRow({
         <p className="truncate font-medium text-foreground">{card.name}</p>
         <p className="truncate text-xs text-muted-foreground">
           <span className="font-mono">{card.id}</span>
-          {card.setCode ? ` · ${card.setCode} #${card.collectorNumber}` : ""}
+          {/* Les deux champs sont facultatifs : le numéro n'est accolé au code
+              d'extension que s'ils sont l'un et l'autre renseignés. */}
+          {card.setCode ? ` · ${card.setCode}` : ""}
+          {card.setCode && card.collectorNumber ? ` #${card.collectorNumber}` : ""}
           {card.lang ? ` · ${card.lang.toUpperCase()}` : ""}
         </p>
         <CardOriginBadges card={card} />

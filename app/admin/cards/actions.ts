@@ -18,7 +18,7 @@ import { getGameById } from "@/lib/db/games";
 import { cardSchema } from "@/lib/schemas/card.schema";
 import { gameIdSchema } from "@/lib/schemas/game.schema";
 import { withUniquePrintingIds } from "@/lib/constants/card-ids";
-import meilisearch, { indexes } from "@/lib/meilisearch";
+import meilisearch, { cardIndexFor, type CardIndexConfig } from "@/lib/meilisearch";
 
 export type SaveCardResult = {
   success: boolean;
@@ -96,7 +96,7 @@ type SearchableCard = {
 };
 
 function toSearchDocument(
-  indexConfig: (typeof indexes)[string],
+  indexConfig: CardIndexConfig,
   card: SearchableCard
 ): Record<string, unknown> {
   return {
@@ -132,7 +132,7 @@ async function indexCard(
   card: z.infer<typeof cardSchema>,
   previousCardId?: string
 ): Promise<string | undefined> {
-  const indexConfig = gameSlug ? indexes[gameSlug] : undefined;
+  const indexConfig = cardIndexFor(gameSlug);
   if (!indexConfig) {
     return "La carte a été enregistrée ; ce jeu n'a pas d'index de recherche, elle n'apparaîtra pas dans la recherche de cartes.";
   }
@@ -214,7 +214,7 @@ export async function reindexGameCards(gameId: string): Promise<ReindexResult> {
       return { success: false, error: "Jeu non trouvé" };
     }
 
-    const indexConfig = game.slug ? indexes[game.slug] : undefined;
+    const indexConfig = cardIndexFor(game.slug);
     if (!indexConfig) {
       return { success: false, error: "Ce jeu n'a pas d'index de recherche : il n'y a rien à mettre à jour." };
     }
