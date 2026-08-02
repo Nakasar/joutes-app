@@ -56,6 +56,12 @@ recherche refait alors sa requête sans les critères refusés et renvoie
 relancer la réindexation. C'est aussi ce qui rattrape un jeu dont le catalogue a
 gagné un nouvel attribut.
 
+Ce repli ne vaut que pour un refus explicite des critères —
+`invalid_search_filter` et `invalid_search_sort`, reconnus par
+`isUndeclaredCriteriaError`. Une coupure réseau, une clé refusée ou un index
+absent remontent : les rattraper ici rendrait des résultats non filtrés à la
+place d'une panne, sur une page qui a l'air de répondre.
+
 ## Implémentation
 
 - `lib/cards/search-filters.ts` — lecture des critères, expressions de filtre,

@@ -84,6 +84,11 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
     totalPages: 1,
   });
   const hasInitializedRef = useRef(false);
+  // Dernière saisie effectivement cherchée. Seule la saisie est « débouncée » :
+  // tous les autres contrôles lancent eux-mêmes leur recherche, et sans cette
+  // mémoire leur changement d'état reprogrammerait 300 ms plus tard un second
+  // appel — et un second `router.replace` — pour la requête qui vient de partir.
+  const lastSearchedQueryRef = useRef<string | null>(null);
   const pendingRequestKeyRef = useRef<string | null>(null);
   const activeControllerRef = useRef<AbortController | null>(null);
   const t = useTranslations("Games");
@@ -125,6 +130,7 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
       searchCriteria: CardSearchCriteria | URLSearchParams = EMPTY_CRITERIA
     ) => {
       const trimmedQuery = query.trim();
+      lastSearchedQueryRef.current = trimmedQuery;
       const normalizedSetCode = setCode && setCode !== "all" ? setCode : "all";
       const normalizedType = type && type !== "all" ? type : "all";
       const normalizedLanguage = language && language !== "all" ? language : "all";
@@ -305,6 +311,12 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
 
     const trimmedQuery = searchQuery.trim();
 
+    // La requête est déjà celle qui a été cherchée : c'est un autre contrôle qui
+    // a changé, et il s'est déjà chargé de relancer la recherche.
+    if (lastSearchedQueryRef.current === trimmedQuery) {
+      return undefined;
+    }
+
     if (trimmedQuery.length === 0 || trimmedQuery.length > 2) {
       const timer = window.setTimeout(() => {
         void fetchCards(trimmedQuery, selectedSetCode, selectedType, selectedLanguage, 1, criteria);
@@ -315,6 +327,9 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
       return () => window.clearTimeout(timer);
     }
 
+    // Une ou deux lettres ne cherchent pas. La mémoire est effacée avec la
+    // liste, pour que revenir à la requête précédente la relance vraiment.
+    lastSearchedQueryRef.current = null;
     setCards([]);
     setSetCodes([]);
     setTypes([]);

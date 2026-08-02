@@ -1,6 +1,6 @@
 import {NextRequest, NextResponse} from "next/server";
 import {BoosterCard} from "@/lib/types/booster";
-import meilisearch, {cardIndexFor} from "@/lib/meilisearch";
+import meilisearch, {cardIndexFor, isUndeclaredCriteriaError} from "@/lib/meilisearch";
 import db from "@/lib/mongodb";
 import {Game} from "@/lib/types/Game";
 import {getGameCardFilterFacets} from "@/lib/db/cards";
@@ -118,6 +118,10 @@ async function search({ gameId, searchQuery, lang, setCode, type, limit, offset,
   // Tant que la réindexation n'a pas été relancée depuis l'administration, il ne
   // l'est pas : plutôt qu'une page en erreur, on refait la recherche sans ces
   // critères et on le signale à l'appelant.
+  //
+  // Ce repli est réservé au refus explicite des critères. Une panne — réseau,
+  // clé refusée, index absent — doit remonter : la rattraper ici rendrait des
+  // résultats non filtrés qui ressemblent à une page qui marche.
   let degraded = false;
   let result;
   try {
@@ -127,7 +131,7 @@ async function search({ gameId, searchQuery, lang, setCode, type, limit, offset,
       ...(sort.length > 0 ? { sort } : {}),
     });
   } catch (error) {
-    if (facetFilters.length === 0 && sort.length === 0) {
+    if (!isUndeclaredCriteriaError(error) || (facetFilters.length === 0 && sort.length === 0)) {
       throw error;
     }
     console.error("Recherche de cartes : filtres ou tri refusés par l'index", error);

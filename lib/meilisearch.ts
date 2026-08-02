@@ -1,4 +1,4 @@
-import {Meilisearch} from "meilisearch";
+import {Meilisearch, MeilisearchApiError} from "meilisearch";
 
 const meilisearch = new Meilisearch({
   host: process.env.MEILISEARCH_ENDPOINT ?? 'localhost:7700',
@@ -91,4 +91,26 @@ export function cardIndexSettings(
     filterableAttributes: [...new Set([...core, ...facetKeys])],
     sortableAttributes: [...new Set(["name", indexConfig.keys.collectorNumber, ...numericKeys])],
   };
+}
+
+/**
+ * Codes que renvoie Meilisearch quand l'expression de filtre ou le tri portent
+ * sur un attribut qui n'a pas été déclaré sur l'index.
+ *
+ * @see https://www.meilisearch.com/docs/reference/errors/error_codes
+ */
+const UNDECLARED_CRITERIA_CODES = new Set(["invalid_search_filter", "invalid_search_sort"]);
+
+/**
+ * L'erreur dit-elle que l'index refuse les critères, ou qu'il est en panne ?
+ *
+ * La distinction commande le repli de l'exploration des cartes : un index dont
+ * les réglages n'ont pas encore été poussés se rattrape en refaisant la
+ * recherche sans les critères, alors qu'une coupure réseau, une clé refusée ou
+ * un index absent doivent remonter. Traiter les seconds comme le premier
+ * servirait des résultats non filtrés à la place d'une panne — silencieusement,
+ * puisque la page a l'air de répondre.
+ */
+export function isUndeclaredCriteriaError(error: unknown): boolean {
+  return error instanceof MeilisearchApiError && UNDECLARED_CRITERIA_CODES.has(error.cause?.code ?? "");
 }
