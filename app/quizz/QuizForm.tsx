@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import QuizBlockEditor from "./QuizBlockEditor";
+import QuizImportDialog from "./QuizImportDialog";
 import { toast } from "sonner";
 import { Loader2, FileText, ListChecks } from "lucide-react";
 
@@ -42,6 +43,19 @@ export default function QuizForm(props: QuizFormProps) {
     setForm((prev) => ({
       ...prev,
       blocks: [...prev.blocks, { id: nanoid(), type: "form", questions: [], showSubmitButton: true }],
+    }));
+  };
+
+  /**
+   * Brouillon issu d'un texte : ses blocs s'ajoutent à la suite de ceux déjà
+   * saisis, et le titre proposé n'est repris que si aucun n'a été donné — un
+   * import ne doit pas écraser un travail en cours.
+   */
+  const applyImport = (draft: { title: string; blocks: QuizBlock[] }) => {
+    setForm((prev) => ({
+      ...prev,
+      title: prev.title.trim() ? prev.title : draft.title,
+      blocks: [...prev.blocks, ...draft.blocks],
     }));
   };
 
@@ -183,6 +197,7 @@ export default function QuizForm(props: QuizFormProps) {
             <ListChecks className="h-4 w-4 mr-2" />
             Ajouter un bloc formulaire
           </Button>
+          <QuizImportDialog gameId={form.gameId} onImported={applyImport} />
         </div>
       </div>
 

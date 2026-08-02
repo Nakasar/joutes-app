@@ -2299,6 +2299,46 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
 
+  /quizzes/import:
+    post:
+      tags: [Quizzes]
+      summary: Draft a quiz from free text
+      description: >
+        Turns a raw text (rules thread, question of the day, FAQ) into a quiz draft using an LLM.
+        Nothing is persisted: the caller reviews the draft and posts it to `/quizzes`.
+        With `gameId`, card names found in the text are wrapped in brackets so they link to the
+        card once the quiz is published. Requires permission `quizzes:update`.
+      security: [{ sessionAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: { type: string, maxLength: 20000, description: "Source text to analyse." }
+                gameId:
+                  type: string
+                  pattern: "^[0-9a-fA-F]{24}$"
+                  description: "Game whose cards are detected in the text. Omit for no card detection."
+      responses:
+        "200":
+          description: Quiz draft, not persisted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  title: { type: string }
+                  blocks: { type: array, items: { $ref: "#/components/schemas/QuizBlock" } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { description: No question could be drawn from the text. }
+        "502": { description: The language model call failed. }
+
   /quizzes/{quizId}:
     parameters:
       - { name: quizId, in: path, required: true, schema: { type: string } }
