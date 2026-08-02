@@ -132,11 +132,16 @@ export async function resolveCardListEntries(
   // Repêchage : une ligne dont le nom est resté sans réponse peut encore être
   // identifiée par son seul code d'impression.
   const byCode = new Map<string, CardListEntry[]>();
+  // Codes tels qu'ils ont été saisis : la normalisation retire la ponctuation,
+  // or un identifiant de carte peut la porter (`SOR-001`). Interroger `id` avec
+  // le seul code normalisé passerait à côté.
+  const writtenCodes = new Set<string>();
   for (const entry of pending) {
     if (!entry.printCode) {
       continue;
     }
     const code = normalizePrintCode(entry.printCode);
+    writtenCodes.add(entry.printCode);
     const bucket = byCode.get(code);
     if (bucket) {
       bucket.push(entry);
@@ -148,7 +153,7 @@ export async function resolveCardListEntries(
   const fallbackByCode = new Map<string, CardDoc>();
   if (byCode.size > 0) {
     const codes = [...byCode.keys()];
-    const or: Record<string, unknown>[] = [{ id: { $in: codes } }];
+    const or: Record<string, unknown>[] = [{ id: { $in: [...new Set([...codes, ...writtenCodes])] } }];
     for (const code of codes) {
       or.push(...printCodeSplits(code));
     }

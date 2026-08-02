@@ -46,8 +46,14 @@ const LINE_PATTERN = /^(?:(?:(\d+)\s*[xX*]?|[xX*](\d+))\s+)?(.+?)(?:\s+#([^\s#]+
 /** Une liste peut porter des titres de section ou des annotations : ils ne sont pas des cartes. */
 const COMMENT_PATTERN = /^(?:\/\/|#)/;
 
+/**
+ * Regroupement des lignes d'une même carte. Le code d'impression est normalisé
+ * comme il le sera à la résolution : sans cela, `#SOR-001` et `#SOR001`
+ * compteraient pour deux entrées alors qu'ils désignent la même impression, et
+ * leurs quantités ne s'additionneraient pas.
+ */
 function entryKey(entry: CardListEntry): string {
-  return `${entry.name.toLowerCase()}|${entry.printCode?.toUpperCase() ?? ""}`;
+  return `${entry.name.toLowerCase()}|${entry.printCode ? normalizePrintCode(entry.printCode) : ""}`;
 }
 
 /**

@@ -50,6 +50,14 @@ describe("parseCardList", () => {
     assert.deepEqual(entries, [{ quantity: 4, name: "Alpha", printCode: "OGN001" }]);
   });
 
+  it("additionne malgré la ponctuation du code d'impression", () => {
+    // `SOR-001` et `SOR001` désignent la même impression à la résolution : le
+    // regroupement doit en dire autant, sinon les quantités restent séparées.
+    const { entries } = parseCardList("1x Alpha #SOR-001\n2x Alpha #SOR001");
+
+    assert.deepEqual(entries, [{ quantity: 3, name: "Alpha", printCode: "SOR-001" }]);
+  });
+
   it("distingue deux impressions d'une même carte", () => {
     const { entries } = parseCardList("1x Alpha #OGN001\n1x Alpha #SFD005\n1x Alpha");
 

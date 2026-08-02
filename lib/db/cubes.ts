@@ -341,7 +341,11 @@ export async function getCubePackCards(packId: string): Promise<CubeCard[]> {
   const docs = await db
     .collection(CUBE_CARDS_COLLECTION)
     .find({ packId: new ObjectId(packId) })
-    .sort({ createdAt: 1 })
+    // `_id` départage : tout un lot inséré d'un coup (import, ajout de
+    // plusieurs exemplaires) partage la même date, et `createdAt` seul rendrait
+    // l'ordre du paquet instable d'une lecture à l'autre. Les identifiants
+    // étant croissants dans l'ordre d'insertion, l'ordre de la liste est tenu.
+    .sort({ createdAt: 1, _id: 1 })
     .toArray();
 
   return docs.map(toCubeCard);
@@ -418,21 +422,31 @@ export async function importCardsIntoCubePack(
   mode: "append" | "replace",
 ): Promise<CubeCard[]> {
   const packObjectId = new ObjectId(packId);
+  const now = new Date();
+  const documents = cards.map((card) => ({
+    cubeId: new ObjectId(cubeId),
+    packId: packObjectId,
+    ...card,
+    createdAt: now,
+  }));
 
   if (mode === "replace") {
-    await db.collection(CUBE_CARDS_COLLECTION).deleteMany({ packId: packObjectId });
-  }
-
-  if (cards.length > 0) {
-    const now = new Date();
-    await db.collection(CUBE_CARDS_COLLECTION).insertMany(
-      cards.map((card) => ({
-        cubeId: new ObjectId(cubeId),
-        packId: packObjectId,
-        ...card,
-        createdAt: now,
-      })),
-    );
+    // Vider puis réécrire dans une même transaction : hors transaction, une
+    // insertion qui échoue après la suppression laisserait le paquet vide,
+    // son contenu d'origine perdu.
+    const session = db.client.startSession();
+    try {
+      await session.withTransaction(async () => {
+        await db.collection(CUBE_CARDS_COLLECTION).deleteMany({ packId: packObjectId }, { session });
+        if (documents.length > 0) {
+          await db.collection(CUBE_CARDS_COLLECTION).insertMany(documents, { session });
+        }
+      });
+    } finally {
+      await session.endSession();
+    }
+  } else if (documents.length > 0) {
+    await db.collection(CUBE_CARDS_COLLECTION).insertMany(documents);
   }
 
   await touchCube(cubeId);
@@ -449,7 +463,8 @@ export async function getCubeCards(cubeId: string): Promise<CubeCard[]> {
   const docs = await db
     .collection(CUBE_CARDS_COLLECTION)
     .find({ cubeId: new ObjectId(cubeId) })
-    .sort({ createdAt: 1 })
+    // Même départage que pour un paquet : voir `getCubePackCards`.
+    .sort({ createdAt: 1, _id: 1 })
     .toArray();
 
   return docs.map(toCubeCard);
