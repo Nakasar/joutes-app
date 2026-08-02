@@ -238,13 +238,12 @@ export async function searchGameCards(gameId: ObjectId, query: string, limit = 2
   return docs.map(toSummary);
 }
 
-/** Carte complète pour l'édition : champs communs d'un côté, attributs de jeu de l'autre. */
-export async function getGameCard(gameId: ObjectId, id: string): Promise<GameCardDetail | null> {
-  const doc = await db.collection("cards").findOne({ gameId, id });
-  if (!doc) {
-    return null;
-  }
-
+/**
+ * Attributs de jeu portés par un document de carte : tout ce qui n'est pas un
+ * champ commun. Les formes non éditables dans le formulaire (objets, tableaux
+ * hétérogènes) sont ignorées et laissées telles quelles en base.
+ */
+function extractCardAttributes(doc: Record<string, unknown>): Record<string, CardAttributeValue> {
   const attributes: Record<string, CardAttributeValue> = {};
   for (const [key, value] of Object.entries(doc)) {
     if (isReservedCardKey(key)) continue;
@@ -253,24 +252,77 @@ export async function getGameCard(gameId: ObjectId, id: string): Promise<GameCar
     } else if (Array.isArray(value) && value.every((item) => typeof item === "string")) {
       attributes[key] = value as string[];
     }
-    // Les autres formes (objets, tableaux hétérogènes) ne sont pas éditables
-    // dans le formulaire : elles sont laissées telles quelles en base.
+  }
+  return attributes;
+}
+
+/** Champs communs d'un document de carte, séparés de ses attributs de jeu. */
+function toCoreCard(doc: Record<string, unknown>) {
+  return {
+    id: doc.id as string,
+    name: doc.name as string,
+    setCode: doc.setCode as string | undefined,
+    collectorNumber: doc.collectorNumber as string | undefined,
+    lang: doc.lang as string | undefined,
+    image: doc.image as string | undefined,
+    text: doc.text as string | undefined,
+    foil: doc.foil === true ? true : undefined,
+    printings: Array.isArray(doc.printings) ? (doc.printings as CardPrinting[]) : undefined,
+  };
+}
+
+/** Carte complète pour l'édition : champs communs d'un côté, attributs de jeu de l'autre. */
+export async function getGameCard(gameId: ObjectId, id: string): Promise<GameCardDetail | null> {
+  const doc = await db.collection("cards").findOne({ gameId, id });
+  if (!doc) {
+    return null;
   }
 
   return {
-    id: doc.id,
-    name: doc.name,
-    setCode: doc.setCode,
-    collectorNumber: doc.collectorNumber,
-    lang: doc.lang,
-    image: doc.image,
-    text: doc.text,
-    foil: doc.foil === true ? true : undefined,
-    printings: Array.isArray(doc.printings) ? (doc.printings as CardPrinting[]) : undefined,
+    ...toCoreCard(doc),
     source: doc.source,
     manuallyEditedAt: doc.manuallyEditedAt instanceof Date ? doc.manuallyEditedAt.toISOString() : undefined,
-    attributes,
+    attributes: extractCardAttributes(doc),
   };
+}
+
+/** Nombre de cartes d'un jeu, affiché dans l'administration. */
+export async function countGameCards(gameId: ObjectId): Promise<number> {
+  return db.collection("cards").countDocuments({ gameId });
+}
+
+/** Carte telle qu'elle est poussée dans l'index de recherche. */
+export type IndexableCard = ReturnType<typeof toCoreCard> & {
+  attributes: Record<string, CardAttributeValue>;
+};
+
+/**
+ * Parcourt les cartes d'un jeu par lots, pour réindexer un catalogue entier
+ * sans le charger d'un bloc en mémoire. Un document sans identifiant est
+ * ignoré : il n'a pas de clé primaire côté recherche, et le pousser ferait
+ * échouer tout son lot.
+ */
+export async function* iterateGameCardsForIndexing(
+  gameId: ObjectId,
+  batchSize = 500
+): AsyncGenerator<IndexableCard[]> {
+  const cursor = db.collection("cards").find({ gameId });
+
+  let batch: IndexableCard[] = [];
+  for await (const doc of cursor) {
+    if (typeof doc.id !== "string" || !doc.id) {
+      continue;
+    }
+    batch.push({ ...toCoreCard(doc), attributes: extractCardAttributes(doc) });
+    if (batch.length >= batchSize) {
+      yield batch;
+      batch = [];
+    }
+  }
+
+  if (batch.length > 0) {
+    yield batch;
+  }
 }
 
 export async function getCardsByNames(gameId: ObjectId, names: string[]): Promise<CardNameMatch[]> {

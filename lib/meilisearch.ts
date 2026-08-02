@@ -44,3 +44,8 @@ export const indexes: { [gameSlug: string]: { name: string; keys: { set: string;
     },
   }
 };
+
+/** Les cartes de ce jeu sont-elles indexées pour la recherche ? */
+export function hasCardIndex(gameSlug?: string): boolean {
+  return Boolean(gameSlug && indexes[gameSlug]);
+}
