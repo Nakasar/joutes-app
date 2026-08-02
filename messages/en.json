@@ -372,7 +372,7 @@
         "searching": "Searching...",
         "noResults": "No cards found for \"{query}\"",
         "emptyState": "No cards available yet.",
-        "resultCount": "{count} cards",
+        "resultCount": "{count, plural, =0 {No cards} one {# card} other {# cards}}",
         "copyLink": "Copy link",
         "linkCopied": "Link copied",
         "columns": {
@@ -434,7 +434,7 @@
         "errataSectionTitle": "Errata & Clarifications",
         "consensus": "{percent}% agree",
         "errataFilterAll": "All",
-        "errataNoneForFilter": "No entry of this kind.",
+        "errataNoneForFilter": "No entries of this kind.",
         "errataShowMuted": "Show set-aside entries — deprecated or mostly downvoted",
         "errataHideMuted": "Hide set-aside entries",
         "noErrata": "No errata or clarification for this card.",

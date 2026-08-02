@@ -115,6 +115,15 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   const [layout, setLayout] = useState<"grid" | "list">("grid");
   const [density, setDensity] = useState(DEFAULT_DENSITY);
   const [linkCopied, setLinkCopied] = useState(false);
+  const copiedTimerRef = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      if (copiedTimerRef.current !== null) {
+        window.clearTimeout(copiedTimerRef.current);
+      }
+    },
+    []
+  );
   // Critères lus de l'URL avant de connaître les facettes : ils sont transmis
   // tels quels à la première requête, puis relus dès que les facettes arrivent,
   // pour qu'un lien partagé s'ouvre bien sur ses filtres.
@@ -492,17 +501,26 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
     setSelectedLanguage("all");
     setSearchQuery("");
     setCurrentPage(1);
-    const next = { ...criteria, ranges: {}, values: {} };
-    setCriteria(next);
-    void fetchCards("", "all", "all", "all", 1, next);
-    updateURL("", "all", "all", "all", 1, next);
+    // Le tri part avec le reste : « tout réinitialiser » le laisserait sinon en
+    // place, alors que rien à l'écran ne dirait plus qu'il est actif.
+    setCriteria(EMPTY_CRITERIA);
+    void fetchCards("", "all", "all", "all", 1, EMPTY_CRITERIA);
+    updateURL("", "all", "all", "all", 1, EMPTY_CRITERIA);
   };
 
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
       setLinkCopied(true);
-      window.setTimeout(() => setLinkCopied(false), 2000);
+      // Un clic répété repart de zéro : sans ça, le premier délai éteindrait la
+      // confirmation que le second vient d'allumer.
+      if (copiedTimerRef.current !== null) {
+        window.clearTimeout(copiedTimerRef.current);
+      }
+      copiedTimerRef.current = window.setTimeout(() => {
+        copiedTimerRef.current = null;
+        setLinkCopied(false);
+      }, 2000);
     } catch {
       // Presse-papiers refusé par le navigateur : l'URL reste celle de la barre d'adresse.
     }

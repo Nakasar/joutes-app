@@ -372,7 +372,7 @@
         "searching": "Recherche...",
         "noResults": "Aucune carte trouvée pour \"{query}\"",
         "emptyState": "Aucune carte disponible pour le moment.",
-        "resultCount": "{count} cartes",
+        "resultCount": "{count, plural, =0 {Aucune carte} one {# carte} other {# cartes}}",
         "copyLink": "Copier le lien",
         "linkCopied": "Lien copié",
         "columns": {

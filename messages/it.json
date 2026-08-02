@@ -372,7 +372,7 @@
         "searching": "Ricerca in corso...",
         "noResults": "Nessuna carta trovata per \"{query}\"",
         "emptyState": "Nessuna carta disponibile al momento.",
-        "resultCount": "{count} carte",
+        "resultCount": "{count, plural, =0 {Nessuna carta} one {# carta} other {# carte}}",
         "copyLink": "Copia link",
         "linkCopied": "Link copiato",
         "columns": {

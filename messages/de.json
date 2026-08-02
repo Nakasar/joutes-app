@@ -372,7 +372,7 @@
         "searching": "Suchen...",
         "noResults": "Keine Karte gefunden für \"{query}\"",
         "emptyState": "Noch keine Karten verfügbar.",
-        "resultCount": "{count} Karten",
+        "resultCount": "{count, plural, =0 {Keine Karten} one {# Karte} other {# Karten}}",
         "copyLink": "Link kopieren",
         "linkCopied": "Link kopiert",
         "columns": {
