@@ -15,7 +15,18 @@ function escapeRegExp(value: string): string {
  * inside unrelated words.
  */
 export function bracketPlainCardMentions(text: string, cardNames: string[]): string {
-  if (cardNames.length === 0) return text;
+  return createCardMentionBracketer(cardNames)(text);
+}
+
+/**
+ * Même traitement, mais l'expression est compilée une seule fois pour être
+ * appliquée à plusieurs textes. Le catalogue d'un jeu pèse des dizaines de
+ * milliers de noms : recompiler par texte coûterait cher là où l'appelant en
+ * annote beaucoup (import d'un quizz, qui traite chaque énoncé, chaque
+ * proposition et chaque explication).
+ */
+export function createCardMentionBracketer(cardNames: string[]): (text: string) => string {
+  if (cardNames.length === 0) return (text) => text;
 
   const sorted = [...cardNames].sort((a, b) => b.length - a.length);
   const namesPattern = sorted.map(escapeRegExp).join("|");
@@ -24,7 +35,8 @@ export function bracketPlainCardMentions(text: string, cardNames: string[]): str
     "giu"
   );
 
-  return text.replace(regex, (match, alreadyBracketed: string | undefined, cardName: string | undefined) =>
-    alreadyBracketed ?? `[${cardName}]`
-  );
+  return (text: string) =>
+    text.replace(regex, (match, alreadyBracketed: string | undefined, cardName: string | undefined) =>
+      alreadyBracketed ?? `[${cardName}]`
+    );
 }
