@@ -5,6 +5,7 @@ import { nanoid } from "nanoid";
 import { useRouter } from "next/navigation";
 import { Game } from "@/lib/types/Game";
 import { Quiz, QuizBlock } from "@/lib/types/Quiz";
+import { locales, localeLabels, type Locale } from "@/i18n/config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,12 +16,14 @@ import { toast } from "sonner";
 import { Loader2, FileText, ListChecks } from "lucide-react";
 
 type QuizFormProps =
-  | { mode: "create"; games: Game[] }
+  | { mode: "create"; games: Game[]; defaultLang: Locale }
   | { mode: "edit"; quiz: Quiz; games: Game[] };
 
 type FormData = {
   title: string;
   gameId: string;
+  /** Langue dans laquelle le quizz est écrit : la « VO » dont partent les traductions. */
+  originalLang: Locale;
   blocks: QuizBlock[];
 };
 
@@ -31,6 +34,7 @@ export default function QuizForm(props: QuizFormProps) {
   const [form, setForm] = useState<FormData>({
     title: isEdit ? props.quiz.title : "",
     gameId: isEdit ? props.quiz.gameId ?? "" : "",
+    originalLang: isEdit ? props.quiz.originalLang : props.defaultLang,
     blocks: isEdit ? props.quiz.blocks : [],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -170,6 +174,29 @@ export default function QuizForm(props: QuizFormProps) {
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Langue d&apos;origine</Label>
+        <Select
+          value={form.originalLang}
+          onValueChange={(value) => setForm((prev) => ({ ...prev, originalLang: value as Locale }))}
+        >
+          <SelectTrigger className="sm:max-w-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {locales.map((lang) => (
+              <SelectItem key={lang} value={lang}>
+                {localeLabels[lang]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">
+          La langue dans laquelle vous écrivez le quizz. Les traductions en partent, et elle sert de repli
+          quand un texte n&apos;est pas traduit.
+        </p>
       </div>
 
       <div className="space-y-3">

@@ -1,10 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { QuizBlock, QuizQuestion } from "@/lib/types/Quiz";
+import { useMemo, useState } from "react";
+import { Quiz, QuizQuestion } from "@/lib/types/Quiz";
 import type { CardNameMatch } from "@/lib/db/cards";
+import { Gamepad2 } from "lucide-react";
 import AnnotatedMarkdown from "@/components/AnnotatedMarkdown";
+import { Badge } from "@/components/ui/badge";
+import LanguagePicker from "@/components/LanguagePicker";
+import StaleTranslationWarning from "@/components/StaleTranslationWarning";
 import { Button } from "@/components/ui/button";
+import { availableQuizLangs, isTranslationStale, localizeQuiz } from "@/lib/quizzes/translate";
+import type { Locale } from "@/i18n/config";
 import QuizQuestionPlayer, { type QuizAnswerValue } from "./QuizQuestionPlayer";
 
 function isCorrect(question: QuizQuestion, answer: QuizAnswerValue): boolean {
@@ -29,16 +35,33 @@ function isCorrect(question: QuizQuestion, answer: QuizAnswerValue): boolean {
 }
 
 export default function QuizPlayer({
-  blocks,
+  quiz,
+  interfaceLocale,
+  gameName,
   cardIdByName,
   cardsById,
   gameSlug,
 }: {
-  blocks: QuizBlock[];
+  quiz: Quiz;
+  /** Langue de l'utilisateur : le quizz s'y affiche s'il y est traduit. */
+  interfaceLocale: Locale;
+  gameName?: string;
   cardIdByName: Record<string, string>;
   cardsById: Record<string, CardNameMatch>;
   gameSlug: string;
 }) {
+  const availableLangs = availableQuizLangs(quiz);
+  const [selectedLang, setSelectedLang] = useState<Locale>(
+    availableLangs.includes(interfaceLocale) ? interfaceLocale : quiz.originalLang
+  );
+
+  // Les identifiants ne changent pas d'une langue à l'autre : les réponses
+  // déjà données et leur correction survivent donc au changement de langue.
+  const localized = useMemo(() => localizeQuiz(quiz, selectedLang), [quiz, selectedLang]);
+  const blocks = localized.blocks;
+  const translation = quiz.translations?.find((tr) => tr.lang === selectedLang);
+  const isStale = !!translation && isTranslationStale(translation, quiz.updatedAt);
+
   const [answers, setAnswers] = useState<Record<string, QuizAnswerValue>>({});
   const [results, setResults] = useState<Record<string, boolean>>({});
 
@@ -69,6 +92,33 @@ export default function QuizPlayer({
 
   return (
     <div className="space-y-6">
+      <header className="space-y-4">
+        <h1 className="text-4xl font-bold tracking-tight">{localized.title}</h1>
+        {gameName && (
+          <Badge variant="secondary" className="gap-1">
+            <Gamepad2 className="h-3 w-3" />
+            {gameName}
+          </Badge>
+        )}
+      </header>
+
+      {availableLangs.length > 1 && (
+        <div className="flex items-center justify-end">
+          <LanguagePicker
+            availableLangs={availableLangs}
+            originalLang={quiz.originalLang}
+            value={selectedLang}
+            onChange={setSelectedLang}
+            originalLabel="VO"
+            ariaLabel="Langue du quizz"
+          />
+        </div>
+      )}
+
+      {isStale && (
+        <StaleTranslationWarning message="Le quizz a été modifié depuis cette traduction : certains textes peuvent être en version originale ou dépassés." />
+      )}
+
       {blocks.map((block, index) =>
         block.type === "markdown" ? (
           <div key={block.id} className="prose prose-neutral dark:prose-invert max-w-none">

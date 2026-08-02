@@ -7,6 +7,8 @@ import { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { getLocale } from "next-intl/server";
+import type { Locale } from "@/i18n/config";
 import QuizForm from "../QuizForm";
 
 export const metadata: Metadata = {
@@ -27,6 +29,8 @@ export default async function CreateQuizzPage() {
   }
 
   const games = await getAllGames();
+  // La VO part de la langue de l'auteur, qui reste modifiable dans le formulaire.
+  const defaultLang = (await getLocale()) as Locale;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -41,7 +45,7 @@ export default async function CreateQuizzPage() {
         <p className="text-muted-foreground mt-1">Créez un nouveau quizz pour la communauté</p>
       </div>
 
-      <QuizForm mode="create" games={games} />
+      <QuizForm mode="create" games={games} defaultLang={defaultLang} />
     </div>
   );
 }
