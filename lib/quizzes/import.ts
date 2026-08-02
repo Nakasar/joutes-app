@@ -52,23 +52,43 @@ const LIMITS = {
   options: 20,
 } as const;
 
-function clean(value: string | null | undefined, max: number): string {
-  return (value ?? "").trim().slice(0, max);
+function trimmed(value: string | null | undefined): string {
+  return (value ?? "").trim();
 }
 
-/** Texte facultatif : vide une fois nettoyé, le champ n'est pas écrit. */
-function optional(value: string | null | undefined, max: number): string | undefined {
-  return clean(value, max) || undefined;
+/**
+ * Borne un texte déjà annoté. La coupe ne doit pas tomber au milieu d'une
+ * mention : un crochet resté ouvert s'afficherait tel quel dans le quizz.
+ */
+function bound(value: string, max: number): string {
+  if (value.length <= max) {
+    return value;
+  }
+
+  const cut = value.slice(0, max);
+  const lastOpen = cut.lastIndexOf("[");
+  const lastClose = cut.lastIndexOf("]");
+  return (lastOpen > lastClose ? cut.slice(0, lastOpen) : cut).trimEnd();
 }
 
 export type AnnotateText = (text: string) => string;
+
+/**
+ * Texte affiché dans le quizz : annoté, puis borné. L'ordre compte — les
+ * crochets ajoutés autour des noms de cartes allongent le texte, et borner
+ * avant l'annotation laisserait passer des champs au-delà des limites du
+ * schéma, donc un brouillon refusé à la publication.
+ */
+function display(value: string | null | undefined, max: number, annotate: AnnotateText): string {
+  return bound(annotate(trimmed(value)), max);
+}
 
 function normalizeQuestion(
   question: ImportedQuestion,
   annotate: AnnotateText,
   makeId: () => string
 ): QuizQuestion | null {
-  const prompt = annotate(clean(question.prompt, LIMITS.prompt));
+  const prompt = display(question.prompt, LIMITS.prompt, annotate);
   if (!prompt) {
     return null;
   }
@@ -76,18 +96,16 @@ function normalizeQuestion(
   const base = {
     id: makeId(),
     prompt,
-    correctFeedback: optional(question.correctFeedback, LIMITS.feedback),
-    incorrectFeedback: optional(question.incorrectFeedback, LIMITS.feedback),
+    correctFeedback: display(question.correctFeedback, LIMITS.feedback, annotate) || undefined,
+    incorrectFeedback: display(question.incorrectFeedback, LIMITS.feedback, annotate) || undefined,
   };
-  if (base.correctFeedback) base.correctFeedback = annotate(base.correctFeedback);
-  if (base.incorrectFeedback) base.incorrectFeedback = annotate(base.incorrectFeedback);
 
   if (question.type === "single" || question.type === "multiple") {
     const options = (question.options ?? [])
-      .map((text) => clean(text, LIMITS.optionText))
+      .map((text) => trimmed(text))
       .filter(Boolean)
       .slice(0, LIMITS.options)
-      .map((text) => ({ id: makeId(), text: annotate(text) }));
+      .map((text) => ({ id: makeId(), text: bound(annotate(text), LIMITS.optionText) }));
 
     // Une question à choix sans alternative n'en est pas une.
     if (options.length < 2) {
@@ -123,7 +141,7 @@ function normalizeQuestion(
   // Réponse libre : comparée telle quelle à la saisie du joueur, elle n'est
   // donc jamais annotée — des crochets y rendraient la bonne réponse
   // impossible à saisir.
-  const correctText = clean(question.correctText, LIMITS.correctText);
+  const correctText = bound(trimmed(question.correctText), LIMITS.correctText);
   if (!correctText) {
     return null;
   }
@@ -168,5 +186,5 @@ export function toQuizBlocks(
 
 /** Titre du brouillon, borné comme celui du formulaire. */
 export function toQuizTitle(title: string): string {
-  return clean(title, LIMITS.title);
+  return bound(trimmed(title), LIMITS.title);
 }

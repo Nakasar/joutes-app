@@ -193,6 +193,45 @@ describe("toQuizBlocks", () => {
     assert.equal(block.questions[0].correctFeedback?.length, 2000);
   });
 
+  it("tient les bornes une fois l'annotation appliquée", () => {
+    // Les crochets rallongent le texte : borner avant l'annotation laisserait
+    // passer des champs au-delà des limites, et le brouillon serait refusé à
+    // la publication.
+    const annotate = (text: string) => text.replaceAll("Yasuo", "[Yasuo]");
+    const longPrompt = `${"Yasuo ".repeat(200)}fin`;
+    const [block] = toQuizBlocks(
+      [
+        {
+          type: "form",
+          questions: [
+            {
+              type: "single",
+              prompt: longPrompt,
+              options: [`${"Yasuo ".repeat(80)}`, "Non"],
+              correctOptionIndexes: [0],
+              correctFeedback: `${"Yasuo ".repeat(500)}`,
+            },
+          ],
+        },
+      ],
+      { annotate, makeId: counter() }
+    );
+
+    assert.ok(block.type === "form");
+    const question = block.questions[0];
+    assert.ok(question.prompt.length <= 1000, `énoncé : ${question.prompt.length}`);
+    assert.ok((question.options?.[0].text.length ?? 0) <= 300);
+    assert.ok((question.correctFeedback?.length ?? 0) <= 2000);
+    // La coupe ne laisse pas de crochet ouvert derrière elle.
+    for (const value of [question.prompt, question.options?.[0].text ?? "", question.correctFeedback ?? ""]) {
+      assert.equal(
+        (value.match(/\[/g) ?? []).length,
+        (value.match(/\]/g) ?? []).length,
+        `crochets déséquilibrés : ${value.slice(-40)}`
+      );
+    }
+  });
+
   it("ne garde que 20 propositions au maximum", () => {
     const [block] = toQuizBlocks(
       [
