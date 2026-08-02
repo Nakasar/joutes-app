@@ -378,7 +378,16 @@
           "type": "Type",
           "allTypes": "All types",
           "language": "Language",
-          "allLanguages": "All languages"
+          "allLanguages": "All languages",
+          "sort": "Sort",
+          "sortRelevance": "Relevance",
+          "sortAsc": "{field} ascending",
+          "sortDesc": "{field} descending",
+          "attributes": "Advanced filters",
+          "min": "Minimum {field}",
+          "max": "Maximum {field}",
+          "clear": "Clear filters",
+          "unavailable": "These filters are not active for this game yet: an administrator needs to run “Update index”. The results below ignore them."
         },
         "pagination": {
           "results": "Showing {start}-{end} of {total} cards",

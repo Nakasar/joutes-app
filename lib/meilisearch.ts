@@ -68,3 +68,27 @@ export function cardIndexFor(gameSlug?: string): CardIndexConfig | undefined {
 export function hasCardIndex(gameSlug?: string): boolean {
   return cardIndexFor(gameSlug) !== undefined;
 }
+
+/**
+ * Réglages d'index nécessaires aux filtres et au tri de l'exploration des
+ * cartes.
+ *
+ * Meilisearch refuse de filtrer ou de trier sur un attribut qui n'a pas été
+ * déclaré : sans ces réglages, les plages d'énergie ou le tri par puissance
+ * échouent, quels que soient les documents indexés. Ils sont donc appliqués en
+ * même temps que la réindexation, depuis l'administration des cartes.
+ *
+ * `facetKeys` vient des attributs réellement portés par le jeu ; `numericKeys`
+ * en est le sous-ensemble triable.
+ */
+export function cardIndexSettings(
+  indexConfig: CardIndexConfig,
+  { facetKeys, numericKeys }: { facetKeys: string[]; numericKeys: string[] }
+): { filterableAttributes: string[]; sortableAttributes: string[] } {
+  const core = [indexConfig.keys.set, indexConfig.keys.collectorNumber, "lang", "type"];
+
+  return {
+    filterableAttributes: [...new Set([...core, ...facetKeys])],
+    sortableAttributes: [...new Set(["name", indexConfig.keys.collectorNumber, ...numericKeys])],
+  };
+}

@@ -378,7 +378,16 @@
           "type": "Tipo",
           "allTypes": "Tutti i tipi",
           "language": "Lingua",
-          "allLanguages": "Tutte le lingue"
+          "allLanguages": "Tutte le lingue",
+          "sort": "Ordinamento",
+          "sortRelevance": "Pertinenza",
+          "sortAsc": "{field} crescente",
+          "sortDesc": "{field} decrescente",
+          "attributes": "Filtri avanzati",
+          "min": "{field} minimo",
+          "max": "{field} massimo",
+          "clear": "Cancella i filtri",
+          "unavailable": "Questi filtri non sono ancora attivi per questo gioco: un amministratore deve eseguire “Aggiorna l'indice”. I risultati qui sotto li ignorano."
         },
         "pagination": {
           "results": "Mostrando {start}-{end} di {total} carte",

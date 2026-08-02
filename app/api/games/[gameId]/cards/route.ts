@@ -3,6 +3,13 @@ import {BoosterCard} from "@/lib/types/booster";
 import meilisearch, {cardIndexFor} from "@/lib/meilisearch";
 import db from "@/lib/mongodb";
 import {Game} from "@/lib/types/Game";
+import {getGameCardFilterFacets} from "@/lib/db/cards";
+import {
+  buildFacetFilters,
+  buildSortExpressions,
+  parseCardSearchCriteria,
+  type CardFilterFacet,
+} from "@/lib/cards/search-filters";
 
 type SearchCard = BoosterCard & {
   type?: string;
@@ -32,17 +39,18 @@ async function getFilterValues(gameSlug: string): Promise<{ setCodes: string[]; 
   return { setCodes, types, languages };
 }
 
-async function search({ gameId, searchQuery, lang, setCode, type, limit, offset }: { gameId: string; searchQuery: string; lang: string; setCode: string; type?: string; limit?: number; offset?: number }): Promise<{
+async function search({ gameId, searchQuery, lang, setCode, type, limit, offset, criteriaParams, facets }: { gameId: string; searchQuery: string; lang: string; setCode: string; type?: string; limit?: number; offset?: number; criteriaParams: URLSearchParams; facets: CardFilterFacet[] }): Promise<{
   cards: BoosterCard[];
   total: number;
   setCodes: string[];
   types: string[];
   languages: string[];
+  degraded: boolean;
 }> {
   const indexConfig = cardIndexFor(gameId);
   if (!indexConfig) {
     console.error(`No index found for gameId: ${gameId}`);
-    return { cards: [], total: 0, setCodes: [], types: [], languages: [] };
+    return { cards: [], total: 0, setCodes: [], types: [], languages: [], degraded: false };
   }
 
   const index = meilisearch.index<SearchCard>(indexConfig.name);
@@ -102,7 +110,30 @@ async function search({ gameId, searchQuery, lang, setCode, type, limit, offset 
     queryOptions.offset = offset;
   }
 
-  const result = await index.search(queryString, queryOptions);
+  const criteria = parseCardSearchCriteria(criteriaParams, facets);
+  const facetFilters = buildFacetFilters(criteria, facets);
+  const sort = buildSortExpressions(criteria, indexConfig.keys);
+
+  // Filtrer ou trier sur un attribut suppose qu'il soit déclaré dans l'index.
+  // Tant que la réindexation n'a pas été relancée depuis l'administration, il ne
+  // l'est pas : plutôt qu'une page en erreur, on refait la recherche sans ces
+  // critères et on le signale à l'appelant.
+  let degraded = false;
+  let result;
+  try {
+    result = await index.search(queryString, {
+      ...queryOptions,
+      filter: [...queryOptions.filter, ...facetFilters],
+      ...(sort.length > 0 ? { sort } : {}),
+    });
+  } catch (error) {
+    if (facetFilters.length === 0 && sort.length === 0) {
+      throw error;
+    }
+    console.error("Recherche de cartes : filtres ou tri refusés par l'index", error);
+    degraded = true;
+    result = await index.search(queryString, queryOptions);
+  }
   const cards = result.hits.map(result => ({
     ...result,
     image: (result.image || result.poster) ?? '',
@@ -119,6 +150,7 @@ async function search({ gameId, searchQuery, lang, setCode, type, limit, offset 
     setCodes: filterValues.setCodes,
     types: filterValues.types,
     languages: filterValues.languages,
+    degraded,
   };
 }
 
@@ -137,6 +169,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const limit = Math.max(1, Math.min(100, Number.parseInt(limitParam ?? '24', 10) || 24));
   const offset = (page - 1) * limit;
 
+  // Les facettes proposées viennent des attributs que portent réellement les
+  // cartes du jeu : elles bornent aussi ce que les critères peuvent demander.
+  const game = await db.collection<Game>("games").findOne({ slug: gameId });
+  const facets = game ? await getGameCardFilterFacets(game._id) : [];
+
   const result = await search({
     gameId,
     searchQuery,
@@ -145,6 +182,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     type,
     limit: shouldPaginate ? limit : undefined,
     offset: shouldPaginate ? offset : undefined,
+    criteriaParams: searchParams,
+    facets,
   });
 
   if (!shouldPaginate) {
@@ -160,5 +199,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     setCodes: result.setCodes,
     types: result.types,
     languages: result.languages,
+    facets,
+    // Vrai quand l'index n'accepte pas encore les filtres d'attributs : les
+    // résultats sont alors ceux de la recherche sans eux.
+    filtersUnavailable: result.degraded,
   });
 }

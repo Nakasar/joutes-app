@@ -378,7 +378,16 @@
           "type": "Type",
           "allTypes": "Tous les types",
           "language": "Langue",
-          "allLanguages": "Toutes les langues"
+          "allLanguages": "Toutes les langues",
+          "sort": "Tri",
+          "sortRelevance": "Pertinence",
+          "sortAsc": "{field} croissant",
+          "sortDesc": "{field} décroissant",
+          "attributes": "Filtres avancés",
+          "min": "{field} minimum",
+          "max": "{field} maximum",
+          "clear": "Effacer les filtres",
+          "unavailable": "Ces filtres ne sont pas encore actifs sur ce jeu : un administrateur doit relancer « Mettre à jour l'index ». Les résultats ci-dessous les ignorent."
         },
         "pagination": {
           "results": "Affichage de {start}-{end} sur {total} cartes",
