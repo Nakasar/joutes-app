@@ -299,16 +299,6 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
         )}
       </div>
 
-      {error && (
-        <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">{error}</div>
-      )}
-      {success && (
-        <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-emerald-700 dark:text-emerald-300 text-sm">{success}</div>
-      )}
-      {warning && (
-        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-800 dark:text-amber-300 text-sm">{warning}</div>
-      )}
-
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-foreground mb-1">Code d&apos;extension</label>
@@ -642,7 +632,20 @@ export default function CardForm({ gameId, gameName, gameSlug, attributeFields, 
         </div>
       </div>
 
-      <div className="flex justify-end pt-4 border-t">
+      {/*
+        Barre d'action collée au bas de la fenêtre : le formulaire est long, et
+        le bouton comme le compte rendu de l'enregistrement doivent rester
+        atteignables sans remonter en haut de page.
+      */}
+      <div className="sticky bottom-0 -mx-6 -mb-6 flex flex-wrap items-center justify-between gap-3 rounded-b-lg border-t bg-card/95 px-6 py-4 backdrop-blur">
+        <div className="min-w-0 flex-1 space-y-1 text-sm">
+          {error && <p className="text-destructive">{error}</p>}
+          {success && <p className="text-emerald-600 dark:text-emerald-400">{success}</p>}
+          {warning && <p className="text-amber-700 dark:text-amber-400">{warning}</p>}
+          {availability === "taken" && !error && (
+            <p className="text-destructive">Une carte « {effectiveId} » existe déjà pour ce jeu.</p>
+          )}
+        </div>
         <Button type="submit" disabled={isPending || uploading || availability === "taken" || !effectiveId}>
           {isPending
             ? isEdit

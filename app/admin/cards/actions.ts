@@ -8,6 +8,7 @@ import {
   cardIdExists,
   createCard,
   getGameCard,
+  iterateGameCardsForIndexing,
   searchGameCards,
   updateCard,
   type CardAttributeValue,
@@ -17,7 +18,7 @@ import { getGameById } from "@/lib/db/games";
 import { cardSchema } from "@/lib/schemas/card.schema";
 import { gameIdSchema } from "@/lib/schemas/game.schema";
 import { withUniquePrintingIds } from "@/lib/constants/card-ids";
-import meilisearch, { indexes } from "@/lib/meilisearch";
+import meilisearch, { cardIndexFor, type CardIndexConfig } from "@/lib/meilisearch";
 
 export type SaveCardResult = {
   success: boolean;
@@ -76,9 +77,27 @@ function searchDocumentId(cardId: string): string {
   return cardId.replaceAll("*", "s");
 }
 
+/**
+ * Le minimum dont on a besoin pour construire un document de recherche. Aussi
+ * bien une carte validée par le formulaire qu'une carte relue en base s'y
+ * conforment : les deux chemins produisent donc exactement le même document.
+ */
+type SearchableCard = {
+  id: string;
+  name: string;
+  setCode?: string;
+  collectorNumber?: string;
+  lang?: string;
+  image?: string;
+  text?: string;
+  foil?: boolean;
+  printings?: { id?: string; name: string; foil?: boolean; image?: string }[];
+  attributes?: Record<string, CardAttributeValue>;
+};
+
 function toSearchDocument(
-  indexConfig: (typeof indexes)[string],
-  card: z.infer<typeof cardSchema>
+  indexConfig: CardIndexConfig,
+  card: SearchableCard
 ): Record<string, unknown> {
   return {
     ...card.attributes,
@@ -93,8 +112,13 @@ function toSearchDocument(
     // carte : la recherche est donc une source fiable pour les écrans qui
     // ajoutent un exemplaire depuis un résultat de recherche.
     printings: card.printings?.length ? withUniquePrintingIds(card.printings) : undefined,
-    [indexConfig.keys.set]: card.setCode,
-    [indexConfig.keys.collectorNumber]: card.collectorNumber,
+    // Écrits seulement s'ils sont renseignés : l'index peut les porter sous un
+    // autre nom que la base (`set` chez Magic), qui est alors relu comme un
+    // attribut de jeu — le mapper à `undefined` l'effacerait du document.
+    ...(card.setCode !== undefined && { [indexConfig.keys.set]: card.setCode }),
+    ...(card.collectorNumber !== undefined && {
+      [indexConfig.keys.collectorNumber]: card.collectorNumber,
+    }),
   };
 }
 
@@ -108,7 +132,7 @@ async function indexCard(
   card: z.infer<typeof cardSchema>,
   previousCardId?: string
 ): Promise<string | undefined> {
-  const indexConfig = gameSlug ? indexes[gameSlug] : undefined;
+  const indexConfig = cardIndexFor(gameSlug);
   if (!indexConfig) {
     return "La carte a été enregistrée ; ce jeu n'a pas d'index de recherche, elle n'apparaîtra pas dans la recherche de cartes.";
   }
@@ -159,6 +183,54 @@ export async function searchCards(gameId: string, query: string): Promise<GameCa
 
   const validatedGameId = gameIdSchema.parse(gameId);
   return searchGameCards(new ObjectId(validatedGameId), query);
+}
+
+export type ReindexResult = {
+  success: boolean;
+  error?: string;
+  /** Nombre de cartes envoyées à l'index. */
+  sent?: number;
+};
+
+/** Cartes envoyées par requête à Meilisearch : assez pour limiter les aller-retours, assez peu pour garder des requêtes de taille raisonnable. */
+const REINDEX_BATCH_SIZE = 500;
+
+/**
+ * Repousse toutes les cartes du jeu dans l'index de recherche. Utile après une
+ * modification en masse en base, ou quand l'index a divergé.
+ *
+ * Les lots sont mis en file sans attendre que Meilisearch les ait traités :
+ * l'indexation d'un gros catalogue dépasserait la durée d'une action serveur.
+ * L'écriture est un upsert par identifiant — l'index n'est jamais vidé, donc
+ * la recherche reste servie pendant l'opération.
+ */
+export async function reindexGameCards(gameId: string): Promise<ReindexResult> {
+  try {
+    await requireAdmin();
+
+    const validatedGameId = gameIdSchema.parse(gameId);
+    const game = await getGameById(validatedGameId);
+    if (!game) {
+      return { success: false, error: "Jeu non trouvé" };
+    }
+
+    const indexConfig = cardIndexFor(game.slug);
+    if (!indexConfig) {
+      return { success: false, error: "Ce jeu n'a pas d'index de recherche : il n'y a rien à mettre à jour." };
+    }
+
+    const index = meilisearch.index(indexConfig.name);
+    let sent = 0;
+    for await (const batch of iterateGameCardsForIndexing(new ObjectId(validatedGameId), REINDEX_BATCH_SIZE)) {
+      await index.addDocuments(batch.map((card) => toSearchDocument(indexConfig, card)));
+      sent += batch.length;
+    }
+
+    return { success: true, sent };
+  } catch (error) {
+    console.error("Erreur lors de la réindexation des cartes:", error);
+    return { success: false, error: "La mise à jour de l'index a échoué." };
+  }
 }
 
 export async function createGameCard(gameId: string, data: CardPayload): Promise<SaveCardResult> {

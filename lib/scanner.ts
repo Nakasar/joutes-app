@@ -1,6 +1,6 @@
 import "server-only";
 
-import meilisearch, { indexes } from "@/lib/meilisearch";
+import meilisearch, { cardIndexFor } from "@/lib/meilisearch";
 
 type CardNameHit = { id: string; name: string };
 export type ScannerMatch = { id: string; name: string; score: number };
@@ -20,7 +20,7 @@ export async function matchCardNameInMeilisearch(
   query: string,
   options: { lang?: string | null; setCode?: string | null } = {}
 ): Promise<ScannerMatch | null> {
-  const indexConfig = gameSlug ? indexes[gameSlug] : undefined;
+  const indexConfig = cardIndexFor(gameSlug);
   if (!indexConfig) {
     return null;
   }

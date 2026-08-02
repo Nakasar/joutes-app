@@ -1,6 +1,6 @@
 import {NextRequest, NextResponse} from "next/server";
 import {BoosterCard} from "@/lib/types/booster";
-import meilisearch, {indexes} from "@/lib/meilisearch";
+import meilisearch, {cardIndexFor} from "@/lib/meilisearch";
 import db from "@/lib/mongodb";
 import {Game} from "@/lib/types/Game";
 
@@ -39,7 +39,7 @@ async function search({ gameId, searchQuery, lang, setCode, type, limit, offset 
   types: string[];
   languages: string[];
 }> {
-  const indexConfig = indexes[gameId];
+  const indexConfig = cardIndexFor(gameId);
   if (!indexConfig) {
     console.error(`No index found for gameId: ${gameId}`);
     return { cards: [], total: 0, setCodes: [], types: [], languages: [] };

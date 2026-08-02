@@ -1,10 +1,16 @@
 import { ObjectId } from "mongodb";
 import Link from "next/link";
 import { getAllGames } from "@/lib/db/games";
-import { getGameCard, getGameCardAttributeFields, getRecentGameCards } from "@/lib/db/cards";
+import {
+  countGameCards,
+  getGameCard,
+  getGameCardAttributeFields,
+  getRecentGameCards,
+} from "@/lib/db/cards";
+import { hasCardIndex } from "@/lib/meilisearch";
 import CardForm from "./CardForm";
-import CardOriginBadges from "./CardOriginBadges";
-import CardSearch from "./CardSearch";
+import CardBrowser from "./CardBrowser";
+import ReindexButton from "./ReindexButton";
 
 export const dynamic = "force-dynamic";
 
@@ -18,17 +24,18 @@ export default async function AdminCardsPage({
   const games = (await getAllGames()).sort((a, b) => a.name.localeCompare(b.name));
   const selectedGame = games.find((game) => game.id === gameId);
 
-  const [attributeFields, recentCards, card] = selectedGame
+  const [attributeFields, recentCards, cardCount, card] = selectedGame
     ? await Promise.all([
         getGameCardAttributeFields(new ObjectId(selectedGame.id)),
         getRecentGameCards(new ObjectId(selectedGame.id)),
+        countGameCards(new ObjectId(selectedGame.id)),
         cardId ? getGameCard(new ObjectId(selectedGame.id), cardId) : Promise.resolve(null),
       ])
-    : [[], [], null];
+    : [[], [], 0, null];
 
   return (
     <div className="bg-muted/50 p-8">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-5xl mx-auto space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Gestion des cartes</h1>
           <p className="text-muted-foreground">
@@ -36,8 +43,8 @@ export default async function AdminCardsPage({
           </p>
         </div>
 
-        <div className="bg-card rounded-lg shadow-md p-6">
-          <label className="block text-sm font-medium text-foreground mb-2">Jeu</label>
+        <div className="bg-card rounded-lg shadow-md p-6 space-y-3">
+          <label className="block text-sm font-medium text-foreground">Jeu</label>
           <div className="flex flex-wrap gap-2">
             {games.map((game) => (
               <Link
@@ -54,11 +61,25 @@ export default async function AdminCardsPage({
             ))}
           </div>
           {games.length === 0 && <p className="text-sm text-muted-foreground">Aucun jeu enregistré.</p>}
+
+          {selectedGame && (
+            <div className="flex flex-wrap items-start justify-between gap-3 border-t pt-3">
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">{cardCount}</span> carte{cardCount === 1 ? "" : "s"} pour{" "}
+                {selectedGame.name}.
+              </p>
+              <ReindexButton
+                gameId={selectedGame.id}
+                gameName={selectedGame.name}
+                hasSearchIndex={hasCardIndex(selectedGame.slug)}
+              />
+            </div>
+          )}
         </div>
 
         {selectedGame ? (
           <>
-            <CardSearch gameId={selectedGame.id} selectedCardId={card?.id} />
+            <CardBrowser gameId={selectedGame.id} selectedCardId={card?.id} recentCards={recentCards} />
 
             {cardId && !card && (
               <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">
@@ -76,42 +97,6 @@ export default async function AdminCardsPage({
               attributeFields={attributeFields}
               card={card ?? undefined}
             />
-
-            <div className="bg-card rounded-lg shadow-md p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-3">Dernières cartes ajoutées</h2>
-              {recentCards.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Aucune carte pour ce jeu pour l&apos;instant.</p>
-              ) : (
-                <ul className="divide-y divide-border">
-                  {recentCards.map((recent) => (
-                    <li key={recent.id} className="flex flex-wrap items-center justify-between gap-3 py-2 text-sm">
-                      <div className="min-w-0">
-                        <Link
-                          href={`/games/${selectedGame.slug ?? selectedGame.id}/cards/${recent.id}`}
-                          className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
-                        >
-                          {recent.name}
-                        </Link>
-                        <span className="ml-2 font-mono text-xs text-muted-foreground">{recent.id}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-muted-foreground">
-                          {recent.setCode} #{recent.collectorNumber}
-                          {recent.lang ? ` · ${recent.lang.toUpperCase()}` : ""}
-                        </span>
-                        <CardOriginBadges card={recent} />
-                        <Link
-                          href={`/admin/cards?gameId=${selectedGame.id}&cardId=${encodeURIComponent(recent.id)}`}
-                          className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                        >
-                          Modifier
-                        </Link>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
           </>
         ) : (
           <div className="bg-card rounded-lg shadow-md p-6 text-sm text-muted-foreground">
