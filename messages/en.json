@@ -372,6 +372,13 @@
         "searching": "Searching...",
         "noResults": "No cards found for \"{query}\"",
         "emptyState": "No cards available yet.",
+        "resultCount": "{count, plural, =0 {No cards} one {# card} other {# cards}}",
+        "copyLink": "Copy link",
+        "linkCopied": "Link copied",
+        "columns": {
+          "name": "Name",
+          "type": "Type"
+        },
         "filters": {
           "setCode": "Set",
           "allSets": "All sets",
@@ -383,7 +390,13 @@
           "sortRelevance": "Relevance",
           "sortAsc": "{field} ascending",
           "sortDesc": "{field} descending",
-          "attributes": "Advanced filters",
+          "title": "Filters",
+          "reset": "Reset all",
+          "range": "{min} to {max}",
+          "viewGrid": "Grid",
+          "viewList": "List",
+          "densitySmaller": "Smaller thumbnails",
+          "densityBigger": "Larger thumbnails",
           "min": "Minimum {field}",
           "max": "Maximum {field}",
           "clear": "Clear filters",
@@ -419,6 +432,11 @@
           "copies": "{count, plural, one {# copy} other {# copies}}"
         },
         "errataSectionTitle": "Errata & Clarifications",
+        "consensus": "{percent}% agree",
+        "errataFilterAll": "All",
+        "errataNoneForFilter": "No entries of this kind.",
+        "errataShowMuted": "Show set-aside entries — deprecated or mostly downvoted",
+        "errataHideMuted": "Hide set-aside entries",
         "noErrata": "No errata or clarification for this card.",
         "errataTypes": {
           "errata": "Errata",

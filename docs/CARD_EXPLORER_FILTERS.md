@@ -70,5 +70,6 @@ place d'une panne, sur une page qui a l'air de répondre.
 - `lib/meilisearch.ts` — `cardIndexSettings`.
 - `app/admin/cards/actions.ts` — réglages appliqués à la réindexation.
 - `app/api/games/[gameId]/cards/route.ts` — critères, tri, repli.
-- `app/games/[gameSlugOrId]/cards/components.tsx` — sélecteur de tri et panneau
-  de filtres repliable, avec le nombre d'attributs filtrés.
+- `app/games/[gameSlugOrId]/cards/components.tsx` — barre latérale de filtres
+  (à demeure sur bureau, dépliable sur mobile), sélecteur de tri, résumé des
+  filtres actifs en pastilles retirables, grille ou liste.
