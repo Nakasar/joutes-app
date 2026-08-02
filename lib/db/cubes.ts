@@ -341,7 +341,11 @@ export async function getCubePackCards(packId: string): Promise<CubeCard[]> {
   const docs = await db
     .collection(CUBE_CARDS_COLLECTION)
     .find({ packId: new ObjectId(packId) })
-    .sort({ createdAt: 1 })
+    // `_id` départage : tout un lot inséré d'un coup (import, ajout de
+    // plusieurs exemplaires) partage la même date, et `createdAt` seul rendrait
+    // l'ordre du paquet instable d'une lecture à l'autre. Les identifiants
+    // étant croissants dans l'ordre d'insertion, l'ordre de la liste est tenu.
+    .sort({ createdAt: 1, _id: 1 })
     .toArray();
 
   return docs.map(toCubeCard);
@@ -404,6 +408,66 @@ export async function setCubeCardQuantity(
   await touchCube(cubeId);
 
   return getCubePackCards(packId);
+}
+
+/**
+ * Écrit d'un coup le contenu d'un import : un document par exemplaire, comme
+ * les ajouts carte à carte. En mode « remplacer », le paquet est vidé d'abord ;
+ * en mode « ajouter », les cartes s'empilent sur celles déjà présentes.
+ */
+export async function importCardsIntoCubePack(
+  cubeId: string,
+  packId: string,
+  cards: { cardId: string; name: string; setCode: string; collectorNumber: string; image: string }[],
+  mode: "append" | "replace",
+): Promise<CubeCard[]> {
+  const packObjectId = new ObjectId(packId);
+  const now = new Date();
+  const documents = cards.map((card) => ({
+    cubeId: new ObjectId(cubeId),
+    packId: packObjectId,
+    ...card,
+    createdAt: now,
+  }));
+
+  if (mode === "replace") {
+    // Vider puis réécrire dans une même transaction : hors transaction, une
+    // insertion qui échoue après la suppression laisserait le paquet vide,
+    // son contenu d'origine perdu.
+    const session = db.client.startSession();
+    try {
+      await session.withTransaction(async () => {
+        await db.collection(CUBE_CARDS_COLLECTION).deleteMany({ packId: packObjectId }, { session });
+        if (documents.length > 0) {
+          await db.collection(CUBE_CARDS_COLLECTION).insertMany(documents, { session });
+        }
+      });
+    } finally {
+      await session.endSession();
+    }
+  } else if (documents.length > 0) {
+    await db.collection(CUBE_CARDS_COLLECTION).insertMany(documents);
+  }
+
+  await touchCube(cubeId);
+
+  return getCubePackCards(packId);
+}
+
+/** Toutes les cartes d'un cube, paquets confondus : chaque entrée porte son `packId`. */
+export async function getCubeCards(cubeId: string): Promise<CubeCard[]> {
+  if (!ObjectId.isValid(cubeId)) {
+    return [];
+  }
+
+  const docs = await db
+    .collection(CUBE_CARDS_COLLECTION)
+    .find({ cubeId: new ObjectId(cubeId) })
+    // Même départage que pour un paquet : voir `getCubePackCards`.
+    .sort({ createdAt: 1, _id: 1 })
+    .toArray();
+
+  return docs.map(toCubeCard);
 }
 
 export async function removeCardFromCubePack(cubeId: string, packId: string, cardEntryId: string): Promise<boolean> {

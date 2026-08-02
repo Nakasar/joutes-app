@@ -23,3 +23,11 @@ export const CUBE_DRAW_MAX_PLAYERS = 16;
 
 /** Exemplaires d'une même carte dans un paquet, borne partagée saisie/serveur. */
 export const CUBE_PACK_CARD_MAX_QUANTITY = 99;
+
+/**
+ * Bornes d'un import de liste de cartes. La zone de saisie est libre, l'écriture
+ * ne l'est pas : au-delà, l'import est refusé plutôt que tronqué en silence.
+ */
+export const CUBE_IMPORT_MAX_TEXT_LENGTH = 50_000;
+export const CUBE_IMPORT_MAX_LINES = 500;
+export const CUBE_IMPORT_MAX_CARDS = 1_000;

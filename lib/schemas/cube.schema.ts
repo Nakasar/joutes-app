@@ -5,6 +5,7 @@ import {
   CUBE_DRAW_MAX_PLAYERS,
   CUBE_DRAW_MAX_RULES,
   CUBE_DRAW_MIN_PLAYERS,
+  CUBE_IMPORT_MAX_TEXT_LENGTH,
   CUBE_PACK_CARD_MAX_QUANTITY,
 } from "@/lib/constants/cubes";
 
@@ -74,6 +75,15 @@ export const cubeCardSchema = z.strictObject({
 /** Quantité visée pour une carte dans un paquet ; zéro la retire entièrement. */
 export const cubeCardQuantitySchema = cubeCardSchema.extend({
   quantity: z.number().int().min(0).max(CUBE_PACK_CARD_MAX_QUANTITY),
+});
+
+/**
+ * Import d'une liste de cartes dans un paquet. « append » ajoute à l'existant,
+ * « replace » repart du paquet vide.
+ */
+export const cubePackImportSchema = z.strictObject({
+  text: z.string().min(1, "La liste est vide").max(CUBE_IMPORT_MAX_TEXT_LENGTH, "La liste est trop longue"),
+  mode: z.enum(["append", "replace"]).default("append"),
 });
 
 export const cubeIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID du cube doit être un ObjectId MongoDB valide");

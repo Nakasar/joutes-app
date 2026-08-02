@@ -898,6 +898,82 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
 
+  /cubes/{cubeId}/packs/{packId}/import:
+    parameters:
+      - { name: cubeId, in: path, required: true, schema: { type: string } }
+      - { name: packId, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [Cubes]
+      summary: Import a card list into a pack
+      description: >-
+        Each line reads as `2x Card name #SET001`, where the quantity and the
+        `#setCode+collectorNumber` printing code are optional. Blank lines and
+        lines starting with `//` or `#` are ignored. Cards are matched against
+        the game's catalogue by name, the printing code picking between
+        reprints; a line whose name is unknown is matched on its printing code
+        alone. Lines that match nothing are reported back rather than failing
+        the whole import, and a list that matches nothing at all leaves the pack
+        untouched.
+      security: [{ sessionAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: { type: string, maxLength: 50000 }
+                mode:
+                  type: string
+                  enum: [append, replace]
+                  default: append
+                  description: "`append` adds to the pack, `replace` empties it first."
+      responses:
+        "200":
+          description: The pack's cards after the import, one entry per copy.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  imported: { type: integer, description: Copies actually written. }
+                  unresolved:
+                    type: array
+                    description: Lines whose card is absent from the game's catalogue.
+                    items: { type: string }
+                  invalidLines:
+                    type: array
+                    description: Lines the format does not cover.
+                    items: { type: string }
+                  cards: { type: array, items: { $ref: "#/components/schemas/CubeDrawnCard" } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /cubes/{cubeId}/export:
+    parameters:
+      - { name: cubeId, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Cubes]
+      summary: Export the whole cube as a card list
+      description: >-
+        Every pack in order, each announced by a `// pack name` comment and
+        followed by its cards as `2x Card name #SET001`. Comments being ignored
+        on import, the text can be pasted back into a pack. Open to anyone who
+        can view the cube.
+      security: []
+      responses:
+        "200":
+          description: The cube as text.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  text: { type: string }
+        "404": { $ref: "#/components/responses/NotFound" }
+
   /cubes/{cubeId}/draw:
     parameters:
       - { name: cubeId, in: path, required: true, schema: { type: string } }

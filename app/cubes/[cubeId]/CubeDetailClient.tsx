@@ -39,6 +39,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { CubeAttributeOption } from "@/lib/db/cube-draw";
 import type { Cube, CubeDrawConfig, CubePack, CubeVisibility } from "@/lib/types/Cube";
 import { VISIBILITY_ICONS } from "../CubesClient";
+import ExportCardListDialog from "../ExportCardListDialog";
 import DrawSettingsDialog from "./DrawSettingsDialog";
 
 type Props = {
@@ -141,6 +142,16 @@ export default function CubeDetailClient({
     }
   };
 
+  /** Cube entier en liste de cartes : le texte est assemblé par le serveur, paquet par paquet. */
+  const exportCube = async () => {
+    const res = await fetch(`/api/cubes/${cube.id}/export`);
+    if (!res.ok) {
+      throw new Error("export failed");
+    }
+    const data: { text: string } = await res.json();
+    return data.text;
+  };
+
   const deleteCube = async () => {
     setDeletingCube(true);
     try {
@@ -200,6 +211,12 @@ export default function CubeDetailClient({
                 {t("stats.link")}
               </Link>
             </Button>
+            <ExportCardListDialog
+              title={t("export.cubeTitle")}
+              triggerLabel={t("export.trigger")}
+              fileName={cube.name}
+              getText={exportCube}
+            />
             {canEdit ? (
               <>
                 <DrawSettingsDialog cubeId={cube.id} config={drawConfig} attributeOptions={attributeOptions} />
