@@ -1379,11 +1379,28 @@ paths:
         supports inline directives: `set:<code>` / `e:<code>` to filter by set
         (overrides `setCode`; `set:*` disables set filtering), and
         `cn:<code>` to filter by exact collector number.
+
+
+        Game attributes can also be filtered and sorted on. The attributes a game actually has are
+        returned as `facets`; anything outside them is ignored rather than passed to the search engine.
+        Numeric attributes take `min_<attr>` / `max_<attr>` (inverted bounds are swapped), value
+        attributes take `in_<attr>` as a comma-separated list (values within one attribute are OR-ed,
+        attributes are AND-ed). `sort` is `<key>:asc|desc` over `name`, `collectorNumber` or any numeric
+        attribute.
+
+
+        Filtering and sorting require the attribute to be declared on the Meilisearch index, which the
+        admin "update index" action does. Until it has run for a game, the search falls back to
+        returning results without those criteria and sets `filtersUnavailable`.
       parameters:
         - { name: setCode, in: query, schema: { type: string } }
         - { name: searchQuery, in: query, schema: { type: string } }
         - { name: lang, in: query, schema: { type: string, default: all } }
         - { name: type, in: query, schema: { type: string } }
+        - { name: sort, in: query, description: "`<key>:asc|desc`.", schema: { type: string } }
+        - { name: "min_{attribute}", in: query, description: "Lower bound of a numeric attribute.", schema: { type: number } }
+        - { name: "max_{attribute}", in: query, description: "Upper bound of a numeric attribute.", schema: { type: number } }
+        - { name: "in_{attribute}", in: query, description: "Comma-separated values of a value attribute.", schema: { type: string } }
         - { name: page, in: query, schema: { type: integer } }
         - { name: limit, in: query, schema: { type: integer, default: 24, maximum: 100 } }
       responses:
@@ -1405,6 +1422,10 @@ paths:
                       setCodes: { type: array, items: { type: string } }
                       types: { type: array, items: { type: string } }
                       languages: { type: array, items: { type: string } }
+                      facets: { type: array, items: { $ref: "#/components/schemas/CardFilterFacet" } }
+                      filtersUnavailable:
+                        type: boolean
+                        description: "The index does not accept attribute filters yet; the results ignore them."
 
   /games/{gameId}/cards/{cardId}:
     parameters:
@@ -3030,6 +3051,17 @@ components:
         banned: { type: boolean }
         text: { type: string }
         type: { type: string }
+
+    CardFilterFacet:
+      type: object
+      description: "A game attribute the catalog can be filtered on: a range for numeric attributes, a value list otherwise."
+      required: [key, type]
+      properties:
+        key: { type: string }
+        type: { type: string, enum: [number, value] }
+        min: { type: number, description: "Numeric facets only." }
+        max: { type: number, description: "Numeric facets only." }
+        values: { type: array, items: { type: string }, description: "Value facets only." }
 
     CardPrinting:
       type: object

@@ -17,7 +17,18 @@ import { useTranslations } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import AddToWishlistButton from "@/components/AddToWishlistButton";
+import { Checkbox } from "@/components/ui/checkbox";
+import { SlidersHorizontal } from "lucide-react";
 import type { CardPrinting } from "@/lib/types/card";
+import {
+  EMPTY_CRITERIA,
+  countActiveFacetFilters,
+  parseCardSearchCriteria,
+  serializeCardSearchCriteria,
+  sortableKeys,
+  type CardFilterFacet,
+  type CardSearchCriteria,
+} from "@/lib/cards/search-filters";
 
 // La recherche renvoie le document de catalogue : il porte aussi les variantes
 // d'impression de la carte, absentes d'un simple exemplaire de collection.
@@ -31,6 +42,9 @@ type CardsApiResponse = {
   setCodes: string[];
   types: string[];
   languages: string[];
+  facets?: CardFilterFacet[];
+  /** L'index n'accepte pas encore les filtres d'attributs : les résultats les ignorent. */
+  filtersUnavailable?: boolean;
 };
 
 const PAGE_SIZE = 24;
@@ -47,6 +61,16 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   const [selectedSetCode, setSelectedSetCode] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
   const [selectedLanguage, setSelectedLanguage] = useState("all");
+  // Les facettes arrivent avec la première réponse : elles décrivent les
+  // attributs du jeu et bornent ce que les critères peuvent demander.
+  const [facets, setFacets] = useState<CardFilterFacet[]>([]);
+  const [criteria, setCriteria] = useState<CardSearchCriteria>(EMPTY_CRITERIA);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filtersUnavailable, setFiltersUnavailable] = useState(false);
+  // Critères lus de l'URL avant de connaître les facettes : ils sont transmis
+  // tels quels à la première requête, puis relus dès que les facettes arrivent,
+  // pour qu'un lien partagé s'ouvre bien sur ses filtres.
+  const pendingCriteriaRef = useRef<URLSearchParams | null>(null);
   const [cards, setCards] = useState<CardWithType[]>([]);
   const [setCodes, setSetCodes] = useState<string[]>([]);
   const [types, setTypes] = useState<string[]>([]);
@@ -60,6 +84,11 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
     totalPages: 1,
   });
   const hasInitializedRef = useRef(false);
+  // Dernière saisie effectivement cherchée. Seule la saisie est « débouncée » :
+  // tous les autres contrôles lancent eux-mêmes leur recherche, et sans cette
+  // mémoire leur changement d'état reprogrammerait 300 ms plus tard un second
+  // appel — et un second `router.replace` — pour la requête qui vient de partir.
+  const lastSearchedQueryRef = useRef<string | null>(null);
   const pendingRequestKeyRef = useRef<string | null>(null);
   const activeControllerRef = useRef<AbortController | null>(null);
   const t = useTranslations("Games");
@@ -92,12 +121,24 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   }, [session, gameSlug]);
 
   const fetchCards = useCallback(
-    async (query: string, setCode: string, type: string, language: string, pageNumber: number) => {
+    async (
+      query: string,
+      setCode: string,
+      type: string,
+      language: string,
+      pageNumber: number,
+      searchCriteria: CardSearchCriteria | URLSearchParams = EMPTY_CRITERIA
+    ) => {
       const trimmedQuery = query.trim();
+      lastSearchedQueryRef.current = trimmedQuery;
       const normalizedSetCode = setCode && setCode !== "all" ? setCode : "all";
       const normalizedType = type && type !== "all" ? type : "all";
       const normalizedLanguage = language && language !== "all" ? language : "all";
-      const requestKey = `${trimmedQuery}|${normalizedSetCode}|${normalizedType}|${normalizedLanguage}|${pageNumber}`;
+      const criteriaEntries =
+        searchCriteria instanceof URLSearchParams
+          ? [...searchCriteria.entries()]
+          : serializeCardSearchCriteria(searchCriteria);
+      const requestKey = `${trimmedQuery}|${normalizedSetCode}|${normalizedType}|${normalizedLanguage}|${pageNumber}|${new URLSearchParams(criteriaEntries).toString()}`;
 
       if (pendingRequestKeyRef.current === requestKey) {
         return;
@@ -125,6 +166,10 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
 
         if (normalizedLanguage !== "all") {
           params.set("lang", normalizedLanguage);
+        }
+
+        for (const [key, value] of criteriaEntries) {
+          params.set(key, value);
         }
 
         params.set("page", String(pageNumber));
@@ -163,6 +208,21 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
         setTypes(nextTypes);
         setLanguages(nextLanguages);
         setPagination(nextPagination);
+
+        const nextFacets = Array.isArray(data) ? [] : data.facets ?? [];
+        setFacets(nextFacets);
+        setFiltersUnavailable(Array.isArray(data) ? false : data.filtersUnavailable === true);
+
+        // Les critères de l'URL n'ont pu être lus qu'une fois les facettes
+        // connues : c'est ici qu'un lien partagé retrouve ses filtres.
+        if (pendingCriteriaRef.current) {
+          const parsed = parseCardSearchCriteria(pendingCriteriaRef.current, nextFacets);
+          pendingCriteriaRef.current = null;
+          setCriteria(parsed);
+          if (countActiveFacetFilters(parsed) > 0) {
+            setFiltersOpen(true);
+          }
+        }
       } catch (error) {
         if (controller.signal.aborted) {
           return;
@@ -187,7 +247,7 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
     [gameSlug]
   );
 
-  const updateURL = useCallback((query: string, setCode: string, type: string, language: string, page: number) => {
+  const updateURL = useCallback((query: string, setCode: string, type: string, language: string, page: number, searchCriteria: CardSearchCriteria = EMPTY_CRITERIA) => {
     const params = new URLSearchParams();
 
     if (query.trim()) {
@@ -204,6 +264,10 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
 
     if (language && language !== "all") {
       params.set("lang", language);
+    }
+
+    for (const [key, value] of serializeCardSearchCriteria(searchCriteria)) {
+      params.set(key, value);
     }
 
     if (page > 1) {
@@ -233,7 +297,10 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
     setSelectedType(urlType);
     setSelectedLanguage(urlLanguage);
 
-    void fetchCards(urlQuery, urlSetCode, urlType, urlLanguage, urlPage);
+    const urlCriteria = new URLSearchParams(searchParams.toString());
+    pendingCriteriaRef.current = urlCriteria;
+
+    void fetchCards(urlQuery, urlSetCode, urlType, urlLanguage, urlPage, urlCriteria);
   }, [fetchCards, searchParams]);
 
   // Debounced search when typing
@@ -244,29 +311,38 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
 
     const trimmedQuery = searchQuery.trim();
 
+    // La requête est déjà celle qui a été cherchée : c'est un autre contrôle qui
+    // a changé, et il s'est déjà chargé de relancer la recherche.
+    if (lastSearchedQueryRef.current === trimmedQuery) {
+      return undefined;
+    }
+
     if (trimmedQuery.length === 0 || trimmedQuery.length > 2) {
       const timer = window.setTimeout(() => {
-        void fetchCards(trimmedQuery, selectedSetCode, selectedType, selectedLanguage, 1);
+        void fetchCards(trimmedQuery, selectedSetCode, selectedType, selectedLanguage, 1, criteria);
         setCurrentPage(1);
-        updateURL(trimmedQuery, selectedSetCode, selectedType, selectedLanguage, 1);
+        updateURL(trimmedQuery, selectedSetCode, selectedType, selectedLanguage, 1, criteria);
       }, trimmedQuery.length === 0 ? 0 : 300);
 
       return () => window.clearTimeout(timer);
     }
 
+    // Une ou deux lettres ne cherchent pas. La mémoire est effacée avec la
+    // liste, pour que revenir à la requête précédente la relance vraiment.
+    lastSearchedQueryRef.current = null;
     setCards([]);
     setSetCodes([]);
     setTypes([]);
     setLanguages([]);
     setPagination({ page: 1, limit: PAGE_SIZE, total: 0, totalPages: 1 });
     return undefined;
-  }, [searchQuery, selectedSetCode, selectedType, selectedLanguage, fetchCards, updateURL]);
+  }, [searchQuery, selectedSetCode, selectedType, selectedLanguage, criteria, fetchCards, updateURL]);
 
   const handleSearch = () => {
     const newPage = 1;
     setCurrentPage(newPage);
-    void fetchCards(searchQuery, selectedSetCode, selectedType, selectedLanguage, newPage);
-    updateURL(searchQuery, selectedSetCode, selectedType, selectedLanguage, newPage);
+    void fetchCards(searchQuery, selectedSetCode, selectedType, selectedLanguage, newPage, criteria);
+    updateURL(searchQuery, selectedSetCode, selectedType, selectedLanguage, newPage, criteria);
   };
 
   const handlePageChange = (nextPage: number) => {
@@ -275,33 +351,89 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
     }
 
     setCurrentPage(nextPage);
-    void fetchCards(searchQuery, selectedSetCode, selectedType, selectedLanguage, nextPage);
-    updateURL(searchQuery, selectedSetCode, selectedType, selectedLanguage, nextPage);
+    void fetchCards(searchQuery, selectedSetCode, selectedType, selectedLanguage, nextPage, criteria);
+    updateURL(searchQuery, selectedSetCode, selectedType, selectedLanguage, nextPage, criteria);
   };
 
   const handleSetCodeChange = (value: string) => {
     const newPage = 1;
     setSelectedSetCode(value);
     setCurrentPage(newPage);
-    void fetchCards(searchQuery, value, selectedType, selectedLanguage, newPage);
-    updateURL(searchQuery, value, selectedType, selectedLanguage, newPage);
+    void fetchCards(searchQuery, value, selectedType, selectedLanguage, newPage, criteria);
+    updateURL(searchQuery, value, selectedType, selectedLanguage, newPage, criteria);
   };
 
   const handleTypeChange = (value: string) => {
     const newPage = 1;
     setSelectedType(value);
     setCurrentPage(newPage);
-    void fetchCards(searchQuery, selectedSetCode, value, selectedLanguage, newPage);
-    updateURL(searchQuery, selectedSetCode, value, selectedLanguage, newPage);
+    void fetchCards(searchQuery, selectedSetCode, value, selectedLanguage, newPage, criteria);
+    updateURL(searchQuery, selectedSetCode, value, selectedLanguage, newPage, criteria);
   };
 
   const handleLanguageChange = (value: string) => {
     const newPage = 1;
     setSelectedLanguage(value);
     setCurrentPage(newPage);
-    void fetchCards(searchQuery, selectedSetCode, selectedType, value, newPage);
-    updateURL(searchQuery, selectedSetCode, selectedType, value, newPage);
+    void fetchCards(searchQuery, selectedSetCode, selectedType, value, newPage, criteria);
+    updateURL(searchQuery, selectedSetCode, selectedType, value, newPage, criteria);
   };
+
+  const applyCriteria = (next: CardSearchCriteria) => {
+    setCriteria(next);
+    setCurrentPage(1);
+    void fetchCards(searchQuery, selectedSetCode, selectedType, selectedLanguage, 1, next);
+    updateURL(searchQuery, selectedSetCode, selectedType, selectedLanguage, 1, next);
+  };
+
+  const setRange = (key: string, bound: "min" | "max", raw: string) => {
+    const parsed = Number(raw);
+    const next = { ...criteria, ranges: { ...criteria.ranges } };
+    const range = { ...next.ranges[key] };
+
+    if (raw.trim() === "" || !Number.isFinite(parsed)) {
+      delete range[bound];
+    } else {
+      range[bound] = parsed;
+    }
+
+    if (range.min === undefined && range.max === undefined) {
+      delete next.ranges[key];
+    } else {
+      next.ranges[key] = range;
+    }
+
+    applyCriteria(next);
+  };
+
+  const toggleValue = (key: string, value: string) => {
+    const current = criteria.values[key] ?? [];
+    const kept = current.includes(value) ? current.filter((item) => item !== value) : [...current, value];
+    const next = { ...criteria, values: { ...criteria.values } };
+
+    if (kept.length > 0) {
+      next.values[key] = kept;
+    } else {
+      delete next.values[key];
+    }
+
+    applyCriteria(next);
+  };
+
+  const changeSort = (value: string) => {
+    if (value === "default") {
+      applyCriteria({ ...criteria, sort: undefined });
+      return;
+    }
+    const [key, direction] = value.split(":");
+    applyCriteria({ ...criteria, sort: { key, direction: direction === "desc" ? "desc" : "asc" } });
+  };
+
+  const clearFacetFilters = () => applyCriteria({ ...criteria, ranges: {}, values: {} });
+
+  const activeFilterCount = countActiveFacetFilters(criteria);
+  // Un attribut se lit mieux capitalisé : les clés sont brutes en base (`energy`).
+  const facetLabel = (key: string) => key.charAt(0).toUpperCase() + key.slice(1);
 
   const getLanguageLabel = (language: string) => {
     if (language === "all") {
@@ -391,10 +523,118 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
             </Select>
           </div>
 
+          <div className="w-full sm:w-52">
+            <label className="mb-1 block text-sm font-medium">
+              {t("cards.search.filters.sort")}
+            </label>
+            <Select value={criteria.sort ? `${criteria.sort.key}:${criteria.sort.direction}` : "default"} onValueChange={changeSort}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">{t("cards.search.filters.sortRelevance")}</SelectItem>
+                {sortableKeys(facets).flatMap((key) => [
+                  <SelectItem key={`${key}:asc`} value={`${key}:asc`}>
+                    {t("cards.search.filters.sortAsc", { field: facetLabel(key) })}
+                  </SelectItem>,
+                  <SelectItem key={`${key}:desc`} value={`${key}:desc`}>
+                    {t("cards.search.filters.sortDesc", { field: facetLabel(key) })}
+                  </SelectItem>,
+                ])}
+              </SelectContent>
+            </Select>
+          </div>
+
           <Button onClick={handleSearch} disabled={isLoading} className="h-10">
             {isLoading ? t("cards.search.searching") : t("cards.search.search")}
           </Button>
         </div>
+
+        {facets.length > 0 ? (
+          <div className="rounded-lg border">
+            <button
+              type="button"
+              onClick={() => setFiltersOpen((open) => !open)}
+              className="flex w-full items-center justify-between gap-2 px-4 py-3 text-sm font-medium"
+              aria-expanded={filtersOpen}
+            >
+              <span className="flex items-center gap-2">
+                <SlidersHorizontal className="h-4 w-4" />
+                {t("cards.search.filters.attributes")}
+                {activeFilterCount > 0 ? (
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                    {activeFilterCount}
+                  </span>
+                ) : null}
+              </span>
+              <span className="text-muted-foreground">{filtersOpen ? "\u2212" : "+"}</span>
+            </button>
+
+            {filtersOpen ? (
+              <div className="space-y-4 border-t px-4 py-4">
+                {filtersUnavailable ? (
+                  <p className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-300">
+                    {t("cards.search.filters.unavailable")}
+                  </p>
+                ) : null}
+
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {facets.map((facet) =>
+                    facet.type === "number" ? (
+                      <div key={facet.key}>
+                        <label className="mb-1 block text-sm font-medium">{facetLabel(facet.key)}</label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            inputMode="numeric"
+                            min={facet.min}
+                            max={facet.max}
+                            placeholder={String(facet.min)}
+                            aria-label={t("cards.search.filters.min", { field: facetLabel(facet.key) })}
+                            value={criteria.ranges[facet.key]?.min ?? ""}
+                            onChange={(e) => setRange(facet.key, "min", e.target.value)}
+                          />
+                          <span className="text-muted-foreground">–</span>
+                          <Input
+                            type="number"
+                            inputMode="numeric"
+                            min={facet.min}
+                            max={facet.max}
+                            placeholder={String(facet.max)}
+                            aria-label={t("cards.search.filters.max", { field: facetLabel(facet.key) })}
+                            value={criteria.ranges[facet.key]?.max ?? ""}
+                            onChange={(e) => setRange(facet.key, "max", e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div key={facet.key}>
+                        <span className="mb-1 block text-sm font-medium">{facetLabel(facet.key)}</span>
+                        <div className="flex flex-wrap gap-x-4 gap-y-2">
+                          {facet.values.map((value) => (
+                            <label key={value} className="flex items-center gap-2 text-sm">
+                              <Checkbox
+                                checked={(criteria.values[facet.key] ?? []).includes(value)}
+                                onCheckedChange={() => toggleValue(facet.key, value)}
+                              />
+                              {value}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+
+                {activeFilterCount > 0 ? (
+                  <Button variant="outline" size="sm" onClick={clearFacetFilters}>
+                    {t("cards.search.filters.clear")}
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {isLoading && cards.length === 0 ? (

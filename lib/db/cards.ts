@@ -4,6 +4,7 @@ import db from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { isReservedCardKey, RESERVED_CARD_KEYS, type CardSource } from "@/lib/constants/cards";
 import type { CardPrinting } from "@/lib/types/card";
+import type { CardFilterFacet } from "@/lib/cards/search-filters";
 
 export type CardNameMatch = {
   id: string;
@@ -85,6 +86,68 @@ export async function getGameCardAttributeFields(gameId: ObjectId, sampleSize = 
       // textes courts…) et l'autocomplétion n'aiderait pas.
       suggestions: suggestions.length > 0 && suggestions.length <= 40 ? suggestions : undefined,
     }];
+  });
+}
+
+/**
+ * Facettes de filtrage d'un jeu, tirées des attributs que portent réellement
+ * ses cartes : plage pour un attribut numérique, liste de valeurs pour les
+ * autres. `type` en est exclu — il a déjà son propre filtre.
+ *
+ * Les valeurs sont relevées sur un échantillon (comme les champs du formulaire
+ * d'administration), mais les bornes numériques sont calculées sur tout le
+ * catalogue : une plage qui n'irait pas jusqu'aux extrêmes rendrait des cartes
+ * impossibles à atteindre.
+ */
+export async function getGameCardFilterFacets(gameId: ObjectId): Promise<CardFilterFacet[]> {
+  const fields = (await getGameCardAttributeFields(gameId)).filter((field) => field.key !== "type");
+
+  const numericKeys = fields.filter((field) => field.type === "number").map((field) => field.key);
+  const bounds = new Map<string, { min: number; max: number }>();
+
+  if (numericKeys.length > 0) {
+    const [row] = await db
+      .collection("cards")
+      .aggregate<Record<string, unknown>>([
+        { $match: { gameId } },
+        {
+          $group: {
+            _id: null,
+            ...Object.fromEntries(
+              numericKeys.flatMap((key) => [
+                [`min_${key}`, { $min: `$${key}` }],
+                [`max_${key}`, { $max: `$${key}` }],
+              ])
+            ),
+          },
+        },
+      ])
+      .toArray();
+
+    for (const key of numericKeys) {
+      const min = row?.[`min_${key}`];
+      const max = row?.[`max_${key}`];
+      if (typeof min === "number" && typeof max === "number") {
+        bounds.set(key, { min, max });
+      }
+    }
+  }
+
+  return fields.flatMap((field): CardFilterFacet[] => {
+    if (field.type === "number") {
+      const bound = bounds.get(field.key);
+      // Sans borne exploitable, la plage n'aurait pas de curseurs : l'attribut
+      // est laissé de côté plutôt que proposé vide.
+      return bound && bound.min !== bound.max ? [{ key: field.key, type: "number", ...bound }] : [];
+    }
+
+    if (field.type === "boolean") {
+      return [];
+    }
+
+    // `suggestions` n'est renseigné que si les valeurs sont assez peu nombreuses
+    // pour faire une liste de cases à cocher.
+    return field.suggestions?.length ? [{ key: field.key, type: "value", values: field.suggestions }] : [];
   });
 }
 

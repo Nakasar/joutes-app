@@ -8,6 +8,7 @@ import {
   cardIdExists,
   createCard,
   getGameCard,
+  getGameCardFilterFacets,
   iterateGameCardsForIndexing,
   searchGameCards,
   updateCard,
@@ -18,7 +19,7 @@ import { getGameById } from "@/lib/db/games";
 import { cardSchema } from "@/lib/schemas/card.schema";
 import { gameIdSchema } from "@/lib/schemas/game.schema";
 import { withUniquePrintingIds } from "@/lib/constants/card-ids";
-import meilisearch, { cardIndexFor, type CardIndexConfig } from "@/lib/meilisearch";
+import meilisearch, { cardIndexFor, cardIndexSettings, type CardIndexConfig } from "@/lib/meilisearch";
 
 export type SaveCardResult = {
   success: boolean;
@@ -203,6 +204,11 @@ const REINDEX_BATCH_SIZE = 500;
  * l'indexation d'un gros catalogue dépasserait la durée d'une action serveur.
  * L'écriture est un upsert par identifiant — l'index n'est jamais vidé, donc
  * la recherche reste servie pendant l'opération.
+ *
+ * Les attributs filtrables et triables sont réglés au passage, d'après ceux que
+ * portent réellement les cartes du jeu : sans eux, Meilisearch refuse les
+ * filtres et les tris de l'exploration des cartes. C'est donc ici qu'on rattrape
+ * un jeu dont le catalogue a gagné un nouvel attribut.
  */
 export async function reindexGameCards(gameId: string): Promise<ReindexResult> {
   try {
@@ -220,6 +226,15 @@ export async function reindexGameCards(gameId: string): Promise<ReindexResult> {
     }
 
     const index = meilisearch.index(indexConfig.name);
+
+    const facets = await getGameCardFilterFacets(new ObjectId(validatedGameId));
+    await index.updateSettings(
+      cardIndexSettings(indexConfig, {
+        facetKeys: facets.map((facet) => facet.key),
+        numericKeys: facets.flatMap((facet) => (facet.type === "number" ? [facet.key] : [])),
+      })
+    );
+
     let sent = 0;
     for await (const batch of iterateGameCardsForIndexing(new ObjectId(validatedGameId), REINDEX_BATCH_SIZE)) {
       await index.addDocuments(batch.map((card) => toSearchDocument(indexConfig, card)));

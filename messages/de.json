@@ -378,7 +378,16 @@
           "type": "Typ",
           "allTypes": "Alle Typen",
           "language": "Sprache",
-          "allLanguages": "Alle Sprachen"
+          "allLanguages": "Alle Sprachen",
+          "sort": "Sortierung",
+          "sortRelevance": "Relevanz",
+          "sortAsc": "{field} aufsteigend",
+          "sortDesc": "{field} absteigend",
+          "attributes": "Erweiterte Filter",
+          "min": "{field} Minimum",
+          "max": "{field} Maximum",
+          "clear": "Filter zurücksetzen",
+          "unavailable": "Diese Filter sind für dieses Spiel noch nicht aktiv: Ein Administrator muss „Index aktualisieren“ ausführen. Die Ergebnisse unten ignorieren sie."
         },
         "pagination": {
           "results": "Zeige {start}-{end} von {total} Karten",
