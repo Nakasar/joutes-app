@@ -26,9 +26,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { parseCardSearch } from "@/lib/cards/search-query";
+import { formatCardList } from "@/lib/cubes/card-list";
 import { CUBE_PACK_CARD_MAX_QUANTITY } from "@/lib/constants/cubes";
 import type { BoosterCard } from "@/lib/types/booster";
 import type { Cube, CubePack } from "@/lib/types/Cube";
+import ExportCardListDialog from "@/app/cubes/ExportCardListDialog";
+import ImportPackDialog from "./ImportPackDialog";
 
 /** Carte du paquet, réduite à ce que l'interface affiche. */
 export type PackCard = {
@@ -215,6 +218,12 @@ export default function PackEditor({ cube, pack, packLabel, initialCards, canEdi
     requestAnimationFrame(() => searchRef.current?.focus());
   };
 
+  /** L'import renvoie le paquet complet : il remplace la liste locale d'un bloc. */
+  const onImported = (imported: PackCard[]) => {
+    setCards(imported);
+    router.refresh();
+  };
+
   const saveDetails = async () => {
     setSavingDetails(true);
     try {
@@ -296,39 +305,50 @@ export default function PackEditor({ cube, pack, packLabel, initialCards, canEdi
               ) : null}
             </div>
           </div>
-          {canEdit ? (
-            <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="ml-auto gap-2">
-                  <Pencil className="size-4" />
-                  {t("editPack")}
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>{t("editPackTitle")}</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 pt-2">
-                  <div className="space-y-1">
-                    <Label htmlFor="pack-edit-name">{t("form.packName")}</Label>
-                    <Input id="pack-edit-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="pack-edit-type">{t("form.packType")}</Label>
-                    <Input id="pack-edit-type" value={type} onChange={(e) => setType(e.target.value)} maxLength={100} />
-                  </div>
-                  <p className="text-xs text-muted-foreground">{t("form.packHint")}</p>
-                </div>
-                <DialogFooter>
-                  <Button variant="ghost" onClick={() => setDetailsOpen(false)}>{t("cancel")}</Button>
-                  <Button onClick={saveDetails} disabled={savingDetails} className="gap-2">
-                    {savingDetails ? <Loader2 className="size-4 animate-spin" /> : null}
-                    {t("save")}
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <ExportCardListDialog
+              title={t("export.packTitle")}
+              triggerLabel={t("export.trigger")}
+              fileName={packLabel}
+              getText={() => formatCardList(cards)}
+            />
+            {canEdit ? (
+              <ImportPackDialog cubeId={cube.id} packId={pack.id} onImported={onImported} />
+            ) : null}
+            {canEdit ? (
+              <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <Pencil className="size-4" />
+                    {t("editPack")}
                   </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          ) : null}
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{t("editPackTitle")}</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="pack-edit-name">{t("form.packName")}</Label>
+                      <Input id="pack-edit-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="pack-edit-type">{t("form.packType")}</Label>
+                      <Input id="pack-edit-type" value={type} onChange={(e) => setType(e.target.value)} maxLength={100} />
+                    </div>
+                    <p className="text-xs text-muted-foreground">{t("form.packHint")}</p>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="ghost" onClick={() => setDetailsOpen(false)}>{t("cancel")}</Button>
+                    <Button onClick={saveDetails} disabled={savingDetails} className="gap-2">
+                      {savingDetails ? <Loader2 className="size-4 animate-spin" /> : null}
+                      {t("save")}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            ) : null}
+          </div>
         </div>
       </div>
 

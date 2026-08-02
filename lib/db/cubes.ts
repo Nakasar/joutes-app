@@ -406,6 +406,55 @@ export async function setCubeCardQuantity(
   return getCubePackCards(packId);
 }
 
+/**
+ * Écrit d'un coup le contenu d'un import : un document par exemplaire, comme
+ * les ajouts carte à carte. En mode « remplacer », le paquet est vidé d'abord ;
+ * en mode « ajouter », les cartes s'empilent sur celles déjà présentes.
+ */
+export async function importCardsIntoCubePack(
+  cubeId: string,
+  packId: string,
+  cards: { cardId: string; name: string; setCode: string; collectorNumber: string; image: string }[],
+  mode: "append" | "replace",
+): Promise<CubeCard[]> {
+  const packObjectId = new ObjectId(packId);
+
+  if (mode === "replace") {
+    await db.collection(CUBE_CARDS_COLLECTION).deleteMany({ packId: packObjectId });
+  }
+
+  if (cards.length > 0) {
+    const now = new Date();
+    await db.collection(CUBE_CARDS_COLLECTION).insertMany(
+      cards.map((card) => ({
+        cubeId: new ObjectId(cubeId),
+        packId: packObjectId,
+        ...card,
+        createdAt: now,
+      })),
+    );
+  }
+
+  await touchCube(cubeId);
+
+  return getCubePackCards(packId);
+}
+
+/** Toutes les cartes d'un cube, paquets confondus : chaque entrée porte son `packId`. */
+export async function getCubeCards(cubeId: string): Promise<CubeCard[]> {
+  if (!ObjectId.isValid(cubeId)) {
+    return [];
+  }
+
+  const docs = await db
+    .collection(CUBE_CARDS_COLLECTION)
+    .find({ cubeId: new ObjectId(cubeId) })
+    .sort({ createdAt: 1 })
+    .toArray();
+
+  return docs.map(toCubeCard);
+}
+
 export async function removeCardFromCubePack(cubeId: string, packId: string, cardEntryId: string): Promise<boolean> {
   if (!ObjectId.isValid(cardEntryId)) {
     return false;
