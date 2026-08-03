@@ -69,8 +69,21 @@ Le menu propose, selon ce qui est tapé :
   commencent ainsi — taper « fury » propose `domain:Fury` sans avoir à deviner
   le nom du champ.
 
+Une fois l'opérateur posé (`energy<=`), le menu propose des bornes du
+catalogue ; une fois la borne tapée, il n'a plus rien à compléter et se tait.
+Après `e:` il ne propose rien non plus : ce mot repartira au texte libre, et
+suggérer une énergie promettrait un filtre qui ne sera pas appliqué.
+
+Un filtre déjà posé n'est pas reproposé, quelle que soit son écriture : `d:fury`
+et `domain:Fury` sont comparés sous leur forme canonique.
+
 ↑ ↓ parcourent la liste, Entrée complète la suggestion en cours ou lance la
-recherche si aucune n'est sélectionnée.
+recherche si aucune n'est sélectionnée. L'option mise en évidence est reliée au
+champ par `aria-activedescendant`, le focus ne quittant jamais la saisie.
+
+Les explications du menu sont décrites par le module et **mises en phrase par
+l'interface** : il tourne aussi côté serveur, et l'application parle quatre
+langues.
 
 ## Où la saisie est lue
 

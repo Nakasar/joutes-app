@@ -35,6 +35,7 @@ import {
   parseSearchSyntax,
   removeSearchWord,
   suggestTokens,
+  type SuggestionHint,
 } from "@/lib/cards/search-syntax";
 
 // La recherche renvoie le document de catalogue : il porte aussi les variantes
@@ -557,6 +558,10 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   const searchFields = buildSearchFields(facets, { setCodes, types, languages });
   const parsedQuery = parseSearchSyntax(searchQuery, searchFields);
   const suggestions = suggestionsOpen ? suggestTokens(searchQuery, searchFields) : [];
+  // Le module de syntaxe tourne aussi côté serveur : il décrit ce que fait une
+  // suggestion, c'est ici que ça devient une phrase, dans la langue de l'écran.
+  const suggestionHint = (hint: SuggestionHint) =>
+    t(`cards.search.syntax.hints.${hint.kind}`, { field: hint.field, value: hint.value });
   // Le mot en cours de frappe est forcément incomplet : l'annoncer comme
   // invalide reviendrait à signaler une faute à chaque lettre tapée.
   const typing = currentWord(searchQuery);
@@ -600,13 +605,15 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   // Ce qui est filtré, dit d'un coup d'œil et retirable d'un clic — sans avoir
   // à rouvrir la liste déroulante ou la section d'où le filtre vient.
   const activeChips: { key: string; label: string; remove: () => void }[] = [];
-  for (const token of parsedQuery.tokens) {
+  parsedQuery.tokens.forEach((token, index) => {
     activeChips.push({
-      key: `token-${token.raw}`,
+      // L'index fait partie de la clé : rien n'empêche de taper deux fois le
+      // même token, et chaque pastille en retire alors une occurrence.
+      key: `token-${index}-${token.raw}`,
       label: token.label,
       remove: () => setSearchQuery(removeSearchWord(searchQuery, token.raw)),
     });
-  }
+  });
   if (selectedSetCode !== "all") {
     activeChips.push({
       key: "set",
@@ -828,6 +835,9 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
               aria-expanded={suggestions.length > 0}
               aria-autocomplete="list"
               aria-controls="card-search-suggestions"
+              aria-activedescendant={
+                activeSuggestion >= 0 ? `card-search-suggestion-${activeSuggestion}` : undefined
+              }
               className="h-10 w-full pl-9 font-mono text-sm"
             />
 
@@ -840,6 +850,7 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
                 {suggestions.map((suggestion, index) => (
                   <button
                     key={suggestion.token}
+                    id={`card-search-suggestion-${index}`}
                     type="button"
                     role="option"
                     aria-selected={index === activeSuggestion}
@@ -858,7 +869,7 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
                     {/* Poussé à droite plutôt qu'aligné sur une colonne fixe :
                         un token long — `type:"Battlefield Rune"` — décalerait
                         toute la colonne des explications. */}
-                    <span className="ml-auto truncate text-xs text-muted-foreground">{suggestion.hint}</span>
+                    <span className="ml-auto truncate text-xs text-muted-foreground">{suggestionHint(suggestion.hint)}</span>
                   </button>
                 ))}
                 <p className="px-2 pb-1 pt-1.5 text-[11px] text-muted-foreground">
@@ -989,8 +1000,8 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
             filtre rien : le taire donnerait une liste large sans explication. */}
         {rejectedTokens.length > 0 ? (
           <ul className="flex flex-col gap-0.5 text-xs text-amber-700 dark:text-amber-400">
-            {rejectedTokens.map((rejected) => (
-              <li key={rejected.raw}>
+            {rejectedTokens.map((rejected, index) => (
+              <li key={`${index}-${rejected.raw}`}>
                 {t(`cards.search.syntax.rejected.${rejected.reason}`, {
                   token: rejected.raw,
                   field: rejected.field,

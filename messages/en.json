@@ -375,6 +375,12 @@
         "syntax": {
           "tokens": "{count, plural, one {# filter in the query} other {# filters in the query}}",
           "invite": "Type an attribute followed by “:” or a comparison — ↑ ↓ to pick, Enter to complete.",
+          "hints": {
+            "value": "{field}: {value}",
+            "atMost": "{field} at most {value}",
+            "atLeast": "{field} at least {value}",
+            "exactly": "{field} equals {value}"
+          },
           "rejected": {
             "value": "{token} — unknown value for “{field}”: this filter is not applied.",
             "number": "{token} — “{field}” expects a number: this filter is not applied.",

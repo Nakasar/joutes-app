@@ -8,6 +8,7 @@ import {
   buildFacetFilters,
   buildSortExpressions,
   parseCardSearchCriteria,
+  quoteFilterValue,
   type CardFilterFacet,
 } from "@/lib/cards/search-filters";
 import {
@@ -111,7 +112,10 @@ async function search({ gameId, searchQuery, lang, setCode, type, limit, offset,
   }
 
   if (effectiveType) {
-    queryOptions.filter.push(`type = ${effectiveType}`)
+    // Guillemets obligatoires : un type à espaces — « Battlefield Rune » —
+    // casserait l'expression, et la syntaxe de recherche rend ce cas
+    // atteignable depuis la barre (`type:"Battlefield Rune"`).
+    queryOptions.filter.push(`type = ${quoteFilterValue(effectiveType)}`)
   }
 
   if (typeof limit === 'number') {

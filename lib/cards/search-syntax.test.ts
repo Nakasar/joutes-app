@@ -259,4 +259,45 @@ describe("suggestTokens", () => {
 
     assert.ok(!tokens.includes("domain:Fury"));
   });
+
+  it("reconnaît un filtre déjà posé sous une autre écriture", () => {
+    // `d:fury` et `domain:Fury` sont le même filtre : le reproposer sous sa
+    // forme canonique ferait croire qu'il manque.
+    for (const query of ["d:fury ", "domain=Fury ", "d:FURY "]) {
+      const tokens = suggestTokens(query, FIELDS).map((suggestion) => suggestion.token);
+      assert.ok(!tokens.includes("domain:Fury"), `${query} propose encore domain:Fury`);
+    }
+  });
+
+  it("ne propose rien pour `e:`, qui repart au texte libre", () => {
+    // Proposer de l'énergie ici promettrait un filtre qui ne sera pas appliqué.
+    assert.deepEqual(suggestTokens("e:", FIELDS), []);
+    assert.deepEqual(suggestTokens("energy:", FIELDS), []);
+  });
+
+  it("propose des bornes une fois l'opérateur tapé", () => {
+    assert.deepEqual(
+      suggestTokens("energy<=", FIELDS).map((suggestion) => suggestion.token),
+      ["energy<=0", "energy<=5", "energy<=9"]
+    );
+  });
+
+  it("ne propose plus rien une fois la borne tapée", () => {
+    assert.deepEqual(suggestTokens("energy<=3", FIELDS), []);
+  });
+
+  it("décrit ce que fait la suggestion sans l'écrire en toutes lettres", () => {
+    // Le module tourne aussi côté serveur, et l'application parle quatre
+    // langues : la phrase est construite par l'interface.
+    assert.deepEqual(suggestTokens("energy>=", FIELDS)[0]?.hint, {
+      kind: "atLeast",
+      field: "energy",
+      value: 0,
+    });
+    assert.deepEqual(suggestTokens("d:ca", FIELDS)[0]?.hint, {
+      kind: "value",
+      field: "domain",
+      value: "Calm",
+    });
+  });
 });

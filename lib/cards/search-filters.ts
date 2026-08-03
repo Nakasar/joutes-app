@@ -123,7 +123,12 @@ function parseSort(raw: string | null, facets: CardFilterFacet[]): CardSearchCri
 }
 
 /** Valeur littérale d'une expression Meilisearch : guillemets et antislashs échappés. */
-function quote(value: string): string {
+/**
+ * Une valeur dans une expression de filtre Meilisearch : entre guillemets et
+ * échappée. Sans ça, une valeur à espaces — `Battlefield Rune` — casse
+ * l'expression, et une valeur à guillemets la réécrit.
+ */
+export function quoteFilterValue(value: string): string {
   return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
 }
 
@@ -144,7 +149,7 @@ export function buildFacetFilters(criteria: CardSearchCriteria, facets: CardFilt
 
   for (const [key, kept] of Object.entries(criteria.values)) {
     if (!lists.has(key) || kept.length === 0) continue;
-    filters.push(`${key} IN [${kept.map(quote).join(", ")}]`);
+    filters.push(`${key} IN [${kept.map(quoteFilterValue).join(", ")}]`);
   }
 
   return filters;

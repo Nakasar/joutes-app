@@ -33,6 +33,12 @@ export type SearchToken = {
   field: string;
   /** Libellé lisible, affiché en pastille. */
   label: string;
+  /**
+   * Forme canonique — nom complet du champ, valeur telle qu'elle est en base.
+   * `d:fury` et `domain=Fury` désignent le même filtre : c'est sur cette forme
+   * que les suggestions savent qu'il est déjà posé.
+   */
+  canonical: string;
 };
 
 export type RejectedToken = {
@@ -54,11 +60,19 @@ export type ParsedSearch = {
   rejected: RejectedToken[];
 };
 
+/**
+ * Ce que fait une suggestion, sous une forme que l'interface traduit — ce
+ * module tourne aussi côté serveur et l'application parle quatre langues :
+ * il n'a rien à faire de texte tout écrit.
+ */
+export type SuggestionHint =
+  | { kind: "value"; field: string; value: string }
+  | { kind: "atMost" | "atLeast" | "exactly"; field: string; value: number };
+
 export type TokenSuggestion = {
   /** Le token complet à insérer. */
   token: string;
-  /** Ce qu'il fait, en clair. */
-  hint: string;
+  hint: SuggestionHint;
 };
 
 const OPERATOR_PATTERN = /^([A-Za-z][A-Za-z0-9_]*)(<=|>=|<|>|=|:)(.*)$/;
@@ -244,7 +258,12 @@ export function parseSearchSyntax(input: string, fields: SearchField[]): ParsedS
         continue;
       }
       parsed.criteria.ranges[field.key] = mergeRange(parsed.criteria.ranges[field.key], bounds);
-      parsed.tokens.push({ raw: word, field: field.key, label: `${field.key} ${operator} ${value}` });
+      parsed.tokens.push({
+        raw: word,
+        field: field.key,
+        label: `${field.key} ${operator} ${value}`,
+        canonical: `${field.key}${operator}${value}`,
+      });
       continue;
     }
 
@@ -272,7 +291,12 @@ export function parseSearchSyntax(input: string, fields: SearchField[]): ParsedS
       }
     }
 
-    parsed.tokens.push({ raw: word, field: field.key, label: `${field.key} · ${canonical}` });
+    parsed.tokens.push({
+      raw: word,
+      field: field.key,
+      label: `${field.key} · ${canonical}`,
+      canonical: formatToken(field.key, ":", canonical),
+    });
   }
 
   parsed.text = words.join(" ");
@@ -329,18 +353,43 @@ export function applyTokenSuggestion(input: string, token: string): string {
 
 const MAX_VALUES_PER_FIELD = 6;
 
+const HINT_BY_OPERATOR: Record<string, "atMost" | "atLeast" | "exactly"> = {
+  "<=": "atMost",
+  ">=": "atLeast",
+  "=": "exactly",
+};
+
+/** Bornes proposées pour un opérateur déjà tapé : le bas, le milieu, le haut. */
+function numericPoints(field: SearchField, operator: string): TokenSuggestion[] {
+  const kind = HINT_BY_OPERATOR[operator];
+  if (!kind) {
+    // `<` et `>` restent valides mais n'ont pas de libellé à eux : plutôt que
+    // d'en inventer un, on ne propose rien — le token tapé se lit très bien.
+    return [];
+  }
+
+  const min = field.min ?? 0;
+  const max = field.max ?? 0;
+  const points = [...new Set([min, Math.round((min + max) / 2), max])];
+  return points.map((value) => ({
+    token: `${field.key}${operator}${value}`,
+    hint: { kind, field: field.key, value },
+  }));
+}
+
+/** Ce qu'on propose pour un champ numérique dont seul le nom est connu. */
 function numericExamples(field: SearchField): TokenSuggestion[] {
   const min = field.min ?? 0;
   const max = field.max ?? 0;
   if (max <= min) {
-    return [{ token: `${field.key}=${min}`, hint: `${field.key} vaut ${min}` }];
+    return [{ token: `${field.key}=${min}`, hint: { kind: "exactly", field: field.key, value: min } }];
   }
 
   const low = Math.round(min + (max - min) / 3);
   const high = Math.round(max - (max - min) / 3);
   return [
-    { token: `${field.key}<=${low}`, hint: `${field.key} au plus ${low}` },
-    { token: `${field.key}>=${high}`, hint: `${field.key} au moins ${high}` },
+    { token: `${field.key}<=${low}`, hint: { kind: "atMost", field: field.key, value: low } },
+    { token: `${field.key}>=${high}`, hint: { kind: "atLeast", field: field.key, value: high } },
   ];
 }
 
@@ -350,7 +399,7 @@ function fieldSuggestions(field: SearchField): TokenSuggestion[] {
   }
   return (field.values ?? []).slice(0, MAX_VALUES_PER_FIELD).map((value) => ({
     token: formatToken(field.key, ":", value),
-    hint: `${field.key} : ${value}`,
+    hint: { kind: "value", field: field.key, value },
   }));
 }
 
@@ -367,7 +416,11 @@ export function suggestTokens(
   { limit = 8 }: { limit?: number } = {}
 ): TokenSuggestion[] {
   const partial = currentWord(input);
-  const used = new Set(parseSearchSyntax(input, fields).tokens.map((token) => token.raw.toLowerCase()));
+  // Comparaison sur la forme canonique : un `d:fury` déjà tapé doit empêcher de
+  // reproposer `domain:Fury`, qui est le même filtre écrit autrement.
+  const used = new Set(
+    parseSearchSyntax(input, fields).tokens.map((token) => token.canonical.toLowerCase())
+  );
 
   if (!partial) {
     return fields
@@ -384,19 +437,24 @@ export function suggestTokens(
     const typed = unquote(rawValue).toLowerCase();
 
     if (field.kind === "number") {
-      return numericExamples(field)
-        .filter((suggestion) => suggestion.token.toLowerCase().startsWith(partial.toLowerCase()))
-        .concat(typed ? [] : numericExamples(field))
-        .slice(0, limit);
+      // `:` n'a pas de sens sur un attribut numérique : le mot repartira au
+      // texte libre, où `e:OGN` désigne une extension. Proposer de l'énergie
+      // ici promettrait un filtre qui ne sera pas appliqué.
+      if (operator === ":") {
+        return [];
+      }
+      // Une borne déjà tapée n'a plus rien à compléter.
+      return typed ? [] : numericPoints(field, operator).slice(0, limit);
     }
 
     return (field.values ?? [])
       .filter((value) => value.toLowerCase().includes(typed))
-      .slice(0, limit)
       .map((value) => ({
         token: formatToken(field.key, operator === "=" ? "=" : ":", value),
-        hint: `${field.key} : ${value}`,
-      }));
+        hint: { kind: "value" as const, field: field.key, value },
+      }))
+      .filter((suggestion) => !used.has(formatToken(field.key, ":", suggestion.hint.value).toLowerCase()))
+      .slice(0, limit);
   }
 
   // Début de mot : les champs dont le nom commence ainsi, puis les valeurs qui
@@ -412,9 +470,9 @@ export function suggestTokens(
       ? []
       : (item.values ?? [])
           .filter((value) => value.toLowerCase().startsWith(lower))
-          .map((value) => ({
+          .map((value): TokenSuggestion => ({
             token: formatToken(item.key, ":", value),
-            hint: `${item.key} : ${value}`,
+            hint: { kind: "value", field: item.key, value },
           }))
   );
 

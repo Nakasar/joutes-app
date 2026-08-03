@@ -375,6 +375,12 @@
         "syntax": {
           "tokens": "{count, plural, one {# Filter in der Suche} other {# Filter in der Suche}}",
           "invite": "Attribut gefolgt von „:“ oder einem Vergleich eingeben — ↑ ↓ zum Auswählen, Enter zum Übernehmen.",
+          "hints": {
+            "value": "{field}: {value}",
+            "atMost": "{field} höchstens {value}",
+            "atLeast": "{field} mindestens {value}",
+            "exactly": "{field} gleich {value}"
+          },
           "rejected": {
             "value": "{token} — unbekannter Wert für „{field}“: Dieser Filter wird nicht angewendet.",
             "number": "{token} — „{field}“ erwartet eine Zahl: Dieser Filter wird nicht angewendet.",
