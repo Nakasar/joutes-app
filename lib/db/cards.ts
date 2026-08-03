@@ -1,10 +1,11 @@
 import 'server-only';
 
 import db from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
+import { ObjectId, type AnyBulkWriteOperation } from "mongodb";
 import { isReservedCardKey, RESERVED_CARD_KEYS, type CardSource } from "@/lib/constants/cards";
 import type { CardPrinting } from "@/lib/types/card";
 import type { CardFilterFacet } from "@/lib/cards/search-filters";
+import { planPrintingAddition, type BulkPrinting } from "@/lib/cards/bulk-printings";
 
 export type CardNameMatch = {
   id: string;
@@ -386,6 +387,111 @@ export async function* iterateGameCardsForIndexing(
   if (batch.length > 0) {
     yield batch;
   }
+}
+
+/**
+ * Cartes désignées par leur identifiant, dans la forme attendue par l'index de
+ * recherche. Sert à réindexer les seules cartes touchées par une modification
+ * en masse, plutôt que de repousser tout le catalogue.
+ */
+export async function getGameCardsForIndexing(gameId: ObjectId, ids: string[]): Promise<IndexableCard[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const docs = await db
+    .collection("cards")
+    .find({ gameId, id: { $in: ids } })
+    .toArray();
+
+  return docs
+    .filter((doc) => typeof doc.id === "string" && doc.id)
+    .map((doc) => ({ ...toCoreCard(doc), attributes: extractCardAttributes(doc) }));
+}
+
+/** Ce qu'il est advenu de chaque carte d'une modification en masse de variantes. */
+export type BulkPrintingOutcome = {
+  added: string[];
+  replaced: string[];
+  skipped: string[];
+  /** La carte porte déjà le maximum de variantes. */
+  limitReached: string[];
+  /** Identifiants sans carte correspondante dans ce jeu. */
+  notFound: string[];
+};
+
+/**
+ * Ajoute une même variante d'impression à une liste de cartes.
+ *
+ * Chaque carte est décidée séparément par `planPrintingAddition`, puis les
+ * seules cartes qui changent sont écrites en un `bulkWrite`. Les identifiants
+ * introuvables sont renvoyés plutôt qu'ignorés : coller deux cents
+ * identifiants dont trente sont fautifs et lire « c'est fait » serait pire que
+ * l'erreur elle-même.
+ */
+export async function addPrintingToCards(
+  gameId: ObjectId,
+  ids: string[],
+  printing: BulkPrinting,
+  { replaceExisting, editedBy }: { replaceExisting: boolean; editedBy: string }
+): Promise<BulkPrintingOutcome> {
+  const outcome: BulkPrintingOutcome = {
+    added: [],
+    replaced: [],
+    skipped: [],
+    limitReached: [],
+    notFound: [],
+  };
+
+  if (ids.length === 0) {
+    return outcome;
+  }
+
+  const docs = await db
+    .collection("cards")
+    .find({ gameId, id: { $in: ids } }, { projection: { _id: 0, id: 1, printings: 1 } })
+    .toArray();
+
+  const byId = new Map(docs.filter((doc) => typeof doc.id === "string").map((doc) => [doc.id as string, doc]));
+  const writes: AnyBulkWriteOperation[] = [];
+
+  for (const id of ids) {
+    const doc = byId.get(id);
+    if (!doc) {
+      outcome.notFound.push(id);
+      continue;
+    }
+
+    const existing = Array.isArray(doc.printings) ? (doc.printings as CardPrinting[]) : undefined;
+    const plan = planPrintingAddition(existing, printing, { replaceExisting });
+
+    if (plan.action === "skip") {
+      outcome.skipped.push(id);
+      continue;
+    }
+    if (plan.action === "limit") {
+      outcome.limitReached.push(id);
+      continue;
+    }
+
+    (plan.action === "add" ? outcome.added : outcome.replaced).push(id);
+    writes.push({
+      updateOne: {
+        filter: { gameId, id },
+        // Marquée comme retouchée à la main, comme une modification par le
+        // formulaire : les scripts d'import respectent ce marqueur.
+        update: {
+          $set: { printings: plan.printings, manuallyEditedAt: new Date(), manuallyEditedBy: editedBy },
+        },
+      },
+    });
+  }
+
+  if (writes.length > 0) {
+    await db.collection("cards").bulkWrite(writes, { ordered: false });
+  }
+
+  return outcome;
 }
 
 export async function getCardsByNames(gameId: ObjectId, names: string[]): Promise<CardNameMatch[]> {

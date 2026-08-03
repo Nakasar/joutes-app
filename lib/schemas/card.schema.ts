@@ -51,6 +51,9 @@ export const cardPrintingSchema = z.object({
   image: z.union([z.url("L'URL de l'image d'une variante doit être valide"), z.literal("")]).optional(),
 });
 
+/** Plafond de variantes par carte, partagé par le formulaire et l'édition en masse. */
+export const MAX_CARD_PRINTINGS = 30;
+
 export const cardSchema = z.object({
   id: z
     .string()
@@ -70,7 +73,10 @@ export const cardSchema = z.object({
   text: z.string().max(5000, "Le texte de la carte est trop long").optional(),
   /** La carte n'existe qu'en foil : elle est toujours affichée comme telle. */
   foil: z.boolean().optional(),
-  printings: z.array(cardPrintingSchema).max(30, "Une carte ne peut pas avoir plus de 30 variantes").optional(),
+  printings: z
+    .array(cardPrintingSchema)
+    .max(MAX_CARD_PRINTINGS, `Une carte ne peut pas avoir plus de ${MAX_CARD_PRINTINGS} variantes`)
+    .optional(),
   attributes: z
     .record(z.string(), cardAttributeValueSchema)
     .optional()

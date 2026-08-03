@@ -11,6 +11,7 @@ import { hasCardIndex } from "@/lib/meilisearch";
 import CardForm from "./CardForm";
 import CardBrowser from "./CardBrowser";
 import ReindexButton from "./ReindexButton";
+import BulkPrintingsForm from "./BulkPrintingsForm";
 
 export const dynamic = "force-dynamic";
 
@@ -80,6 +81,8 @@ export default async function AdminCardsPage({
         {selectedGame ? (
           <>
             <CardBrowser gameId={selectedGame.id} selectedCardId={card?.id} recentCards={recentCards} />
+
+            <BulkPrintingsForm gameId={selectedGame.id} gameName={selectedGame.name} />
 
             {cardId && !card && (
               <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">
