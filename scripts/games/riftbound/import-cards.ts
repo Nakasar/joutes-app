@@ -5,7 +5,6 @@ import {ObjectId} from "mongodb";
 import {dirname} from 'path';
 import {fileURLToPath} from 'url';
 import meilisearch, {indexes} from "../../../lib/meilisearch.ts";
-import {inspect} from "node:util";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -73,7 +72,7 @@ async function getCardsFromJson(): Promise<WebSiteCard[]> {
 }
 
 async function main() {
-  const cardsRaw = await getCardsFromJson();
+  const cardsRaw = await fetchCardsFromWebsite();
 
   const cards = cardsRaw.map(card => {
     const codeRegex = /(?<set>[A-Z]{3})-(?<cn>[A-Z0-9]{3}[a*]?)(?:\/[0-9]{3})?/;
@@ -96,6 +95,7 @@ async function main() {
       superType: card.cardType.superType?.[0]?.label,
       isToken: card.cardType.superType?.[0]?.label === 'Token',
       rarity: card.rarity?.value?.label,
+      foil: ['Epic', 'Rare'].includes(card.rarity?.value?.label ?? ''),
       domain: labels(card.domain),
       illustrator: labels(card.illustrator),
       energy: numericValue(card.energy),
