@@ -163,6 +163,19 @@ function revalidateCard(gameSlugOrId: string, ...cardIds: string[]) {
   }
 }
 
+/**
+ * Revalidation d'une modification en masse : les listes, et rien d'autre.
+ *
+ * La fiche d'une carte lit la session (`headers()`) : elle est rendue à chaque
+ * requête et n'a donc aucune entrée en cache à invalider. Une `revalidatePath`
+ * par carte n'y changerait rien — et à mille cartes, ce serait mille appels
+ * dans une action déjà bornée pour rester courte.
+ */
+function revalidateCardLists(gameSlugOrId: string) {
+  revalidatePath("/admin/cards");
+  revalidatePath(`/games/${gameSlugOrId}/cards`);
+}
+
 export async function checkCardIdAvailability(
   gameId: string,
   cardId: string,
@@ -423,7 +436,7 @@ export async function addPrintingToGameCards(
         }
       }
 
-      revalidateCard(game.slug ?? game.id, ...touched);
+      revalidateCardLists(game.slug ?? game.id);
     }
 
     return { success: true, outcome, warning };

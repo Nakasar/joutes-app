@@ -61,3 +61,11 @@ l'interface le signale.
   plafond de 1 000 identifiants par envoi, réindexation ciblée.
 - `app/admin/cards/BulkPrintingsForm.tsx` — saisie, confirmation et compte
   rendu dépliable par catégorie.
+
+## Revalidation
+
+Seules les listes sont revalidées — `/admin/cards` et la galerie du jeu. La
+fiche d'une carte lit la session (`headers()`) : elle est rendue à chaque
+requête et n'a aucune entrée en cache à invalider, donc une `revalidatePath`
+par carte n'y changerait rien. À mille cartes, ce serait mille appels sans
+effet dans une action déjà bornée pour rester courte.
