@@ -28,6 +28,14 @@ import {
   type CardFilterFacet,
   type CardSearchCriteria,
 } from "@/lib/cards/search-filters";
+import {
+  applyTokenSuggestion,
+  buildSearchFields,
+  currentWord,
+  parseSearchSyntax,
+  removeSearchWord,
+  suggestTokens,
+} from "@/lib/cards/search-syntax";
 
 // La recherche renvoie le document de catalogue : il porte aussi les variantes
 // d'impression de la carte, absentes d'un simple exemplaire de collection.
@@ -115,6 +123,10 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   const [layout, setLayout] = useState<"grid" | "list">("grid");
   const [density, setDensity] = useState(DEFAULT_DENSITY);
   const [linkCopied, setLinkCopied] = useState(false);
+  // Suggestions de la barre de recherche : ouvertes à la frappe, parcourues au
+  // clavier. `-1` = aucune sélectionnée, Entrée lance alors la recherche.
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const copiedTimerRef = useRef<number | null>(null);
   useEffect(
     () => () => {
@@ -540,9 +552,61 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
     return translated === translationKey ? language.toUpperCase() : translated;
   };
 
+  // Le vocabulaire de la barre de recherche vient du catalogue du jeu, comme
+  // les filtres : `domain:fury`, `energy<=3`, `set:OGN`… Rien n'est codé par jeu.
+  const searchFields = buildSearchFields(facets, { setCodes, types, languages });
+  const parsedQuery = parseSearchSyntax(searchQuery, searchFields);
+  const suggestions = suggestionsOpen ? suggestTokens(searchQuery, searchFields) : [];
+  // Le mot en cours de frappe est forcément incomplet : l'annoncer comme
+  // invalide reviendrait à signaler une faute à chaque lettre tapée.
+  const typing = currentWord(searchQuery);
+  const rejectedTokens = parsedQuery.rejected.filter((rejected) => rejected.raw !== typing);
+
+  const pickSuggestion = (token: string) => {
+    setSearchQuery(applyTokenSuggestion(searchQuery, token));
+    setActiveSuggestion(-1);
+  };
+
+  const onSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Escape") {
+      setSuggestionsOpen(false);
+      setActiveSuggestion(-1);
+      return;
+    }
+    if (event.key === "ArrowDown" && suggestions.length > 0) {
+      event.preventDefault();
+      setActiveSuggestion((index) => (index + 1) % suggestions.length);
+      return;
+    }
+    if (event.key === "ArrowUp" && suggestions.length > 0) {
+      event.preventDefault();
+      setActiveSuggestion((index) => (index <= 0 ? suggestions.length - 1 : index - 1));
+      return;
+    }
+    if (event.key === "Enter") {
+      // Entrée complète la suggestion en cours, ou lance la recherche si aucune
+      // n'est sélectionnée : compléter puis chercher restent deux gestes.
+      const chosen = suggestions[activeSuggestion];
+      if (chosen) {
+        event.preventDefault();
+        pickSuggestion(chosen.token);
+        return;
+      }
+      setSuggestionsOpen(false);
+      handleSearch();
+    }
+  };
+
   // Ce qui est filtré, dit d'un coup d'œil et retirable d'un clic — sans avoir
   // à rouvrir la liste déroulante ou la section d'où le filtre vient.
   const activeChips: { key: string; label: string; remove: () => void }[] = [];
+  for (const token of parsedQuery.tokens) {
+    activeChips.push({
+      key: `token-${token.raw}`,
+      label: token.label,
+      remove: () => setSearchQuery(removeSearchWord(searchQuery, token.raw)),
+    });
+  }
   if (selectedSetCode !== "all") {
     activeChips.push({
       key: "set",
@@ -752,14 +816,58 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
               type="text"
               placeholder={t("cards.search.placeholder")}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleSearch();
-                }
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setSuggestionsOpen(true);
+                setActiveSuggestion(-1);
               }}
-              className="h-10 w-full pl-9"
+              onFocus={() => setSuggestionsOpen(true)}
+              onBlur={() => setSuggestionsOpen(false)}
+              onKeyDown={onSearchKeyDown}
+              role="combobox"
+              aria-expanded={suggestions.length > 0}
+              aria-autocomplete="list"
+              aria-controls="card-search-suggestions"
+              className="h-10 w-full pl-9 font-mono text-sm"
             />
+
+            {suggestions.length > 0 ? (
+              <div
+                id="card-search-suggestions"
+                role="listbox"
+                className="absolute left-0 right-0 top-11 z-20 rounded-lg border bg-popover p-1 shadow-lg"
+              >
+                {suggestions.map((suggestion, index) => (
+                  <button
+                    key={suggestion.token}
+                    type="button"
+                    role="option"
+                    aria-selected={index === activeSuggestion}
+                    // `onMouseDown` plutôt que `onClick` : le clic doit agir
+                    // avant que la perte de focus ne referme la liste.
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      pickSuggestion(suggestion.token);
+                    }}
+                    onMouseEnter={() => setActiveSuggestion(index)}
+                    className={`flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left text-sm ${
+                      index === activeSuggestion ? "bg-muted" : ""
+                    }`}
+                  >
+                    <span className="font-mono text-xs text-primary">{suggestion.token}</span>
+                    {/* Poussé à droite plutôt qu'aligné sur une colonne fixe :
+                        un token long — `type:"Battlefield Rune"` — décalerait
+                        toute la colonne des explications. */}
+                    <span className="ml-auto truncate text-xs text-muted-foreground">{suggestion.hint}</span>
+                  </button>
+                ))}
+                <p className="px-2 pb-1 pt-1.5 text-[11px] text-muted-foreground">
+                  {parsedQuery.tokens.length > 0
+                    ? t("cards.search.syntax.tokens", { count: parsedQuery.tokens.length })
+                    : t("cards.search.syntax.invite")}
+                </p>
+              </div>
+            ) : null}
           </div>
 
           <Button
@@ -876,6 +984,21 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
             {linkCopied ? t("cards.search.linkCopied") : t("cards.search.copyLink")}
           </button>
         </div>
+
+        {/* Un token dont le champ est connu mais la valeur inutilisable ne
+            filtre rien : le taire donnerait une liste large sans explication. */}
+        {rejectedTokens.length > 0 ? (
+          <ul className="flex flex-col gap-0.5 text-xs text-amber-700 dark:text-amber-400">
+            {rejectedTokens.map((rejected) => (
+              <li key={rejected.raw}>
+                {t(`cards.search.syntax.rejected.${rejected.reason}`, {
+                  token: rejected.raw,
+                  field: rejected.field,
+                })}
+              </li>
+            ))}
+          </ul>
+        ) : null}
 
         {isLoading && cards.length === 0 ? (
           <p className="mt-8 text-center text-muted-foreground">{t("cards.search.searching")}</p>

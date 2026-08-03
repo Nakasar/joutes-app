@@ -367,11 +367,20 @@
       "back": "Torna al portale del gioco",
       "search": {
         "title": "Ricerca carte",
-        "placeholder": "Cerca una carta per nome...",
+        "placeholder": "Cerca — nome, testo o attributo:valore",
         "search": "Cerca",
         "searching": "Ricerca in corso...",
         "noResults": "Nessuna carta trovata per \"{query}\"",
         "emptyState": "Nessuna carta disponibile al momento.",
+        "syntax": {
+          "tokens": "{count, plural, one {# filtro nella ricerca} other {# filtri nella ricerca}}",
+          "invite": "Digita un attributo seguito da «:» o da un confronto — ↑ ↓ per scegliere, Invio per completare.",
+          "rejected": {
+            "value": "{token} — valore sconosciuto per «{field}»: questo filtro non viene applicato.",
+            "number": "{token} — «{field}» richiede un numero: questo filtro non viene applicato.",
+            "operator": "{token} — «{field}» non si confronta, usa «:»: questo filtro non viene applicato."
+          }
+        },
         "resultCount": "{count, plural, =0 {Nessuna carta} one {# carta} other {# carte}}",
         "copyLink": "Copia link",
         "linkCopied": "Link copiato",

@@ -10,6 +10,13 @@ import {
   parseCardSearchCriteria,
   type CardFilterFacet,
 } from "@/lib/cards/search-filters";
+import {
+  buildSearchFields,
+  mergeSearchCriteria,
+  parseSearchSyntax,
+} from "@/lib/cards/search-syntax";
+
+type CardFilterValues = { setCodes: string[]; types: string[]; languages: string[] };
 
 type SearchCard = BoosterCard & {
   type?: string;
@@ -19,7 +26,7 @@ type SearchCard = BoosterCard & {
   [key: string]: unknown;
 };
 
-async function getFilterValues(gameSlug: string): Promise<{ setCodes: string[]; types: string[]; languages: string[] }> {
+async function getFilterValues(gameSlug: string): Promise<CardFilterValues> {
   const game = await db.collection<Game>("games").findOne({ slug: gameSlug });
   if (!game) {
     return { setCodes: [], types: [], languages: [] };
@@ -39,7 +46,7 @@ async function getFilterValues(gameSlug: string): Promise<{ setCodes: string[]; 
   return { setCodes, types, languages };
 }
 
-async function search({ gameId, searchQuery, lang, setCode, type, limit, offset, criteriaParams, facets }: { gameId: string; searchQuery: string; lang: string; setCode: string; type?: string; limit?: number; offset?: number; criteriaParams: URLSearchParams; facets: CardFilterFacet[] }): Promise<{
+async function search({ gameId, searchQuery, lang, setCode, type, limit, offset, criteriaParams, facets, filterValues }: { gameId: string; searchQuery: string; lang: string; setCode: string; type?: string; limit?: number; offset?: number; criteriaParams: URLSearchParams; facets: CardFilterFacet[]; filterValues: CardFilterValues }): Promise<{
   cards: BoosterCard[];
   total: number;
   setCodes: string[];
@@ -55,14 +62,24 @@ async function search({ gameId, searchQuery, lang, setCode, type, limit, offset,
 
   const index = meilisearch.index<SearchCard>(indexConfig.name);
 
+  // La saisie peut porter des tokens (`domain:fury energy<=3`) : ils sont lus
+  // ici plutôt que côté navigateur, pour qu'un lien partagé s'ouvre déjà
+  // filtré, dès le premier rendu. Ce qui n'est pas un token reste le texte
+  // cherché — et repart donc dans les filtres historiques ci-dessous.
+  const parsedQuery = parseSearchSyntax(searchQuery, buildSearchFields(facets, filterValues));
+  const freeText = parsedQuery.text;
+  const effectiveLang = parsedQuery.lang ?? lang;
+  const effectiveSetCode = parsedQuery.setCode ?? setCode;
+  const effectiveType = parsedQuery.type ?? type;
+
   const queryOptions: { filter: string[]; limit?: number; offset?: number } = { filter: [] };
   let queryString = "";
 
-  if (lang === 'all') {
+  if (effectiveLang === 'all') {
     // no language filter
-  } else if (lang !== 'en') {
+  } else if (effectiveLang !== 'en') {
     queryOptions.filter.push(
-      `lang IN [en, ${lang}]`,
+      `lang IN [en, ${effectiveLang}]`,
     );
   } else {
     queryOptions.filter.push(
@@ -71,35 +88,30 @@ async function search({ gameId, searchQuery, lang, setCode, type, limit, offset,
   }
 
   const setRegex = /(?: e|^e|^set| set):(?<set>[\w*]+)/gm;
-  const setResult = setRegex.exec(searchQuery);
+  const setResult = setRegex.exec(freeText);
   if (setResult?.groups?.set === '*') {
   } else if (setResult?.groups?.set) {
     queryOptions.filter.push(
       `${indexConfig.keys.set} = ${setResult?.groups?.set}`,
     );
-  } else if (setCode && setCode !== '*') {
+  } else if (effectiveSetCode && effectiveSetCode !== '*') {
     queryOptions.filter.push(
-      `${indexConfig.keys.set} = ${setCode}`,
+      `${indexConfig.keys.set} = ${effectiveSetCode}`,
     );
   }
 
   const cnRegex = /(?: cn|^cn):(?<cn>[\w*]+)/gm;
-  const cnResult = cnRegex.exec(searchQuery);
+  const cnResult = cnRegex.exec(freeText);
   if (cnResult?.groups?.cn) {
     queryOptions.filter.push(
       `${indexConfig.keys.collectorNumber} = ${cnResult?.groups?.cn}`,
     );
   } else {
-    const queryNumber = parseInt(searchQuery);
-    if (!isNaN(queryNumber)) {
-      queryString = searchQuery;
-    } else {
-      queryString = searchQuery;
-    }
+    queryString = freeText;
   }
 
-  if (type) {
-    queryOptions.filter.push(`type = ${type}`)
+  if (effectiveType) {
+    queryOptions.filter.push(`type = ${effectiveType}`)
   }
 
   if (typeof limit === 'number') {
@@ -110,7 +122,7 @@ async function search({ gameId, searchQuery, lang, setCode, type, limit, offset,
     queryOptions.offset = offset;
   }
 
-  const criteria = parseCardSearchCriteria(criteriaParams, facets);
+  const criteria = mergeSearchCriteria(parseCardSearchCriteria(criteriaParams, facets), parsedQuery.criteria);
   const facetFilters = buildFacetFilters(criteria, facets);
   const sort = buildSortExpressions(criteria, indexConfig.keys);
 
@@ -146,8 +158,6 @@ async function search({ gameId, searchQuery, lang, setCode, type, limit, offset,
     type: typeof result.type === 'string' ? result.type : undefined,
   }));
 
-  const filterValues = await getFilterValues(gameId);
-
   return {
     cards,
     total: result.estimatedTotalHits ?? cards.length,
@@ -176,7 +186,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   // Les facettes proposées viennent des attributs que portent réellement les
   // cartes du jeu : elles bornent aussi ce que les critères peuvent demander.
   const game = await db.collection<Game>("games").findOne({ slug: gameId });
-  const facets = game ? await getGameCardFilterFacets(game._id) : [];
+  // Les valeurs de filtre sont relues avant la recherche, et plus après : la
+  // syntaxe de la barre de recherche s'appuie dessus pour reconnaître
+  // `set:OGN` ou `type:Unit`.
+  const [facets, filterValues] = await Promise.all([
+    game ? getGameCardFilterFacets(game._id) : Promise.resolve([]),
+    getFilterValues(gameId),
+  ]);
 
   const result = await search({
     gameId,
@@ -188,6 +204,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     offset: shouldPaginate ? offset : undefined,
     criteriaParams: searchParams,
     facets,
+    filterValues,
   });
 
   if (!shouldPaginate) {

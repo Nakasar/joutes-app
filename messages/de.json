@@ -367,11 +367,20 @@
       "back": "Zurück zum Spielportal",
       "search": {
         "title": "Kartensuche",
-        "placeholder": "Suche nach Karte nach Name...",
+        "placeholder": "Suchen — Name, Text oder Attribut:Wert",
         "search": "Suchen",
         "searching": "Suchen...",
         "noResults": "Keine Karte gefunden für \"{query}\"",
         "emptyState": "Noch keine Karten verfügbar.",
+        "syntax": {
+          "tokens": "{count, plural, one {# Filter in der Suche} other {# Filter in der Suche}}",
+          "invite": "Attribut gefolgt von „:“ oder einem Vergleich eingeben — ↑ ↓ zum Auswählen, Enter zum Übernehmen.",
+          "rejected": {
+            "value": "{token} — unbekannter Wert für „{field}“: Dieser Filter wird nicht angewendet.",
+            "number": "{token} — „{field}“ erwartet eine Zahl: Dieser Filter wird nicht angewendet.",
+            "operator": "{token} — „{field}“ lässt sich nicht vergleichen, „:“ verwenden: Dieser Filter wird nicht angewendet."
+          }
+        },
         "resultCount": "{count, plural, =0 {Keine Karten} one {# Karte} other {# Karten}}",
         "copyLink": "Link kopieren",
         "linkCopied": "Link kopiert",

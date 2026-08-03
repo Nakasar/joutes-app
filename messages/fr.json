@@ -367,11 +367,20 @@
       "back": "Retour au portail du jeu",
       "search": {
         "title": "Recherche de cartes",
-        "placeholder": "Rechercher une carte par nom...",
+        "placeholder": "Rechercher — nom, texte, ou attribut:valeur",
         "search": "Rechercher",
         "searching": "Recherche...",
         "noResults": "Aucune carte trouvée pour \"{query}\"",
         "emptyState": "Aucune carte disponible pour le moment.",
+        "syntax": {
+          "tokens": "{count, plural, one {# filtre dans la requête} other {# filtres dans la requête}}",
+          "invite": "Tapez un attribut suivi de « : » ou d'une comparaison — ↑ ↓ pour choisir, Entrée pour compléter.",
+          "rejected": {
+            "value": "{token} — valeur inconnue pour « {field} » : ce filtre n'est pas appliqué.",
+            "number": "{token} — « {field} » attend un nombre : ce filtre n'est pas appliqué.",
+            "operator": "{token} — « {field} » ne se compare pas, utilisez « : » : ce filtre n'est pas appliqué."
+          }
+        },
         "resultCount": "{count, plural, =0 {Aucune carte} one {# carte} other {# cartes}}",
         "copyLink": "Copier le lien",
         "linkCopied": "Lien copié",
