@@ -76,15 +76,17 @@ async function search({ gameId, searchQuery, lang, setCode, type, limit, offset,
   const queryOptions: { filter: string[]; limit?: number; offset?: number } = { filter: [] };
   let queryString = "";
 
+  // La langue vient d'un paramètre d'URL : elle est échappée comme n'importe
+  // quelle valeur qui entre dans une expression de filtre.
   if (effectiveLang === 'all') {
     // no language filter
   } else if (effectiveLang !== 'en') {
     queryOptions.filter.push(
-      `lang IN [en, ${effectiveLang}]`,
+      `lang IN ["en", ${quoteFilterValue(effectiveLang)}]`,
     );
   } else {
     queryOptions.filter.push(
-      `lang IN [en]`,
+      `lang IN ["en"]`,
     );
   }
 
@@ -96,8 +98,10 @@ async function search({ gameId, searchQuery, lang, setCode, type, limit, offset,
       `${indexConfig.keys.set} = ${setResult?.groups?.set}`,
     );
   } else if (effectiveSetCode && effectiveSetCode !== '*') {
+    // Idem : `setCode` arrive brut du paramètre d'URL. Les deux valeurs lues par
+    // les expressions régulières ci-dessus, elles, sont déjà bornées à `[\w*]+`.
     queryOptions.filter.push(
-      `${indexConfig.keys.set} = ${effectiveSetCode}`,
+      `${indexConfig.keys.set} = ${quoteFilterValue(effectiveSetCode)}`,
     );
   }
 

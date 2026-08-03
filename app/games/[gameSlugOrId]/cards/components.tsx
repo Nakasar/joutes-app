@@ -834,7 +834,10 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
               role="combobox"
               aria-expanded={suggestions.length > 0}
               aria-autocomplete="list"
-              aria-controls="card-search-suggestions"
+              // Ces deux attributs ne désignent quelque chose que lorsque la
+              // liste est rendue : les poser à vide pointerait vers un id
+              // inexistant, que les validateurs ARIA signalent.
+              aria-controls={suggestions.length > 0 ? "card-search-suggestions" : undefined}
               aria-activedescendant={
                 activeSuggestion >= 0 ? `card-search-suggestion-${activeSuggestion}` : undefined
               }
