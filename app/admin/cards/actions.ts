@@ -5,18 +5,22 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/middleware/admin";
 import {
+  addPrintingToCards,
   cardIdExists,
   createCard,
   getGameCard,
   getGameCardFilterFacets,
+  getGameCardsForIndexing,
   iterateGameCardsForIndexing,
   searchGameCards,
   updateCard,
+  type BulkPrintingOutcome,
   type CardAttributeValue,
   type GameCardSummary,
 } from "@/lib/db/cards";
+import { parseCardIdList } from "@/lib/cards/bulk-printings";
 import { getGameById } from "@/lib/db/games";
-import { cardSchema } from "@/lib/schemas/card.schema";
+import { cardPrintingSchema, cardSchema } from "@/lib/schemas/card.schema";
 import { gameIdSchema } from "@/lib/schemas/game.schema";
 import { withUniquePrintingIds } from "@/lib/constants/card-ids";
 import meilisearch, { cardIndexFor, cardIndexSettings, type CardIndexConfig } from "@/lib/meilisearch";
@@ -334,5 +338,100 @@ export async function updateGameCard(
     }
     console.error("Erreur lors de la modification de la carte:", error);
     return { success: false, error: "Erreur lors de la modification de la carte" };
+  }
+}
+
+export type BulkPrintingResult = {
+  success: boolean;
+  error?: string;
+  outcome?: BulkPrintingOutcome;
+  /** Les cartes sont écrites mais la recherche n'est pas à jour. */
+  warning?: string;
+};
+
+/** Plafond d'identifiants par envoi : au-delà, l'action serveur deviendrait trop longue. */
+const MAX_BULK_CARD_IDS = 1000;
+
+const bulkPrintingSchema = z.object({
+  cardIds: z.string().max(50_000, "La liste d'identifiants est trop longue"),
+  printing: cardPrintingSchema.omit({ id: true }),
+  replaceExisting: z.boolean(),
+});
+
+/**
+ * Ajoute une même variante d'impression à toutes les cartes d'une liste
+ * d'identifiants.
+ *
+ * Les cartes touchées sont réindexées immédiatement — et elles seules : les
+ * variantes vivent aussi dans le document de recherche, dont dépendent les
+ * écrans qui ajoutent un exemplaire depuis un résultat. Sans ça, la variante
+ * n'existerait que sur la fiche.
+ */
+export async function addPrintingToGameCards(
+  gameId: string,
+  input: { cardIds: string; printing: { name: string; foil?: boolean; image?: string }; replaceExisting: boolean }
+): Promise<BulkPrintingResult> {
+  try {
+    const session = await requireAdmin();
+
+    const validatedGameId = gameIdSchema.parse(gameId);
+    const { cardIds, printing, replaceExisting } = bulkPrintingSchema.parse(input);
+
+    const game = await getGameById(validatedGameId);
+    if (!game) {
+      return { success: false, error: "Jeu non trouvé" };
+    }
+
+    const ids = parseCardIdList(cardIds);
+    if (ids.length === 0) {
+      return { success: false, error: "Aucun identifiant de carte n'a été saisi." };
+    }
+    if (ids.length > MAX_BULK_CARD_IDS) {
+      return {
+        success: false,
+        error: `${ids.length} identifiants saisis : le maximum est de ${MAX_BULK_CARD_IDS} par envoi.`,
+      };
+    }
+
+    const outcome = await addPrintingToCards(
+      new ObjectId(validatedGameId),
+      ids,
+      { name: printing.name, foil: printing.foil, image: printing.image || undefined },
+      { replaceExisting, editedBy: session.user.id }
+    );
+
+    const touched = [...outcome.added, ...outcome.replaced];
+    let warning: string | undefined;
+
+    if (touched.length > 0) {
+      const indexConfig = cardIndexFor(game.slug);
+      if (!indexConfig) {
+        warning = "Ce jeu n'a pas d'index de recherche : la variante n'apparaîtra que sur les fiches de cartes.";
+      } else {
+        try {
+          const index = meilisearch.index(indexConfig.name);
+          const cards = await getGameCardsForIndexing(new ObjectId(validatedGameId), touched);
+          for (let start = 0; start < cards.length; start += REINDEX_BATCH_SIZE) {
+            await index.addDocuments(
+              cards.slice(start, start + REINDEX_BATCH_SIZE).map((card) => toSearchDocument(indexConfig, card))
+            );
+          }
+        } catch (error) {
+          console.error("Erreur lors de la réindexation des cartes modifiées:", error);
+          warning =
+            "Les cartes ont été modifiées mais n'ont pas pu être réindexées : la recherche ne montrera pas encore la variante.";
+        }
+      }
+
+      revalidateCard(game.slug ?? game.id, ...touched);
+    }
+
+    return { success: true, outcome, warning };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.issues[0]?.message || "Données invalides" };
+    }
+    console.error("Erreur lors de l'ajout en masse d'une variante:", error);
+    return { success: false, error: "L'ajout de la variante a échoué." };
   }
 }
