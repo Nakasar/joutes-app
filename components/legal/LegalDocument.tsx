@@ -44,6 +44,16 @@ export type LegalDocumentContent = {
   articles: LegalArticle[];
 };
 
+/**
+ * Langue réellement rendue par un document légal. Seul l'anglais dispose d'une
+ * traduction dédiée : les autres langues affichent le texte français, et la
+ * date doit suivre le texte affiché plutôt que la langue choisie dans
+ * l'en-tête.
+ */
+export function resolveLegalLocale(locale: string): "fr" | "en" {
+  return locale === "en" ? "en" : "fr";
+}
+
 export function LegalDocumentView({
   content,
   formattedDate,

@@ -42,8 +42,8 @@ export const cguEn: LegalDocumentContent = {
   highlight: (
     <>
       <p>
-        Joutes is a free, independent service. Events, tournaments, trades and content are created
-        by users, who remain responsible for them.
+        Joutes is an independent service. Events, tournaments, trades and content are created by
+        users, who remain responsible for them.
       </p>
       <p>
         This summary is provided for convenience only: solely the detailed clauses below are
@@ -73,16 +73,17 @@ export const cguEn: LegalDocumentContent = {
             community content (rules, rulings, errata).
           </p>
           <p>
-            Joutes is an independent, non-commercial project published by Nakasar and developed
-            partly in the open (see the{" "}
+            Joutes is an independent project published by Nakasar and developed partly in the open
+            (see the{" "}
             <Link href="/open-source" className="text-primary hover:underline">
               Open Source
             </Link>{" "}
             page). The Platform is hosted by Vercel Inc.
           </p>
           <p>
-            Access to the Platform is free of charge. No feature is paid for and the Platform
-            collects no payment.
+            Using the features currently offered involves no payment. Optional paid services may be
+            offered in the future: their scope, price and subscription terms would then be set out
+            before any subscription.
           </p>
         </>
       ),
@@ -297,7 +298,7 @@ export const cguEn: LegalDocumentContent = {
           <p>
             The collection, trade and sell list features are tracking and matchmaking tools. The
             Platform is not a party to transactions concluded between users: it holds no cards,
-            collects no payment, ships nothing and offers no completion guarantee.
+            collects no payment on that account, ships nothing and offers no completion guarantee.
           </p>
           <p>
             Users are solely responsible for the reality, conformity and lawfulness of their
@@ -479,8 +480,8 @@ export const cguEn: LegalDocumentContent = {
       content: (
         <>
           <p>
-            As the Platform is provided free of charge, our liability is limited to direct damage
-            resulting from proven fault on our part. We cannot be held liable for:
+            Our liability is limited to direct damage resulting from proven fault on our part. We
+            cannot be held liable for:
           </p>
           <LegalList>
             <li>content published by users, its accuracy and its lawfulness;</li>

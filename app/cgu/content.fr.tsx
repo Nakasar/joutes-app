@@ -35,8 +35,8 @@ export const cguFr: LegalDocumentContent = {
   highlight: (
     <>
       <p>
-        Joutes est un service gratuit et indépendant. Les événements, tournois, échanges et
-        contenus sont créés par les utilisateurs, qui en restent responsables.
+        Joutes est un service indépendant. Les événements, tournois, échanges et contenus sont
+        créés par les utilisateurs, qui en restent responsables.
       </p>
       <p>
         Ce résumé est fourni à titre indicatif : seules les clauses détaillées ci-dessous ont
@@ -67,16 +67,18 @@ export const cguFr: LegalDocumentContent = {
             communautaires (règles, rulings, errata).
           </p>
           <p>
-            Joutes est un projet indépendant et non commercial, édité et publié par Nakasar, et
-            développé en partie de manière ouverte (voir la page{" "}
+            Joutes est un projet indépendant, édité et publié par Nakasar, et développé en partie
+            de manière ouverte (voir la page{" "}
             <Link href="/open-source" className="text-primary hover:underline">
               Open Source
             </Link>
             ). La Plateforme est hébergée par Vercel Inc.
           </p>
           <p>
-            L&apos;accès à la Plateforme est gratuit. Aucune fonctionnalité n&apos;est payante et
-            aucun paiement n&apos;est encaissé par la Plateforme.
+            L&apos;utilisation des fonctionnalités actuellement proposées ne donne lieu à aucun
+            paiement. Des services optionnels payants pourront être proposés à l&apos;avenir :
+            leurs caractéristiques, leur prix et leurs conditions de souscription seraient alors
+            précisés avant toute souscription.
           </p>
         </>
       ),
@@ -306,7 +308,8 @@ export const cguFr: LegalDocumentContent = {
             Les fonctionnalités de collection, d&apos;échange et de liste de vente sont des outils
             de suivi et de mise en relation. La Plateforme n&apos;est pas partie aux transactions
             conclues entre utilisateurs : elle ne détient aucune carte, n&apos;encaisse aucun
-            paiement, ne procède à aucune expédition et n&apos;offre aucune garantie de bonne fin.
+            paiement à ce titre, ne procède à aucune expédition et n&apos;offre aucune garantie de
+            bonne fin.
           </p>
           <p>
             Les utilisateurs sont seuls responsables de la réalité, de la conformité et de la
@@ -495,9 +498,8 @@ export const cguFr: LegalDocumentContent = {
       content: (
         <>
           <p>
-            La Plateforme étant fournie gratuitement, notre responsabilité est limitée aux dommages
-            directs résultant d&apos;une faute prouvée de notre part. Nous ne saurions être tenus
-            responsables :
+            Notre responsabilité est limitée aux dommages directs résultant d&apos;une faute
+            prouvée de notre part. Nous ne saurions être tenus responsables :
           </p>
           <LegalList>
             <li>
