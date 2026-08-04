@@ -2033,7 +2033,7 @@
                      "statAria": "{stat} for {name} in game {number}",
                      "statsHint": "Recorded after each game: {stats}.",
                      "statsRequiredHint": "Required after each game: {stats}.",
-                     "statsMissing": "Fill in every statistic for every player of the games played.",
+                     "statsMissing": "Fill in every statistic for each player in the games you report.",
       "gameN": "Game {number}",
       "gameWinnerAria": "Winner of game {number}",
       "winnerPlaceholder": "Winner…",
