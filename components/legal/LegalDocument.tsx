@@ -1,4 +1,6 @@
 import { ReactNode } from "react";
+import { Languages } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 /**
@@ -15,37 +17,84 @@ export type LegalArticle = {
   content: ReactNode;
 };
 
-export function LegalHeader({
-  title,
-  description,
-  updatedAt,
-  children,
-}: {
+/**
+ * Un document légal dans une langue donnée. Les traductions vivent dans des
+ * modules séparés (`content.fr.tsx`, `content.en.tsx`) et partagent cette
+ * forme, si bien qu'une langue qui oublie une section ne compile pas.
+ */
+export type LegalDocumentContent = {
+  meta: {
+    title: string;
+    description: string;
+    keywords: string[];
+  };
+  /** Sur-titre affiché au-dessus du titre principal. */
+  documentLabel: string;
   title: string;
   description: string;
-  updatedAt: string;
-  children?: ReactNode;
+  /** Compose la ligne de date à partir de la date déjà formatée. */
+  lastUpdated: (formattedDate: string) => string;
+  /** Liens vers les autres documents, affichés sous la date. */
+  crossLinks: ReactNode;
+  /** Avertissement affiché en tête des traductions de courtoisie. */
+  translationNotice?: ReactNode;
+  highlightTitle: string;
+  highlight: ReactNode;
+  summaryTitle: string;
+  articles: LegalArticle[];
+};
+
+export function LegalDocumentView({
+  content,
+  formattedDate,
+}: {
+  content: LegalDocumentContent;
+  formattedDate: string;
 }) {
   return (
-    <header className="space-y-4 text-center">
-      <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-        Document légal
-      </p>
-      <h1 className="text-4xl font-bold tracking-tight">{title}</h1>
-      <p className="text-lg text-muted-foreground">{description}</p>
-      <p className="text-sm text-muted-foreground">
-        Dernière mise à jour : {updatedAt}
-      </p>
-      {children}
-    </header>
+    <div className="container mx-auto max-w-4xl px-4 py-8">
+      <div className="space-y-8">
+        <header className="space-y-4 text-center">
+          <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+            {content.documentLabel}
+          </p>
+          <h1 className="text-4xl font-bold tracking-tight">{content.title}</h1>
+          <p className="text-lg text-muted-foreground">{content.description}</p>
+          <p className="text-sm text-muted-foreground">
+            {content.lastUpdated(formattedDate)}
+          </p>
+          <p className="text-sm text-muted-foreground">{content.crossLinks}</p>
+        </header>
+
+        {content.translationNotice && (
+          <Alert>
+            <Languages />
+            <AlertDescription>{content.translationNotice}</AlertDescription>
+          </Alert>
+        )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">{content.highlightTitle}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-muted-foreground">
+            {content.highlight}
+          </CardContent>
+        </Card>
+
+        <LegalSummary title={content.summaryTitle} articles={content.articles} />
+
+        <LegalArticles articles={content.articles} />
+      </div>
+    </div>
   );
 }
 
-export function LegalSummary({ articles }: { articles: LegalArticle[] }) {
+function LegalSummary({ title, articles }: { title: string; articles: LegalArticle[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Sommaire</CardTitle>
+        <CardTitle className="text-lg">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <ol className="grid gap-x-8 gap-y-2 sm:grid-cols-2">
@@ -63,7 +112,7 @@ export function LegalSummary({ articles }: { articles: LegalArticle[] }) {
   );
 }
 
-export function LegalArticles({ articles }: { articles: LegalArticle[] }) {
+function LegalArticles({ articles }: { articles: LegalArticle[] }) {
   return (
     <div className="space-y-6">
       {articles.map((article, index) => (
@@ -81,7 +130,7 @@ export function LegalArticles({ articles }: { articles: LegalArticle[] }) {
   );
 }
 
-/** Liste à puces homogène entre les deux documents. */
+/** Liste à puces homogène entre les documents et les langues. */
 export function LegalList({ children }: { children: ReactNode }) {
   return <ul className="list-disc space-y-2 pl-6">{children}</ul>;
 }
@@ -119,5 +168,25 @@ export function LegalTable({
         </tbody>
       </table>
     </div>
+  );
+}
+
+/** Coordonnées de contact, identiques dans toutes les langues. */
+export const LEGAL_CONTACT = {
+  discord: "https://discord.gg/dZEGkZwJGB",
+  github: "https://github.com/Joutes",
+} as const;
+
+/** Lien externe, avec les attributs de sécurité qui vont avec. */
+export function LegalLink({ href, children }: { href: string; children?: ReactNode }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-primary hover:underline"
+    >
+      {children ?? href}
+    </a>
   );
 }
