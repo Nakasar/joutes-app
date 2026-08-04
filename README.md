@@ -52,3 +52,9 @@ Pour plus de détails, voir [docs/ERRATAS.md](docs/ERRATAS.md).
 Une carte peut être marquée « toujours foil » et porter une liste de variantes d'impression (promo pack, pre-release, judge…), avec une image propre optionnelle.
 
 Pour plus de détails, voir [docs/CARD_PRINTINGS.md](docs/CARD_PRINTINGS.md).
+
+### Documents d'export hors ligne
+
+Chaque jeu expose un document JSON (cartes, erratas, policies, règles) que les clients téléchargent pour fonctionner hors ligne. Il est généré en flux, une génération à la fois par jeu.
+
+Pour plus de détails, voir [docs/GAME_EXPORTS.md](docs/GAME_EXPORTS.md).
