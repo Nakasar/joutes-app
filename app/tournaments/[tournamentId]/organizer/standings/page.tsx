@@ -36,6 +36,7 @@ export default async function OrganizerStandingsPage({
         gamesLost: row.gamesLost,
         opponentMatchWinPercentage: row.opponentMatchWinPercentage,
         stats: row.stats,
+        puzzleTimeSeconds: row.puzzleTimeSeconds,
         playerStatus: row.playerStatus,
       })),
     }));
@@ -56,6 +57,7 @@ export default async function OrganizerStandingsPage({
       gamesLost: row.gamesLost,
       opponentMatchWinPercentage: row.opponentMatchWinPercentage,
       stats: row.stats,
+      puzzleTimeSeconds: row.puzzleTimeSeconds,
       playerStatus: row.playerStatus,
     })),
   });

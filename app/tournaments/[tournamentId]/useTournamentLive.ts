@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import type { LiveTimer } from "@/lib/tournament-timer";
-import type { TournamentLiveDisplay } from "@/lib/types/Tournament";
+import type { LiveStopwatch, LiveTimer } from "@/lib/tournament-timer";
+import type { TournamentLiveDisplay, TournamentPhaseType } from "@/lib/types/Tournament";
 
 export type LiveAnnouncement = {
   id: string;
@@ -18,6 +18,9 @@ export type LiveStanding = {
   matchPoints: number;
   record: string;
   dropped: boolean;
+  // Temps de résolution du puzzle, en secondes. null hors phase puzzle, ou tant
+  // que le joueur n'a pas terminé.
+  puzzleTimeSeconds: number | null;
 };
 
 export type LiveMatch = {
@@ -31,6 +34,10 @@ export type LiveState = {
   name: string;
   announcements: LiveAnnouncement[];
   timer: LiveTimer;
+  // Chronomètre des phases puzzle. Il prend la place du minuteur partout où le
+  // type de la phase en cours (`phaseType`) est « puzzle ».
+  stopwatch: LiveStopwatch;
+  phaseType: TournamentPhaseType | null;
   serverNow: string;
   // Panneau demandé par l'organisateur pour l'écran de la salle. Les deux
   // listes ne sont servies que par le panneau qui les affiche.

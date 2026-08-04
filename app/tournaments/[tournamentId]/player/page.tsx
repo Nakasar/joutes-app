@@ -13,6 +13,7 @@ import { MatchGamesEditor } from "../MatchGamesEditor";
 import { playerTag } from "../PlayerNameTag";
 import { buildQuickResults, type QuickResult } from "../quickResults";
 import { PlayerShell } from "./PlayerShell";
+import { PuzzleCard } from "./PuzzleCard";
 import { ReportSheet } from "./ReportSheet";
 import { usePlayerTournament, type ApiPhase } from "./usePlayerTournament";
 
@@ -258,7 +259,19 @@ export default function TournamentPlayerMatchPage({
       }
       deadlineAt={round?.deadlineAt}
     >
-      {myMatch && round ? (
+      {/* Phase puzzle : ni table ni adversaire, la carte de match n'a rien à
+          montrer. Le chronomètre de la salle et le « j'ai fini » la remplacent. */}
+      {activePhase?.type === "puzzle" ? (
+        <PuzzleCard
+          tournamentId={tournamentId}
+          phaseId={activePhase.id}
+          myPlayerId={myPlayerId}
+          allowSelfReporting={tournament?.settings.allowSelfReporting ?? false}
+          disabled={submitting || myStatus === "dropped" || !myPlayerId}
+          scenario={round?.scenario}
+          apiFetch={apiFetch}
+        />
+      ) : myMatch && round ? (
         <div className="space-y-4">
           <div className="rounded-2xl border bg-card p-6 text-center shadow-sm">
             {/* Sur un intervalle de ligue, il n'y a pas de table : ce qui

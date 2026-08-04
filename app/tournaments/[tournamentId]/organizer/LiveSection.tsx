@@ -9,7 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { formatDuration, timerIsPaused, timerRemainingSeconds } from "@/lib/tournament-timer";
+import {
+  formatDuration,
+  stopwatchElapsedSeconds,
+  stopwatchIsPaused,
+  timerIsPaused,
+  timerRemainingSeconds,
+} from "@/lib/tournament-timer";
 import { TOURNAMENT_LIVE_DISPLAYS, type TournamentLiveDisplay } from "@/lib/types/Tournament";
 import { OrganizerPageHeader } from "./OrganizerPageHeader";
 import { TimerTimeEditor } from "./TimerTimeEditor";
@@ -75,6 +81,14 @@ export function LiveSection({
   const paused = timerIsPaused(timer);
   const expired = remaining !== null && remaining < 0;
   const low = remaining !== null && remaining >= 0 && remaining < 300;
+
+  // Phase puzzle : le décompte n'a plus de sens, la salle suit un chronomètre
+  // parti de 0 — c'est lui qui donne le temps enregistré pour chaque joueur.
+  const isPuzzle = state?.phaseType === "puzzle";
+  const stopwatch = state?.stopwatch ?? null;
+  const elapsed = stopwatchElapsedSeconds(stopwatch, serverOffsetMs);
+  const stopwatchRunning = stopwatch?.running ?? false;
+  const stopwatchPaused = stopwatchIsPaused(stopwatch);
 
   // Messages tout prêts : le libellé sert de bouton, le texte est ce que voient
   // les joueurs. Les urgents passent en rouge sur leur téléphone.
@@ -157,6 +171,33 @@ export function LiveSection({
       action: "start",
       durationSeconds: timer?.durationSeconds ?? DEFAULT_ROUND_SECONDS,
     });
+  };
+
+  const stopwatchAction = async (action: "start" | "pause" | "resume" | "reset") => {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/tournaments/${tournamentId}/stopwatch`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? t("stopwatch.error"));
+      }
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("stopwatch.error"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const toggleStopwatch = () => {
+    if (stopwatchRunning) return stopwatchAction("pause");
+    if (stopwatchPaused) return stopwatchAction("resume");
+    return stopwatchAction("start");
   };
 
   const addTime = () => {
@@ -335,70 +376,124 @@ export function LiveSection({
                       : "text-neutral-400 hover:text-white"
                   )}
                 >
-                  {t(`live.displays.${option}`)}
+                  {/* En phase puzzle, le panneau « minuteur » projette le
+                      chronomètre : le bouton doit annoncer ce qui s'affichera. */}
+                  {option === "timer" && isPuzzle
+                    ? t("stopwatch.title")
+                    : t(`live.displays.${option}`)}
                 </button>
               ))}
             </div>
 
-            <div className="py-4 text-center">
-              <p
-                className={cn(
-                  "font-mono text-[76px] font-bold leading-none tracking-tighter tabular-nums",
-                  expired ? "text-red-400" : low ? "text-amber-300" : "text-white"
-                )}
-              >
-                {remaining === null ? "--:--" : formatDuration(remaining)}
-              </p>
-              <p className="mt-2 text-sm text-neutral-400">
-                {expired
-                  ? t("timerManager.expired")
-                  : running
-                    ? t("timerManager.running")
-                    : paused
-                      ? t("timerManager.paused")
-                      : t("timerManager.stopped")}
-              </p>
-            </div>
+            {isPuzzle ? (
+              <>
+                <div className="py-4 text-center">
+                  <p className="font-mono text-[76px] font-bold leading-none tracking-tighter tabular-nums text-white">
+                    {formatDuration(elapsed ?? 0)}
+                  </p>
+                  <p className="mt-2 text-sm text-neutral-400">
+                    {stopwatchRunning
+                      ? t("stopwatch.running")
+                      : stopwatchPaused
+                        ? t("stopwatch.paused")
+                        : t("stopwatch.notStarted")}
+                  </p>
+                </div>
 
-            <div className="flex flex-wrap justify-center gap-2">
-              <Button variant="secondary" onClick={toggleRun} disabled={busy}>
-                {running ? <Pause className="size-4" /> : <Play className="size-4" />}
-                {running ? t("timerManager.pause") : paused ? t("timerManager.resume") : t("timerManager.start")}
-              </Button>
-              <Button
-                variant="outline"
-                className="border-neutral-700 bg-transparent text-white hover:bg-neutral-800 hover:text-white"
-                onClick={addTime}
-                disabled={busy}
-              >
-                {t("roundHeader.addTwoMinutes")}
-              </Button>
-              <TimerTimeEditor
-                currentSeconds={remaining}
-                disabled={busy}
-                className="h-9 border-neutral-700 bg-transparent px-4 text-white hover:bg-neutral-800 hover:text-white"
-                onApply={setTime}
-              />
-              <Button
-                variant="outline"
-                className="border-neutral-700 bg-transparent text-white hover:bg-neutral-800 hover:text-white"
-                onClick={() =>
-                  timerAction({
-                    action: "start",
-                    durationSeconds: timer?.durationSeconds ?? DEFAULT_ROUND_SECONDS,
-                  })
-                }
-                disabled={busy}
-              >
-                <RotateCcw className="size-4" />
-                {t("live.resetTimer")}
-              </Button>
-            </div>
+                <div className="flex flex-wrap justify-center gap-2">
+                  <Button variant="secondary" onClick={toggleStopwatch} disabled={busy}>
+                    {stopwatchRunning ? <Pause className="size-4" /> : <Play className="size-4" />}
+                    {stopwatchRunning
+                      ? t("stopwatch.pause")
+                      : stopwatchPaused
+                        ? t("stopwatch.resume")
+                        : t("stopwatch.start")}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-neutral-700 bg-transparent text-white hover:bg-neutral-800 hover:text-white"
+                    onClick={() => stopwatchAction("reset")}
+                    disabled={busy}
+                  >
+                    <RotateCcw className="size-4" />
+                    {t("stopwatch.reset")}
+                  </Button>
+                </div>
 
-            <div className="mt-5 flex items-center justify-between border-t border-neutral-800 pt-4 text-[13px] text-neutral-400">
-              <span>{t("live.tablesReported", { done: reportedMatches, total: totalMatches })}</span>
-              <span className="font-mono">{projectionUrl}</span>
-            </div>
+                <div className="mt-5 flex items-center justify-between border-t border-neutral-800 pt-4 text-[13px] text-neutral-400">
+                  <span>{t("stopwatch.livePanelHint")}</span>
+                  <span className="font-mono">{projectionUrl}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="py-4 text-center">
+                  <p
+                    className={cn(
+                      "font-mono text-[76px] font-bold leading-none tracking-tighter tabular-nums",
+                      expired ? "text-red-400" : low ? "text-amber-300" : "text-white"
+                    )}
+                  >
+                    {remaining === null ? "--:--" : formatDuration(remaining)}
+                  </p>
+                  <p className="mt-2 text-sm text-neutral-400">
+                    {expired
+                      ? t("timerManager.expired")
+                      : running
+                        ? t("timerManager.running")
+                        : paused
+                          ? t("timerManager.paused")
+                          : t("timerManager.stopped")}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap justify-center gap-2">
+                  <Button variant="secondary" onClick={toggleRun} disabled={busy}>
+                    {running ? <Pause className="size-4" /> : <Play className="size-4" />}
+                    {running
+                      ? t("timerManager.pause")
+                      : paused
+                        ? t("timerManager.resume")
+                        : t("timerManager.start")}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-neutral-700 bg-transparent text-white hover:bg-neutral-800 hover:text-white"
+                    onClick={addTime}
+                    disabled={busy}
+                  >
+                    {t("roundHeader.addTwoMinutes")}
+                  </Button>
+                  <TimerTimeEditor
+                    currentSeconds={remaining}
+                    disabled={busy}
+                    className="h-9 border-neutral-700 bg-transparent px-4 text-white hover:bg-neutral-800 hover:text-white"
+                    onApply={setTime}
+                  />
+                  <Button
+                    variant="outline"
+                    className="border-neutral-700 bg-transparent text-white hover:bg-neutral-800 hover:text-white"
+                    onClick={() =>
+                      timerAction({
+                        action: "start",
+                        durationSeconds: timer?.durationSeconds ?? DEFAULT_ROUND_SECONDS,
+                      })
+                    }
+                    disabled={busy}
+                  >
+                    <RotateCcw className="size-4" />
+                    {t("live.resetTimer")}
+                  </Button>
+                </div>
+
+                <div className="mt-5 flex items-center justify-between border-t border-neutral-800 pt-4 text-[13px] text-neutral-400">
+                  <span>
+                    {t("live.tablesReported", { done: reportedMatches, total: totalMatches })}
+                  </span>
+                  <span className="font-mono">{projectionUrl}</span>
+                </div>
+              </>
+            )}
           </div>
 
           <Button variant="outline" className="mt-3 w-full" asChild>

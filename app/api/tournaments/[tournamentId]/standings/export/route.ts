@@ -9,6 +9,7 @@ import {
   getTournamentById,
   listPhases,
 } from "@/lib/db/tournaments";
+import { formatDuration } from "@/lib/tournament-timer";
 import { resolveDisplayPhase } from "@/lib/tournaments/current-round";
 import { getPreset } from "@/lib/tournaments/game-presets";
 import {
@@ -80,6 +81,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       // Cellule vide plutôt que zéro quand la statistique est absente : dans
       // un tableur, un 0 fabriqué fausserait moyennes et totaux.
       stats: statColumns.map((column) => row.stats?.[column.key] ?? ""),
+      puzzleTime:
+        row.puzzleTimeSeconds === undefined ? "" : formatDuration(row.puzzleTimeSeconds),
     }));
 
     const csv = buildStandingsCsv(entries, {
@@ -90,6 +93,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       opponentMatchWin: t("standingsExport.columns.opponentMatchWin"),
       gameWin: t("standingsExport.columns.gameWin"),
       status: t("standingsExport.columns.status"),
+      time: t("standingsExport.columns.time"),
     }, statColumns.map((column) => t(`matchStats.stats.${column.labelKey}`)));
 
     const fileName = buildStandingsCsvFileName(tournament.name, round?.number);

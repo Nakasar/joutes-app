@@ -33,6 +33,9 @@ const TONE: Record<TournamentActivityType, string> = {
   "player-dropped": "bg-amber-500",
   "player-reregistered": "bg-emerald-500",
   "penalty-issued": "bg-destructive",
+  "puzzle-solved": "bg-emerald-500",
+  "puzzle-time-edited": "bg-amber-500",
+  "puzzle-cleared": "bg-amber-500",
 };
 
 /**

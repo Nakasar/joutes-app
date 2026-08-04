@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { usePaginatedSearch } from "@/lib/use-paginated-search";
+import { formatDuration } from "@/lib/tournament-timer";
 import { getPreset, type MatchStatDefinition } from "@/lib/tournaments/game-presets";
 import type { TournamentPhaseType, TournamentResultMode, TournamentRoundStanding } from "@/lib/types/Tournament";
 import { MatchPlayerName } from "./MatchPlayerName";
@@ -226,6 +227,9 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
     [current]
   );
   const standingsSearch = usePaginatedSearch(rankedStandings, (s) => s.displayName, 25);
+  // Un seul temps relevé suffit à ouvrir la colonne : les autres joueurs n'ont
+  // simplement pas terminé le puzzle.
+  const standingsHaveTimes = rankedStandings.some((s) => s.puzzleTimeSeconds !== undefined);
 
   // Phase par défaut pour la création : celle de la ronde affichée, sinon la
   // première. N'écrase pas un choix explicite de l'organisateur.
@@ -579,6 +583,13 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
                         <th className="px-3 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
                           {t("history.colPlayer")}
                         </th>
+                        {/* Colonne du chronomètre : une phase puzzle se classe
+                            au temps, et il doit se lire dans le classement. */}
+                        {standingsHaveTimes && (
+                          <th className="px-3 py-2 text-right text-xs font-medium uppercase text-muted-foreground">
+                            {t("history.colTime")}
+                          </th>
+                        )}
                         <th className="px-3 py-2 text-right text-xs font-medium uppercase text-muted-foreground">
                           {t("history.colPoints")}
                         </th>
@@ -604,6 +615,13 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
                             />
                             {standing.playerStatus === "dropped" ? ` ${t("history.dropped")}` : ""}
                           </td>
+                          {standingsHaveTimes && (
+                            <td className="px-3 py-2 text-right font-mono">
+                              {standing.puzzleTimeSeconds === undefined
+                                ? "—"
+                                : formatDuration(standing.puzzleTimeSeconds)}
+                            </td>
+                          )}
                           <td className="px-3 py-2 text-right font-mono">{standing.matchPoints}</td>
                           <td className="px-3 py-2 text-right font-mono">
                             {standing.wins}/{standing.draws}/{standing.losses}
@@ -618,7 +636,10 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
                       ))}
                       {standingsSearch.pageItems.length === 0 && (
                         <tr>
-                          <td colSpan={6} className="px-3 py-3 text-center text-muted-foreground">
+                          <td
+                            colSpan={standingsHaveTimes ? 7 : 6}
+                            className="px-3 py-3 text-center text-muted-foreground"
+                          >
                             {t("history.noPlayerMatch")}
                           </td>
                         </tr>

@@ -1757,6 +1757,47 @@
     }
   },
   "Tournaments": {
+                   "puzzleBoard": {
+                     "clearError": "Could not clear the time",
+                     "editError": "Could not edit the time",
+                     "recordError": "Could not record the time",
+                     "editDialogDescription": "The time recorded for this player. It is what the standings use.",
+                     "editDialogTitle": "{name}'s time",
+                     "finishedCount": "{done} / {total} players finished",
+                     "selfReported": "self-reported",
+                     "clearAria": "Clear {name}'s time",
+                     "editTime": "Time",
+                     "markFinished": "Finished",
+                     "columnActions": "Actions",
+                     "noPlayers": "No registered players.",
+                     "noPhase": "No puzzle phase configured for this tournament.",
+                     "pageDescriptionNamed": "Phase “{phase}” · {puzzle}. Start the stopwatch, then tick off each player as they finish.",
+                     "pageDescription": "Phase “{phase}”. Start the stopwatch, then tick off each player as they finish.",
+                     "pageTitle": "Puzzle"
+                   },
+                   "puzzle": {
+                     "reportError": "Could not record your time",
+                     "finishedCount": "{count} player(s) finished",
+                     "organizerOnlyHint": "The organizers will record your time once you are done.",
+                     "declareFinished": "I finished the puzzle",
+                     "doneHint": "Time recorded. Ask the organizers to correct it.",
+                     "runningHint": "Let us know as soon as you are done.",
+                     "puzzleLabel": "Puzzle",
+                     "yourTime": "Your time",
+                     "elapsed": "Elapsed time"
+                   },
+                   "stopwatch": {
+                     "livePanelHint": "Record times from the “Puzzle” section",
+                     "error": "Stopwatch error",
+                     "notStarted": "Stopwatch not started",
+                     "paused": "Paused",
+                     "running": "Running",
+                     "reset": "Reset",
+                     "resume": "Resume",
+                     "pause": "Pause",
+                     "start": "Start",
+                     "title": "Stopwatch"
+                   },
                    "matchStats": {
                      "presets": {
                        "swpLeague": "Shatterpoint League (struggle cards, wounds)",
@@ -1877,6 +1918,7 @@
         "dropped": "Dropped"
       },
       "phaseType": {
+        "puzzle": "Puzzle (timed)",
         "freeform": "Free format",
         "swiss": "Swiss rounds",
         "elimination": "Elimination (re-pairing)",
@@ -1942,6 +1984,7 @@
       "myMatchesTitle": "My matches"
     },
     "playerShell": {
+                     "elapsed": "elapsed",
                      "deadline": "deadline",
       "notSyncedTitle": "Tournament not synced",
       "notSyncedDescription": "This browser is not synced with this tournament. Scan the QR code provided by the organizer, or sign in if you registered with your account.",
@@ -2041,6 +2084,7 @@
       "pointsAria": "Points for {name} in game {number}"
     },
     "history": {
+      "colTime": "Time",
       "loadError": "Unable to load the history",
       "loadFallbackError": "Error while loading",
       "unknownPlayer": "Unknown",
@@ -2089,6 +2133,7 @@
     "organizerShell": {
       "subtitle": "Organizer portal",
       "sections": {
+        "puzzle": "Puzzle",
         "form": "Form",
         "settings": "Settings",
         "players": "Players",
@@ -2179,6 +2224,10 @@
       "joinQr": "Registration QR"
     },
     "organizerPhases": {
+                         "puzzleHint": "Shown to players during the phase. After the “|”, the solving instructions.",
+                         "puzzlePlaceholder": "Mate in three | White to play and win",
+                         "puzzleLabel": "Puzzle to solve",
+                         "puzzleTypeHint": "Every player solves the same puzzle at the same time. The countdown gives way to a stopwatch starting at 0, and the fastest player ranks first.",
                          "swissPairingLabel": "Pairing within the same point total",
                          "swissPairingRanked": "By standings",
                          "swissPairingRandom": "Random within the group",
@@ -2250,6 +2299,7 @@
       "submit": "Add the phase",
       "deletePhaseAria": "Delete phase {name}",
       "summary": {
+        "puzzleTimed": "ranked on time",
         "resultPoints": "points",
         "resultSelection": "selection",
         "scoringRank": "rank",
@@ -2511,6 +2561,7 @@
       "announce": "Room announcement"
     },
     "standings": {
+      "columnTime": "Time",
       "pageTitle": "Standings",
       "tiebreakers": "Tiebreakers: points, then OMW%, then GW%.",
       "currentTab": "Current",
@@ -2533,6 +2584,7 @@
     },
     "standingsExport": {
       "columns": {
+        "time": "Time",
         "rank": "Rank",
         "player": "Player",
         "points": "Points",
@@ -2589,6 +2641,9 @@
       "empty": "No activity yet.",
       "staffActor": "the organisers",
       "types": {
+                 "puzzle-cleared": "{player}'s time cleared",
+                 "puzzle-time-edited": "{player}'s time corrected ({time})",
+                 "puzzle-solved": "{player} solved the puzzle in {time}",
                  "match-forfeited": "{actor} recorded a forfeit at table {table}",
                  "round-deadline-set": "Deadline for round {round} changed",
                  "round-closed-on-deadline": "Round {round} closed at the deadline ({matches} match(es) settled)",

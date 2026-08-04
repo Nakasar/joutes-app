@@ -286,4 +286,60 @@ describe("calculateMultiplayerStandings", () => {
     assert.equal(standingOf(standings, "a").stats, undefined);
     assert.equal(standings[0].playerId, "a");
   });
+
+  // Phase puzzle : aucun match, donc aucun point. Tout le classement repose
+  // sur le chronomètre, et c'est le seul critère où « moins » vaut « mieux ».
+  it("classe une phase de puzzle au temps, le plus rapide en tête", () => {
+    const standings = calculateMultiplayerStandings(
+      ["lent", "rapide", "moyen"],
+      [],
+      () => SCORING,
+      undefined,
+      undefined,
+      { lent: 900, rapide: 120, moyen: 300 }
+    );
+
+    assert.deepEqual(
+      standings.map((s) => s.playerId),
+      ["rapide", "moyen", "lent"]
+    );
+    assert.equal(standingOf(standings, "rapide").puzzleTimeSeconds, 120);
+  });
+
+  it("place les joueurs sans temps derrière ceux qui ont terminé le puzzle", () => {
+    const standings = calculateMultiplayerStandings(
+      ["fini", "abandon"],
+      [],
+      () => SCORING,
+      undefined,
+      undefined,
+      { fini: 600 }
+    );
+
+    assert.deepEqual(
+      standings.map((s) => s.playerId),
+      ["fini", "abandon"]
+    );
+    assert.equal(standingOf(standings, "abandon").puzzleTimeSeconds, undefined);
+  });
+
+  // Le temps ne départage qu'en dernier : il ne renverse jamais des points de
+  // match gagnés dans une phase précédente du même tournoi.
+  it("ne fait jouer le temps de puzzle qu'après les points de match", () => {
+    const standings = calculateMultiplayerStandings(
+      ["a", "b"],
+      [
+        match({
+          players: [{ playerId: "a", score: 1 }, { playerId: "b", score: 0 }],
+          winnerIds: ["a"],
+        }),
+      ],
+      () => SCORING,
+      undefined,
+      undefined,
+      { a: 900, b: 120 }
+    );
+
+    assert.equal(standings[0].playerId, "a");
+  });
 });

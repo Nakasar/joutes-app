@@ -31,6 +31,10 @@ export type PlayerStanding = {
   // points de victoire…), par clé de statistique. Absent quand la phase n'en
   // utilise pas.
   stats?: Record<string, number>;
+  // Temps mis pour résoudre le(s) puzzle(s) pris en compte, en secondes. Absent
+  // hors phase puzzle, ou tant que le joueur n'a pas terminé. Le plus petit
+  // temps passe devant : c'est le seul critère où « moins » vaut « mieux ».
+  puzzleTimeSeconds?: number;
 };
 
 export type PairingResult = {

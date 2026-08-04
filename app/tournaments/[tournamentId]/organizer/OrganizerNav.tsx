@@ -8,6 +8,7 @@ import type { OrganizerNavCounts } from "./organizerContext";
 
 export type OrganizerNavSection =
   | "rounds"
+  | "puzzle"
   | "standings"
   | "live"
   | "players"
@@ -55,6 +56,9 @@ export function OrganizerNav({
             ? { label: String(counts.pendingMatches), tone: "muted" }
             : undefined,
     },
+    // Le relevé des temps ne concerne que les tournois qui comportent une
+    // phase de puzzle : ailleurs, l'entrée n'aurait rien à montrer.
+    ...(counts.hasPuzzlePhase ? [{ key: "puzzle" as const, href: `${base}/puzzle` }] : []),
     { key: "standings", href: `${base}/standings` },
     { key: "live", href: `${base}/live` },
   ];
@@ -76,21 +80,18 @@ export function OrganizerNav({
   // Le classement vit sous /rounds/:id/standings : on le distingue des matchs
   // pour que les deux entrées ne s'allument pas ensemble.
   const isRoundStandings = /\/rounds\/[^/]+\/standings$/.test(pathname);
-  const activeKey: OrganizerNavSection = pathname.startsWith(`${base}/standings`)
+  const SECTION_PREFIXES: OrganizerNavSection[] = [
+    "standings",
+    "puzzle",
+    "rounds",
+    "live",
+    "players",
+    "phases",
+    "form",
+  ];
+  const activeKey: OrganizerNavSection = isRoundStandings
     ? "standings"
-    : isRoundStandings
-      ? "standings"
-      : pathname.startsWith(`${base}/rounds`)
-        ? "rounds"
-        : pathname.startsWith(`${base}/live`)
-          ? "live"
-          : pathname.startsWith(`${base}/players`)
-            ? "players"
-            : pathname.startsWith(`${base}/phases`)
-              ? "phases"
-              : pathname.startsWith(`${base}/form`)
-                ? "form"
-                : "settings";
+    : (SECTION_PREFIXES.find((section) => pathname.startsWith(`${base}/${section}`)) ?? "settings");
 
   const renderItem = (item: NavItem) => {
     const active = item.key === activeKey;

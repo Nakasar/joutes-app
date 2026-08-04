@@ -39,3 +39,34 @@ export function timerRemainingSeconds(timer: LiveTimer, serverOffsetMs: number):
 export function timerIsPaused(timer: LiveTimer): boolean {
   return !!timer && !timer.running && timer.remainingSeconds !== undefined;
 }
+
+export type LiveStopwatch = {
+  running: boolean;
+  startedAt?: string;
+  elapsedSeconds?: number;
+} | null;
+
+// Secondes écoulées depuis le départ du chronomètre (phases puzzle), corrigées
+// du décalage d'horloge serveur/client. En pause, renvoie le temps figé.
+// Renvoie null si le chronomètre n'a jamais été lancé.
+export function stopwatchElapsedSeconds(
+  stopwatch: LiveStopwatch,
+  serverOffsetMs: number
+): number | null {
+  if (!stopwatch) return null;
+  if (stopwatch.running && stopwatch.startedAt) {
+    const startedAtMs = new Date(stopwatch.startedAt).getTime();
+    // Le chronomètre ne recule jamais : une horloge cliente en avance sur le
+    // serveur ne doit pas afficher un temps négatif au premier dixième.
+    return Math.max(0, (Date.now() + serverOffsetMs - startedAtMs) / 1000);
+  }
+  if (!stopwatch.running && stopwatch.elapsedSeconds !== undefined) {
+    return stopwatch.elapsedSeconds;
+  }
+  return null;
+}
+
+// Indique si le chronomètre est en pause (arrêté sur un temps écoulé non nul).
+export function stopwatchIsPaused(stopwatch: LiveStopwatch): boolean {
+  return !!stopwatch && !stopwatch.running && stopwatch.elapsedSeconds !== undefined;
+}

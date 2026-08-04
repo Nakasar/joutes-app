@@ -1,6 +1,12 @@
 import { z } from "zod";
 
-export const tournamentPhaseTypeSchema = z.enum(["freeform", "swiss", "elimination", "bracket"]);
+export const tournamentPhaseTypeSchema = z.enum([
+  "freeform",
+  "swiss",
+  "elimination",
+  "bracket",
+  "puzzle",
+]);
 export const tournamentResultModeSchema = z.enum(["points", "selection"]);
 export const tournamentScoringMethodSchema = z.enum(["fixed", "rank_offset"]);
 export const tournamentEliminationSeedingSchema = z.enum(["standings", "random"]);
@@ -93,6 +99,30 @@ export const timerActionSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("resume") }),
   z.object({ action: z.literal("stop") }),
 ]);
+
+// Contrôle du chronomètre d'une phase puzzle : il part toujours de 0, il n'y a
+// donc pas de durée à fournir. `reset` le remet à zéro et l'arrête.
+export const stopwatchActionSchema = z.object({
+  action: z.enum(["start", "pause", "resume", "reset"]),
+});
+
+// Un temps de puzzle : jusqu'à 24 h, exprimé en secondes entières. La seconde
+// est la granularité de tout ce qui est affiché en salle.
+const puzzleDurationSecondsSchema = z.number().int().min(0).max(86400);
+
+// Relevé d'un temps de puzzle. `durationSeconds` absent = le temps courant du
+// chronomètre du tournoi, ce qui est le geste normal (« il vient de finir »).
+// `playerId` est réservé à l'organisation : un joueur ne se rapporte que
+// lui-même, et le domaine le lui impose.
+export const recordPuzzleResultSchema = z.object({
+  playerId: z.string().min(1).optional(),
+  durationSeconds: puzzleDurationSecondsSchema.optional(),
+});
+
+// Correction d'un temps déjà relevé (organisation).
+export const updatePuzzleResultSchema = z.object({
+  durationSeconds: puzzleDurationSecondsSchema,
+});
 
 // Rejoindre un tournoi via son code. Sans session, `displayName` est requis
 // (joueur invité) ; avec session, il est ignoré (nom du compte utilisé).
@@ -411,6 +441,9 @@ export type UpdateTournamentRoundInput = z.infer<typeof updateTournamentRoundSch
 export type JoinTournamentInput = z.infer<typeof joinTournamentSchema>;
 export type CreateAnnouncementInput = z.infer<typeof createAnnouncementSchema>;
 export type TimerActionInput = z.infer<typeof timerActionSchema>;
+export type StopwatchActionInput = z.infer<typeof stopwatchActionSchema>;
+export type RecordPuzzleResultInput = z.infer<typeof recordPuzzleResultSchema>;
+export type UpdatePuzzleResultInput = z.infer<typeof updatePuzzleResultSchema>;
 export type CreateTournamentPenaltyInput = z.infer<typeof createTournamentPenaltySchema>;
 export type CreateTournamentNoteInput = z.infer<typeof createTournamentNoteSchema>;
 export type UpdateTournamentDecklistInput = z.infer<typeof updateTournamentDecklistSchema>;
