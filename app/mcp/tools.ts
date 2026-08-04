@@ -45,6 +45,7 @@ import {
     updateTournament,
 } from "@/lib/db/tournaments";
 import { getUserByEmail, getUserByTagOrId, getUsersByIds } from "@/lib/db/users";
+import { formatDuration } from "@/lib/tournament-timer";
 import { removeSellListItemByCollectionEntryId } from "@/lib/db/sell-lists";
 import { collectionLanguage } from "@/lib/schemas/collection.schema";
 import { parseDeckList, serializeDeckList } from "@/app/games/riftbound/deck-checker/utils";
@@ -641,9 +642,14 @@ async function handleGetTournament(
         const sanitized = sanitizePlayer(p);
         return `- ${sanitized.displayName}${sanitized.discriminator ? `#${sanitized.discriminator}` : ""} (${sanitized.status})`;
     }).join("\n");
-    const standingsText = standings.slice(0, 20).map((s, index) =>
-        `${index + 1}. ${s.displayName} — ${s.matchPoints} pts (${s.wins}V/${s.losses}D${s.draws ? `/${s.draws}N` : ""})`
-    ).join("\n");
+    const standingsText = standings.slice(0, 20).map((s, index) => {
+        // Une phase puzzle se classe au temps : les points et le bilan y sont
+        // tous à zéro, seul le chronomètre dit quelque chose.
+        const time = s.puzzleTimeSeconds !== undefined
+            ? `, puzzle en ${formatDuration(s.puzzleTimeSeconds)}`
+            : "";
+        return `${index + 1}. ${s.displayName} — ${s.matchPoints} pts (${s.wins}V/${s.losses}D${s.draws ? `/${s.draws}N` : ""})${time}`;
+    }).join("\n");
 
     return textResult(
         `**${tournament.name}** (ID: ${tournament.id}) — ${TOURNAMENT_STATUS_LABELS[tournament.status] ?? tournament.status}${tournament.joinCode ? `, code de participation : ${tournament.joinCode}` : ""}\n\n` +

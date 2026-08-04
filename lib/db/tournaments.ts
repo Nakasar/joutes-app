@@ -41,6 +41,8 @@ import {
   TournamentPlayerStatus,
   TournamentPlayer,
   TournamentPlayerDb,
+  TournamentPuzzleResult,
+  TournamentPuzzleResultDb,
   TournamentResultMode,
   TournamentRound,
   TournamentRoundDb,
@@ -97,6 +99,11 @@ const ANNOUNCEMENTS = "tournament-announcements";
 const PENALTIES = "tournament-penalties";
 const NOTES = "tournament-notes";
 const ACTIVITY = "tournament-activity";
+// Temps relevés sur les phases chronométrées (type `time-race`). Le type de
+// phase porte un nom générique — d'autres épreuves au chrono pourront s'y
+// ranger — mais le seul format proposé aujourd'hui est le puzzle, d'où le nom
+// de la collection et du vocabulaire alentour.
+const PUZZLE_RESULTS = "tournament-puzzle-results";
 
 // Nombre d'événements conservés dans le journal d'activité d'un tournoi. Les
 // plus anciens sont purgés à l'écriture : le journal est un fil de suivi en
@@ -125,6 +132,17 @@ const roundsIndexReady = db
   .createIndex({ phaseId: 1, number: 1 }, { unique: true })
   .catch((error) => {
     console.error("Impossible de créer l'index unique des rondes de tournoi:", error);
+  });
+
+// Index unique (phase, joueur) des résultats de puzzle : un joueur n'a qu'un
+// temps par phase. Deux enregistrements concurrents (organisateur et joueur qui
+// se signalent en même temps) ne peuvent pas créer deux temps concurrents —
+// l'upsert retombe alors sur le document existant.
+const puzzleResultsIndexReady = db
+  .collection(PUZZLE_RESULTS)
+  .createIndex({ phaseId: 1, playerId: 1 }, { unique: true })
+  .catch((error) => {
+    console.error("Impossible de créer l'index unique des résultats de puzzle:", error);
   });
 
 // Index unique partiel : un code de participation ne peut être partagé par deux
@@ -197,6 +215,7 @@ function toTournament(doc: WithId<TournamentDb>): Tournament {
     joinCode: doc.joinCode,
     liveCode: doc.liveCode,
     timer: doc.timer,
+    stopwatch: doc.stopwatch,
     liveDisplay: doc.liveDisplay,
     location: doc.location,
     startsAt: doc.startsAt,
@@ -1112,6 +1131,7 @@ export async function deleteTournament(tournamentId: string): Promise<void> {
     db.collection(PENALTIES).deleteMany({ tournamentId: _id }),
     db.collection(NOTES).deleteMany({ tournamentId: _id }),
     db.collection(ACTIVITY).deleteMany({ tournamentId: _id }),
+    db.collection(PUZZLE_RESULTS).deleteMany({ tournamentId: _id }),
   ]);
 }
 
@@ -1736,6 +1756,269 @@ async function updateTournamentTimer(
 }
 
 // =====================
+// CHRONOMÈTRE (phases puzzle)
+// =====================
+
+type Stopwatch = NonNullable<Tournament["stopwatch"]>;
+
+// Secondes écoulées au chronomètre à l'instant présent : c'est ce temps qui est
+// enregistré quand un joueur est marqué comme ayant terminé son puzzle. Renvoie
+// null tant que le chronomètre n'a jamais été lancé.
+export function stopwatchElapsedNow(tournament: Tournament, now = new Date()): number | null {
+  const stopwatch = tournament.stopwatch;
+  if (!stopwatch) return null;
+  if (stopwatch.running && stopwatch.startedAt) {
+    return Math.max(0, (now.getTime() - stopwatch.startedAt.getTime()) / 1000);
+  }
+  if (!stopwatch.running && stopwatch.elapsedSeconds !== undefined) {
+    return stopwatch.elapsedSeconds;
+  }
+  return null;
+}
+
+// Lance le chronomètre à 0 : fixe l'instant de départ absolu, à partir duquel
+// tous les postes recalculent le même temps écoulé.
+export async function startStopwatch(tournamentId: string): Promise<Tournament> {
+  return updateTournamentStopwatch(tournamentId, { running: true, startedAt: new Date() });
+}
+
+// Met le chronomètre en pause : fige le temps écoulé et efface l'instant de
+// départ. Sans effet s'il ne tourne pas.
+export async function pauseStopwatch(tournamentId: string): Promise<Tournament> {
+  const tournament = await requireTournament(tournamentId);
+  const stopwatch = tournament.stopwatch;
+  if (!stopwatch?.running || !stopwatch.startedAt) {
+    return tournament;
+  }
+  return updateTournamentStopwatch(tournamentId, {
+    running: false,
+    elapsedSeconds: Math.max(0, (Date.now() - stopwatch.startedAt.getTime()) / 1000),
+  });
+}
+
+// Reprend un chronomètre en pause : recule l'instant de départ du temps déjà
+// écoulé, pour que le décompte reparte d'où il s'était arrêté.
+export async function resumeStopwatch(tournamentId: string): Promise<Tournament> {
+  const tournament = await requireTournament(tournamentId);
+  const stopwatch = tournament.stopwatch;
+  if (!stopwatch || stopwatch.running || stopwatch.elapsedSeconds === undefined) {
+    return tournament;
+  }
+  return updateTournamentStopwatch(tournamentId, {
+    running: true,
+    startedAt: new Date(Date.now() - stopwatch.elapsedSeconds * 1000),
+  });
+}
+
+// Remet le chronomètre à zéro et l'arrête. Il retrouve l'état « jamais lancé »
+// plutôt qu'une pause à 0 : « en pause à 00:00 » laisserait croire à une course
+// commencée, et « Reprendre » plutôt que « Lancer » sur le bouton. Les temps
+// déjà enregistrés ne sont pas touchés : ce sont des résultats, pas un état
+// d'affichage.
+export async function resetStopwatch(tournamentId: string): Promise<Tournament> {
+  return updateTournamentStopwatch(tournamentId, { running: false });
+}
+
+async function updateTournamentStopwatch(
+  tournamentId: string,
+  stopwatch: Stopwatch
+): Promise<Tournament> {
+  const _id = parseObjectId(tournamentId, "Tournoi");
+  // Les deux champs facultatifs s'excluent (en marche / en pause) : le
+  // chronomètre entier est réécrit, sinon une reprise laisserait derrière elle
+  // le temps figé de la pause précédente.
+  const result = await db
+    .collection<TournamentDb>(TOURNAMENTS)
+    .findOneAndUpdate({ _id }, { $set: { stopwatch } }, { returnDocument: "after" });
+  if (!result) {
+    throw new TournamentError("not-found", "Tournoi non trouvé");
+  }
+  return toTournament(result);
+}
+
+// =====================
+// RÉSULTATS DE PUZZLE
+// =====================
+
+function toPuzzleResult(doc: WithId<TournamentPuzzleResultDb>): TournamentPuzzleResult {
+  return {
+    id: doc._id.toString(),
+    tournamentId: doc.tournamentId.toString(),
+    phaseId: doc.phaseId.toString(),
+    playerId: doc.playerId.toString(),
+    durationSeconds: doc.durationSeconds,
+    selfReported: doc.selfReported ?? false,
+    reportedBy: doc.reportedBy,
+    createdAt: doc.createdAt,
+    updatedAt: doc.updatedAt,
+  };
+}
+
+// Vérifie qu'une phase existe, appartient au tournoi et est bien une phase
+// puzzle : les temps n'ont de sens nulle part ailleurs.
+async function requirePuzzlePhase(tournamentId: string, phaseId: string): Promise<TournamentPhase> {
+  const phase = await getPhaseById(tournamentId, phaseId);
+  if (!phase) {
+    throw new TournamentError("not-found", "Phase non trouvée");
+  }
+  if (phase.type !== "time-race") {
+    throw new TournamentError("invalid", "Cette phase n'est pas une phase de puzzle");
+  }
+  return phase;
+}
+
+export async function listPuzzleResults(
+  tournamentId: string,
+  phaseId?: string
+): Promise<TournamentPuzzleResult[]> {
+  const tId = parseObjectId(tournamentId, "Tournoi");
+  const filter: Record<string, unknown> = { tournamentId: tId };
+  if (phaseId) filter.phaseId = parseObjectId(phaseId, "Phase");
+  const docs = await db
+    .collection<TournamentPuzzleResultDb>(PUZZLE_RESULTS)
+    .find(filter)
+    .sort({ durationSeconds: 1 })
+    .toArray();
+  return docs.map(toPuzzleResult);
+}
+
+/**
+ * Enregistre le temps d'un joueur sur le puzzle d'une phase.
+ * `durationSeconds` absent = le temps courant du chronomètre du tournoi, ce qui
+ * est le cas d'usage normal : l'organisateur (ou le joueur) constate la fin du
+ * puzzle au moment où il appuie.
+ *
+ * `overwrite` distingue les deux gestes : l'organisation peut repointer un
+ * joueur déjà relevé (le nouveau temps remplace l'ancien), un joueur ne rend
+ * son temps qu'une fois.
+ */
+export async function recordPuzzleResult(
+  tournamentId: string,
+  phaseId: string,
+  data: {
+    playerId: string;
+    durationSeconds?: number;
+    selfReported: boolean;
+    reportedBy: string;
+    overwrite: boolean;
+  }
+): Promise<TournamentPuzzleResult> {
+  const tournament = await requireTournament(tournamentId);
+  await requirePuzzlePhase(tournamentId, phaseId);
+
+  const player = await getPlayerById(tournamentId, data.playerId);
+  if (!player) {
+    throw new TournamentError("not-found", "Joueur non trouvé");
+  }
+  if (player.status === "dropped") {
+    throw new TournamentError("conflict", "Ce joueur ne participe plus au tournoi");
+  }
+
+  const elapsed = data.durationSeconds ?? stopwatchElapsedNow(tournament);
+  if (elapsed === null) {
+    throw new TournamentError(
+      "conflict",
+      "Le chronomètre de la phase n'a pas encore été lancé : impossible de relever un temps"
+    );
+  }
+  const durationSeconds = Math.max(0, Math.round(elapsed));
+
+  await puzzleResultsIndexReady;
+  const now = new Date();
+  const collection = db.collection<TournamentPuzzleResultDb>(PUZZLE_RESULTS);
+  const key = {
+    tournamentId: new ObjectId(tournamentId),
+    phaseId: new ObjectId(phaseId),
+    playerId: new ObjectId(data.playerId),
+  };
+  const value = {
+    durationSeconds,
+    selfReported: data.selfReported,
+    reportedBy: data.reportedBy,
+  };
+
+  // Sans droit de réécriture, le « une seule fois » est porté par l'écriture
+  // elle-même plutôt que par une lecture préalable : deux requêtes concurrentes
+  // (double appui, rejeu réseau) passeraient toutes deux un contrôle fait
+  // avant, et la seconde écraserait le temps rendu par la première.
+  if (!data.overwrite) {
+    let upsertedId: ObjectId | null;
+    try {
+      upsertedId = (
+        await collection.updateOne(
+          key,
+          { $setOnInsert: { ...value, createdAt: now } },
+          { upsert: true }
+        )
+      ).upsertedId;
+    } catch (error) {
+      // Course perdue sur l'index unique : l'autre requête a relevé le temps,
+      // celui-ci est en trop.
+      if (!isDuplicateKeyError(error)) throw error;
+      upsertedId = null;
+    }
+    if (!upsertedId) {
+      throw new TournamentError("conflict", "Un temps est déjà enregistré pour ce joueur");
+    }
+    return toPuzzleResult({ ...key, ...value, createdAt: now, _id: upsertedId });
+  }
+
+  const result = await collection.findOneAndUpdate(
+    key,
+    { $set: { ...value, updatedAt: now }, $setOnInsert: { createdAt: now } },
+    { upsert: true, returnDocument: "after" }
+  );
+  if (!result) {
+    throw new TournamentError("not-found", "Résultat de puzzle non trouvé");
+  }
+  return toPuzzleResult(result);
+}
+
+/**
+ * Corrige le temps enregistré d'un joueur (organisation). Distinct de
+ * `recordPuzzleResult` : il n'y a rien à corriger tant que rien n'a été relevé,
+ * et l'auteur du relevé initial n'a pas à être réécrit par la correction.
+ */
+export async function updatePuzzleResultTime(
+  tournamentId: string,
+  phaseId: string,
+  playerId: string,
+  durationSeconds: number
+): Promise<TournamentPuzzleResult> {
+  await requirePuzzlePhase(tournamentId, phaseId);
+  const result = await db.collection<TournamentPuzzleResultDb>(PUZZLE_RESULTS).findOneAndUpdate(
+    {
+      tournamentId: parseObjectId(tournamentId, "Tournoi"),
+      phaseId: parseObjectId(phaseId, "Phase"),
+      playerId: parseObjectId(playerId, "Joueur"),
+    },
+    { $set: { durationSeconds: Math.max(0, Math.round(durationSeconds)), updatedAt: new Date() } },
+    { returnDocument: "after" }
+  );
+  if (!result) {
+    throw new TournamentError("not-found", "Aucun temps enregistré pour ce joueur");
+  }
+  return toPuzzleResult(result);
+}
+
+// Retire le temps enregistré d'un joueur : le puzzle redevient « non terminé ».
+export async function deletePuzzleResult(
+  tournamentId: string,
+  phaseId: string,
+  playerId: string
+): Promise<void> {
+  await requirePuzzlePhase(tournamentId, phaseId);
+  const result = await db.collection<TournamentPuzzleResultDb>(PUZZLE_RESULTS).deleteOne({
+    tournamentId: parseObjectId(tournamentId, "Tournoi"),
+    phaseId: parseObjectId(phaseId, "Phase"),
+    playerId: parseObjectId(playerId, "Joueur"),
+  });
+  if (result.deletedCount === 0) {
+    throw new TournamentError("not-found", "Aucun temps enregistré pour ce joueur");
+  }
+}
+
+// =====================
 // PLAYERS
 // =====================
 
@@ -2169,6 +2452,12 @@ function assertPlayerBoundsForType(
   }
 }
 
+// Une phase chronométrée n'apparie personne : elle n'a ni match ni table, et
+// son unique ronde n'existe que pour donner un contenant aux temps relevés.
+function phaseGeneratesMatches(type: TournamentPhase["type"]): boolean {
+  return type !== "freeform" && type !== "time-race";
+}
+
 export async function addPhase(
   tournamentId: string,
   data: {
@@ -2364,6 +2653,7 @@ export async function deletePhase(tournamentId: string, phaseId: string): Promis
   await db.collection<TournamentPhaseDb>(PHASES).deleteOne({ _id: pId, tournamentId: tId });
   await db.collection(ROUNDS).deleteMany({ tournamentId: tId, phaseId: pId });
   await db.collection(MATCHES).deleteMany({ tournamentId: tId, phaseId: pId });
+  await db.collection(PUZZLE_RESULTS).deleteMany({ tournamentId: tId, phaseId: pId });
   await db
     .collection<TournamentDb>(TOURNAMENTS)
     .updateOne({ _id: tId, currentPhaseId: phaseId }, { $unset: { currentPhaseId: "" } });
@@ -2490,7 +2780,8 @@ function scenarioForRound(phase: TournamentPhase, roundNumber: number): Tourname
 /**
  * Crée la ronde suivante d'une phase, avec génération automatique des matchs
  * (pairings suisses ou bracket). Pour une phase freeform, crée une ronde vide
- * dans laquelle l'organisateur ajoute ses matchs manuellement.
+ * dans laquelle l'organisateur ajoute ses matchs manuellement ; pour une phase
+ * puzzle, une ronde vide unique, qui n'ancre que le chronomètre et les temps.
  */
 export async function createNextRound(
   tournamentId: string,
@@ -2530,6 +2821,13 @@ export async function createNextRound(
     throw new TournamentError("conflict", `Toutes les rondes (${phase.plannedRounds}) ont déjà été créées`);
   }
 
+  // Une phase puzzle porte un puzzle, chronométré depuis son démarrage : sa
+  // ronde unique n'est là que pour ancrer la phase dans le déroulé du tournoi.
+  // Plusieurs puzzles = plusieurs phases, chacune avec son chronomètre.
+  if (phase.type === "time-race" && lastRound) {
+    throw new TournamentError("conflict", "Une phase de puzzle ne comporte qu'une seule ronde");
+  }
+
   const players = await listPlayers(tournamentId);
   const activePlayerIds = players.filter((p) => p.status === "registered").map((p) => p.id);
   const activeSet = new Set(activePlayerIds);
@@ -2546,12 +2844,21 @@ export async function createNextRound(
     await db.collection<TournamentMatchDb>(MATCHES).find({ tournamentId: tId }).toArray()
   ).map(toMatch);
   const phasePreset = getPreset(phase.statsPresetKey);
+  // Temps de puzzle de tout le tournoi : après une phase puzzle, c'est le seul
+  // critère qui distingue les joueurs (aucun match, donc aucun point), et il
+  // doit donc porter le seeding d'entrée de la phase suivante.
+  const puzzleTimes: Record<string, number> = {};
+  for (const result of await listPuzzleResults(tournamentId)) {
+    puzzleTimes[result.playerId] = (puzzleTimes[result.playerId] ?? 0) + result.durationSeconds;
+  }
   const cumulativeStandings = (ids: string[]): PlayerStanding[] =>
     calculateMultiplayerStandings(
       ids,
       allMatches,
       (match) => scoringByPhaseId.get(match.phaseId) ?? scoringForPhase(phase),
-      phasePreset
+      phasePreset,
+      undefined,
+      puzzleTimes
     );
   const cumulativeRank = (ids: string[]): string[] =>
     cumulativeStandings(ids).map((s) => s.playerId);
@@ -2662,7 +2969,7 @@ export async function createNextRound(
       );
     }
   }
-  // freeform: pas de génération, la ronde est créée vide.
+  // freeform et puzzle : pas de génération, la ronde est créée vide.
 
   const now = new Date();
   const isAsync = phase.pacing === "asynchronous";
@@ -3627,7 +3934,9 @@ function resolveStandingsPreset(
 
 /**
  * Classement d'une phase (ou du tournoi entier si phaseId est omis), calculé
- * sur les matchs terminés uniquement.
+ * sur les matchs terminés uniquement. Les temps de puzzle relevés sur le
+ * périmètre demandé sont cumulés et servent de dernier départage — ce qui, dans
+ * une phase puzzle (sans match, donc sans point), revient à classer au temps.
  */
 export async function getStandings(tournamentId: string, phaseId?: string): Promise<TournamentStanding[]> {
   const tId = parseObjectId(tournamentId, "Tournoi");
@@ -3637,20 +3946,31 @@ export async function getStandings(tournamentId: string, phaseId?: string): Prom
     filter.phaseId = parseObjectId(phaseId, "Phase");
   }
 
-  const [players, matchDocs, phases] = await Promise.all([
+  const [players, matchDocs, phases, puzzleResults] = await Promise.all([
     listPlayers(tournamentId),
     db.collection<TournamentMatchDb>(MATCHES).find(filter).toArray(),
     listPhases(tournamentId),
+    listPuzzleResults(tournamentId, phaseId),
   ]);
+
+  // Cumul des temps : sur le classement d'ensemble d'un tournoi enchaînant
+  // plusieurs puzzles, c'est le temps total qui départage.
+  const puzzleTimes: Record<string, number> = {};
+  for (const result of puzzleResults) {
+    puzzleTimes[result.playerId] = (puzzleTimes[result.playerId] ?? 0) + result.durationSeconds;
+  }
 
   // Chaque match est scoré selon la méthode de sa propre phase (le scoring
   // peut différer d'une phase à l'autre du tournoi).
   const scoringByPhaseId = new Map(phases.map((p) => [p.id, scoringForPhase(p)]));
+  const preset = resolveStandingsPreset(phases, phaseId);
   const standings = calculateMultiplayerStandings(
     players.map((p) => p.id),
     matchDocs.map(toMatch),
     (match) => scoringByPhaseId.get(match.phaseId) ?? DEFAULT_MATCH_SCORING,
-    resolveStandingsPreset(phases, phaseId)
+    preset,
+    undefined,
+    puzzleTimes
   );
 
   const playersById = new Map(players.map((p) => [p.id, p]));
@@ -3757,11 +4077,12 @@ export async function validateRoundStandings(
     throw new TournamentError("not-found", "Phase non trouvée");
   }
 
-  const [players, allPhases, phaseRounds, allMatchDocs] = await Promise.all([
+  const [players, allPhases, phaseRounds, allMatchDocs, allPuzzleResults] = await Promise.all([
     listPlayers(tournamentId),
     listPhases(tournamentId),
     listRounds(tournamentId, round.phaseId),
     db.collection<TournamentMatchDb>(MATCHES).find({ tournamentId: tId }).toArray(),
+    listPuzzleResults(tournamentId),
   ]);
   const playersById = new Map(players.map((p) => [p.id, p]));
   const scoringByPhaseId = new Map(allPhases.map((p) => [p.id, scoringForPhase(p)]));
@@ -3783,21 +4104,44 @@ export async function validateRoundStandings(
     const index = phaseIndexById.get(m.phaseId);
     return index !== undefined && index < currentPhaseIndex;
   });
+  // Temps de puzzle cumulés jusqu'à cette phase incluse : même périmètre que
+  // les matchs retenus ci-dessus, pour que le classement figé se lise comme le
+  // classement en direct au même instant.
+  const cumulativePuzzleTimes: Record<string, number> = {};
+  for (const result of allPuzzleResults) {
+    const index = phaseIndexById.get(result.phaseId);
+    if (index === undefined || index > currentPhaseIndex) continue;
+    cumulativePuzzleTimes[result.playerId] =
+      (cumulativePuzzleTimes[result.playerId] ?? 0) + result.durationSeconds;
+  }
+
   // Ne figer que les joueurs présents dans la phase courante (jusqu'à cette
   // ronde) ; ils portent toutefois leurs points cumulés des phases précédentes.
-  const participantIds = [
-    ...new Set(
-      cumulativeMatches
-        .filter((m) => m.phaseId === round.phaseId)
-        .flatMap((m) => m.players.map((p) => p.playerId))
-    ),
-  ];
+  // Une phase puzzle n'a pas de match : ses participants sont les inscrits, et
+  // ceux qui ont déjà rendu un temps même s'ils se sont retirés depuis.
+  const participantIds =
+    phase.type === "time-race"
+      ? [
+          ...new Set([
+            ...players.filter((p) => p.status === "registered").map((p) => p.id),
+            ...allPuzzleResults.filter((r) => r.phaseId === round.phaseId).map((r) => r.playerId),
+          ]),
+        ]
+      : [
+          ...new Set(
+            cumulativeMatches
+              .filter((m) => m.phaseId === round.phaseId)
+              .flatMap((m) => m.players.map((p) => p.playerId))
+          ),
+        ];
 
   const standings: TournamentRoundStanding[] = calculateMultiplayerStandings(
     participantIds,
     cumulativeMatches,
     (m) => scoringByPhaseId.get(m.phaseId) ?? scoringForPhase(phase),
-    resolveStandingsPreset(allPhases, round.phaseId)
+    resolveStandingsPreset(allPhases, round.phaseId),
+    undefined,
+    cumulativePuzzleTimes
   ).map((standing) => {
     const player = playersById.get(standing.playerId);
     return {
@@ -3975,7 +4319,10 @@ export async function advanceToNextPhase(
 
   // Vérifie qu'il restera assez de joueurs avant toute mutation (évite un état
   // partiel : phase clôturée / joueurs droppés sans ronde créée).
-  if (nextPhase.type !== "freeform" && qualification.qualified.length < nextPhase.minPlayersPerMatch) {
+  if (
+    phaseGeneratesMatches(nextPhase.type) &&
+    qualification.qualified.length < nextPhase.minPlayersPerMatch
+  ) {
     throw new TournamentError(
       "invalid",
       `Au moins ${nextPhase.minPlayersPerMatch} joueurs qualifiés sont requis pour démarrer cette phase`

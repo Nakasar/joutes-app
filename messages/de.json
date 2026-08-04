@@ -1674,6 +1674,47 @@
     }
   },
   "Tournaments": {
+                   "puzzleBoard": {
+                     "clearError": "Zeit konnte nicht gelöscht werden",
+                     "editError": "Zeit konnte nicht geändert werden",
+                     "recordError": "Zeit konnte nicht erfasst werden",
+                     "editDialogDescription": "Die für diesen Spieler erfasste Zeit. Sie zählt für die Tabelle.",
+                     "editDialogTitle": "Zeit von {name}",
+                     "finishedCount": "{done} / {total} Spieler fertig",
+                     "selfReported": "selbst gemeldet",
+                     "clearAria": "Zeit von {name} löschen",
+                     "editTime": "Zeit",
+                     "markFinished": "Fertig",
+                     "columnActions": "Aktionen",
+                     "noPlayers": "Keine angemeldeten Spieler.",
+                     "noPhase": "Für dieses Turnier ist keine Puzzle-Phase eingerichtet.",
+                     "pageDescriptionNamed": "Phase „{phase}“ · {puzzle}. Stoppuhr starten und dann jeden Spieler abhaken, der fertig ist.",
+                     "pageDescription": "Phase „{phase}“. Stoppuhr starten und dann jeden Spieler abhaken, der fertig ist.",
+                     "pageTitle": "Puzzle"
+                   },
+                   "puzzle": {
+                     "reportError": "Ihre Zeit konnte nicht erfasst werden",
+                     "finishedCount": "{count} Spieler fertig",
+                     "organizerOnlyHint": "Die Organisation erfasst Ihre Zeit, sobald Sie fertig sind.",
+                     "declareFinished": "Ich habe das Puzzle gelöst",
+                     "doneHint": "Zeit erfasst. Für eine Korrektur wenden Sie sich an die Organisation.",
+                     "runningHint": "Melden Sie sich, sobald Sie fertig sind.",
+                     "puzzleLabel": "Puzzle",
+                     "yourTime": "Ihre Zeit",
+                     "elapsed": "Vergangene Zeit"
+                   },
+                   "stopwatch": {
+                     "livePanelHint": "Zeiten werden unter „Puzzle“ erfasst",
+                     "error": "Fehler bei der Stoppuhr",
+                     "notStarted": "Stoppuhr nicht gestartet",
+                     "paused": "Pausiert",
+                     "running": "Läuft",
+                     "reset": "Zurücksetzen",
+                     "resume": "Fortsetzen",
+                     "pause": "Pause",
+                     "start": "Starten",
+                     "title": "Stoppuhr"
+                   },
                    "matchStats": {
                      "presets": {
                        "swpLeague": "Shatterpoint-Liga (Kampfkarten, Wunden)",
@@ -1794,6 +1835,7 @@
         "dropped": "Ausgeschieden"
       },
       "phaseType": {
+        "time-race": "Puzzle (auf Zeit)",
         "freeform": "Freies Format",
         "swiss": "Schweizer Runden",
         "elimination": "K.-o. (Neupaarung)",
@@ -1859,6 +1901,7 @@
       "myMatchesTitle": "Meine Matches"
     },
     "playerShell": {
+                     "elapsed": "vergangen",
                      "deadline": "Frist",
       "notSyncedTitle": "Turnier nicht synchronisiert",
       "notSyncedDescription": "Dieser Browser ist nicht mit diesem Turnier synchronisiert. Scannen Sie den vom Organisator bereitgestellten QR-Code oder melden Sie sich an, falls Sie sich mit Ihrem Konto registriert haben.",
@@ -1958,6 +2001,7 @@
       "pointsAria": "Punkte von {name} in Partie {number}"
     },
     "history": {
+      "colTime": "Zeit",
       "loadError": "Der Verlauf konnte nicht geladen werden",
       "loadFallbackError": "Fehler beim Laden",
       "unknownPlayer": "Unbekannt",
@@ -2006,6 +2050,7 @@
     "organizerShell": {
       "subtitle": "Organisatorportal",
       "sections": {
+        "puzzle": "Puzzle",
         "form": "Formular",
         "settings": "Einstellungen",
         "players": "Spieler",
@@ -2096,6 +2141,10 @@
       "joinQr": "Anmelde-QR"
     },
     "organizerPhases": {
+                         "puzzleHint": "Wird den Spielern während der Phase angezeigt. Nach dem „|“ folgen die Lösungshinweise.",
+                         "puzzlePlaceholder": "Matt in drei Zügen | Weiß zieht und gewinnt",
+                         "puzzleLabel": "Zu lösendes Puzzle",
+                         "puzzleTypeHint": "Alle Spieler lösen gleichzeitig dasselbe Puzzle. Statt des Countdowns läuft eine Stoppuhr ab 0, und die schnellste Zeit führt die Tabelle an.",
                          "swissPairingLabel": "Paarung bei gleicher Punktzahl",
                          "swissPairingRanked": "Nach Tabelle",
                          "swissPairingRandom": "Zufällig innerhalb der Gruppe",
@@ -2167,6 +2216,7 @@
       "submit": "Phase hinzufügen",
       "deletePhaseAria": "Phase {name} löschen",
       "summary": {
+        "puzzleTimed": "Wertung nach Zeit",
         "resultPoints": "Punkte",
         "resultSelection": "Auswahl",
         "scoringRank": "Rang",
@@ -2428,6 +2478,7 @@
       "announce": "Saalansage"
     },
     "standings": {
+      "columnTime": "Zeit",
       "pageTitle": "Tabelle",
       "tiebreakers": "Entscheidung: Punkte, dann OMW%, dann GW%.",
       "currentTab": "Aktuell",
@@ -2450,6 +2501,7 @@
     },
     "standingsExport": {
       "columns": {
+        "time": "Zeit",
         "rank": "Rang",
         "player": "Spieler",
         "points": "Punkte",
@@ -2506,6 +2558,9 @@
       "empty": "Noch keine Aktivität.",
       "staffActor": "die Organisation",
       "types": {
+                 "puzzle-cleared": "Zeit von {player} gelöscht",
+                 "puzzle-time-edited": "Zeit von {player} korrigiert ({time})",
+                 "puzzle-solved": "{player} hat das Puzzle in {time} gelöst",
                  "match-forfeited": "{actor} hat ein Forfait an Tisch {table} eingetragen",
                  "round-deadline-set": "Frist der Runde {round} geändert",
                  "round-closed-on-deadline": "Runde {round} bei Fristablauf geschlossen ({matches} Partie(n) geregelt)",

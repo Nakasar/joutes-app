@@ -4,7 +4,14 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { DateTime } from "luxon";
 import { cn } from "@/lib/utils";
-import { formatDuration, timerIsPaused, timerRemainingSeconds } from "@/lib/tournament-timer";
+import {
+  formatDuration,
+  formatStopwatch,
+  stopwatchElapsedSeconds,
+  stopwatchIsPaused,
+  timerIsPaused,
+  timerRemainingSeconds,
+} from "@/lib/tournament-timer";
 import { useTournamentLive } from "../../tournaments/[tournamentId]/useTournamentLive";
 
 /**
@@ -21,9 +28,14 @@ export function ProjectionScreen({ tournamentId }: { tournamentId: string }) {
 
   const timer = state?.timer ?? null;
   const remaining = timerRemainingSeconds(timer, serverOffsetMs);
-  const expired = remaining !== null && remaining < 0;
-  const paused = timerIsPaused(timer);
   const display = state?.display ?? "timer";
+
+  // Phase puzzle : le panneau « minuteur » projette le chronomètre commun de la
+  // salle, qui monte depuis 0 et ne peut donc jamais expirer.
+  const isPuzzle = state?.phaseType === "time-race";
+  const elapsed = stopwatchElapsedSeconds(state?.stopwatch ?? null, serverOffsetMs);
+  const expired = !isPuzzle && remaining !== null && remaining < 0;
+  const paused = isPuzzle ? stopwatchIsPaused(state?.stopwatch ?? null) : timerIsPaused(timer);
 
   // Décompte fluide : le sondage rafraîchit les données, ce tick rafraîchit
   // l'affichage entre deux sondages. Réservé au minuteur — c'est le seul
@@ -53,9 +65,12 @@ export function ProjectionScreen({ tournamentId }: { tournamentId: string }) {
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col justify-center px-[3vw] py-[2vh]">
-        {display === "timer" && (
-          <TimerPanel remaining={remaining} paused={paused} expired={expired} />
-        )}
+        {display === "timer" &&
+          (isPuzzle ? (
+            <StopwatchPanel elapsed={elapsed} paused={paused} />
+          ) : (
+            <TimerPanel remaining={remaining} paused={paused} expired={expired} />
+          ))}
         {display === "announcements" && (
           <AnnouncementsPanel announcements={state?.announcements ?? []} />
         )}
@@ -92,6 +107,24 @@ function TimerPanel({
       {paused && (
         <p className="text-[3vh] uppercase tracking-[0.2em] text-white/70">{t("timerPage.paused")}</p>
       )}
+    </div>
+  );
+}
+
+/**
+ * Chronomètre d'une phase puzzle. Rien ne clignote et rien ne devient rouge :
+ * il n'y a pas d'échéance, seulement un temps que chacun cherche à battre.
+ */
+function StopwatchPanel({ elapsed, paused }: { elapsed: number | null; paused: boolean }) {
+  const t = useTranslations("Tournaments");
+  return (
+    <div className="flex flex-col items-center justify-center gap-[2vh]">
+      <p className="font-mono text-[26vh] font-bold leading-none tabular-nums">
+        {formatStopwatch(elapsed)}
+      </p>
+      <p className="text-[3vh] uppercase tracking-[0.2em] text-white/70">
+        {paused ? t("stopwatch.paused") : elapsed === null ? t("stopwatch.notStarted") : ""}
+      </p>
     </div>
   );
 }
@@ -148,13 +181,25 @@ function StandingsPanel({
   standings,
 }: {
   standings:
-    | { rank: number; name: string; matchPoints: number; record: string; dropped: boolean }[]
+    | {
+        rank: number;
+        name: string;
+        matchPoints: number;
+        record: string;
+        dropped: boolean;
+        puzzleTimeSeconds: number | null;
+      }[]
     | null;
 }) {
   const t = useTranslations("Tournaments");
   if (!standings || standings.length === 0) {
     return <p className="text-center text-[4vh] text-white/50">{t("projection.noStandings")}</p>;
   }
+
+  // Classement au temps (phase puzzle) : le bilan et les points ne disent rien,
+  // c'est le chrono qui fait le rang. Un seul joueur classé au temps suffit à
+  // basculer la colonne — les autres n'ont simplement pas encore terminé.
+  const timed = standings.some((row) => row.puzzleTimeSeconds !== null);
 
   // Deux colonnes dès que la liste dépasse ce que l'écran tient en hauteur :
   // 20 lignes par colonne restent lisibles depuis le fond de la salle.
@@ -173,12 +218,23 @@ function StandingsPanel({
               <tr key={row.rank} className={cn("border-b border-white/10", row.dropped && "opacity-40")}>
                 <td className="w-[4vw] py-[0.6vh] font-mono text-[2.6vh] text-white/50">{row.rank}</td>
                 <td className="truncate py-[0.6vh] text-[2.8vh] font-medium">{row.name}</td>
-                <td className="w-[7vw] py-[0.6vh] text-right font-mono text-[2.6vh] text-white/60">
-                  {row.record}
-                </td>
-                <td className="w-[5vw] py-[0.6vh] text-right font-mono text-[2.8vh] font-bold tabular-nums">
-                  {row.matchPoints}
-                </td>
+                {timed ? (
+                  <td
+                    className="w-[12vw] py-[0.6vh] text-right font-mono text-[2.8vh] font-bold tabular-nums"
+                    colSpan={2}
+                  >
+                    {row.puzzleTimeSeconds === null ? "—" : formatDuration(row.puzzleTimeSeconds)}
+                  </td>
+                ) : (
+                  <>
+                    <td className="w-[7vw] py-[0.6vh] text-right font-mono text-[2.6vh] text-white/60">
+                      {row.record}
+                    </td>
+                    <td className="w-[5vw] py-[0.6vh] text-right font-mono text-[2.8vh] font-bold tabular-nums">
+                      {row.matchPoints}
+                    </td>
+                  </>
+                )}
               </tr>
             ))}
           </tbody>

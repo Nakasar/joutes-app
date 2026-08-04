@@ -3,7 +3,13 @@
 import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
-import { formatDuration, timerIsPaused, timerRemainingSeconds } from "@/lib/tournament-timer";
+import {
+  formatDuration,
+  stopwatchElapsedSeconds,
+  stopwatchIsPaused,
+  timerIsPaused,
+  timerRemainingSeconds,
+} from "@/lib/tournament-timer";
 import { useTournamentLive } from "../useTournamentLive";
 
 export default function TournamentTimerPage({
@@ -22,9 +28,16 @@ export default function TournamentTimerPage({
     return () => clearInterval(id);
   }, []);
 
-  const remaining = timerRemainingSeconds(state?.timer ?? null, serverOffsetMs);
-  const expired = remaining !== null && remaining < 0;
-  const paused = timerIsPaused(state?.timer ?? null);
+  // Phase puzzle : le chronomètre commun remplace le minuteur. Il monte depuis
+  // 0, donc rien n'« expire » et l'écran ne passe jamais au rouge.
+  const isPuzzle = state?.phaseType === "time-race";
+  const elapsed = stopwatchElapsedSeconds(state?.stopwatch ?? null, serverOffsetMs);
+  const countdown = timerRemainingSeconds(state?.timer ?? null, serverOffsetMs);
+  const value = isPuzzle ? elapsed : countdown;
+  const expired = !isPuzzle && countdown !== null && countdown < 0;
+  const paused = isPuzzle
+    ? stopwatchIsPaused(state?.stopwatch ?? null)
+    : timerIsPaused(state?.timer ?? null);
 
   return (
     // Surcouche plein écran (recouvre l'en-tête du site) pour un affichage épuré.
@@ -40,14 +53,14 @@ export default function TournamentTimerPage({
         </p>
       )}
 
-      {remaining === null ? (
+      {value === null ? (
         <p className={cn("text-3xl", expired ? "text-white" : "text-muted-foreground")}>
-          {t("timerPage.noTimer")}
+          {isPuzzle ? t("stopwatch.notStarted") : t("timerPage.noTimer")}
         </p>
       ) : (
         <div className="flex flex-col items-center gap-4">
           <div className="font-mono text-[24vw] font-bold leading-none tabular-nums md:text-[20vw]">
-            {formatDuration(remaining)}
+            {formatDuration(value)}
           </div>
           {paused && (
             <p className={cn("text-2xl uppercase tracking-widest", expired ? "text-white/80" : "text-muted-foreground")}>

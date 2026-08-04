@@ -33,13 +33,17 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const display = tournament.liveDisplay ?? "timer";
     const needsRound = display === "matches" || display === "standings";
 
+    // Les phases sont toujours lues : leur type décide de ce que la salle et
+    // les téléphones affichent (minuteur, ou chronomètre en phase puzzle). Une
+    // poignée de documents indexés, contre les lectures franchement coûteuses
+    // — classement, tables — qui restent conditionnées au panneau demandé.
     const [announcements, phases, rounds] = await Promise.all([
       listAnnouncements(tournamentId),
-      needsRound ? listPhases(tournamentId) : Promise.resolve([]),
+      listPhases(tournamentId),
       needsRound ? listRounds(tournamentId) : Promise.resolve([]),
     ]);
 
-    const activePhase = needsRound ? resolveDisplayPhase(phases, tournament.currentPhaseId) : null;
+    const activePhase = resolveDisplayPhase(phases, tournament.currentPhaseId);
     const currentRound = needsRound ? resolveCurrentRound(rounds, activePhase?.id) : null;
 
     let standings: unknown[] | null = null;
@@ -53,6 +57,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         matchPoints: row.matchPoints,
         record: `${row.wins}-${row.losses}-${row.draws}`,
         dropped: row.playerStatus === "dropped",
+        // Phases puzzle : c'est le temps qui fait le classement, il remplace
+        // donc le bilan et les points sur l'écran de la salle.
+        puzzleTimeSeconds: row.puzzleTimeSeconds ?? null,
       }));
     }
 
@@ -94,6 +101,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         createdAt: a.createdAt,
       })),
       timer: tournament.timer ?? null,
+      stopwatch: tournament.stopwatch ?? null,
+      // Type de la phase en cours : l'écran de salle et le portail joueur s'en
+      // servent pour montrer le chronomètre plutôt que le minuteur.
+      phaseType: activePhase?.type ?? null,
       standings,
       matches,
       serverNow: new Date().toISOString(),

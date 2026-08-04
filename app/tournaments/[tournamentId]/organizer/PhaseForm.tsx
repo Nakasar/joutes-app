@@ -90,6 +90,10 @@ export function PhaseForm({
   const isEdit = !!initial;
 
   const [name, setName] = useState(initial?.name ?? "");
+  // Une phase puzzle n'apparie personne et ne compte pas de parties : tout ce
+  // qui décrit un affrontement (best-of, points, appariement, rythme des
+  // rondes) disparaît du formulaire. Ne restent que le nom, le top cut d'entrée
+  // et le pool de puzzles.
   const [type, setType] = useState<TournamentPhaseType>(initial?.type ?? "swiss");
   const [bestOf, setBestOf] = useState(String(initial?.bestOf ?? 1));
   const [resultMode, setResultMode] = useState<TournamentResultMode>(
@@ -138,6 +142,8 @@ export function PhaseForm({
     isEdit ? (initial?.requireMatchStats ?? false) : (defaultPreset?.requireStats ?? false)
   );
   const [scenariosText, setScenariosText] = useState(scenariosToText(initial));
+
+  const isPuzzle = type === "time-race";
 
   // Changer de preset rebascule l'exigence de saisie sur l'usage du nouveau
   // jeu : c'est ce que l'organisateur attend en choisissant un format, et il
@@ -264,51 +270,61 @@ export function PhaseForm({
               <SelectItem value="elimination">{t("common.phaseType.elimination")}</SelectItem>
               <SelectItem value="bracket">{t("common.phaseType.bracket")}</SelectItem>
               <SelectItem value="freeform">{t("common.phaseType.freeform")}</SelectItem>
+              <SelectItem value="time-race">{t("common.phaseType.time-race")}</SelectItem>
             </SelectContent>
           </Select>
+          {isPuzzle && (
+            <p className="text-xs text-muted-foreground">{t("organizerPhases.puzzleTypeHint")}</p>
+          )}
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="phase-bestof">{t("organizerPhases.bestOfLabel")}</Label>
-          <Input
-            id="phase-bestof"
-            type="number"
-            min={1}
-            max={9}
-            value={bestOf}
-            onChange={(e) => setBestOf(e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>{t("organizerPhases.resultModeLabel")}</Label>
-          <Select
-            value={resultMode}
-            onValueChange={(v) => setResultMode(v as TournamentResultMode)}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="selection">{t("organizerPhases.resultSelection")}</SelectItem>
-              <SelectItem value="points">{t("organizerPhases.resultPoints")}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label>{t("organizerPhases.scoringMethodLabel")}</Label>
-          <Select
-            value={scoringMethod}
-            onValueChange={(v) => setScoringMethod(v as TournamentScoringMethod)}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="fixed">{t("organizerPhases.scoringFixedOption")}</SelectItem>
-              <SelectItem value="rank_offset">{t("organizerPhases.scoringRankOption")}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        {scoringMethod === "fixed" && (
+        {!isPuzzle && (
+          <div className="space-y-2">
+            <Label htmlFor="phase-bestof">{t("organizerPhases.bestOfLabel")}</Label>
+            <Input
+              id="phase-bestof"
+              type="number"
+              min={1}
+              max={9}
+              value={bestOf}
+              onChange={(e) => setBestOf(e.target.value)}
+            />
+          </div>
+        )}
+        {!isPuzzle && (
+          <div className="space-y-2">
+            <Label>{t("organizerPhases.resultModeLabel")}</Label>
+            <Select
+              value={resultMode}
+              onValueChange={(v) => setResultMode(v as TournamentResultMode)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="selection">{t("organizerPhases.resultSelection")}</SelectItem>
+                <SelectItem value="points">{t("organizerPhases.resultPoints")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        {!isPuzzle && (
+          <div className="space-y-2">
+            <Label>{t("organizerPhases.scoringMethodLabel")}</Label>
+            <Select
+              value={scoringMethod}
+              onValueChange={(v) => setScoringMethod(v as TournamentScoringMethod)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fixed">{t("organizerPhases.scoringFixedOption")}</SelectItem>
+                <SelectItem value="rank_offset">{t("organizerPhases.scoringRankOption")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        {!isPuzzle && scoringMethod === "fixed" && (
           <div className="space-y-2 md:col-span-2">
             <Label>{t("organizerPhases.fixedPointsLabel")}</Label>
             <div className="flex items-center gap-2">
@@ -336,7 +352,7 @@ export function PhaseForm({
             </div>
           </div>
         )}
-        {scoringMethod === "rank_offset" && (
+        {!isPuzzle && scoringMethod === "rank_offset" && (
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="phase-offsets">{t("organizerPhases.offsetsLabel")}</Label>
             <Input
@@ -431,7 +447,7 @@ export function PhaseForm({
       </div>
 
       {/* Bornes de joueurs par match (le bracket est toujours en duel). */}
-      {type !== "bracket" && (
+      {type !== "bracket" && !isPuzzle && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label>{t("organizerPhases.playersPerMatchLabel")}</Label>
@@ -475,60 +491,64 @@ export function PhaseForm({
       )}
 
       {/* Rythme des rondes : sur place, ou par intervalles de plusieurs jours
-          (ligues, où les joueurs planifient eux-mêmes leur partie). */}
-      <div className="space-y-4 border-t pt-4">
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label>{t("organizerPhases.pacingLabel")}</Label>
-            <Select value={pacing} onValueChange={(v) => setPacing(v as TournamentPhasePacing)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="live">{t("organizerPhases.pacingLive")}</SelectItem>
-                <SelectItem value="asynchronous">{t("organizerPhases.pacingAsync")}</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">{t("organizerPhases.pacingHint")}</p>
-          </div>
-          {pacing === "asynchronous" && (
+          (ligues, où les joueurs planifient eux-mêmes leur partie). Un puzzle
+          se résout en salle, chronomètre commun : il n'a que le rythme direct. */}
+      {!isPuzzle && (
+        <div className="space-y-4 border-t pt-4">
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="phase-interval">{t("organizerPhases.intervalLabel")}</Label>
-              <Input
-                id="phase-interval"
-                type="number"
-                min={1}
-                max={365}
-                value={intervalDays}
-                onChange={(e) => setIntervalDays(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">{t("organizerPhases.intervalHint")}</p>
-            </div>
-          )}
-          {pacing === "asynchronous" && (
-            <div className="space-y-2 md:col-span-2">
-              <Label>{t("organizerPhases.deadlineResolutionLabel")}</Label>
-              <Select
-                value={deadlineResolution}
-                onValueChange={(v) => setDeadlineResolution(v as TournamentDeadlineResolution)}
-              >
+              <Label>{t("organizerPhases.pacingLabel")}</Label>
+              <Select value={pacing} onValueChange={(v) => setPacing(v as TournamentPhasePacing)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="double-loss">
-                    {t("organizerPhases.deadlineDoubleLoss")}
-                  </SelectItem>
-                  <SelectItem value="manual">{t("organizerPhases.deadlineManual")}</SelectItem>
+                  <SelectItem value="live">{t("organizerPhases.pacingLive")}</SelectItem>
+                  <SelectItem value="asynchronous">{t("organizerPhases.pacingAsync")}</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">{t("organizerPhases.pacingHint")}</p>
             </div>
-          )}
+            {pacing === "asynchronous" && (
+              <div className="space-y-2">
+                <Label htmlFor="phase-interval">{t("organizerPhases.intervalLabel")}</Label>
+                <Input
+                  id="phase-interval"
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={intervalDays}
+                  onChange={(e) => setIntervalDays(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">{t("organizerPhases.intervalHint")}</p>
+              </div>
+            )}
+            {pacing === "asynchronous" && (
+              <div className="space-y-2 md:col-span-2">
+                <Label>{t("organizerPhases.deadlineResolutionLabel")}</Label>
+                <Select
+                  value={deadlineResolution}
+                  onValueChange={(v) => setDeadlineResolution(v as TournamentDeadlineResolution)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="double-loss">
+                      {t("organizerPhases.deadlineDoubleLoss")}
+                    </SelectItem>
+                    <SelectItem value="manual">{t("organizerPhases.deadlineManual")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Statistiques de match livrées par le jeu (départages officiels). */}
-      {presets.length > 0 && (
+      {/* Statistiques de match livrées par le jeu (départages officiels). Sans
+          match, il n'y a rien à relever : le bloc disparaît sur un puzzle. */}
+      {presets.length > 0 && !isPuzzle && (
         <div className="space-y-2 border-t pt-4">
           <Label>{t("organizerPhases.statsPresetLabel")}</Label>
           <Select value={statsPresetKey} onValueChange={pickPreset}>
@@ -568,17 +588,26 @@ export function PhaseForm({
         </div>
       )}
 
-      {/* Pool de scénarios, attribués aux rondes dans l'ordre. */}
+      {/* Pool de scénarios, attribués aux rondes dans l'ordre. Une phase puzzle
+          n'a qu'une ronde : la première ligne y décrit le puzzle à résoudre. */}
       <div className="space-y-2 border-t pt-4">
-        <Label htmlFor="phase-scenarios">{t("organizerPhases.scenariosLabel")}</Label>
+        <Label htmlFor="phase-scenarios">
+          {isPuzzle ? t("organizerPhases.puzzleLabel") : t("organizerPhases.scenariosLabel")}
+        </Label>
         <Textarea
           id="phase-scenarios"
-          rows={4}
+          rows={isPuzzle ? 2 : 4}
           value={scenariosText}
           onChange={(e) => setScenariosText(e.target.value)}
-          placeholder={t("organizerPhases.scenariosPlaceholder")}
+          placeholder={
+            isPuzzle
+              ? t("organizerPhases.puzzlePlaceholder")
+              : t("organizerPhases.scenariosPlaceholder")
+          }
         />
-        <p className="text-xs text-muted-foreground">{t("organizerPhases.scenariosHint")}</p>
+        <p className="text-xs text-muted-foreground">
+          {isPuzzle ? t("organizerPhases.puzzleHint") : t("organizerPhases.scenariosHint")}
+        </p>
       </div>
 
       <Button onClick={submit} disabled={busy || !name.trim()}>

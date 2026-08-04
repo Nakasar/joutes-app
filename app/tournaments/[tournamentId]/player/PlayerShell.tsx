@@ -9,7 +9,11 @@ import { ClipboardList, ListChecks, Megaphone, Target, Trophy } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import ReportButton from "@/components/ReportButton";
 import { cn } from "@/lib/utils";
-import { formatDuration, timerRemainingSeconds } from "@/lib/tournament-timer";
+import {
+  formatDuration,
+  stopwatchElapsedSeconds,
+  timerRemainingSeconds,
+} from "@/lib/tournament-timer";
 import type { ApiTournament } from "./usePlayerTournament";
 import { useTournamentLive } from "../useTournamentLive";
 
@@ -83,13 +87,18 @@ export function PlayerShell({
   const base = `/tournaments/${tournamentId}/player`;
   const me = myPlayerId ? tournament?.players.find((p) => p.id === myPlayerId) : undefined;
 
-  const remaining = timerRemainingSeconds(state?.timer ?? null, serverOffsetMs);
+  // Phase puzzle : le chronomètre de la salle prend la place du décompte, et
+  // le libellé passe de « restant » à « écoulé ».
+  const isPuzzle = state?.phaseType === "time-race";
+  const remaining = isPuzzle
+    ? stopwatchElapsedSeconds(state?.stopwatch ?? null, serverOffsetMs)
+    : timerRemainingSeconds(state?.timer ?? null, serverOffsetMs);
   // Instant de référence des échéances : l'heure du serveur, corrigée du
   // décalage du poste. Une machine mal réglée afficherait sinon un intervalle
   // déjà expiré — le minuteur applique la même correction.
   const serverNow = DateTime.now().plus({ milliseconds: serverOffsetMs });
-  const expired = remaining !== null && remaining < 0;
-  const low = remaining !== null && remaining >= 0 && remaining < 300;
+  const expired = !isPuzzle && remaining !== null && remaining < 0;
+  const low = !isPuzzle && remaining !== null && remaining >= 0 && remaining < 300;
   const lastAnnouncement = state?.announcements?.[0];
 
   return (
@@ -127,7 +136,9 @@ export function PlayerShell({
                 >
                   {formatDuration(remaining)}
                 </p>
-                <p className="text-[11px] text-neutral-400">{t("playerShell.remaining")}</p>
+                <p className="text-[11px] text-neutral-400">
+                  {isPuzzle ? t("playerShell.elapsed") : t("playerShell.remaining")}
+                </p>
               </div>
             )
           )}

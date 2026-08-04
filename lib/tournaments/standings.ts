@@ -85,6 +85,20 @@ function matchStatsForPlayer(
 }
 
 /**
+ * Départage au temps de puzzle : le plus rapide devant, et un joueur qui n'a
+ * pas terminé passe derrière tous ceux qui ont terminé. Deux joueurs sans temps
+ * restent à égalité (les critères suivants tranchent).
+ */
+function compareByPuzzleTime(a: PlayerStanding, b: PlayerStanding): number {
+  const left = a.puzzleTimeSeconds;
+  const right = b.puzzleTimeSeconds;
+  if (left === undefined && right === undefined) return 0;
+  if (left === undefined) return 1;
+  if (right === undefined) return -1;
+  return left - right;
+}
+
+/**
  * Compare deux classements selon une chaîne de départage. Tous les critères se
  * lisent « le plus grand d'abord » ; une valeur absente compte pour zéro, ce
  * qui place naturellement en dessous un joueur qui n'a rien marqué.
@@ -125,14 +139,18 @@ function compareByTiebreakers(
  * - une double défaite (`resolution: "double-loss"`) fait perdre tout le monde,
  *   contrairement au match nul auquel elle ressemble (winnerIds vide) ;
  * - les statistiques secondaires du preset sont cumulées et servent aux
- *   départages, dans l'ordre donné par `tiebreakers`.
+ *   départages, dans l'ordre donné par `tiebreakers` ;
+ * - `puzzleTimes` (phases puzzle) porte le temps de résolution par joueur : il
+ *   départage en dernier, le plus rapide devant. Une phase puzzle ne produit
+ *   aucun match, donc aucun point : le temps y devient de fait le classement.
  */
 export function calculateMultiplayerStandings(
   playerIds: string[],
   matches: TournamentMatch[],
   scoringFor: (match: TournamentMatch) => MatchScoring = () => DEFAULT_MATCH_SCORING,
   preset?: GameTournamentPreset,
-  tiebreakers: TiebreakerKey[] = presetTiebreakers(preset)
+  tiebreakers: TiebreakerKey[] = presetTiebreakers(preset),
+  puzzleTimes: Record<string, number> = {}
 ): PlayerStanding[] {
   const standings = new Map<string, PlayerStanding>();
   const statKeys = presetStatKeys(preset);
@@ -150,6 +168,9 @@ export function calculateMultiplayerStandings(
       gamesDiff: 0,
       ...(statKeys.length > 0
         ? { stats: Object.fromEntries(statKeys.map((key) => [key, 0])) }
+        : {}),
+      ...(puzzleTimes[playerId] !== undefined
+        ? { puzzleTimeSeconds: puzzleTimes[playerId] }
         : {}),
     });
   });
@@ -230,6 +251,10 @@ export function calculateMultiplayerStandings(
 
   return Array.from(standings.values()).sort((a, b) => {
     if (b.matchPoints !== a.matchPoints) return b.matchPoints - a.matchPoints;
-    return compareByTiebreakers(a, b, tiebreakers);
+    const byTiebreakers = compareByTiebreakers(a, b, tiebreakers);
+    if (byTiebreakers !== 0) return byTiebreakers;
+    // Dernier mot au chronomètre : sans effet hors phase puzzle (personne n'a
+    // de temps), décisif dans une phase puzzle où tout le reste est à zéro.
+    return compareByPuzzleTime(a, b);
   });
 }

@@ -23,6 +23,9 @@ export type OrganizerNavCounts = {
   // Pointage à l'arrivée : joueurs présents sur joueurs inscrits.
   checkedInPlayers: number;
   totalPlayers: number;
+  // Le tournoi comporte au moins une phase de puzzle : la section « Puzzle »
+  // n'a de raison d'être que là, elle reste masquée partout ailleurs.
+  hasPuzzlePhase: boolean;
 };
 
 /**
@@ -59,6 +62,7 @@ export async function loadOrganizerContext(tournamentId: string) {
     // Les joueurs retirés ne sont plus attendus : ils sortent du dénominateur
     // du pointage, sinon le compteur ne peut jamais être complet.
     totalPlayers: players.filter((p) => p.status !== "dropped").length,
+    hasPuzzlePhase: phases.some((phase) => phase.type === "time-race"),
   };
 
   return { session, tournament, phases, rounds: byCreation, players, currentRound, activePhase, counts };

@@ -16,6 +16,9 @@ export type StandingsExportEntry = {
   status: string;
   // Statistiques secondaires du preset, dans l'ordre des colonnes demandées.
   stats?: (number | string)[];
+  // Temps de résolution du puzzle, déjà formaté (mm:ss). Vide hors phase
+  // puzzle, ou tant que le joueur n'a pas terminé.
+  puzzleTime?: string;
 };
 
 export type StandingsCsvLabels = {
@@ -26,6 +29,7 @@ export type StandingsCsvLabels = {
   opponentMatchWin: string;
   gameWin: string;
   status: string;
+  time: string;
 };
 
 /**
@@ -51,16 +55,20 @@ export function formatTiebreaker(value: number | null | undefined, locale: strin
 /**
  * Classement au format CSV. `statLabels` insère les colonnes de statistiques du
  * preset entre le bilan et les pourcentages de départage, dans le même ordre
- * que le tableau à l'écran : le fichier doit se relire comme la page.
+ * que le tableau à l'écran : le fichier doit se relire comme la page. La
+ * colonne du chronomètre n'apparaît que si un temps a été relevé (phase
+ * puzzle) — ailleurs, elle serait vide sur toute la hauteur.
  */
 export function buildStandingsCsv(
   entries: StandingsExportEntry[],
   labels: StandingsCsvLabels,
   statLabels: string[] = []
 ): string {
+  const withTime = entries.some((entry) => entry.puzzleTime);
   const header = [
     labels.rank,
     labels.player,
+    ...(withTime ? [labels.time] : []),
     labels.points,
     labels.record,
     ...statLabels,
@@ -71,6 +79,7 @@ export function buildStandingsCsv(
   const rows = entries.map((entry) => [
     entry.rank,
     entry.name,
+    ...(withTime ? [entry.puzzleTime ?? ""] : []),
     entry.matchPoints,
     `${entry.wins}-${entry.losses}-${entry.draws}`,
     ...statLabels.map((_, index) => entry.stats?.[index] ?? 0),

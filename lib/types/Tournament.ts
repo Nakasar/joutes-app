@@ -7,7 +7,12 @@ export type TournamentStatus = "draft" | "in-progress" | "completed";
 // - elimination : seuls les vainqueurs passent à la ronde suivante, ré-appariés
 //   selon le classement ou aléatoirement (eliminationSeeding).
 // - bracket : arbre d'élimination figé, seedé selon le classement d'entrée.
-export type TournamentPhaseType = "freeform" | "swiss" | "elimination" | "bracket";
+// - time-race : course contre la montre, sans adversaire. Tous les joueurs
+//   affrontent la même épreuve en même temps ; le minuteur cède la place à un
+//   chronomètre parti de 0, et le classement se fait au temps mis pour terminer
+//   (le plus rapide en tête). Le nom est volontairement générique : le puzzle
+//   est le premier usage, pas le seul format chronométré possible.
+export type TournamentPhaseType = "freeform" | "swiss" | "elimination" | "bracket" | "time-race";
 export type TournamentPhaseStatus = "not-started" | "in-progress" | "completed";
 export type TournamentRoundStatus = "in-progress" | "completed";
 // REGISTERED : inscrit et apparaillé lors de la génération des rondes.
@@ -118,6 +123,17 @@ export type Tournament = {
     endsAt?: Date;
     running: boolean;
     remainingSeconds?: number;
+  };
+  // Chronomètre diffusé aux joueurs pendant une phase puzzle : il part de 0 et
+  // monte. `startedAt` (instant de départ absolu) n'est présent que lorsqu'il
+  // tourne ; `elapsedSeconds` mémorise le temps écoulé lorsqu'il est en pause
+  // (et sert de base à la reprise). Vit à côté du minuteur plutôt qu'à sa
+  // place : un tournoi enchaîne des phases puzzle et des phases classiques, et
+  // la durée de ronde réglée ne doit pas être perdue en route.
+  stopwatch?: {
+    running: boolean;
+    startedAt?: Date;
+    elapsedSeconds?: number;
   };
   // Panneau affiché sur l'écran de projection. Absent = minuteur, l'affichage
   // par défaut et le seul qui existait avant.
@@ -362,6 +378,26 @@ export type TournamentPhase = {
   createdAt: Date;
 };
 
+// Temps réalisé par un joueur sur le puzzle d'une phase. Un seul résultat par
+// joueur et par phase : la phase porte un puzzle, et le chronomètre commun
+// démarre avec elle. Le temps est mesuré en secondes depuis le départ du
+// chronomètre du tournoi ; il reste modifiable par l'organisation (chronomètre
+// lancé en retard, joueur signalé après coup…).
+export type TournamentPuzzleResult = {
+  id: string;
+  tournamentId: string;
+  phaseId: string;
+  playerId: string;
+  durationSeconds: number;
+  // Rapporté par le joueur lui-même (self-report) plutôt que par l'organisation.
+  selfReported: boolean;
+  // Identité de l'auteur du dernier enregistrement : id utilisateur du staff,
+  // ou id de joueur de tournoi pour un self-report.
+  reportedBy: string;
+  createdAt: Date;
+  updatedAt?: Date;
+};
+
 // Classement figé d'une ronde : snapshot calculé et persisté au moment où
 // l'organisateur valide la ronde, pour ne pas le recalculer à chaque lecture.
 // Réutilise PlayerStanding (source du calcul) et n'ajoute que les champs
@@ -498,7 +534,10 @@ export type TournamentActivityType =
   | "player-checked-in"
   | "player-dropped"
   | "player-reregistered"
-  | "penalty-issued";
+  | "penalty-issued"
+  | "puzzle-solved"
+  | "puzzle-time-edited"
+  | "puzzle-cleared";
 
 export type TournamentActivity = {
   id: string;
@@ -541,6 +580,14 @@ export type TournamentActivityDb = Omit<TournamentActivity, "id" | "tournamentId
 };
 
 export type TournamentPlayerDb = Omit<TournamentPlayer, "id" | "tournamentId"> & { tournamentId: ObjectId };
+export type TournamentPuzzleResultDb = Omit<
+  TournamentPuzzleResult,
+  "id" | "tournamentId" | "phaseId" | "playerId"
+> & {
+  tournamentId: ObjectId;
+  phaseId: ObjectId;
+  playerId: ObjectId;
+};
 export type TournamentPhaseDb = Omit<TournamentPhase, "id" | "tournamentId"> & { tournamentId: ObjectId };
 export type TournamentRoundDb = Omit<TournamentRound, "id" | "tournamentId" | "phaseId"> & {
   tournamentId: ObjectId;

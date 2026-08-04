@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Download, Maximize2, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { formatDuration } from "@/lib/tournament-timer";
 import { formatTiebreaker, gameWinPercentage } from "@/lib/tournaments/standings-export";
 import type { MatchStatDefinition } from "@/lib/tournaments/game-presets";
 import { OrganizerPageHeader } from "../OrganizerPageHeader";
@@ -23,6 +24,9 @@ export type StandingsRow = {
   opponentMatchWinPercentage?: number;
   // Cumul des statistiques secondaires du preset, par clé. Absent hors preset.
   stats?: Record<string, number>;
+  // Temps de résolution du puzzle. Absent hors phase puzzle, ou tant que le
+  // joueur n'a pas terminé.
+  puzzleTimeSeconds?: number;
   playerStatus: string;
 };
 
@@ -62,6 +66,9 @@ export function StandingsBoard({
   const snapshot = snapshots[selectedIndex] ?? snapshots[snapshots.length - 1];
 
   const rows = snapshot?.rows ?? [];
+  // Colonne du chronomètre : ouverte dès qu'un temps a été relevé (phase
+  // puzzle). Les joueurs qui n'ont pas terminé y lisent « — ».
+  const hasPuzzleTimes = rows.some((row) => row.puzzleTimeSeconds !== undefined);
   const stats = useMemo(() => {
     const ranked = rows.filter((r) => r.playerStatus !== "dropped");
     const dropped = rows.length - ranked.length;
@@ -166,6 +173,11 @@ export function StandingsBoard({
             <tr className="border-b bg-muted/50 text-[11px] uppercase tracking-[0.06em] text-muted-foreground">
               <th className="w-12 px-4 py-2.5 text-left font-semibold">#</th>
               <th className="px-4 py-2.5 text-left font-semibold">{t("standings.columnPlayer")}</th>
+              {hasPuzzleTimes && (
+                <th className="w-24 px-4 py-2.5 text-right font-semibold">
+                  {t("standings.columnTime")}
+                </th>
+              )}
               <th className="w-20 px-4 py-2.5 text-right font-semibold">
                 {t("standings.columnPoints")}
               </th>
@@ -204,6 +216,13 @@ export function StandingsBoard({
                       )}
                     </Link>
                   </td>
+                  {hasPuzzleTimes && (
+                    <td className="px-4 py-2.5 text-right font-mono font-semibold tabular-nums">
+                      {row.puzzleTimeSeconds === undefined
+                        ? "—"
+                        : formatDuration(row.puzzleTimeSeconds)}
+                    </td>
+                  )}
                   <td className="px-4 py-2.5 text-right font-mono font-semibold">{row.matchPoints}</td>
                   <td className="px-4 py-2.5 text-right font-mono text-[13px] text-muted-foreground">
                     {row.wins}-{row.losses}-{row.draws}
@@ -235,7 +254,7 @@ export function StandingsBoard({
                     la phase finale, là où elle tombe dans le classement. */}
                 {topCut !== undefined && index + 1 === topCut && index + 1 < rows.length && (
                   <tr className="border-b bg-muted/40">
-                    <td colSpan={7 + statColumns.length} className="px-4 py-1.5">
+                    <td colSpan={7 + statColumns.length + (hasPuzzleTimes ? 1 : 0)} className="px-4 py-1.5">
                       <div className="flex items-center gap-2.5">
                         <span className="h-px flex-1 bg-border" />
                         <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
@@ -250,7 +269,7 @@ export function StandingsBoard({
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={7 + statColumns.length} className="px-4 py-4 text-center text-muted-foreground">
+                <td colSpan={7 + statColumns.length + (hasPuzzleTimes ? 1 : 0)} className="px-4 py-4 text-center text-muted-foreground">
                   {t("standings.empty")}
                 </td>
               </tr>
