@@ -14,16 +14,34 @@ const LOCKS_COLLECTION_NAME = "game-export-locks";
  */
 export const GAME_EXPORT_LOCK_MAX_AGE_MS = 10 * 60 * 1000;
 
-// `createIndex` est idempotent : la promesse est créée une fois par instance et
-// attendue avant les écritures qui en dépendent. L'unicité sur `gameId` est ce
-// qui rend la prise de verrou atomique — c'est l'erreur de clé dupliquée qui
-// signale qu'une génération est déjà en cours.
-const gameExportIndexesReady = db
-  .collection(LOCKS_COLLECTION_NAME)
-  .createIndex({gameId: 1}, {unique: true})
-  .catch((error) => {
-    console.error("Impossible de créer l'index des verrous d'export:", error);
-  });
+let gameExportIndexesReady: Promise<void> | null = null;
+
+/**
+ * Garantit l'index unique des verrous. `createIndex` est idempotent, et sa
+ * promesse est mémorisée pour n'être jouée qu'une fois par instance.
+ *
+ * L'échec n'est pas absorbé : c'est cette unicité qui rend la prise de verrou
+ * atomique — sans elle, deux générations concurrentes obtiendraient chacune son
+ * verrou et la protection disparaîtrait en silence, précisément dans le cas
+ * qu'elle est censée couvrir. Mieux vaut refuser de générer.
+ *
+ * Un échec n'est pas mémorisé non plus : la tentative suivante réessaiera,
+ * plutôt que de condamner l'instance pour une indisponibilité passagère.
+ */
+function ensureGameExportIndexes(): Promise<void> {
+  if (!gameExportIndexesReady) {
+    gameExportIndexesReady = db
+      .collection(LOCKS_COLLECTION_NAME)
+      .createIndex({gameId: 1}, {unique: true})
+      .then(() => undefined)
+      .catch((error: unknown) => {
+        gameExportIndexesReady = null;
+        console.error("Impossible de créer l'index des verrous d'export:", error);
+        throw error;
+      });
+  }
+  return gameExportIndexesReady;
+}
 
 export type GameExport = {
   id: string;
@@ -83,7 +101,7 @@ export async function acquireGameExportLock(
   gameId: string,
   maxAgeMs: number = GAME_EXPORT_LOCK_MAX_AGE_MS
 ): Promise<GameExportLock> {
-  await gameExportIndexesReady;
+  await ensureGameExportIndexes();
 
   const _id = new ObjectId(gameId);
   const now = new Date();

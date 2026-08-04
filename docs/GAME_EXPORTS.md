@@ -60,6 +60,13 @@ dépassé son temps n'efface pas le verrou de celui qui a pris sa suite.
 Le verrou obtenu, la fraîcheur du document est **revérifiée** : une autre
 instance a pu terminer pendant l'attente, auquel cas il n'y a plus rien à faire.
 
+L'index est créé au premier verrou demandé, et son échec fait échouer la
+requête au lieu d'être journalisé puis oublié : sans unicité, l'insertion
+concurrente ne lèverait plus de conflit, chaque appelant repartirait avec son
+propre verrou et la protection disparaîtrait en silence — exactement dans le
+cas qu'elle couvre. Un échec n'est pas mémorisé : la demande suivante
+réessaiera plutôt que de condamner l'instance pour une panne passagère.
+
 ## Réponses
 
 Toutes portent un champ `status`.
