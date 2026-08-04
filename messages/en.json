@@ -367,11 +367,26 @@
       "back": "Back to the game portal",
       "search": {
         "title": "Card search",
-        "placeholder": "Search a card by name...",
+        "placeholder": "Search — name, text, or attribute:value",
         "search": "Search",
         "searching": "Searching...",
         "noResults": "No cards found for \"{query}\"",
         "emptyState": "No cards available yet.",
+        "syntax": {
+          "tokens": "{count, plural, one {# filter in the query} other {# filters in the query}}",
+          "invite": "Type an attribute followed by “:” or a comparison — ↑ ↓ to pick, Enter to complete.",
+          "hints": {
+            "value": "{field}: {value}",
+            "atMost": "{field} at most {value}",
+            "atLeast": "{field} at least {value}",
+            "exactly": "{field} equals {value}"
+          },
+          "rejected": {
+            "value": "{token} — unknown value for “{field}”: this filter is not applied.",
+            "number": "{token} — “{field}” expects a number: this filter is not applied.",
+            "operator": "{token} — “{field}” cannot be compared, use “:”: this filter is not applied."
+          }
+        },
         "resultCount": "{count, plural, =0 {No cards} one {# card} other {# cards}}",
         "copyLink": "Copy link",
         "linkCopied": "Link copied",
