@@ -80,12 +80,6 @@ export async function POST(request: NextRequest, { params }: Params) {
           "Seule l'organisation peut saisir un temps : signalez simplement la fin du puzzle"
         );
       }
-      // Un puzzle ne se termine qu'une fois : un second appui n'écrase pas le
-      // temps déjà rendu (seule l'organisation peut le corriger).
-      const existing = await listPuzzleResults(tournamentId, phaseId);
-      if (existing.some((result) => result.playerId === playerId)) {
-        throw new TournamentError("conflict", "Votre temps a déjà été enregistré");
-      }
     }
     if (!playerId) {
       throw new TournamentError("invalid", "Aucun joueur désigné");
@@ -96,6 +90,9 @@ export async function POST(request: NextRequest, { params }: Params) {
       durationSeconds: validated.durationSeconds,
       selfReported: !isOrganizer,
       reportedBy: actor.id,
+      // Un puzzle ne se termine qu'une fois : le joueur ne réécrit pas son
+      // propre temps. L'organisation, elle, repointe qui elle veut.
+      overwrite: isOrganizer,
     });
 
     const player = await getPlayerById(tournamentId, playerId);

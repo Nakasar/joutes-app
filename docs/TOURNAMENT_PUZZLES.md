@@ -49,6 +49,9 @@ propre décalage d'horloge.
 
 `POST /api/tournaments/:id/stopwatch` (organisateurs) — `start`, `pause`,
 `resume`, `reset`. Il n'y a pas de durée à fournir : il part toujours de 0.
+`reset` le ramène à l'état « jamais lancé », et non à une pause à 00:00 : les
+deux sont arrêtés, mais seul le second propose « Reprendre » et autorise le
+relevé d'un temps.
 
 Le chronomètre s'affiche à la place du minuteur sur l'écran de projection, la
 page plein écran, l'en-tête du portail joueur et la carte du tournoi en direct,

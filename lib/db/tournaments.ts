@@ -1810,10 +1810,13 @@ export async function resumeStopwatch(tournamentId: string): Promise<Tournament>
   });
 }
 
-// Remet le chronomètre à zéro et l'arrête. Les temps déjà enregistrés ne sont
-// pas touchés : ce sont des résultats, pas un état d'affichage.
+// Remet le chronomètre à zéro et l'arrête. Il retrouve l'état « jamais lancé »
+// plutôt qu'une pause à 0 : « en pause à 00:00 » laisserait croire à une course
+// commencée, et « Reprendre » plutôt que « Lancer » sur le bouton. Les temps
+// déjà enregistrés ne sont pas touchés : ce sont des résultats, pas un état
+// d'affichage.
 export async function resetStopwatch(tournamentId: string): Promise<Tournament> {
-  return updateTournamentStopwatch(tournamentId, { running: false, elapsedSeconds: 0 });
+  return updateTournamentStopwatch(tournamentId, { running: false });
 }
 
 async function updateTournamentStopwatch(
@@ -1880,10 +1883,14 @@ export async function listPuzzleResults(
 }
 
 /**
- * Enregistre (ou réécrit) le temps d'un joueur sur le puzzle d'une phase.
+ * Enregistre le temps d'un joueur sur le puzzle d'une phase.
  * `durationSeconds` absent = le temps courant du chronomètre du tournoi, ce qui
  * est le cas d'usage normal : l'organisateur (ou le joueur) constate la fin du
  * puzzle au moment où il appuie.
+ *
+ * `overwrite` distingue les deux gestes : l'organisation peut repointer un
+ * joueur déjà relevé (le nouveau temps remplace l'ancien), un joueur ne rend
+ * son temps qu'une fois.
  */
 export async function recordPuzzleResult(
   tournamentId: string,
@@ -1893,6 +1900,7 @@ export async function recordPuzzleResult(
     durationSeconds?: number;
     selfReported: boolean;
     reportedBy: string;
+    overwrite: boolean;
   }
 ): Promise<TournamentPuzzleResult> {
   const tournament = await requireTournament(tournamentId);
@@ -1917,21 +1925,47 @@ export async function recordPuzzleResult(
 
   await puzzleResultsIndexReady;
   const now = new Date();
-  const result = await db.collection<TournamentPuzzleResultDb>(PUZZLE_RESULTS).findOneAndUpdate(
-    {
-      tournamentId: new ObjectId(tournamentId),
-      phaseId: new ObjectId(phaseId),
-      playerId: new ObjectId(data.playerId),
-    },
-    {
-      $set: {
-        durationSeconds,
-        selfReported: data.selfReported,
-        reportedBy: data.reportedBy,
-        updatedAt: now,
-      },
-      $setOnInsert: { createdAt: now },
-    },
+  const collection = db.collection<TournamentPuzzleResultDb>(PUZZLE_RESULTS);
+  const key = {
+    tournamentId: new ObjectId(tournamentId),
+    phaseId: new ObjectId(phaseId),
+    playerId: new ObjectId(data.playerId),
+  };
+  const value = {
+    durationSeconds,
+    selfReported: data.selfReported,
+    reportedBy: data.reportedBy,
+  };
+
+  // Sans droit de réécriture, le « une seule fois » est porté par l'écriture
+  // elle-même plutôt que par une lecture préalable : deux requêtes concurrentes
+  // (double appui, rejeu réseau) passeraient toutes deux un contrôle fait
+  // avant, et la seconde écraserait le temps rendu par la première.
+  if (!data.overwrite) {
+    let upsertedId: ObjectId | null;
+    try {
+      upsertedId = (
+        await collection.updateOne(
+          key,
+          { $setOnInsert: { ...value, createdAt: now } },
+          { upsert: true }
+        )
+      ).upsertedId;
+    } catch (error) {
+      // Course perdue sur l'index unique : l'autre requête a relevé le temps,
+      // celui-ci est en trop.
+      if (!isDuplicateKeyError(error)) throw error;
+      upsertedId = null;
+    }
+    if (!upsertedId) {
+      throw new TournamentError("conflict", "Un temps est déjà enregistré pour ce joueur");
+    }
+    return toPuzzleResult({ ...key, ...value, createdAt: now, _id: upsertedId });
+  }
+
+  const result = await collection.findOneAndUpdate(
+    key,
+    { $set: { ...value, updatedAt: now }, $setOnInsert: { createdAt: now } },
     { upsert: true, returnDocument: "after" }
   );
   if (!result) {

@@ -66,7 +66,10 @@ export function stopwatchElapsedSeconds(
   return null;
 }
 
-// Indique si le chronomètre est en pause (arrêté sur un temps écoulé non nul).
+// Indique si le chronomètre est en pause : arrêté, mais sur un temps écoulé
+// mémorisé — y compris 0, une pause juste après le départ reste une pause. Un
+// chronomètre jamais lancé (ou remis à zéro) n'en a pas, et n'est donc pas
+// « en pause » mais « non lancé ».
 export function stopwatchIsPaused(stopwatch: LiveStopwatch): boolean {
   return !!stopwatch && !stopwatch.running && stopwatch.elapsedSeconds !== undefined;
 }
