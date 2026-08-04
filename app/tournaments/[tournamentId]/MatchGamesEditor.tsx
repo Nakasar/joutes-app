@@ -81,20 +81,25 @@ export function MatchGamesEditor({
       )
     );
 
-  // Statistiques d'une partie, envoyées seulement si au moins une case est
-  // remplie : une partie sans saisie ne doit pas créditer des zéros.
+  // Statistiques d'une partie. Seules les cases réellement remplies partent :
+  // un champ laissé vide n'est pas un zéro, et le classement comme l'historique
+  // tiennent à la différence entre « rien n'a été relevé » et « zéro marqué ».
+  // Un « 0 » tapé, lui, est bien une valeur — c'est le texte vide qui écarte.
   const gameStats = (gameIndex: number): TournamentGameResult["stats"] => {
     if (stats.length === 0) return undefined;
     const row = statValues[gameIndex] ?? {};
-    const filled = matchPlayerIds.some((id) => stats.some((stat) => (row[id]?.[stat.key] ?? "") !== ""));
-    if (!filled) return undefined;
     const result: Record<string, Record<string, number>> = {};
     for (const id of matchPlayerIds) {
-      result[id] = Object.fromEntries(
-        stats.map((stat) => [stat.key, Number.parseInt(row[id]?.[stat.key] ?? "", 10) || 0])
-      );
+      const values = stats
+        .map((stat) => ({ key: stat.key, raw: row[id]?.[stat.key] ?? "" }))
+        .filter(({ raw }) => raw !== "")
+        .map(({ key, raw }) => ({ key, value: Number.parseInt(raw, 10) }))
+        .filter(({ value }) => Number.isFinite(value));
+      if (values.length > 0) {
+        result[id] = Object.fromEntries(values.map(({ key, value }) => [key, value]));
+      }
     }
-    return result;
+    return Object.keys(result).length > 0 ? result : undefined;
   };
 
   // Parties renseignées, donc envoyées : une issue choisie en mode selection,

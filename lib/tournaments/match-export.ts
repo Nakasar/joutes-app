@@ -89,11 +89,15 @@ export function buildMatchExportEntries({
   const phasesById = new Map(phases.map((phase) => [phase.id, phase]));
   const roundsById = new Map(rounds.map((round) => [round.id, round]));
   const phaseOrder = new Map(phases.map((phase, index) => [phase.id, index]));
+  // Statistiques relevées, résolues une fois par phase : chaque phase a les
+  // siennes, mais un export porte des milliers de matchs pour quelques phases.
+  const statKeysByPhaseId = new Map(
+    phases.map((phase) => [phase.id, presetStatKeys(getPreset(phase.statsPresetKey))])
+  );
 
   const entries = matches.map((match) => {
     const round = roundsById.get(match.roundId);
-    // Statistiques relevées par la phase du match : chaque phase a la sienne.
-    const statKeys = presetStatKeys(getPreset(phasesById.get(match.phaseId)?.statsPresetKey));
+    const statKeys = statKeysByPhaseId.get(match.phaseId) ?? [];
     const entryPlayers = match.players.map((matchPlayer) => ({
       id: matchPlayer.playerId,
       label: formatPlayerLabel(playersById.get(matchPlayer.playerId), unknownPlayerLabel),

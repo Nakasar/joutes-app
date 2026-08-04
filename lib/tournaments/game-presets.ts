@@ -205,8 +205,9 @@ export function byeStats(preset?: GameTournamentPreset): Record<string, number> 
  * départage de tout le tableau.
  *
  * Renvoie les couples (joueur, statistique) en défaut, vide si tout est saisi.
- * Fonction pure, partagée par la validation du domaine et par la saisie : le
- * joueur voit à l'écran la même exigence que celle qui le fera refuser.
+ * La saisie applique la même règle sur ses champs, mais sur des chaînes en
+ * cours de frappe : elle ne peut pas passer par ici, où les valeurs sont déjà
+ * des nombres. C'est ce contrôle-ci qui fait foi.
  */
 export function missingRequiredStats(
   stats: Record<string, Record<string, number>> | undefined,
