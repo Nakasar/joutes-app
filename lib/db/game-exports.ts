@@ -1,9 +1,47 @@
 import 'server-only';
 
+import {randomUUID} from "node:crypto";
 import db from "@/lib/mongodb";
 import {ObjectId, WithId} from "mongodb";
 
 const COLLECTION_NAME = "game-exports";
+const LOCKS_COLLECTION_NAME = "game-export-locks";
+
+/**
+ * Durée au-delà de laquelle un verrou est tenu pour abandonné. Une fonction
+ * tuée en cours de génération (timeout, redéploiement) ne libère pas le sien :
+ * sans péremption, le jeu ne serait plus jamais exporté.
+ */
+export const GAME_EXPORT_LOCK_MAX_AGE_MS = 10 * 60 * 1000;
+
+let gameExportIndexesReady: Promise<void> | null = null;
+
+/**
+ * Garantit l'index unique des verrous. `createIndex` est idempotent, et sa
+ * promesse est mémorisée pour n'être jouée qu'une fois par instance.
+ *
+ * L'échec n'est pas absorbé : c'est cette unicité qui rend la prise de verrou
+ * atomique — sans elle, deux générations concurrentes obtiendraient chacune son
+ * verrou et la protection disparaîtrait en silence, précisément dans le cas
+ * qu'elle est censée couvrir. Mieux vaut refuser de générer.
+ *
+ * Un échec n'est pas mémorisé non plus : la tentative suivante réessaiera,
+ * plutôt que de condamner l'instance pour une indisponibilité passagère.
+ */
+function ensureGameExportIndexes(): Promise<void> {
+  if (!gameExportIndexesReady) {
+    gameExportIndexesReady = db
+      .collection(LOCKS_COLLECTION_NAME)
+      .createIndex({gameId: 1}, {unique: true})
+      .then(() => undefined)
+      .catch((error: unknown) => {
+        gameExportIndexesReady = null;
+        console.error("Impossible de créer l'index des verrous d'export:", error);
+        throw error;
+      });
+  }
+  return gameExportIndexesReady;
+}
 
 export type GameExport = {
   id: string;
@@ -31,6 +69,81 @@ function toGameExport(doc: WithId<GameExportDb>): GameExport {
     size: doc.size,
     generatedAt: doc.generatedAt,
   };
+}
+
+type GameExportLockDb = {
+  gameId: ObjectId;
+  startedAt: Date;
+  /** Propriétaire du verrou : seul lui peut le relâcher. */
+  token: string;
+};
+
+export type GameExportLock =
+  /** Verrou pris : la génération peut commencer, `token` sert à le relâcher. */
+  | {acquired: true; token: string}
+  /** Verrou déjà tenu : une génération est en cours depuis `startedAt`. */
+  | {acquired: false; startedAt: Date};
+
+/** Une écriture a violé un index unique. */
+function isDuplicateKeyError(error: unknown): boolean {
+  return typeof error === "object" && error !== null && (error as {code?: number}).code === 11000;
+}
+
+/**
+ * Prend le verrou de génération d'un jeu, ou renvoie depuis quand il est tenu.
+ *
+ * L'atomicité vient de l'index unique sur `gameId` : deux fonctions qui
+ * démarrent en même temps tentent la même insertion, et une seule la réussit.
+ * Un verrou plus vieux que `maxAgeMs` est considéré comme abandonné et repris,
+ * ce qui évite qu'une génération interrompue bloque le jeu pour toujours.
+ */
+export async function acquireGameExportLock(
+  gameId: string,
+  maxAgeMs: number = GAME_EXPORT_LOCK_MAX_AGE_MS
+): Promise<GameExportLock> {
+  await ensureGameExportIndexes();
+
+  const _id = new ObjectId(gameId);
+  const now = new Date();
+  const staleBefore = new Date(now.getTime() - maxAgeMs);
+  const token = randomUUID();
+
+  try {
+    // Le filtre ne retient que les verrous périmés : sur un verrou frais il ne
+    // correspond à rien, l'upsert tente l'insertion, et l'index unique la
+    // refuse. Sans verrou du tout, l'insertion passe — le document inséré tient
+    // son `gameId` de l'égalité du filtre, inutile de le répéter en
+    // `$setOnInsert` où il entrerait en conflit avec elle.
+    await db
+      .collection<GameExportLockDb>(LOCKS_COLLECTION_NAME)
+      .updateOne(
+        {gameId: _id, startedAt: {$lte: staleBefore}},
+        {$set: {startedAt: now, token}},
+        {upsert: true}
+      );
+    return {acquired: true, token};
+  } catch (error) {
+    if (!isDuplicateKeyError(error)) throw error;
+
+    const held = await db
+      .collection<GameExportLockDb>(LOCKS_COLLECTION_NAME)
+      .findOne({gameId: _id});
+    // Le verrou a pu être relâché entre l'échec et cette lecture. L'appelant
+    // sera invité à réessayer, ce qu'il aurait fait de toute façon : mieux vaut
+    // une attente inutile qu'une seconde génération lancée en parallèle.
+    return {acquired: false, startedAt: held?.startedAt ?? now};
+  }
+}
+
+/**
+ * Relâche le verrou, à condition qu'il soit toujours le nôtre : un verrou
+ * périmé repris par une autre génération ne doit pas être effacé par celle qui
+ * l'avait laissé traîner.
+ */
+export async function releaseGameExportLock(gameId: string, token: string): Promise<void> {
+  await db
+    .collection<GameExportLockDb>(LOCKS_COLLECTION_NAME)
+    .deleteOne({gameId: new ObjectId(gameId), token});
 }
 
 export async function getRecentGameExport(gameId: string, maxAgeMs: number): Promise<GameExport | null> {
