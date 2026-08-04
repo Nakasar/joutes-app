@@ -1860,7 +1860,7 @@
         "dropped": "Ritirato"
       },
       "phaseType": {
-        "puzzle": "Puzzle (a cronometro)",
+        "time-race": "Puzzle (a cronometro)",
         "freeform": "Formato libero",
         "swiss": "Turni svizzeri",
         "elimination": "Eliminazione (riaccoppiamento)",

@@ -31,7 +31,7 @@ export function ProjectionScreen({ tournamentId }: { tournamentId: string }) {
 
   // Phase puzzle : le panneau « minuteur » projette le chronomètre commun de la
   // salle, qui monte depuis 0 et ne peut donc jamais expirer.
-  const isPuzzle = state?.phaseType === "puzzle";
+  const isPuzzle = state?.phaseType === "time-race";
   const elapsed = stopwatchElapsedSeconds(state?.stopwatch ?? null, serverOffsetMs);
   const expired = !isPuzzle && remaining !== null && remaining < 0;
   const paused = isPuzzle ? stopwatchIsPaused(state?.stopwatch ?? null) : timerIsPaused(timer);

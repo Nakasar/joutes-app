@@ -24,7 +24,7 @@ export function TournamentClock({ tournamentId }: { tournamentId: string }) {
   }, []);
 
   const value =
-    state?.phaseType === "puzzle"
+    state?.phaseType === "time-race"
       ? stopwatchElapsedSeconds(state?.stopwatch ?? null, serverOffsetMs)
       : timerRemainingSeconds(state?.timer ?? null, serverOffsetMs);
   if (value === null) return null;

@@ -5,7 +5,7 @@ export const tournamentPhaseTypeSchema = z.enum([
   "swiss",
   "elimination",
   "bracket",
-  "puzzle",
+  "time-race",
 ]);
 export const tournamentResultModeSchema = z.enum(["points", "selection"]);
 export const tournamentScoringMethodSchema = z.enum(["fixed", "rank_offset"]);

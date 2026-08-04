@@ -1835,7 +1835,7 @@
         "dropped": "Ausgeschieden"
       },
       "phaseType": {
-        "puzzle": "Puzzle (auf Zeit)",
+        "time-race": "Puzzle (auf Zeit)",
         "freeform": "Freies Format",
         "swiss": "Schweizer Runden",
         "elimination": "K.-o. (Neupaarung)",

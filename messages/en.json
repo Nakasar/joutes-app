@@ -1918,7 +1918,7 @@
         "dropped": "Dropped"
       },
       "phaseType": {
-        "puzzle": "Puzzle (timed)",
+        "time-race": "Puzzle (timed)",
         "freeform": "Free format",
         "swiss": "Swiss rounds",
         "elimination": "Elimination (re-pairing)",

@@ -6,6 +6,11 @@ classement se fait au temps mis pour le terminer, le plus rapide en tête.
 
 ## Principes
 
+- **Le type de phase s'appelle `time-race`, la fonctionnalité s'appelle
+  « puzzle ».** La valeur stockée est volontairement générique : d'autres
+  épreuves au chronomètre pourront s'y ranger sans migration. Le puzzle est le
+  premier — et pour l'instant le seul — format qu'elle porte, et c'est ce nom
+  que voient les organisateurs et les joueurs.
 - **Un puzzle n'est pas un match.** Une phase puzzle ne génère ni appariement,
   ni table, ni match : il n'y a rien à apparier. Elle porte une ronde unique,
   vide, qui ne sert qu'à l'ancrer dans le déroulé du tournoi.
@@ -22,7 +27,7 @@ classement se fait au temps mis pour le terminer, le plus rapide en tête.
 
 ## Configuration d'une phase
 
-Type de phase `puzzle`. Le formulaire de phase masque tout ce qui décrit un
+Type de phase `time-race`. Le formulaire de phase masque tout ce qui décrit un
 affrontement (best-of, mode de résultat, scoring, appariement, bornes de joueurs
 par match, rythme, preset de statistiques). Restent :
 
@@ -32,7 +37,7 @@ par match, rythme, preset de statistiques). Restent :
 | `topCut` | Joueurs qualifiés à l'entrée de la phase, comme ailleurs. |
 | `scenarios` | Le premier scénario décrit le puzzle à résoudre ; il est affiché aux joueurs (nom, et consignes après le « \| »). |
 
-Une phase puzzle n'accepte qu'une seule ronde : plusieurs puzzles se
+Une phase de puzzle n'accepte qu'une seule ronde : plusieurs puzzles se
 configurent en plusieurs phases, chacune avec son chronomètre.
 
 ## Chronomètre

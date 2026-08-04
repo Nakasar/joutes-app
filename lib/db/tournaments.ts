@@ -99,6 +99,10 @@ const ANNOUNCEMENTS = "tournament-announcements";
 const PENALTIES = "tournament-penalties";
 const NOTES = "tournament-notes";
 const ACTIVITY = "tournament-activity";
+// Temps relevés sur les phases chronométrées (type `time-race`). Le type de
+// phase porte un nom générique — d'autres épreuves au chrono pourront s'y
+// ranger — mais le seul format proposé aujourd'hui est le puzzle, d'où le nom
+// de la collection et du vocabulaire alentour.
 const PUZZLE_RESULTS = "tournament-puzzle-results";
 
 // Nombre d'événements conservés dans le journal d'activité d'un tournoi. Les
@@ -1854,7 +1858,7 @@ async function requirePuzzlePhase(tournamentId: string, phaseId: string): Promis
   if (!phase) {
     throw new TournamentError("not-found", "Phase non trouvée");
   }
-  if (phase.type !== "puzzle") {
+  if (phase.type !== "time-race") {
     throw new TournamentError("invalid", "Cette phase n'est pas une phase de puzzle");
   }
   return phase;
@@ -2414,10 +2418,10 @@ function assertPlayerBoundsForType(
   }
 }
 
-// Une phase puzzle n'apparie personne : elle n'a ni match ni table, et son
-// unique ronde n'existe que pour donner un contenant aux temps relevés.
+// Une phase chronométrée n'apparie personne : elle n'a ni match ni table, et
+// son unique ronde n'existe que pour donner un contenant aux temps relevés.
 function phaseGeneratesMatches(type: TournamentPhase["type"]): boolean {
-  return type !== "freeform" && type !== "puzzle";
+  return type !== "freeform" && type !== "time-race";
 }
 
 export async function addPhase(
@@ -2786,7 +2790,7 @@ export async function createNextRound(
   // Une phase puzzle porte un puzzle, chronométré depuis son démarrage : sa
   // ronde unique n'est là que pour ancrer la phase dans le déroulé du tournoi.
   // Plusieurs puzzles = plusieurs phases, chacune avec son chronomètre.
-  if (phase.type === "puzzle" && lastRound) {
+  if (phase.type === "time-race" && lastRound) {
     throw new TournamentError("conflict", "Une phase de puzzle ne comporte qu'une seule ronde");
   }
 
@@ -4082,7 +4086,7 @@ export async function validateRoundStandings(
   // Une phase puzzle n'a pas de match : ses participants sont les inscrits, et
   // ceux qui ont déjà rendu un temps même s'ils se sont retirés depuis.
   const participantIds =
-    phase.type === "puzzle"
+    phase.type === "time-race"
       ? [
           ...new Set([
             ...players.filter((p) => p.status === "registered").map((p) => p.id),

@@ -30,7 +30,7 @@ export default function TournamentTimerPage({
 
   // Phase puzzle : le chronomètre commun remplace le minuteur. Il monte depuis
   // 0, donc rien n'« expire » et l'écran ne passe jamais au rouge.
-  const isPuzzle = state?.phaseType === "puzzle";
+  const isPuzzle = state?.phaseType === "time-race";
   const elapsed = stopwatchElapsedSeconds(state?.stopwatch ?? null, serverOffsetMs);
   const countdown = timerRemainingSeconds(state?.timer ?? null, serverOffsetMs);
   const value = isPuzzle ? elapsed : countdown;

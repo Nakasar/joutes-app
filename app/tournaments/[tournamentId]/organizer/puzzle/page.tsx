@@ -21,9 +21,9 @@ export default async function OrganizerPuzzlePage({
 
   const displayPhase = resolveDisplayPhase(phases, tournament.currentPhaseId);
   const phase =
-    displayPhase?.type === "puzzle"
+    displayPhase?.type === "time-race"
       ? displayPhase
-      : [...phases].reverse().find((candidate) => candidate.type === "puzzle");
+      : [...phases].reverse().find((candidate) => candidate.type === "time-race");
 
   if (!phase) {
     return (

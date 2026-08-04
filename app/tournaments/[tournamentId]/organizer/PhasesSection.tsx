@@ -142,10 +142,10 @@ export function PhasesSection({
     const preset = presets.find((option) => option.key === phase.statsPresetKey);
     // Une phase puzzle n'a ni best-of, ni points, ni appariement : son résumé
     // se limite à ce qui la décrit vraiment, le classement au chronomètre.
-    if (phase.type === "puzzle") {
+    if (phase.type === "time-race") {
       return (
         <>
-          {t("common.phaseType.puzzle")} · {t("organizerPhases.summary.puzzleTimed")}
+          {t("common.phaseType.time-race")} · {t("organizerPhases.summary.puzzleTimed")}
           {phase.topCut ? ` · ${t("organizerPhases.summary.topN", { count: phase.topCut })}` : ""}
         </>
       );

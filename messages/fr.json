@@ -1919,7 +1919,7 @@
         "dropped": "Retiré"
       },
       "phaseType": {
-        "puzzle": "Puzzle (chronométré)",
+        "time-race": "Puzzle (chronométré)",
         "freeform": "Format libre",
         "swiss": "Rondes suisses",
         "elimination": "Élimination (ré-appariement)",

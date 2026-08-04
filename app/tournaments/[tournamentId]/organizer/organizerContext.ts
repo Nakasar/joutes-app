@@ -62,7 +62,7 @@ export async function loadOrganizerContext(tournamentId: string) {
     // Les joueurs retirés ne sont plus attendus : ils sortent du dénominateur
     // du pointage, sinon le compteur ne peut jamais être complet.
     totalPlayers: players.filter((p) => p.status !== "dropped").length,
-    hasPuzzlePhase: phases.some((phase) => phase.type === "puzzle"),
+    hasPuzzlePhase: phases.some((phase) => phase.type === "time-race"),
   };
 
   return { session, tournament, phases, rounds: byCreation, players, currentRound, activePhase, counts };

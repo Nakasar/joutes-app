@@ -7,10 +7,12 @@ export type TournamentStatus = "draft" | "in-progress" | "completed";
 // - elimination : seuls les vainqueurs passent à la ronde suivante, ré-appariés
 //   selon le classement ou aléatoirement (eliminationSeeding).
 // - bracket : arbre d'élimination figé, seedé selon le classement d'entrée.
-// - puzzle : pas d'adversaire. Tous les joueurs résolvent le même puzzle en
-//   même temps ; le minuteur cède la place à un chronomètre parti de 0, et le
-//   classement se fait au temps mis pour terminer (le plus rapide en tête).
-export type TournamentPhaseType = "freeform" | "swiss" | "elimination" | "bracket" | "puzzle";
+// - time-race : course contre la montre, sans adversaire. Tous les joueurs
+//   affrontent la même épreuve en même temps ; le minuteur cède la place à un
+//   chronomètre parti de 0, et le classement se fait au temps mis pour terminer
+//   (le plus rapide en tête). Le nom est volontairement générique : le puzzle
+//   est le premier usage, pas le seul format chronométré possible.
+export type TournamentPhaseType = "freeform" | "swiss" | "elimination" | "bracket" | "time-race";
 export type TournamentPhaseStatus = "not-started" | "in-progress" | "completed";
 export type TournamentRoundStatus = "in-progress" | "completed";
 // REGISTERED : inscrit et apparaillé lors de la génération des rondes.

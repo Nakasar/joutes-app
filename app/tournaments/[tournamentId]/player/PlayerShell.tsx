@@ -89,7 +89,7 @@ export function PlayerShell({
 
   // Phase puzzle : le chronomètre de la salle prend la place du décompte, et
   // le libellé passe de « restant » à « écoulé ».
-  const isPuzzle = state?.phaseType === "puzzle";
+  const isPuzzle = state?.phaseType === "time-race";
   const remaining = isPuzzle
     ? stopwatchElapsedSeconds(state?.stopwatch ?? null, serverOffsetMs)
     : timerRemainingSeconds(state?.timer ?? null, serverOffsetMs);

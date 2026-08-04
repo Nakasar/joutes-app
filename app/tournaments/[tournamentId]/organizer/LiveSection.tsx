@@ -84,7 +84,7 @@ export function LiveSection({
 
   // Phase puzzle : le décompte n'a plus de sens, la salle suit un chronomètre
   // parti de 0 — c'est lui qui donne le temps enregistré pour chaque joueur.
-  const isPuzzle = state?.phaseType === "puzzle";
+  const isPuzzle = state?.phaseType === "time-race";
   const stopwatch = state?.stopwatch ?? null;
   const elapsed = stopwatchElapsedSeconds(stopwatch, serverOffsetMs);
   const stopwatchRunning = stopwatch?.running ?? false;

@@ -261,7 +261,7 @@ export default function TournamentPlayerMatchPage({
     >
       {/* Phase puzzle : ni table ni adversaire, la carte de match n'a rien à
           montrer. Le chronomètre de la salle et le « j'ai fini » la remplacent. */}
-      {activePhase?.type === "puzzle" ? (
+      {activePhase?.type === "time-race" ? (
         <PuzzleCard
           tournamentId={tournamentId}
           phaseId={activePhase.id}

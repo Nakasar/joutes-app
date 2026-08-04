@@ -143,7 +143,7 @@ export function PhaseForm({
   );
   const [scenariosText, setScenariosText] = useState(scenariosToText(initial));
 
-  const isPuzzle = type === "puzzle";
+  const isPuzzle = type === "time-race";
 
   // Changer de preset rebascule l'exigence de saisie sur l'usage du nouveau
   // jeu : c'est ce que l'organisateur attend en choisissant un format, et il
@@ -270,7 +270,7 @@ export function PhaseForm({
               <SelectItem value="elimination">{t("common.phaseType.elimination")}</SelectItem>
               <SelectItem value="bracket">{t("common.phaseType.bracket")}</SelectItem>
               <SelectItem value="freeform">{t("common.phaseType.freeform")}</SelectItem>
-              <SelectItem value="puzzle">{t("common.phaseType.puzzle")}</SelectItem>
+              <SelectItem value="time-race">{t("common.phaseType.time-race")}</SelectItem>
             </SelectContent>
           </Select>
           {isPuzzle && (
