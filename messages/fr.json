@@ -1761,6 +1761,7 @@
                    "matchStats": {
                      "presets": {
                        "swpLeague": "Ligue Shatterpoint (cartes de lutte, blessures)",
+                       "battlePoints": "Score de bataille (bataille, destruction)",
                        "victoryPoints": "Points de victoire",
                        "bloodBowl": "Blood Bowl (touchdowns, sorties)"
                      },
@@ -1774,7 +1775,11 @@
                        "touchdowns": "Touchdowns",
                        "touchdownsShort": "TD",
                        "casualties": "Sorties adverses",
-                       "casualtiesShort": "Sorties"
+                       "casualtiesShort": "Sorties",
+                       "battlePoints": "Score de bataille",
+                       "battlePointsShort": "Bataille",
+                       "pointsDestroyed": "Score de destruction",
+                       "pointsDestroyedShort": "Détruits"
                      }
                    },
     "matchExport": {
@@ -2028,6 +2033,8 @@
     "gamesEditor": {
                      "statAria": "{stat} de {name} pour la partie {number}",
                      "statsHint": "Relevé après chaque partie : {stats}.",
+                     "statsRequiredHint": "À relever obligatoirement après chaque partie : {stats}.",
+                     "statsMissing": "Renseignez toutes les statistiques de chaque joueur pour les parties jouées.",
       "gameN": "Partie {number}",
       "gameWinnerAria": "Vainqueur de la partie {number}",
       "winnerPlaceholder": "Vainqueur…",
@@ -2189,6 +2196,8 @@
                          "statsPresetLabel": "Statistiques de match",
                          "statsPresetNone": "Aucune",
                          "statsPresetHint": "Relevées à chaque partie et utilisées pour départager le classement. Elles ne désignent jamais le vainqueur.",
+                         "requireStatsLabel": "Saisie obligatoire",
+                         "requireStatsHint": "Un résultat n'est accepté que si toutes les statistiques sont renseignées, pour chaque joueur. Les raccourcis de score sont alors désactivés.",
                          "scenariosLabel": "Scénarios (un par ligne)",
                          "scenariosPlaceholder": "Conflit mineur | Une seule escouade\nPriorité changeante | Deux escouades",
                          "scenariosHint": "Attribués aux rondes dans l'ordre. Après le « | », les consignes de composition affichées aux joueurs.",
@@ -2250,7 +2259,8 @@
         "topN": "Top {count}",
         "duels": "duels",
         "podsOf": "pods de {count}",
-        "podsRange": "pods {min}-{max}"
+        "podsRange": "pods {min}-{max}",
+        "statsRequired": "saisie obligatoire"
       },
       "pageTitle": "Format & phases",
       "pageDescription": "Les étapes s'enchaînent dans l'ordre. Vous pouvez encore modifier ce qui n'a pas commencé.",

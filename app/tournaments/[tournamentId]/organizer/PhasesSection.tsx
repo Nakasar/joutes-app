@@ -136,41 +136,50 @@ export function PhasesSection({
     });
 
   // Résumé d'une phase dans la liste.
-  const phaseSummary = (phase: TournamentPhase) => (
-    <>
-      {t(`common.phaseType.${phase.type}`)} · {t("common.bestOfN", { count: phase.bestOf })}
-      {` · ${
-        phase.resultMode === "points"
-          ? t("organizerPhases.summary.resultPoints")
-          : t("organizerPhases.summary.resultSelection")
-      }`}
-      {` · ${
-        phase.scoringMethod === "rank_offset"
-          ? t("organizerPhases.summary.scoringRank")
-          : t("organizerPhases.summary.scoringFixed")
-      }`}
-      {phase.plannedRounds
-        ? ` · ${t("organizerPhases.summary.roundsCount", { count: phase.plannedRounds })}`
-        : ""}
-      {phase.topCut ? ` · ${t("organizerPhases.summary.topN", { count: phase.topCut })}` : ""}
-      {phase.type === "bracket"
-        ? ` · ${t(`organizerPhases.bracketSeeding.${phase.bracketSeeding}`)}`
-        : ""}
-      {phase.type !== "bracket" && (
-        <>
-          {" · "}
-          {phase.minPlayersPerMatch === phase.maxPlayersPerMatch
-            ? phase.minPlayersPerMatch === 2
-              ? t("organizerPhases.summary.duels")
-              : t("organizerPhases.summary.podsOf", { count: phase.minPlayersPerMatch })
-            : t("organizerPhases.summary.podsRange", {
-                min: phase.minPlayersPerMatch,
-                max: phase.maxPlayersPerMatch,
-              })}
-        </>
-      )}
-    </>
-  );
+  const phaseSummary = (phase: TournamentPhase) => {
+    // Preset de statistiques : l'organisateur doit voir depuis la liste qu'une
+    // phase relève des scores, et si leur saisie conditionne les résultats.
+    const preset = presets.find((option) => option.key === phase.statsPresetKey);
+    return (
+      <>
+        {t(`common.phaseType.${phase.type}`)} · {t("common.bestOfN", { count: phase.bestOf })}
+        {` · ${
+          phase.resultMode === "points"
+            ? t("organizerPhases.summary.resultPoints")
+            : t("organizerPhases.summary.resultSelection")
+        }`}
+        {` · ${
+          phase.scoringMethod === "rank_offset"
+            ? t("organizerPhases.summary.scoringRank")
+            : t("organizerPhases.summary.scoringFixed")
+        }`}
+        {phase.plannedRounds
+          ? ` · ${t("organizerPhases.summary.roundsCount", { count: phase.plannedRounds })}`
+          : ""}
+        {phase.topCut ? ` · ${t("organizerPhases.summary.topN", { count: phase.topCut })}` : ""}
+        {phase.type === "bracket"
+          ? ` · ${t(`organizerPhases.bracketSeeding.${phase.bracketSeeding}`)}`
+          : ""}
+        {phase.type !== "bracket" && (
+          <>
+            {" · "}
+            {phase.minPlayersPerMatch === phase.maxPlayersPerMatch
+              ? phase.minPlayersPerMatch === 2
+                ? t("organizerPhases.summary.duels")
+                : t("organizerPhases.summary.podsOf", { count: phase.minPlayersPerMatch })
+              : t("organizerPhases.summary.podsRange", {
+                  min: phase.minPlayersPerMatch,
+                  max: phase.maxPlayersPerMatch,
+                })}
+          </>
+        )}
+        {preset ? ` · ${t(`matchStats.presets.${preset.labelKey}`)}` : ""}
+        {preset && phase.requireMatchStats
+          ? ` (${t("organizerPhases.summary.statsRequired")})`
+          : ""}
+      </>
+    );
+  };
 
   return (
     <div className="space-y-4">

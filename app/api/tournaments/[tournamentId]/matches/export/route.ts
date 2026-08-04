@@ -17,7 +17,9 @@ import {
   buildCsvFileName,
   buildMatchExportEntries,
   buildMatchesCsv,
+  type MatchCsvStatColumn,
 } from "@/lib/tournaments/match-export";
+import { getPreset } from "@/lib/tournaments/game-presets";
 import type { TournamentMatchStatus } from "@/lib/types/Tournament";
 
 const MATCH_STATUSES: TournamentMatchStatus[] = ["pending", "in-progress", "completed", "disputed"];
@@ -68,18 +70,34 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       unknownPlayerLabel: t("roundClient.unknownPlayer"),
     });
 
-    const csv = buildMatchesCsv(entries, {
-      phase: t("matchExport.columns.phase"),
-      round: t("matchExport.columns.round"),
-      table: t("matchExport.columns.table"),
-      status: t("matchExport.columns.status"),
-      player: t("matchExport.columns.player"),
-      games: t("matchExport.columns.games"),
-      winners: t("matchExport.columns.winners"),
-      statusLabels: Object.fromEntries(
-        MATCH_STATUSES.map((status) => [status, t(`common.matchStatus.${status}`)])
-      ) as Record<TournamentMatchStatus, string>,
-    });
+    // Colonnes de statistiques : celles de la phase exportée, ou l'union des
+    // presets du tournoi quand l'export porte sur tout le tournoi. Dédoublonné
+    // par clé — deux phases peuvent relever la même statistique.
+    const exportedPhases = round ? phases.filter((phase) => phase.id === round.phaseId) : phases;
+    const statColumns: MatchCsvStatColumn[] = [];
+    for (const phase of exportedPhases) {
+      for (const stat of getPreset(phase.statsPresetKey)?.stats ?? []) {
+        if (statColumns.some((column) => column.key === stat.key)) continue;
+        statColumns.push({ key: stat.key, label: t(`matchStats.stats.${stat.labelKey}Short`) });
+      }
+    }
+
+    const csv = buildMatchesCsv(
+      entries,
+      {
+        phase: t("matchExport.columns.phase"),
+        round: t("matchExport.columns.round"),
+        table: t("matchExport.columns.table"),
+        status: t("matchExport.columns.status"),
+        player: t("matchExport.columns.player"),
+        games: t("matchExport.columns.games"),
+        winners: t("matchExport.columns.winners"),
+        statusLabels: Object.fromEntries(
+          MATCH_STATUSES.map((status) => [status, t(`common.matchStatus.${status}`)])
+        ) as Record<TournamentMatchStatus, string>,
+      },
+      statColumns
+    );
 
     const fileName = buildCsvFileName(tournament.name, round?.number);
 

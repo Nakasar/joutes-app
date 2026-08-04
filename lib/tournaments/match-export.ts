@@ -1,3 +1,4 @@
+import { getPreset, presetStatKeys } from "@/lib/tournaments/game-presets";
 import type {
   TournamentMatch,
   TournamentMatchStatus,
@@ -29,11 +30,43 @@ export type MatchExportEntry = {
   tableNumber?: number;
   status: TournamentMatchStatus;
   /** Un seul joueur : le match est un BYE. */
-  players: { id: string; label: string; score: number; isWinner: boolean }[];
+  players: {
+    id: string;
+    label: string;
+    score: number;
+    isWinner: boolean;
+    // Statistiques du preset cumulées sur les parties du match (score de
+    // bataille, score de destruction…). Absent si la phase n'en relève pas.
+    stats?: Record<string, number>;
+  }[];
   winners: string[];
   /** Score du best-of, dans l'ordre des joueurs (ex. « 2 - 1 »). */
   score: string;
 };
+
+/**
+ * Statistiques d'un joueur cumulées sur les parties d'un match. Une clé jamais
+ * saisie reste absente : l'export doit distinguer « zéro rapporté » de « rien
+ * n'a été relevé », par exemple sur un match antérieur à l'ajout du preset.
+ */
+function sumMatchStats(
+  match: TournamentMatch,
+  playerId: string,
+  statKeys: string[]
+): Record<string, number> {
+  const totals: Record<string, number> = {};
+  for (const game of match.games) {
+    const values = game.stats?.[playerId];
+    if (!values) continue;
+    for (const key of statKeys) {
+      const value = values[key];
+      if (typeof value === "number" && Number.isFinite(value)) {
+        totals[key] = (totals[key] ?? 0) + value;
+      }
+    }
+  }
+  return totals;
+}
 
 /**
  * Ordonne et enrichit les matchs : par phase, puis par ronde, puis par table
@@ -48,7 +81,7 @@ export function buildMatchExportEntries({
 }: {
   matches: TournamentMatch[];
   players: MatchExportPlayer[];
-  phases: Pick<TournamentPhase, "id" | "name">[];
+  phases: Pick<TournamentPhase, "id" | "name" | "statsPresetKey">[];
   rounds: Pick<TournamentRound, "id" | "number" | "phaseId">[];
   unknownPlayerLabel: string;
 }): MatchExportEntry[] {
@@ -59,11 +92,16 @@ export function buildMatchExportEntries({
 
   const entries = matches.map((match) => {
     const round = roundsById.get(match.roundId);
+    // Statistiques relevées par la phase du match : chaque phase a la sienne.
+    const statKeys = presetStatKeys(getPreset(phasesById.get(match.phaseId)?.statsPresetKey));
     const entryPlayers = match.players.map((matchPlayer) => ({
       id: matchPlayer.playerId,
       label: formatPlayerLabel(playersById.get(matchPlayer.playerId), unknownPlayerLabel),
       score: matchPlayer.score,
       isWinner: match.winnerIds.includes(matchPlayer.playerId),
+      ...(statKeys.length > 0
+        ? { stats: sumMatchStats(match, matchPlayer.playerId, statKeys) }
+        : {}),
     }));
 
     return {
@@ -88,6 +126,9 @@ export function buildMatchExportEntries({
       (a.tableNumber ?? Number.MAX_SAFE_INTEGER) - (b.tableNumber ?? Number.MAX_SAFE_INTEGER)
   );
 }
+
+/** Colonne de statistique du CSV : clé du preset et intitulé traduit. */
+export type MatchCsvStatColumn = { key: string; label: string };
 
 export type MatchCsvLabels = {
   phase: string;
@@ -133,14 +174,21 @@ function escapeCsvValue(value: string | number | undefined): string {
  * Séparateur `;` et BOM UTF-8 : c'est ce qu'attend Excel en configuration
  * française, où un `,` casserait les colonnes et l'absence de BOM les accents.
  * Le nombre de colonnes joueur s'adapte au match le plus peuplé (les formats
- * multijoueurs dépassent les deux joueurs habituels).
+ * multijoueurs dépassent les deux joueurs habituels), et chaque joueur porte
+ * les statistiques relevées par le jeu (score de bataille, score de
+ * destruction…) : l'export est l'archive du tournoi, il doit tout retenir.
  */
-export function buildMatchesCsv(entries: MatchExportEntry[], labels: MatchCsvLabels): string {
+export function buildMatchesCsv(
+  entries: MatchExportEntry[],
+  labels: MatchCsvLabels,
+  statColumns: MatchCsvStatColumn[] = []
+): string {
   const maxPlayers = entries.reduce((max, entry) => Math.max(max, entry.players.length), 0);
 
   const header = [labels.phase, labels.round, labels.table, labels.status];
   for (let index = 0; index < maxPlayers; index++) {
     header.push(`${labels.player} ${index + 1}`, `${labels.games} ${index + 1}`);
+    for (const column of statColumns) header.push(`${column.label} ${index + 1}`);
   }
   header.push(labels.winners);
 
@@ -154,6 +202,7 @@ export function buildMatchesCsv(entries: MatchExportEntry[], labels: MatchCsvLab
     for (let index = 0; index < maxPlayers; index++) {
       const player = entry.players[index];
       row.push(player?.label, player ? player.score : undefined);
+      for (const column of statColumns) row.push(player?.stats?.[column.key]);
     }
     row.push(entry.winners.join(" / "));
     return row;

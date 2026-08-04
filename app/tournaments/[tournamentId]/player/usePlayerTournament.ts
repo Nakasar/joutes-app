@@ -23,6 +23,8 @@ export type ApiPhase = {
   resultMode: TournamentResultMode;
   // Preset de statistiques du jeu appliqué à la phase, s'il y en a un.
   statsPresetKey?: string;
+  // La phase exige la saisie des statistiques pour rapporter un résultat.
+  requireMatchStats?: boolean;
 };
 export type ApiTournament = {
   id: string;

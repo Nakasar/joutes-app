@@ -23,7 +23,12 @@ export default async function OrganizerPhasesPage({
         tournamentId={tournamentId}
         initialPhases={phases}
         initialCurrentPhaseId={tournament.currentPhaseId}
-        presets={presets.map((preset) => ({ key: preset.key, labelKey: preset.labelKey }))}
+        presets={presets.map((preset) => ({
+          key: preset.key,
+          labelKey: preset.labelKey,
+          applyByDefault: preset.applyByDefault ?? false,
+          requireStats: preset.defaults.requireStats,
+        }))}
         rounds={rounds.map((r) => ({
           id: r.id,
           phaseId: r.phaseId,

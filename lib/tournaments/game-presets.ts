@@ -41,12 +41,20 @@ export type GameTournamentPreset = {
   stats: MatchStatDefinition[];
   // Départages appliqués après les points de match, dans cet ordre.
   tiebreakers: TiebreakerKey[];
+  // Preset proposé d'emblée à la création d'une phase pour l'un de ses jeux.
+  // Les tournois de figurines à grande armée relèvent leurs statistiques par
+  // défaut : l'organisateur les retire s'il n'en veut pas, plutôt que d'avoir à
+  // se souvenir de les activer.
+  applyByDefault?: boolean;
   // Valeurs pré-remplies dans le formulaire de phase quand le preset est choisi.
   defaults: {
     fixedScoring: TournamentFixedScoring;
     swissPairing: TournamentSwissPairing;
     bestOf: number;
     resultMode: TournamentResultMode;
+    // Saisie des statistiques exigée pour rapporter un résultat. Reste un
+    // réglage de phase : le preset ne fait que proposer l'usage du jeu.
+    requireStats: boolean;
   };
 };
 
@@ -69,12 +77,48 @@ export const GAME_TOURNAMENT_PRESETS: GameTournamentPreset[] = [
       swissPairing: "random-in-bracket",
       bestOf: 1,
       resultMode: "selection",
+      requireStats: false,
     },
   },
   {
-    // Format à points de victoire, commun aux jeux de figurines à objectifs
-    // (Warhammer 40 000, Age of Sigmar, Star Wars: Legion). Le vainqueur reste
-    // désigné par les joueurs ; les points de victoire départagent.
+    // Jeux de figurines à grande armée (Warhammer 40 000, Warhammer, Star Wars:
+    // Legion). Chaque partie relève deux scores que les joueurs tiennent déjà
+    // sur leur feuille de match :
+    // - le score de bataille (« battle points »), marqué sur les objectifs de
+    //   la mission, qui départage à égalité de points de tournoi ;
+    // - le score de destruction (« points destroyed »), la valeur en points de
+    //   l'armée adverse détruite, conservé pour l'historique du tournoi.
+    // Départage : points de tournoi (victoires/nuls/défaites, appliqués avant
+    // toute cette chaîne), puis score de bataille, puis résistance (OMW%).
+    key: "battle-points",
+    labelKey: "battlePoints",
+    gameSlugs: ["w40k", "warhammer", "legion"],
+    // Format habituel de ces jeux : les statistiques y sont exigées, pas
+    // optionnelles — un tournoi ne peut pas départager sans elles.
+    applyByDefault: true,
+    stats: [
+      // Un BYE est crédité du barème plein de la mission (100 points de
+      // bataille), comme le veut l'usage : le joueur exempté ne doit pas être
+      // rétrogradé au départage pour une partie qu'on ne lui a pas donnée.
+      { key: "battlePoints", labelKey: "battlePoints", byeValue: 100, max: 999 },
+      // Rien n'a été détruit : le score de destruction d'un BYE est nul, et il
+      // ne sert de toute façon pas au départage.
+      { key: "pointsDestroyed", labelKey: "pointsDestroyed", byeValue: 0, max: 9999 },
+    ],
+    tiebreakers: ["stat:battlePoints", "omw"],
+    defaults: {
+      fixedScoring: DEFAULT_FIXED_SCORING,
+      swissPairing: "ranked",
+      bestOf: 1,
+      resultMode: "selection",
+      requireStats: true,
+    },
+  },
+  {
+    // Format à points de victoire, commun aux jeux de figurines à objectifs.
+    // Plus léger que `battle-points` : une seule statistique, sans obligation
+    // de saisie. Conservé pour les phases qui l'utilisent déjà et pour les
+    // formats maison qui ne relèvent pas la destruction.
     key: "victory-points",
     labelKey: "victoryPoints",
     gameSlugs: ["w40k", "warhammer", "legion"],
@@ -85,6 +129,7 @@ export const GAME_TOURNAMENT_PRESETS: GameTournamentPreset[] = [
       swissPairing: "ranked",
       bestOf: 1,
       resultMode: "selection",
+      requireStats: false,
     },
   },
   {
@@ -103,6 +148,7 @@ export const GAME_TOURNAMENT_PRESETS: GameTournamentPreset[] = [
       swissPairing: "ranked",
       bestOf: 1,
       resultMode: "selection",
+      requireStats: false,
     },
   },
 ];
@@ -111,6 +157,15 @@ export const GAME_TOURNAMENT_PRESETS: GameTournamentPreset[] = [
 export function presetsForGameSlug(slug?: string | null): GameTournamentPreset[] {
   if (!slug) return [];
   return GAME_TOURNAMENT_PRESETS.filter((preset) => preset.gameSlugs.includes(slug));
+}
+
+/**
+ * Preset pré-sélectionné à la création d'une phase pour ce jeu. Absent quand le
+ * jeu n'en impose aucun : l'organisateur part alors d'une phase sans
+ * statistique, comme avant.
+ */
+export function defaultPresetForGameSlug(slug?: string | null): GameTournamentPreset | undefined {
+  return presetsForGameSlug(slug).find((preset) => preset.applyByDefault);
 }
 
 /**
@@ -141,4 +196,33 @@ export function presetTiebreakers(preset?: GameTournamentPreset): TiebreakerKey[
 export function byeStats(preset?: GameTournamentPreset): Record<string, number> {
   if (!preset) return {};
   return Object.fromEntries(preset.stats.map((stat) => [stat.key, stat.byeValue]));
+}
+
+/**
+ * Statistiques manquantes dans le résultat d'une partie, quand la phase les
+ * exige. Chaque joueur du match doit porter une valeur pour chaque statistique
+ * du preset : un score de bataille absent ne se devine pas et fausserait le
+ * départage de tout le tableau.
+ *
+ * Renvoie les couples (joueur, statistique) en défaut, vide si tout est saisi.
+ * Fonction pure, partagée par la validation du domaine et par la saisie : le
+ * joueur voit à l'écran la même exigence que celle qui le fera refuser.
+ */
+export function missingRequiredStats(
+  stats: Record<string, Record<string, number>> | undefined,
+  matchPlayerIds: string[],
+  statKeys: string[]
+): { playerId: string; key: string }[] {
+  if (statKeys.length === 0) return [];
+  const missing: { playerId: string; key: string }[] = [];
+  for (const playerId of matchPlayerIds) {
+    const playerStats = stats?.[playerId];
+    for (const key of statKeys) {
+      const value = playerStats?.[key];
+      if (typeof value !== "number" || !Number.isFinite(value)) {
+        missing.push({ playerId, key });
+      }
+    }
+  }
+  return missing;
 }

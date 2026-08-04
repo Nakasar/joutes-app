@@ -19,13 +19,19 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { usePaginatedSearch } from "@/lib/use-paginated-search";
+import { getPreset, type MatchStatDefinition } from "@/lib/tournaments/game-presets";
 import type { TournamentPhaseType, TournamentResultMode, TournamentRoundStanding } from "@/lib/types/Tournament";
 import { MatchPlayerName } from "./MatchPlayerName";
 import { PlayerNameTag } from "./PlayerNameTag";
 import { TablePagination } from "./TablePagination";
 
 type ApiPlayer = { id: string; userId?: string; displayName: string; status: string };
-type ApiGame = { winnerId?: string | null; points?: Record<string, number> };
+type ApiGame = {
+  winnerId?: string | null;
+  points?: Record<string, number>;
+  // Statistiques secondaires de la partie : joueur → clé de statistique.
+  stats?: Record<string, Record<string, number>>;
+};
 type ApiMatchPlayer = { playerId: string; score: number };
 type ApiMatch = {
   id: string;
@@ -41,6 +47,9 @@ type ApiPhase = {
   type: TournamentPhaseType;
   bestOf: number;
   resultMode: TournamentResultMode;
+  // Preset de statistiques de la phase : donne les colonnes relevées partie
+  // par partie (score de bataille, score de destruction…).
+  statsPresetKey?: string;
 };
 type ApiRound = {
   id: string;
@@ -71,6 +80,32 @@ function gameSummary(
   }
   if (game.winnerId) return `${playerName(game.winnerId)} 🏆`;
   return t("history.gameDraw");
+}
+
+/**
+ * Statistiques relevées sur une partie, joueur par joueur — c'est là que se lit
+ * l'historique d'un tournoi de figurines (« Alice : Bataille 82 · Détruits
+ * 1 240 »). Un joueur sans aucune statistique saisie est omis plutôt que
+ * présenté à zéro : la partie a pu être rapportée avant que la phase ne relève
+ * ces scores.
+ */
+function gameStatLines(
+  game: ApiGame,
+  stats: MatchStatDefinition[],
+  playerIds: string[],
+  playerName: (id: string) => string,
+  t: ReturnType<typeof useTranslations>
+): string[] {
+  if (stats.length === 0 || !game.stats) return [];
+  return playerIds.flatMap((playerId) => {
+    const values = game.stats?.[playerId];
+    if (!values) return [];
+    const detail = stats
+      .filter((stat) => typeof values[stat.key] === "number")
+      .map((stat) => `${t(`matchStats.stats.${stat.labelKey}Short`)} ${values[stat.key]}`)
+      .join(" · ");
+    return detail ? [`${playerName(playerId)} — ${detail}`] : [];
+  });
 }
 
 type Props = {
@@ -170,6 +205,9 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
 
   const currentIndex = flatRounds.findIndex((r) => r.round.id === selectedRoundId);
   const current = currentIndex >= 0 ? flatRounds[currentIndex] : null;
+  // Statistiques relevées par la phase de la ronde affichée : le preset peut
+  // différer d'une phase à l'autre du même tournoi.
+  const phaseStats = getPreset(current?.phase.statsPresetKey)?.stats ?? [];
 
   // La suppression n'est possible que sur la dernière ronde de la phase courante.
   const currentIsLastRound = useMemo(() => {
@@ -459,6 +497,17 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
                             <li key={index}>
                               {t("history.gameN", { number: index + 1 })}{" "}
                               {gameSummary(game, current.phase.resultMode, playerName, t)}
+                              {gameStatLines(
+                                game,
+                                phaseStats,
+                                match.players.map((p) => p.playerId),
+                                playerName,
+                                t
+                              ).map((line) => (
+                                <span key={line} className="block pl-4 font-mono text-[11px]">
+                                  {line}
+                                </span>
+                              ))}
                             </li>
                           ))}
                         </ol>

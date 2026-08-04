@@ -25,6 +25,9 @@ type Props = {
   // Statistiques secondaires relevées par le jeu, saisies après le vainqueur.
   // Vide = la phase n'en relève pas.
   stats?: MatchStatDefinition[];
+  // La phase exige la saisie des statistiques : une partie renseignée doit les
+  // porter toutes, pour chaque joueur, sans quoi l'API refuse le résultat.
+  requireStats?: boolean;
   submitting: boolean;
   submitLabel?: string;
   onSubmit: (games: TournamentGameResult[]) => void;
@@ -46,6 +49,7 @@ export function MatchGamesEditor({
   resultMode,
   bestOf,
   stats = [],
+  requireStats = false,
   submitting,
   submitLabel,
   onSubmit,
@@ -92,6 +96,26 @@ export function MatchGamesEditor({
     }
     return result;
   };
+
+  // Parties renseignées, donc envoyées : une issue choisie en mode selection,
+  // au moins un point saisi en mode points.
+  const reportedGameIndexes = gameIndexes.filter((gameIndex) =>
+    resultMode === "selection"
+      ? winners[gameIndex] !== ""
+      : matchPlayerIds.some((id) => (points[gameIndex]?.[id] ?? "") !== "")
+  );
+
+  // Statistiques exigées par la phase : chaque partie renseignée les porte
+  // toutes, pour chaque joueur. L'envoi est bloqué tant qu'il en manque, plutôt
+  // que refusé par l'API une fois le formulaire refermé.
+  const statsIncomplete =
+    requireStats &&
+    stats.length > 0 &&
+    reportedGameIndexes.some((gameIndex) =>
+      matchPlayerIds.some((id) =>
+        stats.some((stat) => (statValues[gameIndex]?.[id]?.[stat.key] ?? "") === "")
+      )
+    );
 
   const buildGames = (): TournamentGameResult[] => {
     if (resultMode === "selection") {
@@ -186,12 +210,19 @@ export function MatchGamesEditor({
       ))}
       {stats.length > 0 && (
         <p className="text-xs text-muted-foreground">
-          {t("gamesEditor.statsHint", {
+          {t(requireStats ? "gamesEditor.statsRequiredHint" : "gamesEditor.statsHint", {
             stats: stats.map((stat) => t(`matchStats.stats.${stat.labelKey}`)).join(", "),
           })}
         </p>
       )}
-      <Button onClick={() => onSubmit(buildGames())} disabled={submitting} data-match={matchId}>
+      {statsIncomplete && (
+        <p className="text-xs font-medium text-destructive">{t("gamesEditor.statsMissing")}</p>
+      )}
+      <Button
+        onClick={() => onSubmit(buildGames())}
+        disabled={submitting || statsIncomplete}
+        data-match={matchId}
+      >
         {submitLabel ?? t("common.save")}
       </Button>
     </div>

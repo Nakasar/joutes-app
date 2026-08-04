@@ -148,6 +148,8 @@ export const createTournamentPhaseSchema = z
     intervalHours: intervalHoursSchema.optional(),
     deadlineResolution: tournamentDeadlineResolutionSchema.default("double-loss"),
     statsPresetKey: z.string().min(1).max(60).optional(),
+    // Saisie des statistiques du preset exigée pour rapporter un résultat.
+    requireMatchStats: z.boolean().default(false),
     scenarios: z.array(tournamentScenarioSchema).max(50).optional(),
     plannedRounds: z.number().int().min(1).optional(),
     // Joueurs qualifiés à l'entrée de la phase.
@@ -185,6 +187,7 @@ export const updateTournamentPhaseSchema = z
     // null retire le preset : la phase ne relève plus de statistiques et
     // retombe sur les départages historiques.
     statsPresetKey: z.string().min(1).max(60).nullable().optional(),
+    requireMatchStats: z.boolean().optional(),
     // null vide le pool de scénarios (les rondes déjà créées gardent le leur).
     scenarios: z.array(tournamentScenarioSchema).max(50).nullable().optional(),
     plannedRounds: z.number().int().min(1).nullable().optional(),

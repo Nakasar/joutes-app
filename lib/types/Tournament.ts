@@ -338,6 +338,10 @@ export type TournamentPhase = {
   // Preset de jeu appliqué à la phase (statistiques secondaires et départages).
   // Absent = aucune statistique relevée, départages historiques.
   statsPresetKey?: string;
+  // Saisie des statistiques du preset exigée pour rapporter un résultat. Défaut
+  // false (statistiques facultatives). Sans effet si la phase n'a pas de
+  // preset : il n'y a alors rien à saisir.
+  requireMatchStats: boolean;
   // Pool de scénarios attribués aux rondes dans l'ordre (cyclique). Absent ou
   // vide = les rondes n'ont pas de scénario.
   scenarios?: TournamentScenario[];
