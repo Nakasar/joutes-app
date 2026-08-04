@@ -1760,6 +1760,7 @@
                    "matchStats": {
                      "presets": {
                        "swpLeague": "Shatterpoint League (struggle cards, wounds)",
+                       "battlePoints": "Battle points (battle, destruction)",
                        "victoryPoints": "Victory points",
                        "bloodBowl": "Blood Bowl (touchdowns, casualties)"
                      },
@@ -1773,7 +1774,11 @@
                        "touchdowns": "Touchdowns",
                        "touchdownsShort": "TD",
                        "casualties": "Casualties inflicted",
-                       "casualtiesShort": "Cas."
+                       "casualtiesShort": "Cas.",
+                       "battlePoints": "Battle points",
+                       "battlePointsShort": "Battle",
+                       "pointsDestroyed": "Points destroyed",
+                       "pointsDestroyedShort": "Destroyed"
                      }
                    },
     "matchExport": {
@@ -2027,6 +2032,8 @@
     "gamesEditor": {
                      "statAria": "{stat} for {name} in game {number}",
                      "statsHint": "Recorded after each game: {stats}.",
+                     "statsRequiredHint": "Required after each game: {stats}.",
+                     "statsMissing": "Fill in every statistic for each player in the games you report.",
       "gameN": "Game {number}",
       "gameWinnerAria": "Winner of game {number}",
       "winnerPlaceholder": "Winner…",
@@ -2188,6 +2195,8 @@
                          "statsPresetLabel": "Match statistics",
                          "statsPresetNone": "None",
                          "statsPresetHint": "Recorded for each game and used as standings tiebreakers. They never decide the winner.",
+                         "requireStatsLabel": "Mandatory entry",
+                         "requireStatsHint": "A result is only accepted once every statistic is filled in, for every player. Score shortcuts are disabled in that case.",
                          "scenariosLabel": "Scenarios (one per line)",
                          "scenariosPlaceholder": "Minor Conflict | A single squad\nEscalating Priority | Two squads",
                          "scenariosHint": "Assigned to rounds in order. After the “|”, the list-building instructions shown to players.",
@@ -2249,7 +2258,8 @@
         "topN": "Top {count}",
         "duels": "duels",
         "podsOf": "pods of {count}",
-        "podsRange": "pods {min}-{max}"
+        "podsRange": "pods {min}-{max}",
+        "statsRequired": "mandatory entry"
       },
       "pageTitle": "Format & phases",
       "pageDescription": "Steps run in order. You can still edit anything that has not started.",

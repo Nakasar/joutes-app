@@ -1677,6 +1677,7 @@
                    "matchStats": {
                      "presets": {
                        "swpLeague": "Shatterpoint-Liga (Kampfkarten, Wunden)",
+                       "battlePoints": "Kampfpunkte (Kampf, Zerstörung)",
                        "victoryPoints": "Siegpunkte",
                        "bloodBowl": "Blood Bowl (Touchdowns, Ausfälle)"
                      },
@@ -1690,7 +1691,11 @@
                        "touchdowns": "Touchdowns",
                        "touchdownsShort": "TD",
                        "casualties": "Zugefügte Ausfälle",
-                       "casualtiesShort": "Ausf."
+                       "casualtiesShort": "Ausf.",
+                       "battlePoints": "Kampfpunkte",
+                       "battlePointsShort": "Kampf",
+                       "pointsDestroyed": "Zerstörte Punkte",
+                       "pointsDestroyedShort": "Zerstört"
                      }
                    },
     "matchExport": {
@@ -1944,6 +1949,8 @@
     "gamesEditor": {
                      "statAria": "{stat} von {name} für Partie {number}",
                      "statsHint": "Nach jeder Partie erfasst: {stats}.",
+                     "statsRequiredHint": "Nach jeder Partie zwingend zu erfassen: {stats}.",
+                     "statsMissing": "Erfasse alle Statistiken jedes Spielers für die gespielten Partien.",
       "gameN": "Partie {number}",
       "gameWinnerAria": "Sieger der Partie {number}",
       "winnerPlaceholder": "Sieger…",
@@ -2105,6 +2112,8 @@
                          "statsPresetLabel": "Match-Statistiken",
                          "statsPresetNone": "Keine",
                          "statsPresetHint": "Pro Partie erfasst und zur Entscheidung von Gleichständen genutzt. Sie bestimmen nie den Sieger.",
+                         "requireStatsLabel": "Erfassung verpflichtend",
+                         "requireStatsHint": "Ein Ergebnis wird nur angenommen, wenn alle Statistiken für jeden Spieler erfasst sind. Die Ergebnis-Kurzwahl ist dann deaktiviert.",
                          "scenariosLabel": "Szenarien (eines pro Zeile)",
                          "scenariosPlaceholder": "Kleiner Konflikt | Nur eine Einheit\nWechselnde Priorität | Zwei Einheiten",
                          "scenariosHint": "Werden den Runden der Reihe nach zugewiesen. Nach dem „|“ die Aufstellungsvorgaben für die Spieler.",
@@ -2166,7 +2175,8 @@
         "topN": "Top {count}",
         "duels": "Duelle",
         "podsOf": "Pods mit {count}",
-        "podsRange": "Pods {min}-{max}"
+        "podsRange": "Pods {min}-{max}",
+        "statsRequired": "Erfassung verpflichtend"
       },
       "pageTitle": "Format & Phasen",
       "pageDescription": "Die Schritte laufen der Reihe nach. Was noch nicht begonnen hat, lässt sich ändern.",

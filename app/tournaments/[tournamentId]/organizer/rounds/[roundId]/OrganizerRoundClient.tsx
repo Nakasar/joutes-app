@@ -40,6 +40,9 @@ type Props = {
   bestOf: number;
   // Statistiques secondaires du preset de la phase. Vide = aucune.
   stats: MatchStatDefinition[];
+  // La phase exige leur saisie : les raccourcis de score, qui n'en portent pas,
+  // ne peuvent alors plus rendre un résultat complet.
+  requireStats: boolean;
   phaseId: string;
   // La suppression de match n'est possible que dans la dernière ronde.
   isLastRound: boolean;
@@ -55,6 +58,7 @@ export function OrganizerRoundClient({
   resultMode,
   bestOf,
   stats,
+  requireStats,
   phaseId,
   isLastRound,
   reopenCascades,
@@ -325,8 +329,12 @@ export function OrganizerRoundClient({
   const donePercent = total > 0 ? (doneCount / total) * 100 : 0;
   const disputedPercent = total > 0 ? (disputedCount / total) * 100 : 0;
 
+  // Les raccourcis ne savent pas porter de statistiques : dès que la phase les
+  // exige, la saisie détaillée devient le seul chemin complet.
   const quickResultsFor = (match: TournamentMatch) =>
-    resultMode === "selection" ? buildQuickResults(bestOf, match.players.map((p) => p.playerId)) : [];
+    resultMode === "selection" && !(requireStats && stats.length > 0)
+      ? buildQuickResults(bestOf, match.players.map((p) => p.playerId))
+      : [];
 
   const filterChips: { key: Filter; label: string; tone?: "alert" }[] = [
     { key: "all", label: t("roundClient.filterAll") },
@@ -719,6 +727,7 @@ export function OrganizerRoundClient({
                 resultMode={resultMode}
                 bestOf={bestOf}
                 stats={stats}
+                requireStats={requireStats}
                 submitting={submitting}
                 submitLabel={t("common.save")}
                 onSubmit={(games) => submitDetailed(editMatch, games)}

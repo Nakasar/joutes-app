@@ -41,6 +41,7 @@ export default async function OrganizerRoundMatchesPage({
         resultMode={phase.resultMode}
         bestOf={phase.bestOf}
         stats={getPreset(phase.statsPresetKey)?.stats ?? []}
+        requireStats={phase.requireMatchStats}
         phaseId={phase.id}
         isLastRound={isLastRound}
         reopenCascades={reopenCascades}

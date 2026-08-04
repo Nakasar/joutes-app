@@ -26,6 +26,7 @@ organisateur et joueur — n'est pas forké : il gagne des réglages.
 | `deadlineResolution` | Sort des matchs sans résultat à la clôture : `double-loss` (défaut) ou `manual`. |
 | `swissPairing` | `ranked` (défaut, ordre du classement) ou `random-in-bracket` (tirage au sort dans chaque groupe de points, règle des ligues officielles). |
 | `statsPresetKey` | Preset de statistiques du jeu. Absent = aucune statistique relevée, départages historiques. |
+| `requireMatchStats` | Saisie des statistiques exigée pour rapporter un résultat. Défaut `false`, sans effet sans preset. |
 | `scenarios` | Pool de scénarios attribués aux rondes dans l'ordre, en boucle. |
 
 ## Presets de jeu — `lib/tournaments/game-presets.ts`
@@ -38,6 +39,7 @@ du code tournoi.
 | Preset | Jeux | Statistiques | Départages |
 | --- | --- | --- | --- |
 | `swp-league` | `shatterpoint` | Cartes de lutte revendiquées (bye : 2), blessures infligées (bye : 3) | lutte → blessures → OMW% |
+| `battle-points` **(défaut)** | `w40k`, `warhammer`, `legion` | Score de bataille (bye : 100), score de destruction (bye : 0) | bataille → OMW% |
 | `victory-points` | `w40k`, `warhammer`, `legion` | Points de victoire | PV → OMW% → diff. de parties |
 | `blood-bowl` | `bb` | Touchdowns (bye : 2), sorties adverses | TD → sorties → OMW% |
 
@@ -46,9 +48,53 @@ désigne (`resultMode: "selection"`). Elles sont saisies partie par partie, en
 plus du résultat, et servent au classement.
 
 Un preset porte aussi des valeurs par défaut proposées à la création d'une
-phase (barème, mode d'appariement, best-of). Un preset retiré d'une version à
-l'autre ne casse rien : le classement retombe sur les départages historiques et
-les résultats déjà rapportés sont conservés.
+phase (barème, mode d'appariement, best-of, saisie obligatoire). Un preset
+retiré d'une version à l'autre ne casse rien : le classement retombe sur les
+départages historiques et les résultats déjà rapportés sont conservés.
+
+## Jeux de figurines à grande armée — `battle-points`
+
+Warhammer, Warhammer 40 000 et Star Wars: Legion relèvent deux scores à chaque
+partie, ceux que les joueurs tiennent déjà sur leur feuille de match :
+
+- le **score de bataille** (« battle points »), marqué sur les objectifs de la
+  mission — c'est lui qui départage ;
+- le **score de destruction** (« points destroyed »), la valeur en points de
+  l'armée adverse détruite — conservé pour l'historique du tournoi, il n'entre
+  dans aucun départage.
+
+Départage complet, dans l'ordre : **points de tournoi** (victoires, nuls,
+défaites selon le barème de la phase — appliqués avant toute chaîne de preset
+par `calculateMultiplayerStandings`), puis **score de bataille**, puis
+**résistance** (OMW%, moyenne du taux de victoire des adversaires rencontrés).
+
+C'est le preset retenu d'office (`applyByDefault`) à la création d'une phase
+pour ces jeux, avec la saisie exigée : `victory-points`, plus léger, reste
+disponible dans la liste pour les formats maison. Un tournoi qui n'en veut pas
+choisit « Aucune » comme avant.
+
+### Saisie obligatoire
+
+`requireMatchStats` fait de la saisie une condition du résultat, plutôt qu'une
+case qu'on remplira « plus tard » — un score de bataille manquant fausse le
+départage de tout le tableau, et ne se rattrape pas une fois la ronde close.
+
+- Le domaine refuse un rapport dont une partie ne porte pas **toutes** les
+  statistiques pour **tous** les joueurs du match. Les valeurs absentes ne sont
+  pas complétées à zéro : un zéro se lirait comme un score réellement rapporté.
+- Les raccourcis de score (« j'ai gagné », « 2-1 ») disparaissent des deux
+  portails et de l'application mobile : ils ne savent pas porter de
+  statistiques. La saisie détaillée devient le seul chemin, et son bouton reste
+  désactivé tant qu'une case manque.
+- Un BYE et un forfait échappent à l'exigence : personne n'a joué, ce sont les
+  valeurs de bye du preset qui s'appliquent.
+
+### Historique
+
+Les scores relevés se retrouvent partout où le tournoi se relit :
+partie par partie dans l'historique des rondes, cumulés en colonnes du
+classement (à l'écran et dans le CSV de classement), et par joueur dans le CSV
+des matchs — une colonne par statistique et par joueur du match.
 
 ## Intervalles
 
@@ -135,7 +181,10 @@ npm run test
 - `lib/utils/pairing.test.ts` — rotation des byes, évitement des re-matchs,
   tirage au sort dans un groupe de points.
 - `lib/tournaments/standings.test.ts` — double défaite ≠ match nul,
-  statistiques de bye et de forfait, chaîne de départage.
+  statistiques de bye et de forfait, chaîne de départage (dont points de
+  tournoi → score de bataille → résistance).
+- `lib/tournaments/game-presets.test.ts` — preset retenu d'office par jeu,
+  complétude des statistiques exigées (un zéro est une valeur saisie).
 
 `scripts/ts-paths-hook.mjs` résout l'alias `@/` et les imports sans extension
 pour `node --test`.

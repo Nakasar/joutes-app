@@ -60,7 +60,12 @@ import {
   generateSwissPairings,
   shuffleArray,
 } from "@/lib/utils/pairing";
-import { type GameTournamentPreset, getPreset, presetStatKeys } from "@/lib/tournaments/game-presets";
+import {
+  type GameTournamentPreset,
+  getPreset,
+  missingRequiredStats,
+  presetStatKeys,
+} from "@/lib/tournaments/game-presets";
 import {
   DEFAULT_MATCH_SCORING,
   calculateMultiplayerStandings,
@@ -278,6 +283,7 @@ function toPhase(doc: WithId<TournamentPhaseDb> & { matchFormat?: string }): Tou
     intervalHours: doc.intervalHours ?? DEFAULT_INTERVAL_HOURS,
     deadlineResolution: doc.deadlineResolution ?? "double-loss",
     statsPresetKey: doc.statsPresetKey,
+    requireMatchStats: doc.requireMatchStats ?? false,
     scenarios: doc.scenarios,
     plannedRounds: doc.plannedRounds,
     topCut: doc.topCut,
@@ -2180,6 +2186,7 @@ export async function addPhase(
     intervalHours?: number;
     deadlineResolution?: TournamentDeadlineResolution;
     statsPresetKey?: string;
+    requireMatchStats?: boolean;
     scenarios?: TournamentScenario[];
     plannedRounds?: number;
     topCut?: number;
@@ -2221,6 +2228,7 @@ export async function addPhase(
     intervalHours: data.intervalHours ?? DEFAULT_INTERVAL_HOURS,
     deadlineResolution: data.deadlineResolution ?? "double-loss",
     statsPresetKey: data.statsPresetKey,
+    requireMatchStats: data.requireMatchStats ?? false,
     scenarios: data.scenarios,
     plannedRounds: data.plannedRounds,
     topCut: data.topCut,
@@ -2253,6 +2261,7 @@ export async function updatePhase(
     intervalHours?: number;
     deadlineResolution?: TournamentDeadlineResolution;
     statsPresetKey?: string | null;
+    requireMatchStats?: boolean;
     scenarios?: TournamentScenario[] | null;
     plannedRounds?: number | null;
     topCut?: number | null;
@@ -2303,6 +2312,7 @@ export async function updatePhase(
   } else if (updates.statsPresetKey !== undefined) {
     set.statsPresetKey = updates.statsPresetKey;
   }
+  if (updates.requireMatchStats !== undefined) set.requireMatchStats = updates.requireMatchStats;
   if (updates.scenarios === null) {
     unset.scenarios = "";
   } else if (updates.scenarios !== undefined) {
@@ -3288,6 +3298,19 @@ export async function reportMatchResult(
             throw new TournamentError("invalid", `Statistique inconnue pour cette phase : ${key}`);
           }
         }
+      }
+    }
+    // Statistiques exigées par la phase : chaque joueur porte chaque
+    // statistique, faute de quoi le départage du tableau entier serait faussé
+    // par une case laissée vide. Le refus est explicite plutôt que complété par
+    // des zéros, qui se liraient comme un score réellement rapporté.
+    if (phase.requireMatchStats && statKeys.length > 0) {
+      const missing = missingRequiredStats(game.stats, matchPlayerIds, statKeys);
+      if (missing.length > 0) {
+        throw new TournamentError(
+          "invalid",
+          "Cette phase exige la saisie de toutes les statistiques de match pour chaque joueur"
+        );
       }
     }
     if (phase.resultMode === "points") {

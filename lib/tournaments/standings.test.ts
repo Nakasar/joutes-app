@@ -19,6 +19,7 @@ const SCORING: MatchScoring = {
 };
 
 const swpPreset = getPreset("swp-league");
+const battlePreset = getPreset("battle-points");
 
 function match(overrides: Partial<TournamentMatch> & Pick<TournamentMatch, "players">): TournamentMatch {
   return {
@@ -150,6 +151,124 @@ describe("calculateMultiplayerStandings", () => {
     const standings = calculateMultiplayerStandings(["a", "b", "x", "y"], matches, () => SCORING, swpPreset);
     const order = standings.map((s) => s.playerId);
     assert.ok(order.indexOf("a") < order.indexOf("b"), `a doit précéder b (ordre : ${order.join(", ")})`);
+  });
+
+  it("départage les grandes armées par points, score de bataille, puis résistance", () => {
+    // Chaîne complète du preset `battle-points` : les trois joueurs finissent à
+    // une victoire et une défaite (3 points), « a » et « b » à égalité de score
+    // de bataille — c'est alors la résistance qui tranche, en faveur de « a »
+    // dont l'adversaire battu a mieux marché. « c », meilleur score de
+    // destruction mais moins de score de bataille, reste derrière : la
+    // destruction ne départage pas.
+    const matches: TournamentMatch[] = [
+      // « a » bat « strong » (qui gagne son autre match) ; « b » bat « weak ».
+      match({
+        id: "m1",
+        players: [{ playerId: "a", score: 1 }, { playerId: "strong", score: 0 }],
+        winnerIds: ["a"],
+        games: [
+          {
+            winnerId: "a",
+            stats: {
+              a: { battlePoints: 80, pointsDestroyed: 900 },
+              strong: { battlePoints: 60, pointsDestroyed: 700 },
+            },
+          },
+        ],
+      }),
+      match({
+        id: "m2",
+        players: [{ playerId: "b", score: 1 }, { playerId: "weak", score: 0 }],
+        winnerIds: ["b"],
+        games: [
+          {
+            winnerId: "b",
+            stats: {
+              b: { battlePoints: 80, pointsDestroyed: 900 },
+              weak: { battlePoints: 60, pointsDestroyed: 700 },
+            },
+          },
+        ],
+      }),
+      match({
+        id: "m3",
+        players: [{ playerId: "c", score: 1 }, { playerId: "weak", score: 0 }],
+        winnerIds: ["c"],
+        games: [
+          {
+            winnerId: "c",
+            stats: {
+              c: { battlePoints: 70, pointsDestroyed: 2000 },
+              weak: { battlePoints: 65, pointsDestroyed: 500 },
+            },
+          },
+        ],
+      }),
+      // Les deux battus se départagent : « strong » gagne, « weak » perd tout.
+      match({
+        id: "m4",
+        players: [{ playerId: "strong", score: 1 }, { playerId: "c", score: 0 }],
+        winnerIds: ["strong"],
+        games: [
+          {
+            winnerId: "strong",
+            stats: {
+              strong: { battlePoints: 90, pointsDestroyed: 1000 },
+              c: { battlePoints: 30, pointsDestroyed: 400 },
+            },
+          },
+        ],
+      }),
+      match({
+        id: "m5",
+        players: [{ playerId: "a", score: 0 }, { playerId: "b", score: 1 }],
+        winnerIds: ["b"],
+        games: [
+          {
+            winnerId: "b",
+            stats: {
+              a: { battlePoints: 20, pointsDestroyed: 300 },
+              b: { battlePoints: 20, pointsDestroyed: 300 },
+            },
+          },
+        ],
+      }),
+    ];
+
+    const standings = calculateMultiplayerStandings(
+      ["a", "b", "c", "strong", "weak"],
+      matches,
+      () => SCORING,
+      battlePreset
+    );
+    const order = standings.map((s) => s.playerId);
+
+    // « b » a deux victoires : les points de match passent avant tout le reste.
+    assert.equal(order[0], "b", `ordre : ${order.join(", ")}`);
+    // « a » et « c » sont à 3 points ; 100 points de bataille contre 100 aussi…
+    assert.equal(standingOf(standings, "a").stats?.battlePoints, 100);
+    assert.equal(standingOf(standings, "c").stats?.battlePoints, 100);
+    // …et pourtant « a » passe devant : sa résistance est meilleure, quand la
+    // destruction (2 400 contre 1 200 pour « c ») ne compte pas.
+    assert.ok(
+      standingOf(standings, "c").stats!.pointsDestroyed >
+        standingOf(standings, "a").stats!.pointsDestroyed
+    );
+    assert.ok(order.indexOf("a") < order.indexOf("c"), `a doit précéder c (ordre : ${order.join(", ")})`);
+  });
+
+  it("crédite le barème plein de la mission au joueur exempté", () => {
+    const standings = calculateMultiplayerStandings(
+      ["a"],
+      [match({ players: [{ playerId: "a", score: 1 }], winnerIds: ["a"] })],
+      () => SCORING,
+      battlePreset
+    );
+
+    const standing = standingOf(standings, "a");
+    assert.equal(standing.wins, 1);
+    assert.equal(standing.stats?.battlePoints, 100);
+    assert.equal(standing.stats?.pointsDestroyed, 0);
   });
 
   it("garde les départages historiques sans preset", () => {

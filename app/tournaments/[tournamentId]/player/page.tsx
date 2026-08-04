@@ -225,6 +225,7 @@ export default function TournamentPlayerMatchPage({
   // saisie ne suffisent plus : le joueur passe directement par la saisie
   // détaillée, seule à proposer les champs.
   const phaseStats = getPreset(activePhase?.statsPresetKey)?.stats ?? [];
+  const requireStats = activePhase?.requireMatchStats ?? false;
 
   const myScore = myMatch?.players.find((p) => p.playerId === myPlayerId)?.score ?? 0;
   const theirScore = opponent?.score ?? 0;
@@ -479,6 +480,7 @@ export default function TournamentPlayerMatchPage({
               resultMode={activePhase.resultMode}
               bestOf={activePhase.bestOf}
               stats={phaseStats}
+              requireStats={requireStats}
               submitting={submitting}
               submitLabel={t("player.reportResult")}
               onSubmit={report}

@@ -1702,6 +1702,7 @@
                    "matchStats": {
                      "presets": {
                        "swpLeague": "Lega Shatterpoint (carte lotta, ferite)",
+                       "battlePoints": "Punti battaglia (battaglia, distruzione)",
                        "victoryPoints": "Punti vittoria",
                        "bloodBowl": "Blood Bowl (touchdown, infortuni)"
                      },
@@ -1715,7 +1716,11 @@
                        "touchdowns": "Touchdown",
                        "touchdownsShort": "TD",
                        "casualties": "Infortuni inflitti",
-                       "casualtiesShort": "Inf."
+                       "casualtiesShort": "Inf.",
+                       "battlePoints": "Punti battaglia",
+                       "battlePointsShort": "Battaglia",
+                       "pointsDestroyed": "Punti distrutti",
+                       "pointsDestroyedShort": "Distrutti"
                      }
                    },
     "matchExport": {
@@ -1969,6 +1974,8 @@
     "gamesEditor": {
                      "statAria": "{stat} di {name} per la partita {number}",
                      "statsHint": "Rilevato dopo ogni partita: {stats}.",
+                     "statsRequiredHint": "Da rilevare obbligatoriamente dopo ogni partita: {stats}.",
+                     "statsMissing": "Compila tutte le statistiche di ogni giocatore per le partite giocate.",
       "gameN": "Partita {number}",
       "gameWinnerAria": "Vincitore della partita {number}",
       "winnerPlaceholder": "Vincitore…",
@@ -2130,6 +2137,8 @@
                          "statsPresetLabel": "Statistiche di partita",
                          "statsPresetNone": "Nessuna",
                          "statsPresetHint": "Rilevate a ogni partita e usate come spareggio in classifica. Non designano mai il vincitore.",
+                         "requireStatsLabel": "Inserimento obbligatorio",
+                         "requireStatsHint": "Un risultato è accettato solo se tutte le statistiche sono compilate, per ogni giocatore. Le scorciatoie di punteggio sono quindi disattivate.",
                          "scenariosLabel": "Scenari (uno per riga)",
                          "scenariosPlaceholder": "Conflitto minore | Una sola squadra\nPriorità mutevole | Due squadre",
                          "scenariosHint": "Assegnati ai turni in ordine. Dopo la « | », le indicazioni di composizione mostrate ai giocatori.",
@@ -2191,7 +2200,8 @@
         "topN": "Top {count}",
         "duels": "duelli",
         "podsOf": "pod da {count}",
-        "podsRange": "pod {min}-{max}"
+        "podsRange": "pod {min}-{max}",
+        "statsRequired": "inserimento obbligatorio"
       },
       "pageTitle": "Formato e fasi",
       "pageDescription": "Le tappe si susseguono in ordine. Puoi ancora modificare ciò che non è iniziato.",

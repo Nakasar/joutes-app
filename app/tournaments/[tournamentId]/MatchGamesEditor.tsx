@@ -25,6 +25,9 @@ type Props = {
   // Statistiques secondaires relevées par le jeu, saisies après le vainqueur.
   // Vide = la phase n'en relève pas.
   stats?: MatchStatDefinition[];
+  // La phase exige la saisie des statistiques : une partie renseignée doit les
+  // porter toutes, pour chaque joueur, sans quoi l'API refuse le résultat.
+  requireStats?: boolean;
   submitting: boolean;
   submitLabel?: string;
   onSubmit: (games: TournamentGameResult[]) => void;
@@ -46,6 +49,7 @@ export function MatchGamesEditor({
   resultMode,
   bestOf,
   stats = [],
+  requireStats = false,
   submitting,
   submitLabel,
   onSubmit,
@@ -77,21 +81,46 @@ export function MatchGamesEditor({
       )
     );
 
-  // Statistiques d'une partie, envoyées seulement si au moins une case est
-  // remplie : une partie sans saisie ne doit pas créditer des zéros.
+  // Statistiques d'une partie. Seules les cases réellement remplies partent :
+  // un champ laissé vide n'est pas un zéro, et le classement comme l'historique
+  // tiennent à la différence entre « rien n'a été relevé » et « zéro marqué ».
+  // Un « 0 » tapé, lui, est bien une valeur — c'est le texte vide qui écarte.
   const gameStats = (gameIndex: number): TournamentGameResult["stats"] => {
     if (stats.length === 0) return undefined;
     const row = statValues[gameIndex] ?? {};
-    const filled = matchPlayerIds.some((id) => stats.some((stat) => (row[id]?.[stat.key] ?? "") !== ""));
-    if (!filled) return undefined;
     const result: Record<string, Record<string, number>> = {};
     for (const id of matchPlayerIds) {
-      result[id] = Object.fromEntries(
-        stats.map((stat) => [stat.key, Number.parseInt(row[id]?.[stat.key] ?? "", 10) || 0])
-      );
+      const values = stats
+        .map((stat) => ({ key: stat.key, raw: row[id]?.[stat.key] ?? "" }))
+        .filter(({ raw }) => raw !== "")
+        .map(({ key, raw }) => ({ key, value: Number.parseInt(raw, 10) }))
+        .filter(({ value }) => Number.isFinite(value));
+      if (values.length > 0) {
+        result[id] = Object.fromEntries(values.map(({ key, value }) => [key, value]));
+      }
     }
-    return result;
+    return Object.keys(result).length > 0 ? result : undefined;
   };
+
+  // Parties renseignées, donc envoyées : une issue choisie en mode selection,
+  // au moins un point saisi en mode points.
+  const reportedGameIndexes = gameIndexes.filter((gameIndex) =>
+    resultMode === "selection"
+      ? winners[gameIndex] !== ""
+      : matchPlayerIds.some((id) => (points[gameIndex]?.[id] ?? "") !== "")
+  );
+
+  // Statistiques exigées par la phase : chaque partie renseignée les porte
+  // toutes, pour chaque joueur. L'envoi est bloqué tant qu'il en manque, plutôt
+  // que refusé par l'API une fois le formulaire refermé.
+  const statsIncomplete =
+    requireStats &&
+    stats.length > 0 &&
+    reportedGameIndexes.some((gameIndex) =>
+      matchPlayerIds.some((id) =>
+        stats.some((stat) => (statValues[gameIndex]?.[id]?.[stat.key] ?? "") === "")
+      )
+    );
 
   const buildGames = (): TournamentGameResult[] => {
     if (resultMode === "selection") {
@@ -186,12 +215,19 @@ export function MatchGamesEditor({
       ))}
       {stats.length > 0 && (
         <p className="text-xs text-muted-foreground">
-          {t("gamesEditor.statsHint", {
+          {t(requireStats ? "gamesEditor.statsRequiredHint" : "gamesEditor.statsHint", {
             stats: stats.map((stat) => t(`matchStats.stats.${stat.labelKey}`)).join(", "),
           })}
         </p>
       )}
-      <Button onClick={() => onSubmit(buildGames())} disabled={submitting} data-match={matchId}>
+      {statsIncomplete && (
+        <p className="text-xs font-medium text-destructive">{t("gamesEditor.statsMissing")}</p>
+      )}
+      <Button
+        onClick={() => onSubmit(buildGames())}
+        disabled={submitting || statsIncomplete}
+        data-match={matchId}
+      >
         {submitLabel ?? t("common.save")}
       </Button>
     </div>

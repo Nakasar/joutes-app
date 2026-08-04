@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -27,7 +28,15 @@ import type {
 } from "@/lib/types/Tournament";
 
 // Preset de format proposé par le jeu du tournoi, résolu côté serveur.
-export type PhasePresetOption = { key: string; labelKey: string };
+export type PhasePresetOption = {
+  key: string;
+  labelKey: string;
+  // Preset retenu d'emblée pour une nouvelle phase (usage du jeu).
+  applyByDefault: boolean;
+  // Saisie des statistiques exigée par l'usage du jeu, proposée à la sélection
+  // du preset. L'organisateur reste libre de la décocher.
+  requireStats: boolean;
+};
 
 // Valeur sentinelle du Select de preset (SelectItem ne peut pas être vide).
 const NO_PRESET = "none";
@@ -118,8 +127,25 @@ export function PhaseForm({
   const [deadlineResolution, setDeadlineResolution] = useState<TournamentDeadlineResolution>(
     initial?.deadlineResolution ?? "double-loss"
   );
-  const [statsPresetKey, setStatsPresetKey] = useState(initial?.statsPresetKey ?? NO_PRESET);
+  // Nouvelle phase : le preset par défaut du jeu est retenu d'emblée, avec
+  // l'exigence de saisie qui va avec. En édition, on repart de la phase telle
+  // qu'elle est enregistrée — un réglage déjà pris ne se réécrit pas tout seul.
+  const defaultPreset = presets.find((preset) => preset.applyByDefault);
+  const [statsPresetKey, setStatsPresetKey] = useState(
+    isEdit ? (initial?.statsPresetKey ?? NO_PRESET) : (defaultPreset?.key ?? NO_PRESET)
+  );
+  const [requireMatchStats, setRequireMatchStats] = useState(
+    isEdit ? (initial?.requireMatchStats ?? false) : (defaultPreset?.requireStats ?? false)
+  );
   const [scenariosText, setScenariosText] = useState(scenariosToText(initial));
+
+  // Changer de preset rebascule l'exigence de saisie sur l'usage du nouveau
+  // jeu : c'est ce que l'organisateur attend en choisissant un format, et il
+  // peut toujours décocher juste en dessous.
+  const pickPreset = (key: string) => {
+    setStatsPresetKey(key);
+    setRequireMatchStats(presets.find((preset) => preset.key === key)?.requireStats ?? false);
+  };
 
   const submit = () => {
     if (!name.trim()) return;
@@ -169,8 +195,12 @@ export function PhaseForm({
     // choisi ; en édition, null le retire explicitement de la phase.
     if (statsPresetKey !== NO_PRESET) {
       body.statsPresetKey = statsPresetKey;
-    } else if (isEdit) {
-      body.statsPresetKey = null;
+      body.requireMatchStats = requireMatchStats;
+    } else {
+      // Sans preset il n'y a rien à exiger : le drapeau retombe, sinon une
+      // phase reprenant un preset plus tard hériterait d'une exigence oubliée.
+      body.requireMatchStats = false;
+      if (isEdit) body.statsPresetKey = null;
     }
 
     const scenarios = scenariosFromText(scenariosText);
@@ -501,7 +531,7 @@ export function PhaseForm({
       {presets.length > 0 && (
         <div className="space-y-2 border-t pt-4">
           <Label>{t("organizerPhases.statsPresetLabel")}</Label>
-          <Select value={statsPresetKey} onValueChange={setStatsPresetKey}>
+          <Select value={statsPresetKey} onValueChange={pickPreset}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -515,6 +545,26 @@ export function PhaseForm({
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">{t("organizerPhases.statsPresetHint")}</p>
+
+          {/* Saisie exigée : le résultat n'est accepté qu'avec toutes les
+              statistiques, pour chaque joueur. */}
+          {statsPresetKey !== NO_PRESET && (
+            <div className="flex items-start gap-3 rounded-md border p-3">
+              <Checkbox
+                id="phase-require-stats"
+                checked={requireMatchStats}
+                onCheckedChange={(checked) => setRequireMatchStats(checked === true)}
+              />
+              <div className="space-y-1 leading-none">
+                <Label htmlFor="phase-require-stats">
+                  {t("organizerPhases.requireStatsLabel")}
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {t("organizerPhases.requireStatsHint")}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
