@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   formatDuration,
+  formatStopwatch,
   stopwatchElapsedSeconds,
   stopwatchIsPaused,
 } from "@/lib/tournament-timer";
@@ -60,6 +61,19 @@ describe("stopwatchIsPaused", () => {
     assert.equal(stopwatchIsPaused({ running: false, elapsedSeconds: 42 }), true);
     // Une pause juste après le départ reste une pause.
     assert.equal(stopwatchIsPaused({ running: false, elapsedSeconds: 0 }), true);
+  });
+});
+
+describe("formatStopwatch", () => {
+  it("ne montre pas « 00:00 » sur un chronomètre jamais lancé", () => {
+    // Un zéro affiché serait un temps, là où il n'y en a pas encore — et le
+    // libellé juste à côté dit « non lancé ».
+    assert.equal(formatStopwatch(null), "—");
+  });
+
+  it("formate un temps réel, zéro compris", () => {
+    assert.equal(formatStopwatch(0), "00:00");
+    assert.equal(formatStopwatch(125), "02:05");
   });
 });
 

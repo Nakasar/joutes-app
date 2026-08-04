@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
   formatDuration,
+  formatStopwatch,
   stopwatchElapsedSeconds,
   stopwatchIsPaused,
   timerIsPaused,
@@ -389,7 +390,7 @@ export function LiveSection({
               <>
                 <div className="py-4 text-center">
                   <p className="font-mono text-[76px] font-bold leading-none tracking-tighter tabular-nums text-white">
-                    {formatDuration(elapsed ?? 0)}
+                    {formatStopwatch(elapsed)}
                   </p>
                   <p className="mt-2 text-sm text-neutral-400">
                     {stopwatchRunning

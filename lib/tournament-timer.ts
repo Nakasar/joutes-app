@@ -66,6 +66,13 @@ export function stopwatchElapsedSeconds(
   return null;
 }
 
+// Temps écoulé tel qu'il s'affiche. Un chronomètre jamais lancé (ou remis à
+// zéro) ne montre pas « 00:00 » : ce serait un temps, là où il n'y en a pas
+// encore — et le libellé juste à côté dit « non lancé ».
+export function formatStopwatch(elapsedSeconds: number | null): string {
+  return elapsedSeconds === null ? "—" : formatDuration(elapsedSeconds);
+}
+
 // Indique si le chronomètre est en pause : arrêté, mais sur un temps écoulé
 // mémorisé — y compris 0, une pause juste après le départ reste une pause. Un
 // chronomètre jamais lancé (ou remis à zéro) n'en a pas, et n'est donc pas

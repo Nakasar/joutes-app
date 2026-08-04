@@ -3,7 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { formatDuration, stopwatchElapsedSeconds } from "@/lib/tournament-timer";
+import {
+  formatDuration,
+  formatStopwatch,
+  stopwatchElapsedSeconds,
+} from "@/lib/tournament-timer";
 import { useTournamentLive } from "../useTournamentLive";
 
 type PuzzleResult = {
@@ -40,8 +44,10 @@ export function PuzzleCard({
   const t = useTranslations("Tournaments");
   const { state, serverOffsetMs } = useTournamentLive(tournamentId, 5000);
 
-  const [myResult, setMyResult] = useState<PuzzleResult | null>(null);
-  const [finishedCount, setFinishedCount] = useState(0);
+  // `null` = temps pas encore chargés (ou chargement échoué), à distinguer
+  // d'une liste vide : « 0 joueur a terminé » est une information, pas un repli
+  // acceptable quand on n'a simplement rien pu lire.
+  const [results, setResults] = useState<PuzzleResult[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,11 +61,10 @@ export function PuzzleCard({
 
   const load = useCallback(async () => {
     const res = await apiFetch(`/api/tournaments/${tournamentId}/phases/${phaseId}/puzzle-results`);
-    if (!res.ok) return;
-    const results: PuzzleResult[] = await res.json();
-    setFinishedCount(results.length);
-    setMyResult(results.find((result) => result.playerId === myPlayerId) ?? null);
-  }, [apiFetch, tournamentId, phaseId, myPlayerId]);
+    // Lecture d'appoint : un échec laisse la carte sans son compteur, il n'y a
+    // rien à signaler au joueur.
+    setResults(res.ok ? await res.json() : null);
+  }, [apiFetch, tournamentId, phaseId]);
 
   useEffect(() => {
     void load();
@@ -85,6 +90,7 @@ export function PuzzleCard({
     }
   };
 
+  const myResult = results?.find((result) => result.playerId === myPlayerId) ?? null;
   const done = myResult !== null;
 
   return (
@@ -94,7 +100,7 @@ export function PuzzleCard({
           {done ? t("puzzle.yourTime") : t("puzzle.elapsed")}
         </p>
         <p className="my-1.5 font-mono text-[62px] font-bold leading-none tracking-tighter tabular-nums">
-          {done ? formatDuration(myResult.durationSeconds) : formatDuration(elapsed ?? 0)}
+          {done ? formatDuration(myResult.durationSeconds) : formatStopwatch(elapsed)}
         </p>
         <p className="text-[13px] text-muted-foreground">
           {done
@@ -140,9 +146,11 @@ export function PuzzleCard({
         </p>
       )}
 
-      <p className="text-center text-[13px] text-muted-foreground">
-        {t("puzzle.finishedCount", { count: finishedCount })}
-      </p>
+      {results !== null && (
+        <p className="text-center text-[13px] text-muted-foreground">
+          {t("puzzle.finishedCount", { count: results.length })}
+        </p>
+      )}
     </div>
   );
 }

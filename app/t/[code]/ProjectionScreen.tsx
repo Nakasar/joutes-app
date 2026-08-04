@@ -6,6 +6,7 @@ import { DateTime } from "luxon";
 import { cn } from "@/lib/utils";
 import {
   formatDuration,
+  formatStopwatch,
   stopwatchElapsedSeconds,
   stopwatchIsPaused,
   timerIsPaused,
@@ -119,7 +120,7 @@ function StopwatchPanel({ elapsed, paused }: { elapsed: number | null; paused: b
   return (
     <div className="flex flex-col items-center justify-center gap-[2vh]">
       <p className="font-mono text-[26vh] font-bold leading-none tabular-nums">
-        {formatDuration(elapsed ?? 0)}
+        {formatStopwatch(elapsed)}
       </p>
       <p className="text-[3vh] uppercase tracking-[0.2em] text-white/70">
         {paused ? t("stopwatch.paused") : elapsed === null ? t("stopwatch.notStarted") : ""}

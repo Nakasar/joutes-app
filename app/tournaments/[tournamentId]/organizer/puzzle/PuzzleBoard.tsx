@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import {
   formatDuration,
+  formatStopwatch,
   stopwatchElapsedSeconds,
   stopwatchIsPaused,
 } from "@/lib/tournament-timer";
@@ -200,7 +201,7 @@ export function PuzzleBoard({
             {t("stopwatch.title")}
           </p>
           <p className="mt-1 font-mono text-[56px] font-bold leading-none tracking-tighter tabular-nums">
-            {formatDuration(elapsed ?? 0)}
+            {formatStopwatch(elapsed)}
           </p>
           <p className="mt-1.5 text-[13px] text-neutral-400">
             {running
