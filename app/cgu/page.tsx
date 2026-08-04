@@ -1,237 +1,644 @@
 import { Metadata } from "next";
+import Link from "next/link";
+import { DateTime } from "luxon";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  LegalArticle,
+  LegalArticles,
+  LegalHeader,
+  LegalList,
+  LegalSummary,
+} from "@/components/legal/LegalDocument";
 
 export const metadata: Metadata = {
   title: "Conditions Générales d'Utilisation",
-  description: "Conditions générales d'utilisation de la plateforme Joutes.",
+  description:
+    "Conditions générales d'utilisation de la plateforme Joutes : compte, contenus, événements, échanges, API et responsabilités.",
   keywords: ["cgu", "conditions générales d'utilisation", "mentions légales", "joutes"],
   openGraph: {
     title: "Conditions Générales d'Utilisation - Joutes",
-    description: "Conditions générales d'utilisation de la plateforme Joutes.",
+    description:
+      "Conditions générales d'utilisation de la plateforme Joutes : compte, contenus, événements, échanges, API et responsabilités.",
   },
 };
 
+const LAST_UPDATED = DateTime.fromISO("2026-08-04")
+  .setLocale("fr")
+  .toLocaleString(DateTime.DATE_FULL);
+
+const DISCORD_URL = "https://discord.gg/dZEGkZwJGB";
+const GITHUB_URL = "https://github.com/Joutes";
+
+const ARTICLES: LegalArticle[] = [
+  {
+    id: "objet",
+    title: "Objet et éditeur de la Plateforme",
+    content: (
+      <>
+        <p>
+          Les présentes Conditions Générales d&apos;Utilisation (ci-après « CGU ») définissent les
+          règles d&apos;accès et d&apos;utilisation de la plateforme Joutes (ci-après « la
+          Plateforme »), accessible à l&apos;adresse{" "}
+          <a href="https://joutes.app" className="text-primary hover:underline">
+            https://joutes.app
+          </a>{" "}
+          ainsi que de ses services associés (interfaces web, API, serveur MCP et bot Discord).
+        </p>
+        <p>
+          La Plateforme permet aux joueuses et joueurs de jeux de cartes à collectionner et de jeux
+          de société de découvrir des événements près de chez eux, d&apos;organiser des rencontres
+          et des tournois, de gérer leurs collections et de consulter des contenus communautaires
+          (règles, rulings, errata).
+        </p>
+        <p>
+          Joutes est un projet indépendant et non commercial, édité et publié par Nakasar, et
+          développé en partie de manière ouverte (voir la page{" "}
+          <Link href="/open-source" className="text-primary hover:underline">
+            Open Source
+          </Link>
+          ). La Plateforme est hébergée par Vercel Inc.
+        </p>
+        <p>
+          L&apos;accès à la Plateforme est gratuit. Aucune fonctionnalité n&apos;est payante et
+          aucun paiement n&apos;est encaissé par la Plateforme.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "acceptation",
+    title: "Acceptation et modification des CGU",
+    content: (
+      <>
+        <p>
+          L&apos;utilisation de la Plateforme, avec ou sans compte, implique l&apos;acceptation
+          pleine et entière des présentes CGU. Si vous ne les acceptez pas, vous ne devez pas
+          utiliser la Plateforme.
+        </p>
+        <p>
+          Ces CGU peuvent être modifiées à tout moment, notamment pour accompagner
+          l&apos;évolution des fonctionnalités ou du cadre légal. La version applicable est celle
+          publiée sur cette page ; la date de dernière mise à jour figure en haut du document. En
+          cas de modification substantielle, une information sera diffusée sur la Plateforme ou via
+          les canaux communautaires. Continuer à utiliser la Plateforme après une modification vaut
+          acceptation de la nouvelle version.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "compte",
+    title: "Accès à la Plateforme et compte utilisateur",
+    content: (
+      <>
+        <p>
+          Une partie des contenus (événements, lieux, règles, cartes) est consultable sans compte.
+          Les fonctionnalités personnelles (collection, decks, inscriptions, organisation
+          d&apos;événements, échanges) nécessitent la création d&apos;un compte.
+        </p>
+        <p>La connexion s&apos;effectue au choix :</p>
+        <LegalList>
+          <li>par code à usage unique envoyé à votre adresse email ;</li>
+          <li>via un compte Discord ;</li>
+          <li>
+            via une clé d&apos;accès (passkey / WebAuthn) enregistrée depuis votre espace sécurité.
+          </li>
+        </LegalList>
+        <p>En créant un compte, vous vous engagez à :</p>
+        <LegalList>
+          <li>fournir des informations exactes et les tenir à jour ;</li>
+          <li>
+            ne pas usurper l&apos;identité d&apos;une autre personne, d&apos;une boutique ou
+            d&apos;un organisateur ;
+          </li>
+          <li>
+            préserver la confidentialité de vos moyens de connexion (adresse email, codes reçus,
+            clés d&apos;accès, clés d&apos;API) ;
+          </li>
+          <li>
+            assumer la responsabilité de toutes les actions effectuées depuis votre compte, y
+            compris par les applications que vous y avez connectées ;
+          </li>
+          <li>
+            nous signaler sans délai toute utilisation non autorisée ou suspicion de compromission.
+          </li>
+        </LegalList>
+        <p>
+          La Plateforme est destinée aux personnes âgées d&apos;au moins 15 ans. En dessous de cet
+          âge, la création d&apos;un compte requiert l&apos;accord préalable du titulaire de
+          l&apos;autorité parentale, qui reste responsable de l&apos;usage qui en est fait.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "services",
+    title: "Services proposés",
+    content: (
+      <>
+        <p>
+          La Plateforme réunit plusieurs services, susceptibles d&apos;évoluer, d&apos;être
+          complétés ou retirés :
+        </p>
+        <LegalList>
+          <li>
+            <strong>Événements et calendrier :</strong> publication, recherche (y compris à
+            proximité) et inscription à des événements organisés par des joueurs ou des boutiques.
+          </li>
+          <li>
+            <strong>Tournois et ligues :</strong> création et gestion de tournois, appariements,
+            saisie de résultats, classements et portails de tournoi.
+          </li>
+          <li>
+            <strong>Lieux et communautés :</strong> pages de lieux (boutiques, clubs, lieux
+            privés), suivi de lieux, groupes de jeu, amis et matchs.
+          </li>
+          <li>
+            <strong>Collection et jeu :</strong> collections de cartes, listes de souhaits, decks,
+            cubes, scan de cartes, échanges et listes de vente entre utilisateurs.
+          </li>
+          <li>
+            <strong>Contenus de jeu :</strong> bases de cartes, règles, rulings, politiques de
+            tournoi, errata communautaires soumis au vote, quizz et actualités.
+          </li>
+          <li>
+            <strong>Intégrations :</strong> API publique, clés d&apos;API, serveur MCP,
+            applications tierces via OAuth et bot Discord.
+          </li>
+        </LegalList>
+        <p>
+          Les contenus liés aux jeux (cartes, règles, rulings) sont fournis à titre informatif. Ils
+          peuvent comporter des erreurs, des retards de mise à jour ou des traductions
+          automatiques : seuls les documents officiels des éditeurs et l&apos;arbitrage sur place
+          font foi.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "contenus",
+    title: "Contenus publiés par les utilisateurs",
+    content: (
+      <>
+        <p>
+          Vous restez propriétaire des contenus que vous publiez (événements, descriptions, images,
+          decks, commentaires, rulings proposés, etc.).
+        </p>
+        <p>
+          En les publiant, vous accordez à Joutes une licence non exclusive, mondiale et gratuite
+          d&apos;héberger, reproduire, afficher, adapter techniquement (redimensionnement,
+          indexation, traduction) et diffuser ces contenus, pour la seule durée de leur publication
+          sur la Plateforme et pour les besoins du fonctionnement du service, y compris via
+          l&apos;API et les intégrations.
+        </p>
+        <p>
+          Vous garantissez disposer des droits nécessaires sur les contenus publiés, notamment sur
+          les images, logos et textes provenant de tiers, et vous êtes seul responsable de leur
+          licéité.
+        </p>
+        <p>
+          La suppression d&apos;un contenu met fin à sa diffusion. Certains contenus rattachés à
+          des données partagées (résultats de tournoi, historiques de matchs ou d&apos;échanges)
+          peuvent être conservés pour préserver la cohérence de l&apos;historique des autres
+          participants.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "conduite",
+    title: "Règles de conduite",
+    content: (
+      <>
+        <p>En utilisant la Plateforme, vous vous engagez à ne pas :</p>
+        <LegalList>
+          <li>
+            publier de contenu illégal, haineux, diffamatoire, harcelant, pornographique ou
+            manifestement inapproprié ;
+          </li>
+          <li>porter atteinte aux droits d&apos;autrui, notamment de propriété intellectuelle ;</li>
+          <li>
+            publier de fausses informations, de faux événements, de faux résultats ou tricher dans
+            un tournoi ;
+          </li>
+          <li>
+            collecter, extraire massivement ou republier les données de la Plateforme en dehors des
+            usages prévus par l&apos;API ;
+          </li>
+          <li>
+            perturber le fonctionnement du service (charge anormale, contournement des limites,
+            tentative d&apos;intrusion, accès à des zones non autorisées) ;
+          </li>
+          <li>
+            utiliser la Plateforme à des fins publicitaires ou commerciales sans rapport avec les
+            jeux et sans autorisation ;
+          </li>
+          <li>
+            adopter un comportement irrespectueux envers les autres utilisateurs, les organisateurs
+            ou les arbitres.
+          </li>
+        </LegalList>
+      </>
+    ),
+  },
+  {
+    id: "evenements",
+    title: "Événements, tournois et ligues",
+    content: (
+      <>
+        <p>
+          Les événements et tournois publiés sur la Plateforme sont organisés par les utilisateurs,
+          les boutiques ou les associations qui les créent, sous leur seule responsabilité. Joutes
+          fournit un outil de publication et de gestion : la Plateforme n&apos;organise pas ces
+          événements, n&apos;en est pas co-organisatrice et ne garantit ni leur tenue, ni leurs
+          conditions, ni les lots annoncés.
+        </p>
+        <p>Les organisateurs s&apos;engagent à :</p>
+        <LegalList>
+          <li>publier des informations exactes (lieu, date, format, prix d&apos;entrée, lots) ;</li>
+          <li>
+            respecter la réglementation applicable ainsi que les règles et politiques des éditeurs
+            des jeux concernés ;
+          </li>
+          <li>
+            n&apos;utiliser les informations des participants (identité, contact, résultats) que
+            pour les besoins de l&apos;événement, et respecter la réglementation sur les données
+            personnelles pour les traitements qu&apos;ils réalisent de leur côté.
+          </li>
+        </LegalList>
+        <p>
+          Les participants acceptent que leur pseudonyme, leurs inscriptions, leurs appariements et
+          leurs résultats soient visibles des autres participants et, pour les événements publics,
+          de toute personne consultant la page correspondante.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "echanges",
+    title: "Collections, échanges et listes de vente",
+    content: (
+      <>
+        <p>
+          Les fonctionnalités de collection, d&apos;échange et de liste de vente sont des outils de
+          suivi et de mise en relation. La Plateforme n&apos;est pas partie aux transactions
+          conclues entre utilisateurs : elle ne détient aucune carte, n&apos;encaisse aucun
+          paiement, ne procède à aucune expédition et n&apos;offre aucune garantie de bonne fin.
+        </p>
+        <p>
+          Les utilisateurs sont seuls responsables de la réalité, de la conformité et de la
+          légalité de leurs transactions, ainsi que du respect de leurs éventuelles obligations
+          fiscales et déclaratives. Il vous appartient de prendre les précautions nécessaires avant
+          tout échange ou toute vente.
+        </p>
+        <p>
+          Les données de collection saisies sont déclaratives : elles ne constituent ni une preuve
+          de propriété, ni une estimation de valeur.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "moderation",
+    title: "Modération et signalements",
+    content: (
+      <>
+        <p>
+          Tout utilisateur connecté peut signaler un contenu qui lui semble contraire aux présentes
+          CGU ou à la loi, à l&apos;aide du bouton de signalement présent sur les contenus
+          concernés.
+        </p>
+        <p>
+          Les signalements sont examinés par l&apos;équipe de la Plateforme. Nous pouvons masquer,
+          modifier ou supprimer tout contenu manifestement illicite ou contraire aux CGU, et
+          restreindre l&apos;accès du compte à l&apos;origine de la publication, sans que cela
+          crée une obligation générale de surveillance des contenus.
+        </p>
+        <p>
+          Les signalements abusifs ou répétés sans fondement peuvent eux-mêmes donner lieu à une
+          mesure de restriction.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "developpeurs",
+    title: "API, MCP et applications tierces",
+    content: (
+      <>
+        <p>
+          La Plateforme expose une API, un serveur MCP et un mécanisme d&apos;autorisation OAuth
+          permettant à des applications tierces d&apos;accéder à certaines données. L&apos;usage de
+          ces interfaces est décrit sur la page{" "}
+          <Link href="/integrations" className="text-primary hover:underline">
+            Intégrations et Développeurs
+          </Link>
+          .
+        </p>
+        <LegalList>
+          <li>
+            Vos clés d&apos;API sont personnelles et confidentielles : les appels qui en sont issus
+            vous sont imputables.
+          </li>
+          <li>
+            En autorisant une application tierce, vous lui donnez accès aux données couvertes par
+            l&apos;autorisation accordée. Vous pouvez révoquer cet accès depuis votre compte.
+          </li>
+          <li>
+            Les applications tierces ne sont ni éditées, ni contrôlées, ni garanties par Joutes ;
+            leurs propres conditions et politiques leur sont applicables.
+          </li>
+          <li>
+            Nous pouvons appliquer des limites d&apos;usage et suspendre une clé ou une application
+            en cas d&apos;usage abusif, de charge excessive ou de risque pour le service.
+          </li>
+        </LegalList>
+        <p>
+          L&apos;API est fournie sans garantie de stabilité : ses formats et points d&apos;entrée
+          peuvent évoluer.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "ia",
+    title: "Fonctionnalités assistées par IA",
+    content: (
+      <>
+        <p>
+          Certaines fonctionnalités s&apos;appuient sur des modèles d&apos;intelligence
+          artificielle fournis par un prestataire tiers, par exemple la reconnaissance de cartes
+          scannées, la vérification de decks, l&apos;import de quizz ou l&apos;extraction
+          d&apos;informations d&apos;événements.
+        </p>
+        <p>
+          Les résultats produits sont indicatifs et peuvent être incomplets ou erronés. Ils ne
+          remplacent ni la vérification par l&apos;utilisateur, ni la décision d&apos;un arbitre,
+          ni les documents officiels des éditeurs.
+        </p>
+        <p>
+          Les contenus que vous soumettez à ces fonctionnalités sont transmis au prestataire
+          concerné pour produire la réponse. Le détail figure dans la{" "}
+          <Link href="/privacy" className="text-primary hover:underline">
+            politique de confidentialité
+          </Link>
+          .
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "propriete",
+    title: "Propriété intellectuelle",
+    content: (
+      <>
+        <p>
+          La Plateforme, sa structure, son interface et ses éléments graphiques sont protégés par
+          le droit de la propriété intellectuelle. Les composants publiés en open source restent
+          régis par leurs licences respectives.
+        </p>
+        <p>
+          Les noms, logos, visuels de cartes, textes de règles et marques des jeux mentionnés
+          appartiennent à leurs éditeurs et ayants droit respectifs. Ils sont utilisés à des fins
+          d&apos;information et de référencement communautaire, dans le cadre des politiques de
+          contenus non officiels des éditeurs concernés.
+        </p>
+        <p>
+          <strong>Joutes n&apos;est affiliée à aucun éditeur de jeu</strong> et n&apos;est ni
+          sponsorisée, ni approuvée par eux.
+        </p>
+        <p>
+          Tout ayant droit qui estimerait qu&apos;un contenu porte atteinte à ses droits peut nous
+          contacter via les{" "}
+          <a href="#contact" className="text-primary hover:underline">
+            canaux de contact
+          </a>{" "}
+          : le contenu litigieux sera examiné et, le cas échéant, retiré.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "donnees",
+    title: "Données personnelles",
+    content: (
+      <>
+        <p>
+          Le traitement des données personnelles des utilisateurs est décrit en détail dans la{" "}
+          <Link href="/privacy" className="text-primary hover:underline">
+            politique de confidentialité
+          </Link>
+          , qui fait partie intégrante des présentes CGU. Elle précise les données collectées, les
+          finalités et bases légales, les destinataires, les durées de conservation ainsi que les
+          modalités d&apos;exercice de vos droits.
+        </p>
+        <p>
+          Certaines informations que vous renseignez sont publiques par nature (pseudonyme,
+          participations à des événements publics, résultats de tournoi, profil si vous
+          l&apos;avez rendu public). Il vous appartient de ne pas publier d&apos;informations
+          personnelles que vous ne souhaitez pas rendre accessibles.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "disponibilite",
+    title: "Disponibilité et évolution du service",
+    content: (
+      <>
+        <p>
+          La Plateforme est fournie « en l&apos;état » et « selon disponibilité ». Nous nous
+          efforçons d&apos;assurer un service accessible et fiable, sans pouvoir garantir une
+          disponibilité continue ni l&apos;absence d&apos;erreurs.
+        </p>
+        <p>
+          L&apos;accès peut être suspendu, limité ou interrompu à tout moment, notamment pour des
+          opérations de maintenance, des mises à jour, des raisons de sécurité ou des contraintes
+          techniques liées à nos prestataires.
+        </p>
+        <p>
+          Les fonctionnalités peuvent être ajoutées, modifiées ou retirées, y compris lorsqu&apos;elles
+          sont proposées à titre expérimental. Nous recommandons d&apos;exporter régulièrement les
+          données auxquelles vous tenez lorsque cette possibilité est offerte.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "responsabilite",
+    title: "Limitation de responsabilité",
+    content: (
+      <>
+        <p>
+          La Plateforme étant fournie gratuitement, notre responsabilité est limitée aux dommages
+          directs résultant d&apos;une faute prouvée de notre part. Nous ne saurions être tenus
+          responsables :
+        </p>
+        <LegalList>
+          <li>
+            des contenus publiés par les utilisateurs, de leur exactitude et de leur licéité ;
+          </li>
+          <li>
+            du déroulement, de l&apos;annulation ou des conséquences des événements, tournois,
+            échanges et ventes organisés ou conclus entre utilisateurs ;
+          </li>
+          <li>
+            des interactions et litiges entre utilisateurs, y compris en dehors de la Plateforme ;
+          </li>
+          <li>
+            des erreurs ou retards affectant les données de jeu, les règles, les rulings ou les
+            résultats produits par des fonctionnalités automatiques ;
+          </li>
+          <li>
+            des dommages indirects (perte de données, perte de chance, préjudice commercial ou
+            d&apos;image) ;
+          </li>
+          <li>
+            des indisponibilités, dysfonctionnements ou pertes imputables à un service tiers ou à
+            un cas de force majeure.
+          </li>
+        </LegalList>
+        <p>
+          Aucune stipulation des présentes CGU n&apos;a pour effet d&apos;écarter la responsabilité
+          qui ne peut légalement être limitée, notamment en cas de faute lourde ou dolosive.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "resiliation",
+    title: "Suspension et suppression du compte",
+    content: (
+      <>
+        <p>
+          Vous pouvez cesser d&apos;utiliser la Plateforme à tout moment et demander la suppression
+          de votre compte via les{" "}
+          <a href="#contact" className="text-primary hover:underline">
+            canaux de contact
+          </a>
+          . La suppression
+          entraîne l&apos;effacement ou l&apos;anonymisation de vos données personnelles dans les
+          conditions décrites par la{" "}
+          <Link href="/privacy" className="text-primary hover:underline">
+            politique de confidentialité
+          </Link>
+          .
+        </p>
+        <p>
+          Nous pouvons suspendre ou supprimer un compte, ainsi que retirer les contenus associés,
+          en cas de violation des présentes CGU, d&apos;activité illicite, de risque pour la
+          sécurité du service ou d&apos;atteinte aux autres utilisateurs. Sauf urgence, illicéité
+          manifeste ou récidive, une information préalable est adressée à l&apos;utilisateur
+          concerné, qui peut contester la mesure via les canaux de contact.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "droit",
+    title: "Droit applicable et litiges",
+    content: (
+      <>
+        <p>
+          Les présentes CGU sont régies par le droit français. Elles sont rédigées en français ;
+          toute traduction est fournie à titre de commodité et le texte français prévaut.
+        </p>
+        <p>
+          En cas de difficulté, nous vous invitons à nous contacter en priorité afin de rechercher
+          une solution amiable. À défaut d&apos;accord, le litige pourra être porté devant les
+          juridictions françaises compétentes. Si vous êtes consommateur, vous conservez le droit
+          de saisir la juridiction du lieu de votre domicile.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "contact",
+    title: "Contact",
+    content: (
+      <>
+        <p>
+          Pour toute question relative aux présentes CGU, un signalement de contenu ou une demande
+          concernant votre compte :
+        </p>
+        <LegalList>
+          <li>
+            <strong>Discord :</strong>{" "}
+            <a
+              href={DISCORD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              {DISCORD_URL}
+            </a>
+          </li>
+          <li>
+            <strong>GitHub :</strong>{" "}
+            <a
+              href={GITHUB_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              {GITHUB_URL}
+            </a>
+          </li>
+        </LegalList>
+        <p>
+          Les demandes relatives aux données personnelles sont traitées selon les modalités
+          décrites dans la{" "}
+          <Link href="/privacy" className="text-primary hover:underline">
+            politique de confidentialité
+          </Link>
+          .
+        </p>
+      </>
+    ),
+  },
+];
+
 export default function CGUPage() {
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="container mx-auto max-w-4xl px-4 py-8">
       <div className="space-y-8">
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold">Conditions Générales d&apos;Utilisation</h1>
+        <LegalHeader
+          title="Conditions Générales d'Utilisation"
+          description="Les règles qui encadrent l'utilisation de Joutes, de votre compte et des contenus que vous y publiez."
+          updatedAt={LAST_UPDATED}
+        >
           <p className="text-sm text-muted-foreground">
-            Dernière mise à jour : 6 novembre 2025
+            Voir aussi la{" "}
+            <Link href="/privacy" className="text-primary hover:underline">
+              politique de confidentialité
+            </Link>{" "}
+            et la page{" "}
+            <Link href="/about" className="text-primary hover:underline">
+              à propos
+            </Link>
+            .
           </p>
-        </div>
+        </LegalHeader>
 
         <Card>
           <CardHeader>
-            <CardTitle>1. Objet</CardTitle>
+            <CardTitle className="text-lg">L&apos;essentiel</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-2 text-sm text-muted-foreground">
             <p>
-              Les présentes Conditions Générales d&apos;Utilisation (ci-après « CGU ») régissent 
-              l&apos;utilisation de la plateforme Joutes (ci-après « la Plateforme »), accessible 
-              à l&apos;adresse <a href="https://joutes.app" className="text-primary hover:underline">https://joutes.app</a>.
+              Joutes est un service gratuit et indépendant. Les événements, tournois, échanges et
+              contenus sont créés par les utilisateurs, qui en restent responsables.
             </p>
             <p>
-              La Plateforme est un service permettant aux utilisateurs de découvrir, organiser et 
-              participer à des événements liés aux jeux de cartes à collectionner et aux jeux de société.
+              Ce résumé est fourni à titre indicatif : seules les clauses détaillées ci-dessous ont
+              valeur contractuelle.
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>2. Acceptation des CGU</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p>
-              L&apos;utilisation de la Plateforme implique l&apos;acceptation pleine et entière des 
-              présentes CGU. Si vous n&apos;acceptez pas ces conditions, vous ne devez pas utiliser 
-              la Plateforme.
-            </p>
-            <p>
-              Nous nous réservons le droit de modifier ces CGU à tout moment. Les modifications 
-              prendront effet dès leur publication sur la Plateforme. Il est de votre responsabilité 
-              de consulter régulièrement les CGU.
-            </p>
-          </CardContent>
-        </Card>
+        <LegalSummary articles={ARTICLES} />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>3. Inscription et Compte Utilisateur</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p>
-              Pour accéder à certaines fonctionnalités de la Plateforme, vous devez créer un compte 
-              utilisateur. Vous vous engagez à :
-            </p>
-            <ul className="list-disc pl-6 space-y-2">
-              <li>Fournir des informations exactes et à jour</li>
-              <li>Être responsable de toutes les activités effectuées depuis votre compte</li>
-              <li>Notifier immédiatement toute utilisation non autorisée de votre compte</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>4. Utilisation de la Plateforme</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p>Vous vous engagez à utiliser la Plateforme de manière responsable et à :</p>
-            <ul className="list-disc pl-6 space-y-2">
-              <li>Ne pas publier de contenu illégal, offensant, diffamatoire ou inapproprié</li>
-              <li>Respecter les droits de propriété intellectuelle d&apos;autrui</li>
-              <li>Ne pas perturber le fonctionnement de la Plateforme</li>
-              <li>Ne pas utiliser la Plateforme à des fins commerciales non autorisées</li>
-              <li>Respecter les autres utilisateurs et maintenir un comportement courtois</li>
-              <li>Ne pas tenter d&apos;accéder à des parties non autorisées de la Plateforme</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>5. Contenu Utilisateur</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p>
-              Vous conservez la propriété du contenu que vous publiez sur la Plateforme (événements, 
-              commentaires, etc.). Cependant, en publiant du contenu, vous nous accordez une licence 
-              non exclusive, mondiale et gratuite pour utiliser, reproduire, modifier et distribuer 
-              ce contenu dans le cadre du fonctionnement de la Plateforme.
-            </p>
-            <p>
-              Vous êtes seul responsable du contenu que vous publiez. Nous nous réservons le droit 
-              de modérer, modifier ou supprimer tout contenu qui violerait les présentes CGU.
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>6. Données Personnelles</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p>
-              La collecte et le traitement de vos données personnelles sont effectués dans le respect 
-              du Règlement Général sur la Protection des Données (RGPD) et des lois applicables en 
-              matière de protection des données.
-            </p>
-            <p>
-              Les données collectées incluent :
-            </p>
-            <ul className="list-disc pl-6 space-y-2">
-              <li>Informations de compte (nom d&apos;utilisateur, email)</li>
-              <li>Données de localisation (si vous l&apos;autorisez)</li>
-              <li>Informations sur vos participations aux événements</li>
-              <li>Cookies et données de navigation</li>
-            </ul>
-            <p>
-              Vous disposez d&apos;un droit d&apos;accès, de rectification et de suppression de vos 
-              données personnelles. Pour exercer ces droits, veuillez nous contacter via Discord ou GitHub.
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>7. Propriété Intellectuelle</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p>
-              La Plateforme et son contenu (hors contenu utilisateur) sont protégés par les droits 
-              de propriété intellectuelle.
-            </p>
-            <p>
-              Les noms, logos et marques des jeux mentionnés sur la Plateforme appartiennent à 
-              leurs propriétaires respectifs. Joutes n&apos;est pas affilié à ces éditeurs de jeux.
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>8. Limitation de Responsabilité</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p>
-              La Plateforme est fournie « en l&apos;état » sans garantie d&apos;aucune sorte. Nous 
-              nous efforçons de maintenir la Plateforme accessible et fonctionnelle, mais ne pouvons 
-              garantir une disponibilité ininterrompue.
-            </p>
-            <p>
-              Nous ne sommes pas responsables :
-            </p>
-            <ul className="list-disc pl-6 space-y-2">
-              <li>Des interactions entre utilisateurs</li>
-              <li>De la véracité des informations publiées par les utilisateurs</li>
-              <li>Des dommages résultant de l&apos;utilisation ou de l&apos;impossibilité d&apos;utiliser la Plateforme</li>
-              <li>Des événements organisés par les utilisateurs ou les boutiques</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>9. Résiliation</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p>
-              Vous pouvez supprimer votre compte à tout moment. Nous nous réservons le droit de 
-              suspendre ou de supprimer votre compte en cas de violation des présentes CGU, sans 
-              préavis ni indemnité.
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>10. Droit Applicable</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p>
-              Les présentes CGU sont régies par le droit français. En cas de litige, les tribunaux 
-              français seront seuls compétents.
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>11. Contact</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p>
-              Pour toute question concernant ces CGU, vous pouvez nous contacter via :
-            </p>
-            <ul className="space-y-2">
-              <li>
-                <strong>Discord :</strong>{" "}
-                <a 
-                  href="https://discord.gg/dZEGkZwJGB" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  https://discord.gg/dZEGkZwJGB
-                </a>
-              </li>
-              <li>
-                <strong>GitHub :</strong>{" "}
-                <a 
-                  href="https://github.com/Joutes" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  https://github.com/Joutes
-                </a>
-              </li>
-            </ul>
-          </CardContent>
-        </Card>
+        <LegalArticles articles={ARTICLES} />
       </div>
     </div>
   );

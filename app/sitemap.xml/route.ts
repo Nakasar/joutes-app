@@ -20,6 +20,8 @@ const urls = [
   { url: 'https://www.joutes.app/integrations/mcp', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.2 },
   { url: 'https://www.joutes.app/integrations/api', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.2 },
   { url: 'https://www.joutes.app/integrations/discord', lastModified: new Date(), changeFrequency: 'weekly', priority: 0.2 },
+  { url: 'https://www.joutes.app/cgu', lastModified: new Date(), changeFrequency: 'yearly', priority: 0.1 },
+  { url: 'https://www.joutes.app/privacy', lastModified: new Date(), changeFrequency: 'yearly', priority: 0.1 },
 ];
 
 export function GET() {
