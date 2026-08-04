@@ -95,7 +95,7 @@ function gameStatLines(
   playerIds: string[],
   playerName: (id: string) => string,
   t: ReturnType<typeof useTranslations>
-): string[] {
+): { playerId: string; text: string }[] {
   if (stats.length === 0 || !game.stats) return [];
   return playerIds.flatMap((playerId) => {
     const values = game.stats?.[playerId];
@@ -104,7 +104,10 @@ function gameStatLines(
       .filter((stat) => typeof values[stat.key] === "number")
       .map((stat) => `${t(`matchStats.stats.${stat.labelKey}Short`)} ${values[stat.key]}`)
       .join(" · ");
-    return detail ? [`${playerName(playerId)} — ${detail}`] : [];
+    // L'identifiant du joueur accompagne la ligne : deux homonymes aux mêmes
+    // scores donneraient deux textes identiques, et le texte ne peut donc pas
+    // servir de clé de rendu.
+    return detail ? [{ playerId, text: `${playerName(playerId)} — ${detail}` }] : [];
   });
 }
 
@@ -504,8 +507,11 @@ export function RoundHistoryBrowser({ tournamentId, canManage, syncKey }: Props)
                                 playerName,
                                 t
                               ).map((line) => (
-                                <span key={line} className="block pl-4 font-mono text-[11px]">
-                                  {line}
+                                <span
+                                  key={line.playerId}
+                                  className="block pl-4 font-mono text-[11px]"
+                                >
+                                  {line.text}
                                 </span>
                               ))}
                             </li>
