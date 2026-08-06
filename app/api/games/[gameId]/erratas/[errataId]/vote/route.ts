@@ -4,7 +4,7 @@ import {auth} from "@/lib/auth";
 import {headers} from "next/headers";
 import {hasPermission} from "@/lib/db/permissions";
 import {getGameBySlugOrId} from "@/lib/db/games";
-import {voteOnErrata} from "@/lib/db/erratas";
+import {getErrataGameCardIds, voteOnErrata} from "@/lib/db/erratas";
 import {errataVoteSchema} from "@/lib/schemas/errata.schema";
 
 /**
@@ -39,13 +39,22 @@ export async function POST(
     );
   }
 
+  // L'errata doit porter sur une carte du jeu du chemin, sinon on pourrait
+  // voter sur n'importe quel errata via n'importe quel jeu existant.
+  const cardIds = await getErrataGameCardIds(errataId, game.id);
+  if (!cardIds) {
+    return NextResponse.json({error: "Errata introuvable"}, {status: 404});
+  }
+
   try {
     const votes = await voteOnErrata(errataId, session.user.id, parsed.data.vote);
     if (!votes) {
       return NextResponse.json({error: "Errata introuvable"}, {status: 404});
     }
 
-    revalidatePath("/riftbound/erratas");
+    for (const cardId of cardIds) {
+      revalidatePath(`/games/${game.slug ?? gameId}/cards/${cardId}`);
+    }
 
     return NextResponse.json({votes});
   } catch (error) {

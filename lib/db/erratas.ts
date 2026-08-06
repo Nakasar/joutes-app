@@ -10,6 +10,7 @@ import {
   MAX_ERRATA_CARDS,
 } from "@/lib/types/errata";
 import { Locale } from "@/i18n/config";
+import { tallyVotes } from "@/lib/db/votes";
 import { ObjectId } from "bson";
 
 type ErrataAggregateResult = ErrataDb & {
@@ -369,13 +370,47 @@ export async function voteOnErrata(
     );
   }
 
-  const remaining = await votes.find({ errataId: errataObjId }).toArray();
+  return tallyVotes({ collection: "errata-votes", field: "errataId" }, errataObjId, userId);
+}
 
-  return {
-    positive: remaining.filter((v) => v.vote === "positive").length,
-    negative: remaining.filter((v) => v.vote === "negative").length,
-    userVote: remaining.find((v) => v.userId.toString() === userId)?.vote,
-  };
+/**
+ * Cartes d'un errata appartenant à ce jeu, ou `null` si l'errata est inconnu ou
+ * ne concerne pas le jeu. Sans cette vérification, `/games/{gameId}/erratas/
+ * {errataId}` accepterait n'importe quel jeu existant et le segment de chemin
+ * ne voudrait rien dire. Les cartes renvoyées servent aussi à revalider les
+ * pages qui affichent l'errata.
+ */
+export async function getErrataGameCardIds(
+  errataId: string,
+  gameId: string,
+): Promise<string[] | null> {
+  if (!ObjectId.isValid(errataId)) {
+    return null;
+  }
+
+  const errata = await db
+    .collection<ErrataDb & { cardId?: string }>("erratas")
+    .findOne({ _id: new ObjectId(errataId) });
+  if (!errata) {
+    return null;
+  }
+
+  // Repli sur le `cardId` scalaire des documents pas encore migrés, comme le
+  // fait `buildErrataCardIdsMatchFilter`.
+  const cardIds = errata.cardIds?.length
+    ? errata.cardIds
+    : errata.cardId
+      ? [errata.cardId]
+      : [];
+  if (cardIds.length === 0) {
+    return null;
+  }
+
+  const gameCardIds = await db
+    .collection("cards")
+    .distinct("id", { id: { $in: cardIds }, gameId: new ObjectId(gameId) });
+
+  return gameCardIds.length > 0 ? gameCardIds : null;
 }
 
 /**

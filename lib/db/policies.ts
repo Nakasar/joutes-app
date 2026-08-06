@@ -3,6 +3,7 @@ import 'server-only';
 import db from "@/lib/mongodb";
 import { Policy, PolicyDb, PolicyVoteDb, PolicyVoteType } from "@/lib/types/policies";
 import { Locale } from "@/i18n/config";
+import { tallyVotes } from "@/lib/db/votes";
 import { ObjectId } from "bson";
 
 // Shape of an aggregation pipeline result that joins in votes and the game,
@@ -260,13 +261,7 @@ export async function voteOnPolicy(
     );
   }
 
-  const remaining = await votes.find({ policyId: policyObjId }).toArray();
-
-  return {
-    positive: remaining.filter((v) => v.vote === "positive").length,
-    negative: remaining.filter((v) => v.vote === "negative").length,
-    userVote: remaining.find((v) => v.userId.toString() === userId)?.vote,
-  };
+  return tallyVotes({ collection: "policy-votes", field: "policyId" }, policyObjId, userId);
 }
 
 /**
