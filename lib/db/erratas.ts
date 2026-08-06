@@ -1,7 +1,16 @@
 import 'server-only';
 
 import db from "@/lib/mongodb";
-import { Errata, ErrataDb, ErrataType } from "@/lib/types/errata";
+import {
+  Errata,
+  ErrataDb,
+  ErrataType,
+  ErrataVoteDb,
+  ErrataVoteType,
+  MAX_ERRATA_CARDS,
+} from "@/lib/types/errata";
+import { Locale } from "@/i18n/config";
+import { tallyVotes } from "@/lib/db/votes";
 import { ObjectId } from "bson";
 
 type ErrataAggregateResult = ErrataDb & {
@@ -243,6 +252,165 @@ export async function getAllErratas({
     .toArray();
 
   return erratasDb.map((errata) => toErrata(errata, userId));
+}
+
+/**
+ * Erreur de saisie côté appelant (contenu manquant, cartes inconnues…), par
+ * opposition à une panne serveur : les routes HTTP la traduisent en 400 plutôt
+ * qu'en 500.
+ */
+export class ErrataInputError extends Error {}
+
+/**
+ * Normalise et valide les cartes d'un errata : au moins une carte, pas plus de
+ * `MAX_ERRATA_CARDS`, et uniquement des cartes existantes. `gameId` restreint
+ * en plus les cartes à ce jeu, ce dont les routes `/games/{gameId}/erratas` ont
+ * besoin pour que le jeu du chemin ne soit pas purement décoratif.
+ */
+export async function checkErrataCardIds(cardIds: string[], gameId?: string): Promise<string[]> {
+  const uniqueCardIds = [...new Set(cardIds)];
+
+  if (uniqueCardIds.length === 0) {
+    throw new ErrataInputError("Un errata doit être lié à au moins une carte.");
+  }
+
+  if (uniqueCardIds.length > MAX_ERRATA_CARDS) {
+    throw new ErrataInputError(`Un errata ne peut pas être lié à plus de ${MAX_ERRATA_CARDS} cartes.`);
+  }
+
+  const filter: Record<string, unknown> = { id: { $in: uniqueCardIds } };
+  if (gameId) {
+    filter.gameId = new ObjectId(gameId);
+  }
+
+  const knownCardIds = await db.collection("cards").distinct("id", filter);
+  if (knownCardIds.length !== uniqueCardIds.length) {
+    throw new ErrataInputError(
+      gameId
+        ? "Un errata ne peut être lié qu'à des cartes existantes de ce jeu."
+        : "Un errata ne peut être lié qu'à des cartes existantes.",
+    );
+  }
+
+  return uniqueCardIds;
+}
+
+/**
+ * Insère un errata. La création est ouverte à tout utilisateur connecté : les
+ * erratas sont un contenu communautaire, arbitré par les votes et les
+ * signalements. Renvoie les cartes retenues, que l'appelant utilise pour
+ * revalider les pages concernées.
+ */
+export async function createErrata(data: {
+  cardIds: string[];
+  type: ErrataType;
+  details: string;
+  originalLang: Locale;
+  source?: string;
+  errataDate: Date;
+  createdBy: string;
+  /** Restreint les cartes visées à ce jeu. */
+  gameId?: string;
+}): Promise<{ id: string; cardIds: string[] }> {
+  if (!data.details.trim()) {
+    throw new ErrataInputError("Le contenu de l'errata est requis.");
+  }
+
+  const cardIds = await checkErrataCardIds(data.cardIds, data.gameId);
+
+  const now = new Date();
+  const errata: ErrataDb = {
+    cardIds,
+    type: data.type,
+    details: data.details,
+    originalLang: data.originalLang,
+    contentUpdatedAt: now,
+    source: data.source,
+    errataDate: data.errataDate,
+    createdBy: new ObjectId(data.createdBy),
+    createdAt: now,
+  };
+
+  const result = await db.collection<ErrataDb>("erratas").insertOne(errata);
+
+  return { id: result.insertedId.toString(), cardIds };
+}
+
+/**
+ * Pose, change ou retire le vote d'un utilisateur sur un errata — revoter à
+ * l'identique retire le vote. Renvoie le décompte à jour, ou `null` si
+ * l'errata n'existe pas.
+ */
+export async function voteOnErrata(
+  errataId: string,
+  userId: string,
+  vote: ErrataVoteType,
+): Promise<Errata["votes"] | null> {
+  if (!ObjectId.isValid(errataId)) {
+    return null;
+  }
+
+  const errataObjId = new ObjectId(errataId);
+  const errata = await db.collection<ErrataDb>("erratas").findOne({ _id: errataObjId });
+  if (!errata) {
+    return null;
+  }
+
+  const userObjId = new ObjectId(userId);
+  const votes = db.collection<ErrataVoteDb>("errata-votes");
+  const existing = await votes.findOne({ errataId: errataObjId, userId: userObjId });
+
+  if (existing && existing.vote === vote) {
+    await votes.deleteOne({ errataId: errataObjId, userId: userObjId });
+  } else {
+    await votes.updateOne(
+      { errataId: errataObjId, userId: userObjId },
+      { $set: { vote, createdAt: new Date() } },
+      { upsert: true },
+    );
+  }
+
+  return tallyVotes({ collection: "errata-votes", field: "errataId" }, errataObjId, userId);
+}
+
+/**
+ * Cartes d'un errata appartenant à ce jeu, ou `null` si l'errata est inconnu ou
+ * ne concerne pas le jeu. Sans cette vérification, `/games/{gameId}/erratas/
+ * {errataId}` accepterait n'importe quel jeu existant et le segment de chemin
+ * ne voudrait rien dire. Les cartes renvoyées servent aussi à revalider les
+ * pages qui affichent l'errata.
+ */
+export async function getErrataGameCardIds(
+  errataId: string,
+  gameId: string,
+): Promise<string[] | null> {
+  if (!ObjectId.isValid(errataId)) {
+    return null;
+  }
+
+  const errata = await db
+    .collection<ErrataDb & { cardId?: string }>("erratas")
+    .findOne({ _id: new ObjectId(errataId) });
+  if (!errata) {
+    return null;
+  }
+
+  // Repli sur le `cardId` scalaire des documents pas encore migrés, comme le
+  // fait `buildErrataCardIdsMatchFilter`.
+  const cardIds = errata.cardIds?.length
+    ? errata.cardIds
+    : errata.cardId
+      ? [errata.cardId]
+      : [];
+  if (cardIds.length === 0) {
+    return null;
+  }
+
+  const gameCardIds = await db
+    .collection("cards")
+    .distinct("id", { id: { $in: cardIds }, gameId: new ObjectId(gameId) });
+
+  return gameCardIds.length > 0 ? gameCardIds : null;
 }
 
 /**
