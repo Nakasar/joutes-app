@@ -4,12 +4,17 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import db from "@/lib/mongodb";
-import { PolicyDb, PolicyTranslationInput, PolicyVoteDb, PolicyVoteType } from "@/lib/types/policies";
+import { PolicyDb, PolicyTranslationInput, PolicyVoteType } from "@/lib/types/policies";
 import { ObjectId } from "bson";
 import { Policy } from "@/lib/types/policies";
 import { Locale } from "@/i18n/config";
 import { requirePermission } from "@/lib/db/permissions";
-import { getAllPolicies, countAllPolicies } from "@/lib/db/policies";
+import {
+  countAllPolicies,
+  createPolicy as createPolicyInDb,
+  getAllPolicies,
+  voteOnPolicy,
+} from "@/lib/db/policies";
 import { resolveCardMentions } from "@/lib/game-content-cards";
 import { CardNameMatch } from "@/lib/db/cards";
 import { mergeTranslationTimestamps } from "@/lib/translations";
@@ -67,19 +72,7 @@ export async function createPolicy(data: {
   const game = await db.collection("games").findOne({ _id: new ObjectId(data.gameId) });
   const gameSlug = game?.slug ?? data.gameId;
 
-  const now = new Date();
-  const policy: PolicyDb = {
-    gameId: new ObjectId(data.gameId),
-    title: data.title,
-    content: data.content,
-    originalLang: data.originalLang,
-    contentUpdatedAt: now,
-    source: data.source,
-    createdBy: session.user.id,
-    createdAt: now,
-  };
-
-  await db.collection<PolicyDb>("policies").insertOne(policy);
+  await createPolicyInDb({ ...data, createdBy: session.user.id });
 
   revalidatePath(`/games/${gameSlug}/policies`);
 }
@@ -167,28 +160,7 @@ export async function votePolicy(policyId: string, gameSlug: string, vote: Polic
     throw new Error("Utilisateur non authentifié");
   }
 
-  const userId = new ObjectId(session.user.id);
-  const policyObjId = new ObjectId(policyId);
-
-  const existing = await db.collection<PolicyVoteDb>("policy-votes").findOne({
-    policyId: policyObjId,
-    userId,
-  });
-
-  if (existing && existing.vote === vote) {
-    // Même vote → retrait du vote
-    await db.collection<PolicyVoteDb>("policy-votes").deleteOne({
-      policyId: policyObjId,
-      userId,
-    });
-  } else {
-    // Nouveau vote ou changement de vote → upsert
-    await db.collection<PolicyVoteDb>("policy-votes").updateOne(
-      { policyId: policyObjId, userId },
-      { $set: { vote, createdAt: new Date() } },
-      { upsert: true }
-    );
-  }
+  await voteOnPolicy(policyId, session.user.id, vote);
 
   revalidatePath(`/games/${gameSlug}/policies`);
   revalidatePath(`/policies/${policyId}`);

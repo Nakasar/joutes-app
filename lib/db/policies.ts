@@ -1,7 +1,8 @@
 import 'server-only';
 
 import db from "@/lib/mongodb";
-import { Policy, PolicyDb, PolicyVoteDb } from "@/lib/types/policies";
+import { Policy, PolicyDb, PolicyVoteDb, PolicyVoteType } from "@/lib/types/policies";
+import { Locale } from "@/i18n/config";
 import { ObjectId } from "bson";
 
 // Shape of an aggregation pipeline result that joins in votes and the game,
@@ -196,6 +197,78 @@ export async function getPolicyById(id: string, userId?: string, gameId?: string
     },
   };
 }
+/**
+ * Insère une politique pour un jeu. Renvoie son identifiant ; l'appelant se
+ * charge de revalider les pages concernées.
+ */
+export async function createPolicy(data: {
+  gameId: string;
+  title: string;
+  content: string;
+  originalLang: Locale;
+  source?: string;
+  createdBy: string;
+}): Promise<string> {
+  const now = new Date();
+  const policy: PolicyDb = {
+    gameId: new ObjectId(data.gameId),
+    title: data.title,
+    content: data.content,
+    originalLang: data.originalLang,
+    contentUpdatedAt: now,
+    source: data.source,
+    createdBy: data.createdBy,
+    createdAt: now,
+  };
+
+  const result = await db.collection<PolicyDb>("policies").insertOne(policy);
+
+  return result.insertedId.toString();
+}
+
+/**
+ * Pose, change ou retire le vote d'un utilisateur sur une politique — revoter à
+ * l'identique retire le vote. Renvoie le décompte à jour, ou `null` si la
+ * politique n'existe pas.
+ */
+export async function voteOnPolicy(
+  policyId: string,
+  userId: string,
+  vote: PolicyVoteType,
+): Promise<Policy["votes"] | null> {
+  if (!ObjectId.isValid(policyId)) {
+    return null;
+  }
+
+  const policyObjId = new ObjectId(policyId);
+  const policy = await db.collection<PolicyDb>("policies").findOne({ _id: policyObjId });
+  if (!policy) {
+    return null;
+  }
+
+  const userObjId = new ObjectId(userId);
+  const votes = db.collection<PolicyVoteDb>("policy-votes");
+  const existing = await votes.findOne({ policyId: policyObjId, userId: userObjId });
+
+  if (existing && existing.vote === vote) {
+    await votes.deleteOne({ policyId: policyObjId, userId: userObjId });
+  } else {
+    await votes.updateOne(
+      { policyId: policyObjId, userId: userObjId },
+      { $set: { vote, createdAt: new Date() } },
+      { upsert: true },
+    );
+  }
+
+  const remaining = await votes.find({ policyId: policyObjId }).toArray();
+
+  return {
+    positive: remaining.filter((v) => v.vote === "positive").length,
+    negative: remaining.filter((v) => v.vote === "negative").length,
+    userVote: remaining.find((v) => v.userId.toString() === userId)?.vote,
+  };
+}
+
 /**
  * Suppression d'une policy et de ses votes (modération).
  */

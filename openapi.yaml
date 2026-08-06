@@ -1480,6 +1480,99 @@ paths:
         "404": { $ref: "#/components/responses/NestedNotFound" }
         "500": { description: Failed to verify decklist., content: { application/json: { schema: { $ref: "#/components/schemas/NestedError" } } } }
 
+  /games/{gameId}/erratas:
+    parameters:
+      - { name: gameId, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Games]
+      summary: List a game's erratas
+      security: []
+      description: >
+        Every errata attached to a card of this game. Session is optional; if
+        present, `votes.userVote` is populated. Response body is a raw array;
+        pagination totals are returned via the `x-page`, `x-page-size` and
+        `x-count` response headers instead of the body.
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, default: 20, maximum: 100 } }
+      responses:
+        "200":
+          description: Erratas.
+          headers:
+            x-page: { schema: { type: string } }
+            x-page-size: { schema: { type: string } }
+            x-count: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Errata" } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: [Games]
+      summary: Submit an errata
+      description: >
+        Open to any signed-in user — erratas are community content, arbitrated by
+        votes and reports. Every `cardIds` entry must be an existing card **of this
+        game**, at most 20 of them. `errataDate` defaults to now.
+      security: [{ sessionAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cardIds, type, details]
+              properties:
+                cardIds: { type: array, minItems: 1, maxItems: 20, items: { type: string } }
+                type: { type: string, enum: [errata, clarification, ruling] }
+                details: { type: string, maxLength: 5000 }
+                originalLang: { type: string, enum: [en, fr, it, de], default: fr }
+                source: { type: string, maxLength: 500 }
+                errataDate: { type: string, format: date-time }
+      responses:
+        "201":
+          description: Created errata.
+          content: { application/json: { schema: { $ref: "#/components/schemas/Errata" } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /games/{gameId}/erratas/{errataId}/vote:
+    parameters:
+      - { name: gameId, in: path, required: true, schema: { type: string } }
+      - { name: errataId, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [Games]
+      summary: Vote on an errata
+      description: >
+        Casting the same vote again removes it. Voting is open to any signed-in
+        user (implicit `erratas:vote` permission).
+      security: [{ sessionAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vote]
+              properties: { vote: { type: string, enum: [positive, negative] } }
+      responses:
+        "200":
+          description: Updated tally.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  votes:
+                    type: object
+                    properties: { positive: { type: integer }, negative: { type: integer }, userVote: { type: string, enum: [positive, negative] } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /games/{gameId}/loop:
     parameters:
       - { name: gameId, in: path, required: true, schema: { type: string } }
@@ -1568,16 +1661,32 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
     post:
       tags: [Games]
-      summary: (Stub) Create a policy for a game
+      summary: Create a policy for a game
       description: >
-        Requires permission `policies:update`. Currently a stub: it does not read
-        a request body nor persist anything, and always returns `{}` on success.
-        An unauthorized call surfaces as an unhandled server error rather than a
-        clean 401/403.
+        Requires permission `policies:update` — unlike erratas, policies carry
+        authority and are not arbitrated by votes.
       security: [{ sessionAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, content]
+              properties:
+                title: { type: string, maxLength: 200 }
+                content: { type: string, maxLength: 20000 }
+                originalLang: { type: string, enum: [en, fr, it, de], default: fr }
+                source: { type: string, maxLength: 500 }
       responses:
-        "200": { description: "Stub response, always `{}`." , content: { application/json: { schema: { type: object } } } }
+        "201":
+          description: Created policy.
+          content: { application/json: { schema: { $ref: "#/components/schemas/Policy" } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
 
   /games/{gameId}/policies/{policyId}:
     parameters:
@@ -1595,6 +1704,42 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Policy" }
         "404": { $ref: "#/components/responses/NotFound" }
+
+  /games/{gameId}/policies/{policyId}/vote:
+    parameters:
+      - { name: gameId, in: path, required: true, schema: { type: string } }
+      - { name: policyId, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [Games]
+      summary: Vote on a policy
+      description: >
+        Casting the same vote again removes it. Voting is open to any signed-in
+        user (implicit `policies:vote` permission).
+      security: [{ sessionAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vote]
+              properties: { vote: { type: string, enum: [positive, negative] } }
+      responses:
+        "200":
+          description: Updated tally.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  votes:
+                    type: object
+                    properties: { positive: { type: integer }, negative: { type: integer }, userVote: { type: string, enum: [positive, negative] } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
 
   /games/{gameId}/quizzes:
     parameters:
@@ -2619,6 +2764,29 @@ paths:
         "500": { $ref: "#/components/responses/ServerError" }
 
   # ---------------------------------------------------------------- Users
+  /users/me/permissions:
+    get:
+      tags: [Users]
+      summary: List the caller's own effective permissions
+      description: >
+        What the signed-in account is allowed to do, so clients only offer the
+        actions that will succeed. `policies:vote` and `erratas:vote` are implicit
+        for every signed-in account and always listed. An administrator holds every
+        permission — the list is not exhaustive for them, `isAdmin` is.
+      security: [{ sessionAuth: [] }]
+      responses:
+        "200":
+          description: Effective permissions.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  permissions: { type: array, items: { type: string }, example: ["erratas:vote", "policies:vote"] }
+                  isAdmin: { type: boolean }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /users/me/games:
     get:
       tags: [Users]

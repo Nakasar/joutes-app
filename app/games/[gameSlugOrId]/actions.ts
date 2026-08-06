@@ -1,9 +1,14 @@
 "use server";
 
-import {ErrataDb, ErrataTranslationInput, ErrataType, ErrataVoteDb, ErrataVoteType} from "@/lib/types/errata";
+import {ErrataDb, ErrataTranslationInput, ErrataType, ErrataVoteType} from "@/lib/types/errata";
 import {Locale} from "@/i18n/config";
 import {requirePermission} from "@/lib/db/permissions";
-import {deleteErrataById} from "@/lib/db/erratas";
+import {
+  checkErrataCardIds,
+  createErrata as createErrataInDb,
+  deleteErrataById,
+  voteOnErrata,
+} from "@/lib/db/erratas";
 import {deleteReportsForContent} from "@/lib/db/reports";
 import {headers} from "next/headers";
 import {auth} from "@/lib/auth";
@@ -13,33 +18,6 @@ import {revalidatePath} from "next/cache";
 import {requireAdmin} from "@/lib/middleware/admin";
 import meilisearch, {indexes} from "@/lib/meilisearch";
 import {mergeTranslationTimestamps} from "@/lib/translations";
-
-// La création étant ouverte à tous, un errata ne peut pas viser une liste de
-// cartes arbitrairement longue (chaque carte entraîne une revalidation de page).
-const MAX_ERRATA_CARDS = 20;
-
-/**
- * Normalise et valide les cartes d'un errata : au moins une carte, pas plus de
- * `MAX_ERRATA_CARDS`, et uniquement des cartes existantes.
- */
-async function checkErrataCardIds(cardIds: string[]): Promise<string[]> {
-  const uniqueCardIds = [...new Set(cardIds)];
-
-  if (uniqueCardIds.length === 0) {
-    throw new Error("Un errata doit être lié à au moins une carte.");
-  }
-
-  if (uniqueCardIds.length > MAX_ERRATA_CARDS) {
-    throw new Error(`Un errata ne peut pas être lié à plus de ${MAX_ERRATA_CARDS} cartes.`);
-  }
-
-  const knownCardIds = await db.collection("cards").distinct("id", { id: { $in: uniqueCardIds } });
-  if (knownCardIds.length !== uniqueCardIds.length) {
-    throw new Error("Un errata ne peut être lié qu'à des cartes existantes.");
-  }
-
-  return uniqueCardIds;
-}
 
 /**
  * Autorise la modification et la suppression d'un errata : son auteur, ou un
@@ -83,26 +61,7 @@ export async function createErrata(data: {
     throw new Error("Utilisateur non authentifié");
   }
 
-  if (!data.details.trim()) {
-    throw new Error("Le contenu de l'errata est requis.");
-  }
-
-  const cardIds = await checkErrataCardIds(data.cardIds);
-
-  const now = new Date();
-  const errata: ErrataDb = {
-    cardIds,
-    type: data.type,
-    details: data.details,
-    originalLang: data.originalLang,
-    contentUpdatedAt: now,
-    source: data.source,
-    errataDate: data.errataDate,
-    createdBy: new ObjectId(session.user.id),
-    createdAt: now,
-  };
-
-  await db.collection<ErrataDb>("erratas").insertOne(errata);
+  const { cardIds } = await createErrataInDb({ ...data, createdBy: session.user.id });
 
   for (const cardId of cardIds) {
     revalidatePath(`/games/riftbound/cards/${cardId}`);
@@ -209,28 +168,7 @@ export async function voteErrata(errataId: string, vote: ErrataVoteType) {
     throw new Error("Utilisateur non authentifié");
   }
 
-  const userId = new ObjectId(session.user.id);
-  const errataObjId = new ObjectId(errataId);
-
-  const existing = await db.collection<ErrataVoteDb>("errata-votes").findOne({
-    errataId: errataObjId,
-    userId,
-  });
-
-  if (existing && existing.vote === vote) {
-    // Même vote → retrait du vote
-    await db.collection<ErrataVoteDb>("errata-votes").deleteOne({
-      errataId: errataObjId,
-      userId,
-    });
-  } else {
-    // Nouveau vote ou changement de vote → upsert
-    await db.collection<ErrataVoteDb>("errata-votes").updateOne(
-      { errataId: errataObjId, userId },
-      { $set: { vote, createdAt: new Date() } },
-      { upsert: true }
-    );
-  }
+  await voteOnErrata(errataId, session.user.id, vote);
 
   revalidatePath("/riftbound/erratas");
 }
