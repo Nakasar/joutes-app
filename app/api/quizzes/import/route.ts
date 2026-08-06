@@ -73,8 +73,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
   }
 
+  // Deux droits distincts : `quizzes:update` parce que le brouillon produit ne
+  // sert qu'à alimenter l'éditeur de quizz, et `quizzes:ai-import` parce que
+  // chaque appel consomme du crédit chez le fournisseur du modèle — comme
+  // `scanner:ai` pour la reconnaissance de cartes.
   if (!(await hasPermission("quizzes:update"))) {
     return NextResponse.json({ error: "Permission refusée" }, { status: 403 });
+  }
+
+  if (!(await hasPermission("quizzes:ai-import"))) {
+    return NextResponse.json(
+      { error: "Permission refusée : l'import par IA nécessite le droit quizzes:ai-import" },
+      { status: 403 },
+    );
   }
 
   let body: unknown;

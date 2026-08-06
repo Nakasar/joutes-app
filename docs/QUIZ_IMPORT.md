@@ -6,6 +6,20 @@ du jour, FAQ. Le texte est analysé par un modèle, qui en tire les questions et
 leurs réponses ; les noms de cartes sont ensuite mis entre crochets, comme le
 fait la loupe.
 
+## Qui y a droit
+
+Deux permissions, et les deux sont nécessaires :
+
+- `quizzes:update` — écrire un quizz. Le brouillon ne sert qu'à alimenter
+  l'éditeur, il n'a aucun intérêt sans ce droit.
+- `quizzes:ai-import` — appeler le modèle. Chaque import est facturé chez le
+  fournisseur, ce droit se donne donc à part, comme `scanner:ai` pour la
+  reconnaissance de cartes. **Il n'est pas impliqué par `quizzes:update`** : un
+  rédacteur de quizz existant n'a pas l'import tant qu'on ne le lui accorde pas.
+
+Sans `quizzes:ai-import`, le bouton d'import n'est pas rendu et la route répond
+`403`.
+
 ## Parcours
 
 1. Bouton **« Importer depuis un texte »**, à côté des boutons d'ajout de bloc.
@@ -62,10 +76,10 @@ disparaît ; si rien ne survit du tout, la route répond `422`.
 
 - `lib/quizzes/import.ts` — normalisation, couverte par `lib/quizzes/import.test.ts`.
 - `lib/loop-markdown.ts` — `createCardMentionBracketer`, expression compilée une fois.
-- `app/api/quizzes/import/route.ts` — permission `quizzes:update`, appel du
-  modèle, détection des cartes.
+- `app/api/quizzes/import/route.ts` — permissions `quizzes:update` et
+  `quizzes:ai-import`, appel du modèle, détection des cartes.
 - `app/quizz/QuizImportDialog.tsx` — la boîte de dialogue, branchée dans
-  `QuizForm`.
+  `QuizForm` via `canImport`.
 
 Le modèle utilisé est `gpt-5.4-mini` via `@ai-sdk/openai`, comme la
 reconnaissance de cartes du scanner.

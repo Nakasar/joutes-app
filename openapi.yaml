@@ -2473,7 +2473,9 @@ paths:
         Turns a raw text (rules thread, question of the day, FAQ) into a quiz draft using an LLM.
         Nothing is persisted: the caller reviews the draft and posts it to `/quizzes`.
         With `gameId`, card names found in the text are wrapped in brackets so they link to the
-        card once the quiz is published. Requires permission `quizzes:update`.
+        card once the quiz is published. Requires **both** `quizzes:update` (the draft only feeds
+        the quiz editor) and `quizzes:ai-import` — the latter gates the billed model call, the way
+        `scanner:ai` gates card recognition, and is not implied by `quizzes:update`.
       security: [{ sessionAuth: [] }]
       requestBody:
         required: true
@@ -3081,8 +3083,10 @@ components:
         Session cookie set by Better Auth after signing in via `/auth/*`.
         Some operations additionally require a specific permission
         (e.g. `news:update`, `quizzes:update`, `policies:update`,
-        `scanner:ai`) or admin status on top of a valid session - see the
-        operation description.
+        `scanner:ai`, `quizzes:ai-import`) or admin status on top of a valid
+        session - see the operation description. Permissions gating a billed
+        external AI call (`scanner:ai`, `quizzes:ai-import`) are always granted
+        separately and never implied by the matching content permission.
     cronSecret:
       type: http
       scheme: bearer

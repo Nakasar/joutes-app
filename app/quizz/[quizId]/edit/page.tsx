@@ -27,6 +27,10 @@ export default async function EditQuizzPage({ params }: { params: Promise<{ quiz
     redirect(`/quizz/${quizId}`);
   }
 
+  // L'import par IA a son propre droit : rédiger un quizz ne donne pas accès au
+  // modèle, dont chaque appel est facturé.
+  const canImport = await hasPermission("quizzes:ai-import").catch(() => false);
+
   const [quiz, games] = await Promise.all([getQuizById(quizId), getAllGames()]);
 
   if (!quiz) {
@@ -45,7 +49,7 @@ export default async function EditQuizzPage({ params }: { params: Promise<{ quiz
         <h1 className="text-3xl font-bold tracking-tight">Modifier le quizz</h1>
       </div>
 
-      <QuizForm mode="edit" quiz={quiz} games={games} />
+      <QuizForm mode="edit" quiz={quiz} games={games} canImport={canImport} />
     </div>
   );
 }

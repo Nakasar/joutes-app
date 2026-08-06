@@ -28,6 +28,10 @@ export default async function CreateQuizzPage() {
     redirect("/quizz");
   }
 
+  // L'import par IA a son propre droit : rédiger un quizz ne donne pas accès au
+  // modèle, dont chaque appel est facturé.
+  const canImport = await hasPermission("quizzes:ai-import").catch(() => false);
+
   const games = await getAllGames();
   // La VO part de la langue de l'auteur, qui reste modifiable dans le formulaire.
   const defaultLang = (await getLocale()) as Locale;
@@ -45,7 +49,12 @@ export default async function CreateQuizzPage() {
         <p className="text-muted-foreground mt-1">Créez un nouveau quizz pour la communauté</p>
       </div>
 
-      <QuizForm mode="create" games={games} defaultLang={defaultLang} />
+      <QuizForm
+        mode="create"
+        games={games}
+        defaultLang={defaultLang}
+        canImport={canImport}
+      />
     </div>
   );
 }

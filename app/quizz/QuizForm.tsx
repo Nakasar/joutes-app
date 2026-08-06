@@ -15,9 +15,11 @@ import QuizImportDialog from "./QuizImportDialog";
 import { toast } from "sonner";
 import { Loader2, FileText, ListChecks } from "lucide-react";
 
-type QuizFormProps =
+/** `canImport` : droit `quizzes:ai-import`, distinct de celui d'éditer un quizz. */
+type QuizFormProps = { canImport: boolean } & (
   | { mode: "create"; games: Game[]; defaultLang: Locale }
-  | { mode: "edit"; quiz: Quiz; games: Game[] };
+  | { mode: "edit"; quiz: Quiz; games: Game[] }
+);
 
 type FormData = {
   title: string;
@@ -224,7 +226,9 @@ export default function QuizForm(props: QuizFormProps) {
             <ListChecks className="h-4 w-4 mr-2" />
             Ajouter un bloc formulaire
           </Button>
-          <QuizImportDialog gameId={form.gameId} onImported={applyImport} />
+          {props.canImport && (
+            <QuizImportDialog gameId={form.gameId} onImported={applyImport} />
+          )}
         </div>
       </div>
 
