@@ -309,10 +309,15 @@ export async function getEventParticipants(eventId: string) {
     // Vérifier l'accès
     const isCreator = event.creatorId === session.user.id;
     const isParticipant = event.participants?.includes(session.user.id);
-    
+
     if (!isCreator && !isParticipant) {
       return { success: false, error: "Accès non autorisé" };
     }
+
+    // L'email des participants sert aux organisateurs pour les contacter ; un
+    // simple inscrit n'a pas à repartir avec le carnet d'adresses de
+    // l'évènement. Les portails joueurs n'affichent que le nom.
+    const isStaff = await isEventOrganizer(eventId, session.user.id);
 
     const guestsCollection = db.collection<GuestParticipant>(GUEST_PARTICIPANTS_COLLECTION);
     
@@ -333,7 +338,7 @@ export async function getEventParticipants(eventId: string) {
         id: user._id.toString(),
         username: user.displayName || user.username,
         discriminator: user.discriminator,
-        email: user.email,
+        email: isStaff ? user.email : undefined,
         profileImage: user.profileImage,
         type: "user" as const,
         registrationStatus: event.participantRegistrations?.[user._id.toString()] || 'REGISTERED',
@@ -342,7 +347,7 @@ export async function getEventParticipants(eventId: string) {
         id: guest.id,
         username: guest.username,
         discriminator: guest.discriminator,
-        email: guest.email,
+        email: isStaff ? guest.email : undefined,
         type: guest.type,
         registrationStatus: 'REGISTERED' as const,
       })),

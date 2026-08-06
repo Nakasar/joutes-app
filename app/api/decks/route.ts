@@ -23,7 +23,10 @@ export async function GET(request: NextRequest) {
     const scope = searchParams.get("scope") as "mine" | "all" | null;
     const favoritesOnly = searchParams.get("favoritesOnly") === "true";
 
-    // Si on demande les decks privés d'un joueur, il faut être ce joueur
+    // Si on demande les decks privés d'un joueur, il faut être ce joueur. La
+    // restriction de fond est appliquée par `searchDecks`, qui ne rend jamais un
+    // deck privé dont l'appelant n'est pas propriétaire ; ce contrôle sert à
+    // répondre 403 plutôt qu'une liste vide.
     if (visibility === "private" && playerId && session?.user?.id !== playerId) {
       return NextResponse.json(
         { error: "Vous n'avez pas l'autorisation de voir ces decks" },
@@ -37,7 +40,9 @@ export async function GET(request: NextRequest) {
       effectivePlayerId = session.user.id;
     }
 
-    // Si on ne spécifie pas de playerId et pas de visibilité, on ne retourne que les decks publics
+    // Sans playerId, ni visibilité, ni scope, la liste est celle des decks
+    // publics : sans ce défaut un utilisateur connecté verrait ses propres
+    // decks privés remonter dans le catalogue.
     let effectiveVisibility = visibility;
     if (!effectivePlayerId && !visibility && !scope) {
       effectiveVisibility = "public";

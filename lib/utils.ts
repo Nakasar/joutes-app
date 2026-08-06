@@ -37,3 +37,40 @@ export function formatFullUsername(displayName?: string, discriminator?: string)
   return `${displayName}#${discriminator}`;
 }
 
+
+/**
+ * Rend une URL saisie par un utilisateur sûre à placer dans un `href`.
+ * `javascript:` (ou tout autre schéma que http/https) devient du script exécuté
+ * dans l'origine du site dès qu'un visiteur clique le lien. Les saisies sont
+ * validées par `httpUrlSchema`, mais les valeurs enregistrées avant cette
+ * validation restent en base : on filtre donc aussi au rendu.
+ *
+ * @returns L'URL si elle est en http/https, `null` sinon (ne pas rendre le lien)
+ */
+export function safeExternalUrl(url: string | null | undefined): string | null {
+  if (!url) {
+    return null;
+  }
+  try {
+    const protocol = new URL(url).protocol;
+    return protocol === "http:" || protocol === "https:" ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Nom d'hôte d'une URL, pour afficher un lien externe de façon compacte.
+ * Rend `null` si l'URL n'est pas exploitable.
+ */
+export function externalUrlHostname(url: string | null | undefined): string | null {
+  const safe = safeExternalUrl(url);
+  if (!safe) {
+    return null;
+  }
+  try {
+    return new URL(safe).hostname;
+  } catch {
+    return null;
+  }
+}

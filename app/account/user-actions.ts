@@ -2,25 +2,41 @@
 
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { 
-  searchUsersByUsername, 
-  getUserByUsernameAndDiscriminator, 
-  updateUserProfileVisibility, 
+import {
+  searchUsersByUsername,
+  getUserByUsernameAndDiscriminator,
+  updateUserProfileVisibility,
   getUserByTagOrId,
   updateUserProfileInfo,
-  updateUserProfileImage
+  updateUserProfileImage,
+  toPublicUser,
+  toPublicUserProfile,
+  type PublicUser,
+  type PublicUserProfile
 } from "@/lib/db/users";
-import { User } from "@/lib/types/User";
-import { 
-  updateProfileVisibilitySchema, 
+
+import {
+  updateProfileVisibilitySchema,
   updateProfileInfoSchema,
   updateProfileImageSchema
 } from "@/lib/schemas/user.schema";
 import { put } from "@vercel/blob";
 
+/**
+ * Profil rendu par la page `/users/{tag}` : les champs publics, plus les jeux,
+ * les lieux et l'image de profil dont la page a besoin. Volontairement construit
+ * par énumération et non par `spread` de l'utilisateur complet, pour que l'ajout
+ * d'un champ privé sur `User` ne se retrouve pas publié ici sans décision.
+ */
+export type ProfilePageUser = PublicUserProfile & {
+  profileImage?: string;
+  games: string[];
+  lairs: string[];
+};
+
 export async function searchUsersAction(
   searchTerm: string
-): Promise<{ success: boolean; error?: string; users?: User[] }> {
+): Promise<{ success: boolean; error?: string; users?: PublicUser[] }> {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -36,7 +52,7 @@ export async function searchUsersAction(
 
     const users = await searchUsersByUsername(searchTerm);
 
-    return { success: true, users };
+    return { success: true, users: users.map(toPublicUser) };
   } catch (error) {
     console.error("Erreur lors de la recherche d'utilisateurs:", error);
     return { success: false, error: "Erreur serveur" };
@@ -46,7 +62,7 @@ export async function searchUsersAction(
 export async function getUserByUsernameAction(
   displayName: string,
   discriminator: string
-): Promise<{ success: boolean; error?: string; user?: User }> {
+): Promise<{ success: boolean; error?: string; user?: PublicUser }> {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -62,7 +78,7 @@ export async function getUserByUsernameAction(
       return { success: false, error: "Utilisateur non trouvé" };
     }
 
-    return { success: true, user };
+    return { success: true, user: toPublicUser(user) };
   } catch (error) {
     console.error("Erreur lors de la récupération de l'utilisateur:", error);
     return { success: false, error: "Erreur serveur" };
@@ -108,7 +124,7 @@ export async function updateProfileVisibilityAction(
  */
 export async function getPublicUserProfileAction(
   userTagOrId: string
-): Promise<{ success: boolean; error?: string; user?: User; isPublic?: boolean }> {
+): Promise<{ success: boolean; error?: string; user?: ProfilePageUser; isPublic?: boolean }> {
   try {
     let formatted = userTagOrId.trim();
     if (!userTagOrId.includes("#") && isNaN(+userTagOrId.substring(-4))) {
@@ -122,10 +138,17 @@ export async function getPublicUserProfileAction(
       return { success: false, error: "Utilisateur non trouvé" };
     }
 
-    // Retourner l'utilisateur avec indication de visibilité
-    return { 
-      success: true, 
-      user,
+    // Retourner l'utilisateur avec indication de visibilité. Cette action est
+    // ouverte aux appelants anonymes : elle ne doit porter que des champs
+    // publics, pas l'email, le code ami ni la position GPS de `User`.
+    return {
+      success: true,
+      user: {
+        ...toPublicUserProfile(user),
+        profileImage: user.profileImage,
+        games: user.games ?? [],
+        lairs: user.lairs ?? [],
+      },
       isPublic: user.isPublicProfile || false
     };
   } catch (error) {

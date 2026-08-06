@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import db from "@/lib/mongodb";
 import { createPlayGroupInvitation, getPlayGroupByIdAndUser } from "@/lib/db/play-groups";
-import { getUserByEmail, getUserByTagOrId, getUsersByIds } from "@/lib/db/users";
+import { getUserByEmail, getUserByTagOrId, getUsersByIds, toPublicUser } from "@/lib/db/users";
 import { ObjectId } from "mongodb";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ playGroupId: string }> }) {
@@ -22,7 +22,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const memberIds = group.members.map((member) => member.userId);
     const users = await getUsersByIds(memberIds);
-    const userById = new Map(users.map((user) => [user.id, user]));
+    // Projection publique : `toUser` porte l'email, le code ami et la
+    // position GPS du membre, qui n'ont pas à circuler dans le groupe.
+    const userById = new Map(users.map((user) => [user.id, toPublicUser(user)]));
     const currentMember = group.members.find((member) => member.userId === session.user.id);
 
     return NextResponse.json({

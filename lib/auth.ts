@@ -11,6 +11,33 @@ const generateOTP = customAlphabet("0123456789", 6);
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Le code de revue a la même longueur que les codes envoyés par email : le
+// champ de saisie de `/login` est plafonné à 6 caractères, un code plus long y
+// serait tronqué.
+const REVIEW_OTP_LENGTH = 6;
+
+/**
+ * Compte à code fixe utilisé par les validateurs des app stores, qui n'ont pas
+ * accès à la boîte mail associée. Il n'est actif que si `APP_REVIEW_EMAIL` et
+ * `APP_REVIEW_OTP` sont tous deux configurés : aucune valeur par défaut n'est
+ * codée en dur, sans quoi le code serait public avec les sources.
+ *
+ * Ce code ne tourne pas et tient lieu de mot de passe permanent. Sur 6
+ * caractères il reste énumérable, d'autant qu'un nouvel envoi régénère le même
+ * code : ne l'activer que le temps d'une revue, et limiter le débit des envois
+ * et vérifications sur cette adresse si le compte doit rester ouvert.
+ */
+function getReviewAccount(): { email: string; otp: string } | null {
+  const email = process.env.APP_REVIEW_EMAIL?.trim().toLowerCase();
+  const otp = process.env.APP_REVIEW_OTP?.trim();
+
+  if (!email || !otp || otp.length !== REVIEW_OTP_LENGTH) {
+    return null;
+  }
+
+  return { email, otp };
+}
+
 export const auth = betterAuth({
   database: mongodbAdapter(db),
   emailAndPassword: {
@@ -28,14 +55,23 @@ export const auth = betterAuth({
   plugins: [
     jwt(),
     emailOTP({
-      generateOTP({ email, type }) {
-        if (email === 'app.verifier@joutes.app') {
-          return '567234';
+      generateOTP({ email }) {
+        const review = getReviewAccount();
+        if (review && email.toLowerCase() === review.email) {
+          return review.otp;
         }
         return generateOTP();
       },
       async sendVerificationOTP({ email, otp }: { email: string; otp: string }) {
-        if (process.env.RESEND_API_KEY === "CONSOLE" || email === 'app.verifier@joutes.app') {
+        // Le compte de revue applicative ne reçoit pas d'email : son code vient
+        // de la configuration, et le journaliser le rendrait lisible par
+        // quiconque a accès aux logs.
+        const review = getReviewAccount();
+        if (review && email.toLowerCase() === review.email) {
+          return;
+        }
+
+        if (process.env.RESEND_API_KEY === "CONSOLE") {
           console.log(`Envoi OTP à ${email}: ${otp}`);
           return;
         }

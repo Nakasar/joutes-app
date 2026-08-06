@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getPlayGroupByIdAndUser, updatePlayGroupEnabledGames } from "@/lib/db/play-groups";
-import { getUsersByIds } from "@/lib/db/users";
+import { getUsersByIds, toPublicUser } from "@/lib/db/users";
 import { playGroupGamesSchema } from "@/lib/schemas/play-group.schema";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ playGroupId: string }> }) {
@@ -21,7 +21,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const memberIds = group.members.map((member) => member.userId);
     const users = await getUsersByIds(memberIds);
-    const userById = new Map(users.map((user) => [user.id, user]));
+    // Projection publique : `toUser` porte l'email, le code ami et la
+    // position GPS du membre, qui n'ont pas à circuler dans le groupe.
+    const userById = new Map(users.map((user) => [user.id, toPublicUser(user)]));
 
     return NextResponse.json({
       group: {
@@ -70,7 +72,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const memberIds = updated.members.map((member) => member.userId);
     const users = await getUsersByIds(memberIds);
-    const userById = new Map(users.map((user) => [user.id, user]));
+    // Projection publique : `toUser` porte l'email, le code ami et la
+    // position GPS du membre, qui n'ont pas à circuler dans le groupe.
+    const userById = new Map(users.map((user) => [user.id, toPublicUser(user)]));
 
     return NextResponse.json({
       group: {

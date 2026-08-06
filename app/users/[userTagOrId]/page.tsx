@@ -16,6 +16,7 @@ import { checkAdmin } from "@/lib/middleware/admin";
 import { UnlockAchievementButton } from "@/app/users/UnlockAchievementButton";
 import ReportButton from "@/components/ReportButton";
 import { Metadata } from "next";
+import { safeExternalUrl, externalUrlHostname } from "@/lib/utils";
 
 interface UserProfilePageProps {
   params: Promise<{
@@ -119,6 +120,19 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
     ? `${user.displayName}#${user.discriminator}`
     : user.username;
 
+  // Les liens sortants sont filtrés sur le schéma d'URI : une valeur
+  // `javascript:` enregistrée avant la validation ne doit pas atterrir dans un
+  // `href`. `safeLink` rend null pour toute URL non http/https.
+  const safeLink = (value: string | null | undefined) => {
+    const url = safeExternalUrl(value);
+    const hostname = externalUrlHostname(value);
+    return url && hostname ? { url, hostname } : null;
+  };
+  const safeWebsite = safeLink(user.website);
+  const safeSocialLinks = (user.socialLinks ?? [])
+    .map(safeLink)
+    .filter((link): link is { url: string; hostname: string } => link !== null);
+
   const displayImage = user.profileImage || user.avatar;
 
   return (
@@ -166,33 +180,33 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
                   )}
                   
                   {/* Site web et réseaux sociaux */}
-                  {(user.website || (user.socialLinks && user.socialLinks.length > 0)) && (
+                  {(safeWebsite || safeSocialLinks.length > 0) && (
                     <div className="mt-4 space-y-2">
-                      {user.website && (
+                      {safeWebsite && (
                         <a 
-                          href={user.website}
+                          href={safeWebsite.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
                         >
                           <Globe className="h-4 w-4" />
-                          {new URL(user.website).hostname}
+                          {safeWebsite.hostname}
                           <ExternalLink className="h-3 w-3" />
                         </a>
                       )}
                       
-                      {user.socialLinks && user.socialLinks.length > 0 && (
+                      {safeSocialLinks.length > 0 && (
                         <div className="flex flex-wrap gap-2">
-                          {user.socialLinks.map((link, index) => (
+                          {safeSocialLinks.map((link, index) => (
                             <a
                               key={index}
-                              href={link}
+                              href={link.url}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
                             >
                               <ExternalLink className="h-3 w-3" />
-                              {new URL(link).hostname}
+                              {link.hostname}
                             </a>
                           ))}
                         </div>

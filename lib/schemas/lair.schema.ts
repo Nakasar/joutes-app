@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { httpUrlSchema } from "./url.schema";
+
 // Pour la validation d'ID MongoDB (ObjectId est un string hexadecimal de 24 caractères)
 const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID doit être un ObjectId MongoDB valide");
 
@@ -68,7 +70,7 @@ export const lairSchema = z.object({
   eventsSourceInstructions: z.string().max(2000, "Les consignes sont trop longues").optional(),
   location: geoJSONPointSchema,
   address: z.string().max(500, "L'adresse est trop longue").optional(),
-  website: z.url("L'URL du site web doit être valide").optional().or(z.literal("")),
+  website: httpUrlSchema("L'URL du site web doit être valide").optional().or(z.literal("")),
   isPrivate: z.boolean().default(false),
   invitationCode: z.string().optional(),
   options: z.object({

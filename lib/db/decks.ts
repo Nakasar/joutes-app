@@ -92,38 +92,51 @@ export async function searchDecks(options: SearchDecksOptions): Promise<Paginate
     favoritesOnly = false,
   } = options;
 
-  const query: Record<string, unknown> = {};
+  // Garde d'accès appliquée quelles que soient les options : on ne voit que ses
+  // propres decks et les decks publics. Elle n'est pas dérivée des filtres
+  // fournis par l'appelant, pour qu'aucune combinaison de paramètres ne puisse
+  // la contourner (un `playerId` sans `visibility` exposait auparavant les
+  // decks privés du joueur visé).
+  const clauses: Record<string, unknown>[] = [
+    viewerId
+      ? { $or: [{ playerId: viewerId }, { visibility: "public" }] }
+      : { visibility: "public" },
+  ];
 
-  if (scope === "mine" && viewerId) {
-    query.playerId = viewerId;
-  } else if (scope === "all" && viewerId) {
-    query.$or = [
-      { playerId: viewerId },
-      { visibility: "public" },
-    ];
-  } else if (playerId) {
-    query.playerId = playerId;
+  if (scope === "mine") {
+    // Sans viewerId, la garde ci-dessus ramène déjà la recherche aux decks
+    // publics : on n'ajoute pas de filtre propriétaire impossible à satisfaire.
+    if (viewerId) {
+      clauses.push({ playerId: viewerId });
+    }
+  } else if (scope !== "all" && playerId) {
+    clauses.push({ playerId });
   }
 
   if (gameId) {
-    query.gameId = gameId;
+    clauses.push({ gameId });
   }
 
   if (visibility) {
-    query.visibility = visibility;
+    clauses.push({ visibility });
   }
 
   if (favoritesOnly && viewerId) {
-    query.favoritedBy = viewerId;
+    clauses.push({ favoritedBy: viewerId });
   }
 
   if (search) {
-    query.$or = [
-      ...(Array.isArray(query.$or) ? query.$or : []),
-      { name: { $regex: search, $options: "i" } },
-      { description: { $regex: search, $options: "i" } },
-    ];
+    clauses.push({
+      $or: [
+        { name: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+      ],
+    });
   }
+
+  // `$and` plutôt qu'un objet à plat : plusieurs clauses utilisent `$or`
+  // (garde d'accès et recherche textuelle) et s'écraseraient mutuellement.
+  const query: Record<string, unknown> = { $and: clauses };
 
   const skip = (page - 1) * limit;
 
