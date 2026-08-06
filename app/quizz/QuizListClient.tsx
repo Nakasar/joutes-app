@@ -14,7 +14,10 @@ import { toast } from "sonner";
 
 type QuizListClientProps = {
   games: Game[];
-  canWrite: boolean;
+  /** Identifiant du visiteur, pour reconnaître ses propres quizz. */
+  currentUserId?: string;
+  /** Droit `quizzes:update-all` : la main sur les quizz de tout le monde. */
+  canManageAll: boolean;
 };
 
 type PaginatedQuizzesResponse = {
@@ -29,7 +32,11 @@ function countQuestions(quiz: Quiz): number {
   return quiz.blocks.reduce((sum, block) => (block.type === "form" ? sum + block.questions.length : sum), 0);
 }
 
-export default function QuizListClient({ games, canWrite }: QuizListClientProps) {
+export default function QuizListClient({
+  games,
+  currentUserId,
+  canManageAll,
+}: QuizListClientProps) {
   const [data, setData] = useState<PaginatedQuizzesResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -108,7 +115,7 @@ export default function QuizListClient({ games, canWrite }: QuizListClientProps)
                         {quiz.title}
                       </CardTitle>
                     </Link>
-                    {canWrite && (
+                    {(canManageAll || (!!currentUserId && quiz.authorId === currentUserId)) && (
                       <Button asChild variant="ghost" size="icon" className="shrink-0">
                         <Link href={`/quizz/${quiz.id}/edit`}>
                           <Pencil className="h-4 w-4" />

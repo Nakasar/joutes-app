@@ -23,13 +23,9 @@ export default async function CreateQuizzPage() {
     redirect("/login");
   }
 
-  const canWrite = await hasPermission("quizzes:update").catch(() => false);
-  if (!canWrite) {
-    redirect("/quizz");
-  }
-
-  // L'import par IA a son propre droit : rédiger un quizz ne donne pas accès au
-  // modèle, dont chaque appel est facturé.
+  // Écrire un quizz est ouvert à tout compte connecté. L'import par IA a son
+  // propre droit : rédiger un quizz ne donne pas accès au modèle, dont chaque
+  // appel est facturé.
   const canImport = await hasPermission("quizzes:ai-import").catch(() => false);
 
   const games = await getAllGames();

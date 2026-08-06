@@ -12,6 +12,11 @@ import {isAdmin} from "@/lib/config/admins";
 // modérateurs pouvaient en créer ; c'est aujourd'hui `erratas:manage`.
 const PERMISSION_ALIASES: Record<string, string[]> = {
   'erratas:manage': ['erratas:update'],
+  // `quizzes:update` donnait la main sur tous les quizz, à l'époque où seuls
+  // ses porteurs pouvaient en écrire. Écrire un quizz est aujourd'hui ouvert à
+  // tous et chacun gère les siens ; toucher à ceux des autres est devenu
+  // `quizzes:update-all`.
+  'quizzes:update-all': ['quizzes:update'],
 };
 
 // Accordées à tout compte connecté : voter est ouvert à la communauté, seule

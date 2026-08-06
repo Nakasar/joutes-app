@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { getQuizById } from "@/lib/db/quizzes";
-import { hasPermission } from "@/lib/db/permissions";
+import { canManageQuiz } from "@/lib/quizzes/authorization";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 import { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Pencil } from "lucide-react";
@@ -12,6 +14,7 @@ import { localizeQuiz } from "@/lib/quizzes/translate";
 import type { Locale } from "@/i18n/config";
 import QuizPlayer from "./QuizPlayer";
 import QuizTranslateMenu from "./QuizTranslateMenu";
+import DeleteQuizButton from "./DeleteQuizButton";
 import ReportButton from "@/components/ReportButton";
 
 type Props = { params: Promise<{ quizId: string }> };
@@ -33,14 +36,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function QuizzDetailPage({ params }: Props) {
   const { quizId } = await params;
 
-  const [quiz, canWrite] = await Promise.all([
+  const [quiz, session] = await Promise.all([
     getQuizById(quizId),
-    hasPermission("quizzes:update").catch(() => false),
+    auth.api.getSession({ headers: await headers() }),
   ]);
 
   if (!quiz) {
     notFound();
   }
+
+  // Son auteur, ou la modération (`quizzes:update-all`) : c'est ce qui ouvre la
+  // modification, la traduction et la suppression.
+  const canWrite = await canManageQuiz(quiz, session?.user?.id).catch(() => false);
 
   const texts = quiz.blocks.flatMap((block) =>
     block.type === "markdown"
@@ -88,6 +95,7 @@ export default async function QuizzDetailPage({ params }: Props) {
                 originalLang={quiz.originalLang}
                 translatedLangs={(quiz.translations ?? []).map((translation) => translation.lang)}
               />
+              <DeleteQuizButton quizId={quiz.id} />
             </>
           )}
           <ReportButton contentType="quiz" contentId={quiz.id} />

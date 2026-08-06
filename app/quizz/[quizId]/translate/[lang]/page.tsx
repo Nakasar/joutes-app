@@ -5,8 +5,8 @@ import { ArrowLeft } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { Button } from "@/components/ui/button";
-import { hasPermission } from "@/lib/db/permissions";
 import { getQuizById } from "@/lib/db/quizzes";
+import { canManageQuiz } from "@/lib/quizzes/authorization";
 import { locales, localeLabels, type Locale } from "@/i18n/config";
 import QuizTranslationEditor from "./QuizTranslationEditor";
 
@@ -26,11 +26,6 @@ export default async function TranslateQuizPage({ params }: Props) {
     redirect("/login");
   }
 
-  const canWrite = await hasPermission("quizzes:update").catch(() => false);
-  if (!canWrite) {
-    redirect(`/quizz/${quizId}`);
-  }
-
   if (!(locales as readonly string[]).includes(lang)) {
     notFound();
   }
@@ -39,6 +34,12 @@ export default async function TranslateQuizPage({ params }: Props) {
   const quiz = await getQuizById(quizId);
   if (!quiz) {
     notFound();
+  }
+
+  // Traduire, c'est modifier le contenu affiché : son auteur, ou la modération.
+  const canWrite = await canManageQuiz(quiz, session.user.id).catch(() => false);
+  if (!canWrite) {
+    redirect(`/quizz/${quizId}`);
   }
 
   // Traduire un quizz vers sa propre langue n'a pas de sens : on renvoie vers

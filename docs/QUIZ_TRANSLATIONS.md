@@ -78,8 +78,9 @@ les explications, et **la réponse attendue d'une question libre** — jouer le
 quizz en italien suppose de pouvoir y répondre en italien.
 
 L'accès se fait par le menu **Traduire** de la page du quizz, qui liste les
-langues autres que la VO et signale celles déjà commencées. La permission est
-`quizzes:update`, la même qu'écrire un quizz.
+langues autres que la VO et signale celles déjà commencées. Traduire, c'est
+modifier le contenu affiché : la règle est donc celle de la modification — son
+auteur, ou la modération (`quizzes:update-all`).
 
 ## Implémentation
 

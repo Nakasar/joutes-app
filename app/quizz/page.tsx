@@ -1,5 +1,7 @@
 import { getAllGames } from "@/lib/db/games";
 import { hasPermission } from "@/lib/db/permissions";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 import { Metadata } from "next";
 import { HelpCircle, PenSquare } from "lucide-react";
 import Link from "next/link";
@@ -21,10 +23,16 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function QuizzPage() {
-  const [games, canWrite] = await Promise.all([
+  const [games, session, canManageAll] = await Promise.all([
     getAllGames(),
-    hasPermission("quizzes:update").catch(() => false),
+    auth.api.getSession({ headers: await headers() }),
+    hasPermission("quizzes:update-all").catch(() => false),
   ]);
+
+  // Écrire un quizz est ouvert à tout compte connecté ; le crayon de la liste
+  // ne s'affiche en revanche que sur ses propres quizz, ou pour la modération.
+  const canWrite = Boolean(session?.user);
+  const currentUserId = session?.user?.id;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -49,7 +57,11 @@ export default async function QuizzPage() {
           )}
         </div>
 
-        <QuizListClient games={games} canWrite={canWrite} />
+        <QuizListClient
+          games={games}
+          currentUserId={currentUserId}
+          canManageAll={canManageAll}
+        />
       </div>
     </div>
   );

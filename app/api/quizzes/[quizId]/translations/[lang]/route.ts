@@ -1,25 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import { hasPermission } from "@/lib/db/permissions";
 import { deleteQuizTranslation, getQuizById, upsertQuizTranslation } from "@/lib/db/quizzes";
+import { canManageQuiz } from "@/lib/quizzes/authorization";
 import { quizTranslationSchema } from "@/lib/schemas/quiz.schema";
+import type { Quiz } from "@/lib/types/Quiz";
 import { locales, type Locale } from "@/i18n/config";
 
 function parseLang(lang: string): Locale | null {
   return (locales as readonly string[]).includes(lang) ? (lang as Locale) : null;
 }
 
-/** Traduire un quizz relève de la même permission que l'écrire. */
-async function authorize(): Promise<NextResponse | null> {
+/**
+ * Traduire un quizz, c'est en modifier le contenu affiché : même règle que la
+ * modification — son auteur, ou la modération (`quizzes:update-all`).
+ * Renvoie le quizz pour éviter de le relire ensuite.
+ */
+async function authorize(
+  quizId: string,
+): Promise<{ denied: NextResponse } | { denied: null; quiz: Quiz }> {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) {
-    return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    return { denied: NextResponse.json({ error: "Non authentifié" }, { status: 401 }) };
   }
-  if (!(await hasPermission("quizzes:update"))) {
-    return NextResponse.json({ error: "Permission refusée" }, { status: 403 });
+
+  const quiz = await getQuizById(quizId);
+  if (!quiz) {
+    return { denied: NextResponse.json({ error: "Quizz non trouvé" }, { status: 404 }) };
   }
-  return null;
+
+  if (!(await canManageQuiz(quiz, session.user.id))) {
+    return { denied: NextResponse.json({ error: "Permission refusée" }, { status: 403 }) };
+  }
+
+  return { denied: null, quiz };
 }
 
 export async function PUT(
@@ -28,19 +42,15 @@ export async function PUT(
 ) {
   const { quizId, lang } = await params;
 
-  const denied = await authorize();
-  if (denied) return denied;
+  const authorized = await authorize(quizId);
+  if (authorized.denied) return authorized.denied;
 
   const locale = parseLang(lang);
   if (!locale) {
     return NextResponse.json({ error: "Langue non prise en charge" }, { status: 400 });
   }
 
-  const quiz = await getQuizById(quizId);
-  if (!quiz) {
-    return NextResponse.json({ error: "Quizz non trouvé" }, { status: 404 });
-  }
-  if (locale === quiz.originalLang) {
+  if (locale === authorized.quiz.originalLang) {
     return NextResponse.json(
       { error: "La langue d'origine du quizz ne se traduit pas" },
       { status: 400 }
@@ -76,8 +86,8 @@ export async function DELETE(
 ) {
   const { quizId, lang } = await params;
 
-  const denied = await authorize();
-  if (denied) return denied;
+  const authorized = await authorize(quizId);
+  if (authorized.denied) return authorized.denied;
 
   const locale = parseLang(lang);
   if (!locale) {
