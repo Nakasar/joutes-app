@@ -2452,7 +2452,10 @@ paths:
     post:
       tags: [Quizzes]
       summary: Create a quiz
-      description: Requires permission `quizzes:update`.
+      description: >
+        Open to any signed-in user — quizzes are community content. The caller becomes the
+        quiz's author and is the only one who can edit, translate or delete it afterwards,
+        short of the `quizzes:update-all` moderation permission.
       security: [{ sessionAuth: [] }]
       requestBody:
         required: true
@@ -2473,7 +2476,9 @@ paths:
         Turns a raw text (rules thread, question of the day, FAQ) into a quiz draft using an LLM.
         Nothing is persisted: the caller reviews the draft and posts it to `/quizzes`.
         With `gameId`, card names found in the text are wrapped in brackets so they link to the
-        card once the quiz is published. Requires permission `quizzes:update`.
+        card once the quiz is published. Writing a quiz is open to everyone, but having a model
+        write it is not: this requires `quizzes:ai-import`, which gates the billed model call the
+        way `scanner:ai` gates card recognition.
       security: [{ sessionAuth: [] }]
       requestBody:
         required: true
@@ -2513,7 +2518,9 @@ paths:
       tags: [Quizzes]
       summary: Save a quiz translation
       description: >
-        Replaces the quiz's translation for that language. Requires permission `quizzes:update`.
+        Replaces the quiz's translation for that language. Translating a quiz changes what
+        readers see, so it follows the same rule as editing: the quiz's author, or holders of
+        `quizzes:update-all`.
         The quiz's own `updatedAt` is left untouched, so it keeps marking the last *content* change —
         that is what flags translations as stale. Translating a quiz into its own language is rejected.
       security: [{ sessionAuth: [] }]
@@ -2539,7 +2546,7 @@ paths:
     delete:
       tags: [Quizzes]
       summary: Remove a quiz translation
-      description: Requires permission `quizzes:update`.
+      description: Reserved to the quiz's author, or to holders of `quizzes:update-all`.
       security: [{ sessionAuth: [] }]
       responses:
         "200": { description: Removed. }
@@ -2562,7 +2569,8 @@ paths:
     patch:
       tags: [Quizzes]
       summary: Update a quiz
-      description: Requires permission `quizzes:update`.
+      description: >
+        Reserved to the quiz's author, or to holders of `quizzes:update-all`.
       security: [{ sessionAuth: [] }]
       requestBody:
         required: true
@@ -2578,6 +2586,19 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Quizzes]
+      summary: Delete a quiz
+      description: >
+        Reserved to the quiz's author, or to holders of `quizzes:update-all`. Reports filed
+        against the quiz are removed along with it.
+      security: [{ sessionAuth: [] }]
+      responses:
+        "200": { description: Deleted., content: { application/json: { schema: { type: object, properties: { success: { type: boolean } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
 
   # ---------------------------------------------------------------- Sell Lists
   /sell-lists/{sellListId}:
@@ -3080,9 +3101,12 @@ components:
       description: >
         Session cookie set by Better Auth after signing in via `/auth/*`.
         Some operations additionally require a specific permission
-        (e.g. `news:update`, `quizzes:update`, `policies:update`,
-        `scanner:ai`) or admin status on top of a valid session - see the
-        operation description.
+        (e.g. `news:update`, `quizzes:update-all`, `policies:update`,
+        `scanner:ai`, `quizzes:ai-import`) or admin status on top of a valid
+        session - see the operation description. Permissions gating a billed
+        external AI call (`scanner:ai`, `quizzes:ai-import`) are always granted
+        separately and never implied by the matching content permission.
+        `quizzes:update-all` also honours the legacy `quizzes:update` name.
     cronSecret:
       type: http
       scheme: bearer

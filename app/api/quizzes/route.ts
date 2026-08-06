@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { getQuizzes, createQuiz } from "@/lib/db/quizzes";
-import { hasPermission } from "@/lib/db/permissions";
 import { createQuizSchema } from "@/lib/schemas/quiz.schema";
 
 export async function GET(request: NextRequest) {
@@ -33,13 +32,10 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
 
+    // Écrire un quizz est ouvert à tout compte connecté : c'est un contenu
+    // communautaire, dont l'auteur reste seul maître (voir `canManageQuiz`).
     if (!session?.user) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
-    }
-
-    const canCreate = await hasPermission("quizzes:update");
-    if (!canCreate) {
-      return NextResponse.json({ error: "Permission refusée" }, { status: 403 });
     }
 
     const body = await request.json();

@@ -6,6 +6,16 @@ du jour, FAQ. Le texte est analysé par un modèle, qui en tire les questions et
 leurs réponses ; les noms de cartes sont ensuite mis entre crochets, comme le
 fait la loupe.
 
+## Qui y a droit
+
+Écrire un quizz est ouvert à tout compte connecté. Le faire écrire par un modèle
+ne l'est pas : l'import demande la permission **`quizzes:ai-import`**, parce que
+chaque appel est facturé chez le fournisseur — même logique que `scanner:ai`
+pour la reconnaissance de cartes.
+
+Sans cette permission, le bouton d'import n'est pas rendu et la route répond
+`403`.
+
 ## Parcours
 
 1. Bouton **« Importer depuis un texte »**, à côté des boutons d'ajout de bloc.
@@ -62,10 +72,10 @@ disparaît ; si rien ne survit du tout, la route répond `422`.
 
 - `lib/quizzes/import.ts` — normalisation, couverte par `lib/quizzes/import.test.ts`.
 - `lib/loop-markdown.ts` — `createCardMentionBracketer`, expression compilée une fois.
-- `app/api/quizzes/import/route.ts` — permission `quizzes:update`, appel du
+- `app/api/quizzes/import/route.ts` — permission `quizzes:ai-import`, appel du
   modèle, détection des cartes.
 - `app/quizz/QuizImportDialog.tsx` — la boîte de dialogue, branchée dans
-  `QuizForm`.
+  `QuizForm` via `canImport`.
 
 Le modèle utilisé est `gpt-5.4-mini` via `@ai-sdk/openai`, comme la
 reconnaissance de cartes du scanner.

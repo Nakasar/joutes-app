@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 import { hasPermission } from "@/lib/db/permissions";
 import { getQuizById } from "@/lib/db/quizzes";
+import { canManageQuiz } from "@/lib/quizzes/authorization";
 import { getAllGames } from "@/lib/db/games";
 import { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
@@ -22,16 +23,22 @@ export default async function EditQuizzPage({ params }: { params: Promise<{ quiz
     redirect("/login");
   }
 
-  const canWrite = await hasPermission("quizzes:update").catch(() => false);
-  if (!canWrite) {
-    redirect(`/quizz/${quizId}`);
-  }
-
   const [quiz, games] = await Promise.all([getQuizById(quizId), getAllGames()]);
 
   if (!quiz) {
     notFound();
   }
+
+  // Son auteur, ou la modération : modifier le quizz de quelqu'un d'autre
+  // demande `quizzes:update-all`.
+  const canWrite = await canManageQuiz(quiz, session.user.id).catch(() => false);
+  if (!canWrite) {
+    redirect(`/quizz/${quizId}`);
+  }
+
+  // L'import par IA a son propre droit : rédiger un quizz ne donne pas accès au
+  // modèle, dont chaque appel est facturé.
+  const canImport = await hasPermission("quizzes:ai-import").catch(() => false);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -45,7 +52,7 @@ export default async function EditQuizzPage({ params }: { params: Promise<{ quiz
         <h1 className="text-3xl font-bold tracking-tight">Modifier le quizz</h1>
       </div>
 
-      <QuizForm mode="edit" quiz={quiz} games={games} />
+      <QuizForm mode="edit" quiz={quiz} games={games} canImport={canImport} />
     </div>
   );
 }
