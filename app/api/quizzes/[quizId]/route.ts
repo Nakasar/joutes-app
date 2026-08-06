@@ -85,11 +85,19 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
 
     const deleted = await deleteQuiz(quizId);
     if (!deleted) {
-      return NextResponse.json({ error: "Suppression impossible" }, { status: 500 });
+      // Le quizz existait à la lecture juste au-dessus : s'il a disparu entre
+      // les deux, c'est une suppression concurrente, pas une panne.
+      return NextResponse.json({ error: "Quizz introuvable" }, { status: 404 });
     }
 
-    // Le quizz a disparu : ses éventuels signalements n'ont plus d'objet.
-    await deleteReportsForContent({ contentType: "quiz", contentId: quizId });
+    // Le quizz a disparu : ses éventuels signalements n'ont plus d'objet. Au
+    // mieux : la suppression est faite et irréversible, échouer ici renverrait
+    // une erreur sur une opération réussie et inviterait le client à réessayer.
+    try {
+      await deleteReportsForContent({ contentType: "quiz", contentId: quizId });
+    } catch (error) {
+      console.error("Signalements du quizz supprimé non purgés:", error);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
