@@ -1431,6 +1431,8 @@
         "notOwned": "Not owned",
         "results": "{count, plural, =0 {No cards} one {# card} other {# cards}}",
         "noResults": "No cards match your filters.",
+        "loadError": "Loading the cards failed.",
+        "retry": "Retry",
         "range": "{start}–{end} of {total}",
         "previous": "Previous",
         "next": "Next",

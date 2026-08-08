@@ -5,6 +5,7 @@ import { Game } from "@/lib/types/Game";
 import { printingKey, type OwnershipSnapshot } from "@/lib/collection/ownership";
 import type { CardPrinting } from "@/lib/types/card";
 import type { CollectionEntryGroup } from "@/lib/collection/formats";
+import { cardSearchFilter } from "@/lib/collection/search";
 
 /**
  * Collection completion model.
@@ -67,10 +68,6 @@ function ownerField(owner: CollectionOwner): "userId" | "playGroupId" {
 
 function ownerMatch(owner: CollectionOwner): Record<string, ObjectId> {
   return { [ownerField(owner)]: new ObjectId(owner.id) };
-}
-
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /**
@@ -438,7 +435,9 @@ export async function getGameCollection({
   const match: Record<string, unknown> = { gameId: gameObjId };
   if (setCode && setCode !== "all") match.setCode = setCode;
   if (type && type !== "all") match.type = type;
-  if (search && search.trim()) match.name = { $regex: escapeRegex(search.trim()), $options: "i" };
+  // Nom, numéro de collection ou identifiant, sans se soucier des accents :
+  // voir `lib/collection/search.ts`.
+  Object.assign(match, cardSearchFilter(search) ?? {});
 
   const ownedLookup: Record<string, unknown>[] = [
     {
