@@ -99,7 +99,7 @@ describe("toPlaceRef", () => {
     const ref = toPlaceRef(place);
 
     assert.equal(ref.postalCode, undefined);
-    assert.ok(!Object.values(ref).includes(null));
+    assert.ok(Object.values(ref).every((value) => value === undefined || typeof value === "string"));
   });
 });
 

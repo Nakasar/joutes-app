@@ -2668,9 +2668,27 @@ paths:
     get:
       tags: [Quizzes]
       summary: Get a quiz
+      description: |
+        Quiz prose is annotated markdown — `[Card Name]` mentions, keyword brackets and `:icon:` tags. `cardIdByName` and `cardsById` resolve those mentions against the quiz's game, so a client can render card links without looking the cards up itself. Translations are covered too: a reader switches language without asking again.
       security: []
       responses:
-        "200": { description: Quiz., content: { application/json: { schema: { $ref: "#/components/schemas/Quiz" } } } }
+        "200":
+          description: Quiz, with the cards its prose mentions.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Quiz"
+                  - type: object
+                    properties:
+                      cardIdByName:
+                        type: object
+                        description: Lower-cased card name → card id, for every `[Card Name]` mention the quiz resolves.
+                        additionalProperties: { type: string }
+                      cardsById:
+                        type: object
+                        description: Card id → card, for the same mentions.
+                        additionalProperties: { $ref: "#/components/schemas/CardNameMatch" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
     patch:
