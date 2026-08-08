@@ -18,6 +18,8 @@ type EventsCalendarClientProps = {
     latitude: number;
     longitude: number;
     label?: string;
+    city?: string;
+    postalCode?: string;
   };
 };
 

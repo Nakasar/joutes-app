@@ -18,7 +18,7 @@ import { Game } from "@/lib/types/Game";
 import { toggleEventFavoriteAction } from "./actions";
 import { updateUserLocation } from "../account/actions";
 import LocationSearchInput from "@/components/LocationSearchInput";
-import type { Place } from "@/lib/geo/places";
+import { toPlaceRef, type Place, type PlaceRef } from "@/lib/geo/places";
 import {useTranslations, useLocale} from "next-intl";
 
 type EventsCalendarProps = {
@@ -39,6 +39,8 @@ type EventsCalendarProps = {
     longitude: number;
     /** Localité d'où viennent ces coordonnées, si elle a été choisie par son nom. */
     label?: string;
+    city?: string;
+    postalCode?: string;
   };
 };
 
@@ -88,11 +90,11 @@ export default function EventsCalendar({
   const [coordinates, setCoordinates] = useState("");
   const [placeQuery, setPlaceQuery] = useState("");
   /**
-   * Localité retenue dans la liste, s'il y en a une. Elle n'est gardée que tant
+   * Localité attachée aux coordonnées du formulaire. Elle n'est gardée que tant
    * que les coordonnées viennent d'elle : dès que le champ GPS est modifié à la
    * main, le nom ne décrit plus le point et serait mémorisé à tort.
    */
-  const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
+  const [attachedPlace, setAttachedPlace] = useState<PlaceRef | null>(null);
   const [distance, setDistance] = useState("15");
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isSavingLocation, setIsSavingLocation] = useState(false);
@@ -196,7 +198,7 @@ export default function EventsCalendar({
 
   /** Une localité choisie dans la liste fixe le point de recherche. */
   const handlePlaceSelect = (place: Place) => {
-    setSelectedPlace(place);
+    setAttachedPlace(toPlaceRef(place));
     setCoordinates(`${place.latitude}, ${place.longitude}`);
   };
 
@@ -207,20 +209,29 @@ export default function EventsCalendar({
    */
   const handleCoordinatesChange = (value: string) => {
     setCoordinates(value);
-    setSelectedPlace(null);
+    setAttachedPlace(null);
     setPlaceQuery("");
   };
 
   const handleGetCurrentLocation = () => {
-    setSelectedPlace(null);
-    setPlaceQuery("");
-
-    // Si l'utilisateur a une localisation sauvegardée, l'utiliser en priorité
+    // Si l'utilisateur a une localisation sauvegardée, l'utiliser en priorité.
+    // Elle vient avec sa localité : la réattacher, sans quoi réenregistrer
+    // cette même position lui ferait perdre son nom.
     if (userLocation?.latitude && userLocation?.longitude) {
       setCoordinates(`${userLocation.latitude}, ${userLocation.longitude}`);
+      setAttachedPlace(
+        userLocation.label
+          ? { label: userLocation.label, city: userLocation.city, postalCode: userLocation.postalCode }
+          : null
+      );
+      setPlaceQuery(userLocation.label ?? "");
       setIsGettingLocation(false);
       return;
     }
+
+    // Une position relevée au GPS ne se rattache à aucune ville nommée.
+    setAttachedPlace(null);
+    setPlaceQuery("");
 
     // Sinon, utiliser la géolocalisation du navigateur
     if (!navigator.geolocation) {
@@ -298,7 +309,7 @@ export default function EventsCalendar({
   const handleResetLocation = () => {
     setCoordinates("");
     setPlaceQuery("");
-    setSelectedPlace(null);
+    setAttachedPlace(null);
     setDistance("15");
     setShowLocationForm(false);
     if (onResetLocation) {
@@ -450,17 +461,7 @@ export default function EventsCalendar({
     setIsSavingLocation(true);
 
     try {
-      const result = await updateUserLocation(
-        lat,
-        lon,
-        selectedPlace
-          ? {
-              label: selectedPlace.label,
-              city: selectedPlace.city ?? undefined,
-              postalCode: selectedPlace.postalCode ?? undefined,
-            }
-          : null
-      );
+      const result = await updateUserLocation(lat, lon, attachedPlace);
 
       if (result.success) {
         setDialogState({

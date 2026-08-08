@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { dedupePlaces, parsePhotonResponse, toPlace } from "@/lib/geo/places";
+import { dedupePlaces, parsePhotonResponse, toPlace, toPlaceRef } from "@/lib/geo/places";
 
 /**
  * Tests de la normalisation des réponses Photon. L'appel réseau n'est pas
@@ -78,6 +78,28 @@ describe("toPlace", () => {
   it("écarte des coordonnées hors du domaine terrestre", () => {
     assert.equal(toPlace(feature({ name: "Nulle part" }, [0, 91])), null);
     assert.equal(toPlace(feature({ name: "Nulle part" }, [181, 0])), null);
+  });
+});
+
+describe("toPlaceRef", () => {
+  it("ne garde que ce qui accompagne des coordonnées en base", () => {
+    const place = toPlace(feature({ name: "Lyon", postcode: "69000", country: "France" }))!;
+
+    assert.deepEqual(toPlaceRef(place), {
+      label: "Lyon (69000), France",
+      city: "Lyon",
+      postalCode: "69000",
+    });
+  });
+
+  it("rend `undefined` plutôt que `null` pour ce qui manque", () => {
+    // Mongo distingue les deux : un `null` écrirait un champ vide là où on veut
+    // n'écrire aucun champ.
+    const place = toPlace(feature({ name: "Lyon" }))!;
+    const ref = toPlaceRef(place);
+
+    assert.equal(ref.postalCode, undefined);
+    assert.ok(!Object.values(ref).includes(null));
   });
 });
 

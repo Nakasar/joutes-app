@@ -7,24 +7,38 @@ import { Navigation, Trash2, MapPin, Pencil, X, Check, Loader2 } from "lucide-re
 import { updateUserLocation } from "./actions";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import LocationSearchInput from "@/components/LocationSearchInput";
-import type { Place } from "@/lib/geo/places";
+import { toPlaceRef, type Place, type PlaceRef } from "@/lib/geo/places";
 
 type LocationDisplayProps = {
   currentLatitude?: number;
   currentLongitude?: number;
   /** Localité enregistrée avec les coordonnées, quand elle a été choisie par son nom. */
   currentLabel?: string;
+  currentCity?: string;
+  currentPostalCode?: string;
 };
 
-export default function LocationDisplay({ currentLatitude, currentLongitude, currentLabel }: LocationDisplayProps) {
+export default function LocationDisplay({
+  currentLatitude,
+  currentLongitude,
+  currentLabel,
+  currentCity,
+  currentPostalCode,
+}: LocationDisplayProps) {
+  const savedPlace: PlaceRef | null = currentLabel
+    ? { label: currentLabel, city: currentCity, postalCode: currentPostalCode }
+    : null;
+
   const [latitude, setLatitude] = useState(currentLatitude?.toString() || "");
   const [longitude, setLongitude] = useState(currentLongitude?.toString() || "");
   const [placeQuery, setPlaceQuery] = useState(currentLabel || "");
   /**
-   * Localité retenue dans la liste. Écartée dès que les coordonnées sont
-   * reprises à la main : le nom ne décrirait plus le point enregistré.
+   * Localité attachée aux coordonnées du formulaire. Initialisée avec celle
+   * déjà enregistrée : réenregistrer une localisation sans y toucher ne doit
+   * pas lui faire perdre son nom. Elle n'est détachée que lorsque les
+   * coordonnées cessent de venir d'elle — saisie manuelle ou relevé GPS.
    */
-  const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
+  const [attachedPlace, setAttachedPlace] = useState<PlaceRef | null>(savedPlace);
   const [isLoading, setIsLoading] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -33,7 +47,7 @@ export default function LocationDisplay({ currentLatitude, currentLongitude, cur
   const hasLocation = currentLatitude !== undefined && currentLongitude !== undefined;
 
   const handlePlaceSelect = (place: Place) => {
-    setSelectedPlace(place);
+    setAttachedPlace(toPlaceRef(place));
     setLatitude(place.latitude.toString());
     setLongitude(place.longitude.toString());
     setMessage(null);
@@ -41,19 +55,19 @@ export default function LocationDisplay({ currentLatitude, currentLongitude, cur
 
   const handleCoordinateChange = (setter: (value: string) => void) => (value: string) => {
     setter(value);
-    setSelectedPlace(null);
+    setAttachedPlace(null);
     setPlaceQuery("");
   };
 
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
-      setMessage({ type: "error", text: "La géolocalisation n&apos;est pas supportée par votre navigateur" });
+      setMessage({ type: "error", text: "La géolocalisation n'est pas supportée par votre navigateur" });
       return;
     }
 
     setIsGettingLocation(true);
     setMessage(null);
-    setSelectedPlace(null);
+    setAttachedPlace(null);
     setPlaceQuery("");
 
     navigator.geolocation.getCurrentPosition(
@@ -67,7 +81,7 @@ export default function LocationDisplay({ currentLatitude, currentLongitude, cur
         console.error("Erreur de géolocalisation:", error);
         setMessage({ 
           type: "error", 
-          text: "Impossible d&apos;obtenir votre position. Veuillez entrer vos coordonnées manuellement." 
+          text: "Impossible d'obtenir votre position. Veuillez entrer vos coordonnées manuellement." 
         });
         setIsGettingLocation(false);
       }
@@ -99,17 +113,7 @@ export default function LocationDisplay({ currentLatitude, currentLongitude, cur
       return;
     }
 
-    const result = await updateUserLocation(
-      lat,
-      lon,
-      selectedPlace
-        ? {
-            label: selectedPlace.label,
-            city: selectedPlace.city ?? undefined,
-            postalCode: selectedPlace.postalCode ?? undefined,
-          }
-        : null
-    );
+    const result = await updateUserLocation(lat, lon, attachedPlace);
 
     if (result.success) {
       setMessage({ type: "success", text: "Localisation sauvegardée avec succès" });
@@ -134,7 +138,7 @@ export default function LocationDisplay({ currentLatitude, currentLongitude, cur
       setLatitude("");
       setLongitude("");
       setPlaceQuery("");
-      setSelectedPlace(null);
+      setAttachedPlace(null);
       setMessage({ type: "success", text: "Localisation supprimée avec succès" });
       setTimeout(() => {
         setMessage(null);
@@ -151,7 +155,8 @@ export default function LocationDisplay({ currentLatitude, currentLongitude, cur
     setLatitude(currentLatitude?.toString() || "");
     setLongitude(currentLongitude?.toString() || "");
     setPlaceQuery(currentLabel || "");
-    setSelectedPlace(null);
+    // Annuler, c'est revenir à l'enregistré — y compris à sa localité.
+    setAttachedPlace(savedPlace);
     setMessage(null);
     setIsDialogOpen(false);
   };

@@ -53,8 +53,12 @@ export default function LocationSearchInput({
 
   const [places, setPlaces] = useState<Place[]>([]);
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [failed, setFailed] = useState(false);
+  /**
+   * Un booléen « chargement » ne suffit pas : une recherche aboutie sans
+   * résultat est indiscernable d'une recherche jamais lancée, et le panneau
+   * resterait muet là où il doit dire « aucune localité trouvée ».
+   */
+  const [status, setStatus] = useState<"idle" | "loading" | "done" | "failed">("idle");
   const [highlighted, setHighlighted] = useState(-1);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -79,15 +83,13 @@ export default function LocationSearchInput({
     if (query.length < MIN_QUERY_LENGTH) {
       setPlaces([]);
       setOpen(false);
-      setLoading(false);
-      setFailed(false);
+      setStatus("idle");
       return;
     }
 
     const generation = ++requestRef.current;
     const controller = new AbortController();
-    setLoading(true);
-    setFailed(false);
+    setStatus("loading");
 
     const timer = setTimeout(() => {
       fetch(`/api/geo/places?q=${encodeURIComponent(query)}&lang=${encodeURIComponent(locale)}`, {
@@ -100,16 +102,15 @@ export default function LocationSearchInput({
           setPlaces(found);
           setHighlighted(-1);
           setOpen(true);
-          setLoading(false);
+          setStatus("done");
         })
         .catch((error) => {
           // L'annulation est le fonctionnement normal : la frappe a continué.
           if (controller.signal.aborted || generation !== requestRef.current) return;
           console.error("Recherche de localité impossible:", error);
           setPlaces([]);
-          setFailed(true);
           setOpen(true);
-          setLoading(false);
+          setStatus("failed");
         });
     }, DEBOUNCE_MS);
 
@@ -139,6 +140,7 @@ export default function LocationSearchInput({
       onSelect(place);
       setOpen(false);
       setPlaces([]);
+      setStatus("idle");
       setHighlighted(-1);
     },
     [onSelect, onValueChange]
@@ -166,7 +168,9 @@ export default function LocationSearchInput({
     }
   };
 
-  const showPanel = open && (places.length > 0 || failed || loading);
+  // Dès qu'une recherche est en cours ou terminée, le panneau a quelque chose à
+  // dire — y compris qu'il n'a rien trouvé.
+  const showPanel = open && status !== "idle";
 
   return (
     <div ref={containerRef} className={cn("relative", className)}>
@@ -189,7 +193,7 @@ export default function LocationSearchInput({
         }}
       />
 
-      {loading && (
+      {status === "loading" && (
         <Loader2
           aria-hidden
           className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground"
@@ -227,7 +231,11 @@ export default function LocationSearchInput({
 
           {places.length === 0 && (
             <li className="px-2 py-3 text-center text-sm text-muted-foreground">
-              {loading ? t("searching") : failed ? t("searchFailed") : t("noResults")}
+              {status === "loading"
+                ? t("searching")
+                : status === "failed"
+                  ? t("searchFailed")
+                  : t("noResults")}
             </li>
           )}
         </ul>

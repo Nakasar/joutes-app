@@ -25,6 +25,27 @@ export type Place = {
 };
 
 /**
+ * Ce que l'on mémorise d'une localité à côté de coordonnées : de quoi la
+ * renommer plus tard, pas de quoi la retrouver sur la carte. `null` partout
+ * signifie des coordonnées sans localité — une position relevée au GPS ou
+ * saisie à la main.
+ */
+export type PlaceRef = {
+  label?: string;
+  city?: string;
+  postalCode?: string;
+};
+
+/** Réduit une localité à ce qui l'accompagne en base. */
+export function toPlaceRef(place: Place): PlaceRef {
+  return {
+    label: place.label,
+    city: place.city ?? undefined,
+    postalCode: place.postalCode ?? undefined,
+  };
+}
+
+/**
  * Langues que Photon sait rendre. Les autres ne sont pas une erreur : le
  * service répond alors dans la langue locale, ce qui reste utilisable.
  */
