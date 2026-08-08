@@ -45,9 +45,21 @@ export function parseQuantity(value: string): number | null {
   return quantity;
 }
 
-export function parseBoolean(value: string): boolean {
+const TRUE_WORDS = ["true", "1", "yes", "oui", "y", "o"];
+const FALSE_WORDS = ["false", "0", "no", "non", "n"];
+
+/**
+ * Booléen d'une colonne, ou `undefined` si la valeur n'en est pas un.
+ *
+ * La nuance compte : rendre `false` pour tout ce qu'on ne comprend pas
+ * écraserait une information portée ailleurs — un `OGN-001-Foil` dont la
+ * colonne « Foil » est illisible s'importerait en version normale.
+ */
+export function parseBoolean(value: string): boolean | undefined {
   const normalized = value.trim().toLowerCase();
-  return normalized === "true" || normalized === "1" || normalized === "yes" || normalized === "oui";
+  if (TRUE_WORDS.includes(normalized)) return true;
+  if (FALSE_WORDS.includes(normalized)) return false;
+  return undefined;
 }
 
 /** Note d'une carte gradée, sur 10. Hors bornes ou illisible : pas de note. */

@@ -166,6 +166,15 @@ describe("format Joutes", () => {
     assert.equal(entries[0].foil, true);
   });
 
+  it("ne retient le foil que s'il est affirmé", () => {
+    const csv = "Card ID,Foil,Quantity\r\nOGN001,true,1\r\nOGN001,bof,1\r\nOGN001,,1\r\n";
+    const { entries } = joutesFormat.fromCsv(csv, CONTEXT);
+    assert.deepEqual(
+      entries.map((entry) => entry.foil),
+      [true, false, false],
+    );
+  });
+
   it("ignore une langue ou un état que le schéma ne connaît pas", () => {
     const csv = "Card ID,Language,Condition,Quantity\r\nOGN001,Klingon,Bof,1\r\n";
     const { entries, issues } = joutesFormat.fromCsv(csv, CONTEXT);
@@ -259,6 +268,18 @@ describe("format Piltover Archive", () => {
 
   it("fait confiance à la colonne Foil plutôt qu'au suffixe du numéro", () => {
     const csv = "Variant Number,Set Prefix,Foil,Quantity\r\nOGN-001-Foil,OGN,false,1\r\n";
+    const { entries } = piltoverFormat.fromCsv(csv, CONTEXT);
+    assert.equal(entries[0].foil, false);
+  });
+
+  it("retombe sur le suffixe du numéro quand la colonne Foil est illisible", () => {
+    const csv = "Variant Number,Set Prefix,Foil,Quantity\r\nOGN-001-Foil,OGN,peut-être,1\r\n";
+    const { entries } = piltoverFormat.fromCsv(csv, CONTEXT);
+    assert.equal(entries[0].foil, true);
+  });
+
+  it("laisse une colonne Foil vide au suffixe du numéro", () => {
+    const csv = "Variant Number,Set Prefix,Foil,Quantity\r\nOGN-001,OGN,,1\r\n";
     const { entries } = piltoverFormat.fromCsv(csv, CONTEXT);
     assert.equal(entries[0].foil, false);
   });

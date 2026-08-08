@@ -79,8 +79,14 @@ export default function CollectionTransfer({
       const link = document.createElement("a");
       link.href = url;
       link.download = fileName;
+      // Le lien est posé dans le document avant le clic : certains navigateurs
+      // ignorent un clic sur un élément détaché. La révocation est différée —
+      // révoquer dans la foulée coupe un téléchargement qui n'a pas encore
+      // démarré, et le fichier arrive vide.
+      document.body.append(link);
       link.click();
-      URL.revokeObjectURL(url);
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 
       setExportOpen(false);
     } catch (error) {

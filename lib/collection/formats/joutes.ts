@@ -108,8 +108,9 @@ export const joutesFormat: CollectionFormat = {
         card,
         quantity,
         // Une carte ou une variante qui n'existe qu'en foil l'emporte sur la
-        // colonne, qui peut venir d'un fichier où elle n'a pas été renseignée.
-        foil: printing.foil || card.foil === true || parseBoolean(row.Foil ?? ""),
+        // colonne ; sinon le foil n'est retenu que s'il est affirmé, une valeur
+        // illisible ne valant pas « non ».
+        foil: printing.foil || card.foil === true || parseBoolean(row.Foil ?? "") === true,
         ...(printing.printingId ? { printingId: printing.printingId } : {}),
         ...(printing.printingName ? { printingName: printing.printingName } : {}),
         ...(language ? { language } : {}),

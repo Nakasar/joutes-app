@@ -148,10 +148,11 @@ export const piltoverFormat: CollectionFormat = {
         return;
       }
 
-      // La colonne « Foil » prime sur le suffixe du numéro de variante ; une
+      // La colonne « Foil » prime sur le suffixe du numéro de variante, mais
+      // seulement si elle est lisible : sinon c'est le suffixe qui tranche. Une
       // carte qui n'existe qu'en foil l'emporte sur les deux.
-      const foilColumn = (row.Foil ?? "").trim();
-      const foil = card.foil || (foilColumn ? parseBoolean(foilColumn) : variant.foil);
+      const foilColumn = parseBoolean(row.Foil ?? "");
+      const foil = card.foil === true || (foilColumn ?? variant.foil);
 
       const language = LANGUAGE_CODES[(row.Language ?? "").trim().toLowerCase()];
       const condition = parseCondition(row.Condition ?? "");
