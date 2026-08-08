@@ -2883,10 +2883,28 @@ paths:
     get:
       tags: [Users]
       summary: List the caller's own followed games
-      description: The caller's `User.games` (followed games), regardless of `isPublicProfile` — unlike `GET /users/{userTagOrId}`, which only reveals this list when the profile is public.
+      description: |
+        The caller's `User.games` (followed games), regardless of `isPublicProfile` — unlike `GET /users/{userTagOrId}`, which only reveals this list when the profile is public.
+
+        `gameIds` holds the raw stored ids; `games` adds what it takes to display them (name and slug) without a second call. A followed game that has since been deleted appears in `gameIds` but not in `games`.
       security: [{ sessionAuth: [] }]
       responses:
-        "200": { description: Followed game ids., content: { application/json: { schema: { type: object, properties: { gameIds: { type: array, items: { type: string } } } } } } }
+        "200":
+          description: Followed games, in the order the user followed them.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  gameIds: { type: array, items: { type: string } }
+                  games:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        name: { type: string }
+                        slug: { type: string, nullable: true }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }

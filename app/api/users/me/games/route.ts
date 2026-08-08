@@ -2,11 +2,17 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { getUserById } from "@/lib/db/users";
+import { getGameSummariesByIds } from "@/lib/db/games";
 
 /**
  * Jeux suivis par l'utilisateur connecté (`User.games`), quel que soit
  * `isPublicProfile` — contrairement à `GET /users/{userTagOrId}`, qui ne
  * révèle cette liste que si le profil est public, même à son propriétaire.
+ *
+ * `gameIds` porte les identifiants bruts, tels que stockés ; `games` y ajoute
+ * de quoi les afficher sans second appel (nom et slug), ce dont le menu de
+ * navigation a besoin. Un jeu suivi puis supprimé figure donc dans `gameIds`
+ * sans apparaître dans `games`.
  */
 export async function GET() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -20,7 +26,10 @@ export async function GET() {
     if (!user) {
       return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
     }
-    return NextResponse.json({ gameIds: user.games ?? [] });
+    const gameIds = user.games ?? [];
+    const games = await getGameSummariesByIds(gameIds);
+
+    return NextResponse.json({ gameIds, games });
   } catch (error) {
     console.error("Error fetching the user's followed games:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
