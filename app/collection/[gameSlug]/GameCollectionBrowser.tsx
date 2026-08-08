@@ -126,6 +126,10 @@ export default function GameCollectionBrowser({
       const controller = new AbortController();
       controllerRef.current = controller;
       setLoading(true);
+      // Effacé dès le départ : garder le message d'échec pendant le nouvel essai
+      // masquerait la grille et donnerait, là encore, l'impression que le clic
+      // n'a rien déclenché.
+      setLoadError(false);
       try {
         const params = new URLSearchParams({ page: String(opts.page), limit: "48" });
         if (opts.search.trim()) params.set("search", opts.search.trim());

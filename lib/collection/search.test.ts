@@ -78,6 +78,18 @@ describe("cardSearchFilter", () => {
     assert.ok(!filter.$or.some((entry) => typeof entry.collectorNumber === "number"));
   });
 
+  it("n'ajoute d'égalité numérique que pour une suite de chiffres", () => {
+    // `Number` accepterait ces trois-là et chercherait un numéro que personne
+    // n'a saisi : 12000, 1 et -5.
+    for (const search of ["12e3", "1.0", "-5"]) {
+      const filter = cardSearchFilter(search) as { $or: Record<string, unknown>[] };
+      assert.ok(
+        !filter.$or.some((entry) => typeof entry.collectorNumber === "number"),
+        `« ${search} » ne doit pas produire d'égalité numérique`,
+      );
+    }
+  });
+
   it("cherche l'identifiant de carte par son début", () => {
     const filter = cardSearchFilter("OGN001") as { $or: Record<string, { $regex?: string }>[] };
     const idClause = filter.$or.find((entry) => entry.id?.$regex);

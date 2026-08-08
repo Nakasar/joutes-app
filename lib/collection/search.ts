@@ -68,9 +68,14 @@ export function cardSearchFilter(search: string | undefined): Record<string, unk
   // Une expression régulière ne s'applique qu'aux chaînes : les numéros de
   // collection stockés en nombre (le catalogue en contient des deux sortes,
   // d'où les `String(...)` à la lecture) demandent une égalité.
-  const asNumber = Number(trimmed);
-  if (Number.isInteger(asNumber)) {
-    clauses.push({ collectorNumber: asNumber });
+  //
+  // Uniquement des chiffres : `Number` accepterait « 12e3 » ou « 1.0 » et
+  // ajouterait une égalité sur un numéro que personne n'a cherché.
+  if (/^\d+$/.test(trimmed)) {
+    const asNumber = Number(trimmed);
+    if (Number.isSafeInteger(asNumber)) {
+      clauses.push({ collectorNumber: asNumber });
+    }
   }
 
   return { $or: clauses };
