@@ -161,9 +161,26 @@ export async function updateUserDisplayNameAction(
   }
 }
 
+/** Longueur au-delà de laquelle un nom de localité n'en est plus un. */
+const MAX_PLACE_FIELD_LENGTH = 200;
+
+/** Ne garde une chaîne que si elle porte quelque chose, et pas trop. */
+function sanitizePlaceField(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  if (!trimmed) return undefined;
+  return trimmed.slice(0, MAX_PLACE_FIELD_LENGTH);
+}
+
+/**
+ * `place` accompagne les coordonnées de la localité d'où elles viennent, quand
+ * elle a été choisie dans une liste de villes. Le libellé est enregistré tel
+ * que l'utilisateur l'a vu : c'est lui qui sera réaffiché, et un « Lyon
+ * (69000), France » se relit mieux que « 45.7640, 4.8357 ».
+ */
 export async function updateUserLocation(
   latitude: number | null,
-  longitude: number | null
+  longitude: number | null,
+  place?: { label?: string; city?: string; postalCode?: string } | null
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const session = await auth.api.getSession({
@@ -188,7 +205,11 @@ export async function updateUserLocation(
     }
 
     const { updateUserLocation: updateLocation } = await import("@/lib/db/users");
-    const result = await updateLocation(session.user.id, latitude, longitude);
+    const result = await updateLocation(session.user.id, latitude, longitude, {
+      label: sanitizePlaceField(place?.label),
+      city: sanitizePlaceField(place?.city),
+      postalCode: sanitizePlaceField(place?.postalCode),
+    });
 
     if (!result) {
       return { success: false, error: "Erreur lors de la mise à jour de la localisation" };

@@ -111,6 +111,8 @@
       "geolocUpdate": "Modifica la posizione",
       "geolocSaved": "Posizione salvata",
       "geolocDetails": "Verrà utilizzata la tua posizione predefinita:",
+      "geolocPlace": "Città o codice postale",
+      "geolocPlaceHelp": "Scegli una località: le sue coordinate verranno compilate per te.",
       "geolocCoordinates": "Coordinate GPS",
       "geolocPending": "Localizzazione...",
       "geolocUseSaved": "Clicca sul pulsante per usare la tua posizione salvata o inserisci altre coordinate",
@@ -3082,6 +3084,12 @@
     "success": "Grazie, questo contenuto è stato segnalato agli amministratori.",
     "alreadyReported": "Hai già segnalato questo contenuto.",
     "error": "Impossibile salvare la segnalazione."
+  },
+  "Location": {
+    "searchPlaceholder": "Città o codice postale",
+    "searching": "Ricerca...",
+    "searchFailed": "Ricerca non disponibile al momento.",
+    "noResults": "Nessuna località trovata."
   },
   "Printings": {
     "label": "Variante di stampa",

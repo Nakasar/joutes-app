@@ -30,6 +30,8 @@ tags:
     description: Tournament / event calendar entries tied to lairs.
   - name: Friends
     description: Friend list, friend requests and friend codes.
+  - name: Geo
+    description: Place lookup backing the "near me" location fields.
   - name: Game Matches
     description: Casual game match invitations/joining.
   - name: Games
@@ -1193,6 +1195,40 @@ paths:
       responses:
         "200":
           description: The static `openapi.json` document served as-is.
+
+  # ---------------------------------------------------------------- Geo
+  /geo/places:
+    get:
+      tags: [Geo]
+      summary: Search places by city name or postcode
+      description: |
+        Autocompletion for the location fields ("near me", account location). Relays to Photon (Komoot's OpenStreetMap-backed geocoder) server-side, which lets the app send the `User-Agent` that service asks for and cache the answers — the same towns come up from one visitor to the next.
+
+        Open to anonymous callers, like the near-me event search it serves. Queries shorter than 2 or longer than 120 characters return an empty list rather than an error.
+      security: []
+      parameters:
+        - { name: q, in: query, required: true, description: City name or postcode., schema: { type: string, minLength: 2, maxLength: 120 } }
+        - { name: lang, in: query, required: false, description: "Result language. `de`, `en`, `fr` and `it` are honoured; anything else falls back to the local language." , schema: { type: string } }
+      responses:
+        "200":
+          description: Matching places, deduplicated by label, at most 6.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  places:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string, description: Stable key for list rendering., example: "R:120965" }
+                        label: { type: string, example: "Lyon (69000), Auvergne-Rhône-Alpes, France" }
+                        city: { type: string, nullable: true, example: "Lyon" }
+                        postalCode: { type: string, nullable: true, example: "69000" }
+                        latitude: { type: number, example: 45.764 }
+                        longitude: { type: number, example: 4.8357 }
+        "502": { description: The upstream geocoder is unreachable or errored. }
 
   # ---------------------------------------------------------------- Events
   /events:

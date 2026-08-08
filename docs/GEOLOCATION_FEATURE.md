@@ -14,20 +14,27 @@ Par défaut, le calendrier affiche les événements des lairs suivis par l'utili
 
 En cliquant sur le bouton **"Proches de moi"**, l'utilisateur accède à un formulaire permettant de :
 
-1. **Entrer ses coordonnées GPS** manuellement au format `latitude, longitude`
-   - Exemple : `48.8566, 2.3522`
+1. **Chercher une ville ou un code postal**, avec autocomplétion
+   - Exemples : `Lyon`, `69000`
+   - Choisir une proposition remplit les coordonnées correspondantes
+   - En cas de sauvegarde, le nom de la localité est enregistré à côté des coordonnées et réaffiché ensuite
 
-2. **Obtenir sa position automatiquement** en cliquant sur le bouton de localisation
+2. **Entrer ses coordonnées GPS** manuellement au format `latitude, longitude`
+   - Exemple : `48.8566, 2.3522`
+   - Modifier ce champ à la main détache la localité choisie : le nom ne décrirait plus le point
+
+3. **Obtenir sa position automatiquement** en cliquant sur le bouton de localisation
    - Utilise l'API de géolocalisation du navigateur
    - Nécessite l'autorisation de l'utilisateur
+   - Une position relevée ainsi n'est rattachée à aucune ville nommée
 
-3. **Choisir une distance** dans un menu déroulant :
+4. **Choisir une distance** dans un menu déroulant :
    - 5 km
    - 15 km (par défaut)
    - 50 km
    - 150 km
 
-4. **Lancer la recherche** avec le bouton "Rechercher"
+5. **Lancer la recherche** avec le bouton "Rechercher"
 
 Une fois la recherche effectuée :
 - Les événements affichés sont filtrés pour n'inclure que ceux des lairs situés dans le rayon spécifié
@@ -49,6 +56,16 @@ En cliquant sur **"Mes lieux"**, l'utilisateur revient à la vue par défaut ave
   - `isLocationMode`: Boolean indiquant si le mode géolocalisation est actif
   - `onLocationSearch`: Callback appelé avec (latitude, longitude, distance)
   - `onResetLocation`: Callback pour revenir au mode "Mes lieux"
+
+#### components/LocationSearchInput.tsx
+- Champ de recherche d'une localité par nom de ville ou code postal, avec autocomplétion
+- Partagé entre le formulaire "Proches de moi" et la localisation du compte
+- Interroge `/api/geo/places` après 300 ms sans frappe, à partir de deux caractères
+
+#### lib/geo/places.ts + app/api/geo/places/route.ts
+- Recherche de localités via Photon (OpenStreetMap), relayée côté serveur
+- Le relais porte l'en-tête `User-Agent` que Photon demande et met les réponses en cache
+- Nominatim n'est pas utilisé : son règlement interdit l'autocomplétion
 
 #### EventsCalendarClient.tsx
 - Wrapper client qui gère l'état et les appels API
@@ -88,6 +105,20 @@ Les coordonnées sont stockées au format GeoJSON Point :
 ```
 
 MongoDB utilise un index `2dsphere` sur le champ `location` pour des recherches géospatiales efficaces.
+
+La localisation par défaut d'un utilisateur (`users.location`) suit un format distinct, en latitude/longitude nommées, et porte en plus la localité d'où viennent les coordonnées quand elle a été choisie par son nom :
+
+```javascript
+{
+  location: {
+    latitude: 45.764,
+    longitude: 4.8357,
+    label: "Lyon (69000), Auvergne-Rhône-Alpes, France",  // absent si position GPS
+    city: "Lyon",
+    postalCode: "69000"
+  }
+}
+```
 
 ## Paramètres d'URL
 

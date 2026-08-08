@@ -17,6 +17,8 @@ import EventDetailsModal from "./EventDetailsModal";
 import { Game } from "@/lib/types/Game";
 import { toggleEventFavoriteAction } from "./actions";
 import { updateUserLocation } from "../account/actions";
+import LocationSearchInput from "@/components/LocationSearchInput";
+import { toPlaceRef, type Place, type PlaceRef } from "@/lib/geo/places";
 import {useTranslations, useLocale} from "next-intl";
 
 type EventsCalendarProps = {
@@ -35,6 +37,10 @@ type EventsCalendarProps = {
   userLocation?: {
     latitude: number;
     longitude: number;
+    /** Localité d'où viennent ces coordonnées, si elle a été choisie par son nom. */
+    label?: string;
+    city?: string;
+    postalCode?: string;
   };
 };
 
@@ -82,6 +88,13 @@ export default function EventsCalendar({
   const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
   const [showLocationForm, setShowLocationForm] = useState(false);
   const [coordinates, setCoordinates] = useState("");
+  const [placeQuery, setPlaceQuery] = useState("");
+  /**
+   * Localité attachée aux coordonnées du formulaire. Elle n'est gardée que tant
+   * que les coordonnées viennent d'elle : dès que le champ GPS est modifié à la
+   * main, le nom ne décrit plus le point et serait mémorisé à tort.
+   */
+  const [attachedPlace, setAttachedPlace] = useState<PlaceRef | null>(null);
   const [distance, setDistance] = useState("15");
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [isSavingLocation, setIsSavingLocation] = useState(false);
@@ -183,13 +196,42 @@ export default function EventsCalendar({
     }
   };
 
+  /** Une localité choisie dans la liste fixe le point de recherche. */
+  const handlePlaceSelect = (place: Place) => {
+    setAttachedPlace(toPlaceRef(place));
+    setCoordinates(`${place.latitude}, ${place.longitude}`);
+  };
+
+  /**
+   * Les coordonnées saisies à la main ne sont plus celles de la ville affichée
+   * au-dessus : garder le nom reviendrait à mémoriser « Lyon » pour un point
+   * qui n'y est pas.
+   */
+  const handleCoordinatesChange = (value: string) => {
+    setCoordinates(value);
+    setAttachedPlace(null);
+    setPlaceQuery("");
+  };
+
   const handleGetCurrentLocation = () => {
-    // Si l'utilisateur a une localisation sauvegardée, l'utiliser en priorité
+    // Si l'utilisateur a une localisation sauvegardée, l'utiliser en priorité.
+    // Elle vient avec sa localité : la réattacher, sans quoi réenregistrer
+    // cette même position lui ferait perdre son nom.
     if (userLocation?.latitude && userLocation?.longitude) {
       setCoordinates(`${userLocation.latitude}, ${userLocation.longitude}`);
+      setAttachedPlace(
+        userLocation.label
+          ? { label: userLocation.label, city: userLocation.city, postalCode: userLocation.postalCode }
+          : null
+      );
+      setPlaceQuery(userLocation.label ?? "");
       setIsGettingLocation(false);
       return;
     }
+
+    // Une position relevée au GPS ne se rattache à aucune ville nommée.
+    setAttachedPlace(null);
+    setPlaceQuery("");
 
     // Sinon, utiliser la géolocalisation du navigateur
     if (!navigator.geolocation) {
@@ -266,6 +308,8 @@ export default function EventsCalendar({
 
   const handleResetLocation = () => {
     setCoordinates("");
+    setPlaceQuery("");
+    setAttachedPlace(null);
     setDistance("15");
     setShowLocationForm(false);
     if (onResetLocation) {
@@ -417,7 +461,7 @@ export default function EventsCalendar({
     setIsSavingLocation(true);
 
     try {
-      const result = await updateUserLocation(lat, lon);
+      const result = await updateUserLocation(lat, lon, attachedPlace);
 
       if (result.success) {
         setDialogState({
@@ -837,10 +881,30 @@ export default function EventsCalendar({
                         <div className="rounded-lg bg-muted/50 p-3 text-sm">
                           <p className="mb-1 font-medium">{t('filters.geolocSaved')}</p>
                           <p className="text-muted-foreground">
-                            {t('filters.geolocDetails')} {userLocation.latitude.toFixed(4)}, {userLocation.longitude.toFixed(4)}
+                            {/* Le nom de la localité si on le connaît : « Lyon
+                                (69000), France » se relit mieux que ses
+                                coordonnées. */}
+                            {t('filters.geolocDetails')}{" "}
+                            {userLocation.label ??
+                              `${userLocation.latitude.toFixed(4)}, ${userLocation.longitude.toFixed(4)}`}
                           </p>
                         </div>
                       )}
+
+                      <div>
+                        <label htmlFor="near-me-place" className="mb-2 block text-sm font-medium">
+                          {t('filters.geolocPlace')}
+                        </label>
+                        <LocationSearchInput
+                          id="near-me-place"
+                          value={placeQuery}
+                          onValueChange={setPlaceQuery}
+                          onSelect={handlePlaceSelect}
+                        />
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {t('filters.geolocPlaceHelp')}
+                        </p>
+                      </div>
 
                       <div>
                         <label className="mb-2 block text-sm font-medium">
@@ -850,7 +914,7 @@ export default function EventsCalendar({
                           <Input
                             type="text"
                             value={coordinates}
-                            onChange={(e) => setCoordinates(e.target.value)}
+                            onChange={(e) => handleCoordinatesChange(e.target.value)}
                             placeholder="48.8566, 2.3522"
                             className="flex-1"
                           />
