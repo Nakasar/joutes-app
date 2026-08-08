@@ -9,6 +9,7 @@ import { ArrowLeft, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ObjectId } from "mongodb";
 import { resolveCardMentions } from "@/lib/game-content-cards";
+import { quizContentTexts } from "@/lib/quizzes/content";
 import { getLocale } from "next-intl/server";
 import { localizeQuiz } from "@/lib/quizzes/translate";
 import type { Locale } from "@/i18n/config";
@@ -49,25 +50,12 @@ export default async function QuizzDetailPage({ params }: Props) {
   // modification, la traduction et la suppression.
   const canWrite = await canManageQuiz(quiz, session?.user?.id).catch(() => false);
 
-  const texts = quiz.blocks.flatMap((block) =>
-    block.type === "markdown"
-      ? [block.content]
-      : block.questions.flatMap((question) => [
-          question.prompt,
-          ...(question.options ?? []).map((option) => option.text),
-          question.correctFeedback ?? "",
-          question.incorrectFeedback ?? "",
-        ])
-  );
-  // Les traductions sont jointes à la résolution : le lecteur change de langue
+  // `quizContentTexts` inclut les traductions : le lecteur change de langue
   // sans aller-retour serveur, les cartes qu'elles mentionnent doivent donc
-  // être connues d'avance.
-  const translatedTexts = (quiz.translations ?? []).flatMap((translation) =>
-    Object.values(translation.entries ?? {}).flatMap((entry) => Object.values(entry).filter(Boolean))
-  );
-
+  // être connues d'avance. `GET /quizzes/{quizId}` résout le même ensemble,
+  // pour l'application mobile.
   const { cardIdByName, cardsById } = quiz.gameId
-    ? await resolveCardMentions(new ObjectId(quiz.gameId), [...texts, ...translatedTexts])
+    ? await resolveCardMentions(new ObjectId(quiz.gameId), quizContentTexts(quiz))
     : { cardIdByName: {}, cardsById: {} };
   const gameSlug = quiz.game?.slug ?? "riftbound";
   const locale = (await getLocale()) as Locale;
