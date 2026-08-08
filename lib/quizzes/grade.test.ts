@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { gradeSection, isCorrect, questionsValidatedBy } from "@/lib/quizzes/grade";
+import { gradeSection, isCorrect, questionsValidatedBy, toAnswerPayload } from "@/lib/quizzes/grade";
 import type { QuizBlock, QuizQuestion } from "@/lib/types/Quiz";
 
 /**
@@ -72,6 +72,28 @@ describe("isCorrect", () => {
   it("ne valide rien quand la question n'attend aucune réponse", () => {
     assert.equal(isCorrect(question({ id: "q", type: "text" }), ""), false);
     assert.equal(isCorrect(question({ id: "q", type: "number" }), 0), false);
+  });
+});
+
+describe("toAnswerPayload", () => {
+  it("garde les réponses exploitables telles quelles", () => {
+    assert.deepEqual(toAnswerPayload({ q1: "a", q2: ["a", "b"], q3: 3, q4: "" }), {
+      q1: "a",
+      q2: ["a", "b"],
+      q3: 3,
+      q4: "",
+    });
+  });
+
+  it("écarte une question sans réponse", () => {
+    assert.deepEqual(toAnswerPayload({ q1: "a", q2: undefined }), { q1: "a" });
+  });
+
+  it("écarte un nombre non fini", () => {
+    // Une saisie incomplète laisse un `NaN` en état ; `JSON.stringify` le
+    // tourne en `null`, que le schéma de l'API rejette — un 400 que personne
+    // ne verrait passer.
+    assert.deepEqual(toAnswerPayload({ q1: NaN, q2: Infinity, q3: 0 }), { q3: 0 });
   });
 });
 

@@ -29,6 +29,30 @@ function toNumber(answer: QuizAnswerValue): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
+/**
+ * Réponses telles qu'elles partent au serveur.
+ *
+ * L'état local garde une entrée par question touchée, y compris vidée après
+ * coup, et le champ nombre peut y laisser un `NaN` le temps d'une saisie
+ * incomplète. `JSON.stringify` tourne l'un en champ absent et l'autre en
+ * `null` — que le schéma de l'API rejette, pour un 400 que personne ne verrait
+ * passer. Les deux sont donc écartés ici : une question sans réponse
+ * exploitable est simplement absente, et sera comptée fausse.
+ */
+export function toAnswerPayload(
+  answers: Record<string, QuizAnswerValue>
+): Record<string, string | string[] | number> {
+  const payload: Record<string, string | string[] | number> = {};
+
+  for (const [questionId, answer] of Object.entries(answers)) {
+    if (answer === undefined) continue;
+    if (typeof answer === "number" && !Number.isFinite(answer)) continue;
+    payload[questionId] = answer;
+  }
+
+  return payload;
+}
+
 /** Une réponse est juste ou fausse ; l'absence de réponse est fausse. */
 export function isCorrect(question: QuizQuestion, answer: QuizAnswerValue): boolean {
   switch (question.type) {

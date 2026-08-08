@@ -2704,7 +2704,9 @@ paths:
                   total: { type: integer, example: 5 }
         "400": { $ref: "#/components/responses/ValidationError" }
         "401": { $ref: "#/components/responses/Unauthorized" }
-        "404": { description: No such quiz, or no such section in it. }
+        "404":
+          description: No such quiz, or no such section in it.
+          content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
         "500": { $ref: "#/components/responses/ServerError" }
 
   /quizzes/{quizId}:

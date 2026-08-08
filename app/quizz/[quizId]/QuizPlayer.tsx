@@ -10,7 +10,7 @@ import LanguagePicker from "@/components/LanguagePicker";
 import StaleTranslationWarning from "@/components/StaleTranslationWarning";
 import { Button } from "@/components/ui/button";
 import { availableQuizLangs, isTranslationStale, localizeQuiz } from "@/lib/quizzes/translate";
-import { isCorrect, questionsValidatedBy } from "@/lib/quizzes/grade";
+import { isCorrect, questionsValidatedBy, toAnswerPayload } from "@/lib/quizzes/grade";
 import type { Locale } from "@/i18n/config";
 import QuizQuestionPlayer, { type QuizAnswerValue } from "./QuizQuestionPlayer";
 
@@ -77,10 +77,18 @@ export default function QuizPlayer({
       fetch(`/api/quizzes/${quiz.id}/scores`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ blockId: block.id, answers }),
-      }).catch((error) => {
-        console.error("Score de quizz non enregistré:", error);
-      });
+        body: JSON.stringify({ blockId: block.id, answers: toAnswerPayload(answers) }),
+      })
+        .then((response) => {
+          // `fetch` ne rejette que sur une panne réseau : un refus du serveur
+          // passerait sans bruit sans ce contrôle.
+          if (!response.ok) {
+            console.error("Score de quizz refusé par le serveur:", response.status);
+          }
+        })
+        .catch((error) => {
+          console.error("Score de quizz non enregistré:", error);
+        });
     }
   };
 
@@ -147,6 +155,10 @@ export default function QuizPlayer({
                   <p className="text-sm font-medium" aria-live="polite">
                     {scores[block.id].correct} / {scores[block.id].total}{" "}
                     <span className="font-normal text-muted-foreground">
+                      {/* Le français met au singulier après zéro comme après
+                          un — c'est aussi la règle CLDR. Un bloc formulaire
+                          exigeant au moins une question, le cas ne se
+                          présente de toute façon pas. */}
                       {scores[block.id].total > 1 ? "bonnes réponses" : "bonne réponse"}
                     </span>
                   </p>
