@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { toQuizBlocks, toQuizTitle, type ImportedBlock } from "./import";
+import { zodSchema } from "ai";
+import { importedQuizSchema, toQuizBlocks, toQuizTitle, type ImportedBlock } from "./import";
 
 /**
  * Normalisation de la sortie du modèle pour l'import d'un quizz depuis un
@@ -15,6 +16,85 @@ function counter() {
   let next = 0;
   return () => `id${++next}`;
 }
+
+/**
+ * Mots-clés que les sorties structurées d'OpenAI refusent en mode strict. Leur
+ * présence fait rejeter la requête avec un 400 « Invalid schema for
+ * response_format », avant toute génération : côté utilisateur, l'IA « n'arrive
+ * pas à produire le schéma demandé ».
+ *
+ * Ils s'ajoutent sans qu'on les écrive : `z.number().int()` amène `minimum` et
+ * `maximum` sous Zod 4, `z.string().min(1)` amène `minLength`. D'où ce test sur
+ * le schéma réellement émis plutôt que sur le code qui le déclare.
+ */
+const UNSUPPORTED_KEYWORDS = [
+  "minimum",
+  "maximum",
+  "exclusiveMinimum",
+  "exclusiveMaximum",
+  "multipleOf",
+  "minLength",
+  "maxLength",
+  "pattern",
+  "format",
+  "minItems",
+  "maxItems",
+  "uniqueItems",
+  "minProperties",
+  "maxProperties",
+  "default",
+];
+
+/** Chaque clé du schéma JSON, à tout niveau de profondeur. */
+function keysDeep(value: unknown): string[] {
+  if (Array.isArray(value)) return value.flatMap(keysDeep);
+  if (value === null || typeof value !== "object") return [];
+
+  return Object.entries(value as Record<string, unknown>).flatMap(([key, child]) => [
+    key,
+    ...keysDeep(child),
+  ]);
+}
+
+describe("importedQuizSchema", () => {
+  it("n'émet aucun mot-clé que le mode strict d'OpenAI refuse", () => {
+    // `zodSchema` est la conversion qu'applique le SDK avant l'appel : c'est
+    // exactement ce que le fournisseur reçoit.
+    const keys = new Set(keysDeep(zodSchema(importedQuizSchema).jsonSchema));
+    const offenders = UNSUPPORTED_KEYWORDS.filter((keyword) => keys.has(keyword));
+
+    assert.deepEqual(offenders, [], `Mots-clés refusés par le mode strict : ${offenders.join(", ")}`);
+  });
+
+  it("décrit bien les champs attendus du modèle", () => {
+    // Garde-fou du garde-fou : un schéma vidé passerait le test précédent.
+    const parsed = importedQuizSchema.parse({
+      title: "Quizz",
+      blocks: [
+        { type: "markdown", content: "Contexte", questions: null },
+        {
+          type: "form",
+          content: null,
+          questions: [
+            {
+              type: "single",
+              prompt: "Question ?",
+              options: ["Oui", "Non"],
+              correctOptionIndexes: [0],
+              correctText: null,
+              correctNumber: null,
+              correctFeedback: null,
+              incorrectFeedback: null,
+            },
+          ],
+        },
+      ],
+    });
+
+    assert.equal(parsed.blocks.length, 2);
+    assert.deepEqual(parsed.blocks[1].questions?.[0].correctOptionIndexes, [0]);
+  });
+});
 
 describe("toQuizBlocks", () => {
   it("convertit un bloc de texte et une question à choix unique", () => {

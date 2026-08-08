@@ -9,41 +9,17 @@ import { hasPermission } from "@/lib/db/permissions";
 import { getGameById } from "@/lib/db/games";
 import { getAllCardNamesById } from "@/lib/db/cards";
 import { createCardMentionBracketer } from "@/lib/loop-markdown";
-import { toQuizBlocks, toQuizTitle, type ImportedBlock } from "@/lib/quizzes/import";
+import {
+  importedQuizSchema,
+  toQuizBlocks,
+  toQuizTitle,
+  type ImportedBlock,
+} from "@/lib/quizzes/import";
 
 /** Même borne que la loupe : de quoi coller un fil de discussion entier. */
 const MAX_TEXT_LENGTH = 20000;
 
 const objectIdPattern = /^[0-9a-fA-F]{24}$/;
-
-/**
- * Ce qu'on demande au modèle. Pas d'identifiants ni de références croisées :
- * les bonnes réponses sont désignées par leur rang, tout le reste est rétabli
- * par `toQuizBlocks`. Les champs facultatifs sont déclarés `nullable` plutôt
- * qu'`optional`, la forme que les sorties structurées rendent le plus
- * fidèlement.
- */
-const importedQuestionSchema = z.object({
-  type: z.enum(["single", "multiple", "text", "number"]),
-  prompt: z.string(),
-  options: z.array(z.string()).nullable(),
-  correctOptionIndexes: z.array(z.number().int()).nullable(),
-  correctText: z.string().nullable(),
-  correctNumber: z.number().nullable(),
-  correctFeedback: z.string().nullable(),
-  incorrectFeedback: z.string().nullable(),
-});
-
-const importedBlockSchema = z.object({
-  type: z.enum(["markdown", "form"]),
-  content: z.string().nullable(),
-  questions: z.array(importedQuestionSchema).nullable(),
-});
-
-const importedQuizSchema = z.object({
-  title: z.string(),
-  blocks: z.array(importedBlockSchema),
-});
 
 const IMPORT_PROMPT = `You turn a raw text — a rules discussion, a "question of the day" post, a FAQ, a forum thread — into a quiz.
 
@@ -117,8 +93,13 @@ export async function POST(request: Request) {
     });
     imported = result.object;
   } catch (error) {
+    // Le message du fournisseur est le seul indice utile ici : un schéma
+    // refusé, un modèle inconnu et un quota épuisé se ressemblent tous vus du
+    // navigateur. Il a fallu un signalement d'utilisateur pour découvrir que
+    // la requête était rejetée avant même la génération.
+    const cause = error instanceof Error ? error.message : String(error);
     console.error("Erreur lors de l'analyse du texte du quizz:", error);
-    return NextResponse.json({ error: "L'analyse du texte a échoué" }, { status: 502 });
+    return NextResponse.json({ error: "L'analyse du texte a échoué", cause }, { status: 502 });
   }
 
   // Détection des cartes : la même que la loupe, appliquée à chaque texte
