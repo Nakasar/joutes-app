@@ -88,6 +88,7 @@ export default function GameCollectionBrowser({
   const [type, setType] = useState("all");
   const [ownership, setOwnership] = useState<"all" | "owned" | "unowned">("all");
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   const [manageCard, setManageCard] = useState<ManageableCard | null>(null);
   const [busyCardId, setBusyCardId] = useState<string | null>(null);
@@ -136,7 +137,9 @@ export default function GameCollectionBrowser({
         const res = await fetch(`${apiBasePath}/games/${gameSlug}?${params.toString()}`, {
           signal: controller.signal,
         });
-        if (!res.ok) return;
+        // Une réponse en échec laissait la liste précédente à l'écran sans rien
+        // dire : une recherche qui échoue paraissait alors n'avoir aucun effet.
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: GameCollectionResult = await res.json();
         if (controller.signal.aborted) return;
         setItems(data.items);
@@ -144,8 +147,11 @@ export default function GameCollectionBrowser({
         setTotal(data.total);
         setPage(data.page);
         setTotalPages(data.totalPages);
+        setLoadError(false);
       } catch (error) {
-        if (!controller.signal.aborted) console.error("Failed to load collection:", error);
+        if (controller.signal.aborted) return;
+        console.error("Failed to load collection:", error);
+        setLoadError(true);
       } finally {
         if (controllerRef.current === controller) {
           controllerRef.current = null;
@@ -418,7 +424,19 @@ export default function GameCollectionBrowser({
       </div>
 
       {/* Grid */}
-      {items.length === 0 && !loading ? (
+      {loadError ? (
+        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed py-16 text-center">
+          <SlidersHorizontal className="size-8 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">{t("filters.loadError")}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fetchPage({ search, setCode, type, ownership, page })}
+          >
+            {t("filters.retry")}
+          </Button>
+        </div>
+      ) : items.length === 0 && !loading ? (
         <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-16 text-center">
           <SlidersHorizontal className="size-8 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">{t("filters.noResults")}</p>

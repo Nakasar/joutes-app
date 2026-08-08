@@ -1348,6 +1348,8 @@
         "notOwned": "Nicht besessen",
         "results": "{count, plural, =0 {Keine Karten} one {# Karte} other {# Karten}}",
         "noResults": "Keine Karten entsprechen deinen Filtern.",
+        "loadError": "Die Karten konnten nicht geladen werden.",
+        "retry": "Erneut versuchen",
         "range": "{start}–{end} von {total}",
         "previous": "Zurück",
         "next": "Weiter",

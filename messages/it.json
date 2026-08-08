@@ -1373,6 +1373,8 @@
         "notOwned": "Non possedute",
         "results": "{count, plural, =0 {Nessuna carta} one {# carta} other {# carte}}",
         "noResults": "Nessuna carta corrisponde ai tuoi filtri.",
+        "loadError": "Caricamento delle carte non riuscito.",
+        "retry": "Riprova",
         "range": "{start}–{end} di {total}",
         "previous": "Precedente",
         "next": "Successivo",
