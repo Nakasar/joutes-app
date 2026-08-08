@@ -1,4 +1,5 @@
 import { nanoid } from "nanoid";
+import { z } from "zod";
 import type { QuizBlock, QuizQuestion, QuizQuestionType } from "@/lib/types/Quiz";
 
 /**
@@ -14,6 +15,44 @@ import type { QuizBlock, QuizQuestion, QuizQuestionType } from "@/lib/types/Quiz
  * au jugé : mieux vaut un brouillon plus court qu'une question fausse glissée
  * au milieu des bonnes.
  */
+
+/**
+ * Ce qu'on demande au modèle. Pas d'identifiants ni de références croisées :
+ * les bonnes réponses sont désignées par leur rang, tout le reste est rétabli
+ * par `toQuizBlocks`. Les champs facultatifs sont déclarés `nullable` plutôt
+ * qu'`optional`, la forme que les sorties structurées rendent le plus
+ * fidèlement.
+ *
+ * **Aucun mot-clé de validation en dehors du type.** Les sorties structurées
+ * d'OpenAI travaillent en mode strict, qui refuse `minimum`, `maxLength`,
+ * `pattern` et leurs semblables : la requête est alors rejetée avant que le
+ * modèle n'écrive quoi que ce soit. `z.number().int()` est le piège de la
+ * famille — Zod 4 lui adjoint des bornes `minimum`/`maximum`, invisibles à la
+ * lecture du code. L'entier est vérifié par `normalizeQuestion`, qui le
+ * confronte de toute façon au nombre réel de propositions. `import.test.ts`
+ * monte la garde sur le schéma émis.
+ */
+const importedQuestionSchema = z.object({
+  type: z.enum(["single", "multiple", "text", "number"]),
+  prompt: z.string(),
+  options: z.array(z.string()).nullable(),
+  correctOptionIndexes: z.array(z.number()).nullable(),
+  correctText: z.string().nullable(),
+  correctNumber: z.number().nullable(),
+  correctFeedback: z.string().nullable(),
+  incorrectFeedback: z.string().nullable(),
+});
+
+const importedBlockSchema = z.object({
+  type: z.enum(["markdown", "form"]),
+  content: z.string().nullable(),
+  questions: z.array(importedQuestionSchema).nullable(),
+});
+
+export const importedQuizSchema = z.object({
+  title: z.string(),
+  blocks: z.array(importedBlockSchema),
+});
 
 /** Question telle que le modèle la rend. */
 export type ImportedQuestion = {
