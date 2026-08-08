@@ -27,12 +27,31 @@ import {useTranslations} from "next-intl";
 import LocaleSwitcher from "@/components/locale-switcher";
 import { CommandBox } from "@/components/CommandBox";
 
+/**
+ * Raccourcis affichés dans le menu « Jeux » tant qu'on ne sait rien des goûts
+ * du visiteur : les jeux les plus joués de la plateforme. Un utilisateur
+ * connecté qui suit des jeux voit les siens à la place.
+ */
+const DEFAULT_GAME_LINKS: { href: string; label: string }[] = [
+  { href: "/games/riftbound", label: "Riftbound" },
+  { href: "/games/mtg", label: "Magic: The Gathering" },
+  { href: "/games/swu", label: "Star Wars Unlimited" },
+];
+
+/**
+ * Le menu déroulant reste un raccourci, pas un catalogue : au-delà de quelques
+ * entrées il devient plus long à parcourir que la page « Tous les jeux », qui
+ * le suit d'un clic.
+ */
+const MAX_FOLLOWED_GAMES_IN_MENU = 5;
+
 export default function Header() {
   const t = useTranslations('Header');
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { data: session, isPending } = useSession();
   const [playGroups, setPlayGroups] = useState<{ id: string; name: string }[]>([]);
+  const [followedGames, setFollowedGames] = useState<{ id: string; name: string; slug: string | null }[]>([]);
 
   const userId = session?.user?.id;
   useEffect(() => {
@@ -56,11 +75,35 @@ export default function Header() {
     };
   }, [userId]);
 
+  useEffect(() => {
+    if (!userId) {
+      setFollowedGames([]);
+      return;
+    }
+
+    let cancelled = false;
+    fetch("/api/users/me/games")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && Array.isArray(data?.games)) {
+          setFollowedGames(data.games.slice(0, MAX_FOLLOWED_GAMES_IN_MENU));
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  // Les jeux suivis remplacent les raccourcis par défaut dès qu'il y en a. Le
+  // temps de les charger — et pour qui n'en suit aucun — les raccourcis
+  // tiennent la place, plutôt que de laisser le menu se vider puis se remplir.
   const gamesMenuItems: { href: string; label: string }[] = [
     { href: "/games", label: t('menu.AllGames') },
-    { href: "/games/riftbound", label: "Riftbound" },
-    { href: "/games/mtg", label: "Magic: The Gathering" },
-    { href: "/games/swu", label: "Star Wars Unlimited" },
+    ...(followedGames.length > 0
+      ? followedGames.map((game) => ({ href: `/games/${game.slug ?? game.id}`, label: game.name }))
+      : DEFAULT_GAME_LINKS),
   ];
 
   const eventsMenuItems: { href: string; label: string; icon: LucideIcon }[] = [

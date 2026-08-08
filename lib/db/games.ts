@@ -69,6 +69,25 @@ export async function getGameById(id: string): Promise<Game | null> {
   return game ? toGame(game) : null;
 }
 
+/**
+ * Jeux correspondant à une liste d'identifiants, rendus dans l'ordre demandé.
+ *
+ * L'ordre compte : celui de `User.games` est celui dans lequel le joueur a
+ * suivi ses jeux, quand Mongo rendrait les documents dans le sien. Les
+ * identifiants inconnus ou mal formés sont ignorés plutôt que de faire échouer
+ * la lecture — un jeu supprimé peut rester inscrit dans la liste d'un
+ * utilisateur.
+ */
+export async function getGamesByIds(ids: string[]): Promise<Game[]> {
+  const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
+  if (objectIds.length === 0) return [];
+
+  const found = await db.collection(COLLECTION_NAME).find({ _id: { $in: objectIds } }).toArray();
+  const byId = new Map(found.map((doc) => [doc._id.toString(), toGame(doc)]));
+
+  return ids.map((id) => byId.get(id)).filter((game): game is Game => game !== undefined);
+}
+
 export async function getGameBySlugOrId(slugOrId: string): Promise<Game | null> {
   // Try to find by slug first
   let game = await db.collection(COLLECTION_NAME).findOne({ slug: slugOrId });
