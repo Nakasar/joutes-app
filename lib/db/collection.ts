@@ -405,6 +405,39 @@ async function getVariantsOwnedByKey(
 }
 
 /**
+ * Le catalogue porte **une ligne par langue** : une carte importée en deux
+ * langues y figure deux fois, avec le même numéro de collection et le même
+ * identifiant. Or un item de collection est un tirage, la langue n'étant qu'un
+ * attribut d'exemplaire (voir la note en tête de module) — sans ce
+ * regroupement, la carte apparaît en double dans la liste et compte double
+ * dans les résultats. Les dénominateurs de complétion le font déjà.
+ *
+ * La clé de regroupement ramène le numéro à une chaîne : le catalogue en stocke
+ * certains sous forme de nombre, qui formeraient sinon une clé distincte de
+ * leur jumeau textuel. Le champ conservé reste en revanche la valeur d'origine,
+ * pour que le tri qui suit ordonne comme avant — trier des numéros nus sur leur
+ * écriture donnerait 1, 10, 100, 2.
+ *
+ * Aucun tri ne précède le regroupement : la ligne retenue est celle que le
+ * parcours rencontre en premier, comme pour le calcul de complétion.
+ */
+const dedupePrintings: Record<string, unknown>[] = [
+  {
+    $group: {
+      _id: { setCode: "$setCode", collectorNumber: { $toString: "$collectorNumber" } },
+      id: { $first: "$id" },
+      name: { $first: "$name" },
+      setCode: { $first: "$setCode" },
+      collectorNumber: { $first: "$collectorNumber" },
+      image: { $first: "$image" },
+      type: { $first: "$type" },
+      foil: { $first: "$foil" },
+      printings: { $first: "$printings" },
+    },
+  },
+];
+
+/**
  * Paginated catalog for a single game, each item annotated with the quantity
  * the user owns. Supports set / type / search filtering and an owned-only mode.
  */
@@ -472,6 +505,7 @@ export async function getGameCollection({
     // Ownership is only known after the lookup, so it must precede pagination.
     const filtered = [
       { $match: match },
+      ...dedupePrintings,
       ...ownedLookup,
       { $match: { quantity: owned ? { $gt: 0 } : { $eq: 0 } } },
     ];
@@ -479,8 +513,8 @@ export async function getGameCollection({
     itemsPipeline = [...filtered, ...sortSkipLimit, project];
   } else {
     // Paginate first, then only resolve quantities for the page being returned.
-    countPipeline = [{ $match: match }, { $count: "total" }];
-    itemsPipeline = [{ $match: match }, ...sortSkipLimit, ...ownedLookup, project];
+    countPipeline = [{ $match: match }, ...dedupePrintings, { $count: "total" }];
+    itemsPipeline = [{ $match: match }, ...dedupePrintings, ...sortSkipLimit, ...ownedLookup, project];
   }
 
   const countRes = await cards.aggregate(countPipeline).toArray();
@@ -550,6 +584,9 @@ export async function getCardVariants({
     .collection("cards")
     .aggregate([
       { $match: { gameId: gameObjId, name } },
+      // Sans quoi une carte présente en plusieurs langues se compterait autant
+      // de fois parmi ses propres variantes.
+      ...dedupePrintings,
       {
         $lookup: {
           from: "collection-cards",

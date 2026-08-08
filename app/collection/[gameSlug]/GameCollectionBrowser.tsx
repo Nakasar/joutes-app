@@ -447,11 +447,18 @@ export default function GameCollectionBrowser({
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-          {items.map((card) => {
+          {items.map((card, index) => {
             const owned = card.quantity > 0;
             return (
               <div
-                key={card.id}
+                // `cards.id` n'est pas unique : deux tirages d'une même carte
+                // partagent extension et numéro, donc leur identifiant (deux
+                // « Astral Heron VEN 044 », par exemple). Des clés en double
+                // rendent la réconciliation de React indéfinie — elle laissait
+                // les tuiles du résultat précédent à l'écran, et la recherche
+                // paraissait sans effet. Le rang lève l'ambiguïté, rien d'autre
+                // ne distinguant deux tirages jumeaux.
+                key={`${card.id}-${index}`}
                 className={`group relative flex flex-col overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-md ${
                   owned ? "ring-1 ring-emerald-500/40" : ""
                 }`}
@@ -632,9 +639,11 @@ export default function GameCollectionBrowser({
                       {variantsLoading ? <Loader2 className="size-3.5 animate-spin text-muted-foreground" /> : null}
                     </p>
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                      {otherVariants.map((variant) => (
+                      {otherVariants.map((variant, index) => (
                         <button
-                          key={`${variant.setCode}-${variant.collectorNumber}`}
+                          // Même collision que la grille : deux tirages jumeaux
+                          // partagent extension et numéro.
+                          key={`${variant.setCode}-${variant.collectorNumber}-${index}`}
                           type="button"
                           onClick={() => setManageCard(variant)}
                           className="flex items-center gap-2 rounded-lg border p-1.5 text-left transition-colors hover:bg-accent"
