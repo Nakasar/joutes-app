@@ -98,6 +98,7 @@ export default async function QuizzDetailPage({ params }: Props) {
           cardIdByName={cardIdByName}
           cardsById={cardsById}
           gameSlug={gameSlug}
+          isSignedIn={!!session?.user?.id}
         />
       </article>
     </div>

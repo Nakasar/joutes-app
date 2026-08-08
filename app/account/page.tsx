@@ -11,8 +11,10 @@ import ProfileEditor from "./ProfileEditor";
 import ProfileImageDisplay from "./ProfileImageDisplay";
 import LocationDisplay from "./LocationDisplay";
 import ProfileVisibilitySwitch from "./ProfileVisibilitySwitch";
+import QuizScores from "./QuizScores";
+import { getUserQuizScores } from "@/lib/db/quiz-scores";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {User as UserIcon, Mail, Gamepad2, MapPin, FileText, Settings, Shield, Trophy, MailIcon} from "lucide-react";
+import {User as UserIcon, Mail, Gamepad2, MapPin, FileText, Settings, Shield, Trophy, MailIcon, GraduationCap} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -34,6 +36,8 @@ export default async function AccountPage() {
 
   // Récupérer tous les jeux disponibles
   const allGames = await getAllGames();
+
+  const quizScores = await getUserQuizScores(session.user.id);
 
   // Récupérer les détails des jeux suivis par l'utilisateur
   const followedGames = await Promise.all(
@@ -201,6 +205,26 @@ export default async function AccountPage() {
                 userGames={userGames}
                 allGames={allGames}
               />
+            </CardContent>
+          </Card>
+
+          {/* Section Scores de quizz */}
+          <Card className="border-2 shadow-lg">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <GraduationCap className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl">Mes scores de quizz</CardTitle>
+                  <CardDescription className="mt-1">
+                    Le résultat de votre dernière validation, section par section
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <QuizScores scores={quizScores} />
             </CardContent>
           </Card>
 
