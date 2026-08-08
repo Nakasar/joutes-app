@@ -1446,6 +1446,23 @@
         "variantsBadgeHint": "Vous possédez d'autres versions de cette carte",
         "variantsSectionTitle": "Autres versions"
       },
+      "transfer": {
+        "exportAction": "Exporter",
+        "importAction": "Importer",
+        "formatLabel": "Format",
+        "exportTitle": "Exporter la collection",
+        "exportDescription": "Choisissez un format ; le fichier CSV est téléchargé aussitôt.",
+        "exportSubmit": "Télécharger le CSV",
+        "exportError": "L'export a échoué.",
+        "importTitle": "Importer une collection",
+        "importDescription": "Les exemplaires du fichier s'ajoutent à votre collection : rien n'est remplacé, et importer deux fois le même fichier compte double.",
+        "fileLabel": "Fichier CSV",
+        "importSubmit": "Importer",
+        "importError": "L'import a échoué.",
+        "importDone": "{count} exemplaire(s) ajouté(s).",
+        "importIssues": "{count} ligne(s) ignorée(s) :",
+        "importIssueLine": "Ligne {line} : {message}"
+      },
       "sets": {
         "title": "Extensions",
         "metadataTitle": "Extensions · {game}",

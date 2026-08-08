@@ -1387,6 +1387,23 @@
         "variantsBadgeHint": "Possiedi altre stampe di questa carta",
         "variantsSectionTitle": "Altre stampe"
       },
+      "transfer": {
+        "exportAction": "Esporta",
+        "importAction": "Importa",
+        "formatLabel": "Formato",
+        "exportTitle": "Esportare la collezione",
+        "exportDescription": "Scegli un formato; il file CSV viene scaricato subito.",
+        "exportSubmit": "Scarica il CSV",
+        "exportError": "Esportazione non riuscita.",
+        "importTitle": "Importare una collezione",
+        "importDescription": "Le copie del file si aggiungono alla tua collezione: nulla viene sostituito, e importare due volte lo stesso file conta doppio.",
+        "fileLabel": "File CSV",
+        "importSubmit": "Importa",
+        "importError": "Importazione non riuscita.",
+        "importDone": "{count} copia/copie aggiunte.",
+        "importIssues": "{count} riga/righe ignorate:",
+        "importIssueLine": "Riga {line}: {message}"
+      },
       "sets": {
         "title": "Set",
         "metadataTitle": "Set · {game}",

@@ -1445,6 +1445,23 @@
         "variantsBadgeHint": "You own other printings of this card",
         "variantsSectionTitle": "Other printings"
       },
+      "transfer": {
+        "exportAction": "Export",
+        "importAction": "Import",
+        "formatLabel": "Format",
+        "exportTitle": "Export collection",
+        "exportDescription": "Pick a format; the CSV file downloads right away.",
+        "exportSubmit": "Download CSV",
+        "exportError": "Export failed.",
+        "importTitle": "Import a collection",
+        "importDescription": "Copies from the file are added to your collection: nothing is replaced, and importing the same file twice counts twice.",
+        "fileLabel": "CSV file",
+        "importSubmit": "Import",
+        "importError": "Import failed.",
+        "importDone": "{count} copy/copies added.",
+        "importIssues": "{count} line(s) skipped:",
+        "importIssueLine": "Line {line}: {message}"
+      },
       "sets": {
         "title": "Sets",
         "metadataTitle": "Sets · {game}",

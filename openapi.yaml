@@ -352,6 +352,77 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
 
+  /collection/games/{gameSlug}/export:
+    parameters:
+      - { name: gameSlug, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Collection]
+      summary: Export the caller's collection for a game as CSV
+      description: >
+        Returns the CSV file itself (`text/csv`, with a `Content-Disposition` filename), not JSON.
+        Copies are grouped: one row per set of interchangeable copies, with a quantity — the
+        collection stores one document per copy, which would otherwise mean thousands of rows.
+        `format` is one of the formats the game offers: `joutes` is common to every game and
+        carries every field, the others mirror a third-party tool and may drop what they have no
+        column for.
+      security: [{ sessionAuth: [] }]
+      parameters:
+        - { name: format, in: query, description: "Defaults to `joutes`.", schema: { type: string, example: piltover-archive } }
+      responses:
+        "200":
+          description: The CSV file.
+          headers:
+            Content-Disposition: { schema: { type: string } }
+          content:
+            text/csv: { schema: { type: string } }
+        "400": { description: Unknown format for this game., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /collection/games/{gameSlug}/import:
+    parameters:
+      - { name: gameSlug, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [Collection]
+      summary: Add copies to the caller's collection from a CSV file
+      description: >
+        Copies read from the file are **added**; nothing is replaced or removed, so importing the
+        same file twice doubles those copies. A line the catalog cannot match is reported in
+        `issues` and skipped — the rest of the file is still imported, since a third-party export
+        routinely holds a few cards this catalog does not know.
+      security: [{ sessionAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [format, csv]
+              properties:
+                format: { type: string, example: piltover-archive }
+                csv: { type: string, description: "Raw file contents, 5 MB at most." }
+      responses:
+        "200":
+          description: Import summary.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  added: { type: integer, description: "Copies inserted." }
+                  rows: { type: integer, description: "File lines retained." }
+                  issues:
+                    type: array
+                    items:
+                      type: object
+                      properties: { line: { type: integer }, message: { type: string } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "413": { description: File too large, or too many copies for a single import., content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /collection/games/{gameSlug}/ownership:
     parameters:
       - { name: gameSlug, in: path, required: true, schema: { type: string } }

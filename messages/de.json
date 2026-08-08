@@ -1362,6 +1362,23 @@
         "variantsBadgeHint": "Du besitzt weitere Drucke dieser Karte",
         "variantsSectionTitle": "Weitere Drucke"
       },
+      "transfer": {
+        "exportAction": "Exportieren",
+        "importAction": "Importieren",
+        "formatLabel": "Format",
+        "exportTitle": "Sammlung exportieren",
+        "exportDescription": "Format wählen; die CSV-Datei wird sofort heruntergeladen.",
+        "exportSubmit": "CSV herunterladen",
+        "exportError": "Export fehlgeschlagen.",
+        "importTitle": "Sammlung importieren",
+        "importDescription": "Die Exemplare aus der Datei werden zu deiner Sammlung hinzugefügt: nichts wird ersetzt, und dieselbe Datei zweimal zu importieren zählt doppelt.",
+        "fileLabel": "CSV-Datei",
+        "importSubmit": "Importieren",
+        "importError": "Import fehlgeschlagen.",
+        "importDone": "{count} Exemplar(e) hinzugefügt.",
+        "importIssues": "{count} Zeile(n) übersprungen:",
+        "importIssueLine": "Zeile {line}: {message}"
+      },
       "sets": {
         "title": "Sets",
         "metadataTitle": "Sets · {game}",

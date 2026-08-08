@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
 import { getGameBySlugOrId } from "@/lib/db/games";
 import { getGameCollection } from "@/lib/db/collection";
+import { collectionFormatsForGame } from "@/lib/collection/formats";
 import GameCollectionBrowser from "./GameCollectionBrowser";
 
 export const dynamic = "force-dynamic";
@@ -46,12 +47,18 @@ export default async function GameCollectionPage({
     limit: 48,
   });
 
+  const gameSlugOrId = game.slug ?? game.id;
+
   return (
     <div className="container mx-auto p-4 sm:p-6">
       <GameCollectionBrowser
-        gameSlug={game.slug ?? game.id}
+        gameSlug={gameSlugOrId}
         gameName={game.name}
         initialData={initial}
+        transferFormats={collectionFormatsForGame(gameSlugOrId).map((format) => ({
+          id: format.id,
+          label: format.label,
+        }))}
       />
     </div>
   );
