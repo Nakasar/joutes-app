@@ -412,8 +412,8 @@ async function getVariantsOwnedByKey(
  * regroupement, la carte apparaît en double dans la liste et compte double
  * dans les résultats. Les dénominateurs de complétion le font déjà.
  *
- * La clé de regroupement ramène le numéro à une chaîne : le catalogue en
- * contient de stockés en nombre, qui formeraient sinon une clé distincte de
+ * La clé de regroupement ramène le numéro à une chaîne : le catalogue en stocke
+ * certains sous forme de nombre, qui formeraient sinon une clé distincte de
  * leur jumeau textuel. Le champ conservé reste en revanche la valeur d'origine,
  * pour que le tri qui suit ordonne comme avant — trier des numéros nus sur leur
  * écriture donnerait 1, 10, 100, 2.
