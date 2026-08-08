@@ -6,21 +6,44 @@ import { Input } from "@/components/ui/input";
 import { Navigation, Trash2, MapPin, Pencil, X, Check, Loader2 } from "lucide-react";
 import { updateUserLocation } from "./actions";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import LocationSearchInput from "@/components/LocationSearchInput";
+import type { Place } from "@/lib/geo/places";
 
 type LocationDisplayProps = {
   currentLatitude?: number;
   currentLongitude?: number;
+  /** Localité enregistrée avec les coordonnées, quand elle a été choisie par son nom. */
+  currentLabel?: string;
 };
 
-export default function LocationDisplay({ currentLatitude, currentLongitude }: LocationDisplayProps) {
+export default function LocationDisplay({ currentLatitude, currentLongitude, currentLabel }: LocationDisplayProps) {
   const [latitude, setLatitude] = useState(currentLatitude?.toString() || "");
   const [longitude, setLongitude] = useState(currentLongitude?.toString() || "");
+  const [placeQuery, setPlaceQuery] = useState(currentLabel || "");
+  /**
+   * Localité retenue dans la liste. Écartée dès que les coordonnées sont
+   * reprises à la main : le nom ne décrirait plus le point enregistré.
+   */
+  const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const hasLocation = currentLatitude !== undefined && currentLongitude !== undefined;
+
+  const handlePlaceSelect = (place: Place) => {
+    setSelectedPlace(place);
+    setLatitude(place.latitude.toString());
+    setLongitude(place.longitude.toString());
+    setMessage(null);
+  };
+
+  const handleCoordinateChange = (setter: (value: string) => void) => (value: string) => {
+    setter(value);
+    setSelectedPlace(null);
+    setPlaceQuery("");
+  };
 
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -30,7 +53,9 @@ export default function LocationDisplay({ currentLatitude, currentLongitude }: L
 
     setIsGettingLocation(true);
     setMessage(null);
-    
+    setSelectedPlace(null);
+    setPlaceQuery("");
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setLatitude(position.coords.latitude.toString());
@@ -74,7 +99,17 @@ export default function LocationDisplay({ currentLatitude, currentLongitude }: L
       return;
     }
 
-    const result = await updateUserLocation(lat, lon);
+    const result = await updateUserLocation(
+      lat,
+      lon,
+      selectedPlace
+        ? {
+            label: selectedPlace.label,
+            city: selectedPlace.city ?? undefined,
+            postalCode: selectedPlace.postalCode ?? undefined,
+          }
+        : null
+    );
 
     if (result.success) {
       setMessage({ type: "success", text: "Localisation sauvegardée avec succès" });
@@ -98,6 +133,8 @@ export default function LocationDisplay({ currentLatitude, currentLongitude }: L
     if (result.success) {
       setLatitude("");
       setLongitude("");
+      setPlaceQuery("");
+      setSelectedPlace(null);
       setMessage({ type: "success", text: "Localisation supprimée avec succès" });
       setTimeout(() => {
         setMessage(null);
@@ -113,6 +150,8 @@ export default function LocationDisplay({ currentLatitude, currentLongitude }: L
   const handleCancel = () => {
     setLatitude(currentLatitude?.toString() || "");
     setLongitude(currentLongitude?.toString() || "");
+    setPlaceQuery(currentLabel || "");
+    setSelectedPlace(null);
     setMessage(null);
     setIsDialogOpen(false);
   };
@@ -126,9 +165,21 @@ export default function LocationDisplay({ currentLatitude, currentLongitude }: L
             {hasLocation ? (
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">Ma localisation</p>
-                <p className="text-sm font-mono">
-                  {currentLatitude?.toFixed(4)}, {currentLongitude?.toFixed(4)}
-                </p>
+                {/* Le nom de la localité prime : c'est ce que l'utilisateur a
+                    choisi, et il se relit sans effort. Les coordonnées restent
+                    affichées en dessous, elles seules sont exactes. */}
+                {currentLabel ? (
+                  <>
+                    <p className="text-sm font-medium">{currentLabel}</p>
+                    <p className="text-xs font-mono text-muted-foreground">
+                      {currentLatitude?.toFixed(4)}, {currentLongitude?.toFixed(4)}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-sm font-mono">
+                    {currentLatitude?.toFixed(4)}, {currentLongitude?.toFixed(4)}
+                  </p>
+                )}
               </div>
             ) : (
               <div className="space-y-1">
@@ -161,11 +212,28 @@ export default function LocationDisplay({ currentLatitude, currentLongitude }: L
             {hasLocation && (
               <div className="p-3 bg-muted/50 rounded-lg">
                 <p className="text-xs text-muted-foreground mb-1">Localisation actuelle</p>
+                {currentLabel && <p className="text-sm font-medium">{currentLabel}</p>}
                 <p className="text-sm font-mono">
                   {currentLatitude?.toFixed(6)}, {currentLongitude?.toFixed(6)}
                 </p>
               </div>
             )}
+
+            <div>
+              <label htmlFor="location-place" className="text-sm font-medium mb-1.5 block">
+                Ville ou code postal
+              </label>
+              <LocationSearchInput
+                id="location-place"
+                value={placeQuery}
+                onValueChange={setPlaceQuery}
+                onSelect={handlePlaceSelect}
+                disabled={isLoading || isGettingLocation}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Choisissez une localité : ses coordonnées seront remplies pour vous.
+              </p>
+            </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -177,7 +245,7 @@ export default function LocationDisplay({ currentLatitude, currentLongitude }: L
                   type="text"
                   placeholder="48.8566"
                   value={latitude}
-                  onChange={(e) => setLatitude(e.target.value)}
+                  onChange={(e) => handleCoordinateChange(setLatitude)(e.target.value)}
                   disabled={isLoading || isGettingLocation}
                 />
               </div>
@@ -190,7 +258,7 @@ export default function LocationDisplay({ currentLatitude, currentLongitude }: L
                   type="text"
                   placeholder="2.3522"
                   value={longitude}
-                  onChange={(e) => setLongitude(e.target.value)}
+                  onChange={(e) => handleCoordinateChange(setLongitude)(e.target.value)}
                   disabled={isLoading || isGettingLocation}
                 />
               </div>

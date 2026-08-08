@@ -28,6 +28,15 @@ export type User = {
   location?: {
     latitude: number;
     longitude: number;
+    /**
+     * Localité d'où viennent ces coordonnées, telle qu'elle a été choisie :
+     * « Lyon (69000), France ». Absente d'une position relevée au GPS ou saisie
+     * en coordonnées, qui ne se rattachent à aucune ville nommée — l'affichage
+     * retombe alors sur les coordonnées elles-mêmes.
+     */
+    label?: string;
+    city?: string;
+    postalCode?: string;
   };
   notifications?: {
     emails?: {

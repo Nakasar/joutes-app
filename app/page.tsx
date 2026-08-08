@@ -25,7 +25,8 @@ export default async function Home({ searchParams }: HomeProps) {
             {t('title')}
           </h1>
         </div>
-        <Button asChild>
+        {/* Même en-tête que `/events`, même raison de le masquer sur mobile. */}
+        <Button asChild className="hidden sm:inline-flex">
           <Link href="/events/new">
             <Plus className="h-4 w-4 mr-2" />
             {t('createEvent')}

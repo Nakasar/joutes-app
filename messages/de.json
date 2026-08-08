@@ -111,6 +111,8 @@
       "geolocUpdate": "Standort ändern",
       "geolocSaved": "Standort gespeichert",
       "geolocDetails": "Dein Standardstandort wird verwendet:",
+      "geolocPlace": "Stadt oder Postleitzahl",
+      "geolocPlaceHelp": "Wähle einen Ort aus – seine Koordinaten werden für dich eingetragen.",
       "geolocCoordinates": "GPS-Koordinaten",
       "geolocPending": "Standortbestimmung...",
       "geolocUseSaved": "Klicke auf den Button, um deinen gespeicherten Standort zu verwenden, oder gib andere Koordinaten ein",
@@ -3057,6 +3059,12 @@
     "success": "Danke, dieser Inhalt wurde den Administratoren gemeldet.",
     "alreadyReported": "Du hast diesen Inhalt bereits gemeldet.",
     "error": "Die Meldung konnte nicht gespeichert werden."
+  },
+  "Location": {
+    "searchPlaceholder": "Stadt oder Postleitzahl",
+    "searching": "Suche...",
+    "searchFailed": "Die Suche ist derzeit nicht verfügbar.",
+    "noResults": "Kein Ort gefunden."
   },
   "Printings": {
     "label": "Druckvariante",

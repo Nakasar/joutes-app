@@ -146,9 +146,10 @@ export default async function AccountPage() {
 
               {/* Localisation */}
               <div className="pt-4">
-                <LocationDisplay 
+                <LocationDisplay
                   currentLatitude={user.location?.latitude}
                   currentLongitude={user.location?.longitude}
+                  currentLabel={user.location?.label}
                 />
               </div>
             </CardContent>

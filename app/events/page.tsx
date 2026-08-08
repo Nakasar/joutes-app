@@ -40,7 +40,10 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
             {t('title')}
           </h1>
         </div>
-        <Button asChild>
+        {/* Organiser un évènement se fait rarement depuis un téléphone, et le
+            bouton y prenait toute la largeur au-dessus du calendrier. Le menu
+            de navigation garde l'entrée pour ceux qui la cherchent. */}
+        <Button asChild className="hidden sm:inline-flex">
           <Link href="/events/new">
             <Plus className="h-4 w-4 mr-2" />
             {t('createEvent')}

@@ -17,6 +17,7 @@ type EventsCalendarClientProps = {
   userLocation?: {
     latitude: number;
     longitude: number;
+    label?: string;
   };
 };
 

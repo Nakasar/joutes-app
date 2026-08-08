@@ -111,6 +111,8 @@
       "geolocUpdate": "Update location",
       "geolocSaved": "Saved location",
       "geolocDetails": "Your default location will be used:",
+      "geolocPlace": "City or postcode",
+      "geolocPlaceHelp": "Pick a place and its coordinates will be filled in for you.",
       "geolocCoordinates": "GPS Coordinates",
       "geolocPending": "Locating...",
       "geolocUseSaved": "Click the button to use your saved location or enter other coordinates",
@@ -3140,6 +3142,12 @@
     "success": "Thanks, this content has been reported to the administrators.",
     "alreadyReported": "You have already reported this content.",
     "error": "The report could not be saved."
+  },
+  "Location": {
+    "searchPlaceholder": "City or postcode",
+    "searching": "Searching...",
+    "searchFailed": "Search is unavailable right now.",
+    "noResults": "No place found."
   },
   "Printings": {
     "label": "Print variant",

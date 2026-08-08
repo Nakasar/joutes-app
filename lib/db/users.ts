@@ -27,6 +27,9 @@ function toUser(doc: WithId<Document>): User {
     location: doc.location ? {
       latitude: doc.location.latitude,
       longitude: doc.location.longitude,
+      label: doc.location.label || undefined,
+      city: doc.location.city || undefined,
+      postalCode: doc.location.postalCode || undefined,
     } : undefined,
   };
 }
@@ -460,29 +463,41 @@ export async function updateUserProfileImage(
   return result.modifiedCount > 0 || result.matchedCount > 0;
 }
 
+/**
+ * `place` porte la localité d'où viennent les coordonnées, quand elles ont été
+ * choisies dans une liste de villes. Une position relevée au GPS n'en a pas :
+ * la localisation est alors enregistrée sans nom, comme avant.
+ */
 export async function updateUserLocation(
   userId: string,
   latitude: number | null,
-  longitude: number | null
+  longitude: number | null,
+  place?: { label?: string; city?: string; postalCode?: string } | null
 ): Promise<boolean> {
-  
+
   let updateOperation;
-  
+
   if (latitude === null || longitude === null) {
     // Supprimer la localisation
     updateOperation = { $unset: { location: "" } };
   } else {
-    // Mettre à jour ou créer la localisation
-    updateOperation = { 
-      $set: { 
+    // Mettre à jour ou créer la localisation. Les champs de localité sont
+    // écrits seulement s'ils existent : les omettre efface le nom d'une
+    // localisation précédente, ce qui est le comportement voulu quand on la
+    // remplace par une position GPS.
+    updateOperation = {
+      $set: {
         location: {
           latitude,
           longitude,
+          ...(place?.label ? { label: place.label } : {}),
+          ...(place?.city ? { city: place.city } : {}),
+          ...(place?.postalCode ? { postalCode: place.postalCode } : {}),
         }
-      } 
+      }
     };
   }
-  
+
   const result = await db.collection(COLLECTION_NAME).updateOne(
     { _id: ObjectId.createFromHexString(userId) },
     updateOperation
