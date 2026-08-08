@@ -36,6 +36,7 @@ import {
 import CollectionManager from "@/app/games/[gameSlugOrId]/cards/[cardId]/CollectionManager";
 import AddToWishlistButton from "@/components/AddToWishlistButton";
 import { CompletionBar } from "@/app/collection/CollectionOverview";
+import CollectionTransfer, { type CollectionFormatOption } from "./CollectionTransfer";
 import type { CardVariant, CollectionItem, GameCollectionResult } from "@/lib/db/collection";
 
 type Props = {
@@ -50,6 +51,11 @@ type Props = {
   showBoosters?: boolean;
   /** Set when browsing a play-group's shared collection — enables username autocompletion when marking a card borrowed. */
   playGroupId?: string;
+  /**
+   * Formats d'import/export proposés. Absent = pas de transfert : les routes
+   * correspondantes ne visent que la collection personnelle.
+   */
+  transferFormats?: CollectionFormatOption[];
 };
 
 type ManageableCard = Pick<
@@ -65,6 +71,7 @@ export default function GameCollectionBrowser({
   apiBasePath = "/api/collection",
   showBoosters = true,
   playGroupId,
+  transferFormats,
 }: Props) {
   const t = useTranslations("Collection");
 
@@ -274,6 +281,13 @@ export default function GameCollectionBrowser({
                   {t("boosters.title")}
                 </Link>
               </Button>
+            )}
+            {transferFormats && transferFormats.length > 0 && (
+              <CollectionTransfer
+                gameSlug={gameSlug}
+                formats={transferFormats}
+                onImported={() => fetchPage({ search, setCode, type, ownership, page: 1 })}
+              />
             )}
           </div>
         </div>

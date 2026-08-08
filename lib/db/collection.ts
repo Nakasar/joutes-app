@@ -4,6 +4,7 @@ import { ObjectId } from "mongodb";
 import { Game } from "@/lib/types/Game";
 import { printingKey, type OwnershipSnapshot } from "@/lib/collection/ownership";
 import type { CardPrinting } from "@/lib/types/card";
+import type { CollectionEntryGroup } from "@/lib/collection/formats";
 
 /**
  * Collection completion model.
@@ -691,5 +692,92 @@ export async function getCardOwnershipByOwners(
       ? { type: "user" as const, id: row._id.userId.toString() }
       : { type: "playGroup" as const, id: row._id.playGroupId!.toString() },
     count: row.count,
+  }));
+}
+
+/**
+ * La collection, prête à être exportée : un lot par ensemble d'exemplaires
+ * identiques, avec sa quantité.
+ *
+ * Le stockage est d'un document par exemplaire, ce qui donnerait un fichier de
+ * plusieurs milliers de lignes pour une collection ordinaire. Le regroupement
+ * porte sur tout ce qui distingue deux exemplaires (variante, foil, langue,
+ * état, note, provenance) : deux cartes réunies ici sont bien interchangeables.
+ */
+export async function getCollectionEntriesForExport(
+  owner: CollectionOwner,
+  gameId: string
+): Promise<CollectionEntryGroup[]> {
+  const rows = await db
+    .collection("collection-cards")
+    .aggregate<{
+      _id: {
+        cardId: string;
+        foil: boolean;
+        printingId?: string;
+        language?: string;
+        condition?: string;
+        grade?: number;
+        obtainedAt?: string;
+        acquisitionPrice?: number;
+        acquisitionCurrency?: string;
+      };
+      quantity: number;
+      name: string;
+      setCode: string;
+      collectorNumber: unknown;
+      rarity?: string;
+      printingName?: string;
+    }>([
+      { $match: ownerMatch(owner) },
+      { $lookup: { from: "cards", localField: "cardId", foreignField: "id", as: "c" } },
+      // Même précaution que `getGamesStats` : `cards.id` n'est pas strictement
+      // unique, on ne garde qu'une correspondance pour ne pas dupliquer un
+      // exemplaire au passage.
+      { $addFields: { c: { $arrayElemAt: ["$c", 0] } } },
+      { $match: { "c.gameId": new ObjectId(gameId) } },
+      {
+        $group: {
+          _id: {
+            cardId: "$cardId",
+            foil: { $ifNull: ["$foil", false] },
+            printingId: "$printingId",
+            language: "$language",
+            condition: "$condition",
+            grade: "$grade",
+            obtainedAt: "$obtainedAt",
+            acquisitionPrice: "$acquisitionPrice",
+            acquisitionCurrency: "$acquisitionCurrency",
+          },
+          quantity: { $sum: 1 },
+          name: { $first: "$c.name" },
+          setCode: { $first: "$c.setCode" },
+          collectorNumber: { $first: "$c.collectorNumber" },
+          rarity: { $first: "$c.rarity" },
+          printingName: { $first: "$printingName" },
+        },
+      },
+      { $sort: { setCode: 1, collectorNumber: 1, "_id.foil": 1, "_id.printingId": 1 } },
+    ])
+    .toArray();
+
+  return rows.map((row) => ({
+    cardId: row._id.cardId,
+    name: row.name,
+    setCode: row.setCode,
+    collectorNumber: String(row.collectorNumber ?? ""),
+    ...(row.rarity !== undefined && { rarity: row.rarity }),
+    foil: row._id.foil === true,
+    ...(row._id.printingId !== undefined && { printingId: row._id.printingId }),
+    ...(row.printingName !== undefined && { printingName: row.printingName }),
+    ...(row._id.language !== undefined && { language: row._id.language as CollectionEntryGroup["language"] }),
+    ...(row._id.condition !== undefined && { condition: row._id.condition as CollectionEntryGroup["condition"] }),
+    ...(row._id.grade !== undefined && { grade: row._id.grade }),
+    ...(row._id.obtainedAt !== undefined && { obtainedAt: row._id.obtainedAt }),
+    ...(row._id.acquisitionPrice !== undefined && { acquisitionPrice: row._id.acquisitionPrice }),
+    ...(row._id.acquisitionCurrency !== undefined && {
+      acquisitionCurrency: row._id.acquisitionCurrency as CollectionEntryGroup["acquisitionCurrency"],
+    }),
+    quantity: row.quantity,
   }));
 }
