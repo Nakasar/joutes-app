@@ -69,23 +69,51 @@ export async function getGameById(id: string): Promise<Game | null> {
   return game ? toGame(game) : null;
 }
 
+/** De quoi nommer un jeu et y mener, rien de plus. */
+export type GameSummary = {
+  id: string;
+  name: string;
+  slug: string | null;
+};
+
 /**
- * Jeux correspondant à une liste d'identifiants, rendus dans l'ordre demandé.
+ * Identité des jeux correspondant à une liste d'identifiants, rendus dans
+ * l'ordre demandé.
  *
  * L'ordre compte : celui de `User.games` est celui dans lequel le joueur a
  * suivi ses jeux, quand Mongo rendrait les documents dans le sien. Les
  * identifiants inconnus ou mal formés sont ignorés plutôt que de faire échouer
  * la lecture — un jeu supprimé peut rester inscrit dans la liste d'un
  * utilisateur.
+ *
+ * Volontairement étroit : les appelants sont des menus et des listes, et un
+ * `Game` entier traîne descriptions, galerie et métadonnées derrière lui. Pour
+ * le jeu complet, voir `getGameById`.
  */
-export async function getGamesByIds(ids: string[]): Promise<Game[]> {
+export async function getGameSummariesByIds(ids: string[]): Promise<GameSummary[]> {
+  // `ObjectId.isValid` accepte aussi bien l'hexadécimal en majuscules que les
+  // chaînes de douze caractères, dont la forme canonique ne ressemble pas à la
+  // saisie. Comparer la saisie à ce que rend Mongo laisserait donc échapper des
+  // jeux bel et bien trouvés : la correspondance se fait des deux côtés sur
+  // l'`ObjectId`.
   const objectIds = ids.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id));
   if (objectIds.length === 0) return [];
 
-  const found = await db.collection(COLLECTION_NAME).find({ _id: { $in: objectIds } }).toArray();
-  const byId = new Map(found.map((doc) => [doc._id.toString(), toGame(doc)]));
+  const found = await db
+    .collection(COLLECTION_NAME)
+    .find({ _id: { $in: objectIds } }, { projection: { name: 1, slug: 1 } })
+    .toArray();
 
-  return ids.map((id) => byId.get(id)).filter((game): game is Game => game !== undefined);
+  const byId = new Map<string, GameSummary>(
+    found.map((doc) => [
+      doc._id.toString(),
+      { id: doc._id.toString(), name: doc.name, slug: doc.slug ?? null },
+    ])
+  );
+
+  return objectIds
+    .map((objectId) => byId.get(objectId.toString()))
+    .filter((game): game is GameSummary => game !== undefined);
 }
 
 export async function getGameBySlugOrId(slugOrId: string): Promise<Game | null> {

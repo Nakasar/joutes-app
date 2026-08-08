@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { getUserById } from "@/lib/db/users";
-import { getGamesByIds } from "@/lib/db/games";
+import { getGameSummariesByIds } from "@/lib/db/games";
 
 /**
  * Jeux suivis par l'utilisateur connecté (`User.games`), quel que soit
@@ -27,12 +27,9 @@ export async function GET() {
       return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
     }
     const gameIds = user.games ?? [];
-    const games = await getGamesByIds(gameIds);
+    const games = await getGameSummariesByIds(gameIds);
 
-    return NextResponse.json({
-      gameIds,
-      games: games.map((game) => ({ id: game.id, name: game.name, slug: game.slug ?? null })),
-    });
+    return NextResponse.json({ gameIds, games });
   } catch (error) {
     console.error("Error fetching the user's followed games:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
