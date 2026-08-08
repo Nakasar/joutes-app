@@ -132,6 +132,30 @@ export const updateQuizSchema = quizBaseSchema.partial().refine(
   "Au moins un champ doit être modifié"
 );
 
+/**
+ * Validation d'une section : le bloc dont le bouton a été pressé, et les
+ * réponses données. Le score n'est pas transmis — il est recalculé côté
+ * serveur, un score déclaré par le client ne valant rien.
+ *
+ * Une réponse est un identifiant de proposition, une liste d'identifiants, ou
+ * une saisie libre. Le champ nombre transmet la saisie brute, d'où la chaîne
+ * acceptée là où un nombre est attendu.
+ */
+export const quizScoreSchema = z.object({
+  blockId: z.string().min(1).max(64),
+  answers: z
+    .record(
+      z.string().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/, "Identifiant de question invalide"),
+      z.union([z.string().max(300), z.array(z.string().min(1).max(64)).max(20), z.number()])
+    )
+    .default({})
+    // Le client envoie tout ce qu'il a répondu depuis le début, pas seulement
+    // la section validée : la borne est donc large, mais elle en est une —
+    // rien ne limite par ailleurs le nombre de blocs d'un quizz.
+    .refine((answers) => Object.keys(answers).length <= 500, "Trop de réponses"),
+});
+
 export type CreateQuizInput = z.infer<typeof createQuizSchema>;
+export type QuizScoreInput = z.infer<typeof quizScoreSchema>;
 export type QuizTranslationPayload = z.infer<typeof quizTranslationSchema>;
 export type UpdateQuizInput = z.infer<typeof updateQuizSchema>;

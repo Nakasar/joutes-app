@@ -2662,6 +2662,53 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
 
+  /quizzes/{quizId}/scores:
+    parameters:
+      - { name: quizId, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [Quizzes]
+      summary: Record the caller's score for one section of a quiz
+      description: |
+        A quiz can hold several sections, each ended by its own validation button; a score is recorded per section, keyed by the id of the block carrying that button. The latest score replaces the previous one for that section — replaying a section is relearning, and showing a score the last attempt contradicts would mislead.
+
+        The caller sends its **answers**, not a score. Clients grade locally to answer without waiting for the network, but a score they declared would be worth nothing: the server grades the same answers again and returns what it counted.
+
+        Answering a quiz stays open to everyone; only recording needs an account, for want of a profile to file the score under.
+      security: [{ sessionAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [blockId]
+              properties:
+                blockId: { type: string, description: Id of the form block whose validation button was pressed. }
+                answers:
+                  type: object
+                  description: "Answer per question id: an option id, a list of option ids, or free input. The number field carries its raw text, hence a string where a number is expected."
+                  additionalProperties:
+                    oneOf:
+                      - { type: string }
+                      - { type: array, items: { type: string } }
+                      - { type: number }
+      responses:
+        "200":
+          description: Score as the server counted it.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  correct: { type: integer, example: 3 }
+                  total: { type: integer, example: 5 }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404":
+          description: No such quiz, or no such section in it.
+          content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /quizzes/{quizId}:
     parameters:
       - { name: quizId, in: path, required: true, schema: { type: string } }

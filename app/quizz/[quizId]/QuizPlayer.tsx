@@ -10,29 +10,12 @@ import LanguagePicker from "@/components/LanguagePicker";
 import StaleTranslationWarning from "@/components/StaleTranslationWarning";
 import { Button } from "@/components/ui/button";
 import { availableQuizLangs, isTranslationStale, localizeQuiz } from "@/lib/quizzes/translate";
+import { isCorrect, questionsValidatedBy, toAnswerPayload } from "@/lib/quizzes/grade";
 import type { Locale } from "@/i18n/config";
 import QuizQuestionPlayer, { type QuizAnswerValue } from "./QuizQuestionPlayer";
 
-function isCorrect(question: QuizQuestion, answer: QuizAnswerValue): boolean {
-  switch (question.type) {
-    case "single": {
-      const correct = question.correctOptionIds?.[0];
-      return !!correct && answer === correct;
-    }
-    case "multiple": {
-      const correctIds = question.correctOptionIds ?? [];
-      const given = Array.isArray(answer) ? answer : [];
-      return correctIds.length === given.length && correctIds.every((id) => given.includes(id));
-    }
-    case "text": {
-      const expected = (question.correctText ?? "").trim().toLowerCase();
-      const given = typeof answer === "string" ? answer.trim().toLowerCase() : "";
-      return !!expected && given === expected;
-    }
-    case "number":
-      return question.correctNumber !== undefined && typeof answer === "number" && answer === question.correctNumber;
-  }
-}
+/** Score d'une section, tel qu'affiché à côté de son bouton de validation. */
+type SectionScore = { correct: number; total: number };
 
 export default function QuizPlayer({
   quiz,
@@ -41,6 +24,7 @@ export default function QuizPlayer({
   cardIdByName,
   cardsById,
   gameSlug,
+  isSignedIn,
 }: {
   quiz: Quiz;
   /** Langue de l'utilisateur : le quizz s'y affiche s'il y est traduit. */
@@ -49,6 +33,8 @@ export default function QuizPlayer({
   cardIdByName: Record<string, string>;
   cardsById: Record<string, CardNameMatch>;
   gameSlug: string;
+  /** Un score n'est enregistré que s'il y a un profil où le ranger. */
+  isSignedIn: boolean;
 }) {
   const availableLangs = availableQuizLangs(quiz);
   const [selectedLang, setSelectedLang] = useState<Locale>(
@@ -64,30 +50,46 @@ export default function QuizPlayer({
 
   const [answers, setAnswers] = useState<Record<string, QuizAnswerValue>>({});
   const [results, setResults] = useState<Record<string, boolean>>({});
+  /** Score de chaque section validée, indexé par l'identifiant de son bloc. */
+  const [scores, setScores] = useState<Record<string, SectionScore>>({});
 
-  // A validation button checks every question since the previous validation
-  // button (or since the start of the quiz, for the first one) — not the
-  // whole quiz over again — so a multi-section quiz can have one button per
-  // section without re-grading earlier sections each time.
+  // La correction se fait ici, pour répondre sans attendre le réseau. Le score
+  // enregistré est en revanche celui que le serveur recalcule : lui seul ne
+  // dépend pas de ce que le navigateur veut bien annoncer.
   const validateBlock = (blockIndex: number) => {
-    let startIndex = 0;
-    for (let i = blockIndex - 1; i >= 0; i--) {
-      const previousBlock = blocks[i];
-      if (previousBlock.type === "form" && previousBlock.showSubmitButton) {
-        startIndex = i + 1;
-        break;
-      }
+    const questions = questionsValidatedBy(blocks, blockIndex);
+    const nextResults = { ...results };
+    let correct = 0;
+
+    for (const question of questions) {
+      const result = isCorrect(question, answers[question.id]);
+      nextResults[question.id] = result;
+      if (result) correct += 1;
     }
 
-    const nextResults = { ...results };
-    for (let i = startIndex; i <= blockIndex; i++) {
-      const block = blocks[i];
-      if (block.type !== "form") continue;
-      for (const question of block.questions) {
-        nextResults[question.id] = isCorrect(question, answers[question.id]);
-      }
-    }
+    const block = blocks[blockIndex];
     setResults(nextResults);
+    setScores((previous) => ({ ...previous, [block.id]: { correct, total: questions.length } }));
+
+    if (isSignedIn) {
+      // L'enregistrement ne conditionne pas l'affichage : un score qui ne part
+      // pas ne doit pas priver le joueur de sa correction.
+      fetch(`/api/quizzes/${quiz.id}/scores`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blockId: block.id, answers: toAnswerPayload(answers) }),
+      })
+        .then((response) => {
+          // `fetch` ne rejette que sur une panne réseau : un refus du serveur
+          // passerait sans bruit sans ce contrôle.
+          if (!response.ok) {
+            console.error("Score de quizz refusé par le serveur:", response.status);
+          }
+        })
+        .catch((error) => {
+          console.error("Score de quizz non enregistré:", error);
+        });
+    }
   };
 
   return (
@@ -145,9 +147,23 @@ export default function QuizPlayer({
               />
             ))}
             {block.showSubmitButton && (
-              <Button type="button" onClick={() => validateBlock(index)}>
-                Valider
-              </Button>
+              <div className="flex items-center gap-3">
+                <Button type="button" onClick={() => validateBlock(index)}>
+                  Valider
+                </Button>
+                {scores[block.id] && (
+                  <p className="text-sm font-medium" aria-live="polite">
+                    {scores[block.id].correct} / {scores[block.id].total}{" "}
+                    <span className="font-normal text-muted-foreground">
+                      {/* Le français met au singulier après zéro comme après
+                          un — c'est aussi la règle CLDR. Un bloc formulaire
+                          exigeant au moins une question, le cas ne se
+                          présente de toute façon pas. */}
+                      {scores[block.id].total > 1 ? "bonnes réponses" : "bonne réponse"}
+                    </span>
+                  </p>
+                )}
+              </div>
             )}
           </div>
         )
