@@ -22,6 +22,7 @@ import { getRawEntries } from "@/lib/rules/riftbound";
 import { serverClient } from "@/lib/server-client";
 import { validateApiKey } from "@/lib/db/api-keys";
 import { MCP_TOKEN } from "@/lib/well-known/auth-md";
+import { MCP_SERVER_INFO } from "@/lib/well-known/mcp-server-card";
 import { registerJoutesDataTools, withToolLogging } from "./tools";
 
 // Gestionnaires pour chaque outil
@@ -669,10 +670,9 @@ const handler = createMcpHandler(server => {
     }, withToolLogging("get_rule", handleGetRule));
     registerJoutesDataTools(server);
 }, {
-    serverInfo: {
-        name: "Joutes APP",
-        version: "1.0.0",
-    }
+    // Partagé avec la carte du serveur : ce que dit la poignée de main et ce
+    // que dit `/.well-known/mcp/server-card.json` ne peuvent pas diverger.
+    serverInfo: MCP_SERVER_INFO,
 }, {
     basePath: '',
     verboseLogs: true,

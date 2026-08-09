@@ -24,6 +24,7 @@ export const ADVERTISED_PATHS = {
   authMd: "/auth.md",
   mcp: "/mcp",
   mcpDoc: "/integrations/mcp",
+  mcpServerCard: "/.well-known/mcp/server-card.json",
   terms: "/cgu",
   privacy: "/privacy",
 } as const;
@@ -98,10 +99,17 @@ export function buildApiCatalog(origin: string): ApiCatalog {
         "privacy-policy": [{ href: url(ADVERTISED_PATHS.privacy) }],
       },
       {
-        // Le serveur MCP n'a pas de description lisible par machine : son
-        // protocole se découvre à l'appel. Reste son URI, que ce catalogue est
-        // le seul endroit à donner sans lire une page.
         anchor: url(ADVERTISED_PATHS.mcp),
+        // La carte du serveur (SEP-1649) : son nom, sa version et son
+        // transport, lisibles sans ouvrir de session MCP. Elle ne liste pas
+        // les outils — `tools/list` le fait, et à jour.
+        "service-desc": [
+          {
+            href: url(ADVERTISED_PATHS.mcpServerCard),
+            type: "application/json",
+            title: "Carte du serveur MCP de Joutes",
+          },
+        ],
         "service-doc": [
           {
             href: url(ADVERTISED_PATHS.mcpDoc),
