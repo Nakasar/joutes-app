@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   API_KEYS_PATH,
+  AUTH_MD_PATH,
   buildAgentAuth,
   buildAuthMd,
   MCP_TOKEN,
@@ -166,5 +167,30 @@ describe("buildAuthMd", () => {
     for (const marker of ["register", "registration", "claim", "credential", "agent"]) {
       assert.ok(document.includes(marker), `repère absent du document : ${marker}`);
     }
+  });
+});
+
+describe("agent_auth et la voie anonyme", () => {
+  it("décrit la voie sous la clé de son type d'identité", () => {
+    // La spécification range chaque méthode d'enregistrement sous le type
+    // d'identité qu'elle emploie. Le champ plat ne suffit pas : c'est sous
+    // `anonymous` qu'on vient lire ce que la voie délivre.
+    const agentAuth = buildAgentAuth(METADATA, ORIGIN);
+
+    assert.deepEqual(agentAuth.identity_types_supported, ["anonymous"]);
+    assert.deepEqual(
+      agentAuth.anonymous.credential_types_supported,
+      agentAuth.credential_types_supported,
+      "les deux formes doivent dire la même chose"
+    );
+    assert.ok(agentAuth.claim_uri, "la voie anonyme se revendique, il faut dire où");
+  });
+
+  it("porte de quoi s'enregistrer et se révoquer", () => {
+    const agentAuth = buildAgentAuth(METADATA, ORIGIN);
+
+    assert.ok(agentAuth.skill.endsWith(AUTH_MD_PATH));
+    assert.ok(agentAuth.register_uri, "sans register_uri, rien à faire de ce bloc");
+    assert.ok(agentAuth.revocation_uri);
   });
 });

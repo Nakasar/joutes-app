@@ -66,13 +66,17 @@ export type AuthServerMetadata = {
 export type AgentAuth = {
   skill: string;
   identity_types_supported: string[];
-  credential_types_supported: string[];
+  credential_types_supported: readonly string[];
+  anonymous: { credential_types_supported: readonly string[] };
   credential_delivery: string;
   user_credential_uri: string;
   register_uri?: string;
   claim_uri?: string;
   revocation_uri?: string;
 };
+
+/** Ce que Joutes délivre, quelle que soit la voie empruntée. */
+const CREDENTIAL_TYPES = ["oauth_access_token", "api_key"] as const;
 
 /**
  * Bloc `agent_auth`, greffé sur les métadonnées du serveur d'autorisation.
@@ -90,7 +94,12 @@ export function buildAgentAuth(metadata: AuthServerMetadata, origin: string): Ag
   return {
     skill: url(AUTH_MD_PATH),
     identity_types_supported: ["anonymous"],
-    credential_types_supported: ["oauth_access_token", "api_key"],
+    credential_types_supported: CREDENTIAL_TYPES,
+    // La spécification décrit chaque méthode d'enregistrement sous la clé du
+    // type d'identité qu'elle emploie. Le champ plat au-dessus dit la même
+    // chose et reste pour qui le lit déjà ; celui-ci est celui qu'on vient
+    // chercher pour savoir ce que la voie `anonymous` délivre vraiment.
+    anonymous: { credential_types_supported: CREDENTIAL_TYPES },
     credential_delivery: "authorization_header_bearer",
     user_credential_uri: url(API_KEYS_PATH),
     // Absents des métadonnées, ces endpoints ne sont pas annoncés : mieux vaut
