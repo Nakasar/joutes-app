@@ -1,7 +1,7 @@
 import "server-only";
 
 import { serverClient } from "@/lib/server-client";
-import { AUTH_MD_PATH } from "@/lib/well-known/auth-md";
+import { AUTH_MD_PATH, MCP_TOKEN } from "@/lib/well-known/auth-md";
 
 /**
  * Métadonnées de la ressource protégée (RFC 9728).
@@ -11,10 +11,28 @@ import { AUTH_MD_PATH } from "@/lib/well-known/auth-md";
  * fois obtenu. Un agent devait le déduire — et un agent qui déduit essaie, et
  * se fait jeter.
  *
- * `resource` reste le domaine de production : c'est le `aud` que le serveur
- * MCP vérifie, pas l'origine de la requête.
+ * Les deux identifiants viennent de `MCP_TOKEN`, c'est-à-dire de ce que le
+ * serveur vérifie réellement, et non du domaine de production écrit à la main.
+ * Écrits séparément, ils étaient tous les deux faux d'un cheveu — et un cheveu
+ * suffit :
+ *
+ * - `resource` est l'identifiant que le client recopie dans le paramètre
+ *   `resource` (RFC 8707) pour obtenir un jeton à la bonne audience. Sans la
+ *   barre finale, il obtenait `aud: https://www.joutes.app`, que le serveur MCP
+ *   rejette — il exige `https://www.joutes.app/`.
+ * - `authorization_servers` attend des **identifiants d'émetteur**, pas
+ *   l'adresse de la ressource. Le client qui y lisait `https://www.joutes.app`
+ *   allait chercher les métadonnées à `/.well-known/oauth-authorization-server`
+ *   et y trouvait un `issuer` différent de ce qu'il avait demandé : validation
+ *   en échec. Avec l'émetteur, il vise
+ *   `/.well-known/oauth-authorization-server/api/auth` — la variante qui existe
+ *   précisément pour lui — et les deux concordent.
  */
-const RESOURCE = "https://www.joutes.app";
+const RESOURCE = MCP_TOKEN.audience;
+const AUTHORIZATION_SERVER = MCP_TOKEN.issuer;
+
+/** `RESOURCE` finit par une barre : concaténer y doublerait le séparateur. */
+const resourceUrl = (path: string) => new URL(path, RESOURCE).toString();
 
 /**
  * `scopes_supported` est absent, et ce n'est pas un oubli.
@@ -29,15 +47,15 @@ const RESOURCE = "https://www.joutes.app";
 export async function protectedResourceMetadata(): Promise<Response> {
   const metadata = await serverClient.getProtectedResourceMetadata({
     resource: RESOURCE, // `aud` claim
-    authorization_servers: [RESOURCE],
+    authorization_servers: [AUTHORIZATION_SERVER],
     // Le jeton se présente en en-tête, et nulle part ailleurs : ni en
     // paramètre d'URL, où il finirait dans les journaux, ni en corps de
     // formulaire.
     bearer_methods_supported: ["header"],
     resource_name: "Joutes",
-    resource_documentation: `${RESOURCE}${AUTH_MD_PATH}`,
-    resource_policy_uri: `${RESOURCE}/privacy`,
-    resource_tos_uri: `${RESOURCE}/cgu`,
+    resource_documentation: resourceUrl(AUTH_MD_PATH),
+    resource_policy_uri: resourceUrl("/privacy"),
+    resource_tos_uri: resourceUrl("/cgu"),
   });
 
   return new Response(JSON.stringify(metadata), {
