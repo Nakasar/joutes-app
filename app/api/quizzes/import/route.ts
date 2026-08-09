@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { ObjectId } from "mongodb";
-import { z } from "zod";
 import { generateObject } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { auth } from "@/lib/auth";
@@ -13,7 +12,7 @@ import {
   importedQuizSchema,
   toQuizBlocks,
   toQuizTitle,
-  type ImportedBlock,
+  type ImportedQuiz,
 } from "@/lib/quizzes/import";
 
 /** Même borne que la loupe : de quoi coller un fil de discussion entier. */
@@ -28,8 +27,12 @@ Read the text and produce:
 - blocks: an ordered list of blocks that reads as a quiz.
 
 Two block types:
-- "markdown": prose shown to the player. Use it for the setup, the scenario, or the explanation that follows the questions. Set "content", leave "questions" null.
+- "markdown": prose shown to the player. Use it for the setup or the scenario that leads to a question. Set "content", leave "questions" null.
 - "form": one or more questions. Set "questions", leave "content" null.
+
+Always write both keys on every block, with null for the one that does not apply. Never omit a key.
+
+A quiz asks; it does not recount. At least one "form" block is required — a quiz made only of prose is not a quiz, and is rejected. A source that asks something and then answers it becomes a "markdown" block for the scenario and a "form" block for the question. Never a second "markdown" block holding the answer: the answer and its reasoning go in correctFeedback / incorrectFeedback, where the player reads them once they have answered. A text that answers its own question in passing, or that ends on "I would rule that…", still becomes a question — that ruling is the answer, not the prose.
 
 Rules for the questions:
 - Every question the text asks should become a question. Keep the wording of the original question when it is already a question.
@@ -81,7 +84,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Paramètre gameId invalide" }, { status: 400 });
   }
 
-  let imported: z.infer<typeof importedQuizSchema>;
+  let imported: ImportedQuiz;
   try {
     const result = await generateObject({
       model: openai("gpt-5.4-mini"),
@@ -114,9 +117,12 @@ export async function POST(request: Request) {
     annotate = createCardMentionBracketer(cardNames);
   }
 
-  const blocks = toQuizBlocks(imported.blocks as ImportedBlock[], { annotate });
+  const blocks = toQuizBlocks(imported.blocks, { annotate });
 
-  if (blocks.length === 0) {
+  // Un quizz sans question n'en est pas un. Le modèle s'en tire parfois en
+  // recopiant la question et sa réponse en deux blocs de texte : le brouillon
+  // s'ouvrirait alors sur une correction déjà donnée et rien à répondre.
+  if (!blocks.some((block) => block.type === "form")) {
     return NextResponse.json(
       { error: "Aucune question n'a pu être tirée de ce texte" },
       { status: 422 }

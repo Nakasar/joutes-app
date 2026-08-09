@@ -1,6 +1,7 @@
+import { jsonSchema, zodSchema, type Schema } from "ai";
 import { nanoid } from "nanoid";
 import { z } from "zod";
-import type { QuizBlock, QuizQuestion, QuizQuestionType } from "@/lib/types/Quiz";
+import type { QuizBlock, QuizQuestion } from "@/lib/types/Quiz";
 
 /**
  * Conversion de la sortie du modèle en blocs de quizz.
@@ -17,69 +18,102 @@ import type { QuizBlock, QuizQuestion, QuizQuestionType } from "@/lib/types/Quiz
  */
 
 /**
- * Ce qu'on demande au modèle. Pas d'identifiants ni de références croisées :
+ * Ce qu'on accepte du modèle. Pas d'identifiants ni de références croisées :
  * les bonnes réponses sont désignées par leur rang, tout le reste est rétabli
- * par `toQuizBlocks`. Les champs facultatifs sont déclarés `nullable` plutôt
- * qu'`optional`, la forme que les sorties structurées rendent le plus
- * fidèlement.
+ * par `toQuizBlocks`.
+ *
+ * **Tout y est facultatif, à dessein.** Le SDK envoie le schéma avec
+ * `strict: false` (le défaut de `@ai-sdk/openai`) : le fournisseur le traite
+ * comme une indication, pas comme un contrat, et le modèle omet des clés —
+ * `questions` sur un bloc de texte, par exemple. Refuser tout l'import pour
+ * autant ferait perdre un texte entier sur un champ absent. Ce qui est
+ * inexploitable est écarté plus loin, question par question, là où on peut le
+ * dire à l'utilisateur.
  *
  * **Aucun mot-clé de validation en dehors du type.** Les sorties structurées
- * d'OpenAI travaillent en mode strict, qui refuse `minimum`, `maxLength`,
- * `pattern` et leurs semblables : la requête est alors rejetée avant que le
- * modèle n'écrive quoi que ce soit. `z.number().int()` est le piège de la
- * famille — Zod 4 lui adjoint des bornes `minimum`/`maximum`, invisibles à la
- * lecture du code. L'entier est vérifié par `normalizeQuestion`, qui le
- * confronte de toute façon au nombre réel de propositions. `import.test.ts`
- * monte la garde sur le schéma émis.
+ * d'OpenAI refusent en mode strict `minimum`, `maxLength`, `pattern` et leurs
+ * semblables : la requête serait rejetée avant que le modèle n'écrive quoi que
+ * ce soit. `z.number().int()` est le piège de la famille — Zod 4 lui adjoint
+ * des bornes `minimum`/`maximum`, invisibles à la lecture du code. L'entier est
+ * vérifié par `normalizeQuestion`, qui le confronte de toute façon au nombre
+ * réel de propositions. `import.test.ts` monte la garde sur le schéma émis.
  */
-const importedQuestionSchema = z.object({
-  type: z.enum(["single", "multiple", "text", "number"]),
-  prompt: z.string(),
-  options: z.array(z.string()).nullable(),
-  correctOptionIndexes: z.array(z.number()).nullable(),
-  correctText: z.string().nullable(),
-  correctNumber: z.number().nullable(),
-  correctFeedback: z.string().nullable(),
-  incorrectFeedback: z.string().nullable(),
+const receivedQuestionSchema = z.object({
+  type: z.enum(["single", "multiple", "text", "number"]).nullish(),
+  prompt: z.string().nullish(),
+  /** Propositions, pour les questions à choix. */
+  options: z.array(z.string()).nullish(),
+  /** Rangs (à partir de 0) des bonnes propositions. */
+  correctOptionIndexes: z.array(z.number()).nullish(),
+  correctText: z.string().nullish(),
+  correctNumber: z.number().nullish(),
+  correctFeedback: z.string().nullish(),
+  incorrectFeedback: z.string().nullish(),
 });
 
-const importedBlockSchema = z.object({
-  type: z.enum(["markdown", "form"]),
-  content: z.string().nullable(),
-  questions: z.array(importedQuestionSchema).nullable(),
+const receivedBlockSchema = z.object({
+  type: z.enum(["markdown", "form"]).nullish(),
+  /** Blocs `markdown` uniquement. */
+  content: z.string().nullish(),
+  /** Blocs `form` uniquement. */
+  questions: z.array(receivedQuestionSchema).nullish(),
 });
 
-export const importedQuizSchema = z.object({
-  title: z.string(),
-  blocks: z.array(importedBlockSchema),
+const receivedQuizSchema = z.object({
+  title: z.string().nullish(),
+  blocks: z.array(receivedBlockSchema).nullish(),
 });
 
 /** Question telle que le modèle la rend. */
-export type ImportedQuestion = {
-  type: QuizQuestionType;
-  prompt: string;
-  /** Propositions, pour les questions à choix. */
-  options?: string[] | null;
-  /** Rangs (à partir de 0) des bonnes propositions. */
-  correctOptionIndexes?: number[] | null;
-  correctText?: string | null;
-  correctNumber?: number | null;
-  correctFeedback?: string | null;
-  incorrectFeedback?: string | null;
-};
+export type ImportedQuestion = z.infer<typeof receivedQuestionSchema>;
+export type ImportedBlock = z.infer<typeof receivedBlockSchema>;
+export type ImportedQuiz = z.infer<typeof receivedQuizSchema>;
 
-export type ImportedBlock = {
-  type: "markdown" | "form";
-  /** Blocs `markdown` uniquement. */
-  content?: string | null;
-  /** Blocs `form` uniquement. */
-  questions?: ImportedQuestion[] | null;
-};
+/**
+ * Remet chaque propriété dans `required`. Une clé facultative côté Zod en sort,
+ * et le modèle — qui ne voit que ce schéma — se croit alors libre de l'omettre.
+ * C'est l'inverse qu'on veut : demander toutes les clés, et ne tolérer leur
+ * absence qu'à la lecture.
+ */
+function requireEveryProperty(node: unknown): unknown {
+  if (Array.isArray(node)) {
+    return node.map(requireEveryProperty);
+  }
+  if (node === null || typeof node !== "object") {
+    return node;
+  }
 
-export type ImportedQuiz = {
-  title: string;
-  blocks: ImportedBlock[];
-};
+  const result: Record<string, unknown> = Object.fromEntries(
+    Object.entries(node as Record<string, unknown>).map(([key, value]) => [
+      key,
+      requireEveryProperty(value),
+    ])
+  );
+
+  const properties = result.properties;
+  if (properties && typeof properties === "object" && !Array.isArray(properties)) {
+    result.required = Object.keys(properties);
+  }
+
+  return result;
+}
+
+/**
+ * Ce qu'on demande au modèle, et comment on lit sa réponse — les deux ne se
+ * confondent pas : le schéma envoyé réclame tous les champs, la validation les
+ * accepte tous absents.
+ */
+export const importedQuizSchema: Schema<ImportedQuiz> = jsonSchema<ImportedQuiz>(
+  requireEveryProperty(zodSchema(receivedQuizSchema).jsonSchema) as Schema["jsonSchema"],
+  {
+    validate: (value) => {
+      const result = receivedQuizSchema.safeParse(value);
+      return result.success
+        ? { success: true, value: result.data }
+        : { success: false, error: result.error };
+    },
+  }
+);
 
 /** Bornes de `lib/schemas/quiz.schema.ts` : le brouillon doit s'y tenir. */
 const LIMITS = {
@@ -192,7 +226,7 @@ function normalizeQuestion(
  * markdown — c'est là que les noms de cartes sont mis entre crochets.
  */
 export function toQuizBlocks(
-  blocks: ImportedBlock[],
+  blocks: ImportedBlock[] | null | undefined,
   options: { annotate?: AnnotateText; makeId?: () => string } = {}
 ): QuizBlock[] {
   const annotate = options.annotate ?? ((text: string) => text);
@@ -224,6 +258,6 @@ export function toQuizBlocks(
 }
 
 /** Titre du brouillon, borné comme celui du formulaire. */
-export function toQuizTitle(title: string): string {
+export function toQuizTitle(title: string | null | undefined): string {
   return bound(trimmed(title), LIMITS.title);
 }
