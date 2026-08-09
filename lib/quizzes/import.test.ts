@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { zodSchema } from "ai";
 import { importedQuizSchema, toQuizBlocks, toQuizTitle, type ImportedBlock } from "./import";
 
 /**
@@ -56,19 +55,51 @@ function keysDeep(value: unknown): string[] {
   ]);
 }
 
+/** Chaque nœud du schéma JSON qui décrit un objet, à tout niveau de profondeur. */
+function objectNodesDeep(value: unknown): Record<string, unknown>[] {
+  if (Array.isArray(value)) return value.flatMap(objectNodesDeep);
+  if (value === null || typeof value !== "object") return [];
+
+  const node = value as Record<string, unknown>;
+  const children = Object.values(node).flatMap(objectNodesDeep);
+  return node.properties && typeof node.properties === "object" ? [node, ...children] : children;
+}
+
+/** Le validateur du schéma, tel que le SDK l'appelle sur la réponse du modèle. */
+function validate(value: unknown) {
+  const result = importedQuizSchema.validate?.(value);
+  assert.ok(result && !("then" in result), "validateur absent ou asynchrone");
+  return result;
+}
+
 describe("importedQuizSchema", () => {
   it("n'émet aucun mot-clé que le mode strict d'OpenAI refuse", () => {
-    // `zodSchema` est la conversion qu'applique le SDK avant l'appel : c'est
-    // exactement ce que le fournisseur reçoit.
-    const keys = new Set(keysDeep(zodSchema(importedQuizSchema).jsonSchema));
+    // `importedQuizSchema.jsonSchema` est ce que le SDK envoie tel quel.
+    const keys = new Set(keysDeep(importedQuizSchema.jsonSchema));
     const offenders = UNSUPPORTED_KEYWORDS.filter((keyword) => keys.has(keyword));
 
     assert.deepEqual(offenders, [], `Mots-clés refusés par le mode strict : ${offenders.join(", ")}`);
   });
 
+  it("réclame toutes les clés au modèle", () => {
+    // Le schéma part avec `strict: false` : `required` n'est qu'une consigne,
+    // mais c'est la seule qui dise au modèle d'écrire `questions` sur un bloc
+    // de formulaire. Une clé facultative côté Zod ne doit pas l'en dispenser.
+    const nodes = objectNodesDeep(importedQuizSchema.jsonSchema);
+    assert.ok(nodes.length >= 3, `nœuds objet trouvés : ${nodes.length}`);
+
+    for (const node of nodes) {
+      assert.deepEqual(
+        node.required,
+        Object.keys(node.properties as Record<string, unknown>),
+        `clés manquantes dans required : ${JSON.stringify(node.properties)}`
+      );
+    }
+  });
+
   it("décrit bien les champs attendus du modèle", () => {
-    // Garde-fou du garde-fou : un schéma vidé passerait le test précédent.
-    const parsed = importedQuizSchema.parse({
+    // Garde-fou du garde-fou : un schéma vidé passerait les tests précédents.
+    const result = validate({
       title: "Quizz",
       blocks: [
         { type: "markdown", content: "Contexte", questions: null },
@@ -91,8 +122,23 @@ describe("importedQuizSchema", () => {
       ],
     });
 
-    assert.equal(parsed.blocks.length, 2);
-    assert.deepEqual(parsed.blocks[1].questions?.[0].correctOptionIndexes, [0]);
+    assert.ok(result.success, "réponse conforme refusée");
+    assert.equal(result.value.blocks?.length, 2);
+    assert.deepEqual(result.value.blocks?.[1].questions?.[0].correctOptionIndexes, [0]);
+  });
+
+  it("accepte une réponse dont le modèle a omis des clés", () => {
+    // Cas signalé : deux blocs de texte sans `questions`, plus un `questions`
+    // parasite à la racine. Avec `strict: false`, le fournisseur ne garantit
+    // rien — refuser ici ferait perdre tout l'import.
+    const result = validate({
+      title: "Rebuttal e Defy",
+      blocks: [{ type: "markdown", content: "Scénario" }, { type: "markdown", content: "Réponse" }],
+      questions: null,
+    });
+
+    assert.ok(result.success, "réponse incomplète refusée");
+    assert.equal(result.value.blocks?.length, 2);
   });
 });
 
@@ -242,6 +288,22 @@ describe("toQuizBlocks", () => {
 
     // Aucune question ne survit : le bloc lui-même disparaît.
     assert.deepEqual(toQuizBlocks(blocks, { makeId: counter() }), []);
+  });
+
+  it("ne fabrique pas de question à partir de blocs de texte", () => {
+    // Le modèle recopie parfois la question et sa réponse en deux blocs de
+    // texte. La route s'appuie sur l'absence de bloc `form` pour refuser
+    // l'import plutôt que d'ouvrir un brouillon où il n'y a rien à répondre.
+    const blocks = toQuizBlocks(
+      [
+        { type: "markdown", content: "Je joue un sort, l'adversaire le contre." },
+        { type: "markdown", content: "R : le sort est encore sur la chaîne." },
+      ],
+      { makeId: counter() }
+    );
+
+    assert.equal(blocks.length, 2);
+    assert.ok(!blocks.some((block) => block.type === "form"));
   });
 
   it("ignore un bloc de texte vide", () => {
