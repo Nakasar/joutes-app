@@ -22,6 +22,7 @@ export const ADVERTISED_PATHS = {
   // enregistrée ne décrit « le mode d'emploi pour obtenir un accès ». Il est
   // tenu ici pour que le test des routes existantes le couvre aussi.
   authMd: "/auth.md",
+  agentSkills: "/.well-known/agent-skills/index.json",
   mcp: "/mcp",
   mcpDoc: "/integrations/mcp",
   mcpServerCard: "/.well-known/mcp/server-card.json",
