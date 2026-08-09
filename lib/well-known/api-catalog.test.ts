@@ -110,6 +110,19 @@ describe("buildApiCatalog", () => {
     ]);
   });
 
+  it("dit de chaque service où en lire l'état", () => {
+    // Sans la relation `status`, un agent qui reçoit une erreur ne peut pas
+    // distinguer sa faute de la nôtre : il réessaie à l'aveugle ou renonce.
+    const catalog = buildApiCatalog("https://www.joutes.app");
+
+    for (const entry of catalog.linkset) {
+      const status = entry.status;
+      assert.ok(Array.isArray(status), `pas de relation status : ${entry.anchor}`);
+      assert.equal(status[0].href, "https://www.joutes.app/api/health");
+      assert.equal(status[0].type, "application/health+json");
+    }
+  });
+
   it("n'écrit que des URI absolues", () => {
     const catalog = buildApiCatalog("https://www.joutes.app");
 

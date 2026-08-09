@@ -21,6 +21,8 @@ import { Game } from "@/lib/types/Game";
 import { getRawEntries } from "@/lib/rules/riftbound";
 import { serverClient } from "@/lib/server-client";
 import { validateApiKey } from "@/lib/db/api-keys";
+import { MCP_TOKEN } from "@/lib/well-known/auth-md";
+import { MCP_SERVER_INFO } from "@/lib/well-known/mcp-server-card";
 import { registerJoutesDataTools, withToolLogging } from "./tools";
 
 // Gestionnaires pour chaque outil
@@ -257,7 +259,6 @@ async function handleCreateEvent(argsRaw: Record<string, unknown>, extra: Reques
 
 async function handleFollowLair(argsRaw: Record<string, unknown>, extra: RequestHandlerExtra<ServerRequest, ServerNotification>): Promise<{ content: TextContent[]; isError?: boolean }> {
     try {
-        console.info(extra.authInfo);
         const userId: string = extra.authInfo?.extra?.userId as string;
 
         if (!userId) {
@@ -668,10 +669,9 @@ const handler = createMcpHandler(server => {
     }, withToolLogging("get_rule", handleGetRule));
     registerJoutesDataTools(server);
 }, {
-    serverInfo: {
-        name: "Joutes APP",
-        version: "1.0.0",
-    }
+    // Partagé avec la carte du serveur : ce que dit la poignée de main et ce
+    // que dit `/.well-known/mcp/server-card.json` ne peuvent pas diverger.
+    serverInfo: MCP_SERVER_INFO,
 }, {
     basePath: '',
     verboseLogs: true,
@@ -720,13 +720,15 @@ async function authHandler(req: Request) {
                     };
                 }
             } else {
-                console.log(accessToken);
+                // Rien de ce qui suit ne journalise le jeton : un porteur écrit
+                // en clair dans les journaux vaut le compte qu'il ouvre, et il
+                // survit à la session dans les exports et la rétention.
                 const payload = await serverClient.verifyAccessToken(
                     accessToken, {
-                    jwksUrl: "https://www.joutes.app/api/auth/jwks",
+                    jwksUrl: MCP_TOKEN.jwksUri,
                     verifyOptions: {
-                        audience: "https://www.joutes.app/",
-                        issuer: "https://www.joutes.app/api/auth",
+                        audience: MCP_TOKEN.audience,
+                        issuer: MCP_TOKEN.issuer,
                     },
                 });
 

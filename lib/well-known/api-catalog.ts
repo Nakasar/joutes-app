@@ -17,8 +17,15 @@ export const ADVERTISED_PATHS = {
   restApi: "/api",
   openapi: "/api/docs",
   apiDoc: "/integrations/api",
+  health: "/api/health",
+  // Annoncé par `agent_auth.skill` plutôt que par un lien : aucune relation
+  // enregistrée ne décrit « le mode d'emploi pour obtenir un accès ». Il est
+  // tenu ici pour que le test des routes existantes le couvre aussi.
+  authMd: "/auth.md",
+  agentSkills: "/.well-known/agent-skills/index.json",
   mcp: "/mcp",
   mcpDoc: "/integrations/mcp",
+  mcpServerCard: "/.well-known/mcp/server-card.json",
   terms: "/cgu",
   privacy: "/privacy",
 } as const;
@@ -80,19 +87,45 @@ export function buildApiCatalog(origin: string): ApiCatalog {
             title: "Documentation développeurs et API",
           },
         ],
+        // Un agent qui reçoit une erreur a besoin de savoir si c'est lui ou
+        // nous, sans quoi il réessaie à l'aveugle ou abandonne à tort.
+        status: [
+          {
+            href: url(ADVERTISED_PATHS.health),
+            type: "application/health+json",
+            title: "État de santé de l'API Joutes",
+          },
+        ],
         "terms-of-service": [{ href: url(ADVERTISED_PATHS.terms) }],
         "privacy-policy": [{ href: url(ADVERTISED_PATHS.privacy) }],
       },
       {
-        // Le serveur MCP n'a pas de description lisible par machine : son
-        // protocole se découvre à l'appel. Reste son URI, que ce catalogue est
-        // le seul endroit à donner sans lire une page.
         anchor: url(ADVERTISED_PATHS.mcp),
+        // La carte du serveur (SEP-1649) : son nom, sa version et son
+        // transport, lisibles sans ouvrir de session MCP. Elle ne liste pas
+        // les outils — `tools/list` le fait, et à jour.
+        "service-desc": [
+          {
+            href: url(ADVERTISED_PATHS.mcpServerCard),
+            type: "application/json",
+            title: "Carte du serveur MCP de Joutes",
+          },
+        ],
         "service-doc": [
           {
             href: url(ADVERTISED_PATHS.mcpDoc),
             type: "text/html",
             title: "Serveur MCP de Joutes",
+          },
+        ],
+        // Même sonde que l'API REST : le serveur MCP est servi par le même
+        // déploiement et lit la même base. Ce qui vaut pour l'une vaut pour
+        // l'autre.
+        status: [
+          {
+            href: url(ADVERTISED_PATHS.health),
+            type: "application/health+json",
+            title: "État de santé de l'API Joutes",
           },
         ],
         "terms-of-service": [{ href: url(ADVERTISED_PATHS.terms) }],
