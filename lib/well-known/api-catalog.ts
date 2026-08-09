@@ -18,6 +18,10 @@ export const ADVERTISED_PATHS = {
   openapi: "/api/docs",
   apiDoc: "/integrations/api",
   health: "/api/health",
+  // Annoncé par `agent_auth.skill` plutôt que par un lien : aucune relation
+  // enregistrée ne décrit « le mode d'emploi pour obtenir un accès ». Il est
+  // tenu ici pour que le test des routes existantes le couvre aussi.
+  authMd: "/auth.md",
   mcp: "/mcp",
   mcpDoc: "/integrations/mcp",
   terms: "/cgu",

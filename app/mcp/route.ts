@@ -21,6 +21,7 @@ import { Game } from "@/lib/types/Game";
 import { getRawEntries } from "@/lib/rules/riftbound";
 import { serverClient } from "@/lib/server-client";
 import { validateApiKey } from "@/lib/db/api-keys";
+import { MCP_TOKEN } from "@/lib/well-known/auth-md";
 import { registerJoutesDataTools, withToolLogging } from "./tools";
 
 // Gestionnaires pour chaque outil
@@ -723,10 +724,10 @@ async function authHandler(req: Request) {
                 console.log(accessToken);
                 const payload = await serverClient.verifyAccessToken(
                     accessToken, {
-                    jwksUrl: "https://www.joutes.app/api/auth/jwks",
+                    jwksUrl: MCP_TOKEN.jwksUri,
                     verifyOptions: {
-                        audience: "https://www.joutes.app/",
-                        issuer: "https://www.joutes.app/api/auth",
+                        audience: MCP_TOKEN.audience,
+                        issuer: MCP_TOKEN.issuer,
                     },
                 });
 
