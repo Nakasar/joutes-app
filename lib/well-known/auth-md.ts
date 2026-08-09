@@ -110,9 +110,35 @@ export function buildAgentAuth(metadata: AuthServerMetadata, origin: string): Ag
   };
 }
 
-/** Une étape que ses endpoints rendent impossible n'est pas écrite du tout. */
-function section(available: boolean, body: string): string {
-  return available ? body : "";
+/**
+ * Une requête écrite en ligne de requête HTTP, chemin et `Host` séparés.
+ *
+ * `POST /api/auth/oauth2/register HTTP/1.1` plutôt que `POST https://…/register` :
+ * c'est la forme de la RFC 9110, celle qu'on lit dans une spécification, et
+ * celle qu'un outil sait relire pour en extraire l'endpoint. Écrite en URL
+ * absolue, l'étape se lit encore mais ne s'analyse plus — un vérificateur de
+ * conformité ne trouvait aucun endpoint d'enregistrement dans ce document.
+ *
+ * L'URL vient toujours des métadonnées du serveur : on la décompose, on ne la
+ * réécrit pas. Un endpoint qui déménage emmène son chemin et son hôte avec lui.
+ */
+function httpRequest(method: string, endpoint: string, headers: string[] = []): string[] {
+  const { pathname, search, host } = new URL(endpoint);
+
+  return ["```http", `${method} ${pathname}${search} HTTP/1.1`, `Host: ${host}`, ...headers];
+}
+
+/**
+ * Une étape que ses endpoints rendent impossible n'est pas écrite du tout.
+ *
+ * Le corps est une fonction, et pas une chaîne déjà construite : il décompose
+ * des URL que l'on vient justement de juger absentes. Évalué d'avance, il levait
+ * « Invalid URL » et emportait tout le document — un serveur sans enregistrement
+ * dynamique n'aurait plus eu de `/auth.md` du tout, alors que la voie par clé
+ * API, elle, restait praticable.
+ */
+function section(available: boolean, body: () => string): string {
+  return available ? body() : "";
 }
 
 /**
@@ -154,12 +180,12 @@ export function buildAuthMd(metadata: AuthServerMetadata, origin: string): strin
     // Annoncer la voie OAuth quand le serveur ne l'expose pas enverrait par
     // ailleurs l'agent vers des étapes que ce document ne décrit même pas.
     [
-      `| Credential | How you get it | What it opens |`,
-      `| --- | --- | --- |`,
+      `| Credential | Type | How you get it | What it opens |`,
+      `| --- | --- | --- | --- |`,
       oauthUsable
-        ? `| OAuth 2.0 access token | Path A — the agent registers itself, then a user claims it | the MCP server (\`${MCP_PATH}\`) |`
+        ? `| OAuth 2.0 access token | \`oauth_access_token\` | Path A — the agent registers itself, then a user claims it | the MCP server (\`${MCP_PATH}\`) |`
         : null,
-      `| API key \`jts_…\` | Path B — a user creates one and hands it over | the REST API (\`${REST_API_PATH}\`) **and** the MCP server |`,
+      `| API key \`jts_…\` | \`api_key\` | Path B — a user creates one and hands it over | the REST API (\`${REST_API_PATH}\`) **and** the MCP server |`,
     ]
       .filter(Boolean)
       .join("\n"),
@@ -176,17 +202,20 @@ export function buildAuthMd(metadata: AuthServerMetadata, origin: string): strin
     ``,
     section(
       oauthUsable,
-      [
+      () => [
         `## Path A — Agent registration with OAuth 2.0`,
+        ``,
+        `This is the **anonymous** registration flow: the agent registers without`,
+        `an account and without any prior credential, works as nobody, and is`,
+        `claimed by a user when one is available. Identity type: \`anonymous\`.`,
+        `Credential types issued: \`oauth_access_token\`, \`api_key\`.`,
         ``,
         `### Step 1 — Register the client`,
         ``,
         `Dynamic client registration (RFC 7591) is open: no prior credential, no`,
         `application form, no account.`,
         ``,
-        "```http",
-        `POST ${metadata.registration_endpoint}`,
-        `Content-Type: application/json`,
+        ...httpRequest("POST", metadata.registration_endpoint!, ["Content-Type: application/json"]),
         ``,
         `{`,
         `  "client_name": "Your agent's name",`,
@@ -227,9 +256,9 @@ export function buildAuthMd(metadata: AuthServerMetadata, origin: string): strin
         ``,
         `### Step 3 — Exchange the code for a credential`,
         ``,
-        "```http",
-        `POST ${metadata.token_endpoint}`,
-        `Content-Type: application/x-www-form-urlencoded`,
+        ...httpRequest("POST", metadata.token_endpoint!, [
+          "Content-Type: application/x-www-form-urlencoded",
+        ]),
         ``,
         `grant_type=authorization_code`,
         `&code=<the code you received>`,
@@ -244,10 +273,10 @@ export function buildAuthMd(metadata: AuthServerMetadata, origin: string): strin
         ``,
         `### Step 4 — Use the credential`,
         ``,
-        "```http",
-        `POST ${url(MCP_PATH)}`,
-        `Authorization: Bearer <access_token>`,
-        `Content-Type: application/json`,
+        ...httpRequest("POST", url(MCP_PATH), [
+          "Authorization: Bearer <access_token>",
+          "Content-Type: application/json",
+        ]),
         "```",
         ``,
         `Every request is verified against \`${MCP_TOKEN.jwksUri}\`, for audience`,
@@ -257,12 +286,12 @@ export function buildAuthMd(metadata: AuthServerMetadata, origin: string): strin
         ``,
         section(
           Boolean(metadata.revocation_endpoint),
-          [
+          () => [
             `### Step 5 — Revoke the credential`,
             ``,
-            "```http",
-            `POST ${metadata.revocation_endpoint}`,
-            `Content-Type: application/x-www-form-urlencoded`,
+            ...httpRequest("POST", metadata.revocation_endpoint!, [
+              "Content-Type: application/x-www-form-urlencoded",
+            ]),
             ``,
             `token=<access_token or refresh_token>&client_id=<client_id>`,
             "```",
@@ -281,9 +310,7 @@ export function buildAuthMd(metadata: AuthServerMetadata, origin: string): strin
     `the agent. Nothing to register, nothing to claim: the key already carries`,
     `their account.`,
     ``,
-    "```http",
-    `GET ${url(REST_API_PATH)}/...`,
-    `Authorization: Bearer jts_…`,
+    ...httpRequest("GET", url(`${REST_API_PATH}/...`), ["Authorization: Bearer jts_…"]),
     "```",
     ``,
     `What the REST API exposes is described in OpenAPI 3.1: ${url(OPENAPI_PATH)}.`,

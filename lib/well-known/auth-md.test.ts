@@ -88,16 +88,23 @@ describe("buildAuthMd", () => {
   });
 
   it("porte les endpoints du serveur, pas des URL recopiées", () => {
+    // Les requêtes s'écrivent en chemin + `Host` pour rester analysables ;
+    // l'exigence reste la même : ces adresses viennent des métadonnées.
     const document = buildAuthMd(METADATA, ORIGIN);
 
     for (const endpoint of [
       METADATA.registration_endpoint,
-      METADATA.authorization_endpoint,
       METADATA.token_endpoint,
       METADATA.revocation_endpoint,
     ]) {
-      assert.ok(document.includes(endpoint!), `absent du document : ${endpoint}`);
+      const { pathname, host } = new URL(endpoint!);
+      assert.ok(document.includes(pathname), `chemin absent du document : ${pathname}`);
+      assert.ok(document.includes(`Host: ${host}`), `hôte absent du document : ${host}`);
     }
+
+    // L'autorisation est une adresse que l'on ouvre dans un navigateur, pas une
+    // requête que l'on rejoue : elle reste écrite en URL complète.
+    assert.ok(document.includes(METADATA.authorization_endpoint!));
   });
 
   it("annonce l'audience que le serveur MCP vérifie, pas celle du domaine servant", () => {
@@ -127,8 +134,22 @@ describe("buildAuthMd", () => {
       "http://localhost:3000"
     );
 
-    assert.ok(document.includes("http://localhost:3000/mcp"));
+    assert.ok(document.includes("Host: localhost:3000"));
+    assert.ok(document.includes("POST /mcp HTTP/1.1"));
     assert.ok(!document.includes("https://www.joutes.app/mcp"));
+  });
+
+  it("reste servable quand le serveur n'expose ni enregistrement ni révocation", () => {
+    // Les étapes écartées décomposent des URL absentes. Construites d'avance,
+    // elles levaient « Invalid URL » et emportaient tout le document — alors
+    // que la voie par clé API, elle, restait praticable.
+    const document = buildAuthMd(
+      { ...METADATA, registration_endpoint: undefined, revocation_endpoint: undefined },
+      ORIGIN
+    );
+
+    assert.ok(document.startsWith("# auth.md"));
+    assert.ok(document.includes("Path B"));
   });
 
   it("n'écrit pas l'étape OAuth quand le serveur ne la permet pas", () => {
@@ -192,5 +213,52 @@ describe("agent_auth et la voie anonyme", () => {
     assert.ok(agentAuth.skill.endsWith(AUTH_MD_PATH));
     assert.ok(agentAuth.register_uri, "sans register_uri, rien à faire de ce bloc");
     assert.ok(agentAuth.revocation_uri);
+  });
+});
+
+describe("ce qu'un analyseur doit pouvoir extraire du document", () => {
+  // Le document n'est pas seulement lu : il est analysé. Un vérificateur en
+  // tire les endpoints d'enregistrement, les types d'identifiants et le type
+  // d'identité. Écrites en URL absolue, les étapes se lisaient encore mais ne
+  // s'analysaient plus — zéro repère trouvé sur un document pourtant complet.
+
+  it("écrit ses requêtes en ligne de requête HTTP, chemin et Host séparés", () => {
+    const document = buildAuthMd(METADATA, ORIGIN);
+
+    assert.ok(
+      document.includes("POST /api/auth/oauth2/register HTTP/1.1"),
+      "l'endpoint d'enregistrement doit être extractible"
+    );
+    assert.ok(document.includes("Host: www.joutes.app"));
+    assert.ok(
+      !/^POST https?:\/\//m.test(document),
+      "plus aucune requête en URL absolue"
+    );
+  });
+
+  it("nomme les types d'identifiants tels que la spécification les nomme", () => {
+    const document = buildAuthMd(METADATA, ORIGIN);
+
+    assert.ok(document.includes("oauth_access_token"));
+    assert.ok(document.includes("api_key"));
+  });
+
+  it("dit que la voie est anonyme", () => {
+    // C'est le type d'identité de Joutes : un client enregistré n'appartient à
+    // personne jusqu'à ce qu'un utilisateur le revendique.
+    const document = buildAuthMd(METADATA, ORIGIN);
+
+    assert.ok(/anonymous/.test(document));
+  });
+
+  it("décompose l'URL du serveur au lieu de la réécrire", () => {
+    // Un endpoint qui déménage doit emmener son chemin et son hôte.
+    const document = buildAuthMd(
+      { ...METADATA, registration_endpoint: "https://auth.example.test/ailleurs/register" },
+      ORIGIN
+    );
+
+    assert.ok(document.includes("POST /ailleurs/register HTTP/1.1"));
+    assert.ok(document.includes("Host: auth.example.test"));
   });
 });
