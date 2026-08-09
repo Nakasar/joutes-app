@@ -1,11 +1,7 @@
-export function GET() {
-  const content = `User-Agent: *
-Allow: /
-Disallow: /admin/
-Sitemap: https://www.joutes.app/sitemap.xml
-Sitemap: https://www.joutes.app/sitemap_index.xml`;
+import { buildRobotsTxt } from "@/lib/well-known/robots";
 
-  return new Response(content, {
+export function GET() {
+  return new Response(buildRobotsTxt(), {
     headers: {
       'Content-Type': 'text/plain',
     },
