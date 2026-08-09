@@ -135,9 +135,9 @@ describe("buildAuthMd", () => {
     // l'agent après qu'il a déjà dérangé un utilisateur.
     const document = buildAuthMd({ ...METADATA, registration_endpoint: undefined }, ORIGIN);
 
-    assert.ok(!document.includes("Voie A"));
+    assert.ok(!document.includes("Path A"));
     // La voie qui reste, elle, doit toujours être là.
-    assert.ok(document.includes("Voie B"));
+    assert.ok(document.includes("Path B"));
     assert.ok(document.includes(`${ORIGIN}${API_KEYS_PATH}`));
   });
 
@@ -153,6 +153,18 @@ describe("buildAuthMd", () => {
     const document = buildAuthMd(METADATA, ORIGIN);
 
     assert.ok(document.includes("Authorization: Bearer"));
-    assert.ok(/ne vaut pas pour l'API REST/.test(document));
+    assert.ok(/does not work on the REST API/.test(document));
+  });
+
+  it("emploie le vocabulaire d'enregistrement de la spécification", () => {
+    // Le document n'a pas de lecteur humain : il est lu par des agents dont
+    // l'outillage cherche ces mots-là. Rédigé en français, il gardait la bonne
+    // structure sans aucun de ces repères, et les vérificateurs de conformité
+    // ne le reconnaissaient pas comme un mode d'emploi d'enregistrement.
+    const document = buildAuthMd(METADATA, ORIGIN).toLowerCase();
+
+    for (const marker of ["register", "registration", "claim", "credential", "agent"]) {
+      assert.ok(document.includes(marker), `repère absent du document : ${marker}`);
+    }
   });
 });
