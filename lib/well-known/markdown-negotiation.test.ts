@@ -5,6 +5,7 @@ import {
   htmlToMarkdown,
   isNegotiablePath,
   MARKDOWN_CONTENT_TYPE,
+  MARKDOWN_NEGOTIATION_EXCLUDED,
 } from "./markdown-negotiation";
 
 /**
@@ -120,5 +121,36 @@ describe("estimateTokens", () => {
 describe("MARKDOWN_CONTENT_TYPE", () => {
   it("est ce que le scanner cherche", () => {
     assert.ok(MARKDOWN_CONTENT_TYPE.startsWith("text/markdown"));
+  });
+});
+
+describe("MARKDOWN_NEGOTIATION_EXCLUDED", () => {
+  it("écarte les mêmes chemins que la route", () => {
+    // La réécriture et la route ont deux façons de dire la même liste. Quand
+    // elles divergent, la réécriture happe une adresse que la route refuse, et
+    // c'est un 404 là où la page répondait.
+    const excluded = new RegExp(`^(?!${MARKDOWN_NEGOTIATION_EXCLUDED}).*$`);
+
+    for (const path of [
+      "api",
+      "api/games",
+      "_next/static/chunk.js",
+      ".well-known/api-catalog",
+      "auth.md",
+      "robots.txt",
+      "sitemap.xml",
+    ]) {
+      assert.equal(excluded.test(path), false, `la réécriture happe : /${path}`);
+      assert.equal(isNegotiablePath(`/${path}`), false, `la route convertirait : /${path}`);
+    }
+  });
+
+  it("laisse passer les pages, y compris celles qui commencent comme une exclusion", () => {
+    // `api/` en préfixe nu aurait aussi écarté `apidocs`, qui est une page.
+    for (const path of ["cgu", "apidocs", "games/riftbound"]) {
+      const excluded = new RegExp(`^(?!${MARKDOWN_NEGOTIATION_EXCLUDED}).*$`);
+      assert.equal(excluded.test(path), true, `écarté à tort : /${path}`);
+      assert.equal(isNegotiablePath(`/${path}`), true, `non converti : /${path}`);
+    }
   });
 });

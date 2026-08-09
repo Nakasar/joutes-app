@@ -21,6 +21,18 @@ import {
 /** Le rendu dépend de la requête : rien à figer au build. */
 export const dynamic = "force-dynamic";
 
+/**
+ * Ce dont la réponse dépend, et donc ce sur quoi un cache partagé doit
+ * l'indexer.
+ *
+ * `Accept` choisit entre HTML et markdown. `Accept-Language` compte tout
+ * autant : il est transmis à la requête interne, et `getUserLocale()` s'en sert
+ * pour choisir la langue quand aucun cookie ne la fixe — ce qui est toujours le
+ * cas ici, puisque les cookies ne sont pas transmis. Sans lui, un cache servirait
+ * la page française à l'agent suivant, quelle que soit sa demande.
+ */
+const VARY = "Accept, Accept-Language";
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ path?: string[] }> }
@@ -35,10 +47,6 @@ export async function GET(
     ? `${request.headers.get("x-forwarded-proto") ?? requested.protocol.replace(":", "")}://${forwardedHost}`
     : requested.origin;
   const pathname = `/${(path ?? []).join("/")}`.replace(/\/+$/, "") || "/";
-
-  if (!isNegotiablePath(pathname)) {
-    return new Response("Not Found", { status: 404, headers: { "Content-Type": "text/plain" } });
-  }
 
   const target = new URL(pathname + requested.search, origin);
 
@@ -60,7 +68,7 @@ export async function GET(
   if (!upstream.ok) {
     return new Response(`Upstream responded ${upstream.status}`, {
       status: upstream.status,
-      headers: { "Content-Type": "text/plain", Vary: "Accept" },
+      headers: { "Content-Type": "text/plain", Vary: VARY },
     });
   }
 
@@ -71,19 +79,22 @@ export async function GET(
   if (upstream.url && new URL(upstream.url).origin !== new URL(origin).origin) {
     return new Response("Upstream redirected off-origin", {
       status: 502,
-      headers: { "Content-Type": "text/plain", Vary: "Accept" },
+      headers: { "Content-Type": "text/plain", Vary: VARY },
     });
   }
 
   const contentType = upstream.headers.get("content-type") ?? "";
-  if (!contentType.includes("text/html")) {
-    // Une route qui ne rend pas de HTML n'a rien à convertir : on rend ce
-    // qu'elle a produit plutôt que d'en faire de la prose.
+  // Deux raisons de ne rien convertir : la page n'est pas du HTML, ou son
+  // chemin n'a pas à l'être. Le second cas ne devrait pas se produire — la
+  // réécriture écarte déjà ces chemins — mais s'il se produit, mieux vaut
+  // rendre la réponse d'origine qu'un 404 : une exclusion oubliée dégrade
+  // alors la négociation sans casser l'adresse.
+  if (!contentType.includes("text/html") || !isNegotiablePath(pathname)) {
     return new Response(upstream.body, {
       status: upstream.status,
       headers: {
         "Content-Type": contentType || "application/octet-stream",
-        Vary: "Accept",
+        Vary: VARY,
       },
     });
   }
@@ -95,9 +106,7 @@ export async function GET(
       "Content-Type": MARKDOWN_CONTENT_TYPE,
       // Ordre de grandeur, pour budgéter avant de lire.
       "x-markdown-tokens": String(estimateTokens(markdown)),
-      // Sans cela, un cache intermédiaire servirait ce markdown au navigateur
-      // suivant qui demande la même URL en HTML.
-      Vary: "Accept",
+      Vary: VARY,
       "Cache-Control": "public, max-age=300, stale-while-revalidate=3600",
     },
   });

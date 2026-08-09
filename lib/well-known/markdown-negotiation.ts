@@ -38,7 +38,10 @@ export const MARKDOWN_SOURCE_HEADER = "x-markdown-source";
  * la réécriture de `next.config.ts` ; celle-ci est le filet de sécurité.
  */
 export const MARKDOWN_NEGOTIATION_EXCLUDED = [
-  "api/",
+  // `api(?:/|$)` et pas `api/` : `/api` tout court est une adresse à part
+  // entière, que la réécriture aurait sinon happée pour la faire finir en 404.
+  // Le préfixe seul aurait aussi laissé passer `apidocs`, qui n'a rien à voir.
+  "api(?:/|$)",
   "_next/",
   "\\.well-known/",
   "auth\\.md",
@@ -65,7 +68,13 @@ export function isNegotiablePath(pathname: string): boolean {
  * choisir un — c'est-à-dire de se tromper pour tous les autres.
  */
 export function estimateTokens(markdown: string): number {
-  return Math.ceil([...markdown].length / 4);
+  // Compté en boucle plutôt qu'en étalant la chaîne : `[...markdown]` alloue un
+  // tableau d'un élément par point de code — des dizaines de milliers pour une
+  // page — juste pour en lire la longueur.
+  let codePoints = 0;
+  for (const _ of markdown) codePoints++;
+
+  return Math.ceil(codePoints / 4);
 }
 
 /** Ce qui ne se lit pas : ni le code, ni le JSON d'hydratation de Next. */
