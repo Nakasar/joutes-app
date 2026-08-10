@@ -43,8 +43,32 @@ describe("mergeGameFeatures", () => {
     assert.deepEqual(features, {});
   });
 
-  it("rend un objet vide quand rien n'est soumis", () => {
+  it("rend un objet vide quand rien n'est soumis et que rien n'existe", () => {
     assert.deepEqual(mergeGameFeatures(undefined, undefined), {});
+  });
+
+  // `undefined` et `{}` ne disent pas la même chose : l'un se tait sur les
+  // fonctionnalités, l'autre les désactive toutes.
+  it("ne touche à rien quand la saisie est absente", () => {
+    const features = mergeGameFeatures(undefined, { cards: true, collection: true });
+
+    assert.deepEqual(features, { cards: true, collection: true });
+  });
+
+  it("désactive tout quand la saisie est vide", () => {
+    const features = mergeGameFeatures({}, { cards: true, collection: true });
+
+    assert.deepEqual(features, {});
+  });
+
+  it("conserve aussi les clés inconnues quand la saisie est absente", () => {
+    const features = mergeGameFeatures(undefined, { cards: true, experimental: true });
+
+    assert.deepEqual(features, { cards: true, experimental: true });
+  });
+
+  it("ne recopie pas un fanion déjà à false quand la saisie est absente", () => {
+    assert.deepEqual(mergeGameFeatures(undefined, { cards: false }), {});
   });
 });
 

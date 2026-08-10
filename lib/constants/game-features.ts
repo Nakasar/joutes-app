@@ -59,9 +59,15 @@ export function isGameFeatureKey(key: string): key is GameFeatureKey {
 /**
  * Fanions à écrire en base à partir d'une saisie de formulaire.
  *
- * Deux règles, l'une et l'autre pour que le document reste lisible et qu'un
+ * Trois règles, toutes pour que le document reste lisible et qu'un
  * enregistrement ne détruise rien :
  *
+ *  - **une saisie absente ne touche à rien.** `undefined` et l'objet vide ne
+ *    disent pas la même chose : le premier est « ce formulaire ne parle pas des
+ *    fonctionnalités », le second « l'utilisateur les a toutes décochées ». Les
+ *    confondre laisserait un client qui n'envoie pas le champ — un onglet resté
+ *    ouvert sur la version précédente pendant un déploiement — effacer en
+ *    silence tout ce qu'un jeu expose.
  *  - **seuls les fanions activés sont écrits.** Un fanion décoché disparaît du
  *    document plutôt que d'y rester en `false` — c'est déjà la convention du
  *    dépôt (`foil` sur une carte, `sealed` sur un exemplaire), et tout le code
@@ -74,11 +80,16 @@ export function mergeGameFeatures(
   submitted: Partial<Record<GameFeatureKey, boolean>> | undefined,
   existing: Record<string, boolean | undefined> | undefined
 ): Record<string, boolean> {
-  const preserved = Object.entries(existing ?? {}).filter(
-    ([key, value]) => !isGameFeatureKey(key) && value === true
+  const enabledExisting = Object.entries(existing ?? {}).filter(
+    ([, value]) => value === true
   ) as [string, boolean][];
 
-  const enabled = GAME_FEATURE_KEYS.filter((key) => submitted?.[key]).map(
+  if (submitted === undefined) {
+    return Object.fromEntries(enabledExisting);
+  }
+
+  const preserved = enabledExisting.filter(([key]) => !isGameFeatureKey(key));
+  const enabled = GAME_FEATURE_KEYS.filter((key) => submitted[key]).map(
     (key) => [key, true] as [string, boolean]
   );
 
