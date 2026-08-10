@@ -45,6 +45,17 @@
 }
 
 :root {
+  /*
+   * Sans cette déclaration, le navigateur dessine les contrôles natifs — liste
+   * déroulante d'un `select`, sélecteur de date, cases à cocher, ascenseurs —
+   * avec ses couleurs claires, quel que soit le thème de la page. En sombre, la
+   * liste d'un `select` s'ouvrait donc en texte blanc sur fond blanc.
+   *
+   * C'est le navigateur qu'il faut informer, pas chaque contrôle qu'il faut
+   * repeindre : une couleur posée sur un `select` ne suit pas toujours dans le
+   * menu qu'il ouvre, celui-ci étant rendu hors de la page.
+   */
+  color-scheme: light;
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -80,6 +91,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
