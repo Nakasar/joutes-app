@@ -57,9 +57,20 @@ export default function BattleReportSection({
 
   const handleSaveReport = () => {
     setError(null);
+    // L'enregistrement débarrasse les champs de leurs espaces. Envoyer la saisie
+    // brute puis garder celle-ci à l'écran laisserait le formulaire « modifié »
+    // juste après avoir été enregistré, et afficherait autre chose que la base.
+    const trimmedScenario = scenario.trim();
+    const trimmedNotes = notes.trim();
+
     startTransition(async () => {
-      const result = await updateBattleReportAction(matchId, { scenario, notes });
+      const result = await updateBattleReportAction(matchId, {
+        scenario: trimmedScenario,
+        notes: trimmedNotes,
+      });
       if (result.success) {
+        setScenario(trimmedScenario);
+        setNotes(trimmedNotes);
         router.refresh();
       } else {
         setError(result.error || "Erreur lors de la mise à jour du rapport");

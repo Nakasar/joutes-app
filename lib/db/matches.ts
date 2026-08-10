@@ -473,9 +473,13 @@ export async function removePlayerFromMatch(matchId: string, userId: string): Pr
     { _id: new ObjectId(matchId), matchType: 'game' },
     {
       $pull: { playerIds: userId },
-      // Un joueur retiré emporte sa liste d'armée : sans cela, le rapport
-      // afficherait une armée que plus aucun nom n'accompagne.
-      $unset: { [`battleReport.armies.${userId}`]: "" },
+      // Un joueur retiré emporte ce qu'il avait posé sur la table — sa liste
+      // d'armée comme son deck. L'affichage ne parcourt que les joueurs de la
+      // partie : ce qui reste là n'est plus lu par personne, mais reste écrit.
+      $unset: {
+        [`battleReport.armies.${userId}`]: "",
+        [`decks.${userId}`]: "",
+      },
     }
   );
 

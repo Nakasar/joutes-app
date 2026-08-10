@@ -179,7 +179,13 @@ export default function GameMatchForm({
           displayName: p.displayName,
           discriminator: p.discriminator,
         })),
-        decks: Object.keys(decksToSubmit).length > 0 ? decksToSubmit : undefined,
+        // Un rapport de bataille n'a pas de deck : les decks choisis avant que
+        // l'interrupteur soit poussé restent dans l'état du formulaire, mais ne
+        // doivent pas entrer en base sous un format qui ne les affiche jamais.
+        decks:
+          !isBattleReport && Object.keys(decksToSubmit).length > 0
+            ? decksToSubmit
+            : undefined,
         // L'objet, même vide, est ce qui fait de la partie un rapport de
         // bataille : le format ne dépend pas de ce qui a déjà été rempli.
         battleReport: isBattleReport
