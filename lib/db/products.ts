@@ -254,7 +254,11 @@ function escapeRegExp(value: string): string {
 export async function searchGameProducts(
   gameId: ObjectId,
   query: string,
-  { limit = 20, leavesOnly = false }: { limit?: number; leavesOnly?: boolean } = {}
+  {
+    limit = 20,
+    leavesOnly = false,
+    kinds,
+  }: { limit?: number; leavesOnly?: boolean; kinds?: ProductKindKey[] } = {}
 ): Promise<GameProductSummary[]> {
   const trimmed = query.trim();
   if (!trimmed) {
@@ -270,6 +274,9 @@ export async function searchGameProducts(
         $or: [{ id: pattern }, { name: pattern }],
         // Seul un produit sans contenu peut entrer dans le contenu d'un autre.
         ...(leavesOnly ? { $nor: [{ contents: { $exists: true, $not: { $size: 0 } } }] } : {}),
+        // Une liste d'armée ne se compose que de figurines : proposer les
+        // boîtes et les livres du catalogue ferait du bruit à chaque frappe.
+        ...(kinds && kinds.length > 0 ? { kind: { $in: kinds } } : {}),
       },
       { projection: SUMMARY_PROJECTION }
     )

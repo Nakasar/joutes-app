@@ -41,6 +41,11 @@ export const GAME_FEATURES = {
     label: "Cubes",
     description: "Création et draft de cubes.",
   },
+  battleReports: {
+    label: "Rapports de bataille",
+    description:
+      "Les parties de ce jeu se saisissent en rapport de bataille : listes d'armée, scénario et notes. Pour les jeux de figurines.",
+  },
 } as const;
 
 export type GameFeatureKey = keyof typeof GAME_FEATURES;

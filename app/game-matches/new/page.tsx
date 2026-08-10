@@ -6,7 +6,14 @@ import { getAllLairs } from "@/lib/db/lairs";
 import { getUserById } from "@/lib/db/users";
 import GameMatchForm from "./GameMatchForm";
 
-export default async function NewGameMatchPage() {
+export default async function NewGameMatchPage({
+  searchParams,
+}: {
+  // `gameId` pré-sélectionne le jeu : la tuile « rapports de bataille » d'une
+  // fiche de jeu amène ici, et redemander le jeu qu'on vient de quitter serait
+  // une question de trop.
+  searchParams: Promise<{ gameId?: string }>;
+}) {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -14,6 +21,8 @@ export default async function NewGameMatchPage() {
   if (!session?.user?.id) {
     redirect("/login");
   }
+
+  const { gameId } = await searchParams;
 
   const [games, lairs, user] = await Promise.all([
     getAllGames(),
@@ -35,7 +44,12 @@ export default async function NewGameMatchPage() {
       </div>
 
       <div className="bg-card border rounded-lg p-6">
-        <GameMatchForm games={games} lairs={lairs} currentUser={user} />
+        <GameMatchForm
+          games={games}
+          lairs={lairs}
+          currentUser={user}
+          initialGameId={games.some((game) => game.id === gameId) ? gameId : undefined}
+        />
       </div>
     </div>
   );

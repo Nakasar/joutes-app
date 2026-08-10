@@ -298,6 +298,10 @@
         "title": "Produits",
         "description": "Explorez les boîtes et les figurines du jeu, et suivez ce que vous possédez"
       },
+      "toolsBattleReports": {
+        "title": "Rapports de bataille",
+        "description": "Enregistrez vos parties avec les listes d'armée jouées, le scénario et vos notes"
+      },
       "toolsCollection": {
         "title": "Collection et échanges",
         "description": "Gérez votre collection, échangez avec d'autres joueurs et trouvez des pièces rares"

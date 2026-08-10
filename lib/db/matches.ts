@@ -5,6 +5,8 @@ import {
   GameTypeMatch,
   LeagueTypeMatch,
   EventTypeMatch,
+  BattleReport,
+  BattleReportArmy,
   GameMatchPlayer,
   GameMatchRating,
   GameMatchMVPVote,
@@ -13,6 +15,7 @@ import {
   isLeagueMatch,
   isEventMatch,
 } from "@/lib/types/Match";
+import { isEmptyArmy, normalizeArmy } from "@/lib/battle-reports/army";
 
 const COLLECTION_NAME = "matches";
 
@@ -37,7 +40,8 @@ export type MatchDocument = {
   ratings?: GameMatchRating[];
   mvpVotes?: GameMatchMVPVote[];
   decks?: Record<string, string>;
-  
+  battleReport?: BattleReport;
+
   // League match fields
   leagueId?: string;
   playerScores?: Record<string, number>;
@@ -91,6 +95,9 @@ function toMatch(doc: WithId<Document>): Match {
       mvpVotes: doc.mvpVotes || [],
       winnerIds: doc.winnerIds || [],
       decks: doc.decks,
+      // Pas de valeur par défaut : c'est l'absence du champ qui dit qu'une
+      // partie n'est pas un rapport de bataille.
+      battleReport: doc.battleReport,
     } as GameTypeMatch;
   } else if (doc.matchType === 'league') {
     return {
@@ -158,6 +165,7 @@ function toDocument(match: Omit<Match, "id" | "createdAt">): Omit<MatchDocument,
       mvpVotes: match.mvpVotes,
       winnerIds: match.winnerIds,
       decks: match.decks,
+      battleReport: match.battleReport,
     };
   } else if (isLeagueMatch(match)) {
     return {
@@ -463,9 +471,18 @@ export async function deleteMatch(id: string): Promise<boolean> {
 export async function removePlayerFromMatch(matchId: string, userId: string): Promise<boolean> {
   const result = await db.collection<MatchDocument>(COLLECTION_NAME).updateOne(
     { _id: new ObjectId(matchId), matchType: 'game' },
-    { $pull: { playerIds: userId } }
+    {
+      $pull: { playerIds: userId },
+      // Un joueur retiré emporte ce qu'il avait posé sur la table — sa liste
+      // d'armée comme son deck. L'affichage ne parcourt que les joueurs de la
+      // partie : ce qui reste là n'est plus lu par personne, mais reste écrit.
+      $unset: {
+        [`battleReport.armies.${userId}`]: "",
+        [`decks.${userId}`]: "",
+      },
+    }
   );
-  
+
   return result.modifiedCount > 0;
 }
 
@@ -596,6 +613,70 @@ export async function toggleWinner(
   }
   
   return true;
+}
+
+// ============================================================================
+// BATTLE REPORT OPERATIONS
+// ============================================================================
+
+/**
+ * Scénario et notes d'un rapport de bataille.
+ *
+ * Les écritures sont **champ par champ** plutôt qu'un remplacement de l'objet
+ * entier : le rapport est édité de plusieurs endroits (le scénario depuis
+ * l'en-tête, les notes depuis leur fiche, les armées par chaque joueur), et
+ * réécrire `battleReport` d'un bloc ferait perdre au dernier arrivé ce que les
+ * autres viennent d'y mettre.
+ *
+ * Un champ vidé est retiré du document, comme partout ailleurs dans le dépôt.
+ */
+export async function updateMatchBattleReport(
+  matchId: string,
+  fields: { scenario?: string; notes?: string }
+): Promise<boolean> {
+  const set: Record<string, unknown> = { updatedAt: new Date() };
+  const unset: Record<string, ""> = {};
+
+  for (const [field, value] of Object.entries(fields)) {
+    if (value === undefined) continue;
+    if (value) {
+      set[`battleReport.${field}`] = value;
+    } else {
+      unset[`battleReport.${field}`] = "";
+    }
+  }
+
+  const result = await db.collection<MatchDocument>(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(matchId), matchType: 'game' },
+    {
+      $set: set,
+      ...(Object.keys(unset).length > 0 ? { $unset: unset } : {}),
+    }
+  );
+
+  return result.matchedCount > 0;
+}
+
+/**
+ * Liste d'armée d'un joueur. Une liste vide est retirée : une armée sans nom ni
+ * figurine n'est pas une armée, et la laisser afficherait une section creuse.
+ */
+export async function setMatchBattleReportArmy(
+  matchId: string,
+  userId: string,
+  army: BattleReportArmy
+): Promise<boolean> {
+  const normalized = normalizeArmy(army);
+  const path = `battleReport.armies.${userId}`;
+
+  const result = await db.collection<MatchDocument>(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(matchId), matchType: 'game' },
+    isEmptyArmy(normalized)
+      ? { $set: { updatedAt: new Date() }, $unset: { [path]: "" } }
+      : { $set: { [path]: normalized, updatedAt: new Date() } }
+  );
+
+  return result.matchedCount > 0;
 }
 
 // ============================================================================

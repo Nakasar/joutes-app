@@ -298,6 +298,10 @@
         "title": "Products",
         "description": "Browse the game's boxes and miniatures, and track what you own"
       },
+      "toolsBattleReports": {
+        "title": "Battle reports",
+        "description": "Record your games with the army lists played, the scenario and your notes"
+      },
       "toolsCollection": {
         "title": "Collection and trading",
         "description": "Manage your collection, trade with other players, and find rare pieces"

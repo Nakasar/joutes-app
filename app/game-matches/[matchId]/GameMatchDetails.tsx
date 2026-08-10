@@ -26,7 +26,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { DateTime } from "luxon";
-import { Calendar, MapPin, Users, Edit, Trash2, X, ArrowLeft, UserMinus, UserPlus, QrCode, Medal, Trophy } from "lucide-react";
+import { Calendar, MapPin, Users, Edit, Trash2, X, ArrowLeft, UserMinus, UserPlus, QrCode, Medal, Trophy, Swords } from "lucide-react";
 import QRCode from "qrcode";
 import {
   removePlayerFromMatchAction,
@@ -40,6 +40,7 @@ import {
 } from "../actions";
 import RatingSelector from "./RatingSelector";
 import DeckSelector from "@/components/DeckSelector";
+import BattleReportSection from "./BattleReportSection";
 
 type GameMatchDetailsProps = {
   match: GameMatch;
@@ -360,11 +361,17 @@ export default function GameMatchDetails({
           {/* En-tête avec jeu et actions */}
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <h1 className="text-2xl font-bold">{gameName}</h1>
                 {isCreator && (
                   <Badge variant="outline" className="text-xs">
                     Créateur
+                  </Badge>
+                )}
+                {match.battleReport && (
+                  <Badge variant="outline" className="text-xs gap-1">
+                    <Swords className="h-3 w-3" />
+                    Rapport de bataille
                   </Badge>
                 )}
               </div>
@@ -579,8 +586,9 @@ export default function GameMatchDetails({
             </div>
           )}
 
-          {/* Sélection du deck pour le joueur courant */}
-          {isPlayer && (
+          {/* Sélection du deck pour le joueur courant. Un rapport de bataille
+              n'en a pas l'usage : ce qui a été joué s'y écrit en liste d'armée. */}
+          {isPlayer && !match.battleReport && (
             <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold">Votre deck utilisé</h3>
@@ -817,6 +825,18 @@ export default function GameMatchDetails({
           </div>
         </div>
       </Card>
+
+      {match.battleReport && (
+        <BattleReportSection
+          matchId={match.id}
+          gameId={match.gameId}
+          report={match.battleReport}
+          players={match.players}
+          winnerIds={match.winnerIds ?? []}
+          currentUserId={currentUserId}
+          isCreator={isCreator}
+        />
+      )}
     </div>
   );
 }

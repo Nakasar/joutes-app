@@ -8,6 +8,8 @@ import { Lair } from "@/lib/types/Lair";
 import { User } from "@/lib/types/User";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -18,11 +20,16 @@ import {
 import { DateTime } from "luxon";
 import { X } from "lucide-react";
 import DeckSelector from "@/components/DeckSelector";
+import ArmyListEditor from "@/components/battle-reports/ArmyListEditor";
+import type { BattleReportArmy } from "@/lib/types/Match";
+import { MAX_NOTES_LENGTH, MAX_SCENARIO_LENGTH } from "@/lib/battle-reports/army";
 
 type GameMatchFormProps = {
   games: Game[];
   lairs: Lair[];
   currentUser: User;
+  /** Jeu pré-sélectionné, quand le formulaire est ouvert depuis une fiche de jeu. */
+  initialGameId?: string;
 };
 
 type PlayerInput = {
@@ -32,7 +39,12 @@ type PlayerInput = {
   discriminator?: string;
 };
 
-export default function GameMatchForm({ games, lairs, currentUser }: GameMatchFormProps) {
+export default function GameMatchForm({
+  games,
+  lairs,
+  currentUser,
+  initialGameId,
+}: GameMatchFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +54,7 @@ export default function GameMatchForm({ games, lairs, currentUser }: GameMatchFo
   const defaultDateTime = now.toFormat("yyyy-MM-dd'T'HH:mm");
   
   const [formData, setFormData] = useState({
-    gameId: games.length > 0 ? games[0].id : "",
+    gameId: initialGameId ?? (games.length > 0 ? games[0].id : ""),
     playedAt: defaultDateTime,
     lairId: "",
   });
@@ -63,6 +75,19 @@ export default function GameMatchForm({ games, lairs, currentUser }: GameMatchFo
   const [playerDecks, setPlayerDecks] = useState<Record<string, string | undefined>>({});
 
   const [newPlayerTag, setNewPlayerTag] = useState("");
+
+  /**
+   * Rapport de bataille. Le format suit le jeu : les jeux qui activent la
+   * fonctionnalité l'imposent, les autres le proposent — un joueur peut vouloir
+   * raconter une partie d'un jeu dont le fanion n'est pas encore posé.
+   */
+  const selectedGame = games.find((game) => game.id === formData.gameId);
+  const [optedInBattleReport, setOptedInBattleReport] = useState(false);
+  const isBattleReport = Boolean(selectedGame?.features?.battleReports) || optedInBattleReport;
+
+  const [scenario, setScenario] = useState("");
+  const [notes, setNotes] = useState("");
+  const [armies, setArmies] = useState<Record<string, BattleReportArmy>>({});
 
   const addPlayer = () => {
     const trimmedTag = newPlayerTag.trim();
@@ -154,7 +179,18 @@ export default function GameMatchForm({ games, lairs, currentUser }: GameMatchFo
           displayName: p.displayName,
           discriminator: p.discriminator,
         })),
-        decks: Object.keys(decksToSubmit).length > 0 ? decksToSubmit : undefined,
+        // Un rapport de bataille n'a pas de deck : les decks choisis avant que
+        // l'interrupteur soit poussé restent dans l'état du formulaire, mais ne
+        // doivent pas entrer en base sous un format qui ne les affiche jamais.
+        decks:
+          !isBattleReport && Object.keys(decksToSubmit).length > 0
+            ? decksToSubmit
+            : undefined,
+        // L'objet, même vide, est ce qui fait de la partie un rapport de
+        // bataille : le format ne dépend pas de ce qui a déjà été rempli.
+        battleReport: isBattleReport
+          ? { scenario, notes, armies }
+          : undefined,
       });
 
       if (result.success) {
@@ -193,6 +229,24 @@ export default function GameMatchForm({ games, lairs, currentUser }: GameMatchFo
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      {/* Format rapport de bataille */}
+      <div className="flex items-start justify-between gap-4 p-4 border rounded-lg bg-muted/30">
+        <div className="space-y-1">
+          <p className="text-sm font-medium">Rapport de bataille</p>
+          <p className="text-xs text-muted-foreground">
+            {selectedGame?.features?.battleReports
+              ? `Les parties de ${selectedGame.name} sont enregistrées en rapport de bataille : listes d'armée, scénario et notes.`
+              : "Ajoutez les listes d'armée jouées, le scénario et une fiche de notes."}
+          </p>
+        </div>
+        <Switch
+          checked={isBattleReport}
+          disabled={isPending || Boolean(selectedGame?.features?.battleReports)}
+          onCheckedChange={setOptedInBattleReport}
+          aria-label="Enregistrer cette partie en rapport de bataille"
+        />
       </div>
 
       {/* Date et heure */}
@@ -258,8 +312,28 @@ export default function GameMatchForm({ games, lairs, currentUser }: GameMatchFo
                 )}
               </div>
               
-              {/* Sélecteur de deck pour ce joueur */}
-              {player.id && (
+              {/* Liste d'armée (rapport de bataille) ou deck (jeu de cartes).
+                  Dans les deux cas, seuls les joueurs déjà identifiés peuvent
+                  s'en voir attribuer une : un invité résolu côté serveur n'a pas
+                  encore d'identifiant sur lequel accrocher la saisie. */}
+              {player.id && isBattleReport && (
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">
+                    Liste d&apos;armée (optionnel)
+                  </label>
+                  <ArmyListEditor
+                    gameId={formData.gameId}
+                    idPrefix={`player-${index}`}
+                    army={armies[player.id] ?? { units: [] }}
+                    onChange={(army) =>
+                      setArmies({ ...armies, [player.id]: army })
+                    }
+                    disabled={isPending}
+                  />
+                </div>
+              )}
+
+              {player.id && !isBattleReport && (
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">
                     Deck utilisé (optionnel)
@@ -302,6 +376,41 @@ export default function GameMatchForm({ games, lairs, currentUser }: GameMatchFo
           </p>
         </div>
       </div>
+
+      {/* Scénario et notes du rapport de bataille */}
+      {isBattleReport && (
+        <>
+          <div className="space-y-2">
+            <label htmlFor="scenario" className="text-sm font-medium">
+              Scénario <span className="text-muted-foreground">(optionnel)</span>
+            </label>
+            <Input
+              id="scenario"
+              type="text"
+              value={scenario}
+              maxLength={MAX_SCENARIO_LENGTH}
+              disabled={isPending}
+              placeholder="Ex. : Prise de position"
+              onChange={(e) => setScenario(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="notes" className="text-sm font-medium">
+              Notes <span className="text-muted-foreground">(optionnel)</span>
+            </label>
+            <Textarea
+              id="notes"
+              value={notes}
+              rows={6}
+              maxLength={MAX_NOTES_LENGTH}
+              disabled={isPending}
+              placeholder="Le déroulé de la partie, les moments marquants, ce qu'il faudra retenir pour la prochaine fois…"
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
+        </>
+      )}
 
       {/* Boutons */}
       <div className="flex gap-4 pt-4">
