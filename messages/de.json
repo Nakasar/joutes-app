@@ -298,6 +298,10 @@
         "title": "Produkte",
         "description": "Entdecke Schachteln und Miniaturen des Spiels und verfolge, was du besitzt"
       },
+      "toolsBattleReports": {
+        "title": "Schlachtberichte",
+        "description": "Halte deine Partien mit den gespielten Armeelisten, dem Szenario und deinen Notizen fest"
+      },
       "toolsCollection": {
         "title": "Sammlung und Tausch",
         "description": "Verwalte deine Sammlung, tausche mit anderen Spielern und finde seltene Stücke"

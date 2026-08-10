@@ -1,6 +1,9 @@
 import { Game } from "@/lib/types/Game";
 import { Lair } from "@/lib/types/Lair";
 import { User } from "@/lib/types/User";
+import type { BattleReport } from "@/lib/types/Match";
+
+export type { BattleReport, BattleReportArmy, BattleReportArmyUnit } from "@/lib/types/Match";
 
 export type GameMatchPlayer = {
   userId: User['id'];
@@ -32,4 +35,5 @@ export type GameMatch = {
   mvpVotes?: GameMatchMVPVote[]; // Votes pour le MVP
   winnerIds?: User['id'][]; // IDs des gagnants désignés par le créateur
   decks?: Record<User['id'], string>; // Decks utilisés par chaque joueur { playerId: deckId }
+  battleReport?: BattleReport; // Présent = la partie est saisie en rapport de bataille
 };

@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DateTime } from "luxon";
-import { Calendar, MapPin, Users, Eye, Trophy, Medal, Angry, Frown, Meh, Smile, Laugh } from "lucide-react";
+import { Calendar, MapPin, Users, Eye, Trophy, Medal, Angry, Frown, Meh, Smile, Laugh, Swords } from "lucide-react";
 import { useRouter } from "next/navigation";
 import GameMatchActions from "./GameMatchActions";
 import AddPlayerToMatch from "./AddPlayerToMatch";
@@ -95,11 +95,17 @@ export default function GameMatchList({ matches, games, lairs, currentUserId }: 
               {/* En-tête avec jeu et date */}
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h3 className="text-lg font-semibold">{gameName}</h3>
                     {isCreator && (
                       <Badge variant="outline" className="text-xs">
                         Créateur
+                      </Badge>
+                    )}
+                    {match.battleReport && (
+                      <Badge variant="outline" className="text-xs gap-1">
+                        <Swords className="h-3 w-3" />
+                        Rapport de bataille
                       </Badge>
                     )}
                     {/* Note moyenne de la partie */}
@@ -152,6 +158,14 @@ export default function GameMatchList({ matches, games, lairs, currentUserId }: 
                 <div className="flex items-center gap-2 text-sm">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
                   <span>{lairName}</span>
+                </div>
+              )}
+
+              {/* Scénario du rapport de bataille */}
+              {match.battleReport?.scenario && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Swords className="h-4 w-4 text-muted-foreground" />
+                  <span>{match.battleReport.scenario}</span>
                 </div>
               )}
 

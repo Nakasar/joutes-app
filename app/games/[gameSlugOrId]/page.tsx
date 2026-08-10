@@ -197,6 +197,15 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
               </Link>
             )}
 
+            {game.features?.battleReports && (
+              <Link href={`/game-matches/new?gameId=${game.id}`} className="group">
+                <div className="bg-gradient-to-br from-amber-900/30 to-amber-800/20 backdrop-blur-sm rounded-xl border border-amber-500/20 p-8 hover:border-amber-500/50 transition-all hover:scale-105">
+                  <h3 className="text-xl font-bold text-white mb-2">{t("detail.toolsBattleReports.title")}</h3>
+                  <p className="text-gray-300">{t("detail.toolsBattleReports.description")}</p>
+                </div>
+              </Link>
+            )}
+
             {game.features?.collection && (
               <Link href={`/collection/${game.slug}`} className="group">
                 <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 backdrop-blur-sm rounded-xl border border-blue-500/20 p-8 hover:border-blue-500/50 transition-all hover:scale-105">

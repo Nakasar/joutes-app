@@ -1,5 +1,5 @@
 import { GameMatch } from "@/lib/types/GameMatch";
-import { GameTypeMatch } from "@/lib/types/Match";
+import { BattleReportArmy, GameTypeMatch } from "@/lib/types/Match";
 import {
   createMatch,
   getMatchById,
@@ -11,6 +11,8 @@ import {
   rateMatch,
   voteMVP,
   toggleWinner,
+  updateMatchBattleReport,
+  setMatchBattleReportArmy,
 } from "@/lib/db/matches";
 
 // Adapters pour maintenir la rétrocompatibilité avec l'API existante
@@ -108,4 +110,19 @@ export async function toggleGameMatchWinner(
   userId: string
 ): Promise<boolean> {
   return toggleWinner(matchId, userId);
+}
+
+export async function updateGameMatchBattleReport(
+  matchId: string,
+  fields: { scenario?: string; notes?: string }
+): Promise<boolean> {
+  return updateMatchBattleReport(matchId, fields);
+}
+
+export async function setGameMatchBattleReportArmy(
+  matchId: string,
+  userId: string,
+  army: BattleReportArmy
+): Promise<boolean> {
+  return setMatchBattleReportArmy(matchId, userId, army);
 }

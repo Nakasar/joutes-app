@@ -35,6 +35,12 @@ Les utilisateurs peuvent enregistrer et consulter l'historique de leurs parties 
 
 Pour plus de détails, voir [docs/GAME_MATCHES.md](docs/GAME_MATCHES.md).
 
+### Rapports de bataille (jeux de figurines)
+
+Les parties des jeux qui l'activent se saisissent en rapport de bataille : liste d'armée de chaque joueur (avec autocomplétion des figurines du catalogue), scénario joué et fiche de notes libres.
+
+Pour plus de détails, voir [docs/BATTLE_REPORTS.md](docs/BATTLE_REPORTS.md).
+
 ### Signalement de contenus
 
 Les utilisateurs connectés peuvent signaler les contenus créés par d'autres utilisateurs (bouton drapeau). Les administrateurs les traitent depuis `/admin/reports`.

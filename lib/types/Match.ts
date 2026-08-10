@@ -26,6 +26,42 @@ export type MatchFeatAward = {
   pointsCounted?: boolean; // Indique si les points ont été comptabilisés (false si limite atteinte)
 };
 
+/**
+ * Une ligne de liste d'armée. `productId` désigne une figurine du catalogue du
+ * jeu ; il est absent d'une ligne saisie librement (figurine convertie, sortie
+ * trop récente pour le catalogue). Le `name` est écrit dans le rapport plutôt
+ * que retrouvé par jointure : un rapport de bataille est une archive, il doit
+ * rester lisible si le produit quitte le catalogue.
+ *
+ * Les règles de saisie vivent dans `lib/battle-reports/army.ts`.
+ */
+export type BattleReportArmyUnit = {
+  productId?: string;
+  name: string;
+  quantity: number;
+};
+
+export type BattleReportArmy = {
+  name?: string; // Nom de la liste, tel que le joueur l'appelle
+  units: BattleReportArmyUnit[];
+};
+
+/**
+ * Volet « rapport de bataille » d'une partie — les jeux de figurines racontent
+ * une partie autrement qu'un jeu de cartes : ce qui compte n'est pas un deck
+ * mais la liste posée sur la table, le scénario joué et le récit qu'on en fait.
+ *
+ * **La présence de cet objet fait la partie un rapport de bataille**, y compris
+ * s'il est vide : le format est choisi à la création (automatiquement pour les
+ * jeux qui activent la fonctionnalité `battleReports`), et il ne dépend pas du
+ * fait qu'une note ait déjà été écrite.
+ */
+export type BattleReport = {
+  scenario?: string; // Champ libre : les scénarios ne sont pas catalogués
+  notes?: string; // Fiche de notes libres sur la partie
+  armies?: Record<User['id'], BattleReportArmy>; // Liste jouée par chaque joueur
+};
+
 // Type de base pour tous les matchs
 export type BaseMatch = {
   id: string;
@@ -51,6 +87,7 @@ export type GameTypeMatch = BaseMatch & {
   mvpVotes?: GameMatchMVPVote[]; // Votes pour le MVP
   winnerIds?: User['id'][]; // IDs des gagnants désignés par le créateur
   decks?: Record<User['id'], string>; // Decks utilisés par chaque joueur { playerId: deckId }
+  battleReport?: BattleReport; // Présent = la partie est saisie en rapport de bataille
 };
 
 // Match de ligue
@@ -105,6 +142,15 @@ export function isLeagueMatch(match: { matchType: Match['matchType'] }): match i
 
 export function isEventMatch(match: { matchType: Match['matchType'] }): match is EventTypeMatch {
   return match.matchType === 'event';
+}
+
+/**
+ * Une partie est un rapport de bataille dès lors qu'elle en porte le volet —
+ * même vide. Le format est une propriété de la partie, pas une conséquence de
+ * ce qui a été rempli.
+ */
+export function isBattleReport(match: { battleReport?: BattleReport }): boolean {
+  return match.battleReport !== undefined;
 }
 
 // Alias pour la rétrocompatibilité (à supprimer progressivement)

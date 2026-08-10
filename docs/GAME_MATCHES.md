@@ -40,7 +40,15 @@ Toutes les actions de suppression nécessitent une confirmation via une boîte d
 
 - Filtre par jeu pour affiner la liste des parties affichées
 
-### 5. Partage de l'historique
+### 5. Rapports de bataille
+
+Une partie peut être enregistrée au format **rapport de bataille** — listes
+d'armée, scénario et fiche de notes. Le format est automatique pour les jeux qui
+activent la fonctionnalité, et disponible à la demande pour les autres.
+
+Voir [BATTLE_REPORTS.md](BATTLE_REPORTS.md).
+
+### 6. Partage de l'historique
 
 Les parties sont partagées : quand un utilisateur enregistre une partie avec d'autres joueurs, tous les participants voient cette partie dans leur propre historique.
 

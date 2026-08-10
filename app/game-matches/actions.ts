@@ -13,9 +13,19 @@ import {
   addPlayerToGameMatch,
   updateGameMatch,
   rateGameMatch,
+  updateGameMatchBattleReport,
+  setGameMatchBattleReportArmy,
 } from "@/lib/db/game-matches";
-import { gameMatchSchema } from "@/lib/schemas/game-match.schema";
+import {
+  battleReportArmySchema,
+  battleReportSchema,
+  gameMatchSchema,
+} from "@/lib/schemas/game-match.schema";
 import { GameMatch } from "@/lib/types/GameMatch";
+import { BattleReport, BattleReportArmy } from "@/lib/types/Match";
+import { normalizeArmy, normalizeBattleReport } from "@/lib/battle-reports/army";
+import { searchGameProducts, type GameProductSummary } from "@/lib/db/products";
+import { gameIdSchema } from "@/lib/schemas/game.schema";
 import { getUserByUsernameAndDiscriminator, getUserById } from "@/lib/db/users";
 import { ObjectId } from "mongodb";
 import db from "@/lib/mongodb";
@@ -33,6 +43,13 @@ export async function createGameMatchAction(
       discriminator?: string;
     }>;
     decks?: Record<string, string>;
+    /**
+     * Présent = la partie est saisie en rapport de bataille. Le formulaire le
+     * pose d'office pour les jeux qui activent la fonctionnalité ; le champ est
+     * accepté pour les autres, un joueur pouvant vouloir raconter une partie
+     * dont le jeu n'a pas encore le fanion.
+     */
+    battleReport?: BattleReport;
   }
 ): Promise<{ success: boolean; error?: string; match?: GameMatch }> {
   try {
@@ -77,6 +94,13 @@ export async function createGameMatchAction(
       })
     );
 
+    // Les listes d'armée sont saisies avant que les joueurs invités soient
+    // résolus : celles qui ne retombent sur aucun joueur de la partie sont
+    // abandonnées ici plutôt que d'entrer en base sans propriétaire.
+    const battleReport = data.battleReport
+      ? normalizeBattleReport(data.battleReport, resolvedPlayerIds)
+      : undefined;
+
     // Valider les données
     const validationResult = gameMatchSchema.safeParse({
       gameId: data.gameId,
@@ -84,6 +108,7 @@ export async function createGameMatchAction(
       lairId: data.lairId,
       playerIds: resolvedPlayerIds,
       decks: data.decks,
+      battleReport,
     });
     
     if (!validationResult.success) {
@@ -514,6 +539,169 @@ export async function updatePlayerDeckAction(
     return { success: true };
   } catch (error) {
     console.error("Erreur lors de la mise à jour du deck:", error);
+    return { success: false, error: "Erreur serveur" };
+  }
+}
+
+// ============================================================================
+// RAPPORTS DE BATAILLE
+// ============================================================================
+
+/**
+ * Figurines proposées à la saisie d'une liste d'armée.
+ *
+ * Le catalogue des produits est public — c'est la même source que la galerie
+ * d'un jeu —, mais l'action reste réservée aux comptes connectés : elle ne sert
+ * qu'à remplir un rapport de bataille, et seul un utilisateur connecté peut en
+ * tenir un.
+ */
+export async function searchBattleReportUnitsAction(
+  gameId: string,
+  query: string
+): Promise<GameProductSummary[]> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return [];
+    }
+
+    const validatedGameId = gameIdSchema.safeParse(gameId);
+    if (!validatedGameId.success) {
+      return [];
+    }
+
+    return await searchGameProducts(new ObjectId(validatedGameId.data), query, {
+      // « Figurine » au sens du catalogue : ce qu'un joueur pose sur la table.
+      kinds: ["unit"],
+      limit: 10,
+    });
+  } catch (error) {
+    console.error("Erreur lors de la recherche de figurines:", error);
+    return [];
+  }
+}
+
+/**
+ * Scénario et notes du rapport. Réservés au créateur : ce sont les deux seuls
+ * champs partagés de la fiche, et deux joueurs qui les écriraient en même temps
+ * s'effaceraient l'un l'autre sans le voir. Chacun garde en revanche la main sur
+ * sa propre liste d'armée (`updateBattleReportArmyAction`).
+ */
+export async function updateBattleReportAction(
+  matchId: string,
+  fields: { scenario?: string; notes?: string }
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    const match = await getGameMatchById(matchId);
+
+    if (!match) {
+      return { success: false, error: "Partie non trouvée" };
+    }
+
+    if (!match.battleReport) {
+      return { success: false, error: "Cette partie n'est pas un rapport de bataille" };
+    }
+
+    if (match.createdBy !== session.user.id) {
+      return { success: false, error: "Seul le créateur peut modifier le rapport" };
+    }
+
+    const validationResult = battleReportSchema
+      .pick({ scenario: true, notes: true })
+      .safeParse(fields);
+
+    if (!validationResult.success) {
+      const errorMessage = validationResult.error.issues[0]?.message || "Données invalides";
+      return { success: false, error: errorMessage };
+    }
+
+    // Un champ absent de la saisie n'est pas touché ; un champ vidé est effacé.
+    const result = await updateGameMatchBattleReport(matchId, {
+      ...(fields.scenario !== undefined ? { scenario: validationResult.data.scenario ?? "" } : {}),
+      ...(fields.notes !== undefined ? { notes: validationResult.data.notes ?? "" } : {}),
+    });
+
+    if (!result) {
+      return { success: false, error: "Erreur lors de la mise à jour du rapport" };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour du rapport de bataille:", error);
+    return { success: false, error: "Erreur serveur" };
+  }
+}
+
+/**
+ * Liste d'armée d'un joueur. Chacun saisit la sienne ; le créateur peut saisir
+ * celle des autres, parce que c'est souvent lui qui tient le rapport pour toute
+ * la table.
+ */
+export async function updateBattleReportArmyAction(
+  matchId: string,
+  playerId: string,
+  army: BattleReportArmy
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    const match = await getGameMatchById(matchId);
+
+    if (!match) {
+      return { success: false, error: "Partie non trouvée" };
+    }
+
+    if (!match.battleReport) {
+      return { success: false, error: "Cette partie n'est pas un rapport de bataille" };
+    }
+
+    const isCreator = match.createdBy === session.user.id;
+
+    if (!isCreator && playerId !== session.user.id) {
+      return { success: false, error: "Vous ne pouvez modifier que votre propre liste d'armée" };
+    }
+
+    if (!match.playerIds.includes(playerId)) {
+      return { success: false, error: "Le joueur doit être dans la partie" };
+    }
+
+    const validationResult = battleReportArmySchema.safeParse(army);
+
+    if (!validationResult.success) {
+      const errorMessage = validationResult.error.issues[0]?.message || "Données invalides";
+      return { success: false, error: errorMessage };
+    }
+
+    const result = await setGameMatchBattleReportArmy(
+      matchId,
+      playerId,
+      normalizeArmy(validationResult.data)
+    );
+
+    if (!result) {
+      return { success: false, error: "Erreur lors de la mise à jour de la liste d'armée" };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour de la liste d'armée:", error);
     return { success: false, error: "Erreur serveur" };
   }
 }
