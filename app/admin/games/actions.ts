@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { gameSchema, gameIdSchema } from "@/lib/schemas/game.schema";
 import { z } from "zod";
 import * as gamesDb from "@/lib/db/games";
+import { mergeGameFeatures, type GameFeatureKey } from "@/lib/constants/game-features";
 
 export async function getGames(): Promise<Game[]> {
   try {
@@ -16,14 +17,17 @@ export async function getGames(): Promise<Game[]> {
   }
 }
 
-export async function createGame(data: {
+type GameFormData = {
   name: string;
   slug?: string;
   icon?: string;
   banner?: string;
   description: string;
   type: string;
-}) {
+  features?: Partial<Record<GameFeatureKey, boolean>>;
+};
+
+export async function createGame(data: GameFormData) {
   try {
     await requireAdmin();
 
@@ -32,6 +36,7 @@ export async function createGame(data: {
 
     const newGame = await gamesDb.createGame({
       ...validatedData,
+      features: mergeGameFeatures(validatedData.features, undefined),
       metadata: {},
       images: { banner: validatedData.banner },
       longDescription: "",
@@ -61,17 +66,7 @@ export async function createGame(data: {
   }
 }
 
-export async function updateGame(
-  id: string,
-  data: {
-    name: string;
-    slug?: string;
-    icon?: string;
-    banner?: string;
-    description: string;
-    type: string;
-  }
-) {
+export async function updateGame(id: string, data: GameFormData) {
   try {
     await requireAdmin();
 
@@ -87,7 +82,10 @@ export async function updateGame(
       return { success: false, error: "Jeu non trouvé" };
     }
 
-    const updated = await gamesDb.updateGame(validatedId, validatedData);
+    const updated = await gamesDb.updateGame(validatedId, {
+      ...validatedData,
+      features: mergeGameFeatures(validatedData.features, game.features),
+    });
     
     if (!updated) {
       return { success: false, error: "Jeu non trouvé" };

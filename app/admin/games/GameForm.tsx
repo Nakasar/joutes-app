@@ -3,6 +3,7 @@
 import { useState, useTransition, useEffect } from "react";
 import { GameType, Game } from "@/lib/types/Game";
 import { GAME_TYPE_OPTIONS } from "@/lib/constants/game-types";
+import { GAME_FEATURE_OPTIONS, type GameFeatureKey } from "@/lib/constants/game-features";
 import { createGame, updateGame } from "./actions";
 import {
   Dialog,
@@ -33,6 +34,7 @@ export function GameForm({
     description: "",
     type: "TCG" as GameType,
   });
+  const [features, setFeatures] = useState<Partial<Record<GameFeatureKey, boolean>>>({});
   const [uploading, setUploading] = useState<{
     icon: boolean;
     banner: boolean;
@@ -53,6 +55,7 @@ export function GameForm({
           description: game.description,
           type: game.type,
         });
+        setFeatures(game.features ?? {});
       } else {
         setFormData({
           slug: "",
@@ -62,6 +65,7 @@ export function GameForm({
           description: "",
           type: "TCG",
         });
+        setFeatures({});
       }
       setError(null);
     }
@@ -79,6 +83,7 @@ export function GameForm({
         banner: formData.banner.length > 0 ? formData.banner : undefined,
         description: formData.description,
         type: formData.type,
+        features,
       };
 
       const result = game
@@ -94,6 +99,7 @@ export function GameForm({
           description: "",
           type: "TCG",
         });
+        setFeatures({});
         setOpen(false);
       } else {
         setError(result.error || `Erreur lors de ${game ? "la modification" : "l'ajout"} du jeu`);
@@ -305,6 +311,37 @@ export function GameForm({
               }
               className="w-full px-4 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
             />
+          </div>
+
+          <div className="pt-4 border-t space-y-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">Fonctionnalités</p>
+              <p className="text-xs text-muted-foreground">
+                Ce que le jeu expose aux joueurs : onglets de la barre d&apos;outils, tuiles de sa fiche et routes
+                d&apos;API. Une fonctionnalité décochée devient invisible, mais rien n&apos;est supprimé.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {GAME_FEATURE_OPTIONS.map(({ value, label, description }) => (
+                <label
+                  key={value}
+                  className="flex items-start gap-2 rounded-lg border border-input p-2 cursor-pointer hover:border-blue-500"
+                >
+                  <input
+                    type="checkbox"
+                    checked={features[value] === true}
+                    onChange={(e) =>
+                      setFeatures((prev) => ({ ...prev, [value]: e.target.checked }))
+                    }
+                    className="mt-0.5 size-4 shrink-0"
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-sm text-foreground">{label}</span>
+                    <span className="block text-xs text-muted-foreground">{description}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
           </div>
 
           {game && (

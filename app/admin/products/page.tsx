@@ -82,7 +82,11 @@ export default async function AdminProductsPage({
               {!selectedGame.features?.products && productCount > 0 && (
                 <p className="text-sm text-amber-700 dark:text-amber-300">
                   La fonctionnalité « produits » n&apos;est pas activée pour ce jeu : le catalogue reste invisible
-                  côté joueurs tant que <span className="font-mono">features.products</span> n&apos;est pas posé.
+                  côté joueurs. Cochez-la dans{" "}
+                  <Link href="/admin/games" className="underline">
+                    la fiche du jeu
+                  </Link>
+                  .
                 </p>
               )}
             </div>

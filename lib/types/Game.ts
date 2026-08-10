@@ -1,4 +1,5 @@
 import { GameTypeKey } from "@/lib/constants/game-types";
+import { GameFeatureKey } from "@/lib/constants/game-features";
 import { Lair } from "@/lib/types/Lair";
 
 export type Game = {
@@ -45,17 +46,12 @@ export type Game = {
     communityRating: number;
     popularityScore: number;
   };
-  features?: {
-    cards?: boolean;
-    collection?: boolean;
-    /** Catalogue de produits — boîtes et figurines des jeux qui n'ont pas de cartes. */
-    products?: boolean;
-    rules?: boolean;
-    policies?: boolean;
-    tournaments?: boolean;
-    deckChecker?: boolean;
-    cubes?: boolean;
-  }
+  /**
+   * Fonctionnalités activées. Les clés et leurs libellés sont décrits une seule
+   * fois, dans `lib/constants/game-features.ts` — le formulaire
+   * d'administration se rend à partir de cette même table.
+   */
+  features?: Partial<Record<GameFeatureKey, boolean>>;
 };
 
 export type GameType = GameTypeKey;
