@@ -49,6 +49,8 @@ type Props = {
   apiBasePath?: string;
   /** Boosters aren't tracked per play-group yet, so group pages hide the link. */
   showBoosters?: boolean;
+  /** Le jeu a un catalogue de produits : la collection de figurines est accessible d'ici. */
+  hasProducts?: boolean;
   /** Set when browsing a play-group's shared collection — enables username autocompletion when marking a card borrowed. */
   playGroupId?: string;
   /**
@@ -70,10 +72,12 @@ export default function GameCollectionBrowser({
   basePath = "/collection",
   apiBasePath = "/api/collection",
   showBoosters = true,
+  hasProducts = false,
   playGroupId,
   transferFormats,
 }: Props) {
   const t = useTranslations("Collection");
+  const tProducts = useTranslations("Collection.products");
 
   const [items, setItems] = useState<CollectionItem[]>(initialData.items);
   const [stats, setStats] = useState(initialData.stats);
@@ -289,6 +293,14 @@ export default function GameCollectionBrowser({
                 <Link href={`${basePath}/${gameSlug}/boosters`}>
                   <Package className="size-4" />
                   {t("boosters.title")}
+                </Link>
+              </Button>
+            )}
+            {hasProducts && (
+              <Button asChild variant="outline" className="gap-2">
+                <Link href={`${basePath}/${gameSlug}/products`}>
+                  <Boxes className="size-4" />
+                  {tProducts("title")}
                 </Link>
               </Button>
             )}

@@ -256,6 +256,7 @@
       }
     },
     "nav": {
+      "products": "Produkte",
       "tools": "Werkzeuge",
       "cards": "Karten",
       "rules": "Regeln",
@@ -292,6 +293,10 @@
       "toolsTournaments": {
         "title": "Turniere",
         "description": "Organisiere deine eigenen Turniere"
+      },
+      "toolsProducts": {
+        "title": "Produkte",
+        "description": "Entdecke Schachteln und Miniaturen des Spiels und verfolge, was du besitzt"
       },
       "toolsCollection": {
         "title": "Sammlung und Tausch",
@@ -1298,6 +1303,11 @@
     },
     "Collection": {
       "products": {
+        "explorerTitle": "Produkte · {game}",
+        "explorerSubtitle": "Der gesamte Katalog des Spiels. Was du besitzt, ist markiert.",
+        "goToCollection": "Meine Sammlung",
+        "signedOutHint": "Melde dich an, um zu markieren, was du besitzt.",
+        "signIn": "Anmelden",
         "title": "Meine Produkte",
         "metadataTitle": "Produkte · {game}",
         "subtitle": "Deine Schachteln und Miniaturen für {game}.",

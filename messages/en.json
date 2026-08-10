@@ -256,6 +256,7 @@
       }
     },
     "nav": {
+      "products": "Products",
       "tools": "Tools",
       "cards": "Cards",
       "rules": "Rules",
@@ -292,6 +293,10 @@
       "toolsTournaments": {
         "title": "Tournaments",
         "description": "Organize your own tournaments"
+      },
+      "toolsProducts": {
+        "title": "Products",
+        "description": "Browse the game's boxes and miniatures, and track what you own"
       },
       "toolsCollection": {
         "title": "Collection and trading",
@@ -1381,6 +1386,11 @@
     },
     "Collection": {
       "products": {
+        "explorerTitle": "Products · {game}",
+        "explorerSubtitle": "The game's full catalogue. What you own is marked.",
+        "goToCollection": "My collection",
+        "signedOutHint": "Sign in to mark what you own.",
+        "signIn": "Sign in",
         "title": "My products",
         "metadataTitle": "Products · {game}",
         "subtitle": "Your boxes and miniatures for {game}.",
