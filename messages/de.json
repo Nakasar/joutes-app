@@ -256,6 +256,7 @@
       }
     },
     "nav": {
+      "products": "Produkte",
       "tools": "Werkzeuge",
       "cards": "Karten",
       "rules": "Regeln",
@@ -292,6 +293,10 @@
       "toolsTournaments": {
         "title": "Turniere",
         "description": "Organisiere deine eigenen Turniere"
+      },
+      "toolsProducts": {
+        "title": "Produkte",
+        "description": "Entdecke Schachteln und Miniaturen des Spiels und verfolge, was du besitzt"
       },
       "toolsCollection": {
         "title": "Sammlung und Tausch",
@@ -1297,6 +1302,104 @@
       }
     },
     "Collection": {
+      "products": {
+        "explorerTitle": "Produkte · {game}",
+        "explorerSubtitle": "Der gesamte Katalog des Spiels. Was du besitzt, ist markiert.",
+        "goToCollection": "Meine Sammlung",
+        "signedOutHint": "Melde dich an, um zu markieren, was du besitzt.",
+        "signIn": "Anmelden",
+        "title": "Meine Produkte",
+        "metadataTitle": "Produkte · {game}",
+        "subtitle": "Deine Schachteln und Miniaturen für {game}.",
+        "backToCollection": "Zurück zu {game}",
+        "nav": "Produkte",
+        "kinds": {
+          "box": "Schachtel",
+          "unit": "Miniatur",
+          "starter": "Starterset",
+          "bundle": "Bundle",
+          "accessory": "Zubehör",
+          "book": "Buch",
+          "other": "Sonstiges"
+        },
+        "paintStates": {
+          "unassembled": "Nicht zusammengebaut",
+          "assembled": "Zusammengebaut",
+          "primed": "Grundiert",
+          "partial": "In Arbeit",
+          "painted": "Bemalt",
+          "based": "Base fertig"
+        },
+        "stats": {
+          "catalog": "Katalog",
+          "catalogHint": "Referenzen im Besitz",
+          "units": "Miniaturen",
+          "unitsHint": "ohne Schachteln",
+          "paint": "Bemalung",
+          "paintHint": "bemalte Miniaturen"
+        },
+        "filters": {
+          "searchPlaceholder": "Produkt suchen…",
+          "allSets": "Alle Reihen",
+          "allKinds": "Alle Typen",
+          "all": "Alle",
+          "owned": "Im Besitz",
+          "unowned": "Nicht im Besitz",
+          "shape": {
+            "all": "Alles",
+            "containers": "Schachteln",
+            "units": "Miniaturen"
+          },
+          "results": "{count, plural, =0 {Kein Produkt} one {# Produkt} other {# Produkte}}",
+          "retry": "Erneut versuchen",
+          "previous": "Zurück",
+          "next": "Weiter",
+          "pageOf": "Seite {page} / {totalPages}"
+        },
+        "tile": {
+          "manage": "{name} verwalten",
+          "addOne": "Exemplar hinzufügen",
+          "removeOne": "Exemplar entfernen",
+          "contentComplete": "Du besitzt den gesamten Inhalt",
+          "contentCompleteHint": "Du besitzt bereits den gesamten Inhalt dieses Produkts",
+          "contentPartialHint": "Referenzen aus dem Inhalt, die du besitzt"
+        },
+        "add": {
+          "trigger": "Exemplar hinzufügen",
+          "paintState": "Bemalungsstand",
+          "sealed": "Noch versiegelt",
+          "withContents": "{count, plural, =0 {Inhalt ebenfalls hinzufügen} one {Inhalt ebenfalls hinzufügen (# Miniatur)} other {Inhalt ebenfalls hinzufügen (# Miniaturen)}}",
+          "withContentsHint": "Hake ab, was fehlt – eine gebrauchte Schachtel ist selten vollständig.",
+          "obtainedAt": "Erworben am",
+          "price": "Bezahlter Preis",
+          "submit": "Hinzufügen",
+          "submitWithContents": "{count, plural, =0 {Hinzufügen} one {Mit # Miniatur hinzufügen} other {Mit # Miniaturen hinzufügen}}"
+        },
+        "contents": {
+          "title": "Inhalt",
+          "required": "{count, plural, one {# Exemplar erwartet} other {# Exemplare erwartet}}",
+          "addOne": "Nur {name} hinzufügen",
+          "presentIn": "Enthalten in"
+        },
+        "copies": {
+          "title": "Meine Exemplare",
+          "loading": "Wird geladen…",
+          "owned": "{count, plural, =0 {Exemplare} one {Exemplar} other {Exemplare}}",
+          "sealed": "Versiegelt",
+          "sealedLocked": "Noch versiegelt: der Inhalt wurde nicht zusammengebaut.",
+          "unseal": "Ich habe die Schachtel geöffnet",
+          "detach": "Lösen",
+          "detachHint": "Diese Miniatur aus der Schachtel nehmen: sie wird nicht mehr mit ihr entfernt.",
+          "remove": "Entfernen",
+          "removeBoxWarning": "Wenn du diese Schachtel entfernst, {count, plural, one {wird auch das Exemplar entfernt, das sie mitgebracht hat und das noch mit ihr verknüpft ist} other {werden auch die # Exemplare entfernt, die sie mitgebracht hat und die noch mit ihr verknüpft sind}}. Fortfahren?",
+          "boxHint": "Referenzen, die noch mit diesem Exemplar verknüpft sind"
+        },
+        "empty": {
+          "noCatalog": "Für {game} ist noch kein Produkt erfasst.",
+          "noResults": "Kein Produkt entspricht deinen Filtern.",
+          "loadError": "Die Produkte konnten nicht geladen werden."
+        }
+      },
       "metadata": {
         "title": "Meine Sammlung",
         "description": "Verfolge deine Sammlung über alle deine Spiele hinweg."

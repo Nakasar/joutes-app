@@ -47,6 +47,12 @@ Tout utilisateur connecté peut créer un errata ; chacun ne peut modifier ou su
 
 Pour plus de détails, voir [docs/ERRATAS.md](docs/ERRATAS.md).
 
+### Collection de produits (jeux de figurines)
+
+Les jeux qui ne se jouent pas avec des cartes ont leur propre catalogue : boîtes, figurines et accessoires, gérés depuis `/admin/products`. Une boîte déclare ce qu'elle contient ; l'ajouter à sa collection y verse ses figurines, et une boîte dont on possède déjà tout le contenu est signalée comme telle.
+
+Pour plus de détails, voir [docs/COLLECTION_PRODUCTS.md](docs/COLLECTION_PRODUCTS.md).
+
 ### Foil et variantes d'impression
 
 Une carte peut être marquée « toujours foil » et porter une liste de variantes d'impression (promo pack, pre-release, judge…), avec une image propre optionnelle.

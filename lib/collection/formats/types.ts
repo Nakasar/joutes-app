@@ -1,14 +1,13 @@
-import type { z } from "zod";
-import type {
-  cardCondition,
-  collectionCurrency,
-  collectionLanguage,
-} from "@/lib/schemas/collection.schema";
 import type { CardPrinting } from "@/lib/types/card";
 
-export type CardCondition = z.infer<typeof cardCondition>;
-export type CollectionLanguage = z.infer<typeof collectionLanguage>;
-export type CollectionCurrency = z.infer<typeof collectionCurrency>;
+// Déduits des énumérations zod, auprès desquelles ils sont désormais déclarés ;
+// réexportés ici, où les formats d'import/export les cherchent depuis toujours.
+export type {
+  CardCondition,
+  CollectionLanguage,
+  CollectionCurrency,
+} from "@/lib/schemas/collection.schema";
+import type { CardCondition, CollectionLanguage, CollectionCurrency } from "@/lib/schemas/collection.schema";
 
 /**
  * Un lot d'exemplaires identiques d'une même carte. La collection est stockée

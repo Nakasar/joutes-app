@@ -256,6 +256,7 @@
       }
     },
     "nav": {
+      "products": "Prodotti",
       "tools": "Strumenti",
       "cards": "Carte",
       "rules": "Regole",
@@ -292,6 +293,10 @@
       "toolsTournaments": {
         "title": "Tornei",
         "description": "Organizza i tuoi tornei"
+      },
+      "toolsProducts": {
+        "title": "Prodotti",
+        "description": "Esplora scatole e miniature del gioco e segui ciò che possiedi"
       },
       "toolsCollection": {
         "title": "Collezione e scambi",
@@ -1322,6 +1327,104 @@
       }
     },
     "Collection": {
+      "products": {
+        "explorerTitle": "Prodotti · {game}",
+        "explorerSubtitle": "L'intero catalogo del gioco. Ciò che possiedi è segnalato.",
+        "goToCollection": "La mia collezione",
+        "signedOutHint": "Accedi per segnare ciò che possiedi.",
+        "signIn": "Accedi",
+        "title": "I miei prodotti",
+        "metadataTitle": "Prodotti · {game}",
+        "subtitle": "Le tue scatole e le tue miniature per {game}.",
+        "backToCollection": "Torna a {game}",
+        "nav": "Prodotti",
+        "kinds": {
+          "box": "Scatola",
+          "unit": "Miniatura",
+          "starter": "Scatola base",
+          "bundle": "Lotto",
+          "accessory": "Accessorio",
+          "book": "Libro",
+          "other": "Altro"
+        },
+        "paintStates": {
+          "unassembled": "Non montata",
+          "assembled": "Montata",
+          "primed": "Con primer",
+          "partial": "In corso",
+          "painted": "Dipinta",
+          "based": "Base completata"
+        },
+        "stats": {
+          "catalog": "Catalogo",
+          "catalogHint": "referenze possedute",
+          "units": "Miniature",
+          "unitsHint": "scatole escluse",
+          "paint": "Pittura",
+          "paintHint": "miniature dipinte"
+        },
+        "filters": {
+          "searchPlaceholder": "Cerca un prodotto…",
+          "allSets": "Tutte le gamme",
+          "allKinds": "Tutti i tipi",
+          "all": "Tutti",
+          "owned": "Posseduti",
+          "unowned": "Non posseduti",
+          "shape": {
+            "all": "Tutto",
+            "containers": "Scatole",
+            "units": "Miniature"
+          },
+          "results": "{count, plural, =0 {Nessun prodotto} one {# prodotto} other {# prodotti}}",
+          "retry": "Riprova",
+          "previous": "Precedente",
+          "next": "Successivo",
+          "pageOf": "Pagina {page} / {totalPages}"
+        },
+        "tile": {
+          "manage": "Gestisci {name}",
+          "addOne": "Aggiungi una copia",
+          "removeOne": "Rimuovi una copia",
+          "contentComplete": "Possiedi tutto il contenuto",
+          "contentCompleteHint": "Possiedi già tutto il contenuto di questo prodotto",
+          "contentPartialHint": "Referenze del contenuto che possiedi"
+        },
+        "add": {
+          "trigger": "Aggiungi una copia",
+          "paintState": "Stato di pittura",
+          "sealed": "Ancora sigillato",
+          "withContents": "{count, plural, =0 {Aggiungi anche il contenuto} one {Aggiungi anche il contenuto (# miniatura)} other {Aggiungi anche il contenuto (# miniature)}}",
+          "withContentsHint": "Deseleziona ciò che manca: una scatola di seconda mano è raramente completa.",
+          "obtainedAt": "Data di acquisto",
+          "price": "Prezzo pagato",
+          "submit": "Aggiungi",
+          "submitWithContents": "{count, plural, =0 {Aggiungi} one {Aggiungi con # miniatura} other {Aggiungi con # miniature}}"
+        },
+        "contents": {
+          "title": "Contenuto",
+          "required": "{count, plural, one {# copia prevista} other {# copie previste}}",
+          "addOne": "Aggiungi solo {name}",
+          "presentIn": "Presente in"
+        },
+        "copies": {
+          "title": "Le mie copie",
+          "loading": "Caricamento…",
+          "owned": "{count, plural, =0 {copie} one {copia} other {copie}}",
+          "sealed": "Sigillato",
+          "sealedLocked": "Prodotto ancora sigillato: il contenuto non è stato montato.",
+          "unseal": "Ho aperto la scatola",
+          "detach": "Stacca",
+          "detachHint": "Togli questa miniatura dalla scatola: non verrà più rimossa insieme a essa.",
+          "remove": "Rimuovi",
+          "removeBoxWarning": "Rimuovendo questa scatola verrà rimossa anche {count, plural, one {la copia che ha portato e che è ancora collegata} other {le # copie che ha portato e che sono ancora collegate}}. Continuare?",
+          "boxHint": "Referenze ancora collegate a questa copia"
+        },
+        "empty": {
+          "noCatalog": "Nessun prodotto è ancora catalogato per {game}.",
+          "noResults": "Nessun prodotto corrisponde ai tuoi filtri.",
+          "loadError": "Caricamento dei prodotti non riuscito."
+        }
+      },
       "metadata": {
         "title": "La mia collezione",
         "description": "Monitora la tua collezione su tutti i tuoi giochi."

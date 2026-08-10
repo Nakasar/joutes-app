@@ -5,6 +5,8 @@ import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
 import { getGameBySlugOrId } from "@/lib/db/games";
 import { getGameCollection } from "@/lib/db/collection";
+import { hasProducts } from "@/lib/db/products";
+import { ObjectId } from "mongodb";
 import { collectionFormatsForGame } from "@/lib/collection/formats";
 import GameCollectionBrowser from "./GameCollectionBrowser";
 
@@ -40,12 +42,21 @@ export default async function GameCollectionPage({
     notFound();
   }
 
-  const initial = await getGameCollection({
-    owner: { type: "user", id: session.user.id },
-    gameId: game.id,
-    page: 1,
-    limit: 48,
-  });
+  const [initial, gameHasProducts] = await Promise.all([
+    getGameCollection({
+      owner: { type: "user", id: session.user.id },
+      gameId: game.id,
+      page: 1,
+      limit: 48,
+    }),
+    game.features?.products ? hasProducts(new ObjectId(game.id)) : Promise.resolve(false),
+  ]);
+
+  // Un jeu de figurines n'a pas de cartes : cet écran n'aurait rien à montrer.
+  // On envoie directement là où sa collection se trouve.
+  if (gameHasProducts && initial.total === 0) {
+    redirect(`/collection/${game.slug ?? game.id}/products`);
+  }
 
   const gameSlugOrId = game.slug ?? game.id;
 
@@ -55,6 +66,7 @@ export default async function GameCollectionPage({
         gameSlug={gameSlugOrId}
         gameName={game.name}
         initialData={initial}
+        hasProducts={gameHasProducts}
         transferFormats={collectionFormatsForGame(gameSlugOrId).map((format) => ({
           id: format.id,
           label: format.label,

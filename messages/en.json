@@ -256,6 +256,7 @@
       }
     },
     "nav": {
+      "products": "Products",
       "tools": "Tools",
       "cards": "Cards",
       "rules": "Rules",
@@ -292,6 +293,10 @@
       "toolsTournaments": {
         "title": "Tournaments",
         "description": "Organize your own tournaments"
+      },
+      "toolsProducts": {
+        "title": "Products",
+        "description": "Browse the game's boxes and miniatures, and track what you own"
       },
       "toolsCollection": {
         "title": "Collection and trading",
@@ -1380,6 +1385,104 @@
       }
     },
     "Collection": {
+      "products": {
+        "explorerTitle": "Products · {game}",
+        "explorerSubtitle": "The game's full catalogue. What you own is marked.",
+        "goToCollection": "My collection",
+        "signedOutHint": "Sign in to mark what you own.",
+        "signIn": "Sign in",
+        "title": "My products",
+        "metadataTitle": "Products · {game}",
+        "subtitle": "Your boxes and miniatures for {game}.",
+        "backToCollection": "Back to {game}",
+        "nav": "Products",
+        "kinds": {
+          "box": "Box",
+          "unit": "Miniature",
+          "starter": "Starter set",
+          "bundle": "Bundle",
+          "accessory": "Accessory",
+          "book": "Book",
+          "other": "Other"
+        },
+        "paintStates": {
+          "unassembled": "Unassembled",
+          "assembled": "Assembled",
+          "primed": "Primed",
+          "partial": "In progress",
+          "painted": "Painted",
+          "based": "Based"
+        },
+        "stats": {
+          "catalog": "Catalogue",
+          "catalogHint": "references owned",
+          "units": "Miniatures",
+          "unitsHint": "boxes excluded",
+          "paint": "Painting",
+          "paintHint": "miniatures painted"
+        },
+        "filters": {
+          "searchPlaceholder": "Search for a product…",
+          "allSets": "All ranges",
+          "allKinds": "All types",
+          "all": "All",
+          "owned": "Owned",
+          "unowned": "Not owned",
+          "shape": {
+            "all": "Everything",
+            "containers": "Boxes",
+            "units": "Miniatures"
+          },
+          "results": "{count, plural, =0 {No product} one {# product} other {# products}}",
+          "retry": "Try again",
+          "previous": "Previous",
+          "next": "Next",
+          "pageOf": "Page {page} / {totalPages}"
+        },
+        "tile": {
+          "manage": "Manage {name}",
+          "addOne": "Add a copy",
+          "removeOne": "Remove a copy",
+          "contentComplete": "You own everything inside",
+          "contentCompleteHint": "You already own everything this product contains",
+          "contentPartialHint": "References from the contents you own"
+        },
+        "add": {
+          "trigger": "Add a copy",
+          "paintState": "Painting stage",
+          "sealed": "Still sealed",
+          "withContents": "{count, plural, =0 {Add its contents too} one {Add its contents too (# miniature)} other {Add its contents too (# miniatures)}}",
+          "withContentsHint": "Untick whatever is missing — a second-hand box is rarely complete.",
+          "obtainedAt": "Acquired on",
+          "price": "Price paid",
+          "submit": "Add",
+          "submitWithContents": "{count, plural, =0 {Add} one {Add with # miniature} other {Add with # miniatures}}"
+        },
+        "contents": {
+          "title": "Contents",
+          "required": "{count, plural, one {# copy expected} other {# copies expected}}",
+          "addOne": "Add {name} on its own",
+          "presentIn": "Found in"
+        },
+        "copies": {
+          "title": "My copies",
+          "loading": "Loading…",
+          "owned": "{count, plural, =0 {copies} one {copy} other {copies}}",
+          "sealed": "Sealed",
+          "sealedLocked": "Still sealed: nothing inside has been assembled.",
+          "unseal": "I opened the box",
+          "detach": "Detach",
+          "detachHint": "Take this miniature out of the box: it will no longer be removed with it.",
+          "remove": "Remove",
+          "removeBoxWarning": "Removing this box will also remove {count, plural, one {the copy it brought that is still attached to it} other {the # copies it brought that are still attached to it}}. Continue?",
+          "boxHint": "References still attached to this copy"
+        },
+        "empty": {
+          "noCatalog": "No product has been catalogued for {game} yet.",
+          "noResults": "No product matches your filters.",
+          "loadError": "Products could not be loaded."
+        }
+      },
       "metadata": {
         "title": "My collection",
         "description": "Track your collection across all your games."

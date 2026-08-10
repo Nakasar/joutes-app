@@ -1,11 +1,16 @@
 import 'server-only';
 import db from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
-import { Game } from "@/lib/types/Game";
 import { printingKey, type OwnershipSnapshot } from "@/lib/collection/ownership";
 import type { CardPrinting } from "@/lib/types/card";
 import type { CollectionEntryGroup } from "@/lib/collection/formats";
 import { cardSearchFilter } from "@/lib/collection/search";
+import {
+  getOwnedProductGameIds,
+  getProductGamesStats,
+  type ProductCollectionStats,
+} from "@/lib/db/products-collection";
+import { getGameIdsWithProducts } from "@/lib/db/products";
 
 /**
  * Collection completion model.
@@ -41,6 +46,16 @@ export type GameCollectionStats = {
   sets: SetCompletion[];
 };
 
+/**
+ * Les statistiques de produits vivent dans un tableau à part plutôt que dans un
+ * champ optionnel de `GameCollectionStats` : ce type est lu par les écrans de
+ * collection, ceux des groupes de jeu, l'app mobile et `openapi.yaml`, et tous
+ * ses champs parlent de cartes. La fusion par jeu se fait dans la vue.
+ *
+ * `totalCopies` garde donc son sens — les exemplaires de **cartes**. Les
+ * clients existants continuent de le lire sans surprise, et mêler figurines et
+ * cartes dans un seul nombre n'aurait de toute façon aucun sens à l'écran.
+ */
 export type CollectionOverview = {
   totalCopies: number;
   masterOwned: number;
@@ -49,6 +64,11 @@ export type CollectionOverview = {
   gameTotal: number;
   gamesWithItems: number;
   games: GameCollectionStats[];
+  /** Progression des jeux qui ont un catalogue de produits. */
+  productGames: ProductCollectionStats[];
+  totalProductCopies: number;
+  productsOwned: number;
+  productsTotal: number;
 };
 
 type FacetCount = { masterOwned?: number; masterTotal?: number; gameOwned?: number; gameTotal?: number; copies?: number };
@@ -62,11 +82,14 @@ type FacetCount = { masterOwned?: number; masterTotal?: number; gameOwned?: numb
  */
 export type CollectionOwner = { type: "user"; id: string } | { type: "playGroup"; id: string };
 
-function ownerField(owner: CollectionOwner): "userId" | "playGroupId" {
+// Exportés : la collection de produits (`lib/db/products-collection.ts`) suit
+// exactement la même convention de propriétaire, et la redéfinir de son côté
+// laisserait deux vérités à tenir à jour.
+export function ownerField(owner: CollectionOwner): "userId" | "playGroupId" {
   return owner.type === "user" ? "userId" : "playGroupId";
 }
 
-function ownerMatch(owner: CollectionOwner): Record<string, ObjectId> {
+export function ownerMatch(owner: CollectionOwner): Record<string, ObjectId> {
   return { [ownerField(owner)]: new ObjectId(owner.id) };
 }
 
@@ -261,6 +284,15 @@ export async function getGamesStats(
   return results;
 }
 
+/** Deux `ObjectId` égaux sont deux objets distincts : la clé de dédoublonnage est leur écriture. */
+function dedupeObjectIds(ids: ObjectId[]): ObjectId[] {
+  const seen = new Map<string, ObjectId>();
+  for (const id of ids) {
+    seen.set(id.toString(), id);
+  }
+  return [...seen.values()];
+}
+
 /**
  * Full collection overview across games.
  * By default only games the user owns items in are returned; pass includeEmpty
@@ -281,12 +313,19 @@ export async function getCollectionOverview(
       { $group: { _id: "$c.gameId" } },
     ])
     .toArray();
-  const ownedGameIds = ownedGameRows.map((r) => r._id);
+  // Les jeux de figurines n'ont pas de cartes : sans cette seconde source, un
+  // jeu dont on ne possède que des produits n'apparaîtrait jamais ici.
+  const ownedProductGameIds = await getOwnedProductGameIds(owner);
+
+  const ownedGameIds = dedupeObjectIds([...ownedGameRows.map((r) => r._id), ...ownedProductGameIds]);
 
   let gameIds = ownedGameIds;
   if (includeEmpty) {
-    const allGameIds = (await db.collection("cards").distinct("gameId")) as ObjectId[];
-    gameIds = allGameIds;
+    const [cardGameIds, productGameIds] = await Promise.all([
+      db.collection("cards").distinct("gameId") as Promise<ObjectId[]>,
+      getGameIdsWithProducts(),
+    ]);
+    gameIds = dedupeObjectIds([...cardGameIds, ...productGameIds]);
   }
 
   if (allowedGameIds) {
@@ -294,10 +333,16 @@ export async function getCollectionOverview(
     gameIds = gameIds.filter((gameId) => allowedSet.has(gameId.toString()));
   }
 
-  const games = await getGamesStats(owner, gameIds);
+  const [games, productGames] = await Promise.all([
+    getGamesStats(owner, gameIds),
+    getProductGamesStats(owner, gameIds),
+  ]);
 
   // Show games with the most owned first, then the biggest catalogs.
   games.sort((a, b) => b.copies - a.copies || b.masterTotal - a.masterTotal || a.name.localeCompare(b.name));
+  productGames.sort(
+    (a, b) => b.copies - a.copies || b.productsTotal - a.productsTotal || a.name.localeCompare(b.name)
+  );
 
   const overview: CollectionOverview = {
     totalCopies: 0,
@@ -307,15 +352,32 @@ export async function getCollectionOverview(
     gameTotal: 0,
     gamesWithItems: 0,
     games,
+    productGames,
+    totalProductCopies: 0,
+    productsOwned: 0,
+    productsTotal: 0,
   };
+  // Un jeu qui a des cartes **et** des produits ne doit être compté qu'une fois
+  // dans le nombre de jeux entamés.
+  const gamesWithItems = new Set<string>();
+
   for (const g of games) {
     overview.totalCopies += g.copies;
     overview.masterOwned += g.masterOwned;
     overview.masterTotal += g.masterTotal;
     overview.gameOwned += g.gameOwned;
     overview.gameTotal += g.gameTotal;
-    if (g.copies > 0) overview.gamesWithItems += 1;
+    if (g.copies > 0) gamesWithItems.add(g.gameId);
   }
+
+  for (const g of productGames) {
+    overview.totalProductCopies += g.copies;
+    overview.productsOwned += g.productsOwned;
+    overview.productsTotal += g.productsTotal;
+    if (g.copies > 0) gamesWithItems.add(g.gameId);
+  }
+
+  overview.gamesWithItems = gamesWithItems.size;
 
   return overview;
 }

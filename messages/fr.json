@@ -256,6 +256,7 @@
       }
     },
     "nav": {
+      "products": "Produits",
       "tools": "Outils",
       "cards": "Cartes",
       "rules": "Règles",
@@ -292,6 +293,10 @@
       "toolsTournaments": {
         "title": "Tournois",
         "description": "Organisez vos propres tournois"
+      },
+      "toolsProducts": {
+        "title": "Produits",
+        "description": "Explorez les boîtes et les figurines du jeu, et suivez ce que vous possédez"
       },
       "toolsCollection": {
         "title": "Collection et échanges",
@@ -1381,6 +1386,104 @@
       }
     },
     "Collection": {
+      "products": {
+        "explorerTitle": "Produits · {game}",
+        "explorerSubtitle": "Tout le catalogue du jeu. Ce que vous possédez est signalé.",
+        "goToCollection": "Ma collection",
+        "signedOutHint": "Connectez-vous pour marquer ce que vous possédez.",
+        "signIn": "Se connecter",
+        "title": "Mes produits",
+        "metadataTitle": "Produits · {game}",
+        "subtitle": "Vos boîtes et vos figurines pour {game}.",
+        "backToCollection": "Retour à {game}",
+        "nav": "Produits",
+        "kinds": {
+          "box": "Boîte",
+          "unit": "Figurine",
+          "starter": "Coffret de démarrage",
+          "bundle": "Lot",
+          "accessory": "Accessoire",
+          "book": "Livre",
+          "other": "Autre"
+        },
+        "paintStates": {
+          "unassembled": "Non montée",
+          "assembled": "Montée",
+          "primed": "Sous-couchée",
+          "partial": "En cours",
+          "painted": "Peinte",
+          "based": "Socle terminé"
+        },
+        "stats": {
+          "catalog": "Catalogue",
+          "catalogHint": "références possédées",
+          "units": "Figurines",
+          "unitsHint": "hors boîtes",
+          "paint": "Peinture",
+          "paintHint": "figurines peintes"
+        },
+        "filters": {
+          "searchPlaceholder": "Rechercher un produit…",
+          "allSets": "Toutes les gammes",
+          "allKinds": "Tous les types",
+          "all": "Tous",
+          "owned": "Possédés",
+          "unowned": "Non possédés",
+          "shape": {
+            "all": "Tout",
+            "containers": "Boîtes",
+            "units": "Figurines"
+          },
+          "results": "{count, plural, =0 {Aucun produit} one {# produit} other {# produits}}",
+          "retry": "Réessayer",
+          "previous": "Précédent",
+          "next": "Suivant",
+          "pageOf": "Page {page} / {totalPages}"
+        },
+        "tile": {
+          "manage": "Gérer {name}",
+          "addOne": "Ajouter un exemplaire",
+          "removeOne": "Retirer un exemplaire",
+          "contentComplete": "Vous possédez tout le contenu",
+          "contentCompleteHint": "Vous possédez déjà tout le contenu de ce produit",
+          "contentPartialHint": "Références du contenu que vous possédez"
+        },
+        "add": {
+          "trigger": "Ajouter un exemplaire",
+          "paintState": "État de peinture",
+          "sealed": "Encore sous blister",
+          "withContents": "{count, plural, =0 {Ajouter aussi le contenu} one {Ajouter aussi le contenu (# figurine)} other {Ajouter aussi le contenu (# figurines)}}",
+          "withContentsHint": "Décochez ce qui manque : une boîte d'occasion arrive rarement complète.",
+          "obtainedAt": "Date d'acquisition",
+          "price": "Prix payé",
+          "submit": "Ajouter",
+          "submitWithContents": "{count, plural, =0 {Ajouter} one {Ajouter avec # figurine} other {Ajouter avec # figurines}}"
+        },
+        "contents": {
+          "title": "Contenu",
+          "required": "{count, plural, one {# exemplaire attendu} other {# exemplaires attendus}}",
+          "addOne": "Ajouter {name} seule",
+          "presentIn": "Présente dans"
+        },
+        "copies": {
+          "title": "Mes exemplaires",
+          "loading": "Chargement…",
+          "owned": "{count, plural, =0 {exemplaire} one {exemplaire} other {exemplaires}}",
+          "sealed": "Sous blister",
+          "sealedLocked": "Produit encore scellé : son contenu n'a pas été monté.",
+          "unseal": "J'ai ouvert la boîte",
+          "detach": "Détacher",
+          "detachHint": "Sortir cette figurine de la boîte : elle ne sera plus retirée avec elle.",
+          "remove": "Retirer",
+          "removeBoxWarning": "Retirer cette boîte retirera aussi {count, plural, one {l'exemplaire qu'elle a apporté et qui y est encore rattaché} other {les # exemplaires qu'elle a apportés et qui y sont encore rattachés}}. Continuer ?",
+          "boxHint": "Références encore rattachées à cet exemplaire"
+        },
+        "empty": {
+          "noCatalog": "Aucun produit n'est encore répertorié pour {game}.",
+          "noResults": "Aucun produit ne correspond à vos filtres.",
+          "loadError": "Le chargement des produits a échoué."
+        }
+      },
       "metadata": {
         "title": "Ma collection",
         "description": "Suivez votre collection sur tous vos jeux."

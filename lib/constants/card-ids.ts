@@ -26,21 +26,32 @@ export function buildCardId(gameSlug: string | undefined, setCode: string, colle
 }
 
 /**
+ * Fragment d'identifiant dérivé d'un texte libre (« Promo Pack Nexus » ->
+ * `promo-pack-nexus`) : accents retirés, minuscules, tout le reste réduit à des
+ * tirets. Partagé par les variantes d'impression et les produits, pour que deux
+ * saisies identiques donnent partout le même identifiant.
+ *
+ * Renvoie la chaîne vide si le texte ne contient rien d'exploitable ; le repli
+ * est laissé à l'appelant, qui seul sait ce qu'il nomme.
+ */
+export function slugSegment(value: string, maxLength = 60): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, maxLength);
+}
+
+/**
  * Identifiant d'une variante d'impression, dérivé de son nom (« Promo Pack
  * Nexus » -> `promo-pack-nexus`). Il n'a de sens qu'au sein d'une carte, et
  * reste stable si la variante est renommée : il n'est calculé qu'à la création
  * de la variante.
  */
 export function buildPrintingId(name: string): string {
-  const slug = name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60);
-
-  return slug || "variante";
+  return slugSegment(name) || "variante";
 }
 
 /**

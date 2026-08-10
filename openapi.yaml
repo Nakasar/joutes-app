@@ -462,6 +462,176 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
 
+  /collection/products:
+    post:
+      tags: [Collection]
+      summary: Add a product copy to the caller's collection
+      description: >
+        Adds one copy of the product and, unless refused, one entry per unit of
+        its contents, each linked to the container copy. The acquisition date is
+        inherited by the contents; the price is not — copying a box's price onto
+        each of its miniatures would double the collection's value.
+      security: [{ sessionAuth: [] }]
+      parameters:
+        - { name: gameSlug, in: query, required: true, description: "A product id is only unique within a game.", schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CollectionProductInput" }
+      responses:
+        "200":
+          description: Copy added.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entryId: { type: string }
+                  addedContents: { type: integer }
+                  missing:
+                    type: array
+                    items: { type: string }
+                    description: "Content references missing from the catalogue; skipped rather than silently dropped."
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /collection/products/{entryId}:
+    parameters:
+      - { name: entryId, in: path, required: true, description: "A single physical copy, not a product.", schema: { type: string } }
+    patch:
+      tags: [Collection]
+      summary: Update one owned product copy
+      security: [{ sessionAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CollectionProductPatch" }
+      responses:
+        "200": { description: Copy updated. }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    delete:
+      tags: [Collection]
+      summary: Remove one owned product copy
+      description: >
+        Removing a container copy also removes what it brought and is still
+        attached to it. A copy that was detached beforehand survives.
+      security: [{ sessionAuth: [] }]
+      responses:
+        "200":
+          description: Copy removed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  removed: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /collection/games/{gameSlug}/products:
+    get:
+      tags: [Collection]
+      summary: Browse a game's product catalogue, annotated with what the caller owns
+      security: [{ sessionAuth: [] }]
+      parameters:
+        - { name: gameSlug, in: path, required: true, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, default: 48, maximum: 96 } }
+        - { name: setCode, in: query, description: "Range / wave.", schema: { type: string } }
+        - { name: kind, in: query, schema: { type: string, enum: [box, unit, starter, bundle, accessory, book, other] } }
+        - { name: search, in: query, schema: { type: string } }
+        - { name: owned, in: query, description: "Omit for everything.", schema: { type: string, enum: ["true", "false"] } }
+        - { name: containers, in: query, description: "`true` for products with contents, `false` for leaves.", schema: { type: string, enum: ["true", "false"] } }
+      responses:
+        "200":
+          description: Product catalogue with ownership.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductCollectionResult" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /collection/games/{gameSlug}/products/{productId}:
+    get:
+      tags: [Collection]
+      summary: One product's sheet — resolved contents, owned copies, and the boxes containing it
+      security: [{ sessionAuth: [] }]
+      parameters:
+        - { name: gameSlug, in: path, required: true, schema: { type: string } }
+        - { name: productId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Product detail.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  name: { type: string }
+                  kind: { type: string }
+                  setCode: { type: string }
+                  image: { type: string }
+                  quantity: { type: integer }
+                  content: { $ref: "#/components/schemas/ContentCompletion" }
+                  contents:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        productId: { type: string }
+                        quantity: { type: integer }
+                        name: { type: string }
+                        image: { type: string }
+                        kind: { type: string }
+                        owned: { type: integer }
+                  entries:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        paintState: { type: string }
+                        sealed: { type: boolean }
+                        obtainedAt: { type: string }
+                        acquisitionPrice: { type: number }
+                        acquisitionCurrency: { type: string }
+                        fromProductEntryId: { type: string }
+                        attachedCopies:
+                          type: integer
+                          description: >
+                            Copies still attached to this one — what removing it would take
+                            along. Zero for a leaf, and for a container whose contents have
+                            all been detached.
+                        box:
+                          allOf:
+                            - $ref: "#/components/schemas/ContentCompletion"
+                          description: "Contents still attached to *this* copy. Present only on containers."
+                  containers:
+                    type: array
+                    description: "Products whose contents cite this one."
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        name: { type: string }
+                        image: { type: string }
+                        kind: { type: string }
+                        owned: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /collection/boosters:
     get:
       tags: [Collection]
@@ -1975,6 +2145,49 @@ paths:
                 properties: { names: { type: array, items: { type: object, properties: { id: { type: string }, name: { type: string } } } } }
         "400": { $ref: "#/components/responses/NestedValidationError" }
         "404": { $ref: "#/components/responses/NestedNotFound" }
+
+  /games/{gameId}/products:
+    get:
+      tags: [Games]
+      summary: Public product catalogue of a game
+      description: >
+        Browsable without an account, like the card gallery. Ownership is not
+        included here — `/collection/games/{gameSlug}/products` serves the same
+        catalogue annotated with what the caller owns. Returns 404 when the game
+        has no product catalogue enabled.
+      parameters:
+        - { name: gameId, in: path, required: true, description: "Slug or ObjectId.", schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, default: 48, maximum: 96 } }
+        - { name: setCode, in: query, schema: { type: string } }
+        - { name: kind, in: query, schema: { type: string, enum: [box, unit, starter, bundle, accessory, book, other] } }
+        - { name: search, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Product catalogue.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        name: { type: string }
+                        kind: { type: string }
+                        setCode: { type: string }
+                        image: { type: string }
+                        contents: { type: array, items: { $ref: "#/components/schemas/ProductContent" } }
+                  total: { type: integer }
+                  page: { type: integer }
+                  limit: { type: integer }
+                  totalPages: { type: integer }
+                  setCodes: { type: array, items: { type: string } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
 
   /games/{gameId}/sets:
     parameters:
@@ -4018,6 +4231,121 @@ components:
         gameTotal: { type: integer }
         gamesWithItems: { type: integer }
         games: { type: array, items: { $ref: "#/components/schemas/GameCollectionStats" } }
+        productGames:
+          type: array
+          items: { $ref: "#/components/schemas/ProductCollectionStats" }
+          description: "Progress on games that have a product catalogue (miniature games)."
+        totalProductCopies: { type: integer }
+        productsOwned: { type: integer }
+        productsTotal: { type: integer }
+
+    ProductSetCompletion:
+      type: object
+      properties:
+        setCode: { type: string }
+        productsOwned: { type: integer }
+        productsTotal: { type: integer }
+        unitsOwned: { type: integer }
+        unitsTotal: { type: integer }
+
+    ProductCollectionStats:
+      type: object
+      nullable: true
+      properties:
+        gameId: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        icon: { type: string }
+        color: { type: string }
+        type: { type: string }
+        copies: { type: integer, description: "Copies owned, all products taken together." }
+        productsOwned: { type: integer }
+        productsTotal: { type: integer }
+        unitsOwned: { type: integer, description: "Distinct leaf products (miniatures) owned; boxes excluded." }
+        unitsTotal: { type: integer }
+        paintedCopies: { type: integer }
+        paintableCopies: { type: integer, description: "Copies of leaf products, the denominator of the painting ratio." }
+        sets: { type: array, items: { $ref: "#/components/schemas/ProductSetCompletion" } }
+
+    ProductContent:
+      type: object
+      properties:
+        productId: { type: string }
+        quantity: { type: integer }
+
+    ContentCompletion:
+      type: object
+      description: >
+        Completion counted in *references*, not units: a box of eight miniatures
+        of which two are identical reads 7/7.
+      properties:
+        owned: { type: integer }
+        total: { type: integer }
+        complete: { type: boolean }
+
+    ProductCollectionItem:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        kind: { type: string, enum: [box, unit, starter, bundle, accessory, book, other] }
+        setCode: { type: string }
+        image: { type: string }
+        contents: { type: array, items: { $ref: "#/components/schemas/ProductContent" } }
+        quantity: { type: integer }
+        content:
+          allOf:
+            - $ref: "#/components/schemas/ContentCompletion"
+          description: >
+            Completion of this product's contents across the whole collection,
+            regardless of which box brought them. Meaningful even for a product
+            the caller does not own — you may already own everything inside it.
+
+    ProductCollectionResult:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/ProductCollectionItem" } }
+        total: { type: integer }
+        page: { type: integer }
+        limit: { type: integer }
+        totalPages: { type: integer }
+        setCodes: { type: array, items: { type: string } }
+        stats: { $ref: "#/components/schemas/ProductCollectionStats" }
+
+    CollectionProductInput:
+      type: object
+      required: [productId]
+      description: >
+        Only the product id is sent: name, image, kind and range are read back
+        from the catalogue server-side.
+      properties:
+        productId: { type: string }
+        addContents:
+          type: boolean
+          description: "Also add the product's contents (default `true`). No effect on a product without contents."
+        contents:
+          type: array
+          items: { type: string }
+          description: "Subset of the contents to add, when the buyer is missing part of a second-hand box. Absent means all of it."
+        paintState: { type: string, enum: [unassembled, assembled, primed, partial, painted, based] }
+        sealed: { type: boolean }
+        obtainedAt: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
+        acquisitionPrice: { type: number, minimum: 0 }
+        acquisitionCurrency: { type: string, enum: [EUR, USD, GBP, JPY, CNY] }
+        note: { type: string, maxLength: 200 }
+
+    CollectionProductPatch:
+      type: object
+      description: "A `null` value clears the field. `detach` is one-way: there is no re-attach."
+      properties:
+        paintState: { type: string, enum: [unassembled, assembled, primed, partial, painted, based], nullable: true }
+        sealed: { type: boolean, description: "Unsealing a container also unseals what it brought and is still sealed." }
+        obtainedAt: { type: string, nullable: true }
+        acquisitionPrice: { type: number, nullable: true }
+        acquisitionCurrency: { type: string, enum: [EUR, USD, GBP, JPY, CNY], nullable: true }
+        note: { type: string, nullable: true }
+        borrowedBy: { type: string, nullable: true }
+        detach: { type: boolean, enum: [true], description: "Take this copy out of the box that brought it; it will survive that box's removal." }
 
     SellList:
       type: object

@@ -36,11 +36,12 @@ export function CompletionBar({
   hint?: string;
   owned: number;
   total: number;
-  tone: "master" | "game";
+  /** `paint` sert la progression de peinture des figurines. */
+  tone: "master" | "game" | "paint";
   icon: React.ReactNode;
 }) {
   const value = pct(owned, total);
-  const barColor = tone === "master" ? "bg-primary" : "bg-emerald-500";
+  const barColor = tone === "master" ? "bg-primary" : tone === "paint" ? "bg-amber-500" : "bg-emerald-500";
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-2 text-sm">
