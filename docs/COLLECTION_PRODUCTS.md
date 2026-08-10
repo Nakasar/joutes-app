@@ -193,9 +193,7 @@ ajouter depuis une ligne du contenu n'ajoute que cette figurine.
 
 ## Activer un jeu
 
-1. Poser `features.products = true` sur le document du jeu. Comme les autres
-   `features`, ce fanion n'est éditable dans aucun formulaire : il se pose en
-   base.
+1. Cocher **Produits** dans les fonctionnalités du jeu, depuis `/admin/games`.
 2. Créer les index : `npx tsx scripts/create-product-indexes.ts`. **À faire avant
    tout import** — l'unicité de `{gameId, id}` est ce qui évite de reproduire le
    défaut de `cards.id`.

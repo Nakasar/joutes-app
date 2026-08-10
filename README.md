@@ -49,7 +49,7 @@ Pour plus de détails, voir [docs/ERRATAS.md](docs/ERRATAS.md).
 
 ### Collection de produits (jeux de figurines)
 
-Les jeux qui ne se jouent pas avec des cartes ont leur propre catalogue : boîtes, figurines et accessoires, gérés depuis `/admin/products`. Une boîte déclare ce qu'elle contient ; l'ajouter à sa collection y verse ses figurines, et une boîte dont on possède déjà tout le contenu est signalée comme telle.
+Les jeux qui ne se jouent pas avec des cartes ont leur propre catalogue : boîtes, figurines et accessoires, gérés depuis `/admin/products` et activés par la fonctionnalité « Produits » de la fiche du jeu. Une boîte déclare ce qu'elle contient ; l'ajouter à sa collection y verse ses figurines, et une boîte dont on possède déjà tout le contenu est signalée comme telle.
 
 Pour plus de détails, voir [docs/COLLECTION_PRODUCTS.md](docs/COLLECTION_PRODUCTS.md).
 
