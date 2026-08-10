@@ -607,6 +607,12 @@ paths:
                         acquisitionPrice: { type: number }
                         acquisitionCurrency: { type: string }
                         fromProductEntryId: { type: string }
+                        attachedCopies:
+                          type: integer
+                          description: >
+                            Copies still attached to this one — what removing it would take
+                            along. Zero for a leaf, and for a container whose contents have
+                            all been detached.
                         box:
                           allOf:
                             - $ref: "#/components/schemas/ContentCompletion"

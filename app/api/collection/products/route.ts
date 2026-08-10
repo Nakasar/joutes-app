@@ -24,7 +24,9 @@ export async function POST(request: NextRequest) {
   }
 
   const game = await getGameBySlugOrId(gameSlug);
-  if (!game) {
+  // Un catalogue non activé n'existe pas du point de vue du client : même 404
+  // que la route publique, et que les pages qui font `notFound()`.
+  if (!game?.features?.products) {
     return NextResponse.json({ error: "Game not found" }, { status: 404 });
   }
 

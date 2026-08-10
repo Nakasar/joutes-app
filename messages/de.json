@@ -1391,7 +1391,7 @@
           "detach": "Lösen",
           "detachHint": "Diese Miniatur aus der Schachtel nehmen: sie wird nicht mehr mit ihr entfernt.",
           "remove": "Entfernen",
-          "removeBoxWarning": "Wenn du diese Schachtel entfernst, werden auch die {count} Referenzen entfernt, die sie mitgebracht hat und die noch mit ihr verknüpft sind. Fortfahren?",
+          "removeBoxWarning": "Wenn du diese Schachtel entfernst, {count, plural, one {wird auch das Exemplar entfernt, das sie mitgebracht hat und das noch mit ihr verknüpft ist} other {werden auch die # Exemplare entfernt, die sie mitgebracht hat und die noch mit ihr verknüpft sind}}. Fortfahren?",
           "boxHint": "Referenzen, die noch mit diesem Exemplar verknüpft sind"
         },
         "empty": {

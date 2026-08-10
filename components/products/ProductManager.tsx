@@ -46,6 +46,8 @@ type Entry = {
   acquisitionCurrency?: string;
   fromProductEntryId?: string;
   box?: Completion;
+  /** Ce que le retrait de cet exemplaire emporterait avec lui. */
+  attachedCopies: number;
 };
 
 export type ProductDetail = {
@@ -432,7 +434,7 @@ export default function ProductManager({
                       variant="ghost"
                       size="sm"
                       disabled={busy}
-                      onClick={() => void removeEntry(entry.id, entry.box ? detail.contents.length : 0)}
+                      onClick={() => void removeEntry(entry.id, entry.attachedCopies)}
                       className="text-destructive"
                     >
                       <Trash2 className="size-3.5" />

@@ -440,6 +440,13 @@ export type ResolvedContent = {
 /** Un exemplaire possédé, avec l'état du contenu qu'il a apporté s'il est conteneur. */
 export type ProductEntryDetail = CollectionProductEntry & {
   box?: ContentCompletion;
+  /**
+   * Exemplaires encore rattachés à celui-ci, donc ce que son retrait
+   * emporterait. Vaut 0 pour une feuille comme pour un conteneur dont tout a
+   * été détaché — c'est le nombre que l'avertissement de suppression annonce,
+   * et sa nullité est ce qui permet de ne pas avertir du tout.
+   */
+  attachedCopies: number;
 };
 
 export type ProductDetail = {
@@ -528,12 +535,16 @@ export async function getProductDetail(
     contents: resolvedContents,
     content: contentCompletion(contents, copies),
     quantity: copies[productId] ?? 0,
-    entries: entries.map((entry) => ({
-      ...toEntry(entry),
-      ...(contents.length > 0
-        ? { box: contentCompletion(contents, brought.get(entry._id.toString()) ?? {}) }
-        : {}),
-    })),
+    entries: entries.map((entry) => {
+      const broughtByEntry: ProductCopies = brought.get(entry._id.toString()) ?? {};
+      return {
+        ...toEntry(entry),
+        // Somme du relevé déjà en mémoire : compter les exemplaires rattachés
+        // ne coûte aucune requête de plus.
+        attachedCopies: Object.values(broughtByEntry).reduce((sum, count) => sum + count, 0),
+        ...(contents.length > 0 ? { box: contentCompletion(contents, broughtByEntry) } : {}),
+      };
+    }),
     containers: containerDocs.map((doc) => ({
       id: doc.id as string,
       name: doc.name as string,

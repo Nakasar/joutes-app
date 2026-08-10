@@ -1416,7 +1416,7 @@
           "detach": "Stacca",
           "detachHint": "Togli questa miniatura dalla scatola: non verrà più rimossa insieme a essa.",
           "remove": "Rimuovi",
-          "removeBoxWarning": "Rimuovendo questa scatola verranno rimosse anche le {count} referenze che ha portato e che sono ancora collegate. Continuare?",
+          "removeBoxWarning": "Rimuovendo questa scatola verrà rimossa anche {count, plural, one {la copia che ha portato e che è ancora collegata} other {le # copie che ha portato e che sono ancora collegate}}. Continuare?",
           "boxHint": "Referenze ancora collegate a questa copia"
         },
         "empty": {

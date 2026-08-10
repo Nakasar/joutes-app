@@ -1474,7 +1474,7 @@
           "detach": "Detach",
           "detachHint": "Take this miniature out of the box: it will no longer be removed with it.",
           "remove": "Remove",
-          "removeBoxWarning": "Removing this box will also remove the {count} references it brought that are still attached to it. Continue?",
+          "removeBoxWarning": "Removing this box will also remove {count, plural, one {the copy it brought that is still attached to it} other {the # copies it brought that are still attached to it}}. Continue?",
           "boxHint": "References still attached to this copy"
         },
         "empty": {

@@ -1475,7 +1475,7 @@
           "detach": "Détacher",
           "detachHint": "Sortir cette figurine de la boîte : elle ne sera plus retirée avec elle.",
           "remove": "Retirer",
-          "removeBoxWarning": "Retirer cette boîte retirera aussi les {count} références qu'elle a apportées et qui y sont encore rattachées. Continuer ?",
+          "removeBoxWarning": "Retirer cette boîte retirera aussi {count, plural, one {l'exemplaire qu'elle a apporté et qui y est encore rattaché} other {les # exemplaires qu'elle a apportés et qui y sont encore rattachés}}. Continuer ?",
           "boxHint": "Références encore rattachées à cet exemplaire"
         },
         "empty": {
