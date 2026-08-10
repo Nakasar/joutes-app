@@ -1,7 +1,6 @@
 import 'server-only';
 import db from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
-import { Game } from "@/lib/types/Game";
 import { printingKey, type OwnershipSnapshot } from "@/lib/collection/ownership";
 import type { CardPrinting } from "@/lib/types/card";
 import type { CollectionEntryGroup } from "@/lib/collection/formats";
