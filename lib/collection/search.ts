@@ -80,3 +80,25 @@ export function cardSearchFilter(search: string | undefined): Record<string, unk
 
   return { $or: clauses };
 }
+
+/**
+ * Filtre Mongo pour la recherche d'un produit : le nom n'importe où,
+ * l'identifiant en début de valeur.
+ *
+ * Un produit n'a pas de numéro de collection — c'est son nom qui le désigne,
+ * « Spearhead », « blister Liberator ». Les tolérances propres aux numéros de
+ * carte (zéro de tête, égalité numérique) n'ont donc pas d'objet ici, et
+ * l'insensibilité aux accents compte davantage : les noms de gammes en sont
+ * pleins.
+ */
+export function productSearchFilter(search: string | undefined): Record<string, unknown> | null {
+  const trimmed = search?.trim();
+  if (!trimmed) return null;
+
+  return {
+    $or: [
+      { name: { $regex: accentInsensitivePattern(trimmed), $options: "i" } },
+      { id: { $regex: `^${escapeRegex(trimmed)}`, $options: "i" } },
+    ],
+  };
+}

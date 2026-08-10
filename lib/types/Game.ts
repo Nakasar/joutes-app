@@ -48,6 +48,8 @@ export type Game = {
   features?: {
     cards?: boolean;
     collection?: boolean;
+    /** Catalogue de produits — boîtes et figurines des jeux qui n'ont pas de cartes. */
+    products?: boolean;
     rules?: boolean;
     policies?: boolean;
     tournaments?: boolean;
