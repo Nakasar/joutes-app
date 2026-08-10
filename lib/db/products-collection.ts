@@ -426,6 +426,124 @@ export async function getBroughtCopies(
   return byEntry;
 }
 
+/** Une ligne de contenu, résolue et annotée de ce qu'on en possède. */
+export type ResolvedContent = {
+  productId: string;
+  quantity: number;
+  name: string;
+  image?: string;
+  kind: ProductKindKey;
+  /** Exemplaires possédés, toutes provenances confondues. */
+  owned: number;
+};
+
+/** Un exemplaire possédé, avec l'état du contenu qu'il a apporté s'il est conteneur. */
+export type ProductEntryDetail = CollectionProductEntry & {
+  box?: ContentCompletion;
+};
+
+export type ProductDetail = {
+  id: string;
+  name: string;
+  kind: ProductKindKey;
+  setCode?: string;
+  image?: string;
+  attributes: Record<string, unknown>;
+  contents: ResolvedContent[];
+  content: ContentCompletion;
+  quantity: number;
+  entries: ProductEntryDetail[];
+  /** Les produits dont le contenu cite celui-ci — utile pour décider d'un achat. */
+  containers: { id: string; name: string; image?: string; kind: ProductKindKey; owned: number }[];
+};
+
+/**
+ * Fiche complète d'un produit : son contenu annoté, les exemplaires possédés,
+ * et les boîtes qui le contiennent.
+ */
+export async function getProductDetail(
+  owner: CollectionOwner,
+  gameId: string,
+  productId: string
+): Promise<ProductDetail | null> {
+  const gameObjId = new ObjectId(gameId);
+
+  const product = await db.collection(PRODUCTS).findOne({ gameId: gameObjId, id: productId });
+  if (!product) {
+    return null;
+  }
+
+  const contents = Array.isArray(product.contents) ? (product.contents as ProductContent[]) : [];
+
+  const [copies, entries, containerDocs, contentDocs] = await Promise.all([
+    getProductCopies(owner, gameObjId),
+    db
+      .collection<EntryDoc>(ENTRIES)
+      .find({ ...ownerMatch(owner), gameId: gameObjId, productId })
+      .sort({ _id: 1 })
+      .toArray(),
+    db
+      .collection(PRODUCTS)
+      .find(
+        { gameId: gameObjId, "contents.productId": productId },
+        { projection: { _id: 0, id: 1, name: 1, image: 1, kind: 1 } }
+      )
+      .sort({ name: 1 })
+      .toArray(),
+    contents.length > 0
+      ? db
+          .collection(PRODUCTS)
+          .find(
+            { gameId: gameObjId, id: { $in: contents.map((line) => line.productId) } },
+            { projection: { _id: 0, id: 1, name: 1, image: 1, kind: 1 } }
+          )
+          .toArray()
+      : Promise.resolve([]),
+  ]);
+
+  const contentById = new Map(contentDocs.map((doc) => [doc.id as string, doc]));
+  const resolvedContents: ResolvedContent[] = contents.flatMap((line) => {
+    const doc = contentById.get(line.productId);
+    if (!doc) return [];
+    return [{
+      productId: line.productId,
+      quantity: line.quantity,
+      name: doc.name as string,
+      image: doc.image as string | undefined,
+      kind: doc.kind as ProductKindKey,
+      owned: copies[line.productId] ?? 0,
+    }];
+  });
+
+  // Complétude par exemplaire : ce qui est encore rattaché à cette boîte-là.
+  const brought = contents.length > 0 ? await getBroughtCopies(owner, entries.map((entry) => entry._id)) : new Map();
+
+  return {
+    id: product.id as string,
+    name: product.name as string,
+    kind: product.kind as ProductKindKey,
+    setCode: product.setCode as string | undefined,
+    image: product.image as string | undefined,
+    attributes: (product.attributes as Record<string, unknown>) ?? {},
+    contents: resolvedContents,
+    content: contentCompletion(contents, copies),
+    quantity: copies[productId] ?? 0,
+    entries: entries.map((entry) => ({
+      ...toEntry(entry),
+      ...(contents.length > 0
+        ? { box: contentCompletion(contents, brought.get(entry._id.toString()) ?? {}) }
+        : {}),
+    })),
+    containers: containerDocs.map((doc) => ({
+      id: doc.id as string,
+      name: doc.name as string,
+      image: doc.image as string | undefined,
+      kind: doc.kind as ProductKindKey,
+      owned: copies[doc.id as string] ?? 0,
+    })),
+  };
+}
+
 export type AddProductInput = {
   productId: string;
   addContents?: boolean;
