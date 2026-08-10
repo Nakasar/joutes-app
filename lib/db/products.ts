@@ -312,6 +312,23 @@ export async function getProductsByIds(gameId: ObjectId, ids: string[]): Promise
   return docs.map(toDetail);
 }
 
+/** Produits désignés par leur identifiant, dans la forme légère des listes. */
+export async function getProductSummariesByIds(
+  gameId: ObjectId,
+  ids: string[]
+): Promise<GameProductSummary[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const docs = await db
+    .collection<SummaryDoc & { gameId: ObjectId }>(COLLECTION)
+    .find({ gameId, id: { $in: [...new Set(ids)] } }, { projection: SUMMARY_PROJECTION })
+    .toArray();
+
+  return docs.map(toSummary);
+}
+
 /**
  * Ce qu'il faut savoir des produits référencés par un contenu pour le valider.
  * Rendu dans la forme attendue par `lib/products/contents.ts`, qui ne connaît

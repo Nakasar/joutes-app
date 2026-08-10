@@ -44,6 +44,12 @@ export default async function AdminLayout({
                 Cartes
               </Link>
               <Link
+                href="/admin/products"
+                className="inline-flex items-center px-1 pt-1 text-sm font-medium text-foreground border-b-2 border-transparent hover:border-blue-500"
+              >
+                Produits
+              </Link>
+              <Link
                 href="/admin/lairs"
                 className="inline-flex items-center px-1 pt-1 text-sm font-medium text-foreground border-b-2 border-transparent hover:border-blue-500"
               >

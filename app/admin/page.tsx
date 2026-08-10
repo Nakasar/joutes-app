@@ -68,6 +68,35 @@ export default function AdminDashboard() {
           </Link>
 
           <Link
+            href="/admin/products"
+            className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-foreground mb-2">
+                  Gestion des Produits
+                </h2>
+                <p className="text-muted-foreground">
+                  Boîtes, figurines et accessoires des jeux sans cartes, et ce que chaque boîte contient
+                </p>
+              </div>
+              <svg
+                className="h-12 w-12 text-teal-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                />
+              </svg>
+            </div>
+          </Link>
+
+          <Link
             href="/admin/lairs"
             className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
           >
