@@ -3617,13 +3617,27 @@ components:
             stats: { type: object, properties: { communityRating: { type: number }, popularityScore: { type: number } } }
             features:
               type: object
+              description: >
+                Fanions activés pour ce jeu. Seuls les fanions actifs sont
+                écrits : un fanion absent vaut « désactivé ».
               properties:
                 cards: { type: boolean }
                 collection: { type: boolean }
+                products:
+                  type: boolean
+                  description: >
+                    Catalogue de boîtes et de figurines, et la collection qui va
+                    avec — les jeux sans cartes. Commande `/games/{gameId}/products`
+                    et `/collection/games/{gameSlug}/products`, qui répondent 404
+                    quand il est éteint.
                 rules: { type: boolean }
                 policies: { type: boolean }
                 tournaments: { type: boolean }
                 deckChecker: { type: boolean }
+                cubes: { type: boolean }
+                battleReports:
+                  type: boolean
+                  description: "Les parties de ce jeu se saisissent en rapport de bataille."
 
     BoosterCard:
       type: object
