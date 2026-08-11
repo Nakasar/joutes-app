@@ -32,6 +32,8 @@ import {
   removePlayerFromMatchAction,
   deleteGameMatchAction,
   addPlayerToMatchAction,
+  addGuestToMatchAction,
+  removeGuestFromMatchAction,
   updateGameMatchAction,
   rateGameMatchAction,
   voteMVPAction,
@@ -39,6 +41,8 @@ import {
   updatePlayerDeckAction,
 } from "../actions";
 import RatingSelector from "./RatingSelector";
+import { MAX_GUEST_NAME_LENGTH, guestId } from "@/lib/matches/participants";
+import { nanoid } from "nanoid";
 import DeckSelector from "@/components/DeckSelector";
 import BattleReportSection from "./BattleReportSection";
 
@@ -66,6 +70,8 @@ export default function GameMatchDetails({
   const [isQRCodeDialogOpen, setIsQRCodeDialogOpen] = useState(false);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>("");
   const [newPlayerTag, setNewPlayerTag] = useState("");
+  const [isAddGuestDialogOpen, setIsAddGuestDialogOpen] = useState(false);
+  const [newGuestName, setNewGuestName] = useState("");
 
   // États pour les nouvelles fonctionnalités
   const [userRating, setUserRating] = useState<1 | 2 | 3 | 4 | 5 | undefined>(
@@ -84,11 +90,13 @@ export default function GameMatchDetails({
   );
 
   // Calculer le MVP (joueur avec le plus de votes)
-  const mvpCounts = match.players.reduce((acc, player) => {
+  // `match.players` mêle comptes et invités : un invité reçoit des voix comme
+  // un autre.
+  const mvpCounts = match.players.reduce<Record<string, number>>((acc, player) => {
     const votes = match.mvpVotes?.filter(v => v.votedForId === player.userId).length || 0;
     acc[player.userId] = votes;
     return acc;
-  }, {} as Record<string, number>);
+  }, {});
   
   const maxVotes = Math.max(...Object.values(mvpCounts), 0);
   const mvpPlayerIds = maxVotes > 0 
@@ -154,7 +162,10 @@ export default function GameMatchDetails({
   }, [match.decks]);
 
   const isCreator = match.createdBy === currentUserId;
-  const isPlayer = match.players.some((p) => p.userId === currentUserId);
+  // `playerIds` et non `players` : depuis que les invités rejoignent la liste
+  // affichée, c'est la seule des deux qui ne contienne que des comptes — et un
+  // droit ne se lit que là.
+  const isPlayer = match.playerIds.includes(currentUserId);
 
   const gameName = games.find((g) => g.id === match.gameId)?.name || "Jeu inconnu";
   const lairName = match.lairId
@@ -245,6 +256,41 @@ export default function GameMatchDetails({
         router.refresh();
       } else {
         setError(result.error || "Erreur lors de l&apos;ajout du joueur");
+      }
+    });
+  };
+
+  const handleAddGuest = () => {
+    const name = newGuestName.trim();
+
+    if (!name) {
+      setError("Veuillez entrer le nom de l'invité");
+      return;
+    }
+
+    setError(null);
+    startTransition(async () => {
+      // L'identifiant est fabriqué ici : c'est ce qui permet à un invité de
+      // porter une liste d'armée et des jetons dès son ajout.
+      const result = await addGuestToMatchAction(match.id, { id: guestId(nanoid(8)), name });
+      if (result.success) {
+        setNewGuestName("");
+        setIsAddGuestDialogOpen(false);
+        router.refresh();
+      } else {
+        setError(result.error || "Erreur lors de l'ajout de l'invité");
+      }
+    });
+  };
+
+  const handleRemoveGuest = (id: string) => {
+    setError(null);
+    startTransition(async () => {
+      const result = await removeGuestFromMatchAction(match.id, id);
+      if (result.success) {
+        router.refresh();
+      } else {
+        setError(result.error || "Erreur lors du retrait de l'invité");
       }
     });
   };
@@ -654,6 +700,56 @@ export default function GameMatchDetails({
                     </DialogContent>
                   </Dialog>
 
+                  {/* Un invité n'a pas de compte : on ne le cherche pas, on le
+                      nomme. */}
+                  <Dialog open={isAddGuestDialogOpen} onOpenChange={setIsAddGuestDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="outline" className="gap-2">
+                        <UserPlus className="h-4 w-4" />
+                        Invité
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Ajouter un invité</DialogTitle>
+                        <DialogDescription>
+                          Un participant sans compte sur Joutes. Il comptera comme joueur de
+                          la partie, mais ne la verra pas dans son historique.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 pt-4">
+                        <Input
+                          type="text"
+                          placeholder="Nom de l&apos;invité"
+                          maxLength={MAX_GUEST_NAME_LENGTH}
+                          value={newGuestName}
+                          onChange={(e) => setNewGuestName(e.target.value)}
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setIsAddGuestDialogOpen(false);
+                              setNewGuestName("");
+                              setError(null);
+                            }}
+                            disabled={isPending}
+                            className="flex-1"
+                          >
+                            Annuler
+                          </Button>
+                          <Button
+                            onClick={handleAddGuest}
+                            disabled={isPending || !newGuestName.trim()}
+                            className="flex-1"
+                          >
+                            {isPending ? "Ajout..." : "Ajouter"}
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
                   <Dialog
                     open={isAddPlayerDialogOpen}
                     onOpenChange={setIsAddPlayerDialogOpen}
@@ -715,21 +811,29 @@ export default function GameMatchDetails({
               {match.players.map((player) => {
                 const isMVP = mvpPlayerIds.includes(player.userId);
                 const isWinner = match.winnerIds?.includes(player.userId);
-                const isCurrentUserPlayer = player.userId !== currentUserId && isPlayer;
+                // On ne vote pas pour soi-même ; un invité, lui, peut toujours
+                // recevoir la voix d'un joueur de la table.
+                const canVoteForThisPlayer = player.userId !== currentUserId && isPlayer;
                 const hasVotedForThisPlayer = userMVPVote === player.userId;
                 const playerDeckId = match.decks?.[player.userId];
                 const playerDeck = playerDeckId ? decksInfo[playerDeckId] : undefined;
-                
+
                 return (
                   <div
                     key={player.userId}
                     className="p-3 border rounded-lg bg-muted/50 space-y-2"
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant="secondary" className="text-sm">
                           {player.username}
                         </Badge>
+
+                        {player.isGuest && (
+                          <Badge variant="outline" className="text-xs">
+                            Invité
+                          </Badge>
+                        )}
                         
                         {/* Médaille MVP */}
                         {isMVP && (
@@ -748,7 +852,7 @@ export default function GameMatchDetails({
 
                       <div className="flex items-center gap-2">
                         {/* Vote MVP pour les joueurs */}
-                        {isCurrentUserPlayer && (
+                        {canVoteForThisPlayer && (
                           <Button
                             variant={hasVotedForThisPlayer ? "default" : "outline"}
                             size="sm"
@@ -787,7 +891,9 @@ export default function GameMatchDetails({
                             </DialogTrigger>
                             <DialogContent>
                               <DialogHeader>
-                                <DialogTitle>Retirer le joueur</DialogTitle>
+                                <DialogTitle>
+                                  {player.isGuest ? "Retirer l'invité" : "Retirer le joueur"}
+                                </DialogTitle>
                                 <DialogDescription>
                                   Êtes-vous sûr de vouloir retirer {player.username} de la
                                   partie ?
@@ -799,7 +905,11 @@ export default function GameMatchDetails({
                                 </Button>
                                 <Button
                                   variant="destructive"
-                                  onClick={() => handleRemovePlayer(player.userId)}
+                                  onClick={() =>
+                                    player.isGuest
+                                      ? handleRemoveGuest(player.userId)
+                                      : handleRemovePlayer(player.userId)
+                                  }
                                   disabled={isPending}
                                   className="flex-1"
                                 >

@@ -8,6 +8,7 @@ import {
   BattleMap,
   BattleReport,
   BattleReportArmy,
+  GameMatchGuest,
   GameMatchPlayer,
   GameMatchRating,
   GameMatchMVPVote,
@@ -17,6 +18,7 @@ import {
   isEventMatch,
 } from "@/lib/types/Match";
 import { isEmptyArmy, normalizeArmy } from "@/lib/battle-reports/army";
+import { MAX_GUESTS, isGuestId, normalizeGuests, toGuestPlayer } from "@/lib/matches/participants";
 
 const COLLECTION_NAME = "matches";
 
@@ -38,6 +40,7 @@ export type MatchDocument = {
   // Game match fields
   gameId?: string;
   playerIds?: string[];
+  guests?: GameMatchGuest[];
   ratings?: GameMatchRating[];
   mvpVotes?: GameMatchMVPVote[];
   decks?: Record<string, string>;
@@ -90,8 +93,15 @@ function toMatch(doc: WithId<Document>): Match {
       ...base,
       matchType: 'game',
       gameId: doc.gameId,
+      // `playerIds` ne contient que des comptes : c'est lui qui décide des
+      // droits, et l'agrégation qui résout les joueurs le passe à `$toObjectId`.
       playerIds: doc.playerIds || [],
-      players: doc.players || [],
+      // Les invités rejoignent les comptes ici, une fois pour toutes : les deux
+      // chemins de lecture (fiche et liste) passent par cette fonction, et
+      // l'affichage n'a plus qu'une liste à parcourir. `guests` reste la source,
+      // `players` n'est jamais réécrit en base.
+      players: [...(doc.players || []), ...((doc.guests || []) as GameMatchGuest[]).map(toGuestPlayer)],
+      guests: doc.guests || [],
       ratings: doc.ratings || [],
       mvpVotes: doc.mvpVotes || [],
       winnerIds: doc.winnerIds || [],
@@ -162,6 +172,7 @@ function toDocument(match: Omit<Match, "id" | "createdAt">): Omit<MatchDocument,
       ...base,
       gameId: match.gameId,
       playerIds: match.playerIds,
+      guests: match.guests,
       ratings: match.ratings,
       mvpVotes: match.mvpVotes,
       winnerIds: match.winnerIds,
@@ -678,6 +689,76 @@ export async function setMatchBattleReportArmy(
   );
 
   return result.matchedCount > 0;
+}
+
+// ============================================================================
+// INVITÉS
+// ============================================================================
+
+/**
+ * Ajoute un participant sans compte. L'identifiant est fabriqué par l'appelant
+ * (préfixé `guest_`), la normalisation refusant tout ce qui n'en a pas la forme :
+ * un client ne peut donc pas glisser l'ObjectId d'un compte dans cette liste.
+ */
+export async function addGuestToMatch(matchId: string, guest: GameMatchGuest): Promise<boolean> {
+  const [normalized] = normalizeGuests([guest]);
+
+  if (!normalized) {
+    return false;
+  }
+
+  const result = await db.collection<MatchDocument>(COLLECTION_NAME).updateOne(
+    {
+      _id: new ObjectId(matchId),
+      matchType: 'game',
+      "guests.id": { $ne: normalized.id },
+      // Le plafond se vérifie **dans le filtre**, et non avant l'écriture : la
+      // borne du schéma ne s'applique qu'à une liste validée d'un bloc, et deux
+      // ajouts lancés en même temps passeraient tous deux un contrôle fait en
+      // amont. Ici, le second ne trouve plus de document à modifier.
+      $expr: { $lt: [{ $size: { $ifNull: ["$guests", []] } }, MAX_GUESTS] },
+    },
+    { $push: { guests: normalized }, $set: { updatedAt: new Date() } }
+  );
+
+  return result.modifiedCount > 0;
+}
+
+/**
+ * Retire un invité, et avec lui ce qu'il avait posé sur la partie : sa liste
+ * d'armée et son deck, comme pour un joueur qui s'en va. Ses jetons sur la table
+ * disparaissent au prochain enregistrement de celle-ci, la normalisation
+ * n'y gardant que les participants connus.
+ */
+export async function removeGuestFromMatch(matchId: string, guestId: string): Promise<boolean> {
+  // L'identifiant sert à **construire des chemins** de document. Sans cette
+  // vérification, celui d'un compte effacerait la liste d'armée et le deck d'un
+  // vrai joueur, et un identifiant pointé (`a.b`) atteindrait un champ que
+  // personne n'a désigné. L'appelant valide déjà : on ne s'en remet pas à lui,
+  // parce que le jour où une autre fonction appellera celle-ci, elle ne le
+  // saura pas.
+  if (!isGuestId(guestId)) {
+    return false;
+  }
+
+  const result = await db.collection<MatchDocument>(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(matchId), matchType: 'game' },
+    {
+      $pull: {
+        guests: { id: guestId },
+        winnerIds: guestId,
+        // Les voix reçues par un invité qui s'en va ne désignent plus personne.
+        mvpVotes: { votedForId: guestId },
+      },
+      $unset: {
+        [`battleReport.armies.${guestId}`]: "",
+        [`decks.${guestId}`]: "",
+      },
+      $set: { updatedAt: new Date() },
+    }
+  );
+
+  return result.modifiedCount > 0;
 }
 
 /**

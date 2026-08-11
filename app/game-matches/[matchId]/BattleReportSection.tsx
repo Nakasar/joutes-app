@@ -42,6 +42,7 @@ export default function BattleReportSection({
   /** Sert à proposer la table habituelle du jeu (90 × 90 cm pour Shatterpoint). */
   gameSlug?: string;
   report: BattleReport;
+  /** Comptes et invités mêlés : un invité aligne une armée comme un autre. */
   players: GameMatchPlayer[];
   winnerIds: string[];
   currentUserId: string;
@@ -176,6 +177,7 @@ export default function BattleReportSection({
 
           {players.map((player) => {
             const army = report.armies?.[player.userId];
+            // Un invité ne se connecte pas : sa liste est tenue par le créateur.
             const canEdit = isCreator || player.userId === currentUserId;
             const isEditing = editedPlayerId === player.userId;
             const total = army ? countArmyUnits(army) : 0;
@@ -187,6 +189,11 @@ export default function BattleReportSection({
                     <Badge variant="secondary" className="text-sm">
                       {player.username}
                     </Badge>
+                    {player.isGuest && (
+                      <Badge variant="outline" className="text-xs">
+                        Invité
+                      </Badge>
+                    )}
                     {winnerIds.includes(player.userId) && (
                       <span title="Vainqueur">
                         <Trophy className="h-4 w-4 text-amber-600" />

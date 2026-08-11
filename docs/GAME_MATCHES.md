@@ -40,7 +40,42 @@ Toutes les actions de suppression nécessitent une confirmation via une boîte d
 
 - Filtre par jeu pour affiner la liste des parties affichées
 
-### 5. Rapports de bataille
+### 5. Joueurs invités (sans compte)
+
+Toutes les parties ne se jouent pas entre inscrits. Le créateur peut ajouter des
+**invités**, désignés par un simple nom : un adversaire croisé en boutique, un
+ami sans compte. Un invité est un participant à part entière — il peut être
+désigné vainqueur, recevoir des voix MVP, aligner une liste d'armée et poser des
+jetons sur la table de jeu — mais **n'est pas un utilisateur** :
+
+- personne ne se connecte à sa place ;
+- il ne reçoit aucune notification, et ne verra pas la partie dans un historique
+  qu'il n'a pas ;
+- il n'existe que dans la partie où il a été saisi. Deux invités homonymes de
+  deux parties différentes sont deux inconnus l'un pour l'autre.
+
+Son identifiant est préfixé (`guest_…`) pour ne jamais pouvoir être confondu
+avec un compte : tout ce qui est indexé par participant — listes d'armée, decks,
+jetons de la table, vainqueurs — accepte les deux formes, et la validation
+refuse un `ObjectId` glissé dans la liste des invités.
+
+Le créateur seul ajoute et retire les invités, ici comme pour les joueurs. Un
+invité retiré emporte sa liste d'armée, son deck et sa place au palmarès.
+
+**Les invités rejoignent les comptes dans `players` à la lecture**
+(`toMatch`, dans `lib/db/matches.ts`), sous le fanion `isGuest` : l'affichage
+n'a ainsi qu'une liste à parcourir, et une partie se lit comme une liste de
+joueurs, pas comme deux. `guests` reste la source en base ; `players`, qui est
+un champ dérivé, n'y est jamais réécrit.
+
+La contrepartie tient en une règle : **`players[].userId` n'est plus toujours
+l'identifiant d'un compte**. Ce qui décide d'un droit — accéder à la partie,
+l'évaluer, voter, la quitter — se lit donc dans `playerIds`, seule liste qui ne
+contienne que des comptes, et jamais dans `players`.
+
+Les règles vivent dans `lib/matches/participants.ts` (module pur, testé).
+
+### 6. Rapports de bataille
 
 Une partie peut être enregistrée au format **rapport de bataille** — listes
 d'armée, scénario et fiche de notes. Le format est automatique pour les jeux qui
@@ -48,7 +83,7 @@ activent la fonctionnalité, et disponible à la demande pour les autres.
 
 Voir [BATTLE_REPORTS.md](BATTLE_REPORTS.md).
 
-### 6. Partage de l'historique
+### 7. Partage de l'historique
 
 Les parties sont partagées : quand un utilisateur enregistre une partie avec d'autres joueurs, tous les participants voient cette partie dans leur propre historique.
 
@@ -66,6 +101,14 @@ type GameMatch = {
   players: GameMatchPlayer[]; // Liste des joueurs
   createdBy: string;        // ID de l'utilisateur créateur
   createdAt: Date;          // Date de création de l'enregistrement
+}
+```
+
+#### `GameMatchGuest` (`lib/types/Match.ts`)
+```typescript
+type GameMatchGuest = {
+  id: string;    // Local à la partie, préfixé `guest_` : ce n'est pas un compte
+  name: string;  // Nom saisi par le créateur
 }
 ```
 
@@ -113,6 +156,8 @@ Fichier : `app/game-matches/actions.ts`
 - `deleteGameMatchAction()` - Supprimer une partie (créateur uniquement)
 - `removePlayerFromMatchAction()` - Retirer un joueur (créateur ou soi-même)
 - `addPlayerToMatchAction()` - Ajouter un joueur à une partie (créateur uniquement)
+- `addGuestToMatchAction()` - Ajouter un participant sans compte (créateur uniquement)
+- `removeGuestFromMatchAction()` - Retirer un invité (créateur uniquement)
 
 ### Pages et composants
 

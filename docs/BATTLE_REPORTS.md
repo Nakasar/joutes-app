@@ -16,12 +16,17 @@ vote MVP. Le rapport n'est qu'un **volet supplémentaire** de la partie.
 | Élément | Où il vit | Qui l'écrit |
 | --- | --- | --- |
 | Jeu joué | `gameId` de la partie | Créateur |
-| Joueurs | `playerIds` de la partie | Créateur (ajout / retrait), chacun peut se retirer |
+| Joueurs | `playerIds` et `guests` de la partie | Créateur (ajout / retrait), chacun peut se retirer |
 | Vainqueur(s) | `winnerIds` de la partie | Créateur |
 | Liste d'armée par joueur | `battleReport.armies[playerId]` | Chaque joueur pour la sienne, le créateur pour toutes |
 | Scénario (champ libre) | `battleReport.scenario` | Créateur |
 | Fiche de notes libres | `battleReport.notes` | Créateur |
 | Table de jeu et ses instants | `battleReport.map` | Créateur |
+
+Un **invité** (participant sans compte, voir [GAME_MATCHES.md](GAME_MATCHES.md))
+tient sa place dans un rapport comme n'importe quel joueur : il aligne une liste
+d'armée et pose ses jetons sur la table. Comme il ne se connecte pas, c'est le
+créateur qui les tient pour lui.
 
 Le scénario et les notes sont réservés au créateur parce que ce sont les deux
 seuls champs **partagés** de la fiche : à plusieurs mains, deux joueurs qui les

@@ -2,12 +2,41 @@ import { Game } from "@/lib/types/Game";
 import { Lair } from "@/lib/types/Lair";
 import { User } from "@/lib/types/User";
 
-// Types communs
+/**
+ * Un participant de la partie, tel que l'affichage le lit : les comptes et les
+ * invités y sont mêlés, `isGuest` faisant la différence.
+ *
+ * **`userId` n'est donc pas toujours l'identifiant d'un compte** : pour un
+ * invité, c'est un identifiant local à la partie, préfixé `guest_`. Deux règles
+ * en découlent, et elles ne souffrent pas d'exception :
+ *
+ *  - ce qui décide d'un **droit** ne se lit jamais ici, mais dans `playerIds`,
+ *    qui ne contient que des comptes. Un identifiant d'invité n'appartient à
+ *    personne : le confondre avec un compte donnerait à n'importe qui ce qu'il
+ *    porte ;
+ *  - ce qui va chercher un **utilisateur** (ses decks, son profil) écarte
+ *    d'abord les invités : ils n'ont rien à y chercher.
+ *
+ * Voir `lib/matches/participants.ts`.
+ */
 export type GameMatchPlayer = {
   userId: User['id'];
   username: string; // displayName#discriminator ou username
   displayName?: string;
   discriminator?: string;
+  /** Écrit seulement pour un invité, comme tous les fanions du dépôt. */
+  isGuest?: boolean;
+};
+
+/**
+ * Un participant sans compte. Son `id` est local à la partie et préfixé
+ * (`guest_…`) : il n'est pas un utilisateur, personne ne s'y connecte, et il
+ * n'existe que dans la partie où il a été saisi. Voir
+ * `lib/matches/participants.ts`.
+ */
+export type GameMatchGuest = {
+  id: string;
+  name: string;
 };
 
 export type GameMatchRating = {
@@ -143,6 +172,7 @@ export type GameTypeMatch = BaseMatch & {
   gameId: Game['id'];
   playerIds: User['id'][];
   players?: GameMatchPlayer[]; // Détails des joueurs (récupérés via aggregate)
+  guests?: GameMatchGuest[]; // Participants sans compte
   ratings?: GameMatchRating[]; // Évaluations des joueurs
   mvpVotes?: GameMatchMVPVote[]; // Votes pour le MVP
   winnerIds?: User['id'][]; // IDs des gagnants désignés par le créateur

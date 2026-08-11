@@ -59,12 +59,12 @@ export default function GameMatchList({ matches, games, lairs, currentUserId }: 
 
   const getMVPPlayerIds = (match: GameMatch): string[] => {
     if (!match.mvpVotes || match.mvpVotes.length === 0) return [];
-    
-    const mvpCounts = match.players.reduce((acc, player) => {
+
+    const mvpCounts = match.players.reduce<Record<string, number>>((acc, player) => {
       const votes = match.mvpVotes?.filter(v => v.votedForId === player.userId).length || 0;
       acc[player.userId] = votes;
       return acc;
-    }, {} as Record<string, number>);
+    }, {});
     
     const maxVotes = Math.max(...Object.values(mvpCounts), 0);
     return maxVotes > 0 
@@ -79,7 +79,9 @@ export default function GameMatchList({ matches, games, lairs, currentUserId }: 
         const lairName = getLairName(match.lairId);
         const playedDate = DateTime.fromJSDate(match.playedAt).setZone('Europe/Paris');
         const isCreator = match.createdBy === currentUserId;
-        const isPlayer = match.players.some((p) => p.userId === currentUserId);
+        // `playerIds` ne contient que des comptes, contrairement à `players`
+        // qui y mêle les invités : un droit ne se lit que là.
+        const isPlayer = match.playerIds.includes(currentUserId);
         
         // Calculer la note moyenne
         const averageRating = match.ratings && match.ratings.length > 0
@@ -181,14 +183,17 @@ export default function GameMatchList({ matches, games, lairs, currentUserId }: 
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {match.players.map((player, index) => {
+                  {match.players.map((player) => {
                     const isMVP = mvpPlayerIds.includes(player.userId);
                     const isWinner = match.winnerIds?.includes(player.userId);
-                    
+
                     return (
-                      <div key={index} className="flex items-center gap-1">
+                      <div key={player.userId} className="flex items-center gap-1">
                         <Badge variant="secondary" className="flex items-center gap-1">
                           {player.username}
+                          {player.isGuest && (
+                            <span className="text-muted-foreground">(invité)</span>
+                          )}
                           {isMVP && (
                             <Medal className="h-3 w-3 text-yellow-500" />
                           )}
@@ -196,7 +201,9 @@ export default function GameMatchList({ matches, games, lairs, currentUserId }: 
                             <Trophy className="h-3 w-3 text-amber-600" />
                           )}
                         </Badge>
-                        {isCreator && (
+                        {/* Le retrait d'un invité se fait depuis la fiche de la
+                            partie : la liste ne porte que les actions de masse. */}
+                        {isCreator && !player.isGuest && (
                           <GameMatchActions
                             matchId={match.id}
                             isCreator={true}

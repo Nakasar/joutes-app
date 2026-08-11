@@ -1,9 +1,10 @@
 import { Game } from "@/lib/types/Game";
 import { Lair } from "@/lib/types/Lair";
 import { User } from "@/lib/types/User";
-import type { BattleReport } from "@/lib/types/Match";
+import type { BattleReport, GameMatchGuest, GameMatchPlayer } from "@/lib/types/Match";
 
 export type {
+  GameMatchGuest,
   BattleReport,
   BattleReportArmy,
   BattleReportArmyUnit,
@@ -14,12 +15,12 @@ export type {
   BattleMapUnitToken,
 } from "@/lib/types/Match";
 
-export type GameMatchPlayer = {
-  userId: User['id'];
-  username: string; // displayName#discriminator ou username
-  displayName?: string;
-  discriminator?: string;
-};
+/**
+ * Le même participant que dans `lib/types/Match.ts`, ré-exporté plutôt que
+ * redéfini : deux copies du type divergeraient, et l'une d'elles ignorerait
+ * alors qu'un `userId` peut désigner un invité.
+ */
+export type { GameMatchPlayer } from "@/lib/types/Match";
 
 export type GameMatchRating = {
   userId: User['id'];
@@ -38,6 +39,7 @@ export type GameMatch = {
   lairId?: Lair['id'];
   playerIds: string[]; // IDs des joueurs stockés en DB
   players: GameMatchPlayer[]; // Contient les détails des joueurs (récupérés via aggregate)
+  guests?: GameMatchGuest[]; // Participants sans compte
   createdBy: User['id'];
   createdAt: Date;
   ratings?: GameMatchRating[]; // Évaluations des joueurs

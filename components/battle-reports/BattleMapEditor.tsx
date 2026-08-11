@@ -57,6 +57,7 @@ export default function BattleMapEditor({
 }: {
   matchId: string;
   gameSlug?: string;
+  /** Comptes et invités mêlés : les uns comme les autres posent des jetons. */
   players: GameMatchPlayer[];
   armies: Record<string, BattleReportArmy>;
   map?: BattleMap;
@@ -88,11 +89,22 @@ export default function BattleMapEditor({
     | null
   >(null);
 
-  const snapshot = map.snapshots[snapshotIndex] ?? map.snapshots[0];
+  const known = new Set(players.map((player) => player.userId));
+  const stored = map.snapshots[snapshotIndex] ?? map.snapshots[0];
+  // Les jetons d'un participant sorti de la partie ne sont plus montrés : c'est
+  // déjà ce que la normalisation en fait au prochain enregistrement, et les
+  // laisser afficherait un nom que la liste des joueurs ne porte plus.
+  const snapshot = stored
+    ? { ...stored, units: stored.units.filter((unit) => known.has(unit.playerId)) }
+    : stored;
   const preset = useMemo(() => defaultTableForGame(gameSlug), [gameSlug]);
 
   const playerColor = (playerId: string) =>
-    colorForPlayer(map, playerId, players.findIndex((player) => player.userId === playerId));
+    colorForPlayer(
+      map,
+      playerId,
+      players.findIndex((player) => player.userId === playerId)
+    );
 
   const update = (next: BattleMap) => {
     setMap(next);
@@ -496,6 +508,7 @@ export default function BattleMapEditor({
                 style={{ backgroundColor: playerColor(player.userId) }}
               />
               {player.username}
+              {player.isGuest && <span className="text-muted-foreground">(invité)</span>}
             </span>
           ))}
         </div>
@@ -611,6 +624,9 @@ export default function BattleMapEditor({
                       }
                     />
                     <span className="text-sm">{player.username}</span>
+                    {player.isGuest && (
+                      <span className="text-xs text-muted-foreground">invité</span>
+                    )}
                   </div>
 
                   {units.length === 0 ? (
