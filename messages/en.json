@@ -1335,6 +1335,9 @@
       },
       "addToWishlist": {
         "trigger": "Wishlist",
+        "quickAdd": "Add to “{wishlist}”",
+        "loadError": "Could not load your lists.",
+        "retry": "Try again",
         "loading": "Loading wishlists…",
         "empty": "No wishlists yet. Create one below.",
         "personalHeading": "My wishlists",

@@ -34,6 +34,19 @@ Le plafond de cinq entrées s'applique **après** le choix de la source, jamais 
 la lecture des jeux suivis : un favori posé sur le huitième jeu suivi
 disparaîtrait sinon du menu qu'il est censé commander.
 
+## Les outils en sous-menu
+
+En liste, chaque jeu ouvre ses outils en sous-menu (`Jeux → Magic → Cartes`).
+La galerie de cartes d'un jeu était jusqu'ici à deux pages de la barre de
+navigation, et se trouvait par hasard — en passant par sa collection, puis en
+cliquant sur le jeu. L'entrée du jeu reste cliquable et mène à sa fiche : le
+sous-menu ajoute des chemins, il n'en retire aucun. Un jeu qui n'active aucun
+outil n'a pas de sous-menu, celui-ci ne contiendrait que sa fiche.
+
+Le menu mobile déplié n'en a pas : il est déjà long, et cinq jeux multipliés par
+leurs outils en feraient une page à part entière. Sur téléphone, les outils se
+trouvent sur la fiche du jeu.
+
 ## Un seul jeu : ses outils
 
 Quand la sélection se réduit à **un seul jeu** — un favori unique, ou un unique

@@ -1277,6 +1277,9 @@
       },
       "addToWishlist": {
         "trigger": "Wishlist",
+        "quickAdd": "Aggiungi a «{wishlist}»",
+        "loadError": "Impossibile caricare le tue liste.",
+        "retry": "Riprova",
         "loading": "Caricamento delle liste…",
         "empty": "Nessuna lista dei desideri per ora. Creane una qui sotto.",
         "personalHeading": "Le mie liste",
