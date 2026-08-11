@@ -18,6 +18,15 @@ import path from "node:path";
 
 const roots = ["app", "components"];
 const RIGID_TAGS = new Set(["Button", "Badge"]);
+
+/**
+ * Un composant maison rend souvent un bouton sans le dire dans son nom
+ * (`ExportWishlistDialog`). Deux indices le trahissent, et il faut les deux
+ * faute de quoi la moitié des barres d'actions passe entre les mailles :
+ * un nom qui l'annonce, ou une définition locale dont le corps contient un
+ * `<Button>`.
+ */
+const CONTROL_NAME = /Button|Dialog|Action|Selector|Toggle|Switch|Picker|Menu/;
 const files = [];
 
 function walk(dir) {
@@ -58,11 +67,52 @@ function tagOf(node) {
  * largeur — un bouton qui les porte reste incompressible, et les compter comme
  * souples ferait manquer des rangées au détecteur.
  */
-function isRigid(node) {
+function isRigid(node, controls) {
   const classes = classNameOf(node) ?? "";
   if (/flex-1|shrink(?!-0)|truncate|min-w-0/.test(classes)) return false;
-  if (RIGID_TAGS.has(tagOf(node))) return true;
+  const tag = tagOf(node);
+  if (RIGID_TAGS.has(tag)) return true;
+  if (controls.has(tag)) return true;
   return /whitespace-nowrap/.test(classes);
+}
+
+/**
+ * Les composants de ce fichier qui rendent un contrôle : ceux dont le nom
+ * l'annonce, et ceux dont la définition locale contient un `<Button>`. Les
+ * icônes de `lucide-react` sont écartées — elles se compriment sans broncher.
+ */
+function controlsOf(source) {
+  const controls = new Set();
+  const icons = new Set();
+
+  const visit = (node) => {
+    if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
+      if (node.moduleSpecifier.text === "lucide-react") {
+        const bindings = node.importClause?.namedBindings;
+        if (bindings && ts.isNamedImports(bindings)) {
+          for (const element of bindings.elements) icons.add(element.name.getText());
+        }
+      }
+    }
+
+    // `function X() { … <Button> … }` ou `const X = () => …`
+    const named =
+      (ts.isFunctionDeclaration(node) && node.name?.getText()) ||
+      (ts.isVariableDeclaration(node) &&
+        node.initializer &&
+        (ts.isArrowFunction(node.initializer) || ts.isFunctionExpression(node.initializer)) &&
+        node.name.getText());
+
+    if (named && /^[A-Z]/.test(named)) {
+      if (CONTROL_NAME.test(named) || /<Button\b/.test(node.getText())) controls.add(named);
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(source);
+  for (const icon of icons) controls.delete(icon);
+  return controls;
 }
 
 /** Les enfants JSX directs, en traversant les expressions `{cond && <X/>}`. */
@@ -114,16 +164,18 @@ const hits = [];
 for (const file of files) {
   const source = ts.createSourceFile(file, fs.readFileSync(file, "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 
+  const controls = controlsOf(source);
+
   const visit = (node) => {
     if (ts.isJsxElement(node)) {
       const classes = classNameOf(node);
       if (classes && /\bflex\b/.test(classes) && !/flex-wrap|flex-col|overflow-x-auto|hidden/.test(classes)) {
         const children = directChildren(node);
-        const rigid = children.filter(isRigid);
+        const rigid = children.filter((child) => isRigid(child, controls));
         // Un groupe de boutons compte comme un bloc rigide entier.
         const rigidGroups = children.filter((child) => {
           const cls = classNameOf(child) ?? "";
-          return /\bflex\b/.test(cls) && !/flex-wrap|flex-col/.test(cls) && directChildren(child).filter(isRigid).length >= 2;
+          return /\bflex\b/.test(cls) && !/flex-wrap|flex-col/.test(cls) && directChildren(child).filter((kid) => isRigid(kid, controls)).length >= 2;
         });
 
         // Le motif qui a cassé trois fois : un en-tête `justify-between` dont
@@ -141,7 +193,7 @@ for (const file of files) {
             // qui en rend (`GameMatchActions`, `ReportButton`…).
             return kids.some((kid) => {
               const tag = tagOf(kid);
-              return tag === "Button" || /Action|Button/.test(tag);
+              return tag === "Button" || CONTROL_NAME.test(tag) || controls.has(tag);
             });
           });
 

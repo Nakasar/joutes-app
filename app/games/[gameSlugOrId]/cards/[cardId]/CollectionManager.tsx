@@ -580,7 +580,7 @@ export default function CollectionManager({
                     </Badge>
                   )}
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex flex-wrap items-center gap-1 shrink-0">
                   <BorrowPopover
                     entry={entry}
                     playGroupId={playGroupId}
