@@ -1337,6 +1337,8 @@
       "addToWishlist": {
         "trigger": "Wishlist",
         "quickAdd": "Ajouter à « {wishlist} »",
+        "loadError": "Impossible de charger vos listes.",
+        "retry": "Réessayer",
         "loading": "Chargement des listes…",
         "empty": "Aucune liste de souhaits pour le moment. Créez-en une ci-dessous.",
         "personalHeading": "Mes listes",

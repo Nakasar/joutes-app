@@ -19,6 +19,7 @@ import { resolvePrinting } from "@/lib/cards/printings";
 import type { CardPrinting } from "@/lib/types/card";
 import type { Wishlist } from "@/lib/types/Wishlist";
 import {
+  getLoadedMyWishlists,
   invalidateMyWishlists,
   loadMyWishlists,
   readPreferredWishlistId,
@@ -66,7 +67,10 @@ export default function AddToWishlistButton({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [data, setData] = useState<MyWishlists | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  // Le cache peut déjà savoir : le raccourci s'affiche alors dès le premier
+  // rendu, au lieu d'apparaître après coup et de décaler ce qui l'entoure.
+  const [data, setData] = useState<MyWishlists | null>(() => getLoadedMyWishlists());
   const [addingId, setAddingId] = useState<string | null>(null);
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [newName, setNewName] = useState("");
@@ -80,9 +84,15 @@ export default function AddToWishlistButton({
   // cartes ne déclenche qu'une requête.
   useEffect(() => {
     let cancelled = false;
-    void loadMyWishlists().then((mine) => {
-      if (!cancelled) setData(mine);
-    });
+    loadMyWishlists()
+      .then((mine) => {
+        if (!cancelled) setData(mine);
+      })
+      // Un échec au montage ne se signale pas : il n'y a rien à l'écran à
+      // corriger, le raccourci ne s'affiche simplement pas. C'est à
+      // l'ouverture du panneau, où l'utilisateur attend une réponse, que
+      // l'erreur se dit.
+      .catch(() => {});
     setPreferredId(readPreferredWishlistId());
     return () => {
       cancelled = true;
@@ -93,6 +103,7 @@ export default function AddToWishlistButton({
 
   async function loadWishlists() {
     setLoading(true);
+    setLoadError(false);
     try {
       // Charge en parallèle mes wishlists et celles qui contiennent déjà cette
       // carte, pour les afficher cochées à l'ouverture du popover.
@@ -110,6 +121,10 @@ export default function AddToWishlistButton({
           setAddedIds((prev) => new Set([...prev, ...wishlistIds]));
         }
       }
+    } catch {
+      // Une session expirée n'est pas un compte sans liste : le panneau le dit
+      // et propose de réessayer, plutôt que d'annoncer « aucune liste ».
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -278,7 +293,16 @@ export default function AddToWishlistButton({
                     />
                   </div>
                 )}
-                {loaded && !hasAnyWishlist && <CommandEmpty>{t("addToWishlist.empty")}</CommandEmpty>}
+                {loadError ? (
+                  <div className="flex flex-col items-start gap-2 p-3 text-sm">
+                    <span className="text-muted-foreground">{t("addToWishlist.loadError")}</span>
+                    <Button size="sm" variant="outline" onClick={() => void loadWishlists()}>
+                      {t("addToWishlist.retry")}
+                    </Button>
+                  </div>
+                ) : (
+                  loaded && !hasAnyWishlist && <CommandEmpty>{t("addToWishlist.empty")}</CommandEmpty>
+                )}
                 {data && data.personal.length > 0 && (
                   <CommandGroup heading={t("addToWishlist.personalHeading")}>
                     {data.personal.map((wishlist) => (

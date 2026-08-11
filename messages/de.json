@@ -1253,6 +1253,8 @@
       "addToWishlist": {
         "trigger": "Wunschliste",
         "quickAdd": "Zu „{wishlist}“ hinzufügen",
+        "loadError": "Deine Listen konnten nicht geladen werden.",
+        "retry": "Erneut versuchen",
         "loading": "Wunschlisten werden geladen…",
         "empty": "Noch keine Wunschliste. Erstelle unten eine.",
         "personalHeading": "Meine Wunschlisten",
