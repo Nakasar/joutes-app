@@ -37,7 +37,9 @@ export default async function AdminExportsPage() {
           <h1 className="text-3xl font-bold text-foreground">Exports de données</h1>
         </div>
 
-        <div className="bg-card rounded-lg shadow-md overflow-hidden">
+        {/* Le tableau défile dans sa carte : coupé, il perdait ses dernières
+            colonnes sur un écran étroit. */}
+        <div className="bg-card rounded-lg shadow-md overflow-x-auto">
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-muted/50">
               <tr>

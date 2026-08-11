@@ -24,8 +24,12 @@ export function GameList({ games }: { games: Game[] }) {
     });
   };
 
+  // Le tableau est plus large qu'un téléphone : `overflow-x-auto` le laisse
+  // défiler dans sa carte. `overflow-hidden` coupait les colonnes qui
+  // dépassaient — la liste s'arrêtait au type du jeu, et rien ne permettait
+  // d'aller voir sa description ni ses actions.
   return (
-    <div className="bg-card rounded-lg shadow-md overflow-hidden">
+    <div className="bg-card rounded-lg shadow-md overflow-x-auto">
       {error && (
         <div className="m-4 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">
           {error}
