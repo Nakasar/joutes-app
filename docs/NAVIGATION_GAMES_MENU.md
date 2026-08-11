@@ -14,16 +14,21 @@ entrées — plus long à parcourir que la page « Tous les jeux ».
 Trois sources, de la plus personnelle à la plus générique. La règle vit dans
 `lib/games/nav-menu.ts`, module pur testé par `lib/games/nav-menu.test.ts`.
 
-| Situation | Ce que le menu montre |
-| --- | --- |
-| Des favoris | Les favoris |
-| Pas de favori, des jeux suivis | Les jeux suivis |
-| Ni l'un ni l'autre (visiteur compris) | Les jeux par défaut de la plateforme |
+| Situation | Ce que le menu montre | Accès au réglage |
+| --- | --- | --- |
+| Des favoris | Les favoris | Un engrenage dans le coin |
+| Pas de favori, des jeux suivis | Les jeux suivis | Une entrée « Personnaliser » |
+| Ni l'un ni l'autre (visiteur compris) | Les jeux par défaut de la plateforme | Une entrée « Personnaliser » |
 
 Un **favori** est un jeu mis en avant **parmi les jeux suivis** — le seul choix
-explicite de l'utilisateur, il passe donc devant. Il se pose sur `/account`,
-section « Mes jeux suivis », d'une étoile ; le bouton « Personnaliser » du menu
-y mène directement (`/account#jeux`).
+explicite de l'utilisateur, il passe donc devant. Il se pose de deux endroits :
+l'étoile de la fiche du jeu, à côté du bouton « Suivre » (elle n'y apparaît que
+pour un jeu suivi), et la section « Mes jeux suivis » de `/account`.
+
+L'accès au réglage change de forme selon le cas, et ce n'est pas cosmétique :
+qui n'a pas encore de favori a besoin qu'on lui montre où les poser, d'où une
+entrée en toutes lettres ; qui en a déjà connaît le chemin, et l'engrenage du
+coin lui laisse la place pour ses jeux. Les deux mènent à `/account#jeux`.
 
 Le plafond de cinq entrées s'applique **après** le choix de la source, jamais à
 la lecture des jeux suivis : un favori posé sur le huitième jeu suivi
@@ -53,7 +58,10 @@ pas demandé l'enfermerait dans un jeu au hasard.
 - `app/api/users/me/games` — rend `gameIds`, `games` (nom, slug, visuel et
   fanions des outils) et `favoriteGameIds`.
 - `app/account/actions.ts` — `setFavoriteGameAction`.
-- `app/account/GamesManager.tsx` — l'étoile, en affichage optimiste : le serveur
-  peut refuser, l'étoile revient alors en arrière.
+- `app/account/GamesManager.tsx` et
+  `app/games/[gameSlugOrId]/FavoriteGameButton.tsx` — l'étoile, en affichage
+  optimiste : le serveur peut refuser, l'étoile revient alors en arrière. La
+  fiche du jeu ne la rend que pour un jeu suivi, une action vouée à échouer
+  n'ayant pas à être proposée.
 - `components/Header.tsx` — les trois rendus du menu (large, intermédiaire,
   mobile) parcourent la même liste d'entrées.

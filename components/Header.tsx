@@ -71,6 +71,34 @@ const GAME_TOOL_ICONS: Record<GameToolKey, LucideIcon> = {
   deckChecker: ListChecks,
 };
 
+/**
+ * Le coin du menu « Jeux » : son titre, et l'engrenage qui mène au choix des
+ * favoris. Rendu seulement quand l'utilisateur en a déjà — sinon c'est une
+ * entrée en toutes lettres qui l'invite à en poser, un engrenage muet ne
+ * s'expliquant de lui-même qu'à qui sait déjà ce qu'il y a derrière.
+ */
+function GamesCustomizeCorner({
+  label,
+  customizeLabel,
+}: {
+  label: string;
+  customizeLabel: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2 px-2 py-1.5">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <Link
+        href="/account#jeux"
+        aria-label={customizeLabel}
+        title={customizeLabel}
+        className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+      >
+        <Settings2 className="h-3.5 w-3.5" />
+      </Link>
+    </div>
+  );
+}
+
 export default function Header() {
   const t = useTranslations('Header');
 
@@ -168,11 +196,14 @@ export default function Header() {
         })),
       ];
 
-  // « Personnaliser » mène là où les favoris se choisissent. Proposé même à qui
-  // en a déjà : sans cela, l'utilisateur qui a des favoris n'aurait plus, dans
-  // le menu qu'ils commandent, aucun moyen d'y revenir. Le lien passe par
-  // /account, qui renvoie vers la connexion pour un visiteur.
-  gamesMenuItems.push({ href: "/account#jeux", label: t('menu.CustomizeGames'), icon: Settings2 });
+  // Qui n'a pas encore de favori a besoin qu'on lui montre où les poser : une
+  // entrée en toutes lettres, dans la liste. Qui en a déjà connaît le chemin —
+  // l'engrenage dans le coin suffit, et laisse la place à ses jeux. Le lien
+  // passe par /account, qui renvoie vers la connexion pour un visiteur.
+  const hasFavorites = gamesSelection.source === "favorites";
+  if (!hasFavorites) {
+    gamesMenuItems.push({ href: "/account#jeux", label: t('menu.CustomizeGames'), icon: Settings2 });
+  }
 
   const eventsMenuItems: { href: string; label: string; icon: LucideIcon }[] = [
     { href: "/events", label: t('menu.Calendrier'), icon: Calendar },
@@ -215,6 +246,9 @@ export default function Header() {
                     <ChevronDown className="ml-1 h-3 w-3" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
+                    {hasFavorites && (
+                      <GamesCustomizeCorner label={t('menu.Jeux')} customizeLabel={t('menu.CustomizeGames')} />
+                    )}
                     {gamesMenuItems.map((item) => (
                       <DropdownMenuItem asChild key={item.href}>
                         <Link href={item.href} className="flex w-full cursor-pointer">
@@ -367,6 +401,9 @@ export default function Header() {
                     <ChevronDown className="ml-1 h-3 w-3" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
+                    {hasFavorites && (
+                      <GamesCustomizeCorner label={t('menu.Jeux')} customizeLabel={t('menu.CustomizeGames')} />
+                    )}
                     {gamesMenuItems.map((item) => (
                       <DropdownMenuItem asChild key={item.href}>
                         <Link href={item.href} className="flex w-full cursor-pointer">
@@ -577,7 +614,20 @@ export default function Header() {
           <div className="border-t py-4 xl:hidden">
             <div className="flex flex-col gap-2">
               <div className="flex flex-col gap-2 md:hidden">
-                <p className="px-3 pt-2 text-xs font-medium text-muted-foreground">{t('menu.Jeux')}</p>
+                <div className="flex items-center justify-between gap-2 px-3 pt-2">
+                  <p className="text-xs font-medium text-muted-foreground">{t('menu.Jeux')}</p>
+                  {hasFavorites && (
+                    <Link
+                      href="/account#jeux"
+                      onClick={() => setMobileMenuOpen(false)}
+                      aria-label={t('menu.CustomizeGames')}
+                      title={t('menu.CustomizeGames')}
+                      className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                    >
+                      <Settings2 className="h-4 w-4" />
+                    </Link>
+                  )}
+                </div>
                 {gamesMenuItems.map((item) => (
                   <Button variant="ghost" asChild className="w-full justify-start" key={item.href}>
                     <Link href={item.href} onClick={() => setMobileMenuOpen(false)}>

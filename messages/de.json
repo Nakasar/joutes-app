@@ -350,6 +350,11 @@
         "follow": "Diesem Spiel folgen",
         "unfollow": "Nicht mehr folgen"
       },
+      "favorite": {
+        "loading": "Wird geladen...",
+        "add": "Zu Favoriten hinzufügen",
+        "remove": "Aus Favoriten entfernen"
+      },
       "events": {
         "upcoming": "Kommende Events",
         "loading": "Events werden geladen...",

@@ -350,6 +350,11 @@
         "follow": "Suivre ce jeu",
         "unfollow": "Ne plus suivre"
       },
+      "favorite": {
+        "loading": "Chargement...",
+        "add": "Mettre en favori",
+        "remove": "Retirer des favoris"
+      },
       "events": {
         "upcoming": "Événements à venir",
         "loading": "Chargement des événements...",
