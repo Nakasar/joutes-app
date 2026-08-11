@@ -3,6 +3,7 @@
 import { Game } from "@/lib/types/Game";
 import { useState, useTransition } from "react";
 import { addGameToUserList, removeGameFromUserList, setFavoriteGameAction } from "./actions";
+import { notifyGamesChanged } from "@/lib/games/games-changed";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,9 +38,10 @@ export default function GamesManager({ userGames, allGames, favoriteGameIds }: G
     startTransition(async () => {
       const result = await addGameToUserList(selectedGame);
       if (result.success) {
-        setFollowedGames([...followedGames, game]);
+        setFollowedGames(current => [...current, game]);
         setSelectedGame("");
         setError(null);
+        notifyGamesChanged();
       } else {
         setError(result.error || "Erreur lors de l'ajout du jeu");
       }
@@ -50,11 +52,15 @@ export default function GamesManager({ userGames, allGames, favoriteGameIds }: G
     startTransition(async () => {
       const result = await removeGameFromUserList(gameId);
       if (result.success) {
-        setFollowedGames(followedGames.filter(g => g.id !== gameId));
+        // Mises à jour fonctionnelles : deux retraits lancés coup sur coup
+        // partiraient sinon du même état capturé, et le second effacerait le
+        // premier.
+        setFollowedGames(current => current.filter(g => g.id !== gameId));
         // Le serveur retire aussi le favori : ne pas le refléter ici laisserait
         // une étoile allumée sur un jeu qui n'est plus dans la liste.
-        setFavorites(favorites.filter(id => id !== gameId));
+        setFavorites(current => current.filter(id => id !== gameId));
         setError(null);
+        notifyGamesChanged();
       } else {
         setError(result.error || "Erreur lors de la suppression du jeu");
       }
@@ -65,12 +71,15 @@ export default function GamesManager({ userGames, allGames, favoriteGameIds }: G
     const favorite = !favorites.includes(gameId);
     // Affichage optimiste : l'étoile doit répondre au doigt. Le serveur peut
     // refuser (jeu qui n'est plus suivi), auquel cas on revient en arrière.
-    setFavorites(favorite ? [...favorites, gameId] : favorites.filter(id => id !== gameId));
+    setFavorites(current =>
+      favorite ? [...current, gameId] : current.filter(id => id !== gameId)
+    );
 
     startTransition(async () => {
       const result = await setFavoriteGameAction(gameId, favorite);
       if (result.success) {
         setError(null);
+        notifyGamesChanged();
         return;
       }
       setFavorites(current =>

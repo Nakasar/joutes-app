@@ -64,4 +64,11 @@ pas demandé l'enfermerait dans un jeu au hasard.
   fiche du jeu ne la rend que pour un jeu suivi, une action vouée à échouer
   n'ayant pas à être proposée.
 - `components/Header.tsx` — les trois rendus du menu (large, intermédiaire,
-  mobile) parcourent la même liste d'entrées.
+  mobile) parcourent la même liste d'entrées. L'engrenage est un
+  `DropdownMenuItem` malgré son allure d'en-tête : dans un menu Radix, seuls les
+  items entrent dans la navigation au clavier.
+- `lib/games/games-changed.ts` — le signal `joutes:games-changed`. L'en-tête est
+  un composant client : `router.refresh()` rejoue les composants serveur mais lui
+  laisse son état, et le menu resterait en retard d'un suivi ou d'un favori
+  jusqu'au prochain chargement complet. Tout ce qui modifie ces listes l'émet ;
+  l'en-tête relit à ce moment-là.

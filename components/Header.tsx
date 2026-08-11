@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSession, signOut } from "@/lib/auth-client";
 import Image from "next/image";
 import {Menu, Calendar, MapPin, User, UserRound, LogOut, Shield, Trophy, Dices, Library, Heart, Users, ChevronDown, Sparkles, Tag, Gamepad2, Plus, ArrowLeftRight, Boxes, BookOpen, Layers, ListChecks, Package, Scale, Settings2, Swords, type LucideIcon} from "lucide-react";
@@ -23,6 +23,7 @@ import {
   NavigationMenuList,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
+import { GAMES_CHANGED_EVENT } from "@/lib/games/games-changed";
 import {
   type GameToolKey,
   type NavGame,
@@ -76,6 +77,10 @@ const GAME_TOOL_ICONS: Record<GameToolKey, LucideIcon> = {
  * favoris. Rendu seulement quand l'utilisateur en a déjà — sinon c'est une
  * entrée en toutes lettres qui l'invite à en poser, un engrenage muet ne
  * s'expliquant de lui-même qu'à qui sait déjà ce qu'il y a derrière.
+ *
+ * C'est un `DropdownMenuItem` malgré son allure d'en-tête : dans un menu Radix,
+ * seuls les items entrent dans la navigation au clavier et portent le rôle
+ * attendu. Un lien posé à même le contenu serait inatteignable aux flèches.
  */
 function GamesCustomizeCorner({
   label,
@@ -85,17 +90,17 @@ function GamesCustomizeCorner({
   customizeLabel: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-2 px-2 py-1.5">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+    <DropdownMenuItem asChild>
       <Link
         href="/account#jeux"
         aria-label={customizeLabel}
         title={customizeLabel}
-        className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+        className="flex w-full cursor-pointer items-center justify-between gap-2"
       >
-        <Settings2 className="h-3.5 w-3.5" />
+        <span className="text-xs font-medium text-muted-foreground">{label}</span>
+        <Settings2 className="h-3.5 w-3.5 text-muted-foreground" />
       </Link>
-    </div>
+    </DropdownMenuItem>
   );
 }
 
@@ -130,27 +135,37 @@ export default function Header() {
     };
   }, [userId]);
 
-  useEffect(() => {
+  const loadGames = useCallback((signal?: AbortSignal) => {
     if (!userId) {
       setFollowedGames([]);
       setFavoriteGameIds([]);
       return;
     }
 
-    let cancelled = false;
-    fetch("/api/users/me/games")
+    fetch("/api/users/me/games", { signal })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (cancelled || !Array.isArray(data?.games)) return;
+        if (signal?.aborted || !Array.isArray(data?.games)) return;
         setFollowedGames(data.games);
         setFavoriteGameIds(Array.isArray(data.favoriteGameIds) ? data.favoriteGameIds : []);
       })
       .catch(() => {});
-
-    return () => {
-      cancelled = true;
-    };
   }, [userId]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    loadGames(controller.signal);
+    return () => controller.abort();
+  }, [loadGames]);
+
+  // Suivre un jeu, le mettre en favori : cela se fait ailleurs (fiche du jeu,
+  // page du compte) et l'en-tête, composant client, ne serait pas rejoué par
+  // `router.refresh()`. Il se remet donc à jour au signal.
+  useEffect(() => {
+    const reload = () => loadGames();
+    window.addEventListener(GAMES_CHANGED_EVENT, reload);
+    return () => window.removeEventListener(GAMES_CHANGED_EVENT, reload);
+  }, [loadGames]);
 
   // Favoris, sinon jeux suivis, sinon raccourcis de la plateforme — la règle
   // vit dans `lib/games/nav-menu.ts`. Le temps du chargement, les raccourcis

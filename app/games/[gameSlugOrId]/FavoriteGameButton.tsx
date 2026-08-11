@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Star } from "lucide-react";
 import { setFavoriteGameAction } from "@/app/account/actions";
+import { notifyGamesChanged } from "@/lib/games/games-changed";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
@@ -40,6 +41,9 @@ export default function FavoriteGameButton({
         console.error("Erreur:", result.error);
         return;
       }
+      // `router.refresh()` rejoue les composants serveur ; l'en-tête est un
+      // composant client, il lui faut le signal pour se remettre à jour.
+      notifyGamesChanged();
       router.refresh();
     } catch (error) {
       setFavorite(!next);

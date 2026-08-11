@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Heart } from "lucide-react";
 import { addGameToUserList, removeGameFromUserList } from "@/app/account/actions";
+import { notifyGamesChanged } from "@/lib/games/games-changed";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 
@@ -46,6 +47,9 @@ export default function FollowGameButton({
           console.error("Erreur:", result.error);
         }
       }
+      // Le menu « Jeux » de l'en-tête vit sur ces listes : sans le signal, il
+      // resterait en retard d'un suivi jusqu'au prochain chargement complet.
+      notifyGamesChanged();
       router.refresh();
     } catch (error) {
       console.error("Erreur lors du suivi du jeu:", error);
