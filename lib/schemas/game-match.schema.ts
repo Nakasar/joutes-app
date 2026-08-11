@@ -7,6 +7,14 @@ import {
   MAX_UNIT_NAME_LENGTH,
   MAX_UNIT_QUANTITY,
 } from "@/lib/battle-reports/army";
+import {
+  BATTLE_MAP_SHAPES,
+  MAX_LABEL_LENGTH,
+  MAX_SNAPSHOTS,
+  MAX_TABLE_SIDE,
+  MAX_TERRAIN_PIECES,
+  MAX_UNIT_TOKENS,
+} from "@/lib/battle-reports/battle-map";
 
 /**
  * Une ligne de liste d'armée. `productId` est l'identifiant d'un produit **au
@@ -17,12 +25,61 @@ import {
 export const battleReportArmyUnitSchema = z.object({
   productId: z.string().trim().min(1).max(120).optional(),
   name: z.string().trim().min(1, "Le nom de la figurine est requis").max(MAX_UNIT_NAME_LENGTH),
+  image: z.url("L'image de la figurine doit être une URL valide").max(2048).optional(),
   quantity: z.number().int().min(1).max(MAX_UNIT_QUANTITY),
 });
 
 export const battleReportArmySchema = z.object({
   name: z.string().trim().max(MAX_ARMY_NAME_LENGTH).optional(),
   units: z.array(battleReportArmyUnitSchema).max(MAX_ARMY_UNITS).default([]),
+});
+
+/**
+ * Table de jeu. Les bornes sont celles de `lib/battle-reports/battle-map.ts` ;
+ * ce qui dépasse est **ramené** par la normalisation plutôt que refusé — une
+ * table rétrécie après coup ne doit pas rendre tout un rapport inenregistrable.
+ * Le schéma n'est là que pour écarter ce qui n'a pas la bonne forme.
+ */
+const battleMapIdSchema = z.string().trim().min(1).max(40);
+const battleMapColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/, "La couleur doit être au format #rrggbb");
+const battleMapCoordinateSchema = z.number().finite().min(-MAX_TABLE_SIDE).max(2 * MAX_TABLE_SIDE);
+
+export const battleMapTerrainSchema = z.object({
+  id: battleMapIdSchema,
+  shape: z.enum(BATTLE_MAP_SHAPES),
+  name: z.string().trim().max(MAX_LABEL_LENGTH).optional(),
+  color: battleMapColorSchema,
+  x: battleMapCoordinateSchema,
+  y: battleMapCoordinateSchema,
+  width: z.number().finite().positive().max(MAX_TABLE_SIDE),
+  height: z.number().finite().positive().max(MAX_TABLE_SIDE),
+});
+
+export const battleMapUnitTokenSchema = z.object({
+  id: battleMapIdSchema,
+  playerId: z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID du joueur doit être un ObjectId MongoDB valide"),
+  unitName: z.string().trim().min(1).max(MAX_LABEL_LENGTH),
+  productId: z.string().trim().min(1).max(120).optional(),
+  image: z.url().max(2048).optional(),
+  x: battleMapCoordinateSchema,
+  y: battleMapCoordinateSchema,
+  diameter: z.number().finite().positive().max(MAX_TABLE_SIDE),
+});
+
+export const battleMapSnapshotSchema = z.object({
+  id: battleMapIdSchema,
+  label: z.string().trim().min(1).max(MAX_LABEL_LENGTH),
+  units: z.array(battleMapUnitTokenSchema).max(MAX_UNIT_TOKENS).default([]),
+});
+
+export const battleMapSchema = z.object({
+  table: z.object({
+    width: z.number().finite().positive().max(MAX_TABLE_SIDE),
+    height: z.number().finite().positive().max(MAX_TABLE_SIDE),
+  }),
+  terrain: z.array(battleMapTerrainSchema).max(MAX_TERRAIN_PIECES).default([]),
+  snapshots: z.array(battleMapSnapshotSchema).max(MAX_SNAPSHOTS).default([]),
+  playerColors: z.record(z.string(), battleMapColorSchema).optional(),
 });
 
 export const battleReportSchema = z.object({
@@ -34,6 +91,7 @@ export const battleReportSchema = z.object({
       battleReportArmySchema
     )
     .optional(),
+  map: battleMapSchema.optional(),
 });
 
 export const gameMatchRatingSchema = z.object({
@@ -62,3 +120,4 @@ export const gameMatchSchema = z.object({
 export type GameMatchInput = z.infer<typeof gameMatchSchema>;
 export type BattleReportInput = z.infer<typeof battleReportSchema>;
 export type BattleReportArmyInput = z.infer<typeof battleReportArmySchema>;
+export type BattleMapInput = z.infer<typeof battleMapSchema>;

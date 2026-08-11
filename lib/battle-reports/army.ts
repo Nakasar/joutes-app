@@ -63,10 +63,16 @@ export function normalizeArmyUnits(units: BattleReportArmyUnit[]): BattleReportA
       Math.max(1, Math.trunc(Number.isFinite(unit.quantity) ? unit.quantity : 1))
     );
 
+    const image = unit.image?.trim() || undefined;
     const existing = merged.get(unitKey(productId, name));
 
     if (existing) {
       existing.quantity = Math.min(MAX_UNIT_QUANTITY, existing.quantity + quantity);
+      // La même figurine saisie deux fois, une fois depuis le catalogue et une
+      // fois à la main : c'est la ligne illustrée qui doit survivre à la fusion.
+      if (!existing.image && image) {
+        existing.image = image;
+      }
       continue;
     }
 
@@ -75,7 +81,14 @@ export function normalizeArmyUnits(units: BattleReportArmyUnit[]): BattleReportA
     // boucle ici perdrait leur quantité.
     if (merged.size >= MAX_ARMY_UNITS) continue;
 
-    merged.set(unitKey(productId, name), { ...(productId ? { productId } : {}), name, quantity });
+    merged.set(unitKey(productId, name), {
+      ...(productId ? { productId } : {}),
+      name,
+      // Conservée jusqu'en base : c'est elle qui illustrera le jeton de l'unité
+      // sur la table, et la perdre ici la perdrait pour de bon.
+      ...(image ? { image } : {}),
+      quantity,
+    });
   }
 
   return [...merged.values()];

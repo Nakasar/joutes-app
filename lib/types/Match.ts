@@ -38,7 +38,66 @@ export type MatchFeatAward = {
 export type BattleReportArmyUnit = {
   productId?: string;
   name: string;
+  /** Visuel du produit, dénormalisé comme le nom : il illustre le jeton sur la table. */
+  image?: string;
   quantity: number;
+};
+
+/** Formes de décor posables sur la table. Volontairement peu nombreuses : on
+ * note une position approximative, pas un plan d'architecte. */
+export type BattleMapShape = 'circle' | 'rectangle' | 'triangle';
+
+/**
+ * Une pièce de décor. Tout est en centimètres, `x`/`y` désignant le **centre** —
+ * c'est ce qu'on déplace au doigt, et ce qui reste juste quand la pièce change
+ * de taille.
+ */
+export type BattleMapTerrain = {
+  id: string;
+  shape: BattleMapShape;
+  name?: string;
+  color: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+/**
+ * Un jeton d'unité : toujours rond, à la couleur de son joueur, rattaché à une
+ * ligne de sa liste d'armée. Le nom et l'image sont recopiés ici pour la même
+ * raison que dans la liste — le rapport est une archive.
+ */
+export type BattleMapUnitToken = {
+  id: string;
+  playerId: User['id'];
+  unitName: string;
+  productId?: string;
+  image?: string;
+  x: number;
+  y: number;
+  /** Diamètre du socle, en centimètres. */
+  diameter: number;
+};
+
+/** Un état de la table à un moment de la partie. */
+export type BattleMapSnapshot = {
+  id: string;
+  label: string;
+  units: BattleMapUnitToken[];
+};
+
+/**
+ * La table vue de dessus. Le décor appartient à la table, les unités à
+ * l'instant : un décor ne bouge pas de la partie, et le recopier dans chaque
+ * instant obligerait à le corriger partout.
+ */
+export type BattleMap = {
+  /** Dimensions du plateau, en centimètres. */
+  table: { width: number; height: number };
+  terrain: BattleMapTerrain[];
+  snapshots: BattleMapSnapshot[];
+  playerColors?: Record<User['id'], string>;
 };
 
 export type BattleReportArmy = {
@@ -60,6 +119,7 @@ export type BattleReport = {
   scenario?: string; // Champ libre : les scénarios ne sont pas catalogués
   notes?: string; // Fiche de notes libres sur la partie
   armies?: Record<User['id'], BattleReportArmy>; // Liste jouée par chaque joueur
+  map?: BattleMap; // Table de jeu vue de dessus, et ses instants
 };
 
 // Type de base pour tous les matchs

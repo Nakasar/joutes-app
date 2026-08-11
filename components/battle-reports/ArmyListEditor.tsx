@@ -228,7 +228,14 @@ export default function ArmyListEditor({
                 type="button"
                 disabled={disabled}
                 onClick={() =>
-                  addUnit({ productId: product.id, name: product.name, quantity: 1 })
+                  addUnit({
+                    productId: product.id,
+                    name: product.name,
+                    // Recopiée comme le nom : c'est elle qui illustrera le
+                    // jeton de l'unité sur la table.
+                    ...(product.image ? { image: product.image } : {}),
+                    quantity: 1,
+                  })
                 }
                 className="flex w-full items-center gap-2 rounded-lg border p-2 text-left hover:border-primary"
               >

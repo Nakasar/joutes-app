@@ -830,6 +830,7 @@ export default function GameMatchDetails({
         <BattleReportSection
           matchId={match.id}
           gameId={match.gameId}
+          gameSlug={games.find((game) => game.id === match.gameId)?.slug}
           report={match.battleReport}
           players={match.players}
           winnerIds={match.winnerIds ?? []}

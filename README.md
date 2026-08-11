@@ -37,7 +37,7 @@ Pour plus de détails, voir [docs/GAME_MATCHES.md](docs/GAME_MATCHES.md).
 
 ### Rapports de bataille (jeux de figurines)
 
-Les parties des jeux qui l'activent se saisissent en rapport de bataille : liste d'armée de chaque joueur (avec autocomplétion des figurines du catalogue), scénario joué et fiche de notes libres.
+Les parties des jeux qui l'activent se saisissent en rapport de bataille : liste d'armée de chaque joueur (avec autocomplétion des figurines du catalogue), scénario joué, fiche de notes libres, et une table de jeu vue de dessus où l'on pose décor et unités, instant par instant.
 
 Pour plus de détails, voir [docs/BATTLE_REPORTS.md](docs/BATTLE_REPORTS.md).
 
