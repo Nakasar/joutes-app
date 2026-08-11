@@ -39,7 +39,17 @@
       "Fonctionnalités": "Fonctionnalités",
       "SellLists": "Ma liste de vente",
       "Cubes": "Mes cubes",
-      "Amis": "Amis"
+      "Amis": "Amis",
+      "CustomizeGames": "Personnaliser",
+      "tools": {
+        "cards": "Cartes",
+        "products": "Produits",
+        "battleReports": "Rapport de bataille",
+        "rules": "Règles du jeu",
+        "policies": "Politiques",
+        "cubes": "Cubes",
+        "deckChecker": "Vérificateur de deck"
+      }
     }
   },
   "LocaleSwitcher": {
@@ -339,6 +349,11 @@
         "loading": "Chargement...",
         "follow": "Suivre ce jeu",
         "unfollow": "Ne plus suivre"
+      },
+      "favorite": {
+        "loading": "Chargement...",
+        "add": "Mettre en favori",
+        "remove": "Retirer des favoris"
       },
       "events": {
         "upcoming": "Événements à venir",

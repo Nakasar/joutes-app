@@ -5,6 +5,8 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import {
   addGameToUser,
+  addFavoriteGameToUser,
+  removeFavoriteGameFromUser,
   removeGameFromUser,
   addLairToUser,
   removeLairFromUser,
@@ -59,6 +61,49 @@ export async function removeGameFromUserList(gameId: string): Promise<{ success:
     return { success: true };
   } catch (error) {
     console.error("Erreur lors de la suppression du jeu:", error);
+    return { success: false, error: "Erreur serveur" };
+  }
+}
+
+/**
+ * Met ou retire un jeu des favoris — ceux que le menu « Jeux » propose.
+ *
+ * La mise en favori peut échouer sans que rien ne soit cassé : elle est
+ * refusée pour un jeu que l'utilisateur ne suit pas (voir
+ * `addFavoriteGameToUser`), et l'appelant doit alors défaire son affichage
+ * optimiste.
+ */
+export async function setFavoriteGameAction(
+  gameId: string,
+  favorite: boolean
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    const result = favorite
+      ? await addFavoriteGameToUser(session.user.id, gameId)
+      : await removeFavoriteGameFromUser(session.user.id, gameId);
+
+    if (!result) {
+      return {
+        success: false,
+        error: favorite
+          ? "Ce jeu doit d'abord faire partie de vos jeux suivis"
+          : "Erreur lors du retrait du favori",
+      };
+    }
+
+    revalidatePath("/account");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la mise en favori du jeu:", error);
     return { success: false, error: "Erreur serveur" };
   }
 }

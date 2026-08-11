@@ -11,6 +11,7 @@ import { ArrowLeft, Calendar, Users, MapPin } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { getUserById } from "@/lib/db/users";
+import FavoriteGameButton from "./FavoriteGameButton";
 import FollowGameButton from "./FollowGameButton";
 import { FeaturedEventsAgenda } from "./FeaturedEventsAgenda";
 import { GameNewsSection } from "./GameNewsSection";
@@ -60,9 +61,11 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
   });
 
   let isFollowing = false;
+  let isFavorite = false;
   if (session?.user?.id) {
     const user = await getUserById(session.user.id);
     isFollowing = user?.games?.includes(game.id) ?? false;
+    isFavorite = user?.favoriteGames?.includes(game.id) ?? false;
   }
 
   const featuredLairs = game.featuredLairs && game.featuredLairs.length > 0
@@ -127,12 +130,17 @@ export default async function GameDetailPage({ params }: GameDetailPageProps) {
               {game.description}
             </p>
 
-            <div className="flex gap-4 pt-4 animate-fade-in animate-delay-300">
+            <div className="flex flex-wrap gap-4 pt-4 animate-fade-in animate-delay-300">
               <FollowGameButton
                 gameId={game.id}
                 isFollowing={isFollowing}
                 isAuthenticated={!!session?.user?.id}
               />
+              {/* Un favori se choisit parmi les jeux suivis : proposer l'étoile
+                  avant le suivi promettrait une action que le serveur refuse. */}
+              {isFollowing && (
+                <FavoriteGameButton gameId={game.id} isFavorite={isFavorite} />
+              )}
               <Link href={`/events?gameId=${game.id}`}>
                 <Button size="lg" variant="secondary" className="bg-black/50 backdrop-blur-sm border-white/20 text-white hover:bg-black/70 px-8">
                   <Calendar className="h-5 w-5 mr-2" />
