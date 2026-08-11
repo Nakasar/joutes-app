@@ -226,7 +226,9 @@ export default function WishlistDetailClient({
           {wishlist.description && <p className="text-muted-foreground">{wishlist.description}</p>}
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Quatre contrôles, dont trois au libellé long : sans repli, la barre
+            pousse la page hors de l'écran sur un téléphone. */}
+        <div className="flex flex-wrap items-center gap-2">
           <ExportWishlistDialog wishlistId={wishlist.id} />
           {canEdit && (
             <>
