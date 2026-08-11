@@ -50,8 +50,10 @@ export function LairList({
     return games.find((g) => g.id === gameId)?.name || gameId;
   };
 
+  // Comme la liste des jeux : le tableau défile dans sa carte plutôt que d'être
+  // coupé à la largeur de l'écran.
   return (
-    <div className="bg-card rounded-lg shadow-md overflow-hidden">
+    <div className="bg-card rounded-lg shadow-md overflow-x-auto">
       {error && (
         <div className="m-4 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">
           {error}
