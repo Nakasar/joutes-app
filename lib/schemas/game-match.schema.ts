@@ -141,6 +141,43 @@ export const gameMatchSchema = z.object({
   battleReport: battleReportSchema.optional(),
 });
 
+/**
+ * Création d'une partie depuis l'API REST (application mobile, clés API).
+ *
+ * Ce n'est pas `gameMatchSchema` : ce que le client envoie et ce qui entre en
+ * base ne sont pas la même chose. Le créateur n'a pas à se citer lui-même parmi
+ * les joueurs — il est ajouté d'office —, la date par défaut est l'instant, et
+ * l'identifiant d'un invité peut être omis, auquel cas le serveur le fabrique.
+ *
+ * Le client garde toutefois la possibilité de le fournir : les vainqueurs et
+ * les listes d'armée se désignent par identifiant, et un formulaire qui les
+ * saisit avant d'enregistrer doit pouvoir nommer ses invités.
+ */
+export const gameMatchApiCreateSchema = z.object({
+  gameId: z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID du jeu doit être un ObjectId MongoDB valide"),
+  playedAt: z.coerce.date().optional(),
+  lairId: z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID du lair doit être un ObjectId MongoDB valide").optional(),
+  playerIds: z
+    .array(z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID du joueur doit être un ObjectId MongoDB valide"))
+    .max(20)
+    .optional(),
+  guests: z
+    .array(
+      z.object({
+        id: z
+          .string()
+          .regex(GUEST_ID_PATTERN, "L'identifiant d'un invité doit être de la forme guest_…")
+          .optional(),
+        name: z.string().trim().min(1, "Le nom de l'invité est requis").max(MAX_GUEST_NAME_LENGTH),
+      })
+    )
+    .max(MAX_GUESTS)
+    .optional(),
+  winnerIds: z.array(participantIdSchema).optional(),
+  battleReport: battleReportSchema.optional(),
+});
+
+export type GameMatchApiCreateInput = z.infer<typeof gameMatchApiCreateSchema>;
 export type GameMatchInput = z.infer<typeof gameMatchSchema>;
 export type BattleReportInput = z.infer<typeof battleReportSchema>;
 export type BattleReportArmyInput = z.infer<typeof battleReportArmySchema>;
