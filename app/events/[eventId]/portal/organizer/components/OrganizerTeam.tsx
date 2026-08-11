@@ -224,7 +224,7 @@ export default function OrganizerTeam({ eventId, initialStaff, isCreator }: Orga
               {staff.map((member) => (
                 <div
                   key={member.userId}
-                  className="flex items-center justify-between p-3 rounded-lg border bg-card"
+                  className="flex flex-wrap items-center justify-between p-3 rounded-lg border bg-card gap-2"
                 >
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center text-sm font-medium">

@@ -855,7 +855,7 @@ export default function LeagueManageClient({
       )}
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b">
+      <div className="flex flex-wrap gap-2 border-b">
         <Button
           variant={activeTab === "settings" ? "default" : "ghost"}
           onClick={() => setActiveTab("settings")}
@@ -1331,7 +1331,7 @@ export default function LeagueManageClient({
                     }}
                   >
                     <summary className="cursor-pointer list-none p-3 [&::-webkit-details-marker]:hidden">
-                      <div className="flex items-center justify-between gap-4">
+                      <div className="flex flex-wrap items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                           {participant.user?.avatar && (
                             <img
@@ -2004,7 +2004,7 @@ export default function LeagueManageClient({
                       return (
                         <div
                           key={playerId}
-                          className="flex items-center justify-between border rounded-lg p-2 bg-muted/30"
+                          className="flex flex-wrap items-center justify-between border rounded-lg p-2 bg-muted/30 gap-2"
                         >
                           <div className="flex items-center gap-2 flex-1 min-w-0">
                             <span className="font-medium truncate">

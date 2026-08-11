@@ -275,7 +275,7 @@ export default function OrganizerMatches({
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <CardTitle>Gestion des matchs</CardTitle>
               <CardDescription>
@@ -497,7 +497,7 @@ export default function OrganizerMatches({
                             </div>
                           </div>
                         ) : (
-                          <div className="flex items-center justify-between">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
                             <div>
                               <div className="font-medium mb-1">
                                 {getParticipantName(match.player1Id)} vs {getParticipantName(match.player2Id)}

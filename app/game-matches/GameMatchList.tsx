@@ -95,7 +95,7 @@ export default function GameMatchList({ matches, games, lairs, currentUserId }: 
           <Card key={match.id} className="p-6 hover:shadow-md transition-shadow">
             <div className="space-y-4">
               {/* En-tête avec jeu et date */}
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h3 className="text-lg font-semibold">{gameName}</h3>
@@ -125,8 +125,9 @@ export default function GameMatchList({ matches, games, lairs, currentUserId }: 
                   </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex gap-2">
+                {/* Actions. « Supprimer la partie » est long : sans repli, la
+                    rangée poussait la carte — et la page — hors de l'écran. */}
+                <div className="flex flex-wrap gap-2">
                   <Button
                     variant="outline"
                     size="sm"

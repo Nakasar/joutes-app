@@ -606,7 +606,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
                       ) : (
                         // Mode affichage
                         <>
-                          <div className="flex items-center justify-between mb-2">
+                          <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
                             <div className="flex items-center gap-2">
                               <h3 className="font-semibold">{phase.name}</h3>
                               <Badge variant={phase.status === "completed" ? "default" : phase.status === "in-progress" ? "secondary" : "outline"}>
@@ -640,7 +640,7 @@ export default function OrganizerSettings({ event, settings }: OrganizerSettings
                             Format: {phase.matchType}
                             {phase.rounds && ` • ${phase.rounds} rondes`}
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap gap-2">
                             <Button
                               size="sm"
                               variant="outline"

@@ -712,7 +712,7 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
                             Format: {phase.matchType}
                             {phase.rounds && ` • ${phase.rounds} rondes`}
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap gap-2">
                             <Button
                               size="sm"
                               variant="outline"
@@ -877,7 +877,7 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
 
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <CardTitle>Gestion des matchs</CardTitle>
                   <CardDescription>
@@ -1167,7 +1167,7 @@ export default function OrganizerPortal({ event, settings: initialSettings, user
                                 </div>
                               ) : (
                                 // Mode affichage
-                                <div className="flex items-center justify-between">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
                                   <div>
                                     <div className="font-medium mb-1">
                                       {getParticipantName(match.player1Id)} vs {getParticipantName(match.player2Id)}

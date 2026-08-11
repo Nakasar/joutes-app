@@ -282,7 +282,7 @@ export function FormBuilder({
               <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">
                 {t(`form.fieldTypes.${field.type}`)}
               </span>
-              <div className="flex items-center gap-1">
+              <div className="flex flex-wrap items-center gap-1">
                 <Button
                   variant="ghost"
                   size="icon"

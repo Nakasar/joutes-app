@@ -548,7 +548,7 @@ export function RiftboundDeckChecker({ input }: { input?: string }) {
           }
         </div>
 
-        <div className="flex flex-row space-x-4">
+        <div className="flex flex-wrap flex-row space-x-4">
           <Button onClick={importDeckList} disabled={isLoading || !rawDeckList.trim()}>
             {isLoading ? t('form.loading') : t('form.validate')}
           </Button>

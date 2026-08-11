@@ -137,7 +137,7 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
                   />
                 )}
                 <div className="flex-1">
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
                     <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
                       {userTag}
                       {!isPublic && (

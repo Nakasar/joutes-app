@@ -148,7 +148,7 @@ export default async function LeagueDetailPage({
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-4">
             <Button variant="ghost" size="icon" asChild>
               <Link href="/leagues">

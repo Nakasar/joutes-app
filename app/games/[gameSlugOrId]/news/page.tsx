@@ -86,7 +86,7 @@ export default async function GameNewsPage({ params, searchParams }: GameNewsPag
       )}
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-4">
+        <div className="flex flex-wrap items-center justify-center gap-4">
           {currentPage <= 1 ? (
             <Button variant="outline" size="sm" disabled>
               <ChevronLeft className="h-4 w-4" />

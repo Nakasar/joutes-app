@@ -1,0 +1,164 @@
+// Détecteur de rangées incompressibles — `node scripts/check-flex-rows.mjs`.
+//
+// Trois débordements horizontaux sur téléphone ont eu la même cause : une
+// rangée `flex` à laquelle on ajoute un bouton de plus. Ce script répond à la
+// question « où cela peut-il se reproduire ? » sans avoir à relire l'application.
+//
+// Dans ce dépôt, `Button` et `Badge` portent `whitespace-nowrap shrink-0` : ils
+// ne se coupent pas et ne rétrécissent pas. Deux d'entre eux **enfants directs**
+// d'une rangée `flex` sans `flex-wrap` peuvent donc élargir le document entier
+// sur un écran étroit, au lieu de passer à la ligne.
+//
+// L'analyse passe par le compilateur TypeScript plutôt que par une expression
+// régulière : seule une vraie lecture de l'arbre JSX distingue un enfant direct
+// d'un descendant enfoui dans une boîte de dialogue.
+import ts from "typescript";
+import fs from "node:fs";
+import path from "node:path";
+
+const roots = ["app", "components"];
+const RIGID_TAGS = new Set(["Button", "Badge"]);
+const files = [];
+
+function walk(dir) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) walk(full);
+    else if (entry.name.endsWith(".tsx")) files.push(full);
+  }
+}
+roots.forEach(walk);
+
+function classNameOf(node) {
+  const attributes = ts.isJsxElement(node) ? node.openingElement.attributes : node.attributes;
+  for (const attr of attributes.properties) {
+    if (!ts.isJsxAttribute(attr) || attr.name.getText() !== "className") continue;
+    const init = attr.initializer;
+    if (init && ts.isStringLiteral(init)) return init.text;
+    // `className={`...`}` : on ne lit que la partie littérale.
+    if (init && ts.isJsxExpression(init) && init.expression) {
+      const text = init.expression.getText();
+      return text.replace(/[`"'{}]/g, " ");
+    }
+  }
+  return null;
+}
+
+function tagOf(node) {
+  const tag = ts.isJsxElement(node) ? node.openingElement.tagName : node.tagName;
+  return tag.getText();
+}
+
+/**
+ * Un enfant est « rigide » s'il ne peut ni se couper ni rétrécir.
+ *
+ * `flex-1`, `grow` et `w-full` posent `flex-shrink: 1` : un bouton qui les porte
+ * rétrécit avec la rangée — c'est le cas des pieds de boîte de dialogue, qui ne
+ * débordent donc pas.
+ */
+function isRigid(node) {
+  const classes = classNameOf(node) ?? "";
+  if (/flex-1|\bgrow\b|w-full|shrink(?!-0)|truncate|min-w-0/.test(classes)) return false;
+  if (RIGID_TAGS.has(tagOf(node))) return true;
+  return /whitespace-nowrap/.test(classes);
+}
+
+/** Les enfants JSX directs, en traversant les expressions `{cond && <X/>}`. */
+function directChildren(node) {
+  if (!ts.isJsxElement(node)) return [];
+  const out = [];
+
+  const collect = (child) => {
+    if (ts.isJsxElement(child) || ts.isJsxSelfClosingElement(child)) out.push(child);
+    else if (ts.isJsxExpression(child) && child.expression) {
+      const walkExpr = (expr) => {
+        if (ts.isJsxElement(expr) || ts.isJsxSelfClosingElement(expr)) out.push(expr);
+        else if (ts.isBinaryExpression(expr)) walkExpr(expr.right);
+        else if (ts.isConditionalExpression(expr)) { walkExpr(expr.whenTrue); walkExpr(expr.whenFalse); }
+        else if (ts.isParenthesizedExpression(expr)) walkExpr(expr.expression);
+        else if (ts.isJsxFragment(expr)) expr.children.forEach(collect);
+        else if (ts.isCallExpression(expr)) {
+          // `.map(() => <X/>)`
+          for (const arg of expr.arguments) {
+            if (ts.isArrowFunction(arg)) walkExpr(arg.body);
+          }
+        }
+      };
+      walkExpr(child.expression);
+    }
+  };
+
+  node.children.forEach(collect);
+  return out;
+}
+
+const hits = [];
+
+for (const file of files) {
+  const source = ts.createSourceFile(file, fs.readFileSync(file, "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+
+  const visit = (node) => {
+    if (ts.isJsxElement(node)) {
+      const classes = classNameOf(node);
+      if (classes && /\bflex\b/.test(classes) && !/flex-wrap|flex-col|overflow-x-auto|hidden/.test(classes)) {
+        const children = directChildren(node);
+        const rigid = children.filter(isRigid);
+        // Un groupe de boutons compte comme un bloc rigide entier.
+        const rigidGroups = children.filter((child) => {
+          const cls = classNameOf(child) ?? "";
+          return /\bflex\b/.test(cls) && !/flex-wrap|flex-col/.test(cls) && directChildren(child).filter(isRigid).length >= 2;
+        });
+
+        // Le motif qui a cassé trois fois : un en-tête `justify-between` dont
+        // un côté est un groupe de boutons. Le groupe peut n'en contenir qu'un
+        // seul rendu par un composant maison (`GameMatchActions`) — que
+        // l'analyse ne sait pas reconnaître comme rigide.
+        const headerPattern =
+          /justify-between/.test(classes) &&
+          children.some((child) => {
+            const cls = classNameOf(child) ?? "";
+            if (!/\bflex\b/.test(cls) || /flex-wrap|flex-col/.test(cls)) return false;
+            const kids = directChildren(child);
+            if (kids.length < 2) return false;
+            // Un groupe d'actions : au moins un bouton, ou un composant maison
+            // qui en rend (`GameMatchActions`, `ReportButton`…).
+            return kids.some((kid) => {
+              const tag = tagOf(kid);
+              return tag === "Button" || /Action|Button/.test(tag);
+            });
+          });
+
+        if (rigid.length + rigidGroups.length >= 2 || headerPattern) {
+          const { line } = source.getLineAndCharacterOfPosition(node.getStart());
+          hits.push({
+            file,
+            line: line + 1,
+            rigides: rigid.length,
+            groupes: rigidGroups.length,
+            classes: classes.trim().slice(0, 60),
+            motif: headerPattern ? "en-tête" : "rangée",
+          });
+        }
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  visit(source);
+}
+
+hits.sort((a, b) => (b.rigides + b.groupes) - (a.rigides + a.groupes));
+
+// Deux catégories ont déjà cassé en production, ce sont celles à corriger :
+// l'en-tête `justify-between` doublé d'un groupe d'actions, et la barre de trois
+// boutons ou plus. Une rangée de deux boutons courts tient sur un téléphone :
+// elle est signalée, pas condamnée.
+const risky = hits.filter((hit) => hit.motif === "en-tête" || hit.rigides >= 3);
+
+console.log(`${hits.length} rangées sans flex-wrap, dont ${risky.length} à risque\n`);
+for (const hit of hits) {
+  const mark = risky.includes(hit) ? "!" : " ";
+  console.log(`${mark} ${hit.motif}\t${hit.file}:${hit.line}\trigides=${hit.rigides}\t${hit.classes}`);
+}
+
+process.exitCode = risky.length > 0 ? 1 : 0;
