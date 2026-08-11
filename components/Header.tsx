@@ -14,6 +14,9 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -104,6 +107,44 @@ function GamesCustomizeCorner({
   );
 }
 
+type MenuEntry = { href: string; label: string; icon: LucideIcon };
+
+/**
+ * Un jeu de la liste, et ses outils en sous-menu.
+ *
+ * La galerie de cartes d'un jeu était à deux pages de la barre de navigation ;
+ * on la trouvait par hasard, en passant par sa collection. L'entrée du jeu
+ * reste cliquable et mène à sa fiche : le sous-menu ajoute des chemins, il n'en
+ * retire aucun.
+ */
+function GameToolsSubmenu({ item, tools }: { item: MenuEntry; tools: MenuEntry[] }) {
+  return (
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger className="cursor-pointer">
+        <item.icon className="mr-2 h-4 w-4" />
+        <span>{item.label}</span>
+      </DropdownMenuSubTrigger>
+      <DropdownMenuSubContent>
+        <DropdownMenuItem asChild>
+          <Link href={item.href} className="flex w-full cursor-pointer">
+            <item.icon className="mr-2 h-4 w-4" />
+            <span>{item.label}</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        {tools.map((tool) => (
+          <DropdownMenuItem asChild key={tool.href}>
+            <Link href={tool.href} className="flex w-full cursor-pointer">
+              <tool.icon className="mr-2 h-4 w-4" />
+              <span>{tool.label}</span>
+            </Link>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuSubContent>
+    </DropdownMenuSub>
+  );
+}
+
 export default function Header() {
   const t = useTranslations('Header');
 
@@ -177,9 +218,10 @@ export default function Header() {
   });
 
   const toolLabels: Record<GameToolKey, string> = {
-    // La fiche du jeu porte le nom du jeu : c'est le titre du menu autant que
-    // sa première entrée.
-    hub: gamesSelection.games[0]?.name ?? t('menu.Jeux'),
+    // « hub » n'est jamais rendu avec ce libellé : la fiche d'un jeu porte le
+    // nom du jeu, que l'appelant substitue. Il est là pour que la table reste
+    // complète, et que l'ajout d'un outil ne puisse pas l'oublier.
+    hub: t('menu.Jeux'),
     cards: t('menu.tools.cards'),
     tournaments: t('menu.Tournois'),
     products: t('menu.tools.products'),
@@ -191,15 +233,19 @@ export default function Header() {
     deckChecker: t('menu.tools.deckChecker'),
   };
 
+  /** Les outils d'un jeu, prêts à afficher : lien, libellé, illustration. */
+  const toolsOf = (game: NavGame) =>
+    gameToolLinks(game).map((tool) => ({
+      href: tool.href,
+      label: tool.key === "hub" ? game.name : toolLabels[tool.key],
+      icon: GAME_TOOL_ICONS[tool.key],
+    }));
+
   // Un seul jeu à proposer : ses outils valent mieux qu'une liste d'un élément,
   // qui ne ferait qu'ajouter un clic avant d'y arriver.
   const gamesMenuItems: { href: string; label: string; icon: LucideIcon }[] = showsGameTools(gamesSelection)
     ? [
-        ...gameToolLinks(gamesSelection.games[0]).map((tool) => ({
-          href: tool.href,
-          label: toolLabels[tool.key],
-          icon: GAME_TOOL_ICONS[tool.key],
-        })),
+        ...toolsOf(gamesSelection.games[0]),
         { href: "/games", label: t('menu.AllGames'), icon: Dices },
       ]
     : [
@@ -210,6 +256,23 @@ export default function Header() {
           icon: Dices,
         })),
       ];
+
+  /**
+   * En liste, chaque jeu ouvre ses outils en sous-menu — la galerie de cartes
+   * d'un jeu était jusqu'ici à deux pages de distance, et on la trouvait par
+   * hasard en passant par sa collection. Rien ne se perd : l'entrée du jeu
+   * reste cliquable et mène à sa fiche.
+   */
+  const gamesSubmenus = showsGameTools(gamesSelection)
+    ? new Map<string, { href: string; label: string; icon: LucideIcon }[]>()
+    : new Map(
+        gamesSelection.games.slice(0, MAX_GAMES_IN_MENU).map((game) => {
+          const tools = toolsOf(game);
+          // Un jeu qui n'ouvre aucun outil n'a pas de sous-menu à montrer :
+          // il ne resterait que sa fiche, déjà atteinte par l'entrée elle-même.
+          return [`/games/${game.slug ?? game.id}`, tools.length > 1 ? tools.slice(1) : []];
+        })
+      );
 
   // Qui n'a pas encore de favori a besoin qu'on lui montre où les poser : une
   // entrée en toutes lettres, dans la liste. Qui en a déjà connaît le chemin —
@@ -264,14 +327,19 @@ export default function Header() {
                     {hasFavorites && (
                       <GamesCustomizeCorner label={t('menu.Jeux')} customizeLabel={t('menu.CustomizeGames')} />
                     )}
-                    {gamesMenuItems.map((item) => (
-                      <DropdownMenuItem asChild key={item.href}>
-                        <Link href={item.href} className="flex w-full cursor-pointer">
-                          <item.icon className="mr-2 h-4 w-4" />
-                          <span>{item.label}</span>
-                        </Link>
-                      </DropdownMenuItem>
-                    ))}
+                    {gamesMenuItems.map((item) => {
+                      const tools = gamesSubmenus.get(item.href);
+                      return tools && tools.length > 0 ? (
+                        <GameToolsSubmenu key={item.href} item={item} tools={tools} />
+                      ) : (
+                        <DropdownMenuItem asChild key={item.href}>
+                          <Link href={item.href} className="flex w-full cursor-pointer">
+                            <item.icon className="mr-2 h-4 w-4" />
+                            <span>{item.label}</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      );
+                    })}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </NavigationMenuItem>
@@ -419,14 +487,19 @@ export default function Header() {
                     {hasFavorites && (
                       <GamesCustomizeCorner label={t('menu.Jeux')} customizeLabel={t('menu.CustomizeGames')} />
                     )}
-                    {gamesMenuItems.map((item) => (
-                      <DropdownMenuItem asChild key={item.href}>
-                        <Link href={item.href} className="flex w-full cursor-pointer">
-                          <item.icon className="mr-2 h-4 w-4" />
-                          <span>{item.label}</span>
-                        </Link>
-                      </DropdownMenuItem>
-                    ))}
+                    {gamesMenuItems.map((item) => {
+                      const tools = gamesSubmenus.get(item.href);
+                      return tools && tools.length > 0 ? (
+                        <GameToolsSubmenu key={item.href} item={item} tools={tools} />
+                      ) : (
+                        <DropdownMenuItem asChild key={item.href}>
+                          <Link href={item.href} className="flex w-full cursor-pointer">
+                            <item.icon className="mr-2 h-4 w-4" />
+                            <span>{item.label}</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      );
+                    })}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </NavigationMenuItem>

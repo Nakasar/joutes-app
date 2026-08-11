@@ -1335,6 +1335,7 @@
       },
       "addToWishlist": {
         "trigger": "Wishlist",
+        "quickAdd": "Add to “{wishlist}”",
         "loading": "Loading wishlists…",
         "empty": "No wishlists yet. Create one below.",
         "personalHeading": "My wishlists",

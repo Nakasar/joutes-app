@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Check, Heart, Loader2, Plus } from "lucide-react";
@@ -18,11 +18,13 @@ import PrintingPicker from "@/components/PrintingPicker";
 import { resolvePrinting } from "@/lib/cards/printings";
 import type { CardPrinting } from "@/lib/types/card";
 import type { Wishlist } from "@/lib/types/Wishlist";
-
-type MyWishlists = {
-  personal: Wishlist[];
-  groups: { group: { id: string; name: string }; wishlists: Wishlist[] }[];
-};
+import {
+  invalidateMyWishlists,
+  loadMyWishlists,
+  readPreferredWishlistId,
+  writePreferredWishlistId,
+} from "@/lib/wishlists/my-wishlists-client";
+import { type MyWishlists, pickShortcutWishlist } from "@/lib/wishlists/shortcut";
 
 type AddToWishlistButtonProps = {
   cardId: string;
@@ -70,23 +72,38 @@ export default function AddToWishlistButton({
   const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
   const [printingId, setPrintingId] = useState("");
+  const [preferredId, setPreferredId] = useState<string | null>(null);
   const printingChoice = resolvePrinting({ foil: cardFoil, image, printings }, printingId || undefined);
+
+  // Les listes sont chargées d'emblée — le raccourci doit pouvoir nommer sa
+  // cible avant tout clic. Le cache partagé fait qu'une galerie de soixante
+  // cartes ne déclenche qu'une requête.
+  useEffect(() => {
+    let cancelled = false;
+    void loadMyWishlists().then((mine) => {
+      if (!cancelled) setData(mine);
+    });
+    setPreferredId(readPreferredWishlistId());
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const shortcut = data ? pickShortcutWishlist(data, preferredId) : null;
 
   async function loadWishlists() {
     setLoading(true);
     try {
       // Charge en parallèle mes wishlists et celles qui contiennent déjà cette
       // carte, pour les afficher cochées à l'ouverture du popover.
-      const [res, containingRes] = await Promise.all([
-        fetch("/api/wishlists/mine"),
+      const [mine, containingRes] = await Promise.all([
+        loadMyWishlists(),
         fetch(
           `/api/wishlists/mine/containing?gameSlug=${encodeURIComponent(gameSlug)}&cardId=${encodeURIComponent(cardId)}`
         ),
       ]);
-      if (res.ok) {
-        setData(await res.json());
-        setLoaded(true);
-      }
+      setData(mine);
+      setLoaded(true);
       if (containingRes.ok) {
         const { wishlistIds }: { wishlistIds?: string[] } = await containingRes.json();
         if (Array.isArray(wishlistIds) && wishlistIds.length > 0) {
@@ -133,6 +150,9 @@ export default function AddToWishlistButton({
       // l'indique via la quantité renvoyée.
       const item: { quantity?: number } = await res.json().catch(() => ({}));
       setAddedIds((prev) => new Set(prev).add(wishlist.id));
+      // La liste qu'on vient de choisir devient celle que le raccourci visera.
+      writePreferredWishlistId(wishlist.id);
+      setPreferredId(wishlist.id);
       if (typeof item.quantity === "number" && item.quantity > 1) {
         toast.success(
           t("addToWishlist.quantityIncreased", { wishlist: wishlist.name, quantity: item.quantity })
@@ -162,6 +182,7 @@ export default function AddToWishlistButton({
         return;
       }
       const wishlist: Wishlist = await res.json();
+      invalidateMyWishlists();
       setData((prev) =>
         prev ? { ...prev, personal: [wishlist, ...prev.personal] } : { personal: [wishlist], groups: [] }
       );
@@ -174,7 +195,44 @@ export default function AddToWishlistButton({
 
   const hasAnyWishlist = !!data && (data.personal.length > 0 || data.groups.length > 0);
 
+  /**
+   * Le raccourci : un geste au lieu de deux, vers la liste nommée sur le
+   * bouton. Il ne remplace pas le panneau, qui reste le chemin dès qu'on veut
+   * choisir — une autre liste, une variante d'impression.
+   */
+  const shortcutButton = shortcut ? (
+    <Button
+      type="button"
+      variant={iconOnly ? undefined : "outline"}
+      size={iconOnly ? undefined : "sm"}
+      onClick={(e) => {
+        e.stopPropagation();
+        void handleAdd(shortcut);
+      }}
+      disabled={addingId === shortcut.id}
+      aria-label={t("addToWishlist.quickAdd", { wishlist: shortcut.name })}
+      title={t("addToWishlist.quickAdd", { wishlist: shortcut.name })}
+      className={
+        iconOnly
+          ? "flex size-7 items-center justify-center rounded-full bg-black/60 p-0 text-white shadow transition-colors hover:bg-black/80"
+          : "gap-1.5"
+      }
+    >
+      {addingId === shortcut.id ? (
+        <Loader2 className={iconOnly ? "size-3.5 animate-spin" : "size-4 animate-spin"} />
+      ) : addedIds.has(shortcut.id) ? (
+        <Check className={iconOnly ? "size-3.5" : "size-4 text-emerald-500"} />
+      ) : (
+        <Plus className={iconOnly ? "size-3.5" : "size-4"} />
+      )}
+      {!iconOnly && <span className="max-w-32 truncate">{shortcut.name}</span>}
+    </Button>
+  ) : null;
+
   return (
+    // `flex-wrap` : deux boutons côte à côte, dont un au libellé libre — sans
+    // repli, la rangée pousse la page hors de l'écran sur un téléphone.
+    <span className="inline-flex flex-wrap items-center gap-1.5">
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         {iconOnly ? (
@@ -293,5 +351,7 @@ export default function AddToWishlistButton({
         </Command>
       </PopoverContent>
     </Popover>
+    {shortcutButton}
+    </span>
   );
 }

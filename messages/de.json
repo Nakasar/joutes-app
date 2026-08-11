@@ -1252,6 +1252,7 @@
       },
       "addToWishlist": {
         "trigger": "Wunschliste",
+        "quickAdd": "Zu „{wishlist}“ hinzufügen",
         "loading": "Wunschlisten werden geladen…",
         "empty": "Noch keine Wunschliste. Erstelle unten eine.",
         "personalHeading": "Meine Wunschlisten",

@@ -1277,6 +1277,7 @@
       },
       "addToWishlist": {
         "trigger": "Wishlist",
+        "quickAdd": "Aggiungi a «{wishlist}»",
         "loading": "Caricamento delle liste…",
         "empty": "Nessuna lista dei desideri per ora. Creane una qui sotto.",
         "personalHeading": "Le mie liste",
