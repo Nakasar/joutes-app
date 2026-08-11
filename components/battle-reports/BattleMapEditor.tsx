@@ -31,8 +31,8 @@ import type {
   BattleMapTerrain,
   BattleMapUnitToken,
   BattleReportArmy,
-  GameMatchPlayer,
 } from "@/lib/types/Match";
+import type { MatchParticipant } from "@/lib/matches/participants";
 import { updateBattleMapAction } from "@/app/game-matches/actions";
 
 /**
@@ -50,14 +50,15 @@ import { updateBattleMapAction } from "@/app/game-matches/actions";
 export default function BattleMapEditor({
   matchId,
   gameSlug,
-  players,
+  participants,
   armies,
   map: savedMap,
   editable,
 }: {
   matchId: string;
   gameSlug?: string;
-  players: GameMatchPlayer[];
+  /** Comptes et invités : les uns comme les autres posent des jetons. */
+  participants: MatchParticipant[];
   armies: Record<string, BattleReportArmy>;
   map?: BattleMap;
   editable: boolean;
@@ -73,7 +74,7 @@ export default function BattleMapEditor({
       emptyBattleMap(
         gameSlug,
         nanoid(8),
-        players.map((player) => player.userId)
+        participants.map((participant) => participant.id)
       )
   );
   const [snapshotIndex, setSnapshotIndex] = useState(0);
@@ -88,11 +89,22 @@ export default function BattleMapEditor({
     | null
   >(null);
 
-  const snapshot = map.snapshots[snapshotIndex] ?? map.snapshots[0];
+  const known = new Set(participants.map((participant) => participant.id));
+  const stored = map.snapshots[snapshotIndex] ?? map.snapshots[0];
+  // Les jetons d'un participant sorti de la partie ne sont plus montrés : c'est
+  // déjà ce que la normalisation en fait au prochain enregistrement, et les
+  // laisser afficherait un nom que la liste des joueurs ne porte plus.
+  const snapshot = stored
+    ? { ...stored, units: stored.units.filter((unit) => known.has(unit.playerId)) }
+    : stored;
   const preset = useMemo(() => defaultTableForGame(gameSlug), [gameSlug]);
 
   const playerColor = (playerId: string) =>
-    colorForPlayer(map, playerId, players.findIndex((player) => player.userId === playerId));
+    colorForPlayer(
+      map,
+      playerId,
+      participants.findIndex((participant) => participant.id === playerId)
+    );
 
   const update = (next: BattleMap) => {
     setMap(next);
@@ -489,13 +501,14 @@ export default function BattleMapEditor({
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          {players.map((player) => (
-            <span key={player.userId} className="flex items-center gap-1.5 text-xs">
+          {participants.map((participant) => (
+            <span key={participant.id} className="flex items-center gap-1.5 text-xs">
               <span
                 className="inline-block size-3 rounded-full border"
-                style={{ backgroundColor: playerColor(player.userId) }}
+                style={{ backgroundColor: playerColor(participant.id) }}
               />
-              {player.username}
+              {participant.name}
+              {participant.isGuest && <span className="text-muted-foreground">(invité)</span>}
             </span>
           ))}
         </div>
@@ -589,28 +602,31 @@ export default function BattleMapEditor({
           {/* Unités des joueurs */}
           <div className="space-y-2">
             <p className="text-sm font-medium">Poser une unité</p>
-            {players.map((player) => {
-              const units = armies[player.userId]?.units ?? [];
+            {participants.map((participant) => {
+              const units = armies[participant.id]?.units ?? [];
 
               return (
-                <div key={player.userId} className="space-y-1 rounded-lg border p-2">
+                <div key={participant.id} className="space-y-1 rounded-lg border p-2">
                   <div className="flex items-center gap-2">
                     <input
                       type="color"
-                      aria-label={`Couleur de ${player.username}`}
+                      aria-label={`Couleur de ${participant.name}`}
                       className="size-6 rounded border bg-transparent"
-                      value={playerColor(player.userId)}
+                      value={playerColor(participant.id)}
                       onChange={(event) =>
                         update({
                           ...map,
                           playerColors: {
                             ...map.playerColors,
-                            [player.userId]: event.target.value,
+                            [participant.id]: event.target.value,
                           },
                         })
                       }
                     />
-                    <span className="text-sm">{player.username}</span>
+                    <span className="text-sm">{participant.name}</span>
+                    {participant.isGuest && (
+                      <span className="text-xs text-muted-foreground">invité</span>
+                    )}
                   </div>
 
                   {units.length === 0 ? (
@@ -627,7 +643,7 @@ export default function BattleMapEditor({
                           variant="ghost"
                           className="h-7 gap-1 text-xs"
                           disabled={snapshot.units.length >= MAX_UNIT_TOKENS}
-                          onClick={() => addUnitToken(player.userId, unit)}
+                          onClick={() => addUnitToken(participant.id, unit)}
                         >
                           <Plus className="h-3 w-3" />
                           {unit.name}

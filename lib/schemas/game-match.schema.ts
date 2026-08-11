@@ -15,6 +15,31 @@ import {
   MAX_TERRAIN_PIECES,
   MAX_UNIT_TOKENS,
 } from "@/lib/battle-reports/battle-map";
+import {
+  GUEST_ID_PATTERN,
+  MAX_GUESTS,
+  MAX_GUEST_NAME_LENGTH,
+} from "@/lib/matches/participants";
+
+/**
+ * Un participant est soit un compte (`ObjectId`), soit un invité (`guest_…`).
+ * Tout ce qui est indexé par participant — listes d'armée, jetons de la table,
+ * vainqueurs — accepte donc les deux formes. Le motif de l'invité est repris de
+ * `lib/matches/participants.ts` plutôt que réécrit : une seule définition, pas
+ * deux qui divergent.
+ */
+const participantIdPattern = new RegExp(
+  `^(?:[0-9a-fA-F]{24}|${GUEST_ID_PATTERN.source.slice(1, -1)})$`
+);
+
+export const participantIdSchema = z
+  .string()
+  .regex(participantIdPattern, "L'identifiant doit être celui d'un compte ou d'un invité");
+
+export const gameMatchGuestSchema = z.object({
+  id: z.string().regex(GUEST_ID_PATTERN, "L'identifiant d'un invité doit être de la forme guest_…"),
+  name: z.string().trim().min(1, "Le nom de l'invité est requis").max(MAX_GUEST_NAME_LENGTH),
+});
 
 /**
  * Une ligne de liste d'armée. `productId` est l'identifiant d'un produit **au
@@ -57,7 +82,7 @@ export const battleMapTerrainSchema = z.object({
 
 export const battleMapUnitTokenSchema = z.object({
   id: battleMapIdSchema,
-  playerId: z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID du joueur doit être un ObjectId MongoDB valide"),
+  playerId: participantIdSchema,
   unitName: z.string().trim().min(1).max(MAX_LABEL_LENGTH),
   productId: z.string().trim().min(1).max(120).optional(),
   image: z.url().max(2048).optional(),
@@ -85,12 +110,7 @@ export const battleMapSchema = z.object({
 export const battleReportSchema = z.object({
   scenario: z.string().trim().max(MAX_SCENARIO_LENGTH).optional(),
   notes: z.string().trim().max(MAX_NOTES_LENGTH).optional(),
-  armies: z
-    .record(
-      z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID du joueur doit être un ObjectId MongoDB valide"),
-      battleReportArmySchema
-    )
-    .optional(),
+  armies: z.record(participantIdSchema, battleReportArmySchema).optional(),
   map: battleMapSchema.optional(),
 });
 
@@ -100,8 +120,10 @@ export const gameMatchRatingSchema = z.object({
 });
 
 export const gameMatchMVPVoteSchema = z.object({
+  // Seul un compte vote — un invité ne se connecte pas —, mais chacun peut voter
+  // pour n'importe quel participant, invités compris.
   voterId: z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID du votant doit être un ObjectId MongoDB valide"),
-  votedForId: z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID du joueur voté doit être un ObjectId MongoDB valide"),
+  votedForId: participantIdSchema,
 });
 
 export const gameMatchSchema = z.object({
@@ -111,7 +133,9 @@ export const gameMatchSchema = z.object({
   playerIds: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID du joueur doit être un ObjectId MongoDB valide")).min(1, "Au moins un joueur est requis"),
   ratings: z.array(gameMatchRatingSchema).optional(),
   mvpVotes: z.array(gameMatchMVPVoteSchema).optional(),
-  winnerIds: z.array(z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID du gagnant doit être un ObjectId MongoDB valide")).optional(),
+  // Un invité gagne comme un autre : les vainqueurs sont des participants.
+  winnerIds: z.array(participantIdSchema).optional(),
+  guests: z.array(gameMatchGuestSchema).max(MAX_GUESTS).optional(),
   decks: z.record(z.string(), z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID du deck doit être un ObjectId MongoDB valide")).optional(),
   // Présent = la partie est saisie en rapport de bataille, même vide.
   battleReport: battleReportSchema.optional(),

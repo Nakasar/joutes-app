@@ -1,9 +1,10 @@
 import { Game } from "@/lib/types/Game";
 import { Lair } from "@/lib/types/Lair";
 import { User } from "@/lib/types/User";
-import type { BattleReport } from "@/lib/types/Match";
+import type { BattleReport, GameMatchGuest } from "@/lib/types/Match";
 
 export type {
+  GameMatchGuest,
   BattleReport,
   BattleReportArmy,
   BattleReportArmyUnit,
@@ -38,6 +39,7 @@ export type GameMatch = {
   lairId?: Lair['id'];
   playerIds: string[]; // IDs des joueurs stockés en DB
   players: GameMatchPlayer[]; // Contient les détails des joueurs (récupérés via aggregate)
+  guests?: GameMatchGuest[]; // Participants sans compte
   createdBy: User['id'];
   createdAt: Date;
   ratings?: GameMatchRating[]; // Évaluations des joueurs

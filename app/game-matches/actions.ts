@@ -16,17 +16,25 @@ import {
   updateGameMatchBattleReport,
   setGameMatchBattleReportArmy,
   setGameMatchBattleMap,
+  addGuestToGameMatch,
+  removeGuestFromGameMatch,
 } from "@/lib/db/game-matches";
 import {
   battleMapSchema,
+  gameMatchGuestSchema,
   battleReportArmySchema,
   battleReportSchema,
   gameMatchSchema,
 } from "@/lib/schemas/game-match.schema";
 import { GameMatch } from "@/lib/types/GameMatch";
-import { BattleMap, BattleReport, BattleReportArmy } from "@/lib/types/Match";
+import { BattleMap, BattleReport, BattleReportArmy, GameMatchGuest } from "@/lib/types/Match";
 import { normalizeArmy, normalizeBattleReport } from "@/lib/battle-reports/army";
 import { normalizeBattleMap } from "@/lib/battle-reports/battle-map";
+import {
+  isParticipant,
+  normalizeGuests,
+  participantIds,
+} from "@/lib/matches/participants";
 import { searchGameProducts, type GameProductSummary } from "@/lib/db/products";
 import { gameIdSchema } from "@/lib/schemas/game.schema";
 import { getUserByUsernameAndDiscriminator, getUserById } from "@/lib/db/users";
@@ -46,6 +54,12 @@ export async function createGameMatchAction(
       discriminator?: string;
     }>;
     decks?: Record<string, string>;
+    /**
+     * Participants sans compte. Leurs identifiants sont fabriqués par le
+     * formulaire — les listes d'armée sont saisies avant l'enregistrement et
+     * doivent bien s'accrocher à quelque chose.
+     */
+    guests?: GameMatchGuest[];
     /**
      * Présent = la partie est saisie en rapport de bataille. Le formulaire le
      * pose d'office pour les jeux qui activent la fonctionnalité ; le champ est
@@ -97,11 +111,17 @@ export async function createGameMatchAction(
       })
     );
 
-    // Les listes d'armée sont saisies avant que les joueurs invités soient
-    // résolus : celles qui ne retombent sur aucun joueur de la partie sont
-    // abandonnées ici plutôt que d'entrer en base sans propriétaire.
+    const guests = normalizeGuests(data.guests);
+
+    // Les listes d'armée sont saisies avant que les joueurs invités par leur tag
+    // soient résolus : celles qui ne retombent sur aucun participant — compte ou
+    // invité — sont abandonnées ici plutôt que d'entrer en base sans
+    // propriétaire.
     const battleReport = data.battleReport
-      ? normalizeBattleReport(data.battleReport, resolvedPlayerIds)
+      ? normalizeBattleReport(data.battleReport, [
+          ...resolvedPlayerIds,
+          ...guests.map((guest) => guest.id),
+        ])
       : undefined;
 
     // Valider les données
@@ -110,6 +130,7 @@ export async function createGameMatchAction(
       playedAt: data.playedAt,
       lairId: data.lairId,
       playerIds: resolvedPlayerIds,
+      guests,
       decks: data.decks,
       battleReport,
     });
@@ -438,8 +459,9 @@ export async function voteMVPAction(
       return { success: false, error: "Vous devez être joueur de la partie pour voter MVP" };
     }
 
-    // Vérifier que le joueur voté est dans la partie
-    if (!match.playerIds.includes(votedForId)) {
+    // Vérifier que le joueur voté est dans la partie. Un invité peut recevoir
+    // des voix : il a joué, même sans compte.
+    if (!isParticipant(match, votedForId)) {
       return { success: false, error: "Le joueur voté doit être dans la partie" };
     }
 
@@ -486,8 +508,9 @@ export async function toggleWinnerAction(
       return { success: false, error: "Seul le créateur peut désigner les gagnants" };
     }
 
-    // Vérifier que le joueur est dans la partie
-    if (!match.playerIds.includes(userId)) {
+    // Vérifier que le joueur est dans la partie — invités compris : ils gagnent
+    // des parties comme les autres.
+    if (!isParticipant(match, userId)) {
       return { success: false, error: "Le joueur doit être dans la partie" };
     }
 
@@ -681,7 +704,7 @@ export async function updateBattleReportArmyAction(
       return { success: false, error: "Vous ne pouvez modifier que votre propre liste d'armée" };
     }
 
-    if (!match.playerIds.includes(playerId)) {
+    if (!isParticipant(match, playerId)) {
       return { success: false, error: "Le joueur doit être dans la partie" };
     }
 
@@ -747,7 +770,7 @@ export async function updateBattleMapAction(
       return { success: false, error: "Seul le créateur peut modifier la table de jeu" };
     }
 
-    const normalized = normalizeBattleMap(map, match.playerIds);
+    const normalized = normalizeBattleMap(map, participantIds(match));
     const validationResult = battleMapSchema.safeParse(normalized);
 
     if (!validationResult.success) {
@@ -764,6 +787,106 @@ export async function updateBattleMapAction(
     return { success: true };
   } catch (error) {
     console.error("Erreur lors de la mise à jour de la table de jeu:", error);
+    return { success: false, error: "Erreur serveur" };
+  }
+}
+
+// ============================================================================
+// INVITÉS
+// ============================================================================
+
+/**
+ * Ajoute un participant sans compte à une partie existante.
+ *
+ * Réservé au créateur, comme l'ajout d'un joueur : un invité n'est le nom de
+ * personne en particulier, et n'importe qui pourrait sinon peupler la partie
+ * d'autrui. L'identifiant est fabriqué par l'appelant et vérifié ici — sans
+ * quoi un client pourrait glisser l'ObjectId d'un compte dans la liste des
+ * invités et lui prêter des droits qu'il n'a pas.
+ */
+export async function addGuestToMatchAction(
+  matchId: string,
+  guest: GameMatchGuest
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    const match = await getGameMatchById(matchId);
+
+    if (!match) {
+      return { success: false, error: "Partie non trouvée" };
+    }
+
+    if (match.createdBy !== session.user.id) {
+      return { success: false, error: "Seul le créateur peut ajouter un invité" };
+    }
+
+    const validationResult = gameMatchGuestSchema.safeParse(guest);
+
+    if (!validationResult.success) {
+      const errorMessage = validationResult.error.issues[0]?.message || "Données invalides";
+      return { success: false, error: errorMessage };
+    }
+
+    if (isParticipant(match, validationResult.data.id)) {
+      return { success: false, error: "Cet invité est déjà dans la partie" };
+    }
+
+    const result = await addGuestToGameMatch(matchId, validationResult.data);
+
+    if (!result) {
+      return { success: false, error: "Erreur lors de l'ajout de l'invité" };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de l'ajout de l'invité:", error);
+    return { success: false, error: "Erreur serveur" };
+  }
+}
+
+/**
+ * Retire un invité. Réservé au créateur : personne d'autre ne peut se retirer à
+ * sa place, puisqu'un invité ne se connecte pas.
+ */
+export async function removeGuestFromMatchAction(
+  matchId: string,
+  guestId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    const match = await getGameMatchById(matchId);
+
+    if (!match) {
+      return { success: false, error: "Partie non trouvée" };
+    }
+
+    if (match.createdBy !== session.user.id) {
+      return { success: false, error: "Seul le créateur peut retirer un invité" };
+    }
+
+    const result = await removeGuestFromGameMatch(matchId, guestId);
+
+    if (!result) {
+      return { success: false, error: "Erreur lors du retrait de l'invité" };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors du retrait de l'invité:", error);
     return { success: false, error: "Erreur serveur" };
   }
 }

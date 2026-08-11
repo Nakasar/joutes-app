@@ -8,6 +8,7 @@ import {
   BattleMap,
   BattleReport,
   BattleReportArmy,
+  GameMatchGuest,
   GameMatchPlayer,
   GameMatchRating,
   GameMatchMVPVote,
@@ -17,6 +18,7 @@ import {
   isEventMatch,
 } from "@/lib/types/Match";
 import { isEmptyArmy, normalizeArmy } from "@/lib/battle-reports/army";
+import { normalizeGuests } from "@/lib/matches/participants";
 
 const COLLECTION_NAME = "matches";
 
@@ -38,6 +40,7 @@ export type MatchDocument = {
   // Game match fields
   gameId?: string;
   playerIds?: string[];
+  guests?: GameMatchGuest[];
   ratings?: GameMatchRating[];
   mvpVotes?: GameMatchMVPVote[];
   decks?: Record<string, string>;
@@ -92,6 +95,7 @@ function toMatch(doc: WithId<Document>): Match {
       gameId: doc.gameId,
       playerIds: doc.playerIds || [],
       players: doc.players || [],
+      guests: doc.guests || [],
       ratings: doc.ratings || [],
       mvpVotes: doc.mvpVotes || [],
       winnerIds: doc.winnerIds || [],
@@ -162,6 +166,7 @@ function toDocument(match: Omit<Match, "id" | "createdAt">): Omit<MatchDocument,
       ...base,
       gameId: match.gameId,
       playerIds: match.playerIds,
+      guests: match.guests,
       ratings: match.ratings,
       mvpVotes: match.mvpVotes,
       winnerIds: match.winnerIds,
@@ -678,6 +683,52 @@ export async function setMatchBattleReportArmy(
   );
 
   return result.matchedCount > 0;
+}
+
+// ============================================================================
+// INVITÉS
+// ============================================================================
+
+/**
+ * Ajoute un participant sans compte. L'identifiant est fabriqué par l'appelant
+ * (préfixé `guest_`), la normalisation refusant tout ce qui n'en a pas la forme :
+ * un client ne peut donc pas glisser l'ObjectId d'un compte dans cette liste.
+ */
+export async function addGuestToMatch(matchId: string, guest: GameMatchGuest): Promise<boolean> {
+  const [normalized] = normalizeGuests([guest]);
+
+  if (!normalized) {
+    return false;
+  }
+
+  const result = await db.collection<MatchDocument>(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(matchId), matchType: 'game', "guests.id": { $ne: normalized.id } },
+    { $push: { guests: normalized }, $set: { updatedAt: new Date() } }
+  );
+
+  return result.modifiedCount > 0;
+}
+
+/**
+ * Retire un invité, et avec lui ce qu'il avait posé sur la partie : sa liste
+ * d'armée et son deck, comme pour un joueur qui s'en va. Ses jetons sur la table
+ * disparaissent au prochain enregistrement de celle-ci, la normalisation
+ * n'y gardant que les participants connus.
+ */
+export async function removeGuestFromMatch(matchId: string, guestId: string): Promise<boolean> {
+  const result = await db.collection<MatchDocument>(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(matchId), matchType: 'game' },
+    {
+      $pull: { guests: { id: guestId }, winnerIds: guestId },
+      $unset: {
+        [`battleReport.armies.${guestId}`]: "",
+        [`decks.${guestId}`]: "",
+      },
+      $set: { updatedAt: new Date() },
+    }
+  );
+
+  return result.modifiedCount > 0;
 }
 
 /**

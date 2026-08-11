@@ -31,7 +31,7 @@ Pour voir une démo du thème : `/winter-demo`
 
 ### Historique des Parties
 
-Les utilisateurs peuvent enregistrer et consulter l'historique de leurs parties jouées.
+Les utilisateurs peuvent enregistrer et consulter l'historique de leurs parties jouées, avec ou sans compte pour les autres participants (joueurs invités).
 
 Pour plus de détails, voir [docs/GAME_MATCHES.md](docs/GAME_MATCHES.md).
 

@@ -1,5 +1,5 @@
 import { GameMatch } from "@/lib/types/GameMatch";
-import { BattleMap, BattleReportArmy, GameTypeMatch } from "@/lib/types/Match";
+import { BattleMap, BattleReportArmy, GameMatchGuest, GameTypeMatch } from "@/lib/types/Match";
 import {
   createMatch,
   getMatchById,
@@ -14,6 +14,8 @@ import {
   updateMatchBattleReport,
   setMatchBattleReportArmy,
   setMatchBattleMap,
+  addGuestToMatch,
+  removeGuestFromMatch,
 } from "@/lib/db/matches";
 
 // Adapters pour maintenir la rétrocompatibilité avec l'API existante
@@ -130,4 +132,12 @@ export async function setGameMatchBattleReportArmy(
 
 export async function setGameMatchBattleMap(matchId: string, map: BattleMap): Promise<boolean> {
   return setMatchBattleMap(matchId, map);
+}
+
+export async function addGuestToGameMatch(matchId: string, guest: GameMatchGuest): Promise<boolean> {
+  return addGuestToMatch(matchId, guest);
+}
+
+export async function removeGuestFromGameMatch(matchId: string, guestId: string): Promise<boolean> {
+  return removeGuestFromMatch(matchId, guestId);
 }

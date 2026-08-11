@@ -21,7 +21,9 @@ import { DateTime } from "luxon";
 import { X } from "lucide-react";
 import DeckSelector from "@/components/DeckSelector";
 import ArmyListEditor from "@/components/battle-reports/ArmyListEditor";
-import type { BattleReportArmy } from "@/lib/types/Match";
+import type { BattleReportArmy, GameMatchGuest } from "@/lib/types/Match";
+import { MAX_GUESTS, MAX_GUEST_NAME_LENGTH, guestId } from "@/lib/matches/participants";
+import { nanoid } from "nanoid";
 import { MAX_NOTES_LENGTH, MAX_SCENARIO_LENGTH } from "@/lib/battle-reports/army";
 
 type GameMatchFormProps = {
@@ -75,6 +77,14 @@ export default function GameMatchForm({
   const [playerDecks, setPlayerDecks] = useState<Record<string, string | undefined>>({});
 
   const [newPlayerTag, setNewPlayerTag] = useState("");
+
+  /**
+   * Participants sans compte. Leur identifiant est fabriqué ici plutôt qu'au
+   * serveur : une liste d'armée se saisit avant l'enregistrement, et il lui faut
+   * dès maintenant quelque chose à quoi s'accrocher.
+   */
+  const [guests, setGuests] = useState<GameMatchGuest[]>([]);
+  const [newGuestName, setNewGuestName] = useState("");
 
   /**
    * Rapport de bataille. Le format suit le jeu : les jeux qui activent la
@@ -142,6 +152,33 @@ export default function GameMatchForm({
     setError(null);
   };
 
+  const addGuest = () => {
+    const name = newGuestName.trim();
+
+    if (!name) {
+      setError("Veuillez entrer le nom de l'invité");
+      return;
+    }
+
+    if (guests.length >= MAX_GUESTS) {
+      setError(`Une partie ne peut pas compter plus de ${MAX_GUESTS} invités`);
+      return;
+    }
+
+    // Deux invités homonymes restent deux joueurs distincts : c'est
+    // l'identifiant qui les sépare, jamais le nom.
+    setGuests([...guests, { id: guestId(nanoid(8)), name }]);
+    setNewGuestName("");
+    setError(null);
+  };
+
+  const removeGuest = (id: string) => {
+    setGuests(guests.filter((guest) => guest.id !== id));
+    // La liste d'armée saisie pour cet invité part avec lui : le serveur
+    // l'abandonnerait de toute façon, faute de propriétaire.
+    setArmies(Object.fromEntries(Object.entries(armies).filter(([playerId]) => playerId !== id)));
+  };
+
   const removePlayer = (index: number) => {
     // Ne pas permettre de retirer le joueur courant (index 0)
     if (index === 0) {
@@ -186,6 +223,7 @@ export default function GameMatchForm({
           !isBattleReport && Object.keys(decksToSubmit).length > 0
             ? decksToSubmit
             : undefined,
+        guests: guests.length > 0 ? guests : undefined,
         // L'objet, même vide, est ce qui fait de la partie un rapport de
         // bataille : le format ne dépend pas de ce qui a déjà été rempli.
         battleReport: isBattleReport
@@ -373,6 +411,66 @@ export default function GameMatchForm({
           </div>
           <p className="text-xs text-muted-foreground">
             Format : username#1234
+          </p>
+        </div>
+
+        {/* Invités : des participants sans compte sur Joutes. Ils comptent dans
+            la partie, mais ne la verront pas dans leur historique — ils n'en ont
+            pas. */}
+        <div className="space-y-3 pt-4">
+          <label className="text-sm font-medium">
+            Invités <span className="text-muted-foreground">(sans compte)</span>
+          </label>
+
+          {guests.map((guest) => (
+            <div key={guest.id} className="p-3 border rounded-lg bg-muted/50 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="flex-1 text-sm font-medium">{guest.name}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeGuest(guest.id)}
+                  className="h-8 w-8 p-0"
+                  aria-label={`Retirer ${guest.name}`}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {isBattleReport && (
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">
+                    Liste d&apos;armée (optionnel)
+                  </label>
+                  <ArmyListEditor
+                    gameId={formData.gameId}
+                    idPrefix={`guest-${guest.id}`}
+                    army={armies[guest.id] ?? { units: [] }}
+                    onChange={(army) => setArmies({ ...armies, [guest.id]: army })}
+                    disabled={isPending}
+                  />
+                </div>
+              )}
+            </div>
+          ))}
+
+          <div className="flex gap-2">
+            <Input
+              type="text"
+              placeholder="Nom de l&apos;invité"
+              maxLength={MAX_GUEST_NAME_LENGTH}
+              value={newGuestName}
+              onChange={(e) => setNewGuestName(e.target.value)}
+              className="flex-1"
+            />
+            <Button type="button" onClick={addGuest} variant="outline">
+              Ajouter
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Un invité est enregistré dans cette partie seulement : il ne reçoit pas de
+            notification et ne la retrouvera pas dans un historique.
           </p>
         </div>
       </div>

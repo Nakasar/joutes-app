@@ -10,6 +10,17 @@ export type GameMatchPlayer = {
   discriminator?: string;
 };
 
+/**
+ * Un participant sans compte. Son `id` est local à la partie et préfixé
+ * (`guest_…`) : il n'est pas un utilisateur, personne ne s'y connecte, et il
+ * n'existe que dans la partie où il a été saisi. Voir
+ * `lib/matches/participants.ts`.
+ */
+export type GameMatchGuest = {
+  id: string;
+  name: string;
+};
+
 export type GameMatchRating = {
   userId: User['id'];
   rating: 1 | 2 | 3 | 4 | 5; // 1: angry, 2: sad, 3: neutral, 4: happy, 5: very happy
@@ -143,6 +154,7 @@ export type GameTypeMatch = BaseMatch & {
   gameId: Game['id'];
   playerIds: User['id'][];
   players?: GameMatchPlayer[]; // Détails des joueurs (récupérés via aggregate)
+  guests?: GameMatchGuest[]; // Participants sans compte
   ratings?: GameMatchRating[]; // Évaluations des joueurs
   mvpVotes?: GameMatchMVPVote[]; // Votes pour le MVP
   winnerIds?: User['id'][]; // IDs des gagnants désignés par le créateur
