@@ -2,21 +2,24 @@
 
 import { Game } from "@/lib/types/Game";
 import { useState, useTransition } from "react";
-import { addGameToUserList, removeGameFromUserList } from "./actions";
+import { addGameToUserList, removeGameFromUserList, setFavoriteGameAction } from "./actions";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Gamepad2, Trash2, Plus, Loader2, AlertCircle } from "lucide-react";
+import { Gamepad2, Trash2, Plus, Loader2, AlertCircle, Star } from "lucide-react";
 
 interface GamesManagerProps {
   userGames: Game[];
   allGames: Game[];
+  /** Jeux mis en avant dans le menu de navigation, parmi ceux qui sont suivis. */
+  favoriteGameIds: string[];
 }
 
-export default function GamesManager({ userGames, allGames }: GamesManagerProps) {
+export default function GamesManager({ userGames, allGames, favoriteGameIds }: GamesManagerProps) {
   const [followedGames, setFollowedGames] = useState<Game[]>(userGames);
+  const [favorites, setFavorites] = useState<string[]>(favoriteGameIds);
   const [isPending, startTransition] = useTransition();
   const [selectedGame, setSelectedGame] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
@@ -48,10 +51,32 @@ export default function GamesManager({ userGames, allGames }: GamesManagerProps)
       const result = await removeGameFromUserList(gameId);
       if (result.success) {
         setFollowedGames(followedGames.filter(g => g.id !== gameId));
+        // Le serveur retire aussi le favori : ne pas le refléter ici laisserait
+        // une étoile allumée sur un jeu qui n'est plus dans la liste.
+        setFavorites(favorites.filter(id => id !== gameId));
         setError(null);
       } else {
         setError(result.error || "Erreur lors de la suppression du jeu");
       }
+    });
+  };
+
+  const handleToggleFavorite = (gameId: string) => {
+    const favorite = !favorites.includes(gameId);
+    // Affichage optimiste : l'étoile doit répondre au doigt. Le serveur peut
+    // refuser (jeu qui n'est plus suivi), auquel cas on revient en arrière.
+    setFavorites(favorite ? [...favorites, gameId] : favorites.filter(id => id !== gameId));
+
+    startTransition(async () => {
+      const result = await setFavoriteGameAction(gameId, favorite);
+      if (result.success) {
+        setError(null);
+        return;
+      }
+      setFavorites(current =>
+        favorite ? current.filter(id => id !== gameId) : [...current, gameId]
+      );
+      setError(result.error || "Erreur lors de la mise en favori");
     });
   };
 
@@ -62,6 +87,16 @@ export default function GamesManager({ userGames, allGames }: GamesManagerProps)
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
+      )}
+
+      {/* Les favoris commandent le menu de navigation : sans explication,
+          l'étoile passerait pour une décoration. */}
+      {followedGames.length > 0 && (
+        <p className="text-sm text-muted-foreground">
+          Mettez en favori les jeux que vous voulez retrouver dans le menu
+          &laquo;&nbsp;Jeux&nbsp;&raquo;. Sans favori, ce sont tous vos jeux suivis qui y
+          figurent.
+        </p>
       )}
 
       {/* Liste des jeux suivis */}
@@ -95,18 +130,42 @@ export default function GamesManager({ userGames, allGames }: GamesManagerProps)
                     <p className="text-sm text-muted-foreground truncate">{game.type}</p>
                   </div>
                 </div>
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  onClick={() => handleRemoveGame(game.id)}
-                  disabled={isPending}
-                >
-                  {isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-4 w-4" />
-                  )}
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant={favorites.includes(game.id) ? "default" : "outline"}
+                    size="icon"
+                    onClick={() => handleToggleFavorite(game.id)}
+                    disabled={isPending}
+                    aria-pressed={favorites.includes(game.id)}
+                    aria-label={
+                      favorites.includes(game.id)
+                        ? `Retirer ${game.name} des favoris`
+                        : `Mettre ${game.name} en favori`
+                    }
+                    title={
+                      favorites.includes(game.id)
+                        ? "Retirer des favoris"
+                        : "Mettre en favori"
+                    }
+                  >
+                    <Star
+                      className={`h-4 w-4 ${favorites.includes(game.id) ? "fill-current" : ""}`}
+                    />
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    onClick={() => handleRemoveGame(game.id)}
+                    disabled={isPending}
+                    aria-label={`Ne plus suivre ${game.name}`}
+                  >
+                    {isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}

@@ -281,13 +281,38 @@ export async function addGameToUser(userId: string, gameId: string): Promise<boo
 }
 
 export async function removeGameFromUser(userId: string, gameId: string): Promise<boolean> {
-  
+
   const result = await db.collection<User>(COLLECTION_NAME).updateOne(
     { _id: ObjectId.createFromHexString(userId) },
-    { $pull: { games: gameId } }
+    // Le favori part avec le suivi : un jeu qu'on ne suit plus n'a rien à faire
+    // en tête du menu, et un favori orphelin y resterait invisible et intouchable.
+    { $pull: { games: gameId, favoriteGames: gameId } }
   );
-  
+
   return result.modifiedCount > 0;
+}
+
+/**
+ * Met un jeu en favori. Refusé si l'utilisateur ne suit pas ce jeu : le favori
+ * se choisit parmi les jeux suivis, et un favori posé ailleurs serait retiré
+ * à la lecture sans que personne comprenne pourquoi.
+ */
+export async function addFavoriteGameToUser(userId: string, gameId: string): Promise<boolean> {
+  const result = await db.collection<User>(COLLECTION_NAME).updateOne(
+    { _id: ObjectId.createFromHexString(userId), games: gameId },
+    { $addToSet: { favoriteGames: gameId } }
+  );
+
+  return result.matchedCount > 0;
+}
+
+export async function removeFavoriteGameFromUser(userId: string, gameId: string): Promise<boolean> {
+  const result = await db.collection<User>(COLLECTION_NAME).updateOne(
+    { _id: ObjectId.createFromHexString(userId) },
+    { $pull: { favoriteGames: gameId } }
+  );
+
+  return result.matchedCount > 0;
 }
 
 export async function updateUserLairs(userId: string, lairs: string[]): Promise<boolean> {

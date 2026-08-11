@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSession, signOut } from "@/lib/auth-client";
 import Image from "next/image";
-import {Menu, Calendar, MapPin, User, UserRound, LogOut, Shield, Trophy, Dices, Library, Heart, Users, ChevronDown, Sparkles, Tag, Gamepad2, Plus, ArrowLeftRight, Boxes, type LucideIcon} from "lucide-react";
+import {Menu, Calendar, MapPin, User, UserRound, LogOut, Shield, Trophy, Dices, Library, Heart, Users, ChevronDown, Sparkles, Tag, Gamepad2, Plus, ArrowLeftRight, Boxes, BookOpen, Layers, ListChecks, Package, Scale, Settings2, Swords, type LucideIcon} from "lucide-react";
 import { isAdmin } from "@/lib/config/admins";
 import { Button } from "@/components/ui/button";
 import { NotificationDropdown } from "@/components/NotificationDropdown";
@@ -23,6 +23,13 @@ import {
   NavigationMenuList,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
+import {
+  type GameToolKey,
+  type NavGame,
+  gameToolLinks,
+  selectMenuGames,
+  showsGameTools,
+} from "@/lib/games/nav-menu";
 import {useTranslations} from "next-intl";
 import LocaleSwitcher from "@/components/locale-switcher";
 import { CommandBox } from "@/components/CommandBox";
@@ -30,20 +37,39 @@ import { CommandBox } from "@/components/CommandBox";
 /**
  * Raccourcis affichés dans le menu « Jeux » tant qu'on ne sait rien des goûts
  * du visiteur : les jeux les plus joués de la plateforme. Un utilisateur
- * connecté qui suit des jeux voit les siens à la place.
+ * connecté qui suit des jeux — ou qui en a mis en favori — voit les siens à la
+ * place.
  */
-const DEFAULT_GAME_LINKS: { href: string; label: string }[] = [
-  { href: "/games/riftbound", label: "Riftbound" },
-  { href: "/games/mtg", label: "Magic: The Gathering" },
-  { href: "/games/swu", label: "Star Wars Unlimited" },
+const DEFAULT_GAMES: NavGame[] = [
+  { id: "riftbound", name: "Riftbound", slug: "riftbound" },
+  { id: "mtg", name: "Magic: The Gathering", slug: "mtg" },
+  { id: "swu", name: "Star Wars Unlimited", slug: "swu" },
 ];
 
 /**
  * Le menu déroulant reste un raccourci, pas un catalogue : au-delà de quelques
  * entrées il devient plus long à parcourir que la page « Tous les jeux », qui
  * le suit d'un clic.
+ *
+ * Le plafond s'applique **après** le choix de la source, jamais aux jeux
+ * suivis à la lecture : un favori posé sur le huitième jeu suivi disparaîtrait
+ * sans cela du menu qu'il est censé commander.
  */
-const MAX_FOLLOWED_GAMES_IN_MENU = 5;
+const MAX_GAMES_IN_MENU = 5;
+
+/** Illustration de chaque outil d'un jeu, quand le menu les propose. */
+const GAME_TOOL_ICONS: Record<GameToolKey, LucideIcon> = {
+  hub: Dices,
+  cards: Layers,
+  tournaments: Trophy,
+  products: Package,
+  battleReports: Swords,
+  collection: Library,
+  rules: BookOpen,
+  policies: Scale,
+  cubes: Boxes,
+  deckChecker: ListChecks,
+};
 
 export default function Header() {
   const t = useTranslations('Header');
@@ -51,7 +77,8 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { data: session, isPending } = useSession();
   const [playGroups, setPlayGroups] = useState<{ id: string; name: string }[]>([]);
-  const [followedGames, setFollowedGames] = useState<{ id: string; name: string; slug: string | null }[]>([]);
+  const [followedGames, setFollowedGames] = useState<NavGame[]>([]);
+  const [favoriteGameIds, setFavoriteGameIds] = useState<string[]>([]);
 
   const userId = session?.user?.id;
   useEffect(() => {
@@ -78,6 +105,7 @@ export default function Header() {
   useEffect(() => {
     if (!userId) {
       setFollowedGames([]);
+      setFavoriteGameIds([]);
       return;
     }
 
@@ -85,9 +113,9 @@ export default function Header() {
     fetch("/api/users/me/games")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (!cancelled && Array.isArray(data?.games)) {
-          setFollowedGames(data.games.slice(0, MAX_FOLLOWED_GAMES_IN_MENU));
-        }
+        if (cancelled || !Array.isArray(data?.games)) return;
+        setFollowedGames(data.games);
+        setFavoriteGameIds(Array.isArray(data.favoriteGameIds) ? data.favoriteGameIds : []);
       })
       .catch(() => {});
 
@@ -96,15 +124,55 @@ export default function Header() {
     };
   }, [userId]);
 
-  // Les jeux suivis remplacent les raccourcis par défaut dès qu'il y en a. Le
-  // temps de les charger — et pour qui n'en suit aucun — les raccourcis
-  // tiennent la place, plutôt que de laisser le menu se vider puis se remplir.
-  const gamesMenuItems: { href: string; label: string }[] = [
-    { href: "/games", label: t('menu.AllGames') },
-    ...(followedGames.length > 0
-      ? followedGames.map((game) => ({ href: `/games/${game.slug ?? game.id}`, label: game.name }))
-      : DEFAULT_GAME_LINKS),
-  ];
+  // Favoris, sinon jeux suivis, sinon raccourcis de la plateforme — la règle
+  // vit dans `lib/games/nav-menu.ts`. Le temps du chargement, les raccourcis
+  // tiennent la place plutôt que de laisser le menu se vider puis se remplir.
+  const gamesSelection = selectMenuGames({
+    followed: followedGames,
+    favoriteIds: favoriteGameIds,
+    defaults: DEFAULT_GAMES,
+  });
+
+  const toolLabels: Record<GameToolKey, string> = {
+    // La fiche du jeu porte le nom du jeu : c'est le titre du menu autant que
+    // sa première entrée.
+    hub: gamesSelection.games[0]?.name ?? t('menu.Jeux'),
+    cards: t('menu.tools.cards'),
+    tournaments: t('menu.Tournois'),
+    products: t('menu.tools.products'),
+    battleReports: t('menu.tools.battleReports'),
+    collection: t('menu.Collection'),
+    rules: t('menu.tools.rules'),
+    policies: t('menu.tools.policies'),
+    cubes: t('menu.tools.cubes'),
+    deckChecker: t('menu.tools.deckChecker'),
+  };
+
+  // Un seul jeu à proposer : ses outils valent mieux qu'une liste d'un élément,
+  // qui ne ferait qu'ajouter un clic avant d'y arriver.
+  const gamesMenuItems: { href: string; label: string; icon: LucideIcon }[] = showsGameTools(gamesSelection)
+    ? [
+        ...gameToolLinks(gamesSelection.games[0]).map((tool) => ({
+          href: tool.href,
+          label: toolLabels[tool.key],
+          icon: GAME_TOOL_ICONS[tool.key],
+        })),
+        { href: "/games", label: t('menu.AllGames'), icon: Dices },
+      ]
+    : [
+        { href: "/games", label: t('menu.AllGames'), icon: Dices },
+        ...gamesSelection.games.slice(0, MAX_GAMES_IN_MENU).map((game) => ({
+          href: `/games/${game.slug ?? game.id}`,
+          label: game.name,
+          icon: Dices,
+        })),
+      ];
+
+  // « Personnaliser » mène là où les favoris se choisissent. Proposé même à qui
+  // en a déjà : sans cela, l'utilisateur qui a des favoris n'aurait plus, dans
+  // le menu qu'ils commandent, aucun moyen d'y revenir. Le lien passe par
+  // /account, qui renvoie vers la connexion pour un visiteur.
+  gamesMenuItems.push({ href: "/account#jeux", label: t('menu.CustomizeGames'), icon: Settings2 });
 
   const eventsMenuItems: { href: string; label: string; icon: LucideIcon }[] = [
     { href: "/events", label: t('menu.Calendrier'), icon: Calendar },
@@ -150,7 +218,7 @@ export default function Header() {
                     {gamesMenuItems.map((item) => (
                       <DropdownMenuItem asChild key={item.href}>
                         <Link href={item.href} className="flex w-full cursor-pointer">
-                          <Dices className="mr-2 h-4 w-4" />
+                          <item.icon className="mr-2 h-4 w-4" />
                           <span>{item.label}</span>
                         </Link>
                       </DropdownMenuItem>
@@ -302,7 +370,7 @@ export default function Header() {
                     {gamesMenuItems.map((item) => (
                       <DropdownMenuItem asChild key={item.href}>
                         <Link href={item.href} className="flex w-full cursor-pointer">
-                          <Dices className="mr-2 h-4 w-4" />
+                          <item.icon className="mr-2 h-4 w-4" />
                           <span>{item.label}</span>
                         </Link>
                       </DropdownMenuItem>
@@ -513,7 +581,7 @@ export default function Header() {
                 {gamesMenuItems.map((item) => (
                   <Button variant="ghost" asChild className="w-full justify-start" key={item.href}>
                     <Link href={item.href} onClick={() => setMobileMenuOpen(false)}>
-                      <Dices className="mr-2 h-4 w-4" />
+                      <item.icon className="mr-2 h-4 w-4" />
                       {item.label}
                     </Link>
                   </Button>

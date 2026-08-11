@@ -39,7 +39,17 @@
       "Fonctionnalités": "Funktionen",
       "SellLists": "Meine Verkaufsliste",
       "Cubes": "Meine Cubes",
-      "Amis": "Freunde"
+      "Amis": "Freunde",
+      "CustomizeGames": "Anpassen",
+      "tools": {
+        "cards": "Karten",
+        "products": "Produkte",
+        "battleReports": "Schlachtbericht",
+        "rules": "Spielregeln",
+        "policies": "Richtlinien",
+        "cubes": "Cubes",
+        "deckChecker": "Deck-Checker"
+      }
     }
   },
   "LocaleSwitcher": {

@@ -13,6 +13,14 @@ export type User = {
 
   lairs: Lair['id'][];
   games: Game['id'][];
+  /**
+   * Jeux mis en avant **parmi ceux que l'utilisateur suit** : ce sont eux que
+   * le menu « Jeux » propose. Toujours un sous-ensemble de `games` — retirer un
+   * jeu des suivis le retire aussi d'ici (`removeGameFromUser`), et la lecture
+   * écarte de toute façon un favori qui n'y figure plus
+   * (`lib/games/nav-menu.ts`) : un favori n'a de sens que parmi les jeux suivis.
+   */
+  favoriteGames?: Game['id'][];
   friends: User['id'][];
   friendCode?: string; // Code unique partageable (QR code) pour être ajouté en ami instantanément
 

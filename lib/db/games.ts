@@ -69,11 +69,20 @@ export async function getGameById(id: string): Promise<Game | null> {
   return game ? toGame(game) : null;
 }
 
-/** De quoi nommer un jeu et y mener, rien de plus. */
+/**
+ * De quoi nommer un jeu, y mener, et savoir ce qu'il ouvre — rien de plus.
+ *
+ * `features` est là parce que le menu de navigation en dépend : quand il ne
+ * reste qu'un jeu à proposer, il montre ses outils, et un outil ne s'affiche
+ * que si le jeu l'active (`lib/games/nav-menu.ts`). C'est une poignée de
+ * booléens, cela ne trahit pas l'étroitesse du type.
+ */
 export type GameSummary = {
   id: string;
   name: string;
   slug: string | null;
+  icon?: string;
+  features?: Game["features"];
 };
 
 /**
@@ -101,13 +110,19 @@ export async function getGameSummariesByIds(ids: string[]): Promise<GameSummary[
 
   const found = await db
     .collection(COLLECTION_NAME)
-    .find({ _id: { $in: objectIds } }, { projection: { name: 1, slug: 1 } })
+    .find({ _id: { $in: objectIds } }, { projection: { name: 1, slug: 1, icon: 1, features: 1 } })
     .toArray();
 
   const byId = new Map<string, GameSummary>(
     found.map((doc) => [
       doc._id.toString(),
-      { id: doc._id.toString(), name: doc.name, slug: doc.slug ?? null },
+      {
+        id: doc._id.toString(),
+        name: doc.name,
+        slug: doc.slug ?? null,
+        ...(doc.icon ? { icon: doc.icon } : {}),
+        ...(doc.features ? { features: doc.features } : {}),
+      },
     ])
   );
 

@@ -185,8 +185,9 @@ export default async function AccountPage() {
             </CardContent>
           </Card>
 
-          {/* Section Jeux suivis */}
-          <Card className="border-2 shadow-lg">
+          {/* Section Jeux suivis. L'ancre sert au menu de navigation, dont le
+              bouton « Personnaliser » mène droit aux favoris. */}
+          <Card id="jeux" className="border-2 shadow-lg scroll-mt-20">
             <CardHeader>
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-primary/10 rounded-lg">
@@ -195,15 +196,17 @@ export default async function AccountPage() {
                 <div>
                   <CardTitle className="text-2xl">Mes jeux suivis</CardTitle>
                   <CardDescription className="mt-1">
-                    Gérez les jeux dont vous souhaitez suivre les événements
+                    Gérez les jeux dont vous souhaitez suivre les événements, et
+                    choisissez ceux qui vous suivent dans le menu
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <GamesManager 
+              <GamesManager
                 userGames={userGames}
                 allGames={allGames}
+                favoriteGameIds={user.favoriteGames ?? []}
               />
             </CardContent>
           </Card>
