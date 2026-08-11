@@ -4,7 +4,7 @@ import { z } from "zod";
 import { authenticateApiRequest } from "@/lib/api/authenticate";
 import { serializeGameMatch, serializeGameMatches } from "@/lib/api/game-matches";
 import { normalizeBattleReport } from "@/lib/battle-reports/army";
-import { createGameMatch, getGameMatchesByUser } from "@/lib/db/game-matches";
+import { createGameMatch, getGameMatchesPageByUser } from "@/lib/db/game-matches";
 import { getUserById } from "@/lib/db/users";
 import { guestId, normalizeGuests } from "@/lib/matches/participants";
 import { gameMatchApiCreateSchema } from "@/lib/schemas/game-match.schema";
@@ -13,8 +13,15 @@ import { gameMatchApiCreateSchema } from "@/lib/schemas/game-match.schema";
 const MAX_LIMIT = 100;
 const DEFAULT_LIMIT = 30;
 
+/** Une date de jour, `YYYY-MM-DD` : c'est ce qu'un sélecteur de date envoie. */
+const daySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "La date doit être au format AAAA-MM-JJ");
+
 const listQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(MAX_LIMIT).optional(),
+  gameId: z.string().trim().min(1).max(60).optional(),
+  from: daySchema.optional(),
+  to: daySchema.optional(),
 });
 
 /**
@@ -29,8 +36,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
   }
 
+  const params = request.nextUrl.searchParams;
   const query = listQuerySchema.safeParse({
-    limit: request.nextUrl.searchParams.get("limit") ?? undefined,
+    page: params.get("page") ?? undefined,
+    limit: params.get("limit") ?? undefined,
+    gameId: params.get("gameId") ?? undefined,
+    from: params.get("from") ?? undefined,
+    to: params.get("to") ?? undefined,
   });
   if (!query.success) {
     return NextResponse.json(
@@ -39,10 +51,30 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  try {
-    const matches = await getGameMatchesByUser(user.userId, query.data.limit ?? DEFAULT_LIMIT);
+  const limit = query.data.limit ?? DEFAULT_LIMIT;
+  const page = query.data.page ?? 1;
 
-    return NextResponse.json({ matches: await serializeGameMatches(matches) });
+  try {
+    const { matches, total } = await getGameMatchesPageByUser({
+      userId: user.userId,
+      page,
+      limit,
+      gameId: query.data.gameId,
+      from: query.data.from ? new Date(`${query.data.from}T00:00:00.000Z`) : undefined,
+      // Borne haute incluse : filtrer « jusqu'au 12 » sur un instant à minuit
+      // écarterait toutes les parties du 12.
+      to: query.data.to ? new Date(`${query.data.to}T23:59:59.999Z`) : undefined,
+    });
+
+    // `matches` reste la clé de tête : c'est celle que lisent les clients
+    // déjà installés, qui ignoreront simplement le reste.
+    return NextResponse.json({
+      matches: await serializeGameMatches(matches),
+      total,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    });
   } catch (error) {
     console.error("Erreur lors de la récupération des parties:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
