@@ -168,6 +168,17 @@ describe("normalizeBattleMap", () => {
     assert.deepEqual(map.playerColors, { alice: "#123456" });
   });
 
+  it("replie sur la couleur du rang du joueur, pas sur celle de son entrée", () => {
+    // Bob est deuxième dans la partie, et seul à porter une couleur — invalide.
+    // Sa couleur de repli doit rester celle de son rang, pas celle d'Alice.
+    const map = normalizeBattleMap(mapWith({ playerColors: { bob: "pas-une-couleur" } }), [
+      "alice",
+      "bob",
+    ]);
+
+    assert.equal(map.playerColors?.bob, PLAYER_COLORS[1]);
+  });
+
   it("donne un nom aux instants laissés sans titre", () => {
     const map = normalizeBattleMap(
       mapWith({ snapshots: [{ id: "s1", label: "   ", units: [] }] }),

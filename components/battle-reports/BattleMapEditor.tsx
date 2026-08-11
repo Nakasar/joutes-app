@@ -108,6 +108,17 @@ export default function BattleMapEditor({
     });
   };
 
+  /**
+   * Un doigt qui file au-delà du plateau ne doit pas emporter le jeton avec
+   * lui : la `viewBox` s'arrête à la table, et ce qui sort disparaît de l'écran.
+   * Le serveur ramène déjà tout au bord à l'enregistrement — le faire aussi au
+   * déplacement, c'est montrer tout de suite ce qui sera gardé.
+   */
+  const clampToTable = (x: number, y: number) => ({
+    x: Math.min(map.table.width, Math.max(0, x)),
+    y: Math.min(map.table.height, Math.max(0, y)),
+  });
+
   /** Position du pointeur, en centimètres sur la table. */
   const toTable = (event: React.PointerEvent) => {
     const rect = svgRef.current?.getBoundingClientRect();
@@ -153,8 +164,14 @@ export default function BattleMapEditor({
                 ...entry,
                 // La poignée tire un coin : la pièce grandit de part et d'autre
                 // de son centre, qui ne bouge pas.
-                width: Math.max(MIN_TOKEN_SIZE, Math.abs(point.x - piece.x) * 2),
-                height: Math.max(MIN_TOKEN_SIZE, Math.abs(point.y - piece.y) * 2),
+                width: Math.min(
+                  map.table.width,
+                  Math.max(MIN_TOKEN_SIZE, Math.abs(point.x - piece.x) * 2)
+                ),
+                height: Math.min(
+                  map.table.height,
+                  Math.max(MIN_TOKEN_SIZE, Math.abs(point.y - piece.y) * 2)
+                ),
               }
             : entry
         ),
@@ -162,8 +179,7 @@ export default function BattleMapEditor({
       return;
     }
 
-    const x = point.x - current.offsetX;
-    const y = point.y - current.offsetY;
+    const { x, y } = clampToTable(point.x - current.offsetX, point.y - current.offsetY);
 
     if (current.kind === "terrain") {
       update({

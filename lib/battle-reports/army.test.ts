@@ -41,6 +41,30 @@ describe("normalizeArmyUnits", () => {
     assert.deepEqual(units, [{ name: "Clone Trooper", quantity: 4 }]);
   });
 
+  it("conserve l'image du catalogue, qui illustrera le jeton sur la table", () => {
+    const units = normalizeArmyUnits([
+      { productId: "vader", name: "Darth Vader", image: "https://exemple.test/vader.png", quantity: 1 },
+    ]);
+
+    assert.equal(units[0].image, "https://exemple.test/vader.png");
+  });
+
+  it("récupère l'image de la ligne illustrée quand deux saisies fusionnent", () => {
+    const units = normalizeArmyUnits([
+      { productId: "vader", name: "Darth Vader", quantity: 1 },
+      { productId: "vader", name: "Darth Vader", image: "https://exemple.test/vader.png", quantity: 1 },
+    ]);
+
+    assert.deepEqual(units, [
+      {
+        productId: "vader",
+        name: "Darth Vader",
+        image: "https://exemple.test/vader.png",
+        quantity: 2,
+      },
+    ]);
+  });
+
   it("distingue une saisie libre d'un produit du catalogue portant le même nom", () => {
     const units = normalizeArmyUnits([
       { productId: "vader", name: "Darth Vader", quantity: 1 },

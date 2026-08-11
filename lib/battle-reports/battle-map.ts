@@ -216,9 +216,16 @@ export function normalizeBattleMap(map: BattleMap, playerIds: string[]): BattleM
   const table = normalizeTable(map.table);
   const players = new Set(playerIds);
 
+  // Le repli suit le **rang du joueur dans la partie**, pas sa position dans
+  // l'objet : c'est ce que lit l'affichage (`colorForPlayer`), et prendre
+  // l'index de l'entrée donnerait au deuxième joueur la couleur du premier dès
+  // qu'il est seul à en avoir une.
   const playerColors = Object.entries(map.playerColors ?? {})
     .filter(([playerId]) => players.has(playerId))
-    .map(([playerId, color], index) => [playerId, normalizeColor(color, playerColorAt(index))] as const);
+    .map(
+      ([playerId, color]) =>
+        [playerId, normalizeColor(color, playerColorAt(playerIds.indexOf(playerId)))] as const
+    );
 
   return {
     table,
