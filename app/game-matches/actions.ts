@@ -15,15 +15,18 @@ import {
   rateGameMatch,
   updateGameMatchBattleReport,
   setGameMatchBattleReportArmy,
+  setGameMatchBattleMap,
 } from "@/lib/db/game-matches";
 import {
+  battleMapSchema,
   battleReportArmySchema,
   battleReportSchema,
   gameMatchSchema,
 } from "@/lib/schemas/game-match.schema";
 import { GameMatch } from "@/lib/types/GameMatch";
-import { BattleReport, BattleReportArmy } from "@/lib/types/Match";
+import { BattleMap, BattleReport, BattleReportArmy } from "@/lib/types/Match";
 import { normalizeArmy, normalizeBattleReport } from "@/lib/battle-reports/army";
+import { normalizeBattleMap } from "@/lib/battle-reports/battle-map";
 import { searchGameProducts, type GameProductSummary } from "@/lib/db/products";
 import { gameIdSchema } from "@/lib/schemas/game.schema";
 import { getUserByUsernameAndDiscriminator, getUserById } from "@/lib/db/users";
@@ -702,6 +705,65 @@ export async function updateBattleReportArmyAction(
     return { success: true };
   } catch (error) {
     console.error("Erreur lors de la mise à jour de la liste d'armée:", error);
+    return { success: false, error: "Erreur serveur" };
+  }
+}
+
+/**
+ * Table de jeu du rapport : dimensions, décor, couleurs des joueurs et instants.
+ *
+ * Réservée au créateur, comme le scénario et les notes, et pour une raison de
+ * plus : la table est un dessin unique. Deux joueurs qui déplaceraient des
+ * jetons dans le même instant n'écraseraient pas seulement un champ l'un de
+ * l'autre — ils repositionneraient toute la partie.
+ *
+ * Ce qui dépasse est **ramené** dans la table plutôt que refusé : un plateau
+ * rétréci après coup ne doit pas rendre le rapport inenregistrable.
+ */
+export async function updateBattleMapAction(
+  matchId: string,
+  map: BattleMap
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    const match = await getGameMatchById(matchId);
+
+    if (!match) {
+      return { success: false, error: "Partie non trouvée" };
+    }
+
+    if (!match.battleReport) {
+      return { success: false, error: "Cette partie n'est pas un rapport de bataille" };
+    }
+
+    if (match.createdBy !== session.user.id) {
+      return { success: false, error: "Seul le créateur peut modifier la table de jeu" };
+    }
+
+    const normalized = normalizeBattleMap(map, match.playerIds);
+    const validationResult = battleMapSchema.safeParse(normalized);
+
+    if (!validationResult.success) {
+      const errorMessage = validationResult.error.issues[0]?.message || "Données invalides";
+      return { success: false, error: errorMessage };
+    }
+
+    const result = await setGameMatchBattleMap(matchId, validationResult.data);
+
+    if (!result) {
+      return { success: false, error: "Erreur lors de la mise à jour de la table de jeu" };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour de la table de jeu:", error);
     return { success: false, error: "Erreur serveur" };
   }
 }

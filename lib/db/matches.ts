@@ -5,6 +5,7 @@ import {
   GameTypeMatch,
   LeagueTypeMatch,
   EventTypeMatch,
+  BattleMap,
   BattleReport,
   BattleReportArmy,
   GameMatchPlayer,
@@ -674,6 +675,23 @@ export async function setMatchBattleReportArmy(
     isEmptyArmy(normalized)
       ? { $set: { updatedAt: new Date() }, $unset: { [path]: "" } }
       : { $set: { [path]: normalized, updatedAt: new Date() } }
+  );
+
+  return result.matchedCount > 0;
+}
+
+/**
+ * Table de jeu. Écrite d'un bloc, contrairement au reste du rapport : c'est un
+ * dessin, pas une fiche. Ses pièces se tiennent les unes les autres — un jeton
+ * dépend des dimensions du plateau, un instant de la liste des joueurs — et la
+ * découper en écritures indépendantes ferait cohabiter des états qui ne vont
+ * pas ensemble. Le fait qu'une seule main l'édite, celle du créateur, est ce
+ * qui rend ce choix tenable.
+ */
+export async function setMatchBattleMap(matchId: string, map: BattleMap): Promise<boolean> {
+  const result = await db.collection<MatchDocument>(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(matchId), matchType: 'game' },
+    { $set: { "battleReport.map": map, updatedAt: new Date() } }
   );
 
   return result.matchedCount > 0;

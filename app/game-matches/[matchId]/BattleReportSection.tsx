@@ -7,8 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Pencil, Swords, Trophy } from "lucide-react";
+// `Map` est aliasé : sous son nom, l'icône masquerait le Map du langage.
+import { Map as MapIcon, Pencil, Swords, Trophy } from "lucide-react";
 import ArmyListEditor from "@/components/battle-reports/ArmyListEditor";
+import BattleMapEditor from "@/components/battle-reports/BattleMapEditor";
 import { MAX_NOTES_LENGTH, MAX_SCENARIO_LENGTH, countArmyUnits } from "@/lib/battle-reports/army";
 import type { BattleReport, BattleReportArmy, GameMatchPlayer } from "@/lib/types/Match";
 import { updateBattleReportAction, updateBattleReportArmyAction } from "../actions";
@@ -28,6 +30,7 @@ import { updateBattleReportAction, updateBattleReportArmyAction } from "../actio
 export default function BattleReportSection({
   matchId,
   gameId,
+  gameSlug,
   report,
   players,
   winnerIds,
@@ -36,6 +39,8 @@ export default function BattleReportSection({
 }: {
   matchId: string;
   gameId: string;
+  /** Sert à proposer la table habituelle du jeu (90 × 90 cm pour Shatterpoint). */
+  gameSlug?: string;
   report: BattleReport;
   players: GameMatchPlayer[];
   winnerIds: string[];
@@ -262,6 +267,30 @@ export default function BattleReportSection({
               </div>
             );
           })}
+        </div>
+
+        {/* Table de jeu. Elle vient après les listes d'armée parce qu'elle en
+            dépend : un jeton d'unité se choisit dans la liste de son joueur. */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <MapIcon className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-semibold">Table de jeu</h3>
+          </div>
+
+          {report.map || isCreator ? (
+            <BattleMapEditor
+              matchId={matchId}
+              gameSlug={gameSlug}
+              players={players}
+              armies={report.armies ?? {}}
+              map={report.map}
+              editable={isCreator}
+            />
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Aucune table n&apos;a été dressée pour cette partie.
+            </p>
+          )}
         </div>
       </div>
     </Card>

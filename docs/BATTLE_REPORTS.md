@@ -21,6 +21,7 @@ vote MVP. Le rapport n'est qu'un **volet supplémentaire** de la partie.
 | Liste d'armée par joueur | `battleReport.armies[playerId]` | Chaque joueur pour la sienne, le créateur pour toutes |
 | Scénario (champ libre) | `battleReport.scenario` | Créateur |
 | Fiche de notes libres | `battleReport.notes` | Créateur |
+| Table de jeu et ses instants | `battleReport.map` | Créateur |
 
 Le scénario et les notes sont réservés au créateur parce que ce sont les deux
 seuls champs **partagés** de la fiche : à plusieurs mains, deux joueurs qui les
@@ -71,6 +72,66 @@ Bornes de saisie (`lib/battle-reports/army.ts`) : 60 références par liste,
 99 figurines par ligne, 120 caractères pour un nom de figurine ou de liste,
 200 pour un scénario, 10 000 pour les notes.
 
+## La table de jeu
+
+Une vue de dessus du plateau, sur laquelle on pose le décor et les unités pour
+noter leur position approximative — pas un plan d'architecte, un croquis qui se
+relit.
+
+### Tout est en centimètres
+
+Le modèle ne connaît que des centimètres, jamais des pixels : une table est un
+objet physique, et un socle de 4 cm en occupe toujours la même fraction, que la
+carte soit affichée sur un téléphone ou sur un écran de bureau. La `viewBox` du
+SVG **est** la table ; l'affichage n'est qu'une mise à l'échelle.
+
+Les dimensions se règlent par rapport. Leur valeur de départ vient du jeu
+(`GAME_TABLE_PRESETS`) : 90 × 90 cm pour Shatterpoint, 152 × 112 cm pour
+Warhammer 40 000, 183 × 91 cm pour Star Wars: Legion, 120 × 120 cm à défaut. Ce
+ne sont que des valeurs de départ — un scénario joué sur une autre surface se
+corrige en deux champs.
+
+### Décor et unités
+
+- **Le décor** se pose en trois formes simples — rond, rectangle, triangle —
+  redimensionnables à la poignée ou au champ numérique, chacune avec un nom et
+  une couleur (noir par défaut).
+- **Les unités** sont toujours rondes, à la couleur de leur joueur (modifiable
+  par le créateur), et rattachées à une ligne de la liste d'armée de ce joueur.
+  Quand la figurine vient du catalogue et porte une image, c'est l'image qui
+  remplit le rond et la couleur du joueur ne garde que la bordure.
+
+### Le décor appartient à la table, les unités à l'instant
+
+Un rapport garde une suite d'**instants** (« début de partie », « fin du tour
+2 ») qui ne décrivent que les positions des unités. Le décor, lui, est posé une
+fois pour toutes : le recopier dans chaque instant obligerait à le corriger
+partout, pour un décor qui ne bouge pas de la partie.
+
+Un nouvel instant part de l'état courant plutôt que d'une table vide : on
+capture une évolution, pas un nouveau déploiement — les unités ont bougé de
+quelques centimètres, elles n'ont pas été reposées. Chaque instant se renomme,
+se réédite et se supprime ; le dernier restant ne peut pas l'être.
+
+### Ce qui dépasse est ramené, pas refusé
+
+Un doigt qui glisse au-delà du plateau, une table rétrécie après coup : dans les
+deux cas la normalisation ramène le jeton au bord plutôt que de refuser
+l'enregistrement. Un rapport ne doit pas devenir inenregistrable parce que son
+plateau a changé de taille, et un jeton ne doit pas disparaître avec ce qu'il
+documentait.
+
+### Qui dessine
+
+La table est réservée au créateur, pour une raison de plus que le scénario et
+les notes : c'est un **dessin unique**. Deux joueurs qui déplaceraient des
+jetons dans le même instant n'écraseraient pas seulement un champ l'un de
+l'autre — ils repositionneraient toute la partie. Pour la même raison, elle est
+écrite d'un bloc (`battleReport.map`) et non champ par champ : ses pièces se
+tiennent les unes les autres.
+
+Les autres joueurs voient la même table, sans les poignées ni les panneaux.
+
 ## Structure technique
 
 ### Types (`lib/types/Match.ts`)
@@ -79,6 +140,7 @@ Bornes de saisie (`lib/battle-reports/army.ts`) : 60 références par liste,
 type BattleReportArmyUnit = {
   productId?: string;   // Figurine du catalogue ; absent = saisie libre
   name: string;         // Dénormalisé : survit à la disparition du produit
+  image?: string;       // Dénormalisée aussi : elle illustre le jeton sur la table
   quantity: number;
 };
 
@@ -91,6 +153,14 @@ type BattleReport = {
   scenario?: string;                          // Champ libre
   notes?: string;                             // Fiche de notes
   armies?: Record<User['id'], BattleReportArmy>;
+  map?: BattleMap;                            // Table de jeu et ses instants
+};
+
+type BattleMap = {
+  table: { width: number; height: number };   // En centimètres
+  terrain: BattleMapTerrain[];                // Rond, rectangle ou triangle
+  snapshots: BattleMapSnapshot[];             // Positions des unités, instant par instant
+  playerColors?: Record<User['id'], string>;
 };
 ```
 
@@ -108,6 +178,20 @@ Normalisation et bornes, sans accès à la base — donc testé
 - `isEmptyArmy()` / `countArmyUnits()` ;
 - `normalizeBattleReport(report, playerIds)` — écarte les champs blancs, les
   armées vides, et celles qui ne retombent sur aucun joueur de la partie.
+
+### Module pur (`lib/battle-reports/battle-map.ts`)
+
+Géométrie et bornes de la table, également testées
+(`lib/battle-reports/battle-map.test.ts`) :
+
+- `defaultTableForGame(slug)` — la table habituelle du jeu ;
+- `normalizeBattleMap(map, playerIds)` — ramène les jetons sur le plateau, borne
+  les tailles, écarte les doublons d'identifiant, les jetons et les couleurs des
+  joueurs sortis de la partie, et plafonne décors, jetons et instants ;
+- `emptyBattleMap(slug, snapshotId, playerIds)` — la table de départ, avec son
+  premier instant « Début de partie » et une couleur par joueur ;
+- `colorForPlayer()`, `trianglePoints()` — ce que le dessin réclame, rendu
+  testable en le sortant du composant.
 
 ### Base de données
 
@@ -137,12 +221,16 @@ aucun nom n'accompagne.
 - `updateBattleReportArmyAction(matchId, playerId, army)` — le joueur pour sa
   liste, le créateur pour toutes ;
 - `searchBattleReportUnitsAction(gameId, query)` — figurines proposées à la
-  saisie (produits de type `unit` du jeu), réservée aux comptes connectés.
+  saisie (produits de type `unit` du jeu), réservée aux comptes connectés ;
+- `updateBattleMapAction(matchId, map)` — table de jeu, créateur seul.
 
 ### Composants
 
 - `components/battle-reports/ArmyListEditor.tsx` — saisie d'une liste d'armée
   (composant contrôlé : il ne sait pas enregistrer) ;
+- `components/battle-reports/BattleMapEditor.tsx` — la table vue de dessus, en
+  SVG : décor, jetons, instants, et la même vue en lecture seule pour les
+  joueurs qui ne tiennent pas le rapport ;
 - `app/game-matches/[matchId]/BattleReportSection.tsx` — le volet sur la page
   d'une partie : scénario, notes, listes de chaque joueur ;
 - `app/game-matches/new/GameMatchForm.tsx` — le format et sa saisie à la création ;
@@ -181,6 +269,9 @@ librement.
 
 ## Évolutions futures possibles
 
+- Décor qui change d'un instant à l'autre (une ruine détruite, un pont coupé)
+- Rotation des pièces de décor
+- Listes d'armée et jetons tenus par chaque joueur plutôt que par le seul créateur
 - Rendu Markdown de la fiche de notes
 - Photos de la table jointes au rapport
 - Score par joueur en plus du vainqueur (points de victoire, objectifs)
