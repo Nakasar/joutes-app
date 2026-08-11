@@ -1,38 +1,10 @@
 import db from "@/lib/mongodb";
 import { User } from "@/lib/types/User";
-import { WithId, Document, ObjectId } from "mongodb";
+import { ObjectId } from "mongodb";
+import { toUser } from "@/lib/users/document";
 import { generateFriendCode } from "@/lib/utils/friend-codes";
 
 const COLLECTION_NAME = "user";
-
-// Convertir un document MongoDB en User
-function toUser(doc: WithId<Document>): User {
-  return {
-    id: doc.id || doc._id.toString(),
-    username: doc.name || doc.username || "",
-    displayName: doc.displayName || undefined,
-    discriminator: doc.discriminator || undefined,
-    email: doc.email,
-    discordId: doc.discordId || "",
-    avatar: doc.image || doc.avatar || "",
-    lairs: doc.lairs || [],
-    games: doc.games || [],
-    friends: doc.friends || [],
-    friendCode: doc.friendCode || undefined,
-    isPublicProfile: doc.isPublicProfile || false,
-    description: doc.description || undefined,
-    website: doc.website || undefined,
-    socialLinks: doc.socialLinks || [],
-    profileImage: doc.profileImage || undefined,
-    location: doc.location ? {
-      latitude: doc.location.latitude,
-      longitude: doc.location.longitude,
-      label: doc.location.label || undefined,
-      city: doc.location.city || undefined,
-      postalCode: doc.location.postalCode || undefined,
-    } : undefined,
-  };
-}
 
 export async function getUserById(id: string): Promise<User | null> {
   if (!id) {

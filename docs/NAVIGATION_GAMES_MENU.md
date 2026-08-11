@@ -65,6 +65,10 @@ pas demandé l'enfermerait dans un jeu au hasard.
 - `lib/games/nav-menu.ts` — `selectMenuGames`, `showsGameTools`, `gameToolLinks`.
   Sans accès à la base ni à React, donc testable.
 - `lib/types/User.ts` — `favoriteGames`, toujours un sous-ensemble de `games`.
+- `lib/users/document.ts` — la conversion d'un document `user`. Elle est
+  explicite champ par champ : un champ ajouté au type sans l'être ici est écrit
+  en base et perdu à chaque lecture. C'est arrivé aux favoris ; un test le
+  vérifie désormais sur le type entier.
 - `lib/db/users.ts` — `addFavoriteGameToUser` (refusé si le jeu n'est pas suivi),
   `removeFavoriteGameFromUser`, et `removeGameFromUser` qui retire le favori avec
   le suivi : un favori orphelin resterait invisible et intouchable.
