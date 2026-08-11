@@ -442,25 +442,25 @@ export default function Header() {
                   </DropdownMenu>
                 </NavigationMenuItem>
               )}
-              {session && (
-                <NavigationMenuItem>
-                  <NavigationMenuLink className={navLinkStyle} asChild>
-                    <Link href="/friends">
-                      <UserRound className="mr-1.5 h-4 w-4" />
-                      {t('menu.Amis')}
-                    </Link>
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
-              )}
+              {/* Les amis et les groupes de jeu tenaient deux entrées de la
+                  barre pour une même chose : les gens avec qui on joue. Un
+                  seul menu « Social » les réunit, et rend sa place au reste. */}
               {session && (
                 <NavigationMenuItem>
                   <DropdownMenu>
                     <DropdownMenuTrigger className={navigationMenuTriggerStyle()}>
                       <Users className="mr-1.5 h-4 w-4" />
-                      {t('menu.Groupes')}
+                      {t('menu.Social')}
                       <ChevronDown className="ml-1 h-3 w-3" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start">
+                      <DropdownMenuItem asChild>
+                        <Link href="/friends" className="flex w-full cursor-pointer">
+                          <UserRound className="mr-2 h-4 w-4" />
+                          <span>{t('menu.Amis')}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       {playGroups.map((group) => (
                         <DropdownMenuItem asChild key={group.id}>
                           <Link href={`/play-groups/${group.id}`} className="flex w-full cursor-pointer">
@@ -480,12 +480,18 @@ export default function Header() {
                   </DropdownMenu>
                 </NavigationMenuItem>
               )}
+              {/* L'administration ne se montre qu'à qui l'administre, et celui-là
+                  n'a pas besoin qu'on lui rappelle ce qu'est un bouclier : l'icône
+                  seule, avec son libellé en infobulle et pour les lecteurs d'écran. */}
               {session && isAdmin(session.user.email) && (
                 <NavigationMenuItem>
                   <NavigationMenuLink className={navLinkStyle} asChild>
-                    <Link href="/admin">
-                      <Shield className="mr-1.5 h-4 w-4" />
-                      {t('menu.Administration')}
+                    <Link
+                      href="/admin"
+                      aria-label={t('menu.Administration')}
+                      title={t('menu.Administration')}
+                    >
+                      <Shield className="h-4 w-4" />
                     </Link>
                   </NavigationMenuLink>
                 </NavigationMenuItem>
@@ -770,14 +776,6 @@ export default function Header() {
                 </Link>
               </Button>
               {session && (
-                <Button variant="ghost" asChild className="justify-start">
-                  <Link href="/friends" onClick={() => setMobileMenuOpen(false)}>
-                    <UserRound className="mr-2 h-4 w-4" />
-                    {t('menu.Amis')}
-                  </Link>
-                </Button>
-              )}
-              {session && (
                 <div className="flex flex-col gap-2 md:hidden">
                   <p className="px-3 pt-2 text-xs font-medium text-muted-foreground">{t('menu.Collection')}</p>
                   <Button variant="ghost" asChild className="w-full justify-start">
@@ -812,9 +810,18 @@ export default function Header() {
                   </Button>
                 </div>
               )}
+              {/* Même regroupement que la barre : amis et groupes de jeu sous
+                  un seul intitulé, pour que les deux navigations racontent la
+                  même chose. */}
               {session && (
                 <>
-                  <p className="px-3 pt-2 text-xs font-medium text-muted-foreground">{t('menu.Groupes')}</p>
+                  <p className="px-3 pt-2 text-xs font-medium text-muted-foreground">{t('menu.Social')}</p>
+                  <Button variant="ghost" asChild className="justify-start">
+                    <Link href="/friends" onClick={() => setMobileMenuOpen(false)}>
+                      <UserRound className="mr-2 h-4 w-4" />
+                      {t('menu.Amis')}
+                    </Link>
+                  </Button>
                   {playGroups.map((group) => (
                     <Button variant="ghost" asChild className="justify-start" key={group.id}>
                       <Link href={`/play-groups/${group.id}`} onClick={() => setMobileMenuOpen(false)}>
