@@ -52,13 +52,15 @@ function tagOf(node) {
 /**
  * Un enfant est « rigide » s'il ne peut ni se couper ni rétrécir.
  *
- * `flex-1`, `grow` et `w-full` posent `flex-shrink: 1` : un bouton qui les porte
- * rétrécit avec la rangée — c'est le cas des pieds de boîte de dialogue, qui ne
- * débordent donc pas.
+ * Seul `flex-1` (`flex: 1 1 0%`) rétablit `flex-shrink: 1` sur un bouton, qui
+ * naît `shrink-0` : c'est le cas des pieds de boîte de dialogue, qui ne
+ * débordent donc pas. `grow` ne touche qu'à `flex-grow`, et `w-full` qu'à la
+ * largeur — un bouton qui les porte reste incompressible, et les compter comme
+ * souples ferait manquer des rangées au détecteur.
  */
 function isRigid(node) {
   const classes = classNameOf(node) ?? "";
-  if (/flex-1|\bgrow\b|w-full|shrink(?!-0)|truncate|min-w-0/.test(classes)) return false;
+  if (/flex-1|shrink(?!-0)|truncate|min-w-0/.test(classes)) return false;
   if (RIGID_TAGS.has(tagOf(node))) return true;
   return /whitespace-nowrap/.test(classes);
 }
@@ -78,9 +80,24 @@ function directChildren(node) {
         else if (ts.isParenthesizedExpression(expr)) walkExpr(expr.expression);
         else if (ts.isJsxFragment(expr)) expr.children.forEach(collect);
         else if (ts.isCallExpression(expr)) {
-          // `.map(() => <X/>)`
+          // `.map(...)`, sous ses deux formes : le corps-expression
+          // (`() => <X/>`) et le corps-bloc, de loin le plus répandu ici, dont
+          // il faut aller chercher les `return`. S'en tenir au premier ferait
+          // manquer au détecteur la moitié des listes du dépôt.
           for (const arg of expr.arguments) {
-            if (ts.isArrowFunction(arg)) walkExpr(arg.body);
+            if (!ts.isArrowFunction(arg) && !ts.isFunctionExpression(arg)) continue;
+            if (ts.isBlock(arg.body)) {
+              const findReturns = (child) => {
+                if (ts.isReturnStatement(child) && child.expression) walkExpr(child.expression);
+                // Sans s'enfoncer dans une fonction imbriquée, qui rend ailleurs.
+                if (!ts.isFunctionDeclaration(child) && !ts.isArrowFunction(child) && !ts.isFunctionExpression(child)) {
+                  ts.forEachChild(child, findReturns);
+                }
+              };
+              ts.forEachChild(arg.body, findReturns);
+            } else {
+              walkExpr(arg.body);
+            }
           }
         }
       };
