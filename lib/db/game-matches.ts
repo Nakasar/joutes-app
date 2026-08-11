@@ -31,6 +31,9 @@ export interface GetGameMatchesFilters {
   gameId?: string;
   lairId?: string;
   playerUserIds?: string[];
+  /** Pagination : sans plafond, la lecture ramène tout l'historique. */
+  limit?: number;
+  page?: number;
 }
 
 export async function createGameMatch(gameMatch: Omit<GameMatch, "id" | "createdAt" | "players">): Promise<GameMatch> {
@@ -59,15 +62,18 @@ export async function getGameMatches(filters: GetGameMatchesFilters = {}): Promi
     gameId: filters.gameId,
     lairId: filters.lairId,
     playerUserIds: filters.playerUserIds,
+    limit: filters.limit,
+    page: filters.page,
   });
-  
+
   return matches.filter(m => m.matchType === 'game').map(m => toGameMatch(m as GameTypeMatch));
 }
 
-export async function getGameMatchesByUser(userId: string): Promise<GameMatch[]> {
+export async function getGameMatchesByUser(userId: string, limit?: number): Promise<GameMatch[]> {
   const matches = await getMatches({
     matchType: 'game',
     userId,
+    limit,
   });
   
   return matches.filter(m => m.matchType === 'game').map(m => toGameMatch(m as GameTypeMatch));

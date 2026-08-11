@@ -3243,6 +3243,165 @@
         }
       }
     },
+    "/game-matches": {
+      "get": {
+        "tags": [
+          "Game Matches"
+        ],
+        "summary": "List my casual game matches",
+        "description": "Matches the authenticated user took part in — created by them or by someone else who listed them as a player. Sorted by play date, most recent first.\n",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 30
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matches",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "matches"
+                  ],
+                  "properties": {
+                    "matches": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/GameMatchSummary"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Game Matches"
+        ],
+        "summary": "Record a casual game match",
+        "description": "Creates a match. The authenticated user is always one of its players and does not have to list themselves in `playerIds`.\n\nGuests are participants without an account: they can win, field an army list and hold tokens on the battle map, but no one signs in as them. Their id may be omitted, in which case the server generates one; supply it (`guest_…`) when the client needs to reference them in `winnerIds` or in the battle report before saving.\n\n`winnerIds` entries that match no participant are dropped, as are battle report armies keyed by an unknown participant.\n",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GameMatchCreateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created match",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameMatch"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/game-matches/{matchId}": {
+      "parameters": [
+        {
+          "name": "matchId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "tags": [
+          "Game Matches"
+        ],
+        "summary": "Get a casual game match",
+        "description": "Restricted to the match creator and its players (accounts only — a guest id grants no access).\n",
+        "security": [
+          {
+            "sessionAuth": []
+          },
+          {
+            "apiKeyBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Match",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameMatch"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
     "/game-matches/{matchId}/join": {
       "parameters": [
         {
@@ -10990,6 +11149,244 @@
           },
           "avatar": {
             "type": "string"
+          }
+        }
+      },
+      "GameMatchPlayer": {
+        "type": "object",
+        "description": "A participant. `isGuest` marks someone without an account: their `id` is local to the match (`guest_…`) and grants no access to it.\n",
+        "required": [
+          "id",
+          "username",
+          "isWinner"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "discriminator": {
+            "type": "string"
+          },
+          "isGuest": {
+            "type": "boolean"
+          },
+          "isWinner": {
+            "type": "boolean"
+          }
+        }
+      },
+      "GameMatchSummary": {
+        "type": "object",
+        "description": "A match as listed. `battleReport` present (even empty) means the match is recorded as a battle report; only its scenario is repeated here — army lists and battle map are served on the match itself.\n",
+        "required": [
+          "id",
+          "playedAt",
+          "createdBy",
+          "game",
+          "lair",
+          "players",
+          "winnerIds"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "playedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string"
+          },
+          "game": {
+            "type": "object",
+            "nullable": true,
+            "required": [
+              "id",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "slug": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "lair": {
+            "type": "object",
+            "nullable": true,
+            "required": [
+              "id",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "players": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GameMatchPlayer"
+            }
+          },
+          "winnerIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "battleReport": {
+            "type": "object",
+            "properties": {
+              "scenario": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "GameMatch": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/GameMatchSummary"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "battleReport": {
+                "$ref": "#/components/schemas/BattleReport"
+              }
+            }
+          }
+        ]
+      },
+      "BattleReportArmyUnit": {
+        "type": "object",
+        "description": "A line of an army list. `name` and `image` are copied into the report rather than joined from the catalog: a battle report is an archive and must stay readable once a product leaves the catalog.\n",
+        "required": [
+          "name",
+          "quantity"
+        ],
+        "properties": {
+          "productId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 99
+          }
+        }
+      },
+      "BattleReport": {
+        "type": "object",
+        "description": "Battle report side of a match: army lists, scenario, free notes and the top-down battle map. Army lists and battle map are keyed by participant id (account or guest).\n",
+        "properties": {
+          "scenario": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "armies": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "units": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BattleReportArmyUnit"
+                  }
+                }
+              }
+            }
+          },
+          "map": {
+            "type": "object",
+            "description": "Top-down table, in centimetres. Terrain belongs to the table, unit tokens to a snapshot.\n"
+          }
+        }
+      },
+      "GameMatchCreateInput": {
+        "type": "object",
+        "required": [
+          "gameId"
+        ],
+        "properties": {
+          "gameId": {
+            "type": "string"
+          },
+          "playedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Defaults to now."
+          },
+          "lairId": {
+            "type": "string"
+          },
+          "playerIds": {
+            "type": "array",
+            "maxItems": 20,
+            "description": "Other accounts at the table. The authenticated user is added automatically.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "guests": {
+            "type": "array",
+            "maxItems": 20,
+            "items": {
+              "type": "object",
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^guest_[A-Za-z0-9_-]{4,32}$"
+                },
+                "name": {
+                  "type": "string",
+                  "maxLength": 60
+                }
+              }
+            }
+          },
+          "winnerIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "battleReport": {
+            "$ref": "#/components/schemas/BattleReport"
           }
         }
       },

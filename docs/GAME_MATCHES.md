@@ -159,6 +159,30 @@ Fichier : `app/game-matches/actions.ts`
 - `addGuestToMatchAction()` - Ajouter un participant sans compte (créateur uniquement)
 - `removeGuestFromMatchAction()` - Retirer un invité (créateur uniquement)
 
+### API REST
+
+Le web passe par des actions serveur ; les clients qui n'ont pas la base sous
+la main — l'application mobile, les clés API `jts_…` — passent par ces routes.
+Elles sont décrites dans `app/api/docs/openapi.json`.
+
+- `GET /api/game-matches?limit=` - Parties de l'utilisateur authentifié, de la
+  plus récente à la plus ancienne. Le jeu et le lieu sont rendus résolus (nom
+  compris) : une liste de parties sans nom de jeu obligerait chaque client à
+  recharger le catalogue pour afficher une ligne. Le rapport de bataille y est
+  réduit à son scénario, les listes d'armée et la table de jeu n'étant affichées
+  nulle part à ce niveau.
+- `POST /api/game-matches` - Enregistre une partie. Le créateur en est joueur
+  sans avoir à se citer. L'identifiant d'un invité peut être omis (le serveur le
+  fabrique) ou fourni, ce qui permet de le désigner vainqueur ou de lui
+  attribuer une liste d'armée avant l'enregistrement. Les vainqueurs et les
+  listes d'armée qui ne retombent sur aucun participant sont écartés.
+- `GET /api/game-matches/{matchId}` - Fiche complète, rapport de bataille
+  compris. Réservée au créateur et aux joueurs, comme la page web ;
+  l'appartenance se lit dans `playerIds`, jamais dans `players`.
+
+La mise en forme des réponses vit dans `lib/api/game-matches.ts`, le schéma
+d'entrée (`gameMatchApiCreateSchema`) dans `lib/schemas/game-match.schema.ts`.
+
 ### Pages et composants
 
 #### Pages
