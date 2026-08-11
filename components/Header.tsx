@@ -37,6 +37,7 @@ import {
 import {useTranslations} from "next-intl";
 import LocaleSwitcher from "@/components/locale-switcher";
 import { CommandBox } from "@/components/CommandBox";
+import { cn } from "@/lib/utils";
 
 /**
  * Raccourcis affichés dans le menu « Jeux » tant qu'on ne sait rien des goûts
@@ -60,6 +61,26 @@ const DEFAULT_GAMES: NavGame[] = [
  * sans cela du menu qu'il est censé commander.
  */
 const MAX_GAMES_IN_MENU = 5;
+
+/**
+ * Style d'une entrée de la barre qui mène droit à une page — « Lieux »,
+ * « Amis »… — par opposition à celles qui ouvrent un menu.
+ *
+ * Les secondes sont des `DropdownMenuTrigger` et ne portent que
+ * `navigationMenuTriggerStyle()` ; les premières sont des
+ * `NavigationMenuLink`, dont le style de base empile ses enfants
+ * (`flex flex-col gap-1`) — pensé pour les panneaux riches d'un menu de
+ * navigation, pas pour une entrée d'une ligne. Le style de déclencheur ne
+ * redresse pas la direction : il n'y a pas de `flex-row` à emporter la mise sur
+ * `flex-col`. L'icône passait donc **au-dessus** du libellé, que la hauteur
+ * fixe (`h-9`) rognait aussitôt — d'où une barre dont une entrée sur deux
+ * n'avait plus d'icône et dont le texte tombait quelques pixels plus bas que
+ * ses voisines.
+ *
+ * `gap-0` annule l'espacement du style de base : ce sont les icônes qui portent
+ * leur marge (`mr-1.5`), exactement comme dans les entrées à menu.
+ */
+const navLinkStyle = cn(navigationMenuTriggerStyle(), "flex-row gap-0");
 
 /** Illustration de chaque outil d'un jeu, quand le menu les propose. */
 const GAME_TOOL_ICONS: Record<GameToolKey, LucideIcon> = {
@@ -363,7 +384,7 @@ export default function Header() {
                 </DropdownMenu>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                <NavigationMenuLink className={navLinkStyle} asChild>
                   <Link href="/lairs">
                     <MapPin className="mr-1.5 h-4 w-4" />
                     {t('menu.Lieux')}
@@ -371,7 +392,7 @@ export default function Header() {
                 </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                <NavigationMenuLink className={navLinkStyle} asChild>
                   <Link href="/features">
                     <Sparkles className="mr-1.5 h-4 w-4" />
                     {t('menu.Fonctionnalités')}
@@ -423,7 +444,7 @@ export default function Header() {
               )}
               {session && (
                 <NavigationMenuItem>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                  <NavigationMenuLink className={navLinkStyle} asChild>
                     <Link href="/friends">
                       <UserRound className="mr-1.5 h-4 w-4" />
                       {t('menu.Amis')}
@@ -461,7 +482,7 @@ export default function Header() {
               )}
               {session && isAdmin(session.user.email) && (
                 <NavigationMenuItem>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                  <NavigationMenuLink className={navLinkStyle} asChild>
                     <Link href="/admin">
                       <Shield className="mr-1.5 h-4 w-4" />
                       {t('menu.Administration')}
@@ -523,7 +544,7 @@ export default function Header() {
                 </DropdownMenu>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                <NavigationMenuLink className={navLinkStyle} asChild>
                   <Link href="/lairs">
                     <MapPin className="mr-1.5 h-4 w-4" />
                     {t('menu.Lieux')}
