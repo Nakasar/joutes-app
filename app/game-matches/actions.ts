@@ -31,6 +31,8 @@ import { BattleMap, BattleReport, BattleReportArmy, GameMatchGuest } from "@/lib
 import { normalizeArmy, normalizeBattleReport } from "@/lib/battle-reports/army";
 import { normalizeBattleMap } from "@/lib/battle-reports/battle-map";
 import {
+  MAX_GUESTS,
+  isGuestId,
   isParticipant,
   normalizeGuests,
   participantIds,
@@ -838,6 +840,16 @@ export async function addGuestToMatchAction(
       return { success: false, error: "Cet invité est déjà dans la partie" };
     }
 
+    // Le plafond du schéma ne s'applique qu'à une liste envoyée d'un bloc : ici
+    // les invités arrivent un par un, et rien ne l'aurait fait respecter. La
+    // base tranche pour de bon ; ce contrôle-ci n'est là que pour le dire.
+    if ((match.guests?.length ?? 0) >= MAX_GUESTS) {
+      return {
+        success: false,
+        error: `Une partie ne peut pas compter plus de ${MAX_GUESTS} invités`,
+      };
+    }
+
     const result = await addGuestToGameMatch(matchId, validationResult.data);
 
     if (!result) {
@@ -876,6 +888,13 @@ export async function removeGuestFromMatchAction(
 
     if (match.createdBy !== session.user.id) {
       return { success: false, error: "Seul le créateur peut retirer un invité" };
+    }
+
+    // Cet identifiant sert à construire des chemins de document : celui d'un
+    // compte effacerait la liste d'armée et le deck d'un vrai joueur. Il doit
+    // être celui d'un invité, et d'un invité **de cette partie**.
+    if (!isGuestId(guestId) || !match.guests?.some((guest) => guest.id === guestId)) {
+      return { success: false, error: "Cet invité n'est pas dans la partie" };
     }
 
     const result = await removeGuestFromGameMatch(matchId, guestId);

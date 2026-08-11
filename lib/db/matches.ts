@@ -18,7 +18,7 @@ import {
   isEventMatch,
 } from "@/lib/types/Match";
 import { isEmptyArmy, normalizeArmy } from "@/lib/battle-reports/army";
-import { normalizeGuests, toGuestPlayer } from "@/lib/matches/participants";
+import { MAX_GUESTS, isGuestId, normalizeGuests, toGuestPlayer } from "@/lib/matches/participants";
 
 const COLLECTION_NAME = "matches";
 
@@ -708,7 +708,16 @@ export async function addGuestToMatch(matchId: string, guest: GameMatchGuest): P
   }
 
   const result = await db.collection<MatchDocument>(COLLECTION_NAME).updateOne(
-    { _id: new ObjectId(matchId), matchType: 'game', "guests.id": { $ne: normalized.id } },
+    {
+      _id: new ObjectId(matchId),
+      matchType: 'game',
+      "guests.id": { $ne: normalized.id },
+      // Le plafond se vérifie **dans le filtre**, et non avant l'écriture : la
+      // borne du schéma ne s'applique qu'à une liste validée d'un bloc, et deux
+      // ajouts lancés en même temps passeraient tous deux un contrôle fait en
+      // amont. Ici, le second ne trouve plus de document à modifier.
+      $expr: { $lt: [{ $size: { $ifNull: ["$guests", []] } }, MAX_GUESTS] },
+    },
     { $push: { guests: normalized }, $set: { updatedAt: new Date() } }
   );
 
@@ -722,10 +731,25 @@ export async function addGuestToMatch(matchId: string, guest: GameMatchGuest): P
  * n'y gardant que les participants connus.
  */
 export async function removeGuestFromMatch(matchId: string, guestId: string): Promise<boolean> {
+  // L'identifiant sert à **construire des chemins** de document. Sans cette
+  // vérification, celui d'un compte effacerait la liste d'armée et le deck d'un
+  // vrai joueur, et un identifiant pointé (`a.b`) atteindrait un champ que
+  // personne n'a désigné. L'appelant valide déjà : on ne s'en remet pas à lui,
+  // parce que le jour où une autre fonction appellera celle-ci, elle ne le
+  // saura pas.
+  if (!isGuestId(guestId)) {
+    return false;
+  }
+
   const result = await db.collection<MatchDocument>(COLLECTION_NAME).updateOne(
     { _id: new ObjectId(matchId), matchType: 'game' },
     {
-      $pull: { guests: { id: guestId }, winnerIds: guestId },
+      $pull: {
+        guests: { id: guestId },
+        winnerIds: guestId,
+        // Les voix reçues par un invité qui s'en va ne désignent plus personne.
+        mvpVotes: { votedForId: guestId },
+      },
       $unset: {
         [`battleReport.armies.${guestId}`]: "",
         [`decks.${guestId}`]: "",
