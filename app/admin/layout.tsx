@@ -21,7 +21,10 @@ export default async function AdminLayout({
 
   return (
     <div className="bg-muted/50">
-      <nav className="bg-card shadow-sm border-b border-border">
+      {/* Deuxième repère « navigation » de la page, après celui de l'en-tête du
+          site : sans nom, un lecteur d'écran les annonce tous deux « navigation »
+          et ne donne aucun moyen de les distinguer. */}
+      <nav aria-label="Administration" className="bg-card shadow-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between gap-4 h-16">
             {/*
