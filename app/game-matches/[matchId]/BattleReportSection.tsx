@@ -184,7 +184,10 @@ export default function BattleReportSection({
 
             return (
               <div key={player.userId} className="p-3 border rounded-lg bg-muted/50 space-y-3">
-                <div className="flex items-center justify-between gap-2">
+                {/* Mêmes précautions que sur la fiche : le nom, la pastille et
+                    le bouton ne rétrécissent pas, ils doivent pouvoir passer à
+                    la ligne. */}
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <Badge variant="secondary" className="text-sm">
                       {player.username}
