@@ -32,7 +32,9 @@ export default async function GameMatchDetailPage({ params }: PageProps) {
   // Vérifier que l'utilisateur a accès à la partie
   // Seuls le créateur et les joueurs peuvent accéder à la page
   const isCreator = match.createdBy === session.user.id;
-  const isPlayer = match.players.some((p) => p.userId === session.user.id);
+  // `playerIds` ne contient que des comptes : `players` y mêle les invités, qui
+  // n'ouvrent aucun accès.
+  const isPlayer = match.playerIds.includes(session.user.id);
 
   if (!isCreator && !isPlayer) {
     return (

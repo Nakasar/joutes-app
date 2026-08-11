@@ -18,7 +18,7 @@ import {
   isEventMatch,
 } from "@/lib/types/Match";
 import { isEmptyArmy, normalizeArmy } from "@/lib/battle-reports/army";
-import { normalizeGuests } from "@/lib/matches/participants";
+import { normalizeGuests, toGuestPlayer } from "@/lib/matches/participants";
 
 const COLLECTION_NAME = "matches";
 
@@ -93,8 +93,14 @@ function toMatch(doc: WithId<Document>): Match {
       ...base,
       matchType: 'game',
       gameId: doc.gameId,
+      // `playerIds` ne contient que des comptes : c'est lui qui décide des
+      // droits, et l'agrégation qui résout les joueurs le passe à `$toObjectId`.
       playerIds: doc.playerIds || [],
-      players: doc.players || [],
+      // Les invités rejoignent les comptes ici, une fois pour toutes : les deux
+      // chemins de lecture (fiche et liste) passent par cette fonction, et
+      // l'affichage n'a plus qu'une liste à parcourir. `guests` reste la source,
+      // `players` n'est jamais réécrit en base.
+      players: [...(doc.players || []), ...((doc.guests || []) as GameMatchGuest[]).map(toGuestPlayer)],
       guests: doc.guests || [],
       ratings: doc.ratings || [],
       mvpVotes: doc.mvpVotes || [],

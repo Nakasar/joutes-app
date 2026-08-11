@@ -62,9 +62,18 @@ refuse un `ObjectId` glissé dans la liste des invités.
 Le créateur seul ajoute et retire les invités, ici comme pour les joueurs. Un
 invité retiré emporte sa liste d'armée, son deck et sa place au palmarès.
 
-Les règles vivent dans `lib/matches/participants.ts` (module pur, testé), et
-`matchParticipants()` est ce que l'affichage manipule : une partie se lit comme
-une liste de joueurs, pas comme deux.
+**Les invités rejoignent les comptes dans `players` à la lecture**
+(`toMatch`, dans `lib/db/matches.ts`), sous le fanion `isGuest` : l'affichage
+n'a ainsi qu'une liste à parcourir, et une partie se lit comme une liste de
+joueurs, pas comme deux. `guests` reste la source en base ; `players`, qui est
+un champ dérivé, n'y est jamais réécrit.
+
+La contrepartie tient en une règle : **`players[].userId` n'est plus toujours
+l'identifiant d'un compte**. Ce qui décide d'un droit — accéder à la partie,
+l'évaluer, voter, la quitter — se lit donc dans `playerIds`, seule liste qui ne
+contienne que des comptes, et jamais dans `players`.
+
+Les règles vivent dans `lib/matches/participants.ts` (module pur, testé).
 
 ### 6. Rapports de bataille
 

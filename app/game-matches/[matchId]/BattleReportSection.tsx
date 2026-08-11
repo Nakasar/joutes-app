@@ -12,8 +12,7 @@ import { Map as MapIcon, Pencil, Swords, Trophy } from "lucide-react";
 import ArmyListEditor from "@/components/battle-reports/ArmyListEditor";
 import BattleMapEditor from "@/components/battle-reports/BattleMapEditor";
 import { MAX_NOTES_LENGTH, MAX_SCENARIO_LENGTH, countArmyUnits } from "@/lib/battle-reports/army";
-import type { BattleReport, BattleReportArmy } from "@/lib/types/Match";
-import type { MatchParticipant } from "@/lib/matches/participants";
+import type { BattleReport, BattleReportArmy, GameMatchPlayer } from "@/lib/types/Match";
 import { updateBattleReportAction, updateBattleReportArmyAction } from "../actions";
 
 /**
@@ -33,7 +32,7 @@ export default function BattleReportSection({
   gameId,
   gameSlug,
   report,
-  participants,
+  players,
   winnerIds,
   currentUserId,
   isCreator,
@@ -43,8 +42,8 @@ export default function BattleReportSection({
   /** Sert à proposer la table habituelle du jeu (90 × 90 cm pour Shatterpoint). */
   gameSlug?: string;
   report: BattleReport;
-  /** Comptes et invités confondus : un invité aligne une armée comme un autre. */
-  participants: MatchParticipant[];
+  /** Comptes et invités mêlés : un invité aligne une armée comme un autre. */
+  players: GameMatchPlayer[];
   winnerIds: string[];
   currentUserId: string;
   isCreator: boolean;
@@ -176,26 +175,26 @@ export default function BattleReportSection({
         <div className="space-y-3">
           <h3 className="text-sm font-semibold">Listes d&apos;armée</h3>
 
-          {participants.map((participant) => {
-            const army = report.armies?.[participant.id];
+          {players.map((player) => {
+            const army = report.armies?.[player.userId];
             // Un invité ne se connecte pas : sa liste est tenue par le créateur.
-            const canEdit = isCreator || participant.id === currentUserId;
-            const isEditing = editedPlayerId === participant.id;
+            const canEdit = isCreator || player.userId === currentUserId;
+            const isEditing = editedPlayerId === player.userId;
             const total = army ? countArmyUnits(army) : 0;
 
             return (
-              <div key={participant.id} className="p-3 border rounded-lg bg-muted/50 space-y-3">
+              <div key={player.userId} className="p-3 border rounded-lg bg-muted/50 space-y-3">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <Badge variant="secondary" className="text-sm">
-                      {participant.name}
+                      {player.username}
                     </Badge>
-                    {participant.isGuest && (
+                    {player.isGuest && (
                       <Badge variant="outline" className="text-xs">
                         Invité
                       </Badge>
                     )}
-                    {winnerIds.includes(participant.id) && (
+                    {winnerIds.includes(player.userId) && (
                       <span title="Vainqueur">
                         <Trophy className="h-4 w-4 text-amber-600" />
                       </span>
@@ -211,7 +210,7 @@ export default function BattleReportSection({
                       size="sm"
                       className="gap-2 shrink-0"
                       disabled={isPending}
-                      onClick={() => startEditingArmy(participant.id)}
+                      onClick={() => startEditingArmy(player.userId)}
                     >
                       <Pencil className="h-4 w-4" />
                       {army ? "Modifier" : "Ajouter"}
@@ -223,7 +222,7 @@ export default function BattleReportSection({
                   <div className="space-y-3">
                     <ArmyListEditor
                       gameId={gameId}
-                      idPrefix={`army-${participant.id}`}
+                      idPrefix={`army-${player.userId}`}
                       army={draftArmy}
                       onChange={setDraftArmy}
                       disabled={isPending}
@@ -242,7 +241,7 @@ export default function BattleReportSection({
                         size="sm"
                         className="flex-1"
                         disabled={isPending}
-                        onClick={() => handleSaveArmy(participant.id)}
+                        onClick={() => handleSaveArmy(player.userId)}
                       >
                         {isPending ? "Enregistrement..." : "Enregistrer la liste"}
                       </Button>
@@ -289,7 +288,7 @@ export default function BattleReportSection({
             <BattleMapEditor
               matchId={matchId}
               gameSlug={gameSlug}
-              participants={participants}
+              players={players}
               armies={report.armies ?? {}}
               map={report.map}
               editable={isCreator}

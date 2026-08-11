@@ -11,7 +11,6 @@ import { Calendar, MapPin, Users, Eye, Trophy, Medal, Angry, Frown, Meh, Smile, 
 import { useRouter } from "next/navigation";
 import GameMatchActions from "./GameMatchActions";
 import AddPlayerToMatch from "./AddPlayerToMatch";
-import { matchParticipants } from "@/lib/matches/participants";
 
 type GameMatchListProps = {
   matches: GameMatch[];
@@ -61,11 +60,11 @@ export default function GameMatchList({ matches, games, lairs, currentUserId }: 
   const getMVPPlayerIds = (match: GameMatch): string[] => {
     if (!match.mvpVotes || match.mvpVotes.length === 0) return [];
 
-    const mvpCounts = matchParticipants(match).reduce((acc, participant) => {
-      const votes = match.mvpVotes?.filter(v => v.votedForId === participant.id).length || 0;
-      acc[participant.id] = votes;
+    const mvpCounts = match.players.reduce<Record<string, number>>((acc, player) => {
+      const votes = match.mvpVotes?.filter(v => v.votedForId === player.userId).length || 0;
+      acc[player.userId] = votes;
       return acc;
-    }, {} as Record<string, number>);
+    }, {});
     
     const maxVotes = Math.max(...Object.values(mvpCounts), 0);
     return maxVotes > 0 
@@ -80,9 +79,9 @@ export default function GameMatchList({ matches, games, lairs, currentUserId }: 
         const lairName = getLairName(match.lairId);
         const playedDate = DateTime.fromJSDate(match.playedAt).setZone('Europe/Paris');
         const isCreator = match.createdBy === currentUserId;
-        const isPlayer = match.players.some((p) => p.userId === currentUserId);
-        // Les invités comptent comme joueurs de la partie, et s'affichent avec.
-        const participants = matchParticipants(match);
+        // `playerIds` ne contient que des comptes, contrairement à `players`
+        // qui y mêle les invités : un droit ne se lit que là.
+        const isPlayer = match.playerIds.includes(currentUserId);
         
         // Calculer la note moyenne
         const averageRating = match.ratings && match.ratings.length > 0
@@ -177,22 +176,22 @@ export default function GameMatchList({ matches, games, lairs, currentUserId }: 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Users className="h-4 w-4" />
-                    <span>Joueurs ({participants.length})</span>
+                    <span>Joueurs ({match.players.length})</span>
                   </div>
                   {isCreator && (
                     <AddPlayerToMatch matchId={match.id} />
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {participants.map((participant) => {
-                    const isMVP = mvpPlayerIds.includes(participant.id);
-                    const isWinner = match.winnerIds?.includes(participant.id);
+                  {match.players.map((player) => {
+                    const isMVP = mvpPlayerIds.includes(player.userId);
+                    const isWinner = match.winnerIds?.includes(player.userId);
 
                     return (
-                      <div key={participant.id} className="flex items-center gap-1">
+                      <div key={player.userId} className="flex items-center gap-1">
                         <Badge variant="secondary" className="flex items-center gap-1">
-                          {participant.name}
-                          {participant.isGuest && (
+                          {player.username}
+                          {player.isGuest && (
                             <span className="text-muted-foreground">(invité)</span>
                           )}
                           {isMVP && (
@@ -204,13 +203,13 @@ export default function GameMatchList({ matches, games, lairs, currentUserId }: 
                         </Badge>
                         {/* Le retrait d'un invité se fait depuis la fiche de la
                             partie : la liste ne porte que les actions de masse. */}
-                        {isCreator && !participant.isGuest && (
+                        {isCreator && !player.isGuest && (
                           <GameMatchActions
                             matchId={match.id}
                             isCreator={true}
                             currentUserId={currentUserId}
-                            playerUserId={participant.id}
-                            playerUsername={participant.name}
+                            playerUserId={player.userId}
+                            playerUsername={player.username}
                             variant="remove-player"
                           />
                         )}

@@ -33,7 +33,9 @@ export async function GET(
     }
 
     // Vérifier si l'utilisateur est déjà dans la partie
-    const isAlreadyPlayer = match.players.some((p) => p.userId === session.user.id);
+    // `playerIds` plutôt que `players`, qui mêle désormais les invités : on ne
+    // rejoint une partie qu'avec un compte.
+    const isAlreadyPlayer = match.playerIds.includes(session.user.id);
 
     if (isAlreadyPlayer) {
       return NextResponse.redirect(

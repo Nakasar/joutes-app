@@ -41,7 +41,7 @@ import {
   updatePlayerDeckAction,
 } from "../actions";
 import RatingSelector from "./RatingSelector";
-import { MAX_GUEST_NAME_LENGTH, guestId, matchParticipants } from "@/lib/matches/participants";
+import { MAX_GUEST_NAME_LENGTH, guestId } from "@/lib/matches/participants";
 import { nanoid } from "nanoid";
 import DeckSelector from "@/components/DeckSelector";
 import BattleReportSection from "./BattleReportSection";
@@ -90,14 +90,13 @@ export default function GameMatchDetails({
   );
 
   // Calculer le MVP (joueur avec le plus de votes)
-  // Comptes et invités : un invité reçoit des voix comme un autre.
-  const participants = matchParticipants(match);
-
-  const mvpCounts = participants.reduce((acc, participant) => {
-    const votes = match.mvpVotes?.filter(v => v.votedForId === participant.id).length || 0;
-    acc[participant.id] = votes;
+  // `match.players` mêle comptes et invités : un invité reçoit des voix comme
+  // un autre.
+  const mvpCounts = match.players.reduce<Record<string, number>>((acc, player) => {
+    const votes = match.mvpVotes?.filter(v => v.votedForId === player.userId).length || 0;
+    acc[player.userId] = votes;
     return acc;
-  }, {} as Record<string, number>);
+  }, {});
   
   const maxVotes = Math.max(...Object.values(mvpCounts), 0);
   const mvpPlayerIds = maxVotes > 0 
@@ -163,7 +162,10 @@ export default function GameMatchDetails({
   }, [match.decks]);
 
   const isCreator = match.createdBy === currentUserId;
-  const isPlayer = match.players.some((p) => p.userId === currentUserId);
+  // `playerIds` et non `players` : depuis que les invités rejoignent la liste
+  // affichée, c'est la seule des deux qui ne contienne que des comptes — et un
+  // droit ne se lit que là.
+  const isPlayer = match.playerIds.includes(currentUserId);
 
   const gameName = games.find((g) => g.id === match.gameId)?.name || "Jeu inconnu";
   const lairName = match.lairId
@@ -657,7 +659,7 @@ export default function GameMatchDetails({
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-muted-foreground" />
                 <h2 className="text-lg font-semibold">
-                  Joueurs ({participants.length})
+                  Joueurs ({match.players.length})
                 </h2>
               </div>
               {isCreator && (
@@ -806,28 +808,28 @@ export default function GameMatchDetails({
             </div>
 
             <div className="space-y-2">
-              {participants.map((participant) => {
-                const isMVP = mvpPlayerIds.includes(participant.id);
-                const isWinner = match.winnerIds?.includes(participant.id);
+              {match.players.map((player) => {
+                const isMVP = mvpPlayerIds.includes(player.userId);
+                const isWinner = match.winnerIds?.includes(player.userId);
                 // On ne vote pas pour soi-même ; un invité, lui, peut toujours
                 // recevoir la voix d'un joueur de la table.
-                const canVoteForThisPlayer = participant.id !== currentUserId && isPlayer;
-                const hasVotedForThisPlayer = userMVPVote === participant.id;
-                const playerDeckId = match.decks?.[participant.id];
+                const canVoteForThisPlayer = player.userId !== currentUserId && isPlayer;
+                const hasVotedForThisPlayer = userMVPVote === player.userId;
+                const playerDeckId = match.decks?.[player.userId];
                 const playerDeck = playerDeckId ? decksInfo[playerDeckId] : undefined;
 
                 return (
                   <div
-                    key={participant.id}
+                    key={player.userId}
                     className="p-3 border rounded-lg bg-muted/50 space-y-2"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant="secondary" className="text-sm">
-                          {participant.name}
+                          {player.username}
                         </Badge>
 
-                        {participant.isGuest && (
+                        {player.isGuest && (
                           <Badge variant="outline" className="text-xs">
                             Invité
                           </Badge>
@@ -854,7 +856,7 @@ export default function GameMatchDetails({
                           <Button
                             variant={hasVotedForThisPlayer ? "default" : "outline"}
                             size="sm"
-                            onClick={() => handleVoteMVP(participant.id)}
+                            onClick={() => handleVoteMVP(player.userId)}
                             disabled={isPending}
                             className="gap-2"
                             title="Voter pour le MVP"
@@ -869,7 +871,7 @@ export default function GameMatchDetails({
                           <Button
                             variant={isWinner ? "default" : "outline"}
                             size="sm"
-                            onClick={() => handleToggleWinner(participant.id)}
+                            onClick={() => handleToggleWinner(player.userId)}
                             disabled={isPending}
                             className="gap-2"
                             title={isWinner ? "Retirer le trophée" : "Désigner comme vainqueur"}
@@ -890,10 +892,10 @@ export default function GameMatchDetails({
                             <DialogContent>
                               <DialogHeader>
                                 <DialogTitle>
-                                  {participant.isGuest ? "Retirer l'invité" : "Retirer le joueur"}
+                                  {player.isGuest ? "Retirer l'invité" : "Retirer le joueur"}
                                 </DialogTitle>
                                 <DialogDescription>
-                                  Êtes-vous sûr de vouloir retirer {participant.name} de la
+                                  Êtes-vous sûr de vouloir retirer {player.username} de la
                                   partie ?
                                 </DialogDescription>
                               </DialogHeader>
@@ -904,9 +906,9 @@ export default function GameMatchDetails({
                                 <Button
                                   variant="destructive"
                                   onClick={() =>
-                                    participant.isGuest
-                                      ? handleRemoveGuest(participant.id)
-                                      : handleRemovePlayer(participant.id)
+                                    player.isGuest
+                                      ? handleRemoveGuest(player.userId)
+                                      : handleRemovePlayer(player.userId)
                                   }
                                   disabled={isPending}
                                   className="flex-1"
@@ -940,7 +942,7 @@ export default function GameMatchDetails({
           gameId={match.gameId}
           gameSlug={games.find((game) => game.id === match.gameId)?.slug}
           report={match.battleReport}
-          participants={participants}
+          players={match.players}
           winnerIds={match.winnerIds ?? []}
           currentUserId={currentUserId}
           isCreator={isCreator}

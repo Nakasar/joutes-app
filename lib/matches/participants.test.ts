@@ -6,9 +6,9 @@ import {
   guestId,
   isGuestId,
   isParticipant,
-  matchParticipants,
   normalizeGuests,
   participantIds,
+  toGuestPlayer,
 } from "./participants";
 
 /**
@@ -36,32 +36,23 @@ describe("isGuestId", () => {
   });
 });
 
-describe("matchParticipants", () => {
-  it("rend les comptes d'abord, les invités ensuite", () => {
-    const participants = matchParticipants({
-      players: [player("507f1f77bcf86cd799439011", "Alice#0001")],
-      guests: [{ id: guestId("kevin123"), name: "Kévin" }],
+describe("toGuestPlayer", () => {
+  it("rend un invité sous la forme d'un participant, marqué comme tel", () => {
+    assert.deepEqual(toGuestPlayer({ id: guestId("kevin123"), name: "Kévin" }), {
+      userId: guestId("kevin123"),
+      username: "Kévin",
+      isGuest: true,
     });
-
-    assert.deepEqual(participants, [
-      { id: "507f1f77bcf86cd799439011", name: "Alice#0001", isGuest: false },
-      { id: guestId("kevin123"), name: "Kévin", isGuest: true },
-    ]);
-  });
-
-  it("tient sans invité comme sans joueur", () => {
-    assert.deepEqual(matchParticipants({}), []);
-    assert.deepEqual(
-      participantIds({ players: [player("507f1f77bcf86cd799439011", "Alice#0001")] }),
-      ["507f1f77bcf86cd799439011"]
-    );
   });
 });
 
 describe("isParticipant", () => {
+  // La liste mêlée, telle que la lecture la rend : comptes puis invités.
   const match = {
-    players: [player("507f1f77bcf86cd799439011", "Alice#0001")],
-    guests: [{ id: guestId("kevin123"), name: "Kévin" }],
+    players: [
+      player("507f1f77bcf86cd799439011", "Alice#0001"),
+      toGuestPlayer({ id: guestId("kevin123"), name: "Kévin" }),
+    ],
   };
 
   it("reconnaît un compte comme un invité", () => {
@@ -72,6 +63,10 @@ describe("isParticipant", () => {
   it("rejette qui n'est pas à la table", () => {
     assert.equal(isParticipant(match, guestId("inconnu1")), false);
     assert.equal(isParticipant(match, "507f1f77bcf86cd799439099"), false);
+  });
+
+  it("tient sur une partie sans personne", () => {
+    assert.deepEqual(participantIds({}), []);
   });
 });
 

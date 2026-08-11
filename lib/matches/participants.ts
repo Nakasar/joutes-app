@@ -18,6 +18,11 @@
  *    la table, vainqueurs — accepte les deux sortes de clés sans avoir à savoir
  *    laquelle est laquelle.
  *
+ * Les invités rejoignent les comptes dans `players` à la lecture
+ * (`lib/db/matches.ts`), sous le fanion `isGuest` : l'affichage n'a ainsi qu'une
+ * liste à parcourir. Ce qui décide d'un **droit**, en revanche, ne se lit jamais
+ * dans `players` mais dans `playerIds`, qui ne contient que des comptes.
+ *
  * Module pur, sans accès à la base : c'est ce qui le rend testable.
  */
 
@@ -46,45 +51,22 @@ export function guestId(suffix: string): string {
   return `${GUEST_ID_PREFIX}${suffix}`;
 }
 
-/**
- * Un participant, quelle que soit sa nature. C'est cette forme que l'affichage
- * manipule : une partie se lit comme une liste de joueurs, pas comme deux.
- */
-export type MatchParticipant = {
-  /** `userId` d'un compte, ou identifiant d'invité. */
-  id: string;
-  /** `displayName#discriminator` d'un compte, ou nom saisi pour un invité. */
-  name: string;
-  isGuest: boolean;
-};
-
 type ParticipantSource = {
   players?: GameMatchPlayer[];
-  guests?: GameMatchGuest[];
 };
 
 /**
- * Les comptes d'abord, les invités ensuite. L'ordre n'est pas cosmétique : il
- * décide de la couleur attribuée à chacun sur la table de jeu, et déplacer un
- * participant dans la liste repeindrait ses jetons.
+ * Un invité, rendu sous la forme d'un participant de la partie. C'est ce que la
+ * lecture ajoute aux comptes résolus : les invités **après** eux, car l'ordre
+ * n'est pas cosmétique — il décide de la couleur attribuée à chacun sur la table
+ * de jeu, et déplacer un participant dans la liste repeindrait ses jetons.
  */
-export function matchParticipants(match: ParticipantSource): MatchParticipant[] {
-  return [
-    ...(match.players ?? []).map((player) => ({
-      id: player.userId,
-      name: player.username,
-      isGuest: false,
-    })),
-    ...(match.guests ?? []).map((guest) => ({
-      id: guest.id,
-      name: guest.name,
-      isGuest: true,
-    })),
-  ];
+export function toGuestPlayer(guest: GameMatchGuest): GameMatchPlayer {
+  return { userId: guest.id, username: guest.name, isGuest: true };
 }
 
 export function participantIds(match: ParticipantSource): string[] {
-  return matchParticipants(match).map((participant) => participant.id);
+  return (match.players ?? []).map((player) => player.userId);
 }
 
 export function isParticipant(match: ParticipantSource, id: string): boolean {
