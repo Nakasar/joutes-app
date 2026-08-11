@@ -270,7 +270,7 @@ export default function PrivateLairsManager({ userOwnedLairs }: PrivateLairsMana
           {ownedLairs.map((lair) => (
             <Card key={lair.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
-                <div className="flex items-start justify-between">
+                <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <Lock className="h-4 w-4 text-muted-foreground" />

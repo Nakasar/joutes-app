@@ -236,7 +236,7 @@ function DeckCard({
     <Link href={`/decks/${deck.id}`} className="group">
       <Card className="h-full overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
         <CardHeader>
-          <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
             <CardTitle className="text-xl group-hover:text-primary transition-colors line-clamp-2 flex-1">
               {deck.name}
             </CardTitle>

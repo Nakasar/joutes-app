@@ -235,12 +235,12 @@ export function PhasesSection({
           ) : (
             <ul className="space-y-3">
               {phases.map((phase) => (
-                <li key={phase.id} className="flex items-center justify-between rounded-lg border p-4">
+                <li key={phase.id} className="flex flex-wrap items-center justify-between rounded-lg border p-4 gap-2">
                   <div>
                     <div className="font-medium">{phase.name}</div>
                     <div className="text-sm text-muted-foreground">{phaseSummary(phase)}</div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="outline">{t(`common.phaseStatus.${phase.status}`)}</Badge>
                     {phase.status === "in-progress" && (
                       <Button

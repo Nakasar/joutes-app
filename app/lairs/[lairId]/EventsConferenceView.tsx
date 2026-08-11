@@ -328,7 +328,7 @@ export default function EventsConferenceView({ events }: EventsConferenceViewPro
                           </div>
 
                           {/* Actions */}
-                          <div className="flex gap-1 pt-2">
+                          <div className="flex flex-wrap gap-1 pt-2">
                             {session.data?.user && (
                               <Button
                                 variant="ghost"

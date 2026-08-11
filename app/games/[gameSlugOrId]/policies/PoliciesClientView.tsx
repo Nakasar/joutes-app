@@ -204,7 +204,7 @@ export default function PoliciesClientView({
 
                   {isExpanded && (
                     <div className="px-6 pb-6 border-t pt-4">
-                      <div className="flex items-center justify-between gap-3 mb-3">
+                      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                         <div className="flex items-center gap-3">
                           <LanguagePicker
                             availableLangs={availableLangs}
@@ -285,11 +285,11 @@ export default function PoliciesClientView({
         )}
 
         {totalPages > 1 && (
-          <div className="mt-8 flex items-center justify-between">
+          <div className="mt-8 flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm text-muted-foreground">
               {t("policies.paginationSummary", { currentPage, totalPages, count: totalCount })}
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"

@@ -367,7 +367,7 @@ export default function WishlistDetailClient({
                   )}
                 </div>
                 {canEdit ? (
-                  <div className="mt-auto flex items-center gap-1">
+                  <div className="mt-auto flex flex-wrap items-center gap-1">
                     <Button
                       variant="outline"
                       size="icon-sm"

@@ -108,7 +108,7 @@ export function StaffManager({
 
         <ul className="divide-y rounded-md border">
           {staff.map((entry) => (
-            <li key={entry.userId} className="flex items-center justify-between gap-2 px-3 py-2">
+            <li key={entry.userId} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
               <span className="flex min-w-0 items-center gap-2">
                 <PlayerNameTag
                   name={entry.displayName}

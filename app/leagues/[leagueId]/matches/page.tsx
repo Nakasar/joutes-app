@@ -182,7 +182,7 @@ export default async function LeagueMatchesPage({
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <div className="space-y-6">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-4">
             <Button variant="ghost" size="icon" asChild>
               <Link href={`/leagues/${league.id}`}>
@@ -302,7 +302,7 @@ export default async function LeagueMatchesPage({
         )}
 
         {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex flex-wrap items-center justify-center gap-2">
             {currentPage > 1 ? (
               <Button variant="outline" size="sm" asChild>
                 <Link href={buildPageHref(currentPage - 1)}>

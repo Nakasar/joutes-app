@@ -301,7 +301,7 @@ export default function LocationDisplay({
               </div>
             )}
 
-            <div className="flex gap-2 justify-end pt-2">
+            <div className="flex flex-wrap gap-2 justify-end pt-2">
               {hasLocation && (
                 <Button
                   type="button"

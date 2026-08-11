@@ -49,12 +49,12 @@ export default function QuizBlockEditor({
 
   return (
     <div className="space-y-4 rounded-lg border bg-card p-4">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
           {block.type === "markdown" ? <FileText className="h-4 w-4" /> : <ListChecks className="h-4 w-4" />}
           Bloc {index + 1} — {block.type === "markdown" ? "Texte" : "Formulaire"}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           <Button type="button" variant="ghost" size="icon" onClick={onMoveUp} disabled={isFirst}>
             <ArrowUp className="h-4 w-4" />
           </Button>

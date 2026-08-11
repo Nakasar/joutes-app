@@ -90,7 +90,7 @@ export default function OrganizerStandings({ event, settings, standings, partici
                     ""
                   }`}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-4">
                       <div className="text-2xl font-bold w-8 text-center">
                         #{index + 1}

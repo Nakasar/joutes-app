@@ -264,7 +264,7 @@ export function PlayersSection({
                       : player.status}
                   </Badge>
 
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="flex flex-wrap shrink-0 items-center gap-2">
                     <label className="flex items-center gap-1 text-xs text-muted-foreground">
                       <TableIcon className="size-4" aria-hidden="true" />
                       <Input

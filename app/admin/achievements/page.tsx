@@ -39,7 +39,7 @@ export default async function AdminAchievementsPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm mb-4 h-10 overflow-hidden">{achievement.description}</p>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex gap-2">
                     <Badge variant="secondary">{achievement.points} pts</Badge>
                     {achievement.category && <Badge variant="outline">{achievement.category}</Badge>}

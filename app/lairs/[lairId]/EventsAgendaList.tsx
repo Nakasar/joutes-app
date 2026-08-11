@@ -228,7 +228,7 @@ export default function EventsAgendaList({ events }: EventsAgendaListProps) {
                             )}
                           </div>
 
-                          <div className="flex gap-2 pt-2">
+                          <div className="flex flex-wrap gap-2 pt-2">
                             {session.data?.user && (
                               <Button
                                 variant="outline"

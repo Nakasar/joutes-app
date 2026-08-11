@@ -201,7 +201,7 @@ export default function AddParticipantForm({
           {participants.map((participant) => (
             <div
               key={participant.id}
-              className="flex items-center justify-between gap-2 p-2 rounded hover:bg-gray-50 border"
+              className="flex flex-wrap items-center justify-between gap-2 p-2 rounded hover:bg-gray-50 border"
             >
               <div className="flex items-center gap-2 flex-1">
                 {participant.profileImage ? (
@@ -307,7 +307,7 @@ export default function AddParticipantForm({
             )}
 
             {/* Sélection du type */}
-            <div className="flex gap-2 border-b pb-2">
+            <div className="flex flex-wrap gap-2 border-b pb-2">
               <Button
                 variant={addType === "userTag" ? "default" : "outline"}
                 size="sm"

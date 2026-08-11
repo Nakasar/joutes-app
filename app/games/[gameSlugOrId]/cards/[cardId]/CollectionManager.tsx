@@ -517,7 +517,7 @@ export default function CollectionManager({
             entries.map((entry, i) => (
               <div
                 key={entry.id}
-                className="flex items-center justify-between p-3 gap-2"
+                className="flex flex-wrap items-center justify-between p-3 gap-2"
               >
                 <div className="flex flex-wrap items-center gap-2 text-sm">
                   <span className="text-muted-foreground">#{i + 1}</span>

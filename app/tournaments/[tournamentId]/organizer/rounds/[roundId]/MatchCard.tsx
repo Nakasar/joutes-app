@@ -104,7 +104,7 @@ export function MatchCard({
             );
           })}
 
-          <div className="mt-2.5 flex items-center justify-between gap-2">
+          <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
             <span
               className={cn(
                 "text-xs font-semibold",

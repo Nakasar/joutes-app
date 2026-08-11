@@ -698,7 +698,7 @@ export default function EventsCalendar({
       <Card className="overflow-hidden">
         <CardHeader className="gap-4">
           {/* Navigation mois : chevrons compacts + titre localisé */}
-          <div className="flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4">
             <Button
               size="icon"
               variant="outline"

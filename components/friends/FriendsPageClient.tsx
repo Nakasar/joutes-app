@@ -166,7 +166,7 @@ export default function FriendsPageClient() {
           <h2 className="text-xl font-semibold">{t("page.requestsTitle")}</h2>
           <div className="mt-4 space-y-3">
             {requests.map((request) => (
-              <div className="flex items-center justify-between rounded-lg border p-4" key={request.id}>
+              <div className="flex flex-wrap items-center justify-between rounded-lg border p-4 gap-2" key={request.id}>
                 <p className="font-medium">{displayNameFor(request.requester)}</p>
                 <div className="flex gap-2">
                   <Button size="sm" onClick={() => void handleAcceptRequest(request.id)}>
