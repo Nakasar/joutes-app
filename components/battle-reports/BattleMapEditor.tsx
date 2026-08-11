@@ -659,7 +659,7 @@ export default function BattleMapEditor({
           {/* Élément sélectionné */}
           {(selectedTerrain || selectedUnit) && (
             <div className="space-y-2 rounded-lg border p-3">
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm font-medium">
                   {selectedTerrain
                     ? BATTLE_MAP_SHAPE_LABELS[selectedTerrain.shape]

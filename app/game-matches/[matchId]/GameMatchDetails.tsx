@@ -405,8 +405,8 @@ export default function GameMatchDetails({
       <Card className="p-6">
         <div className="space-y-6">
           {/* En-tête avec jeu et actions */}
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <h1 className="text-2xl font-bold">{gameName}</h1>
                 {isCreator && (
@@ -428,7 +428,7 @@ export default function GameMatchDetails({
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {isCreator && (
                 <>
                   <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -655,7 +655,11 @@ export default function GameMatchDetails({
 
           {/* Liste des joueurs */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
+            {/* Les boutons de cette rangée portent `whitespace-nowrap shrink-0` :
+                ils ne rétrécissent pas, et sans `flex-wrap` ils poussaient la
+                page entière au-delà de l'écran d'un téléphone — c'est toute la
+                fiche qui s'en trouvait décalée, pas seulement cette ligne. */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-muted-foreground" />
                 <h2 className="text-lg font-semibold">
@@ -663,7 +667,7 @@ export default function GameMatchDetails({
                 </h2>
               </div>
               {isCreator && (
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Dialog
                     open={isQRCodeDialogOpen}
                     onOpenChange={setIsQRCodeDialogOpen}
@@ -823,7 +827,7 @@ export default function GameMatchDetails({
                     key={player.userId}
                     className="p-3 border rounded-lg bg-muted/50 space-y-2"
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant="secondary" className="text-sm">
                           {player.username}
@@ -850,7 +854,7 @@ export default function GameMatchDetails({
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         {/* Vote MVP pour les joueurs */}
                         {canVoteForThisPlayer && (
                           <Button
