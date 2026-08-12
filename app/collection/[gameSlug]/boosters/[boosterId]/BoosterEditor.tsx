@@ -44,6 +44,7 @@ import {
 import { getBoosterTypeOptions, normalizeBoosterType } from "@/lib/constants/booster-types";
 import { BOOSTER_NOTE_MAX_LENGTH } from "@/lib/constants/boosters";
 import { cardSearchText, parseCardSearch } from "@/lib/cards/search-query";
+import { buildSearchFields, keepFilterTokens } from "@/lib/cards/search-syntax";
 import {
   EMPTY_CRITERIA,
   serializeCardSearchCriteria,
@@ -127,6 +128,13 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
   const [selectedSet, setSelectedSet] = useState(initialBooster.setCode);
   const [results, setResults] = useState<SearchCard[]>([]);
   const [resultSetCodes, setResultSetCodes] = useState<string[]>([initialBooster.setCode]);
+  // Vocabulaire de la saisie : les attributs du jeu et les listes qu'il porte.
+  // Bâti ici plutôt que dans la barre, car l'ajout d'une carte s'en sert pour
+  // ne garder que les filtres.
+  const searchFields = useMemo(
+    () => buildSearchFields(facets, { setCodes: resultSetCodes, types: resultTypes, languages: resultLanguages }),
+    [facets, resultSetCodes, resultTypes, resultLanguages],
+  );
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -332,8 +340,10 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
         image: printing.image ?? card.image,
       },
     ]);
-    // Clear the search and return focus to it, ready for the next card.
-    setRawQuery("");
+    // Le nom cherché s'en va et la barre reprend le focus, prête pour la carte
+    // suivante ; les filtres tapés restent, eux : ils décrivent le booster qu'on
+    // est en train de saisir, pas la carte qu'on vient d'ajouter.
+    setRawQuery(keepFilterTokens(rawQuery, searchFields));
     requestAnimationFrame(() => searchRef.current?.focus());
     try {
       const res = await fetch(`/api/collection/boosters/${booster.id}/cards`, {
@@ -883,9 +893,7 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
             criteria={criteria}
             onCriteriaChange={setCriteria}
             facets={facets}
-            setCodes={resultSetCodes}
-            types={resultTypes}
-            languages={resultLanguages}
+            fields={searchFields}
             filtersUnavailable={filtersUnavailable}
             filtersPending={!facetsKnown}
             placeholder={t("boosters.searchPlaceholder")}

@@ -9,7 +9,7 @@ import {
   type CardFilterFacet,
   type CardSearchCriteria,
 } from "@/lib/cards/search-filters";
-import { buildSearchFields } from "@/lib/cards/search-syntax";
+import type { SearchField } from "@/lib/cards/search-syntax";
 import { CardFacetFilters } from "./CardFacetFilters";
 import { CardSearchInput } from "./CardSearchInput";
 
@@ -28,9 +28,7 @@ export function CardSearchToolbar({
   criteria,
   onCriteriaChange,
   facets,
-  setCodes,
-  types,
-  languages,
+  fields,
   filtersUnavailable = false,
   filtersPending = false,
   placeholder,
@@ -43,9 +41,8 @@ export function CardSearchToolbar({
   criteria: CardSearchCriteria;
   onCriteriaChange: (next: CardSearchCriteria) => void;
   facets: CardFilterFacet[];
-  setCodes: string[];
-  types: string[];
-  languages: string[];
+  /** Vocabulaire de la saisie, tiré des facettes et des listes du jeu. */
+  fields: SearchField[];
   filtersUnavailable?: boolean;
   /** Les facettes ne sont pas encore arrivées : on ne conclut rien d'une liste vide. */
   filtersPending?: boolean;
@@ -58,9 +55,6 @@ export function CardSearchToolbar({
   const t = useTranslations("Games");
   const [open, setOpen] = useState(false);
   const activeCount = countActiveFacetFilters(criteria);
-  // Le vocabulaire de la saisie vient du catalogue du jeu, comme les filtres :
-  // `domain:fury`, `energy<=3`, `set:OGN`… Rien n'est codé par jeu.
-  const fields = buildSearchFields(facets, { setCodes, types, languages });
 
   return (
     <div className="flex flex-col gap-2">

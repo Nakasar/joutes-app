@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cardSearchText, parseCardSearch } from "@/lib/cards/search-query";
+import { buildSearchFields, keepFilterTokens } from "@/lib/cards/search-syntax";
 import {
   EMPTY_CRITERIA,
   serializeCardSearchCriteria,
@@ -91,6 +92,13 @@ export default function PackEditor({ cube, pack, packLabel, initialCards, canEdi
   const [resultTypes, setResultTypes] = useState<string[]>([]);
   const [resultLanguages, setResultLanguages] = useState<string[]>([]);
   const [criteria, setCriteria] = useState<CardSearchCriteria>(EMPTY_CRITERIA);
+  // Vocabulaire de la saisie : les attributs du jeu et les listes qu'il porte.
+  // Bâti ici plutôt que dans la barre, car l'ajout d'une carte s'en sert pour
+  // ne garder que les filtres.
+  const searchFields = useMemo(
+    () => buildSearchFields(facets, { setCodes: resultSetCodes, types: resultTypes, languages: resultLanguages }),
+    [facets, resultSetCodes, resultTypes, resultLanguages],
+  );
   const [filtersUnavailable, setFiltersUnavailable] = useState(false);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -241,8 +249,10 @@ export default function PackEditor({ cube, pack, packLabel, initialCards, canEdi
       image: found.image,
     };
     void setQuantity(card, quantityOf(card.cardId) + 1);
-    // La recherche est vidée et reprend le focus, prête pour la carte suivante.
-    setRawQuery("");
+    // Le nom cherché s'en va et la barre reprend le focus, prête pour la carte
+    // suivante ; les filtres tapés restent, eux : ils décrivent le paquet qu'on
+    // est en train de composer, pas la carte qu'on vient d'ajouter.
+    setRawQuery(keepFilterTokens(rawQuery, searchFields));
     requestAnimationFrame(() => searchRef.current?.focus());
   };
 
@@ -468,9 +478,7 @@ export default function PackEditor({ cube, pack, packLabel, initialCards, canEdi
               criteria={criteria}
               onCriteriaChange={setCriteria}
               facets={facets}
-              setCodes={resultSetCodes}
-              types={resultTypes}
-              languages={resultLanguages}
+              fields={searchFields}
               filtersUnavailable={filtersUnavailable}
               filtersPending={!facetsKnown}
               placeholder={t("searchCardPlaceholder")}

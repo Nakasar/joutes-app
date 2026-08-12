@@ -96,5 +96,10 @@ panneau prendrait celle des résultats. Le bouton porte le nombre de filtres
 actifs : un panneau refermé ne laisse jamais croire à une recherche sans
 critère.
 
+Les filtres tiennent d'un ajout à l'autre : ceux du panneau parce qu'ils vivent
+dans l'éditeur, ceux tapés dans la barre parce que l'ajout n'en retire que le
+nom cherché (voir [CARD_SEARCH_SYNTAX.md](./CARD_SEARCH_SYNTAX.md)). Composer un
+paquet, c'est enchaîner les ajouts sous les mêmes critères.
+
 Ces écrans n'écrivent pas leurs critères dans l'URL — on n'y partage pas une
 recherche, on remplit un paquet.

@@ -488,3 +488,20 @@ export function suggestTokens(
     })
     .slice(0, limit);
 }
+
+/**
+ * La saisie réduite à ses seuls tokens, prête à recevoir la suite.
+ *
+ * Sert aux éditeurs de booster et de paquet de cube : après l'ajout d'une carte,
+ * le nom cherché n'a plus lieu d'être — on passe à la suivante — mais les
+ * filtres tapés décrivent ce qu'on est en train de composer et doivent tenir
+ * d'un ajout à l'autre. Vider la barre entière les emporterait avec le nom.
+ */
+export function keepFilterTokens(input: string, fields: SearchField[]): string {
+  const tokens = parseSearchSyntax(input, fields).tokens;
+  if (tokens.length === 0) {
+    return "";
+  }
+  // Espace final : la carte suivante se tape sans avoir à l'ajouter soi-même.
+  return `${tokens.map((token) => token.raw).join(" ")} `;
+}
