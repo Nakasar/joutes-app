@@ -114,4 +114,8 @@ propres à ces écrans :
   raccourci qui existait avant, et qu'on tape sans y penser ;
 - **les suggestions ne s'ouvrent qu'à la frappe**, pas à la prise de focus : à
   l'ouverture, les flèches doivent mener aux résultats, pas à une liste de
-  champs.
+  champs ;
+- **un ajout ne garde que les filtres** (`keepFilterTokens`) : le nom de la
+  carte ajoutée s'en va — on passe à la suivante — mais les tokens tapés
+  décrivent le paquet qu'on est en train de composer et tiennent d'un ajout à
+  l'autre. La barre repart avec une espace finale, prête pour le nom suivant.

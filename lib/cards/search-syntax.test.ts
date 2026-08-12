@@ -4,6 +4,7 @@ import {
   applyTokenSuggestion,
   buildSearchFields,
   currentWord,
+  keepFilterTokens,
   mergeSearchCriteria,
   parseSearchSyntax,
   removeSearchWord,
@@ -299,5 +300,31 @@ describe("suggestTokens", () => {
       field: "domain",
       value: "Calm",
     });
+  });
+});
+
+describe("keepFilterTokens", () => {
+  it("garde les filtres et laisse partir le nom cherché", () => {
+    // Le geste des éditeurs : la carte ajoutée, on cherche la suivante sans
+    // avoir à reposer les filtres.
+    assert.equal(keepFilterTokens("domain:fury energy<=3 deathknell", FIELDS), "domain:fury energy<=3 ");
+  });
+
+  it("rend une barre vide quand il n'y avait que du texte", () => {
+    assert.equal(keepFilterTokens("deathknell", FIELDS), "");
+    assert.equal(keepFilterTokens("", FIELDS), "");
+  });
+
+  it("garde les champs communs comme les attributs du jeu", () => {
+    assert.equal(keepFilterTokens('set:OGN type:"Battlefield Rune" rune', FIELDS), 'set:OGN type:"Battlefield Rune" ');
+  });
+
+  it("ne garde pas un champ reconnu à valeur inutilisable", () => {
+    // `domain:dragon` ne filtre rien : le garder ferait croire l'inverse.
+    assert.equal(keepFilterTokens("domain:dragon deathknell", FIELDS), "");
+  });
+
+  it("laisse la barre prête pour le mot suivant", () => {
+    assert.match(keepFilterTokens("domain:fury carte", FIELDS), /\s$/);
   });
 });
