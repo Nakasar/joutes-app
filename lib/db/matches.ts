@@ -313,24 +313,20 @@ export interface GetMatchesFilters {
   eventId?: string;
   phaseId?: string;
   playerUserIds?: string[];
+  /** Bornes sur la date de jeu, incluses. */
+  from?: Date;
+  to?: Date;
   page?: number;
   limit?: number;
 }
 
-export async function getMatches(filters: GetMatchesFilters = {}): Promise<Match[]> {
-  const requestedLimit = filters.limit;
-  const requestedPage = filters.page;
-
-  const limit =
-    typeof requestedLimit === "number" && Number.isFinite(requestedLimit)
-      ? Math.max(1, Math.floor(requestedLimit))
-      : undefined;
-  const page =
-    typeof requestedPage === "number" && Number.isFinite(requestedPage)
-      ? Math.max(1, Math.floor(requestedPage))
-      : 1;
-  const skip = limit ? (page - 1) * limit : 0;
-
+/**
+ * Le filtre Mongo d'une recherche de parties, isolé de la pagination : la même
+ * question sert à lire une page et à compter le tout, et deux copies du filtre
+ * finiraient par diverger — un compte qui ne correspondrait plus à la liste
+ * qu'il chiffre.
+ */
+function buildMatchQuery(filters: GetMatchesFilters): Record<string, unknown> {
   const matchQuery: Record<string, unknown> = {};
   
   // Filtrer par type de match
@@ -381,7 +377,42 @@ export async function getMatches(filters: GetMatchesFilters = {}): Promise<Match
       { player2Id: { $in: filters.playerUserIds } },
     ];
   }
-  
+
+  // Bornes de date : `to` désigne un jour entier, borne incluse — l'appelant
+  // passe la fin de journée, on ne la devine pas ici.
+  if (filters.from || filters.to) {
+    matchQuery.playedAt = {
+      ...(filters.from ? { $gte: filters.from } : {}),
+      ...(filters.to ? { $lte: filters.to } : {}),
+    };
+  }
+
+  return matchQuery;
+}
+
+/** Nombre de parties répondant au filtre, pagination mise à part. */
+export async function countMatches(filters: GetMatchesFilters = {}): Promise<number> {
+  return db
+    .collection<MatchDocument>(COLLECTION_NAME)
+    .countDocuments(buildMatchQuery(filters));
+}
+
+export async function getMatches(filters: GetMatchesFilters = {}): Promise<Match[]> {
+  const requestedLimit = filters.limit;
+  const requestedPage = filters.page;
+
+  const limit =
+    typeof requestedLimit === "number" && Number.isFinite(requestedLimit)
+      ? Math.max(1, Math.floor(requestedLimit))
+      : undefined;
+  const page =
+    typeof requestedPage === "number" && Number.isFinite(requestedPage)
+      ? Math.max(1, Math.floor(requestedPage))
+      : 1;
+  const skip = limit ? (page - 1) * limit : 0;
+
+  const matchQuery = buildMatchQuery(filters);
+
   const matches = await db
     .collection<MatchDocument>(COLLECTION_NAME)
     .aggregate([

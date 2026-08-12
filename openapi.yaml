@@ -1597,6 +1597,96 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
 
   # ---------------------------------------------------------------- Game Matches
+  /game-matches:
+    get:
+      tags: [Game Matches]
+      summary: The caller's casual matches, most recent first
+      description: >
+        "Their" matches in the broad sense: the ones they created as well as the
+        ones someone else signed them up for. The battle report is trimmed to its
+        scenario here — army lists and the game table are only served on the
+        match sheet.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 30 } }
+        - { name: gameId, in: query, description: "Game ObjectId.", schema: { type: string } }
+        - { name: from, in: query, description: "Played on or after this day (`YYYY-MM-DD`).", schema: { type: string } }
+        - { name: to, in: query, description: "Played on or before this day, that day included.", schema: { type: string } }
+      responses:
+        "200":
+          description: Matches.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  matches: { type: array, items: { $ref: "#/components/schemas/GameMatchSummary" } }
+                  total: { type: integer }
+                  page: { type: integer }
+                  limit: { type: integer }
+                  totalPages: { type: integer }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /game-matches/{matchId}:
+    parameters:
+      - { name: matchId, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Game Matches]
+      summary: One match, battle report included
+      description: "Restricted to those who were there: its creator and its players."
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      responses:
+        "200":
+          description: Match.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GameMatchDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /game-matches/{matchId}/battle-map:
+    parameters:
+      - { name: matchId, in: path, required: true, schema: { type: string } }
+    put:
+      tags: [Game Matches]
+      summary: Write the game table of a battle report
+      description: >
+        Written as a whole, unlike the scenario and the notes: the pieces of the
+        table hold one another, and a terrain moved without its instant means
+        nothing. Creator only — the table is a single drawing, and two players
+        moving tokens in the same instant would reposition the whole game rather
+        than overwrite one field. What sticks out is brought back, not refused:
+        tokens are clamped onto the board and terrain, tokens and instants are
+        capped, so a report never becomes unsaveable because its table shrank.
+        The normalized table is returned.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [map]
+              properties: { map: { $ref: "#/components/schemas/BattleMap" } }
+      responses:
+        "200":
+          description: Table written.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [map]
+                properties: { map: { $ref: "#/components/schemas/BattleMap" } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /game-matches/{matchId}/join:
     parameters:
       - { name: matchId, in: path, required: true, schema: { type: string } }
@@ -1615,6 +1705,78 @@ paths:
             Redirect to `/login?callbackUrl=...` (not authenticated), or to
             `/game-matches/{matchId}?message=...` / `/game-matches?error=...`
             depending on outcome.
+    post:
+      tags: [Game Matches]
+      summary: The same move, in JSON
+      description: >
+        For clients that scan the invite QR code without a browser. Joining twice
+        is not an error — the QR code stays on screen and gets scanned again:
+        `joined` is then `false`, and the match is returned either way.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      responses:
+        "200":
+          description: Joined, or already a player.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  joined: { type: boolean }
+                  match: { $ref: "#/components/schemas/GameMatchDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /tournaments/playing:
+    get:
+      tags: [Tournaments]
+      summary: Tournaments the caller is registered in
+      description: >
+        Unlike the sync-key endpoint, no secret is required: a session (or API
+        key) is enough. **Two response shapes, deliberately.** With no query
+        parameter the full list is returned as a bare array, the way it always
+        was, for clients already installed. As soon as a page or a filter is
+        asked for, the response becomes a paginated envelope. In that mode
+        tournaments **in progress come first** — they are the only thing anyone
+        looks for on the day, and a pagination that buried them would miss its
+        point. A date filter only keeps tournaments that carry a date.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { name: search, in: query, description: "Case-insensitive match on the tournament name.", schema: { type: string } }
+        - { name: status, in: query, description: "Comma-separated statuses to keep. Absent = all.", schema: { type: string, example: "draft,in-progress" } }
+        - { name: gameId, in: query, schema: { type: string } }
+        - { name: from, in: query, description: "Starts on or after this day (`YYYY-MM-DD`)." , schema: { type: string } }
+        - { name: to, in: query, description: "Starts on or before this day, that day included.", schema: { type: string } }
+      responses:
+        "200":
+          description: Tournaments, as an array (no parameters) or a paginated envelope.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: array
+                    items:
+                      type: object
+                      properties:
+                        tournament: { type: object }
+                        player: { type: object }
+                  - type: object
+                    properties:
+                      tournaments:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            tournament: { type: object }
+                            player: { type: object }
+                      total: { type: integer }
+                      page: { type: integer }
+                      limit: { type: integer }
+                      totalPages: { type: integer }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
 
   # ---------------------------------------------------------------- Games
   /games:
@@ -3510,6 +3672,16 @@ components:
         external AI call (`scanner:ai`, `quizzes:ai-import`) are always granted
         separately and never implied by the matching content permission.
         `quizzes:update-all` also honours the legacy `quizzes:update` name.
+    apiKeyAuth:
+      type: http
+      scheme: bearer
+      description: >
+        Personal API key (`jts_...`), sent as `Authorization: Bearer jts_...`.
+        Every operation resolved through `authenticateApiRequest` accepts it in
+        place of the session cookie — that is most of the user-scoped API, even
+        where only `sessionAuth` is listed below: the schemes were added later
+        than those operations were written, and only the ones documented since
+        carry both.
     cronSecret:
       type: http
       scheme: bearer
@@ -4360,6 +4532,109 @@ components:
         note: { type: string, nullable: true }
         borrowedBy: { type: string, nullable: true }
         detach: { type: boolean, enum: [true], description: "Take this copy out of the box that brought it; it will survive that box's removal." }
+
+    GameMatchPlayer:
+      type: object
+      properties:
+        id: { type: string }
+        username: { type: string }
+        displayName: { type: string }
+        discriminator: { type: string }
+        isGuest: { type: boolean, description: "Participant without an account: their id opens no access." }
+        isWinner: { type: boolean }
+
+    GameMatchSummary:
+      type: object
+      properties:
+        id: { type: string }
+        playedAt: { type: string, format: date-time }
+        createdBy: { type: string }
+        game: { type: object, nullable: true, properties: { id: { type: string }, name: { type: string }, slug: { type: string, nullable: true } } }
+        lair: { type: object, nullable: true, properties: { id: { type: string }, name: { type: string } } }
+        players: { type: array, items: { $ref: "#/components/schemas/GameMatchPlayer" } }
+        winnerIds: { type: array, items: { type: string } }
+        battleReport:
+          type: object
+          description: "Present = the match is recorded as a battle report. Trimmed to its scenario in lists."
+          properties: { scenario: { type: string } }
+
+    BattleReportArmyUnit:
+      type: object
+      properties:
+        productId: { type: string, description: "Catalogue miniature; absent for a free-form entry." }
+        name: { type: string, description: "Denormalized: it survives the product's disappearance." }
+        image: { type: string }
+        quantity: { type: integer }
+
+    BattleReportArmy:
+      type: object
+      properties:
+        name: { type: string }
+        units: { type: array, items: { $ref: "#/components/schemas/BattleReportArmyUnit" } }
+
+    BattleMapTerrain:
+      type: object
+      description: "A piece of terrain. Everything is in centimetres, `x`/`y` being the centre."
+      properties:
+        id: { type: string }
+        shape: { type: string, enum: [circle, rectangle, triangle] }
+        name: { type: string }
+        color: { type: string, example: "#000000" }
+        x: { type: number }
+        y: { type: number }
+        width: { type: number }
+        height: { type: number }
+
+    BattleMapUnitToken:
+      type: object
+      description: "A unit token: always round, in its player's colour, tied to a line of their army list."
+      properties:
+        id: { type: string }
+        playerId: { type: string }
+        unitName: { type: string }
+        productId: { type: string }
+        image: { type: string }
+        x: { type: number }
+        y: { type: number }
+        diameter: { type: number, description: "Base diameter, in centimetres." }
+
+    BattleMapSnapshot:
+      type: object
+      description: "One instant of the game — « start of play », « end of turn 2 »."
+      properties:
+        id: { type: string }
+        label: { type: string }
+        units: { type: array, items: { $ref: "#/components/schemas/BattleMapUnitToken" } }
+
+    BattleMap:
+      type: object
+      description: >
+        The table seen from above. Terrain belongs to the table, units to the
+        instant: terrain does not move during a game, and copying it into every
+        instant would mean correcting it everywhere.
+      properties:
+        table:
+          type: object
+          description: "Board size, in centimetres."
+          properties: { width: { type: number }, height: { type: number } }
+        terrain: { type: array, items: { $ref: "#/components/schemas/BattleMapTerrain" } }
+        snapshots: { type: array, items: { $ref: "#/components/schemas/BattleMapSnapshot" } }
+        playerColors: { type: object, additionalProperties: { type: string } }
+
+    BattleReport:
+      type: object
+      properties:
+        scenario: { type: string }
+        notes: { type: string }
+        armies: { type: object, additionalProperties: { $ref: "#/components/schemas/BattleReportArmy" } }
+        map: { $ref: "#/components/schemas/BattleMap" }
+
+    GameMatchDetail:
+      allOf:
+        - $ref: "#/components/schemas/GameMatchSummary"
+        - type: object
+          properties:
+            battleReport: { $ref: "#/components/schemas/BattleReport" }
 
     SellList:
       type: object

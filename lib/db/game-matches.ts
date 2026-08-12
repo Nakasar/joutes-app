@@ -1,6 +1,7 @@
 import { GameMatch } from "@/lib/types/GameMatch";
 import { BattleMap, BattleReportArmy, GameMatchGuest, GameTypeMatch } from "@/lib/types/Match";
 import {
+  countMatches,
   createMatch,
   getMatchById,
   getMatches,
@@ -77,6 +78,30 @@ export async function getGameMatchesByUser(userId: string, limit?: number): Prom
   });
   
   return matches.filter(m => m.matchType === 'game').map(m => toGameMatch(m as GameTypeMatch));
+}
+
+/**
+ * Une page des parties d'un compte, et le total qui va avec.
+ *
+ * Le total n'est pas un ornement : sans lui, un client ne peut pas savoir s'il
+ * a atteint le bout de la liste autrement qu'en tombant sur une page vide —
+ * une requête de plus, systématiquement.
+ */
+export async function getGameMatchesPageByUser(filters: {
+  userId: string;
+  page?: number;
+  limit?: number;
+  gameId?: string;
+  from?: Date;
+  to?: Date;
+}): Promise<{ matches: GameMatch[]; total: number }> {
+  const query = { matchType: 'game' as const, ...filters };
+  const [matches, total] = await Promise.all([getMatches(query), countMatches(query)]);
+
+  return {
+    matches: matches.filter(m => m.matchType === 'game').map(m => toGameMatch(m as GameTypeMatch)),
+    total,
+  };
 }
 
 export async function updateGameMatch(id: string, gameMatch: Partial<Omit<GameMatch, "id" | "createdAt" | "createdBy" | "players">>): Promise<boolean> {

@@ -49,6 +49,7 @@ import {
   TournamentRoundStanding,
   TournamentScenario,
   TournamentScoringMethod,
+  TournamentStatus,
   TournamentSwissPairing,
 } from "@/lib/types/Tournament";
 import {
@@ -812,6 +813,91 @@ export async function listPlayerTournamentsForUser(
     })
     .filter((entry): entry is { tournament: Tournament; player: TournamentPlayer } => entry !== null)
     .sort((a, b) => b.tournament.createdAt.getTime() - a.tournament.createdAt.getTime());
+}
+
+/**
+ * Une page des tournois d'un joueur, filtrée et comptée.
+ *
+ * Pendant paginé de `listPlayerTournamentsForUser`, pour les clients qui ne
+ * peuvent pas tout charger — l'application mobile en tête, dont la liste
+ * s'allonge à chaque tournoi joué.
+ *
+ * L'ordre place **les tournois en cours d'abord** : ils sont la seule chose
+ * qu'on cherche le jour même, et une pagination qui les enterrerait en page
+ * trois manquerait son but. Viennent ensuite les autres, du plus proche au plus
+ * ancien.
+ *
+ * Un filtre de dates ne retient que les tournois qui en portent une
+ * (`startsAt`) : un tournoi sans date ne peut pas être placé dans le temps, et
+ * l'inclure au hasard mentirait autant que l'exclure — l'exclure, au moins, se
+ * comprend.
+ */
+export async function listPlayerTournamentsPageForUser(
+  userId: string,
+  options: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    statuses?: TournamentStatus[];
+    gameId?: string;
+    from?: Date;
+    to?: Date;
+  } = {}
+): Promise<{ entries: { tournament: Tournament; player: TournamentPlayer }[]; total: number }> {
+  const playerDocs = await db.collection<TournamentPlayerDb>(PLAYERS).find({ userId }).toArray();
+  if (playerDocs.length === 0) return { entries: [], total: 0 };
+
+  const playersByTournament = new Map(
+    playerDocs.map((doc) => [doc.tournamentId.toString(), toPlayer(doc)])
+  );
+
+  const query: Record<string, unknown> = {
+    _id: { $in: playerDocs.map((doc) => doc.tournamentId) },
+  };
+  if (options.search) {
+    // Recherche par nom, insensible à la casse. Les caractères spéciaux sont
+    // échappés : un joueur qui tape « (final) » cherche ce texte, pas un groupe.
+    query.name = { $regex: options.search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" };
+  }
+  if (options.statuses && options.statuses.length > 0) {
+    query.status = { $in: options.statuses };
+  }
+  if (options.gameId) {
+    query.gameId = options.gameId;
+  }
+  if (options.from || options.to) {
+    query.startsAt = {
+      ...(options.from ? { $gte: options.from } : {}),
+      ...(options.to ? { $lte: options.to } : {}),
+    };
+  }
+
+  const limit = Math.max(1, Math.floor(options.limit ?? 20));
+  const page = Math.max(1, Math.floor(options.page ?? 1));
+
+  const [docs, total] = await Promise.all([
+    db
+      .collection<TournamentDb>(TOURNAMENTS)
+      .aggregate<WithId<TournamentDb>>([
+        { $match: query },
+        { $addFields: { livePriority: { $cond: [{ $eq: ["$status", "in-progress"] }, 0, 1] } } },
+        { $sort: { livePriority: 1, startsAt: -1, createdAt: -1 } },
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+        { $unset: "livePriority" },
+      ])
+      .toArray(),
+    db.collection<TournamentDb>(TOURNAMENTS).countDocuments(query),
+  ]);
+
+  const entries = docs
+    .map((doc) => {
+      const player = playersByTournament.get(doc._id.toString());
+      return player ? { tournament: toTournament(doc), player } : null;
+    })
+    .filter((entry): entry is { tournament: Tournament; player: TournamentPlayer } => entry !== null);
+
+  return { entries, total };
 }
 
 async function isTournamentPlayer(tournamentId: ObjectId, userId: string): Promise<boolean> {
