@@ -500,6 +500,7 @@ export async function createTournament(data: {
   name: string;
   eventId?: string;
   gameId?: string;
+  customGameName?: string;
   location?: string;
   startsAt?: Date;
   capacity?: number;
@@ -514,6 +515,9 @@ export async function createTournament(data: {
       name: data.name,
       eventId: data.eventId,
       gameId: data.gameId,
+      // Un jeu du catalogue prime toujours sur un nom saisi à la main : les
+      // deux renseignés, le tournoi afficherait deux jeux différents.
+      customGameName: data.gameId ? undefined : data.customGameName,
       location: data.location,
       startsAt: data.startsAt,
       capacity: data.capacity,
@@ -1120,6 +1124,8 @@ export async function updateTournament(
     currentPhaseId?: string | null;
     // null = retirer le jeu associé.
     gameId?: string | null;
+    // null = retirer le nom de jeu saisi à la main.
+    customGameName?: string | null;
     // null = détacher le tournoi de son événement.
     eventId?: string | null;
     // Informations pratiques ; null retire la valeur.
@@ -1148,6 +1154,15 @@ export async function updateTournament(
     unset.gameId = "";
   } else if (updates.gameId !== undefined) {
     set.gameId = updates.gameId;
+    // Choisir un jeu du catalogue efface le nom saisi à la main : les deux
+    // ensemble feraient afficher deux jeux différents pour le même tournoi.
+    unset.customGameName = "";
+  }
+  if (updates.customGameName === null) {
+    unset.customGameName = "";
+  } else if (updates.customGameName !== undefined && set.gameId === undefined) {
+    set.customGameName = updates.customGameName;
+    delete unset.customGameName;
   }
   if (updates.eventId === null) {
     unset.eventId = "";

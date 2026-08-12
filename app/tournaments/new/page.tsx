@@ -4,7 +4,8 @@ import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { getAllGames } from "@/lib/db/games";
-import { NewTournamentForm } from "./NewTournamentForm";
+import { defaultPresetForGameSlug } from "@/lib/tournaments/game-presets";
+import { CreateTournamentWizard, type WizardGame } from "./CreateTournamentWizard";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Tournaments");
@@ -19,17 +20,30 @@ export default async function NewTournamentPage() {
     redirect("/login");
   }
 
-  const t = await getTranslations("Tournaments");
   const locale = await getLocale();
 
-  const games = (await getAllGames())
-    .map((game) => ({ id: game.id, name: game.name }))
+  // Les presets sont résolus ici, et non dans le tunnel : ils vivent à côté des
+  // types de tournoi, dont le module tire des dépendances serveur.
+  const games: WizardGame[] = (await getAllGames())
+    .map((game) => {
+      const preset = defaultPresetForGameSlug(game.slug);
+      return {
+        id: game.id,
+        name: game.name,
+        type: game.type,
+        icon: game.images?.icon ?? game.icon,
+        ...(preset && {
+          phaseDefaults: {
+            statsPresetKey: preset.key,
+            fixedScoring: preset.defaults.fixedScoring,
+            swissPairing: preset.defaults.swissPairing,
+            resultMode: preset.defaults.resultMode,
+            requireMatchStats: preset.defaults.requireStats,
+          },
+        }),
+      };
+    })
     .sort((a, b) => a.name.localeCompare(b.name, locale));
 
-  return (
-    <div className="p-8 max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">{t("new.title")}</h1>
-      <NewTournamentForm games={games} />
-    </div>
-  );
+  return <CreateTournamentWizard games={games} />;
 }

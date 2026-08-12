@@ -106,6 +106,10 @@ export type Tournament = {
   name: string;
   eventId?: string;
   gameId?: string;
+  // Jeu saisi à la main, pour un jeu absent du catalogue. Il ne sert qu'à
+  // nommer le jeu joué : sans fiche de jeu, ni preset de format ni analyse de
+  // liste ne s'appliquent. Ignoré dès que `gameId` est renseigné.
+  customGameName?: string;
   status: TournamentStatus;
   currentPhaseId?: string;
   // Code court (9 caractères A-Z0-9) permettant de rejoindre le tournoi via

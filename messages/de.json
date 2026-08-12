@@ -2106,19 +2106,128 @@
     },
     "new": {
       "title": "Turnier erstellen",
-      "cardTitle": "Neues Turnier",
-      "nameLabel": "Turniername",
       "namePlaceholder": "z. B. Wöchentliches Riftbound-Turnier",
       "nameRequired": "Der Turniername ist erforderlich.",
       "createError": "Fehler beim Erstellen des Turniers",
-      "gameLabel": "Spiel (optional)",
-      "noGame": "Kein Spiel",
-      "selfReportingLabel": "Ergebnismeldung durch Spieler",
-      "selfReportingHelp": "Spieler können die Ergebnisse ihrer Matches selbst eintragen.",
-      "confirmationLabel": "Bestätigung durch den Gegner",
-      "confirmationHelp": "Ein von einem Spieler gemeldetes Ergebnis muss vom Gegner bestätigt werden.",
-      "creating": "Wird erstellt...",
-      "createButton": "Turnier erstellen"
+      "creating": "Wird erstellt..."
+    },
+    "wizard": {
+      "title": "Neues Turnier",
+      "advanced": "Erweiterte Konfiguration",
+      "continue": "Weiter",
+      "finish": "Turnier erstellen",
+      "progress": "{percent} %",
+      "stepNumber": "Schritt {number}",
+      "setupError": "Fehler beim Einrichten des Turniers",
+      "setupErrorHint": "Das Turnier wurde erstellt, aber seine Konfiguration konnte nicht vollständig angewendet werden ({error}). Sie können sie im Organisatorenportal abschließen.",
+      "steps": {
+        "name": "Name",
+        "game": "Spiel",
+        "format": "Format",
+        "structure": "Struktur",
+        "bestOf": "Matches",
+        "form": "Anmeldung",
+        "done": "Fertig"
+      },
+      "gameTypes": {
+        "TCG": "TCG",
+        "BoardGame": "Brettspiel",
+        "VideoGame": "Videospiel",
+        "Miniatures": "Tabletop",
+        "Other": "Sonstiges"
+      },
+      "name": {
+        "title": "Wie heißt dieses Turnier?",
+        "description": "Den Namen sehen die Spieler beim Beitreten. Sie können ihn später ändern.",
+        "enterHint": "oder Eingabetaste drücken"
+      },
+      "game": {
+        "title": "Welches Spiel wird gespielt?",
+        "description": "Das Spiel bestimmt, welche Listen bei der Anmeldung verlangt werden, welche Wertungsvorlagen angeboten werden und wie entschieden wird.",
+        "searchPlaceholder": "Spiel suchen…",
+        "customPlaceholder": "Oder eigenes Spiel eingeben",
+        "noResult": "Kein Spiel passt zu dieser Suche. Geben Sie den Namen unten ein."
+      },
+      "format": {
+        "title": "Wie ist das Turnier aufgebaut?",
+        "description": "Jedes Format erzeugt seine Runden anders. Weitere Phasen können Sie danach hinzufügen."
+      },
+      "formats": {
+        "swiss": {
+          "name": "Schweizer Runden",
+          "description": "Alle spielen jede Runde, gegen einen Gegner mit gleicher Punktzahl."
+        },
+        "elimination": {
+          "name": "K.-o.-Runde",
+          "description": "Ein Baum: nur die Sieger kommen in die nächste Runde."
+        },
+        "mixed": {
+          "name": "Schweizer Runden + K.-o.",
+          "description": "Schweizer Runden, dann ein Top Cut, der den K.-o.-Baum speist."
+        },
+        "timer": {
+          "name": "Zeitmessung",
+          "description": "Wertung nach erzielter Zeit, ohne Gegnerpaarung."
+        },
+        "free": {
+          "name": "Frei",
+          "description": "Keine automatische Erzeugung: Sie stellen die Matches selbst zusammen."
+        }
+      },
+      "structure": {
+        "roundsTitle": "Wie viele Runden?",
+        "roundsDescription": "Lassen Sie „Auto“ stehen, um die Rundenzahl beim Start anhand der Anmeldungen festzulegen.",
+        "bracketTitle": "Wie groß ist der Baum?",
+        "bracketDescription": "Die Zahl der Spieler, die in den K.-o.-Baum einziehen.",
+        "roundsHint": "Runden",
+        "playersHint": "Spieler",
+        "auto": "Auto",
+        "autoHint": "nach Anmeldungen",
+        "topCutLabel": "Top Cut beim Einzug in den Baum",
+        "topCutOption": "Top {count}"
+      },
+      "bestOf": {
+        "title": "Match-Format",
+        "description": "Anzahl der Spiele in einem Match.",
+        "optionName": "Best of {count}",
+        "option1Description": "Ein Spiel entscheidet das Match. Kurze Runden.",
+        "option3Description": "Zwei Spielsiege nötig. Das Format offizieller Turniere."
+      },
+      "form": {
+        "title": "Anmeldeformular",
+        "hintTcg": "Dieses Spiel ist ein TCG: Spieler können bei der Anmeldung ihre Deckliste abgeben.",
+        "hintMiniatures": "Dieses Spiel ist ein Tabletop-Spiel: Spieler können bei der Anmeldung ihre Armeeliste abgeben.",
+        "deckOn": "Decklisten erfassen",
+        "armyOn": "Armeelisten erfassen",
+        "listsOnDescription": "Dem Anmeldeformular wird eine Frage hinzugefügt; die Schiedsrichter können die Listen einsehen.",
+        "listsOff": "Keine Liste",
+        "listsOffDescription": "Spieler melden sich nur mit ihrem Namen an.",
+        "deckFieldLabel": "Deckliste",
+        "armyFieldLabel": "Armeeliste"
+      },
+      "phaseNames": {
+        "swiss": "Schweizer Runden",
+        "elimination": "K.-o.-Runde",
+        "topCut": "Top Cut",
+        "timer": "Zeitwertung",
+        "free": "Freie Phase"
+      },
+      "done": {
+        "eyebrow": "Bereit",
+        "title": "{name} ist erstellt",
+        "description": "Lassen Sie diesen QR-Code scannen oder diktieren Sie den Teilnahmecode: die Spieler treten über ihr Telefon bei.",
+        "joinCodeLabel": "Teilnahmecode",
+        "summary": {
+          "game": "Spiel",
+          "format": "Format",
+          "bestOf": "Matches",
+          "lists": "Listen"
+        },
+        "listsAsked": "Bei der Anmeldung verlangt",
+        "listsNotAsked": "Nicht verlangt",
+        "open": "Turnier öffnen",
+        "backToList": "Meine Turniere"
+      }
     },
     "join": {
       "invalidLink": "Ungültiger Synchronisierungslink.",
@@ -2220,6 +2329,7 @@
       "statusLabel": "Turnierstatus",
       "gameLabel": "Spiel (optional)",
       "noGame": "Kein Spiel",
+      "customGamePlaceholder": "Oder eigenes Spiel eingeben",
       "unknownGame": "Unbekanntes Spiel",
       "selfReportingLabel": "Ergebnismeldung durch Spieler",
       "selfReportingHint": "Erlaubt Spielern, die Ergebnisse ihrer Matches selbst einzutragen.",

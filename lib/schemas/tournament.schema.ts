@@ -51,6 +51,8 @@ export const createTournamentSchema = z.object({
   name: z.string().min(1, "Le nom du tournoi est requis").max(200),
   eventId: z.string().optional(),
   gameId: z.string().optional(),
+  // Jeu hors catalogue, saisi à la main. Sans effet si `gameId` est fourni.
+  customGameName: z.string().min(1).max(200).optional(),
   ...tournamentDetailsShape,
   settings: z
     .object({
@@ -66,6 +68,8 @@ export const updateTournamentSchema = z.object({
   status: z.enum(["draft", "in-progress", "completed"]).optional(),
   // null = retirer le jeu associé au tournoi (la chaîne vide est refusée).
   gameId: z.string().min(1).nullable().optional(),
+  // null = retirer le nom de jeu saisi à la main.
+  customGameName: z.string().min(1).max(200).nullable().optional(),
   // null = détacher le tournoi de son événement (la chaîne vide est refusée).
   eventId: z.string().min(1).nullable().optional(),
   currentPhaseId: z.string().nullable().optional(),
