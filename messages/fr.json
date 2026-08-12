@@ -440,7 +440,8 @@
           "densityBigger": "Agrandir les vignettes",
           "min": "{field} minimum",
           "max": "{field} maximum",
-          "clear": "Effacer les filtres",
+          "none": "Ce jeu ne déclare encore aucun attribut à filtrer.",
+      "clear": "Effacer les filtres",
           "unavailable": "Ces filtres ne sont pas encore actifs sur ce jeu : un administrateur doit relancer « Mettre à jour l'index ». Les résultats ci-dessous les ignorent."
         },
         "pagination": {
@@ -1634,7 +1635,7 @@
           "emptyBooster": "Ce booster est vide. Recherchez des cartes à ajouter.",
           "addCards": "Ajouter des cartes",
           "searchPlaceholder": "Rechercher une carte…",
-          "searchHint": "Astuce : « e:OGN » filtre l'extension, « cn:001 » filtre le numéro.",
+          "searchHint": "Astuce : « e:OGN » filtre l'extension, « cn:001 » le numéro, et les attributs du jeu s'écrivent « domain:fury », « energy<=3 ».",
           "noResults": "Aucune carte trouvée.",
           "addCard": "Ajouter {name}",
           "foil": "Foil",
@@ -3361,7 +3362,7 @@
     "addCard": "Ajouter {name}",
     "filterBySet": "Filtrer par extension",
     "allSets": "Toutes les extensions",
-    "searchHint": "Astuce : « e:OGN » filtre l'extension, « cn:001 » filtre le numéro.",
+    "searchHint": "Astuce : « e:OGN » filtre l'extension, « cn:001 » le numéro, et les attributs du jeu s'écrivent « domain:fury », « energy<=3 ».",
     "previousPage": "Précédent",
     "nextPage": "Suivant",
     "pageOf": "Page {page} sur {totalPages}"

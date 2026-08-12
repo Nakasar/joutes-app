@@ -4,9 +4,14 @@ import {
   buildFacetFilters,
   buildSortExpressions,
   countActiveFacetFilters,
+  EMPTY_CRITERIA,
   parseCardSearchCriteria,
   serializeCardSearchCriteria,
   sortableKeys,
+  withRangeBound,
+  withToggledValue,
+  withoutFacetFilters,
+  withoutRange,
   type CardFilterFacet,
 } from "./search-filters";
 
@@ -178,5 +183,62 @@ describe("countActiveFacetFilters", () => {
 
     assert.equal(countActiveFacetFilters(criteria), 2);
     assert.equal(countActiveFacetFilters(parseCardSearchCriteria(params("sort=name"), facets)), 0);
+  });
+});
+
+describe("withRangeBound", () => {
+  it("pose une borne sans toucher à l'autre", () => {
+    const withMin = withRangeBound(EMPTY_CRITERIA, "energy", "min", "2");
+    const both = withRangeBound(withMin, "energy", "max", "5");
+
+    assert.deepEqual(both.ranges, { energy: { min: 2, max: 5 } });
+  });
+
+  it("retire la borne qu'on vide, et l'attribut qui n'en a plus", () => {
+    const both = withRangeBound(withRangeBound(EMPTY_CRITERIA, "energy", "min", "2"), "energy", "max", "5");
+
+    assert.deepEqual(withRangeBound(both, "energy", "max", "").ranges, { energy: { min: 2 } });
+    assert.deepEqual(withRangeBound(withRangeBound(both, "energy", "max", ""), "energy", "min", "").ranges, {});
+  });
+
+  it("ignore une saisie qui n'est pas un nombre", () => {
+    const criteria = withRangeBound(EMPTY_CRITERIA, "energy", "min", "beaucoup");
+
+    assert.deepEqual(criteria.ranges, {});
+  });
+
+  it("ne modifie pas les critères reçus", () => {
+    const before = withRangeBound(EMPTY_CRITERIA, "energy", "min", "2");
+    withRangeBound(before, "energy", "max", "5");
+
+    assert.deepEqual(before.ranges, { energy: { min: 2 } });
+  });
+});
+
+describe("withToggledValue", () => {
+  it("coche puis décoche, et laisse l'attribut vide de côté", () => {
+    const one = withToggledValue(EMPTY_CRITERIA, "domain", "Fury");
+    const two = withToggledValue(one, "domain", "Calm");
+
+    assert.deepEqual(two.values, { domain: ["Fury", "Calm"] });
+    assert.deepEqual(withToggledValue(two, "domain", "Fury").values, { domain: ["Calm"] });
+    assert.deepEqual(withToggledValue(one, "domain", "Fury").values, {});
+  });
+});
+
+describe("withoutRange et withoutFacetFilters", () => {
+  it("retire un attribut numérique, bornes comprises", () => {
+    const criteria = parseCardSearchCriteria(params("min_energy=2&max_energy=5&in_domain=Fury"), facets);
+
+    assert.deepEqual(withoutRange(criteria, "energy").ranges, {});
+    assert.deepEqual(withoutRange(criteria, "energy").values, { domain: ["Fury"] });
+  });
+
+  it("vide les filtres mais garde le tri, qui n'en est pas un", () => {
+    const criteria = parseCardSearchCriteria(params("min_energy=2&in_domain=Fury&sort=might:desc"), facets);
+    const cleared = withoutFacetFilters(criteria);
+
+    assert.equal(countActiveFacetFilters(cleared), 0);
+    assert.deepEqual(cleared.sort, { key: "might", direction: "desc" });
   });
 });

@@ -17,7 +17,7 @@ import { useTranslations } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
 import AddToWishlistButton from "@/components/AddToWishlistButton";
-import { Check, LayoutGrid, Link2, List, Minus, Plus, Search, SlidersHorizontal, X } from "lucide-react";
+import { LayoutGrid, Link2, List, Minus, Plus, SlidersHorizontal, X } from "lucide-react";
 import type { CardPrinting } from "@/lib/types/card";
 import {
   EMPTY_CRITERIA,
@@ -25,18 +25,19 @@ import {
   parseCardSearchCriteria,
   serializeCardSearchCriteria,
   sortableKeys,
+  withToggledValue,
+  withoutRange,
   type CardFilterFacet,
   type CardSearchCriteria,
 } from "@/lib/cards/search-filters";
 import {
-  applyTokenSuggestion,
   buildSearchFields,
   currentWord,
   parseSearchSyntax,
   removeSearchWord,
-  suggestTokens,
-  type SuggestionHint,
 } from "@/lib/cards/search-syntax";
+import { CardFacetFilters, FilterSection, facetLabel } from "@/components/cards/CardFacetFilters";
+import { CardSearchInput } from "@/components/cards/CardSearchInput";
 
 // La recherche renvoie le document de catalogue : il porte aussi les variantes
 // d'impression de la carte, absentes d'un simple exemplaire de collection.
@@ -65,43 +66,6 @@ const PAGE_SIZE = 24;
 const TILE_WIDTHS = [120, 152, 190, 240];
 const DEFAULT_DENSITY = 2;
 
-/** Une section de la barre latérale : un intitulé discret, puis ses contrôles. */
-function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</span>
-      {children}
-    </div>
-  );
-}
-
-/** Valeur d'attribut à cocher. Un bouton plutôt qu'une case : plus compact, et la liste en compte souvent une dizaine. */
-function FacetChip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors ${
-        active
-          ? "border-primary bg-primary text-primary-foreground"
-          : "bg-background hover:bg-muted"
-      }`}
-    >
-      {active ? <Check className="h-3 w-3" /> : null}
-      {children}
-    </button>
-  );
-}
-
 export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -124,10 +88,6 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   const [layout, setLayout] = useState<"grid" | "list">("grid");
   const [density, setDensity] = useState(DEFAULT_DENSITY);
   const [linkCopied, setLinkCopied] = useState(false);
-  // Suggestions de la barre de recherche : ouvertes à la frappe, parcourues au
-  // clavier. `-1` = aucune sélectionnée, Entrée lance alors la recherche.
-  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
-  const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const copiedTimerRef = useRef<number | null>(null);
   useEffect(
     () => () => {
@@ -456,39 +416,7 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
     updateURL(searchQuery, selectedSetCode, selectedType, selectedLanguage, 1, next);
   };
 
-  const setRange = (key: string, bound: "min" | "max", raw: string) => {
-    const parsed = Number(raw);
-    const next = { ...criteria, ranges: { ...criteria.ranges } };
-    const range = { ...next.ranges[key] };
-
-    if (raw.trim() === "" || !Number.isFinite(parsed)) {
-      delete range[bound];
-    } else {
-      range[bound] = parsed;
-    }
-
-    if (range.min === undefined && range.max === undefined) {
-      delete next.ranges[key];
-    } else {
-      next.ranges[key] = range;
-    }
-
-    applyCriteria(next);
-  };
-
-  const toggleValue = (key: string, value: string) => {
-    const current = criteria.values[key] ?? [];
-    const kept = current.includes(value) ? current.filter((item) => item !== value) : [...current, value];
-    const next = { ...criteria, values: { ...criteria.values } };
-
-    if (kept.length > 0) {
-      next.values[key] = kept;
-    } else {
-      delete next.values[key];
-    }
-
-    applyCriteria(next);
-  };
+  const toggleValue = (key: string, value: string) => applyCriteria(withToggledValue(criteria, key, value));
 
   const changeSort = (value: string) => {
     if (value === "default") {
@@ -499,13 +427,7 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
     applyCriteria({ ...criteria, sort: { key, direction: direction === "desc" ? "desc" : "asc" } });
   };
 
-  const clearFacetFilters = () => applyCriteria({ ...criteria, ranges: {}, values: {} });
-
-  const removeRange = (key: string) => {
-    const next = { ...criteria, ranges: { ...criteria.ranges } };
-    delete next.ranges[key];
-    applyCriteria(next);
-  };
+  const removeRange = (key: string) => applyCriteria(withoutRange(criteria, key));
 
   /** Remet tout à zéro d'un geste : listes déroulantes, attributs et saisie. */
   const resetAll = () => {
@@ -540,8 +462,6 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   };
 
   const activeFilterCount = countActiveFacetFilters(criteria);
-  // Un attribut se lit mieux capitalisé : les clés sont brutes en base (`energy`).
-  const facetLabel = (key: string) => key.charAt(0).toUpperCase() + key.slice(1);
 
   const getLanguageLabel = (language: string) => {
     if (language === "all") {
@@ -557,51 +477,10 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   // les filtres : `domain:fury`, `energy<=3`, `set:OGN`… Rien n'est codé par jeu.
   const searchFields = buildSearchFields(facets, { setCodes, types, languages });
   const parsedQuery = parseSearchSyntax(searchQuery, searchFields);
-  const suggestions = suggestionsOpen ? suggestTokens(searchQuery, searchFields) : [];
-  // Le module de syntaxe tourne aussi côté serveur : il décrit ce que fait une
-  // suggestion, c'est ici que ça devient une phrase, dans la langue de l'écran.
-  const suggestionHint = (hint: SuggestionHint) =>
-    t(`cards.search.syntax.hints.${hint.kind}`, { field: hint.field, value: hint.value });
   // Le mot en cours de frappe est forcément incomplet : l'annoncer comme
   // invalide reviendrait à signaler une faute à chaque lettre tapée.
   const typing = currentWord(searchQuery);
   const rejectedTokens = parsedQuery.rejected.filter((rejected) => rejected.raw !== typing);
-
-  const pickSuggestion = (token: string) => {
-    setSearchQuery(applyTokenSuggestion(searchQuery, token));
-    setActiveSuggestion(-1);
-  };
-
-  const onSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Escape") {
-      setSuggestionsOpen(false);
-      setActiveSuggestion(-1);
-      return;
-    }
-    if (event.key === "ArrowDown" && suggestions.length > 0) {
-      event.preventDefault();
-      setActiveSuggestion((index) => (index + 1) % suggestions.length);
-      return;
-    }
-    if (event.key === "ArrowUp" && suggestions.length > 0) {
-      event.preventDefault();
-      setActiveSuggestion((index) => (index <= 0 ? suggestions.length - 1 : index - 1));
-      return;
-    }
-    if (event.key === "Enter") {
-      // Entrée complète la suggestion en cours, ou lance la recherche si aucune
-      // n'est sélectionnée : compléter puis chercher restent deux gestes.
-      const chosen = suggestions[activeSuggestion];
-      if (chosen) {
-        event.preventDefault();
-        pickSuggestion(chosen.token);
-        return;
-      }
-      setSuggestionsOpen(false);
-      handleSearch();
-    }
-  };
-
   // Ce qui est filtré, dit d'un coup d'œil et retirable d'un clic — sans avoir
   // à rouvrir la liste déroulante ou la section d'où le filtre vient.
   const activeChips: { key: string; label: string; remove: () => void }[] = [];
@@ -697,12 +576,6 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
         ) : null}
       </div>
 
-      {filtersUnavailable ? (
-        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300">
-          {t("cards.search.filters.unavailable")}
-        </p>
-      ) : null}
-
       <FilterSection title={t("cards.search.filters.setCode")}>
         <Select value={selectedSetCode} onValueChange={handleSetCodeChange}>
           <SelectTrigger className="w-full">
@@ -751,60 +624,12 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
         </Select>
       </FilterSection>
 
-      {facets.map((facet) => (
-        <FilterSection key={facet.key} title={facetLabel(facet.key)}>
-          {facet.type === "number" ? (
-            <>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  min={facet.min}
-                  max={facet.max}
-                  placeholder={String(facet.min)}
-                  aria-label={t("cards.search.filters.min", { field: facetLabel(facet.key) })}
-                  value={criteria.ranges[facet.key]?.min ?? ""}
-                  onChange={(e) => setRange(facet.key, "min", e.target.value)}
-                  className="h-8"
-                />
-                <span className="text-muted-foreground">–</span>
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  min={facet.min}
-                  max={facet.max}
-                  placeholder={String(facet.max)}
-                  aria-label={t("cards.search.filters.max", { field: facetLabel(facet.key) })}
-                  value={criteria.ranges[facet.key]?.max ?? ""}
-                  onChange={(e) => setRange(facet.key, "max", e.target.value)}
-                  className="h-8"
-                />
-              </div>
-              <span className="text-[11px] text-muted-foreground">
-                {t("cards.search.filters.range", { min: facet.min, max: facet.max })}
-              </span>
-            </>
-          ) : (
-            <div className="flex flex-wrap gap-1.5">
-              {facet.values.map((value) => (
-                <FacetChip
-                  key={value}
-                  active={(criteria.values[facet.key] ?? []).includes(value)}
-                  onClick={() => toggleValue(facet.key, value)}
-                >
-                  {value}
-                </FacetChip>
-              ))}
-            </div>
-          )}
-        </FilterSection>
-      ))}
-
-      {activeFilterCount > 0 ? (
-        <Button variant="outline" size="sm" onClick={clearFacetFilters}>
-          {t("cards.search.filters.clear")}
-        </Button>
-      ) : null}
+      <CardFacetFilters
+        facets={facets}
+        criteria={criteria}
+        onChange={applyCriteria}
+        unavailable={filtersUnavailable}
+      />
     </div>
   );
 
@@ -817,71 +642,16 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
 
       <div className="flex min-w-0 flex-1 flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative flex min-w-[240px] flex-1 items-center">
-            <Search className="pointer-events-none absolute left-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder={t("cards.search.placeholder")}
+          <div className="flex min-w-[240px] flex-1 items-center">
+            <CardSearchInput
               value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setSuggestionsOpen(true);
-                setActiveSuggestion(-1);
+              onChange={setSearchQuery}
+              fields={searchFields}
+              placeholder={t("cards.search.placeholder")}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") handleSearch();
               }}
-              onFocus={() => setSuggestionsOpen(true)}
-              onBlur={() => setSuggestionsOpen(false)}
-              onKeyDown={onSearchKeyDown}
-              role="combobox"
-              aria-expanded={suggestions.length > 0}
-              aria-autocomplete="list"
-              // Ces deux attributs ne désignent quelque chose que lorsque la
-              // liste est rendue : les poser à vide pointerait vers un id
-              // inexistant, que les validateurs ARIA signalent.
-              aria-controls={suggestions.length > 0 ? "card-search-suggestions" : undefined}
-              aria-activedescendant={
-                activeSuggestion >= 0 ? `card-search-suggestion-${activeSuggestion}` : undefined
-              }
-              className="h-10 w-full pl-9 font-mono text-sm"
             />
-
-            {suggestions.length > 0 ? (
-              <div
-                id="card-search-suggestions"
-                role="listbox"
-                className="absolute left-0 right-0 top-11 z-20 rounded-lg border bg-popover p-1 shadow-lg"
-              >
-                {suggestions.map((suggestion, index) => (
-                  <button
-                    key={suggestion.token}
-                    id={`card-search-suggestion-${index}`}
-                    type="button"
-                    role="option"
-                    aria-selected={index === activeSuggestion}
-                    // `onMouseDown` plutôt que `onClick` : le clic doit agir
-                    // avant que la perte de focus ne referme la liste.
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      pickSuggestion(suggestion.token);
-                    }}
-                    onMouseEnter={() => setActiveSuggestion(index)}
-                    className={`flex w-full items-center gap-3 rounded-md px-2 py-1.5 text-left text-sm ${
-                      index === activeSuggestion ? "bg-muted" : ""
-                    }`}
-                  >
-                    <span className="font-mono text-xs text-primary">{suggestion.token}</span>
-                    {/* Poussé à droite plutôt qu'aligné sur une colonne fixe :
-                        un token long — `type:"Battlefield Rune"` — décalerait
-                        toute la colonne des explications. */}
-                    <span className="ml-auto truncate text-xs text-muted-foreground">{suggestionHint(suggestion.hint)}</span>
-                  </button>
-                ))}
-                <p className="px-2 pb-1 pt-1.5 text-[11px] text-muted-foreground">
-                  {parsedQuery.tokens.length > 0
-                    ? t("cards.search.syntax.tokens", { count: parsedQuery.tokens.length })
-                    : t("cards.search.syntax.invite")}
-                </p>
-              </div>
-            ) : null}
           </div>
 
           <Button

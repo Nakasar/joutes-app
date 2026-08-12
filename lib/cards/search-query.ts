@@ -43,3 +43,14 @@ export function parseCardSearch(raw: string): CardSearchQuery {
 
   return { setCode, cn, lang, text: trimmed };
 }
+
+/**
+ * Texte cherché envoyé par les éditeurs de booster et de paquet de cube. Tout
+ * part tel quel — l'API lit elle-même les tokens de la barre (`domain:fury`,
+ * `energy<=3`) — sauf un nombre seul, qui désigne depuis toujours un numéro de
+ * collection dans ces écrans et doit continuer à le faire.
+ */
+export function cardSearchText(raw: string): string {
+  const trimmed = raw.trim();
+  return /^\d+$/.test(trimmed) ? `cn:${trimmed}` : raw;
+}

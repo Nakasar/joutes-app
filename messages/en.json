@@ -440,7 +440,8 @@
           "densityBigger": "Larger thumbnails",
           "min": "Minimum {field}",
           "max": "Maximum {field}",
-          "clear": "Clear filters",
+          "none": "This game does not declare any attribute to filter on yet.",
+      "clear": "Clear filters",
           "unavailable": "These filters are not active for this game yet: an administrator needs to run “Update index”. The results below ignore them."
         },
         "pagination": {
@@ -1633,7 +1634,7 @@
           "emptyBooster": "This booster is empty. Search for cards to add.",
           "addCards": "Add cards",
           "searchPlaceholder": "Search for a card…",
-          "searchHint": "Tip: “e:OGN” filters the set, “cn:001” filters the collector number.",
+          "searchHint": "Tip: “e:OGN” filters the set, “cn:001” the number, and the game's attributes are written “domain:fury”, “energy<=3”.",
           "noResults": "No cards found.",
           "addCard": "Add {name}",
           "foil": "Foil",
@@ -3360,7 +3361,7 @@
     "addCard": "Add {name}",
     "filterBySet": "Filter by set",
     "allSets": "All sets",
-    "searchHint": "Tip: “e:OGN” filters the set, “cn:001” filters the number.",
+    "searchHint": "Tip: “e:OGN” filters the set, “cn:001” the number, and the game's attributes are written “domain:fury”, “energy<=3”.",
     "previousPage": "Previous",
     "nextPage": "Next",
     "pageOf": "Page {page} of {totalPages}"
