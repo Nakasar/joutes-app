@@ -132,14 +132,17 @@ export function CreateTournamentWizard({ games }: { games: WizardGame[] }) {
         case "format":
           return format !== null;
         case "structure":
-          return structure !== null;
+          // Le format mixte pose deux questions dans la même étape : sans top
+          // cut, le bracket prendrait tout le monde, ce qui vide les rondes
+          // suisses de leur rôle.
+          return structure !== null && (format !== "mixed" || topCut !== null);
         case "bestOf":
           return bestOf !== null;
         case "form":
           return lists !== null;
       }
     },
-    [name, gameId, customGame, format, structure, bestOf, lists]
+    [name, gameId, customGame, format, structure, topCut, bestOf, lists]
   );
 
   const visible = (step: StepKey) => reached.includes(step) && applies(step);
@@ -244,7 +247,13 @@ export function CreateTournamentWizard({ games }: { games: WizardGame[] }) {
     }
   };
 
-  const post = async (url: string, body: unknown, method: "POST" | "PUT" = "POST") => {
+  // `fallback` porte le message affiché quand l'API n'en donne pas : une fois
+  // le tournoi créé, parler d'un échec de création serait mentir.
+  const post = async (
+    url: string,
+    body: unknown,
+    { method = "POST", fallback }: { method?: "POST" | "PUT"; fallback: string }
+  ) => {
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
@@ -252,7 +261,7 @@ export function CreateTournamentWizard({ games }: { games: WizardGame[] }) {
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      throw new Error(data.error ?? t("new.createError"));
+      throw new Error(data.error ?? fallback);
     }
     return res.json();
   };
@@ -273,11 +282,15 @@ export function CreateTournamentWizard({ games }: { games: WizardGame[] }) {
     setError(null);
     let tournament: CreatedTournament;
     try {
-      tournament = (await post("/api/tournaments", {
-        name: name.trim(),
-        ...(gameId ? { gameId } : customGame.trim() ? { customGameName: customGame.trim() } : {}),
-        settings: { allowSelfReporting: true, requireConfirmation: false, preRegistration: false },
-      })) as CreatedTournament;
+      tournament = (await post(
+        "/api/tournaments",
+        {
+          name: name.trim(),
+          ...(gameId ? { gameId } : customGame.trim() ? { customGameName: customGame.trim() } : {}),
+          settings: { allowSelfReporting: true, requireConfirmation: false, preRegistration: false },
+        },
+        { fallback: t("new.createError") }
+      )) as CreatedTournament;
     } catch (err) {
       setError(err instanceof Error ? err.message : t("new.createError"));
       setBusy(false);
@@ -289,7 +302,9 @@ export function CreateTournamentWizard({ games }: { games: WizardGame[] }) {
       // Séquentiel : sans `order` explicite, chaque phase se range derrière la
       // précédente, ce qui suppose que la précédente est déjà écrite.
       for (const phase of buildPhases()) {
-        await post(`/api/tournaments/${tournament.id}/phases`, phase);
+        await post(`/api/tournaments/${tournament.id}/phases`, phase, {
+          fallback: t("wizard.setupError"),
+        });
       }
       if (lists && game) {
         await post(
@@ -308,7 +323,7 @@ export function CreateTournamentWizard({ games }: { games: WizardGame[] }) {
             playerEditable: true,
             lateSubmissions: false,
           },
-          "PUT"
+          { method: "PUT", fallback: t("wizard.setupError") }
         );
       }
     } catch (err) {
@@ -554,7 +569,7 @@ export function CreateTournamentWizard({ games }: { games: WizardGame[] }) {
           )}
 
           <div className="mt-6">
-            <Button onClick={() => revealAfter("structure")} disabled={!structure}>
+            <Button onClick={() => revealAfter("structure")} disabled={!answered("structure")}>
               {t("wizard.continue")}
               <ArrowRight className="size-4" />
             </Button>
@@ -824,6 +839,8 @@ function DoneStep({
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
+    // Le lien n'existe qu'une fois monté côté client : rien à copier avant.
+    if (!joinUrl) return;
     try {
       await navigator.clipboard.writeText(joinUrl);
       setCopied(true);

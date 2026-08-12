@@ -14,6 +14,8 @@ export function JoinTournamentCard({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
+    // Le lien n'existe qu'une fois monté côté client : rien à copier avant.
+    if (!joinUrl) return;
     try {
       await navigator.clipboard.writeText(joinUrl);
       setCopied(true);
