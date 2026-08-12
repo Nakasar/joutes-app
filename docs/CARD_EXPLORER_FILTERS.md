@@ -73,6 +73,28 @@ place d'une panne, sur une page qui a l'air de répondre.
 - `lib/cards/search-syntax.ts` — la barre de recherche accepte les mêmes
   attributs en tokens (`domain:fury energy<=3`), voir
   [CARD_SEARCH_SYNTAX.md](./CARD_SEARCH_SYNTAX.md).
+- `components/cards/CardFacetFilters.tsx` — les filtres eux-mêmes (plages,
+  valeurs à cocher, « effacer »), partagés par les trois écrans qui cherchent
+  des cartes.
+- `components/cards/CardSearchInput.tsx` — la saisie et ses suggestions.
+- `components/cards/CardSearchToolbar.tsx` — saisie, bouton de filtrage et
+  panneau, tels que les montent les éditeurs.
 - `app/games/[gameSlugOrId]/cards/components.tsx` — barre latérale de filtres
   (à demeure sur bureau, dépliable sur mobile), sélecteur de tri, résumé des
   filtres actifs en pastilles retirables, grille ou liste.
+
+## Les mêmes filtres dans les éditeurs
+
+L'éditeur de paquet de cube et l'éditeur de booster cherchent des cartes avec la
+même barre et les mêmes filtres, servis par la même réponse d'API — la recherche
+y renvoie déjà les facettes du jeu.
+
+Une différence d'usage : **les filtres y sont repliés derrière un bouton**. Sur
+la galerie, on explore un catalogue et la barre latérale mérite sa place ; dans
+un éditeur, on ajoute le plus souvent une carte qu'on connaît déjà, et le
+panneau prendrait celle des résultats. Le bouton porte le nombre de filtres
+actifs : un panneau refermé ne laisse jamais croire à une recherche sans
+critère.
+
+Ces écrans n'écrivent pas leurs critères dans l'URL — on n'y partage pas une
+recherche, on remplit un paquet.

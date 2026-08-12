@@ -100,5 +100,18 @@ l'affichage : pastilles, suggestions, avertissements.
   par `lib/cards/search-syntax.test.ts`.
 - `app/api/games/[gameId]/cards/route.ts` — lecture des tokens avant la
   recherche, fusion avec les critères d'URL.
-- `app/games/[gameSlugOrId]/cards/components.tsx` — menu de suggestions,
-  pastilles, avertissements.
+- `components/cards/CardSearchInput.tsx` — la saisie, son menu de suggestions
+  et la navigation au clavier, partagés par la galerie et les éditeurs.
+- `app/games/[gameSlugOrId]/cards/components.tsx` — pastilles, avertissements.
+
+## La même syntaxe dans les éditeurs
+
+Les éditeurs de booster et de paquet de cube envoient leur saisie telle quelle :
+c'est l'API qui lit les tokens, ils n'ont donc rien à en connaître. Deux nuances
+propres à ces écrans :
+
+- **un nombre seul reste un numéro de collection** (`cardSearchText`) — le
+  raccourci qui existait avant, et qu'on tape sans y penser ;
+- **les suggestions ne s'ouvrent qu'à la frappe**, pas à la prise de focus : à
+  l'ouverture, les flèches doivent mener aux résultats, pas à une liste de
+  champs.

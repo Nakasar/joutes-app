@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { ArrowLeft, Info, Layers, Loader2, Minus, Pencil, Plus, Search, X } from "lucide-react";
+import { ArrowLeft, Info, Layers, Loader2, Minus, Pencil, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -25,7 +25,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { parseCardSearch } from "@/lib/cards/search-query";
+import { cardSearchText, parseCardSearch } from "@/lib/cards/search-query";
+import {
+  EMPTY_CRITERIA,
+  serializeCardSearchCriteria,
+  type CardFilterFacet,
+  type CardSearchCriteria,
+} from "@/lib/cards/search-filters";
+import { CardSearchToolbar } from "@/components/cards/CardSearchToolbar";
 import { formatCardList } from "@/lib/cubes/card-list";
 import { CUBE_PACK_CARD_MAX_QUANTITY } from "@/lib/constants/cubes";
 import type { BoosterCard } from "@/lib/types/booster";
@@ -76,6 +83,15 @@ export default function PackEditor({ cube, pack, packLabel, initialCards, canEdi
   const [selectedSet, setSelectedSet] = useState(ALL_SETS);
   const [results, setResults] = useState<BoosterCard[]>([]);
   const [resultSetCodes, setResultSetCodes] = useState<string[]>([]);
+  // Facettes du jeu et critères choisis : le même vocabulaire que la galerie de
+  // cartes, servi par la même réponse d'API.
+  const [facets, setFacets] = useState<CardFilterFacet[]>([]);
+  // Tant qu'aucune réponse n'est arrivée, une liste vide ne veut rien dire.
+  const [facetsKnown, setFacetsKnown] = useState(false);
+  const [resultTypes, setResultTypes] = useState<string[]>([]);
+  const [resultLanguages, setResultLanguages] = useState<string[]>([]);
+  const [criteria, setCriteria] = useState<CardSearchCriteria>(EMPTY_CRITERIA);
+  const [filtersUnavailable, setFiltersUnavailable] = useState(false);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -107,8 +123,15 @@ export default function PackEditor({ cube, pack, packLabel, initialCards, canEdi
   const quantityOf = (cardId: string) => grouped.find((entry) => entry.card.cardId === cardId)?.quantity ?? 0;
 
   const fetchResults = useCallback(
-    async (searchText: string, setCode: string, lang: string, pageNum: number) => {
-      const key = `${searchText}|${setCode}|${lang}|${pageNum}`;
+    async (
+      searchText: string,
+      setCode: string,
+      lang: string,
+      pageNum: number,
+      searchCriteria: CardSearchCriteria,
+    ) => {
+      const criteriaEntries = serializeCardSearchCriteria(searchCriteria);
+      const key = `${searchText}|${setCode}|${lang}|${pageNum}|${new URLSearchParams(criteriaEntries)}`;
       if (pendingKeyRef.current === key) return;
       controllerRef.current?.abort();
       const controller = new AbortController();
@@ -120,6 +143,7 @@ export default function PackEditor({ cube, pack, packLabel, initialCards, canEdi
         if (searchText) params.set("searchQuery", searchText);
         if (setCode && setCode !== ALL_SETS) params.set("setCode", setCode);
         params.set("lang", lang);
+        for (const [param, value] of criteriaEntries) params.set(param, value);
         params.set("page", String(pageNum));
         params.set("limit", "24");
 
@@ -132,6 +156,11 @@ export default function PackEditor({ cube, pack, packLabel, initialCards, canEdi
         setActiveIndex(0);
         if (!Array.isArray(data)) {
           if (Array.isArray(data.setCodes) && data.setCodes.length) setResultSetCodes(data.setCodes);
+          if (Array.isArray(data.types)) setResultTypes(data.types);
+          if (Array.isArray(data.languages)) setResultLanguages(data.languages);
+          if (Array.isArray(data.facets)) setFacets(data.facets);
+          setFacetsKnown(true);
+          setFiltersUnavailable(data.filtersUnavailable === true);
           setTotalPages(data.totalPages ?? 1);
         }
         setPage(pageNum);
@@ -155,19 +184,18 @@ export default function PackEditor({ cube, pack, packLabel, initialCards, canEdi
     if (parsed.setCode && parsed.setCode !== selectedSet) {
       setSelectedSet(parsed.setCode);
     }
-    const effectiveSet = parsed.setCode ?? selectedSet;
-    const searchText = [parsed.text, parsed.cn ? `cn:${parsed.cn}` : ""].filter(Boolean).join(" ");
     const delay = parsed.text ? 300 : 0;
-    const timer = window.setTimeout(() => void fetchResults(searchText, effectiveSet, parsed.lang ?? "all", 1), delay);
+    const timer = window.setTimeout(
+      () => void fetchResults(cardSearchText(rawQuery), parsed.setCode ?? selectedSet, parsed.lang ?? "all", 1, criteria),
+      delay,
+    );
     return () => window.clearTimeout(timer);
-  }, [rawQuery, selectedSet, fetchResults]);
+  }, [rawQuery, selectedSet, criteria, fetchResults]);
 
   const goToPage = (next: number) => {
     if (next < 1 || next > totalPages || loading) return;
     const parsed = parseCardSearch(rawQuery);
-    const effectiveSet = parsed.setCode ?? selectedSet;
-    const searchText = [parsed.text, parsed.cn ? `cn:${parsed.cn}` : ""].filter(Boolean).join(" ");
-    void fetchResults(searchText, effectiveSet, parsed.lang ?? "all", next);
+    void fetchResults(cardSearchText(rawQuery), parsed.setCode ?? selectedSet, parsed.lang ?? "all", next, criteria);
   };
 
   /** Fixe le nombre d'exemplaires d'une carte ; le serveur renvoie le paquet à jour. */
@@ -434,28 +462,31 @@ export default function PackEditor({ cube, pack, packLabel, initialCards, canEdi
           <section className="space-y-3">
             <h2 className="text-sm font-semibold text-muted-foreground">{t("addCards")}</h2>
 
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <div className="relative flex-1">
-                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  ref={searchRef}
-                  value={rawQuery}
-                  onChange={(e) => setRawQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (results.length === 0) return;
-                    if (e.key === "ArrowDown") {
-                      e.preventDefault();
-                      focusCardAt(0);
-                    } else if (e.key === "Enter") {
-                      // Entrée depuis la barre valide la première carte.
-                      e.preventDefault();
-                      addFromSearch(results[0]);
-                    }
-                  }}
-                  placeholder={t("searchCardPlaceholder")}
-                  className="pl-9"
-                />
-              </div>
+            <CardSearchToolbar
+              query={rawQuery}
+              onQueryChange={setRawQuery}
+              criteria={criteria}
+              onCriteriaChange={setCriteria}
+              facets={facets}
+              setCodes={resultSetCodes}
+              types={resultTypes}
+              languages={resultLanguages}
+              filtersUnavailable={filtersUnavailable}
+              filtersPending={!facetsKnown}
+              placeholder={t("searchCardPlaceholder")}
+              inputRef={searchRef}
+              onInputKeyDown={(e) => {
+                if (results.length === 0) return;
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  focusCardAt(0);
+                } else if (e.key === "Enter") {
+                  // Entrée depuis la barre valide la première carte.
+                  e.preventDefault();
+                  addFromSearch(results[0]);
+                }
+              }}
+            >
               <Select value={selectedSet} onValueChange={setSelectedSet}>
                 <SelectTrigger className="w-full sm:w-[150px]" aria-label={t("filterBySet")}>
                   <SelectValue />
@@ -468,7 +499,7 @@ export default function PackEditor({ cube, pack, packLabel, initialCards, canEdi
                   ))}
                 </SelectContent>
               </Select>
-            </div>
+            </CardSearchToolbar>
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Info className="size-3.5 shrink-0" />
               {t("searchHint")}

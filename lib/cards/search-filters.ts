@@ -190,6 +190,69 @@ export function serializeCardSearchCriteria(criteria: CardSearchCriteria): [stri
   return params;
 }
 
+/**
+ * Borne d'un attribut numérique, telle que la saisit un champ de formulaire :
+ * une saisie vide ou illisible retire la borne plutôt que d'en poser une
+ * fantaisiste, et un attribut sans plus aucune borne quitte les critères.
+ */
+export function withRangeBound(
+  criteria: CardSearchCriteria,
+  key: string,
+  bound: "min" | "max",
+  raw: string
+): CardSearchCriteria {
+  const parsed = Number(raw);
+  const ranges = { ...criteria.ranges };
+  const range = { ...ranges[key] };
+
+  if (raw.trim() === "" || !Number.isFinite(parsed)) {
+    delete range[bound];
+  } else {
+    range[bound] = parsed;
+  }
+
+  if (range.min === undefined && range.max === undefined) {
+    delete ranges[key];
+  } else {
+    ranges[key] = range;
+  }
+
+  return { ...criteria, ranges };
+}
+
+/** Retire les deux bornes d'un attribut d'un coup — la pastille qu'on enlève. */
+export function withoutRange(criteria: CardSearchCriteria, key: string): CardSearchCriteria {
+  const ranges = { ...criteria.ranges };
+  delete ranges[key];
+  return { ...criteria, ranges };
+}
+
+/** Coche ou décoche une valeur ; un attribut sans plus aucune valeur disparaît. */
+export function withToggledValue(
+  criteria: CardSearchCriteria,
+  key: string,
+  value: string
+): CardSearchCriteria {
+  const current = criteria.values[key] ?? [];
+  const kept = current.includes(value)
+    ? current.filter((item) => item !== value)
+    : [...current, value];
+  const values = { ...criteria.values };
+
+  if (kept.length > 0) {
+    values[key] = kept;
+  } else {
+    delete values[key];
+  }
+
+  return { ...criteria, values };
+}
+
+/** Vide les filtres d'attributs. Le tri n'en est pas un : il reste en place. */
+export function withoutFacetFilters(criteria: CardSearchCriteria): CardSearchCriteria {
+  return { ...criteria, ranges: {}, values: {} };
+}
+
 /** Y a-t-il au moins un filtre d'attribut actif ? Sert à annoncer les filtres repliés. */
 export function countActiveFacetFilters(criteria: CardSearchCriteria): number {
   const ranges = Object.values(criteria.ranges).filter(
