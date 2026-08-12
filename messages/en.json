@@ -2189,19 +2189,128 @@
     },
     "new": {
       "title": "Create a tournament",
-      "cardTitle": "New tournament",
-      "nameLabel": "Tournament name",
       "namePlaceholder": "E.g. Weekly Riftbound tournament",
       "nameRequired": "The tournament name is required.",
       "createError": "Error while creating the tournament",
-      "gameLabel": "Game (optional)",
-      "noGame": "No game",
-      "selfReportingLabel": "Score reporting by players",
-      "selfReportingHelp": "Players can enter their own match results.",
-      "confirmationLabel": "Opponent confirmation",
-      "confirmationHelp": "A result reported by a player must be confirmed by their opponent.",
-      "creating": "Creating...",
-      "createButton": "Create the tournament"
+      "creating": "Creating..."
+    },
+    "wizard": {
+      "title": "New tournament",
+      "advanced": "Advanced setup",
+      "continue": "Continue",
+      "finish": "Create the tournament",
+      "progress": "{percent}%",
+      "stepNumber": "Step {number}",
+      "setupError": "Error while setting up the tournament",
+      "setupErrorHint": "The tournament was created, but its setup could not be fully applied ({error}). You can finish it from the organizer portal.",
+      "steps": {
+        "name": "Name",
+        "game": "Game",
+        "format": "Format",
+        "structure": "Structure",
+        "bestOf": "Matches",
+        "form": "Registration",
+        "done": "Done"
+      },
+      "gameTypes": {
+        "TCG": "TCG",
+        "BoardGame": "Board game",
+        "VideoGame": "Video game",
+        "Miniatures": "Miniatures",
+        "Other": "Other"
+      },
+      "name": {
+        "title": "What is this tournament called?",
+        "description": "The name is what players see when they join. You can change it later.",
+        "enterHint": "or press Enter"
+      },
+      "game": {
+        "title": "Which game is being played?",
+        "description": "The game decides which lists are asked for at registration, which scoring presets are offered, and the tiebreakers.",
+        "searchPlaceholder": "Search for a game…",
+        "customPlaceholder": "Or enter a custom game",
+        "noResult": "No game matches this search. Enter its name below."
+      },
+      "format": {
+        "title": "How is the tournament structured?",
+        "description": "Each format generates its rounds differently. You can add more phases afterwards."
+      },
+      "formats": {
+        "swiss": {
+          "name": "Swiss rounds",
+          "description": "Everyone plays every round, against an opponent on the same score."
+        },
+        "elimination": {
+          "name": "Elimination",
+          "description": "A bracket: only the winners move on to the next round."
+        },
+        "mixed": {
+          "name": "Swiss + elimination",
+          "description": "Swiss rounds, then a top cut that feeds the elimination bracket."
+        },
+        "timer": {
+          "name": "Timed",
+          "description": "Ranked on time taken, with no opponent pairing."
+        },
+        "free": {
+          "name": "Freeform",
+          "description": "No automatic generation: you build the matches by hand."
+        }
+      },
+      "structure": {
+        "roundsTitle": "How many rounds?",
+        "roundsDescription": "Leave “Auto” to decide the number of rounds at start time, based on who registered.",
+        "bracketTitle": "How large is the bracket?",
+        "bracketDescription": "The number of players entering the elimination bracket.",
+        "roundsHint": "rounds",
+        "playersHint": "players",
+        "auto": "Auto",
+        "autoHint": "based on registrations",
+        "topCutLabel": "Top cut entering the bracket",
+        "topCutOption": "Top {count}"
+      },
+      "bestOf": {
+        "title": "Match format",
+        "description": "Number of games played in a match.",
+        "optionName": "Best of {count}",
+        "option1Description": "One game decides the match. Short rounds.",
+        "option3Description": "Two game wins needed. The format of official tournaments."
+      },
+      "form": {
+        "title": "Registration form",
+        "hintTcg": "This game is a TCG: players can submit their decklist when registering.",
+        "hintMiniatures": "This game is a miniatures game: players can submit their army list when registering.",
+        "deckOn": "Collect decklists",
+        "armyOn": "Collect army lists",
+        "listsOnDescription": "A question is added to the registration form; judges can review the submitted lists.",
+        "listsOff": "No list",
+        "listsOffDescription": "Players register with their name only.",
+        "deckFieldLabel": "Decklist",
+        "armyFieldLabel": "Army list"
+      },
+      "phaseNames": {
+        "swiss": "Swiss rounds",
+        "elimination": "Elimination",
+        "topCut": "Top cut",
+        "timer": "Timed event",
+        "free": "Freeform phase"
+      },
+      "done": {
+        "eyebrow": "Ready",
+        "title": "{name} is created",
+        "description": "Have players scan this QR code or read out the join code: they join from their phone.",
+        "joinCodeLabel": "Join code",
+        "summary": {
+          "game": "Game",
+          "format": "Format",
+          "bestOf": "Matches",
+          "lists": "Lists"
+        },
+        "listsAsked": "Asked at registration",
+        "listsNotAsked": "Not asked",
+        "open": "Open the tournament",
+        "backToList": "My tournaments"
+      }
     },
     "join": {
       "invalidLink": "Invalid sync link.",
@@ -2303,6 +2412,7 @@
       "statusLabel": "Tournament status",
       "gameLabel": "Game (optional)",
       "noGame": "No game",
+      "customGamePlaceholder": "Or enter a custom game",
       "unknownGame": "Unknown game",
       "selfReportingLabel": "Result reporting by players",
       "selfReportingHint": "Allows players to enter their own match results.",

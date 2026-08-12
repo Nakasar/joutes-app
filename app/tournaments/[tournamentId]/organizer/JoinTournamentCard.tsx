@@ -1,26 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
-import QRCode from "qrcode";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useJoinQrCode } from "@/app/tournaments/useJoinQrCode";
 
 // Affiche le code de participation, le lien /t/:code/join et son QR code, pour
 // inviter des joueurs à rejoindre le tournoi.
 export function JoinTournamentCard({ code }: { code: string }) {
   const t = useTranslations("Tournaments");
-  const [qrCodeUrl, setQrCodeUrl] = useState("");
+  const { joinUrl, qrCodeUrl } = useJoinQrCode(code);
   const [copied, setCopied] = useState(false);
-
-  const joinUrl = typeof window !== "undefined" ? `${window.location.origin}/t/${code}/join` : "";
-
-  useEffect(() => {
-    if (!joinUrl) return;
-    QRCode.toDataURL(joinUrl, { width: 240, margin: 2, color: { dark: "#000000", light: "#FFFFFF" } })
-      .then(setQrCodeUrl)
-      .catch((err) => console.error("Erreur lors de la génération du QR code:", err));
-  }, [joinUrl]);
 
   const copy = async () => {
     try {

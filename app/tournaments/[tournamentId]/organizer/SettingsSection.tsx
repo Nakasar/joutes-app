@@ -85,9 +85,13 @@ export function SettingsSection({
   const [capacity, setCapacity] = useState(
     tournament.capacity !== undefined ? String(tournament.capacity) : ""
   );
+  // Jeu hors catalogue : saisi à la main, il ne vaut que tant qu'aucun jeu du
+  // catalogue n'est choisi — c'est alors celui-ci qui nomme le jeu.
+  const [customGameName, setCustomGameName] = useState(tournament.customGameName ?? "");
   const [savedDetails, setSavedDetails] = useState({
     name: tournament.name,
     capacity: tournament.capacity !== undefined ? String(tournament.capacity) : "",
+    customGameName: tournament.customGameName ?? "",
   });
 
   const [allowSelfReporting, setAllowSelfReporting] = useState(tournament.settings.allowSelfReporting);
@@ -131,7 +135,14 @@ export function SettingsSection({
   };
 
   const changeGame = async (next: string) => {
-    if (await patch({ gameId: next === NO_GAME ? null : next })) setGameId(next);
+    if (!(await patch({ gameId: next === NO_GAME ? null : next }))) return;
+    setGameId(next);
+    // Le serveur efface le nom saisi à la main dès qu'un jeu du catalogue est
+    // choisi : le champ suit, plutôt que d'afficher une valeur qui n'existe plus.
+    if (next !== NO_GAME) {
+      setCustomGameName("");
+      setSavedDetails((current) => ({ ...current, customGameName: "" }));
+    }
   };
 
   const saveDetails = async () => {
@@ -140,9 +151,10 @@ export function SettingsSection({
     const ok = await patch({
       name: name.trim() || tournament.name,
       capacity: Number.isFinite(parsedCapacity) && parsedCapacity > 0 ? parsedCapacity : null,
+      ...(gameId === NO_GAME && { customGameName: customGameName.trim() || null }),
     });
     if (ok) {
-      setSavedDetails({ name, capacity });
+      setSavedDetails({ name, capacity, customGameName });
       router.refresh();
     }
   };
@@ -183,7 +195,10 @@ export function SettingsSection({
     }
   };
 
-  const detailsDirty = name !== savedDetails.name || capacity !== savedDetails.capacity;
+  const detailsDirty =
+    name !== savedDetails.name ||
+    capacity !== savedDetails.capacity ||
+    customGameName !== savedDetails.customGameName;
 
   const settingsDirty =
     allowSelfReporting !== savedSettings.allowSelfReporting ||
@@ -283,6 +298,16 @@ export function SettingsSection({
                       )}
                     </SelectContent>
                   </Select>
+                  {gameId === NO_GAME && (
+                    <Input
+                      id="setting-custom-game"
+                      value={customGameName}
+                      onChange={(e) => setCustomGameName(e.target.value)}
+                      placeholder={t("organizerSettings.customGamePlaceholder")}
+                      maxLength={200}
+                      disabled={busy}
+                    />
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="setting-capacity">{t("organizerSettings.capacityLabel")}</Label>
