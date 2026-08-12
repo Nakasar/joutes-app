@@ -27,6 +27,14 @@ describe("cardSearchText", () => {
     assert.equal(cardSearchText("agent 47"), "agent 47");
     assert.equal(cardSearchText(""), "");
   });
+
+  it("rogne la saisie plutôt que d'aller chercher des espaces", () => {
+    // Sans ça, une barre vidée à coups d'espaces relancerait une recherche.
+    assert.equal(cardSearchText("   "), "");
+    assert.equal(cardSearchText("\t\n"), "");
+    assert.equal(cardSearchText("  deathknell  "), "deathknell");
+    assert.equal(cardSearchText(" domain:fury "), "domain:fury");
+  });
 });
 
 describe("parseCardSearch", () => {

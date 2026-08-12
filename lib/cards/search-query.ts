@@ -49,8 +49,11 @@ export function parseCardSearch(raw: string): CardSearchQuery {
  * part tel quel — l'API lit elle-même les tokens de la barre (`domain:fury`,
  * `energy<=3`) — sauf un nombre seul, qui désigne depuis toujours un numéro de
  * collection dans ces écrans et doit continuer à le faire.
+ *
+ * La saisie est rognée : une barre où il ne reste que des espaces n'a rien à
+ * chercher, et l'appelant ne pose le paramètre que si le texte n'est pas vide.
  */
 export function cardSearchText(raw: string): string {
   const trimmed = raw.trim();
-  return /^\d+$/.test(trimmed) ? `cn:${trimmed}` : raw;
+  return /^\d+$/.test(trimmed) ? `cn:${trimmed}` : trimmed;
 }

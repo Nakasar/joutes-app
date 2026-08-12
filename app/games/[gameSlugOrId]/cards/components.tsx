@@ -81,6 +81,10 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
   // Les facettes arrivent avec la première réponse : elles décrivent les
   // attributs du jeu et bornent ce que les critères peuvent demander.
   const [facets, setFacets] = useState<CardFilterFacet[]>([]);
+  // Tant qu'aucune réponse n'est arrivée, une liste vide ne veut rien dire :
+  // sans ce drapeau, l'écran affirmerait dès le premier rendu que le jeu n'a
+  // aucun attribut à filtrer.
+  const [facetsKnown, setFacetsKnown] = useState(false);
   const [criteria, setCriteria] = useState<CardSearchCriteria>(EMPTY_CRITERIA);
   // La barre latérale est toujours là sur bureau ; sur mobile elle se déplie.
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -241,6 +245,7 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
 
         const nextFacets = Array.isArray(data) ? [] : data.facets ?? [];
         setFacets(nextFacets);
+        setFacetsKnown(true);
         setFiltersUnavailable(Array.isArray(data) ? false : data.filtersUnavailable === true);
 
         // Les critères de l'URL n'ont pu être lus qu'une fois les facettes
@@ -629,6 +634,7 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
         criteria={criteria}
         onChange={applyCriteria}
         unavailable={filtersUnavailable}
+        pending={!facetsKnown}
       />
     </div>
   );

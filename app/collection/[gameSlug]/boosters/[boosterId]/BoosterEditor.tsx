@@ -118,6 +118,8 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
   // Facettes du jeu et critères choisis : le même vocabulaire que la galerie de
   // cartes, servi par la même réponse d'API.
   const [facets, setFacets] = useState<CardFilterFacet[]>([]);
+  // Tant qu'aucune réponse n'est arrivée, une liste vide ne veut rien dire.
+  const [facetsKnown, setFacetsKnown] = useState(false);
   const [resultTypes, setResultTypes] = useState<string[]>([]);
   const [resultLanguages, setResultLanguages] = useState<string[]>([]);
   const [criteria, setCriteria] = useState<CardSearchCriteria>(EMPTY_CRITERIA);
@@ -200,6 +202,7 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
           if (Array.isArray(data.types)) setResultTypes(data.types);
           if (Array.isArray(data.languages)) setResultLanguages(data.languages);
           if (Array.isArray(data.facets)) setFacets(data.facets);
+          setFacetsKnown(true);
           setFiltersUnavailable(data.filtersUnavailable === true);
           setTotalPages(data.totalPages ?? 1);
         }
@@ -884,6 +887,7 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
             types={resultTypes}
             languages={resultLanguages}
             filtersUnavailable={filtersUnavailable}
+            filtersPending={!facetsKnown}
             placeholder={t("boosters.searchPlaceholder")}
             inputRef={searchRef}
             onInputKeyDown={(e) => {

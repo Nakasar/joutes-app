@@ -32,6 +32,7 @@ export function CardSearchToolbar({
   types,
   languages,
   filtersUnavailable = false,
+  filtersPending = false,
   placeholder,
   inputRef,
   onInputKeyDown,
@@ -46,6 +47,8 @@ export function CardSearchToolbar({
   types: string[];
   languages: string[];
   filtersUnavailable?: boolean;
+  /** Les facettes ne sont pas encore arrivées : on ne conclut rien d'une liste vide. */
+  filtersPending?: boolean;
   placeholder?: string;
   inputRef?: React.Ref<HTMLInputElement>;
   onInputKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void;
@@ -98,17 +101,14 @@ export function CardSearchToolbar({
 
       {open ? (
         <div className="rounded-xl border bg-card p-4">
-          {facets.length === 0 ? (
-            <p className="text-xs text-muted-foreground">{t("cards.search.filters.none")}</p>
-          ) : (
-            <CardFacetFilters
-              facets={facets}
-              criteria={criteria}
-              onChange={onCriteriaChange}
-              unavailable={filtersUnavailable}
-              layout="grid"
-            />
-          )}
+          <CardFacetFilters
+            facets={facets}
+            criteria={criteria}
+            onChange={onCriteriaChange}
+            unavailable={filtersUnavailable}
+            pending={filtersPending}
+            layout="grid"
+          />
         </div>
       ) : null}
     </div>

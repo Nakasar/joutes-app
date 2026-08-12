@@ -69,6 +69,7 @@ export function CardFacetFilters({
   criteria,
   onChange,
   unavailable = false,
+  pending = false,
   layout = "column",
 }: {
   facets: CardFilterFacet[];
@@ -76,6 +77,12 @@ export function CardFacetFilters({
   onChange: (next: CardSearchCriteria) => void;
   /** L'index n'accepte pas encore ces filtres : les résultats les ignorent. */
   unavailable?: boolean;
+  /**
+   * Les facettes ne sont pas encore arrivées. Sans ça, le temps de la première
+   * réponse, l'écran affirmerait que le jeu n'a rien à filtrer — alors qu'on
+   * n'en sait encore rien.
+   */
+  pending?: boolean;
   /** En colonne dans une barre latérale, en grille dans un panneau dépliant. */
   layout?: "column" | "grid";
 }) {
@@ -88,6 +95,10 @@ export function CardFacetFilters({
         <p className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300">
           {t("cards.search.filters.unavailable")}
         </p>
+      ) : null}
+
+      {facets.length === 0 && !pending ? (
+        <p className="text-xs text-muted-foreground">{t("cards.search.filters.none")}</p>
       ) : null}
 
       <div
