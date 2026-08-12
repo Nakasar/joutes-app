@@ -53,6 +53,7 @@ if (process.env.NODE_ENV === 'development') {
   db = createResilientDb(createClient);
 }
 
-// Export a module-scoped MongoClient. By doing this in a
-// separate module, the client can be shared across functions.
+// Export a module-scoped Db. By doing this in a separate module, the client
+// behind it is shared across functions — and replaced on its own when a failed
+// connection leaves it unusable (see lib/mongodb-connection.ts).
 export default db;

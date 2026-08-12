@@ -29,12 +29,15 @@ export function createResilientDb(createClient: () => MongoClient): Db {
 
     const previous = client;
     topologyClosed = false;
-    client = createClient();
+    const created = createClient();
     // Rien dans l'application ne ferme de client : l'événement ne signale donc
-    // que la fermeture subie décrite plus haut.
-    client.on("topologyClosed", () => {
-      topologyClosed = true;
+    // que la fermeture subie décrite plus haut. Le test d'identité garde le
+    // drapeau honnête — un client déjà remplacé qui se ferme ne doit pas faire
+    // passer son successeur pour mort.
+    created.on("topologyClosed", () => {
+      if (client === created) topologyClosed = true;
     });
+    client = created;
     db = client.db();
     // Le client remplacé n'a plus de topologie, mais garde des ressources
     // (sessions, moniteurs) qu'il vaut mieux rendre. L'échec de cette

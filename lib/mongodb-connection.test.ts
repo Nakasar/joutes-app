@@ -106,6 +106,21 @@ describe("createResilientDb", () => {
     assert.equal(created.length, 2);
   });
 
+  it("ignore la fermeture d'un client déjà remplacé", () => {
+    const { create, created } = fakeClients();
+    const db = createResilientDb(create);
+
+    db.collection("games");
+    created[0].closeTopology();
+    db.collection("games");
+    // Le client mort s'exprime encore : sa fermeture ne doit pas faire passer
+    // son successeur, bien vivant, pour mort à son tour.
+    created[0].closeTopology();
+    db.collection("games");
+
+    assert.equal(created.length, 2);
+  });
+
   it("sert le Db du client courant, pas celui du client mort", () => {
     const { create, created } = fakeClients();
     const db = createResilientDb(create);
