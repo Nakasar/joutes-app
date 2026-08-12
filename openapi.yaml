@@ -1606,7 +1606,7 @@ paths:
         ones someone else signed them up for. The battle report is trimmed to its
         scenario here — army lists and the game table are only served on the
         match sheet.
-      security: [{ sessionAuth: [] }]
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
       parameters:
         - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 30 } }
@@ -1637,7 +1637,7 @@ paths:
       tags: [Game Matches]
       summary: One match, battle report included
       description: "Restricted to those who were there: its creator and its players."
-      security: [{ sessionAuth: [] }]
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
       responses:
         "200":
           description: Match.
@@ -1645,7 +1645,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/GameMatchDetail" }
         "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { description: Not a participant. }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
 
   /game-matches/{matchId}/battle-map:
@@ -1663,13 +1663,14 @@ paths:
         tokens are clamped onto the board and terrain, tokens and instants are
         capped, so a report never becomes unsaveable because its table shrank.
         The normalized table is returned.
-      security: [{ sessionAuth: [] }]
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required: [map]
               properties: { map: { $ref: "#/components/schemas/BattleMap" } }
       responses:
         "200":
@@ -1678,10 +1679,11 @@ paths:
             application/json:
               schema:
                 type: object
+                required: [map]
                 properties: { map: { $ref: "#/components/schemas/BattleMap" } }
         "400": { $ref: "#/components/responses/ValidationError" }
         "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { description: Only the creator may draw the table. }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
 
@@ -1710,7 +1712,7 @@ paths:
         For clients that scan the invite QR code without a browser. Joining twice
         is not an error — the QR code stays on screen and gets scanned again:
         `joined` is then `false`, and the match is returned either way.
-      security: [{ sessionAuth: [] }]
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
       responses:
         "200":
           description: Joined, or already a player.
@@ -1738,7 +1740,7 @@ paths:
         tournaments **in progress come first** — they are the only thing anyone
         looks for on the day, and a pagination that buried them would miss its
         point. A date filter only keeps tournaments that carry a date.
-      security: [{ sessionAuth: [] }]
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
       parameters:
         - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
@@ -3670,6 +3672,16 @@ components:
         external AI call (`scanner:ai`, `quizzes:ai-import`) are always granted
         separately and never implied by the matching content permission.
         `quizzes:update-all` also honours the legacy `quizzes:update` name.
+    apiKeyAuth:
+      type: http
+      scheme: bearer
+      description: >
+        Personal API key (`jts_...`), sent as `Authorization: Bearer jts_...`.
+        Every operation resolved through `authenticateApiRequest` accepts it in
+        place of the session cookie — that is most of the user-scoped API, even
+        where only `sessionAuth` is listed below: the schemes were added later
+        than those operations were written, and only the ones documented since
+        carry both.
     cronSecret:
       type: http
       scheme: bearer

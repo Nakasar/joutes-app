@@ -47,7 +47,10 @@ export async function PUT(
     return NextResponse.json({ error: "Corps de requête invalide" }, { status: 400 });
   }
 
-  const parsed = battleMapSchema.safeParse((body as { map?: unknown } | null)?.map ?? body);
+  // La table est attendue sous `map`, et seulement là : la réponse la rend sous
+  // la même clé, et accepter en plus l'objet nu donnerait deux formes à décrire
+  // pour un endpoint qui n'a qu'un appelant.
+  const parsed = battleMapSchema.safeParse((body as { map?: unknown } | null)?.map);
   if (!parsed.success) {
     return NextResponse.json(
       { error: parsed.error.issues[0]?.message ?? "Données invalides" },

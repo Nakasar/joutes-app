@@ -44,6 +44,14 @@ export async function GET(request: NextRequest) {
   if (!user) return unauthorizedResponse();
 
   const params = request.nextUrl.searchParams;
+  // Ce qui fait basculer la réponse en enveloppe paginée, lu sur la requête
+  // elle-même : après validation, Zod garde les clés optionnelles absentes —
+  // à `undefined`, mais présentes —, et les compter dirait « paginé » à tout
+  // le monde, y compris à qui n'a rien demandé.
+  const paginated = ["page", "limit", "search", "status", "gameId", "from", "to"].some(
+    (key) => params.has(key)
+  );
+
   const query = querySchema.safeParse({
     page: params.get("page") ?? undefined,
     limit: params.get("limit") ?? undefined,
@@ -59,8 +67,6 @@ export async function GET(request: NextRequest) {
       { status: 400 }
     );
   }
-
-  const paginated = Object.keys(query.data).length > 0;
 
   try {
     if (!paginated) {
