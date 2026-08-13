@@ -111,7 +111,13 @@ export async function getPublicUserProfileAction(
 ): Promise<{ success: boolean; error?: string; user?: User; isPublic?: boolean }> {
   try {
     let formatted = userTagOrId.trim();
-    if (!userTagOrId.includes("#") && isNaN(+userTagOrId.substring(-4))) {
+    // Un identifiant se résout tel quel. Le découpage ci-dessous — qui recolle
+    // le « # » d'un tag concaténé, `Nakasar6666` devenant `Nakasar#6666` — en
+    // ferait sinon un tag imaginaire (`507f1f77bcf86cd7994390#9011`) qui ne
+    // désigne personne : les liens de profil par identifiant tombaient tous sur
+    // « utilisateur non trouvé ».
+    const isObjectId = /^[0-9a-f]{24}$/i.test(formatted);
+    if (!isObjectId && !userTagOrId.includes("#") && isNaN(+userTagOrId.substring(-4))) {
       const lastFour = userTagOrId.slice(-4);
       const namePart = userTagOrId.slice(0, -4);
       formatted = `${namePart}#${lastFour}`;

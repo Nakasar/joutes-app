@@ -107,3 +107,24 @@ export function adminUserTag(user: AdminUserSummary): string {
   }
   return user.username || user.id;
 }
+
+/**
+ * Adresse du profil public.
+ *
+ * Le tag y est **concaténé sans son `#`** — `Nakasar#6666` devient
+ * `/users/Nakasar6666` — parce que c'est la forme que la page sait résoudre :
+ * elle recolle le `#` en découpant les quatre derniers caractères. C'est aussi
+ * la forme des liens de profil partout ailleurs dans l'application.
+ *
+ * Un compte sans pseudonyme personnalisé n'a pas de tag : son identifiant sert
+ * alors d'adresse, l'autre forme reconnue par la page.
+ */
+export function adminUserProfilePath(user: AdminUserSummary): string {
+  const path =
+    user.displayName && user.discriminator
+      ? `${user.displayName}${user.discriminator}`
+      : user.id;
+  // Un pseudonyme peut contenir une espace ou une barre oblique, qui ne
+  // traverseraient pas une URL telles quelles.
+  return `/users/${encodeURIComponent(path)}`;
+}

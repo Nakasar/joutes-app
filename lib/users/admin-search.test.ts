@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  adminUserProfilePath,
   adminUserTag,
   parseAdminUserSearch,
   type AdminUserSummary,
@@ -114,6 +115,40 @@ describe("recherche d'utilisateurs (administration)", () => {
       // Une ligne vide serait indistinguable d'une autre, et son avatar
       // n'aurait même pas d'initiale.
       assert.equal(adminUserTag({ ...base, username: "" }), "1");
+    });
+  });
+
+  describe("adminUserProfilePath", () => {
+    const base: AdminUserSummary = { id: "507f1f77bcf86cd799439011", username: "alice", isPublicProfile: false };
+
+    it("concatène le tag sans son « # »", () => {
+      // C'est la forme que la page de profil sait résoudre : elle recolle le
+      // « # » en découpant les quatre derniers caractères.
+      assert.equal(
+        adminUserProfilePath({ ...base, displayName: "Nakasar", discriminator: "6666" }),
+        "/users/Nakasar6666"
+      );
+    });
+
+    it("encode ce qui ne traverserait pas une URL", () => {
+      assert.equal(
+        adminUserProfilePath({ ...base, displayName: "Jean Luc", discriminator: "0001" }),
+        "/users/Jean%20Luc0001"
+      );
+      assert.equal(
+        adminUserProfilePath({ ...base, displayName: "a/b", discriminator: "0001" }),
+        "/users/a%2Fb0001"
+      );
+    });
+
+    it("retombe sur l'identifiant sans pseudonyme personnalisé", () => {
+      // L'autre forme que la page reconnaît : un compte sans tag n'a pas
+      // d'autre adresse.
+      assert.equal(adminUserProfilePath(base), "/users/507f1f77bcf86cd799439011");
+      assert.equal(
+        adminUserProfilePath({ ...base, displayName: "Alice" }),
+        "/users/507f1f77bcf86cd799439011"
+      );
     });
   });
 });

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { requireAdmin } from "@/lib/middleware/admin";
 import { searchUsersForAdmin } from "@/lib/db/users";
-import { adminUserTag } from "@/lib/users/admin-search";
+import { adminUserProfilePath, adminUserTag } from "@/lib/users/admin-search";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -109,9 +109,7 @@ export default async function AdminUsersPage({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <Button asChild variant="ghost" size="sm">
-                        {/* Lien par identifiant : un tag doit être encodé dans
-                            l'URL, et un pseudonyme change. */}
-                        <Link href={`/users/${user.id}`}>Voir le profil</Link>
+                        <Link href={adminUserProfilePath(user)}>Voir le profil</Link>
                       </Button>
                     </td>
                   </tr>

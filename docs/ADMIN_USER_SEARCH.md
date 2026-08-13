@@ -44,9 +44,10 @@ comptes créés par better-auth portent le premier, les plus anciens le second, 
 ## Modules
 
 - `lib/users/admin-search.ts` — interprétation de la saisie
-  (`parseAdminUserSearch`), forme d'un résultat (`AdminUserSummary`) et tag
+  (`parseAdminUserSearch`), forme d'un résultat (`AdminUserSummary`), tag
   affiché (`adminUserTag`, qui retombe sur l'identifiant pour un compte sans
-  aucun nom : une ligne vide serait indistinguable d'une autre). Module pur : `lib/db/users.ts` ouvre une connexion
+  aucun nom : une ligne vide serait indistinguable d'une autre) et adresse du
+  profil (`adminUserProfilePath`). Module pur : `lib/db/users.ts` ouvre une connexion
   MongoDB au chargement et ne peut pas être importé par un test, alors que
   l'interprétation de la saisie est exactement ce qui mérite d'en avoir un.
 - `lib/db/users.ts` — `searchUsersForAdmin(term, limit)`. Projection étroite,
@@ -55,8 +56,12 @@ comptes créés par better-auth portent le premier, les plus anciens le second, 
   composant client : la recherche tient dans l'URL, se partage, se recharge, et
   fonctionne sans JavaScript.
 
-Les résultats mènent au profil public `/users/{id}`, par identifiant : un tag
-demanderait d'être encodé dans l'URL, et un pseudonyme change.
+Les résultats mènent au profil public par **tag concaténé sans son `#`** —
+`Nakasar#6666` devient `/users/Nakasar6666` : c'est la forme que la page sait
+résoudre (elle recolle le `#` en découpant les quatre derniers caractères), et
+celle des liens de profil partout ailleurs dans l'application. Un compte sans
+pseudonyme personnalisé n'a pas de tag : son identifiant sert alors d'adresse,
+l'autre forme reconnue par la page.
 
 ## Tests
 
@@ -66,5 +71,6 @@ npm run test
 
 - `lib/users/admin-search.test.ts` — saisie vide, identifiant contre pseudonyme
   qui lui ressemble, tag complet, discriminateur non numérique, tag incomplet,
-  `@` de mention, échappement des caractères d'expression régulière, et repli du
-  tag affiché sur l'identifiant.
+  `@` de mention, échappement des caractères d'expression régulière, repli du
+  tag affiché sur l'identifiant, et adresse de profil (tag concaténé, encodage,
+  repli sur l'identifiant).
