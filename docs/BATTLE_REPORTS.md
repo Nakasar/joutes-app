@@ -109,14 +109,33 @@ corrige en deux champs.
 ### Le décor appartient à la table, les unités à l'instant
 
 Un rapport garde une suite d'**instants** (« début de partie », « fin du tour
-2 ») qui ne décrivent que les positions des unités. Le décor, lui, est posé une
-fois pour toutes : le recopier dans chaque instant obligerait à le corriger
-partout, pour un décor qui ne bouge pas de la partie.
+2 ») qui décrivent les positions des unités et **ce qui s'y est passé**. Le
+décor, lui, est posé une fois pour toutes : le recopier dans chaque instant
+obligerait à le corriger partout, pour un décor qui ne bouge pas de la partie.
 
 Un nouvel instant part de l'état courant plutôt que d'une table vide : on
 capture une évolution, pas un nouveau déploiement — les unités ont bougé de
-quelques centimètres, elles n'ont pas été reposées. Chaque instant se renomme,
-se réédite et se supprime ; le dernier restant ne peut pas l'être.
+quelques centimètres, elles n'ont pas été reposées. Ses notes, en revanche, ne
+sont pas recopiées : elles racontent un moment précis, pas celui qui suit.
+Chaque instant se renomme, se réédite et se supprime ; le dernier restant ne
+peut pas l'être.
+
+### Les positions montrent, les notes racontent
+
+Un instant porte des **notes** (1 000 caractères) : la charge qui a tout décidé,
+l'objectif pris, le jet raté. Les positions disent où étaient les unités, elles
+ne disent pas pourquoi — et c'est le pourquoi qu'on relit un an plus tard.
+
+Plus court que les notes du rapport (10 000 caractères), qui racontent la partie
+entière : ici, quelques phrases sur un moment. Les notes s'affichent sous la
+table, dans l'instant qu'elles décrivent, pour qui lit le rapport ; celui qui
+tient la table les saisit dans son panneau, où elles se relisent au fil de la
+frappe.
+
+Une note vide disparaît du document plutôt que d'y rester en chaîne vide, et une
+table dont un instant raconte quelque chose n'est **pas** une table vide : un
+rapport peut raconter ses instants sans avoir posé une seule figurine, et le
+tenir pour vide effacerait le récit.
 
 ### Ce qui dépasse est ramené, pas refusé
 
@@ -164,7 +183,7 @@ type BattleReport = {
 type BattleMap = {
   table: { width: number; height: number };   // En centimètres
   terrain: BattleMapTerrain[];                // Rond, rectangle ou triangle
-  snapshots: BattleMapSnapshot[];             // Positions des unités, instant par instant
+  snapshots: BattleMapSnapshot[];             // Positions et récit, instant par instant
   playerColors?: Record<User['id'], string>;
 };
 ```
@@ -195,6 +214,8 @@ Géométrie et bornes de la table, également testées
   joueurs sortis de la partie, et plafonne décors, jetons et instants ;
 - `emptyBattleMap(slug, snapshotId, playerIds)` — la table de départ, avec son
   premier instant « Début de partie » et une couleur par joueur ;
+- `isEmptyBattleMap(map)` — vraie seulement sans décor, sans jeton **et** sans
+  note ;
 - `colorForPlayer()`, `trianglePoints()` — ce que le dessin réclame, rendu
   testable en le sortant du composant.
 
