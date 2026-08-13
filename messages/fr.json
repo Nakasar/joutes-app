@@ -2504,6 +2504,28 @@
                          "statsPresetHint": "Relevées à chaque partie et utilisées pour départager le classement. Elles ne désignent jamais le vainqueur.",
                          "requireStatsLabel": "Saisie obligatoire",
                          "requireStatsHint": "Un résultat n'est accepté que si toutes les statistiques sont renseignées, pour chaque joueur. Les raccourcis de score sont alors désactivés.",
+                         "tiebreakersLabel": "Départage des égalités",
+                         "tiebreakersHint": "Appliqués dans cet ordre, tant que deux joueurs restent à égalité. Seuls les critères que la plateforme sait calculer sont proposés.",
+                         "tiebreakersReset": "Rétablir les règles du jeu",
+                         "tiebreakersAdd": "Ajouter :",
+                         "tiebreakersEmpty": "Aucun départage : les joueurs à égalité de points le restent, dans un ordre arbitraire.",
+                         "tiebreakersSummary": "Départage : {chain}",
+                         "tiebreakerMatchPoints": "Points de match",
+                         "tiebreakerMatchPointsHint": "Le classement lui-même : victoires, nuls et défaites selon le barème de la phase. Toujours en premier.",
+                         "tiebreakerStatHint": "Statistique relevée à chaque partie. Le plus grand total passe devant.",
+                         "tiebreakerNames": {
+                           "omw": "Résistance (OMW%)",
+                           "gamesDiff": "Différence de parties",
+                           "gamesWon": "Parties gagnées"
+                         },
+                         "tiebreakerDescriptions": {
+                           "omw": "Taux de victoire moyen des adversaires rencontrés. Le plus fort parcours passe devant.",
+                           "gamesDiff": "Parties gagnées moins parties perdues, sur tout le tournoi.",
+                           "gamesWon": "Nombre total de parties gagnées."
+                         },
+                         "tiebreakerMoveUpAria": "Monter le critère {name}",
+                         "tiebreakerMoveDownAria": "Descendre le critère {name}",
+                         "tiebreakerRemoveAria": "Retirer le critère {name}",
                          "scenariosLabel": "Scénarios (un par ligne)",
                          "scenariosPlaceholder": "Conflit mineur | Une seule escouade\nPriorité changeante | Deux escouades",
                          "scenariosHint": "Attribués aux rondes dans l'ordre. Après le « | », les consignes de composition affichées aux joueurs.",

@@ -3,6 +3,7 @@ import {
   type TournamentFixedScoring,
   type TournamentResultMode,
   type TournamentSwissPairing,
+  type TournamentTiebreaker,
 } from "@/lib/types/Tournament";
 
 // Statistique secondaire relevée à la fin de chaque partie, propre à un jeu
@@ -21,12 +22,20 @@ export type MatchStatDefinition = {
   max: number;
 };
 
-// Critère de départage appliqué après les points de match. `stat:<clé>` désigne
-// une statistique du preset ; les autres sont les critères historiques.
-export type TiebreakerKey = "omw" | "gamesDiff" | "gamesWon" | `stat:${string}`;
+// Critère de départage appliqué après les points de match. Le type vit dans
+// lib/types/Tournament.ts (la phase le porte) ; l'alias reste le nom usuel ici.
+export type TiebreakerKey = TournamentTiebreaker;
+
+// Critères de départage indépendants du jeu : les seuls que la plateforme sache
+// calculer sans preset, et donc les seuls proposés à toutes les phases. Toute
+// nouveauté (points de match des adversaires, Buchholz…) s'ajoute ici et devient
+// aussitôt proposable à l'organisateur.
+export const GENERIC_TIEBREAKERS: TiebreakerKey[] = ["omw", "gamesDiff", "gamesWon"];
 
 // Chaîne de départage historique, conservée pour toutes les phases sans preset.
-export const DEFAULT_TIEBREAKERS: TiebreakerKey[] = ["omw", "gamesDiff", "gamesWon"];
+// Elle reprend aujourd'hui tous les critères génériques, mais ne dit pas la même
+// chose : l'une est un catalogue, l'autre un ordre d'application.
+export const DEFAULT_TIEBREAKERS: TiebreakerKey[] = [...GENERIC_TIEBREAKERS];
 
 // Réglages de format livrés avec un jeu. Le preset n'est pas modifiable par
 // l'organisateur : il traduit les règles officielles du jeu. L'organisateur
@@ -187,6 +196,39 @@ export function presetStatKeys(preset?: GameTournamentPreset): string[] {
 /** Départages d'un preset, ou la chaîne historique en son absence. */
 export function presetTiebreakers(preset?: GameTournamentPreset): TiebreakerKey[] {
   return preset ? preset.tiebreakers : DEFAULT_TIEBREAKERS;
+}
+
+/**
+ * Départages applicables à une phase, dans l'ordre où on les propose : d'abord
+ * les statistiques relevées par le preset, puis les critères génériques. C'est
+ * exactement ce que l'organisateur peut mettre dans sa chaîne — un critère
+ * absent d'ici ne se calcule pas.
+ */
+export function availableTiebreakers(preset?: GameTournamentPreset): TiebreakerKey[] {
+  const statTiebreakers = (preset?.stats ?? []).map(
+    (stat) => `stat:${stat.key}` as TiebreakerKey
+  );
+  return [...statTiebreakers, ...GENERIC_TIEBREAKERS];
+}
+
+/**
+ * Chaîne de départage effectivement appliquée à une phase : celle choisie par
+ * l'organisateur, ou celle du preset s'il n'a rien choisi. Une chaîne vide
+ * choisie reste vide (les ex æquo le restent), mais une chaîne absente n'est
+ * pas un choix : elle suit le jeu.
+ *
+ * Les critères devenus incalculables sont écartés — statistique d'un preset
+ * qu'on a retiré de la phase depuis, ou preset disparu d'une version à l'autre.
+ * Sans ce filtre, un départage fantôme resterait affiché dans la configuration
+ * alors qu'il ne compare plus que des zéros.
+ */
+export function resolveTiebreakers(
+  chosen: TiebreakerKey[] | undefined,
+  preset?: GameTournamentPreset
+): TiebreakerKey[] {
+  if (!chosen) return presetTiebreakers(preset);
+  const applicable = new Set<string>(availableTiebreakers(preset));
+  return chosen.filter((tiebreaker) => applicable.has(tiebreaker));
 }
 
 /**

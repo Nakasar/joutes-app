@@ -23,7 +23,12 @@ import {
 import type { TournamentPhase } from "@/lib/types/Tournament";
 import { NextPhaseButton } from "./NextPhaseButton";
 import { OrganizerPageHeader } from "./OrganizerPageHeader";
-import { PhaseForm, type PhasePresetOption } from "./PhaseForm";
+import { PhaseForm } from "./PhaseForm";
+import {
+  type PhasePresetOption,
+  effectiveTiebreakers,
+  tiebreakerLabel,
+} from "./phaseTiebreakers";
 import { PhaseTimeline, type TimelineRound } from "./PhaseTimeline";
 
 // Valeur sentinelle du Select de phase en cours (SelectItem ne peut pas être vide).
@@ -191,6 +196,21 @@ export function PhasesSection({
     );
   };
 
+  // Départages appliqués par une phase, dans l'ordre, points de match compris :
+  // l'organisateur doit pouvoir vérifier la règle sans ouvrir le formulaire.
+  // Une phase puzzle classe au chronomètre et n'a rien à départager ainsi.
+  const tiebreakSummary = (phase: TournamentPhase): string | null => {
+    if (phase.type === "time-race") return null;
+    const preset = presets.find((option) => option.key === phase.statsPresetKey);
+    const chain = [
+      t("organizerPhases.tiebreakerMatchPoints"),
+      ...effectiveTiebreakers(phase.tiebreakers, preset).map((key) =>
+        tiebreakerLabel(key, preset, t)
+      ),
+    ];
+    return t("organizerPhases.tiebreakersSummary", { chain: chain.join(" › ") });
+  };
+
   return (
     <div className="space-y-4">
       <OrganizerPageHeader
@@ -234,52 +254,56 @@ export function PhasesSection({
             <p className="text-sm text-muted-foreground">{t("organizerPhases.empty")}</p>
           ) : (
             <ul className="space-y-3">
-              {phases.map((phase) => (
-                <li key={phase.id} className="flex flex-wrap items-center justify-between rounded-lg border p-4 gap-2">
-                  <div>
-                    <div className="font-medium">{phase.name}</div>
-                    <div className="text-sm text-muted-foreground">{phaseSummary(phase)}</div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline">{t(`common.phaseStatus.${phase.status}`)}</Badge>
-                    {phase.status === "in-progress" && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => resetPhaseStatus(phase)}
-                        disabled={busy}
-                        title={t("organizerPhases.resetStatusTitle")}
-                        aria-label={t("organizerPhases.resetStatusAria", { name: phase.name })}
-                      >
-                        <RotateCcw className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {phase.status === "not-started" && (
-                      <>
+              {phases.map((phase) => {
+                const tiebreaks = tiebreakSummary(phase);
+                return (
+                  <li key={phase.id} className="flex flex-wrap items-center justify-between rounded-lg border p-4 gap-2">
+                    <div>
+                      <div className="font-medium">{phase.name}</div>
+                      <div className="text-sm text-muted-foreground">{phaseSummary(phase)}</div>
+                      {tiebreaks && <div className="text-xs text-muted-foreground">{tiebreaks}</div>}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline">{t(`common.phaseStatus.${phase.status}`)}</Badge>
+                      {phase.status === "in-progress" && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setEditPhase(phase)}
+                          onClick={() => resetPhaseStatus(phase)}
                           disabled={busy}
-                          aria-label={t("organizerPhases.editPhaseAria", { name: phase.name })}
+                          title={t("organizerPhases.resetStatusTitle")}
+                          aria-label={t("organizerPhases.resetStatusAria", { name: phase.name })}
                         >
-                          <Pencil className="h-4 w-4" />
+                          <RotateCcw className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-800"
-                          onClick={() => deletePhase(phase)}
-                          disabled={busy}
-                          aria-label={t("organizerPhases.deletePhaseAria", { name: phase.name })}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </li>
-              ))}
+                      )}
+                      {phase.status === "not-started" && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditPhase(phase)}
+                            disabled={busy}
+                            aria-label={t("organizerPhases.editPhaseAria", { name: phase.name })}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-800"
+                            onClick={() => deletePhase(phase)}
+                            disabled={busy}
+                            aria-label={t("organizerPhases.deletePhaseAria", { name: phase.name })}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
 

@@ -2503,6 +2503,28 @@
                          "statsPresetHint": "Recorded for each game and used as standings tiebreakers. They never decide the winner.",
                          "requireStatsLabel": "Mandatory entry",
                          "requireStatsHint": "A result is only accepted once every statistic is filled in, for every player. Score shortcuts are disabled in that case.",
+                         "tiebreakersLabel": "Tiebreakers",
+                         "tiebreakersHint": "Applied in this order, for as long as two players remain tied. Only criteria the platform can compute are offered.",
+                         "tiebreakersReset": "Restore the game's rules",
+                         "tiebreakersAdd": "Add:",
+                         "tiebreakersEmpty": "No tiebreaker: players on equal points stay tied, in an arbitrary order.",
+                         "tiebreakersSummary": "Tiebreakers: {chain}",
+                         "tiebreakerMatchPoints": "Match points",
+                         "tiebreakerMatchPointsHint": "The standings themselves: wins, draws and losses per the phase's scoring. Always first.",
+                         "tiebreakerStatHint": "Statistic recorded for each game. The highest total comes first.",
+                         "tiebreakerNames": {
+                           "omw": "Resistance (OMW%)",
+                           "gamesDiff": "Game difference",
+                           "gamesWon": "Games won"
+                         },
+                         "tiebreakerDescriptions": {
+                           "omw": "Average win rate of the opponents faced. The tougher run comes first.",
+                           "gamesDiff": "Games won minus games lost, across the whole tournament.",
+                           "gamesWon": "Total number of games won."
+                         },
+                         "tiebreakerMoveUpAria": "Move the {name} criterion up",
+                         "tiebreakerMoveDownAria": "Move the {name} criterion down",
+                         "tiebreakerRemoveAria": "Remove the {name} criterion",
                          "scenariosLabel": "Scenarios (one per line)",
                          "scenariosPlaceholder": "Minor Conflict | A single squad\nEscalating Priority | Two squads",
                          "scenariosHint": "Assigned to rounds in order. After the “|”, the list-building instructions shown to players.",

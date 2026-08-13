@@ -28,6 +28,8 @@ export default async function OrganizerPhasesPage({
           labelKey: preset.labelKey,
           applyByDefault: preset.applyByDefault ?? false,
           requireStats: preset.defaults.requireStats,
+          stats: preset.stats.map((stat) => ({ key: stat.key, labelKey: stat.labelKey })),
+          tiebreakers: preset.tiebreakers,
         }))}
         rounds={rounds.map((r) => ({
           id: r.id,

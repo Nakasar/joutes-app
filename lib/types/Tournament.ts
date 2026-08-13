@@ -28,6 +28,16 @@ export type TournamentMatchStatus = "pending" | "in-progress" | "completed" | "d
 //   en est déduit (score le plus élevé ; égalité = partie nulle).
 export type TournamentResultMode = "points" | "selection";
 
+// Critère de départage appliqué après les points de match, dans l'ordre de la
+// chaîne de la phase. `stat:<clé>` désigne une statistique du preset de la
+// phase ; les autres ne dépendent d'aucun jeu :
+// - omw : moyenne du taux de victoire des adversaires rencontrés (résistance).
+// - gamesDiff : différence entre parties gagnées et parties perdues.
+// - gamesWon : nombre de parties gagnées.
+// Vit ici plutôt que dans game-presets.ts pour que la phase puisse le typer
+// sans dépendre du catalogue des presets, qui lui dépend de ce fichier.
+export type TournamentTiebreaker = "omw" | "gamesDiff" | "gamesWon" | `stat:${string}`;
+
 // Comment les points de classement d'un match sont attribués.
 // - fixed : points fixes par victoire / défaite / égalité.
 // - rank_offset : points = N + offset[rang], N étant le nombre de joueurs du
@@ -358,6 +368,11 @@ export type TournamentPhase = {
   // Preset de jeu appliqué à la phase (statistiques secondaires et départages).
   // Absent = aucune statistique relevée, départages historiques.
   statsPresetKey?: string;
+  // Chaîne de départage choisie par l'organisateur, appliquée après les points
+  // de match et dans cet ordre. Absente = celle du preset de la phase (ou la
+  // chaîne historique sans preset) : une phase qu'on n'a pas touchée suit
+  // l'usage du jeu, y compris s'il évolue.
+  tiebreakers?: TournamentTiebreaker[];
   // Saisie des statistiques du preset exigée pour rapporter un résultat. Défaut
   // false (statistiques facultatives). Sans effet si la phase n'a pas de
   // preset : il n'y a alors rien à saisir.

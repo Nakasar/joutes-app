@@ -11,9 +11,10 @@ organisateur et joueur — n'est pas forké : il gagne des réglages.
   type de phase, le rythme devient un réglage : une phase se joue « sur place »
   (minuteur et tables, comportement historique) ou « par intervalles » (chaque
   ronde court sur plusieurs jours, les joueurs planifient leur partie).
-- **Un jeu apporte ses règles de départage, pas l'organisateur.** Les
+- **Un jeu apporte ses règles de départage, l'organisateur garde la main.** Les
   statistiques de match et l'ordre des départages viennent d'un preset livré
-  avec le jeu. L'organisateur choisit de l'appliquer, il ne le rédige pas.
+  avec le jeu : l'organisateur n'a rien à rédiger, mais il voit la chaîne
+  appliquée et peut la modifier (cf. `docs/TOURNAMENT_TIEBREAKERS.md`).
 - **Un match non joué n'est pas un match nul.** L'écart est invisible à l'écran
   et décisif au classement : il est porté par un champ dédié.
 
@@ -26,6 +27,7 @@ organisateur et joueur — n'est pas forké : il gagne des réglages.
 | `deadlineResolution` | Sort des matchs sans résultat à la clôture : `double-loss` (défaut) ou `manual`. |
 | `swissPairing` | `ranked` (défaut, ordre du classement) ou `random-in-bracket` (tirage au sort dans chaque groupe de points, règle des ligues officielles). |
 | `statsPresetKey` | Preset de statistiques du jeu. Absent = aucune statistique relevée, départages historiques. |
+| `tiebreakers` | Chaîne de départage choisie par l'organisateur. Absent = celle du preset (cf. `docs/TOURNAMENT_TIEBREAKERS.md`). |
 | `requireMatchStats` | Saisie des statistiques exigée pour rapporter un résultat. Défaut `false`, sans effet sans preset. |
 | `scenarios` | Pool de scénarios attribués aux rondes dans l'ordre, en boucle. |
 
@@ -61,12 +63,14 @@ partie, ceux que les joueurs tiennent déjà sur leur feuille de match :
   mission — c'est lui qui départage ;
 - le **score de destruction** (« points destroyed »), la valeur en points de
   l'armée adverse détruite — conservé pour l'historique du tournoi, il n'entre
-  dans aucun départage.
+  dans aucun départage par défaut.
 
 Départage complet, dans l'ordre : **points de tournoi** (victoires, nuls,
 défaites selon le barème de la phase — appliqués avant toute chaîne de preset
 par `calculateMultiplayerStandings`), puis **score de bataille**, puis
 **résistance** (OMW%, moyenne du taux de victoire des adversaires rencontrés).
+C'est la chaîne proposée par le jeu : l'organisateur peut la réordonner, y
+ajouter le score de destruction ou en retirer un critère.
 
 C'est le preset retenu d'office (`applyByDefault`) à la création d'une phase
 pour ces jeux, avec la saisie exigée : `victory-points`, plus léger, reste
@@ -182,9 +186,11 @@ npm run test
   tirage au sort dans un groupe de points.
 - `lib/tournaments/standings.test.ts` — double défaite ≠ match nul,
   statistiques de bye et de forfait, chaîne de départage (dont points de
-  tournoi → score de bataille → résistance).
+  tournoi → score de bataille → résistance, et une chaîne choisie par
+  l'organisateur qui renverse cet ordre).
 - `lib/tournaments/game-presets.test.ts` — preset retenu d'office par jeu,
-  complétude des statistiques exigées (un zéro est une valeur saisie).
+  complétude des statistiques exigées (un zéro est une valeur saisie),
+  résolution de la chaîne de départage.
 
 `scripts/ts-paths-hook.mjs` résout l'alias `@/` et les imports sans extension
 pour `node --test`.

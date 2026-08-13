@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { TournamentTiebreaker } from "@/lib/types/Tournament";
 
 export const tournamentPhaseTypeSchema = z.enum([
   "freeform",
@@ -22,6 +23,26 @@ export const tournamentScenarioSchema = z.object({
   name: z.string().min(1, "Le nom du scénario est requis").max(200),
   description: z.string().max(2000).optional(),
 });
+
+// Critère de départage : un critère générique, ou la statistique d'un preset
+// (`stat:<clé>`). Seule la forme est vérifiée ici ; le domaine sait seul quelles
+// statistiques le preset de la phase relève réellement, et écarte les autres au
+// moment de classer.
+const TIEBREAKER_PATTERN = /^(omw|gamesDiff|gamesWon|stat:[A-Za-z0-9_-]{1,40})$/;
+const tiebreakerSchema = z.custom<TournamentTiebreaker>(
+  (value) => typeof value === "string" && TIEBREAKER_PATTERN.test(value),
+  { message: "Critère de départage inconnu" }
+);
+
+// Chaîne de départage d'une phase. Un tableau vide est un choix valide (aucun
+// départage : les ex æquo le restent) ; un même critère ne peut pas y figurer
+// deux fois, le second passage ne trancherait jamais rien.
+export const tournamentTiebreakersSchema = z
+  .array(tiebreakerSchema)
+  .max(12)
+  .refine((keys) => new Set(keys).size === keys.length, {
+    message: "Un critère de départage ne peut apparaître qu'une fois",
+  });
 
 // Durée d'un intervalle : d'une heure à un an, ce qui couvre aussi bien une
 // ronde jouée le soir même qu'une ligue de club étalée sur une saison.
@@ -182,6 +203,9 @@ export const createTournamentPhaseSchema = z
     intervalHours: intervalHoursSchema.optional(),
     deadlineResolution: tournamentDeadlineResolutionSchema.default("double-loss"),
     statsPresetKey: z.string().min(1).max(60).optional(),
+    // Départages appliqués après les points de match, dans cet ordre. Omis = la
+    // phase suit ceux du jeu (preset) ou la chaîne historique.
+    tiebreakers: tournamentTiebreakersSchema.optional(),
     // Saisie des statistiques du preset exigée pour rapporter un résultat.
     requireMatchStats: z.boolean().default(false),
     scenarios: z.array(tournamentScenarioSchema).max(50).optional(),
@@ -221,6 +245,9 @@ export const updateTournamentPhaseSchema = z
     // null retire le preset : la phase ne relève plus de statistiques et
     // retombe sur les départages historiques.
     statsPresetKey: z.string().min(1).max(60).nullable().optional(),
+    // null rend la phase aux départages de son preset (ou à la chaîne
+    // historique) : c'est le geste « je reprends les règles du jeu ».
+    tiebreakers: tournamentTiebreakersSchema.nullable().optional(),
     requireMatchStats: z.boolean().optional(),
     // null vide le pool de scénarios (les rondes déjà créées gardent le leur).
     scenarios: z.array(tournamentScenarioSchema).max(50).nullable().optional(),
