@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   DEFAULT_TABLE,
   MAX_SNAPSHOTS,
+  MAX_SNAPSHOT_NOTES_LENGTH,
   MAX_TABLE_SIDE,
   MIN_TABLE_SIDE,
   PLAYER_COLORS,
@@ -187,6 +188,41 @@ describe("normalizeBattleMap", () => {
 
     assert.equal(map.snapshots[0].label, "Instant 1");
   });
+
+  it("garde les notes d'un instant, débarrassées de leurs blancs", () => {
+    const map = normalizeBattleMap(
+      mapWith({
+        snapshots: [{ id: "s1", label: "Tour 2", notes: "  Vader charge le pont.  ", units: [] }],
+      }),
+      []
+    );
+
+    assert.equal(map.snapshots[0].notes, "Vader charge le pont.");
+  });
+
+  it("retire une note vide plutôt que d'en garder une chaîne vide", () => {
+    // Le reste du code lit ce champ par vérité : une chaîne vide s'y
+    // afficherait comme une note, sous la forme d'un paragraphe blanc.
+    const map = normalizeBattleMap(
+      mapWith({ snapshots: [{ id: "s1", label: "Tour 2", notes: "   ", units: [] }] }),
+      []
+    );
+
+    assert.equal("notes" in map.snapshots[0], false);
+  });
+
+  it("plafonne la longueur des notes d'un instant", () => {
+    const map = normalizeBattleMap(
+      mapWith({
+        snapshots: [
+          { id: "s1", label: "Tour 2", notes: "x".repeat(MAX_SNAPSHOT_NOTES_LENGTH + 50), units: [] },
+        ],
+      }),
+      []
+    );
+
+    assert.equal(map.snapshots[0].notes?.length, MAX_SNAPSHOT_NOTES_LENGTH);
+  });
 });
 
 describe("emptyBattleMap", () => {
@@ -207,6 +243,25 @@ describe("emptyBattleMap", () => {
 
   it("recommence la palette au-delà de son dernier ton", () => {
     assert.equal(playerColorAt(PLAYER_COLORS.length), PLAYER_COLORS[0]);
+  });
+});
+
+describe("isEmptyBattleMap", () => {
+  it("ne tient pas pour vide une table dont un instant raconte quelque chose", () => {
+    // Un rapport peut raconter ses instants sans avoir posé une seule figurine.
+    // Le tenir pour vide effacerait le récit à l'enregistrement.
+    const map = mapWith({
+      snapshots: [{ id: "s1", label: "Tour 2", notes: "Vader charge le pont.", units: [] }],
+    });
+
+    assert.equal(isEmptyBattleMap(map), false);
+  });
+
+  it("reste vide quand ni décor, ni jeton, ni note", () => {
+    assert.equal(
+      isEmptyBattleMap(mapWith({ snapshots: [{ id: "s1", label: "Tour 2", units: [] }] })),
+      true
+    );
   });
 });
 

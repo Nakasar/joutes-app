@@ -5,6 +5,7 @@ import { nanoid } from "nanoid";
 import { Plus, Save, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   BATTLE_MAP_SHAPES,
@@ -14,6 +15,7 @@ import {
   DEFAULT_TOKEN_DIAMETER,
   MAX_LABEL_LENGTH,
   MAX_SNAPSHOTS,
+  MAX_SNAPSHOT_NOTES_LENGTH,
   MAX_TABLE_SIDE,
   MAX_TERRAIN_PIECES,
   MAX_UNIT_TOKENS,
@@ -28,6 +30,7 @@ import {
 import type {
   BattleMap,
   BattleMapShape,
+  BattleMapSnapshot,
   BattleMapTerrain,
   BattleMapUnitToken,
   BattleReportArmy,
@@ -109,6 +112,16 @@ export default function BattleMapEditor({
   const update = (next: BattleMap) => {
     setMap(next);
     setDirty(true);
+  };
+
+  /** Ce que porte l'instant courant en dehors de ses jetons : nom, notes. */
+  const updateSnapshotFields = (fields: Partial<Omit<BattleMapSnapshot, "id" | "units">>) => {
+    update({
+      ...map,
+      snapshots: map.snapshots.map((entry, index) =>
+        index === snapshotIndex ? { ...entry, ...fields } : entry
+      ),
+    });
   };
 
   const updateSnapshot = (units: BattleMapUnitToken[]) => {
@@ -499,6 +512,15 @@ export default function BattleMapEditor({
         })}
       </svg>
 
+      {/* Ce qui s'est passé à cet instant. En lecture seule uniquement : celui
+          qui dispose la table a le champ de saisie sous les yeux, juste en
+          dessous, et la note s'y relit au fil de la frappe. */}
+      {!editable && snapshot.notes && (
+        // Les notes sont saisies au fil de la plume : leurs retours à la ligne
+        // font le récit, et les perdre le rendrait illisible.
+        <p className="text-sm whitespace-pre-wrap">{snapshot.notes}</p>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
           {players.map((player) => (
@@ -777,6 +799,22 @@ export default function BattleMapEditor({
           )}
 
           {/* Instant courant */}
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              Notes de l&apos;instant
+              <span className="text-muted-foreground/70">
+                ({snapshot.notes?.length ?? 0}/{MAX_SNAPSHOT_NOTES_LENGTH})
+              </span>
+            </label>
+            <Textarea
+              rows={3}
+              maxLength={MAX_SNAPSHOT_NOTES_LENGTH}
+              placeholder="Ce qui s'est passé : la charge décisive, l'objectif pris, le jet raté…"
+              value={snapshot.notes ?? ""}
+              onChange={(event) => updateSnapshotFields({ notes: event.target.value })}
+            />
+          </div>
+
           <div className="flex flex-wrap items-center gap-2">
             <label className="flex items-center gap-2 text-xs text-muted-foreground">
               Nom de l&apos;instant
@@ -785,14 +823,7 @@ export default function BattleMapEditor({
                 className="w-56"
                 maxLength={MAX_LABEL_LENGTH}
                 value={snapshot.label}
-                onChange={(event) =>
-                  update({
-                    ...map,
-                    snapshots: map.snapshots.map((entry, index) =>
-                      index === snapshotIndex ? { ...entry, label: event.target.value } : entry
-                    ),
-                  })
-                }
+                onChange={(event) => updateSnapshotFields({ label: event.target.value })}
               />
             </label>
             {map.snapshots.length > 1 && (

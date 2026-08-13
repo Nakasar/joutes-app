@@ -11,6 +11,7 @@ import {
   BATTLE_MAP_SHAPES,
   MAX_LABEL_LENGTH,
   MAX_SNAPSHOTS,
+  MAX_SNAPSHOT_NOTES_LENGTH,
   MAX_TABLE_SIDE,
   MAX_TERRAIN_PIECES,
   MAX_UNIT_TOKENS,
@@ -94,6 +95,9 @@ export const battleMapUnitTokenSchema = z.object({
 export const battleMapSnapshotSchema = z.object({
   id: battleMapIdSchema,
   label: z.string().trim().min(1).max(MAX_LABEL_LENGTH),
+  // Ce qui s'est passé à cet instant. Absent quand l'instant ne dit rien de
+  // plus que les positions qu'il montre.
+  notes: z.string().trim().max(MAX_SNAPSHOT_NOTES_LENGTH).optional(),
   units: z.array(battleMapUnitTokenSchema).max(MAX_UNIT_TOKENS).default([]),
 });
 

@@ -113,6 +113,12 @@ export type BattleMapUnitToken = {
 export type BattleMapSnapshot = {
   id: string;
   label: string;
+  /**
+   * Ce qui s'est passé à cet instant, raconté par celui qui tient le rapport :
+   * la charge qui a tout décidé, l'objectif pris, le jet raté. Les positions
+   * montrent où étaient les unités, elles ne disent pas pourquoi.
+   */
+  notes?: string;
   units: BattleMapUnitToken[];
 };
 
