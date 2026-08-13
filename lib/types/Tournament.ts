@@ -457,6 +457,11 @@ export type TournamentRound = {
   // Dernière relance envoyée aux joueurs pour cette ronde. Empêche le cron
   // d'échéance de renvoyer la même relance à chaque passage.
   remindersSentAt?: Date;
+  // Date à laquelle l'organisation a été prévenue que tous les résultats de la
+  // ronde étaient rentrés. Sert de verrou : deux confirmations simultanées des
+  // derniers matchs constateraient sinon toutes deux que la ronde est complète,
+  // et l'annonceraient deux fois.
+  roundCompleteNotifiedAt?: Date;
   // Scénario joué pendant la ronde, repris du pool de la phase à la création
   // et modifiable par l'organisateur.
   scenario?: TournamentScenario;

@@ -99,11 +99,13 @@ export async function notifyRoundPaired(
 /**
  * Diffuse une annonce de l'organisation à tous les joueurs inscrits.
  *
- * L'organisation ne se la renvoie pas à elle-même : elle vient de l'écrire.
+ * L'auteur en est écarté : un organisateur inscrit comme joueur — cas courant
+ * dans un petit tournoi — recevrait sinon sa propre annonce sur son téléphone,
+ * une seconde après l'avoir écrite.
  */
 export async function notifyAnnouncement(
   tournament: Tournament,
-  announcement: { message: string; level: TournamentAnnouncementLevel },
+  announcement: { message: string; level: TournamentAnnouncementLevel; createdBy?: string },
   players: TournamentPlayer[]
 ): Promise<void> {
   const { title, description } = announcementMessage({
@@ -116,6 +118,7 @@ export async function notifyAnnouncement(
   await Promise.all(
     players
       .filter(isReachable)
+      .filter((player) => player.userId !== announcement.createdBy)
       .map((player) => notifyUser(player.userId, title, description, { link }))
   );
 }

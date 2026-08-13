@@ -5,6 +5,7 @@ import {
   assertCanManage,
   assertPrincipalCanRead,
   buildMatchActor,
+  claimRoundCompleteNotice,
   clearMatchResult,
   confirmMatchResult,
   deleteMatch,
@@ -48,6 +49,12 @@ async function notifyRoundCompleteIfDone(tournament: Tournament, roundId: string
 
     const round = await getRoundById(tournament.id, roundId);
     if (!round) return;
+
+    // Les deux derniers résultats d'une ronde peuvent être confirmés par deux
+    // requêtes qui se croisent : chacune constaterait que tout est rentré. Le
+    // verrou est posé en base, où MongoDB départage — le perdant repart sans
+    // rien envoyer.
+    if (!(await claimRoundCompleteNotice(tournament.id, roundId))) return;
 
     await notifyRoundComplete(tournament, round);
   } catch (error) {
