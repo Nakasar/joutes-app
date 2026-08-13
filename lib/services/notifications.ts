@@ -2,14 +2,25 @@ import { createNotification } from "@/lib/db/notifications";
 import { Notification } from "@/lib/types/Notification";
 
 /**
- * Crée une notification pour un utilisateur spécifique
+ * Crée une notification pour un utilisateur spécifique.
+ *
+ * `link` est un chemin relatif de Joutes (`/tournaments/xxx`). Il n'est pas
+ * cosmétique : c'est lui que l'application mobile traduit en route pour ouvrir
+ * le bon écran quand l'utilisateur touche la notification. Sans lui, le toucher
+ * retombe sur la liste des notifications.
  */
-export async function notifyUser(userId: string, title: string, description: string): Promise<Notification> {
+export async function notifyUser(
+  userId: string,
+  title: string,
+  description: string,
+  options: { link?: string } = {}
+): Promise<Notification> {
   return createNotification({
     type: 'user',
     userId,
     title,
     description,
+    ...(options.link ? { link: options.link } : {}),
   });
 }
 

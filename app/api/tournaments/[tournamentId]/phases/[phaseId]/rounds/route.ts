@@ -9,7 +9,7 @@ import {
   recordActivity,
   requireTournament,
 } from "@/lib/db/tournaments";
-import { notifyRoundOpened } from "@/lib/tournaments/interval-notifications";
+import { notifyRoundPaired } from "@/lib/tournaments/notifications";
 import { resolveTournamentPrincipal, tournamentErrorResponse, unauthorizedResponse } from "../../../../utils";
 
 type Params = { params: Promise<{ tournamentId: string; phaseId: string }> };
@@ -49,14 +49,14 @@ export async function POST(request: NextRequest, { params }: Params) {
       matches: matches.length,
     });
 
-    // Un intervalle de ligue s'ouvre pour plusieurs jours : sans message, les
-    // joueurs ne savent pas qu'ils sont appariés. L'envoi n'est jamais bloquant.
-    if (round.deadlineAt) {
-      try {
-        await notifyRoundOpened(tournament, round, matches, await listPlayers(tournamentId));
-      } catch (error) {
-        console.error("Notification d'ouverture d'intervalle échouée", error);
-      }
+    // Une ronde qui s'ouvre se dit, quel qu'en soit le rythme. L'intervalle en
+    // avait besoin parce qu'il court sur plusieurs jours ; la ronde sur place en
+    // profite aussi, un téléphone en poche valant mieux qu'un écran à aller
+    // consulter. L'envoi n'est jamais bloquant.
+    try {
+      await notifyRoundPaired(tournament, round, matches, await listPlayers(tournamentId));
+    } catch (error) {
+      console.error("Notification d'appariement échouée", error);
     }
 
     return NextResponse.json({ ...round, matches }, { status: 201 });

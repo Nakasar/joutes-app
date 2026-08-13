@@ -331,6 +331,7 @@ function toRound(doc: WithId<TournamentRoundDb>): TournamentRound {
     opensAt: doc.opensAt,
     deadlineAt: doc.deadlineAt,
     remindersSentAt: doc.remindersSentAt,
+    roundCompleteNotifiedAt: doc.roundCompleteNotifiedAt,
     scenario: doc.scenario,
     createdAt: doc.createdAt,
     completedAt: doc.completedAt,
@@ -3390,6 +3391,32 @@ export async function markRoundReminded(roundId: string): Promise<void> {
   await db
     .collection<TournamentRoundDb>(ROUNDS)
     .updateOne({ _id: parseObjectId(roundId, "Ronde") }, { $set: { remindersSentAt: new Date() } });
+}
+
+/**
+ * Réclame le droit d'annoncer qu'une ronde est complète, et ne le donne qu'une
+ * fois.
+ *
+ * Le dernier résultat d'une ronde peut être confirmé par deux requêtes qui se
+ * croisent : chacune constate que tous les matchs sont terminés, et chacune
+ * prévient l'organisation. Le filtre porte donc sur l'absence du marqueur, et
+ * c'est MongoDB qui départage — `modifiedCount` ne vaut 1 que pour le gagnant.
+ * Un `find` puis un `update` laisseraient la fenêtre ouverte.
+ */
+export async function claimRoundCompleteNotice(
+  tournamentId: string,
+  roundId: string
+): Promise<boolean> {
+  const result = await db.collection<TournamentRoundDb>(ROUNDS).updateOne(
+    {
+      _id: parseObjectId(roundId, "Ronde"),
+      tournamentId: parseObjectId(tournamentId, "Tournoi"),
+      roundCompleteNotifiedAt: { $exists: false },
+    },
+    { $set: { roundCompleteNotifiedAt: new Date() } }
+  );
+
+  return result.modifiedCount === 1;
 }
 
 /** Change (ou retire) le scénario joué pendant une ronde. */

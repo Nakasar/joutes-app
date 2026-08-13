@@ -323,6 +323,40 @@ await notifyEventAll(
 
 **Note importante** : La notification est envoyée AVANT la suppression effective de l'événement pour permettre la récupération des informations des participants.
 
+#### Tournois
+
+Six moments d'un tournoi déclenchent des notifications, tous décrits par
+`lib/tournaments/notification-messages.ts` (module pur, testé) et envoyés par
+`lib/tournaments/notifications.ts`.
+
+| Moment | Destinataires | Point de branchement |
+| --- | --- | --- |
+| Ronde appariée | chaque joueur du match | route `…/phases/[phaseId]/rounds` |
+| Annonce de l'organisation | tous les joueurs inscrits | route `…/announcements` |
+| Résultat à confirmer | l'adversaire qui n'a pas saisi | route `…/matches/[matchId]`, action `report` |
+| Résultat contesté | l'organisation | même route, action `dispute` |
+| Ronde complète | l'organisation | même route, à la dernière confirmation |
+| Début et fin du tournoi | tous les joueurs inscrits | route `…/[tournamentId]`, sur la transition de statut |
+
+Trois choses valent d'être sues :
+
+- **Seuls les joueurs rattachés à un compte sont notifiés.** Un invité entré par
+  code de tournoi n'a ni compte, ni inbox, ni appareil. Les joueurs `dropped`
+  sont écartés de même.
+- **Le rythme change le message, pas l'événement.** Une ronde sur place demande
+  « où est ma table », un intervalle « jusqu'à quand ai-je pour jouer ».
+  `roundPairedMessage` branche sur `round.deadlineAt`, que seule une ronde
+  asynchrone porte. Les relances d'échéance, elles, restent dans
+  `lib/tournaments/interval-notifications.ts` : ce sont les seules choses qu'un
+  intervalle est seul à connaître.
+- **Une ronde régénérée re-notifie.** Un organisateur qui supprime puis recrée
+  une ronde renvoie l'appariement à tout le monde. Aucun garde-fou : le geste
+  est rare, volontaire, et un second message y est plutôt utile.
+
+Toutes portent un `link` vers `/tournaments/{id}` — la seule page que
+l'application mobile sache ouvrir. Il n'y a pas d'écran mobile pour un match ni
+pour une ronde, et y pointer ouvrirait une page blanche.
+
 ## Composants
 
 ### `NotificationDropdown`

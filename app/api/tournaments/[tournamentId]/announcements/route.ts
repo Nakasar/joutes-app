@@ -5,10 +5,12 @@ import {
   assertCanManage,
   createAnnouncement,
   listAnnouncements,
+  listPlayers,
   recordActivity,
   requireTournament,
 } from "@/lib/db/tournaments";
 import { tournamentErrorResponse, unauthorizedResponse } from "../../utils";
+import { notifyAnnouncement } from "@/lib/tournaments/notifications";
 
 type Params = { params: Promise<{ tournamentId: string }> };
 
@@ -46,6 +48,17 @@ export async function POST(request: NextRequest, { params }: Params) {
       createdBy: user.userId,
     });
     await recordActivity(tournamentId, "announcement-sent", { level: validated.level });
+
+    // Une annonce n'existait que sur l'écran du tournoi, que l'application
+    // interroge toutes les huit secondes : la lire supposait de le regarder.
+    // La pousser, c'est ce qui fait qu'un « reprise à 14 h » atteint quelqu'un
+    // parti déjeuner. L'envoi n'est jamais bloquant.
+    try {
+      await notifyAnnouncement(tournament, announcement, await listPlayers(tournamentId));
+    } catch (error) {
+      console.error("Notification d'annonce échouée", error);
+    }
+
     return NextResponse.json(announcement, { status: 201 });
   } catch (error) {
     return tournamentErrorResponse(error);
