@@ -55,10 +55,10 @@ const GAME_TOOLS: { segment: string; feature: GameFeatureKey; priority: number }
   { segment: "rules", feature: "rules", priority: 0.5 },
   { segment: "policies", feature: "policies", priority: 0.5 },
   { segment: "cubes", feature: "cubes", priority: 0.4 },
-  { segment: "products", feature: "products", priority: 0.5 },
   // Deux outils de manipulation des cartes : ils s'ouvrent avec elles.
   { segment: "loop", feature: "cards", priority: 0.3 },
   { segment: "scanner", feature: "cards", priority: 0.3 },
+  { segment: "products", feature: "products", priority: 0.5 },
 ];
 
 /**

@@ -18,7 +18,14 @@ const SITE = "https://www.joutes.app";
  * celles que riftbound est seul à porter (routes statiques, sans équivalent
  * sous `[gameSlugOrId]`).
  */
-const staticUrls: { url: string; lastModified: Date; changeFrequency: string; priority: number }[] = [
+const staticUrls: {
+  url: string;
+  lastModified: Date;
+  // Le même vocabulaire que les pages calculées : une fréquence mal
+  // orthographiée passerait sinon jusque dans le XML.
+  changeFrequency: SitemapUrl["changeFrequency"];
+  priority: number;
+}[] = [
   { url: `${SITE}`, lastModified: new Date(), changeFrequency: 'daily', priority: 1 },
   { url: `${SITE}/features`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
   { url: `${SITE}/about`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
