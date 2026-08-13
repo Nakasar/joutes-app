@@ -5,6 +5,7 @@ import {User} from "@/lib/types/User";
 import {DateTime} from "luxon";
 import UserWeeklyEmail from "@/app/api/cron/emails-user-weekly/user-weekly-email";
 import {getEventsForUser} from "@/lib/db/events";
+import {WEEKLY_DIGEST_COOLDOWN_DAYS, weeklyDigestFilter} from "@/lib/notifications/weekly-digest";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -17,20 +18,12 @@ export async function GET(req: Request) {
   const endDate = today.plus({ weeks: 1 }).endOf('day');
 
   try {
-    const users = db.collection<User>("user").find({
-      'notifications.emails.weekly.enabled': true,
-      $or: [
-        {
-          'notifications.emails.weekly.lastSent': { $lte: today.minus({ days: 6 }).toISO() }
-        },
-        {
-          'notifications.emails.weekly.lastSent': { $exists: false }
-        },
-        {
-          'notifications.emails.weekly.lastSent': null
-        },
-      ]
-    });
+    // Le filtre est partagé avec le récapitulatif push
+    // (`lib/notifications/weekly-digest.ts`) : chaque canal garde sa propre
+    // mémoire d'envoi, mais la règle d'éligibilité est écrite une fois.
+    const users = db
+      .collection<User>("user")
+      .find(weeklyDigestFilter("emails", today.minus({ days: WEEKLY_DIGEST_COOLDOWN_DAYS }).toISO()!));
 
     while (await users.hasNext()) {
       const user = await users.next();
