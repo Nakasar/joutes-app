@@ -23,6 +23,8 @@ import {
   type NotificationChannel,
   type NotificationPreferenceType,
 } from "@/lib/notifications/preferences";
+import { listPushDevicesForUser, revokePushDevice } from "@/lib/db/push-devices";
+import { toPushDeviceSummary, type PushDeviceSummary } from "@/lib/types/PushDevice";
 
 export async function addGameToUserList(gameId: string): Promise<{ success: boolean; error?: string }> {
   try {
@@ -313,6 +315,42 @@ export async function updateNotificationsPreference(
     return { success: true };
   } catch (error) {
     console.error("Erreur lors de la MàJ des préférences de notification :", error);
+    return { success: false, error: "Erreur serveur" };
+  }
+}
+/**
+ * Les appareils enregistrés du compte, pour la page des notifications.
+ *
+ * Le jeton complet ne sort jamais de la base : `toPushDeviceSummary` n'en garde
+ * que les huit derniers caractères, ce qui suffit à reconnaître son téléphone
+ * dans une liste pour l'en retirer.
+ */
+export async function listMyPushDevicesAction(): Promise<PushDeviceSummary[]> {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user?.id) return [];
+
+  const devices = await listPushDevicesForUser(session.user.id);
+  return devices.map(toPushDeviceSummary);
+}
+
+export async function revokePushDeviceAction(
+  deviceId: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user?.id) {
+      return { success: false, error: "Non authentifié" };
+    }
+
+    const revoked = await revokePushDevice(session.user.id, deviceId);
+    if (!revoked) {
+      return { success: false, error: "Appareil introuvable" };
+    }
+
+    revalidatePath("/account/notifications");
+    return { success: true };
+  } catch (error) {
+    console.error("Erreur lors du retrait d'un appareil :", error);
     return { success: false, error: "Erreur serveur" };
   }
 }

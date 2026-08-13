@@ -3,10 +3,12 @@ import {headers} from "next/headers";
 import {redirect} from "next/navigation";
 import Link from "next/link";
 import {Button} from "@/components/ui/button";
-import {ArrowLeft, Calendar1Icon, MailIcon, SmartphoneIcon} from "lucide-react";
+import {ArrowLeft, BellIcon, Calendar1Icon, MailIcon, SmartphoneIcon} from "lucide-react";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import {FieldGroup} from "@/components/ui/field";
 import {NotificationPreferenceSwitch} from "@/app/account/notifications/components";
+import {PushDevicesSection} from "@/app/account/notifications/PushDevicesSection";
+import {listMyPushDevicesAction} from "@/app/account/actions";
 import db from "@/lib/mongodb";
 import {ObjectId} from "mongodb";
 import {User} from "@/lib/types/User";
@@ -28,7 +30,7 @@ export default async function AccountNotificationsPage() {
     redirect("/login");
   }
 
-  console.log(user);
+  const devices = await listMyPushDevicesAction();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8">
@@ -66,8 +68,30 @@ export default async function AccountNotificationsPage() {
               >
                 <FieldGroup className="w-full">
                   <NotificationPreferenceSwitch type="weekly" channel="emails" label="Courriels" icon={<MailIcon className="mr-2 h-4 w-4" />} description="Recevez votre récapitulatif par curriel." initialEnabled={user.notifications?.emails?.weekly?.enabled ?? false} />
-                  <NotificationPreferenceSwitch type="weekly" channel="app" label="App Joutes (coming soon)" icon={<SmartphoneIcon className="mr-2 h-4 w-4" />} description="Recevez votre récapitulatif par notifications push sur l'application." initialEnabled={user.notifications?.app?.weekly?.enabled ?? false} disabled />
+                  <NotificationPreferenceSwitch type="weekly" channel="app" label="App Joutes" icon={<SmartphoneIcon className="mr-2 h-4 w-4" />} description="Recevez votre récapitulatif par notifications push sur l'application." initialEnabled={user.notifications?.app?.weekly?.enabled ?? false} />
                 </FieldGroup>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BellIcon className="h-5 w-5"/>
+                Notifications push
+              </CardTitle>
+              <CardDescription>
+                Les notifications Joutes — appariements, échanges, demandes d&apos;ami, annonces —
+                arrivent aussi sur les téléphones où vous les avez autorisées.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <FieldGroup className="w-full">
+                <NotificationPreferenceSwitch type="push" channel="app" label="Notifications push" icon={<SmartphoneIcon className="mr-2 h-4 w-4" />} description="Décochez pour ne plus rien recevoir sur vos appareils, sans avoir à les retirer un par un." initialEnabled={user.notifications?.app?.push?.enabled ?? true} />
+              </FieldGroup>
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium">Appareils enregistrés</h3>
+                <PushDevicesSection devices={devices} />
               </div>
             </CardContent>
           </Card>
