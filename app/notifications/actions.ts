@@ -2,7 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { getUserNotifications, markAllNotificationsAsRead, markNotificationAsRead, hideNotification } from "@/lib/db/notifications";
+import { countUnreadNotifications, getUserNotifications, markAllNotificationsAsRead, markNotificationAsRead, hideNotification } from "@/lib/db/notifications";
 
 export async function getNotificationsAction(page: number = 1, limit: number = 20) {
   try {
@@ -33,8 +33,12 @@ export async function getRecentNotificationsAction(limit: number = 5) {
       return { success: false, error: "Vous devez être connecté pour voir les notifications", notifications: [] };
     }
 
-    const result = await getUserNotifications(session.user.id, { limit });
-    const unreadCount = result.notifications.filter(n => !n.readBy?.includes(session.user.id)).length;
+    // Le compte se demande à part : le déduire de la page ramenée le
+    // plafonnait au nombre d'éléments chargés, donc à cinq pour la cloche.
+    const [result, unreadCount] = await Promise.all([
+      getUserNotifications(session.user.id, { limit }),
+      countUnreadNotifications(session.user.id),
+    ]);
 
     return { success: true, notifications: result.notifications, unreadCount };
   } catch (error) {

@@ -18,6 +18,11 @@ import { generateDiscriminator } from "@/lib/utils";
 import db from "@/lib/mongodb";
 import {User} from "@/lib/types/User";
 import {ObjectId} from "mongodb";
+import {
+  isNotificationPreference,
+  type NotificationChannel,
+  type NotificationPreferenceType,
+} from "@/lib/notifications/preferences";
 
 export async function addGameToUserList(gameId: string): Promise<{ success: boolean; error?: string }> {
   try {
@@ -269,8 +274,8 @@ export async function updateUserLocation(
 }
 
 export async function updateNotificationsPreference(
-  type: "weekly" | "platform",
-  channel: "emails" | "app",
+  type: NotificationPreferenceType,
+  channel: NotificationChannel,
   enable: boolean,
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -290,8 +295,11 @@ export async function updateNotificationsPreference(
       return { success: false, error: "Non authentifié" };
     }
 
-    if (!["emails", "app"].includes(channel) || !["weekly", "platform"].includes(type)) {
-      return { success: false, error: "Invalid channel or type." };
+    // Le contrôle portait sur le canal et le type séparément, ce qui laissait
+    // passer des couples qui n'existent nulle part — un « courriel push », un
+    // « récapitulatif plateforme ». La matrice les nomme un par un.
+    if (!isNotificationPreference(channel, type)) {
+      return { success: false, error: "Réglage de notification inconnu." };
     }
 
     await db.collection<User>('user').updateOne({
