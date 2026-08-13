@@ -38,7 +38,9 @@ createNotification  →  schedulePushFanout  →  audience  →  appareils  → 
 
 La quasi-totalité des notifications Joutes touchent une poignée de destinataires
 — appariement, demande d'ami, match de ligue — et ce sont justement celles qui
-doivent arriver tout de suite. Imposer la file à tout le monde ajouterait une
+doivent arriver tout de suite. Même une annonce diffusée aux joueurs d'un
+tournoi de cent personnes reste sous le seuil, la plupart n'ayant pas
+l'application : elle part donc immédiatement, sans passer par la file. Imposer la file à tout le monde ajouterait une
 minute d'attente à 99 % du trafic pour borner les annonces d'un lair très suivi,
 qui se comptent en quelques documents par semaine.
 
@@ -55,6 +57,8 @@ pagination s'appuie sur l'identifiant du dernier appareil traité, pas sur un
 | `lib/notifications/deeplink.ts` | où mène la notification. **Pur, testé.** |
 | `lib/notifications/preferences.ts` | la matrice des réglages. **Pur, testé.** |
 | `lib/notifications/weekly-digest.ts` | le récapitulatif hebdomadaire. **Pur, testé.** |
+| `lib/tournaments/notification-messages.ts` | les messages de tournoi. **Pur, testé.** |
+| `lib/tournaments/notifications.ts` | les envois de tournoi. |
 | `lib/push/payload.ts` | les enveloppes d'Apple et de Google. **Pur, testé.** |
 | `lib/push/apns-jwt.ts`, `gcp-jwt.ts` | les jetons fournisseur. **Purs, testés.** |
 | `lib/push/errors.ts` | ce qu'il faut conclure d'une réponse. **Pur, testé.** |

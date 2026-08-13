@@ -15,6 +15,7 @@ import {
   updateTournament,
 } from "@/lib/db/tournaments";
 import { resolveTournamentPrincipal, tournamentErrorResponse, unauthorizedResponse } from "../utils";
+import { notifyTournamentStatus } from "@/lib/tournaments/notifications";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ tournamentId: string }> }) {
   try {
@@ -91,6 +92,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     const updated = await updateTournament(tournamentId, details);
+
+    // Les deux bornes du tournoi, et elles seules : on compare au statut d'avant
+    // plutôt qu'à la valeur envoyée, pour qu'une modification qui répète le
+    // statut courant ne renvoie pas le message. Jamais bloquant.
+    if (updated && updated.status !== tournament.status && updated.status !== "draft") {
+      try {
+        await notifyTournamentStatus(updated, updated.status, await listPlayers(tournamentId));
+      } catch (error) {
+        console.error("Notification de statut de tournoi échouée", error);
+      }
+    }
+
     return NextResponse.json(updated);
   } catch (error) {
     return tournamentErrorResponse(error);

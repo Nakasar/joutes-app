@@ -12,6 +12,9 @@ import {
   extendMatch,
   forfeitMatch,
   getMatchById,
+  getRoundById,
+  listMatchesByRound,
+  listPlayers,
   recordActivity,
   reportMatchResult,
   requireTournament,
@@ -19,8 +22,39 @@ import {
   TournamentError,
 } from "@/lib/db/tournaments";
 import { resolveTournamentPrincipal, tournamentErrorResponse, unauthorizedResponse } from "../../../utils";
+import type { Tournament } from "@/lib/types/Tournament";
+import {
+  notifyResultDisputed,
+  notifyResultToConfirm,
+  notifyRoundComplete,
+} from "@/lib/tournaments/notifications";
 
 type Params = { params: Promise<{ tournamentId: string; matchId: string }> };
+
+/**
+ * Prévient l'organisation quand le dernier résultat d'une ronde vient d'être
+ * confirmé.
+ *
+ * C'est le moment où elle cesse d'avoir à surveiller son écran : le classement
+ * peut être validé et la suite lancée. On ne le dit qu'une fois — au passage du
+ * dernier match, pas à chacun —, et jamais de façon bloquante : une
+ * confirmation de résultat doit aboutir même si l'envoi échoue.
+ */
+async function notifyRoundCompleteIfDone(tournament: Tournament, roundId: string): Promise<void> {
+  try {
+    const matches = await listMatchesByRound(tournament.id, roundId);
+    if (matches.length === 0) return;
+    if (matches.some((match) => match.status !== "completed")) return;
+
+    const round = await getRoundById(tournament.id, roundId);
+    if (!round) return;
+
+    await notifyRoundComplete(tournament, round);
+  } catch (error) {
+    console.error("Notification de ronde complète échouée", error);
+  }
+}
+
 
 export async function GET(request: NextRequest, { params }: Params) {
   try {
@@ -73,9 +107,21 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (validated.action === "report") {
       match = await reportMatchResult(tournament, matchId, { games: validated.games }, actor);
       await recordActivity(tournamentId, "match-reported", { table: match.tableNumber ?? 0 }, actor.label);
+
+      // Un résultat saisi d'un côté attend l'autre : sans message, il dort, et
+      // avec lui la ronde. Jamais bloquant.
+      try {
+        await notifyResultToConfirm(tournament, match, await listPlayers(tournamentId), {
+          identityIds: actor.identityIds,
+          name: actor.label,
+        });
+      } catch (error) {
+        console.error("Notification de résultat à confirmer échouée", error);
+      }
     } else if (validated.action === "confirm") {
       match = await confirmMatchResult(tournament, matchId, actor);
       await recordActivity(tournamentId, "match-confirmed", { table: match.tableNumber ?? 0 }, actor.label);
+      await notifyRoundCompleteIfDone(tournament, match.roundId);
     } else if (validated.action === "clear") {
       match = await clearMatchResult(tournament, matchId, actor);
       await recordActivity(tournamentId, "match-cleared", { table: match.tableNumber ?? 0 }, actor.label);
@@ -117,6 +163,13 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     } else {
       match = await disputeMatchResult(tournament, matchId, actor);
       await recordActivity(tournamentId, "match-disputed", { table: match.tableNumber ?? 0 }, actor.label);
+
+      // Un résultat contesté ne se résout pas tout seul : il attend l'arbitrage.
+      try {
+        await notifyResultDisputed(tournament, match);
+      } catch (error) {
+        console.error("Notification de résultat contesté échouée", error);
+      }
     }
 
     return NextResponse.json(match);
