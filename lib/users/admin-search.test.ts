@@ -56,10 +56,26 @@ describe("recherche d'utilisateurs (administration)", () => {
   });
 
   it("retombe sur le pseudonyme quand le tag est incomplet", () => {
-    // Sans nombre derrière le « # », il n'y a pas de tag à résoudre : autant
-    // chercher ce qui a été tapé.
-    assert.equal(parseAdminUserSearch("Alice#")?.kind, "text");
-    assert.equal(parseAdminUserSearch("#1234")?.kind, "text");
+    // Sans nombre derrière le « # », il n'y a pas de tag à résoudre. Chercher la
+    // saisie entière ne trouverait rien non plus — aucun pseudonyme ne contient
+    // « Alice# » : c'est bien « Alice » qu'on cherche.
+    assert.deepEqual(parseAdminUserSearch("Alice#"), { kind: "text", pattern: "Alice" });
+    assert.deepEqual(parseAdminUserSearch("Alice#abc"), { kind: "text", pattern: "Alice" });
+    // Rien devant le « # » : il ne reste que la saisie elle-même.
+    assert.deepEqual(parseAdminUserSearch("#1234"), { kind: "text", pattern: "#1234" });
+  });
+
+  it("n'accepte qu'un nombre comme discriminateur", () => {
+    // La plateforme en génère quatre chiffres ; la longueur n'est pas imposée,
+    // un compte importé peut en porter moins et son tag doit rester cherchable.
+    assert.deepEqual(parseAdminUserSearch("Alice#42"), {
+      kind: "tag",
+      displayName: "Alice",
+      discriminator: "42",
+    });
+    // Ce qui n'est pas un nombre ne désigne aucun tag.
+    assert.equal(parseAdminUserSearch("Alice#12a4")?.kind, "text");
+    assert.equal(parseAdminUserSearch("Alice#12 34")?.kind, "text");
   });
 
   it("retire le « @ » d'une mention recopiée", () => {
@@ -92,6 +108,12 @@ describe("recherche d'utilisateurs (administration)", () => {
       // Un pseudonyme sans nombre ne fait pas un tag : il ne désignerait
       // personne de façon unique.
       assert.equal(adminUserTag({ ...base, displayName: "Alice" }), "alice");
+    });
+
+    it("retombe sur l'identifiant quand le compte n'a aucun nom", () => {
+      // Une ligne vide serait indistinguable d'une autre, et son avatar
+      // n'aurait même pas d'initiale.
+      assert.equal(adminUserTag({ ...base, username: "" }), "1");
     });
   });
 });

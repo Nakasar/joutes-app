@@ -25,8 +25,14 @@ Atteindre le profil d'un joueur sans avoir à retrouver un lien vers lui.
 
 Un `@` de tête est retiré : c'est le préfixe d'une mention recopiée, pas une
 partie du pseudonyme. Le dernier `#` sépare le tag, un pseudonyme pouvant en
-contenir. Un `#` sans nombre derrière ne fait pas un tag : la saisie retombe
-alors sur la recherche par fragment.
+contenir.
+
+Le discriminateur doit être **un nombre** — la longueur n'est pas imposée : la
+plateforme en génère quatre chiffres, un compte importé peut en porter moins, et
+refuser son tag ne rendrait service à personne. Quand ce qui suit le `#` n'en est
+pas un (`Alice#`, `Alice#abc`), il n'y a pas de tag à résoudre : c'est le
+pseudonyme de gauche qui est cherché comme fragment. Chercher la saisie entière
+ne trouverait rien — aucun pseudonyme ne contient `Alice#`.
 
 Le fragment est **échappé** avant de servir d'expression régulière : sans cela,
 chercher `(test` ferait échouer la requête, et `.*` balaierait la collection.
@@ -39,7 +45,8 @@ comptes créés par better-auth portent le premier, les plus anciens le second, 
 
 - `lib/users/admin-search.ts` — interprétation de la saisie
   (`parseAdminUserSearch`), forme d'un résultat (`AdminUserSummary`) et tag
-  affiché (`adminUserTag`). Module pur : `lib/db/users.ts` ouvre une connexion
+  affiché (`adminUserTag`, qui retombe sur l'identifiant pour un compte sans
+  aucun nom : une ligne vide serait indistinguable d'une autre). Module pur : `lib/db/users.ts` ouvre une connexion
   MongoDB au chargement et ne peut pas être importé par un test, alors que
   l'interprétation de la saisie est exactement ce qui mérite d'en avoir un.
 - `lib/db/users.ts` — `searchUsersForAdmin(term, limit)`. Projection étroite,
@@ -58,5 +65,6 @@ npm run test
 ```
 
 - `lib/users/admin-search.test.ts` — saisie vide, identifiant contre pseudonyme
-  qui lui ressemble, tag complet et tag incomplet, `@` de mention, échappement
-  des caractères d'expression régulière.
+  qui lui ressemble, tag complet, discriminateur non numérique, tag incomplet,
+  `@` de mention, échappement des caractères d'expression régulière, et repli du
+  tag affiché sur l'identifiant.

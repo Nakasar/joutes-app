@@ -49,12 +49,22 @@ export function parseAdminUserSearch(term: string): AdminUserQuery | null {
     return { kind: "id", id: trimmed.toLowerCase() };
   }
 
+  // Le dernier « # » sépare le tag : un pseudonyme peut en contenir.
   const separator = trimmed.lastIndexOf("#");
   if (separator > 0) {
     const displayName = trimmed.slice(0, separator).trim();
     const discriminator = trimmed.slice(separator + 1).trim();
-    if (displayName.length > 0 && discriminator.length > 0) {
-      return { kind: "tag", displayName, discriminator };
+    if (displayName.length > 0) {
+      // Un discriminateur est un nombre. La longueur n'est pas imposée : la
+      // plateforme en génère quatre chiffres, un compte importé peut en porter
+      // moins, et refuser son tag ne rendrait service à personne.
+      if (/^\d+$/.test(discriminator)) {
+        return { kind: "tag", displayName, discriminator };
+      }
+      // « Alice# » ou « Alice#abc » ne désignent aucun tag. Chercher la saisie
+      // entière ne trouverait rien non plus — aucun pseudonyme ne contient ce
+      // qu'on vient de taper. C'est le pseudonyme de gauche qu'on cherche.
+      return { kind: "text", pattern: escapeRegex(displayName) };
     }
   }
 
@@ -71,8 +81,9 @@ export function parseAdminUserSearch(term: string): AdminUserQuery | null {
  */
 export type AdminUserSummary = {
   id: string;
-  // Nom de compte, toujours présent : c'est le repli quand personne n'a choisi
-  // de pseudonyme personnalisé.
+  // Nom de compte, repli quand personne n'a choisi de pseudonyme personnalisé.
+  // Peut être vide : un compte importé n'en porte pas toujours, et l'affichage
+  // retombe alors sur l'identifiant plutôt que sur une case blanche.
   username: string;
   displayName?: string;
   discriminator?: string;
@@ -85,9 +96,14 @@ export type AdminUserSummary = {
 /**
  * Tag affiché : le pseudonyme personnalisé et son nombre quand il existe, le
  * nom de compte sinon. Même règle que la fiche de profil.
+ *
+ * Dernier recours, l'identifiant : un compte sans aucun nom laisserait sinon
+ * une ligne vide, impossible à distinguer d'une autre et sans initiale pour son
+ * avatar. Mieux vaut une étiquette technique qu'aucune étiquette.
  */
 export function adminUserTag(user: AdminUserSummary): string {
-  return user.displayName && user.discriminator
-    ? `${user.displayName}#${user.discriminator}`
-    : user.username;
+  if (user.displayName && user.discriminator) {
+    return `${user.displayName}#${user.discriminator}`;
+  }
+  return user.username || user.id;
 }
