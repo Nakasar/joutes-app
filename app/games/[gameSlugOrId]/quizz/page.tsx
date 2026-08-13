@@ -18,19 +18,28 @@ interface GameQuizzPageProps {
 export async function generateMetadata({ params }: GameQuizzPageProps): Promise<Metadata> {
   const { gameSlugOrId } = await params;
   const game = await getGameBySlugOrId(gameSlugOrId);
-  const t = await getTranslations("Games.quizz");
+  const [t, tQuizz] = await Promise.all([
+    getTranslations("Games.quizz"),
+    getTranslations("Quizz.metadata"),
+  ]);
 
   if (!game) {
     return { title: t("metadata.notFoundTitle") };
   }
 
+  const title = t("metadata.title", { gameName: game.name });
+  const description = t("metadata.description", { gameName: game.name });
+
   return {
-    title: t("metadata.title", { gameName: game.name }),
-    description: t("metadata.description", { gameName: game.name }),
+    title,
+    description,
+    // Ce qu'on cherche avant de trouver un quizz : le jeu, et ce sur quoi on
+    // veut se tester. La liste est traduite avec le reste.
+    keywords: [game.name, ...tQuizz("keywords").split(",").map((keyword) => keyword.trim())],
     openGraph: {
       url: `https://joutes.app/games/${gameSlugOrId}/quizz`,
-      title: t("metadata.title", { gameName: game.name }),
-      description: t("metadata.description", { gameName: game.name }),
+      title,
+      description,
       images: game.banner ? [game.banner] : [],
     },
   };

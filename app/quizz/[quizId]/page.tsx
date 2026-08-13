@@ -10,8 +10,9 @@ import { Button } from "@/components/ui/button";
 import { ObjectId } from "mongodb";
 import { resolveCardMentions } from "@/lib/game-content-cards";
 import { quizContentTexts } from "@/lib/quizzes/content";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { localizeQuiz } from "@/lib/quizzes/translate";
+import { quizIntroDescription } from "@/lib/quizzes/seo";
 import type { Locale } from "@/i18n/config";
 import QuizPlayer from "./QuizPlayer";
 import QuizTranslateMenu from "./QuizTranslateMenu";
@@ -20,16 +21,45 @@ import ReportButton from "@/components/ReportButton";
 
 type Props = { params: Promise<{ quizId: string }> };
 
+/**
+ * Un quizz n'a pas de champ « description » : ce qu'il a de mieux à dire de
+ * lui-même est son introduction, le texte que l'auteur écrit avant la première
+ * question. On la résume (`quizIntroDescription`), et à défaut on annonce ce
+ * qu'un quizz fait travailler — règles, rulings, politiques de jeu — plutôt que
+ * de laisser un moteur composer sa propre phrase à partir des questions.
+ *
+ * Le tout dans la langue du lecteur : le quizz lui-même est traduit, sa fiche
+ * n'a pas de raison de rester française.
+ */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { quizId } = await params;
-  const quiz = await getQuizById(quizId);
-  if (!quiz) return { title: "Quizz introuvable" };
+  const [quiz, t] = await Promise.all([getQuizById(quizId), getTranslations("Quizz.metadata")]);
+  if (!quiz) return { title: t("notFoundTitle") };
 
-  const title = localizeQuiz(quiz, (await getLocale()) as Locale).title;
+  const localized = localizeQuiz(quiz, (await getLocale()) as Locale);
+  const title = localized.title;
+  const description =
+    quizIntroDescription(localized.blocks) ??
+    (quiz.game?.name
+      ? t("quizDescription", { gameName: quiz.game.name })
+      : t("quizDescriptionWithoutGame"));
+
   return {
     title,
+    description,
+    keywords: [
+      ...(quiz.game?.name ? [quiz.game.name] : []),
+      ...t("keywords").split(",").map((keyword) => keyword.trim()),
+    ],
     openGraph: {
+      type: "article",
+      url: `https://joutes.app/quizz/${quizId}`,
+      siteName: "Joutes",
       title,
+      description,
+      // L'icône du jeu est la seule image qu'un quizz porte : elle dit d'un
+      // coup d'œil de quel jeu on va parler.
+      images: quiz.game?.icon ? [quiz.game.icon] : [],
     },
   };
 }

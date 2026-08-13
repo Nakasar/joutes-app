@@ -753,8 +753,8 @@
     "quizz": {
       "metadata": {
         "notFoundTitle": "Gioco non trovato",
-        "title": "Quiz — {gameName}",
-        "description": "Trova tutti i quiz relativi a {gameName}."
+        "title": "Quiz {gameName} — regole, ruling e policy",
+        "description": "Metti alla prova le tue conoscenze di {gameName}: regole di gioco, ruling e policy dei tornei. I quiz della comunità Joutes correggono ogni risposta e la spiegano."
       },
       "title": "Quiz — {gameName}",
       "back": "Torna al gioco",
@@ -3349,6 +3349,16 @@
     "searching": "Ricerca...",
     "searchFailed": "Ricerca non disponibile al momento.",
     "noResults": "Nessuna località trovata."
+  },
+  "Quizz": {
+    "metadata": {
+      "listTitle": "Quiz — regole, ruling e policy di gioco",
+      "keywords": "quiz, regole, ruling, policy di gioco, conoscenze",
+      "listDescription": "Metti alla prova le tue conoscenze dei tuoi giochi preferiti: regole, ruling e policy dei tornei. I quiz della comunità Joutes correggono ogni risposta e la spiegano.",
+      "notFoundTitle": "Quiz non trovato",
+      "quizDescription": "Metti alla prova le tue conoscenze di {gameName}: regole, ruling e policy di gioco. Ogni risposta viene corretta e spiegata.",
+      "quizDescriptionWithoutGame": "Metti alla prova le tue conoscenze: regole, ruling e policy di gioco. Ogni risposta viene corretta e spiegata."
+    }
   },
   "Printings": {
     "label": "Variante di stampa",
