@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  ANDROID_CHANNEL_ID,
   MAX_PUSH_BODY_LENGTH,
   MAX_PUSH_TITLE_LENGTH,
   buildApnsPayload,
@@ -107,5 +108,13 @@ describe("buildFcmMessage", () => {
 
   it("demande la priorité haute à Android", () => {
     assert.equal(buildFcmMessage(content).android.priority, "high");
+  });
+
+  it("nomme le canal Android", () => {
+    // Sans canal, Android range l'alerte dans le repli « Divers » de Firebase :
+    // ni bandeau ni son, une ligne dans le volet. La chaîne doit rester celle
+    // que l'application mobile crée au démarrage (`PUSH_CHANNEL_ID`).
+    assert.equal(buildFcmMessage(content).android.notification.channel_id, ANDROID_CHANNEL_ID);
+    assert.equal(ANDROID_CHANNEL_ID, "joutes-alerts");
   });
 });

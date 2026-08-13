@@ -19,6 +19,21 @@
 export const MAX_PUSH_TITLE_LENGTH = 120;
 export const MAX_PUSH_BODY_LENGTH = 300;
 
+/**
+ * Le canal Android où déposer nos alertes.
+ *
+ * Sans lui, Android range la notification dans le canal de repli de Firebase —
+ * « Divers », d'importance moyenne : pas de bandeau, pas de son, juste une
+ * ligne dans le volet. Un appariement de ronde annoncé ainsi n'est pas annoncé.
+ *
+ * L'application crée ce canal au démarrage (`PUSH_CHANNEL_ID` dans
+ * `src/lib/push.ts` du dépôt mobile) : les deux chaînes doivent coïncider. Si
+ * elle ne le connaît pas — une version antérieure à celle-ci —, Android
+ * retombe sur le canal déclaré au manifeste, puis sur celui de Firebase. La
+ * notification arrive dans tous les cas ; c'est sa visibilité qui se dégrade.
+ */
+export const ANDROID_CHANNEL_ID = "joutes-alerts";
+
 export type PushContent = {
   title: string;
   body: string;
@@ -89,7 +104,10 @@ export function buildApnsPayload(content: PushContent): ApnsPayload {
 export type FcmMessage = {
   notification: { title: string; body: string };
   data: Record<string, string>;
-  android: { priority: "high"; notification: { default_sound: true } };
+  android: {
+    priority: "high";
+    notification: { default_sound: true; channel_id: string };
+  };
 };
 
 /**
@@ -99,6 +117,11 @@ export type FcmMessage = {
  * `data` n'accepte **que** des chaînes de caractères — un nombre ou un `null`
  * fait rejeter tout le message. D'où le `link` rendu en chaîne vide plutôt
  * qu'absent : l'app lit une chaîne vide comme « pas de destination ».
+ *
+ * `channel_id` accompagne la priorité haute et ne fait pas double emploi avec
+ * elle : la priorité dit à quelle vitesse Google livre, le canal dit ce
+ * qu'Android en fait à l'arrivée. Sans canal, une notification livrée sur-le-
+ * champ peut n'être qu'une ligne muette dans le volet.
  */
 export function buildFcmMessage(content: PushContent): FcmMessage {
   return {
@@ -107,6 +130,9 @@ export function buildFcmMessage(content: PushContent): FcmMessage {
       body: truncatePushText(content.body, MAX_PUSH_BODY_LENGTH),
     },
     data: { id: content.notificationId, link: content.link ?? "" },
-    android: { priority: "high", notification: { default_sound: true } },
+    android: {
+      priority: "high",
+      notification: { default_sound: true, channel_id: ANDROID_CHANNEL_ID },
+    },
   };
 }
