@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
+import { ArrowDown, ArrowUp, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -25,18 +26,18 @@ import type {
   TournamentResultMode,
   TournamentScoringMethod,
   TournamentSwissPairing,
+  TournamentTiebreaker,
 } from "@/lib/types/Tournament";
+import {
+  type PhasePresetOption,
+  availableTiebreakers,
+  effectiveTiebreakers,
+  officialTiebreakers,
+  sameTiebreakers,
+  tiebreakerLabel,
+} from "./phaseTiebreakers";
 
-// Preset de format proposé par le jeu du tournoi, résolu côté serveur.
-export type PhasePresetOption = {
-  key: string;
-  labelKey: string;
-  // Preset retenu d'emblée pour une nouvelle phase (usage du jeu).
-  applyByDefault: boolean;
-  // Saisie des statistiques exigée par l'usage du jeu, proposée à la sélection
-  // du preset. L'organisateur reste libre de la décocher.
-  requireStats: boolean;
-};
+export type { PhasePresetOption };
 
 // Valeur sentinelle du Select de preset (SelectItem ne peut pas être vide).
 const NO_PRESET = "none";
@@ -145,13 +146,51 @@ export function PhaseForm({
 
   const isPuzzle = type === "time-race";
 
-  // Changer de preset rebascule l'exigence de saisie sur l'usage du nouveau
-  // jeu : c'est ce que l'organisateur attend en choisissant un format, et il
-  // peut toujours décocher juste en dessous.
+  // Preset choisi, dont dépendent les départages disponibles.
+  const selectedPreset = presets.find((preset) => preset.key === statsPresetKey);
+
+  // Chaîne appliquée à la phase. En édition on repart de celle enregistrée, en
+  // écartant ce qui ne se calcule plus (statistique d'un preset retiré depuis) ;
+  // sans chaîne enregistrée, la phase suit les départages du jeu.
+  const [tiebreakers, setTiebreakers] = useState<TournamentTiebreaker[]>(() =>
+    effectiveTiebreakers(
+      isEdit ? initial?.tiebreakers : undefined,
+      isEdit ? presets.find((preset) => preset.key === initial?.statsPresetKey) : defaultPreset
+    )
+  );
+
+  // Changer de preset rebascule l'exigence de saisie et les départages sur
+  // l'usage du nouveau jeu : c'est ce que l'organisateur attend en choisissant
+  // un format, et les deux restent modifiables juste en dessous.
   const pickPreset = (key: string) => {
+    const preset = presets.find((option) => option.key === key);
     setStatsPresetKey(key);
-    setRequireMatchStats(presets.find((preset) => preset.key === key)?.requireStats ?? false);
+    setRequireMatchStats(preset?.requireStats ?? false);
+    setTiebreakers(officialTiebreakers(preset));
   };
+
+  const labelOf = (key: TournamentTiebreaker): string =>
+    tiebreakerLabel(key, selectedPreset, t);
+
+  const tiebreakerDescription = (key: TournamentTiebreaker): string =>
+    key.startsWith("stat:")
+      ? t("organizerPhases.tiebreakerStatHint")
+      : t(`organizerPhases.tiebreakerDescriptions.${key}`);
+
+  // Déplace un critère d'un cran : l'ordre est toute la règle, il doit se
+  // corriger sans avoir à tout retirer pour tout remettre.
+  const moveTiebreaker = (index: number, delta: number) => {
+    const target = index + delta;
+    if (target < 0 || target >= tiebreakers.length) return;
+    const next = [...tiebreakers];
+    [next[index], next[target]] = [next[target], next[index]];
+    setTiebreakers(next);
+  };
+
+  const unusedTiebreakers = availableTiebreakers(selectedPreset).filter(
+    (key) => !tiebreakers.includes(key)
+  );
+  const followsGame = sameTiebreakers(tiebreakers, officialTiebreakers(selectedPreset));
 
   const submit = () => {
     if (!name.trim()) return;
@@ -207,6 +246,15 @@ export function PhaseForm({
       // phase reprenant un preset plus tard hériterait d'une exigence oubliée.
       body.requireMatchStats = false;
       if (isEdit) body.statsPresetKey = null;
+    }
+
+    // La chaîne n'est enregistrée que si elle s'écarte de celle du jeu : une
+    // phase laissée telle quelle continue de suivre les règles officielles, y
+    // compris si elles évoluent. En édition, null la rend explicitement au jeu.
+    if (!followsGame) {
+      body.tiebreakers = tiebreakers;
+    } else if (isEdit) {
+      body.tiebreakers = null;
     }
 
     const scenarios = scenariosFromText(scenariosText);
@@ -583,6 +631,117 @@ export function PhaseForm({
                   {t("organizerPhases.requireStatsHint")}
                 </p>
               </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Départage des égalités : la chaîne appliquée après les points de match,
+          dans l'ordre. Une phase puzzle classe au chronomètre, sans point ni
+          partie : aucun de ces critères n'y départage quoi que ce soit. */}
+      {!isPuzzle && (
+        <div className="space-y-3 border-t pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Label>{t("organizerPhases.tiebreakersLabel")}</Label>
+            {!followsGame && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setTiebreakers(officialTiebreakers(selectedPreset))}
+              >
+                {t("organizerPhases.tiebreakersReset")}
+              </Button>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">{t("organizerPhases.tiebreakersHint")}</p>
+
+          <ol className="space-y-2">
+            {/* Les points de match tranchent toujours en premier : ils ne sont
+                pas un départage, ils sont le classement. */}
+            <li className="flex flex-wrap items-center gap-2 rounded-md border border-dashed p-3">
+              <span className="text-xs font-medium text-muted-foreground">1</span>
+              <div className="space-y-0.5">
+                <div className="text-sm font-medium">
+                  {t("organizerPhases.tiebreakerMatchPoints")}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {t("organizerPhases.tiebreakerMatchPointsHint")}
+                </p>
+              </div>
+            </li>
+            {tiebreakers.map((key, index) => (
+              <li key={key} className="flex flex-wrap items-center gap-2 rounded-md border p-3">
+                <span className="text-xs font-medium text-muted-foreground">{index + 2}</span>
+                <div className="space-y-0.5">
+                  <div className="text-sm font-medium">{labelOf(key)}</div>
+                  <p className="text-xs text-muted-foreground">{tiebreakerDescription(key)}</p>
+                </div>
+                <div className="ml-auto flex flex-wrap items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={index === 0}
+                    onClick={() => moveTiebreaker(index, -1)}
+                    aria-label={t("organizerPhases.tiebreakerMoveUpAria", {
+                      name: labelOf(key),
+                    })}
+                  >
+                    <ArrowUp className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={index === tiebreakers.length - 1}
+                    onClick={() => moveTiebreaker(index, 1)}
+                    aria-label={t("organizerPhases.tiebreakerMoveDownAria", {
+                      name: labelOf(key),
+                    })}
+                  >
+                    <ArrowDown className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-600 hover:text-red-800"
+                    onClick={() => setTiebreakers(tiebreakers.filter((k) => k !== key))}
+                    aria-label={t("organizerPhases.tiebreakerRemoveAria", {
+                      name: labelOf(key),
+                    })}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ol>
+
+          {tiebreakers.length === 0 && (
+            <p className="text-xs text-muted-foreground">
+              {t("organizerPhases.tiebreakersEmpty")}
+            </p>
+          )}
+
+          {unusedTiebreakers.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                {t("organizerPhases.tiebreakersAdd")}
+              </span>
+              {unusedTiebreakers.map((key) => (
+                <Button
+                  key={key}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTiebreakers([...tiebreakers, key])}
+                >
+                  <Plus className="mr-1 h-3 w-3" />
+                  {labelOf(key)}
+                </Button>
+              ))}
             </div>
           )}
         </div>

@@ -2445,6 +2445,28 @@
                          "statsPresetHint": "Rilevate a ogni partita e usate come spareggio in classifica. Non designano mai il vincitore.",
                          "requireStatsLabel": "Inserimento obbligatorio",
                          "requireStatsHint": "Un risultato è accettato solo se tutte le statistiche sono compilate, per ogni giocatore. Le scorciatoie di punteggio sono quindi disattivate.",
+                         "tiebreakersLabel": "Spareggio in caso di parità",
+                         "tiebreakersHint": "Applicati in quest'ordine, finché due giocatori restano a pari merito. Sono proposti solo i criteri che la piattaforma sa calcolare.",
+                         "tiebreakersReset": "Ripristina le regole del gioco",
+                         "tiebreakersAdd": "Aggiungi:",
+                         "tiebreakersEmpty": "Nessuno spareggio: i giocatori a pari punti restano a pari merito, in ordine arbitrario.",
+                         "tiebreakersSummary": "Spareggio: {chain}",
+                         "tiebreakerMatchPoints": "Punti partita",
+                         "tiebreakerMatchPointsHint": "La classifica stessa: vittorie, pareggi e sconfitte secondo il punteggio della fase. Sempre per primo.",
+                         "tiebreakerStatHint": "Statistica rilevata a ogni partita. Il totale più alto passa avanti.",
+                         "tiebreakerNames": {
+                           "omw": "Resistenza (OMW%)",
+                           "gamesDiff": "Differenza partite",
+                           "gamesWon": "Partite vinte"
+                         },
+                         "tiebreakerDescriptions": {
+                           "omw": "Percentuale media di vittorie degli avversari affrontati. Il percorso più duro passa avanti.",
+                           "gamesDiff": "Partite vinte meno partite perse, sull'intero torneo.",
+                           "gamesWon": "Numero totale di partite vinte."
+                         },
+                         "tiebreakerMoveUpAria": "Sposta il criterio {name} in alto",
+                         "tiebreakerMoveDownAria": "Sposta il criterio {name} in basso",
+                         "tiebreakerRemoveAria": "Rimuovi il criterio {name}",
                          "scenariosLabel": "Scenari (uno per riga)",
                          "scenariosPlaceholder": "Conflitto minore | Una sola squadra\nPriorità mutevole | Due squadre",
                          "scenariosHint": "Assegnati ai turni in ordine. Dopo la « | », le indicazioni di composizione mostrate ai giocatori.",

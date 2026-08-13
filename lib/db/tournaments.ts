@@ -65,9 +65,11 @@ import {
 } from "@/lib/utils/pairing";
 import {
   type GameTournamentPreset,
+  type TiebreakerKey,
   getPreset,
   missingRequiredStats,
   presetStatKeys,
+  resolveTiebreakers,
 } from "@/lib/tournaments/game-presets";
 import {
   DEFAULT_MATCH_SCORING,
@@ -303,6 +305,7 @@ function toPhase(doc: WithId<TournamentPhaseDb> & { matchFormat?: string }): Tou
     intervalHours: doc.intervalHours ?? DEFAULT_INTERVAL_HOURS,
     deadlineResolution: doc.deadlineResolution ?? "double-loss",
     statsPresetKey: doc.statsPresetKey,
+    tiebreakers: doc.tiebreakers,
     requireMatchStats: doc.requireMatchStats ?? false,
     scenarios: doc.scenarios,
     plannedRounds: doc.plannedRounds,
@@ -2576,6 +2579,7 @@ export async function addPhase(
     intervalHours?: number;
     deadlineResolution?: TournamentDeadlineResolution;
     statsPresetKey?: string;
+    tiebreakers?: TiebreakerKey[];
     requireMatchStats?: boolean;
     scenarios?: TournamentScenario[];
     plannedRounds?: number;
@@ -2618,6 +2622,7 @@ export async function addPhase(
     intervalHours: data.intervalHours ?? DEFAULT_INTERVAL_HOURS,
     deadlineResolution: data.deadlineResolution ?? "double-loss",
     statsPresetKey: data.statsPresetKey,
+    tiebreakers: data.tiebreakers,
     requireMatchStats: data.requireMatchStats ?? false,
     scenarios: data.scenarios,
     plannedRounds: data.plannedRounds,
@@ -2651,6 +2656,7 @@ export async function updatePhase(
     intervalHours?: number;
     deadlineResolution?: TournamentDeadlineResolution;
     statsPresetKey?: string | null;
+    tiebreakers?: TiebreakerKey[] | null;
     requireMatchStats?: boolean;
     scenarios?: TournamentScenario[] | null;
     plannedRounds?: number | null;
@@ -2701,6 +2707,13 @@ export async function updatePhase(
     unset.statsPresetKey = "";
   } else if (updates.statsPresetKey !== undefined) {
     set.statsPresetKey = updates.statsPresetKey;
+  }
+  // null retire la chaîne choisie : la phase repart sur les départages de son
+  // preset. Un tableau vide, lui, est un choix — aucun départage du tout.
+  if (updates.tiebreakers === null) {
+    unset.tiebreakers = "";
+  } else if (updates.tiebreakers !== undefined) {
+    set.tiebreakers = updates.tiebreakers;
   }
   if (updates.requireMatchStats !== undefined) set.requireMatchStats = updates.requireMatchStats;
   if (updates.scenarios === null) {
@@ -2945,6 +2958,7 @@ export async function createNextRound(
     await db.collection<TournamentMatchDb>(MATCHES).find({ tournamentId: tId }).toArray()
   ).map(toMatch);
   const phasePreset = getPreset(phase.statsPresetKey);
+  const phaseTiebreakers = resolveTiebreakers(phase.tiebreakers, phasePreset);
   // Temps de puzzle de tout le tournoi : après une phase puzzle, c'est le seul
   // critère qui distingue les joueurs (aucun match, donc aucun point), et il
   // doit donc porter le seeding d'entrée de la phase suivante.
@@ -2958,7 +2972,7 @@ export async function createNextRound(
       allMatches,
       (match) => scoringByPhaseId.get(match.phaseId) ?? scoringForPhase(phase),
       phasePreset,
-      undefined,
+      phaseTiebreakers,
       puzzleTimes
     );
   const cumulativeRank = (ids: string[]): string[] =>
@@ -4012,25 +4026,32 @@ export type TournamentStanding = PlayerStanding & {
 };
 
 /**
- * Preset qui gouverne les colonnes et les départages d'un classement. Pour une
- * phase donnée, c'est le sien. Pour le classement cumulé du tournoi, c'est
- * celui de la dernière phase qui en déclare un : les statistiques se cumulent
- * d'une phase à l'autre, et un tournoi mélangeant des phases avec et sans
- * preset garde ainsi des colonnes lisibles jusqu'au bout.
+ * Règles qui gouvernent les colonnes et les départages d'un classement : le
+ * preset de statistiques et la chaîne de départage qui l'accompagne. Pour une
+ * phase donnée, ce sont les siennes. Pour le classement cumulé du tournoi, ce
+ * sont celles de la dernière phase qui déclare un preset : les statistiques se
+ * cumulent d'une phase à l'autre, et un tournoi mélangeant des phases avec et
+ * sans preset garde ainsi des colonnes lisibles jusqu'au bout. Sans aucun
+ * preset, la dernière phase donne quand même ses départages — ils ne portent
+ * alors que sur des critères indépendants du jeu.
  */
-function resolveStandingsPreset(
+function resolveStandingsRules(
   phases: TournamentPhase[],
   phaseId?: string
-): GameTournamentPreset | undefined {
+): { preset?: GameTournamentPreset; tiebreakers: TiebreakerKey[] } {
+  const rulesOf = (phase?: TournamentPhase) => {
+    const preset = getPreset(phase?.statsPresetKey);
+    return { preset, tiebreakers: resolveTiebreakers(phase?.tiebreakers, preset) };
+  };
+
   if (phaseId) {
-    return getPreset(phases.find((phase) => phase.id === phaseId)?.statsPresetKey);
+    return rulesOf(phases.find((phase) => phase.id === phaseId));
   }
   const ordered = [...phases].sort((a, b) => a.order - b.order);
   for (let i = ordered.length - 1; i >= 0; i--) {
-    const preset = getPreset(ordered[i].statsPresetKey);
-    if (preset) return preset;
+    if (getPreset(ordered[i].statsPresetKey)) return rulesOf(ordered[i]);
   }
-  return undefined;
+  return rulesOf(ordered[ordered.length - 1]);
 }
 
 /**
@@ -4064,13 +4085,13 @@ export async function getStandings(tournamentId: string, phaseId?: string): Prom
   // Chaque match est scoré selon la méthode de sa propre phase (le scoring
   // peut différer d'une phase à l'autre du tournoi).
   const scoringByPhaseId = new Map(phases.map((p) => [p.id, scoringForPhase(p)]));
-  const preset = resolveStandingsPreset(phases, phaseId);
+  const { preset, tiebreakers } = resolveStandingsRules(phases, phaseId);
   const standings = calculateMultiplayerStandings(
     players.map((p) => p.id),
     matchDocs.map(toMatch),
     (match) => scoringByPhaseId.get(match.phaseId) ?? DEFAULT_MATCH_SCORING,
     preset,
-    undefined,
+    tiebreakers,
     puzzleTimes
   );
 
@@ -4236,12 +4257,13 @@ export async function validateRoundStandings(
           ),
         ];
 
+  const roundRules = resolveStandingsRules(allPhases, round.phaseId);
   const standings: TournamentRoundStanding[] = calculateMultiplayerStandings(
     participantIds,
     cumulativeMatches,
     (m) => scoringByPhaseId.get(m.phaseId) ?? scoringForPhase(phase),
-    resolveStandingsPreset(allPhases, round.phaseId),
-    undefined,
+    roundRules.preset,
+    roundRules.tiebreakers,
     cumulativePuzzleTimes
   ).map((standing) => {
     const player = playersById.get(standing.playerId);

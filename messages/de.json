@@ -2420,6 +2420,28 @@
                          "statsPresetHint": "Pro Partie erfasst und zur Entscheidung von Gleichständen genutzt. Sie bestimmen nie den Sieger.",
                          "requireStatsLabel": "Erfassung verpflichtend",
                          "requireStatsHint": "Ein Ergebnis wird nur angenommen, wenn alle Statistiken für jeden Spieler erfasst sind. Die Ergebnis-Kurzwahl ist dann deaktiviert.",
+                         "tiebreakersLabel": "Entscheidung bei Gleichstand",
+                         "tiebreakersHint": "In dieser Reihenfolge angewendet, solange zwei Spieler gleichauf bleiben. Angeboten werden nur Kriterien, die die Plattform berechnen kann.",
+                         "tiebreakersReset": "Regeln des Spiels wiederherstellen",
+                         "tiebreakersAdd": "Hinzufügen:",
+                         "tiebreakersEmpty": "Keine Entscheidung: Spieler mit gleicher Punktzahl bleiben gleichauf, in beliebiger Reihenfolge.",
+                         "tiebreakersSummary": "Gleichstand: {chain}",
+                         "tiebreakerMatchPoints": "Match-Punkte",
+                         "tiebreakerMatchPointsHint": "Die Wertung selbst: Siege, Unentschieden und Niederlagen nach dem Schema der Phase. Immer zuerst.",
+                         "tiebreakerStatHint": "Pro Partie erfasste Statistik. Die höhere Summe steht vorn.",
+                         "tiebreakerNames": {
+                           "omw": "Widerstand (OMW%)",
+                           "gamesDiff": "Partiendifferenz",
+                           "gamesWon": "Gewonnene Partien"
+                         },
+                         "tiebreakerDescriptions": {
+                           "omw": "Durchschnittliche Siegquote der angetretenen Gegner. Der härtere Weg steht vorn.",
+                           "gamesDiff": "Gewonnene minus verlorene Partien über das gesamte Turnier.",
+                           "gamesWon": "Gesamtzahl der gewonnenen Partien."
+                         },
+                         "tiebreakerMoveUpAria": "Kriterium {name} nach oben verschieben",
+                         "tiebreakerMoveDownAria": "Kriterium {name} nach unten verschieben",
+                         "tiebreakerRemoveAria": "Kriterium {name} entfernen",
                          "scenariosLabel": "Szenarien (eines pro Zeile)",
                          "scenariosPlaceholder": "Kleiner Konflikt | Nur eine Einheit\nWechselnde Priorität | Zwei Einheiten",
                          "scenariosHint": "Werden den Runden der Reihe nach zugewiesen. Nach dem „|“ die Aufstellungsvorgaben für die Spieler.",

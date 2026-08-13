@@ -257,6 +257,54 @@ describe("calculateMultiplayerStandings", () => {
     assert.ok(order.indexOf("a") < order.indexOf("c"), `a doit précéder c (ordre : ${order.join(", ")})`);
   });
 
+  it("applique la chaîne de départage de la phase plutôt que celle du preset", () => {
+    // Deux joueurs à une victoire chacun : « a » a le meilleur score de
+    // bataille, « b » le meilleur score de destruction. Le preset départage par
+    // score de bataille ; l'organisateur qui préfère la destruction doit voir
+    // l'ordre s'inverser, sans que rien d'autre ne bouge.
+    const matches: TournamentMatch[] = [
+      match({
+        id: "m1",
+        players: [{ playerId: "a", score: 1 }, { playerId: "x", score: 0 }],
+        winnerIds: ["a"],
+        games: [
+          {
+            winnerId: "a",
+            stats: {
+              a: { battlePoints: 80, pointsDestroyed: 500 },
+              x: { battlePoints: 20, pointsDestroyed: 100 },
+            },
+          },
+        ],
+      }),
+      match({
+        id: "m2",
+        players: [{ playerId: "b", score: 1 }, { playerId: "y", score: 0 }],
+        winnerIds: ["b"],
+        games: [
+          {
+            winnerId: "b",
+            stats: {
+              b: { battlePoints: 60, pointsDestroyed: 2000 },
+              y: { battlePoints: 40, pointsDestroyed: 100 },
+            },
+          },
+        ],
+      }),
+    ];
+    const players = ["a", "b", "x", "y"];
+
+    const official = calculateMultiplayerStandings(players, matches, () => SCORING, battlePreset)
+      .map((s) => s.playerId);
+    assert.ok(official.indexOf("a") < official.indexOf("b"), `ordre officiel : ${official.join(", ")}`);
+
+    const custom = calculateMultiplayerStandings(players, matches, () => SCORING, battlePreset, [
+      "stat:pointsDestroyed",
+      "omw",
+    ]).map((s) => s.playerId);
+    assert.ok(custom.indexOf("b") < custom.indexOf("a"), `ordre choisi : ${custom.join(", ")}`);
+  });
+
   it("crédite le barème plein de la mission au joueur exempté", () => {
     const standings = calculateMultiplayerStandings(
       ["a"],

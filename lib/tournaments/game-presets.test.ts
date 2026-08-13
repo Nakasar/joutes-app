@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { DEFAULT_TIEBREAKERS } from "@/lib/types/Tournament";
 import {
   GAME_TOURNAMENT_PRESETS,
+  availableTiebreakers,
   defaultPresetForGameSlug,
   getPreset,
   missingRequiredStats,
   presetStatKeys,
+  resolveTiebreakers,
 } from "@/lib/tournaments/game-presets";
 
 /**
@@ -46,6 +49,52 @@ describe("presets de jeu", () => {
     // le même jeu rendraient le choix arbitraire.
     const slugs = GAME_TOURNAMENT_PRESETS.filter((p) => p.applyByDefault).flatMap((p) => p.gameSlugs);
     assert.equal(new Set(slugs).size, slugs.length);
+  });
+
+  describe("départages d'une phase", () => {
+    it("propose les statistiques du preset puis les critères génériques", () => {
+      assert.deepEqual(availableTiebreakers(getPreset("battle-points")), [
+        "stat:battlePoints",
+        "stat:pointsDestroyed",
+        "omw",
+        "gamesDiff",
+        "gamesWon",
+      ]);
+      // Sans preset, il ne reste que ce qui ne dépend d'aucun jeu.
+      assert.deepEqual(availableTiebreakers(undefined), ["omw", "gamesDiff", "gamesWon"]);
+    });
+
+    it("suit le jeu tant que l'organisateur n'a rien choisi", () => {
+      assert.deepEqual(resolveTiebreakers(undefined, getPreset("battle-points")), [
+        "stat:battlePoints",
+        "omw",
+      ]);
+      assert.deepEqual(resolveTiebreakers(undefined, undefined), DEFAULT_TIEBREAKERS);
+    });
+
+    it("applique la chaîne choisie, dans son ordre", () => {
+      assert.deepEqual(
+        resolveTiebreakers(["omw", "stat:battlePoints"], getPreset("battle-points")),
+        ["omw", "stat:battlePoints"]
+      );
+    });
+
+    it("respecte une chaîne vide, qui n'est pas une chaîne absente", () => {
+      // Aucun départage : les ex æquo le restent. Retomber sur les départages du
+      // jeu ici reviendrait à ignorer un réglage explicite.
+      assert.deepEqual(resolveTiebreakers([], getPreset("battle-points")), []);
+    });
+
+    it("écarte une statistique que la phase ne relève plus", () => {
+      // La phase a perdu son preset : le score de bataille n'est plus calculé, et
+      // le laisser dans la chaîne ne comparerait que des zéros.
+      assert.deepEqual(resolveTiebreakers(["stat:battlePoints", "omw"], undefined), ["omw"]);
+      // Même chaîne sous un autre preset : seule la statistique étrangère saute.
+      assert.deepEqual(
+        resolveTiebreakers(["stat:battlePoints", "stat:touchdowns"], getPreset("blood-bowl")),
+        ["stat:touchdowns"]
+      );
+    });
   });
 
   describe("missingRequiredStats", () => {
