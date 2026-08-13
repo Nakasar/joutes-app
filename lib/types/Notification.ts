@@ -31,6 +31,15 @@ export type Notification = {
   title: string;
   description: string;
   createdAt: string;
+  /**
+   * Où mène la notification : un **chemin relatif** de Joutes (`/trades/xxx`),
+   * jamais une adresse complète. Le site le passe à `next/link`, l'app mobile
+   * le retraduit en route à elle.
+   *
+   * Absent, la destination se dérive de la cible (`lib/notifications/deeplink.ts`).
+   * Le champ existe pour ce que la cible ne dit pas : un échange, un tournoi.
+   */
+  link?: string;
   template?: NotificationTemplate;
   leagueId?: string;
   matchId?: string;

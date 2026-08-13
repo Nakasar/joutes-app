@@ -35,6 +35,10 @@ export const notificationSchema = z.object({
   title: z.string().min(1, "Le titre est requis").max(200, "Le titre est trop long"),
   description: z.string().min(1, "La description est requise").max(1000, "La description est trop longue"),
   createdAt: z.string().datetime("La date d'émission doit être au format ISO 8601"),
+  // Un chemin relatif de Joutes, jamais une adresse complète : une URL absolue
+  // sortirait l'utilisateur de l'application, et celle d'un autre domaine ferait
+  // de la notification une porte d'hameçonnage.
+  link: z.string().regex(/^\/(?!\/)[^\s]*$/, "Le lien doit être un chemin relatif").max(300).optional(),
   // Champs optionnels pour marquer comme lu
   readBy: z.array(z.string()).optional(),
 }).and(notificationTargetSchema);

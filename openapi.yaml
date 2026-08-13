@@ -42,6 +42,8 @@ tags:
     description: League rankings (league CRUD itself is a server action, not a REST endpoint).
   - name: News
     description: News articles, optionally linked to a game.
+  - name: Notifications
+    description: A user's notification inbox, and the devices registered for push delivery.
   - name: Play Groups
     description: Shared groups for pooled collections, wishlists and sell lists.
   - name: Quizzes
@@ -2554,6 +2556,135 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "500": { $ref: "#/components/responses/ServerError" }
 
+  # -------------------------------------------------------------- Notifications
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: List the caller's notifications
+      description: |
+        Paginated inbox. A notification targets an audience (a user, a lair's owners or
+        followers, an event's participants or creator); this endpoint resolves what the
+        caller is entitled to see. `link` is the notification's destination as a Joutes
+        relative path, or `null` when it leads nowhere.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      parameters:
+        - { in: query, name: page, schema: { type: integer, minimum: 1, default: 1 } }
+        - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        "200":
+          description: The caller's notifications.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notifications: { type: array, items: { $ref: "#/components/schemas/Notification" } }
+                  total: { type: integer }
+                  unreadCount: { type: integer }
+                  page: { type: integer }
+                  limit: { type: integer }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /notifications/unread-count:
+    get:
+      tags: [Notifications]
+      summary: Count the caller's unread notifications
+      description: |
+        Push payloads carry no badge count - computing it per recipient during fan-out
+        would cost more than the delivery. Clients ask for it themselves instead.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      responses:
+        "200": { description: The count., content: { application/json: { schema: { type: object, properties: { count: { type: integer } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /notifications/read-all:
+    post:
+      tags: [Notifications]
+      summary: Mark every notification as read
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      responses:
+        "200": { description: Marked., content: { application/json: { schema: { type: object, properties: { success: { type: boolean } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /notifications/{notificationId}/read:
+    post:
+      tags: [Notifications]
+      summary: Mark one notification as read
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      parameters:
+        - { in: path, name: notificationId, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Marked., content: { application/json: { schema: { type: object, properties: { success: { type: boolean } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /notifications/{notificationId}/hide:
+    post:
+      tags: [Notifications]
+      summary: Hide one notification from the caller's inbox
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      parameters:
+        - { in: path, name: notificationId, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Hidden., content: { application/json: { schema: { type: object, properties: { success: { type: boolean } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /notifications/devices:
+    get:
+      tags: [Notifications]
+      summary: List the caller's registered push devices
+      description: The full push token is never returned - only its last 8 characters.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      responses:
+        "200":
+          description: Registered devices.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  devices: { type: array, items: { $ref: "#/components/schemas/PushDevice" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [Notifications]
+      summary: Register a device for push delivery
+      description: |
+        Upserts on the push token, and detaches the same `installationId` from any other
+        account first. Registering also turns the account's push preference on: accepting
+        the operating system's prompt is the opt-in, and the account switch exists to turn
+        delivery back off.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RegisterPushDevice" }
+      responses:
+        "201": { description: Registered., content: { application/json: { schema: { type: object, properties: { device: { $ref: "#/components/schemas/PushDevice" } } } } } }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /notifications/devices/{deviceId}:
+    delete:
+      tags: [Notifications]
+      summary: Revoke a registered device
+      description: |
+        Also the sign-out call from the mobile app, which must issue it *before* closing
+        its session - afterwards the request carries no cookie, answers 401, and the phone
+        keeps receiving the notifications of the account it just left.
+      security: [{ sessionAuth: [] }, { apiKeyAuth: [] }]
+      parameters:
+        - { in: path, name: deviceId, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Revoked., content: { application/json: { schema: { type: object, properties: { success: { type: boolean } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
   # ---------------------------------------------------------------- Play Groups
   /play-groups:
     get:
@@ -3711,6 +3842,45 @@ components:
       content: { application/json: { schema: { $ref: "#/components/schemas/NestedError" } } }
 
   schemas:
+    Notification:
+      type: object
+      properties:
+        id: { type: string }
+        type: { type: string, enum: [user, lair, event], description: "Who the notification targets, not what it is about." }
+        title: { type: string }
+        description: { type: string }
+        createdAt: { type: string, format: date-time }
+        link: { type: string, nullable: true, description: "Joutes relative path, or null when the notification leads nowhere." }
+        read: { type: boolean }
+        template: { type: string, nullable: true, description: "Drives a richer in-app rendering (league match confirmations)." }
+        leagueId: { type: string, nullable: true }
+        matchId: { type: string, nullable: true }
+        lair: { type: object, nullable: true, properties: { id: { type: string }, name: { type: string } } }
+        event: { type: object, nullable: true, properties: { id: { type: string }, name: { type: string } } }
+
+    PushDevice:
+      type: object
+      properties:
+        id: { type: string }
+        platform: { type: string, enum: [ios, android] }
+        tokenPreview: { type: string, description: "Last 8 characters of the push token. The token itself is a sending secret and never leaves the server." }
+        installationId: { type: string, description: "Echoed back so a client can recognise its own device." }
+        appVersion: { type: string, nullable: true }
+        state: { type: string, enum: [active, revoked] }
+        createdAt: { type: string, format: date-time }
+        lastSeenAt: { type: string, format: date-time }
+
+    RegisterPushDevice:
+      type: object
+      required: [platform, token, installationId]
+      properties:
+        platform: { type: string, enum: [ios, android] }
+        token: { type: string, description: "APNs device token (hexadecimal) on iOS, FCM registration token on Android." }
+        installationId: { type: string, description: "Stable per-installation identifier generated by the app; survives token rotation." }
+        environment: { type: string, enum: [production, sandbox], description: "iOS only. A development build's token is only valid against the APNs sandbox." }
+        locale: { type: string, enum: [fr, en, de, it] }
+        appVersion: { type: string }
+
     Error:
       type: object
       properties:

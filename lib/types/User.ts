@@ -62,6 +62,17 @@ export type User = {
         enabled: boolean;
         lastSent?: string | null;
       },
+      /**
+       * Interrupteur général des notifications push transactionnelles.
+       *
+       * Absent vaut activé : enregistrer un appareil le pose à `true` au moment
+       * où l'utilisateur accepte l'invite du système, et un compte sans
+       * appareil n'a de toute façon rien à recevoir. L'interrupteur sert à
+       * couper.
+       */
+      push?: {
+        enabled: boolean;
+      },
     }
   }
 };
