@@ -800,13 +800,17 @@ export default function BattleMapEditor({
 
           {/* Instant courant */}
           <div className="space-y-2">
-            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            <label
+              htmlFor="snapshot-notes"
+              className="flex items-center gap-2 text-xs text-muted-foreground"
+            >
               Notes de l&apos;instant
               <span className="text-muted-foreground/70">
                 ({snapshot.notes?.length ?? 0}/{MAX_SNAPSHOT_NOTES_LENGTH})
               </span>
             </label>
             <Textarea
+              id="snapshot-notes"
               rows={3}
               maxLength={MAX_SNAPSHOT_NOTES_LENGTH}
               placeholder="Ce qui s'est passé : la charge décisive, l'objectif pris, le jet raté…"
