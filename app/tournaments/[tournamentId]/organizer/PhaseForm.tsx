@@ -29,44 +29,25 @@ import type {
   TournamentTiebreaker,
 } from "@/lib/types/Tournament";
 import {
+  scenarioToLine,
+  scenariosFromText,
+  scenariosToText,
+} from "@/lib/tournaments/scenarios";
+import {
+  type PhaseGameDefaults,
   type PhasePresetOption,
   availableTiebreakers,
+  defaultTiebreakersFor,
   effectiveTiebreakers,
   officialTiebreakers,
   sameTiebreakers,
   tiebreakerLabel,
 } from "./phaseTiebreakers";
 
-export type { PhasePresetOption };
+export type { PhaseGameDefaults, PhasePresetOption };
 
 // Valeur sentinelle du Select de preset (SelectItem ne peut pas être vide).
 const NO_PRESET = "none";
-
-/**
- * Sérialise le pool de scénarios en texte : une ligne par scénario, au format
- * « Nom | consignes ». Un éditeur en champ libre reste le plus rapide pour
- * saisir trois missions d'affilée, et se relit d'un coup d'œil.
- */
-function scenariosToText(phase?: TournamentPhase): string {
-  return (phase?.scenarios ?? [])
-    .map((s) => (s.description ? `${s.name} | ${s.description}` : s.name))
-    .join("\n");
-}
-
-function scenariosFromText(text: string): { id: string; name: string; description?: string }[] {
-  return text
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line, index) => {
-      const separator = line.indexOf("|");
-      const name = (separator === -1 ? line : line.slice(0, separator)).trim();
-      const description = separator === -1 ? undefined : line.slice(separator + 1).trim() || undefined;
-      // L'identifiant est dérivé du rang : les rondes déjà créées portent une
-      // copie du scénario, elles ne sont donc pas affectées par une renumérotation.
-      return { id: `s${index + 1}`, name, description };
-    });
-}
 
 /**
  * Formulaire de configuration d'une phase, partagé entre l'ajout et l'édition
@@ -77,12 +58,15 @@ function scenariosFromText(text: string): { id: string; name: string; descriptio
 export function PhaseForm({
   initial,
   presets,
+  gameDefaults,
   submitLabel,
   busy,
   onSubmit,
 }: {
   initial?: TournamentPhase;
   presets: PhasePresetOption[];
+  // Ce dont part une nouvelle phase, réglé par l'administration pour ce jeu.
+  gameDefaults: PhaseGameDefaults;
   submitLabel: ReactNode;
   busy: boolean;
   onSubmit: (body: Record<string, unknown>) => void | Promise<void>;
@@ -96,16 +80,20 @@ export function PhaseForm({
   // rondes) disparaît du formulaire. Ne restent que le nom, le top cut d'entrée
   // et le pool de puzzles.
   const [type, setType] = useState<TournamentPhaseType>(initial?.type ?? "swiss");
-  const [bestOf, setBestOf] = useState(String(initial?.bestOf ?? 1));
+  const [bestOf, setBestOf] = useState(String(initial?.bestOf ?? gameDefaults.bestOf));
   const [resultMode, setResultMode] = useState<TournamentResultMode>(
-    initial?.resultMode ?? "selection"
+    initial?.resultMode ?? gameDefaults.resultMode
   );
   const [scoringMethod, setScoringMethod] = useState<TournamentScoringMethod>(
     initial?.scoringMethod ?? "fixed"
   );
-  const [win, setWin] = useState(String(initial?.fixedScoring.win ?? 3));
-  const [loss, setLoss] = useState(String(initial?.fixedScoring.loss ?? 0));
-  const [draw, setDraw] = useState(String(initial?.fixedScoring.draw ?? 1));
+  const [win, setWin] = useState(String(initial?.fixedScoring.win ?? gameDefaults.fixedScoring.win));
+  const [loss, setLoss] = useState(
+    String(initial?.fixedScoring.loss ?? gameDefaults.fixedScoring.loss)
+  );
+  const [draw, setDraw] = useState(
+    String(initial?.fixedScoring.draw ?? gameDefaults.fixedScoring.draw)
+  );
   const [rankOffsets, setRankOffsets] = useState(
     initial?.rankOffsets.join(",") ?? "3,1,-1,-3,-4,-5,-7"
   );
@@ -122,7 +110,7 @@ export function PhaseForm({
   const [minPlayers, setMinPlayers] = useState(String(initial?.minPlayersPerMatch ?? 2));
   const [maxPlayers, setMaxPlayers] = useState(String(initial?.maxPlayersPerMatch ?? 2));
   const [swissPairing, setSwissPairing] = useState<TournamentSwissPairing>(
-    initial?.swissPairing ?? "ranked"
+    initial?.swissPairing ?? gameDefaults.swissPairing
   );
   const [pacing, setPacing] = useState<TournamentPhasePacing>(initial?.pacing ?? "live");
   // L'organisateur raisonne en jours d'intervalle, le domaine en heures.
@@ -132,17 +120,17 @@ export function PhaseForm({
   const [deadlineResolution, setDeadlineResolution] = useState<TournamentDeadlineResolution>(
     initial?.deadlineResolution ?? "double-loss"
   );
-  // Nouvelle phase : le preset par défaut du jeu est retenu d'emblée, avec
-  // l'exigence de saisie qui va avec. En édition, on repart de la phase telle
-  // qu'elle est enregistrée — un réglage déjà pris ne se réécrit pas tout seul.
-  const defaultPreset = presets.find((preset) => preset.applyByDefault);
+  // Nouvelle phase : les réglages du jeu s'appliquent d'emblée — preset retenu,
+  // exigence de saisie, départages. En édition, on repart de la phase telle
+  // qu'elle est enregistrée : un réglage déjà pris ne se réécrit pas tout seul.
+  const defaultPreset = presets.find((preset) => preset.key === gameDefaults.statsPresetKey);
   const [statsPresetKey, setStatsPresetKey] = useState(
     isEdit ? (initial?.statsPresetKey ?? NO_PRESET) : (defaultPreset?.key ?? NO_PRESET)
   );
   const [requireMatchStats, setRequireMatchStats] = useState(
-    isEdit ? (initial?.requireMatchStats ?? false) : (defaultPreset?.requireStats ?? false)
+    isEdit ? (initial?.requireMatchStats ?? false) : gameDefaults.requireMatchStats
   );
-  const [scenariosText, setScenariosText] = useState(scenariosToText(initial));
+  const [scenariosText, setScenariosText] = useState(scenariosToText(initial?.scenarios));
 
   const isPuzzle = type === "time-race";
 
@@ -153,10 +141,12 @@ export function PhaseForm({
   // écartant ce qui ne se calcule plus (statistique d'un preset retiré depuis) ;
   // sans chaîne enregistrée, la phase suit les départages du jeu.
   const [tiebreakers, setTiebreakers] = useState<TournamentTiebreaker[]>(() =>
-    effectiveTiebreakers(
-      isEdit ? initial?.tiebreakers : undefined,
-      isEdit ? presets.find((preset) => preset.key === initial?.statsPresetKey) : defaultPreset
-    )
+    isEdit
+      ? effectiveTiebreakers(
+          initial?.tiebreakers,
+          presets.find((preset) => preset.key === initial?.statsPresetKey)
+        )
+      : defaultTiebreakersFor(gameDefaults, defaultPreset)
   );
 
   // Changer de preset rebascule l'exigence de saisie et les départages sur
@@ -165,8 +155,14 @@ export function PhaseForm({
   const pickPreset = (key: string) => {
     const preset = presets.find((option) => option.key === key);
     setStatsPresetKey(key);
-    setRequireMatchStats(preset?.requireStats ?? false);
-    setTiebreakers(officialTiebreakers(preset));
+    // Reprendre le preset réglé pour le jeu, c'est reprendre ses réglages :
+    // ceux de l'administration priment alors sur ceux du format livré.
+    setRequireMatchStats(
+      preset?.key === gameDefaults.statsPresetKey
+        ? gameDefaults.requireMatchStats
+        : (preset?.requireStats ?? false)
+    );
+    setTiebreakers(defaultTiebreakersFor(gameDefaults, preset));
   };
 
   const labelOf = (key: TournamentTiebreaker): string =>
@@ -187,10 +183,33 @@ export function PhaseForm({
     setTiebreakers(next);
   };
 
+  // Scénarios du jeu que le pool ne contient pas encore, comparés au nom : le
+  // pool se retouche à la main, et un nom déjà saisi ne se propose plus.
+  const pooledScenarioNames = new Set(
+    scenariosFromText(scenariosText).map((scenario) => scenario.name.toLowerCase())
+  );
+  const unusedGameScenarios = gameDefaults.scenarios.filter(
+    (scenario) => !pooledScenarioNames.has(scenario.name.toLowerCase())
+  );
+
+  const addGameScenario = (scenario: { name: string; description?: string }) => {
+    const line = scenarioToLine({ id: "", ...scenario });
+    setScenariosText((current) => (current.trim().length === 0 ? line : `${current.trimEnd()}\n${line}`));
+  };
+
   const unusedTiebreakers = availableTiebreakers(selectedPreset).filter(
     (key) => !tiebreakers.includes(key)
   );
-  const followsGame = sameTiebreakers(tiebreakers, officialTiebreakers(selectedPreset));
+  // Deux chaînes de référence, et elles ne servent pas à la même chose :
+  // - celle du jeu (réglages d'administration compris) est ce que le bouton
+  //   « rétablir » redonne, et ce dont part une nouvelle phase ;
+  // - celle du format livré décide de l'enregistrement. Le classement ne lit
+  //   que la phase et son preset : une chaîne réglée en administration doit
+  //   donc être inscrite sur la phase pour s'appliquer, sans quoi elle
+  //   s'évaporerait au premier calcul.
+  const gameChain = defaultTiebreakersFor(gameDefaults, selectedPreset);
+  const followsGameSettings = sameTiebreakers(tiebreakers, gameChain);
+  const followsShippedFormat = sameTiebreakers(tiebreakers, officialTiebreakers(selectedPreset));
 
   const submit = () => {
     if (!name.trim()) return;
@@ -248,10 +267,10 @@ export function PhaseForm({
       if (isEdit) body.statsPresetKey = null;
     }
 
-    // La chaîne n'est enregistrée que si elle s'écarte de celle du jeu : une
+    // La chaîne n'est enregistrée que si elle s'écarte du format livré : une
     // phase laissée telle quelle continue de suivre les règles officielles, y
     // compris si elles évoluent. En édition, null la rend explicitement au jeu.
-    if (!followsGame) {
+    if (!followsShippedFormat) {
       body.tiebreakers = tiebreakers;
     } else if (isEdit) {
       body.tiebreakers = null;
@@ -643,12 +662,12 @@ export function PhaseForm({
         <div className="space-y-3 border-t pt-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <Label>{t("organizerPhases.tiebreakersLabel")}</Label>
-            {!followsGame && (
+            {!followsGameSettings && (
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setTiebreakers(officialTiebreakers(selectedPreset))}
+                onClick={() => setTiebreakers(gameChain)}
               >
                 {t("organizerPhases.tiebreakersReset")}
               </Button>
@@ -767,6 +786,29 @@ export function PhaseForm({
         <p className="text-xs text-muted-foreground">
           {isPuzzle ? t("organizerPhases.puzzleHint") : t("organizerPhases.scenariosHint")}
         </p>
+
+        {/* Scénarios proposés par le jeu : les missions officielles se piochent
+            au lieu de se retaper. Le pool reste du texte libre — on ajoute une
+            ligne, on la modifie ensuite comme les autres. */}
+        {!isPuzzle && unusedGameScenarios.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-muted-foreground">
+              {t("organizerPhases.scenarioCatalogLabel")}
+            </span>
+            {unusedGameScenarios.map((scenario) => (
+              <Button
+                key={scenario.id}
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => addGameScenario(scenario)}
+              >
+                <Plus className="mr-1 h-3 w-3" />
+                {scenario.name}
+              </Button>
+            ))}
+          </div>
+        )}
       </div>
 
       <Button onClick={submit} disabled={busy || !name.trim()}>

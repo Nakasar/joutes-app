@@ -50,9 +50,11 @@ désigne (`resultMode: "selection"`). Elles sont saisies partie par partie, en
 plus du résultat, et servent au classement.
 
 Un preset porte aussi des valeurs par défaut proposées à la création d'une
-phase (barème, mode d'appariement, best-of, saisie obligatoire). Un preset
-retiré d'une version à l'autre ne casse rien : le classement retombe sur les
-départages historiques et les résultats déjà rapportés sont conservés.
+phase (barème, mode d'appariement, best-of, saisie obligatoire). L'administration
+peut les reprendre jeu par jeu, sans toucher au code — voir
+`docs/TOURNAMENT_GAME_DEFAULTS.md`. Un preset retiré d'une version à l'autre ne
+casse rien : le classement retombe sur les départages historiques et les
+résultats déjà rapportés sont conservés.
 
 ## Jeux de figurines à grande armée — `battle-points`
 

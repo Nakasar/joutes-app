@@ -19,8 +19,6 @@ import {
 export type PhasePresetOption = {
   key: string;
   labelKey: string;
-  // Preset retenu d'emblée pour une nouvelle phase (usage du jeu).
-  applyByDefault: boolean;
   // Saisie des statistiques exigée par l'usage du jeu, proposée à la sélection
   // du preset. L'organisateur reste libre de la décocher.
   requireStats: boolean;
@@ -80,4 +78,37 @@ export function tiebreakerLabel(
   const statKey = key.slice("stat:".length);
   const stat = preset?.stats.find((candidate) => candidate.key === statKey);
   return stat ? t(`matchStats.stats.${stat.labelKey}`) : statKey;
+}
+
+/**
+ * Ce dont part une nouvelle phase de ce tournoi : les réglages du jeu, tels que
+ * l'administration les a posés (`lib/tournaments/game-defaults.ts`), résolus
+ * côté serveur et transmis tels quels au formulaire.
+ */
+export type PhaseGameDefaults = {
+  // Preset appliqué d'office. Absent = aucune statistique relevée.
+  statsPresetKey?: string;
+  tiebreakers: TournamentTiebreaker[];
+  fixedScoring: { win: number; loss: number; draw: number };
+  swissPairing: "ranked" | "random-in-bracket";
+  bestOf: number;
+  resultMode: "points" | "selection";
+  requireMatchStats: boolean;
+  // Scénarios proposés par le jeu, à piocher dans le pool d'une phase.
+  scenarios: { id: string; name: string; description?: string }[];
+};
+
+/**
+ * Départages proposés à une phase qui retient ce preset. Ceux du jeu quand
+ * c'est le preset réglé pour lui, ceux du preset choisi sinon : une chaîne
+ * réglée pour un format ne suit pas un autre format.
+ */
+export function defaultTiebreakersFor(
+  gameDefaults: PhaseGameDefaults,
+  preset: PhasePresetOption | undefined
+): TournamentTiebreaker[] {
+  if (preset?.key === gameDefaults.statsPresetKey) {
+    return effectiveTiebreakers(gameDefaults.tiebreakers, preset);
+  }
+  return officialTiebreakers(preset);
 }

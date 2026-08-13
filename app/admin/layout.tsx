@@ -28,7 +28,7 @@ export default async function AdminLayout({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between gap-4 h-16">
             {/*
-              Les huit onglets défilent dans leur propre boîte dès qu'ils ne
+              Les onglets défilent dans leur propre boîte dès qu'ils ne
               tiennent plus sur la ligne. Sans elle, la barre poussait la page
               entière au-delà de l'écran d'un téléphone : ce n'était pas le menu
               seul qui débordait, mais toute l'administration qui se retrouvait
@@ -50,6 +50,12 @@ export default async function AdminLayout({
                 className="inline-flex items-center shrink-0 whitespace-nowrap px-1 pt-1 text-sm font-medium text-foreground border-b-2 border-transparent hover:border-blue-500"
               >
                 Jeux
+              </Link>
+              <Link
+                href="/admin/tournaments"
+                className="inline-flex items-center shrink-0 whitespace-nowrap px-1 pt-1 text-sm font-medium text-foreground border-b-2 border-transparent hover:border-blue-500"
+              >
+                Tournois
               </Link>
               <Link
                 href="/admin/cards"

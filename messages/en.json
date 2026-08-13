@@ -2528,6 +2528,7 @@
                          "scenariosLabel": "Scenarios (one per line)",
                          "scenariosPlaceholder": "Minor Conflict | A single squad\nEscalating Priority | Two squads",
                          "scenariosHint": "Assigned to rounds in order. After the “|”, the list-building instructions shown to players.",
+                         "scenarioCatalogLabel": "Offered by the game:",
       "resetStatusTitle": "Set back to “not started”",
       "resetStatusAria": "Set phase {name} back to not started",
       "currentPhaseLabel": "Current phase",

@@ -31,6 +31,7 @@ function toGame(doc: WithId<Document>): Game {
       popularityScore: 0,
     },
     features: doc.features || {},
+    tournamentDefaults: doc.tournamentDefaults,
   };
 }
 
@@ -54,6 +55,7 @@ function toDocument(game: Omit<Game, "id">): Omit<GameDocument, "_id"> {
     formats: game.formats,
     stats: game.stats,
     features: game.features,
+    tournamentDefaults: game.tournamentDefaults,
   };
 }
 

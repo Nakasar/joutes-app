@@ -2470,6 +2470,7 @@
                          "scenariosLabel": "Scenari (uno per riga)",
                          "scenariosPlaceholder": "Conflitto minore | Una sola squadra\nPriorità mutevole | Due squadre",
                          "scenariosHint": "Assegnati ai turni in ordine. Dopo la « | », le indicazioni di composizione mostrate ai giocatori.",
+                         "scenarioCatalogLabel": "Proposti dal gioco:",
       "resetStatusTitle": "Riporta a “non iniziata”",
       "resetStatusAria": "Riporta la fase {name} a non iniziata",
       "currentPhaseLabel": "Fase corrente",
