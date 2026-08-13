@@ -2,6 +2,7 @@ import db from "@/lib/mongodb";
 import { NewNotification, Notification } from "@/lib/types/Notification";
 import { Document, ObjectId } from "mongodb";
 import { getUserById } from "./users";
+import { schedulePushFanout } from "@/lib/push/dispatch";
 
 const COLLECTION_NAME = "notifications";
 
@@ -315,11 +316,39 @@ export async function createNotification(notification: NewNotification): Promise
 
     await collection.insertOne(notificationDoc);
 
+    // Le push part d'ici, et pas d'une enveloppe dans `lib/services` : c'est le
+    // seul point d'écriture de la collection. Quatre des neuf fonctions de
+    // service sont mortes, et `lib/db/leagues.ts` émet directement — brancher
+    // au-dessus laisserait passer tout appel qui ne passe pas par elles.
+    //
+    // L'appel est délibérément non attendu, et incapable de lever : une
+    // notification enregistrée sans push vaut infiniment mieux qu'une demande
+    // d'ami annulée parce qu'Apple était indisponible.
+    schedulePushFanout(notificationDoc);
+
     return notificationDoc;
   } catch (error) {
     console.error("Error creating notification:", error);
     throw error;
   }
+}
+
+/**
+ * Une notification par son identifiant, sans contrôle d'accès.
+ *
+ * Réservée au dépilage du push, qui reprend un travail mis en file et n'a
+ * besoin que du titre, du corps et de la cible. Toute lecture destinée à un
+ * utilisateur passe par `getUserNotifications`, dont le pipeline filtre selon
+ * ce à quoi il a droit.
+ */
+export async function getNotificationById(notificationId: string): Promise<Notification | null> {
+  const doc = await db
+    .collection<NotificationDocument>(COLLECTION_NAME)
+    .findOne({ id: notificationId });
+
+  if (!doc) return null;
+
+  return { ...doc, _id: undefined } as unknown as Notification;
 }
 
 /**
