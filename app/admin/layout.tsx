@@ -52,6 +52,12 @@ export default async function AdminLayout({
                 Jeux
               </Link>
               <Link
+                href="/admin/users"
+                className="inline-flex items-center shrink-0 whitespace-nowrap px-1 pt-1 text-sm font-medium text-foreground border-b-2 border-transparent hover:border-blue-500"
+              >
+                Utilisateurs
+              </Link>
+              <Link
                 href="/admin/tournaments"
                 className="inline-flex items-center shrink-0 whitespace-nowrap px-1 pt-1 text-sm font-medium text-foreground border-b-2 border-transparent hover:border-blue-500"
               >

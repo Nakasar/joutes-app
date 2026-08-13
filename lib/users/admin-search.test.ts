@@ -1,0 +1,97 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import {
+  adminUserTag,
+  parseAdminUserSearch,
+  type AdminUserSummary,
+} from "@/lib/users/admin-search";
+
+/**
+ * Tests de l'interprétation d'une recherche d'utilisateur.
+ *
+ * Deux choses s'y jouent qui ne se voient pas à l'écran : une saisie vide ne
+ * doit rien chercher (une recherche à blanc listerait la base), et un
+ * pseudonyme peut contenir des caractères qui ont un sens dans une expression
+ * régulière — non échappés, ils font échouer la requête ou la font balayer
+ * toute la collection.
+ *
+ * Exécution : `npm run test`.
+ */
+
+describe("recherche d'utilisateurs (administration)", () => {
+  it("ne cherche rien sur une saisie vide", () => {
+    assert.equal(parseAdminUserSearch(""), null);
+    assert.equal(parseAdminUserSearch("   "), null);
+    // Un « @ » seul n'est pas un pseudonyme : c'est le préfixe d'une mention.
+    assert.equal(parseAdminUserSearch("@"), null);
+  });
+
+  it("reconnaît un identifiant recopié", () => {
+    assert.deepEqual(parseAdminUserSearch("507f1f77bcf86cd799439011"), {
+      kind: "id",
+      id: "507f1f77bcf86cd799439011",
+    });
+    // La casse d'un hexadécimal ne change rien à l'identifiant désigné.
+    assert.deepEqual(parseAdminUserSearch("507F1F77BCF86CD799439011"), {
+      kind: "id",
+      id: "507f1f77bcf86cd799439011",
+    });
+    // Vingt-trois caractères : ce n'est pas un identifiant, c'est un pseudonyme
+    // qui y ressemble.
+    assert.equal(parseAdminUserSearch("507f1f77bcf86cd79943901")?.kind, "text");
+  });
+
+  it("reconnaît un tag complet", () => {
+    assert.deepEqual(parseAdminUserSearch("Alice#1234"), {
+      kind: "tag",
+      displayName: "Alice",
+      discriminator: "1234",
+    });
+    // Un pseudonyme peut contenir un « # » : c'est le dernier qui sépare.
+    assert.deepEqual(parseAdminUserSearch("Mister#1#4242"), {
+      kind: "tag",
+      displayName: "Mister#1",
+      discriminator: "4242",
+    });
+  });
+
+  it("retombe sur le pseudonyme quand le tag est incomplet", () => {
+    // Sans nombre derrière le « # », il n'y a pas de tag à résoudre : autant
+    // chercher ce qui a été tapé.
+    assert.equal(parseAdminUserSearch("Alice#")?.kind, "text");
+    assert.equal(parseAdminUserSearch("#1234")?.kind, "text");
+  });
+
+  it("retire le « @ » d'une mention recopiée", () => {
+    assert.deepEqual(parseAdminUserSearch("@Alice#1234"), {
+      kind: "tag",
+      displayName: "Alice",
+      discriminator: "1234",
+    });
+  });
+
+  it("échappe ce qui aurait un sens dans une expression régulière", () => {
+    // Sans échappement, « (test » ferait échouer la requête et « .* »
+    // balaierait toute la collection.
+    assert.deepEqual(parseAdminUserSearch("(test"), { kind: "text", pattern: "\\(test" });
+    assert.deepEqual(parseAdminUserSearch(".*"), { kind: "text", pattern: "\\.\\*" });
+  });
+
+  describe("adminUserTag", () => {
+    const base: AdminUserSummary = { id: "1", username: "alice", isPublicProfile: false };
+
+    it("préfère le pseudonyme personnalisé et son nombre", () => {
+      assert.equal(
+        adminUserTag({ ...base, displayName: "Alice", discriminator: "1234" }),
+        "Alice#1234"
+      );
+    });
+
+    it("retombe sur le nom de compte", () => {
+      assert.equal(adminUserTag(base), "alice");
+      // Un pseudonyme sans nombre ne fait pas un tag : il ne désignerait
+      // personne de façon unique.
+      assert.equal(adminUserTag({ ...base, displayName: "Alice" }), "alice");
+    });
+  });
+});

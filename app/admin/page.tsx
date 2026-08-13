@@ -10,6 +10,35 @@ export default function AdminDashboard() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Link
+            href="/admin/users"
+            className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-foreground mb-2">
+                  Utilisateurs
+                </h2>
+                <p className="text-muted-foreground">
+                  Retrouver un joueur par son pseudonyme ou son identifiant, et ouvrir son profil
+                </p>
+              </div>
+              <svg
+                className="h-12 w-12 text-emerald-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-4.35-4.35M11 6a4 4 0 100 8 4 4 0 000-8zM4 20a7 7 0 0113 0"
+                />
+              </svg>
+            </div>
+          </Link>
+
+          <Link
             href="/admin/games"
             className="bg-card rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
           >
