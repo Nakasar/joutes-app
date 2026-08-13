@@ -15,6 +15,14 @@ createNotification  →  schedulePushFanout  →  audience  →  appareils  → 
    (un document)         (après la réponse)     (ou file, si trop gros)
 ```
 
+Le dernier maillon n'est pas le fournisseur, et c'est une surprise récurrente :
+**une notification poussée n'est pas affichée quand l'application est au
+premier plan.** Android comme iOS la remettent à l'application, à charge pour
+elle de la montrer. C'est précisément la situation d'un joueur qui attend son
+appariement, l'écran du tournoi ouvert — le message partait, arrivait, se
+rangeait dans l'historique, et le téléphone ne disait rien. L'app mobile la
+réaffiche donc en notification locale (`presentPush`, `src/lib/push.ts`).
+
 ## Les règles
 
 - **L'envoi ne fait jamais échouer l'action métier.** Une notification
@@ -114,6 +122,8 @@ db.user.createIndex({ lairs: 1 })   // sans lui, chaque annonce de lair balaie l
 | `400 BadDeviceToken` sur un jeton pourtant valide | jeton de développement présenté à la production, ou l'inverse ; l'envoi rejoue une fois sur l'autre point d'entrée et retient celui qui marche |
 | Tous les appareils disparaissent d'un coup | un `INVALID_ARGUMENT` de FCM pris pour un jeton mort. Il ne l'est que lorsqu'il porte un `FcmError` ; avec un `BadRequest`, c'est notre charge utile qui est fautive |
 | Android n'affiche jamais l'invite | `POST_NOTIFICATIONS` absente du manifeste généré — `requestPermission()` rend « denied » sans rien demander |
+| La notification est dans l'historique, mais le téléphone n'a rien montré | l'application était au premier plan. Android et iOS remettent alors la notification à l'application **au lieu de l'afficher** : c'est à elle de la montrer. L'app mobile la réaffiche en local (`presentPush`) |
+| Android l'affiche, mais sans bandeau ni son | canal absent ou inconnu de l'appareil : Android retombe sur le repli « Divers » de Firebase, d'importance moyenne. Le canal est nommé dans chaque message (`ANDROID_CHANNEL_ID`) et créé par l'app au démarrage — les deux chaînes doivent coïncider |
 
 Vérifier un jeton sans passer par le fan-out complet :
 
