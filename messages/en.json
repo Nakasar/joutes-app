@@ -753,8 +753,8 @@
     "quizz": {
       "metadata": {
         "notFoundTitle": "Game not found",
-        "title": "Quizzes — {gameName}",
-        "description": "Find all quizzes related to {gameName}."
+        "title": "{gameName} quizzes — rules, rulings and policies",
+        "description": "Test your {gameName} knowledge: game rules, rulings and tournament policies. Joutes community quizzes mark every answer and explain it."
       },
       "title": "Quizzes — {gameName}",
       "back": "Back to game",
@@ -3407,6 +3407,16 @@
     "searching": "Searching...",
     "searchFailed": "Search is unavailable right now.",
     "noResults": "No place found."
+  },
+  "Quizz": {
+    "metadata": {
+      "listTitle": "Quizzes — rules, rulings and game policies",
+      "keywords": "quiz, quizzes, rules, rulings, game policies, knowledge",
+      "listDescription": "Test your knowledge of your favourite games: rules, rulings and tournament policies. Joutes community quizzes mark every answer and explain it.",
+      "notFoundTitle": "Quiz not found",
+      "quizDescription": "Test your {gameName} knowledge: rules, rulings and game policies. Every answer is marked and explained.",
+      "quizDescriptionWithoutGame": "Test your knowledge: rules, rulings and game policies. Every answer is marked and explained."
+    }
   },
   "Printings": {
     "label": "Print variant",

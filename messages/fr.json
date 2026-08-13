@@ -753,8 +753,8 @@
     "quizz": {
       "metadata": {
         "notFoundTitle": "Jeu introuvable",
-        "title": "Quizz — {gameName}",
-        "description": "Retrouvez tous les quizz liés à {gameName}."
+        "title": "Quizz {gameName} — règles, rulings et politiques",
+        "description": "Testez vos connaissances de {gameName} : règles du jeu, rulings et politiques de tournoi. Les quizz de la communauté Joutes corrigent chaque réponse et l'expliquent."
       },
       "title": "Quizz — {gameName}",
       "back": "Retour au jeu",
@@ -3408,6 +3408,16 @@
     "searching": "Recherche...",
     "searchFailed": "Recherche impossible pour le moment.",
     "noResults": "Aucune localité trouvée."
+  },
+  "Quizz": {
+    "metadata": {
+      "listTitle": "Quizz — règles, rulings et politiques de jeu",
+      "keywords": "quizz, quiz, règles, rulings, politiques de jeu, connaissances",
+      "listDescription": "Testez vos connaissances de vos jeux favoris : règles, rulings et politiques de tournoi. Les quizz de la communauté Joutes corrigent chaque réponse et l'expliquent.",
+      "notFoundTitle": "Quizz introuvable",
+      "quizDescription": "Testez vos connaissances de {gameName} : règles, rulings et politiques de jeu. Chaque réponse est corrigée et expliquée.",
+      "quizDescriptionWithoutGame": "Testez vos connaissances : règles, rulings et politiques de jeu. Chaque réponse est corrigée et expliquée."
+    }
   },
   "Printings": {
     "label": "Variante d'impression",

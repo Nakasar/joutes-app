@@ -753,8 +753,8 @@
     "quizz": {
       "metadata": {
         "notFoundTitle": "Spiel nicht gefunden",
-        "title": "Quiz — {gameName}",
-        "description": "Finde alle Quiz zu {gameName}."
+        "title": "{gameName}-Quiz — Regeln, Rulings und Richtlinien",
+        "description": "Prüfe dein Wissen über {gameName}: Spielregeln, Rulings und Turnierrichtlinien. Die Quiz der Joutes-Gemeinschaft werten jede Antwort aus und erklären sie."
       },
       "title": "Quiz — {gameName}",
       "back": "Zurück zum Spiel",
@@ -3324,6 +3324,16 @@
     "searching": "Suche...",
     "searchFailed": "Die Suche ist derzeit nicht verfügbar.",
     "noResults": "Kein Ort gefunden."
+  },
+  "Quizz": {
+    "metadata": {
+      "listTitle": "Quiz — Regeln, Rulings und Spielrichtlinien",
+      "keywords": "Quiz, Regeln, Rulings, Spielrichtlinien, Wissen",
+      "listDescription": "Prüfe dein Wissen über deine Lieblingsspiele: Regeln, Rulings und Turnierrichtlinien. Die Quiz der Joutes-Gemeinschaft werten jede Antwort aus und erklären sie.",
+      "notFoundTitle": "Quiz nicht gefunden",
+      "quizDescription": "Prüfe dein Wissen über {gameName}: Regeln, Rulings und Spielrichtlinien. Jede Antwort wird ausgewertet und erklärt.",
+      "quizDescriptionWithoutGame": "Prüfe dein Wissen: Regeln, Rulings und Spielrichtlinien. Jede Antwort wird ausgewertet und erklärt."
+    }
   },
   "Printings": {
     "label": "Druckvariante",

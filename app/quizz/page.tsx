@@ -6,19 +6,34 @@ import { Metadata } from "next";
 import { HelpCircle, PenSquare } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { getTranslations } from "next-intl/server";
 import QuizListClient from "./QuizListClient";
 
-export const metadata: Metadata = {
-  title: "Quizz",
-  description: "Tous les quizz de la communauté Joutes pour tester vos connaissances sur vos jeux de cartes à collectionner favoris.",
-  keywords: ["quizz", "quiz", "jeux de cartes à collectionner", "communauté", "connaissances"],
-  openGraph: {
-    url: "https://joutes.app/quizz",
-    siteName: "Joutes",
-    title: "Quizz - Joutes",
-    description: "Tous les quizz de la communauté Joutes pour tester vos connaissances sur vos jeux de cartes à collectionner favoris.",
-  },
-};
+/**
+ * La description nomme ce qu'un quizz fait travailler — règles, rulings,
+ * politiques de tournoi — plutôt que de répéter le mot « quizz » : c'est ce
+ * qu'on cherche, et c'est ce qui décide d'un clic sous un résultat de recherche.
+ *
+ * Traduite, quand la page ne l'est pas encore : ce qu'un moteur indexe n'a pas
+ * à attendre que le corps de la page suive.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("Quizz.metadata");
+  const title = t("listTitle");
+  const description = t("listDescription");
+
+  return {
+    title,
+    description,
+    keywords: t("keywords").split(",").map((keyword) => keyword.trim()),
+    openGraph: {
+      url: "https://joutes.app/quizz",
+      siteName: "Joutes",
+      title,
+      description,
+    },
+  };
+}
 
 export const dynamic = "force-dynamic";
 
