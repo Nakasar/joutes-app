@@ -57,13 +57,17 @@ export type PushDevice = {
  */
 export type PushDeviceSummary = Pick<
   PushDevice,
-  "id" | "platform" | "appVersion" | "createdAt" | "lastSeenAt" | "state"
+  "id" | "platform" | "installationId" | "appVersion" | "createdAt" | "lastSeenAt" | "state"
 > & { tokenPreview: string };
 
 export function toPushDeviceSummary(device: PushDevice): PushDeviceSummary {
   return {
     id: device.id,
     platform: device.platform,
+    // L'identifiant d'installation n'est pas un secret : c'est l'application
+    // qui l'a produit. Le lui rendre lui permet de reconnaître son propre
+    // appareil dans la liste, quand elle a perdu l'identifiant serveur.
+    installationId: device.installationId,
     appVersion: device.appVersion,
     createdAt: device.createdAt,
     lastSeenAt: device.lastSeenAt,

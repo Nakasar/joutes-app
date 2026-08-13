@@ -130,29 +130,34 @@ export async function listPushDevicesForUser(userId: string): Promise<PushDevice
  * sans `skip` — un `skip` sur des dizaines de milliers de lignes coûte le
  * balayage qu'il prétend éviter.
  */
-export async function listActiveDevicesForUsers(
-  userIds: string[],
-  options: { limit?: number; after?: string } = {}
-): Promise<PushDevice[]> {
-  if (userIds.length === 0) return [];
-
-  const allowed = await db
+async function usersAcceptingPush(userIds: string[]): Promise<string[]> {
+  const docs = await db
     .collection("user")
     .find(
       {
-        _id: { $in: userIds.map((id) => new ObjectId(id)) },
+        _id: { $in: userIds.filter((id) => ObjectId.isValid(id)).map((id) => new ObjectId(id)) },
         "notifications.app.push.enabled": { $ne: false },
       },
       { projection: { _id: 1 } }
     )
     .toArray();
 
+  return docs.map((doc) => doc._id.toString());
+}
+
+export async function listActiveDevicesForUsers(
+  userIds: string[],
+  options: { limit?: number; after?: string } = {}
+): Promise<PushDevice[]> {
+  if (userIds.length === 0) return [];
+
+  const allowed = await usersAcceptingPush(userIds);
   if (allowed.length === 0) return [];
 
   const docs = await db
     .collection(COLLECTION_NAME)
     .find({
-      userId: { $in: allowed.map((user) => user._id.toString()) },
+      userId: { $in: allowed },
       state: "active",
       ...(options.after ? { _id: { $gt: new ObjectId(options.after) } } : {}),
     })
@@ -163,12 +168,24 @@ export async function listActiveDevicesForUsers(
   return docs.map(toPushDevice);
 }
 
-/** Combien d'appareils une notification ferait sonner. Sert à choisir entre l'envoi immédiat et la file. */
+/**
+ * Combien d'appareils une notification ferait sonner. Sert à choisir entre
+ * l'envoi immédiat et la file.
+ *
+ * Le même filtre de préférence que `listActiveDevicesForUsers`, et pas
+ * seulement les appareils actifs : compter des téléphones dont le compte a
+ * coupé le push surestimerait l'audience, et pourrait mettre en file une
+ * annonce que personne n'attend — le dépilage ne trouverait alors rien à
+ * envoyer.
+ */
 export async function countActiveDevicesForUsers(userIds: string[]): Promise<number> {
   if (userIds.length === 0) return 0;
 
+  const allowed = await usersAcceptingPush(userIds);
+  if (allowed.length === 0) return 0;
+
   return db.collection(COLLECTION_NAME).countDocuments({
-    userId: { $in: userIds },
+    userId: { $in: allowed },
     state: "active",
   });
 }

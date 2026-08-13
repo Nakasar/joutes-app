@@ -87,15 +87,18 @@ function sendOne(
     });
 
     let status = 0;
-    const chunks: Buffer[] = [];
+    // `setEncoding` ci-dessous fait émettre des chaînes, pas des `Buffer` : on
+    // les accumule telles quelles. Les concaténer comme des tampons lèverait
+    // un `TypeError`, et aucune réponse d'Apple ne serait jamais lue.
+    const chunks: string[] = [];
 
     stream.on("response", (responseHeaders) => {
       status = Number(responseHeaders[http2.constants.HTTP2_HEADER_STATUS] ?? 0);
     });
-    stream.on("data", (chunk: Buffer) => chunks.push(chunk));
+    stream.on("data", (chunk: string) => chunks.push(chunk));
     stream.on("error", reject);
     stream.on("end", () => {
-      const raw = Buffer.concat(chunks).toString("utf8");
+      const raw = chunks.join("");
       let parsed: unknown = null;
       if (raw) {
         try {

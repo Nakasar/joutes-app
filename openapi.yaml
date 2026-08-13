@@ -3864,6 +3864,7 @@ components:
         id: { type: string }
         platform: { type: string, enum: [ios, android] }
         tokenPreview: { type: string, description: "Last 8 characters of the push token. The token itself is a sending secret and never leaves the server." }
+        installationId: { type: string, description: "Echoed back so a client can recognise its own device." }
         appVersion: { type: string, nullable: true }
         state: { type: string, enum: [active, revoked] }
         createdAt: { type: string, format: date-time }

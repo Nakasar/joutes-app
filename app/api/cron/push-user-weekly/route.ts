@@ -61,10 +61,6 @@ export async function GET(req: Request) {
         continue;
       }
 
-      await db
-        .collection("user")
-        .updateOne({ _id: user._id }, { $set: { "notifications.app.weekly.lastSent": today.toISO() } });
-
       await sendPushToUsers([userId], {
         title: digest.title,
         body: digest.body,
@@ -74,6 +70,15 @@ export async function GET(req: Request) {
         // l'écran de verrouillage ne servent personne.
         collapseId: "weekly-digest",
       });
+
+      // Marqué APRÈS l'envoi. Dans l'autre ordre, un jeton d'accès refusé ou
+      // une configuration invalide laisserait l'utilisateur noté « servi »
+      // sans rien avoir reçu, et sans rattrapage avant la semaine suivante.
+      // Le risque inverse — un envoi réussi non marqué — se solde par un
+      // second récapitulatif dans sept jours, ce qui se remarque à peine.
+      await db
+        .collection("user")
+        .updateOne({ _id: user._id }, { $set: { "notifications.app.weekly.lastSent": today.toISO() } });
 
       sent++;
     }

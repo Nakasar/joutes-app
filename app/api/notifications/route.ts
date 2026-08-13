@@ -3,6 +3,33 @@ import { authenticateApiRequest } from "@/lib/api/authenticate";
 import { countUnreadNotifications, getUserNotifications } from "@/lib/db/notifications";
 import { notificationsQuerySchema } from "@/lib/schemas/push-device.schema";
 import { notificationLink } from "@/lib/notifications/deeplink";
+import type { Notification } from "@/lib/types/Notification";
+
+/**
+ * Ce qu'une notification montre d'elle-même à son destinataire.
+ *
+ * Énuméré champ par champ, et non recopié depuis le document. `hiddenBy`
+ * recense qui a masqué la notification : sur une annonce de lair, c'est la
+ * liste des identifiants d'autres utilisateurs, et elle n'a rien à faire dans
+ * une réponse. Une projection explicite ferme aussi la porte au prochain champ
+ * interne qu'on ajoutera au modèle sans y penser.
+ */
+function toPublicNotification(notification: Notification, userId: string) {
+  return {
+    id: notification.id,
+    type: notification.type,
+    title: notification.title,
+    description: notification.description,
+    createdAt: notification.createdAt,
+    link: notificationLink(notification),
+    read: notification.readBy?.includes(userId) ?? false,
+    template: notification.template ?? null,
+    leagueId: notification.leagueId ?? null,
+    matchId: notification.matchId ?? null,
+    lair: notification.lair ? { id: notification.lair.id, name: notification.lair.name } : null,
+    event: notification.event ? { id: notification.event.id, name: notification.event.name } : null,
+  };
+}
 
 /**
  * Les notifications d'un utilisateur, pour un client qui n'est pas le site.
@@ -39,11 +66,7 @@ export async function GET(request: Request) {
     ]);
 
     return NextResponse.json({
-      notifications: notifications.map((notification) => ({
-        ...notification,
-        link: notificationLink(notification),
-        read: notification.readBy?.includes(auth.userId) ?? false,
-      })),
+      notifications: notifications.map((notification) => toPublicNotification(notification, auth.userId)),
       total,
       unreadCount,
       page: query.data.page,
