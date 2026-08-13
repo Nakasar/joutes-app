@@ -3,6 +3,10 @@ import { User } from "@/lib/types/User";
 import { ObjectId } from "mongodb";
 import { toUser } from "@/lib/users/document";
 import { generateFriendCode } from "@/lib/utils/friend-codes";
+import {
+  type AdminUserSummary,
+  parseAdminUserSearch,
+} from "@/lib/users/admin-search";
 
 const COLLECTION_NAME = "user";
 
@@ -534,4 +538,70 @@ export async function moderateUserDescription(userId: string, moderatedText: str
   );
 
   return result.matchedCount > 0;
+}
+
+/**
+ * Recherche d'utilisateurs pour l'administration : par identifiant, par tag
+ * complet, ou par fragment de pseudonyme (cf. `lib/users/admin-search.ts`).
+ *
+ * La projection ne rapporte que de quoi afficher un pseudonyme et mener au
+ * profil. L'adresse e-mail reste en base : elle n'a pas à traverser la
+ * frontière du serveur pour dresser une liste de pseudonymes, et l'oubli d'un
+ * champ à l'affichage ne peut alors plus la révéler.
+ */
+export async function searchUsersForAdmin(
+  term: string,
+  limit = 25
+): Promise<AdminUserSummary[]> {
+  const query = parseAdminUserSearch(term);
+  if (!query) {
+    return [];
+  }
+
+  const projection = {
+    name: 1,
+    username: 1,
+    displayName: 1,
+    discriminator: 1,
+    image: 1,
+    avatar: 1,
+    isPublicProfile: 1,
+  };
+
+  // Le pseudonyme de compte vit sous `name` pour les comptes créés par
+  // better-auth, et sous `username` pour les plus anciens : les deux se
+  // cherchent, comme `toUser` les relit tous les deux.
+  const filter =
+    query.kind === "id"
+      ? { _id: ObjectId.createFromHexString(query.id) }
+      : query.kind === "tag"
+        ? { displayName: query.displayName, discriminator: query.discriminator }
+        : {
+            $or: [
+              { name: { $regex: query.pattern, $options: "i" } },
+              { username: { $regex: query.pattern, $options: "i" } },
+              { displayName: { $regex: query.pattern, $options: "i" } },
+            ],
+          };
+
+  const cursor = db
+    .collection(COLLECTION_NAME)
+    .find(filter, { projection })
+    .limit(Math.min(Math.max(limit, 1), 50));
+
+  // Le tag se compare sans tenir compte de la casse, comme partout ailleurs où
+  // on résout un `Pseudo#1234`.
+  const docs = await (query.kind === "tag"
+    ? cursor.collation({ locale: "en", strength: 2 })
+    : cursor
+  ).toArray();
+
+  return docs.map((doc) => ({
+    id: doc._id.toString(),
+    username: doc.name || doc.username || "",
+    displayName: doc.displayName || undefined,
+    discriminator: doc.discriminator || undefined,
+    avatar: doc.image || doc.avatar || undefined,
+    isPublicProfile: doc.isPublicProfile === true,
+  }));
 }
