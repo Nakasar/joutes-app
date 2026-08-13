@@ -33,10 +33,12 @@ export async function updateGameTournamentDefaults(
       return { success: false, error: "Jeu non trouvé" };
     }
 
-    // `updateGame` rend `false` quand rien n'a changé dans le document, ce qui
-    // arrive en réenregistrant les mêmes valeurs : le jeu existe (on vient de
-    // le lire), l'écriture est donc un succès sans modification.
-    await gamesDb.updateGame(validatedId, { tournamentDefaults: validated });
+    // Un formulaire qui ne s'écarte en rien du format livré ne produit aucun
+    // réglage : le champ est alors retiré, et non posé à `{}`. Sans quoi le jeu
+    // se dirait réglé sans l'être, et rien ne permettrait plus de revenir à
+    // l'état d'origine.
+    const hasSettings = Object.keys(validated).length > 0;
+    await gamesDb.setGameTournamentDefaults(validatedId, hasSettings ? validated : null);
 
     revalidatePath("/admin/tournaments");
     revalidatePath(`/admin/tournaments/${validatedId}`);

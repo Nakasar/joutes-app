@@ -16,7 +16,9 @@ Tournois**, jeu par jeu.
   qui s'en écarte : un barème laissé tel quel n'est pas recopié dans le
   document, et le jeu continue donc de suivre son preset si les règles
   officielles changent. C'est aussi ce qui permet de rendre un réglage au jeu en
-  le remettant à sa valeur d'origine.
+  le remettant à sa valeur d'origine — et un formulaire qui ne s'écarte de rien
+  retire le champ du document au lieu d'y laisser un objet vide : « aucun
+  réglage » et « des réglages tous égaux au format livré » sont le même état.
 - **Un défaut n'est pas une contrainte.** Tout ce qui est réglé ici pré-remplit
   la création d'un tournoi et de ses phases ; l'organisateur reste libre de
   modifier chaque valeur pour son tournoi.

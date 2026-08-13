@@ -166,6 +166,29 @@ export async function updateGame(id: string, game: Partial<Omit<Game, "id">>): P
   return result.modifiedCount > 0;
 }
 
+/**
+ * Réglages de tournoi d'un jeu. `null` retire le champ du document plutôt que
+ * d'y laisser un objet vide : « aucun réglage » et « des réglages tous égaux au
+ * format livré » sont le même état, et le jeu se dirait réglé sans l'être —
+ * sans plus aucun moyen de revenir en arrière depuis le formulaire.
+ *
+ * Rend vrai dès que le jeu existe : réenregistrer les mêmes valeurs ne modifie
+ * aucun document, et ce n'est pas un échec.
+ */
+export async function setGameTournamentDefaults(
+  id: string,
+  defaults: Game["tournamentDefaults"] | null
+): Promise<boolean> {
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(id) },
+    defaults === null
+      ? { $unset: { tournamentDefaults: "" } }
+      : { $set: { tournamentDefaults: defaults } }
+  );
+
+  return result.matchedCount > 0;
+}
+
 export async function deleteGame(id: string): Promise<boolean> {
   
   const result = await db.collection(COLLECTION_NAME).deleteOne({ _id: new ObjectId(id) });
