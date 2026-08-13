@@ -32,8 +32,15 @@ preset du jeu sans que rien ne l'affiche.
 
 Tous se lisent « le plus grand d'abord », une valeur absente comptant pour zéro.
 Les trois premiers sont listés dans `GENERIC_TIEBREAKERS`
-(`lib/tournaments/game-presets.ts`) : un critère ajouté là devient aussitôt
-proposable à l'organisateur, sans autre changement d'interface.
+(`lib/types/Tournament.ts`, à côté du type qu'ils habitent) : un critère ajouté
+là est aussitôt proposé à l'organisateur et accepté par l'API — l'interface et
+le schéma de validation s'y adossent tous deux, sans recopier la liste. Reste à
+lui donner son calcul dans `compareByTiebreakers` et son libellé dans les quatre
+locales.
+
+Ces constantes vivent avec le type plutôt qu'avec le catalogue des presets :
+l'interface d'organisation en a besoin, et le bundle client n'a pas à embarquer
+les réglages de tous les jeux pour afficher une liste de critères.
 
 Le **temps de puzzle** reste hors de cette chaîne : il tranche en dernier, après
 tous les critères, et n'est pas configurable. Hors phase puzzle il n'a aucun

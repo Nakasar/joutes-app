@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { TournamentTiebreaker } from "@/lib/types/Tournament";
+import { GENERIC_TIEBREAKERS, type TournamentTiebreaker } from "@/lib/types/Tournament";
 
 export const tournamentPhaseTypeSchema = z.enum([
   "freeform",
@@ -25,12 +25,17 @@ export const tournamentScenarioSchema = z.object({
 });
 
 // Critère de départage : un critère générique, ou la statistique d'un preset
-// (`stat:<clé>`). Seule la forme est vérifiée ici ; le domaine sait seul quelles
-// statistiques le preset de la phase relève réellement, et écarte les autres au
+// (`stat:<clé>`). La liste des critères génériques est celle du domaine, jamais
+// recopiée : un critère qu'on y ajoute est accepté sans toucher à ce schéma.
+// Pour les statistiques, seule la forme est vérifiée ici ; le domaine sait seul
+// lesquelles le preset de la phase relève réellement, et écarte les autres au
 // moment de classer.
-const TIEBREAKER_PATTERN = /^(omw|gamesDiff|gamesWon|stat:[A-Za-z0-9_-]{1,40})$/;
+const GENERIC_TIEBREAKER_KEYS = new Set<string>(GENERIC_TIEBREAKERS);
+const STAT_TIEBREAKER_PATTERN = /^stat:[A-Za-z0-9_-]{1,40}$/;
 const tiebreakerSchema = z.custom<TournamentTiebreaker>(
-  (value) => typeof value === "string" && TIEBREAKER_PATTERN.test(value),
+  (value) =>
+    typeof value === "string" &&
+    (GENERIC_TIEBREAKER_KEYS.has(value) || STAT_TIEBREAKER_PATTERN.test(value)),
   { message: "Critère de départage inconnu" }
 );
 

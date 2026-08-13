@@ -38,6 +38,18 @@ export type TournamentResultMode = "points" | "selection";
 // sans dépendre du catalogue des presets, qui lui dépend de ce fichier.
 export type TournamentTiebreaker = "omw" | "gamesDiff" | "gamesWon" | `stat:${string}`;
 
+// Critères de départage indépendants du jeu : les seuls que la plateforme sache
+// calculer sans preset, et donc les seuls proposés à toutes les phases. Toute
+// nouveauté (points de match des adversaires, Buchholz…) s'ajoute ici et devient
+// aussitôt proposable à l'organisateur comme acceptée par l'API — schéma de
+// validation et interface s'y adossent, personne ne réécrit la liste.
+export const GENERIC_TIEBREAKERS: TournamentTiebreaker[] = ["omw", "gamesDiff", "gamesWon"];
+
+// Chaîne de départage historique, appliquée à toute phase sans preset. Elle
+// reprend aujourd'hui tous les critères génériques, mais ne dit pas la même
+// chose : l'une est un catalogue, l'autre un ordre d'application.
+export const DEFAULT_TIEBREAKERS: TournamentTiebreaker[] = [...GENERIC_TIEBREAKERS];
+
 // Comment les points de classement d'un match sont attribués.
 // - fixed : points fixes par victoire / défaite / égalité.
 // - rank_offset : points = N + offset[rang], N étant le nombre de joueurs du

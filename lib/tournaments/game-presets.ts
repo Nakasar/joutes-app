@@ -1,5 +1,7 @@
 import {
   DEFAULT_FIXED_SCORING,
+  DEFAULT_TIEBREAKERS,
+  GENERIC_TIEBREAKERS,
   type TournamentFixedScoring,
   type TournamentResultMode,
   type TournamentSwissPairing,
@@ -22,20 +24,11 @@ export type MatchStatDefinition = {
   max: number;
 };
 
-// Critère de départage appliqué après les points de match. Le type vit dans
-// lib/types/Tournament.ts (la phase le porte) ; l'alias reste le nom usuel ici.
+// Critère de départage appliqué après les points de match. Le type et les
+// critères génériques vivent dans lib/types/Tournament.ts (la phase les porte,
+// et l'interface d'organisation s'y adosse sans embarquer ce catalogue) ;
+// l'alias reste le nom usuel ici.
 export type TiebreakerKey = TournamentTiebreaker;
-
-// Critères de départage indépendants du jeu : les seuls que la plateforme sache
-// calculer sans preset, et donc les seuls proposés à toutes les phases. Toute
-// nouveauté (points de match des adversaires, Buchholz…) s'ajoute ici et devient
-// aussitôt proposable à l'organisateur.
-export const GENERIC_TIEBREAKERS: TiebreakerKey[] = ["omw", "gamesDiff", "gamesWon"];
-
-// Chaîne de départage historique, conservée pour toutes les phases sans preset.
-// Elle reprend aujourd'hui tous les critères génériques, mais ne dit pas la même
-// chose : l'une est un catalogue, l'autre un ordre d'application.
-export const DEFAULT_TIEBREAKERS: TiebreakerKey[] = [...GENERIC_TIEBREAKERS];
 
 // Réglages de format livrés avec un jeu. Le preset n'est pas modifiable par
 // l'organisateur : il traduit les règles officielles du jeu. L'organisateur

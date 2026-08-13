@@ -1,11 +1,18 @@
-import { DEFAULT_TIEBREAKERS, GENERIC_TIEBREAKERS } from "@/lib/tournaments/game-presets";
-import type { TournamentTiebreaker } from "@/lib/types/Tournament";
+import {
+  DEFAULT_TIEBREAKERS,
+  GENERIC_TIEBREAKERS,
+  type TournamentTiebreaker,
+} from "@/lib/types/Tournament";
 
 /**
  * Départages côté configuration : la même résolution que le serveur applique au
  * classement (lib/tournaments/game-presets.ts), mais à partir des presets tels
  * que la page les transmet. L'organisateur doit lire à l'écran exactement la
  * chaîne qui sera appliquée — sinon autant ne rien afficher.
+ *
+ * Rien n'est importé du catalogue des presets : la page transmet déjà par
+ * props les seuls presets utiles, et le bundle client n'a pas à embarquer les
+ * réglages de tous les jeux pour afficher une liste de critères.
  */
 
 // Preset de format proposé par le jeu du tournoi, résolu côté serveur.

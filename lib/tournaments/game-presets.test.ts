@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { DEFAULT_TIEBREAKERS } from "@/lib/types/Tournament";
 import {
-  DEFAULT_TIEBREAKERS,
   GAME_TOURNAMENT_PRESETS,
   availableTiebreakers,
   defaultPresetForGameSlug,
