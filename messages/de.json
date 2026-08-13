@@ -2445,6 +2445,7 @@
                          "scenariosLabel": "Szenarien (eines pro Zeile)",
                          "scenariosPlaceholder": "Kleiner Konflikt | Nur eine Einheit\nWechselnde Priorität | Zwei Einheiten",
                          "scenariosHint": "Werden den Runden der Reihe nach zugewiesen. Nach dem „|“ die Aufstellungsvorgaben für die Spieler.",
+                         "scenarioCatalogLabel": "Vom Spiel vorgeschlagen:",
       "resetStatusTitle": "Auf „nicht gestartet“ zurücksetzen",
       "resetStatusAria": "Phase {name} auf nicht gestartet zurücksetzen",
       "currentPhaseLabel": "Aktuelle Phase",

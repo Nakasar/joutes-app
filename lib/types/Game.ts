@@ -1,6 +1,7 @@
 import { GameTypeKey } from "@/lib/constants/game-types";
 import { GameFeatureKey } from "@/lib/constants/game-features";
 import { Lair } from "@/lib/types/Lair";
+import type { GameTournamentDefaults } from "@/lib/tournaments/game-defaults";
 
 export type Game = {
   id: string;
@@ -52,6 +53,13 @@ export type Game = {
    * d'administration se rend à partir de cette même table.
    */
   features?: Partial<Record<GameFeatureKey, boolean>>;
+  /**
+   * Réglages de tournoi par défaut : preset de statistiques appliqué d'office,
+   * départages, scénarios proposés, barème. Décrits et résolus dans
+   * `lib/tournaments/game-defaults.ts`. Absent = le jeu s'en tient aux presets
+   * livrés avec la plateforme.
+   */
+  tournamentDefaults?: GameTournamentDefaults;
 };
 
 export type GameType = GameTypeKey;

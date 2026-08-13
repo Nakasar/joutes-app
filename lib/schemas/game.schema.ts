@@ -1,5 +1,11 @@
 import { z } from "zod";
 import { GAME_FEATURE_KEYS } from "@/lib/constants/game-features";
+import {
+  tournamentResultModeSchema,
+  tournamentScenarioSchema,
+  tournamentSwissPairingSchema,
+  tournamentTiebreakersSchema,
+} from "@/lib/schemas/tournament.schema";
 
 export const gameTypeSchema = z.enum(["TCG", "BoardGame", "VideoGame", "Miniatures", "Other"]);
 
@@ -20,6 +26,34 @@ export const gameSchema = z.object({
   type: gameTypeSchema,
   features: gameFeaturesSchema.optional(),
 });
+
+/**
+ * Réglages de tournoi par défaut d'un jeu (administration). Chaque champ est
+ * facultatif : absent, il laisse la main au preset livré avec le jeu.
+ *
+ * `statsPresetKey` porte trois états, comme le document qu'il alimente :
+ * absent (suivre le catalogue), `null` (aucun preset), ou une clé.
+ */
+export const gameTournamentDefaultsSchema = z.object({
+  statsPresetKey: z.string().min(1).max(60).nullable().optional(),
+  tiebreakers: tournamentTiebreakersSchema.optional(),
+  fixedScoring: z
+    .object({
+      win: z.number().int().min(-99).max(999),
+      loss: z.number().int().min(-99).max(999),
+      draw: z.number().int().min(-99).max(999),
+    })
+    .optional(),
+  swissPairing: tournamentSwissPairingSchema.optional(),
+  bestOf: z.number().int().min(1).max(9).optional(),
+  resultMode: tournamentResultModeSchema.optional(),
+  requireMatchStats: z.boolean().optional(),
+  // Catalogue de scénarios proposés aux organisateurs. Plus large que le pool
+  // d'une phase : il couvre la saison d'un jeu, pas une seule ronde.
+  scenarios: z.array(tournamentScenarioSchema).max(200).optional(),
+});
+
+export type GameTournamentDefaultsInput = z.infer<typeof gameTournamentDefaultsSchema>;
 
 // Pour la validation d'ID MongoDB (ObjectId est un string hexadecimal de 24 caractères)
 export const gameIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID du jeu doit être un ObjectId MongoDB valide");

@@ -2529,6 +2529,7 @@
                          "scenariosLabel": "Scénarios (un par ligne)",
                          "scenariosPlaceholder": "Conflit mineur | Une seule escouade\nPriorité changeante | Deux escouades",
                          "scenariosHint": "Attribués aux rondes dans l'ordre. Après le « | », les consignes de composition affichées aux joueurs.",
+                         "scenarioCatalogLabel": "Proposés par le jeu :",
       "resetStatusTitle": "Repasser en « non démarrée »",
       "resetStatusAria": "Repasser la phase {name} en non démarrée",
       "currentPhaseLabel": "Phase en cours",

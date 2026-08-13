@@ -25,6 +25,7 @@ import { NextPhaseButton } from "./NextPhaseButton";
 import { OrganizerPageHeader } from "./OrganizerPageHeader";
 import { PhaseForm } from "./PhaseForm";
 import {
+  type PhaseGameDefaults,
   type PhasePresetOption,
   effectiveTiebreakers,
   tiebreakerLabel,
@@ -39,6 +40,7 @@ export function PhasesSection({
   initialPhases,
   initialCurrentPhaseId,
   presets,
+  gameDefaults,
   rounds,
   activePlayerCount,
 }: {
@@ -47,6 +49,8 @@ export function PhasesSection({
   initialCurrentPhaseId?: string;
   // Presets de format proposés par le jeu du tournoi. Vide = aucun.
   presets: PhasePresetOption[];
+  // Ce dont part une nouvelle phase, réglé par l'administration pour ce jeu.
+  gameDefaults: PhaseGameDefaults;
   rounds: TimelineRound[];
   activePlayerCount: number;
 }) {
@@ -311,6 +315,7 @@ export function PhasesSection({
             <h3 className="font-medium">{t("organizerPhases.addPhase")}</h3>
             <PhaseForm
               presets={presets}
+              gameDefaults={gameDefaults}
               busy={busy}
               submitLabel={
                 <>
@@ -338,6 +343,7 @@ export function PhasesSection({
               key={editPhase.id}
               initial={editPhase}
               presets={presets}
+              gameDefaults={gameDefaults}
               busy={busy}
               submitLabel={t("organizerPhases.editSubmit")}
               onSubmit={(body) => updatePhase(editPhase.id, body)}

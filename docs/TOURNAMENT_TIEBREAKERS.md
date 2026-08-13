@@ -47,6 +47,9 @@ tous les critères, et n'est pas configurable. Hors phase puzzle il n'a aucun
 effet (personne n'a de temps) ; dans une phase puzzle, où rien d'autre ne
 distingue les joueurs, il fait tout le classement — il n'y a donc rien à régler.
 
+Le jeu peut porter sa propre chaîne par défaut, réglée en administration : elle
+pré-remplit les nouvelles phases (cf. `docs/TOURNAMENT_GAME_DEFAULTS.md`).
+
 ## Réglage de phase
 
 | Réglage | Effet |
