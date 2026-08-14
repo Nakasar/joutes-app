@@ -95,7 +95,7 @@ async function main() {
       superType: card.cardType.superType?.[0]?.label,
       isToken: card.cardType.superType?.[0]?.label === 'Token',
       rarity: card.rarity?.value?.label,
-      foil: ['Epic', 'Rare'].includes(card.rarity?.value?.label ?? ''),
+      foil: ['Epic', 'Rare', 'Showcase'].includes(card.rarity?.value?.label ?? ''),
       domain: labels(card.domain),
       illustrator: labels(card.illustrator),
       energy: numericValue(card.energy),
