@@ -34,9 +34,8 @@ export default async function AvatarPage() {
         </div>
 
         <script
-          src="https://web.avatar.lu/widget-avatar.js"
+          src="https://web.avatar.lu/widget.js"
           data-client-id="avatar-riftbound-1871"
-          data-agent-id="c9cb398c-ac6c-41b3-8790-02f8f1b84a25"
           data-lang="fr"
           async>
         </script>
