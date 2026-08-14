@@ -47,3 +47,6 @@ next-env.d.ts
 
 # scratch working files (e.g. source PDFs used for one-off data extraction)
 /tmp/
+
+# cache de téléchargement de l'import Flesh and Blood (≈ 10 Mo, régénérable)
+/scripts/games/fab/cards.json
