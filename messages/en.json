@@ -1600,7 +1600,7 @@
       },
         "boosters": {
           "value": "Booster value",
-          "valueBreakdown": "{priced, plural, =0 {no card priced} one {# card priced} other {# cards priced}} out of {count}",
+          "valueBreakdown": "{priced, plural, =0 {no cards priced} one {# card priced} other {# cards priced}} out of {count}",
           "valueComputedAt": "computed on {date}",
           "valueOutdated": "Contents changed since this computation.",
           "valueNeverComputed": "Never computed.",

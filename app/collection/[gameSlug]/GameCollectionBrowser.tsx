@@ -513,8 +513,8 @@ export default function GameCollectionBrowser({
                 </div>
                 <div className="flex flex-1 flex-col gap-2 p-2">
                   <div className="min-w-0">
-                    <div className="flex items-start justify-between gap-1.5">
-                      <p className="truncate text-sm font-medium leading-tight" title={card.name}>
+                    <div className="flex min-w-0 items-start justify-between gap-1.5">
+                      <p className="min-w-0 flex-1 truncate text-sm font-medium leading-tight" title={card.name}>
                         {card.name}
                       </p>
                       <CardPriceTag price={card.marketPrice} className="text-[11px] leading-tight" />
