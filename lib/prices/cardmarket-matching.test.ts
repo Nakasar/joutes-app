@@ -83,13 +83,27 @@ describe("compareCollectorNumbers", () => {
 });
 
 describe("profil au nom seul", () => {
-  const swu = CARDMARKET_GAME_PROFILES.swu;
+  const riftbound = CARDMARKET_GAME_PROFILES.riftbound;
 
   it("rapproche le nom complet, sous-titre compris", () => {
     assert.equal(
-      swu.productKey("Darth Vader, Dark Lord of the Sith"),
-      swu.cardKey(card("SOR-10", "Darth Vader, Dark Lord of the Sith", "SOR"))
+      riftbound.productKey("Ahri, Alluring"),
+      riftbound.cardKey(card("OGN066", "Ahri, Alluring", "OGN"))
     );
+  });
+});
+
+describe("profil Star Wars Unlimited", () => {
+  const swu = CARDMARKET_GAME_PROFILES.swu;
+
+  it("compare le nom anglais de la carte, le catalogue étant en français", () => {
+    const french = { ...card("SOR-10", "Dark Vador, Seigneur Noir des Sith", "SOR"), englishName: "Darth Vader, Dark Lord of the Sith" };
+
+    assert.equal(swu.productKey("Darth Vader, Dark Lord of the Sith"), swu.cardKey(french));
+  });
+
+  it("retombe sur le nom des cartes importées avant le nom anglais", () => {
+    assert.equal(swu.productKey("Vanquish"), swu.cardKey(card("SOR-206", "Vanquish", "SOR")));
   });
 });
 

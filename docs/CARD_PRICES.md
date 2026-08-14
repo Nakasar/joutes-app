@@ -11,14 +11,43 @@ Pour l'instant, une seule place de marché (Cardmarket) et trois jeux :
 | --- | --- | --- |
 | Riftbound | 1 153 / 1 219 (95 %) | quelques promos et jetons que Cardmarket ne vend pas |
 | Flesh and Blood | 6 719 / 9 555 (70 %) | les promos, jetons et cartes de démonstration absents de Cardmarket |
-| Star Wars Unlimited | 243 / 7 112 (3 %) | **le catalogue est en français**, celui de Cardmarket en anglais |
+| Star Wars Unlimited | dépend du nom anglais des cartes (ci-dessous) | idem, une fois le catalogue réimporté |
 
-Star Wars Unlimited est importé depuis le site officiel en `locale=fr`
-(`scripts/games/swu/import-cards.ts`) : les cartes ne portent que leur nom
-français, alors que Cardmarket nomme ses produits en anglais. Seules les cartes
-dont le nom est identique dans les deux langues ressortent. Y remédier demande
-un nom anglais sur les cartes — à l'import du catalogue, ou en le rapatriant au
-moment de l'import des prix.
+### Star Wars Unlimited : le nom anglais, et les identifiants partagés
+
+Le catalogue est importé du site officiel en `locale=fr`
+(`scripts/games/swu/import-cards.ts`) : les cartes ne portaient que leur nom
+français, quand Cardmarket nomme ses produits en anglais — 243 cartes cotées
+sur 7 112, celles dont le nom s'écrit pareil dans les deux langues.
+
+L'import du catalogue rapporte donc aussi le nom anglais de chaque carte
+(`englishName`), en relisant la même liste en `locale=en`. Une carte s'y
+retrouve par son extension, son numéro **et son type de variante** : le site
+officiel renumérote les variantes, si bien que « Je Suis Ton Père » est la 233
+en standard et la 5 en hyperespace — numéro que porte aussi, en standard, Luke
+Skywalker. C'est ce nom anglais que les prix comparent.
+
+**Il faut donc réimporter le catalogue Star Wars Unlimited** pour que ses prix
+suivent : les cartes déjà en base n'ont pas encore ce champ, et retombent d'ici
+là sur leur nom français.
+
+Cette renumérotation a une autre conséquence, celle-là indépendante des prix :
+l'identifiant des cartes étant `<extension>-<numéro>`, `SOR-5` désigne à la fois
+« Luke Skywalker, Faithful Friend » et « I Am Your Father » — 1 394 des 9 185
+cartes du site officiel partagent ainsi leur identifiant avec une autre. Un
+relevé étant écrit par identifiant, l'import des prix écarte ces cartes-là et le
+dit dans son bilan : leur donner un prix reviendrait à écraser celui de l'autre.
+Y remédier demande de changer le schéma d'identifiant des cartes SWU, ce qui
+touche tout ce qui les référence (collections, listes de souhaits, de vente) —
+c'est un chantier à part.
+
+### Magic n'est pas branché
+
+Deux raisons, et la première suffit : les cartes Magic ne sont pas dans
+MongoDB — elles ne vivent que dans l'index de recherche — alors que l'import
+des prix lit le catalogue en base. Et elles portent déjà `prices.eur` et
+`prices.eur_foil`, que Scryfall tient de Cardmarket et rattache à l'impression
+exacte : mieux que ce qu'un rapprochement par nom saurait retrouver.
 
 ## D'où viennent les prix
 
@@ -170,14 +199,13 @@ aucune authentification.
 2. `CARDMARKET_GAME_PROFILES` (`lib/prices/cardmarket-matching.ts`) : ce qui
    distingue deux cartes de même nom dans ce jeu. `NAME_ONLY_PROFILE` suffit
    quand le nom complet identifie la carte dans son extension — c'est le cas de
-   Riftbound et de Star Wars Unlimited, dont les cartes portent déjà leur
-   sous-titre (`Darth Vader, Dark Lord of the Sith`) comme Cardmarket. Le profil
-   Flesh and Blood sert de modèle pour un jeu qui, comme lui, écrit une variante
-   entre parenthèses.
+   Riftbound, dont les cartes portent déjà leur sous-titre
+   (`Ahri, Alluring`) comme Cardmarket. Le profil Flesh and Blood sert de modèle
+   pour un jeu qui, comme lui, écrit une variante entre parenthèses ; celui de
+   Star Wars Unlimited, pour un jeu dont le catalogue n'est pas en anglais.
 
    Le jeu doit aussi avoir ses cartes dans MongoDB : c'est de là que le script
-   lit le catalogue. Magic fait exception — ses cartes ne vivent que dans
-   l'index de recherche — et n'est donc pas branché.
+   lit le catalogue. Magic fait exception (voir plus haut).
 
 ## Implémentation
 

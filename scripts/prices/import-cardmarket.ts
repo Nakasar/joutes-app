@@ -79,6 +79,26 @@ async function loadCards(gameId: ObjectId, attributeKeys: readonly string[]): Pr
   return docs.filter((card) => typeof card.id === "string" && typeof card.name === "string");
 }
 
+/**
+ * Cartes dont l'identifiant en désigne une seule.
+ *
+ * Le catalogue Star Wars Unlimited en compte quelques centaines qui n'en sont
+ * pas : le site officiel renumérote les variantes, si bien que `SOR-5` est à la
+ * fois « Luke Skywalker, Faithful Friend » en standard et « I Am Your Father »
+ * en hyperespace. Un relevé étant écrit par identifiant de carte, le prix de
+ * l'une écraserait celui de l'autre : ni l'une ni l'autre n'en reçoit.
+ */
+function withUniqueIds(cards: PriceableCard[]): { cards: PriceableCard[]; dropped: number } {
+  const byId = new Map<string, PriceableCard[]>();
+  for (const card of cards) {
+    byId.set(card.id, [...(byId.get(card.id) ?? []), card]);
+  }
+
+  const unique = [...byId.values()].filter((sharing) => sharing.length === 1).flat();
+
+  return { cards: unique, dropped: cards.length - unique.length };
+}
+
 function percent(part: number, total: number): string {
   return total > 0 ? `${((100 * part) / total).toFixed(1)} %` : "—";
 }
@@ -107,8 +127,11 @@ async function main() {
   const gameId = await resolveGameId(slug);
 
   console.info(`Cartes du jeu « ${slug} » (${gameId})...`);
-  const cards = await loadCards(gameId, profile.attributeKeys);
-  console.info(`${cards.length} cartes en base.`);
+  const { cards, dropped } = withUniqueIds(await loadCards(gameId, profile.attributeKeys));
+  console.info(
+    `${cards.length} cartes en base` +
+      (dropped > 0 ? `, ${dropped} écartées : leur identifiant en désigne plusieurs.` : ".")
+  );
 
   console.info(`Téléchargement du catalogue et des prix Cardmarket (jeu ${cardmarketGameId})...`);
   const [productFile, priceFile] = await Promise.all([

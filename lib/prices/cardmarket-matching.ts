@@ -101,11 +101,25 @@ const NAME_ONLY_PROFILE: CardmarketGameProfile = {
   cardKey: (card) => normalizeCardName(card.name),
 };
 
+/**
+ * Star Wars Unlimited : le catalogue est importé du site officiel en français
+ * (`scripts/games/swu/import-cards.ts`), quand Cardmarket nomme ses produits
+ * en anglais. C'est donc le nom anglais rapporté par l'import qui est comparé.
+ * Les cartes importées avant qu'il ne le soit retombent sur leur nom : elles
+ * ne ressortiront que si les deux langues l'écrivent pareil.
+ */
+const SWU_PROFILE: CardmarketGameProfile = {
+  attributeKeys: ["englishName"],
+  productKey: normalizeCardName,
+  cardKey: (card) =>
+    normalizeCardName(typeof card.englishName === "string" && card.englishName ? card.englishName : card.name),
+};
+
 /** Jeu dont on sait rapprocher les cartes des produits Cardmarket. */
 export const CARDMARKET_GAME_PROFILES: Record<string, CardmarketGameProfile> = {
   fab: FAB_PROFILE,
   riftbound: NAME_ONLY_PROFILE,
-  swu: NAME_ONLY_PROFILE,
+  swu: SWU_PROFILE,
 };
 
 /**
