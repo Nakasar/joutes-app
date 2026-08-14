@@ -11,7 +11,7 @@ Pour l'instant, une seule place de marché (Cardmarket) et trois jeux :
 | --- | --- | --- |
 | Riftbound | 1 153 / 1 219 (95 %) | quelques promos et jetons que Cardmarket ne vend pas |
 | Flesh and Blood | 6 719 / 9 555 (70 %) | les promos, jetons et cartes de démonstration absents de Cardmarket |
-| Star Wars Unlimited | dépend du nom anglais des cartes (ci-dessous) | idem, une fois le catalogue réimporté |
+| Star Wars Unlimited | ≈ 800 / 9 185 après réimport (9 %) | son catalogue énumère bien plus de variantes que Cardmarket n'en vend (ci-dessous) |
 
 ### Star Wars Unlimited : le nom anglais, et les identifiants partagés
 
@@ -30,6 +30,18 @@ Skywalker. C'est ce nom anglais que les prix comparent.
 **Il faut donc réimporter le catalogue Star Wars Unlimited** pour que ses prix
 suivent : les cartes déjà en base n'ont pas encore ce champ, et retombent d'ici
 là sur leur nom français.
+
+Le nom anglais lève le premier obstacle, pas le second : le catalogue officiel
+énumère **3,5 variantes par carte** en moyenne (standard, standard foil,
+hyperespace, showcase, et une cinquantaine de types promotionnels — « SS Judge »,
+« GC Top 8 », « Prerelease Promo »…), quand Cardmarket en vend 1,6. Les nombres
+ne correspondant pas, les variantes ne sont pas appariées et le groupe entier
+est écarté : ≈ 800 cartes cotées après réimport, l'essentiel des produits
+restant ambigus.
+
+Pour aller plus loin, il faudrait garder le type de variante sur les cartes et
+n'attribuer les prix qu'au tirage standard, les variantes promotionnelles
+restant sans prix. C'est une décision à prendre, pas un réglage.
 
 Cette renumérotation a une autre conséquence, celle-là indépendante des prix :
 l'identifiant des cartes étant `<extension>-<numéro>`, `SOR-5` désigne à la fois
