@@ -460,9 +460,17 @@ async function marketPricesForCards(
     cardIdsByGame.set(card.gameId, cardIds);
   }
 
+  // Les jeux sont interrogés de front : une offre en mêle plusieurs, et les
+  // enchaîner ajouterait un aller-retour d'attente par jeu.
+  const perGame = await Promise.all(
+    [...cardIdsByGame].map(async ([gameId, cardIds]) => {
+      const gamePrices = await getCardMarketPrices(new ObjectId(gameId), [...cardIds]);
+      return [gameId, gamePrices] as const;
+    })
+  );
+
   const prices = new Map<string, CardMarketPrice>();
-  for (const [gameId, cardIds] of cardIdsByGame) {
-    const gamePrices = await getCardMarketPrices(new ObjectId(gameId), [...cardIds]);
+  for (const [gameId, gamePrices] of perGame) {
     for (const [cardId, price] of gamePrices) {
       prices.set(`${gameId}|${cardId}`, price);
     }

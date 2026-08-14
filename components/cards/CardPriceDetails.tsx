@@ -55,7 +55,7 @@ export default function CardPriceDetails({ price, gameSlug }: { price?: CardPric
           <a
             href={url}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="ml-auto inline-flex items-center gap-1 text-lg font-bold tabular-nums text-emerald-700 hover:underline dark:text-emerald-400"
             title={t("openOnCardmarket", { date: sourceDate })}
           >

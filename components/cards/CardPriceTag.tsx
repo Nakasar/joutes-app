@@ -57,7 +57,7 @@ export function CardPriceTag({
     <a
       href={url}
       target="_blank"
-      rel="noreferrer"
+      rel="noopener noreferrer"
       className={`${style} inline-flex items-center gap-0.5 hover:underline`}
       title={t("openOnCardmarket", { date: updatedAt })}
     >

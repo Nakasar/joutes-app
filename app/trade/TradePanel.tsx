@@ -77,10 +77,19 @@ function CardPriceLine({
   }, [card.unitPrice]);
 
   const commit = () => {
-    const trimmed = text.trim();
+    // La virgule décimale est celle d'une bonne partie de l'Europe : un champ
+    // numérique la rend déjà en point selon le navigateur, mais un collage peut
+    // la laisser passer telle quelle.
+    const trimmed = text.trim().replace(",", ".");
     const value = Number.parseFloat(trimmed);
+
     // Un champ vidé rend la main au prix de marché ; un zéro, lui, est un prix.
-    onPriceChange?.(card.key, trimmed === "" || !Number.isFinite(value) ? null : Math.max(0, value));
+    // La borne est celle du serveur : sans elle, un chiffre saisi de travers
+    // afficherait un total absurde avant de faire refuser tout l'envoi.
+    onPriceChange?.(
+      card.key,
+      trimmed === "" || !Number.isFinite(value) ? null : Math.min(TRADE_MAX_UNIT_PRICE, Math.max(0, value))
+    );
   };
 
   const unit = appliedUnitPrice(card);
@@ -157,7 +166,7 @@ function CardPriceLine({
         <a
           href={marketUrl}
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
           className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground hover:underline"
         >
           {t("panel.cardmarket")}
