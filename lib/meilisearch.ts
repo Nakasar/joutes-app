@@ -38,6 +38,13 @@ export const indexes: { [gameSlug: string]: CardIndexConfig } = {
       collectorNumber: 'collectorNumber',
     },
   },
+  fab: {
+    name: 'fab-cards',
+    keys: {
+      set: 'setCode',
+      collectorNumber: 'collectorNumber',
+    },
+  },
   altered: {
     name: 'altered-cards',
     keys: {
