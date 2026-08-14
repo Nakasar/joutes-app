@@ -21,7 +21,7 @@
  * Usage (depuis la racine du dépôt) :
  *
  *   node --conditions=react-server --import ./scripts/ts-paths-hook.mjs \
- *     scripts/games/fab/import-cards.ts [--fetch-only|--from-file]
+ *     scripts/games/fab/import-cards.ts [--fetch-only|--from-file] [--allow-partial]
  *
  * `--conditions=react-server` est nécessaire parce que `lib/mongodb` importe
  * `server-only`, et le hook résout l'alias `@/` de tsconfig.json hors bundler.
@@ -30,7 +30,11 @@
  *   pousse en base et dans l'index de recherche ;
  * - `--fetch-only` : télécharge seulement (utile pour relire le résultat avant
  *   d'écrire quoi que ce soit) ;
- * - `--from-file` : réécrit en base depuis `cards.json`, sans retélécharger.
+ * - `--from-file` : réécrit en base depuis `cards.json`, sans retélécharger ;
+ * - `--allow-partial` : écrit en base même si des requêtes ont échoué. Sans
+ *   cette option, un produit ou une carte que Card Vault n'a pas rendu
+ *   n'interrompt pas le téléchargement, mais interdit l'écriture — le
+ *   catalogue serait incomplet sans que rien ne le dise ensuite.
  *
  * Variables d'environnement : `MONGODB_URI`, `MEILISEARCH_ENDPOINT`,
  * `MEILISEARCH_API_KEY`, et `FAB_GAME_SLUG` si le jeu n'a pas le slug `fab`.
@@ -497,18 +501,38 @@ function toCards(card: ApiCard): FabCard[] {
 
 // --- Téléchargement complet ---------------------------------------------
 
-async function fetchCatalog(): Promise<FabCard[]> {
+/**
+ * Catalogue téléchargé. `failures` compte les produits et les cartes que Card
+ * Vault n'a pas rendus malgré les tentatives : le téléchargement se poursuit
+ * (perdre 5 000 requêtes pour une seule qui échoue n'aurait pas de sens), mais
+ * le catalogue est alors incomplet et n'est pas écrit en base sans y consentir.
+ */
+type Catalog = { cards: FabCard[]; failures: number };
+
+function reason(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+async function fetchCatalog(): Promise<Catalog> {
   console.info("Récupération des groupes de produits...");
   const groups = await fetchProductGroups();
   console.info(`${groups.length} groupes de produits.`);
 
   const products = groups.flatMap((group) => englishProduct(group) ?? []);
 
+  let failures = 0;
+
   const cardIdLists = await mapWithConcurrency(products, async (product, index) => {
     if (index % 20 === 0) {
       console.info(`Produits : ${index}/${products.length}...`);
     }
-    return fetchProductCardIds(product.slug);
+    try {
+      return await fetchProductCardIds(product.slug);
+    } catch (error) {
+      failures++;
+      console.error(`Produit « ${product.slug} » non récupéré : ${reason(error)}`);
+      return [];
+    }
   });
 
   const cardIds = [...new Set(cardIdLists.flat())].sort();
@@ -518,8 +542,14 @@ async function fetchCatalog(): Promise<FabCard[]> {
     if (index % 250 === 0) {
       console.info(`Cartes : ${index}/${cardIds.length}...`);
     }
-    const card = await fetchCard(cardId);
-    return card ? toCards(card) : [];
+    try {
+      const card = await fetchCard(cardId);
+      return card ? toCards(card) : [];
+    } catch (error) {
+      failures++;
+      console.error(`Carte « ${cardId} » non récupérée : ${reason(error)}`);
+      return [];
+    }
   });
 
   // Quelques numéros des extensions promotionnelles (LGS, HER, XXX) sont
@@ -559,7 +589,7 @@ async function fetchCatalog(): Promise<FabCard[]> {
     console.warn(`${renumbered} cartes renumérotées, ${dropped} écartées.`);
   }
 
-  return [...byId.values()].sort((a, b) => a.id.localeCompare(b.id));
+  return { cards: [...byId.values()].sort((a, b) => a.id.localeCompare(b.id)), failures };
 }
 
 // --- Écriture ------------------------------------------------------------
@@ -629,18 +659,31 @@ async function main() {
   const args = process.argv.slice(2);
   const fromFile = args.includes("--from-file");
   const fetchOnly = args.includes("--fetch-only");
+  const allowPartial = args.includes("--allow-partial");
 
-  const cards: FabCard[] = fromFile
-    ? JSON.parse(await readFile(CARDS_FILE, "utf-8"))
+  const { cards, failures }: Catalog = fromFile
+    ? { cards: JSON.parse(await readFile(CARDS_FILE, "utf-8")), failures: 0 }
     : await fetchCatalog();
 
   if (!fromFile) {
+    // Écrit avant tout contrôle : le téléchargement dure une dizaine de minutes,
+    // il doit rester exploitable même quand l'import s'arrête juste après.
     await writeFile(CARDS_FILE, JSON.stringify(cards, null, 2));
     console.info(`${cards.length} cartes écrites dans ${CARDS_FILE}.`);
   }
 
   if (fetchOnly) {
     return;
+  }
+
+  // Un catalogue amputé écrasé en base passerait inaperçu : les cartes
+  // manquantes ne sont pas supprimées, elles restent simplement à leur état
+  // précédent, sans que rien ne le signale ensuite.
+  if (failures > 0 && !allowPartial) {
+    throw new Error(
+      `${failures} requêtes ont échoué : le catalogue est incomplet et n'est pas écrit en base. ` +
+        `Relancez l'import, ou ajoutez --allow-partial pour l'écrire tel quel.`
+    );
   }
 
   await writeCards(cards);
