@@ -57,7 +57,7 @@ function foilPriceValues(guide: CardmarketPriceGuide): CardPriceValues | undefin
  * classer les produits que Cardmarket ne sait pas encore situer, faute de
  * ventes, et qui passent en dernier.
  */
-function referenceOffer(offers: CardPriceOffer[]): CardPriceOffer | undefined {
+export function referenceOffer(offers: CardPriceOffer[]): CardPriceOffer | undefined {
   const rank = (offer: CardPriceOffer): [number, number, number] => [
     offer.prices.trend ?? Number.POSITIVE_INFINITY,
     offer.prices.low ?? Number.POSITIVE_INFINITY,

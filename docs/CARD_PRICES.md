@@ -198,6 +198,25 @@ contenu d'un booster (`withCardAttributes`) les rattachent aux cartes qu'ils
 renvoient déjà. Une carte de l'index de recherche est retrouvée par son
 `cardId` — l'index épure l'identifiant, le relevé porte le vrai.
 
+### Lien vers Cardmarket
+
+Un prix renvoie à la fiche du produit d'où il vient :
+`https://www.cardmarket.com/en/<Jeu>/Products?idProduct=<id>`. Cardmarket
+redirige cette forme vers la bonne page à partir de l'identifiant de son
+catalogue public — celui que portent nos relevés — et c'est la forme que
+Scryfall publie dans ses `purchase_uris`. Le segment de jeu ne se devine pas
+(`fab` s'y écrit `FleshAndBlood`) : il vient de `CARDMARKET_GAME_PATHS`, et un
+jeu absent de cette table n'a pas de lien plutôt qu'un lien mort.
+
+Le lien mène au **tirage retenu comme prix de référence**, pas à un autre
+tirage de la même carte.
+
+Il n'apparaît que là où le prix n'est pas déjà à l'intérieur d'un lien ou d'un
+bouton : fiche de carte, contenu d'un booster, interface d'échange. Dans la
+galerie et dans la collection, la tuile entière est cliquable et une ancre
+imbriquée dans une autre n'est pas du HTML valide — la fiche de la carte, à un
+clic, porte le lien.
+
 ### Valeur d'un booster
 
 L'éditeur de booster affiche la somme des prix de ses cartes. Elle se recalcule
@@ -215,6 +234,24 @@ non un chiffre qui bouge tout seul au gré des imports.
 La valeur dit aussi sur combien de cartes elle repose : les cartes sans prix ne
 sont pas estimées, et un total porté par trois cartes sur douze ne se lit pas
 comme le prix du booster.
+
+### Chiffrer un échange
+
+L'interface d'échange chiffre les deux offres et affiche leur écart. Chaque
+carte y vaut le prix que son propriétaire a décidé, à défaut son prix de marché
+(`lib/trade/pricing.ts`) :
+
+- le prix décidé se saisit sur la carte, dans sa propre offre — celle d'en face
+  appartient au partenaire, qui fixe la sienne ;
+- le champ vide ou le bouton de remise à zéro rendent la main au prix de
+  marché ; un prix à zéro, lui, en est un — une carte offerte se décide ;
+- le prix négocié est enregistré sur l'offre (`unitPrice` sur la carte de
+  l'échange), donc visible des deux côtés, et le modifier annule les
+  validations en cours, comme toute modification d'une offre.
+
+**Ce qui n'a pas de prix ne vaut pas zéro** : ces cartes restent hors du total,
+et l'écran dit combien d'exemplaires sont dans ce cas. Sans quoi deux offres se
+compareraient sur des bases différentes sans que rien ne le signale.
 
 ## Lancer un import
 
@@ -271,6 +308,9 @@ aucune authentification.
   lot et leur mise en forme, couverts par `display.test.ts`.
 - `components/cards/CardPriceTag.tsx` et `CardPriceDetails.tsx` : l'affichage,
   partagé par tous les écrans qui listent des cartes.
+- `lib/prices/cardmarket.ts` : `cardmarketProductUrl` et les segments de jeu.
+- `lib/trade/pricing.ts` : prix appliqué, total d'une face et écart entre les
+  deux, couverts par `pricing.test.ts`.
 - `lib/db/boosters.ts` : `computeBoosterValue`, derrière
   `app/api/collection/boosters/[boosterId]/value`.
 - `scripts/prices/import-cardmarket.ts` : l'import, lancé à la main.

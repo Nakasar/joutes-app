@@ -15,6 +15,8 @@ export type CardMarketPrice = {
   currency: string;
   /** Date du relevé de la place de marché, pas celle de l'affichage. */
   updatedAt: string;
+  /** Produit de la place de marché d'où vient le montant, pour y renvoyer. */
+  productId?: number;
 };
 
 /**

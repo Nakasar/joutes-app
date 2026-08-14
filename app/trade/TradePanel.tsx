@@ -2,8 +2,8 @@
 
 import { ReactNode, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { useTranslations } from "next-intl";
-import { Check, Loader2, Minus, Plus, Search, X } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { Check, ExternalLink, Loader2, Minus, Plus, RotateCcw, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,6 +14,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { TradeCard, TradeCardScope, TradeCardSearchResult, TradeGame } from "@/lib/db/trades";
+import type { CardMarketPrice } from "@/lib/prices/display";
+import { formatCardPrice } from "@/lib/prices/display";
+import { appliedUnitPrice, isNegotiatedPrice, sideTotal } from "@/lib/trade/pricing";
+import { CardPriceTag } from "@/components/cards/CardPriceTag";
+import { CARDMARKET_CURRENCY, cardmarketProductUrl } from "@/lib/prices/cardmarket";
+import { TRADE_MAX_UNIT_PRICE } from "@/lib/constants/trade";
 
 /** Une carte affichée dans un espace d'échange, avec son plafond de quantité. */
 export type TradePanelCard = {
@@ -24,12 +30,143 @@ export type TradePanelCard = {
   collectorNumber: string;
   image: string;
   gameName?: string;
+  gameSlug?: string;
   quantity: number;
   /** Plafond du bouton « + » : exemplaires possédés connus, sinon la borne d'échange. */
   maxQuantity: number;
+  /** Prix de marché relevé pour la carte (cf. docs/CARD_PRICES.md). */
+  marketPrice?: CardMarketPrice;
+  /** Prix décidé pour cet échange, à l'unité ; à défaut, celui du marché. */
+  unitPrice?: number;
 };
 
 const ALL_GAMES = "all";
+
+/**
+ * Le prix d'une carte dans une offre : celui qui s'applique, la ligne qu'il
+ * donne une fois multiplié par les exemplaires, et le prix de marché quand il
+ * a été laissé de côté au profit d'un prix négocié.
+ *
+ * Modifiable, le montant se saisit ; sinon il se lit. Dans les deux cas, le
+ * relevé de marché renvoie à la fiche Cardmarket du produit.
+ */
+function CardPriceLine({
+  card,
+  editable,
+  disabled,
+  onPriceChange,
+}: {
+  card: TradePanelCard;
+  editable: boolean;
+  disabled: boolean;
+  onPriceChange?: (key: string, unitPrice: number | null) => void;
+}) {
+  const t = useTranslations("Trade");
+  const locale = useLocale();
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [text, setText] = useState(card.unitPrice?.toString() ?? "");
+
+  // Le prix peut changer ailleurs : réponse du serveur, remise à zéro. La
+  // saisie en cours fait foi tant que le champ a le focus — sinon les chiffres
+  // s'effaceraient sous les doigts.
+  useEffect(() => {
+    if (document.activeElement !== inputRef.current) {
+      setText(card.unitPrice?.toString() ?? "");
+    }
+  }, [card.unitPrice]);
+
+  const commit = () => {
+    const trimmed = text.trim();
+    const value = Number.parseFloat(trimmed);
+    // Un champ vidé rend la main au prix de marché ; un zéro, lui, est un prix.
+    onPriceChange?.(card.key, trimmed === "" || !Number.isFinite(value) ? null : Math.max(0, value));
+  };
+
+  const unit = appliedUnitPrice(card);
+  const currency = card.marketPrice?.currency ?? CARDMARKET_CURRENCY;
+  const format = (amount: number) => formatCardPrice({ amount, currency, updatedAt: "" }, locale);
+  const marketUrl = cardmarketProductUrl(card.gameSlug, card.marketPrice?.productId);
+
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+      {editable ? (
+        <div className="flex items-center gap-1">
+          <Input
+            ref={inputRef}
+            type="number"
+            inputMode="decimal"
+            min={0}
+            max={TRADE_MAX_UNIT_PRICE}
+            step="0.01"
+            value={text}
+            placeholder={card.marketPrice ? String(card.marketPrice.amount) : "—"}
+            disabled={disabled}
+            onChange={(event) => setText(event.target.value)}
+            // Le prix part quand la saisie est finie, pas à chaque touche : « 1,50 »
+            // s'écrit en quatre frappes, dont trois donneraient un prix de passage
+            // — enregistré, et annulant au passage les validations en cours.
+            onBlur={commit}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") commit();
+            }}
+            aria-label={t("panel.unitPrice", { name: card.name })}
+            className="h-7 w-20 px-2 text-xs tabular-nums"
+          />
+          <span className="text-[11px] text-muted-foreground">{currency}</span>
+          {card.unitPrice !== undefined ? (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="size-6 text-muted-foreground"
+              disabled={disabled}
+              onClick={() => {
+                setText("");
+                onPriceChange?.(card.key, null);
+              }}
+              aria-label={t("panel.resetPrice", { name: card.name })}
+              title={t("panel.resetPrice", { name: card.name })}
+            >
+              <RotateCcw className="size-3" />
+            </Button>
+          ) : null}
+        </div>
+      ) : unit !== undefined ? (
+        <span className="text-xs font-medium tabular-nums">{format(unit)}</span>
+      ) : null}
+
+      {unit !== undefined && card.quantity > 1 ? (
+        <span className="text-xs text-muted-foreground tabular-nums">
+          {t("panel.lineTotal", { total: format(unit * card.quantity) })}
+        </span>
+      ) : null}
+
+      {unit === undefined && !editable ? (
+        <span className="text-xs text-muted-foreground">{t("panel.noPrice")}</span>
+      ) : null}
+
+      {/* Le prix de marché ne se rappelle que lorsqu'un autre lui est préféré :
+          sinon il est déjà là, dans le champ. */}
+      {card.marketPrice && isNegotiatedPrice(card) ? (
+        <span className="text-[11px] text-muted-foreground">
+          {t("panel.marketPrice", { price: formatCardPrice(card.marketPrice, locale) })}
+        </span>
+      ) : null}
+
+      {marketUrl ? (
+        <a
+          href={marketUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+        >
+          {t("panel.cardmarket")}
+          <ExternalLink className="size-2.5" aria-hidden="true" />
+        </a>
+      ) : null}
+    </div>
+  );
+}
 
 /**
  * Un des deux espaces de l'interface d'échange : les cartes retenues et, quand
@@ -54,6 +191,7 @@ export default function TradePanel({
   badge,
   onAdd,
   onQuantityChange,
+  onPriceChange,
   onRemove,
 }: {
   title: string;
@@ -74,9 +212,11 @@ export default function TradePanel({
   badge?: ReactNode;
   onAdd?: (card: TradeCard) => void;
   onQuantityChange?: (key: string, quantity: number) => void;
+  onPriceChange?: (key: string, unitPrice: number | null) => void;
   onRemove?: (key: string) => void;
 }) {
   const t = useTranslations("Trade");
+  const locale = useLocale();
 
   const [query, setQuery] = useState("");
   const [scope, setScope] = useState<TradeCardScope>(defaultScope);
@@ -151,6 +291,7 @@ export default function TradePanel({
   };
 
   const totalCopies = cards.reduce((sum, card) => sum + card.quantity, 0);
+  const total = sideTotal(cards, CARDMARKET_CURRENCY);
 
   return (
     <section className="flex flex-col gap-4 rounded-xl border bg-card p-4">
@@ -186,6 +327,12 @@ export default function TradePanel({
                   {card.setCode} #{card.collectorNumber}
                   {card.gameName ? ` · ${card.gameName}` : ""}
                 </p>
+                <CardPriceLine
+                  card={card}
+                  editable={editable}
+                  disabled={disabled}
+                  onPriceChange={onPriceChange}
+                />
               </div>
               {editable ? (
                 <div className="flex flex-wrap items-center gap-1">
@@ -227,6 +374,27 @@ export default function TradePanel({
             </div>
           ))
         )}
+
+        {cards.length > 0 ? (
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-t pt-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {t("panel.total")}
+            </span>
+            {/* Ce qui n'a pas de prix ne vaut pas zéro : le total dit ce qu'il
+                laisse dehors, sans quoi deux offres se compareraient sur des
+                bases différentes sans que rien ne le signale. */}
+            {total.unpricedCopies > 0 ? (
+              <span className="text-[11px] text-amber-600 dark:text-amber-400">
+                {t("panel.unpriced", { count: total.unpricedCopies })}
+              </span>
+            ) : null}
+            <span className="ml-auto text-base font-bold tabular-nums">
+              {total.currency
+                ? formatCardPrice({ amount: total.amount, currency: total.currency, updatedAt: "" }, locale)
+                : t("panel.noTotal")}
+            </span>
+          </div>
+        ) : null}
       </div>
 
       {/* Recherche */}
@@ -304,9 +472,14 @@ export default function TradePanel({
                   <li key={`${card.key}|${card.cardId ?? ""}`} className="flex items-center gap-3 rounded-lg border p-2">
                     <CardThumb image={card.image} name={card.name} />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium leading-tight" title={card.name}>
-                        {card.name}
-                      </p>
+                      <div className="flex min-w-0 items-start justify-between gap-1.5">
+                        <p className="min-w-0 flex-1 truncate text-sm font-medium leading-tight" title={card.name}>
+                          {card.name}
+                        </p>
+                        {/* Le prix aide à choisir ce qu'on met dans l'offre,
+                            avant même de l'y ajouter. */}
+                        <CardPriceTag price={card.marketPrice} gameSlug={card.gameSlug} className="text-[11px]" />
+                      </div>
                       <p className="truncate text-xs text-muted-foreground">
                         {card.setCode} #{card.collectorNumber}
                         {card.gameName ? ` · ${card.gameName}` : ""}

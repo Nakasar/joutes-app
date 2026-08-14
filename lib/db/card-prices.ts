@@ -4,6 +4,7 @@ import db from "@/lib/mongodb";
 import { ObjectId, type AnyBulkWriteOperation } from "mongodb";
 import type { CardPrice, CardPriceSource } from "@/lib/types/card-price";
 import { cardPriceAmount, type CardMarketPrice } from "@/lib/prices/display";
+import { referenceOffer } from "@/lib/prices/cardmarket-prices";
 
 /**
  * Relevés de prix des cartes, une place de marché à la fois.
@@ -119,16 +120,28 @@ export async function getCardMarketPrices(
   const docs = await collection()
     .find(
       { gameId, source, cardId: { $in: [...new Set(cardIds)] } },
-      { projection: { _id: 0, cardId: 1, prices: 1, currency: 1, sourceUpdatedAt: 1 } }
+      { projection: { _id: 0, cardId: 1, prices: 1, offers: 1, currency: 1, sourceUpdatedAt: 1 } }
     )
     .toArray();
 
   return new Map(
     docs.flatMap((doc) => {
       const amount = cardPriceAmount(doc.prices);
+      // Le montant vient du tirage le moins cher : c'est vers ce produit-là que
+      // le lien renvoie, pas vers un autre tirage de la même carte.
+      const productId = referenceOffer(doc.offers ?? [])?.productId;
+
       return amount === undefined
         ? []
-        : [[doc.cardId, { amount, currency: doc.currency, updatedAt: doc.sourceUpdatedAt.toISOString() }] as const];
+        : [[
+            doc.cardId,
+            {
+              amount,
+              currency: doc.currency,
+              updatedAt: doc.sourceUpdatedAt.toISOString(),
+              ...(productId === undefined ? {} : { productId }),
+            },
+          ] as const];
     })
   );
 }

@@ -3109,7 +3109,25 @@
       "subtitle": "The cards you receive, added to your collection.",
       "subtitlePartner": "Composed by your partner: you receive it as is."
     },
+    "value": {
+      "mine": "My offer",
+      "theirs": "Their offer",
+      "difference": "Difference",
+      "balanced": "Even",
+      "inMyFavor": "In my favour",
+      "inTheirFavor": "In their favour",
+      "unpriced": "{count, plural, one {# copy left out, no price} other {# copies left out, no price}}"
+    },
     "panel": {
+      "unitPrice": "Unit price of \"{name}\"",
+      "resetPrice": "Back to the market price for \"{name}\"",
+      "marketPrice": "market {price}",
+      "cardmarket": "Cardmarket",
+      "lineTotal": "= {total}",
+      "noPrice": "No price",
+      "total": "Total",
+      "noTotal": "—",
+      "unpriced": "{count, plural, one {# copy without a price} other {# copies without a price}}",
       "copies": "{count, plural, =0 {0 copies} one {# copy} other {# copies}}",
       "emptyOffer": "Add cards from your collection to give away.",
       "emptyRequest": "Add the cards you receive in return.",
@@ -3431,6 +3449,7 @@
     "variantBadge": "Variant: {name}"
   },
   "Prices": {
+    "openOnCardmarket": "View on Cardmarket — price recorded on {date}",
     "title": "Market price",
     "none": "No price recorded for this card.",
     "tooltip": "Cardmarket price recorded on {date}",

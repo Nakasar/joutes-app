@@ -2,7 +2,10 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { DateTime } from "luxon";
+import { ExternalLink } from "lucide-react";
 import { cardPriceAmount, formatCardPrice } from "@/lib/prices/display";
+import { referenceOffer } from "@/lib/prices/cardmarket-prices";
+import { cardmarketProductUrl } from "@/lib/prices/cardmarket";
 import type { CardPrice } from "@/lib/types/card-price";
 
 /**
@@ -14,7 +17,7 @@ import type { CardPrice } from "@/lib/types/card-price";
  * prix « à partir de », relevé un jour donné, sur le tirage le moins cher de la
  * carte. Cf. docs/CARD_PRICES.md.
  */
-export default function CardPriceDetails({ price }: { price?: CardPrice }) {
+export default function CardPriceDetails({ price, gameSlug }: { price?: CardPrice; gameSlug?: string }) {
   const locale = useLocale();
   const t = useTranslations("Prices");
 
@@ -27,6 +30,12 @@ export default function CardPriceDetails({ price }: { price?: CardPrice }) {
   }
 
   const format = (value: number) => formatCardPrice({ ...price, amount: value }, locale);
+
+  // Le lien mène au tirage d'où vient le prix de référence, pas à un autre
+  // tirage de la même carte.
+  const url = cardmarketProductUrl(gameSlug, referenceOffer(price.offers)?.productId);
+
+  const sourceDate = DateTime.fromISO(price.sourceUpdatedAt).setLocale(locale).toLocaleString(DateTime.DATE_MED);
 
   // Les valeurs qui entourent le prix de référence : celles que la place de
   // marché a calculées, et elles seules.
@@ -42,9 +51,22 @@ export default function CardPriceDetails({ price }: { price?: CardPrice }) {
         <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           {t("title")}
         </span>
-        <span className="ml-auto text-lg font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
-          {format(amount)}
-        </span>
+        {url ? (
+          <a
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            className="ml-auto inline-flex items-center gap-1 text-lg font-bold tabular-nums text-emerald-700 hover:underline dark:text-emerald-400"
+            title={t("openOnCardmarket", { date: sourceDate })}
+          >
+            {format(amount)}
+            <ExternalLink className="size-3.5" aria-hidden="true" />
+          </a>
+        ) : (
+          <span className="ml-auto text-lg font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
+            {format(amount)}
+          </span>
+        )}
       </div>
 
       {figures.length > 0 ? (
@@ -59,9 +81,7 @@ export default function CardPriceDetails({ price }: { price?: CardPrice }) {
       ) : null}
 
       <p className="text-[11px] leading-snug text-muted-foreground">
-        {t("source", {
-          date: DateTime.fromISO(price.sourceUpdatedAt).setLocale(locale).toLocaleString(DateTime.DATE_MED),
-        })}
+        {t("source", { date: sourceDate })}
         {price.offers.length > 1 ? ` · ${t("printings", { count: price.offers.length })}` : null}
       </p>
     </section>

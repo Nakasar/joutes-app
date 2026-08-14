@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   ArrowLeftRight,
@@ -32,6 +32,9 @@ import TradePanel, { TradePanelCard } from "../TradePanel";
 import TradeInviteDialog from "./TradeInviteDialog";
 import type { PublicUser } from "@/lib/db/users";
 import type { Trade, TradeCard, TradeCardSnapshot, TradeGame } from "@/lib/db/trades";
+import { sideTotal, tradeDifference } from "@/lib/trade/pricing";
+import { formatCardPrice } from "@/lib/prices/display";
+import { CARDMARKET_CURRENCY } from "@/lib/prices/cardmarket";
 
 type OfferTarget = "mine" | "counterparty";
 
@@ -70,8 +73,11 @@ function toPanelCards(
       collectorNumber: card.collectorNumber,
       image: card.image,
       gameName: card.gameName,
+      gameSlug: card.gameSlug,
       quantity: card.quantity,
       maxQuantity: capToOwned ? hints.get(key) ?? TRADE_MAX_QUANTITY : TRADE_MAX_QUANTITY,
+      marketPrice: card.marketPrice,
+      unitPrice: card.unitPrice,
     };
   });
 }
@@ -101,6 +107,7 @@ export default function TradeEditor({
   games: TradeGame[];
 }) {
   const t = useTranslations("Trade");
+  const locale = useLocale();
   const router = useRouter();
 
   const [trade, setTrade] = useState<Trade>(initialTrade);
@@ -182,10 +189,15 @@ export default function TradeEditor({
                 setCode: card.setCode,
                 collectorNumber: card.collectorNumber,
                 quantity: card.quantity,
+                unitPrice: card.unitPrice ?? null,
               }))
             : draft
                 .filter((card) => card.cardId)
-                .map((card) => ({ cardId: card.cardId as string, quantity: card.quantity }));
+                .map((card) => ({
+                  cardId: card.cardId as string,
+                  quantity: card.quantity,
+                  unitPrice: card.unitPrice ?? null,
+                }));
 
         const res = await fetch(`/api/trades/${trade.id}/offer`, {
           method: "PUT",
@@ -283,8 +295,10 @@ export default function TradeEditor({
             collectorNumber: card.collectorNumber,
             image: card.image,
             gameName: card.gameName,
+            gameSlug: card.gameSlug,
             quantity: 1,
             maxQuantity: max,
+            marketPrice: card.marketPrice,
           },
         ];
 
@@ -298,6 +312,19 @@ export default function TradeEditor({
         card.key === key
           ? { ...card, quantity: Math.max(1, Math.min(card.maxQuantity, quantity)) }
           : card
+      )
+    );
+  };
+
+  /**
+   * Prix décidé pour une carte, à l'unité. `null` l'efface : la carte revient
+   * au prix de marché, qui reste la référence commune des deux faces.
+   */
+  const changePrice = (target: OfferTarget, key: string, unitPrice: number | null) => {
+    updateDraft(
+      target,
+      draftsRef.current[target].map((card) =>
+        card.key === key ? { ...card, unitPrice: unitPrice === null ? undefined : Math.max(0, unitPrice) } : card
       )
     );
   };
@@ -452,6 +479,16 @@ export default function TradeEditor({
 
   const myCopies = drafts.mine.reduce((sum, card) => sum + card.quantity, 0);
   const receivedCopies = drafts.counterparty.reduce((sum, card) => sum + card.quantity, 0);
+
+  // Les deux faces se chiffrent avec la même règle : prix décidé, à défaut prix
+  // de marché, et ce qui n'a pas de prix reste dehors (cf. lib/trade/pricing.ts).
+  const myTotal = sideTotal(drafts.mine, CARDMARKET_CURRENCY);
+  const theirTotal = sideTotal(drafts.counterparty, CARDMARKET_CURRENCY);
+  const difference = tradeDifference(myTotal, theirTotal);
+  const differenceCurrency = myTotal.currency ?? theirTotal.currency;
+  const unpricedCopies = myTotal.unpricedCopies + theirTotal.unpricedCopies;
+  const money = (amount: number) =>
+    formatCardPrice({ amount, currency: differenceCurrency ?? CARDMARKET_CURRENCY, updatedAt: "" }, locale);
   const canValidate = isOpen && !busy && (drafts.mine.length > 0 || drafts.counterparty.length > 0);
   const partnerName = partner ? userLabel(partner) : null;
 
@@ -535,6 +572,7 @@ export default function TradeEditor({
           badge={myValidated ? <ValidatedBadge label={t("validation.mine")} /> : null}
           onAdd={(card) => addCard("mine", card)}
           onQuantityChange={(key, quantity) => changeQuantity("mine", key, quantity)}
+          onPriceChange={(key, unitPrice) => changePrice("mine", key, unitPrice)}
           onRemove={(key) => removeCard("mine", key)}
         />
         <TradePanel
@@ -553,9 +591,53 @@ export default function TradeEditor({
           badge={partnerValidated ? <ValidatedBadge label={t("validation.partner")} /> : null}
           onAdd={(card) => addCard("counterparty", card)}
           onQuantityChange={(key, quantity) => changeQuantity("counterparty", key, quantity)}
+          onPriceChange={(key, unitPrice) => changePrice("counterparty", key, unitPrice)}
           onRemove={(key) => removeCard("counterparty", key)}
         />
       </div>
+
+      {/* Écart entre les deux offres. Il n'a de sens que si quelque chose est
+          chiffré des deux côtés : sinon il ne dirait que le total d'une face. */}
+      {differenceCurrency && (myTotal.pricedCopies > 0 || theirTotal.pricedCopies > 0) ? (
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 rounded-xl border bg-card p-4">
+          <div className="flex flex-col items-center">
+            <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{t("value.mine")}</span>
+            <span className="text-lg font-semibold tabular-nums">{money(myTotal.amount)}</span>
+          </div>
+          <ArrowLeftRight className="size-4 shrink-0 text-muted-foreground" />
+          <div className="flex flex-col items-center">
+            <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{t("value.theirs")}</span>
+            <span className="text-lg font-semibold tabular-nums">{money(theirTotal.amount)}</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{t("value.difference")}</span>
+            <span
+              className={`text-lg font-bold tabular-nums ${
+                difference === 0
+                  ? ""
+                  : difference > 0
+                    ? "text-amber-600 dark:text-amber-400"
+                    : "text-emerald-700 dark:text-emerald-400"
+              }`}
+            >
+              {difference > 0 ? "+" : ""}
+              {money(difference)}
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              {difference === 0
+                ? t("value.balanced")
+                : difference > 0
+                  ? t("value.inTheirFavor")
+                  : t("value.inMyFavor")}
+            </span>
+          </div>
+          {unpricedCopies > 0 ? (
+            <p className="w-full text-center text-[11px] text-amber-600 dark:text-amber-400">
+              {t("value.unpriced", { count: unpricedCopies })}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       {isOpen ? (
         <div className="sticky bottom-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card/95 p-4 shadow-lg backdrop-blur">
@@ -679,6 +761,12 @@ function ConfirmColumn({
   cards: TradePanelCard[];
   tone: "destructive" | "positive";
 }) {
+  const t = useTranslations("Trade");
+  const locale = useLocale();
+  // La confirmation est le dernier moment pour se rendre compte de ce que
+  // l'échange pèse : le total y est repris, avec les mêmes règles qu'ailleurs.
+  const total = sideTotal(cards, CARDMARKET_CURRENCY);
+
   return (
     <div className="rounded-lg border p-3">
       <p
@@ -705,6 +793,14 @@ function ConfirmColumn({
           ))}
         </ul>
       )}
+      {total.currency ? (
+        <p className="mt-2 flex items-baseline justify-between gap-2 border-t pt-2 text-sm">
+          <span className="text-xs uppercase tracking-wider text-muted-foreground">{t("panel.total")}</span>
+          <span className="font-bold tabular-nums">
+            {formatCardPrice({ amount: total.amount, currency: total.currency, updatedAt: "" }, locale)}
+          </span>
+        </p>
+      ) : null}
     </div>
   );
 }

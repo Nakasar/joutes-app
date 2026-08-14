@@ -10,6 +10,8 @@ import {
   TRADE_MAX_CARDS_PER_SIDE,
   TRADE_MAX_QUANTITY,
 } from "@/lib/constants/trade";
+import { getCardMarketPrices } from "@/lib/db/card-prices";
+import type { CardMarketPrice } from "@/lib/prices/display";
 
 /**
  * Échange de cartes.
@@ -42,6 +44,8 @@ export type TradeCard = {
   gameSlug?: string;
   /** Nombre d'exemplaires de cette impression possédés par l'utilisateur. */
   owned: number;
+  /** Prix de marché relevé pour la carte (cf. docs/CARD_PRICES.md). */
+  marketPrice?: CardMarketPrice;
 };
 
 export type TradeCardSearchResult = {
@@ -242,9 +246,14 @@ export async function searchTradeCards({
   const ownedByKey =
     scope === "catalog" ? await getOwnedCountsByKey(userObjId, rawItems) : new Map<string, number>();
 
+  // Le prix accompagne la carte dès la recherche : c'est aussi ce qui aide à
+  // choisir quoi mettre dans une offre.
+  const marketPrices = await marketPricesForCards(rawItems);
+
   const items: TradeCard[] = rawItems.map((it) => {
     const key = cardKey(it.name, it.setCode, it.collectorNumber);
     const game = it.gameId ? gamesMeta.get(it.gameId) : undefined;
+    const marketPrice = it.cardId && it.gameId ? marketPrices.get(`${it.gameId}|${it.cardId}`) : undefined;
 
     return {
       key,
@@ -258,6 +267,7 @@ export async function searchTradeCards({
       gameName: game?.name,
       gameSlug: game?.slug,
       owned: scope === "catalog" ? ownedByKey.get(key) ?? 0 : it.owned,
+      ...(marketPrice ? { marketPrice } : {}),
     };
   });
 
@@ -323,7 +333,19 @@ export type TradeCardSnapshot = {
   image: string;
   gameId?: string;
   gameName?: string;
+  gameSlug?: string;
   quantity: number;
+  /**
+   * Prix décidé par le propriétaire de la face, à l'unité. Absent, c'est le
+   * prix de marché qui s'applique : négocier un prix est un choix, pas un
+   * réglage à refaire à chaque carte.
+   */
+  unitPrice?: number;
+  /**
+   * Prix de marché relevé pour la carte. Relu à chaque lecture de l'échange
+   * plutôt qu'enregistré : c'est une référence, elle doit suivre les imports.
+   */
+  marketPrice?: CardMarketPrice;
 };
 
 export type TradeSideId = "a" | "b";
@@ -395,7 +417,11 @@ const tradeIndexesReady = Promise.all([
   console.error("Impossible de créer les index des échanges:", error);
 });
 
-function toTrade(doc: TradeDocument, usersById: Map<string, PublicUser>): Trade {
+function toTrade(
+  doc: TradeDocument,
+  usersById: Map<string, PublicUser>,
+  marketPrices: Map<string, CardMarketPrice>
+): Trade {
   return {
     id: doc._id.toString(),
     code: doc.code,
@@ -404,7 +430,10 @@ function toTrade(doc: TradeDocument, usersById: Map<string, PublicUser>): Trade 
     sides: doc.sides.map((side) => ({
       id: side.id,
       user: side.userId ? usersById.get(side.userId.toString()) ?? null : null,
-      cards: side.cards ?? [],
+      cards: (side.cards ?? []).map((card) => {
+        const marketPrice = card.cardId && card.gameId ? marketPrices.get(`${card.gameId}|${card.cardId}`) : undefined;
+        return marketPrice ? { ...card, marketPrice } : card;
+      }),
       validatedAt: side.validatedAt ? side.validatedAt.toISOString() : null,
     })),
     createdBy: doc.createdBy.toString(),
@@ -415,14 +444,46 @@ function toTrade(doc: TradeDocument, usersById: Map<string, PublicUser>): Trade 
   };
 }
 
+/**
+ * Prix de marché d'un lot de cartes, indexés par `<jeu>|<carte>` — la clé porte
+ * le jeu parce que deux jeux peuvent donner le même `cards.id`. Un seul
+ * aller-retour par jeu, quel que soit le nombre de cartes.
+ */
+async function marketPricesForCards(
+  cards: { cardId?: string; gameId?: string }[]
+): Promise<Map<string, CardMarketPrice>> {
+  const cardIdsByGame = new Map<string, Set<string>>();
+  for (const card of cards) {
+    if (!card.cardId || !card.gameId) continue;
+    const cardIds = cardIdsByGame.get(card.gameId) ?? new Set<string>();
+    cardIds.add(card.cardId);
+    cardIdsByGame.set(card.gameId, cardIds);
+  }
+
+  const prices = new Map<string, CardMarketPrice>();
+  for (const [gameId, cardIds] of cardIdsByGame) {
+    const gamePrices = await getCardMarketPrices(new ObjectId(gameId), [...cardIds]);
+    for (const [cardId, price] of gamePrices) {
+      prices.set(`${gameId}|${cardId}`, price);
+    }
+  }
+
+  return prices;
+}
+
+/** Prix de marché des cartes offertes dans un lot d'échanges. */
+function marketPricesFor(docs: TradeDocument[]): Promise<Map<string, CardMarketPrice>> {
+  return marketPricesForCards(docs.flatMap((doc) => doc.sides.flatMap((side) => side.cards ?? [])));
+}
+
 /** Résout en un seul appel les profils publics des participants d'un lot d'échanges. */
 async function hydrateTrades(docs: TradeDocument[]): Promise<Trade[]> {
   const userIds = [
     ...new Set(docs.flatMap((doc) => doc.sides.map((side) => side.userId?.toString()).filter((id): id is string => !!id))),
   ];
-  const users = await getUsersByIds(userIds);
+  const [users, marketPrices] = await Promise.all([getUsersByIds(userIds), marketPricesFor(docs)]);
   const usersById = new Map(users.map((user) => [user.id, toPublicUser(user)]));
-  return docs.map((doc) => toTrade(doc, usersById));
+  return docs.map((doc) => toTrade(doc, usersById, marketPrices));
 }
 
 function sideOf(doc: TradeDocument, userId: string): TradeSideDocument | null {
@@ -542,8 +603,26 @@ export async function listUserTrades(
   return { open: trades.slice(0, openDocs.length), past: trades.slice(openDocs.length) };
 }
 
-export type TradeOwnedCardInput = { name: string; setCode: string; collectorNumber: string; quantity: number };
-export type TradeCatalogCardInput = { cardId: string; quantity: number };
+/** `unitPrice` à `null` efface le prix négocié et rend la main au prix de marché. */
+export type TradeOwnedCardInput = {
+  name: string;
+  setCode: string;
+  collectorNumber: string;
+  quantity: number;
+  unitPrice?: number | null;
+};
+export type TradeCatalogCardInput = { cardId: string; quantity: number; unitPrice?: number | null };
+
+/**
+ * Prix négocié retenu tel quel, aux centimes. Zéro en est un — une carte
+ * offerte dans un échange se décide —, seul `null` rend la main au prix de
+ * marché.
+ */
+function negotiatedPrice(unitPrice: number | null | undefined): { unitPrice: number } | undefined {
+  return typeof unitPrice === "number" && unitPrice >= 0
+    ? { unitPrice: Math.round(unitPrice * 100) / 100 }
+    : undefined;
+}
 
 /**
  * Résout les cartes d'une offre depuis la collection de leur propriétaire : la
@@ -561,6 +640,7 @@ async function resolveOwnedCards(
     const existing = merged.get(key);
     if (existing) {
       existing.quantity += item.quantity;
+      existing.unitPrice = existing.unitPrice ?? item.unitPrice;
     } else {
       merged.set(key, { ...item });
     }
@@ -612,7 +692,9 @@ async function resolveOwnedCards(
       image: owned.image ?? "",
       gameId: game?.id,
       gameName: game?.name,
+      gameSlug: game?.slug,
       quantity: Math.max(1, Math.min(owned.owned, Math.min(TRADE_MAX_QUANTITY, item.quantity))),
+      ...negotiatedPrice(item.unitPrice),
     });
   }
 
@@ -628,6 +710,7 @@ async function resolveCatalogCards(
     const existing = merged.get(item.cardId);
     if (existing) {
       existing.quantity += item.quantity;
+      existing.unitPrice = existing.unitPrice ?? item.unitPrice;
     } else {
       merged.set(item.cardId, { ...item });
     }
@@ -669,7 +752,9 @@ async function resolveCatalogCards(
       image: ((card.image ?? card.poster) as string | undefined) ?? "",
       gameId,
       gameName: gameId ? gamesMeta.get(gameId)?.name : undefined,
+      gameSlug: gameId ? gamesMeta.get(gameId)?.slug : undefined,
       quantity: Math.max(1, Math.min(TRADE_MAX_QUANTITY, item.quantity)),
+      ...negotiatedPrice(item.unitPrice),
     });
   }
 

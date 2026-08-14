@@ -966,7 +966,7 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
                     <div className="p-1.5">
                       <div className="flex min-w-0 items-start justify-between gap-1">
                         <p className="min-w-0 flex-1 truncate text-[11px] font-medium leading-tight" title={card.name}>{card.name}</p>
-                        <CardPriceTag price={card.marketPrice} className="text-[10px] leading-tight" />
+                        <CardPriceTag price={card.marketPrice} gameSlug={gameSlug} className="text-[10px] leading-tight" />
                       </div>
                       <p className="truncate text-[10px] text-muted-foreground">
                         {card.setCode} #{card.collectorNumber}
