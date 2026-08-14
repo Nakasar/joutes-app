@@ -50,6 +50,12 @@ function foilPriceValues(guide: CardmarketPriceGuide): CardPriceValues | undefin
  * vaut jamais moins que la carte dont elle est tirée, et une réédition vaut
  * moins que la première édition. Le moins cher des produits est donc le tirage
  * de base, celui que l'application affiche.
+ *
+ * « Moins cher » se lit sur la tendance, le prix lissé par Cardmarket : le
+ * prix bas ne dit que ce que demande une seule offre, parfois une carte
+ * abîmée, et il ne sert donc qu'à départager deux tendances égales — ou à
+ * classer les produits que Cardmarket ne sait pas encore situer, faute de
+ * ventes, et qui passent en dernier.
  */
 function referenceOffer(offers: CardPriceOffer[]): CardPriceOffer | undefined {
   const rank = (offer: CardPriceOffer): [number, number, number] => [
@@ -88,12 +94,14 @@ export function buildCardPrice(
       return [];
     }
 
+    const foilPrices = foilPriceValues(guide);
+
     return [{
       productId: product.idProduct,
       expansionId: product.idExpansion,
       productName: product.name,
       prices,
-      ...(foilPriceValues(guide) ? { foilPrices: foilPriceValues(guide) } : {}),
+      ...(foilPrices ? { foilPrices } : {}),
     }];
   });
 

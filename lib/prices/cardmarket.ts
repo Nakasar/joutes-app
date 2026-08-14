@@ -68,6 +68,27 @@ export type CardmarketPriceGuide = {
 type ProductFile = { version: number; createdAt: string; products: CardmarketProduct[] };
 type PriceGuideFile = { version: number; createdAt: string; priceGuides: CardmarketPriceGuide[] };
 
+/** Décalage horaire écrit sans deux-points, à la fin d'une date. */
+const COMPACT_OFFSET = /([+-]\d{2})(\d{2})$/;
+
+/**
+ * Date de fabrication d'un fichier Cardmarket (`2026-08-14T02:43:53+0200`).
+ *
+ * Le décalage horaire y est écrit sans deux-points, ce que la norme ne prévoit
+ * pas : les moteurs le lisent aujourd'hui, mais rien ne les y oblige. Il est
+ * donc remis en forme, et une date illisible arrête l'import — mieux vaut ça
+ * qu'un `Invalid Date` propagé jusqu'aux relevés écrits en base.
+ */
+export function parseCardmarketDate(value: string): Date {
+  const date = new Date(value.replace(COMPACT_OFFSET, "$1:$2"));
+
+  if (Number.isNaN(date.getTime())) {
+    throw new Error(`Date Cardmarket illisible : « ${value} ».`);
+  }
+
+  return date;
+}
+
 /**
  * Les fichiers pèsent quelques mégaoctets et sont servis par un stockage
  * d'objets : un incident réseau isolé ne doit pas perdre l'import entier.

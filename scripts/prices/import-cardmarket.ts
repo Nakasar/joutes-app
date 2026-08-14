@@ -32,6 +32,7 @@ import {
   CARDMARKET_GAME_IDS,
   fetchCardmarketPriceGuide,
   fetchCardmarketProducts,
+  parseCardmarketDate,
   type CardmarketPriceGuide,
 } from "../../lib/prices/cardmarket.ts";
 import {
@@ -124,7 +125,7 @@ async function main() {
     priceFile.priceGuides.map((guide) => [guide.idProduct, guide])
   );
 
-  const sourceUpdatedAt = new Date(priceFile.createdAt);
+  const sourceUpdatedAt = parseCardmarketDate(priceFile.createdAt);
   const updatedAt = new Date();
 
   const prices = [...matches].flatMap<CardPrice>(([cardId, products]) => {

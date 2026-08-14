@@ -59,6 +59,12 @@ vaut jamais moins que la carte dont elle est tirée, et une réédition vaut moi
 que la première édition, donc le moins cher est le tirage de base. C'est un
 prix « à partir de ».
 
+Le moins cher se lit sur la tendance (`trend`), le prix lissé par Cardmarket.
+Le prix bas ne dit que ce que demande une seule offre, parfois une carte
+abîmée : il ne sert qu'à départager deux tendances égales. Un produit sans
+tendance — Cardmarket ne sait pas le situer, faute de ventes — passe en
+dernier, quel que soit son prix bas.
+
 `offers` garde `productId` et `expansionId` : de quoi retrouver le produit chez
 Cardmarket, et de quoi rattacher un jour les prix aux variantes d'impression
 (cf. docs/CARD_PRINTINGS.md) si Cardmarket finit par les distinguer.
