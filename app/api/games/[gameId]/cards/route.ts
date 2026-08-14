@@ -4,6 +4,7 @@ import meilisearch, {cardIndexFor, isUndeclaredCriteriaError} from "@/lib/meilis
 import db from "@/lib/mongodb";
 import {Game} from "@/lib/types/Game";
 import {getGameCardFilterFacets} from "@/lib/db/cards";
+import {withMarketPrices} from "@/lib/db/card-prices";
 import {
   buildFacetFilters,
   buildSortExpressions,
@@ -215,12 +216,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     filterValues,
   });
 
+  const cards = game ? await withMarketPrices(game._id, result.cards) : result.cards;
+
   if (!shouldPaginate) {
-    return NextResponse.json(result.cards);
+    return NextResponse.json(cards);
   }
 
   return NextResponse.json({
-    cards: result.cards,
+    cards,
     total: result.total,
     page,
     limit,

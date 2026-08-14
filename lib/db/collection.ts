@@ -11,6 +11,8 @@ import {
   type ProductCollectionStats,
 } from "@/lib/db/products-collection";
 import { getGameIdsWithProducts } from "@/lib/db/products";
+import { getCardMarketPrices } from "@/lib/db/card-prices";
+import type { CardMarketPrice } from "@/lib/prices/display";
 
 /**
  * Collection completion model.
@@ -396,6 +398,8 @@ export type CollectionItem = {
   quantity: number;
   /** Number of *other* printings of this same card name the user owns at least one copy of. */
   variantsOwned: number;
+  /** Prix de marché de la carte, absent tant qu'aucun relevé ne la couvre. */
+  marketPrice?: CardMarketPrice;
 };
 
 export type GameCollectionResult = {
@@ -587,10 +591,14 @@ export async function getGameCollection({
     collectorNumber: String(c.collectorNumber ?? ""),
   })) as Omit<CollectionItem, "variantsOwned">[];
 
-  const variantsOwnedByKey = await getVariantsOwnedByKey(owner, gameObjId, rawItems);
+  const [variantsOwnedByKey, marketPrices] = await Promise.all([
+    getVariantsOwnedByKey(owner, gameObjId, rawItems),
+    getCardMarketPrices(gameObjId, rawItems.map((it) => it.id)),
+  ]);
   const items: CollectionItem[] = rawItems.map((it) => ({
     ...it,
     variantsOwned: variantsOwnedByKey.get(`${it.name}|${it.setCode}|${it.collectorNumber}`) ?? 0,
+    ...(marketPrices.get(it.id) ? { marketPrice: marketPrices.get(it.id) } : {}),
   }));
 
   const setCodes = ((await cards.distinct("setCode", { gameId: gameObjId })) as unknown[])

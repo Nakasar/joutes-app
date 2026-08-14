@@ -1541,6 +1541,12 @@
         "noSets": "Nessun set da mostrare."
       },
         "boosters": {
+          "value": "Valore della busta",
+          "valueBreakdown": "{priced, plural, =0 {nessuna carta con prezzo} one {# carta con prezzo} other {# carte con prezzo}} su {count}",
+          "valueComputedAt": "calcolato il {date}",
+          "valueOutdated": "Il contenuto è cambiato da questo calcolo.",
+          "valueNeverComputed": "Mai calcolato.",
+          "recomputeValue": "Ricalcola il prezzo",
           "title": "Bustine",
           "metadataTitle": "Bustine · {game}",
           "subtitle": "Le bustine che hai creato per {game}.",
@@ -3365,5 +3371,17 @@
     "base": "Versione base",
     "foilOption": "{name} (foil)",
     "variantBadge": "Variante: {name}"
+  },
+  "Prices": {
+    "title": "Prezzo di mercato",
+    "none": "Nessun prezzo rilevato per questa carta.",
+    "tooltip": "Prezzo Cardmarket rilevato il {date}",
+    "source": "Cardmarket · rilevato il {date}",
+    "printings": "{count, plural, one {# stampa rilevata} other {# stampe rilevate}}",
+    "figures": {
+      "low": "Prezzo minimo",
+      "trend": "Tendenza",
+      "avg30": "Media 30 gg"
+    }
   }
 }

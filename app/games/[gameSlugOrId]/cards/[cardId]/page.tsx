@@ -37,6 +37,8 @@ import CopyCardTextButton from "@/components/CopyCardTextButton";
 import {Locale} from "@/i18n/config";
 import {CARD_ATTRIBUTE_KEYS, type CardPrinting} from "@/lib/types/card";
 import ErrataList, {type ErrataEntry} from "@/app/games/[gameSlugOrId]/cards/[cardId]/ErrataList";
+import CardPriceDetails from "@/components/cards/CardPriceDetails";
+import {getCardPrices} from "@/lib/db/card-prices";
 
 function hasNegativeVoteRatio(errata: Errata): boolean {
   return errata.votes.negative > errata.votes.positive;
@@ -146,6 +148,11 @@ export default async function RiftboundCardDetailPage({
     : false;
 
   const printings = card.printings ?? [];
+
+  // Une seule place de marché est relevée pour l'instant (cf.
+  // docs/CARD_PRICES.md) ; la fiche montre le premier relevé venu plutôt que
+  // de présumer laquelle.
+  const [cardPrice] = await getCardPrices(new ObjectId(game.id), card.id);
 
   const erratas = [...await getErratasByCardId(cardId, userId)].sort(
     (a, b) => Number(hasNegativeVoteRatio(a)) - Number(hasNegativeVoteRatio(b))
@@ -398,6 +405,8 @@ export default async function RiftboundCardDetailPage({
               />
             </div>
           )}
+
+          <CardPriceDetails price={cardPrice} />
 
           {printings.length > 0 && (
             <div className="flex flex-col gap-2">

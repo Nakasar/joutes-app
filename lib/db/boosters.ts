@@ -1,11 +1,14 @@
 import 'server-only';
 import db from "@/lib/mongodb";
-import {Booster, BoosterCard, BoosterCardDb, BoosterDb} from "@/lib/types/booster";
+import {Booster, BoosterCard, BoosterCardDb, BoosterDb, BoosterValue} from "@/lib/types/booster";
 import {CARD_ATTRIBUTE_KEYS, CardAttributes} from "@/lib/types/card";
 import {boosterTypeStoredValues, normalizeBoosterType, OTHER_BOOSTER_TYPE} from "@/lib/constants/booster-types";
 import {ObjectId} from "bson";
 import {removeSellListItemsByCollectionEntryIds} from "@/lib/db/sell-lists";
 import {getCardsByIds} from "@/lib/db/cards";
+import {getCardMarketPrices} from "@/lib/db/card-prices";
+import {sumCardPrices} from "@/lib/prices/display";
+import {CARDMARKET_CURRENCY} from "@/lib/prices/cardmarket";
 
 type CardAttributesDoc = CardAttributes & { id?: string; setCode?: string; collectorNumber?: string };
 
@@ -32,10 +35,10 @@ function pickCardAttributes(doc: CardAttributesDoc): CardAttributes {
 
 /**
  * Les entrées de `booster-cards` ne stockent que l'identité d'une carte : les
- * propriétés de jeu (type, domaine, rareté…) sont relues depuis `cards` à
- * l'affichage. Cela couvre aussi les boosters saisis avant l'ajout de ces
- * propriétés, sans migration. Les cartes sans correspondance sont renvoyées
- * telles quelles.
+ * propriétés de jeu (type, domaine, rareté…) et son prix de marché sont relus
+ * depuis le catalogue à l'affichage. Cela couvre aussi les boosters saisis
+ * avant l'ajout de ces propriétés, sans migration. Les cartes sans
+ * correspondance sont renvoyées telles quelles.
  */
 async function withCardAttributes(gameId: ObjectId, cards: BoosterCard[]): Promise<BoosterCard[]> {
   if (cards.length === 0) {
@@ -67,6 +70,10 @@ async function withCardAttributes(gameId: ObjectId, cards: BoosterCard[]): Promi
 
   const byId = new Map<string, CardAttributes>();
   const byPrint = new Map<string, CardAttributes>();
+  // Une entrée saisie avant que les cartes ne portent leur identifiant n'a que
+  // son extension et son numéro : c'est le catalogue qui lui rend l'identifiant
+  // sous lequel son prix est relevé.
+  const catalogIdByPrint = new Map<string, string>();
   for (const doc of docs) {
     const attributes = pickCardAttributes(doc);
     if (doc.id && !byId.has(doc.id)) {
@@ -75,15 +82,27 @@ async function withCardAttributes(gameId: ObjectId, cards: BoosterCard[]): Promi
     const key = printKey(doc.setCode, doc.collectorNumber);
     if (!byPrint.has(key)) {
       byPrint.set(key, attributes);
+      if (doc.id) {
+        catalogIdByPrint.set(key, doc.id);
+      }
     }
   }
 
+  const catalogId = (card: BoosterCard) => card.cardId ?? catalogIdByPrint.get(printKey(card.setCode, card.collectorNumber));
+  const prices = await getCardMarketPrices(gameId, cards.flatMap((card) => catalogId(card) ?? []));
+
   return cards.map((card) => {
     const attributes = (card.cardId ? byId.get(card.cardId) : undefined) ?? byPrint.get(printKey(card.setCode, card.collectorNumber));
+    const id = catalogId(card);
+    const marketPrice = id ? prices.get(id) : undefined;
     // `cards` fait foi : les propriétés relues écrasent celles éventuellement
     // stockées sur l'entrée `booster-cards` (boosters saisis avant migration).
-    return attributes ? {...card, ...attributes} : card;
+    return {...card, ...attributes, ...(marketPrice ? {marketPrice} : {})};
   });
+}
+
+function toBoosterValue(value: BoosterDb['estimatedValue']): BoosterValue | undefined {
+  return value ? {...value, computedAt: value.computedAt.toISOString()} : undefined;
 }
 
 export async function createBooster(booster: Omit<Booster, 'id' | 'createdAt'>): Promise<Booster> {
@@ -312,6 +331,7 @@ export async function getBoosters({userId, gameId, type, cards, page = 0, limit 
     cards: booster.cards,
     note: booster.note,
     value: booster.price,
+    estimatedValue: toBoosterValue(booster.estimatedValue),
     archived: booster.archived,
     addedToCollection: booster.addedToCollection ?? false,
     createdAt: booster.createdAt.toISOString(),
@@ -359,11 +379,48 @@ export async function getBooster(boosterId: string): Promise<Booster | null> {
     cards: boosterCards,
     note: booster.note,
     value: booster.price,
+    estimatedValue: toBoosterValue(booster.estimatedValue),
     archived: booster.archived,
     addedToCollection: booster.addedToCollection ?? false,
     createdAt: booster.createdAt.toISOString(),
     id: booster._id.toString(),
   };
+}
+
+/**
+ * Recalcule la valeur d'un booster : la somme des prix de ses cartes, telle
+ * qu'elle est au moment du clic.
+ *
+ * Le résultat est écrit sur le booster plutôt que recalculé à chaque
+ * affichage — c'est ce qui en fait un relevé daté, comparable d'un booster à
+ * l'autre, et non un chiffre qui bouge sous les yeux au gré des imports de
+ * prix. Les cartes sans prix ne sont pas estimées : elles sont comptées à
+ * part, pour que le total dise sur quoi il repose.
+ */
+export async function computeBoosterValue(boosterId: string): Promise<BoosterValue | null> {
+  const booster = await getBooster(boosterId);
+
+  if (!booster) {
+    return null;
+  }
+
+  const sum = sumCardPrices(booster.cards.map((card) => card.marketPrice));
+  const computedAt = new Date();
+
+  const value: BoosterValue = {
+    amount: sum?.amount ?? 0,
+    currency: sum?.currency ?? CARDMARKET_CURRENCY,
+    cardCount: booster.cards.length,
+    pricedCards: sum?.priced ?? 0,
+    computedAt: computedAt.toISOString(),
+  };
+
+  await db.collection<BoosterDb>('boosters').updateOne(
+    {_id: new ObjectId(boosterId)},
+    {$set: {estimatedValue: {...value, computedAt}}},
+  );
+
+  return value;
 }
 
 export async function userOwnsBooster(userId: string, boosterId: string): Promise<boolean> {

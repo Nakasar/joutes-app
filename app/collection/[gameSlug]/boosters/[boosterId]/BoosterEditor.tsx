@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { DateTime } from "luxon";
 import {
   ArrowLeft,
   Plus,
@@ -19,6 +20,8 @@ import {
   ArrowDownWideNarrow,
   ArrowUpNarrowWide,
   NotebookPen,
+  RefreshCw,
+  Coins,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +34,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Booster, BoosterCard } from "@/lib/types/booster";
+import type { Booster, BoosterCard, BoosterValue } from "@/lib/types/booster";
+import { CardPriceTag } from "@/components/cards/CardPriceTag";
+import { formatCardPrice } from "@/lib/prices/display";
 import { resolvePrinting } from "@/lib/cards/printings";
 import type { CardPrinting as CardPrintVariant } from "@/lib/types/card";
 import {
@@ -109,6 +114,7 @@ type Props = {
 
 export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Props) {
   const t = useTranslations("Collection");
+  const locale = useLocale();
   const tPrintings = useTranslations("Printings");
   const router = useRouter();
   const booster = initialBooster;
@@ -149,6 +155,8 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
   const [busyCollection, setBusyCollection] = useState(false);
   const [boosterType, setBoosterType] = useState(normalizeBoosterType(initialBooster.type));
   const [savingBoosterType, setSavingBoosterType] = useState(false);
+  const [boosterValue, setBoosterValue] = useState<BoosterValue | undefined>(initialBooster.estimatedValue);
+  const [computingValue, setComputingValue] = useState(false);
   const [note, setNote] = useState(initialBooster.note ?? "");
   const [savedNote, setSavedNote] = useState(initialBooster.note ?? "");
   const [savingNote, setSavingNote] = useState(false);
@@ -322,6 +330,23 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
       setBoosterCards(data.booster?.cards ?? []);
     }
   }, [booster.id]);
+
+  /**
+   * Recalcul à la demande : le serveur additionne les prix relevés pour les
+   * cartes du booster et garde le résultat, daté, sur le booster.
+   */
+  const recomputeValue = async () => {
+    setComputingValue(true);
+    try {
+      const res = await fetch(`/api/collection/boosters/${booster.id}/value`, { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        setBoosterValue(data.value);
+      }
+    } finally {
+      setComputingValue(false);
+    }
+  };
 
   const addCard = async (card: SearchCard, foil = false) => {
     setBusyAddId(card.id);
@@ -680,6 +705,49 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
         </div>
       </div>
 
+      {/* Valeur du booster, recalculée à la demande */}
+      <section className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border bg-card p-4">
+        <Coins className="size-4 shrink-0 text-muted-foreground" />
+        <div className="flex min-w-0 flex-col">
+          <span className="text-sm font-semibold">{t("boosters.value")}</span>
+          {boosterValue ? (
+            <span className="text-xs text-muted-foreground">
+              {t("boosters.valueBreakdown", {
+                priced: boosterValue.pricedCards,
+                count: boosterValue.cardCount,
+              })}
+              {" · "}
+              {t("boosters.valueComputedAt", {
+                date: DateTime.fromISO(boosterValue.computedAt).setLocale(locale).toLocaleString(DateTime.DATE_MED),
+              })}
+              {/* Une valeur calculée sur un autre contenu ne dit plus rien du
+                  booster : mieux vaut l'annoncer que la laisser passer pour
+                  celle d'aujourd'hui. */}
+              {boosterValue.cardCount !== boosterCards.length ? (
+                <span className="text-amber-600 dark:text-amber-400"> · {t("boosters.valueOutdated")}</span>
+              ) : null}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">{t("boosters.valueNeverComputed")}</span>
+          )}
+        </div>
+        {boosterValue ? (
+          <span className="text-xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
+            {formatCardPrice({ amount: boosterValue.amount, currency: boosterValue.currency, updatedAt: boosterValue.computedAt }, locale)}
+          </span>
+        ) : null}
+        <Button
+          type="button"
+          variant="outline"
+          className="ml-auto gap-2"
+          onClick={recomputeValue}
+          disabled={computingValue || boosterCards.length === 0}
+        >
+          {computingValue ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+          {t("boosters.recomputeValue")}
+        </Button>
+      </section>
+
       {/* Note libre du booster */}
       <section className="space-y-2 rounded-xl border bg-card p-4">
         <div className="flex flex-wrap items-center gap-2">
@@ -869,7 +937,10 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
                       ) : null}
                     </div>
                     <div className="p-1.5">
-                      <p className="truncate text-[11px] font-medium leading-tight" title={card.name}>{card.name}</p>
+                      <div className="flex items-start justify-between gap-1">
+                        <p className="truncate text-[11px] font-medium leading-tight" title={card.name}>{card.name}</p>
+                        <CardPriceTag price={card.marketPrice} className="text-[10px] leading-tight" />
+                      </div>
                       <p className="truncate text-[10px] text-muted-foreground">
                         {card.setCode} #{card.collectorNumber}
                         {card.foil ? <span className="ml-1 font-semibold text-amber-500">· {t("boosters.foil")}</span> : null}
