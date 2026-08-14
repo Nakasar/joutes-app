@@ -193,10 +193,29 @@ la date du relevé et le nombre de tirages retenus. C'est le seul écran où la
 place manque assez peu pour dire d'où vient le chiffre.
 
 Les prix voyagent avec les cartes, jamais dans une requête à part : la
-recherche (`/api/games/<jeu>/cards`), la collection (`getGameCollection`) et le
+recherche (`/api/games/<jeu>/cards`), la fiche d'une carte
+(`/api/games/<jeu>/cards/<carte>`), la collection (`getGameCollection`) et le
 contenu d'un booster (`withCardAttributes`) les rattachent aux cartes qu'ils
 renvoient déjà. Une carte de l'index de recherche est retrouvée par son
 `cardId` — l'index épure l'identifiant, le relevé porte le vrai.
+
+### Sur l'application mobile, et hors ligne
+
+L'application mobile lit le même champ `marketPrice` que le web, aux mêmes
+endroits : vignette de la galerie, vignette de la collection — personnelle ou
+de groupe — et fiche de la carte, où il est accompagné de sa date de relevé et
+du lien vers Cardmarket.
+
+Elle n'y montre que le montant de référence, jamais les valeurs qui
+l'entourent (prix bas, tendance, moyenne 30 jours) : un téléphone en manque de
+place, et surtout la fiche doit se lire pareil avec ou sans réseau. Le document
+d'export hors ligne porte en effet le même `marketPrice` compact sur chaque
+carte cotée (cf. docs/GAME_EXPORTS.md) — un relevé complet par carte pèserait
+ses `offers` sur tout un catalogue, pour un écran qui n'en montrerait rien.
+
+Les prix d'un jeu téléchargé datent donc de la génération de son document :
+c'est déjà le cas de ses cartes et de ses erratas, et l'écran « Hors ligne »
+affiche cette date.
 
 ### Lien vers Cardmarket
 

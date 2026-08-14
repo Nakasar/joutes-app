@@ -6,6 +6,7 @@ import {Game} from "@/lib/types/Game";
 import {getErratasByCardId} from "@/lib/db/erratas";
 import {getCardsByNames} from "@/lib/db/cards";
 import {extractBracketedMentions} from "@/lib/errata-markdown";
+import {getCardMarketPrices} from "@/lib/db/card-prices";
 import {auth} from "@/lib/auth";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ gameId: string; cardId: string }> }) {
@@ -26,6 +27,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: "card not found" }, { status: 404 });
   }
 
+  // Le prix voyage avec la carte, jamais dans une requête à part : c'est ce
+  // qui permet aux clients — dont l'application mobile — de l'afficher sur la
+  // fiche sans second appel. Une carte sans relevé n'a pas de champ du tout.
+  const marketPrice = (await getCardMarketPrices(game._id, [card.id])).get(card.id);
+
   const session = await auth.api.getSession({ headers: await headers() });
 
   const erratas = await getErratasByCardId(card.id.toString(), session?.user?.id);
@@ -44,6 +50,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   return NextResponse.json({
     ...card,
+    ...(marketPrice ? { marketPrice } : {}),
     game: {
       id: game._id.toString(),
       name: game.name,

@@ -5,6 +5,7 @@ import { ObjectId, type AnyBulkWriteOperation } from "mongodb";
 import type { CardPrice, CardPriceSource } from "@/lib/types/card-price";
 import { cardPriceAmount, type CardMarketPrice } from "@/lib/prices/display";
 import { referenceOffer } from "@/lib/prices/cardmarket-prices";
+import { attachInBatches } from "@/lib/prices/stream";
 
 /**
  * Relevés de prix des cartes, une place de marché à la fois.
@@ -169,6 +170,22 @@ export async function withMarketPrices<T extends { id: string; cardId?: string }
     const marketPrice = prices.get(card.cardId ?? card.id);
     return marketPrice ? { ...card, marketPrice } : card;
   });
+}
+
+/**
+ * Les mêmes prix, mais sur un flux de cartes : l'export hors ligne d'un jeu ne
+ * rassemble jamais son catalogue, les cartes arrivent d'un curseur et repartent
+ * aussitôt (cf. docs/GAME_EXPORTS.md).
+ *
+ * Les relevés sont donc lus par paquets — une requête par paquet, jamais une
+ * par carte, et jamais tous les prix du jeu d'un bloc.
+ */
+export function withMarketPricesStream<T extends { id: string; cardId?: string }>(
+  gameId: ObjectId,
+  cards: AsyncIterable<T>,
+  batchSize = 500
+): AsyncGenerator<T & { marketPrice?: CardMarketPrice }> {
+  return attachInBatches(cards, (batch) => withMarketPrices(gameId, batch), batchSize);
 }
 
 /** Nombre de cartes du jeu qui portent un relevé, pour l'écran d'administration. */
