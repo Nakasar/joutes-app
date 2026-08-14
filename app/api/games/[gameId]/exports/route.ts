@@ -15,8 +15,15 @@ import {
   releaseGameExportLock,
 } from "@/lib/db/game-exports";
 import {gameExportChunks} from "@/lib/games/export-document";
+import {withMarketPricesStream} from "@/lib/db/card-prices";
 
 const EXPORT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Ce que l'export a besoin de connaître d'une carte : son identifiant, par
+ * lequel son relevé de prix la retrouve. Le reste du document part tel quel.
+ */
+type ExportedCard = { id: string } & Record<string, unknown>;
 
 /** Délai proposé au client avant de retenter, quand une génération est en cours. */
 const RETRY_AFTER_SECONDS = 120;
@@ -118,7 +125,12 @@ export async function GET(request: Request, {params}: { params: Promise<{ gameId
     // chacune repart aussitôt dans le flux d'envoi.
     const cursor = db
       .collection("cards")
-      .find({gameId: new ObjectId(game.id)}, {projection: {_id: 0}});
+      .find<ExportedCard>({gameId: new ObjectId(game.id)}, {projection: {_id: 0}});
+
+    // Le prix suit la carte plutôt que de voyager à part : hors ligne, il n'y a
+    // pas de seconde requête à faire. Il est lu par paquets, pour ne pas
+    // ramener en mémoire les relevés de tout un catalogue.
+    const cards = withMarketPricesStream(new ObjectId(game.id), cursor);
 
     const stream = new PassThrough();
     const upload = put(pathname, stream, {
@@ -139,7 +151,7 @@ export async function GET(request: Request, {params}: { params: Promise<{ gameId
       for await (const chunk of gameExportChunks({
         game: {id: game.id, slug: game.slug, name: game.name},
         generatedAt,
-        cards: cursor,
+        cards,
         erratas,
         policies,
         rules: getRulesExport(game.slug),

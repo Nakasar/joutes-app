@@ -34,6 +34,22 @@ le plafond de longueur de chaîne de V8 (~512 M caractères).
 La taille enregistrée (`size`) est le compte des octets réellement écrits, et
 non plus un `Buffer.byteLength` sur le document entier.
 
+## Les prix suivent les cartes
+
+Chaque carte cotée porte son `marketPrice` — montant de référence, devise, date
+du relevé et produit Cardmarket d'origine — comme le fait déjà la recherche en
+ligne (cf. docs/CARD_PRICES.md). Une carte sans relevé n'a pas le champ : hors
+ligne comme en ligne, l'absence de prix se lit à ce vide, jamais à un zéro.
+
+Les relevés sont lus **par paquets de cartes** (`withMarketPricesStream`, sur
+`attachInBatches`) : une requête par paquet, jamais une par carte, et jamais
+tous les prix du jeu chargés d'un bloc — ce serait rendre à la mémoire ce que
+la génération en flux vient de lui épargner. Le prix pèse une soixantaine
+d'octets sur les ~640 d'une carte, et seules les cartes cotées en portent un.
+
+Un document déjà en cache garde les prix de sa génération : ils ne se
+rafraîchissent qu'au document suivant, au plus une fois par 24 h.
+
 **Ce qui reste chargé d'un bloc :** erratas et policies, dont le volume est
 borné par jeu. `countErratasByGameId` parcourt en outre les identifiants de
 toutes les cartes du jeu (projection réduite, quelques mégaoctets pour cent
