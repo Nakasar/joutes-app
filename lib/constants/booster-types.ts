@@ -14,6 +14,7 @@ const BOOSTER_TYPES_BY_GAME: Record<string, readonly string[]> = {
   swu: ["booster", "carbonite", "pre-release"],
   mtg: ["play-booster", "set-booster", "collector", "pre-release"],
   altered: ["booster", "collector"],
+  fab: ["booster", "pre-release"],
 };
 
 /** Types traduits : toute autre valeur stockée est affichée telle quelle. */
