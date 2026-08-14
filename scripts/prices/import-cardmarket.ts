@@ -70,6 +70,7 @@ async function loadCards(gameId: ObjectId, attributeKeys: readonly string[]): Pr
     id: 1,
     name: 1,
     setCode: 1,
+    collectorNumber: 1,
     ...Object.fromEntries(attributeKeys.map((key) => [key, 1])),
   };
 
@@ -119,7 +120,7 @@ async function main() {
       `${priceFile.priceGuides.length} lignes de prix (${priceFile.createdAt}).`
   );
 
-  const { matches, expansions, skipped } = matchCardmarketProducts(productFile.products, cards, profile);
+  const { matches, expansions, paired, skipped } = matchCardmarketProducts(productFile.products, cards, profile);
 
   const priceGuides = new Map<number, CardmarketPriceGuide>(
     priceFile.priceGuides.map((guide) => [guide.idProduct, guide])
@@ -139,7 +140,8 @@ async function main() {
   console.info(
     `\nExtensions Cardmarket reconnues : ${mappedExpansions.length}/${expansions.length}. ` +
       `Produits écartés : ${skipped.unknownCard} sans carte de ce nom, ` +
-      `${skipped.unmappedExpansion} sans extension reconnue, ${skipped.ambiguous} ambigus.`
+      `${skipped.unmappedExpansion} sans extension reconnue, ${skipped.ambiguous} ambigus. ` +
+      `${paired} produits attribués par l'ordre des numéros de collection.`
   );
 
   if (showExpansions) {

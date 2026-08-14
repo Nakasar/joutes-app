@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import type { CardmarketProduct } from "./cardmarket";
 import {
   CARDMARKET_GAME_PROFILES,
+  compareCollectorNumbers,
   inferExpansionMappings,
   matchCardmarketProducts,
   normalizeCardName,
@@ -34,7 +35,8 @@ function product(name: string, idExpansion: number): CardmarketProduct {
 }
 
 function card(id: string, name: string, setCode: string, pitch?: number): PriceableCard {
-  return { id, name, setCode, ...(pitch === undefined ? {} : { pitch }) };
+  // Le numéro de collection est celui que porte l'identifiant (`OGN027a`).
+  return { id, name, setCode, collectorNumber: id.replace(/^[A-Z]+/, ""), ...(pitch === undefined ? {} : { pitch }) };
 }
 
 describe("normalizeCardName", () => {
@@ -64,6 +66,30 @@ describe("profil Flesh and Blood", () => {
 
   it("garde une parenthèse qui n'est pas une couleur dans le nom", () => {
     assert.notEqual(fab.productKey("Savage Swing (Pink)"), fab.productKey("Savage Swing"));
+  });
+});
+
+describe("compareCollectorNumbers", () => {
+  const sorted = (numbers: string[]) => [...numbers].sort(compareCollectorNumbers);
+
+  it("classe les numéros dans l'ordre du jeu, pas dans celui des chaînes", () => {
+    assert.deepEqual(sorted(["10", "9", "100"]), ["9", "10", "100"]);
+    assert.deepEqual(sorted(["027", "9"]), ["9", "027"]);
+  });
+
+  it("place une variante après le numéro dont elle est tirée", () => {
+    assert.deepEqual(sorted(["027b", "027a", "027", "028"]), ["027", "027a", "027b", "028"]);
+  });
+});
+
+describe("profil au nom seul", () => {
+  const swu = CARDMARKET_GAME_PROFILES.swu;
+
+  it("rapproche le nom complet, sous-titre compris", () => {
+    assert.equal(
+      swu.productKey("Darth Vader, Dark Lord of the Sith"),
+      swu.cardKey(card("SOR-10", "Darth Vader, Dark Lord of the Sith", "SOR"))
+    );
   });
 });
 
@@ -194,6 +220,69 @@ describe("matchCardmarketProducts", () => {
     );
 
     assert.equal(skipped.unmappedExpansion, 1);
+    assert.equal(matches.size, 0);
+  });
+
+  it("apparie les variantes d'un même nom dans l'ordre des numéros", () => {
+    // Une carte et sa version showcase portent le même nom des deux côtés :
+    // seul l'ordre les distingue, Cardmarket numérotant ses produits dans
+    // l'ordre des numéros de collection.
+    const riftbound = CARDMARKET_GAME_PROFILES.riftbound;
+    const ogn = [
+      card("OGN027", "Darius, Trifarian", "OGN"),
+      card("OGN027a", "Darius, Trifarian", "OGN"),
+      card("OGN028", "Braum, Heart of the Freljord", "OGN"),
+      card("OGN029", "Zed, From the Shadows", "OGN"),
+    ];
+    const showcase = product("Darius, Trifarian", 6286);
+    const base = { ...product("Darius, Trifarian", 6286), idProduct: showcase.idProduct - 1 };
+    const products = [showcase, base, product("Braum, Heart of the Freljord", 6286), product("Zed, From the Shadows", 6286)];
+
+    const { matches, paired } = matchCardmarketProducts(products, ogn, riftbound);
+
+    assert.equal(paired, 2);
+    assert.deepEqual(matches.get("OGN027")?.map((match) => match.idProduct), [base.idProduct]);
+    assert.deepEqual(matches.get("OGN027a")?.map((match) => match.idProduct), [showcase.idProduct]);
+  });
+
+  it("n'apparie pas s'il manque un produit à une variante", () => {
+    // Trois numéros pour deux produits : les apparier dans l'ordre en
+    // décalerait un, et rien ne dit lequel Cardmarket ne vend pas.
+    const riftbound = CARDMARKET_GAME_PROFILES.riftbound;
+    const ogn = [
+      card("OGN027", "Darius, Trifarian", "OGN"),
+      card("OGN027a", "Darius, Trifarian", "OGN"),
+      card("OGN027b", "Darius, Trifarian", "OGN"),
+      card("OGN028", "Braum, Heart of the Freljord", "OGN"),
+    ];
+    const products = [
+      product("Darius, Trifarian", 6286),
+      product("Darius, Trifarian", 6286),
+      product("Braum, Heart of the Freljord", 6286),
+    ];
+
+    const { matches, paired, skipped } = matchCardmarketProducts(products, ogn, riftbound);
+
+    assert.equal(paired, 0);
+    assert.equal(skipped.ambiguous, 2);
+    assert.deepEqual([...matches.keys()], ["OGN028"]);
+  });
+
+  it("n'apparie pas dans une extension à peine reconnue", () => {
+    // Deux produits promotionnels face à une extension complète : l'ordre des
+    // identifiants Cardmarket n'y suit plus celui des numéros.
+    const riftbound = CARDMARKET_GAME_PROFILES.riftbound;
+    const set = [
+      card("OGN027", "Darius, Trifarian", "OGN"),
+      card("OGN027a", "Darius, Trifarian", "OGN"),
+      ...Array.from({ length: 8 }, (_, index) => card(`OGN10${index}`, `Carte ${index}`, "OGN")),
+    ];
+    const products = [product("Darius, Trifarian", 6480), product("Darius, Trifarian", 6480)];
+
+    const { matches, paired, skipped } = matchCardmarketProducts(products, set, riftbound);
+
+    assert.equal(paired, 0);
+    assert.equal(skipped.ambiguous, 2);
     assert.equal(matches.size, 0);
   });
 

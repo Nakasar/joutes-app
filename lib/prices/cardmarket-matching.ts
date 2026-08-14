@@ -25,6 +25,8 @@ export type PriceableCard = {
   id: string;
   name: string;
   setCode?: string;
+  /** Départage les variantes d'un même nom dans une extension (`027`, `027a`). */
+  collectorNumber?: string;
   /** Attributs de jeu utiles au rapprochement (le pitch en Flesh and Blood). */
   [key: string]: unknown;
 };
@@ -88,10 +90,48 @@ const FAB_PROFILE: CardmarketGameProfile = {
   },
 };
 
+/**
+ * Jeu dont le nom de carte suffit à identifier la carte dans son extension.
+ * C'est le cas de la plupart : Cardmarket écrit le nom complet, sous-titre
+ * compris (`Darth Vader, Dark Lord of the Sith`), comme la plateforme.
+ */
+const NAME_ONLY_PROFILE: CardmarketGameProfile = {
+  attributeKeys: [],
+  productKey: normalizeCardName,
+  cardKey: (card) => normalizeCardName(card.name),
+};
+
 /** Jeu dont on sait rapprocher les cartes des produits Cardmarket. */
 export const CARDMARKET_GAME_PROFILES: Record<string, CardmarketGameProfile> = {
   fab: FAB_PROFILE,
+  riftbound: NAME_ONLY_PROFILE,
+  swu: NAME_ONLY_PROFILE,
 };
+
+/**
+ * Ordre des numéros de collection, celui du jeu : `9` avant `10`, et une
+ * variante après le numéro dont elle est tirée (`027` avant `027a`). Une
+ * comparaison de chaînes classerait `10` avant `9`, et un `parseInt` ne
+ * distinguerait plus `027` de `027a`.
+ */
+export function compareCollectorNumbers(left: string, right: string): number {
+  const parts = (value: string) => value.toLowerCase().match(/\d+|\D+/g) ?? [];
+  const [a, b] = [parts(left), parts(right)];
+
+  for (let index = 0; index < Math.max(a.length, b.length); index++) {
+    const [x, y] = [a[index], b[index]];
+
+    // Le plus court d'abord : `027` est le numéro de base de `027a`.
+    if (x === undefined) return -1;
+    if (y === undefined) return 1;
+
+    const numeric = /^\d/.test(x) && /^\d/.test(y);
+    if (numeric && Number(x) !== Number(y)) return Number(x) - Number(y);
+    if (!numeric && x !== y) return x < y ? -1 : 1;
+  }
+
+  return 0;
+}
 
 /** Extension de la plateforme reconnue derrière une extension Cardmarket. */
 export type ExpansionSetMatch = {
@@ -192,6 +232,8 @@ export type CardmarketMatchReport = {
   /** Produits Cardmarket retenus, par identifiant de carte. */
   matches: Map<string, CardmarketProduct[]>;
   expansions: CardmarketExpansionMapping[];
+  /** Produits attribués par l'ordre des numéros, faute de nom distinctif. */
+  paired: number;
   skipped: {
     /** Aucune carte de la plateforme ne porte ce nom. */
     unknownCard: number;
@@ -203,12 +245,54 @@ export type CardmarketMatchReport = {
 };
 
 /**
+ * En dessous de ce recouvrement, l'extension Cardmarket n'est qu'un morceau de
+ * la nôtre (des promos, une réimpression partielle) et l'ordre de ses produits
+ * ne suit plus celui de nos numéros : les variantes n'y sont pas appariées.
+ * Au-dessus, l'ordre se vérifie sur 99 % des cartes sans homonyme.
+ */
+const MIN_PAIRING_SCORE = 0.7;
+
+/**
+ * Variantes d'un même nom appariées par l'ordre : Cardmarket numérote ses
+ * produits dans l'ordre des numéros de collection, ce qui se vérifie sur les
+ * cartes sans homonyme d'une extension — le tirage de base avant sa version
+ * showcase, `027` avant `027a`. Faute de quoi ni l'un ni l'autre n'aurait de
+ * prix : leurs noms sont identiques des deux côtés.
+ *
+ * L'appariement demande **autant** de produits que de cartes : s'il en manque
+ * un, tout le groupe est écarté plutôt que décalé d'un cran.
+ */
+function pairByCollectorNumber(
+  products: CardmarketProduct[],
+  cards: PriceableCard[]
+): [PriceableCard, CardmarketProduct][] | undefined {
+  if (products.length !== cards.length || cards.some((card) => !card.collectorNumber)) {
+    return undefined;
+  }
+
+  const sortedCards = [...cards].sort((a, b) =>
+    compareCollectorNumbers(a.collectorNumber as string, b.collectorNumber as string)
+  );
+  const sortedProducts = [...products].sort((a, b) => a.idProduct - b.idProduct);
+
+  return sortedCards.map((card, index) => [card, sortedProducts[index]]);
+}
+
+/**
  * Produits Cardmarket rapprochés des cartes de la plateforme.
  *
- * Une carte peut recevoir plusieurs produits — Cardmarket vend le tirage
- * normal, le rainbow foil et le cold foil d'un même numéro comme trois
- * produits — et rien dans ses fichiers ne dit lequel est lequel : ils sont donc
- * tous conservés, à charge pour l'appelant d'en tirer un prix de référence.
+ * Le rapprochement se fait par groupe — tous les produits d'une extension qui
+ * portent le même nom, face à toutes les cartes de l'extension reconnue qui le
+ * portent aussi — parce que c'est le nombre de part et d'autre qui dit ce que
+ * ces produits sont :
+ *
+ * - une seule carte, plusieurs produits : ce sont ses tirages (normal, rainbow
+ *   foil, cold foil, réédition), et rien dans les fichiers de Cardmarket ne dit
+ *   lequel est lequel — ils sont tous rattachés à la carte, à charge pour
+ *   l'appelant d'en tirer un prix de référence ;
+ * - autant de cartes que de produits : ce sont ses variantes, qui sont chez
+ *   nous autant de numéros de collection — elles sont appariées dans l'ordre ;
+ * - tout le reste est ambigu, et n'est pas deviné.
  */
 export function matchCardmarketProducts(
   products: CardmarketProduct[],
@@ -216,45 +300,77 @@ export function matchCardmarketProducts(
   profile: CardmarketGameProfile
 ): CardmarketMatchReport {
   const expansions = inferExpansionMappings(products, cards, profile);
-  const scoresByExpansion = new Map(
-    expansions.map(({ idExpansion, setCodes }) => [
-      idExpansion,
-      new Map(setCodes.map((match) => [match.setCode, match.score])),
-    ])
-  );
 
-  const cardsByKey = groupBy(cards, (card) => profile.cardKey(card));
+  const cardsBySetAndKey = new Map<string, Map<string, PriceableCard[]>>();
+  const knownKeys = new Set<string>();
+  for (const card of cards) {
+    const key = profile.cardKey(card);
+    knownKeys.add(key);
+
+    if (!card.setCode) {
+      continue;
+    }
+    const byKey = cardsBySetAndKey.get(card.setCode) ?? new Map<string, PriceableCard[]>();
+    byKey.set(key, [...(byKey.get(key) ?? []), card]);
+    cardsBySetAndKey.set(card.setCode, byKey);
+  }
+
+  const productsByExpansion = groupBy(products, (product) => product.idExpansion);
 
   const matches = new Map<string, CardmarketProduct[]>();
   const skipped = { unknownCard: 0, unmappedExpansion: 0, ambiguous: 0 };
+  let paired = 0;
 
-  for (const product of products) {
-    const named = cardsByKey.get(profile.productKey(product.name));
-    if (!named) {
-      skipped.unknownCard++;
-      continue;
+  const attach = (card: PriceableCard, product: CardmarketProduct) => {
+    matches.set(card.id, [...(matches.get(card.id) ?? []), product]);
+  };
+
+  for (const expansion of expansions) {
+    const groups = groupBy(productsByExpansion.get(expansion.idExpansion) ?? [], (product) =>
+      profile.productKey(product.name)
+    );
+
+    for (const [key, group] of groups) {
+      // Les extensions candidates sont déjà classées par recouvrement
+      // décroissant : la première qui porte ce nom est la mieux reconnue.
+      const candidates = expansion.setCodes
+        .map(({ setCode, score }) => ({ score, cards: cardsBySetAndKey.get(setCode)?.get(key) ?? [] }))
+        .filter((candidate) => candidate.cards.length > 0);
+
+      if (candidates.length === 0) {
+        skipped[knownKeys.has(key) ? "unmappedExpansion" : "unknownCard"] += group.length;
+        continue;
+      }
+
+      // Deux extensions aussi bien reconnues l'une que l'autre : choisir
+      // reviendrait à tirer au sort l'impression que l'on date.
+      if (candidates.filter((candidate) => candidate.score === candidates[0].score).length > 1) {
+        skipped.ambiguous += group.length;
+        continue;
+      }
+
+      const { cards: candidateCards, score } = candidates[0];
+
+      if (candidateCards.length === 1) {
+        for (const product of group) {
+          attach(candidateCards[0], product);
+        }
+        continue;
+      }
+
+      const pairs = score >= MIN_PAIRING_SCORE ? pairByCollectorNumber(group, candidateCards) : undefined;
+
+      if (!pairs) {
+        skipped.ambiguous += group.length;
+        continue;
+      }
+
+      for (const [card, product] of pairs) {
+        attach(card, product);
+      }
+      paired += group.length;
     }
-
-    const scores = scoresByExpansion.get(product.idExpansion);
-    const candidates = named.filter((card) => card.setCode && scores?.has(card.setCode));
-    if (candidates.length === 0) {
-      skipped.unmappedExpansion++;
-      continue;
-    }
-
-    // Deux cartes de même nom dans deux extensions également reconnues (ou
-    // dans la même extension, réimprimées sous deux numéros) : leur donner à
-    // toutes les deux le prix serait aussi faux que de choisir au hasard.
-    const best = Math.max(...candidates.map((card) => scores?.get(card.setCode as string) ?? 0));
-    const winners = candidates.filter((card) => (scores?.get(card.setCode as string) ?? 0) === best);
-    if (winners.length > 1) {
-      skipped.ambiguous++;
-      continue;
-    }
-
-    const cardId = winners[0].id;
-    matches.set(cardId, [...(matches.get(cardId) ?? []), product]);
   }
 
-  return { matches, expansions, skipped };
+  return { matches, expansions, paired, skipped };
 }

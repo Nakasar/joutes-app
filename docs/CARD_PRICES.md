@@ -5,8 +5,20 @@ main depuis Cardmarket. C'est un indicateur, pas une cotation : le relevé date
 du dernier import, il ne vaut que pour l'édition anglaise, et toutes les cartes
 n'en ont pas.
 
-Pour l'instant, une seule place de marché (Cardmarket) et un seul jeu
-(Flesh and Blood) sont branchés.
+Pour l'instant, une seule place de marché (Cardmarket) et trois jeux :
+
+| Jeu | Cartes cotées | Ce qui limite |
+| --- | --- | --- |
+| Riftbound | 1 153 / 1 219 (95 %) | quelques promos et jetons que Cardmarket ne vend pas |
+| Flesh and Blood | 6 719 / 9 555 (70 %) | les promos, jetons et cartes de démonstration absents de Cardmarket |
+| Star Wars Unlimited | 243 / 7 112 (3 %) | **le catalogue est en français**, celui de Cardmarket en anglais |
+
+Star Wars Unlimited est importé depuis le site officiel en `locale=fr`
+(`scripts/games/swu/import-cards.ts`) : les cartes ne portent que leur nom
+français, alors que Cardmarket nomme ses produits en anglais. Seules les cartes
+dont le nom est identique dans les deux langues ressortent. Y remédier demande
+un nom anglais sur les cartes — à l'import du catalogue, ou en le rapatriant au
+moment de l'import des prix.
 
 ## D'où viennent les prix
 
@@ -84,27 +96,48 @@ nommées. Le rapprochement se fait donc en deux temps.
    qu'elles ont en commun n'est qu'une poignée de promos. Plusieurs extensions
    Cardmarket peuvent désigner la même extension (première édition et
    Unlimited), et l'inverse est vrai aussi.
-2. **Les cartes.** Un produit est rapproché des cartes de même nom, parmi les
-   extensions reconnues derrière la sienne. En Flesh and Blood, le nom seul ne
-   suffit pas : une carte existe en trois versions de pitch, qui sont trois
-   cartes de numéros différents. Cardmarket les distingue par un suffixe de
-   couleur (`Savage Swing (Red)`), la plateforme par l'attribut `pitch` : les
-   deux sont traduits dans une même clé.
+2. **Les cartes.** Les produits d'une extension qui portent le même nom sont
+   confrontés d'un bloc aux cartes de même nom de l'extension reconnue. C'est
+   leur nombre de part et d'autre qui dit ce qu'ils sont : une seule carte pour
+   plusieurs produits, ce sont ses tirages (foil, réédition) et ils lui sont
+   tous rattachés ; autant de cartes que de produits, ce sont ses variantes, et
+   elles sont appariées (ci-dessous).
+
+   Le nom ne suffit pas toujours : en Flesh and Blood, une carte existe en trois
+   versions de pitch, qui sont trois cartes de numéros différents. Cardmarket
+   les distingue par un suffixe de couleur (`Savage Swing (Red)`), la plateforme
+   par l'attribut `pitch` : le profil du jeu traduit les deux dans une même clé.
 
 Cette correspondance est déduite du catalogue à chaque import — elle suit donc
 les ajouts de Cardmarket sans entretien — et le script en publie le détail
 (`--expansions`) pour qu'elle reste vérifiable.
 
+### Apparier les variantes
+
+Une carte et sa version showcase portent le même nom des deux côtés : chez nous
+deux numéros de collection (`OGN027` et `OGN027a`), chez Cardmarket deux
+produits que rien ne distingue. Ils sont appariés **dans l'ordre** : Cardmarket
+numérote ses produits dans l'ordre des numéros de collection.
+
+Ce n'est pas une supposition : sur les cartes sans homonyme des extensions
+principales — celles où les deux catalogues se recouvrent à plus de 70 % —
+l'ordre se vérifie sur plus de 99 % des cartes (0 inversion sur les extensions
+Riftbound OGN, SFD, UNL ; 1,1 % sur Flesh and Blood). En dessous de ce
+recouvrement, l'extension Cardmarket n'est qu'un morceau de la nôtre, son ordre
+ne suit plus le nôtre, et les variantes n'y sont pas appariées.
+
+L'appariement demande autant de produits que de cartes : s'il en manque un,
+tout le groupe est écarté plutôt que décalé d'un cran.
+
 **Ce qui n'est pas reconnu n'est pas deviné.** Un produit dont aucune carte ne
 porte le nom, dont l'extension n'est pas reconnue, ou qui conviendrait aussi
-bien à deux cartes (deux numéros de même nom dans une même extension) est
-écarté : la carte reste sans prix, plutôt que de recevoir le prix d'une autre
-impression.
+bien à deux cartes sans que leur nombre permette de les apparier est écarté :
+la carte reste sans prix, plutôt que de recevoir le prix d'une autre impression.
 
-En pratique, environ 70 % des cartes Flesh and Blood reçoivent un prix. Le
-reste est surtout composé de promos, de jetons et de cartes de démonstration
-que Cardmarket ne vend pas — un peu moins de 80 % des cartes de la plateforme
-portent un nom que Cardmarket connaît.
+Les cartes sans prix sont surtout des promos, des jetons et des cartes de
+démonstration que Cardmarket ne vend pas : en Flesh and Blood, à peine 80 % des
+cartes de la plateforme portent un nom que Cardmarket connaît, ce qui borne le
+reste.
 
 ## Lancer un import
 
@@ -135,9 +168,16 @@ aucune authentification.
    connus : Magic 1, Yu-Gi-Oh 3, Pokémon 6, Flesh and Blood 16, One Piece 18,
    Lorcana 19, Star Wars Unlimited 21, Riftbound 22.
 2. `CARDMARKET_GAME_PROFILES` (`lib/prices/cardmarket-matching.ts`) : ce qui
-   distingue deux cartes de même nom dans ce jeu. Sans particularité, un profil
-   qui compare les noms normalisés suffit ; le profil Flesh and Blood sert de
-   modèle pour un jeu qui, comme lui, écrit une variante entre parenthèses.
+   distingue deux cartes de même nom dans ce jeu. `NAME_ONLY_PROFILE` suffit
+   quand le nom complet identifie la carte dans son extension — c'est le cas de
+   Riftbound et de Star Wars Unlimited, dont les cartes portent déjà leur
+   sous-titre (`Darth Vader, Dark Lord of the Sith`) comme Cardmarket. Le profil
+   Flesh and Blood sert de modèle pour un jeu qui, comme lui, écrit une variante
+   entre parenthèses.
+
+   Le jeu doit aussi avoir ses cartes dans MongoDB : c'est de là que le script
+   lit le catalogue. Magic fait exception — ses cartes ne vivent que dans
+   l'index de recherche — et n'est donc pas branché.
 
 ## Implémentation
 
