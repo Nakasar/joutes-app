@@ -200,11 +200,17 @@ renvoient déjà. Une carte de l'index de recherche est retrouvée par son
 
 ### Valeur d'un booster
 
-L'éditeur de booster affiche la somme des prix de ses cartes, et un bouton la
-recalcule (`POST /api/collection/boosters/<id>/value`). Le résultat est écrit
-sur le booster (`estimatedValue`) plutôt que recalculé à chaque affichage :
-c'est un relevé daté, comparable d'un booster à l'autre, et non un chiffre qui
-bouge tout seul au gré des imports.
+L'éditeur de booster affiche la somme des prix de ses cartes. Elle se recalcule
+toute seule à chaque carte ajoutée ou retirée — le recalcul est fait par
+`addCardToBooster` et `removeCardFromBooster`, donc la valeur suit le contenu
+quel que soit l'appelant — et le bouton **Recalculer le prix**
+(`POST /api/collection/boosters/<id>/value`) sert à rattraper un import de prix
+survenu depuis. Le foil, lui, ne la change pas : les prix sont relevés par carte
+du catalogue, sans distinguer les tirages.
+
+Le résultat est écrit sur le booster (`estimatedValue`) plutôt que recalculé à
+chaque affichage : c'est un relevé daté, comparable d'un booster à l'autre, et
+non un chiffre qui bouge tout seul au gré des imports.
 
 La valeur dit aussi sur combien de cartes elle repose : les cartes sans prix ne
 sont pas estimées, et un total porté par trois cartes sur douze ne se lit pas

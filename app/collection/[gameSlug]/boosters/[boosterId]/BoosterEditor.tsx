@@ -157,6 +157,10 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
   const [savingBoosterType, setSavingBoosterType] = useState(false);
   const [boosterValue, setBoosterValue] = useState<BoosterValue | undefined>(initialBooster.estimatedValue);
   const [computingValue, setComputingValue] = useState(false);
+  // Les cartes s'ajoutent au rythme où on les retourne : deux réponses peuvent
+  // se croiser, et la plus lente écraserait alors la valeur la plus récente.
+  // Chaque calcul demandé prend un numéro ; seul le dernier s'affiche.
+  const valueTicketRef = useRef(0);
   const [note, setNote] = useState(initialBooster.note ?? "");
   const [savedNote, setSavedNote] = useState(initialBooster.note ?? "");
   const [savingNote, setSavingNote] = useState(false);
@@ -331,17 +335,29 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
     }
   }, [booster.id]);
 
+  /** Un calcul est en route : l'ajout ou le retrait en cours en déclenche un. */
+  const valuePending = computingValue || busyAddId !== null || busyRemoveId !== null;
+
+  const applyValue = useCallback((ticket: number, value: BoosterValue | undefined) => {
+    if (value && ticket === valueTicketRef.current) {
+      setBoosterValue(value);
+    }
+  }, []);
+
   /**
    * Recalcul à la demande : le serveur additionne les prix relevés pour les
-   * cartes du booster et garde le résultat, daté, sur le booster.
+   * cartes du booster et garde le résultat, daté, sur le booster. Ajouter ou
+   * retirer une carte le refait tout seul ; ce bouton sert à rattraper un
+   * import de prix survenu depuis.
    */
   const recomputeValue = async () => {
+    const ticket = ++valueTicketRef.current;
     setComputingValue(true);
     try {
       const res = await fetch(`/api/collection/boosters/${booster.id}/value`, { method: "POST" });
       if (res.ok) {
         const data = await res.json();
-        setBoosterValue(data.value);
+        applyValue(ticket, data.value);
       }
     } finally {
       setComputingValue(false);
@@ -370,6 +386,7 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
     // est en train de saisir, pas la carte qu'on vient d'ajouter.
     setRawQuery(keepFilterTokens(rawQuery, searchFields));
     requestAnimationFrame(() => searchRef.current?.focus());
+    const ticket = ++valueTicketRef.current;
     try {
       const res = await fetch(`/api/collection/boosters/${booster.id}/cards`, {
         method: "POST",
@@ -388,8 +405,14 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
           }),
         }),
       });
-      if (res.ok) await refetchBooster();
-      else setBoosterCards((prev) => prev.filter((c) => c.id !== tempId));
+      if (res.ok) {
+        // La carte est ajoutée : une réponse illisible ne doit pas la retirer
+        // de l'écran, elle prive seulement la valeur de sa mise à jour.
+        applyValue(ticket, await res.json().then((data) => data.value, () => undefined));
+        await refetchBooster();
+      } else {
+        setBoosterCards((prev) => prev.filter((c) => c.id !== tempId));
+      }
     } catch {
       setBoosterCards((prev) => prev.filter((c) => c.id !== tempId));
     } finally {
@@ -401,12 +424,14 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
     setBusyRemoveId(entryId);
     const snapshot = boosterCards;
     setBoosterCards((prev) => prev.filter((c) => c.id !== entryId));
+    const ticket = ++valueTicketRef.current;
     try {
       const res = await fetch(
         `/api/collection/boosters/${booster.id}/cards?entryId=${encodeURIComponent(entryId)}`,
         { method: "DELETE" }
       );
-      if (!res.ok) setBoosterCards(snapshot);
+      if (res.ok) applyValue(ticket, await res.json().then((data) => data.value, () => undefined));
+      else setBoosterCards(snapshot);
     } catch {
       setBoosterCards(snapshot);
     } finally {
@@ -722,8 +747,10 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
               })}
               {/* Une valeur calculée sur un autre contenu ne dit plus rien du
                   booster : mieux vaut l'annoncer que la laisser passer pour
-                  celle d'aujourd'hui. */}
-              {boosterValue.cardCount !== boosterCards.length ? (
+                  celle d'aujourd'hui. Le temps qu'un ajout aille et revienne,
+                  en revanche, le compte diffère sans que rien ne cloche : rien
+                  n'est signalé tant qu'un calcul est en route. */}
+              {!valuePending && boosterValue.cardCount !== boosterCards.length ? (
                 <span className="text-amber-600 dark:text-amber-400"> · {t("boosters.valueOutdated")}</span>
               ) : null}
             </span>

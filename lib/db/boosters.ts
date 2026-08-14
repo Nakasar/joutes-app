@@ -440,7 +440,12 @@ export async function deleteBooster(boosterId: string): Promise<void> {
   await db.collection<BoosterDb>('boosters').deleteOne({_id});
 }
 
-export async function addCardToBooster(boosterId: string, card: Omit<BoosterCard, 'id'>): Promise<void> {
+/**
+ * Ajoute une carte au booster et renvoie sa nouvelle valeur : le contenu
+ * change, le total qui en découle aussi. Le recalcul est fait ici plutôt que
+ * dans la route pour que la valeur suive le contenu quel que soit l'appelant.
+ */
+export async function addCardToBooster(boosterId: string, card: Omit<BoosterCard, 'id'>): Promise<BoosterValue | null> {
   const booster = await db.collection<BoosterDb>('boosters').findOne({
     _id: new ObjectId(boosterId),
   }, {projection: {_id: 1, userId: 1}});
@@ -453,6 +458,8 @@ export async function addCardToBooster(boosterId: string, card: Omit<BoosterCard
     boosterId: booster._id,
     userId: booster.userId,
   });
+
+  return computeBoosterValue(boosterId);
 }
 
 export async function addBoosterToCollection(userId: string, boosterId: string): Promise<number> {
@@ -503,7 +510,8 @@ export async function setBoosterCardFoil(boosterId: string, entryId: string, foi
   );
 }
 
-export async function removeCardFromBooster(boosterId: string, cardId: string): Promise<void> {
+/** Retire une carte du booster et renvoie sa nouvelle valeur (cf. `addCardToBooster`). */
+export async function removeCardFromBooster(boosterId: string, cardId: string): Promise<BoosterValue | null> {
   console.log('Removing card', cardId, 'from booster', boosterId);
   const booster = await db.collection<BoosterDb>('boosters').findOne({
     _id: new ObjectId(boosterId),
@@ -516,6 +524,8 @@ export async function removeCardFromBooster(boosterId: string, cardId: string): 
     boosterId: booster._id,
     _id: new ObjectId(cardId),
   });
+
+  return computeBoosterValue(boosterId);
 }
 
 export type GroupedCard = {
