@@ -180,6 +180,42 @@ démonstration que Cardmarket ne vend pas : en Flesh and Blood, à peine 80 % de
 cartes de la plateforme portent un nom que Cardmarket connaît, ce qui borne le
 reste.
 
+## Où les prix s'affichent
+
+Partout où une carte porte un nom, le prix se range à côté, en petit
+(`CardPriceTag`) : galerie de cartes (en grille comme en liste), grille de
+collection — personnelle ou de groupe —, et contenu d'un booster. Une carte
+sans relevé n'affiche rien du tout : un tiret se lirait comme un prix nul.
+
+La fiche d'une carte en montre davantage (`CardPriceDetails`) : le prix de
+référence, les valeurs qui l'entourent (prix bas, tendance, moyenne 30 jours),
+la date du relevé et le nombre de tirages retenus. C'est le seul écran où la
+place manque assez peu pour dire d'où vient le chiffre.
+
+Les prix voyagent avec les cartes, jamais dans une requête à part : la
+recherche (`/api/games/<jeu>/cards`), la collection (`getGameCollection`) et le
+contenu d'un booster (`withCardAttributes`) les rattachent aux cartes qu'ils
+renvoient déjà. Une carte de l'index de recherche est retrouvée par son
+`cardId` — l'index épure l'identifiant, le relevé porte le vrai.
+
+### Valeur d'un booster
+
+L'éditeur de booster affiche la somme des prix de ses cartes. Elle se recalcule
+toute seule à chaque carte ajoutée ou retirée — le recalcul est fait par
+`addCardToBooster` et `removeCardFromBooster`, donc la valeur suit le contenu
+quel que soit l'appelant — et le bouton **Recalculer le prix**
+(`POST /api/collection/boosters/<id>/value`) sert à rattraper un import de prix
+survenu depuis. Le foil, lui, ne la change pas : les prix sont relevés par carte
+du catalogue, sans distinguer les tirages.
+
+Le résultat est écrit sur le booster (`estimatedValue`) plutôt que recalculé à
+chaque affichage : c'est un relevé daté, comparable d'un booster à l'autre, et
+non un chiffre qui bouge tout seul au gré des imports.
+
+La valeur dit aussi sur combien de cartes elle repose : les cartes sans prix ne
+sont pas estimées, et un total porté par trois cartes sur douze ne se lit pas
+comme le prix du booster.
+
 ## Lancer un import
 
 Depuis la racine du dépôt :
@@ -229,6 +265,12 @@ aucune authentification.
 - `lib/prices/cardmarket-prices.ts` : construction du relevé et choix du prix
   de référence, couverte par `cardmarket-prices.test.ts`.
 - `lib/db/card-prices.ts` : écriture et lecture de `card-prices`, dont
-  `getCardPricesByCardId` pour chiffrer une collection ou une liste de vente
-  sans une requête par carte.
+  `getCardMarketPrices` et `withMarketPrices`, qui rattachent leur prix à un lot
+  de cartes sans une requête par carte.
+- `lib/prices/display.ts` : le montant qui représente une carte, la somme d'un
+  lot et leur mise en forme, couverts par `display.test.ts`.
+- `components/cards/CardPriceTag.tsx` et `CardPriceDetails.tsx` : l'affichage,
+  partagé par tous les écrans qui listent des cartes.
+- `lib/db/boosters.ts` : `computeBoosterValue`, derrière
+  `app/api/collection/boosters/[boosterId]/value`.
 - `scripts/prices/import-cardmarket.ts` : l'import, lancé à la main.

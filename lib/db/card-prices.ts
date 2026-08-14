@@ -3,6 +3,7 @@ import 'server-only';
 import db from "@/lib/mongodb";
 import { ObjectId, type AnyBulkWriteOperation } from "mongodb";
 import type { CardPrice, CardPriceSource } from "@/lib/types/card-price";
+import { cardPriceAmount, type CardMarketPrice } from "@/lib/prices/display";
 
 /**
  * Relevés de prix des cartes, une place de marché à la fois.
@@ -95,6 +96,66 @@ export async function getCardPricesByCardId(
   const docs = await collection().find({ gameId, source, cardId: { $in: cardIds } }).toArray();
 
   return new Map(docs.map((doc) => [doc.cardId, toCardPrice(doc)]));
+}
+
+/**
+ * Prix d'affichage d'un lot de cartes, par identifiant de carte : un montant
+ * par carte, de quoi le mettre à côté d'un nom dans une grille sans traîner
+ * tout le relevé jusqu'au navigateur.
+ *
+ * Les cartes sans relevé, ou dont le relevé ne porte aucun montant, sont
+ * absentes du résultat : c'est ce qui distingue « pas de prix connu » de
+ * « gratuit ».
+ */
+export async function getCardMarketPrices(
+  gameId: ObjectId,
+  cardIds: string[],
+  source: CardPriceSource = "cardmarket"
+): Promise<Map<string, CardMarketPrice>> {
+  if (cardIds.length === 0) {
+    return new Map();
+  }
+
+  const docs = await collection()
+    .find(
+      { gameId, source, cardId: { $in: [...new Set(cardIds)] } },
+      { projection: { _id: 0, cardId: 1, prices: 1, currency: 1, sourceUpdatedAt: 1 } }
+    )
+    .toArray();
+
+  return new Map(
+    docs.flatMap((doc) => {
+      const amount = cardPriceAmount(doc.prices);
+      return amount === undefined
+        ? []
+        : [[doc.cardId, { amount, currency: doc.currency, updatedAt: doc.sourceUpdatedAt.toISOString() }] as const];
+    })
+  );
+}
+
+/**
+ * Cartes enrichies de leur prix d'affichage, pour les écrans qui en listent :
+ * galerie, collection, booster.
+ *
+ * L'identifiant lu est `cardId` quand il existe : les documents de l'index de
+ * recherche portent en `id` une version épurée de l'identifiant (Meilisearch
+ * n'accepte pas `*`) et le vrai en `cardId`, et c'est le vrai qui date les
+ * relevés.
+ */
+export async function withMarketPrices<T extends { id: string; cardId?: string }>(
+  gameId: ObjectId,
+  cards: T[]
+): Promise<(T & { marketPrice?: CardMarketPrice })[]> {
+  if (cards.length === 0) {
+    return cards;
+  }
+
+  const prices = await getCardMarketPrices(gameId, cards.map((card) => card.cardId ?? card.id));
+
+  return cards.map((card) => {
+    const marketPrice = prices.get(card.cardId ?? card.id);
+    return marketPrice ? { ...card, marketPrice } : card;
+  });
 }
 
 /** Nombre de cartes du jeu qui portent un relevé, pour l'écran d'administration. */

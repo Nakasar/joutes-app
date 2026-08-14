@@ -20,7 +20,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   try {
-    await addCardToBooster(boosterId, {
+    // La valeur du booster est recalculée par l'ajout : elle repart avec la
+    // réponse, pour que l'écran n'ait pas à la redemander.
+    const value = await addCardToBooster(boosterId, {
       cardId: typeof body.cardId === "string" ? body.cardId : undefined,
       name: body.name,
       setCode: body.setCode,
@@ -38,7 +40,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           }
         : {}),
     });
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, value });
   } catch (error) {
     console.error("Error adding card to booster:", error);
     return NextResponse.json({ error: "Failed to add card" }, { status: 500 });
@@ -62,6 +64,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 
   try {
+    // Le foil ne change pas la valeur du booster : les prix sont relevés par
+    // carte du catalogue, sans distinguer les tirages (cf. docs/CARD_PRICES.md).
     await setBoosterCardFoil(boosterId, body.entryId, body.foil);
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -87,8 +91,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   }
 
   try {
-    await removeCardFromBooster(boosterId, entryId);
-    return NextResponse.json({ success: true });
+    const value = await removeCardFromBooster(boosterId, entryId);
+    return NextResponse.json({ success: true, value });
   } catch (error) {
     console.error("Error removing card from booster:", error);
     return NextResponse.json({ error: "Failed to remove card" }, { status: 500 });

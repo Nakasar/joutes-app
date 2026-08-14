@@ -1516,6 +1516,12 @@
         "noSets": "Keine Sets anzuzeigen."
       },
         "boosters": {
+          "value": "Wert des Boosters",
+          "valueBreakdown": "{priced, plural, =0 {keine Karte bepreist} one {# Karte bepreist} other {# Karten bepreist}} von {count}",
+          "valueComputedAt": "berechnet am {date}",
+          "valueOutdated": "Inhalt seit dieser Berechnung geändert.",
+          "valueNeverComputed": "Noch nie berechnet.",
+          "recomputeValue": "Preis neu berechnen",
           "title": "Booster",
           "metadataTitle": "Booster · {game}",
           "subtitle": "Die von dir erstellten Booster für {game}.",
@@ -3340,5 +3346,17 @@
     "base": "Standardversion",
     "foilOption": "{name} (Foil)",
     "variantBadge": "Variante: {name}"
+  },
+  "Prices": {
+    "title": "Marktpreis",
+    "none": "Für diese Karte liegt kein Preis vor.",
+    "tooltip": "Cardmarket-Preis vom {date}",
+    "source": "Cardmarket · Stand {date}",
+    "printings": "{count, plural, one {# erfasster Druck} other {# erfasste Drucke}}",
+    "figures": {
+      "low": "Niedrigster",
+      "trend": "Trend",
+      "avg30": "Ø 30 Tage"
+    }
   }
 }

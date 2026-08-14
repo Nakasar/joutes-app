@@ -1,6 +1,7 @@
 import {Game} from "@/lib/types/Game";
 import {User} from "@/lib/types/User";
 import {CardAttributes} from "@/lib/types/card";
+import {CardMarketPrice} from "@/lib/prices/display";
 import {ObjectId} from "bson";
 
 export type BoosterCard = CardAttributes & {
@@ -18,6 +19,8 @@ export type BoosterCard = CardAttributes & {
   printingName?: string;
   image: string;
   price?: string;
+  /** Prix de marché relevé pour la carte du catalogue (cf. docs/CARD_PRICES.md). */
+  marketPrice?: CardMarketPrice;
   newInCollection?: boolean;
   banned?: boolean;
   text?: string;
@@ -49,6 +52,22 @@ export type BoosterCardDb = {
   borrowedBy?: string;
 }
 
+/**
+ * Valeur d'un booster, calculée à la demande en additionnant le prix de ses
+ * cartes. `pricedCards` dit sur combien de cartes elle repose : une valeur
+ * portée par trois cartes sur douze ne se lit pas comme un total.
+ */
+export type BoosterValue = {
+  amount: number;
+  /** Devise ISO 4217 des montants (`EUR`). */
+  currency: string;
+  /** Cartes du booster au moment du calcul. */
+  cardCount: number;
+  /** Celles qui avaient un prix. */
+  pricedCards: number;
+  computedAt: string;
+};
+
 export type Booster = {
   gameId: Game['id'];
   game? : {
@@ -64,6 +83,8 @@ export type Booster = {
   /** Note libre saisie par le propriétaire du booster. */
   note?: string;
   value?: string;
+  /** Dernière valeur calculée à partir des prix des cartes. */
+  estimatedValue?: BoosterValue;
   archived: boolean;
   addedToCollection?: boolean;
   createdAt: string;
@@ -77,6 +98,7 @@ export type BoosterDb = {
   type: string;
   note?: string;
   price?: string;
+  estimatedValue?: Omit<BoosterValue, 'computedAt'> & { computedAt: Date };
   archived: boolean;
   addedToCollection?: boolean;
   createdAt: Date;

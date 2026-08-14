@@ -1600,6 +1600,12 @@
         "noSets": "Aucune extension à afficher."
       },
         "boosters": {
+          "value": "Valeur du booster",
+          "valueBreakdown": "{priced, plural, =0 {aucune carte cotée} one {# carte cotée} other {# cartes cotées}} sur {count}",
+          "valueComputedAt": "calculée le {date}",
+          "valueOutdated": "Le contenu a changé depuis ce calcul.",
+          "valueNeverComputed": "Jamais calculée.",
+          "recomputeValue": "Recalculer le prix",
           "title": "Boosters",
           "metadataTitle": "Boosters · {game}",
           "subtitle": "Les boosters que vous avez créés pour {game}.",
@@ -3424,5 +3430,17 @@
     "base": "Version de base",
     "foilOption": "{name} (foil)",
     "variantBadge": "Variante : {name}"
+  },
+  "Prices": {
+    "title": "Prix du marché",
+    "none": "Aucun prix relevé pour cette carte.",
+    "tooltip": "Prix Cardmarket relevé le {date}",
+    "source": "Cardmarket · relevé le {date}",
+    "printings": "{count, plural, one {# tirage relevé} other {# tirages relevés}}",
+    "figures": {
+      "low": "Prix bas",
+      "trend": "Tendance",
+      "avg30": "Moyenne 30 j"
+    }
   }
 }
