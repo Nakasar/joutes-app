@@ -30,6 +30,37 @@ export const CARDMARKET_GAME_IDS: Record<string, number> = {
   riftbound: 22,
 };
 
+/**
+ * Segment d'URL du jeu chez Cardmarket, par slug de jeu. Il ne se devine pas
+ * (`fab` s'y écrit `FleshAndBlood`) : un jeu absent de cette table n'a pas de
+ * lien, plutôt qu'un lien vers une page qui n'existe pas.
+ */
+export const CARDMARKET_GAME_PATHS: Record<string, string> = {
+  mtg: "Magic",
+  fab: "FleshAndBlood",
+  riftbound: "Riftbound",
+  swu: "StarWarsUnlimited",
+};
+
+/**
+ * Page d'un produit sur Cardmarket.
+ *
+ * Cardmarket redirige `Products?idProduct=<id>` vers la fiche du produit, en
+ * s'appuyant sur l'identifiant de son catalogue public — celui-là même que nos
+ * relevés portent. C'est la forme que Scryfall publie dans ses
+ * `purchase_uris`, et la seule qui se construise sans connaître le nom de
+ * l'extension ni celui de la carte chez eux.
+ */
+export function cardmarketProductUrl(gameSlug: string | undefined, productId: number | undefined): string | undefined {
+  const path = gameSlug ? CARDMARKET_GAME_PATHS[gameSlug] : undefined;
+
+  if (!path || productId === undefined) {
+    return undefined;
+  }
+
+  return `https://www.cardmarket.com/en/${path}/Products?idProduct=${productId}`;
+}
+
 /** Devise des montants publiés par Cardmarket. */
 export const CARDMARKET_CURRENCY = "EUR";
 

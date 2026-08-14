@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { TRADE_MAX_CARDS_PER_SIDE, TRADE_MAX_QUANTITY } from "@/lib/constants/trade";
+import { TRADE_MAX_CARDS_PER_SIDE, TRADE_MAX_QUANTITY, TRADE_MAX_UNIT_PRICE } from "@/lib/constants/trade";
 
 /**
  * Les cartes d'une offre ne sont jamais insérées telles quelles : le serveur les
@@ -11,16 +11,24 @@ import { TRADE_MAX_CARDS_PER_SIDE, TRADE_MAX_QUANTITY } from "@/lib/constants/tr
  *    (nom + extension + numéro), comme partout ailleurs dans la collection ;
  *  - contrepartie libre : identifiant de catalogue `cards.id`.
  */
+/**
+ * Prix négocié d'une carte, à l'unité. Facultatif : sans lui, c'est le prix de
+ * marché relevé qui s'applique, et `null` revient à l'effacer.
+ */
+const tradeUnitPriceSchema = z.number().min(0).max(TRADE_MAX_UNIT_PRICE).nullish();
+
 export const tradeOwnedCardSchema = z.strictObject({
   name: z.string().min(1).max(200),
   setCode: z.string().min(1).max(100),
   collectorNumber: z.string().min(1).max(100),
   quantity: z.number().int().min(1).max(TRADE_MAX_QUANTITY),
+  unitPrice: tradeUnitPriceSchema,
 });
 
 export const tradeCatalogCardSchema = z.strictObject({
   cardId: z.string().min(1).max(100),
   quantity: z.number().int().min(1).max(TRADE_MAX_QUANTITY),
+  unitPrice: tradeUnitPriceSchema,
 });
 
 export const tradeOfferUpdateSchema = z.discriminatedUnion("target", [

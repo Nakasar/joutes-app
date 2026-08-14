@@ -406,7 +406,7 @@ export default async function RiftboundCardDetailPage({
             </div>
           )}
 
-          <CardPriceDetails price={cardPrice} />
+          <CardPriceDetails price={cardPrice} gameSlug={game.slug ?? gameSlugOrId} />
 
           {printings.length > 0 && (
             <div className="flex flex-col gap-2">

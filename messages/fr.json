@@ -3110,7 +3110,25 @@
       "subtitle": "Les cartes que vous recevez, ajoutées à votre collection.",
       "subtitlePartner": "Composée par votre partenaire : vous la recevez telle quelle."
     },
+    "value": {
+      "mine": "Mon offre",
+      "theirs": "En face",
+      "difference": "Écart",
+      "balanced": "À parité",
+      "inMyFavor": "À mon avantage",
+      "inTheirFavor": "À l'avantage d'en face",
+      "unpriced": "{count, plural, one {# exemplaire hors du calcul, faute de prix} other {# exemplaires hors du calcul, faute de prix}}"
+    },
     "panel": {
+      "unitPrice": "Prix de « {name} », à l'unité",
+      "resetPrice": "Revenir au prix du marché pour « {name} »",
+      "marketPrice": "marché {price}",
+      "cardmarket": "Cardmarket",
+      "lineTotal": "= {total}",
+      "noPrice": "Sans prix",
+      "total": "Total",
+      "noTotal": "—",
+      "unpriced": "{count, plural, one {# exemplaire sans prix} other {# exemplaires sans prix}}",
       "copies": "{count, plural, =0 {0 exemplaire} one {# exemplaire} other {# exemplaires}}",
       "emptyOffer": "Ajoutez des cartes de votre collection à céder.",
       "emptyRequest": "Ajoutez les cartes que vous recevez en échange.",
@@ -3432,6 +3450,7 @@
     "variantBadge": "Variante : {name}"
   },
   "Prices": {
+    "openOnCardmarket": "Voir sur Cardmarket — prix relevé le {date}",
     "title": "Prix du marché",
     "none": "Aucun prix relevé pour cette carte.",
     "tooltip": "Prix Cardmarket relevé le {date}",
