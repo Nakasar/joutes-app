@@ -87,7 +87,14 @@ export default function QuizImportDialog({ gameId, onImported }: Props) {
           Importer depuis un texte
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-2xl">
+      {/*
+        La fenêtre ne dépasse jamais l'écran : c'est son corps qui défile, pas
+        elle. Sans cette borne, un texte collé de plusieurs milliers de
+        caractères poussait le bouton d'analyse hors de l'écran — une fenêtre
+        modale est en position fixe, la page derrière ne la fait pas défiler,
+        et il n'y avait plus aucun moyen de l'atteindre.
+      */}
+      <DialogContent className="flex max-h-[85dvh] flex-col sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Importer un quizz depuis un texte</DialogTitle>
           <DialogDescription>
@@ -96,7 +103,12 @@ export default function QuizImportDialog({ gameId, onImported }: Props) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-2">
+        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
+          {/*
+            `field-sizing-fixed` : la zone de saisie garde la hauteur de ses
+            quatorze lignes au lieu de grandir avec ce qu'on y colle, et se
+            réduit sur un écran bas. C'est elle qui défile, pas la fenêtre.
+          */}
           <Textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -104,6 +116,7 @@ export default function QuizImportDialog({ gameId, onImported }: Props) {
             rows={14}
             maxLength={MAX_TEXT_LENGTH}
             disabled={loading}
+            className="field-sizing-fixed max-h-[45dvh]"
           />
           <p className="text-xs text-muted-foreground">
             {gameId
