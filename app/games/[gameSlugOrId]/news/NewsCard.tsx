@@ -3,6 +3,8 @@ import Image from "next/image";
 import { DateTime } from "luxon";
 import { getLocale, getTranslations } from "next-intl/server";
 import { News } from "@/lib/types/News";
+import { localizeNews, newsOriginalLang, newsPath, resolveNewsLang } from "@/lib/news/localize";
+import type { Locale } from "@/i18n/config";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +19,12 @@ type NewsCardProps = {
 export default async function NewsCard({ news, isLoggedIn, compact = false }: NewsCardProps) {
   const t = await getTranslations("Games.news");
   const locale = await getLocale();
+
+  // La carte parle la langue du lecteur, et son lien mène droit à cette
+  // version-là plutôt qu'à la VO qu'il faudrait ensuite quitter.
+  const localized = localizeNews(news, resolveNewsLang(news, locale as Locale));
+  const href = newsPath(news.id, localized.lang, newsOriginalLang(news));
+
   const date = DateTime.fromJSDate(new Date(news.createdAt))
     .setLocale(locale)
     .toLocaleString(DateTime.DATE_FULL);
@@ -31,7 +39,7 @@ export default async function NewsCard({ news, isLoggedIn, compact = false }: Ne
         <div className="relative w-full aspect-[3/1] max-h-48">
           <Image
             src={news.banner}
-            alt={news.title}
+            alt={localized.title.text}
             fill
             className="object-cover"
             unoptimized
@@ -39,9 +47,12 @@ export default async function NewsCard({ news, isLoggedIn, compact = false }: Ne
         </div>
       )}
       <CardHeader className="pb-2">
-        <Link href={`/news/${news.id}`} className="group">
-          <CardTitle className="text-xl group-hover:text-primary transition-colors">
-            {news.title}
+        <Link href={href} className="group">
+          <CardTitle
+            className="text-xl group-hover:text-primary transition-colors"
+            lang={localized.title.lang}
+          >
+            {localized.title.text}
           </CardTitle>
         </Link>
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
@@ -52,8 +63,11 @@ export default async function NewsCard({ news, isLoggedIn, compact = false }: Ne
       </CardHeader>
 
       <CardContent className="pb-3">
-        <p className={`text-muted-foreground ${compact ? "line-clamp-2" : "line-clamp-3"}`}>
-          {news.summary}
+        <p
+          className={`text-muted-foreground ${compact ? "line-clamp-2" : "line-clamp-3"}`}
+          lang={localized.summary.lang}
+        >
+          {localized.summary.text}
         </p>
 
         {!compact && news.tags.length > 0 && (
@@ -69,7 +83,7 @@ export default async function NewsCard({ news, isLoggedIn, compact = false }: Ne
 
       <CardFooter className="flex items-center justify-between pt-0">
         <Button asChild variant="link" className="p-0 h-auto">
-          <Link href={`/news/${news.id}`}>{t("readMore")}</Link>
+          <Link href={href}>{t("readMore")}</Link>
         </Button>
 
         <LikeButton

@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import type { NewsSource } from "@/lib/types/News";
+import type { Locale } from "@/i18n/config";
 
 export type ImportedNewsDraft = {
   title: string;
@@ -22,6 +23,8 @@ export type ImportedNewsDraft = {
   content: string;
   banner?: string;
   source: NewsSource;
+  /** La langue déclarée par la page, quand c'en est une que Joutes parle. */
+  lang?: Locale;
   images: { rehosted: number; keptRemote: number };
   bannerMissed: boolean;
   cardsDetected: boolean;
@@ -34,6 +37,13 @@ type Props = {
   hasContent: boolean;
   /** Le brouillon remplit le formulaire, il n'est jamais publié directement. */
   onImported: (draft: ImportedNewsDraft) => void;
+  /**
+   * De quoi réemployer la boîte de dialogue là où elle ne sert pas à rédiger
+   * mais à traduire : mêmes mécanique et mêmes garde-fous, autre intention à
+   * annoncer.
+   */
+  triggerLabel?: string;
+  description?: string;
 };
 
 /**
@@ -45,7 +55,13 @@ type Props = {
  * Le résultat atterrit dans le formulaire, où il est relu et corrigé avant
  * publication ; la source y est renseignée pour être citée sur l'actualité.
  */
-export default function NewsImportDialog({ gameId, hasContent, onImported }: Props) {
+export default function NewsImportDialog({
+  gameId,
+  hasContent,
+  onImported,
+  triggerLabel = "Importer depuis un lien",
+  description = "Collez l'adresse d'un article — la FAQ d'une sortie sur le site officiel, une note de mise à jour. Sa mise en page et ses images sont reprises, et la source est citée sur l'actualité.",
+}: Props) {
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
@@ -102,16 +118,13 @@ export default function NewsImportDialog({ gameId, hasContent, onImported }: Pro
       <DialogTrigger asChild>
         <Button type="button" variant="outline">
           <Download className="h-4 w-4 mr-2" />
-          Importer depuis un lien
+          {triggerLabel}
         </Button>
       </DialogTrigger>
       <DialogContent className="flex max-h-[85dvh] flex-col sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Importer une actualité depuis un lien</DialogTitle>
-          <DialogDescription>
-            Collez l&apos;adresse d&apos;un article — la FAQ d&apos;une sortie sur le site officiel, une note de mise à
-            jour. Sa mise en page et ses images sont reprises, et la source est citée sur l&apos;actualité.
-          </DialogDescription>
+          <DialogTitle>{triggerLabel}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto">

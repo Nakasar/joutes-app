@@ -2522,6 +2522,7 @@ paths:
                 content: { type: string, minLength: 1 }
                 banner: { type: string, format: uri }
                 source: { allOf: [{ $ref: "#/components/schemas/NewsSource" }], nullable: true }
+                originalLang: { type: string, enum: [fr, en, it, de], default: fr, description: "The language the article is written in." }
                 gameIds: { type: array, items: { type: string, pattern: "^[0-9a-fA-F]{24}$" }, default: [] }
                 tags: { type: array, items: { type: string, minLength: 1, maxLength: 50 }, default: [] }
       responses:
@@ -2559,6 +2560,7 @@ paths:
                 content: { type: string, minLength: 1 }
                 banner: { type: string, format: uri }
                 source: { allOf: [{ $ref: "#/components/schemas/NewsSource" }], nullable: true, description: "`null` removes the attribution." }
+                originalLang: { type: string, enum: [fr, en, it, de] }
                 gameIds: { type: array, items: { type: string, pattern: "^[0-9a-fA-F]{24}$" } }
                 tags: { type: array, items: { type: string, minLength: 1, maxLength: 50 } }
       responses:
@@ -2584,6 +2586,56 @@ paths:
               schema: { type: object, properties: { liked: { type: boolean }, likesCount: { type: integer } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/ServerError" }
+
+  /news/{newsId}/translations/{lang}:
+    parameters:
+      - { name: newsId, in: path, required: true, schema: { type: string } }
+      - { name: lang, in: path, required: true, schema: { type: string, enum: [fr, en, it, de] } }
+    put:
+      tags: [News]
+      summary: Save a news article's translation in one language
+      description: |
+        Creates or replaces the translation. The three texts may be empty: a translation is written in
+        several sittings, and an empty field displays the original rather than blocking the rest.
+        Sending all three empty **removes** the translation — an empty translation appears nowhere,
+        and its address would answer 404. Saving a translation does not change `contentUpdatedAt`.
+        Requires permission `news:update`.
+      security: [{ sessionAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string, maxLength: 200, default: "" }
+                summary: { type: string, maxLength: 500, default: "" }
+                content: { type: string, default: "" }
+      responses:
+        "200":
+          description: Saved, or removed when all three texts were empty.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  removed: { type: boolean, description: "True when the translation was removed because every text was empty." }
+        "400": { description: "Unsupported language, or the article's own original language." }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [News]
+      summary: Remove a news article's translation in one language
+      description: Requires permission `news:update`.
+      security: [{ sessionAuth: [] }]
+      responses:
+        "200": { description: Removed., content: { application/json: { schema: { type: object, properties: { success: { type: boolean } } } } } }
+        "400": { description: Unsupported language. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
 
   /news/import:
     post:
@@ -2618,6 +2670,7 @@ paths:
                   content: { type: string, description: "Markdown, with bracketed card mentions." }
                   banner: { type: string, format: uri }
                   source: { $ref: "#/components/schemas/NewsSource" }
+                  lang: { type: string, enum: [fr, en, it, de], description: "The language the page declares, when Joutes speaks it." }
                   images:
                     type: object
                     properties:
@@ -4306,6 +4359,9 @@ components:
         content: { type: string }
         banner: { type: string }
         source: { $ref: "#/components/schemas/NewsSource" }
+        originalLang: { type: string, enum: [fr, en, it, de], description: "The language the article was written in." }
+        contentUpdatedAt: { type: string, format: date-time, description: "Last change to the original texts. A translation older than this may be out of date." }
+        translations: { type: array, items: { $ref: "#/components/schemas/NewsTranslation" } }
         gameIds: { type: array, items: { type: string } }
         games: { type: array, items: { type: object, properties: { id: { type: string }, name: { type: string }, icon: { type: string }, slug: { type: string } } } }
         tags: { type: array, items: { type: string } }
@@ -4324,6 +4380,19 @@ components:
       properties:
         name: { type: string, minLength: 1, maxLength: 120, description: "The site the article was originally published on." }
         url: { type: string, format: uri, description: "Link to the original article." }
+
+    NewsTranslation:
+      type: object
+      description: |
+        One language of a news article. Empty fields fall back to the original, field by field:
+        a translation in progress shows what is translated and leaves the rest in the original language.
+      required: [lang]
+      properties:
+        lang: { type: string, enum: [fr, en, it, de] }
+        title: { type: string, maxLength: 200 }
+        summary: { type: string, maxLength: 500 }
+        content: { type: string }
+        updatedAt: { type: string, format: date-time }
 
     QuizQuestion:
       type: object

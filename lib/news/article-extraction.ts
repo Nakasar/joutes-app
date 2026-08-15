@@ -1,5 +1,6 @@
 import { parse, type HTMLElement } from "node-html-parser";
 import { NodeHtmlMarkdown } from "node-html-markdown";
+import { locales, type Locale } from "@/i18n/config";
 
 /**
  * Extraction du corps d'un article depuis la page HTML d'un site extérieur.
@@ -17,6 +18,12 @@ export type ExtractedArticle = {
   bannerUrl?: string;
   /** Le site d'où vient l'article, tel qu'il se nomme lui-même. */
   sourceName: string;
+  /**
+   * La langue déclarée par la page, quand c'en est une que Joutes parle.
+   * Sert à proposer la bonne langue d'origine au brouillon — un site officiel
+   * publie le même article par langue, chacun sous son adresse.
+   */
+  lang?: Locale;
   /** Le corps de l'article, en markdown, images comprises. */
   markdown: string;
 };
@@ -344,6 +351,23 @@ function readSourceName(root: HTMLElement, pageUrl: string): string {
   }
 }
 
+/**
+ * La langue de la page, si elle en déclare une que Joutes parle.
+ *
+ * Les étiquettes rencontrées sont régionales (`fr-fr`, `en-us`, `og:locale`
+ * en `fr_FR`) : seule la sous-étiquette de langue nous intéresse, les quatre
+ * langues de l'application n'ayant pas de variantes régionales.
+ */
+function readLang(root: HTMLElement): Locale | undefined {
+  const declared =
+    root.querySelector("html")?.getAttribute("lang") ??
+    metaContent(root, "property", "og:locale") ??
+    metaContent(root, "name", "language");
+
+  const base = declared?.trim().toLowerCase().split(/[-_]/)[0];
+  return base && (locales as readonly string[]).includes(base) ? (base as Locale) : undefined;
+}
+
 function readTitle(root: HTMLElement): string {
   const candidate =
     metaContent(root, "property", "og:title") ??
@@ -412,6 +436,7 @@ export function extractArticle(html: string, pageUrl: string): ExtractedArticle 
   );
   const sourceName = readSourceName(root, pageUrl);
   const declaredSummary = readDeclaredSummary(root);
+  const lang = readLang(root);
 
   // Les métadonnées sont lues avant ce nettoyage : `<head>` les porte toutes,
   // et il part avec le reste de ce qui n'est pas du contenu.
@@ -444,6 +469,7 @@ export function extractArticle(html: string, pageUrl: string): ExtractedArticle 
     summary: truncate(declaredSummary ?? toPlainProse(markdown), MAX_SUMMARY_LENGTH),
     bannerUrl,
     sourceName,
+    lang,
     markdown,
   };
 }

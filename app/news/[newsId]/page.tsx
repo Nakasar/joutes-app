@@ -1,176 +1,19 @@
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
-import { notFound } from "next/navigation";
-import { getNewsById } from "@/lib/db/news";
-import { hasPermission } from "@/lib/db/permissions";
 import { Metadata } from "next";
-import { DateTime } from "luxon";
-import Link from "next/link";
-import { ArrowLeft, ExternalLink, Pencil, Tag, Gamepad2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import Image from "next/image";
-import LikeButton from "./LikeButton";
-import ReportButton from "@/components/ReportButton";
-import NewsContent from "./NewsContent";
-import { ObjectId } from "mongodb";
-import { resolveCardMentions } from "@/lib/game-content-cards";
+import NewsArticleView, { buildNewsMetadata } from "./NewsArticleView";
 
 type Props = { params: Promise<{ newsId: string }> };
 
+/**
+ * L'actualité dans la langue de l'interface du lecteur, ou à défaut dans sa
+ * version originale. Les autres langues ont leur propre adresse,
+ * `/news/:newsId/:lang`.
+ */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { newsId } = await params;
-  const news = await getNewsById(newsId);
-  if (!news) return { title: "Actualité introuvable" };
-  return {
-    title: news.title,
-    description: news.summary,
-    openGraph: {
-      title: news.title,
-      description: news.summary,
-    },
-  };
+  return buildNewsMetadata(newsId);
 }
 
 export default async function NewsDetailPage({ params }: Props) {
   const { newsId } = await params;
-
-  const [session, news, canWrite] = await Promise.all([
-    auth.api.getSession({ headers: await headers() }),
-    getNewsById(newsId),
-    hasPermission("news:update").catch(() => false),
-  ]);
-
-  if (!news) {
-    notFound();
-  }
-
-  // Keyword styling applies regardless of which game a news post is about,
-  // but resolving `[Card Name]` mentions needs a single unambiguous game —
-  // skip it for global/multi-game news rather than guessing.
-  const singleGame = news.games?.length === 1 ? news.games[0] : undefined;
-  const {cardIdByName, cardsById} = singleGame
-    ? await resolveCardMentions(new ObjectId(singleGame.id), [news.content])
-    : {cardIdByName: {}, cardsById: {}};
-  const gameSlug = singleGame?.slug ?? "riftbound";
-
-  const date = DateTime.fromJSDate(new Date(news.createdAt))
-    .setLocale("fr")
-    .toLocaleString(DateTime.DATE_FULL);
-
-  const authorName =
-    news.author?.displayName && news.author?.discriminator
-      ? `${news.author.displayName}#${news.author.discriminator}`
-      : "Auteur inconnu";
-
-  return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      {/* Navigation */}
-      <div className="flex items-center justify-between mb-6">
-        <Button asChild variant="ghost" size="sm">
-          <Link href="/news">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Retour aux actualités
-          </Link>
-        </Button>
-        {canWrite && (
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/news/${newsId}/edit`}>
-              <Pencil className="h-4 w-4 mr-2" />
-              Modifier
-            </Link>
-          </Button>
-        )}
-      </div>
-
-      {/* En-tête */}
-      <article className="space-y-6">
-        {/* Bannière */}
-        {news.banner && (
-          <div className="relative w-full rounded-xl overflow-hidden aspect-[3/1] max-h-64">
-            <Image
-              src={news.banner}
-              alt={`Bannière : ${news.title}`}
-              fill
-              className="object-cover"
-              unoptimized
-              priority
-            />
-          </div>
-        )}
-
-        <header className="space-y-4">
-          <h1 className="text-4xl font-bold tracking-tight">{news.title}</h1>
-
-          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <span>{date}</span>
-            <span>·</span>
-            <span>Par {authorName}</span>
-          </div>
-
-          {/* Résumé */}
-          <p className="text-lg text-muted-foreground border-l-4 border-primary pl-4">
-            {news.summary}
-          </p>
-
-          {/*
-            Une actualité reprise d'ailleurs dit d'où elle vient, et y renvoie.
-            Annoncé avant le corps plutôt qu'en note de bas de page : le
-            lecteur doit savoir qui parle avant de lire, pas après.
-          */}
-          {news.source && (
-            <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-sm">
-              <span className="text-muted-foreground">Article publié à l&apos;origine sur</span>
-              <a
-                href={news.source.url}
-                target="_blank"
-                rel="noopener noreferrer nofollow"
-                className="inline-flex items-center gap-1 font-medium text-blue-600 hover:underline"
-              >
-                {news.source.name}
-                <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-          )}
-
-          {/* Jeux et tags */}
-          {(news.games?.length || news.tags.length > 0) && (
-            <div className="flex flex-wrap gap-2">
-              {news.games?.map((g) => (
-                <Badge key={g.id} variant="secondary" className="gap-1">
-                  <Gamepad2 className="h-3 w-3" />
-                  {g.name}
-                </Badge>
-              ))}
-              {news.tags.map((t) => (
-                <Badge key={t} variant="outline" className="gap-1">
-                  <Tag className="h-3 w-3" />
-                  {t}
-                </Badge>
-              ))}
-            </div>
-          )}
-        </header>
-
-        {/* Contenu markdown */}
-        <NewsContent
-          content={news.content}
-          cardIdByName={cardIdByName}
-          cardsById={cardsById}
-          gameSlug={gameSlug}
-        />
-
-        {/* Like */}
-        <footer className="pt-6 border-t flex items-center justify-between">
-          <LikeButton
-            newsId={news.id}
-            initialLiked={news.userHasLiked ?? false}
-            initialCount={news.likesCount}
-            isLoggedIn={!!session?.user}
-          />
-          <ReportButton contentType="news" contentId={news.id} withLabel />
-        </footer>
-      </article>
-    </div>
-  );
+  return <NewsArticleView newsId={newsId} />;
 }
