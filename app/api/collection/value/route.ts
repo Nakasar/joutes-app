@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { getOwnedCardGameIds } from "@/lib/db/collection";
-import { computeCollectionValues } from "@/lib/db/collection-values";
+import { computeCollectionValues, gameIdsToRevalue } from "@/lib/db/collection-values";
 import { totalCollectionValue } from "@/lib/collection/value";
 
 /**
@@ -25,7 +25,7 @@ export async function POST() {
   const owner = { type: "user", id: session.user.id } as const;
 
   try {
-    const gameIds = await getOwnedCardGameIds(owner);
+    const gameIds = await gameIdsToRevalue(owner, await getOwnedCardGameIds(owner));
     const values = await computeCollectionValues(owner, gameIds);
 
     return NextResponse.json({

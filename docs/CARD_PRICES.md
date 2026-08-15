@@ -283,6 +283,12 @@ retire des cartes —, donc n'importe quel membre peut en redemander la valeur.
 Les jeux désactivés pour le groupe sont écartés du recalcul global : l'écran ne
 les montre pas, les estimer écrirait une valeur que personne ne verrait.
 
+Un recalcul global reprend les jeux dont une carte est possédée **et ceux qui
+portent déjà une valeur** : sans ce second groupe, un jeu vidé de ses cartes
+garderait la sienne pour toujours — plus rien ne le possède, donc plus rien ne
+le réestime — et le total continuerait de compter une collection qui n'existe
+plus.
+
 **Le total, lui, n'est pas stocké** : il se déduit des valeurs par jeu
 (`totalCollectionValue`). Deux nombres écrits séparément finissent par se
 contredire — un jeu recalculé seul laisserait un total périmé qui, lui, ne

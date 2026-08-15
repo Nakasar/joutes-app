@@ -102,6 +102,33 @@ export async function getCollectionValues(
   return new Map(docs.map((doc) => [doc.gameId.toString(), toCollectionValue(doc)]));
 }
 
+/**
+ * Jeux à réestimer lors d'un recalcul global : ceux dont une carte est
+ * possédée, **plus ceux qui portent déjà une valeur**.
+ *
+ * Sans ce second groupe, un jeu vidé de ses cartes garderait sa dernière
+ * valeur pour toujours : il ne possède plus rien, donc plus rien ne le
+ * réestime, et le total continuerait d'inclure une collection qui n'existe
+ * plus. Réestimé, il tombe à zéro comme il se doit.
+ */
+export async function gameIdsToRevalue(
+  owner: CollectionOwner,
+  ownedGameIds: ObjectId[]
+): Promise<ObjectId[]> {
+  const valued = await collection()
+    .find(ownerMatch(owner), { projection: { _id: 0, gameId: 1 } })
+    .toArray();
+
+  // Deux `ObjectId` égaux sont deux objets distincts : la clé de
+  // dédoublonnage est leur écriture.
+  const byKey = new Map<string, ObjectId>();
+  for (const gameId of [...ownedGameIds, ...valued.map((doc) => doc.gameId)]) {
+    byKey.set(gameId.toString(), gameId);
+  }
+
+  return [...byKey.values()];
+}
+
 /** Exemplaires possédés d'un jeu, regroupés par carte du catalogue. */
 async function getOwnedCopiesByCard(
   owner: CollectionOwner,

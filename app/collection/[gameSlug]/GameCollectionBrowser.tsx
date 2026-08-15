@@ -57,8 +57,9 @@ type Props = {
   /** Set when browsing a play-group's shared collection — enables username autocompletion when marking a card borrowed. */
   playGroupId?: string;
   /**
-   * Route de recalcul de la valeur du jeu (POST). Absente — collection d'un
-   * groupe de jeu —, la valeur reste en lecture seule.
+   * Route de recalcul de la valeur du jeu (POST). La collection personnelle
+   * comme celle d'un groupe de jeu en ont une ; absente, la valeur s'affiche
+   * sans bouton, en lecture seule.
    */
   valuePath?: string;
   /**

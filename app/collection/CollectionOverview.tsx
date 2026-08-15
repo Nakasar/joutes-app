@@ -198,8 +198,9 @@ type CollectionOverviewProps = {
   /** API prefix for reads. Override to view a play-group's shared collection instead of the current user's. */
   apiBasePath?: string;
   /**
-   * Route de recalcul de la valeur (POST). Absente — collection d'un groupe de
-   * jeu —, la valeur reste en lecture seule.
+   * Route de recalcul de la valeur (POST). La collection personnelle comme
+   * celle d'un groupe de jeu en ont une ; absente, la valeur s'affiche sans
+   * bouton, en lecture seule.
    */
   valuePath?: string;
   title?: string;
@@ -249,18 +250,24 @@ export default function CollectionOverview({
   /**
    * Le recalcul renvoie les valeurs par jeu et leur total : elles remplacent
    * celles de la vue sans recharger tout le reste, qui n'a pas bougé.
+   *
+   * Elles les remplacent **toutes**, y compris par une absence : un jeu que le
+   * recalcul ne renvoie pas n'a plus de valeur, et laisser la précédente à
+   * l'écran ferait passer un chiffre périmé pour celui qu'on vient de
+   * demander. Même chose pour le total, nul quand il n'y a plus rien à
+   * estimer.
    */
   const applyValues = useCallback((payload: unknown) => {
     const { values, value } = (payload ?? {}) as {
       values?: Record<string, CollectionValue>;
-      value?: CollectionValue & { games: number };
+      value?: (CollectionValue & { games: number }) | null;
     };
     if (!values) return;
 
     setOverview((previous) => ({
       ...previous,
-      games: previous.games.map((game) => (values[game.gameId] ? { ...game, value: values[game.gameId] } : game)),
-      ...(value ? { value } : {}),
+      games: previous.games.map((game) => ({ ...game, value: values[game.gameId] })),
+      value: value ?? undefined,
     }));
   }, []);
 
