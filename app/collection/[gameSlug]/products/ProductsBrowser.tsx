@@ -380,7 +380,7 @@ export default function ProductsBrowser({
           )}
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-3 text-sm">
+            <div className="flex flex-wrap items-center justify-center gap-3 text-sm">
               <Button
                 variant="outline"
                 size="sm"

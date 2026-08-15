@@ -133,7 +133,12 @@ export async function getGameProductFacets(gameId: ObjectId): Promise<ProductFac
         $group: {
           _id: "$fields.k",
           types: { $addToSet: { $type: "$fields.v" } },
-          values: { $addToSet: "$fields.v" },
+          // Seules les chaînes peuplent une liste de valeurs : relever aussi les
+          // nombres ferait grossir l'accumulateur d'un attribut numérique de
+          // toutes ses valeurs distinctes, dont on ne lit que les bornes.
+          values: {
+            $addToSet: { $cond: [{ $eq: [{ $type: "$fields.v" }, "string"] }, "$fields.v", "$$REMOVE"] },
+          },
           min: { $min: "$fields.v" },
           max: { $max: "$fields.v" },
           count: { $sum: 1 },
