@@ -1443,10 +1443,20 @@
           "units": "Figurines",
           "unitsHint": "hors boîtes",
           "paint": "Peinture",
-          "paintHint": "figurines peintes"
+          "paintHint": "figurines peintes",
+          "title": "Complétion",
+          "scopedTo": "Comptée sur l'édition {edition}",
+          "allEditions": "Comptée sur tout le catalogue, éditions confondues"
         },
         "filters": {
-          "searchPlaceholder": "Rechercher un produit…",
+          "searchPlaceholder": "Rechercher — nom, ou attribut:valeur",
+          "title": "Filtres",
+          "reset": "Tout réinitialiser",
+          "set": "Gamme",
+          "edition": "Édition",
+          "kind": "Type",
+          "shapeTitle": "Forme",
+          "ownershipTitle": "Possession",
           "allSets": "Toutes les gammes",
           "allKinds": "Tous les types",
           "allEditions": "Toutes les éditions",

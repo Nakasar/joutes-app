@@ -14,8 +14,18 @@ import type { ProductKindKey } from "@/lib/constants/product-kinds";
 import type { CollectionProductDb, CollectionProductEntry, ProductContent } from "@/lib/types/product";
 import type { CollectionCurrency } from "@/lib/schemas/collection.schema";
 import { productSearchFilter } from "@/lib/collection/search";
-import { getGameProductEditions, getGameProductSetCodes } from "@/lib/db/products";
-import { PRODUCT_EDITION_FIELD, editionFilter, editionOf } from "@/lib/constants/product-editions";
+import { getGameProductEditions, getGameProductFacets, getGameProductSetCodes } from "@/lib/db/products";
+import {
+  CURRENT_EDITION_SCOPE,
+  PRODUCT_EDITION_FIELD,
+  editionFilter,
+  editionInScope,
+  editionOf,
+  scopeOfEdition,
+  type EditionScope,
+} from "@/lib/constants/product-editions";
+import type { CardSearchCriteria } from "@/lib/cards/search-filters";
+import { parseProductQuery, productFacetMatch, type ProductFacet } from "@/lib/products/search";
 import { removeSellListItemsByCollectionEntryIds } from "@/lib/db/sell-lists";
 
 /**
@@ -49,6 +59,12 @@ export type ProductCollectionStats = {
   icon?: string;
   color?: string;
   type: string;
+  /**
+   * Édition sur laquelle portent ces nombres. Absente = tout le catalogue.
+   * L'écran l'affiche : une complétion qui ne compte qu'une partie du catalogue
+   * doit dire laquelle.
+   */
+  edition?: string;
   /** Exemplaires possédés, tous produits confondus. */
   copies: number;
   productsOwned: number;
@@ -86,6 +102,9 @@ export type ProductCollectionResult = {
   setCodes: string[];
   /** Éditions du catalogue, pour peupler le filtre. Vide = ce jeu n'en a pas. */
   editions: string[];
+  /** Attributs filtrables du jeu, pour la colonne de gauche et la syntaxe de la saisie. */
+  facets: ProductFacet[];
+  /** Absentes pour un catalogue consulté sans compte : il n'y a rien à compléter. */
   stats: ProductCollectionStats | null;
 };
 
@@ -127,14 +146,49 @@ export async function getProductCopies(owner: CollectionOwner, gameId: ObjectId)
 /**
  * Statistiques de complétion par jeu. Contrairement à `getGamesStats`, aucun
  * `$lookup` : le `gameId` est porté par l'exemplaire.
+ *
+ * **Les nombres ne portent que sur une édition** — celle en cours du jeu, sauf
+ * demande contraire. Une gamme qui change d'édition ne se collectionne pas en
+ * repartant de zéro : compter la première édition avec la seconde ferait tomber
+ * la complétion d'un joueur à jour sans qu'il ait rien perdu, et le catalogue
+ * d'un jeu qui en compte trois ne serait plus complétable par personne. Un
+ * écran qui veut le catalogue entier le demande, avec le périmètre `all`.
  */
 export async function getProductGamesStats(
   owner: CollectionOwner,
-  gameIds: ObjectId[]
+  gameIds: ObjectId[],
+  { scope = CURRENT_EDITION_SCOPE }: { scope?: EditionScope } = {}
 ): Promise<ProductCollectionStats[]> {
   if (gameIds.length === 0) {
     return [];
   }
+
+  // --- Métadonnées de jeu ---
+  // Lues d'abord : l'édition en cours de chaque jeu décide de ce que le
+  // catalogue compte, elle ne peut pas arriver après lui.
+  const gameDocs = await db
+    .collection("games")
+    .find(
+      { _id: { $in: gameIds } },
+      { projection: { name: 1, slug: 1, icon: 1, color: 1, type: 1, images: 1, currentProductEdition: 1 } }
+    )
+    .toArray();
+
+  const gameMeta = new Map(
+    gameDocs.map((doc) => [
+      doc._id.toString(),
+      {
+        name: doc.name as string,
+        slug: doc.slug as string | undefined,
+        icon: (doc.icon ?? doc.images?.icon) as string | undefined,
+        color: doc.color as string | undefined,
+        type: (doc.type as string) ?? "Other",
+        edition: editionInScope(scope, doc.currentProductEdition as string | undefined),
+      },
+    ])
+  );
+
+  const editionOfGame = (gameId: ObjectId) => gameMeta.get(gameId.toString())?.edition;
 
   // --- Le catalogue : les dénominateurs ---
   const catalog = await db
@@ -146,7 +200,9 @@ export async function getProductGamesStats(
       ids: string[];
       unitIds: string[];
     }>([
-      { $match: { gameId: { $in: gameIds } } },
+      // Un filtre par jeu plutôt qu'un `$in` global : chaque jeu a son édition
+      // en cours, et la vue d'ensemble les compte tous d'une seule requête.
+      { $match: { $or: gameIds.map((gameId) => ({ gameId, ...editionFilter(editionOfGame(gameId)) })) } },
       {
         $addFields: {
           isUnit: { $eq: [{ $size: { $ifNull: ["$contents", []] } }, 0] },
@@ -196,28 +252,6 @@ export async function getProductGamesStats(
     byProduct.set(row._id.productId, { copies: row.copies, paintedCopies: row.paintedCopies });
     ownedByGame.set(gid, byProduct);
   }
-
-  // --- Métadonnées de jeu ---
-  const gameDocs = await db
-    .collection("games")
-    .find(
-      { _id: { $in: gameIds } },
-      { projection: { name: 1, slug: 1, icon: 1, color: 1, type: 1, images: 1 } }
-    )
-    .toArray();
-
-  const gameMeta = new Map(
-    gameDocs.map((doc) => [
-      doc._id.toString(),
-      {
-        name: doc.name as string,
-        slug: doc.slug as string | undefined,
-        icon: (doc.icon ?? doc.images?.icon) as string | undefined,
-        color: doc.color as string | undefined,
-        type: (doc.type as string) ?? "Other",
-      },
-    ])
-  );
 
   const catalogByGame = new Map<string, typeof catalog>();
   for (const row of catalog) {
@@ -278,6 +312,7 @@ export async function getProductGamesStats(
       icon: meta?.icon,
       color: meta?.color,
       type: meta?.type ?? "Other",
+      ...(meta?.edition ? { edition: meta.edition } : {}),
       copies,
       productsOwned,
       productsTotal,
@@ -312,18 +347,26 @@ export async function getProductCollection({
   kind,
   edition,
   search,
+  criteria,
+  facets,
   owned,
   containers,
   page = 1,
   limit = 48,
 }: {
-  owner: CollectionOwner;
+  /** `null` pour le catalogue public : il n'y a alors ni possession ni statistiques. */
+  owner: CollectionOwner | null;
   gameId: string;
   setCode?: string;
   kind?: string;
   /** Édition à montrer, déjà résolue par l'appelant (`resolveEdition`). */
   edition?: string;
+  /** Saisie complète, tokens compris (`faction:Rebelles points<=8 commando`). */
   search?: string;
+  /** Filtres d'attributs de la barre latérale ; ceux de la saisie s'y ajoutent. */
+  criteria?: CardSearchCriteria;
+  /** Facettes déjà relevées par l'appelant, qui en a eu besoin pour lire ses paramètres. */
+  facets?: ProductFacet[];
   /** true = possédés seulement, false = non possédés seulement, undefined = tous */
   owned?: boolean;
   /** true = conteneurs seulement, false = figurines seulement, undefined = tous */
@@ -333,18 +376,31 @@ export async function getProductCollection({
 }): Promise<ProductCollectionResult> {
   const gameObjId = new ObjectId(gameId);
 
-  const [copies, setCodes, editionCensus, stats] = await Promise.all([
-    getProductCopies(owner, gameObjId),
+  const [copies, setCodes, editionCensus, gameFacets, stats] = await Promise.all([
+    owner ? getProductCopies(owner, gameObjId) : Promise.resolve({} as ProductCopies),
     getGameProductSetCodes(gameObjId),
     getGameProductEditions(gameObjId),
-    getProductGamesStats(owner, [gameObjId]).then((rows) => rows[0] ?? null),
+    facets ? Promise.resolve(facets) : getGameProductFacets(gameObjId),
+    // Les statistiques suivent l'édition affichée : les barres de complétion et
+    // la grille qu'elles surplombent doivent compter la même chose.
+    owner
+      ? getProductGamesStats(owner, [gameObjId], { scope: scopeOfEdition(edition) }).then((rows) => rows[0] ?? null)
+      : Promise.resolve(null),
   ]);
 
-  const match: Record<string, unknown> = { gameId: gameObjId, ...editionFilter(edition) };
-  if (setCode && setCode !== "all") match.setCode = setCode;
-  if (kind && kind !== "all") match.kind = kind;
+  // La saisie peut porter des tokens : ils sont lus ici, et non côté navigateur,
+  // pour qu'un rendu serveur et un appel d'agent filtrent comme l'écran.
+  const query = parseProductQuery({ search, setCode, kind, criteria, facets: gameFacets, setCodes });
 
-  const searchFilter = productSearchFilter(search);
+  const match: Record<string, unknown> = {
+    gameId: gameObjId,
+    ...editionFilter(edition),
+    ...productFacetMatch(query.criteria, gameFacets),
+  };
+  if (query.setCode && query.setCode !== "all") match.setCode = query.setCode;
+  if (query.kind && query.kind !== "all") match.kind = query.kind;
+
+  const searchFilter = productSearchFilter(query.search);
   if (searchFilter) Object.assign(match, searchFilter);
 
   if (containers === true) {
@@ -353,7 +409,7 @@ export async function getProductCollection({
     match.$nor = [{ contents: { $exists: true, $not: { $size: 0 } } }];
   }
 
-  if (owned !== undefined) {
+  if (owner && owned !== undefined) {
     const ownedIds = Object.entries(copies)
       .filter(([, count]) => count > 0)
       .map(([id]) => id);
@@ -399,6 +455,7 @@ export async function getProductCollection({
     totalPages,
     setCodes,
     editions: editionCensus.editions.map((row) => row.edition),
+    facets: gameFacets,
     stats,
   };
 }

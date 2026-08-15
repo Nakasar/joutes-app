@@ -168,6 +168,29 @@ Pour la même raison, **`CollectionOverview.totalCopies` garde son sens** — le
 exemplaires de cartes. Les produits ont leurs propres champs
 (`productGames`, `totalProductCopies`, `productsOwned`, `productsTotal`).
 
+**Les trois axes ne comptent qu'une édition à la fois** — celle en cours du jeu,
+sauf demande contraire. Une gamme qui change d'édition ne se collectionne pas en
+repartant de zéro : compter la première avec la seconde ferait tomber la
+complétion d'un joueur à jour sans qu'il ait rien perdu, et le catalogue d'un jeu
+qui en compte trois ne serait plus complétable par personne.
+
+Le périmètre est un paramètre de `getProductGamesStats`, pas une chaîne :
+
+| Périmètre | Ce qui est compté | Qui le demande |
+| --- | --- | --- |
+| `current` (défaut) | l'édition en cours de **chaque** jeu | la vue d'ensemble, qui calcule pour tous les jeux d'un coup |
+| `edition` | une édition nommée | l'écran de collection, qui suit son sélecteur |
+| `all` | tout le catalogue | le même écran, sur « toutes les éditions » |
+
+Ce troisième cas est ce qui interdisait de se contenter d'une édition résolue :
+la vue d'ensemble n'a pas d'écran où choisir, et chaque jeu y a la sienne. Le
+relevé se fait donc en une requête, avec un `$or` par jeu plutôt qu'un `$in`.
+
+Les statistiques rendues portent l'édition qu'elles couvrent
+(`ProductCollectionStats.edition`, absente pour « toutes ») : une complétion qui
+ne compte qu'une partie du catalogue doit dire laquelle, sur le site comme dans
+l'application mobile.
+
 ## À l'écran
 
 Trois états se lisent sur une tuile, et ils ne disent pas la même chose :
@@ -190,6 +213,48 @@ Le choix « j'ai la boîte » ou « j'ai juste cette figurine » ne pose jamais 
 question : il se joue à l'endroit du clic. Ajouter depuis l'en-tête ajoute le
 produit, avec la case « ajouter aussi le contenu » cochée d'avance et chiffrée ;
 ajouter depuis une ligne du contenu n'ajoute que cette figurine.
+
+## Chercher et filtrer
+
+Le catalogue se parcourt **comme la galerie de cartes** : une colonne de filtres
+à demeure sur la gauche, et une barre de recherche qui accepte la même syntaxe
+(`faction:Rebelles points<=8 commando`). Ce n'est pas une ressemblance de façade
+— c'est le même code : `CardSearchInput`, `CardFacetFilters` et
+`parseSearchSyntax` servent les deux écrans. Deux choses seulement diffèrent, et
+elles tiennent dans `lib/products/search.ts` :
+
+| | Cartes | Produits |
+| --- | --- | --- |
+| Vocabulaire commun | `set`, `type`, `lang` | `set`, `kind` |
+| Traduction des critères | expression Meilisearch | filtre Mongo sur `attributes.<clé>` |
+
+**Les facettes sont relevées, jamais déclarées.** `getGameProductFacets` compte
+les attributs que les produits d'un jeu portent vraiment : plage min–max pour
+ceux qui sont numériques, liste de valeurs pour les autres. Aucun jeu n'est
+nommé dans le code — Legion obtient `faction` et `points` parce que son
+catalogue les porte.
+
+Trois familles restent dehors, faute d'un contrôle qui les servirait :
+l'**édition**, qui a son propre sélecteur et décide en plus du périmètre des
+statistiques ; les **booléens**, qu'une pastille à cocher rendrait ambigus ; les
+attributs à plus de quarante valeurs distinctes ou à une seule — un filtre qui ne
+retire jamais rien n'en est pas un.
+
+**Rien n'est construit à partir de ce que l'appelant envoie.** Une clé qui n'est
+pas une facette du jeu et une valeur que la facette ne déclare pas sont écartées,
+par `parseCardSearchCriteria` puis à nouveau par `productFacetMatch` : les
+critères d'un agent ne décident pas de ce sur quoi on interroge la base.
+
+**La saisie est relue côté serveur**, comme pour les cartes : un rendu serveur et
+un appel d'API filtrent donc comme l'écran, sans que le navigateur ait à traduire
+quoi que ce soit. Un token l'emporte sur la liste déroulante correspondante —
+`set:LEG` filtre la gamme même si la liste dit « toutes » —, tandis que les
+critères d'attributs de la colonne et de la saisie se cumulent.
+
+**Les deux routes de catalogue lisent la même fonction.** `getProductCollection`
+prend un propriétaire `null` pour le catalogue public : il n'y a alors ni
+possession ni statistiques, mais filtres, éditions et syntaxe se comportent à
+l'identique — une correction sur l'un profite à l'autre.
 
 ## Activer un jeu
 
@@ -285,4 +350,10 @@ sera qu'un ajout de routes.
 
 La recherche de produits est un motif Mongo insensible aux accents
 (`productSearchFilter`), sans index Meilisearch — `lib/meilisearch.ts` est une
-table de slugs en dur, réservée aux cartes.
+table de slugs en dur, réservée aux cartes. Le texte libre ne cherche donc que le
+nom et l'identifiant : les filtres d'attributs, eux, sont des conditions Mongo et
+n'en dépendent pas.
+
+Les critères de filtre ne sont pas repris dans l'URL comme ceux de la galerie de
+cartes : un catalogue de produits se partage encore par son adresse de jeu, pas
+par sa recherche.

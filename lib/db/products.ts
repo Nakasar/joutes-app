@@ -6,7 +6,8 @@ import type { CardAttributeFieldType } from "@/lib/db/cards";
 import type { ProductKindKey } from "@/lib/constants/product-kinds";
 import type { Product, ProductAttributeValue, ProductContent, ProductDb } from "@/lib/types/product";
 import { normalizeContents, type ReferencedProduct } from "@/lib/products/contents";
-import { PRODUCT_EDITION_FIELD } from "@/lib/constants/product-editions";
+import type { ProductFacet } from "@/lib/products/search";
+import { PRODUCT_EDITION_ATTRIBUTE, PRODUCT_EDITION_FIELD } from "@/lib/constants/product-editions";
 
 const COLLECTION = "products";
 
@@ -82,6 +83,93 @@ export async function getGameProductAttributeFields(
       // l'autocomplétion n'aiderait pas.
       suggestions: suggestions.length > 0 && suggestions.length <= 40 ? suggestions : undefined,
     }];
+  });
+}
+
+/**
+ * Au-delà, une liste de valeurs n'est plus un filtre mais un annuaire : la
+ * colonne de gauche deviendrait illisible, et l'attribut est de toute façon
+ * cherché à la main dans la barre de recherche.
+ */
+const MAX_FACET_VALUES = 40;
+
+/**
+ * Facettes de filtrage d'un catalogue de produits : plages pour les attributs
+ * numériques (points, socle…), listes de valeurs pour les autres (faction,
+ * unité…).
+ *
+ * Même principe que pour les cartes — rien n'est déclaré par jeu, tout est
+ * relevé sur les produits — mais la source diffère : les cartes lisent les
+ * facettes de leur index Meilisearch, le catalogue de produits n'en a pas et
+ * les compte donc en base.
+ *
+ * Trois familles restent dehors, faute d'un contrôle qui les servirait :
+ *
+ *  - l'**édition**, qui a son propre sélecteur, et qui décide en plus du
+ *    périmètre des statistiques ;
+ *  - les **booléens**, qu'une pastille à cocher rendrait ambigus (« non coché »
+ *    voudrait dire « faux » ou « peu importe » ?) ;
+ *  - les attributs à trop de valeurs distinctes, et ceux qui n'en ont qu'une :
+ *    un filtre qui ne retire jamais rien n'est pas un filtre.
+ */
+export async function getGameProductFacets(gameId: ObjectId): Promise<ProductFacet[]> {
+  const rows = await db
+    .collection(COLLECTION)
+    .aggregate<{
+      _id: string;
+      types: string[];
+      values: unknown[];
+      min: unknown;
+      max: unknown;
+      count: number;
+    }>([
+      { $match: { gameId } },
+      { $project: { fields: { $objectToArray: { $ifNull: ["$attributes", {}] } } } },
+      { $unwind: "$fields" },
+      // Un attribut à valeurs multiples est relevé valeur par valeur : une liste
+      // de factions doit peupler le filtre, pas y entrer comme un bloc.
+      { $unwind: { path: "$fields.v", preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: "$fields.k",
+          types: { $addToSet: { $type: "$fields.v" } },
+          values: { $addToSet: "$fields.v" },
+          min: { $min: "$fields.v" },
+          max: { $max: "$fields.v" },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { count: -1, _id: 1 } },
+    ])
+    .toArray();
+
+  return rows.flatMap((row): ProductFacet[] => {
+    if (row._id === PRODUCT_EDITION_ATTRIBUTE) {
+      return [];
+    }
+
+    const types = row.types.filter((type) => type !== "null" && type !== "missing");
+    if (types.length === 0) {
+      return [];
+    }
+
+    if (types.every((type) => ["int", "long", "double", "decimal"].includes(type))) {
+      const min = Number(row.min);
+      const max = Number(row.max);
+      // Une plage sans étendue ne filtre rien : tous les produits portent la
+      // même valeur, et les deux bornes du formulaire seraient identiques.
+      return Number.isFinite(min) && Number.isFinite(max) && min < max
+        ? [{ key: row._id, type: "number", min, max }]
+        : [];
+    }
+
+    const values = [
+      ...new Set(row.values.filter((value): value is string => typeof value === "string" && value.length > 0)),
+    ].sort((a, b) => a.localeCompare(b));
+
+    return values.length > 1 && values.length <= MAX_FACET_VALUES
+      ? [{ key: row._id, type: "value", values }]
+      : [];
   });
 }
 

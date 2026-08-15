@@ -1442,10 +1442,20 @@
           "units": "Miniatures",
           "unitsHint": "boxes excluded",
           "paint": "Painting",
-          "paintHint": "miniatures painted"
+          "paintHint": "miniatures painted",
+          "title": "Completion",
+          "scopedTo": "Counted on the {edition} edition",
+          "allEditions": "Counted on the whole catalogue, all editions"
         },
         "filters": {
-          "searchPlaceholder": "Search for a product…",
+          "searchPlaceholder": "Search — name, or attribute:value",
+          "title": "Filters",
+          "reset": "Reset everything",
+          "set": "Range",
+          "edition": "Edition",
+          "kind": "Type",
+          "shapeTitle": "Shape",
+          "ownershipTitle": "Ownership",
           "allSets": "All ranges",
           "allKinds": "All types",
           "allEditions": "All editions",

@@ -1384,10 +1384,20 @@
           "units": "Miniature",
           "unitsHint": "scatole escluse",
           "paint": "Pittura",
-          "paintHint": "miniature dipinte"
+          "paintHint": "miniature dipinte",
+          "title": "Completamento",
+          "scopedTo": "Calcolato sull'edizione {edition}",
+          "allEditions": "Calcolato su tutto il catalogo, tutte le edizioni"
         },
         "filters": {
-          "searchPlaceholder": "Cerca un prodotto…",
+          "searchPlaceholder": "Cerca — nome o attributo:valore",
+          "title": "Filtri",
+          "reset": "Reimposta tutto",
+          "set": "Gamma",
+          "edition": "Edizione",
+          "kind": "Tipo",
+          "shapeTitle": "Forma",
+          "ownershipTitle": "Possesso",
           "allSets": "Tutte le gamme",
           "allKinds": "Tutti i tipi",
           "allEditions": "Tutte le edizioni",

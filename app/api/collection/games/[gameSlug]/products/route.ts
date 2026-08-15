@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ObjectId } from "mongodb";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { getGameBySlugOrId } from "@/lib/db/games";
+import { getGameProductFacets } from "@/lib/db/products";
 import { getProductCollection } from "@/lib/db/products-collection";
+import { parseCardSearchCriteria } from "@/lib/cards/search-filters";
 import { resolveEdition } from "@/lib/constants/product-editions";
 
 /**
@@ -44,6 +47,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const containers = containersParam === "true" ? true : containersParam === "false" ? false : undefined;
 
   try {
+    // Les facettes du jeu sont relevées avant de lire les critères : elles
+    // disent quelles clés et quelles valeurs existent, et tout ce qui n'en fait
+    // pas partie est écarté de la requête.
+    const facets = await getGameProductFacets(new ObjectId(game.id));
+    const criteria = parseCardSearchCriteria(searchParams, facets);
+
     const result = await getProductCollection({
       owner: { type: "user", id: session.user.id },
       gameId: game.id,
@@ -51,6 +60,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       kind,
       edition,
       search,
+      criteria,
+      facets,
       owned,
       containers,
       page,
