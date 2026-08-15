@@ -95,18 +95,30 @@ export function buildSearchFields(
   facets: CardFilterFacet[],
   { setCodes = [], types = [], languages = [] }: { setCodes?: string[]; types?: string[]; languages?: string[] } = {}
 ): SearchField[] {
-  const fields: SearchField[] = [
-    ...facets.map((facet): SearchField =>
-      facet.type === "number"
-        ? { key: facet.key, kind: "number", min: facet.min, max: facet.max }
-        : { key: facet.key, kind: "value", values: facet.values }
-    ),
+  return withFieldAliases([
+    ...facetFields(facets),
     ...CORE_FIELDS.map((core): SearchField => ({
       ...core,
       values: core.kind === "set" ? setCodes : core.kind === "type" ? types : languages,
     })),
-  ];
+  ]);
+}
 
+/** Les facettes d'un jeu, dans le vocabulaire de la saisie. */
+export function facetFields(facets: CardFilterFacet[]): SearchField[] {
+  return facets.map((facet): SearchField =>
+    facet.type === "number"
+      ? { key: facet.key, kind: "number", min: facet.min, max: facet.max }
+      : { key: facet.key, kind: "value", values: facet.values }
+  );
+}
+
+/**
+ * Attribue les raccourcis d'une lettre. Séparé de `buildSearchFields` parce que
+ * le catalogue de produits compose sa propre liste de champs — `set`, `kind` —
+ * et doit les distribuer selon la même règle.
+ */
+export function withFieldAliases(fields: SearchField[]): SearchField[] {
   const firstLetters = new Map<string, number>();
   for (const field of fields) {
     const letter = field.key[0]?.toLowerCase();

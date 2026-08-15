@@ -599,7 +599,10 @@ paths:
         - { name: setCode, in: query, description: "Range / wave.", schema: { type: string } }
         - { name: kind, in: query, schema: { type: string, enum: [box, unit, starter, bundle, accessory, book, other] } }
         - { name: edition, in: query, description: "Game edition. Defaults to the game's current edition when it has one; `all` lifts the restriction. Products without an edition attribute match no edition.", schema: { type: string } }
-        - { name: search, in: query, schema: { type: string } }
+        - { name: search, in: query, schema: { type: string }, description: "Free text, plus the card-gallery token syntax carried over to products: `faction:Rebelles points<=8 commando`. Fields are the game's own facets, plus `set` and `kind`; a token wins over the matching parameter." }
+        - { name: "min_{attribute}", in: query, description: "Lower bound of a numeric facet, e.g. `min_points=8`. Keys the game does not carry are ignored.", schema: { type: number } }
+        - { name: "max_{attribute}", in: query, description: "Upper bound of a numeric facet, e.g. `max_points=12`.", schema: { type: number } }
+        - { name: "in_{attribute}", in: query, description: "Comma-separated values of a value facet, e.g. `in_faction=Empire,Rebelles`. Values the facet does not declare are ignored.", schema: { type: string } }
         - { name: owned, in: query, description: "Omit for everything.", schema: { type: string, enum: ["true", "false"] } }
         - { name: containers, in: query, description: "`true` for products with contents, `false` for leaves.", schema: { type: string, enum: ["true", "false"] } }
       responses:
@@ -2375,7 +2378,11 @@ paths:
         - { name: setCode, in: query, schema: { type: string } }
         - { name: kind, in: query, schema: { type: string, enum: [box, unit, starter, bundle, accessory, book, other] } }
         - { name: edition, in: query, description: "Game edition. Defaults to the game's current edition when it has one; `all` lifts the restriction. Products without an edition attribute match no edition.", schema: { type: string } }
-        - { name: search, in: query, schema: { type: string } }
+        - { name: search, in: query, schema: { type: string }, description: "Free text, plus the card-gallery token syntax carried over to products: `faction:Rebelles points<=8 commando`. Fields are the game's own facets, plus `set` and `kind`; a token wins over the matching parameter." }
+        - { name: "min_{attribute}", in: query, description: "Lower bound of a numeric facet, e.g. `min_points=8`. Keys the game does not carry are ignored.", schema: { type: number } }
+        - { name: "max_{attribute}", in: query, description: "Upper bound of a numeric facet, e.g. `max_points=12`.", schema: { type: number } }
+        - { name: "in_{attribute}", in: query, description: "Comma-separated values of a value facet, e.g. `in_faction=Empire,Rebelles`. Values the facet does not declare are ignored.", schema: { type: string } }
+        - { name: containers, in: query, description: "`true` for products with contents, `false` for leaves.", schema: { type: string, enum: ["true", "false"] } }
       responses:
         "200":
           description: Product catalogue.
@@ -2402,6 +2409,8 @@ paths:
                   totalPages: { type: integer }
                   setCodes: { type: array, items: { type: string } }
                   editions: { type: array, items: { type: string }, description: "Editions present in the catalogue, sorted by label in reverse alphabetical order. Empty when the game has none." }
+                  facets: { type: array, items: { $ref: "#/components/schemas/ProductFilterFacet" }, description: "Filterable attributes carried by the game's products; what `min_*`, `max_*` and `in_*` accept." }
+                  stats: { type: "null", description: "Always null here: without an account there is nothing to complete." }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
 
@@ -4884,6 +4893,13 @@ components:
         icon: { type: string }
         color: { type: string }
         type: { type: string }
+        edition:
+          type: string
+          description: >
+            Edition these numbers cover — the game's current one unless another
+            was asked for. Absent means the whole catalogue, all editions
+            together. Completion is counted one edition at a time: a range that
+            changes edition is not collected from scratch.
         copies: { type: integer, description: "Copies owned, all products taken together." }
         productsOwned: { type: integer }
         productsTotal: { type: integer }
@@ -4938,7 +4954,22 @@ components:
         totalPages: { type: integer }
         setCodes: { type: array, items: { type: string } }
         editions: { type: array, items: { type: string }, description: "Editions present in the catalogue, sorted by label in reverse alphabetical order. Empty when the game has none." }
+        facets: { type: array, items: { $ref: "#/components/schemas/ProductFilterFacet" }, description: "Filterable attributes carried by the game's products; what `min_*`, `max_*` and `in_*` accept." }
         stats: { $ref: "#/components/schemas/ProductCollectionStats" }
+
+    ProductFilterFacet:
+      type: object
+      description: >
+        A filterable product attribute, read off the catalogue rather than
+        declared: a min-max range when the attribute is numeric, a list of values
+        otherwise. The `edition` attribute, booleans, attributes with more than
+        forty distinct values and those with a single one are left out.
+      properties:
+        key: { type: string, description: "Attribute key, as stored under `attributes`." }
+        type: { type: string, enum: [number, value] }
+        min: { type: number, description: "Numeric facets only." }
+        max: { type: number, description: "Numeric facets only." }
+        values: { type: array, items: { type: string }, description: "Value facets only." }
 
     CollectionProductInput:
       type: object

@@ -71,6 +71,55 @@ export function resolveEdition(
   return currentProductEdition || undefined;
 }
 
+/**
+ * Périmètre d'édition des **statistiques de complétion**.
+ *
+ * Le catalogue paginé, lui, se contente d'une édition déjà résolue : la route
+ * connaît le jeu qu'elle sert et son édition en cours. Les statistiques sont
+ * lues autrement — la vue d'ensemble en calcule pour tous les jeux d'un coup,
+ * chacun avec son édition en cours —, d'où ce troisième cas qui ne se réduit
+ * pas à une chaîne :
+ *
+ *  - `current` : l'édition en cours de **chaque** jeu, le défaut ;
+ *  - `all` : tout le catalogue, éditions confondues ;
+ *  - `edition` : une édition nommée, celle que l'écran demande.
+ */
+export type EditionScope =
+  | { kind: "current" }
+  | { kind: "all" }
+  | { kind: "edition"; edition: string };
+
+/** Le défaut : « la dernière édition », jeu par jeu. */
+export const CURRENT_EDITION_SCOPE: EditionScope = { kind: "current" };
+
+/**
+ * Périmètre correspondant à une édition **déjà résolue** (celle que rend
+ * `resolveEdition`) : nommée si elle l'est, tout le catalogue sinon. C'est le
+ * pont entre une route, qui a tranché pour son jeu, et les statistiques, qui
+ * savent en plus compter pour plusieurs.
+ */
+export function scopeOfEdition(edition: string | undefined): EditionScope {
+  return edition ? { kind: "edition", edition } : { kind: "all" };
+}
+
+/**
+ * L'édition qu'un périmètre désigne pour un jeu donné. `undefined` ne restreint
+ * rien — c'est aussi ce que rend `current` pour un jeu qui n'a pas d'éditions.
+ */
+export function editionInScope(
+  scope: EditionScope,
+  currentProductEdition: string | undefined
+): string | undefined {
+  if (scope.kind === "all") {
+    return undefined;
+  }
+  if (scope.kind === "edition") {
+    return scope.edition;
+  }
+
+  return currentProductEdition || undefined;
+}
+
 /** Édition portée par un produit, si elle est renseignée et lisible. */
 export function editionOf(attributes: Record<string, unknown> | undefined): string | undefined {
   const value = attributes?.[PRODUCT_EDITION_ATTRIBUTE];

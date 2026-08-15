@@ -1,11 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { ArrowLeft, Boxes, Brush, Loader2, Package, PackageX, Search, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, Boxes, Brush, Loader2, Package, PackageX, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -20,14 +19,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CompletionBar } from "@/app/collection/CollectionOverview";
-import { PRODUCT_KIND_KEYS } from "@/lib/constants/product-kinds";
+import { CardSearchInput } from "@/components/cards/CardSearchInput";
+import {
+  EMPTY_PRODUCT_FILTERS,
+  ProductFilterChips,
+  ProductFilters,
+  type ProductFilterState,
+} from "@/components/products/ProductFilters";
 import { ALL_EDITIONS } from "@/lib/constants/product-editions";
+import { countActiveFacetFilters, serializeCardSearchCriteria } from "@/lib/cards/search-filters";
+import { buildProductSearchFields } from "@/lib/products/search";
 import type { ProductCollectionItem, ProductCollectionResult } from "@/lib/db/products-collection";
 import ProductTile from "@/components/products/ProductTile";
 import ProductManager from "@/components/products/ProductManager";
-
-type Ownership = "all" | "owned" | "unowned";
-type Shape = "all" | "containers" | "units";
 
 export default function ProductsBrowser({
   gameSlug,
@@ -51,17 +55,18 @@ export default function ProductsBrowser({
   const [stats, setStats] = useState(initialData.stats);
   const [setCodes] = useState(initialData.setCodes);
   const [editions] = useState(initialData.editions);
+  const [facets] = useState(initialData.facets);
   const [total, setTotal] = useState(initialData.total);
   const [page, setPage] = useState(initialData.page);
   const [totalPages, setTotalPages] = useState(initialData.totalPages);
 
   const [search, setSearch] = useState("");
-  const [setCode, setSetCode] = useState("all");
-  const [kind, setKind] = useState("all");
-  // Aligné sur ce que la route a déjà appliqué au premier rendu.
-  const [edition, setEdition] = useState(currentEdition ?? ALL_EDITIONS);
-  const [ownership, setOwnership] = useState<Ownership>("all");
-  const [shape, setShape] = useState<Shape>("all");
+  const [filters, setFilters] = useState<ProductFilterState>({
+    ...EMPTY_PRODUCT_FILTERS,
+    // Aligné sur ce que la route a déjà appliqué au premier rendu.
+    edition: currentEdition ?? ALL_EDITIONS,
+  });
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
 
@@ -70,16 +75,15 @@ export default function ProductsBrowser({
   const controllerRef = useRef<AbortController | null>(null);
   const initializedRef = useRef(false);
 
+  // Le vocabulaire de la saisie vient du catalogue du jeu, comme les filtres :
+  // `faction:Rebelles`, `points<=8`, `set:LEG`… Rien n'est codé par jeu.
+  const searchFields = useMemo(
+    () => buildProductSearchFields(facets, { setCodes }),
+    [facets, setCodes]
+  );
+
   const fetchPage = useCallback(
-    async (next: {
-      search: string;
-      setCode: string;
-      edition: string;
-      kind: string;
-      ownership: Ownership;
-      shape: Shape;
-      page: number;
-    }) => {
+    async (next: { search: string; filters: ProductFilterState; page: number }) => {
       controllerRef.current?.abort();
       const controller = new AbortController();
       controllerRef.current = controller;
@@ -88,14 +92,17 @@ export default function ProductsBrowser({
       setLoadError(false);
       try {
         const params = new URLSearchParams({ page: String(next.page), limit: String(initialData.limit) });
-        if (next.search) params.set("search", next.search);
-        if (next.setCode !== "all") params.set("setCode", next.setCode);
+        if (next.search.trim()) params.set("search", next.search.trim());
+        if (next.filters.setCode !== "all") params.set("setCode", next.filters.setCode);
         // Toujours transmis : sans le paramètre, la route appliquerait son
         // propre défaut, et « toutes les éditions » ne lèverait rien.
-        params.set("edition", next.edition);
-        if (next.kind !== "all") params.set("kind", next.kind);
-        if (next.ownership !== "all") params.set("owned", String(next.ownership === "owned"));
-        if (next.shape !== "all") params.set("containers", String(next.shape === "containers"));
+        params.set("edition", next.filters.edition);
+        if (next.filters.kind !== "all") params.set("kind", next.filters.kind);
+        if (next.filters.ownership !== "all") params.set("owned", String(next.filters.ownership === "owned"));
+        if (next.filters.shape !== "all") params.set("containers", String(next.filters.shape === "containers"));
+        for (const [key, value] of serializeCardSearchCriteria(next.filters.criteria)) {
+          params.set(key, value);
+        }
 
         const response = await fetch(
           `${apiBasePath}/games/${encodeURIComponent(gameSlug)}/products?${params}`,
@@ -131,11 +138,20 @@ export default function ProductsBrowser({
     }
 
     const timeout = setTimeout(() => {
-      void fetchPage({ search, setCode, kind, edition, ownership, shape, page: 1 });
+      void fetchPage({ search, filters, page: 1 });
     }, 300);
 
     return () => clearTimeout(timeout);
-  }, [search, setCode, kind, edition, ownership, shape, fetchPage]);
+  }, [search, filters, fetchPage]);
+
+  const changeFilters = (next: Partial<ProductFilterState>) =>
+    setFilters((current) => ({ ...current, ...next }));
+
+  /** Remet tout à zéro d'un geste — saisie comprise, comme la recherche de cartes. */
+  const resetAll = () => {
+    setSearch("");
+    setFilters({ ...EMPTY_PRODUCT_FILTERS, edition: currentEdition ?? ALL_EDITIONS });
+  };
 
   /**
    * Mise à jour immédiate de la tuile ouverte, pour que le dialogue et la
@@ -161,15 +177,34 @@ export default function ProductsBrowser({
     setManaged(null);
     if (dirtyRef.current) {
       dirtyRef.current = false;
-      void fetchPage({ search, setCode, kind, edition, ownership, shape, page });
+      void fetchPage({ search, filters, page });
     }
   };
 
-  const activeSet = setCode !== "all" ? stats?.sets.find((row) => row.setCode === setCode) : undefined;
+  const activeSet =
+    filters.setCode !== "all" ? stats?.sets.find((row) => row.setCode === filters.setCode) : undefined;
   const productsOwned = activeSet?.productsOwned ?? stats?.productsOwned ?? 0;
   const productsTotal = activeSet?.productsTotal ?? stats?.productsTotal ?? 0;
   const unitsOwned = activeSet?.unitsOwned ?? stats?.unitsOwned ?? 0;
   const unitsTotal = activeSet?.unitsTotal ?? stats?.unitsTotal ?? 0;
+
+  // L'édition annoncée est celle que les nombres couvrent vraiment ; sans
+  // statistiques — un catalogue vide pour cette édition —, celle qui est
+  // demandée, faute de mieux.
+  const statsEdition =
+    stats?.edition ?? (filters.edition !== ALL_EDITIONS ? filters.edition : undefined);
+
+  const activeFilterCount = countActiveFacetFilters(filters.criteria);
+  // L'édition est mise à part : elle est toujours posée, et une grille vide
+  // s'explique autrement selon qu'elle est seule en cause ou non.
+  const narrowed =
+    search.trim().length > 0 ||
+    filters.setCode !== "all" ||
+    filters.kind !== "all" ||
+    filters.ownership !== "all" ||
+    filters.shape !== "all" ||
+    activeFilterCount > 0;
+  const resettable = narrowed || filters.edition !== (currentEdition ?? ALL_EDITIONS);
 
   return (
     <div className="space-y-6">
@@ -187,190 +222,188 @@ export default function ProductsBrowser({
         </div>
       </div>
 
-      {stats && (
-        <div className="grid gap-4 rounded-xl border bg-card p-4 sm:grid-cols-3">
-          <CompletionBar
-            label={t("stats.catalog")}
-            hint={t("stats.catalogHint")}
-            owned={productsOwned}
-            total={productsTotal}
-            tone="master"
-            icon={<Boxes className="size-4 text-primary" />}
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        {/* Sur bureau les filtres vivent dans une colonne à demeure, comme la
+            recherche de cartes : ils restent lisibles pendant qu'on parcourt le
+            catalogue. Sur mobile, la colonne se déplie. */}
+        <aside className={`${filtersOpen ? "block" : "hidden"} lg:block lg:w-72 lg:shrink-0`}>
+          <ProductFilters
+            state={filters}
+            onChange={changeFilters}
+            setCodes={setCodes}
+            editions={editions}
+            facets={facets}
+            showOwnership
+            // L'édition se choisit au-dessus des statistiques : c'est elle qui
+            // décide de ce qu'elles comptent, la ranger ici la couperait de ses
+            // barres de complétion.
+            showEdition={false}
+            resettable={resettable}
+            onReset={resetAll}
           />
-          <CompletionBar
-            label={t("stats.units")}
-            hint={t("stats.unitsHint")}
-            owned={unitsOwned}
-            total={unitsTotal}
-            tone="game"
-            icon={<Package className="size-4 text-emerald-500" />}
-          />
-          <CompletionBar
-            label={t("stats.paint")}
-            hint={t("stats.paintHint")}
-            owned={stats.paintedCopies}
-            total={stats.paintableCopies}
-            tone="paint"
-            icon={<Brush className="size-4 text-amber-500" />}
-          />
-        </div>
-      )}
+        </aside>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-[12rem] flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder={t("filters.searchPlaceholder")}
-            className="pl-9"
-          />
-        </div>
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
+          {(stats || editions.length > 0) && (
+            <div className="flex flex-col gap-4 rounded-xl border bg-card p-4">
+              {/* Le sélecteur est rendu même sans statistiques : une édition en
+                  cours dont le catalogue est vide n'en donne aucune, et sans lui
+                  rien ne permettrait plus d'aller voir les autres éditions. */}
+              {editions.length > 0 && (
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold">{t("stats.title")}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {statsEdition ? t("stats.scopedTo", { edition: statsEdition }) : t("stats.allEditions")}
+                    </span>
+                  </div>
+                  <Select value={filters.edition} onValueChange={(edition) => changeFilters({ edition })}>
+                    <SelectTrigger className="w-auto min-w-[12rem]" aria-label={t("filters.edition")}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={ALL_EDITIONS}>{t("filters.allEditions")}</SelectItem>
+                      {editions.map((value) => (
+                        <SelectItem key={value} value={value}>
+                          {value}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
-        {setCodes.length > 0 && (
-          <Select value={setCode} onValueChange={setSetCode}>
-            <SelectTrigger className="w-auto min-w-[10rem]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("filters.allSets")}</SelectItem>
-              {setCodes.map((code) => (
-                <SelectItem key={code} value={code}>
-                  {code}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+              {stats && (
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <CompletionBar
+                    label={t("stats.catalog")}
+                    hint={t("stats.catalogHint")}
+                    owned={productsOwned}
+                    total={productsTotal}
+                    tone="master"
+                    icon={<Boxes className="size-4 text-primary" />}
+                  />
+                  <CompletionBar
+                    label={t("stats.units")}
+                    hint={t("stats.unitsHint")}
+                    owned={unitsOwned}
+                    total={unitsTotal}
+                    tone="game"
+                    icon={<Package className="size-4 text-emerald-500" />}
+                  />
+                  <CompletionBar
+                    label={t("stats.paint")}
+                    hint={t("stats.paintHint")}
+                    owned={stats.paintedCopies}
+                    total={stats.paintableCopies}
+                    tone="paint"
+                    icon={<Brush className="size-4 text-amber-500" />}
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
-        {editions.length > 0 && (
-          <Select value={edition} onValueChange={setEdition}>
-            <SelectTrigger className="w-auto min-w-[10rem]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_EDITIONS}>{t("filters.allEditions")}</SelectItem>
-              {editions.map((value) => (
-                <SelectItem key={value} value={value}>
-                  {value}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex min-w-[240px] flex-1 items-center">
+              <CardSearchInput
+                value={search}
+                onChange={setSearch}
+                fields={searchFields}
+                placeholder={t("filters.searchPlaceholder")}
+              />
+            </div>
 
-        <Select value={kind} onValueChange={setKind}>
-          <SelectTrigger className="w-auto min-w-[10rem]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("filters.allKinds")}</SelectItem>
-            {PRODUCT_KIND_KEYS.map((key) => (
-              <SelectItem key={key} value={key}>
-                {t(`kinds.${key}`)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <div className="inline-flex items-center rounded-lg border bg-muted/40 p-0.5 text-sm">
-          {(["all", "containers", "units"] as const).map((value) => (
-            <button
-              key={value}
+            <Button
               type="button"
-              aria-pressed={shape === value}
-              onClick={() => setShape(value)}
-              className={`rounded-md px-2.5 py-1 transition-colors ${
-                shape === value ? "bg-background shadow-sm" : "text-muted-foreground"
-              }`}
+              variant="outline"
+              onClick={() => setFiltersOpen((open) => !open)}
+              className="h-10 lg:hidden"
             >
-              {t(`filters.shape.${value}`)}
-            </button>
-          ))}
-        </div>
+              <SlidersHorizontal className="h-4 w-4" />
+              {t("filters.title")}
+              {activeFilterCount > 0 ? (
+                <span className="rounded-full bg-primary/10 px-1.5 text-xs text-primary">{activeFilterCount}</span>
+              ) : null}
+            </Button>
+          </div>
 
-        <div className="inline-flex items-center rounded-lg border bg-muted/40 p-0.5 text-sm">
-          {(["all", "owned", "unowned"] as const).map((value) => (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={ownership === value}
-              onClick={() => setOwnership(value)}
-              className={`rounded-md px-2.5 py-1 transition-colors ${
-                ownership === value ? "bg-background shadow-sm" : "text-muted-foreground"
-              }`}
-            >
-              {t(`filters.${value}`)}
-            </button>
-          ))}
+          <ProductFilterChips
+            search={search}
+            onSearchChange={setSearch}
+            fields={searchFields}
+            state={filters}
+            onChange={changeFilters}
+            editions={editions}
+          />
+
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span>{t("filters.results", { count: total })}</span>
+            {loading && <Loader2 className="size-4 animate-spin" />}
+          </div>
+
+          {loadError ? (
+            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed py-16 text-center">
+              <SlidersHorizontal className="size-8 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">{t("empty.loadError")}</p>
+              <Button variant="outline" size="sm" onClick={() => void fetchPage({ search, filters, page })}>
+                {t("filters.retry")}
+              </Button>
+            </div>
+          ) : items.length === 0 && !loading ? (
+            <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-16 text-center">
+              <PackageX className="size-8 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                {narrowed
+                  ? t("empty.noResults")
+                  : filters.edition !== ALL_EDITIONS
+                    ? t("empty.noEdition")
+                    : t("empty.noCatalog", { game: gameName })}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
+              {items.map((item) => (
+                <ProductTile
+                  key={item.id}
+                  product={item}
+                  kindLabel={t(`kinds.${item.kind}`)}
+                  editionLabel={
+                    item.edition && item.edition !== currentEdition
+                      ? t("tile.edition", { edition: item.edition })
+                      : undefined
+                  }
+                  onManage={() => setManaged(item)}
+                />
+              ))}
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="flex flex-wrap items-center justify-center gap-3 text-sm">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1 || loading}
+                onClick={() => void fetchPage({ search, filters, page: page - 1 })}
+              >
+                {t("filters.previous")}
+              </Button>
+              <span className="text-muted-foreground tabular-nums">
+                {t("filters.pageOf", { page, totalPages })}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= totalPages || loading}
+                onClick={() => void fetchPage({ search, filters, page: page + 1 })}
+              >
+                {t("filters.next")}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
-
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <span>{t("filters.results", { count: total })}</span>
-        {loading && <Loader2 className="size-4 animate-spin" />}
-      </div>
-
-      {loadError ? (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed py-16 text-center">
-          <SlidersHorizontal className="size-8 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">{t("empty.loadError")}</p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void fetchPage({ search, setCode, kind, edition, ownership, shape, page })}
-          >
-            {t("filters.retry")}
-          </Button>
-        </div>
-      ) : items.length === 0 && !loading ? (
-        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-16 text-center">
-          <PackageX className="size-8 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">
-            {total === 0 && !search && setCode === "all" && kind === "all" && ownership === "all"
-              ? t("empty.noCatalog", { game: gameName })
-              : t("empty.noResults")}
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {items.map((item) => (
-            <ProductTile
-              key={item.id}
-              product={item}
-              kindLabel={t(`kinds.${item.kind}`)}
-              editionLabel={
-                item.edition && item.edition !== currentEdition ? t("tile.edition", { edition: item.edition }) : undefined
-              }
-              onManage={() => setManaged(item)}
-            />
-          ))}
-        </div>
-      )}
-
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 text-sm">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page <= 1 || loading}
-            onClick={() => void fetchPage({ search, setCode, kind, edition, ownership, shape, page: page - 1 })}
-          >
-            {t("filters.previous")}
-          </Button>
-          <span className="text-muted-foreground tabular-nums">
-            {t("filters.pageOf", { page, totalPages })}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= totalPages || loading}
-            onClick={() => void fetchPage({ search, setCode, kind, edition, ownership, shape, page: page + 1 })}
-          >
-            {t("filters.next")}
-          </Button>
-        </div>
-      )}
 
       <Dialog open={managed !== null} onOpenChange={(open) => !open && closeManager()}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">

@@ -1359,10 +1359,20 @@
           "units": "Miniaturen",
           "unitsHint": "ohne Schachteln",
           "paint": "Bemalung",
-          "paintHint": "bemalte Miniaturen"
+          "paintHint": "bemalte Miniaturen",
+          "title": "Vervollständigung",
+          "scopedTo": "Gezählt für die Edition {edition}",
+          "allEditions": "Gezählt für den gesamten Katalog, alle Editionen"
         },
         "filters": {
-          "searchPlaceholder": "Produkt suchen…",
+          "searchPlaceholder": "Suchen — Name oder Attribut:Wert",
+          "title": "Filter",
+          "reset": "Alles zurücksetzen",
+          "set": "Reihe",
+          "edition": "Edition",
+          "kind": "Typ",
+          "shapeTitle": "Form",
+          "ownershipTitle": "Besitz",
           "allSets": "Alle Reihen",
           "allKinds": "Alle Typen",
           "allEditions": "Alle Editionen",

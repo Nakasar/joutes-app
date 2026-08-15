@@ -3,9 +3,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
-import { ObjectId } from "mongodb";
 import { getGameBySlugOrId } from "@/lib/db/games";
-import { getGameProductEditions, getGameProductSetCodes } from "@/lib/db/products";
 import { getProductCollection } from "@/lib/db/products-collection";
 import { GameToolsNavBar } from "@/components/games/GameToolsNavBar";
 import ProductsExplorer from "./ProductsExplorer";
@@ -47,27 +45,19 @@ export default async function GameProductsPage({
   const session = await auth.api.getSession({ headers: await headers() });
   const gameSlug = game.slug ?? game.id;
 
-  const initial = session?.user?.id
-    ? await getProductCollection({
-        owner: { type: "user", id: session.user.id },
-        gameId: game.id,
-        // Le premier rendu applique déjà l'édition en cours : sans cela, la
-        // grille montrerait tout le catalogue sous une barre de filtres qui
-        // annonce la dernière édition, le temps du premier chargement client.
-        edition: game.currentProductEdition,
-        page: 1,
-        limit: 48,
-      })
-    : null;
-
-  // Déconnecté, le catalogue est chargé par la route publique : les listes de
-  // filtres n'arrivent pas avec lui, il faut les relever ici.
-  const [setCodes, editions] = initial
-    ? [initial.setCodes, initial.editions]
-    : await Promise.all([
-        getGameProductSetCodes(new ObjectId(game.id)),
-        getGameProductEditions(new ObjectId(game.id)).then((census) => census.editions.map((row) => row.edition)),
-      ]);
+  // Le catalogue est lu par la même fonction avec ou sans compte : déconnecté,
+  // il n'y a pas de propriétaire, et donc ni possession ni statistiques. Les
+  // listes de filtres et les facettes du jeu, elles, arrivent dans les deux cas.
+  const initial = await getProductCollection({
+    owner: session?.user?.id ? { type: "user", id: session.user.id } : null,
+    gameId: game.id,
+    // Le premier rendu applique déjà l'édition en cours : sans cela, la grille
+    // montrerait tout le catalogue sous une barre de filtres qui annonce la
+    // dernière édition, le temps du premier chargement client.
+    edition: game.currentProductEdition,
+    page: 1,
+    limit: 48,
+  });
 
   return (
     <div className="container mx-auto p-4 sm:p-6 space-y-4">
@@ -76,8 +66,6 @@ export default async function GameProductsPage({
         gameSlug={gameSlug}
         gameName={game.name}
         initialData={initial}
-        setCodes={setCodes}
-        editions={editions}
         currentEdition={game.currentProductEdition}
         signedIn={Boolean(session?.user?.id)}
       />

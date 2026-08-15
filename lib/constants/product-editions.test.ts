@@ -2,11 +2,14 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
   ALL_EDITIONS,
+  CURRENT_EDITION_SCOPE,
   PRODUCT_EDITION_ATTRIBUTE,
   PRODUCT_EDITION_FIELD,
   editionFilter,
+  editionInScope,
   editionOf,
   resolveEdition,
+  scopeOfEdition,
 } from "@/lib/constants/product-editions";
 import { cardAttributeKeySchema } from "@/lib/schemas/card.schema";
 
@@ -57,6 +60,29 @@ describe("product editions", () => {
       const filter = editionFilter("Seconde édition") as Record<string, unknown>;
       assert.equal(Object.keys(filter).length, 1);
       assert.equal(filter[PRODUCT_EDITION_FIELD], "Seconde édition");
+    });
+  });
+
+  describe("edition scope", () => {
+    it("counts the game's current edition by default", () => {
+      assert.equal(editionInScope(CURRENT_EDITION_SCOPE, "Seconde édition"), "Seconde édition");
+      // Un jeu sans édition en cours n'est pas restreint pour autant : il n'y
+      // aurait rien à compter.
+      assert.equal(editionInScope(CURRENT_EDITION_SCOPE, undefined), undefined);
+      assert.equal(editionInScope(CURRENT_EDITION_SCOPE, ""), undefined);
+    });
+
+    it("follows an edition a screen has already resolved", () => {
+      assert.deepEqual(scopeOfEdition("Première édition"), { kind: "edition", edition: "Première édition" });
+      // `resolveEdition` rend `undefined` pour « toutes les éditions » : le
+      // périmètre doit lever la restriction, et non retomber sur le défaut.
+      assert.deepEqual(scopeOfEdition(undefined), { kind: "all" });
+      assert.equal(editionInScope(scopeOfEdition(undefined), "Seconde édition"), undefined);
+    });
+
+    it("keeps the asked edition whatever the game's current one is", () => {
+      const scope = scopeOfEdition(resolveEdition("Première édition", "Seconde édition"));
+      assert.equal(editionInScope(scope, "Seconde édition"), "Première édition");
     });
   });
 

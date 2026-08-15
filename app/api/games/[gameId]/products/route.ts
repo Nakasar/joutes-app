@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getGameBySlugOrId } from "@/lib/db/games";
-import { getGameProductEditions, getGameProductSetCodes } from "@/lib/db/products";
-import { PRODUCT_EDITION_FIELD, editionFilter, editionOf, resolveEdition } from "@/lib/constants/product-editions";
-import db from "@/lib/mongodb";
-import { productSearchFilter } from "@/lib/collection/search";
+import { getGameProductFacets } from "@/lib/db/products";
+import { getProductCollection } from "@/lib/db/products-collection";
+import { parseCardSearchCriteria } from "@/lib/cards/search-filters";
+import { resolveEdition } from "@/lib/constants/product-editions";
 
 /**
  * Catalogue public des produits d'un jeu — consultable sans compte, comme la
  * galerie de cartes. La possession, elle, passe par
  * `/api/collection/games/[gameSlug]/products`, qui exige une session.
+ *
+ * Les deux routes lisent le catalogue par la même fonction, sans propriétaire
+ * ici : filtres, éditions et syntaxe de recherche se comportent donc à
+ * l'identique, et une correction sur l'une profite à l'autre.
  */
 export async function GET(request: NextRequest, { params }: { params: Promise<{ gameId: string }> }) {
   const { gameId } = await params;
@@ -33,44 +37,30 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   // le site, l'application mobile et les agents lisent la même route.
   const edition = resolveEdition(searchParams.get("edition") || undefined, game.currentProductEdition);
 
-  const gameObjId = new ObjectId(game.id);
-  const match: Record<string, unknown> = { gameId: gameObjId, ...editionFilter(edition) };
-  if (setCode && setCode !== "all") match.setCode = setCode;
-  if (kind && kind !== "all") match.kind = kind;
-
-  const searchFilter = productSearchFilter(search);
-  if (searchFilter) Object.assign(match, searchFilter);
+  const containersParam = searchParams.get("containers");
+  const containers = containersParam === "true" ? true : containersParam === "false" ? false : undefined;
 
   try {
-    const [total, docs, setCodes, editionCensus] = await Promise.all([
-      db.collection("products").countDocuments(match),
-      db
-        .collection("products")
-        .find(match, {
-          // Seule l'édition est lue : ramener tous les attributs d'un produit
-          // gonflerait chaque page sans que rien ne s'en serve.
-          projection: { _id: 0, id: 1, name: 1, kind: 1, setCode: 1, image: 1, contents: 1, [PRODUCT_EDITION_FIELD]: 1 },
-        })
-        .sort({ setCode: 1, name: 1 })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .toArray(),
-      getGameProductSetCodes(gameObjId),
-      getGameProductEditions(gameObjId),
-    ]);
+    // Relevées avant les critères : elles disent quelles clés et quelles valeurs
+    // le jeu porte, et tout ce qui n'en fait pas partie est écarté.
+    const facets = await getGameProductFacets(new ObjectId(game.id));
+    const criteria = parseCardSearchCriteria(searchParams, facets);
 
-    return NextResponse.json({
-      // L'édition remonte à plat : la tuile l'affiche, elle n'a que faire du
-      // reste des attributs.
-      items: docs.map(({ attributes, ...doc }) => ({ ...doc, edition: editionOf(attributes) })),
-      total,
+    const result = await getProductCollection({
+      owner: null,
+      gameId: game.id,
+      setCode,
+      kind,
+      edition,
+      search,
+      criteria,
+      facets,
+      containers,
       page,
       limit,
-      totalPages: Math.max(1, Math.ceil(total / limit)),
-      setCodes,
-      editions: editionCensus.editions.map((row) => row.edition),
-      game: { id: game.id, name: game.name, slug: game.slug },
     });
+
+    return NextResponse.json({ ...result, game: { id: game.id, name: game.name, slug: game.slug } });
   } catch (error) {
     console.error("Error fetching products:", error);
     return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 });

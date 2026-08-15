@@ -119,3 +119,21 @@ propres à ces écrans :
   carte ajoutée s'en va — on passe à la suivante — mais les tokens tapés
   décrivent le paquet qu'on est en train de composer et tiennent d'un ajout à
   l'autre. La barre repart avec une espace finale, prête pour le nom suivant.
+
+## La même syntaxe dans les catalogues de produits
+
+Les jeux de figurines l'empruntent aussi : `faction:Rebelles points<=8 commando`
+se tape dans le catalogue de produits comme un `domain:fury` dans la galerie de
+cartes. Le module ne bouge pas — `buildProductSearchFields` compose sa propre
+liste de champs et la fait passer par `withFieldAliases`, la lecture et la fusion
+restent celles-ci.
+
+Deux différences, portées par `lib/products/search.ts` :
+
+- **le vocabulaire commun n'est pas le même.** Un produit n'a ni langue ni type
+  de carte : il a une gamme (`set`) et une forme (`kind`), qui prend la place que
+  `type` occupe pour une carte ;
+- **les critères deviennent un filtre Mongo** sur `attributes.<clé>`, et non une
+  expression Meilisearch : le catalogue de produits n'est pas indexé.
+
+Voir `docs/COLLECTION_PRODUCTS.md` pour les facettes et la colonne de filtres.
