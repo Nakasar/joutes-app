@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   Layers,
   LayoutGrid,
   ChevronDown,
   ChevronUp,
+  Coins,
   Package,
   Sparkles,
   Boxes,
@@ -17,6 +18,9 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import CollectionValueSection from "./CollectionValueSection";
+import { formatCardPrice } from "@/lib/prices/display";
+import type { CollectionValue } from "@/lib/collection/value";
 import type { CollectionOverview as CollectionOverviewData, GameCollectionStats } from "@/lib/db/collection";
 
 export function pct(owned: number, total: number): number {
@@ -78,6 +82,7 @@ function StatTile({ icon, value, label }: { icon: React.ReactNode; value: string
 
 function GameCard({ game, basePath }: { game: GameCollectionStats; basePath: string }) {
   const t = useTranslations("Collection");
+  const locale = useLocale();
   const [showSets, setShowSets] = useState(false);
   const hasSets = game.sets.length > 0;
 
@@ -123,6 +128,23 @@ function GameCard({ game, basePath }: { game: GameCollectionStats; basePath: str
           tone="game"
           icon={<LayoutGrid className="size-4 text-emerald-500" />}
         />
+
+        {/* La valeur du jeu se lit ici, telle qu'elle a été calculée ; elle se
+            recalcule sur la page du jeu, où l'on voit ce qu'elle compte. */}
+        {game.value ? (
+          <p className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <Coins className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+              {t("value.title")}
+            </span>
+            <span className="font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">
+              {formatCardPrice(
+                { amount: game.value.amount, currency: game.value.currency, updatedAt: game.value.computedAt },
+                locale
+              )}
+            </span>
+          </p>
+        ) : null}
 
         {hasSets ? (
           <>
@@ -175,6 +197,11 @@ type CollectionOverviewProps = {
   basePath?: string;
   /** API prefix for reads. Override to view a play-group's shared collection instead of the current user's. */
   apiBasePath?: string;
+  /**
+   * Route de recalcul de la valeur (POST). Absente — collection d'un groupe de
+   * jeu —, la valeur reste en lecture seule.
+   */
+  valuePath?: string;
   title?: string;
   subtitle?: string;
   emptyTitle?: string;
@@ -185,6 +212,7 @@ export default function CollectionOverview({
   initialOverview,
   basePath = "/collection",
   apiBasePath = "/api/collection",
+  valuePath,
   title,
   subtitle,
   emptyTitle,
@@ -217,6 +245,24 @@ export default function CollectionOverview({
     void load(includeEmpty);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [includeEmpty]);
+
+  /**
+   * Le recalcul renvoie les valeurs par jeu et leur total : elles remplacent
+   * celles de la vue sans recharger tout le reste, qui n'a pas bougé.
+   */
+  const applyValues = useCallback((payload: unknown) => {
+    const { values, value } = (payload ?? {}) as {
+      values?: Record<string, CollectionValue>;
+      value?: CollectionValue & { games: number };
+    };
+    if (!values) return;
+
+    setOverview((previous) => ({
+      ...previous,
+      games: previous.games.map((game) => (values[game.gameId] ? { ...game, value: values[game.gameId] } : game)),
+      ...(value ? { value } : {}),
+    }));
+  }, []);
 
   const hasAnyItems = initialOverview.games.some((g) => g.copies > 0);
 
@@ -251,6 +297,16 @@ export default function CollectionOverview({
             />
             <StatTile icon={<Gamepad2 className="size-5" />} value={overview.gamesWithItems} label={t("stats.games")} />
           </div>
+
+          {/* Valeur de toute la collection. `totalCopies` est le nombre
+              d'exemplaires d'aujourd'hui : c'est lui qui dit si le calcul a
+              vieilli. */}
+          <CollectionValueSection
+            value={overview.value}
+            copies={overview.totalCopies}
+            recomputePath={valuePath}
+            onRecomputed={applyValues}
+          />
 
           {/* Toggle */}
           <div className="flex items-center justify-between gap-3">

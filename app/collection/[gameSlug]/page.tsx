@@ -67,6 +67,7 @@ export default async function GameCollectionPage({
         gameName={game.name}
         initialData={initial}
         hasProducts={gameHasProducts}
+        valuePath={`/api/collection/games/${gameSlugOrId}/value`}
         transferFormats={collectionFormatsForGame(gameSlugOrId).map((format) => ({
           id: format.id,
           label: format.label,

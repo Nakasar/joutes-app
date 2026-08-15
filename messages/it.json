@@ -1463,6 +1463,14 @@
         "completion": "Completamento",
         "games": "Giochi"
       },
+      "value": {
+        "title": "Valore stimato",
+        "breakdown": "{priced, plural, =0 {nessuna copia quotata} one {# copia quotata} other {# copie quotate}} su {copies}",
+        "computedAt": "calcolato il {date}",
+        "never": "Mai calcolato.",
+        "outdated": "La collezione è cambiata da questo calcolo.",
+        "recompute": "Ricalcola"
+      },
       "toggle": {
         "owned": "I miei giochi",
         "all": "Tutti i giochi"

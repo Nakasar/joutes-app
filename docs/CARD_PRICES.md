@@ -254,6 +254,44 @@ La valeur dit aussi sur combien de cartes elle repose : les cartes sans prix ne
 sont pas estimées, et un total porté par trois cartes sur douze ne se lit pas
 comme le prix du booster.
 
+### Valeur d'une collection
+
+La collection porte elle aussi une valeur estimée, par jeu et pour l'ensemble :
+la somme des prix de chaque **exemplaire** possédé — une carte possédée en
+triple compte trois fois. Un exemplaire vaut le prix de sa carte au catalogue,
+quels que soient son état, sa langue et son tirage : les relevés ne distinguent
+pas les impressions, et inventer une décote au foil ou à l'abîmé serait une
+invention.
+
+Comme pour un booster, le résultat est **écrit** (`collection-values`, un
+document par jeu et par propriétaire) plutôt que recalculé à chaque affichage :
+additionner les prix de milliers d'exemplaires à chaque ouverture de l'écran
+coûterait cher pour un chiffre qui ne bouge qu'au rythme des imports. Et
+surtout, un relevé daté se compare — d'un mois à l'autre, d'un jeu à l'autre —
+là où un total recalculé en continu ne dit jamais de quand il parle.
+
+Le recalcul est donc une action explicite, à deux mailles :
+
+| Bouton | Route | Ce qu'il refait |
+| --- | --- | --- |
+| Valeur d'un jeu, sur sa page de collection | `POST /api/collection/games/<jeu>/value` | ce seul jeu |
+| Valeur totale, sur la vue d'ensemble | `POST /api/collection/value` | tous les jeux dont une carte est possédée |
+
+**Le total, lui, n'est pas stocké** : il se déduit des valeurs par jeu
+(`totalCollectionValue`). Deux nombres écrits séparément finissent par se
+contredire — un jeu recalculé seul laisserait un total périmé qui, lui, ne
+dirait pas qu'il l'est. Le total est daté du **plus ancien** des calculs dont il
+est fait, et ne compte que les jeux qui en ont un.
+
+La valeur dit sur combien d'exemplaires elle repose (`pricedCopies` sur
+`copies`) : les cartes sans relevé n'y entrent pas, et un total porté par deux
+cents exemplaires sur mille ne se lit pas comme le prix de la collection.
+L'écran signale par ailleurs qu'elle a vieilli dès que le nombre d'exemplaires
+possédés a changé depuis le calcul.
+
+Les produits — figurines, boîtes — n'entrent pas dans ce total : ils n'ont pas
+de relevé de prix.
+
 ### Chiffrer un échange
 
 L'interface d'échange chiffre les deux offres et affiche leur écart. Chaque
@@ -332,4 +370,10 @@ aucune authentification.
   deux, couverts par `pricing.test.ts`.
 - `lib/db/boosters.ts` : `computeBoosterValue`, derrière
   `app/api/collection/boosters/[boosterId]/value`.
+- `lib/collection/value.ts` : somme des exemplaires possédés et total d'une
+  collection, couverts par `value.test.ts`.
+- `lib/db/collection-values.ts` : lecture et recalcul des valeurs, derrière
+  `app/api/collection/value` et `app/api/collection/games/[gameSlug]/value`.
+- `app/collection/CollectionValueSection.tsx` : l'affichage et son bouton,
+  partagé par la vue d'ensemble et la page d'un jeu.
 - `scripts/prices/import-cardmarket.ts` : l'import, lancé à la main.

@@ -1521,6 +1521,14 @@
         "completion": "Completion",
         "games": "Games"
       },
+      "value": {
+        "title": "Estimated value",
+        "breakdown": "{priced, plural, =0 {no priced copy} one {# priced copy} other {# priced copies}} out of {copies}",
+        "computedAt": "computed on {date}",
+        "never": "Never computed.",
+        "outdated": "The collection has changed since this computation.",
+        "recompute": "Recompute"
+      },
       "toggle": {
         "owned": "My games",
         "all": "All games"

@@ -12,6 +12,9 @@ import {
 } from "@/lib/db/products-collection";
 import { getGameIdsWithProducts } from "@/lib/db/products";
 import { getCardMarketPrices } from "@/lib/db/card-prices";
+import { getCollectionValues } from "@/lib/db/collection-values";
+import { totalCollectionValue, type CollectionValue, type CollectionValueTotal } from "@/lib/collection/value";
+import { ownerField, ownerMatch, type CollectionOwner } from "@/lib/db/collection-owner";
 import type { CardMarketPrice } from "@/lib/prices/display";
 
 /**
@@ -46,6 +49,12 @@ export type GameCollectionStats = {
   gameOwned: number;
   gameTotal: number;
   sets: SetCompletion[];
+  /**
+   * Dernière valeur estimée du jeu, absente tant qu'elle n'a jamais été
+   * calculée. Elle est lue, jamais calculée ici : le total se recalcule à la
+   * demande (cf. `lib/db/collection-values.ts`).
+   */
+  value?: CollectionValue;
 };
 
 /**
@@ -71,29 +80,25 @@ export type CollectionOverview = {
   totalProductCopies: number;
   productsOwned: number;
   productsTotal: number;
+  /**
+   * Valeur estimée de toute la collection : la somme de celles des jeux, datée
+   * du plus ancien de leurs calculs. Absente tant qu'aucun jeu n'a été estimé.
+   *
+   * Les produits n'y entrent pas : une figurine n'a pas de relevé de prix.
+   */
+  value?: CollectionValueTotal;
 };
 
 type FacetCount = { masterOwned?: number; masterTotal?: number; gameOwned?: number; gameTotal?: number; copies?: number };
 
-/**
- * A collection can be owned either by an individual user (their personal
- * collection) or shared by a whole play-group (any member can add/remove
- * cards). `collection-cards` documents carry either a `userId` or a
- * `playGroupId` field (never both), and every query below matches on
- * whichever field applies to the given owner.
- */
-export type CollectionOwner = { type: "user"; id: string } | { type: "playGroup"; id: string };
-
-// Exportés : la collection de produits (`lib/db/products-collection.ts`) suit
-// exactement la même convention de propriétaire, et la redéfinir de son côté
-// laisserait deux vérités à tenir à jour.
-export function ownerField(owner: CollectionOwner): "userId" | "playGroupId" {
-  return owner.type === "user" ? "userId" : "playGroupId";
-}
-
-export function ownerMatch(owner: CollectionOwner): Record<string, ObjectId> {
-  return { [ownerField(owner)]: new ObjectId(owner.id) };
-}
+// Réexportés : la collection de produits (`lib/db/products-collection.ts`) et
+// les valeurs estimées (`lib/db/collection-values.ts`) suivent exactement la
+// même convention de propriétaire, et la redéfinir de leur côté laisserait
+// plusieurs vérités à tenir à jour. Ils vivent dans `collection-owner.ts` pour
+// que ces modules n'aient pas à s'importer l'un l'autre ; c'est bien d'ici que
+// le reste du code les prend.
+export { ownerField, ownerMatch };
+export type { CollectionOwner };
 
 /**
  * Compute per-game / per-set completion stats for the given games.
@@ -206,6 +211,11 @@ export async function getGamesStats(
     }
   ];
 
+  // --- Valeurs estimées, telles qu'elles ont été calculées la dernière fois ---
+  // Lues, jamais recalculées ici : un écran de collection ne doit pas
+  // additionner les prix de milliers d'exemplaires à chaque ouverture.
+  const values = await getCollectionValues(owner, gameIds);
+
   // --- Game metadata ---
   const gameDocs = await db
     .collection("games")
@@ -280,10 +290,33 @@ export async function getGamesStats(
       gameOwned: owned.gameOwned,
       gameTotal: universe.gameTotal,
       sets,
+      ...(values.get(gidStr) ? { value: values.get(gidStr) } : {}),
     });
   }
 
   return results;
+}
+
+/**
+ * Jeux dont le propriétaire possède au moins une carte.
+ *
+ * Les jeux de figurines n'en font pas partie : ils n'ont pas de cartes. C'est
+ * la liste de départ de la vue d'ensemble comme du recalcul global des valeurs,
+ * qui n'a rien à estimer d'un jeu dont rien n'est possédé.
+ */
+export async function getOwnedCardGameIds(owner: CollectionOwner): Promise<ObjectId[]> {
+  const rows = await db
+    .collection("collection-cards")
+    .aggregate<{ _id: ObjectId }>([
+      { $match: ownerMatch(owner) },
+      { $lookup: { from: "cards", localField: "cardId", foreignField: "id", as: "c" } },
+      { $addFields: { c: { $arrayElemAt: ["$c", 0] } } },
+      { $match: { c: { $ne: null } } },
+      { $group: { _id: "$c.gameId" } },
+    ])
+    .toArray();
+
+  return rows.map((row) => row._id);
 }
 
 /** Deux `ObjectId` égaux sont deux objets distincts : la clé de dédoublonnage est leur écriture. */
@@ -304,22 +337,12 @@ export async function getCollectionOverview(
   owner: CollectionOwner,
   { includeEmpty = false, allowedGameIds = null }: { includeEmpty?: boolean; allowedGameIds?: string[] | null } = {}
 ): Promise<CollectionOverview> {
-  // Distinct games the owner owns items in.
-  const ownedGameRows = await db
-    .collection("collection-cards")
-    .aggregate<{ _id: ObjectId }>([
-      { $match: ownerMatch(owner) },
-      { $lookup: { from: "cards", localField: "cardId", foreignField: "id", as: "c" } },
-      { $addFields: { c: { $arrayElemAt: ["$c", 0] } } },
-      { $match: { c: { $ne: null } } },
-      { $group: { _id: "$c.gameId" } },
-    ])
-    .toArray();
+  const ownedCardGameIds = await getOwnedCardGameIds(owner);
   // Les jeux de figurines n'ont pas de cartes : sans cette seconde source, un
   // jeu dont on ne possède que des produits n'apparaîtrait jamais ici.
   const ownedProductGameIds = await getOwnedProductGameIds(owner);
 
-  const ownedGameIds = dedupeObjectIds([...ownedGameRows.map((r) => r._id), ...ownedProductGameIds]);
+  const ownedGameIds = dedupeObjectIds([...ownedCardGameIds, ...ownedProductGameIds]);
 
   let gameIds = ownedGameIds;
   if (includeEmpty) {
@@ -380,6 +403,16 @@ export async function getCollectionOverview(
   }
 
   overview.gamesWithItems = gamesWithItems.size;
+
+  // Le total se déduit des valeurs par jeu plutôt que d'être stocké à part :
+  // un jeu recalculé seul laisserait sinon un total périmé qui ne dirait pas
+  // qu'il l'est.
+  const total = totalCollectionValue(
+    games.flatMap((game) => (game.value ? [game.value] : []))
+  );
+  if (total) {
+    overview.value = total;
+  }
 
   return overview;
 }
