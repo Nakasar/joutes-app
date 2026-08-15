@@ -200,6 +200,28 @@ ajouter depuis une ligne du contenu n'ajoute que cette figurine.
 3. Saisir le catalogue depuis `/admin/products`, figurines d'abord, boîtes
    ensuite : une boîte ne peut référencer que des produits déjà créés.
 
+### Importer un catalogue
+
+Quand la gamme est publiée quelque part, un script vaut mieux qu'une saisie —
+`scripts/games/shatterpoint/import-products.ts` est le modèle à recopier :
+
+```bash
+node --conditions=react-server --import ./scripts/ts-paths-hook.mjs \
+  scripts/games/shatterpoint/import-products.ts --dry-run
+```
+
+Trois points le rendent rejouable, et valent pour tout import de catalogue :
+
+- **Les images sont recopiées sur Vercel Blob.** `next.config.ts` n'autorise
+  `next/image` qu'à charger depuis ce domaine ; un lien vers le site source ne
+  s'afficherait pas. Le chemin de destination est déterministe, si bien qu'une
+  seconde exécution n'envoie rien.
+- **`attributes` n'est jamais écrit.** Les attributs saisis depuis
+  l'administration (faction, points, mission…) survivent aux imports suivants.
+- **Les produits retouchés à la main sont épargnés** — ceux qui portent un
+  `manuallyEditedAt` — sauf `--force`. L'import corrige le reste : c'est ainsi
+  que « Yub Nub », saisi en figurine, redevient une boîte.
+
 ## Ce qui n'est pas branché
 
 Les produits ne sont **pas** dans les wishlists, les listes de vente ni les
