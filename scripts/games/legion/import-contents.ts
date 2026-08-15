@@ -354,18 +354,27 @@ function slug(value: string): string {
     .slice(0, 40);
 }
 
+/** Longueur maximale d'un identifiant de produit, celle de `productIdSchema`. */
+const MAX_PRODUCT_ID = 64;
+
 /** Identifiants des figurines d'une boîte, uniques au sein de celle-ci. */
 function miniIds(box: string, minis: Mini[]): string[] {
   const used = new Set<string>();
 
   return minis.map((mini) => {
-    const base = `${box}-${slug(mini.name) || "miniature"}`.slice(0, 64);
+    const base = `${box}-${slug(mini.name) || "miniature"}`;
+    let id = base.slice(0, MAX_PRODUCT_ID);
+
     // Deux lignes qui se réduisent au même identifiant — des variantes que le
-    // slug ne distingue plus — se départagent par leur rang.
-    let id = base;
-    for (let suffix = 2; used.has(id); suffix += 1) {
-      id = `${base}-${suffix}`.slice(0, 64);
+    // slug ne distingue plus — se départagent par leur rang. C'est **le début**
+    // qui est rogné pour faire de la place au rang, et non la fin : tronquer
+    // après coup rendrait `…-2` et `…-3` identiques dès que la base touche la
+    // limite, et la boucle ne trouverait plus jamais d'identifiant libre.
+    for (let rank = 2; used.has(id); rank += 1) {
+      const suffix = `-${rank}`;
+      id = `${base.slice(0, MAX_PRODUCT_ID - suffix.length)}${suffix}`;
     }
+
     used.add(id);
     return id;
   });
