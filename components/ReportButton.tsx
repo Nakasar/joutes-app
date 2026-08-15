@@ -95,13 +95,13 @@ export default function ReportButton({
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[480px]">
+        <DialogContent className="flex max-h-[85dvh] flex-col sm:max-w-[480px]">
           <DialogHeader>
             <DialogTitle>{t("dialogTitle")}</DialogTitle>
             <DialogDescription>{t("dialogDescription")}</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-2">
+          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
             <Label htmlFor="report-reason">{t("reasonLabel")}</Label>
             <Textarea
               id="report-reason"
@@ -110,6 +110,7 @@ export default function ReportButton({
               placeholder={t("reasonPlaceholder")}
               onChange={(event) => setReason(event.target.value)}
               disabled={isSubmitting}
+              className="max-h-[40dvh]"
             />
           </div>
 
