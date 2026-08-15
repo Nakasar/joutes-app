@@ -598,6 +598,7 @@ paths:
         - { name: limit, in: query, schema: { type: integer, default: 48, maximum: 96 } }
         - { name: setCode, in: query, description: "Range / wave.", schema: { type: string } }
         - { name: kind, in: query, schema: { type: string, enum: [box, unit, starter, bundle, accessory, book, other] } }
+        - { name: edition, in: query, description: "Game edition. Defaults to the game's current edition when it has one; `all` lifts the restriction. Products without an edition attribute match no edition.", schema: { type: string } }
         - { name: search, in: query, schema: { type: string } }
         - { name: owned, in: query, description: "Omit for everything.", schema: { type: string, enum: ["true", "false"] } }
         - { name: containers, in: query, description: "`true` for products with contents, `false` for leaves.", schema: { type: string, enum: ["true", "false"] } }
@@ -2373,6 +2374,7 @@ paths:
         - { name: limit, in: query, schema: { type: integer, default: 48, maximum: 96 } }
         - { name: setCode, in: query, schema: { type: string } }
         - { name: kind, in: query, schema: { type: string, enum: [box, unit, starter, bundle, accessory, book, other] } }
+        - { name: edition, in: query, description: "Game edition. Defaults to the game's current edition when it has one; `all` lifts the restriction. Products without an edition attribute match no edition.", schema: { type: string } }
         - { name: search, in: query, schema: { type: string } }
       responses:
         "200":
@@ -2391,6 +2393,7 @@ paths:
                         name: { type: string }
                         kind: { type: string }
                         setCode: { type: string }
+                        edition: { type: string, description: "Game edition the product belongs to, when the range has editions." }
                         image: { type: string }
                         contents: { type: array, items: { $ref: "#/components/schemas/ProductContent" } }
                   total: { type: integer }
@@ -2398,6 +2401,7 @@ paths:
                   limit: { type: integer }
                   totalPages: { type: integer }
                   setCodes: { type: array, items: { type: string } }
+                  editions: { type: array, items: { type: string }, description: "Editions present in the catalogue, newest first. Empty when the game has none." }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
 
@@ -4912,6 +4916,7 @@ components:
         name: { type: string }
         kind: { type: string, enum: [box, unit, starter, bundle, accessory, book, other] }
         setCode: { type: string }
+        edition: { type: string, description: "Game edition the product belongs to, when the range has editions." }
         image: { type: string }
         contents: { type: array, items: { $ref: "#/components/schemas/ProductContent" } }
         quantity: { type: integer }
@@ -4932,6 +4937,7 @@ components:
         limit: { type: integer }
         totalPages: { type: integer }
         setCodes: { type: array, items: { type: string } }
+        editions: { type: array, items: { type: string }, description: "Editions present in the catalogue, newest first. Empty when the game has none." }
         stats: { $ref: "#/components/schemas/ProductCollectionStats" }
 
     CollectionProductInput:

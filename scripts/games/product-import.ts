@@ -19,7 +19,7 @@
 import { ObjectId } from "mongodb";
 import { list, put } from "@vercel/blob";
 import db from "../../lib/mongodb.ts";
-import type { ProductContent } from "../../lib/types/product.ts";
+import type { ProductAttributeValue, ProductContent } from "../../lib/types/product.ts";
 import type { ProductKindKey } from "../../lib/constants/product-kinds.ts";
 
 /** Nombre d'appels simultanés au site source, et d'envois simultanés au Blob. */
@@ -34,6 +34,13 @@ export type ImportedProduct = {
   setCode: string;
   /** Vide pour une feuille — une figurine, un accessoire. */
   contents: ProductContent[];
+  /**
+   * Attributs que la source connaît — l'édition d'un jeu qui en traverse
+   * plusieurs, par exemple. Ils sont écrits **un à un**, sous leur propre clé :
+   * les attributs saisis depuis l'administration que l'import ignore survivent
+   * intacts à côté.
+   */
+  attributes?: Record<string, ProductAttributeValue>;
   /** URL de l'image chez l'éditeur, à recopier sur le Blob. */
   sourceImage: string;
   /**
@@ -289,6 +296,12 @@ export async function importProducts({
           setCode: product.setCode,
           ...(images.has(product.id) ? { image: images.get(product.id) } : {}),
           ...(product.contents.length > 0 ? { contents: product.contents } : {}),
+          // Écrits par chemin (`attributes.edition`) et non en bloc : remplacer
+          // `attributes` effacerait la faction, les points et tout ce qu'un
+          // administrateur a saisi et que la source ignore.
+          ...Object.fromEntries(
+            Object.entries(product.attributes ?? {}).map(([key, value]) => [`attributes.${key}`, value])
+          ),
         },
         // Un produit sans contenu est une feuille : le champ est retiré, pas
         // laissé à une liste vide, que `getProductGamesStats` compterait comme

@@ -1448,6 +1448,7 @@
           "searchPlaceholder": "Search for a product…",
           "allSets": "All ranges",
           "allKinds": "All types",
+          "allEditions": "All editions",
           "all": "All",
           "owned": "Owned",
           "unowned": "Not owned",
@@ -1468,7 +1469,8 @@
           "removeOne": "Remove a copy",
           "contentComplete": "You own everything inside",
           "contentCompleteHint": "You already own everything this product contains",
-          "contentPartialHint": "References from the contents you own"
+          "contentPartialHint": "References from the contents you own",
+          "edition": "{edition} edition"
         },
         "add": {
           "trigger": "Add a copy",
@@ -1503,6 +1505,7 @@
         "empty": {
           "noCatalog": "No product has been catalogued for {game} yet.",
           "noResults": "No product matches your filters.",
+          "noEdition": "No product in this edition. Pick “All editions” to see the rest of the catalogue.",
           "loadError": "Products could not be loaded."
         }
       },

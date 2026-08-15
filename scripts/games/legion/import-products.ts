@@ -59,14 +59,23 @@
  * - `--game <slug>` : jeu à alimenter, `legion` par défaut ;
  * - `--refresh-images` : renvoie les images déjà présentes sur le Blob.
  *
- * Comme celui de Shatterpoint, l'import n'écrit ni `attributes` ni les champs de
- * saisie manuelle : il est rejouable sans rien détruire. Les index doivent
- * exister avant la première exécution
- * (`npx tsx scripts/create-product-indexes.ts`).
+ * ## Éditions
+ *
+ * Legion en traverse deux, qui ne sont pas compatibles. L'import pose l'attribut
+ * `edition` d'après le préfixe de la référence (`EDITION_BY_PREFIX`) — AMG n'en
+ * dit rien, c'est une lecture des références et non une donnée de la source.
+ * L'édition **en cours**, elle, se règle depuis `/admin/products` : c'est elle
+ * que les catalogues montrent par défaut.
+ *
+ * L'import n'écrit que les attributs qu'il connaît, chacun sous sa propre clé :
+ * ce qu'un administrateur a saisi à côté lui survit, et un produit retouché à la
+ * main est épargné en entier. Les index doivent exister avant la première
+ * exécution (`npx tsx scripts/create-product-indexes.ts`).
  *
  * Variables d'environnement : `MONGODB_URI`, `BLOB_READ_WRITE_TOKEN`.
  */
 import type { ProductKindKey } from "../../../lib/constants/product-kinds.ts";
+import { PRODUCT_EDITION_ATTRIBUTE } from "../../../lib/constants/product-editions.ts";
 import {
   argValue,
   fetchText,
@@ -128,6 +137,25 @@ const KIND_BY_NAME: [RegExp, ProductKindKey][] = [
 
 /** Une boîte de figurines : ce qu'est l'immense majorité du catalogue. */
 const FALLBACK_KIND: ProductKindKey = "box";
+
+/**
+ * Édition du jeu, déduite du préfixe de la référence.
+ *
+ * Legion a traversé deux éditions qui ne sont pas compatibles, et la coupure
+ * suit celle des éditeurs : `SWL` est l'ère Fantasy Flight Games, `SWQ` celle
+ * d'Atomic Mass Games, `SWK` les exclusivités et sorties hobby, toutes récentes.
+ *
+ * **Le site d'AMG ne dit rien des éditions** — ni sa galerie, ni ses notices, ni
+ * sa taxonomie `era`, qui parle des époques de la fiction (Clone Wars, Age of
+ * Rebellion) et non des versions du jeu. Ce tableau est donc une lecture des
+ * références, pas une donnée reprise de la source : c'est ici qu'on la corrige,
+ * et une correction faite depuis `/admin/products` survit aux imports suivants.
+ */
+const EDITION_BY_PREFIX: Record<string, string> = {
+  SWL: "Première édition",
+  SWQ: "Seconde édition",
+  SWK: "Seconde édition",
+};
 
 /** Une tuile de produit, telle que les deux pages la rendent. */
 type Tile = {
@@ -252,7 +280,12 @@ function kindOf(tile: Tile): ProductKindKey | undefined {
  * porte le type commercial, et son visuel est celui de la fiche produit, là où
  * la notice montre parfois une variante de couverture.
  */
-async function buildCatalog(): Promise<{ products: ImportedProduct[]; untyped: string[] }> {
+async function buildCatalog(): Promise<{
+  products: ImportedProduct[];
+  untyped: string[];
+  /** Références dont le préfixe n'est rattaché à aucune édition. */
+  undated: string[];
+}> {
   const [gallery, assembly] = await Promise.all([
     fetchLegionTiles(GALLERY_URL, "Galerie"),
     fetchLegionTiles(ASSEMBLY_URL, "Notices de montage"),
@@ -264,6 +297,7 @@ async function buildCatalog(): Promise<{ products: ImportedProduct[]; untyped: s
   }
 
   const untyped: string[] = [];
+  const undated: string[] = [];
 
   const products = [...tiles.values()]
     .map((tile) => {
@@ -272,20 +306,29 @@ async function buildCatalog(): Promise<{ products: ImportedProduct[]; untyped: s
         untyped.push(tile.code);
       }
 
+      const setCode = setCodeOf(tile.code);
+      const edition = EDITION_BY_PREFIX[setCode];
+      if (!edition) {
+        undated.push(tile.code);
+      }
+
       return {
         id: tile.code,
         name: tile.name,
         kind: kind ?? FALLBACK_KIND,
-        setCode: setCodeOf(tile.code),
+        setCode,
         // AMG ne publie le contenu d'aucune boîte Legion : tout est feuille.
         contents: [],
+        // Un produit sans édition n'appartient à aucune, donc ne ressort
+        // d'aucun filtre : mieux vaut ne rien écrire que d'inventer.
+        ...(edition ? { attributes: { [PRODUCT_EDITION_ATTRIBUTE]: edition } } : {}),
         sourceImage: tile.image,
         imagePath: `${BLOB_PREFIX}/${tile.code}.webp`,
       };
     })
     .sort((a, b) => a.id.localeCompare(b.id));
 
-  return { products, untyped };
+  return { products, untyped, undated };
 }
 
 async function main() {
@@ -299,7 +342,7 @@ async function main() {
   console.info(`Jeu « ${slug} » (${gameId}).`);
 
   console.info("Lecture du catalogue d'atomicmassgames.com...");
-  const { products, untyped } = await buildCatalog();
+  const { products, untyped, undated } = await buildCatalog();
 
   const bySetCode = new Map<string, number>();
   for (const product of products) {
@@ -309,6 +352,21 @@ async function main() {
   console.info(
     `${products.length} produits : ` +
       [...bySetCode].sort().map(([setCode, count]) => `${count} ${setCode}`).join(", ") + "."
+  );
+
+  const byEdition = new Map<string, number>();
+  for (const product of products) {
+    const edition = product.attributes?.[PRODUCT_EDITION_ATTRIBUTE];
+    if (typeof edition === "string") {
+      byEdition.set(edition, (byEdition.get(edition) ?? 0) + 1);
+    }
+  }
+
+  console.info(
+    `Éditions : ` +
+      [...byEdition].sort().map(([edition, count]) => `${count} en « ${edition} »`).join(", ") +
+      (undated.length > 0 ? `, ${undated.length} sans édition (${undated.slice(0, 5).join(", ")})` : "") +
+      ". Réglez l'édition en cours depuis /admin/products."
   );
 
   if (untyped.length > 0) {

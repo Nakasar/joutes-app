@@ -16,8 +16,8 @@ import {
   updateProduct,
   type GameProductSummary,
 } from "@/lib/db/products";
-import { getGameById } from "@/lib/db/games";
-import { gameIdSchema } from "@/lib/schemas/game.schema";
+import { getGameById, setCurrentProductEdition } from "@/lib/db/games";
+import { currentProductEditionSchema, gameIdSchema } from "@/lib/schemas/game.schema";
 import { productSchema } from "@/lib/schemas/product.schema";
 import { describeContentIssue, validateContents } from "@/lib/products/contents";
 import type { ProductAttributeValue } from "@/lib/types/product";
@@ -265,5 +265,40 @@ export async function countProducts(gameId: string): Promise<number> {
     return await countGameProducts(new ObjectId(validatedGameId));
   } catch {
     return 0;
+  }
+}
+
+/**
+ * Édition en cours d'un jeu : celle que les catalogues montrent par défaut.
+ *
+ * Elle se règle ici, au-dessus du catalogue qu'elle gouverne, et non dans la
+ * fiche du jeu : c'est en voyant combien de produits portent quelle édition —
+ * et combien n'en portent aucune — qu'on sait ce qu'on est en train de cacher.
+ *
+ * La chaîne vide vaut « ce jeu n'a pas d'éditions » et retire le champ. La
+ * valeur n'est pas contrainte à celles du catalogue : on peut désigner l'édition
+ * à venir avant d'avoir étiqueté le moindre produit.
+ */
+export async function saveCurrentProductEdition(gameId: string, edition: string): Promise<SaveProductResult> {
+  try {
+    await requireAdmin();
+    const validatedGameId = gameIdSchema.parse(gameId);
+    const validated = currentProductEditionSchema.parse(edition);
+
+    const game = await getGameById(validatedGameId);
+    if (!game) {
+      return { success: false, error: "Jeu introuvable" };
+    }
+
+    await setCurrentProductEdition(validatedGameId, validated || null);
+
+    revalidateProduct(game.slug);
+    return { success: true };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.issues[0]?.message || "Données invalides" };
+    }
+    console.error("Erreur lors de l'enregistrement de l'édition en cours:", error);
+    return { success: false, error: "Erreur lors de l'enregistrement de l'édition en cours" };
   }
 }

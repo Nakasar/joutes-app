@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { getGameBySlugOrId } from "@/lib/db/games";
 import { getProductCollection } from "@/lib/db/products-collection";
+import { resolveEdition } from "@/lib/constants/product-editions";
 
 /**
  * Catalogue de produits d'un jeu, annoté de ce que l'utilisateur en possède.
@@ -32,6 +33,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const setCode = searchParams.get("setCode") || undefined;
   const kind = searchParams.get("kind") || undefined;
   const search = searchParams.get("search") || undefined;
+  // « Par défaut, la dernière édition » est tranché ici plutôt que par l'écran :
+  // le site, l'application mobile et les agents lisent la même route.
+  const edition = resolveEdition(searchParams.get("edition") || undefined, game.currentProductEdition);
 
   const ownedParam = searchParams.get("owned");
   const owned = ownedParam === "true" ? true : ownedParam === "false" ? false : undefined;
@@ -45,6 +49,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       gameId: game.id,
       setCode,
       kind,
+      edition,
       search,
       owned,
       containers,

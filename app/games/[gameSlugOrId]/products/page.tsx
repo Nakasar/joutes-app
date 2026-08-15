@@ -5,7 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
 import { ObjectId } from "mongodb";
 import { getGameBySlugOrId } from "@/lib/db/games";
-import { getGameProductSetCodes } from "@/lib/db/products";
+import { getGameProductEditions, getGameProductSetCodes } from "@/lib/db/products";
 import { getProductCollection } from "@/lib/db/products-collection";
 import { GameToolsNavBar } from "@/components/games/GameToolsNavBar";
 import ProductsExplorer from "./ProductsExplorer";
@@ -51,12 +51,23 @@ export default async function GameProductsPage({
     ? await getProductCollection({
         owner: { type: "user", id: session.user.id },
         gameId: game.id,
+        // Le premier rendu applique déjà l'édition en cours : sans cela, la
+        // grille montrerait tout le catalogue sous une barre de filtres qui
+        // annonce la dernière édition, le temps du premier chargement client.
+        edition: game.currentProductEdition,
         page: 1,
         limit: 48,
       })
     : null;
 
-  const setCodes = initial?.setCodes ?? (await getGameProductSetCodes(new ObjectId(game.id)));
+  // Déconnecté, le catalogue est chargé par la route publique : les listes de
+  // filtres n'arrivent pas avec lui, il faut les relever ici.
+  const [setCodes, editions] = initial
+    ? [initial.setCodes, initial.editions]
+    : await Promise.all([
+        getGameProductSetCodes(new ObjectId(game.id)),
+        getGameProductEditions(new ObjectId(game.id)).then((census) => census.editions.map((row) => row.edition)),
+      ]);
 
   return (
     <div className="container mx-auto p-4 sm:p-6 space-y-4">
@@ -66,6 +77,8 @@ export default async function GameProductsPage({
         gameName={game.name}
         initialData={initial}
         setCodes={setCodes}
+        editions={editions}
+        currentEdition={game.currentProductEdition}
         signedIn={Boolean(session?.user?.id)}
       />
     </div>

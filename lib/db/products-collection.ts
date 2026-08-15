@@ -14,7 +14,8 @@ import type { ProductKindKey } from "@/lib/constants/product-kinds";
 import type { CollectionProductDb, CollectionProductEntry, ProductContent } from "@/lib/types/product";
 import type { CollectionCurrency } from "@/lib/schemas/collection.schema";
 import { productSearchFilter } from "@/lib/collection/search";
-import { getGameProductSetCodes } from "@/lib/db/products";
+import { getGameProductEditions, getGameProductSetCodes } from "@/lib/db/products";
+import { editionFilter, editionOf } from "@/lib/constants/product-editions";
 import { removeSellListItemsByCollectionEntryIds } from "@/lib/db/sell-lists";
 
 /**
@@ -67,6 +68,8 @@ export type ProductCollectionItem = {
   name: string;
   kind: ProductKindKey;
   setCode?: string;
+  /** Édition du jeu à laquelle le produit appartient, quand la gamme en a. */
+  edition?: string;
   image?: string;
   contents: ProductContent[];
   quantity: number;
@@ -81,6 +84,8 @@ export type ProductCollectionResult = {
   limit: number;
   totalPages: number;
   setCodes: string[];
+  /** Éditions du catalogue, pour peupler le filtre. Vide = ce jeu n'en a pas. */
+  editions: string[];
   stats: ProductCollectionStats | null;
 };
 
@@ -305,6 +310,7 @@ export async function getProductCollection({
   gameId,
   setCode,
   kind,
+  edition,
   search,
   owned,
   containers,
@@ -315,6 +321,8 @@ export async function getProductCollection({
   gameId: string;
   setCode?: string;
   kind?: string;
+  /** Édition à montrer, déjà résolue par l'appelant (`resolveEdition`). */
+  edition?: string;
   search?: string;
   /** true = possédés seulement, false = non possédés seulement, undefined = tous */
   owned?: boolean;
@@ -325,13 +333,14 @@ export async function getProductCollection({
 }): Promise<ProductCollectionResult> {
   const gameObjId = new ObjectId(gameId);
 
-  const [copies, setCodes, stats] = await Promise.all([
+  const [copies, setCodes, editionCensus, stats] = await Promise.all([
     getProductCopies(owner, gameObjId),
     getGameProductSetCodes(gameObjId),
+    getGameProductEditions(gameObjId),
     getProductGamesStats(owner, [gameObjId]).then((rows) => rows[0] ?? null),
   ]);
 
-  const match: Record<string, unknown> = { gameId: gameObjId };
+  const match: Record<string, unknown> = { gameId: gameObjId, ...editionFilter(edition) };
   if (setCode && setCode !== "all") match.setCode = setCode;
   if (kind && kind !== "all") match.kind = kind;
 
@@ -357,7 +366,9 @@ export async function getProductCollection({
 
   const docs = await db
     .collection(PRODUCTS)
-    .find(match, { projection: { _id: 0, id: 1, name: 1, kind: 1, setCode: 1, image: 1, contents: 1 } })
+    .find(match, {
+      projection: { _id: 0, id: 1, name: 1, kind: 1, setCode: 1, image: 1, contents: 1, attributes: 1 },
+    })
     .sort({ setCode: 1, name: 1 })
     .skip((safePage - 1) * limit)
     .limit(limit)
@@ -370,6 +381,7 @@ export async function getProductCollection({
       name: doc.name as string,
       kind: doc.kind as ProductKindKey,
       setCode: doc.setCode as string | undefined,
+      edition: editionOf(doc.attributes as Record<string, unknown> | undefined),
       image: doc.image as string | undefined,
       contents,
       quantity: copies[doc.id as string] ?? 0,
@@ -377,7 +389,16 @@ export async function getProductCollection({
     };
   });
 
-  return { items, total, page: safePage, limit, totalPages, setCodes, stats };
+  return {
+    items,
+    total,
+    page: safePage,
+    limit,
+    totalPages,
+    setCodes,
+    editions: editionCensus.editions.map((row) => row.edition),
+    stats,
+  };
 }
 
 /** Les exemplaires possédés d'un produit, du plus ancien au plus récent. */

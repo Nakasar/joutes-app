@@ -11,6 +11,7 @@ export type TileProduct = {
   name: string;
   kind: string;
   setCode?: string;
+  edition?: string;
   image?: string;
   quantity: number;
   content: { owned: number; total: number; complete: boolean };
@@ -33,6 +34,7 @@ export type TileProduct = {
 export default function ProductTile({
   product,
   kindLabel,
+  editionLabel,
   onManage,
   onAdd,
   onRemove,
@@ -40,6 +42,12 @@ export default function ProductTile({
 }: {
   product: TileProduct;
   kindLabel: string;
+  /**
+   * Édition du produit, **seulement lorsqu'elle n'est pas celle en cours** :
+   * une gamme qui traverse plusieurs éditions n'est pas toujours compatible
+   * avec elle-même, et c'est l'exception qu'il faut signaler, pas la règle.
+   */
+  editionLabel?: string;
   onManage: () => void;
   onAdd?: () => void;
   onRemove?: () => void;
@@ -128,6 +136,15 @@ export default function ProductTile({
       <span className="absolute left-1.5 top-1.5 z-10 rounded-full border bg-background/85 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground shadow">
         {kindLabel}
       </span>
+
+      {editionLabel ? (
+        <span
+          className="absolute left-1.5 top-7 z-10 rounded-full border border-amber-500/40 bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 shadow dark:text-amber-200"
+          title={editionLabel}
+        >
+          {editionLabel}
+        </span>
+      ) : null}
 
       <div className="flex flex-1 flex-col gap-2 p-2">
         <div className="min-w-0">

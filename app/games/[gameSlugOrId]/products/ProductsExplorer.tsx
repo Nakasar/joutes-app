@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PRODUCT_KIND_KEYS } from "@/lib/constants/product-kinds";
+import { ALL_EDITIONS } from "@/lib/constants/product-editions";
 import type { ProductCollectionItem, ProductCollectionResult } from "@/lib/db/products-collection";
 import ProductTile from "@/components/products/ProductTile";
 import ProductManager from "@/components/products/ProductManager";
@@ -38,6 +39,8 @@ export default function ProductsExplorer({
   gameName,
   initialData,
   setCodes,
+  editions,
+  currentEdition,
   signedIn,
 }: {
   gameSlug: string;
@@ -45,6 +48,10 @@ export default function ProductsExplorer({
   /** Absent lorsque personne n'est connecté : le catalogue est alors chargé par la route publique. */
   initialData: ProductCollectionResult | null;
   setCodes: string[];
+  /** Éditions présentes au catalogue. Vide = ce jeu n'en a pas, le filtre disparaît. */
+  editions: string[];
+  /** Édition en cours du jeu : ce que l'API montre déjà par défaut. */
+  currentEdition?: string;
   signedIn: boolean;
 }) {
   const t = useTranslations("Collection.products");
@@ -57,6 +64,10 @@ export default function ProductsExplorer({
   const [search, setSearch] = useState("");
   const [setCode, setSetCode] = useState("all");
   const [kind, setKind] = useState("all");
+  // Le filtre part de l'édition en cours parce que c'est ce que la route rend
+  // déjà : afficher « toutes les éditions » au-dessus d'une grille filtrée
+  // ferait mentir la barre de filtres dès le premier rendu.
+  const [edition, setEdition] = useState(currentEdition ?? ALL_EDITIONS);
   const [shape, setShape] = useState<Shape>("all");
   const [loading, setLoading] = useState(!initialData);
   const [loadError, setLoadError] = useState(false);
@@ -68,7 +79,7 @@ export default function ProductsExplorer({
   const dirtyRef = useRef(false);
 
   const fetchPage = useCallback(
-    async (next: { search: string; setCode: string; kind: string; shape: Shape; page: number }) => {
+    async (next: { search: string; setCode: string; kind: string; edition: string; shape: Shape; page: number }) => {
       controllerRef.current?.abort();
       const controller = new AbortController();
       controllerRef.current = controller;
@@ -80,6 +91,9 @@ export default function ProductsExplorer({
         if (next.search) params.set("search", next.search);
         if (next.setCode !== "all") params.set("setCode", next.setCode);
         if (next.kind !== "all") params.set("kind", next.kind);
+        // Toujours transmis : sans le paramètre, la route appliquerait son
+        // propre défaut, et « toutes les éditions » ne lèverait rien.
+        params.set("edition", next.edition);
         if (next.shape !== "all") params.set("containers", String(next.shape === "containers"));
 
         // Connecté, la route de collection rend le même catalogue annoté de la
@@ -118,22 +132,22 @@ export default function ProductsExplorer({
   useEffect(() => {
     if (!initializedRef.current) {
       initializedRef.current = true;
-      void fetchPage({ search, setCode, kind, shape, page: 1 });
+      void fetchPage({ search, setCode, kind, edition, shape, page: 1 });
       return;
     }
 
     const timeout = setTimeout(() => {
-      void fetchPage({ search, setCode, kind, shape, page: 1 });
+      void fetchPage({ search, setCode, kind, edition, shape, page: 1 });
     }, 300);
 
     return () => clearTimeout(timeout);
-  }, [search, setCode, kind, shape, fetchPage]);
+  }, [search, setCode, kind, edition, shape, fetchPage]);
 
   const closeManager = () => {
     setManaged(null);
     if (dirtyRef.current) {
       dirtyRef.current = false;
-      void fetchPage({ search, setCode, kind, shape, page });
+      void fetchPage({ search, setCode, kind, edition, shape, page });
     }
   };
 
@@ -175,6 +189,22 @@ export default function ProductsExplorer({
               {setCodes.map((code) => (
                 <SelectItem key={code} value={code}>
                   {code}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
+        {editions.length > 0 && (
+          <Select value={edition} onValueChange={setEdition}>
+            <SelectTrigger className="w-auto min-w-[10rem]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_EDITIONS}>{t("filters.allEditions")}</SelectItem>
+              {editions.map((value) => (
+                <SelectItem key={value} value={value}>
+                  {value}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -233,7 +263,7 @@ export default function ProductsExplorer({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => void fetchPage({ search, setCode, kind, shape, page })}
+            onClick={() => void fetchPage({ search, setCode, kind, edition, shape, page })}
           >
             {t("filters.retry")}
           </Button>
@@ -244,6 +274,8 @@ export default function ProductsExplorer({
           <p className="text-sm text-muted-foreground">
             {total === 0 && !search && setCode === "all" && kind === "all"
               ? t("empty.noCatalog", { game: gameName })
+              : edition !== ALL_EDITIONS && !search && setCode === "all" && kind === "all"
+              ? t("empty.noEdition")
               : t("empty.noResults")}
           </p>
         </div>
@@ -254,6 +286,9 @@ export default function ProductsExplorer({
               key={item.id}
               product={item}
               kindLabel={t(`kinds.${item.kind}`)}
+              editionLabel={
+                item.edition && item.edition !== currentEdition ? t("tile.edition", { edition: item.edition }) : undefined
+              }
               onManage={() => (signedIn ? setManaged(item) : undefined)}
             />
           ))}
@@ -266,7 +301,7 @@ export default function ProductsExplorer({
             variant="outline"
             size="sm"
             disabled={page <= 1 || loading}
-            onClick={() => void fetchPage({ search, setCode, kind, shape, page: page - 1 })}
+            onClick={() => void fetchPage({ search, setCode, kind, edition, shape, page: page - 1 })}
           >
             {t("filters.previous")}
           </Button>
@@ -277,7 +312,7 @@ export default function ProductsExplorer({
             variant="outline"
             size="sm"
             disabled={page >= totalPages || loading}
-            onClick={() => void fetchPage({ search, setCode, kind, shape, page: page + 1 })}
+            onClick={() => void fetchPage({ search, setCode, kind, edition, shape, page: page + 1 })}
           >
             {t("filters.next")}
           </Button>
