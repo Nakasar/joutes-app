@@ -67,6 +67,31 @@
  * L'édition **en cours**, elle, se règle depuis `/admin/products` : c'est elle
  * que les catalogues montrent par défaut.
  *
+ * ## Factions
+ *
+ * La galerie range chaque produit sous une ou plusieurs factions — c'est ce que
+ * filtrent ses boutons —, et l'import les pose en attribut `faction`. Contrairement
+ * à l'édition, ce n'en est pas une lecture : c'est la donnée d'AMG, reprise telle
+ * qu'il l'écrit.
+ *
+ * **Les libellés sont lus sur la page, pas listés ici.** Les boutons de filtre
+ * portent « Star Wars: Legion Rebel Alliance » en regard de la classe
+ * `star-wars-legion-rebel-alliance` : la table se construit donc à chaque
+ * exécution, et une faction ajoutée par AMG entre au catalogue sans qu'on
+ * touche à ce fichier.
+ *
+ * **La valeur est toujours une liste**, même à une seule faction : un paquet de
+ * cartes en couvre six, et une clé qui serait tantôt une chaîne tantôt un
+ * tableau se filtrerait mal et se saisirait plus mal encore depuis
+ * `/admin/products`.
+ *
+ * **Seule la galerie classe par faction.** Les produits qui n'y sont plus —
+ * l'ère FFG pour l'essentiel, mais aussi des références AMG épuisées — n'en
+ * portent donc aucune : 89 des 152 du catalogue au moment d'écrire ces lignes.
+ * Le bilan de fin d'exécution les compte, pour qu'un filtre à demi peuplé ne
+ * passe pas pour une anomalie, et une faction saisie à la main depuis
+ * `/admin/products` survit aux imports suivants.
+ *
  * L'import n'écrit que les attributs qu'il connaît, chacun sous sa propre clé :
  * ce qu'un administrateur a saisi à côté lui survit, et un produit retouché à la
  * main est épargné en entier. Les index doivent exister avant la première
@@ -89,6 +114,22 @@ const ASSEMBLY_URL = "https://www.atomicmassgames.com/assembly/";
 
 /** Classe que le thème pose sur les produits Legion, les deux pages confondues. */
 const LEGION_CLASS = "star-wars-legion";
+
+/**
+ * Clé de l'attribut qui porte les factions. Elle reste locale à cet import :
+ * l'application ne la nomme nulle part — la colonne de filtres et la syntaxe de
+ * recherche relèvent les attributs qu'un jeu porte, elles n'en connaissent
+ * aucun d'avance.
+ */
+const FACTION_ATTRIBUTE = "faction";
+
+/**
+ * Préfixe des libellés de faction sur les boutons de filtre : « Star Wars:
+ * Legion Rebel Alliance » désigne la faction « Rebel Alliance ». C'est la ligne
+ * de jeu, répétée devant chaque faction parce que le même menu sert Shatterpoint
+ * et Crisis Protocol.
+ */
+const FACTION_LABEL_PREFIX = /^Star Wars:\s*Legion\s+/i;
 
 /** Préfixe des images recopiées sur le Blob, pour les retrouver et les lister. */
 const BLOB_PREFIX = "products/legion";
@@ -228,9 +269,35 @@ function parseTiles(html: string): Tile[] {
   return tiles;
 }
 
+/**
+ * Les factions de la page, telles que ses boutons de filtre les nomment :
+ * classe du thème -> libellé lisible.
+ *
+ * Lire le menu plutôt que d'inscrire six factions dans le code a une raison
+ * simple : Legion en a gagné deux depuis sa sortie (Mandalorian, Shadow
+ * Collective), et la prochaine doit entrer au catalogue sans qu'on touche à ce
+ * fichier. Une page qui n'a pas de menu — les notices de montage — n'en rend
+ * aucune, ce qui est exact : elle ne classe pas par faction.
+ */
+function parseFactionLabels(html: string): Map<string, string> {
+  const labels = new Map<string, string>();
+
+  for (const match of html.matchAll(
+    /data-filter="\.?(star-wars-legion-[a-z0-9-]+)"[^>]*>([^<]+)</gi
+  )) {
+    const label = decodeEntities(match[2]).replace(FACTION_LABEL_PREFIX, "").trim();
+    if (label) {
+      labels.set(match[1].toLowerCase(), label);
+    }
+  }
+
+  return labels;
+}
+
 /** Tuiles Legion d'une page, avec un garde-fou si la trame du thème a changé. */
-async function fetchLegionTiles(url: string, label: string): Promise<Tile[]> {
-  const tiles = parseTiles(await fetchText(url)).filter((tile) => tile.classes.includes(LEGION_CLASS));
+async function fetchLegionPage(url: string, label: string): Promise<{ tiles: Tile[]; factions: Map<string, string> }> {
+  const html = await fetchText(url);
+  const tiles = parseTiles(html).filter((tile) => tile.classes.includes(LEGION_CLASS));
 
   // Sans ce contrôle, un thème remanié ferait un import parfaitement silencieux
   // de zéro produit, et le bilan final annoncerait « 0 créés » sans rien
@@ -242,9 +309,27 @@ async function fetchLegionTiles(url: string, label: string): Promise<Tile[]> {
     );
   }
 
-  console.info(`${label} : ${tiles.length} produits.`);
+  const factions = parseFactionLabels(html);
+  console.info(
+    `${label} : ${tiles.length} produits` +
+      (factions.size > 0 ? `, ${factions.size} factions au menu de filtrage` : "") +
+      "."
+  );
 
-  return tiles;
+  return { tiles, factions };
+}
+
+/**
+ * Les factions d'une tuile, dans l'ordre alphabétique — l'ordre des classes
+ * n'en est pas un, et deux exécutions doivent écrire la même liste.
+ */
+function factionsOf(tile: Tile, labels: Map<string, string>): string[] {
+  const found = tile.classes.flatMap((className) => {
+    const label = labels.get(className.toLowerCase());
+    return label ? [label] : [];
+  });
+
+  return [...new Set(found)].sort((a, b) => a.localeCompare(b));
 }
 
 /** `SWQ53` -> `SWQ`. La gamme, et rien d'autre : le numéro est retiré. */
@@ -285,19 +370,27 @@ async function buildCatalog(): Promise<{
   untyped: string[];
   /** Références dont le préfixe n'est rattaché à aucune édition. */
   undated: string[];
+  /** Références qu'aucun menu ne range sous une faction — l'ère FFG, pour l'essentiel. */
+  factionless: string[];
 }> {
   const [gallery, assembly] = await Promise.all([
-    fetchLegionTiles(GALLERY_URL, "Galerie"),
-    fetchLegionTiles(ASSEMBLY_URL, "Notices de montage"),
+    fetchLegionPage(GALLERY_URL, "Galerie"),
+    fetchLegionPage(ASSEMBLY_URL, "Notices de montage"),
   ]);
 
   const tiles = new Map<string, Tile>();
-  for (const tile of [...assembly, ...gallery]) {
+  for (const tile of [...assembly.tiles, ...gallery.tiles]) {
     tiles.set(tile.code, tile);
   }
 
+  // Les deux menus réunis, pour ne pas dépendre de la page qui a fourni la
+  // tuile retenue : seule la galerie classe par faction aujourd'hui, mais rien
+  // n'oblige l'autre à ne jamais s'y mettre.
+  const factionLabels = new Map([...assembly.factions, ...gallery.factions]);
+
   const untyped: string[] = [];
   const undated: string[] = [];
+  const factionless: string[] = [];
 
   const products = [...tiles.values()]
     .map((tile) => {
@@ -312,6 +405,11 @@ async function buildCatalog(): Promise<{
         undated.push(tile.code);
       }
 
+      const factions = factionsOf(tile, factionLabels);
+      if (factions.length === 0) {
+        factionless.push(tile.code);
+      }
+
       return {
         id: tile.code,
         name: tile.name,
@@ -320,15 +418,24 @@ async function buildCatalog(): Promise<{
         // AMG ne publie le contenu d'aucune boîte Legion : tout est feuille.
         contents: [],
         // Un produit sans édition n'appartient à aucune, donc ne ressort
-        // d'aucun filtre : mieux vaut ne rien écrire que d'inventer.
-        ...(edition ? { attributes: { [PRODUCT_EDITION_ATTRIBUTE]: edition } } : {}),
+        // d'aucun filtre : mieux vaut ne rien écrire que d'inventer. Même règle
+        // pour la faction : une liste vide serait une valeur, et peuplerait le
+        // filtre d'une case « aucune ».
+        ...(edition || factions.length > 0
+          ? {
+              attributes: {
+                ...(edition ? { [PRODUCT_EDITION_ATTRIBUTE]: edition } : {}),
+                ...(factions.length > 0 ? { [FACTION_ATTRIBUTE]: factions } : {}),
+              },
+            }
+          : {}),
         sourceImage: tile.image,
         imagePath: `${BLOB_PREFIX}/${tile.code}.webp`,
       };
     })
     .sort((a, b) => a.id.localeCompare(b.id));
 
-  return { products, untyped, undated };
+  return { products, untyped, undated, factionless };
 }
 
 async function main() {
@@ -342,7 +449,7 @@ async function main() {
   console.info(`Jeu « ${slug} » (${gameId}).`);
 
   console.info("Lecture du catalogue d'atomicmassgames.com...");
-  const { products, untyped, undated } = await buildCatalog();
+  const { products, untyped, undated, factionless } = await buildCatalog();
 
   const bySetCode = new Map<string, number>();
   for (const product of products) {
@@ -367,6 +474,25 @@ async function main() {
       [...byEdition].sort().map(([edition, count]) => `${count} en « ${edition} »`).join(", ") +
       (undated.length > 0 ? `, ${undated.length} sans édition (${undated.slice(0, 5).join(", ")})` : "") +
       ". Réglez l'édition en cours depuis /admin/products."
+  );
+
+  const byFaction = new Map<string, number>();
+  for (const product of products) {
+    const factions = product.attributes?.[FACTION_ATTRIBUTE];
+    for (const faction of Array.isArray(factions) ? factions : []) {
+      byFaction.set(faction, (byFaction.get(faction) ?? 0) + 1);
+    }
+  }
+
+  console.info(
+    `Factions : ` +
+      ([...byFaction].sort().map(([faction, count]) => `${count} ${faction}`).join(", ") || "aucune") +
+      // Un produit peut en porter plusieurs : la somme des lignes ci-dessus
+      // dépasse le nombre de produits, et ce n'est pas une erreur de compte.
+      (factionless.length > 0
+        ? `, ${factionless.length} sans faction (${factionless.slice(0, 5).join(", ")}) — les notices de montage ne classent pas par faction`
+        : "") +
+      "."
   );
 
   if (untyped.length > 0) {

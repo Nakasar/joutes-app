@@ -231,8 +231,9 @@ elles tiennent dans `lib/products/search.ts` :
 **Les facettes sont relevées, jamais déclarées.** `getGameProductFacets` compte
 les attributs que les produits d'un jeu portent vraiment : plage min–max pour
 ceux qui sont numériques, liste de valeurs pour les autres. Aucun jeu n'est
-nommé dans le code — Legion obtient `faction` et `points` parce que son
-catalogue les porte.
+nommé dans le code — Legion obtient une facette `faction` parce que son import
+en pose une, et en obtiendrait une de plus le jour où un administrateur saisit
+des points.
 
 Trois familles restent dehors, faute d'un contrôle qui les servirait :
 l'**édition**, qui a son propre sélecteur et décide en plus du périmètre des
@@ -278,6 +279,7 @@ node --conditions=react-server --import ./scripts/ts-paths-hook.mjs \
 | --- | --- | --- |
 | Star Wars: Shatterpoint | `scripts/games/shatterpoint/import-products.ts` | l'API de shatterpoint-miniatures.eu |
 | Star Wars: Legion | `scripts/games/legion/import-products.ts` | les pages galerie et notices de montage d'atomicmassgames.com |
+| Star Wars: Legion — contenu des boîtes | `scripts/games/legion/import-contents.ts` | les fiches produit d'atomicmassgames.com et le wiki Fandom |
 
 Chacun ne fait que **bâtir sa liste de produits** ; le reste — recopie des
 images, protection de la saisie manuelle, écriture, bilan — vit une seule fois
@@ -290,11 +292,34 @@ Trois points rendent un import rejouable, et valent pour tous :
   `next/image` qu'à charger depuis ce domaine ; un lien vers le site source ne
   s'afficherait pas. Le chemin de destination est déterministe, si bien qu'une
   seconde exécution n'envoie rien.
-- **`attributes` n'est jamais écrit.** Les attributs saisis depuis
-  l'administration (faction, points, mission…) survivent aux imports suivants.
+- **`attributes` n'est jamais remplacé en bloc.** Chaque attribut connu de la
+  source est écrit sous sa propre clé (`attributes.faction`), si bien que ce
+  qu'un administrateur a saisi à côté — points, mission, ce que la source ignore
+  — survit aux imports suivants.
 - **Les produits retouchés à la main sont épargnés** — ceux qui portent un
   `manuallyEditedAt` — sauf `--force`. L'import corrige le reste : c'est ainsi
   que « Yub Nub », saisi en figurine, redevient une boîte.
+
+### Les factions de Legion
+
+La galerie d'AMG range chaque produit sous une ou plusieurs factions, et
+l'import les pose en attribut `faction` — d'où la facette qui apparaît dans la
+colonne de filtres, et le `faction:"Rebel Alliance"` que la barre de recherche
+accepte.
+
+**Les libellés sont lus sur la page**, en regard des classes du thème (« Star
+Wars: Legion Rebel Alliance » pour `star-wars-legion-rebel-alliance`), et non
+inscrits dans le script : Legion a gagné deux factions depuis sa sortie, la
+prochaine entrera au catalogue sans qu'on touche au code.
+
+**La valeur est toujours une liste**, même à une seule faction — un paquet de
+cartes en couvre six, et une clé tantôt chaîne tantôt tableau se filtrerait mal
+et se saisirait plus mal encore.
+
+**Seule la galerie classe par faction** : les produits qui n'y sont plus — l'ère
+FFG pour l'essentiel, mais aussi des références AMG épuisées — n'en portent
+aucune, 89 sur 152 aujourd'hui. Le bilan de fin d'exécution les compte, et une
+faction saisie à la main survit aux imports suivants.
 
 ## Les éditions
 
@@ -332,10 +357,41 @@ cours** : c'est l'exception qu'il faut signaler, pas la règle.
 
 **Un catalogue sans contenu reste un catalogue.** Shatterpoint publie l'unité par
 unité ce que contient chaque boîte, Legion non — Atomic Mass Games n'en dit rien
-d'exploitable. L'import Legion écrit donc 152 feuilles, sans une seule ligne de
-`contents`, et c'est déjà ce qu'il faut pour suivre une collection. Le contenu
-n'est pas un préalable : il pourra s'ajouter plus tard sans toucher aux
-identifiants, qui eux sont figés.
+d'exploitable. L'import de catalogue écrit donc 152 feuilles, sans une seule
+ligne de `contents`, et c'est déjà ce qu'il faut pour suivre une collection. Le
+contenu s'ajoute ensuite, sans toucher aux identifiants, qui eux sont figés :
+c'est ce que fait `import-contents.ts`.
+
+### Les figurines des boîtes Legion
+
+`scripts/games/legion/import-contents.ts` remplit le `contents` des boîtes en
+croisant deux sources incomplètes :
+
+| Source | Ce qu'elle publie | Portée mesurée |
+| --- | --- | --- |
+| Fiche produit d'AMG, « WHAT'S INCLUDED » | un **nombre** de figurines, jamais lesquelles | 25 des 64 produits encore au catalogue |
+| Wiki Fandom, `Included Components / Miniatures` | une **liste** quantifiée | 75 pages, l'ère FFG surtout |
+
+**L'éditeur a raison sur les nombres, le wiki sur les noms.** Quand les deux
+s'accordent, la liste du wiki est reprise telle quelle ; quand la boîte ne
+contient qu'une sorte de figurine, la liste est recalée sur le compte d'AMG — le
+wiki décrit la boîte FFG de 7 Rebel Troopers là où AMG en met 11 dans la sienne ;
+quand plusieurs sortes cohabitent et que les totaux divergent, on ne sait pas
+répartir l'écart et une figurine générique prend le compte d'AMG. Chaque
+désaccord est nommé dans le bilan.
+
+**Une feuille par boîte, jamais partagée.** « Range Troopers » existe en `SWL117`
+et en `SWQ89` : deux sculpts, deux comptes, deux éditions. Une figurine partagée
+ferait dépendre la complétion d'une édition des boîtes de l'autre. L'identifiant
+dérive donc de la boîte — `SWQ15-rebel-trooper` — et la figurine hérite de son
+édition et de ses factions, mais d'aucune image : celle de la boîte montrerait la
+boîte.
+
+**Le script ne devine pas.** Sur 134 boîtes, 60 sont décrites et 74 restent des
+feuilles, que le bilan nomme une à une — à saisir depuis `/admin/products`, où la
+saisie survit aux exécutions suivantes. Le wiki étant une source communautaire
+(CC BY-SA), ce qu'il propose se relit : `--dry-run` montre boîte par boîte ce qui
+serait écrit et d'où ça vient.
 
 ## Ce qui n'est pas branché
 
