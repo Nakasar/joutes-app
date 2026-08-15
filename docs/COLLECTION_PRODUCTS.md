@@ -231,8 +231,9 @@ elles tiennent dans `lib/products/search.ts` :
 **Les facettes sont relevées, jamais déclarées.** `getGameProductFacets` compte
 les attributs que les produits d'un jeu portent vraiment : plage min–max pour
 ceux qui sont numériques, liste de valeurs pour les autres. Aucun jeu n'est
-nommé dans le code — Legion obtient `faction` et `points` parce que son
-catalogue les porte.
+nommé dans le code — Legion obtient une facette `faction` parce que son import
+en pose une, et en obtiendrait une de plus le jour où un administrateur saisit
+des points.
 
 Trois familles restent dehors, faute d'un contrôle qui les servirait :
 l'**édition**, qui a son propre sélecteur et décide en plus du périmètre des
@@ -290,11 +291,34 @@ Trois points rendent un import rejouable, et valent pour tous :
   `next/image` qu'à charger depuis ce domaine ; un lien vers le site source ne
   s'afficherait pas. Le chemin de destination est déterministe, si bien qu'une
   seconde exécution n'envoie rien.
-- **`attributes` n'est jamais écrit.** Les attributs saisis depuis
-  l'administration (faction, points, mission…) survivent aux imports suivants.
+- **`attributes` n'est jamais remplacé en bloc.** Chaque attribut connu de la
+  source est écrit sous sa propre clé (`attributes.faction`), si bien que ce
+  qu'un administrateur a saisi à côté — points, mission, ce que la source ignore
+  — survit aux imports suivants.
 - **Les produits retouchés à la main sont épargnés** — ceux qui portent un
   `manuallyEditedAt` — sauf `--force`. L'import corrige le reste : c'est ainsi
   que « Yub Nub », saisi en figurine, redevient une boîte.
+
+### Les factions de Legion
+
+La galerie d'AMG range chaque produit sous une ou plusieurs factions, et
+l'import les pose en attribut `faction` — d'où la facette qui apparaît dans la
+colonne de filtres, et le `faction:"Rebel Alliance"` que la barre de recherche
+accepte.
+
+**Les libellés sont lus sur la page**, en regard des classes du thème (« Star
+Wars: Legion Rebel Alliance » pour `star-wars-legion-rebel-alliance`), et non
+inscrits dans le script : Legion a gagné deux factions depuis sa sortie, la
+prochaine entrera au catalogue sans qu'on touche au code.
+
+**La valeur est toujours une liste**, même à une seule faction — un paquet de
+cartes en couvre six, et une clé tantôt chaîne tantôt tableau se filtrerait mal
+et se saisirait plus mal encore.
+
+**Seule la galerie classe par faction** : les produits qui n'y sont plus — l'ère
+FFG pour l'essentiel, mais aussi des références AMG épuisées — n'en portent
+aucune, 89 sur 152 aujourd'hui. Le bilan de fin d'exécution les compte, et une
+faction saisie à la main survit aux imports suivants.
 
 ## Les éditions
 
