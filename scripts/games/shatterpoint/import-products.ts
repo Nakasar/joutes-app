@@ -397,9 +397,20 @@ async function loadExisting(gameId: ObjectId): Promise<Map<string, { manuallyEdi
 
 async function main() {
   const args = process.argv.slice(2);
+  // `--lang --dry-run` prendrait le drapeau suivant pour une valeur, et l'import
+  // partirait chercher un catalogue en « --dry-run » sans rien écrire de clair.
   const argValue = (name: string): string | undefined => {
     const index = args.indexOf(name);
-    return index >= 0 ? args[index + 1] : undefined;
+    if (index < 0) {
+      return undefined;
+    }
+
+    const value = args[index + 1];
+    if (value === undefined || value.startsWith("--")) {
+      throw new Error(`L'option ${name} attend une valeur.`);
+    }
+
+    return value;
   };
 
   const slug = argValue("--game") ?? "shatterpoint";
