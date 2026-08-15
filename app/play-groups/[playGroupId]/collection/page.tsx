@@ -63,6 +63,7 @@ export default async function PlayGroupCollectionPage({
         initialOverview={overview}
         basePath={`/play-groups/${group.id}/collection`}
         apiBasePath={`/api/play-groups/${group.id}/collection`}
+        valuePath={`/api/play-groups/${group.id}/collection/value`}
         title={t("title", { group: group.name })}
         subtitle={t("subtitle")}
         emptyTitle={t("emptyTitle")}

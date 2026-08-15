@@ -276,6 +276,12 @@ Le recalcul est donc une action explicite, à deux mailles :
 | --- | --- | --- |
 | Valeur d'un jeu, sur sa page de collection | `POST /api/collection/games/<jeu>/value` | ce seul jeu |
 | Valeur totale, sur la vue d'ensemble | `POST /api/collection/value` | tous les jeux dont une carte est possédée |
+| Les mêmes, dans un groupe de jeu | `POST /api/play-groups/<groupe>/collection[/games/<jeu>]/value` | idem, pour la collection commune |
+
+La collection d'un groupe est commune — n'importe quel membre y ajoute et en
+retire des cartes —, donc n'importe quel membre peut en redemander la valeur.
+Les jeux désactivés pour le groupe sont écartés du recalcul global : l'écran ne
+les montre pas, les estimer écrirait une valeur que personne ne verrait.
 
 **Le total, lui, n'est pas stocké** : il se déduit des valeurs par jeu
 (`totalCollectionValue`). Deux nombres écrits séparément finissent par se

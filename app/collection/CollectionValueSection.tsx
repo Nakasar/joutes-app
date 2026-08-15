@@ -18,8 +18,9 @@ import type { CollectionValue } from "@/lib/collection/value";
  * portée par deux cents cartes sur mille ne se lit pas comme le prix de la
  * collection.
  *
- * Sans `recomputePath`, le bloc est en lecture seule : la collection d'un
- * groupe de jeu s'affiche mais ne se recalcule pas depuis cet écran.
+ * Le même bloc sert la collection personnelle et celle d'un groupe de jeu :
+ * seule la route de recalcul change. Sans `recomputePath`, il reste en lecture
+ * seule.
  */
 export default function CollectionValueSection({
   value,
