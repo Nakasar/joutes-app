@@ -9,7 +9,16 @@ const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID doit être un
  */
 const newsSourceSchema = z.object({
   name: z.string().min(1, "Le nom de la source est requis").max(120, "Le nom de la source est trop long"),
-  url: z.string().url("L'URL de la source doit être valide"),
+  // `url()` seul ne suffit pas : il accepte `javascript:` et `data:`, qui
+  // finiraient dans le `href` du lien vers l'article d'origine. Une source est
+  // une page qu'on peut aller lire, donc http(s) et rien d'autre.
+  url: z
+    .string()
+    .url("L'URL de la source doit être valide")
+    .refine(
+      (value) => /^https?:$/.test(new URL(value).protocol),
+      "L'URL de la source doit être en http(s)"
+    ),
 });
 
 const newsBaseSchema = z.object({
