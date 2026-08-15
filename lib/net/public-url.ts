@@ -88,6 +88,22 @@ function isBlockedIpv6Address(address: string): boolean {
   return false;
 }
 
+/**
+ * L'adresse IP d'un nom d'hôte d'URL qui en est une, `undefined` pour un nom
+ * de domaine.
+ *
+ * Une IPv6 littérale s'écrit entre crochets dans une URL, et `URL.hostname`
+ * les conserve : c'est ce qui la distingue à coup sûr d'un nom de domaine, là
+ * où un test sur les caractères confondrait `face.be` avec de l'hexadécimal.
+ * Les formes détournées d'une IPv4 (`2130706433`, `0x7f.1`) sont, elles, déjà
+ * ramenées en notation pointée par l'analyseur d'URL.
+ */
+export function ipLiteralOf(hostname: string): string | undefined {
+  if (hostname.startsWith("[") && hostname.endsWith("]")) return hostname.slice(1, -1);
+  if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(hostname)) return hostname;
+  return undefined;
+}
+
 export type PublicUrlRejection = "invalid" | "protocol" | "private";
 
 /**
@@ -117,8 +133,8 @@ export function parsePublicHttpUrl(raw: string): { url: URL } | { rejection: Pub
 
   // Une URL écrite directement avec une IP se juge tout de suite ; un nom de
   // domaine attend sa résolution.
-  const looksLikeIp = /^\[?[0-9a-f:.]+\]?$/i.test(hostname) && (/^\[|:/.test(hostname) || /^\d+\.\d+\.\d+\.\d+$/.test(hostname));
-  if (looksLikeIp && isBlockedIpAddress(hostname)) {
+  const literal = ipLiteralOf(hostname);
+  if (literal && isBlockedIpAddress(literal)) {
     return { rejection: "private" };
   }
 

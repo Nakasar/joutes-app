@@ -42,6 +42,14 @@ export function createCardMentionBracketer(cardNames: string[]): (text: string) 
 }
 
 /**
+ * Destination d'un lien ou d'une image, parenthèses comprises : une adresse en
+ * porte souvent (`…/img_(1).jpg`, les articles d'encyclopédie), et s'arrêter à
+ * la première fermante laisserait la fin de l'adresse à découvert. Un niveau
+ * d'imbrication suffit — au-delà, il faudrait un analyseur, pas une expression.
+ */
+const LINK_DESTINATION_SOURCE = String.raw`\((?:[^()]|\([^()]*\))*\)`;
+
+/**
  * Parties d'un markdown qu'une mise entre crochets ne doit pas traverser :
  * blocs et fragments de code, liens et images entiers (destination comprise),
  * balises HTML, et URL nues.
@@ -49,8 +57,10 @@ export function createCardMentionBracketer(cardNames: string[]): (text: string) 
  * Un seul groupe capturant, pour que `split` rende alternativement du texte
  * (rang pair) et du protégé (rang impair).
  */
-const PROTECTED_MARKDOWN_PATTERN =
-  /(```[\s\S]*?```|`[^`\n]*`|!?\[[^\]]*\]\([^)]*\)|<[^>\n]+>|https?:\/\/\S+)/g;
+const PROTECTED_MARKDOWN_PATTERN = new RegExp(
+  `(\`\`\`[\\s\\S]*?\`\`\`|\`[^\`\\n]*\`|!?\\[[^\\]]*\\]${LINK_DESTINATION_SOURCE}|<[^>\\n]+>|https?://\\S+)`,
+  "g"
+);
 
 /**
  * Même mise entre crochets, mais appliquée à un markdown plutôt qu'à du texte

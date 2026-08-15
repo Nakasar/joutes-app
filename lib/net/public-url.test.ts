@@ -77,6 +77,33 @@ test("parsePublicHttpUrl refuse une adresse IP privée écrite en clair", () => 
   }
 });
 
+test("parsePublicHttpUrl juge une IPv6 littérale sans passer par le DNS", () => {
+  // Écrite entre crochets, elle se reconnaît à coup sûr — un test sur les
+  // seuls caractères confondrait `face.be` avec de l'hexadécimal.
+  const blocked = parsePublicHttpUrl("http://[fe80::1]/");
+  assert.ok("rejection" in blocked);
+  assert.equal(blocked.rejection, "private");
+
+  const allowed = parsePublicHttpUrl("http://[2001:4860:4860::8888]/");
+  assert.ok("url" in allowed);
+});
+
+test("parsePublicHttpUrl démasque les IPv4 écrites autrement", () => {
+  // `2130706433` et `0x7f.1` valent 127.0.0.1 : l'analyseur d'URL les ramène
+  // en notation pointée, c'est elle qu'on juge.
+  for (const raw of ["http://2130706433/", "http://0x7f.1/"]) {
+    const result = parsePublicHttpUrl(raw);
+    assert.ok("rejection" in result, raw);
+    assert.equal(result.rejection, "private");
+  }
+});
+
+test("parsePublicHttpUrl ne prend pas un domaine hexadécimal pour une IP", () => {
+  const result = parsePublicHttpUrl("https://face.be/news");
+
+  assert.ok("url" in result);
+});
+
 test("parsePublicHttpUrl refuse ce qui n'est pas une URL", () => {
   const result = parsePublicHttpUrl("pas une adresse");
 

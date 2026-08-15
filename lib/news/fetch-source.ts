@@ -1,7 +1,7 @@
 import "server-only";
 
 import { lookup } from "node:dns/promises";
-import { isBlockedIpAddress, parsePublicHttpUrl } from "@/lib/net/public-url";
+import { ipLiteralOf, isBlockedIpAddress, parsePublicHttpUrl } from "@/lib/net/public-url";
 
 /**
  * Récupération d'une page extérieure et de ses images, pour l'import d'une
@@ -43,12 +43,12 @@ export type FetchedPage = { html: string; finalUrl: string };
 
 /** Vraie si le nom d'hôte se résout entièrement vers des adresses publiques. */
 async function resolvesToPublicAddress(hostname: string): Promise<boolean> {
-  // Une URL déjà écrite en IP a été jugée par `parsePublicHttpUrl` ; la
-  // résolution la renverrait telle quelle, mais échouerait sur certaines
-  // plateformes.
-  if (/^\[?[0-9a-f:.]+\]?$/i.test(hostname) && /^\d+\.\d+\.\d+\.\d+$/.test(hostname.replace(/^\[|\]$/g, ""))) {
-    return !isBlockedIpAddress(hostname);
-  }
+  // Une URL déjà écrite en IP se juge directement, v4 comme v6 : la résoudre
+  // ne renverrait rien de plus, et `dns.lookup` sur une IPv6 littérale échoue
+  // selon la plateforme — ce qui refuserait une adresse publique parfaitement
+  // valide.
+  const literal = ipLiteralOf(hostname);
+  if (literal) return !isBlockedIpAddress(literal);
 
   try {
     const addresses = await lookup(hostname, { all: true });

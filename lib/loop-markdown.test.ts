@@ -26,6 +26,18 @@ test("createMarkdownCardMentionBracketer laisse les adresses d'images intactes",
   );
 });
 
+test("createMarkdownCardMentionBracketer suit une adresse qui porte des parenthèses", () => {
+  const bracket = createMarkdownCardMentionBracketer(CARDS);
+
+  // Une destination s'arrêtant à la première parenthèse fermante laisserait la
+  // fin de l'adresse à découvert, et le nom qui s'y trouve serait mis entre
+  // crochets au milieu de l'image.
+  assert.equal(
+    bracket("![](https://cdn.test/news/Flash_(1).jpg)\n\nJouer Flash."),
+    "![](https://cdn.test/news/Flash_(1).jpg)\n\nJouer [Flash]."
+  );
+});
+
 test("createMarkdownCardMentionBracketer laisse les liens intacts, texte compris", () => {
   const bracket = createMarkdownCardMentionBracketer(CARDS);
 
