@@ -2401,7 +2401,7 @@ paths:
                   limit: { type: integer }
                   totalPages: { type: integer }
                   setCodes: { type: array, items: { type: string } }
-                  editions: { type: array, items: { type: string }, description: "Editions present in the catalogue, newest first. Empty when the game has none." }
+                  editions: { type: array, items: { type: string }, description: "Editions present in the catalogue, sorted by label in reverse alphabetical order. Empty when the game has none." }
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
 
@@ -4937,7 +4937,7 @@ components:
         limit: { type: integer }
         totalPages: { type: integer }
         setCodes: { type: array, items: { type: string } }
-        editions: { type: array, items: { type: string }, description: "Editions present in the catalogue, newest first. Empty when the game has none." }
+        editions: { type: array, items: { type: string }, description: "Editions present in the catalogue, sorted by label in reverse alphabetical order. Empty when the game has none." }
         stats: { $ref: "#/components/schemas/ProductCollectionStats" }
 
     CollectionProductInput:

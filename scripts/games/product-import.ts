@@ -19,6 +19,7 @@
 import { ObjectId } from "mongodb";
 import { list, put } from "@vercel/blob";
 import db from "../../lib/mongodb.ts";
+import { cardAttributeKeySchema } from "../../lib/schemas/card.schema.ts";
 import type { ProductAttributeValue, ProductContent } from "../../lib/types/product.ts";
 import type { ProductKindKey } from "../../lib/constants/product-kinds.ts";
 
@@ -158,6 +159,32 @@ function assertUniqueIds(products: ImportedProduct[]): void {
   }
 }
 
+/**
+ * Les clés d'attribut doivent être celles qu'accepte le formulaire.
+ *
+ * Elles sont écrites en **chemin** (`attributes.edition`) : un point ou un `$`
+ * dans la clé creuserait une sous-arborescence, voire ferait échouer l'écriture.
+ * Et une clé que `productSchema` refuse produirait un attribut impossible à
+ * modifier depuis `/admin/products` — visible, mais hors d'atteinte.
+ */
+function assertAttributeKeys(products: ImportedProduct[]): void {
+  const invalid = new Set<string>();
+  for (const product of products) {
+    for (const key of Object.keys(product.attributes ?? {})) {
+      if (!cardAttributeKeySchema.safeParse(key).success) {
+        invalid.add(key);
+      }
+    }
+  }
+
+  if (invalid.size > 0) {
+    throw new Error(
+      `Clés d'attribut refusées : ${[...invalid].map((key) => `« ${key} »`).join(", ")}. ` +
+        `Une clé doit commencer par une lettre et ne contenir que lettres, chiffres et « _ ».`
+    );
+  }
+}
+
 /** Les images déjà recopiées, par chemin : une seconde exécution n'en renvoie aucune. */
 async function listUploadedImages(prefix: string): Promise<Map<string, string>> {
   const uploaded = new Map<string, string>();
@@ -256,6 +283,7 @@ export async function importProducts({
   refreshImages,
 }: ImportOptions): Promise<void> {
   assertUniqueIds(products);
+  assertAttributeKeys(products);
 
   const existing = await loadExisting(gameId);
   const protectedIds = force

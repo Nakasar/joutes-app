@@ -380,7 +380,11 @@ export async function countGameProducts(gameId: ObjectId): Promise<number> {
 
 /** Ce qu'on sait des éditions d'un catalogue : celles qui existent, et le reste. */
 export type ProductEditionCensus = {
-  /** Valeurs distinctes de l'attribut `edition`, du plus récent au plus ancien selon l'ordre alphabétique inverse. */
+  /**
+   * Valeurs distinctes de l'attribut `edition`, triées par ordre alphabétique
+   * **inverse** — rien ne date une édition, et ce tri met « Seconde » avant
+   * « Première » sans prétendre lire une chronologie.
+   */
   editions: { edition: string; count: number }[];
   /** Produits sans édition : invisibles sous tout filtre d'édition. */
   untagged: number;

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getGameBySlugOrId } from "@/lib/db/games";
 import { getGameProductEditions, getGameProductSetCodes } from "@/lib/db/products";
-import { editionFilter, editionOf, resolveEdition } from "@/lib/constants/product-editions";
+import { PRODUCT_EDITION_FIELD, editionFilter, editionOf, resolveEdition } from "@/lib/constants/product-editions";
 import db from "@/lib/mongodb";
 import { productSearchFilter } from "@/lib/collection/search";
 
@@ -47,7 +47,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       db
         .collection("products")
         .find(match, {
-          projection: { _id: 0, id: 1, name: 1, kind: 1, setCode: 1, image: 1, contents: 1, attributes: 1 },
+          // Seule l'édition est lue : ramener tous les attributs d'un produit
+          // gonflerait chaque page sans que rien ne s'en serve.
+          projection: { _id: 0, id: 1, name: 1, kind: 1, setCode: 1, image: 1, contents: 1, [PRODUCT_EDITION_FIELD]: 1 },
         })
         .sort({ setCode: 1, name: 1 })
         .skip((page - 1) * limit)
