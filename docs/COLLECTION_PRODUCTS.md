@@ -202,15 +202,24 @@ ajouter depuis une ligne du contenu n'ajoute que cette figurine.
 
 ### Importer un catalogue
 
-Quand la gamme est publiée quelque part, un script vaut mieux qu'une saisie —
-`scripts/games/shatterpoint/import-products.ts` est le modèle à recopier :
+Quand la gamme est publiée quelque part, un script vaut mieux qu'une saisie :
 
 ```bash
 node --conditions=react-server --import ./scripts/ts-paths-hook.mjs \
   scripts/games/shatterpoint/import-products.ts --dry-run
 ```
 
-Trois points le rendent rejouable, et valent pour tout import de catalogue :
+| Jeu | Script | Source |
+| --- | --- | --- |
+| Star Wars: Shatterpoint | `scripts/games/shatterpoint/import-products.ts` | l'API de shatterpoint-miniatures.eu |
+| Star Wars: Legion | `scripts/games/legion/import-products.ts` | les pages galerie et notices de montage d'atomicmassgames.com |
+
+Chacun ne fait que **bâtir sa liste de produits** ; le reste — recopie des
+images, protection de la saisie manuelle, écriture, bilan — vit une seule fois
+dans `scripts/games/product-import.ts`. Un troisième jeu n'a que sa source à
+écrire.
+
+Trois points rendent un import rejouable, et valent pour tous :
 
 - **Les images sont recopiées sur Vercel Blob.** `next.config.ts` n'autorise
   `next/image` qu'à charger depuis ce domaine ; un lien vers le site source ne
@@ -221,6 +230,13 @@ Trois points le rendent rejouable, et valent pour tout import de catalogue :
 - **Les produits retouchés à la main sont épargnés** — ceux qui portent un
   `manuallyEditedAt` — sauf `--force`. L'import corrige le reste : c'est ainsi
   que « Yub Nub », saisi en figurine, redevient une boîte.
+
+**Un catalogue sans contenu reste un catalogue.** Shatterpoint publie l'unité par
+unité ce que contient chaque boîte, Legion non — Atomic Mass Games n'en dit rien
+d'exploitable. L'import Legion écrit donc 152 feuilles, sans une seule ligne de
+`contents`, et c'est déjà ce qu'il faut pour suivre une collection. Le contenu
+n'est pas un préalable : il pourra s'ajouter plus tard sans toucher aux
+identifiants, qui eux sont figés.
 
 ## Ce qui n'est pas branché
 
