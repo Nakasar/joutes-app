@@ -164,6 +164,53 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/ServerError" }
 
+  /collection/value:
+    post:
+      tags: [Collection]
+      summary: Recompute the estimated value of the caller's whole collection
+      security: [{ sessionAuth: [] }]
+      description: >
+        Re-prices every game the caller owns at least one card in, stores each
+        game's value and returns them with their total. An explicit action:
+        prices are only imported now and then, and a value dated from the last
+        click reads better than a total that moves on its own.
+      responses:
+        "200":
+          description: Values per game id, and their total.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  values:
+                    type: object
+                    additionalProperties: { $ref: "#/components/schemas/CollectionValue" }
+                  value:
+                    allOf: [{ $ref: "#/components/schemas/CollectionValue" }]
+                    nullable: true
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /collection/games/{gameSlug}/value:
+    parameters:
+      - { name: gameSlug, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [Collection]
+      summary: Recompute the estimated value of the caller's collection for one game
+      security: [{ sessionAuth: [] }]
+      responses:
+        "200":
+          description: The game's freshly computed value.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  value: { $ref: "#/components/schemas/CollectionValue" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /collection/cards:
     get:
       tags: [Collection]
@@ -2828,6 +2875,55 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/ServerError" }
 
+  /play-groups/{playGroupId}/collection/value:
+    parameters:
+      - { name: playGroupId, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [Play Groups]
+      summary: Recompute the estimated value of a play group's shared collection
+      security: [{ sessionAuth: [] }]
+      description: >
+        Open to any member: the collection is shared, so is its value. Games
+        disabled for the group are skipped — the screen does not show them.
+      responses:
+        "200":
+          description: Values per game id, and their total.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  values:
+                    type: object
+                    additionalProperties: { $ref: "#/components/schemas/CollectionValue" }
+                  value:
+                    allOf: [{ $ref: "#/components/schemas/CollectionValue" }]
+                    nullable: true
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /play-groups/{playGroupId}/collection/games/{gameSlug}/value:
+    parameters:
+      - { name: playGroupId, in: path, required: true, schema: { type: string } }
+      - { name: gameSlug, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [Play Groups]
+      summary: Recompute the estimated value of a play group's collection for one game
+      security: [{ sessionAuth: [] }]
+      responses:
+        "200":
+          description: The game's freshly computed value.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  value: { $ref: "#/components/schemas/CollectionValue" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /play-groups/{playGroupId}/collection/cards:
     parameters:
       - { name: playGroupId, in: path, required: true, schema: { type: string } }
@@ -4592,6 +4688,27 @@ components:
         gameOwned: { type: integer }
         gameTotal: { type: integer }
         sets: { type: array, items: { $ref: "#/components/schemas/SetCompletion" } }
+        value: { $ref: "#/components/schemas/CollectionValue" }
+
+    CollectionValue:
+      type: object
+      description: >
+        Estimated market value of a collection, computed on demand and stored:
+        it only moves when the owner asks for it, which is what makes it
+        comparable from one month to the next. Absent when it has never been
+        computed. `pricedCopies` says how many copies actually carried a price —
+        a total backed by 200 copies out of 1000 does not read like the price of
+        the collection.
+      required: [amount, currency, copies, pricedCopies, computedAt]
+      properties:
+        amount: { type: number }
+        currency: { type: string, description: "ISO 4217 code (`EUR`)." }
+        copies: { type: integer, description: "Copies owned at computation time." }
+        pricedCopies: { type: integer }
+        computedAt: { type: string, format: date-time }
+        games:
+          type: integer
+          description: "Whole-collection total only: how many games it is made of. Its date is the oldest of theirs."
 
     CollectionOverview:
       type: object
@@ -4610,6 +4727,9 @@ components:
         totalProductCopies: { type: integer }
         productsOwned: { type: integer }
         productsTotal: { type: integer }
+        value:
+          allOf: [{ $ref: "#/components/schemas/CollectionValue" }]
+          description: "Whole-collection value: the sum of the per-game ones, dated from the oldest. Products are not in it — a miniature has no price reading."
 
     ProductSetCompletion:
       type: object

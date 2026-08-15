@@ -1522,6 +1522,14 @@
         "completion": "Complétion",
         "games": "Jeux"
       },
+      "value": {
+        "title": "Valeur estimée",
+        "breakdown": "{priced, plural, =0 {aucun exemplaire coté} one {# exemplaire coté} other {# exemplaires cotés}} sur {copies}",
+        "computedAt": "calculée le {date}",
+        "never": "Jamais calculée.",
+        "outdated": "La collection a changé depuis ce calcul.",
+        "recompute": "Recalculer"
+      },
       "toggle": {
         "owned": "Mes jeux",
         "all": "Tous les jeux"

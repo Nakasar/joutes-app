@@ -37,6 +37,8 @@ import CollectionManager from "@/app/games/[gameSlugOrId]/cards/[cardId]/Collect
 import AddToWishlistButton from "@/components/AddToWishlistButton";
 import { CompletionBar } from "@/app/collection/CollectionOverview";
 import CollectionTransfer, { type CollectionFormatOption } from "./CollectionTransfer";
+import CollectionValueSection from "@/app/collection/CollectionValueSection";
+import type { CollectionValue } from "@/lib/collection/value";
 import type { CardVariant, CollectionItem, GameCollectionResult } from "@/lib/db/collection";
 import { CardPriceTag } from "@/components/cards/CardPriceTag";
 
@@ -54,6 +56,12 @@ type Props = {
   hasProducts?: boolean;
   /** Set when browsing a play-group's shared collection — enables username autocompletion when marking a card borrowed. */
   playGroupId?: string;
+  /**
+   * Route de recalcul de la valeur du jeu (POST). La collection personnelle
+   * comme celle d'un groupe de jeu en ont une ; absente, la valeur s'affiche
+   * sans bouton, en lecture seule.
+   */
+  valuePath?: string;
   /**
    * Formats d'import/export proposés. Absent = pas de transfert : les routes
    * correspondantes ne visent que la collection personnelle.
@@ -75,6 +83,7 @@ export default function GameCollectionBrowser({
   showBoosters = true,
   hasProducts = false,
   playGroupId,
+  valuePath,
   transferFormats,
 }: Props) {
   const t = useTranslations("Collection");
@@ -355,6 +364,21 @@ export default function GameCollectionBrowser({
             icon={<LayoutGrid className="size-4 text-emerald-500" />}
           />
         </div>
+      ) : null}
+
+      {/* Valeur du jeu. Elle porte sur toute la collection de ce jeu, pas sur
+          l'extension filtrée : un total qui changerait avec un filtre ne se
+          comparerait plus à rien. */}
+      {stats ? (
+        <CollectionValueSection
+          value={stats.value}
+          copies={stats.copies}
+          recomputePath={valuePath}
+          onRecomputed={(payload) => {
+            const { value } = (payload ?? {}) as { value?: CollectionValue };
+            if (value) setStats((previous) => (previous ? { ...previous, value } : previous));
+          }}
+        />
       ) : null}
 
       {/* Filters */}

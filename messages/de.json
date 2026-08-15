@@ -1438,6 +1438,14 @@
         "completion": "Fortschritt",
         "games": "Spiele"
       },
+      "value": {
+        "title": "Geschätzter Wert",
+        "breakdown": "{priced, plural, =0 {kein Exemplar mit Preis} one {# Exemplar mit Preis} other {# Exemplare mit Preis}} von {copies}",
+        "computedAt": "berechnet am {date}",
+        "never": "Noch nie berechnet.",
+        "outdated": "Die Sammlung hat sich seit dieser Berechnung geändert.",
+        "recompute": "Neu berechnen"
+      },
       "toggle": {
         "owned": "Meine Spiele",
         "all": "Alle Spiele"

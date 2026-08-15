@@ -60,6 +60,7 @@ export default async function PlayGroupGameCollectionPage({
         initialData={initial}
         basePath={`/play-groups/${group.id}/collection`}
         apiBasePath={`/api/play-groups/${group.id}/collection`}
+        valuePath={`/api/play-groups/${group.id}/collection/games/${game.slug ?? game.id}/value`}
         showBoosters={false}
         playGroupId={group.id}
       />

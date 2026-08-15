@@ -32,7 +32,7 @@ export default async function CollectionPage() {
 
   return (
     <div className="container mx-auto p-4 sm:p-6">
-      <CollectionOverview initialOverview={overview} />
+      <CollectionOverview initialOverview={overview} valuePath="/api/collection/value" />
     </div>
   );
 }
