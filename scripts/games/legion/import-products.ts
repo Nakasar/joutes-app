@@ -21,7 +21,8 @@
  * unité le contenu de chaque boîte, AMG ne décrit nulle part ce qu'il y a dans
  * une boîte Legion sous une forme exploitable : la notice de montage est un PDF,
  * et la fiche produit une prose (« This expansion contains 7 miniatures ») que
- * seuls deux tiers des produits portent, et jamais les plus anciens.
+ * 44 des 64 fiches portent — soit moins d'un tiers du catalogue, les 88 produits
+ * qui n'ont plus de fiche du tout n'en ayant aucune.
  *
  * Tous les produits sont donc importés en **feuilles**, sans `contents`. Le jour
  * où une source décrira les unités, il suffira de leur ajouter un contenu : les

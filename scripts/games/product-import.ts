@@ -194,8 +194,8 @@ async function uploadImages(
     const blob = await put(product.imagePath, Buffer.from(await response.arrayBuffer()), {
       access: "public",
       contentType: "image/webp",
-      // Le chemin porte la référence du produit : il doit rester le même d'un
-      // import à l'autre, donc ni suffixe aléatoire, ni refus d'écraser.
+      // Le chemin est celui que l'import a calculé, et il doit rester le même
+      // d'un passage à l'autre : ni suffixe aléatoire, ni refus d'écraser.
       addRandomSuffix: false,
       allowOverwrite: true,
     });
