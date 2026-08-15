@@ -19,7 +19,8 @@
 import { ObjectId } from "mongodb";
 import { list, put } from "@vercel/blob";
 import db from "../../lib/mongodb.ts";
-import type { ProductContent } from "../../lib/types/product.ts";
+import { cardAttributeKeySchema } from "../../lib/schemas/card.schema.ts";
+import type { ProductAttributeValue, ProductContent } from "../../lib/types/product.ts";
 import type { ProductKindKey } from "../../lib/constants/product-kinds.ts";
 
 /** Nombre d'appels simultanés au site source, et d'envois simultanés au Blob. */
@@ -34,6 +35,13 @@ export type ImportedProduct = {
   setCode: string;
   /** Vide pour une feuille — une figurine, un accessoire. */
   contents: ProductContent[];
+  /**
+   * Attributs que la source connaît — l'édition d'un jeu qui en traverse
+   * plusieurs, par exemple. Ils sont écrits **un à un**, sous leur propre clé :
+   * les attributs saisis depuis l'administration que l'import ignore survivent
+   * intacts à côté.
+   */
+  attributes?: Record<string, ProductAttributeValue>;
   /** URL de l'image chez l'éditeur, à recopier sur le Blob. */
   sourceImage: string;
   /**
@@ -151,6 +159,32 @@ function assertUniqueIds(products: ImportedProduct[]): void {
   }
 }
 
+/**
+ * Les clés d'attribut doivent être celles qu'accepte le formulaire.
+ *
+ * Elles sont écrites en **chemin** (`attributes.edition`) : un point ou un `$`
+ * dans la clé creuserait une sous-arborescence, voire ferait échouer l'écriture.
+ * Et une clé que `productSchema` refuse produirait un attribut impossible à
+ * modifier depuis `/admin/products` — visible, mais hors d'atteinte.
+ */
+function assertAttributeKeys(products: ImportedProduct[]): void {
+  const invalid = new Set<string>();
+  for (const product of products) {
+    for (const key of Object.keys(product.attributes ?? {})) {
+      if (!cardAttributeKeySchema.safeParse(key).success) {
+        invalid.add(key);
+      }
+    }
+  }
+
+  if (invalid.size > 0) {
+    throw new Error(
+      `Clés d'attribut refusées : ${[...invalid].map((key) => `« ${key} »`).join(", ")}. ` +
+        `Une clé doit commencer par une lettre et ne contenir que lettres, chiffres et « _ ».`
+    );
+  }
+}
+
 /** Les images déjà recopiées, par chemin : une seconde exécution n'en renvoie aucune. */
 async function listUploadedImages(prefix: string): Promise<Map<string, string>> {
   const uploaded = new Map<string, string>();
@@ -249,6 +283,7 @@ export async function importProducts({
   refreshImages,
 }: ImportOptions): Promise<void> {
   assertUniqueIds(products);
+  assertAttributeKeys(products);
 
   const existing = await loadExisting(gameId);
   const protectedIds = force
@@ -289,6 +324,12 @@ export async function importProducts({
           setCode: product.setCode,
           ...(images.has(product.id) ? { image: images.get(product.id) } : {}),
           ...(product.contents.length > 0 ? { contents: product.contents } : {}),
+          // Écrits par chemin (`attributes.edition`) et non en bloc : remplacer
+          // `attributes` effacerait la faction, les points et tout ce qu'un
+          // administrateur a saisi et que la source ignore.
+          ...Object.fromEntries(
+            Object.entries(product.attributes ?? {}).map(([key, value]) => [`attributes.${key}`, value])
+          ),
         },
         // Un produit sans contenu est une feuille : le champ est retiré, pas
         // laissé à une liste vide, que `getProductGamesStats` compterait comme

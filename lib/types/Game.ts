@@ -60,6 +60,14 @@ export type Game = {
    * livrés avec la plateforme.
    */
   tournamentDefaults?: GameTournamentDefaults;
+  /**
+   * Édition du jeu en cours, pour les gammes qui en traversent plusieurs — la
+   * valeur que porte l'attribut `edition` des produits qui se jouent
+   * aujourd'hui. C'est elle que les catalogues montrent par défaut ; absente,
+   * ils montrent tout. Réglée depuis `/admin/products`, décrite dans
+   * `lib/constants/product-editions.ts`.
+   */
+  currentProductEdition?: string;
 };
 
 export type GameType = GameTypeKey;

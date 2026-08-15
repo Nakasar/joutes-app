@@ -1390,6 +1390,7 @@
           "searchPlaceholder": "Cerca un prodotto…",
           "allSets": "Tutte le gamme",
           "allKinds": "Tutti i tipi",
+          "allEditions": "Tutte le edizioni",
           "all": "Tutti",
           "owned": "Posseduti",
           "unowned": "Non posseduti",
@@ -1410,7 +1411,8 @@
           "removeOne": "Rimuovi una copia",
           "contentComplete": "Possiedi tutto il contenuto",
           "contentCompleteHint": "Possiedi già tutto il contenuto di questo prodotto",
-          "contentPartialHint": "Referenze del contenuto che possiedi"
+          "contentPartialHint": "Referenze del contenuto che possiedi",
+          "edition": "Edizione {edition}"
         },
         "add": {
           "trigger": "Aggiungi una copia",
@@ -1445,6 +1447,7 @@
         "empty": {
           "noCatalog": "Nessun prodotto è ancora catalogato per {game}.",
           "noResults": "Nessun prodotto corrisponde ai tuoi filtri.",
+          "noEdition": "Nessun prodotto in questa edizione. Scegli «Tutte le edizioni» per vedere il resto del catalogo.",
           "loadError": "Caricamento dei prodotti non riuscito."
         }
       },

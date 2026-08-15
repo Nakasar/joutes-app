@@ -32,6 +32,7 @@ function toGame(doc: WithId<Document>): Game {
     },
     features: doc.features || {},
     tournamentDefaults: doc.tournamentDefaults,
+    currentProductEdition: doc.currentProductEdition,
   };
 }
 
@@ -56,6 +57,7 @@ function toDocument(game: Omit<Game, "id">): Omit<GameDocument, "_id"> {
     stats: game.stats,
     features: game.features,
     tournamentDefaults: game.tournamentDefaults,
+    currentProductEdition: game.currentProductEdition,
   };
 }
 
@@ -184,6 +186,25 @@ export async function setGameTournamentDefaults(
     defaults === null
       ? { $unset: { tournamentDefaults: "" } }
       : { $set: { tournamentDefaults: defaults } }
+  );
+
+  return result.matchedCount > 0;
+}
+
+/**
+ * Édition en cours d'un jeu — celle que les catalogues montrent par défaut.
+ *
+ * `null` retire le champ plutôt que d'écrire une chaîne vide : « aucune édition
+ * en cours » veut dire « ce jeu n'a pas d'éditions », et les filtres le lisent
+ * par vérité. Rend vrai dès que le jeu existe : réenregistrer la même valeur ne
+ * modifie aucun document, et ce n'est pas un échec.
+ */
+export async function setCurrentProductEdition(id: string, edition: string | null): Promise<boolean> {
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(id) },
+    edition === null
+      ? { $unset: { currentProductEdition: "" } }
+      : { $set: { currentProductEdition: edition } }
   );
 
   return result.matchedCount > 0;

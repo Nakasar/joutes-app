@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { CompletionBar } from "@/app/collection/CollectionOverview";
 import { PRODUCT_KIND_KEYS } from "@/lib/constants/product-kinds";
+import { ALL_EDITIONS } from "@/lib/constants/product-editions";
 import type { ProductCollectionItem, ProductCollectionResult } from "@/lib/db/products-collection";
 import ProductTile from "@/components/products/ProductTile";
 import ProductManager from "@/components/products/ProductManager";
@@ -32,12 +33,15 @@ export default function ProductsBrowser({
   gameSlug,
   gameName,
   initialData,
+  currentEdition,
   basePath = "/collection",
   apiBasePath = "/api/collection",
 }: {
   gameSlug: string;
   gameName: string;
   initialData: ProductCollectionResult;
+  /** Édition en cours du jeu : ce que la route rend déjà par défaut. */
+  currentEdition?: string;
   basePath?: string;
   apiBasePath?: string;
 }) {
@@ -46,6 +50,7 @@ export default function ProductsBrowser({
   const [items, setItems] = useState<ProductCollectionItem[]>(initialData.items);
   const [stats, setStats] = useState(initialData.stats);
   const [setCodes] = useState(initialData.setCodes);
+  const [editions] = useState(initialData.editions);
   const [total, setTotal] = useState(initialData.total);
   const [page, setPage] = useState(initialData.page);
   const [totalPages, setTotalPages] = useState(initialData.totalPages);
@@ -53,6 +58,8 @@ export default function ProductsBrowser({
   const [search, setSearch] = useState("");
   const [setCode, setSetCode] = useState("all");
   const [kind, setKind] = useState("all");
+  // Aligné sur ce que la route a déjà appliqué au premier rendu.
+  const [edition, setEdition] = useState(currentEdition ?? ALL_EDITIONS);
   const [ownership, setOwnership] = useState<Ownership>("all");
   const [shape, setShape] = useState<Shape>("all");
   const [loading, setLoading] = useState(false);
@@ -67,6 +74,7 @@ export default function ProductsBrowser({
     async (next: {
       search: string;
       setCode: string;
+      edition: string;
       kind: string;
       ownership: Ownership;
       shape: Shape;
@@ -82,6 +90,9 @@ export default function ProductsBrowser({
         const params = new URLSearchParams({ page: String(next.page), limit: String(initialData.limit) });
         if (next.search) params.set("search", next.search);
         if (next.setCode !== "all") params.set("setCode", next.setCode);
+        // Toujours transmis : sans le paramètre, la route appliquerait son
+        // propre défaut, et « toutes les éditions » ne lèverait rien.
+        params.set("edition", next.edition);
         if (next.kind !== "all") params.set("kind", next.kind);
         if (next.ownership !== "all") params.set("owned", String(next.ownership === "owned"));
         if (next.shape !== "all") params.set("containers", String(next.shape === "containers"));
@@ -120,11 +131,11 @@ export default function ProductsBrowser({
     }
 
     const timeout = setTimeout(() => {
-      void fetchPage({ search, setCode, kind, ownership, shape, page: 1 });
+      void fetchPage({ search, setCode, kind, edition, ownership, shape, page: 1 });
     }, 300);
 
     return () => clearTimeout(timeout);
-  }, [search, setCode, kind, ownership, shape, fetchPage]);
+  }, [search, setCode, kind, edition, ownership, shape, fetchPage]);
 
   /**
    * Mise à jour immédiate de la tuile ouverte, pour que le dialogue et la
@@ -150,7 +161,7 @@ export default function ProductsBrowser({
     setManaged(null);
     if (dirtyRef.current) {
       dirtyRef.current = false;
-      void fetchPage({ search, setCode, kind, ownership, shape, page });
+      void fetchPage({ search, setCode, kind, edition, ownership, shape, page });
     }
   };
 
@@ -232,6 +243,22 @@ export default function ProductsBrowser({
           </Select>
         )}
 
+        {editions.length > 0 && (
+          <Select value={edition} onValueChange={setEdition}>
+            <SelectTrigger className="w-auto min-w-[10rem]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_EDITIONS}>{t("filters.allEditions")}</SelectItem>
+              {editions.map((value) => (
+                <SelectItem key={value} value={value}>
+                  {value}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
         <Select value={kind} onValueChange={setKind}>
           <SelectTrigger className="w-auto min-w-[10rem]">
             <SelectValue />
@@ -291,7 +318,7 @@ export default function ProductsBrowser({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => void fetchPage({ search, setCode, kind, ownership, shape, page })}
+            onClick={() => void fetchPage({ search, setCode, kind, edition, ownership, shape, page })}
           >
             {t("filters.retry")}
           </Button>
@@ -312,6 +339,9 @@ export default function ProductsBrowser({
               key={item.id}
               product={item}
               kindLabel={t(`kinds.${item.kind}`)}
+              editionLabel={
+                item.edition && item.edition !== currentEdition ? t("tile.edition", { edition: item.edition }) : undefined
+              }
               onManage={() => setManaged(item)}
             />
           ))}
@@ -324,7 +354,7 @@ export default function ProductsBrowser({
             variant="outline"
             size="sm"
             disabled={page <= 1 || loading}
-            onClick={() => void fetchPage({ search, setCode, kind, ownership, shape, page: page - 1 })}
+            onClick={() => void fetchPage({ search, setCode, kind, edition, ownership, shape, page: page - 1 })}
           >
             {t("filters.previous")}
           </Button>
@@ -335,7 +365,7 @@ export default function ProductsBrowser({
             variant="outline"
             size="sm"
             disabled={page >= totalPages || loading}
-            onClick={() => void fetchPage({ search, setCode, kind, ownership, shape, page: page + 1 })}
+            onClick={() => void fetchPage({ search, setCode, kind, edition, ownership, shape, page: page + 1 })}
           >
             {t("filters.next")}
           </Button>

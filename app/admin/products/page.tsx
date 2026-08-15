@@ -5,9 +5,11 @@ import {
   countGameProducts,
   getGameProduct,
   getGameProductAttributeFields,
+  getGameProductEditions,
   getProductSummariesByIds,
   getRecentGameProducts,
 } from "@/lib/db/products";
+import EditionSettings from "./EditionSettings";
 import ProductForm from "./ProductForm";
 import ProductBrowser from "./ProductBrowser";
 
@@ -23,14 +25,15 @@ export default async function AdminProductsPage({
   const games = (await getAllGames()).sort((a, b) => a.name.localeCompare(b.name));
   const selectedGame = games.find((game) => game.id === gameId);
 
-  const [attributeFields, recentProducts, productCount, product] = selectedGame
+  const [attributeFields, recentProducts, productCount, editionCensus, product] = selectedGame
     ? await Promise.all([
         getGameProductAttributeFields(new ObjectId(selectedGame.id)),
         getRecentGameProducts(new ObjectId(selectedGame.id)),
         countGameProducts(new ObjectId(selectedGame.id)),
+        getGameProductEditions(new ObjectId(selectedGame.id)),
         productId ? getGameProduct(new ObjectId(selectedGame.id), productId) : Promise.resolve(null),
       ])
-    : [[], [], 0, null];
+    : [[], [], 0, { editions: [], untagged: 0 }, null];
 
   // Le contenu ne stocke que des références : sans les produits eux-mêmes,
   // l'éditeur n'afficherait que des identifiants.
@@ -95,6 +98,13 @@ export default async function AdminProductsPage({
 
         {selectedGame ? (
           <>
+            <EditionSettings
+              key={selectedGame.id}
+              gameId={selectedGame.id}
+              gameName={selectedGame.name}
+              currentEdition={selectedGame.currentProductEdition}
+              census={editionCensus}
+            />
             <ProductBrowser
               gameId={selectedGame.id}
               selectedProductId={product?.id}

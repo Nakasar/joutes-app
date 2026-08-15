@@ -42,6 +42,7 @@ export default async function ProductCollectionPage({
   const initial = await getProductCollection({
     owner: { type: "user", id: session.user.id },
     gameId: game.id,
+    edition: game.currentProductEdition,
     page: 1,
     limit: 48,
   });
@@ -52,6 +53,7 @@ export default async function ProductCollectionPage({
         gameSlug={game.slug ?? game.id}
         gameName={game.name}
         initialData={initial}
+        currentEdition={game.currentProductEdition}
       />
     </div>
   );

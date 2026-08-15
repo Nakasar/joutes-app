@@ -6,6 +6,7 @@ import type { CardAttributeFieldType } from "@/lib/db/cards";
 import type { ProductKindKey } from "@/lib/constants/product-kinds";
 import type { Product, ProductAttributeValue, ProductContent, ProductDb } from "@/lib/types/product";
 import { normalizeContents, type ReferencedProduct } from "@/lib/products/contents";
+import { PRODUCT_EDITION_FIELD } from "@/lib/constants/product-editions";
 
 const COLLECTION = "products";
 
@@ -375,6 +376,58 @@ export async function getContainersReferencing(gameId: ObjectId, id: string): Pr
 /** Nombre de produits d'un jeu, affiché dans l'administration. */
 export async function countGameProducts(gameId: ObjectId): Promise<number> {
   return db.collection(COLLECTION).countDocuments({ gameId });
+}
+
+/** Ce qu'on sait des éditions d'un catalogue : celles qui existent, et le reste. */
+export type ProductEditionCensus = {
+  /**
+   * Valeurs distinctes de l'attribut `edition`, triées par ordre alphabétique
+   * **inverse** — rien ne date une édition, et ce tri met « Seconde » avant
+   * « Première » sans prétendre lire une chronologie.
+   */
+  editions: { edition: string; count: number }[];
+  /** Produits sans édition : invisibles sous tout filtre d'édition. */
+  untagged: number;
+};
+
+/**
+ * Relevé des éditions d'un jeu, pour le filtre des catalogues et le réglage de
+ * l'administration.
+ *
+ * Le compte des produits **sans** édition est rendu avec les autres : c'est lui
+ * qui explique une gamme qui se vide dès qu'une édition en cours est choisie, et
+ * le taire ferait passer un étiquetage incomplet pour un bug.
+ */
+export async function getGameProductEditions(gameId: ObjectId): Promise<ProductEditionCensus> {
+  const rows = await db
+    .collection(COLLECTION)
+    .aggregate<{ _id: string | null; count: number }>([
+      { $match: { gameId } },
+      {
+        $group: {
+          _id: {
+            $let: {
+              vars: { edition: `$${PRODUCT_EDITION_FIELD}` },
+              // Une édition n'est une édition que si c'est une chaîne non vide :
+              // un attribut saisi en nombre ou vidé compte comme absent, sans
+              // quoi le filtre proposerait une valeur qui ne rend rien.
+              in: {
+                $cond: [{ $and: [{ $eq: [{ $type: "$$edition" }, "string"] }, { $ne: ["$$edition", ""] }] }, "$$edition", null],
+              },
+            },
+          },
+          count: { $sum: 1 },
+        },
+      },
+    ])
+    .toArray();
+
+  const editions = rows
+    .filter((row): row is { _id: string; count: number } => typeof row._id === "string")
+    .map((row) => ({ edition: row._id, count: row.count }))
+    .sort((a, b) => b.edition.localeCompare(a.edition));
+
+  return { editions, untagged: rows.find((row) => row._id === null)?.count ?? 0 };
 }
 
 /** Gammes utilisées par les produits d'un jeu, pour le filtre de l'exploration. */

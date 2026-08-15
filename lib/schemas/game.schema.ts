@@ -55,6 +55,20 @@ export const gameTournamentDefaultsSchema = z.object({
 
 export type GameTournamentDefaultsInput = z.infer<typeof gameTournamentDefaultsSchema>;
 
+/**
+ * Édition du jeu en cours — la valeur que porte l'attribut `edition` des
+ * produits qui se jouent aujourd'hui, et que les catalogues montrent par défaut.
+ *
+ * La chaîne vide est **acceptée** : c'est ainsi qu'on déclare qu'un jeu n'a pas
+ * d'éditions, et l'action serveur la traduit en retrait du champ. Les bornes
+ * sont celles d'une valeur d'attribut de produit, puisque c'est à elles qu'elle
+ * est comparée.
+ */
+export const currentProductEditionSchema = z
+  .string()
+  .trim()
+  .max(60, "Le nom d'une édition est trop long");
+
 // Pour la validation d'ID MongoDB (ObjectId est un string hexadecimal de 24 caractères)
 export const gameIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, "L'ID du jeu doit être un ObjectId MongoDB valide");
 

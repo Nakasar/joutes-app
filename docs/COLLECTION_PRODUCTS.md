@@ -231,6 +231,40 @@ Trois points rendent un import rejouable, et valent pour tous :
   `manuallyEditedAt` — sauf `--force`. L'import corrige le reste : c'est ainsi
   que « Yub Nub », saisi en figurine, redevient une boîte.
 
+## Les éditions
+
+Certaines gammes traversent plusieurs **éditions** — des versions du jeu qui ne
+sont pas toujours compatibles. Star Wars: Legion en compte deux : une boîte de la
+première ne se joue pas avec les règles de la seconde, et un joueur a besoin de
+le savoir avant d'acheter.
+
+| | Où | Quoi |
+| --- | --- | --- |
+| L'édition d'un produit | attribut `edition` | une valeur libre, saisie ou posée par un import |
+| L'édition **en cours** | `games.currentProductEdition` | réglée depuis `/admin/products` |
+
+**L'édition est un attribut, pas un champ.** La plupart des jeux n'en ont pas :
+un champ de plus sur tous les produits de la plateforme pour deux gammes serait
+mal placé. En attribut, elle hérite sans une ligne de la saisie, du relevé et de
+l'autocomplétion de `/admin/products` — et une correction manuelle survit aux
+imports suivants, qui n'écrivent que les attributs qu'ils connaissent, chacun
+sous sa propre clé.
+
+**Un produit sans édition n'appartient à aucune.** Il ne ressort d'aucun filtre
+d'édition, seulement de « toutes ». C'est ce qui donne son sens au réglage —
+« dernière édition » veut dire ce qu'il dit —, et c'est aussi le piège : une
+gamme mal étiquetée disparaît des écrans. L'administration affiche donc, sous le
+réglage, combien de produits portent quelle édition et combien n'en portent
+aucune, avec ce que le choix rendra visible.
+
+**Le défaut est posé côté serveur**, dans les deux routes de catalogue, et non
+dans chaque écran : le site, l'application mobile et les agents lisent les mêmes
+routes, et « par défaut, la dernière édition » doit valoir pour tous. Un client
+qui veut tout le catalogue le demande, avec `edition=all`.
+
+Sur une tuile, l'édition ne s'affiche **que lorsqu'elle n'est pas celle en
+cours** : c'est l'exception qu'il faut signaler, pas la règle.
+
 **Un catalogue sans contenu reste un catalogue.** Shatterpoint publie l'unité par
 unité ce que contient chaque boîte, Legion non — Atomic Mass Games n'en dit rien
 d'exploitable. L'import Legion écrit donc 152 feuilles, sans une seule ligne de
