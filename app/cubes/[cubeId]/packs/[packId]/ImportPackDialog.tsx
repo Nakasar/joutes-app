@@ -115,13 +115,15 @@ export default function ImportPackDialog({ cubeId, packId, onImported }: Props) 
           {t("import.trigger")}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      {/* Bornée à l'écran, corps défilant : la liste collée peut faire
+          plusieurs centaines de lignes. */}
+      <DialogContent className="flex max-h-[85dvh] flex-col">
         <DialogHeader>
           <DialogTitle>{t("import.title")}</DialogTitle>
           <DialogDescription>{t("import.description")}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto">
           <pre className="overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs text-muted-foreground">
             {t("import.example")}
           </pre>
@@ -134,7 +136,7 @@ export default function ImportPackDialog({ cubeId, packId, onImported }: Props) 
               onChange={(e) => setText(e.target.value)}
               rows={10}
               placeholder={t("import.placeholder")}
-              className="font-mono text-xs"
+              className="field-sizing-fixed font-mono text-xs"
             />
           </div>
 

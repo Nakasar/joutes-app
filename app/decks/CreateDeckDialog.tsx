@@ -89,8 +89,11 @@ export default function CreateDeckDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
-        <form onSubmit={handleSubmit}>
+      {/* Bornée à la hauteur de l'écran, corps défilant : la liste de cartes
+          collée peut faire plusieurs centaines de lignes, et une fenêtre en
+          position fixe qui déborde emporte ses boutons hors d'atteinte. */}
+      <DialogContent className="flex max-h-[85dvh] flex-col sm:max-w-[600px]">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-4">
           <DialogHeader>
             <DialogTitle>Créer un nouveau deck</DialogTitle>
             <DialogDescription>
@@ -98,7 +101,7 @@ export default function CreateDeckDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-4">
             {/* Name */}
             <div className="space-y-2">
               <Label htmlFor="name">
@@ -164,6 +167,7 @@ export default function CreateDeckDialog({
                 placeholder="Décrivez votre deck, sa stratégie..."
                 rows={4}
                 disabled={isLoading}
+                className="max-h-[30dvh]"
               />
             </div>
 
@@ -177,7 +181,7 @@ export default function CreateDeckDialog({
                 placeholder="3x Carte A&#10;2x Carte B&#10;1x Carte C..."
                 rows={10}
                 disabled={isLoading}
-                className="font-mono text-sm"
+                className="field-sizing-fixed font-mono text-sm"
               />
               <p className="text-xs text-muted-foreground">
                 Notez la composition complète de votre deck

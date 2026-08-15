@@ -87,7 +87,9 @@ export default function ExportCardListDialog({ title, getText, triggerLabel, fil
           {triggerLabel}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      {/* Bornée à l'écran : la liste produite fait la taille du paquet, et
+          la zone de texte suivrait sa hauteur sans limite. */}
+      <DialogContent className="flex max-h-[85dvh] flex-col">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{t("export.description")}</DialogDescription>
@@ -102,7 +104,7 @@ export default function ExportCardListDialog({ title, getText, triggerLabel, fil
             value={text}
             rows={14}
             placeholder={t("export.empty")}
-            className="font-mono text-xs"
+            className="field-sizing-fixed max-h-[55dvh] min-h-0 font-mono text-xs"
             onFocus={(e) => e.target.select()}
           />
         )}
