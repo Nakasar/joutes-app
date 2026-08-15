@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect, notFound } from "next/navigation";
+import { getLocale } from "next-intl/server";
 import { hasPermission } from "@/lib/db/permissions";
 import { getNewsById, getAllTags } from "@/lib/db/news";
 import { getAllGames } from "@/lib/db/games";
@@ -9,6 +10,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import NewsForm from "../../NewsForm";
+import { Locale } from "@/i18n/config";
 
 type Props = { params: Promise<{ newsId: string }> };
 
@@ -34,10 +36,11 @@ export default async function EditNewsPage({ params }: Props) {
     redirect(`/news/${newsId}`);
   }
 
-  const [news, games, existingTags] = await Promise.all([
+  const [news, games, existingTags, locale] = await Promise.all([
     getNewsById(newsId),
     getAllGames(),
     getAllTags(),
+    getLocale(),
   ]);
 
   if (!news) {
@@ -57,7 +60,7 @@ export default async function EditNewsPage({ params }: Props) {
         <p className="text-muted-foreground mt-1 truncate">{news.title}</p>
       </div>
 
-      <NewsForm mode="edit" news={news} games={games} existingTags={existingTags} />
+      <NewsForm mode="edit" news={news} games={games} existingTags={existingTags} defaultLang={locale as Locale} />
     </div>
   );
 }

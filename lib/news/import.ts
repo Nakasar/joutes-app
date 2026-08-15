@@ -2,6 +2,7 @@ import "server-only";
 
 import { put } from "@vercel/blob";
 import { ObjectId } from "mongodb";
+import type { Locale } from "@/i18n/config";
 import { getAllCardNamesById } from "@/lib/db/cards";
 import { createMarkdownCardMentionBracketer } from "@/lib/loop-markdown";
 import {
@@ -56,6 +57,8 @@ export type NewsImportDraft = {
   content: string;
   banner?: string;
   source: { name: string; url: string };
+  /** La langue déclarée par la page, quand c'en est une que Joutes parle. */
+  lang?: Locale;
   /** Ce que la recopie des images a donné, pour le dire à l'auteur. */
   images: { rehosted: number; keptRemote: number };
   /** Vrai quand la source annonçait une bannière qu'on n'a pas su recopier. */
@@ -185,6 +188,7 @@ export async function importNewsFromUrl(
       content,
       banner,
       source: { name: article.sourceName, url: fetched.page.finalUrl },
+      lang: article.lang,
       images: { rehosted: rehostedContentImages, keptRemote: contentImageUrls.length - rehostedContentImages },
       bannerMissed: !!article.bannerUrl && !banner,
       cardsDetected,

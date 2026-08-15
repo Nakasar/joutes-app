@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { getLocale } from "next-intl/server";
 import { hasPermission } from "@/lib/db/permissions";
 import { getAllGames } from "@/lib/db/games";
 import { getAllTags } from "@/lib/db/news";
@@ -9,6 +10,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import NewsForm from "../NewsForm";
+import { Locale } from "@/i18n/config";
 
 export const metadata: Metadata = {
   title: "Rédiger une actualité",
@@ -27,7 +29,7 @@ export default async function CreateNewsPage() {
     redirect("/news");
   }
 
-  const [games, existingTags] = await Promise.all([getAllGames(), getAllTags()]);
+  const [games, existingTags, locale] = await Promise.all([getAllGames(), getAllTags(), getLocale()]);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -44,7 +46,7 @@ export default async function CreateNewsPage() {
         </p>
       </div>
 
-      <NewsForm mode="create" games={games} existingTags={existingTags} />
+      <NewsForm mode="create" games={games} existingTags={existingTags} defaultLang={locale as Locale} />
     </div>
   );
 }

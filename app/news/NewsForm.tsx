@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Game } from "@/lib/types/Game";
 import { News, NewsSource } from "@/lib/types/News";
+import { locales, localeLabels, type Locale } from "@/i18n/config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,13 +18,15 @@ import { toast } from "sonner";
 import { ExternalLink, Loader2, X } from "lucide-react";
 
 type NewsFormProps =
-  | { mode: "create"; games: Game[]; existingTags: string[] }
-  | { mode: "edit"; news: News; games: Game[]; existingTags: string[] };
+  | { mode: "create"; games: Game[]; existingTags: string[]; defaultLang: Locale }
+  | { mode: "edit"; news: News; games: Game[]; existingTags: string[]; defaultLang: Locale };
 
 type FormData = {
   title: string;
   summary: string;
   content: string;
+  /** La langue dans laquelle l'actualité est écrite : sa VO. */
+  originalLang: Locale;
   banner?: string;
   /** `null` retire l'attribution ; `undefined` la laisse telle qu'elle est en base. */
   source?: NewsSource | null;
@@ -39,6 +42,7 @@ export default function NewsForm(props: NewsFormProps) {
     title: isEdit ? props.news.title : "",
     summary: isEdit ? props.news.summary : "",
     content: isEdit ? props.news.content : "",
+    originalLang: isEdit ? props.news.originalLang : props.defaultLang,
     banner: isEdit ? props.news.banner : undefined,
     source: isEdit ? (props.news.source ?? null) : null,
     gameIds: isEdit ? props.news.gameIds : [],
@@ -63,6 +67,9 @@ export default function NewsForm(props: NewsFormProps) {
       title: draft.title,
       summary: draft.summary,
       content: draft.content,
+      // La page dit dans quelle langue elle est écrite : le texte importé est
+      // la VO de l'actualité, et c'est depuis elle que les traductions se font.
+      originalLang: draft.lang ?? prev.originalLang,
       banner: draft.banner ?? prev.banner,
       source: draft.source,
     }));
@@ -205,6 +212,27 @@ export default function NewsForm(props: NewsFormProps) {
           onChange={(v) => setForm((prev) => ({ ...prev, content: v }))}
           placeholder="Rédigez le contenu en Markdown…"
         />
+      </div>
+
+      {/* Langue d'origine */}
+      <div className="space-y-2">
+        <Label htmlFor="originalLang">Langue de rédaction</Label>
+        <select
+          id="originalLang"
+          value={form.originalLang}
+          onChange={(e) => setForm((prev) => ({ ...prev, originalLang: e.target.value as Locale }))}
+          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:w-64"
+        >
+          {locales.map((lang) => (
+            <option key={lang} value={lang}>
+              {localeLabels[lang]}
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-muted-foreground">
+          La version originale de l&apos;actualité. Les autres langues se saisissent ensuite depuis le menu
+          « Traduire » de sa page, et chacune a son adresse.
+        </p>
       </div>
 
       {/* Source officielle */}

@@ -76,3 +76,9 @@ Pour plus de détails, voir [docs/GAME_EXPORTS.md](docs/GAME_EXPORTS.md).
 Une actualité peut être reprise d'un article publié ailleurs — la FAQ d'une sortie sur le site officiel, par exemple — en gardant sa mise en page et ses images, avec les noms de cartes mis en forme comme ailleurs sur Joutes. La source est citée et liée sur l'actualité.
 
 Pour plus de détails, voir [docs/NEWS_IMPORT.md](docs/NEWS_IMPORT.md).
+
+### Traduction des actualités
+
+Une actualité est écrite dans une langue et peut être traduite dans les autres. `/news/:newsId` la sert dans la langue de l'interface du lecteur ; `/news/:newsId/:lang` sert une langue précise, et chacune a donc son adresse partageable.
+
+Pour plus de détails, voir [docs/NEWS_TRANSLATIONS.md](docs/NEWS_TRANSLATIONS.md).

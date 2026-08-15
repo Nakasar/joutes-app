@@ -184,6 +184,41 @@ test("extractArticle tronque un titre trop long pour le schéma des actualités"
   assert.ok(onlyLong.title.endsWith("…"));
 });
 
+test("extractArticle lit la langue déclarée par la page", () => {
+  const article = extractArticle(pageWith(ARTICLE_BODY), PAGE_URL);
+
+  assert.ok(article);
+  assert.equal(article.lang, "fr");
+});
+
+test("extractArticle réduit une étiquette régionale à sa langue", () => {
+  // Les sites officiels publient par région (`fr-fr`, `en-us`, `og:locale` en
+  // `fr_FR`) ; l'application, elle, ne connaît que quatre langues.
+  const enUs = extractArticle(
+    `<!doctype html><html lang="en-us"><head><meta property="og:title" content="T"></head><body><main><article><p>A paragraph long enough to count as written content in the scoring.</p></article></main></body></html>`,
+    PAGE_URL
+  );
+  assert.ok(enUs);
+  assert.equal(enUs.lang, "en");
+
+  const ogLocale = extractArticle(
+    `<!doctype html><html><head><meta property="og:title" content="T"><meta property="og:locale" content="it_IT"></head><body><main><article><p>Un paragrafo abbastanza lungo per contare come contenuto scritto.</p></article></main></body></html>`,
+    PAGE_URL
+  );
+  assert.ok(ogLocale);
+  assert.equal(ogLocale.lang, "it");
+});
+
+test("extractArticle laisse la langue vide quand Joutes ne parle pas celle de la page", () => {
+  const article = extractArticle(
+    `<!doctype html><html lang="es-es"><head><meta property="og:title" content="T"></head><body><main><article><p>Un parrafo suficientemente largo para contar como contenido escrito.</p></article></main></body></html>`,
+    PAGE_URL
+  );
+
+  assert.ok(article);
+  assert.equal(article.lang, undefined);
+});
+
 test("absoluteUrl écarte ce qui n'est pas une ressource http(s)", () => {
   assert.equal(absoluteUrl("/a/b", PAGE_URL), "https://exemple.com/a/b");
   assert.equal(absoluteUrl("javascript:alert(1)", PAGE_URL), undefined);

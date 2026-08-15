@@ -2,6 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { News } from "@/lib/types/News";
+import {
+  localizeNews,
+  newsOriginalLang,
+  newsPath,
+  resolveNewsLang,
+} from "@/lib/news/localize";
+import { useLocale } from "next-intl";
+import type { Locale } from "@/i18n/config";
 import { Game } from "@/lib/types/Game";
 import Link from "next/link";
 import { DateTime } from "luxon";
@@ -256,7 +264,15 @@ type NewsCardProps = {
 };
 
 function NewsCard({ news, canWrite, isLiking, onLike }: NewsCardProps) {
-  const date = DateTime.fromJSDate(new Date(news.createdAt)).setLocale("fr").toLocaleString(DateTime.DATE_FULL);
+  // La liste parle la langue du lecteur : titre, résumé, et le lien qui mène
+  // droit à la bonne version plutôt qu'à la VO qu'il faudrait ensuite quitter.
+  const locale = useLocale() as Locale;
+  const localized = localizeNews(news, resolveNewsLang(news, locale));
+  const href = newsPath(news.id, localized.lang, newsOriginalLang(news));
+
+  const date = DateTime.fromJSDate(new Date(news.createdAt))
+    .setLocale(localized.lang)
+    .toLocaleString(DateTime.DATE_FULL);
   const authorName =
     news.author?.displayName && news.author?.discriminator
       ? `${news.author.displayName}#${news.author.discriminator}`
@@ -268,7 +284,7 @@ function NewsCard({ news, canWrite, isLiking, onLike }: NewsCardProps) {
         <div className="relative w-full aspect-[3/1] max-h-48">
           <Image
             src={news.banner}
-            alt={`Bannière : ${news.title}`}
+            alt={`Bannière : ${localized.title}`}
             fill
             className="object-cover"
             unoptimized
@@ -277,9 +293,9 @@ function NewsCard({ news, canWrite, isLiking, onLike }: NewsCardProps) {
       )}
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
-          <Link href={`/news/${news.id}`} className="group">
+          <Link href={href} className="group">
             <CardTitle className="text-xl group-hover:text-primary transition-colors">
-              {news.title}
+              {localized.title}
             </CardTitle>
           </Link>
           {canWrite && (
@@ -305,7 +321,7 @@ function NewsCard({ news, canWrite, isLiking, onLike }: NewsCardProps) {
       </CardHeader>
 
       <CardContent className="pb-3">
-        <p className="text-muted-foreground line-clamp-3">{news.summary}</p>
+        <p className="text-muted-foreground line-clamp-3">{localized.summary}</p>
 
         <div className="flex flex-wrap gap-2 mt-3">
           {news.games?.map((g) => (
@@ -322,7 +338,7 @@ function NewsCard({ news, canWrite, isLiking, onLike }: NewsCardProps) {
       </CardContent>
 
       <CardFooter className="flex items-center justify-between pt-0">
-        <Link href={`/news/${news.id}`}>
+        <Link href={href}>
           <Button variant="link" className="p-0 h-auto">
             Lire la suite →
           </Button>
