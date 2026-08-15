@@ -39,7 +39,7 @@ export default async function NewsCard({ news, isLoggedIn, compact = false }: Ne
         <div className="relative w-full aspect-[3/1] max-h-48">
           <Image
             src={news.banner}
-            alt={localized.title}
+            alt={localized.title.text}
             fill
             className="object-cover"
             unoptimized
@@ -48,8 +48,11 @@ export default async function NewsCard({ news, isLoggedIn, compact = false }: Ne
       )}
       <CardHeader className="pb-2">
         <Link href={href} className="group">
-          <CardTitle className="text-xl group-hover:text-primary transition-colors">
-            {localized.title}
+          <CardTitle
+            className="text-xl group-hover:text-primary transition-colors"
+            lang={localized.title.lang}
+          >
+            {localized.title.text}
           </CardTitle>
         </Link>
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
@@ -60,8 +63,11 @@ export default async function NewsCard({ news, isLoggedIn, compact = false }: Ne
       </CardHeader>
 
       <CardContent className="pb-3">
-        <p className={`text-muted-foreground ${compact ? "line-clamp-2" : "line-clamp-3"}`}>
-          {localized.summary}
+        <p
+          className={`text-muted-foreground ${compact ? "line-clamp-2" : "line-clamp-3"}`}
+          lang={localized.summary.lang}
+        >
+          {localized.summary.text}
         </p>
 
         {!compact && news.tags.length > 0 && (

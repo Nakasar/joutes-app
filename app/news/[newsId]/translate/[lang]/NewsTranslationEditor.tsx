@@ -75,14 +75,22 @@ export default function NewsTranslationEditor({
         }),
       });
 
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
         toast.error(data.error ?? "L'enregistrement de la traduction a échoué");
         return;
       }
 
-      toast.success(`Traduction en ${localeLabels[lang]} enregistrée`);
-      router.push(`/news/${newsId}/${lang}`);
+      // Vider les trois champs retire la langue : son adresse n'existe alors
+      // plus, et y renvoyer donnerait un 404 juste après un enregistrement
+      // réussi. On revient à la VO, la seule page qui reste.
+      if (data.removed) {
+        toast.success(`Traduction en ${localeLabels[lang]} retirée : tous les champs étaient vides`);
+        router.push(`/news/${newsId}`);
+      } else {
+        toast.success(`Traduction en ${localeLabels[lang]} enregistrée`);
+        router.push(`/news/${newsId}/${lang}`);
+      }
       router.refresh();
     } catch {
       toast.error("Une erreur réseau est survenue");

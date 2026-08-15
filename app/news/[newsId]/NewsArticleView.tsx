@@ -61,11 +61,11 @@ export async function buildNewsMetadata(newsId: string, requested?: Locale): Pro
   const original = newsOriginalLang(news);
 
   return {
-    title: localized.title,
-    description: localized.summary,
+    title: localized.title.text,
+    description: localized.summary.text,
     openGraph: {
-      title: localized.title,
-      description: localized.summary,
+      title: localized.title.text,
+      description: localized.summary.text,
       locale: lang,
     },
     alternates: {
@@ -115,7 +115,7 @@ export default async function NewsArticleView({ newsId, requestedLang }: Props) 
   // que de deviner pour une actualité multi-jeux.
   const singleGame = news.games?.length === 1 ? news.games[0] : undefined;
   const { cardIdByName, cardsById } = singleGame
-    ? await resolveCardMentions(new ObjectId(singleGame.id), [localized.content])
+    ? await resolveCardMentions(new ObjectId(singleGame.id), [localized.content.text])
     : { cardIdByName: {}, cardsById: {} };
   const gameSlug = singleGame?.slug ?? "riftbound";
 
@@ -159,13 +159,19 @@ export default async function NewsArticleView({ newsId, requestedLang }: Props) 
       </div>
 
       {/* En-tête */}
-      <article className="space-y-6" lang={localized.lang}>
+      {/*
+        Pas de `lang` sur l'article entier : le repli étant champ par champ,
+        titre, résumé et corps ne sont pas forcément dans la même langue, et
+        une étiquette unique en mentirait sur au moins un — la synthèse vocale
+        lirait alors du français avec une prononciation anglaise.
+      */}
+      <article className="space-y-6">
         {/* Bannière */}
         {news.banner && (
           <div className="relative w-full rounded-xl overflow-hidden aspect-[3/1] max-h-64">
             <Image
               src={news.banner}
-              alt={`Bannière : ${localized.title}`}
+              alt={`Bannière : ${localized.title.text}`}
               fill
               className="object-cover"
               unoptimized
@@ -175,7 +181,9 @@ export default async function NewsArticleView({ newsId, requestedLang }: Props) 
         )}
 
         <header className="space-y-4">
-          <h1 className="text-4xl font-bold tracking-tight">{localized.title}</h1>
+          <h1 className="text-4xl font-bold tracking-tight" lang={localized.title.lang}>
+            {localized.title.text}
+          </h1>
 
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <span>{date}</span>
@@ -195,8 +203,11 @@ export default async function NewsArticleView({ newsId, requestedLang }: Props) 
           )}
 
           {/* Résumé */}
-          <p className="text-lg text-muted-foreground border-l-4 border-primary pl-4">
-            {localized.summary}
+          <p
+            className="text-lg text-muted-foreground border-l-4 border-primary pl-4"
+            lang={localized.summary.lang}
+          >
+            {localized.summary.text}
           </p>
 
           {/*
@@ -239,12 +250,14 @@ export default async function NewsArticleView({ newsId, requestedLang }: Props) 
         </header>
 
         {/* Contenu markdown */}
-        <NewsContent
-          content={localized.content}
-          cardIdByName={cardIdByName}
-          cardsById={cardsById}
-          gameSlug={gameSlug}
-        />
+        <div lang={localized.content.lang}>
+          <NewsContent
+            content={localized.content.text}
+            cardIdByName={cardIdByName}
+            cardsById={cardsById}
+            gameSlug={gameSlug}
+          />
+        </div>
 
         {/* Like */}
         <footer className="pt-6 border-t flex flex-wrap items-center justify-between gap-2">

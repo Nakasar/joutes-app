@@ -66,8 +66,8 @@ test("localizeNews rend la traduction demandée", () => {
 
   assert.equal(localized.lang, "en");
   assert.equal(localized.isTranslation, true);
-  assert.equal(localized.title, "Vendetta FAQ");
-  assert.equal(localized.content, "The body of the FAQ.");
+  assert.equal(localized.title.text, "Vendetta FAQ");
+  assert.equal(localized.content.text, "The body of the FAQ.");
 });
 
 test("localizeNews replie champ par champ sur la VO", () => {
@@ -75,9 +75,20 @@ test("localizeNews replie champ par champ sur la VO", () => {
   const news = newsWith([{ ...FULL_EN, summary: "   " }]);
   const localized = localizeNews(news, "en");
 
-  assert.equal(localized.title, "Vendetta FAQ");
-  assert.equal(localized.summary, "Réponses aux questions fréquentes.");
-  assert.equal(localized.content, "The body of the FAQ.");
+  assert.equal(localized.title.text, "Vendetta FAQ");
+  assert.equal(localized.summary.text, "Réponses aux questions fréquentes.");
+  assert.equal(localized.content.text, "The body of the FAQ.");
+});
+
+test("localizeNews dit la langue de chaque texte, pas seulement celle de la page", () => {
+  // Le repli étant champ par champ, une étiquette unique en mentirait sur au
+  // moins un : la synthèse vocale lirait le résumé français à l'anglaise.
+  const localized = localizeNews(newsWith([{ ...FULL_EN, summary: "   " }]), "en");
+
+  assert.equal(localized.lang, "en");
+  assert.equal(localized.title.lang, "en");
+  assert.equal(localized.summary.lang, "fr");
+  assert.equal(localized.content.lang, "en");
 });
 
 test("localizeNews retombe sur la VO pour une langue non traduite", () => {
@@ -85,7 +96,8 @@ test("localizeNews retombe sur la VO pour une langue non traduite", () => {
 
   assert.equal(localized.lang, "fr");
   assert.equal(localized.isTranslation, false);
-  assert.equal(localized.title, "FAQ Vendetta");
+  assert.equal(localized.title.text, "FAQ Vendetta");
+  assert.equal(localized.title.lang, "fr");
 });
 
 test("localizeNews demandée dans la VO ne cherche pas de traduction", () => {

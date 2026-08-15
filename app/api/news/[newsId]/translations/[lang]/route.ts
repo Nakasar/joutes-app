@@ -66,12 +66,21 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     );
   }
 
-  const saved = await upsertNewsTranslation(newsId, locale, parsed.data);
+  // Une traduction dont les trois textes sont vides n'en est pas une : elle
+  // n'apparaîtrait nulle part (`availableNewsLangs` l'écarte) et son adresse
+  // répondrait 404. Vider les champs et enregistrer, c'est retirer la langue —
+  // ce que l'éditeur annonce en le faisant.
+  const isEmpty = !parsed.data.title.trim() && !parsed.data.summary.trim() && !parsed.data.content.trim();
+
+  const saved = isEmpty
+    ? await deleteNewsTranslation(newsId, locale)
+    : await upsertNewsTranslation(newsId, locale, parsed.data);
+
   if (!saved) {
     return NextResponse.json({ error: "Actualité introuvable" }, { status: 404 });
   }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, removed: isEmpty });
 }
 
 export async function DELETE(

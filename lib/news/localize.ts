@@ -11,14 +11,28 @@ import type { News, NewsTranslation } from "@/lib/types/News";
  * module, sans accès à la base ni au réseau, et couvert par ses tests.
  */
 
+/**
+ * Un texte de l'actualité, et la langue dans laquelle il est **réellement**
+ * écrit.
+ *
+ * Le repli étant champ par champ, les trois ne sont pas forcément dans la même
+ * langue : un titre traduit peut voisiner un résumé resté en VO. Poser la
+ * langue de la page sur les trois mentirait à la synthèse vocale, qui lirait du
+ * français avec une prononciation anglaise, et à la coupure de mots.
+ */
+export type LocalizedText = { text: string; lang: Locale };
+
 export type LocalizedNews = {
-  /** La langue effectivement servie. */
+  /**
+   * La langue servie par la page — celle de l'adresse, du `canonical` et du
+   * sélecteur. Distincte de celle de chaque texte, que porte `LocalizedText`.
+   */
   lang: Locale;
   /** Faux quand c'est la VO qui est rendue. */
   isTranslation: boolean;
-  title: string;
-  summary: string;
-  content: string;
+  title: LocalizedText;
+  summary: LocalizedText;
+  content: LocalizedText;
   /**
    * Vrai quand la traduction est antérieure à la dernière modification de la
    * VO : elle est peut-être dépassée, et le lecteur doit le savoir.
@@ -27,9 +41,15 @@ export type LocalizedNews = {
 };
 
 /** Un texte traduit mais blanc n'est pas une traduction : la VO reprend la main. */
-function pick(translated: string | undefined, original: string): string {
-  const trimmed = translated?.trim();
-  return trimmed ? translated! : original;
+function pick(
+  translated: string | undefined,
+  original: string,
+  translatedLang: Locale,
+  originalLang: Locale
+): LocalizedText {
+  return translated?.trim()
+    ? { text: translated, lang: translatedLang }
+    : { text: original, lang: originalLang };
 }
 
 /** La VO d'une actualité, `fr` pour celles écrites avant que la langue soit notée. */
@@ -104,9 +124,9 @@ export function localizeNews(
     return {
       lang: original,
       isTranslation: false,
-      title: news.title,
-      summary: news.summary,
-      content: news.content,
+      title: { text: news.title, lang: original },
+      summary: { text: news.summary, lang: original },
+      content: { text: news.content, lang: original },
       isStale: false,
     };
   }
@@ -114,9 +134,9 @@ export function localizeNews(
   return {
     lang,
     isTranslation: true,
-    title: pick(translation.title, news.title),
-    summary: pick(translation.summary, news.summary),
-    content: pick(translation.content, news.content),
+    title: pick(translation.title, news.title, lang, original),
+    summary: pick(translation.summary, news.summary, lang, original),
+    content: pick(translation.content, news.content, lang, original),
     isStale: isBefore(translation.updatedAt, news.contentUpdatedAt),
   };
 }

@@ -74,9 +74,18 @@ laisse le reste en VO, plutôt que de tout renvoyer en VO — un résumé pas en
 écrit ne doit pas emporter le corps avec lui. Un texte traduit mais blanc compte
 comme non traduit.
 
+Chaque texte porte **sa** langue, et non celle de la page : le repli étant champ
+par champ, un titre traduit peut voisiner un résumé resté en VO, et poser une
+étiquette unique sur les trois mentirait à la synthèse vocale — qui lirait du
+français avec une prononciation anglaise — et à la coupure de mots. D'où
+`LocalizedText`, un texte et sa langue, plutôt qu'une chaîne nue.
+
 `availableNewsLangs` ne retient que les langues qui portent vraiment un texte :
 une traduction entièrement vide n'aurait qu'une page de VO à offrir, sous une
-adresse qui promettrait autre chose.
+adresse qui promettrait autre chose. C'est pourquoi **enregistrer une traduction
+dont les trois champs sont vides la retire** au lieu de la ranger : elle
+n'apparaîtrait nulle part, et l'éditeur renverrait sur une adresse en 404 juste
+après un enregistrement réussi.
 
 La résolution se fait **sur le serveur**, avant le rendu. Les mentions de cartes
 ne sont donc résolues que pour la langue servie, et non pour toutes les

@@ -284,7 +284,7 @@ function NewsCard({ news, canWrite, isLiking, onLike }: NewsCardProps) {
         <div className="relative w-full aspect-[3/1] max-h-48">
           <Image
             src={news.banner}
-            alt={`Bannière : ${localized.title}`}
+            alt={`Bannière : ${localized.title.text}`}
             fill
             className="object-cover"
             unoptimized
@@ -294,8 +294,11 @@ function NewsCard({ news, canWrite, isLiking, onLike }: NewsCardProps) {
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <Link href={href} className="group">
-            <CardTitle className="text-xl group-hover:text-primary transition-colors">
-              {localized.title}
+            <CardTitle
+              className="text-xl group-hover:text-primary transition-colors"
+              lang={localized.title.lang}
+            >
+              {localized.title.text}
             </CardTitle>
           </Link>
           {canWrite && (
@@ -321,7 +324,9 @@ function NewsCard({ news, canWrite, isLiking, onLike }: NewsCardProps) {
       </CardHeader>
 
       <CardContent className="pb-3">
-        <p className="text-muted-foreground line-clamp-3">{localized.summary}</p>
+        <p className="text-muted-foreground line-clamp-3" lang={localized.summary.lang}>
+          {localized.summary.text}
+        </p>
 
         <div className="flex flex-wrap gap-2 mt-3">
           {news.games?.map((g) => (
