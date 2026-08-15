@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Game } from "@/lib/types/Game";
-import { News } from "@/lib/types/News";
+import { News, NewsSource } from "@/lib/types/News";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,8 +12,9 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import MarkdownEditor from "@/components/MarkdownEditor";
 import BannerUploader from "./BannerUploader";
+import NewsImportDialog, { type ImportedNewsDraft } from "./NewsImportDialog";
 import { toast } from "sonner";
-import { Loader2, X } from "lucide-react";
+import { ExternalLink, Loader2, X } from "lucide-react";
 
 type NewsFormProps =
   | { mode: "create"; games: Game[]; existingTags: string[] }
@@ -24,6 +25,8 @@ type FormData = {
   summary: string;
   content: string;
   banner?: string;
+  /** `null` retire l'attribution ; `undefined` la laisse telle qu'elle est en base. */
+  source?: NewsSource | null;
   gameIds: string[];
   tags: string[];
 };
@@ -37,11 +40,33 @@ export default function NewsForm(props: NewsFormProps) {
     summary: isEdit ? props.news.summary : "",
     content: isEdit ? props.news.content : "",
     banner: isEdit ? props.news.banner : undefined,
+    source: isEdit ? (props.news.source ?? null) : null,
     gameIds: isEdit ? props.news.gameIds : [],
     tags: isEdit ? props.news.tags : [],
   });
   const [tagInput, setTagInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Un seul jeu rattaché suffit à désigner le catalogue de cartes interrogé
+  // par l'import ; avec plusieurs, il n'y a pas de choix évident, et la page
+  // de l'actualité ne résout d'ailleurs pas non plus les mentions de cartes.
+  const importGameId = form.gameIds.length === 1 ? form.gameIds[0] : undefined;
+
+  /**
+   * L'article importé remplace le brouillon en cours plutôt que de s'y
+   * ajouter : c'est un texte entier, pas un bloc de plus. Les jeux et les tags
+   * déjà cochés sont conservés — la source ne les connaît pas.
+   */
+  const applyImport = (draft: ImportedNewsDraft) => {
+    setForm((prev) => ({
+      ...prev,
+      title: draft.title,
+      summary: draft.summary,
+      content: draft.content,
+      banner: draft.banner ?? prev.banner,
+      source: draft.source,
+    }));
+  };
 
   const toggleGame = (gameId: string) => {
     setForm((prev) => ({
@@ -86,6 +111,16 @@ export default function NewsForm(props: NewsFormProps) {
       return;
     }
 
+    // Une source à moitié saisie ne veut rien dire : citer un site sans lien
+    // n'aide personne à vérifier, et un lien sans nom ne s'affiche pas.
+    const sourceName = form.source?.name.trim() ?? "";
+    const sourceUrl = form.source?.url.trim() ?? "";
+    if (!sourceName !== !sourceUrl) {
+      toast.error("Renseignez le nom de la source et son lien, ou laissez les deux vides");
+      return;
+    }
+    const source = sourceName && sourceUrl ? { name: sourceName, url: sourceUrl } : null;
+
     setIsSubmitting(true);
     try {
       const url = isEdit ? `/api/news/${props.news.id}` : "/api/news";
@@ -94,7 +129,7 @@ export default function NewsForm(props: NewsFormProps) {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, source }),
       });
 
       if (!res.ok) {
@@ -115,6 +150,18 @@ export default function NewsForm(props: NewsFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Import depuis un site extérieur */}
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed p-3">
+        <p className="text-sm text-muted-foreground">
+          Reprendre un article publié ailleurs, avec sa mise en page et ses images.
+        </p>
+        <NewsImportDialog
+          gameId={importGameId}
+          hasContent={!!form.title.trim() || !!form.content.trim()}
+          onImported={applyImport}
+        />
+      </div>
+
       {/* Bannière */}
       <div className="space-y-2">
         <Label>Bannière</Label>
@@ -158,6 +205,66 @@ export default function NewsForm(props: NewsFormProps) {
           onChange={(v) => setForm((prev) => ({ ...prev, content: v }))}
           placeholder="Rédigez le contenu en Markdown…"
         />
+      </div>
+
+      {/* Source officielle */}
+      <div className="space-y-2">
+        <Label>Source</Label>
+        <p className="text-xs text-muted-foreground">
+          À renseigner quand l&apos;actualité reprend un article publié ailleurs : son origine est alors citée et
+          liée sur la page de l&apos;actualité. Rempli automatiquement par l&apos;import.
+        </p>
+        <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+          <Input
+            aria-label="Nom de la source"
+            value={form.source?.name ?? ""}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                source: { name: e.target.value, url: prev.source?.url ?? "" },
+              }))
+            }
+            placeholder="Nom du site (ex. : Riftbound)"
+            maxLength={120}
+          />
+          <Input
+            type="url"
+            inputMode="url"
+            aria-label="Lien vers l'article d'origine"
+            value={form.source?.url ?? ""}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                source: { name: prev.source?.name ?? "", url: e.target.value },
+              }))
+            }
+            placeholder="https://exemple.com/news/…"
+          />
+        </div>
+        {(form.source?.name || form.source?.url) && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setForm((prev) => ({ ...prev, source: null }))}
+            >
+              <X className="h-3 w-3 mr-1" />
+              Retirer la source
+            </Button>
+            {form.source?.url && (
+              <a
+                href={form.source.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <ExternalLink className="h-3 w-3" />
+                Ouvrir l&apos;article d&apos;origine
+              </a>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Jeux */}

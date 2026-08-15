@@ -294,6 +294,13 @@ function NewsCard({ news, canWrite, isLiking, onLike }: NewsCardProps) {
           <span>{date}</span>
           <span>·</span>
           <span>{authorName}</span>
+          {/* Une actualité reprise d'ailleurs le dit dès la liste. */}
+          {news.source && (
+            <>
+              <span>·</span>
+              <span>d&apos;après {news.source.name}</span>
+            </>
+          )}
         </div>
       </CardHeader>
 

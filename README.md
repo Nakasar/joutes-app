@@ -70,3 +70,9 @@ Pour plus de détails, voir [docs/CARD_PRINTINGS.md](docs/CARD_PRINTINGS.md).
 Chaque jeu expose un document JSON (cartes, erratas, policies, règles) que les clients téléchargent pour fonctionner hors ligne. Il est généré en flux, une génération à la fois par jeu.
 
 Pour plus de détails, voir [docs/GAME_EXPORTS.md](docs/GAME_EXPORTS.md).
+
+### Import d'une actualité depuis un site extérieur
+
+Une actualité peut être reprise d'un article publié ailleurs — la FAQ d'une sortie sur le site officiel, par exemple — en gardant sa mise en page et ses images, avec les noms de cartes mis en forme comme ailleurs sur Joutes. La source est citée et liée sur l'actualité.
+
+Pour plus de détails, voir [docs/NEWS_IMPORT.md](docs/NEWS_IMPORT.md).

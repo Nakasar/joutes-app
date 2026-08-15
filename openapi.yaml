@@ -2521,6 +2521,7 @@ paths:
                 summary: { type: string, minLength: 1, maxLength: 500 }
                 content: { type: string, minLength: 1 }
                 banner: { type: string, format: uri }
+                source: { allOf: [{ $ref: "#/components/schemas/NewsSource" }], nullable: true }
                 gameIds: { type: array, items: { type: string, pattern: "^[0-9a-fA-F]{24}$" }, default: [] }
                 tags: { type: array, items: { type: string, minLength: 1, maxLength: 50 }, default: [] }
       responses:
@@ -2557,6 +2558,7 @@ paths:
                 summary: { type: string, minLength: 1, maxLength: 500 }
                 content: { type: string, minLength: 1 }
                 banner: { type: string, format: uri }
+                source: { allOf: [{ $ref: "#/components/schemas/NewsSource" }], nullable: true, description: "`null` removes the attribution." }
                 gameIds: { type: array, items: { type: string, pattern: "^[0-9a-fA-F]{24}$" } }
                 tags: { type: array, items: { type: string, minLength: 1, maxLength: 50 } }
       responses:
@@ -2582,6 +2584,56 @@ paths:
               schema: { type: object, properties: { liked: { type: boolean }, likesCount: { type: integer } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/ServerError" }
+
+  /news/import:
+    post:
+      tags: [News]
+      summary: Build a news draft from an external article
+      description: |
+        Fetches the given article, converts its body to markdown keeping its layout and images,
+        copies those images to Joutes' own storage, and brackets the card names of the given game
+        so they render as card links. **Nothing is saved**: the response is a draft meant to fill
+        the news form, which the author reviews before publishing. Requires permission `news:update`.
+      security: [{ sessionAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url: { type: string, format: uri, description: "Public http(s) address of the article to import." }
+                gameId: { type: string, pattern: "^[0-9a-fA-F]{24}$", description: "Card catalogue used to detect card names. Without it, no detection happens." }
+      responses:
+        "200":
+          description: The draft. Not saved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  title: { type: string }
+                  summary: { type: string }
+                  content: { type: string, description: "Markdown, with bracketed card mentions." }
+                  banner: { type: string, format: uri }
+                  source: { $ref: "#/components/schemas/NewsSource" }
+                  images:
+                    type: object
+                    properties:
+                      rehosted: { type: integer, description: "Images copied to Joutes' storage." }
+                      keptRemote: { type: integer, description: "Images left at their original address." }
+                  bannerMissed: { type: boolean, description: "The source declared a banner that could not be copied." }
+                  cardsDetected: { type: boolean }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "413": { description: The page is too large to import. }
+        "415": { description: The address does not serve a web page. }
+        "422": { description: No article could be extracted from that page. }
+        "500": { $ref: "#/components/responses/ServerError" }
+        "502": { description: The source site did not answer, or refused to serve the page. }
 
   /news/upload:
     post:
@@ -4253,6 +4305,7 @@ components:
         summary: { type: string }
         content: { type: string }
         banner: { type: string }
+        source: { $ref: "#/components/schemas/NewsSource" }
         gameIds: { type: array, items: { type: string } }
         games: { type: array, items: { type: object, properties: { id: { type: string }, name: { type: string }, icon: { type: string }, slug: { type: string } } } }
         tags: { type: array, items: { type: string } }
@@ -4263,6 +4316,14 @@ components:
         userHasLiked: { type: boolean }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
+
+    NewsSource:
+      type: object
+      description: Attribution of a news article reproduced from an external site.
+      required: [name, url]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120, description: "The site the article was originally published on." }
+        url: { type: string, format: uri, description: "Link to the original article." }
 
     QuizQuestion:
       type: object

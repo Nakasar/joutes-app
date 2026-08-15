@@ -6,7 +6,7 @@ import { hasPermission } from "@/lib/db/permissions";
 import { Metadata } from "next";
 import { DateTime } from "luxon";
 import Link from "next/link";
-import { ArrowLeft, Pencil, Tag, Gamepad2 } from "lucide-react";
+import { ArrowLeft, ExternalLink, Pencil, Tag, Gamepad2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
@@ -112,6 +112,26 @@ export default async function NewsDetailPage({ params }: Props) {
           <p className="text-lg text-muted-foreground border-l-4 border-primary pl-4">
             {news.summary}
           </p>
+
+          {/*
+            Une actualité reprise d'ailleurs dit d'où elle vient, et y renvoie.
+            Annoncé avant le corps plutôt qu'en note de bas de page : le
+            lecteur doit savoir qui parle avant de lire, pas après.
+          */}
+          {news.source && (
+            <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-sm">
+              <span className="text-muted-foreground">Article publié à l&apos;origine sur</span>
+              <a
+                href={news.source.url}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                className="inline-flex items-center gap-1 font-medium text-blue-600 hover:underline"
+              >
+                {news.source.name}
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          )}
 
           {/* Jeux et tags */}
           {(news.games?.length || news.tags.length > 0) && (

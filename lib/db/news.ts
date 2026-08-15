@@ -15,6 +15,7 @@ function toNews(doc: WithId<Document>, userId?: string): News {
     summary: doc.summary,
     content: doc.content,
     banner: doc.banner ?? undefined,
+    source: doc.source ?? undefined,
     gameIds: (doc.gameIds ?? []).map((id: ObjectId) => id.toString()),
     games: doc.games ?? undefined,
     tags: doc.tags ?? [],
@@ -187,6 +188,7 @@ export async function createNews(input: CreateNewsInput, authorId: string): Prom
     summary: input.summary,
     content: input.content,
     banner: input.banner ?? null,
+    source: input.source ?? null,
     gameIds: input.gameIds.map((id) => new ObjectId(id)),
     tags: input.tags,
     authorId: new ObjectId(authorId),
@@ -200,6 +202,7 @@ export async function createNews(input: CreateNewsInput, authorId: string): Prom
     id: result.insertedId.toString(),
     ...input,
     banner: input.banner,
+    source: input.source ?? undefined,
     authorId,
     likedBy: [],
     likesCount: 0,
@@ -218,6 +221,7 @@ export async function updateNews(id: string, input: UpdateNewsInput): Promise<bo
   if (input.summary !== undefined) updateDoc.summary = input.summary;
   if (input.content !== undefined) updateDoc.content = input.content;
   if (input.banner !== undefined) updateDoc.banner = input.banner ?? null;
+  if (input.source !== undefined) updateDoc.source = input.source ?? null;
   if (input.tags !== undefined) updateDoc.tags = input.tags;
   if (input.gameIds !== undefined) {
     updateDoc.gameIds = input.gameIds.map((gId) => new ObjectId(gId));
