@@ -130,6 +130,10 @@ export default function RootLayout({
                         Organisateurs
                       </Link>
                       <span className="text-muted-foreground/50">•</span>
+                      <Link href="/pricing" className="hover:text-foreground transition-colors">
+                        Soutenir
+                      </Link>
+                      <span className="text-muted-foreground/50">•</span>
                       <Link href="/cgu" className="hover:text-foreground transition-colors">
                         CGU
                       </Link>

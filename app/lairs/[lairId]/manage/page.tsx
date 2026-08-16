@@ -11,6 +11,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import LairDetailsForm from "./LairDetailsForm";
 import OwnersManager from "./OwnersManager";
+import ProSubscriptionCard from "./ProSubscriptionCard";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+import { getSubscriptionByUserId, getSubscriptionForLair } from "@/lib/db/subscriptions";
+import { canAttachPro } from "@/lib/subscriptions/seats";
 import PrivateLairInvitationManager from "./PrivateLairInvitationManager";
 import PrivateLairFollowersManager from "./PrivateLairFollowersManager";
 import { getTranslations } from "next-intl/server";
@@ -42,6 +47,27 @@ export default async function ManageLairPage({
     })
   );
   const owners = ownersDetails.filter((owner): owner is NonNullable<typeof owner> => owner !== null);
+
+  // État Pro du lieu : dérivé de l'abonnement qui détient son siège, jamais
+  // stocké sur le lieu. C'est ce qui fait qu'un abonnement éteint retire le
+  // statut au rendu suivant, sans révocation à écrire.
+  const session = await auth.api.getSession({ headers: await headers() });
+  const sponsor = await getSubscriptionForLair(lairId);
+  const mySubscription = session?.user?.id ? await getSubscriptionByUserId(session.user.id) : null;
+  const proState = {
+    isPro: sponsor?.plans.includes("pro") ?? false,
+    attachedByMe: Boolean(
+      session?.user?.id && sponsor?.seats.some((seat) => seat.attachedBy === session.user.id)
+    ),
+    ...(() => {
+      const check = canAttachPro({
+        plans: mySubscription?.plans ?? [],
+        seats: mySubscription?.seats ?? [],
+        lair,
+      });
+      return { canAttach: check.ok, refusal: check.ok ? null : check.reason };
+    })(),
+  };
 
   // Récupérer les abonnés pour les lairs privés
   let followers: User[] = [];
@@ -113,6 +139,23 @@ export default async function ManageLairPage({
           </CardHeader>
           <CardContent>
             <OwnersManager lairId={lairId} owners={owners} />
+          </CardContent>
+        </Card>
+
+        {/* Abonnement Pro */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("manage.pro.title")}</CardTitle>
+            <CardDescription>{t("manage.pro.description")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ProSubscriptionCard
+              lairId={lairId}
+              isPro={proState.isPro}
+              attachedByMe={proState.attachedByMe}
+              canAttach={proState.canAttach}
+              refusal={proState.refusal}
+            />
           </CardContent>
         </Card>
       </div>

@@ -1111,7 +1111,33 @@
       "detailsTitle": "Venue information",
       "detailsDescription": "Update the name, banner, and available games for this venue",
       "ownersTitle": "Owners",
-      "ownersDescription": "Manage the people who can administer this venue"
+      "ownersDescription": "Manage the people who can administer this venue",
+      "pro": {
+        "title": "Pro subscription",
+        "description": "Attach this venue to a Joutes Pro subscription to open its organizer features.",
+        "statusActive": "Pro active",
+        "statusInactive": "No subscription",
+        "statusMine": "Attached by you",
+        "activeDescription": "This venue has the Pro features. All of its owners benefit.",
+        "inactiveDescription": "This venue is not attached to any Pro subscription.",
+        "lapsed": "You attached this venue, but your Pro subscription is no longer active: the venue has lost its rights. They return as they were if your subscription resumes.",
+        "attach": "Attach this venue",
+        "attached": "Venue attached.",
+        "attachFailed": "Attaching failed.",
+        "detach": "Detach this venue",
+        "detached": "Venue detached.",
+        "detachFailed": "Detaching failed.",
+        "mySubscription": "My subscription",
+        "refusal": {
+          "not-pro": "A Joutes Pro subscription is required to attach a venue.",
+          "seats-full": "Your subscription does not allow attaching another venue.",
+          "already-attached": "This venue is already attached to your subscription.",
+          "private-lair": "A private venue cannot be attached: Pro features concern the public storefront.",
+          "lair-not-found": "This venue was not found.",
+          "not-authenticated": "You must be signed in.",
+          "not-attached": "This venue was not attached to any subscription."
+        }
+      }
     },
     "eventNew": {
       "notFound": "Venue not found",
@@ -3684,5 +3710,97 @@
         "field2": "\"registeredParticipantsCount\": 18"
       }
     }
+  },
+  "Pricing": {
+    "metadata": {
+      "title": "Support Joutes",
+      "description": "Joutes is free. If the platform is useful to you, three ways to back it — and a few perks along the way."
+    },
+    "hero": {
+      "eyebrow": "Support Joutes",
+      "titleHighlight": "Joutes is free,",
+      "title": "and it will stay that way.",
+      "subtitle": "If the platform is useful to you, you can back it — and pick up a few perks along the way.",
+      "finePrint": "It all happens on Patreon, cancel whenever you like."
+    },
+    "perMonth": "/ month",
+    "plans": {
+      "supporter": {
+        "tagline": "Say thanks, and show it on your profile.",
+        "features": [
+          "A “Supporter” badge next to your name on Joutes",
+          "A silver border around your avatar",
+          "A “Supporter” role on the Discord server",
+          "Access to a dedicated section on the Discord server"
+        ]
+      },
+      "expert": {
+        "tagline": "For anyone who knows their collection card by card.",
+        "features": [
+          "An “Expert” badge next to your name on Joutes",
+          "An amethyst border around your avatar",
+          "An “Expert” role on the Discord server",
+          "Access to a dedicated section on the Discord server",
+          "Advanced features for your play groups"
+        ]
+      },
+      "pro": {
+        "tagline": "For the store, club or association that gets everyone playing.",
+        "features": [
+          "A “Pro” badge next to your name on Joutes",
+          "A midnight-blue border around your avatar",
+          "A “Pro” role on the Discord server",
+          "Access to a dedicated section on the Discord server",
+          "A registration system for your events",
+          "Your events put front and centre",
+          "Customization of your venue page",
+          "A support channel"
+        ],
+        "billingNote": "Also available on invoice, for stores and associations."
+      }
+    },
+    "cta": {
+      "subscribe": "Subscribe on Patreon",
+      "unavailable": "Coming soon",
+      "manage": "Manage my subscription"
+    },
+    "audiences": {
+      "player": "Player",
+      "organizer": "Organizer",
+      "supporter": "Supporter"
+    },
+    "footer": {
+      "title": "Not sure? Come and ask.",
+      "subtitle": "We hang out on Discord — easiest place to put a question.",
+      "cta": "Join the Discord"
+    }
+  },
+  "AccountSubscription": {
+    "back": "Back",
+    "title": "My subscription",
+    "activeTitle": "Active subscription",
+    "noneTitle": "No subscription",
+    "activeSubtitle": "Thank you! Your entitlements are up to date.",
+    "noneSubtitle": "Joutes stays free. Backing it unlocks a few extra features.",
+    "syncedAt": "Last synced: {date}",
+    "notConfigured": "Patreon is not configured on this environment: linking is unavailable here.",
+    "notConfiguredHint": "Patreon is not configured on this environment.",
+    "link": "Link my Patreon account",
+    "linkFailed": "Linking failed.",
+    "linkHint": "Link your Patreon account so your subscription is recognised here.",
+    "resync": "Resync",
+    "resyncDone": "Subscription resynced.",
+    "resyncFailed": "Resync failed.",
+    "unlink": "Unlink Patreon",
+    "unlinkDone": "Patreon account unlinked.",
+    "unlinkFailed": "Unlinking failed.",
+    "discover": "See the plans on Patreon",
+    "seatsTitle": "Sponsored venues",
+    "seatsCount": "{used} of {total}",
+    "seatsSubtitle": "The venues your Pro subscription grants rights to.",
+    "seatsEmpty": "No venue attached yet.",
+    "seatsHint": "Attaching is done from the management page of a venue you own.",
+    "manageLair": "Manage",
+    "seePlans": "See all plans"
   }
 }

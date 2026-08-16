@@ -5,6 +5,9 @@ import {ObjectId} from "bson";
 import {auth} from "@/lib/auth";
 import {headers} from "next/headers";
 import {isAdmin} from "@/lib/config/admins";
+import type {SubscriptionPlanKey} from "@/lib/constants/subscription-plans";
+import {plansForUserId} from "@/lib/subscriptions/access";
+import {resolveEntitlements} from "@/lib/subscriptions/entitlements";
 
 // Anciens noms de permissions, toujours honorés : les comptes qui les portent
 // conservent leurs droits sans migration de la base.
@@ -72,8 +75,25 @@ export async function hasPermission(permission: string) {
  * mobile) n'affichent que les actions réellement autorisées plutôt que de
  * découvrir le refus au moment d'écrire. Un administrateur les a toutes : il
  * est signalé par `isAdmin`, sa liste de permissions n'étant pas énumérable.
+ *
+ * Les offres d'abonnement et les droits qu'elles ouvrent voyagent dans la même
+ * réponse, parce qu'un client se pose une seule question — « qu'ai-je le droit
+ * de faire ? » — et n'a pas à savoir que deux systèmes y répondent.
+ *
+ * Ils restent pourtant **deux listes séparées**, et c'est délibéré : une
+ * permission s'accorde à la main et vaut capacité d'équipe (modérer les erratas,
+ * importer un quizz) ; un droit d'abonnement s'achète et se recalcule tout seul
+ * depuis Patreon. Fusionner leurs chemins d'écriture ferait qu'un abonnement
+ * expiré pourrait retirer un droit de modérateur. Les deux espaces de noms sont
+ * d'ailleurs disjoints par construction : tout droit d'abonnement porte le
+ * préfixe `sub:`.
  */
-export async function getMyPermissions(): Promise<{ permissions: string[]; isAdmin: boolean } | null> {
+export async function getMyPermissions(): Promise<{
+  permissions: string[];
+  isAdmin: boolean;
+  plans: SubscriptionPlanKey[];
+  entitlements: string[];
+} | null> {
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session?.user?.email) {
@@ -94,8 +114,14 @@ export async function getMyPermissions(): Promise<{ permissions: string[]; isAdm
     }
   }
 
+  // `plansForUserId` et non `getMyPlans` : la session est déjà lue plus haut,
+  // et `getMyPlans` la relirait pour retrouver le même identifiant.
+  const plans = await plansForUserId(session.user.id);
+
   return {
     permissions: [...granted].sort(),
     isAdmin: Boolean(user?.isAdmin) || isAdmin(session.user.email),
+    plans,
+    entitlements: resolveEntitlements(plans),
   };
 }

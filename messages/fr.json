@@ -1112,7 +1112,33 @@
       "detailsTitle": "Informations du lieu",
       "detailsDescription": "Modifiez le nom, la bannière et les jeux disponibles dans ce lieu",
       "ownersTitle": "Propriétaires",
-      "ownersDescription": "Gérez les personnes qui peuvent administrer ce lieu"
+      "ownersDescription": "Gérez les personnes qui peuvent administrer ce lieu",
+      "pro": {
+        "title": "Abonnement Pro",
+        "description": "Rattachez ce lieu à un abonnement Joutes Pro pour lui ouvrir les fonctionnalités organisateur.",
+        "statusActive": "Pro actif",
+        "statusInactive": "Pas d'abonnement",
+        "statusMine": "Rattaché par vous",
+        "activeDescription": "Ce lieu bénéficie des fonctionnalités Pro. Tous ses propriétaires en profitent.",
+        "inactiveDescription": "Ce lieu n'est rattaché à aucun abonnement Pro.",
+        "lapsed": "Vous avez rattaché ce lieu, mais votre abonnement Pro n'est plus actif : le lieu a perdu ses droits. Ils reviendront tels quels si votre abonnement reprend.",
+        "attach": "Rattacher ce lieu",
+        "attached": "Lieu rattaché.",
+        "attachFailed": "Le rattachement a échoué.",
+        "detach": "Détacher ce lieu",
+        "detached": "Lieu détaché.",
+        "detachFailed": "Le détachement a échoué.",
+        "mySubscription": "Mon abonnement",
+        "refusal": {
+          "not-pro": "Il faut un abonnement Joutes Pro pour rattacher un lieu.",
+          "seats-full": "Votre abonnement ne permet pas de rattacher un lieu de plus.",
+          "already-attached": "Ce lieu est déjà rattaché à votre abonnement.",
+          "private-lair": "Un lieu privé ne peut pas être rattaché : les fonctionnalités Pro concernent la vitrine publique.",
+          "lair-not-found": "Ce lieu est introuvable.",
+          "not-authenticated": "Vous devez être connecté.",
+          "not-attached": "Ce lieu n'était rattaché à aucun abonnement."
+        }
+      }
     },
     "eventNew": {
       "notFound": "Lieu non trouvé",
@@ -3685,5 +3711,97 @@
         "field2": "\"registeredParticipantsCount\": 18"
       }
     }
+  },
+  "Pricing": {
+    "metadata": {
+      "title": "Soutenir Joutes",
+      "description": "Joutes est gratuit. Si la plateforme vous est utile, trois façons de la soutenir — et quelques bonus au passage."
+    },
+    "hero": {
+      "eyebrow": "Soutenir Joutes",
+      "titleHighlight": "Joutes est gratuit,",
+      "title": "et le restera.",
+      "subtitle": "Si la plateforme vous est utile, vous pouvez la soutenir — et repartir avec quelques bonus au passage.",
+      "finePrint": "Tout se passe sur Patreon, résiliable quand vous voulez."
+    },
+    "perMonth": "/ mois",
+    "plans": {
+      "supporter": {
+        "tagline": "Dire merci, et le montrer sur votre profil.",
+        "features": [
+          "Badge « Supporter » à côté de votre pseudo sur Joutes",
+          "Un contour argenté autour de votre avatar",
+          "Un rôle « Supporter » sur le serveur Discord",
+          "L'accès à une section dédiée sur le serveur Discord"
+        ]
+      },
+      "expert": {
+        "tagline": "Pour qui connaît sa collection carte par carte.",
+        "features": [
+          "Badge « Expert » à côté de votre pseudo sur Joutes",
+          "Un contour améthyste autour de votre avatar",
+          "Un rôle « Expert » sur le serveur Discord",
+          "L'accès à une section dédiée sur le serveur Discord",
+          "Des fonctionnalités avancées pour vos groupes de jeu"
+        ]
+      },
+      "pro": {
+        "tagline": "Pour la boutique, le club ou l'association qui fait jouer tout le monde.",
+        "features": [
+          "Badge « Pro » à côté de votre pseudo sur Joutes",
+          "Un contour bleu nuit autour de votre avatar",
+          "Un rôle « Pro » sur le serveur Discord",
+          "L'accès à une section dédiée sur le serveur Discord",
+          "Un système de réservation pour vos évènements",
+          "La mise en avant de vos évènements",
+          "La personnalisation de votre page de lieu de jeu",
+          "Un canal d'assistance"
+        ],
+        "billingNote": "Également disponible sur facturation, pour les boutiques et les associations."
+      }
+    },
+    "cta": {
+      "subscribe": "S'abonner sur Patreon",
+      "unavailable": "Bientôt disponible",
+      "manage": "Gérer mon abonnement"
+    },
+    "audiences": {
+      "player": "Joueur",
+      "organizer": "Organisateur",
+      "supporter": "Soutien"
+    },
+    "footer": {
+      "title": "Pas sûr ? Venez nous en parler.",
+      "subtitle": "On traîne sur le Discord, c'est le plus simple pour poser une question.",
+      "cta": "Rejoindre le Discord"
+    }
+  },
+  "AccountSubscription": {
+    "back": "Retour",
+    "title": "Mon abonnement",
+    "activeTitle": "Abonnement actif",
+    "noneTitle": "Aucun abonnement",
+    "activeSubtitle": "Merci ! Vos droits sont à jour.",
+    "noneSubtitle": "Joutes reste gratuit. Le soutenir débloque quelques fonctionnalités en plus.",
+    "syncedAt": "Dernière synchronisation : {date}",
+    "notConfigured": "Patreon n'est pas configuré sur cet environnement : la liaison est indisponible ici.",
+    "notConfiguredHint": "Patreon n'est pas configuré sur cet environnement.",
+    "link": "Lier mon compte Patreon",
+    "linkFailed": "La liaison a échoué.",
+    "linkHint": "Liez votre compte Patreon pour que votre abonnement soit reconnu ici.",
+    "resync": "Resynchroniser",
+    "resyncDone": "Abonnement resynchronisé.",
+    "resyncFailed": "La resynchronisation a échoué.",
+    "unlink": "Délier Patreon",
+    "unlinkDone": "Compte Patreon délié.",
+    "unlinkFailed": "La déliaison a échoué.",
+    "discover": "Voir les offres sur Patreon",
+    "seatsTitle": "Lieux parrainés",
+    "seatsCount": "{used} sur {total}",
+    "seatsSubtitle": "Les lieux auxquels votre abonnement Pro ouvre des droits.",
+    "seatsEmpty": "Aucun lieu rattaché pour l'instant.",
+    "seatsHint": "Le rattachement se fait depuis la page de gestion d'un lieu dont vous êtes propriétaire.",
+    "manageLair": "Gérer",
+    "seePlans": "Voir toutes les offres"
   }
 }

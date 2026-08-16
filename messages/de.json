@@ -1111,7 +1111,33 @@
       "detailsTitle": "Ortsinformationen",
       "detailsDescription": "Name, Banner und verfügbare Spiele dieses Ortes aktualisieren",
       "ownersTitle": "Besitzer",
-      "ownersDescription": "Personen verwalten, die diesen Ort administrieren dürfen"
+      "ownersDescription": "Personen verwalten, die diesen Ort administrieren dürfen",
+      "pro": {
+        "title": "Pro-Abo",
+        "description": "Binde diesen Spielort an ein Joutes-Pro-Abo, um seine Veranstalterfunktionen zu öffnen.",
+        "statusActive": "Pro aktiv",
+        "statusInactive": "Kein Abo",
+        "statusMine": "Von dir gebunden",
+        "activeDescription": "Dieser Spielort hat die Pro-Funktionen. Alle seine Eigentümer profitieren davon.",
+        "inactiveDescription": "Dieser Spielort ist an kein Pro-Abo gebunden.",
+        "lapsed": "Du hast diesen Spielort gebunden, aber dein Pro-Abo ist nicht mehr aktiv: der Spielort hat seine Rechte verloren. Sie kommen unverändert zurück, wenn dein Abo wieder läuft.",
+        "attach": "Diesen Spielort binden",
+        "attached": "Spielort gebunden.",
+        "attachFailed": "Das Binden ist fehlgeschlagen.",
+        "detach": "Diesen Spielort lösen",
+        "detached": "Spielort gelöst.",
+        "detachFailed": "Das Lösen ist fehlgeschlagen.",
+        "mySubscription": "Mein Abo",
+        "refusal": {
+          "not-pro": "Zum Binden eines Spielorts braucht es ein Joutes-Pro-Abo.",
+          "seats-full": "Dein Abo erlaubt keinen weiteren Spielort.",
+          "already-attached": "Dieser Spielort ist bereits an dein Abo gebunden.",
+          "private-lair": "Ein privater Spielort kann nicht gebunden werden: Pro-Funktionen betreffen die öffentliche Außenseite.",
+          "lair-not-found": "Dieser Spielort wurde nicht gefunden.",
+          "not-authenticated": "Du musst angemeldet sein.",
+          "not-attached": "Dieser Spielort war an kein Abo gebunden."
+        }
+      }
     },
     "eventNew": {
       "notFound": "Ort nicht gefunden",
@@ -3601,5 +3627,97 @@
         "field2": "\"registeredParticipantsCount\": 18"
       }
     }
+  },
+  "Pricing": {
+    "metadata": {
+      "title": "Joutes unterstützen",
+      "description": "Joutes ist kostenlos. Wenn dir die Plattform nützt: drei Wege, sie zu unterstützen — mit ein paar Extras obendrauf."
+    },
+    "hero": {
+      "eyebrow": "Joutes unterstützen",
+      "titleHighlight": "Joutes ist kostenlos",
+      "title": "und bleibt es.",
+      "subtitle": "Wenn dir die Plattform nützt, kannst du sie unterstützen — und nimmst ein paar Extras mit.",
+      "finePrint": "Alles läuft über Patreon, jederzeit kündbar."
+    },
+    "perMonth": "/ Monat",
+    "plans": {
+      "supporter": {
+        "tagline": "Danke sagen, und es im Profil zeigen.",
+        "features": [
+          "Ein „Supporter“-Abzeichen neben deinem Namen auf Joutes",
+          "Ein silberner Rand um deinen Avatar",
+          "Eine „Supporter“-Rolle auf dem Discord-Server",
+          "Zugang zu einem eigenen Bereich auf dem Discord-Server"
+        ]
+      },
+      "expert": {
+        "tagline": "Für alle, die ihre Sammlung Karte für Karte kennen.",
+        "features": [
+          "Ein „Expert“-Abzeichen neben deinem Namen auf Joutes",
+          "Ein amethystfarbener Rand um deinen Avatar",
+          "Eine „Expert“-Rolle auf dem Discord-Server",
+          "Zugang zu einem eigenen Bereich auf dem Discord-Server",
+          "Erweiterte Funktionen für deine Spielgruppen"
+        ]
+      },
+      "pro": {
+        "tagline": "Für den Laden, den Club oder den Verein, der alle zum Spielen bringt.",
+        "features": [
+          "Ein „Pro“-Abzeichen neben deinem Namen auf Joutes",
+          "Ein mitternachtsblauer Rand um deinen Avatar",
+          "Eine „Pro“-Rolle auf dem Discord-Server",
+          "Zugang zu einem eigenen Bereich auf dem Discord-Server",
+          "Ein Anmeldesystem für deine Veranstaltungen",
+          "Deine Veranstaltungen nach vorn geholt",
+          "Anpassung deiner Spielort-Seite",
+          "Ein Support-Kanal"
+        ],
+        "billingNote": "Auch auf Rechnung erhältlich, für Läden und Vereine."
+      }
+    },
+    "cta": {
+      "subscribe": "Auf Patreon abonnieren",
+      "unavailable": "Demnächst verfügbar",
+      "manage": "Mein Abo verwalten"
+    },
+    "audiences": {
+      "player": "Spielend",
+      "organizer": "Veranstaltend",
+      "supporter": "Unterstützend"
+    },
+    "footer": {
+      "title": "Unsicher? Frag uns einfach.",
+      "subtitle": "Wir sind auf Discord — am einfachsten stellst du deine Frage dort.",
+      "cta": "Zum Discord"
+    }
+  },
+  "AccountSubscription": {
+    "back": "Zurück",
+    "title": "Mein Abo",
+    "activeTitle": "Aktives Abo",
+    "noneTitle": "Kein Abo",
+    "activeSubtitle": "Danke! Deine Rechte sind aktuell.",
+    "noneSubtitle": "Joutes bleibt kostenlos. Wer unterstützt, schaltet ein paar Funktionen mehr frei.",
+    "syncedAt": "Zuletzt abgeglichen: {date}",
+    "notConfigured": "Patreon ist in dieser Umgebung nicht konfiguriert: die Verknüpfung ist hier nicht verfügbar.",
+    "notConfiguredHint": "Patreon ist in dieser Umgebung nicht konfiguriert.",
+    "link": "Patreon-Konto verknüpfen",
+    "linkFailed": "Die Verknüpfung ist fehlgeschlagen.",
+    "linkHint": "Verknüpfe dein Patreon-Konto, damit dein Abo hier erkannt wird.",
+    "resync": "Neu abgleichen",
+    "resyncDone": "Abo neu abgeglichen.",
+    "resyncFailed": "Der Abgleich ist fehlgeschlagen.",
+    "unlink": "Patreon trennen",
+    "unlinkDone": "Patreon-Konto getrennt.",
+    "unlinkFailed": "Das Trennen ist fehlgeschlagen.",
+    "discover": "Angebote auf Patreon ansehen",
+    "seatsTitle": "Unterstützte Spielorte",
+    "seatsCount": "{used} von {total}",
+    "seatsSubtitle": "Die Spielorte, denen dein Pro-Abo Rechte eröffnet.",
+    "seatsEmpty": "Noch kein Spielort gebunden.",
+    "seatsHint": "Das Binden erfolgt auf der Verwaltungsseite eines Spielorts, dem du gehörst.",
+    "manageLair": "Verwalten",
+    "seePlans": "Alle Angebote ansehen"
   }
 }

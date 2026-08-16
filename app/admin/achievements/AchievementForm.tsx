@@ -9,6 +9,11 @@ import { createAchievementAction, updateAchievementAction } from "./actions";
 import { AchievementIconUploader } from "./AchievementIconUploader";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import {
+  DEFAULT_STATUS_TONE,
+  STATUS_TONE_OPTIONS,
+  type StatusTone,
+} from "@/lib/achievements/status-tone";
 
 // Fallback Label if not exists, but usually it does in shadcn
 function SimpleLabel({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) {
@@ -27,6 +32,8 @@ export function AchievementForm({ initialData }: { initialData?: Achievement }) 
     points: initialData?.points || 10,
     category: initialData?.category || "Général",
     isHidden: initialData?.isHidden || false,
+    isStatus: initialData?.isStatus || false,
+    statusTone: initialData?.statusTone || DEFAULT_STATUS_TONE,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -36,6 +43,13 @@ export function AchievementForm({ initialData }: { initialData?: Achievement }) 
 
   const handleCheckboxChange = (checked: boolean) => {
     setFormData(prev => ({ ...prev, isHidden: checked }));
+  };
+
+  // Cocher « statut » met les points à zéro : un statut est une reconnaissance,
+  // pas une performance, et le laisser peser dans le total des points de
+  // quelqu'un fausserait le classement des succès.
+  const handleStatusChange = (checked: boolean) => {
+    setFormData(prev => ({ ...prev, isStatus: checked, points: checked ? 0 : prev.points }));
   };
 
   async function onSubmit(e: React.FormEvent) {
@@ -159,6 +173,37 @@ export function AchievementForm({ initialData }: { initialData?: Achievement }) 
             Ce succès ne sera pas visible tant qu&apos;il n&apos;est pas débloqué.
           </p>
         </div>
+      </div>
+
+      <div className="space-y-3 rounded-md border p-4">
+        <div className="flex flex-row items-start space-x-3 space-y-0">
+          <Checkbox id="isStatus" checked={formData.isStatus} onCheckedChange={handleStatusChange} />
+          <div className="space-y-1 leading-none">
+            <SimpleLabel htmlFor="isStatus">Statut</SimpleLabel>
+            <p className="text-sm text-muted-foreground">
+              Affiché en badge à côté du pseudonyme, et non seulement dans la liste des
+              succès. N&apos;ouvre aucun droit : c&apos;est de la reconnaissance, pas de
+              l&apos;accès.
+            </p>
+          </div>
+        </div>
+
+        {formData.isStatus && (
+          <div className="space-y-2">
+            <SimpleLabel htmlFor="statusTone">Teinte du badge</SimpleLabel>
+            <select
+              id="statusTone"
+              name="statusTone"
+              value={formData.statusTone}
+              onChange={(e) => setFormData(prev => ({ ...prev, statusTone: e.target.value as StatusTone }))}
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
+            >
+              {STATUS_TONE_OPTIONS.map(option => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       <Button type="submit" disabled={isSubmitting}>

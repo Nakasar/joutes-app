@@ -70,9 +70,17 @@ export function UnlockAchievementButton({
         router.refresh();
       }, 1500);
     } else {
+      // L'action rend désormais un code, pas une phrase : deux causes qui se
+      // confondaient jusqu'ici (« déjà débloqué ou n'existe pas ») ont chacune
+      // leur message.
+      const MESSAGES: Record<string, string> = {
+        "already-unlocked": "Ce succès lui est déjà débloqué",
+        "not-found": "Ce succès n'existe pas",
+      };
+
       setMessage({
         type: "error",
-        text: result.error || "Erreur lors du déblocage du succès"
+        text: MESSAGES[result.error] ?? "Erreur lors du déblocage du succès"
       });
     }
 
