@@ -36,6 +36,28 @@ export type SubscriptionSeat = {
 /** Ce qui a écrit la projection en dernier. Diagnostic uniquement. */
 export type SubscriptionSyncSource = "oauth-link" | "webhook" | "cron" | "manual";
 
+/**
+ * Un palier offert à la main par l'équipe : boutique partenaire, bêta-testeur,
+ * remerciement. Il ouvre exactement les mêmes droits qu'un palier payé.
+ *
+ * Il vit **à côté** de `plans` et non dedans, parce que `plans` est réécrit en
+ * bloc à chaque synchronisation Patreon : un octroi qui s'y trouverait
+ * disparaîtrait au prochain webhook.
+ *
+ * C'est un enregistrement et non une simple clé, parce que la question « pourquoi
+ * cette personne a-t-elle Pro gratuitement ? » se posera, et que sans `grantedBy`
+ * ni `reason` personne ne saura y répondre six mois plus tard. Même forme que
+ * `SubscriptionSeat` juste au-dessus.
+ */
+export type GrantedPlan = {
+  plan: SubscriptionPlanKey;
+  grantedAt: Date;
+  /** Le compte administrateur qui a accordé le palier. */
+  grantedBy: User['id'];
+  /** Motif libre : « boutique partenaire », « bêta-testeur »… */
+  reason: string;
+};
+
 export type Subscription = {
   id: string;
   userId: User['id'];
@@ -52,6 +74,12 @@ export type Subscription = {
    */
   plans: SubscriptionPlanKey[];
   seats: SubscriptionSeat[];
+  /**
+   * Paliers offerts à la main. Ne viennent jamais de Patreon, et ne sont donc
+   * jamais touchés par une synchronisation. Les droits effectifs sont l'union
+   * de ceux-ci et de `plans` — voir `lib/subscriptions/grants.ts`.
+   */
+  grantedPlans: GrantedPlan[];
 
   /**
    * État brut conservé tel que Patreon le donne : il permet de rejouer la
@@ -74,7 +102,15 @@ export type Subscription = {
  * calculés. Assemblé par `lib/subscriptions/access.ts`.
  */
 export type SubscriptionSummary = {
+  /** Union effective : ce qui décide des droits, et ce que le badge affiche. */
   plans: SubscriptionPlanKey[];
+  /**
+   * La part venue de Patreon, et celle offerte par l'équipe. Distinguées pour
+   * que l'écran ne dise pas « abonnement actif » à quelqu'un qui irait ensuite
+   * chercher sur Patreon un prélèvement qui n'existe pas.
+   */
+  paidPlans: SubscriptionPlanKey[];
+  grantedPlans: GrantedPlan[];
   entitlements: string[];
   seats: SubscriptionSeat[];
   seatsTotal: number;

@@ -5,7 +5,7 @@ import { ObjectId, type Document, type WithId } from "mongodb";
 import { isSubscriptionPlanKey, type SubscriptionPlanKey } from "@/lib/constants/subscription-plans";
 import type { MembershipSnapshot } from "@/lib/patreon/types";
 import type { Lair } from "@/lib/types/Lair";
-import type { Subscription, SubscriptionSeat, SubscriptionSyncSource } from "@/lib/types/Subscription";
+import type { GrantedPlan, Subscription, SubscriptionSeat, SubscriptionSyncSource } from "@/lib/types/Subscription";
 import type { User } from "@/lib/types/User";
 
 const COLLECTION_NAME = "subscriptions";
@@ -64,6 +64,11 @@ function toSubscription(doc: WithId<Document>): Subscription {
     // pas remonter jusqu'au calcul des droits.
     plans: (doc.plans ?? []).filter(isSubscriptionPlanKey),
     seats: (doc.seats ?? []) as SubscriptionSeat[],
+    // Même défense que pour `plans` : un palier inconnu ne doit pas remonter
+    // jusqu'au calcul des droits, quelle que soit la porte par laquelle il entre.
+    grantedPlans: ((doc.grantedPlans ?? []) as GrantedPlan[]).filter((granted) =>
+      isSubscriptionPlanKey(granted?.plan)
+    ),
     entitledTierIds: doc.entitledTierIds ?? [],
     entitledAmountCents: doc.entitledAmountCents ?? 0,
     patronStatus: doc.patronStatus ?? null,
@@ -123,7 +128,15 @@ export async function getLairIdsWithPlan(
   await indexesReady;
 
   const docs = await collection()
-    .find({ plans: plan, "seats.lairId": { $in: lairIds } }, { projection: { seats: 1 } })
+    .find(
+      {
+        // Payé **ou** offert : un palier accordé par l'équipe ouvre les mêmes
+        // droits, y compris pour les lieux qu'il parraine.
+        $or: [{ plans: plan }, { "grantedPlans.plan": plan }],
+        "seats.lairId": { $in: lairIds },
+      },
+      { projection: { seats: 1 } }
+    )
     .toArray();
 
   const wanted = new Set(lairIds);
@@ -169,6 +182,13 @@ export async function upsertFromSnapshot({
   const doc = await collection().findOneAndUpdate(
     { userId },
     {
+      // ⚠️ Ne JAMAIS ajouter `grantedPlans` ni `seats` à ce `$set`.
+      //
+      // Toute la protection des paliers offerts tient à leur absence ici :
+      // MongoDB laisse intact un champ qu'on ne lui demande pas d'écrire. Les y
+      // ajouter « par symétrie » recopierait la projection Patreon par-dessus un
+      // octroi manuel, et l'effacerait au premier webhook venu — sans que rien
+      // ne le signale, puisque la synchronisation aurait « réussi ».
       $set: {
         provider: "patreon",
         providerUserId: snapshot.patreonUserId,
@@ -182,7 +202,7 @@ export async function upsertFromSnapshot({
         syncSource: source,
         updatedAt: now,
       },
-      $setOnInsert: { userId, seats: [], createdAt: now },
+      $setOnInsert: { userId, seats: [], grantedPlans: [], createdAt: now },
     },
     { upsert: true, returnDocument: "after" }
   );
@@ -263,6 +283,10 @@ export async function detachLairSeat(lairId: Lair['id']): Promise<boolean> {
  * Appelée quand un compte délie Patreon : sans cela, le droit survivrait à sa
  * preuve. Les sièges restent — le compte peut relier son Patreon et retrouver
  * ses lieux.
+ *
+ * **Les paliers offerts restent aussi**, et ce n'est pas un oubli : délier
+ * Patreon ne prouve rien sur un palier accordé à la main. C'est précisément le
+ * cas du bêta-testeur qui n'a jamais eu de compte Patreon.
  */
 export async function clearProviderLink(userId: User['id']): Promise<void> {
   await indexesReady;
@@ -284,6 +308,85 @@ export async function clearProviderLink(userId: User['id']): Promise<void> {
       },
     }
   );
+}
+
+/**
+ * Offre un palier à un compte.
+ *
+ * En **upsert**, parce que la personne peut n'avoir aucun document — offrir un
+ * palier à quelqu'un qui n'a jamais lié Patreon est même le cas courant.
+ *
+ * `false` signifie « ce palier lui est déjà offert ». Deux chemins y mènent, et
+ * le second surprend : quand le document existe *et* porte déjà ce palier, le
+ * filtre ne matche pas, MongoDB tente donc l'insertion prévue par l'upsert, et
+ * l'index unique sur `userId` la refuse par un E11000. C'est un refus, pas une
+ * panne — même traitement que dans `attachLairSeat` plus haut.
+ */
+export async function grantPlan({
+  userId,
+  plan,
+  grantedBy,
+  reason,
+}: {
+  userId: User['id'];
+  plan: SubscriptionPlanKey;
+  grantedBy: User['id'];
+  reason: string;
+}): Promise<boolean> {
+  await indexesReady;
+
+  const now = new Date();
+
+  try {
+    const result = await collection().updateOne(
+      { userId, "grantedPlans.plan": { $ne: plan } },
+      {
+        $push: { grantedPlans: { plan, grantedAt: now, grantedBy, reason } },
+        $set: { updatedAt: now },
+        $setOnInsert: {
+          userId,
+          provider: "patreon",
+          providerUserId: null,
+          providerMemberId: null,
+          plans: [],
+          seats: [],
+          entitledTierIds: [],
+          entitledAmountCents: 0,
+          patronStatus: null,
+          lastChargeStatus: null,
+          syncedAt: now,
+          syncSource: "manual",
+          createdAt: now,
+        },
+      },
+      { upsert: true }
+    );
+
+    return result.modifiedCount === 1 || result.upsertedCount === 1;
+  } catch (error) {
+    if ((error as { code?: number }).code === 11000) {
+      return false;
+    }
+    throw error;
+  }
+}
+
+/** Retire un palier offert. Ne touche jamais aux paliers venus de Patreon. */
+export async function revokeGrantedPlan({
+  userId,
+  plan,
+}: {
+  userId: User['id'];
+  plan: SubscriptionPlanKey;
+}): Promise<boolean> {
+  await indexesReady;
+
+  const result = await collection().updateOne(
+    { userId },
+    { $pull: { grantedPlans: { plan } }, $set: { updatedAt: new Date() } }
+  );
+
+  return result.modifiedCount === 1;
 }
 
 /** Les abonnements dont le compte lié n'existe plus. Rattrapage du cron. */

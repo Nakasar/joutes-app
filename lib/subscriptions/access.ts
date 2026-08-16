@@ -14,6 +14,7 @@ import {
 import type { Lair } from "@/lib/types/Lair";
 import type { Subscription, SubscriptionSummary } from "@/lib/types/Subscription";
 import { displayPlan, grantsEntitlement, resolveEntitlements, seatsFor } from "./entitlements";
+import { effectivePlans, grantedPlanKeys } from "./grants";
 
 /**
  * Les droits d'abonnement du compte connecté.
@@ -83,7 +84,13 @@ function plansFromSubscription(subscription: Subscription | null): SubscriptionP
     return forced;
   }
 
-  return subscription?.plans ?? [];
+  // Le seul point de composition de toute l'application : `plansForUserId`,
+  // `getMyPlans` et `getMySubscriptionSummary` passent tous par ici, donc le
+  // badge, le contour, les droits et les sièges de lieu suivent sans le savoir.
+  return effectivePlans({
+    paid: subscription?.plans ?? [],
+    granted: grantedPlanKeys(subscription?.grantedPlans ?? []),
+  });
 }
 
 /**
@@ -126,7 +133,11 @@ export async function requireEntitlement(entitlement: EntitlementKey): Promise<t
 export const lairHasPro = cache(async (lairId: Lair['id']): Promise<boolean> => {
   const subscription = await getSubscriptionForLair(lairId);
 
-  return subscription?.plans.includes("pro") ?? false;
+  // Les paliers composés, et non `subscription.plans` : un lieu parrainé par
+  // quelqu'un dont le Pro a été offert par l'équipe ouvre les mêmes droits qu'un
+  // lieu parrainé par un abonné payant. Lire le champ brut ici, c'était créer
+  // deux classes de Pro.
+  return plansFromSubscription(subscription).includes("pro");
 });
 
 /**
@@ -161,6 +172,10 @@ export async function getMySubscriptionSummary(): Promise<SubscriptionSummary | 
 
   return {
     plans,
+    // La part venue de Patreon, brute : l'écran s'en sert pour distinguer un
+    // abonnement d'un cadeau, ce que les droits, eux, ne font jamais.
+    paidPlans: subscription?.plans ?? [],
+    grantedPlans: subscription?.grantedPlans ?? [],
     entitlements: resolveEntitlements(plans),
     seats,
     seatsTotal,
