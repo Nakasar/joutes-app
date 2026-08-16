@@ -15,10 +15,19 @@
  * accordées à la main (`scanner:ai`, `policies:update`…), qui vivent dans un
  * système voisin mais distinct — voir `lib/db/permissions.ts`.
  *
- * **`includes` existe et reste vide.** « Pro inclut Expert » devient alors une
- * décision produit qui coûte un élément de tableau. Aujourd'hui ce sont deux
- * publics — un joueur, un organisateur — et non les deux barreaux d'une
- * échelle : personne ne doit payer Pro pour obtenir les outils de joueur.
+ * **`includes` porte la hiérarchie, et elle n'est pas une simple échelle.**
+ * Expert et Pro incluent tous deux Supporter : la cosmétique est le premier
+ * palier, et personne qui paie davantage ne doit s'en trouver privé. En revanche
+ * Pro n'inclut **pas** Expert, et c'est délibéré — ce sont deux publics, un
+ * joueur et un organisateur, pas les deux barreaux d'une même échelle. Une
+ * boutique ne paie pas pour des statistiques de groupe de jeu. Si le produit en
+ * décide autrement, cela reste un élément de tableau à ajouter.
+ *
+ * **`tone` est l'identité visuelle du palier**, et non un droit. Le contour
+ * d'avatar et le badge se **dérivent** du palier affiché, ils ne sont pas
+ * stockés : il n'y a donc aucune cosmétique à révoquer quand un abonnement
+ * s'arrête. Le droit `sub:profile-border` dit « cet avatar a droit à un
+ * contour », `tone` dit lequel.
  *
  * **Seuls les droits réellement lus par le code sont déclarés.** La tentation
  * est d'inscrire ici tout ce que les deux offres promettent un jour — l'IA, les
@@ -29,31 +38,50 @@
  */
 
 export const SUBSCRIPTION_PLANS = {
-  expert: {
-    label: "Joutes Expert",
-    audience: "player",
-    // Montant de départ, pas un tarif arrêté : il sert l'affichage et le seuil
-    // de repli tant que les identifiants de paliers Patreon sont inconnus.
-    monthlyCents: 300,
-    // Un abonnement joueur ne parraine aucun lieu.
+  supporter: {
+    label: "Supporter",
+    audience: "supporter",
+    monthlyCents: 100,
     lairSeats: 0,
     // Vide : voir l'en-tête. Les clés y sont des clés de cette table même —
     // le test `subscription-plans.test.ts` le vérifie, faute de pouvoir le
     // typer sans que la table ne se référence circulairement.
     includes: [],
     entitlements: ["sub:profile-badge", "sub:profile-border"],
+    tone: "silver",
+  },
+  expert: {
+    label: "Joutes Expert",
+    audience: "player",
+    monthlyCents: 500,
+    // Un abonnement joueur ne parraine aucun lieu.
+    lairSeats: 0,
+    includes: ["supporter"],
+    entitlements: [],
+    tone: "amethyst",
   },
   pro: {
     label: "Joutes Pro",
     audience: "organizer",
-    monthlyCents: 1000,
+    monthlyCents: 1900,
     lairSeats: 1,
-    includes: [],
-    entitlements: ["sub:profile-badge", "sub:lair-pro"],
+    includes: ["supporter"],
+    entitlements: ["sub:lair-pro"],
+    tone: "gold",
   },
 } as const;
 
 export type SubscriptionPlanKey = keyof typeof SUBSCRIPTION_PLANS;
+
+/**
+ * La teinte d'un palier, nommée plutôt que codée en couleurs.
+ *
+ * Les classes Tailwind vivent dans le composant qui rend le contour ; la table
+ * ne connaît que l'intention. C'est ce qui permet d'ajuster une nuance sans
+ * toucher à la déclaration des offres — et de garder cette table lisible par
+ * quelqu'un qui n'écrit pas de CSS.
+ */
+export type SubscriptionPlanTone = (typeof SUBSCRIPTION_PLANS)[SubscriptionPlanKey]["tone"];
 
 /**
  * L'ordre de déclaration fait foi : il est celui de la page d'offres, et sert

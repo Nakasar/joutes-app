@@ -2,6 +2,7 @@ import 'server-only';
 
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
+import db from "@/lib/mongodb";
 import type { SubscriptionPlanKey } from "@/lib/constants/subscription-plans";
 import { getSubscriptionByProviderUserId, upsertFromSnapshot } from "@/lib/db/subscriptions";
 import type { SubscriptionSyncSource } from "@/lib/types/Subscription";
@@ -143,8 +144,6 @@ async function applyFromResult(
  * entre un compte et un fournisseur.
  */
 export async function findUserIdByPatreonId(patreonUserId: string): Promise<User['id'] | null> {
-  const { default: db } = await import("@/lib/mongodb");
-
   const account = await db
     .collection<{ userId: unknown }>("account")
     .findOne({ providerId: PATREON_PROVIDER_ID, accountId: patreonUserId });

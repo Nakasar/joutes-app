@@ -12,7 +12,7 @@ import {
   getSubscriptionForLair,
 } from "@/lib/db/subscriptions";
 import type { Lair } from "@/lib/types/Lair";
-import type { SubscriptionSummary } from "@/lib/types/Subscription";
+import type { Subscription, SubscriptionSummary } from "@/lib/types/Subscription";
 import { displayPlan, grantsEntitlement, resolveEntitlements, seatsFor } from "./entitlements";
 
 /**
@@ -47,17 +47,44 @@ export const getMyPlans = cache(async (): Promise<SubscriptionPlanKey[]> => {
     return [];
   }
 
-  // Développement et aperçus : sans campagne Patreon, c'est le seul moyen de
-  // montrer les écrans. `readForcedPlans` refuse de rien forcer en production.
+  return plansForUserId(session.user.id);
+});
+
+/**
+ * Les plans d'un compte désigné.
+ *
+ * Existe pour les appelants qui tiennent déjà la session — `getMyPermissions`,
+ * par exemple, qui la lit pour ses propres besoins. Passer par `getMyPlans` les
+ * ferait la relire ; ici, ils la réutilisent.
+ */
+export const plansForUserId = cache(async (userId: string): Promise<SubscriptionPlanKey[]> => {
   const forced = devForcedPlans();
   if (forced.length > 0) {
     return forced;
   }
 
-  const subscription = await getSubscriptionByUserId(session.user.id);
+  return plansFromSubscription(await getSubscriptionByUserId(userId));
+});
+
+/**
+ * Les plans que porte un abonnement déjà lu.
+ *
+ * Un seul endroit applique le forçage de développement, et c'est celui-ci : un
+ * appelant qui déduirait les plans de `subscription.plans` sans passer par ici
+ * verrait un écran différent des vérifications de droits, sur un aperçu.
+ *
+ * Développement et aperçus seulement : sans campagne Patreon, c'est le seul
+ * moyen de montrer les écrans, et `readForcedPlans` refuse de rien forcer en
+ * production.
+ */
+function plansFromSubscription(subscription: Subscription | null): SubscriptionPlanKey[] {
+  const forced = devForcedPlans();
+  if (forced.length > 0) {
+    return forced;
+  }
 
   return subscription?.plans ?? [];
-});
+}
 
 /**
  * Vrai si le compte connecté a ce droit.
@@ -125,8 +152,10 @@ export async function getMySubscriptionSummary(): Promise<SubscriptionSummary | 
     return null;
   }
 
+  // Les plans se déduisent de l'abonnement qu'on vient de lire : repasser par
+  // `getMyPlans` relirait la session et le document pour rien.
   const subscription = await getSubscriptionByUserId(session.user.id);
-  const plans = await getMyPlans();
+  const plans = plansFromSubscription(subscription);
   const seats = subscription?.seats ?? [];
   const seatsTotal = seatsFor(plans);
 

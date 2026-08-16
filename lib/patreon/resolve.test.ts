@@ -23,15 +23,17 @@ import type { MembershipSnapshot } from "./types";
  */
 
 const MAPPING_PAR_PALIER: PatreonPlanMapping = {
-  expert: { tierIds: ["tier-expert"], minCents: 300 },
-  pro: { tierIds: ["tier-pro"], minCents: 1000 },
+  supporter: { tierIds: ["tier-supporter"], minCents: 100 },
+  expert: { tierIds: ["tier-expert"], minCents: 500 },
+  pro: { tierIds: ["tier-pro"], minCents: 1900 },
 };
 
-// Ce que le mapping vaut tant que la campagne n'existe pas : aucun identifiant
-// de palier connu, donc repli sur le montant.
+// Ce que le mapping vaut tant que les identifiants de paliers ne sont pas
+// renseignés : repli sur le montant.
 const MAPPING_PAR_MONTANT: PatreonPlanMapping = {
-  expert: { tierIds: [], minCents: 300 },
-  pro: { tierIds: [], minCents: 1000 },
+  supporter: { tierIds: [], minCents: 100 },
+  expert: { tierIds: [], minCents: 500 },
+  pro: { tierIds: [], minCents: 1900 },
 };
 
 function snapshot(overrides: Partial<MembershipSnapshot> = {}): MembershipSnapshot {
@@ -154,20 +156,37 @@ describe("plansFromSnapshot — mapping par identifiant de palier", () => {
 describe("plansFromSnapshot — repli par montant, campagne inexistante", () => {
   it("ouvre le plan dont le seuil est atteint", () => {
     const plans = plansFromSnapshot(
-      snapshot({ entitledTierIds: ["tier-quelconque"], entitledAmountCents: 300 }),
+      snapshot({ entitledTierIds: ["tier-quelconque"], entitledAmountCents: 100 }),
       MAPPING_PAR_MONTANT
     );
 
-    assert.deepEqual(plans, ["expert"]);
+    assert.deepEqual(plans, ["supporter"]);
   });
 
-  it("ouvre les deux plans quand le montant dépasse les deux seuils", () => {
+  it("ouvre tous les paliers dont le seuil est franchi", () => {
     const plans = plansFromSnapshot(
-      snapshot({ entitledTierIds: ["tier-quelconque"], entitledAmountCents: 1000 }),
+      snapshot({ entitledTierIds: ["tier-quelconque"], entitledAmountCents: 500 }),
       MAPPING_PAR_MONTANT
     );
 
-    assert.deepEqual(plans, ["expert", "pro"]);
+    assert.deepEqual(plans, ["supporter", "expert"]);
+  });
+
+  it("rend le repli plus généreux que le mapping par palier — d'où l'intérêt de renseigner les identifiants", () => {
+    // Sur Patreon, un mécène est sur **un** palier : à 19 €, ses
+    // `currently_entitled_tiers` ne contiennent que Pro, et le mapping par
+    // identifiant ne lui ouvre que Pro. Le repli par montant, lui, franchit les
+    // trois seuils et ouvre tout. Ce n'est pas un défaut — c'est le prix d'un
+    // repli qui ne connaît pas les paliers — mais c'est la raison de renseigner
+    // `PATREON_TIER_*` dès que la campagne est en place.
+    const instantane = snapshot({ entitledTierIds: ["tier-pro"], entitledAmountCents: 1900 });
+
+    assert.deepEqual(plansFromSnapshot(instantane, MAPPING_PAR_MONTANT), [
+      "supporter",
+      "expert",
+      "pro",
+    ]);
+    assert.deepEqual(plansFromSnapshot(instantane, MAPPING_PAR_PALIER), ["pro"]);
   });
 
   it("n'ouvre rien sur un montant sans palier actif", () => {

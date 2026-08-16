@@ -6,7 +6,7 @@ import {auth} from "@/lib/auth";
 import {headers} from "next/headers";
 import {isAdmin} from "@/lib/config/admins";
 import type {SubscriptionPlanKey} from "@/lib/constants/subscription-plans";
-import {getMyPlans} from "@/lib/subscriptions/access";
+import {plansForUserId} from "@/lib/subscriptions/access";
 import {resolveEntitlements} from "@/lib/subscriptions/entitlements";
 
 // Anciens noms de permissions, toujours honorés : les comptes qui les portent
@@ -114,7 +114,9 @@ export async function getMyPermissions(): Promise<{
     }
   }
 
-  const plans = await getMyPlans();
+  // `plansForUserId` et non `getMyPlans` : la session est déjà lue plus haut,
+  // et `getMyPlans` la relirait pour retrouver le même identifiant.
+  const plans = await plansForUserId(session.user.id);
 
   return {
     permissions: [...granted].sort(),
