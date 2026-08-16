@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { emailOTP, jwt } from "better-auth/plugins";
+import { genericOAuth, patreon } from "better-auth/plugins/generic-oauth";
 import { Resend } from "resend";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { passkey } from "@better-auth/passkey";
@@ -10,6 +11,51 @@ import {customAlphabet} from "nanoid";
 const generateOTP = customAlphabet("0123456789", 6);
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+/**
+ * Patreon, en fournisseur de **liaison uniquement**.
+ *
+ * La liste rendue est vide quand la configuration manque — un aperçu sans
+ * secrets fonctionne alors normalement, la liaison s'affichant désactivée. En
+ * revanche le plugin lui-même est toujours monté : le retirer changerait le type
+ * inféré de `authClient`, et le client ne saurait plus quoi appeler.
+ *
+ * Deux options ne sont pas négociables :
+ *
+ * - `disableSignUp` — sans elle, n'importe qui se crée un compte Joutes via
+ *   Patreon. On lie un compte existant, on n'en ouvre pas.
+ * - `overrideUserInfo` laissé à son défaut (`false`) — l'adresse Patreon ne doit
+ *   pas écraser celle du compte. `allowDifferentEmails` est déjà posé plus bas,
+ *   une divergence est donc normale et sans conséquence.
+ *
+ * Le scope `identity.memberships` est délibérément **absent** : sans lui,
+ * Patreon ne rend que l'adhésion à notre campagne, ce qui est exactement ce
+ * qu'il nous faut. L'ajouter exposerait les adhésions du mécène à tous les
+ * autres créateurs, sans rien nous apporter.
+ *
+ * Les deux variables sont relues ici plutôt qu'empruntées à
+ * `lib/patreon/config.ts` : la configuration de l'authentification se lit au
+ * chargement du module et doit rester lisible seule, sans dépendre du reste de
+ * la mécanique d'abonnement. C'est deux lignes dupliquées contre une dépendance
+ * en moins sur le chemin critique de la connexion.
+ */
+function patreonOAuthConfigs() {
+  const clientId = process.env.PATREON_CLIENT_ID?.trim();
+  const clientSecret = process.env.PATREON_CLIENT_SECRET?.trim();
+
+  if (!clientId || !clientSecret) {
+    return [];
+  }
+
+  return [
+    patreon({
+      clientId,
+      clientSecret,
+      scopes: ["identity", "identity[email]"],
+      disableSignUp: true,
+    }),
+  ];
+}
 
 export const auth = betterAuth({
   database: mongodbAdapter(db),
@@ -65,6 +111,7 @@ export const auth = betterAuth({
       expiresIn: 600, // 10 minutes
     }),
     passkey(),
+    genericOAuth({ config: patreonOAuthConfigs() }),
     oauthProvider({
       loginPage: "/login",
       consentPage: "/oauth/consent",
