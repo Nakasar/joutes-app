@@ -3684,5 +3684,78 @@
         "field2": "\"registeredParticipantsCount\": 18"
       }
     }
+  },
+  "Pricing": {
+    "metadata": {
+      "title": "Support Joutes",
+      "description": "Supporter, Joutes Expert and Joutes Pro: three ways to back the platform and unlock features, for players and organizers alike."
+    },
+    "hero": {
+      "eyebrow": "Support Joutes",
+      "titleHighlight": "Joutes stays free.",
+      "title": "Backing it unlocks a little more.",
+      "subtitle": "Everything you use today stays. These plans fund the platform and open extra features — for players on one side, organizers on the other.",
+      "hostedBy": "Subscriptions are handled by Patreon."
+    },
+    "perMonth": "/ month",
+    "soonLabel": "Coming soon",
+    "soonNotice": {
+      "title": "What exists, and what is coming",
+      "body": "Features marked “coming soon” are not shipped yet. They are listed here because they are being written, not because they are available: as of today, only the unmarked ones work. Backing Joutes now funds their arrival."
+    },
+    "plans": {
+      "supporter": {
+        "tagline": "To say thank you, simply.",
+        "features": [
+          "“Supporter” badge on your profile",
+          "Silver avatar border"
+        ],
+        "soon": []
+      },
+      "expert": {
+        "tagline": "For players who live in their collection.",
+        "features": [
+          "Badge and violet avatar border",
+          "Everything Supporter includes"
+        ],
+        "soon": [
+          "AI assistance on your cards and decks",
+          "Statistics for your play groups",
+          "Tracked card lending between members"
+        ]
+      },
+      "pro": {
+        "tagline": "For stores, clubs and organizers.",
+        "features": [
+          "Badge and midnight-blue avatar border",
+          "Everything Supporter includes"
+        ],
+        "soon": [
+          "One venue attached to your subscription",
+          "Advanced registration management and related integrations",
+          "Highlighting for your events",
+          "Customization of your venue page"
+        ]
+      }
+    },
+    "cta": {
+      "subscribe": "Subscribe on Patreon",
+      "unavailable": "Coming soon",
+      "manage": "Manage my subscription"
+    },
+    "audiences": {
+      "player": "Player",
+      "organizer": "Organizer",
+      "supporter": "Supporter"
+    },
+    "notPro": {
+      "title": "Pro is not “Expert, but better”",
+      "body": "The two plans serve two audiences. Expert equips those who play; Pro equips those who make the games happen. Neither includes the other — and if you do both, nothing stops you taking both."
+    },
+    "footer": {
+      "title": "A question about the plans?",
+      "subtitle": "The easiest way is to ask us on Discord.",
+      "cta": "Join the Discord"
+    }
   }
 }

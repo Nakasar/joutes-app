@@ -3685,5 +3685,78 @@
         "field2": "\"registeredParticipantsCount\": 18"
       }
     }
+  },
+  "Pricing": {
+    "metadata": {
+      "title": "Soutenir Joutes",
+      "description": "Supporter, Joutes Expert et Joutes Pro : trois façons de soutenir la plateforme et de débloquer des fonctionnalités, pour les joueurs comme pour les organisateurs."
+    },
+    "hero": {
+      "eyebrow": "Soutenir Joutes",
+      "titleHighlight": "Joutes reste gratuit.",
+      "title": "Le soutenir débloque un peu plus.",
+      "subtitle": "Tout ce que vous utilisez aujourd'hui le reste. Ces offres financent la plateforme et ouvrent des fonctionnalités supplémentaires — aux joueurs d'un côté, aux organisateurs de l'autre.",
+      "hostedBy": "Les abonnements sont gérés par Patreon."
+    },
+    "perMonth": "/ mois",
+    "soonLabel": "À venir",
+    "soonNotice": {
+      "title": "Ce qui existe déjà, et ce qui arrive",
+      "body": "Les fonctionnalités marquées « à venir » ne sont pas encore livrées. Elles sont annoncées ici parce qu'elles sont en cours d'écriture, pas parce qu'elles seraient disponibles : à ce jour, seul ce qui n'est pas marqué fonctionne. Soutenir Joutes maintenant, c'est financer leur arrivée."
+    },
+    "plans": {
+      "supporter": {
+        "tagline": "Pour dire merci, simplement.",
+        "features": [
+          "Badge « Supporter » sur votre profil",
+          "Contour d'avatar argenté"
+        ],
+        "soon": []
+      },
+      "expert": {
+        "tagline": "Pour les joueuses et les joueurs qui vivent dans leur collection.",
+        "features": [
+          "Badge et contour d'avatar violet",
+          "Tout ce que comprend Supporter"
+        ],
+        "soon": [
+          "Assistance par IA sur vos cartes et vos decks",
+          "Statistiques de vos groupes de jeu",
+          "Prêt de cartes suivi entre membres"
+        ]
+      },
+      "pro": {
+        "tagline": "Pour les boutiques, les associations et les organisateurs.",
+        "features": [
+          "Badge et contour d'avatar bleu nuit",
+          "Tout ce que comprend Supporter"
+        ],
+        "soon": [
+          "Un lieu de jeu rattaché à votre abonnement",
+          "Gestion de réservation avancée et intégrations liées",
+          "Mise en avant de vos évènements",
+          "Personnalisation de la page de votre lieu"
+        ]
+      }
+    },
+    "cta": {
+      "subscribe": "S'abonner sur Patreon",
+      "unavailable": "Bientôt disponible",
+      "manage": "Gérer mon abonnement"
+    },
+    "audiences": {
+      "player": "Joueur",
+      "organizer": "Organisateur",
+      "supporter": "Soutien"
+    },
+    "notPro": {
+      "title": "Pro n'est pas « Expert en mieux »",
+      "body": "Les deux offres s'adressent à deux publics. Expert outille celles et ceux qui jouent ; Pro outille celles et ceux qui font jouer. Aucune n'inclut l'autre — et si vous faites les deux, rien n'empêche de prendre les deux."
+    },
+    "footer": {
+      "title": "Une question sur les offres ?",
+      "subtitle": "Le plus simple est de nous écrire sur Discord.",
+      "cta": "Rejoindre le Discord"
+    }
   }
 }

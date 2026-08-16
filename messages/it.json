@@ -3626,5 +3626,78 @@
         "field2": "\"registeredParticipantsCount\": 18"
       }
     }
+  },
+  "Pricing": {
+    "metadata": {
+      "title": "Sostenere Joutes",
+      "description": "Supporter, Joutes Expert e Joutes Pro: tre modi di sostenere la piattaforma e sbloccare funzionalità, per chi gioca come per chi organizza."
+    },
+    "hero": {
+      "eyebrow": "Sostenere Joutes",
+      "titleHighlight": "Joutes resta gratuito.",
+      "title": "Sostenerlo sblocca qualcosa in più.",
+      "subtitle": "Tutto quello che usi oggi resta. Queste offerte finanziano la piattaforma e aprono funzionalità in più — a chi gioca da una parte, a chi organizza dall'altra.",
+      "hostedBy": "Gli abbonamenti sono gestiti da Patreon."
+    },
+    "perMonth": "/ mese",
+    "soonLabel": "Presto",
+    "soonNotice": {
+      "title": "Cosa c'è già, e cosa arriva",
+      "body": "Le funzionalità contrassegnate «presto» non sono ancora state consegnate. Sono elencate qui perché sono in lavorazione, non perché siano disponibili: a oggi funziona solo ciò che non è contrassegnato. Sostenere Joutes ora significa finanziarne l'arrivo."
+    },
+    "plans": {
+      "supporter": {
+        "tagline": "Per dire grazie, semplicemente.",
+        "features": [
+          "Badge «Supporter» sul profilo",
+          "Bordo avatar argentato"
+        ],
+        "soon": []
+      },
+      "expert": {
+        "tagline": "Per chi vive nella propria collezione.",
+        "features": [
+          "Badge e bordo avatar viola",
+          "Tutto quello che comprende Supporter"
+        ],
+        "soon": [
+          "Assistenza IA su carte e mazzi",
+          "Statistiche dei tuoi gruppi di gioco",
+          "Prestito di carte tracciato tra membri"
+        ]
+      },
+      "pro": {
+        "tagline": "Per negozi, associazioni e organizzatori.",
+        "features": [
+          "Badge e bordo avatar blu notte",
+          "Tutto quello che comprende Supporter"
+        ],
+        "soon": [
+          "Un locale collegato al tuo abbonamento",
+          "Gestione avanzata delle iscrizioni e integrazioni collegate",
+          "Messa in evidenza dei tuoi eventi",
+          "Personalizzazione della pagina del tuo locale"
+        ]
+      }
+    },
+    "cta": {
+      "subscribe": "Abbonati su Patreon",
+      "unavailable": "Presto disponibile",
+      "manage": "Gestisci il mio abbonamento"
+    },
+    "audiences": {
+      "player": "Giocatore",
+      "organizer": "Organizzatore",
+      "supporter": "Sostenitore"
+    },
+    "notPro": {
+      "title": "Pro non è «Expert, ma meglio»",
+      "body": "Le due offerte si rivolgono a due pubblici. Expert attrezza chi gioca; Pro attrezza chi fa giocare. Nessuna include l'altra — e se fai entrambe le cose, nulla ti impedisce di prenderle entrambe."
+    },
+    "footer": {
+      "title": "Una domanda sulle offerte?",
+      "subtitle": "Il modo più semplice è scriverci su Discord.",
+      "cta": "Entra nel Discord"
+    }
   }
 }

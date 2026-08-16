@@ -3601,5 +3601,78 @@
         "field2": "\"registeredParticipantsCount\": 18"
       }
     }
+  },
+  "Pricing": {
+    "metadata": {
+      "title": "Joutes unterstützen",
+      "description": "Supporter, Joutes Expert und Joutes Pro: drei Wege, die Plattform zu unterstützen und Funktionen freizuschalten — für Spielende wie für Veranstaltende."
+    },
+    "hero": {
+      "eyebrow": "Joutes unterstützen",
+      "titleHighlight": "Joutes bleibt kostenlos.",
+      "title": "Wer unterstützt, schaltet mehr frei.",
+      "subtitle": "Alles, was du heute nutzt, bleibt. Diese Angebote finanzieren die Plattform und öffnen zusätzliche Funktionen — für Spielende auf der einen, für Veranstaltende auf der anderen Seite.",
+      "hostedBy": "Die Abonnements laufen über Patreon."
+    },
+    "perMonth": "/ Monat",
+    "soonLabel": "Demnächst",
+    "soonNotice": {
+      "title": "Was es gibt, und was kommt",
+      "body": "Als „demnächst“ markierte Funktionen sind noch nicht ausgeliefert. Sie stehen hier, weil daran gearbeitet wird, nicht weil sie verfügbar wären: heute funktioniert nur das Unmarkierte. Wer Joutes jetzt unterstützt, finanziert ihr Kommen."
+    },
+    "plans": {
+      "supporter": {
+        "tagline": "Um einfach Danke zu sagen.",
+        "features": [
+          "„Supporter“-Abzeichen im Profil",
+          "Silberner Avatar-Rand"
+        ],
+        "soon": []
+      },
+      "expert": {
+        "tagline": "Für alle, die in ihrer Sammlung leben.",
+        "features": [
+          "Abzeichen und violetter Avatar-Rand",
+          "Alles aus Supporter"
+        ],
+        "soon": [
+          "KI-Unterstützung für Karten und Decks",
+          "Statistiken deiner Spielgruppen",
+          "Nachverfolgtes Kartenverleihen unter Mitgliedern"
+        ]
+      },
+      "pro": {
+        "tagline": "Für Läden, Vereine und Veranstalter.",
+        "features": [
+          "Abzeichen und mitternachtsblauer Avatar-Rand",
+          "Alles aus Supporter"
+        ],
+        "soon": [
+          "Ein Spielort an dein Abo gebunden",
+          "Erweiterte Anmeldeverwaltung und zugehörige Schnittstellen",
+          "Hervorhebung deiner Veranstaltungen",
+          "Anpassung deiner Spielort-Seite"
+        ]
+      }
+    },
+    "cta": {
+      "subscribe": "Auf Patreon abonnieren",
+      "unavailable": "Demnächst verfügbar",
+      "manage": "Mein Abo verwalten"
+    },
+    "audiences": {
+      "player": "Spielend",
+      "organizer": "Veranstaltend",
+      "supporter": "Unterstützend"
+    },
+    "notPro": {
+      "title": "Pro ist nicht „Expert, nur besser“",
+      "body": "Die beiden Angebote sprechen zwei Gruppen an. Expert rüstet aus, wer spielt; Pro rüstet aus, wer spielen lässt. Keines enthält das andere — und wer beides tut, kann beides nehmen."
+    },
+    "footer": {
+      "title": "Eine Frage zu den Angeboten?",
+      "subtitle": "Am einfachsten schreibst du uns auf Discord.",
+      "cta": "Zum Discord"
+    }
   }
 }
