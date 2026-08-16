@@ -3687,6 +3687,13 @@ paths:
         actions that will succeed. `policies:vote` and `erratas:vote` are implicit
         for every signed-in account and always listed. An administrator holds every
         permission — the list is not exhaustive for them, `isAdmin` is.
+
+        Two separate namespaces answer the same question. `permissions` are staff
+        capabilities granted by hand (moderating erratas, importing a quiz).
+        `entitlements` are opened by a paid subscription and recomputed from the
+        billing provider; every one of them is prefixed `sub:`, so the two lists
+        can never collide. `plans` names the subscriptions currently held, and is
+        empty for a free account.
       security: [{ sessionAuth: [] }]
       responses:
         "200":
@@ -3698,6 +3705,8 @@ paths:
                 properties:
                   permissions: { type: array, items: { type: string }, example: ["erratas:vote", "policies:vote"] }
                   isAdmin: { type: boolean }
+                  plans: { type: array, items: { type: string, enum: [expert, pro] }, example: ["pro"] }
+                  entitlements: { type: array, items: { type: string }, example: ["sub:lair-pro", "sub:profile-badge"] }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "500": { $ref: "#/components/responses/ServerError" }
 
