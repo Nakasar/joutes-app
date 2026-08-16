@@ -47,6 +47,16 @@ Les utilisateurs connectés peuvent signaler les contenus créés par d'autres u
 
 Pour plus de détails, voir [docs/REPORTS.md](docs/REPORTS.md).
 
+### Abonnements
+
+Trois offres adossées à Patreon — Supporter, Joutes Expert et Joutes Pro —
+débloquent des fonctionnalités supplémentaires, aux joueurs d'un côté, aux
+organisateurs de l'autre. Patreon reste la source de vérité : on n'en garde
+qu'une projection recalculée, si bien qu'un abonnement qui s'arrête éteint ses
+droits sans qu'aucune révocation ne tourne.
+
+Pour plus de détails, voir [docs/SUBSCRIPTIONS.md](docs/SUBSCRIPTIONS.md).
+
 ### Erratas
 
 Tout utilisateur connecté peut créer un errata ; chacun ne peut modifier ou supprimer que les siens, sauf permission `erratas:manage`.
