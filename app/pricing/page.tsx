@@ -63,12 +63,12 @@ export default async function PricingPage() {
             {t("hero.title")}
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">{t("hero.subtitle")}</p>
-          <p className="mt-3 text-sm text-muted-foreground">{t("hero.hostedBy")}</p>
+          <p className="mt-3 text-sm text-muted-foreground">{t("hero.finePrint")}</p>
         </div>
       </section>
 
       {/* Les offres */}
-      <section className="container mx-auto px-4 pb-4 sm:px-6 lg:px-8">
+      <section className="container mx-auto px-4 pb-16 sm:px-6 lg:px-8">
         <div className="grid gap-6 lg:grid-cols-3">
           {SUBSCRIPTION_PLAN_OPTIONS.map((plan) => {
             const appearance = appearanceForTone(plan.tone);
@@ -152,23 +152,6 @@ export default async function PricingPage() {
               </div>
             );
           })}
-        </div>
-      </section>
-
-      {/* Ce qui existe déjà, et ce qui arrive */}
-      <section className="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-4xl gap-4 md:grid-cols-2">
-          <div className="rounded-2xl border bg-muted/30 p-6">
-            <h2 className="flex items-center gap-2 font-semibold">
-              <Clock className="size-4 text-muted-foreground" />
-              {t("soonNotice.title")}
-            </h2>
-            <p className="mt-3 text-sm text-muted-foreground">{t("soonNotice.body")}</p>
-          </div>
-          <div className="rounded-2xl border bg-muted/30 p-6">
-            <h2 className="font-semibold">{t("notPro.title")}</h2>
-            <p className="mt-3 text-sm text-muted-foreground">{t("notPro.body")}</p>
-          </div>
         </div>
       </section>
 

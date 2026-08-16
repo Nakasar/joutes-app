@@ -3715,53 +3715,49 @@
   "Pricing": {
     "metadata": {
       "title": "Soutenir Joutes",
-      "description": "Supporter, Joutes Expert et Joutes Pro : trois façons de soutenir la plateforme et de débloquer des fonctionnalités, pour les joueurs comme pour les organisateurs."
+      "description": "Joutes est gratuit. Si la plateforme vous est utile, trois façons de la soutenir — et quelques bonus au passage."
     },
     "hero": {
       "eyebrow": "Soutenir Joutes",
-      "titleHighlight": "Joutes reste gratuit.",
-      "title": "Le soutenir débloque un peu plus.",
-      "subtitle": "Tout ce que vous utilisez aujourd'hui le reste. Ces offres financent la plateforme et ouvrent des fonctionnalités supplémentaires — aux joueurs d'un côté, aux organisateurs de l'autre.",
-      "hostedBy": "Les abonnements sont gérés par Patreon."
+      "titleHighlight": "Joutes est gratuit,",
+      "title": "et le restera.",
+      "subtitle": "Si la plateforme vous est utile, vous pouvez la soutenir — et repartir avec quelques bonus au passage.",
+      "finePrint": "Tout se passe sur Patreon, résiliable quand vous voulez."
     },
     "perMonth": "/ mois",
     "soonLabel": "À venir",
-    "soonNotice": {
-      "title": "Ce qui existe déjà, et ce qui arrive",
-      "body": "Les fonctionnalités marquées « à venir » ne sont pas encore livrées. Elles sont annoncées ici parce qu'elles sont en cours d'écriture, pas parce qu'elles seraient disponibles : à ce jour, seul ce qui n'est pas marqué fonctionne. Soutenir Joutes maintenant, c'est financer leur arrivée."
-    },
     "plans": {
       "supporter": {
-        "tagline": "Pour dire merci, simplement.",
+        "tagline": "Dire merci, et le montrer sur votre profil.",
         "features": [
-          "Badge « Supporter » sur votre profil",
-          "Contour d'avatar argenté"
+          "Le badge Supporter à côté de votre pseudo",
+          "Un contour argenté autour de votre avatar"
         ],
         "soon": []
       },
       "expert": {
-        "tagline": "Pour les joueuses et les joueurs qui vivent dans leur collection.",
+        "tagline": "Pour qui connaît sa collection carte par carte.",
         "features": [
-          "Badge et contour d'avatar violet",
+          "Le badge Expert et un contour violet",
           "Tout ce que comprend Supporter"
         ],
         "soon": [
-          "Assistance par IA sur vos cartes et vos decks",
-          "Statistiques de vos groupes de jeu",
-          "Prêt de cartes suivi entre membres"
+          "Une IA qui connaît vos cartes et vos decks",
+          "Les stats de vos groupes de jeu",
+          "Vos prêts de cartes suivis, pour ne plus les perdre"
         ]
       },
       "pro": {
-        "tagline": "Pour les boutiques, les associations et les organisateurs.",
+        "tagline": "Pour la boutique, le club ou l'association qui fait jouer tout le monde.",
         "features": [
-          "Badge et contour d'avatar bleu nuit",
+          "Le badge Pro et un contour bleu nuit",
           "Tout ce que comprend Supporter"
         ],
         "soon": [
-          "Un lieu de jeu rattaché à votre abonnement",
-          "Gestion de réservation avancée et intégrations liées",
-          "Mise en avant de vos évènements",
-          "Personnalisation de la page de votre lieu"
+          "Votre lieu de jeu rattaché à l'abonnement",
+          "Des inscriptions gérées de bout en bout",
+          "Vos évènements mis en avant",
+          "La page de votre lieu à votre image"
         ]
       }
     },
@@ -3775,13 +3771,9 @@
       "organizer": "Organisateur",
       "supporter": "Soutien"
     },
-    "notPro": {
-      "title": "Pro n'est pas « Expert en mieux »",
-      "body": "Les deux offres s'adressent à deux publics. Expert outille celles et ceux qui jouent ; Pro outille celles et ceux qui font jouer. Aucune n'inclut l'autre — et si vous faites les deux, rien n'empêche de prendre les deux."
-    },
     "footer": {
-      "title": "Une question sur les offres ?",
-      "subtitle": "Le plus simple est de nous écrire sur Discord.",
+      "title": "Pas sûr ? Venez nous en parler.",
+      "subtitle": "On traîne sur le Discord, c'est le plus simple pour poser une question.",
       "cta": "Rejoindre le Discord"
     }
   },

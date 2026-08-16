@@ -3656,53 +3656,49 @@
   "Pricing": {
     "metadata": {
       "title": "Sostenere Joutes",
-      "description": "Supporter, Joutes Expert e Joutes Pro: tre modi di sostenere la piattaforma e sbloccare funzionalità, per chi gioca come per chi organizza."
+      "description": "Joutes è gratuito. Se la piattaforma ti è utile, tre modi per sostenerla — con qualche extra per strada."
     },
     "hero": {
       "eyebrow": "Sostenere Joutes",
-      "titleHighlight": "Joutes resta gratuito.",
-      "title": "Sostenerlo sblocca qualcosa in più.",
-      "subtitle": "Tutto quello che usi oggi resta. Queste offerte finanziano la piattaforma e aprono funzionalità in più — a chi gioca da una parte, a chi organizza dall'altra.",
-      "hostedBy": "Gli abbonamenti sono gestiti da Patreon."
+      "titleHighlight": "Joutes è gratuito,",
+      "title": "e lo resterà.",
+      "subtitle": "Se la piattaforma ti è utile, puoi sostenerla — e portarti a casa qualche extra per strada.",
+      "finePrint": "Tutto passa da Patreon, disdicibile quando vuoi."
     },
     "perMonth": "/ mese",
     "soonLabel": "Presto",
-    "soonNotice": {
-      "title": "Cosa c'è già, e cosa arriva",
-      "body": "Le funzionalità contrassegnate «presto» non sono ancora state consegnate. Sono elencate qui perché sono in lavorazione, non perché siano disponibili: a oggi funziona solo ciò che non è contrassegnato. Sostenere Joutes ora significa finanziarne l'arrivo."
-    },
     "plans": {
       "supporter": {
-        "tagline": "Per dire grazie, semplicemente.",
+        "tagline": "Dire grazie, e mostrarlo sul profilo.",
         "features": [
-          "Badge «Supporter» sul profilo",
-          "Bordo avatar argentato"
+          "Il badge Supporter accanto al tuo nome",
+          "Un bordo argentato attorno al tuo avatar"
         ],
         "soon": []
       },
       "expert": {
-        "tagline": "Per chi vive nella propria collezione.",
+        "tagline": "Per chi conosce la propria collezione carta per carta.",
         "features": [
-          "Badge e bordo avatar viola",
+          "Il badge Expert e un bordo viola",
           "Tutto quello che comprende Supporter"
         ],
         "soon": [
-          "Assistenza IA su carte e mazzi",
-          "Statistiche dei tuoi gruppi di gioco",
-          "Prestito di carte tracciato tra membri"
+          "Un'IA che conosce le tue carte e i tuoi mazzi",
+          "Le statistiche dei tuoi gruppi di gioco",
+          "I tuoi prestiti di carte tracciati, per non perderne nessuno"
         ]
       },
       "pro": {
-        "tagline": "Per negozi, associazioni e organizzatori.",
+        "tagline": "Per il negozio, il club o l'associazione che fa giocare tutti.",
         "features": [
-          "Badge e bordo avatar blu notte",
+          "Il badge Pro e un bordo blu notte",
           "Tutto quello che comprende Supporter"
         ],
         "soon": [
-          "Un locale collegato al tuo abbonamento",
-          "Gestione avanzata delle iscrizioni e integrazioni collegate",
-          "Messa in evidenza dei tuoi eventi",
-          "Personalizzazione della pagina del tuo locale"
+          "Il tuo locale collegato all'abbonamento",
+          "Iscrizioni gestite dall'inizio alla fine",
+          "I tuoi eventi messi in primo piano",
+          "La pagina del tuo locale, a modo tuo"
         ]
       }
     },
@@ -3716,13 +3712,9 @@
       "organizer": "Organizzatore",
       "supporter": "Sostenitore"
     },
-    "notPro": {
-      "title": "Pro non è «Expert, ma meglio»",
-      "body": "Le due offerte si rivolgono a due pubblici. Expert attrezza chi gioca; Pro attrezza chi fa giocare. Nessuna include l'altra — e se fai entrambe le cose, nulla ti impedisce di prenderle entrambe."
-    },
     "footer": {
-      "title": "Una domanda sulle offerte?",
-      "subtitle": "Il modo più semplice è scriverci su Discord.",
+      "title": "Non sei sicuro? Vieni a chiedere.",
+      "subtitle": "Stiamo su Discord, è il modo più semplice per fare una domanda.",
       "cta": "Entra nel Discord"
     }
   },
