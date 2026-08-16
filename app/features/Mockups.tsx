@@ -19,7 +19,7 @@ import {
  * than a photo of a running screen. All copy comes from the Features.mockup
  * i18n namespace so they read naturally in every locale.
  */
-function DeviceFrame({ children, accent }: { children: React.ReactNode; accent: string }) {
+export function DeviceFrame({ children, accent }: { children: React.ReactNode; accent: string }) {
   return (
     <div className="group relative">
       <div

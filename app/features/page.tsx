@@ -10,6 +10,7 @@ import {
   Library,
   MapPin,
   Sparkles,
+  Store,
   Trophy,
   Users,
 } from "lucide-react";
@@ -126,6 +127,26 @@ export default async function FeaturesPage() {
             </div>
           );
         })}
+      </section>
+
+      {/* Renvoi vers la page organisateurs : cette page-ci s'adresse aux
+          joueurs, celle-là à qui fait jouer. */}
+      <section className="container mx-auto px-4 pb-16 sm:px-6 lg:px-8">
+        <div className="flex flex-col items-start gap-6 rounded-2xl border bg-muted/30 px-6 py-8 sm:px-8 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border bg-background px-3 py-1 text-xs font-medium text-muted-foreground">
+              <Store className="size-3.5 text-primary" />
+              {t("organizersLink.eyebrow")}
+            </span>
+            <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
+              {t("organizersLink.title")}
+            </h2>
+            <p className="max-w-2xl text-sm text-muted-foreground">{t("organizersLink.subtitle")}</p>
+          </div>
+          <Button asChild variant="outline" size="lg">
+            <Link href="/features/organizers">{t("organizersLink.cta")}</Link>
+          </Button>
+        </div>
       </section>
 
       {/* CTA */}

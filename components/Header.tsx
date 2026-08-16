@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useSession, signOut } from "@/lib/auth-client";
 import Image from "next/image";
-import {Menu, Calendar, MapPin, User, UserRound, LogOut, Shield, Trophy, Dices, Library, Heart, Users, ChevronDown, Sparkles, Tag, Gamepad2, Plus, ArrowLeftRight, Boxes, BookOpen, Layers, ListChecks, Package, Scale, Settings2, Swords, type LucideIcon} from "lucide-react";
+import {Menu, Calendar, MapPin, User, UserRound, LogOut, Shield, Trophy, Dices, Library, Heart, Users, ChevronDown, Sparkles, Tag, Gamepad2, Plus, ArrowLeftRight, Boxes, BookOpen, Layers, ListChecks, Package, Scale, Settings2, Store, Swords, type LucideIcon} from "lucide-react";
 import { isAdmin } from "@/lib/config/admins";
 import { Button } from "@/components/ui/button";
 import { NotificationDropdown } from "@/components/NotificationDropdown";
@@ -311,6 +311,7 @@ export default function Header() {
     { href: "/tournaments", label: t('menu.Tournois'), icon: Trophy },
     { href: "/tournaments/new", label: t('menu.OrganizeTournament'), icon: Plus },
     { href: "/events/new", label: t('menu.OrganizeEvent'), icon: Plus },
+    { href: "/features/organizers", label: t('menu.ForOrganizers'), icon: Store },
   ];
 
   const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);

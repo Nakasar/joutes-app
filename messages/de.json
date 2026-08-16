@@ -49,7 +49,8 @@
         "policies": "Richtlinien",
         "cubes": "Cubes",
         "deckChecker": "Deck-Checker"
-      }
+      },
+      "ForOrganizers": "Für Veranstalter"
     }
   },
   "LocaleSwitcher": {
@@ -1792,6 +1793,12 @@
           "name": "Frühlingsliga",
           "points": "{count} Pkt."
         }
+      },
+      "organizersLink": {
+        "eyebrow": "Du organisierst?",
+        "title": "Joutes für Veranstalter",
+        "subtitle": "Läden, Vereine, Veranstalter, Verlage: Kalender, Anmeldungen, Turniere, Ligen und Schnittstellen — auf einer eigenen Seite.",
+        "cta": "Zur Veranstalterseite"
       }
     },
   "Friends": {
@@ -3397,6 +3404,202 @@
       "low": "Niedrigster",
       "trend": "Trend",
       "avg30": "Ø 30 Tage"
+    }
+  },
+  "FeaturesOrganizers": {
+    "metadata": {
+      "title": "Joutes für Veranstalter",
+      "description": "Kalender, Anmeldungen, Turniere, Ligen und Schnittstellen: alles, was du brauchst, um deine Spielveranstaltungen zu organisieren und deine Tische zu füllen — Läden, Vereine, Veranstalter und Verlage."
+    },
+    "hero": {
+      "eyebrow": "Läden · Vereine · Veranstalter · Verlage",
+      "titleHighlight": "Füll deine Tische,",
+      "title": "nicht deine Tabellen",
+      "subtitle": "Veröffentliche deinen Kalender, öffne die Anmeldung, führe deine Turniere und Ligen durch. Joutes erreicht deine Spielerinnen und Spieler dort, wo sie ohnehin sind: Discord, Mobil-App, Web, Benachrichtigungen.",
+      "ctaPrimary": "Veranstaltung erstellen",
+      "ctaSecondary": "Turnier organisieren"
+    },
+    "audience": {
+      "title": "Für alle gemacht, die spielen lassen",
+      "subtitle": "Dieselbe Plattform, ob du freitagabends drei Tische öffnest oder eine ganze Turniersaison stemmst.",
+      "items": {
+        "stores": {
+          "title": "Spieleläden",
+          "description": "Dein Wochenprogramm sichtbar für die Spielerinnen und Spieler im Viertel, und deine Anmeldungen aktuell ohne Papierliste."
+        },
+        "associations": {
+          "title": "Vereine und Clubs",
+          "description": "Ein gemeinsamer Kalender, automatisch benachrichtigte Mitglieder und Ligen, die eine ganze Saison ohne geteilte Tabelle durchhalten."
+        },
+        "organizers": {
+          "title": "Unabhängige Veranstalter",
+          "description": "Ein komplettes Turnier — Anmeldungen, Paarungen, Timer, Tabelle — ohne Installation, mit Teilnahme per QR-Code."
+        },
+        "publishers": {
+          "title": "Verlage und Distributoren",
+          "description": "Deine offiziellen Veranstaltungen im ganzen Netzwerk verbreitet, und eine offene API für deine eigenen Werkzeuge."
+        }
+      }
+    },
+    "soonLabel": "Demnächst",
+    "items": {
+      "calendar": {
+        "title": "Ein Kalender, den deine Spieler ohnehin ansehen",
+        "description": "Deine Veranstaltungen liegen nicht auf einer einsamen Seite: Sie landen im öffentlichen Joutes-Kalender, auf der Seite deines Spielorts, in der Suche nach Spiel und in der Umkreissuche.",
+        "bullets": [
+          "Öffentlicher Monatskalender, nach Spiel filterbar",
+          "Umkreissuche: deine Veranstaltungen werden „in meiner Nähe“ gefunden",
+          "Vollständige Angaben: Zeiten, Preis, Beschreibung, Link und freie Plätze",
+          "Verknüpft mit deinem Spielort und seinen praktischen Informationen",
+          "Status „ausgebucht“ oder „abgesagt“ auf einen Blick lesbar",
+          "Seiten indexiert und an Suchmaschinen gemeldet"
+        ]
+      },
+      "engagement": {
+        "title": "Eine Ankündigung, alle Kanäle",
+        "description": "Deine Spielerinnen und Spieler sind nicht alle am selben Ort. Dieselbe Veranstaltung erscheint auf deinem Discord-Server, in der Mobil-App, im Web und sogar in den KI-Assistenten derer, die welche nutzen.",
+        "bullets": [
+          "Discord-Bot: eine Veranstaltungstafel in deinem Kanal, die sich selbst aktualisiert",
+          "Anmeldung mit einem Klick aus Discord, für verknüpfte Konten",
+          "Mobil- und Desktop-App: Kalender, Spielerportal, Benachrichtigungen",
+          "Benachrichtigungen in der App und Push-Benachrichtigungen aufs Handy",
+          "Wöchentliche Zusammenfassung per E-Mail und Benachrichtigung",
+          "MCP-Server und WebMCP-Werkzeuge: deine Veranstaltungen antworten kompatiblen KI-Assistenten"
+        ]
+      },
+      "registrations": {
+        "title": "Anmeldungen, ohne einen Chatverlauf nachzulesen",
+        "description": "Wer angemeldet ist, wer noch bestätigt werden muss, wer da ist, wer eine Deckliste abgegeben hat: alles auf einer einzigen Seite — und deine Teilnehmenden erfahren jede Änderung sofort.",
+        "bullets": [
+          "Anmeldung über das Web, über Discord oder über die Mobil-App",
+          "Begrenzte Platzzahl, live mitgezählt",
+          "Voranmeldung: du bestätigst jede Anfrage einzeln",
+          "Einchecken am Veranstaltungstag",
+          "Maßgeschneidertes Anmeldeformular: Text, Zahl, Auswahl, Karte aus dem Spiel, automatisch ausgewertete Deckliste",
+          "Antwortfrist, verspätete Antworten werden als solche gekennzeichnet",
+          "Veranstaltung abgesagt: alle Angemeldeten werden benachrichtigt, samt Grund",
+          "Ankündigungen der Organisation an die Teilnehmenden"
+        ],
+        "soon": [
+          "Automatische Warteliste, die nachrückt, sobald ein Platz frei wird"
+        ]
+      },
+      "tournaments": {
+        "title": "Das Turnier läuft von selbst",
+        "description": "Du startest die Runde, Joutes erledigt den Rest: Paarungen, Tische, ein Timer für den ganzen Saal, von den Spielern gemeldete Ergebnisse und eine Tabelle, die bei jedem Match neu berechnet wird.",
+        "bullets": [
+          "Verkettete Phasen: Schweizer Runden, K.-o.-System, gesetzter Bracket, freie Form, Zeitrennen",
+          "Automatisch erzeugte Paarungen, Top Cut zwischen zwei Phasen",
+          "Konfigurierbare Tiebreaker: Gegnerstärke (OMW), Partiendifferenz, Spielstatistiken",
+          "Timer für alle sichtbar, Verlängerung Tisch für Tisch gewährt",
+          "Saalbildschirm zum Projizieren: Timer, Ankündigungen, Tabelle oder Paarungen",
+          "Ankündigungen als „Info“ oder „dringend“ an die Spieler",
+          "Ergebnisse von den Spielern gemeldet, dann bestätigt oder angefochten",
+          "Schiedsrichterwesen: Strafen, interne Notizen und ein Aktivitätsprotokoll",
+          "Teilnahme per Code oder QR-Code, mit oder ohne Konto",
+          "Export von Paarungen und Tabellen"
+        ]
+      },
+      "leagues": {
+        "title": "Ligen, die eine Saison durchhalten",
+        "description": "Eine Liga läuft über Wochen — genau das, womit eine geteilte Tabelle am schlechtesten zurechtkommt. Joutes führt die Tabelle, erinnert die Spieler und schließt Runden zum Stichtag.",
+        "bullets": [
+          "Punkteformat: Teilnahme, Sieg, Niederlage und selbst definierte Erfolge",
+          "Killer-Format: zugewiesene Ziele, Ausscheiden, Bestätigung durch den Spielort",
+          "Datierte Saison, Anmeldeschluss, öffentliche Liga oder Einladungscode",
+          "Tabelle bei jedem gemeldeten Match neu berechnet",
+          "Asynchrone Runden: jede Runde ist ein mehrtägiges Fenster, das die Spieler selbst einteilen",
+          "Automatische Erinnerungen vor dem Stichtag und eine feste Regelung für nicht gespielte Matches",
+          "Mehrere Veranstalter, mehrere Spiele, mehrere Spielorte"
+        ]
+      },
+      "integrations": {
+        "title": "Deine eigenen Werkzeuge laufen weiter",
+        "description": "Joutes ist keine Sackgasse: Was du hineingibst, kommt über eine offene API, einen MCP-Server und Exporte wieder heraus — für deine Website, deinen Discord oder deine eigenen Werkzeuge.",
+        "bullets": [
+          "Offene, dokumentierte REST-API (OpenAPI): Veranstaltungen, Spielorte, Spiele, Regeln",
+          "Authentifizierung per OAuth2 oder persönlichem API-Schlüssel",
+          "MCP-Server, um deine KI-Agenten an deine Daten anzuschließen",
+          "Discord-Bot, installierbar auf deinem Server",
+          "CSV-Exporte von Paarungen und Tabellen"
+        ],
+        "soon": [
+          "Einbettbare Widgets für deine eigene Website: Kalender, nächste Veranstaltung, Ligatabelle"
+        ]
+      }
+    },
+    "links": {
+      "title": "Weiterlesen",
+      "subtitle": "Die Dokumentation für alle, die Joutes an etwas anderes anschließen.",
+      "discord": {
+        "title": "Discord-Bot",
+        "description": "Befehle, synchronisierte Tafel und Anmeldung von deinem Server aus."
+      },
+      "api": {
+        "title": "Offene API",
+        "description": "Vollständige OpenAPI-Referenz, Authentifizierung und Beispiele."
+      },
+      "mcp": {
+        "title": "MCP-Server",
+        "description": "Einen KI-Agenten an Spiele, Regeln, Spielorte und Veranstaltungen anschließen."
+      },
+      "players": {
+        "title": "Joutes für Spieler",
+        "description": "Sammlung, Decks, Spielgruppen: was deine Teilnehmenden hier finden."
+      }
+    },
+    "cta": {
+      "title": "Du organisierst etwas? Fang mit einer Veranstaltung an.",
+      "subtitle": "Sie zu erstellen dauert zwei Minuten. Sie bekannt zu machen, übernimmt Joutes.",
+      "ctaPrimary": "Veranstaltung erstellen",
+      "ctaSecondary": "Schreib uns auf Discord"
+    },
+    "mockup": {
+      "hero": {
+        "title": "Freitagabend · Draft",
+        "registered": "{count} angemeldet",
+        "capacity": "{count} Plätze",
+        "channelDiscord": "Discord",
+        "channelMobile": "Mobil",
+        "channelWeb": "Web"
+      },
+      "calendar": {
+        "month": "März",
+        "eventShort": "Turnier",
+        "nearby": "Weniger als 10 km entfernt"
+      },
+      "engagement": {
+        "discord": "Discord-Tafel aktualisiert",
+        "push": "Benachrichtigung gesendet · {count} Spieler",
+        "ai": "KI-Assistent · „Turniere am Wochenende?“"
+      },
+      "registrations": {
+        "title": "Anmeldungen",
+        "registered": "Angemeldet",
+        "pending": "Zu bestätigen",
+        "checkedIn": "Eingecheckt",
+        "player1": "Alex",
+        "player2": "Sam",
+        "player3": "Lou",
+        "formField": "Deckliste · ausgewertet"
+      },
+      "tournaments": {
+        "round": "Runde 3 von 5",
+        "timer": "12:40",
+        "table": "Tisch {number}",
+        "versus": "gegen",
+        "announcement": "Ankündigung · Rundenende in 5 Min."
+      },
+      "leagues": {
+        "name": "Frühlingssaison",
+        "points": "{count} Pkt.",
+        "deadline": "Fenster · noch 3 Tage"
+      },
+      "integrations": {
+        "endpoint": "GET /api/events",
+        "field1": "\"name\": \"Samstagsturnier\"",
+        "field2": "\"registeredParticipantsCount\": 18"
+      }
     }
   }
 }
