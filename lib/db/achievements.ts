@@ -15,6 +15,10 @@ function toAchievement(doc: WithId<Document>): Achievement {
     points: doc.points || 0,
     category: doc.category,
     isHidden: doc.isHidden || false,
+    // Conversion explicite, comme le reste : un champ ajouté au type mais oublié
+    // ici serait écrit en base et jamais relu.
+    isStatus: doc.isStatus || false,
+    statusTone: doc.statusTone,
   };
 }
 

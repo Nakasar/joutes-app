@@ -19,6 +19,8 @@ import RevokeAchievementButton from "@/app/users/RevokeAchievementButton";
 import { getSubscriptionByUserId } from "@/lib/db/subscriptions";
 import ReportButton from "@/components/ReportButton";
 import { PlanBadge } from "@/components/PlanBadge";
+import { StatusBadge } from "@/components/StatusBadge";
+import { visibleStatuses } from "@/lib/achievements/status";
 import { plansForUserId } from "@/lib/subscriptions/access";
 import { displayPlan } from "@/lib/subscriptions/entitlements";
 import { appearanceForPlan } from "@/lib/subscriptions/tone";
@@ -129,6 +131,9 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
   const profilePlan = displayPlan(await plansForUserId(user.id));
   const planAppearance = appearanceForPlan(profilePlan);
 
+  // Les statuts sortent de la même lecture de succès que la grille publique.
+  const statuses = visibleStatuses(unlocked);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8">
       <div className="container mx-auto px-4 max-w-5xl">
@@ -157,6 +162,13 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
                         <Lock className="h-5 w-5 text-muted-foreground" />
                       )}
                       <PlanBadge plan={profilePlan} />
+                      {/* Les statuts s'affichent quel que soit `isPublicProfile`,
+                          comme le badge d'offre : un profil privé l'est sur son
+                          contenu, et une marque de reconnaissance posée par
+                          l'équipe n'est pas du contenu. */}
+                      {statuses.map((status) => (
+                        <StatusBadge key={status.id} status={status} />
+                      ))}
                     </h1>
 
                     {/* `flex-wrap` : trois boutons d'administration peuvent
