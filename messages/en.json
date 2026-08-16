@@ -3724,15 +3724,12 @@
       "finePrint": "It all happens on Patreon, cancel whenever you like."
     },
     "perMonth": "/ month",
-    "soonLabel": "Coming soon",
     "plans": {
       "supporter": {
         "tagline": "Say thanks, and show it on your profile.",
         "features": [
           "A “Supporter” badge next to your name on Joutes",
-          "A silver border around your avatar"
-        ],
-        "soon": [
+          "A silver border around your avatar",
           "A “Supporter” role on the Discord server",
           "Access to a dedicated section on the Discord server"
         ]
@@ -3741,9 +3738,7 @@
         "tagline": "For anyone who knows their collection card by card.",
         "features": [
           "An “Expert” badge next to your name on Joutes",
-          "An amethyst border around your avatar"
-        ],
-        "soon": [
+          "An amethyst border around your avatar",
           "An “Expert” role on the Discord server",
           "Access to a dedicated section on the Discord server",
           "Advanced features for your play groups"
@@ -3753,9 +3748,7 @@
         "tagline": "For the store, club or association that gets everyone playing.",
         "features": [
           "A “Pro” badge next to your name on Joutes",
-          "A midnight-blue border around your avatar"
-        ],
-        "soon": [
+          "A midnight-blue border around your avatar",
           "A “Pro” role on the Discord server",
           "Access to a dedicated section on the Discord server",
           "A registration system for your events",

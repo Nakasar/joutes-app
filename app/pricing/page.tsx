@@ -3,7 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Clock, Heart, Sparkles, Store } from "lucide-react";
+import { Check, Heart, Sparkles, Store } from "lucide-react";
 import { SUBSCRIPTION_PLAN_OPTIONS } from "@/lib/constants/subscription-plans";
 import { appearanceForTone } from "@/lib/subscriptions/tone";
 import { patreonPublicUrl } from "@/lib/patreon/config";
@@ -74,11 +74,6 @@ export default async function PricingPage() {
             const appearance = appearanceForTone(plan.tone);
             const Icon = AUDIENCE_ICONS[plan.audience];
             const features = t.raw(`plans.${plan.value}.features`) as string[];
-            // Les fonctionnalités annoncées mais pas encore livrées vivent dans
-            // une clé à part et portent un badge : une page de vente ne doit pas
-            // les faire passer pour existantes.
-            const soon = t.raw(`plans.${plan.value}.soon`) as string[];
-
             return (
               <div
                 key={plan.value}
@@ -117,21 +112,6 @@ export default async function PricingPage() {
                     <li key={feature} className="flex items-start gap-2.5">
                       <Check className="mt-0.5 size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
                       <span>{feature}</span>
-                    </li>
-                  ))}
-                  {soon.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2.5 text-muted-foreground">
-                      <Clock className="mt-0.5 size-4 shrink-0" />
-                      {/* Le badge vit *dans* le paragraphe et non à côté : en
-                          élément de rangée flex, il tombait à la ligne dès que
-                          le libellé dépassait, et la liste devenait illisible.
-                          Ici il suit le dernier mot, comme une incise. */}
-                      <span>
-                        {feature}{" "}
-                        <Badge variant="outline" className="align-middle text-[10px] font-normal">
-                          {t("soonLabel")}
-                        </Badge>
-                      </span>
                     </li>
                   ))}
                 </ul>

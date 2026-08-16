@@ -3666,15 +3666,12 @@
       "finePrint": "Tutto passa da Patreon, disdicibile quando vuoi."
     },
     "perMonth": "/ mese",
-    "soonLabel": "Presto",
     "plans": {
       "supporter": {
         "tagline": "Dire grazie, e mostrarlo sul profilo.",
         "features": [
           "Un badge «Supporter» accanto al tuo nome su Joutes",
-          "Un bordo argentato attorno al tuo avatar"
-        ],
-        "soon": [
+          "Un bordo argentato attorno al tuo avatar",
           "Un ruolo «Supporter» sul server Discord",
           "L'accesso a una sezione dedicata sul server Discord"
         ]
@@ -3683,9 +3680,7 @@
         "tagline": "Per chi conosce la propria collezione carta per carta.",
         "features": [
           "Un badge «Expert» accanto al tuo nome su Joutes",
-          "Un bordo ametista attorno al tuo avatar"
-        ],
-        "soon": [
+          "Un bordo ametista attorno al tuo avatar",
           "Un ruolo «Expert» sul server Discord",
           "L'accesso a una sezione dedicata sul server Discord",
           "Funzionalità avanzate per i tuoi gruppi di gioco"
@@ -3695,9 +3690,7 @@
         "tagline": "Per il negozio, il club o l'associazione che fa giocare tutti.",
         "features": [
           "Un badge «Pro» accanto al tuo nome su Joutes",
-          "Un bordo blu notte attorno al tuo avatar"
-        ],
-        "soon": [
+          "Un bordo blu notte attorno al tuo avatar",
           "Un ruolo «Pro» sul server Discord",
           "L'accesso a una sezione dedicata sul server Discord",
           "Un sistema di prenotazione per i tuoi eventi",

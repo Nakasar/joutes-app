@@ -3725,15 +3725,12 @@
       "finePrint": "Tout se passe sur Patreon, résiliable quand vous voulez."
     },
     "perMonth": "/ mois",
-    "soonLabel": "À venir",
     "plans": {
       "supporter": {
         "tagline": "Dire merci, et le montrer sur votre profil.",
         "features": [
           "Badge « Supporter » à côté de votre pseudo sur Joutes",
-          "Un contour argenté autour de votre avatar"
-        ],
-        "soon": [
+          "Un contour argenté autour de votre avatar",
           "Un rôle « Supporter » sur le serveur Discord",
           "L'accès à une section dédiée sur le serveur Discord"
         ]
@@ -3742,9 +3739,7 @@
         "tagline": "Pour qui connaît sa collection carte par carte.",
         "features": [
           "Badge « Expert » à côté de votre pseudo sur Joutes",
-          "Un contour améthyste autour de votre avatar"
-        ],
-        "soon": [
+          "Un contour améthyste autour de votre avatar",
           "Un rôle « Expert » sur le serveur Discord",
           "L'accès à une section dédiée sur le serveur Discord",
           "Des fonctionnalités avancées pour vos groupes de jeu"
@@ -3754,9 +3749,7 @@
         "tagline": "Pour la boutique, le club ou l'association qui fait jouer tout le monde.",
         "features": [
           "Badge « Pro » à côté de votre pseudo sur Joutes",
-          "Un contour bleu nuit autour de votre avatar"
-        ],
-        "soon": [
+          "Un contour bleu nuit autour de votre avatar",
           "Un rôle « Pro » sur le serveur Discord",
           "L'accès à une section dédiée sur le serveur Discord",
           "Un système de réservation pour vos évènements",

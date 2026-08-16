@@ -3641,15 +3641,12 @@
       "finePrint": "Alles läuft über Patreon, jederzeit kündbar."
     },
     "perMonth": "/ Monat",
-    "soonLabel": "Demnächst",
     "plans": {
       "supporter": {
         "tagline": "Danke sagen, und es im Profil zeigen.",
         "features": [
           "Ein „Supporter“-Abzeichen neben deinem Namen auf Joutes",
-          "Ein silberner Rand um deinen Avatar"
-        ],
-        "soon": [
+          "Ein silberner Rand um deinen Avatar",
           "Eine „Supporter“-Rolle auf dem Discord-Server",
           "Zugang zu einem eigenen Bereich auf dem Discord-Server"
         ]
@@ -3658,9 +3655,7 @@
         "tagline": "Für alle, die ihre Sammlung Karte für Karte kennen.",
         "features": [
           "Ein „Expert“-Abzeichen neben deinem Namen auf Joutes",
-          "Ein amethystfarbener Rand um deinen Avatar"
-        ],
-        "soon": [
+          "Ein amethystfarbener Rand um deinen Avatar",
           "Eine „Expert“-Rolle auf dem Discord-Server",
           "Zugang zu einem eigenen Bereich auf dem Discord-Server",
           "Erweiterte Funktionen für deine Spielgruppen"
@@ -3670,9 +3665,7 @@
         "tagline": "Für den Laden, den Club oder den Verein, der alle zum Spielen bringt.",
         "features": [
           "Ein „Pro“-Abzeichen neben deinem Namen auf Joutes",
-          "Ein mitternachtsblauer Rand um deinen Avatar"
-        ],
-        "soon": [
+          "Ein mitternachtsblauer Rand um deinen Avatar",
           "Eine „Pro“-Rolle auf dem Discord-Server",
           "Zugang zu einem eigenen Bereich auf dem Discord-Server",
           "Ein Anmeldesystem für deine Veranstaltungen",
