@@ -636,12 +636,18 @@ export async function listUserTrades(
     fullHistory = false,
     now = new Date(),
   }: { historyLimit?: number; fullHistory?: boolean; now?: Date } = {}
-): Promise<{ open: Trade[]; past: Trade[]; hiddenCount: number }> {
+): Promise<{
+  open: Trade[];
+  past: Trade[];
+  /** Total des échanges clos visibles, `past` n'en étant que la première page. */
+  pastTotal: number;
+  hiddenCount: number;
+}> {
   const userObjId = new ObjectId(userId);
   const collection = db.collection<TradeDocument>(TRADES_COLLECTION);
   const windowStart = fullHistory ? null : historyWindowStart(now);
 
-  const [openDocs, pastDocs, hiddenCount] = await Promise.all([
+  const [openDocs, pastDocs, pastTotal, hiddenCount] = await Promise.all([
     collection
       .find({ "sides.userId": userObjId, status: "open" })
       .sort({ updatedAt: -1 })
@@ -651,6 +657,7 @@ export async function listUserTrades(
       .sort({ updatedAt: -1 })
       .limit(historyLimit)
       .toArray(),
+    collection.countDocuments(historyFilter(userObjId, { from: windowStart })),
     windowStart
       ? collection.countDocuments({
           ...historyFilter(userObjId),
@@ -659,10 +666,13 @@ export async function listUserTrades(
       : Promise.resolve(0),
   ]);
 
+  // Une seule hydratation pour les deux listes : deux appels feraient deux fois
+  // la lecture des profils et celle des prix de marché.
   const trades = await hydrateTrades([...openDocs, ...pastDocs]);
   return {
     open: trades.slice(0, openDocs.length),
     past: trades.slice(openDocs.length),
+    pastTotal,
     hiddenCount,
   };
 }

@@ -3070,6 +3070,32 @@
       "badgeCompleted": "Abgeschlossen",
       "badgeCancelled": "Abgebrochen"
     },
+    "history": {
+      "windowNote": "Die letzten {days} Tage",
+      "loading": "Suche läuft…",
+      "noMatch": "Kein Tausch entspricht diesen Filtern.",
+      "results": "{count, plural, =0 {Keine Tauschvorgänge} one {# Tausch} other {# Tauschvorgänge}}",
+      "page": "Seite {page} von {totalPages}",
+      "previous": "Zurück",
+      "next": "Weiter",
+      "filters": {
+        "card": "Karte",
+        "cardPlaceholder": "Kartenname…",
+        "partner": "Tauschpartner",
+        "allPartners": "Alle Tauschpartner",
+        "from": "Von",
+        "to": "Bis",
+        "sort": "Sortieren nach",
+        "sortRecent": "Neueste zuerst",
+        "sortOldest": "Älteste zuerst",
+        "reset": "Filter zurücksetzen"
+      },
+      "locked": {
+        "title": "{count, plural, one {# älterer Tausch ist ausgeblendet} other {# ältere Tauschvorgänge sind ausgeblendet}}",
+        "description": "Die vollständige Historie und ihre Suchfilter gehören zu Joutes Expert und Joutes Pro.",
+        "cta": "Angebote ansehen"
+      }
+    },
     "offer": {
       "title": "Mein Angebot",
       "subtitle": "Die Karten, die du abgibst – sie werden aus deiner Sammlung entfernt."

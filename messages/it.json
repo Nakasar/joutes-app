@@ -3095,6 +3095,32 @@
       "badgeCompleted": "Completato",
       "badgeCancelled": "Annullato"
     },
+    "history": {
+      "windowNote": "Gli ultimi {days} giorni",
+      "loading": "Ricerca in corso…",
+      "noMatch": "Nessuno scambio corrisponde a questi filtri.",
+      "results": "{count, plural, =0 {Nessuno scambio} one {# scambio} other {# scambi}}",
+      "page": "Pagina {page} di {totalPages}",
+      "previous": "Precedenti",
+      "next": "Successivi",
+      "filters": {
+        "card": "Carta",
+        "cardPlaceholder": "Nome di una carta…",
+        "partner": "Partner",
+        "allPartners": "Tutti i partner",
+        "from": "Dal",
+        "to": "Al",
+        "sort": "Ordina per",
+        "sortRecent": "Dal più recente",
+        "sortOldest": "Dal più vecchio",
+        "reset": "Cancella i filtri"
+      },
+      "locked": {
+        "title": "{count, plural, one {# scambio più vecchio è nascosto} other {# scambi più vecchi sono nascosti}}",
+        "description": "Lo storico completo e i suoi filtri di ricerca arrivano con Joutes Expert o Joutes Pro.",
+        "cta": "Vedi le offerte"
+      }
+    },
     "offer": {
       "title": "La mia offerta",
       "subtitle": "Le carte che cedi, rimosse dalla tua collezione."

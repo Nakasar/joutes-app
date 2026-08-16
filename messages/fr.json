@@ -3154,6 +3154,32 @@
       "badgeCompleted": "Effectué",
       "badgeCancelled": "Annulé"
     },
+    "history": {
+      "windowNote": "Les {days} derniers jours",
+      "loading": "Recherche en cours…",
+      "noMatch": "Aucun échange ne correspond à ces filtres.",
+      "results": "{count, plural, =0 {Aucun échange} one {# échange} other {# échanges}}",
+      "page": "Page {page} sur {totalPages}",
+      "previous": "Précédents",
+      "next": "Suivants",
+      "filters": {
+        "card": "Carte",
+        "cardPlaceholder": "Nom d'une carte…",
+        "partner": "Partenaire",
+        "allPartners": "Tous les partenaires",
+        "from": "Du",
+        "to": "Au",
+        "sort": "Trier par",
+        "sortRecent": "Du plus récent",
+        "sortOldest": "Du plus ancien",
+        "reset": "Effacer les filtres"
+      },
+      "locked": {
+        "title": "{count, plural, one {# échange plus ancien est masqué} other {# échanges plus anciens sont masqués}}",
+        "description": "L'historique complet et les filtres de recherche arrivent avec Joutes Expert ou Joutes Pro.",
+        "cta": "Voir les offres"
+      }
+    },
     "offer": {
       "title": "Mon offre",
       "subtitle": "Les cartes que vous cédez, retirées de votre collection."
