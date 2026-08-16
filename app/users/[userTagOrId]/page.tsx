@@ -15,6 +15,11 @@ import {Achievement, AchievementWithUnlockInfo} from "@/lib/types/Achievement";
 import { checkAdmin } from "@/lib/middleware/admin";
 import { UnlockAchievementButton } from "@/app/users/UnlockAchievementButton";
 import ReportButton from "@/components/ReportButton";
+import { PlanBadge } from "@/components/PlanBadge";
+import { plansForUserId } from "@/lib/subscriptions/access";
+import { displayPlan } from "@/lib/subscriptions/entitlements";
+import { appearanceForPlan } from "@/lib/subscriptions/tone";
+import { cn } from "@/lib/utils";
 import { Metadata } from "next";
 
 interface UserProfilePageProps {
@@ -121,6 +126,12 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
 
   const displayImage = user.profileImage || user.avatar;
 
+  // Le palier de la personne dont on regarde le profil — pas celui du visiteur.
+  // Contour et badge s'en déduisent : rien de cosmétique n'est stocké, donc rien
+  // n'est à révoquer quand un abonnement s'arrête.
+  const profilePlan = displayPlan(await plansForUserId(user.id));
+  const planAppearance = appearanceForPlan(profilePlan);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8">
       <div className="container mx-auto px-4 max-w-5xl">
@@ -133,16 +144,22 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
                   <img 
                     src={displayImage} 
                     alt={`Avatar de ${userTag}`}
-                    className="w-20 h-20 rounded-full ring-4 ring-primary/20 object-cover"
+                    className={cn(
+                      "w-20 h-20 rounded-full ring-4 object-cover",
+                      planAppearance ? planAppearance.ring : "ring-primary/20"
+                    )}
                   />
                 )}
                 <div className="flex-1">
                   <div className="flex flex-wrap items-start justify-between gap-4">
-                    <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+                    {/* `flex-wrap` : le badge porte `shrink-0`, et un pseudo un
+                        peu long élargirait sinon toute la page sur un téléphone. */}
+                    <h1 className="text-3xl font-bold tracking-tight flex flex-wrap items-center gap-2">
                       {userTag}
                       {!isPublic && (
                         <Lock className="h-5 w-5 text-muted-foreground" />
                       )}
+                      <PlanBadge plan={profilePlan} />
                     </h1>
 
                     <div className="flex items-center gap-2">
