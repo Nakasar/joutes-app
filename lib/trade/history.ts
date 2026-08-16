@@ -60,9 +60,20 @@ export type TradeHistoryQuery = {
   dropped: TradeHistoryFilterName[];
 };
 
-/** Début de la fenêtre visible sans abonnement. */
+const TRADE_HISTORY_WINDOW_MS = TRADE_HISTORY_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+
+/**
+ * Début de la fenêtre visible sans abonnement.
+ *
+ * Une **durée absolue**, et non sept jours de calendrier. La première version
+ * passait par `DateTime.minus({ days: 7 })`, qui compte dans le fuseau du
+ * serveur : au passage à l'heure d'été la fenêtre valait 167 ou 169 heures selon
+ * la saison, alors que le test, lui, affirmait sept fois vingt-quatre heures. Le
+ * décalage était d'une heure deux fois l'an — assez peu pour ne jamais se voir,
+ * assez pour que le code et son test ne disent pas la même chose.
+ */
 export function historyWindowStart(now: Date): Date {
-  return DateTime.fromJSDate(now).minus({ days: TRADE_HISTORY_WINDOW_DAYS }).toJSDate();
+  return new Date(now.getTime() - TRADE_HISTORY_WINDOW_MS);
 }
 
 /**
@@ -206,9 +217,9 @@ export function partnerMatches(partner: PartnerIdentity, term: string): boolean 
 /**
  * Vrai si ces filtres demandent autre chose que l'historique par défaut.
  *
- * Sert à l'interface pour savoir s'il y a lieu de proposer « effacer les
- * filtres », et à l'API pour ne pas signaler un refus là où rien n'a été
- * demandé.
+ * Sert à l'écran : proposer « effacer les filtres », et distinguer « aucun
+ * échange » de « aucun échange ne correspond ». Le refus signalé par `dropped`,
+ * lui, se décide dans `resolveHistoryQuery` — ne pas confondre les deux.
  */
 export function hasActiveHistoryFilters(filters: TradeHistoryFilters): boolean {
   return Boolean(

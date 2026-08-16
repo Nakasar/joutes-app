@@ -23,6 +23,29 @@ describe("fenêtre d'historique", () => {
       NOW.getTime() - TRADE_HISTORY_WINDOW_DAYS * JOUR
     );
   });
+
+  it("dure autant à toute date de l'année", () => {
+    // Sept jours de calendrier n'en font pas toujours sept fois vingt-quatre :
+    // dans un fuseau à heure d'été, la fenêtre vaudrait 167 ou 169 heures selon
+    // la saison. Elle se compte donc en durée absolue.
+    //
+    // Réserve honnête : sur une machine réglée en UTC — les tests d'intégration
+    // continue, notamment — les deux calculs coïncident et ce test ne les
+    // distingue pas. Il mord sur un poste réglé à l'heure de Paris.
+    const dates = [
+      "2026-01-15T12:00:00.000Z",
+      "2026-03-29T12:00:00.000Z", // passage à l'heure d'été en Europe
+      "2026-06-15T12:00:00.000Z",
+      "2026-10-25T12:00:00.000Z", // retour à l'heure d'hiver
+      "2026-12-31T23:30:00.000Z",
+    ].map((iso) => new Date(iso));
+
+    const durees = new Set(
+      dates.map((date) => date.getTime() - historyWindowStart(date).getTime())
+    );
+
+    assert.deepEqual([...durees], [TRADE_HISTORY_WINDOW_DAYS * JOUR]);
+  });
 });
 
 describe("bornes de date", () => {
