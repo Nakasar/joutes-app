@@ -156,6 +156,47 @@ Renseigner `PATREON_CLIENT_ID` et `PATREON_CLIENT_SECRET`, cliquer « Lier » su
 `providerId: "patreon"`, et la page affiche « aucun abonnement » — parce que
 `/identity` ne rend légitimement aucune adhésion.
 
+## Un palier offert à la main
+
+Un administrateur peut donner Supporter, Expert ou Pro sans paiement — boutique
+partenaire, bêta-testeur, remerciement — depuis la page de profil de la personne.
+L'octroi ouvre **exactement les mêmes droits** qu'un palier payé : le badge, le
+contour, les sièges de lieu, tout suit.
+
+Il vit dans `grantedPlans`, à côté de `plans`, sur le même document. C'est
+essentiel : `plans` est une projection de Patreon réécrite en bloc à chaque
+signal, et vidée à la déliaison. Un octroi qui s'y trouverait disparaîtrait au
+premier webhook.
+
+**La protection tient à une absence.** MongoDB laisse intact un champ qu'on ne
+lui demande pas d'écrire, donc `upsertFromSnapshot` protège `grantedPlans` en ne
+le mentionnant simplement pas dans son `$set`. C'est robuste et parfaitement
+invisible : ne jamais l'y ajouter « par symétrie », ce serait effacer les octrois
+sans qu'aucune erreur ne le signale, la synchronisation ayant « réussi ». Un
+commentaire le dit sur place, et un test le prouve indirectement en vérifiant
+qu'un palier offert survit à un `plans` vidé.
+
+La composition se fait dans `lib/subscriptions/grants.ts`, module pur et testé,
+branché en un seul endroit — `plansFromSubscription` de `access.ts`.
+`getMySubscriptionSummary` distingue en revanche les deux origines, pour que
+l'écran de compte n'annonce pas « abonnement actif » à quelqu'un qui irait
+ensuite chercher sur Patreon un prélèvement qui n'existe pas.
+
+## Statuts
+
+Un statut — « Fondateur », « Modérateur », « Ambassadeur » — est un **succès
+marqué `isStatus`**, pas une notion séparée : catalogue, attribution et retrait
+sont ceux des succès. Il s'affiche en badge à côté du pseudonyme au lieu de la
+liste des succès, n'ouvre aucun droit, et coexiste avec une offre payée.
+
+Il s'affiche **quel que soit `isPublicProfile`** : un profil privé l'est sur son
+contenu, et une marque de reconnaissance posée par l'équipe n'est pas du contenu.
+
+Les teintes vivent dans `lib/achievements/status-tone.ts`, séparées de celles des
+offres, et un test vérifie qu'aucune ne coïncide — un « Fondateur » qui porterait
+les classes de Supporter se lirait comme un abonné.
+
+
 ## Pièges à connaître
 
 **Ne jamais éteindre un abonnement sur un échec de lecture.** C'est la règle qui
@@ -164,6 +205,14 @@ gouverne `lib/patreon/api.ts` : ses fonctions rendent un résultat discriminé, 
 requête a échoué » vers `plans: []`. Une panne d'API interprétée comme « aucun
 palier » éteindrait tous les abonnés d'un coup, et Patreon documente des 504 sur
 `/identity` pour les comptes à nombreuses adhésions.
+
+**Ne jamais ajouter `grantedPlans` au `$set` d'`upsertFromSnapshot`.** Toute la
+survie des paliers offerts en dépend, et rien ne signalerait l'erreur : la
+synchronisation réussirait, et les octrois disparaîtraient.
+
+**Le retrait d'un succès compare `achievementId` en tant que chaîne**, sans
+`ObjectId` — c'est ainsi qu'il est inséré. L'envelopper ne supprimerait
+silencieusement rien.
 
 **Le corps d'un webhook se lit brut.** `await req.text()`, jamais `req.json()` :
 la signature porte sur les octets reçus. Le webhook Discord (`app/discord/route.ts`)
@@ -190,8 +239,6 @@ retirés le 7 octobre 2026.
 
 ## Ce qui reste à faire
 
-- Rattachement d'un lieu depuis `/lairs/:id/manage` (le socle existe :
-  `attachLairSeat`, `detachLairSeat`, `canAttachPro`)
 - Les fonctionnalités elles-mêmes : IA, statistiques de groupe, prêt de cartes,
   gestion de réservation avancée, mise en avant d'évènements, personnalisation de
   la page de lieu
