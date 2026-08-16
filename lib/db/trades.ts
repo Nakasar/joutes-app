@@ -1,6 +1,7 @@
 import 'server-only';
+import { cache } from "react";
 import db from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
+import { ObjectId, type Filter } from "mongodb";
 import { DateTime } from "luxon";
 import { customAlphabet } from "nanoid";
 import { removeSellListItemsByCollectionEntryIds } from "@/lib/db/sell-lists";
@@ -10,6 +11,11 @@ import {
   TRADE_MAX_CARDS_PER_SIDE,
   TRADE_MAX_QUANTITY,
 } from "@/lib/constants/trade";
+import {
+  historyWindowStart,
+  partnerMatches,
+  type TradeHistoryQuery,
+} from "@/lib/trade/history";
 import { getCardMarketPrices } from "@/lib/db/card-prices";
 import type { CardMarketPrice } from "@/lib/prices/display";
 
@@ -587,28 +593,179 @@ export async function getTradeByCode(code: string): Promise<Trade | null> {
   return (await hydrateTrades([doc]))[0];
 }
 
-/** Échanges de l'utilisateur : en cours d'abord, puis l'historique (terminés ou annulés). */
+/** Les statuts qui font qu'un échange appartient à l'historique. */
+const CLOSED_STATUSES: TradeStatus[] = ["completed", "cancelled"];
+
+/**
+ * `updatedAt` et non `completedAt`/`cancelledAt` pour dater un échange clos.
+ *
+ * Rien ne touche plus à un échange une fois terminé ou annulé : les deux dates
+ * coïncident. Mais seul `updatedAt` porte l'index `{ "sides.userId": 1,
+ * updatedAt: -1 }` — filtrer sur une autre date ferait un balayage, et le tri
+ * qui l'accompagne ne s'appuierait plus sur rien.
+ */
+function historyFilter(
+  userObjId: ObjectId,
+  { from, to }: { from?: Date | null; to?: Date | null } = {}
+): Filter<TradeDocument> {
+  const range = {
+    ...(from ? { $gte: from } : {}),
+    ...(to ? { $lte: to } : {}),
+  };
+
+  return {
+    "sides.userId": userObjId,
+    status: { $in: CLOSED_STATUSES },
+    ...(from || to ? { updatedAt: range } : {}),
+  };
+}
+
+/**
+ * Échanges de l'utilisateur : en cours d'abord, puis l'historique (terminés ou
+ * annulés).
+ *
+ * Sans `fullHistory`, l'historique s'arrête à sept jours — c'est la valeur par
+ * défaut, et volontairement : un appelant qui oublie de vérifier le droit montre
+ * trop peu, jamais trop. `hiddenCount` compte ce qui reste au-delà, pour ne
+ * proposer l'abonnement qu'à qui a réellement quelque chose à y gagner.
+ */
 export async function listUserTrades(
   userId: string,
-  { historyLimit = 50 }: { historyLimit?: number } = {}
-): Promise<{ open: Trade[]; past: Trade[] }> {
+  {
+    historyLimit = 50,
+    fullHistory = false,
+    now = new Date(),
+  }: { historyLimit?: number; fullHistory?: boolean; now?: Date } = {}
+): Promise<{ open: Trade[]; past: Trade[]; hiddenCount: number }> {
   const userObjId = new ObjectId(userId);
   const collection = db.collection<TradeDocument>(TRADES_COLLECTION);
+  const windowStart = fullHistory ? null : historyWindowStart(now);
 
-  const [openDocs, pastDocs] = await Promise.all([
+  const [openDocs, pastDocs, hiddenCount] = await Promise.all([
     collection
       .find({ "sides.userId": userObjId, status: "open" })
       .sort({ updatedAt: -1 })
       .toArray(),
     collection
-      .find({ "sides.userId": userObjId, status: { $in: ["completed", "cancelled"] } })
+      .find(historyFilter(userObjId, { from: windowStart }))
       .sort({ updatedAt: -1 })
       .limit(historyLimit)
       .toArray(),
+    windowStart
+      ? collection.countDocuments({
+          ...historyFilter(userObjId),
+          updatedAt: { $lt: windowStart },
+        })
+      : Promise.resolve(0),
   ]);
 
   const trades = await hydrateTrades([...openDocs, ...pastDocs]);
-  return { open: trades.slice(0, openDocs.length), past: trades.slice(openDocs.length) };
+  return {
+    open: trades.slice(0, openDocs.length),
+    past: trades.slice(openDocs.length),
+    hiddenCount,
+  };
+}
+
+export type TradeHistoryPage = {
+  items: Trade[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};
+
+/**
+ * Les partenaires rencontrés dans l'historique, pour alimenter le filtre.
+ *
+ * Une seule lecture distincte, et jamais l'annuaire : la liste proposée est
+ * celle des gens avec qui on a effectivement échangé.
+ *
+ * `cache()` le temps d'une requête, parce qu'une recherche par partenaire
+ * l'appelle pour résoudre le nom cherché, et la route l'appelle à nouveau pour
+ * remplir le menu déroulant. Même mémoïsation que `lib/subscriptions/access.ts`,
+ * et pour la même raison : un mémo de module ferait fuiter les partenaires d'un
+ * visiteur vers le suivant sur un conteneur chaud.
+ */
+export const listTradeHistoryPartners = cache(async (userId: string): Promise<PublicUser[]> => {
+  const userObjId = new ObjectId(userId);
+
+  const ids = (await db
+    .collection<TradeDocument>(TRADES_COLLECTION)
+    .distinct("sides.userId", historyFilter(userObjId))) as ObjectId[];
+
+  const partnerIds = ids.filter((id) => id && !id.equals(userObjId)).map((id) => id.toString());
+  if (partnerIds.length === 0) return [];
+
+  const users = (await getUsersByIds(partnerIds)).map(toPublicUser);
+  return users.sort((a, b) =>
+    (a.displayName || a.username).localeCompare(b.displayName || b.username)
+  );
+});
+
+/**
+ * Historique paginé et filtré.
+ *
+ * La requête reçue est déjà normalisée par `resolveHistoryQuery` : c'est là que
+ * la fenêtre de sept jours est imposée à qui n'a pas `trades:full_history`, et
+ * cette fonction n'a donc pas à connaître les droits de l'appelant. Elle exécute
+ * ce qu'on lui donne — d'où l'importance de ne jamais l'appeler avec des filtres
+ * bruts venus d'un client.
+ */
+export async function searchTradeHistory(
+  userId: string,
+  query: TradeHistoryQuery
+): Promise<TradeHistoryPage> {
+  const userObjId = new ObjectId(userId);
+  const collection = db.collection<TradeDocument>(TRADES_COLLECTION);
+
+  const filter: Filter<TradeDocument> = historyFilter(userObjId, {
+    from: query.from,
+    to: query.to,
+  });
+
+  if (query.card) {
+    // Les deux offres : on cherche une carte passée par cet échange, sans
+    // distinguer celle qu'on a cédée de celle qu'on a reçue.
+    filter["sides.cards.name"] = { $regex: escapeRegex(query.card), $options: "i" };
+  }
+
+  if (query.partner) {
+    const matching = (await listTradeHistoryPartners(userId)).filter((partner) =>
+      partnerMatches(partner, query.partner!)
+    );
+
+    // Aucun partenaire de ce nom : la réponse est vide, et il n'y a rien à
+    // demander à la base.
+    if (matching.length === 0) {
+      return { items: [], total: 0, page: query.page, limit: query.limit, totalPages: 0 };
+    }
+
+    // `$and` et non une seconde clé `sides.userId` : le même chemin deux fois
+    // dans un même objet, et la première condition disparaît — l'historique
+    // deviendrait celui de tout le monde.
+    filter.$and = [
+      { "sides.userId": userObjId },
+      { "sides.userId": { $in: matching.map((partner) => new ObjectId(partner.id)) } },
+    ];
+    delete filter["sides.userId"];
+  }
+
+  const total = await collection.countDocuments(filter);
+  const docs = await collection
+    .find(filter)
+    .sort({ updatedAt: query.sort === "oldest" ? 1 : -1 })
+    .skip((query.page - 1) * query.limit)
+    .limit(query.limit)
+    .toArray();
+
+  return {
+    items: await hydrateTrades(docs),
+    total,
+    page: query.page,
+    limit: query.limit,
+    totalPages: Math.ceil(total / query.limit),
+  };
 }
 
 /** `unitPrice` à `null` efface le prix négocié et rend la main au prix de marché. */
