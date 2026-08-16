@@ -28,6 +28,7 @@ const staticUrls: {
 }[] = [
   { url: `${SITE}`, lastModified: new Date(), changeFrequency: 'daily', priority: 1 },
   { url: `${SITE}/features`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
+  { url: `${SITE}/features/organizers`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
   { url: `${SITE}/about`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
   // Pages propres à riftbound : leurs routes sont statiques, aucun autre jeu ne
   // les ouvre, et le vérificateur de deck n'existe pas sous `[gameSlugOrId]`.

@@ -49,7 +49,8 @@
         "policies": "Policies",
         "cubes": "Cubes",
         "deckChecker": "Deck checker"
-      }
+      },
+      "ForOrganizers": "For organizers"
     }
   },
   "Home": {
@@ -1875,6 +1876,12 @@
           "name": "Spring league",
           "points": "{count} pts"
         }
+      },
+      "organizersLink": {
+        "eyebrow": "Running events?",
+        "title": "Joutes for event organizers",
+        "subtitle": "Stores, clubs, organizers, publishers: calendar, registrations, tournaments, leagues and integrations, on a page of their own.",
+        "cta": "See the organizers page"
       }
     },
   "Friends": {
@@ -3480,6 +3487,202 @@
       "low": "Low",
       "trend": "Trend",
       "avg30": "30-day average"
+    }
+  },
+  "FeaturesOrganizers": {
+    "metadata": {
+      "title": "Joutes for organizers",
+      "description": "Calendar, registrations, tournaments, leagues and integrations: everything you need to run your gaming events and fill your tables — stores, clubs, organizers and publishers."
+    },
+    "hero": {
+      "eyebrow": "Stores · Clubs · Organizers · Publishers",
+      "titleHighlight": "Fill your tables,",
+      "title": "not your spreadsheets",
+      "subtitle": "Publish your calendar, open registrations, run your tournaments and leagues. Joutes reaches your players where they already are: Discord, mobile, web, notifications.",
+      "ctaPrimary": "Create an event",
+      "ctaSecondary": "Run a tournament"
+    },
+    "audience": {
+      "title": "Built for the people who make the games happen",
+      "subtitle": "The same platform, whether you open three tables on a Friday night or a full season of tournaments.",
+      "items": {
+        "stores": {
+          "title": "Game stores",
+          "description": "Your weekly schedule visible to players nearby, and your registrations kept up to date without a paper sign-up sheet."
+        },
+        "associations": {
+          "title": "Clubs and associations",
+          "description": "A shared calendar, members notified automatically, and leagues that survive a whole season without a group spreadsheet."
+        },
+        "organizers": {
+          "title": "Independent organizers",
+          "description": "A complete tournament — registrations, pairings, timer, standings — with nothing to install, and players joining by QR code."
+        },
+        "publishers": {
+          "title": "Publishers and distributors",
+          "description": "Your official events relayed to the whole network, and an open API to plug them into your own tools."
+        }
+      }
+    },
+    "soonLabel": "Coming soon",
+    "items": {
+      "calendar": {
+        "title": "A calendar your players already check",
+        "description": "Your events do not sit on an isolated page: they land in the public Joutes calendar, on your venue's page, in per-game search and in search around a location.",
+        "bullets": [
+          "Public monthly calendar, filterable by game",
+          "Location-based search: your events found “near me”",
+          "Full listing: schedule, price, description, link and remaining seats",
+          "Attached to your venue and its practical details",
+          "“Sold out” or “cancelled” status readable at a glance",
+          "Pages indexed and declared to search engines"
+        ]
+      },
+      "engagement": {
+        "title": "One announcement, every channel",
+        "description": "Your players do not all live in the same place. The same event is published to your Discord server, in the mobile app, on the web, and even to the AI assistants some of them use.",
+        "bullets": [
+          "Discord bot: an event board posted in your channel and updated on its own",
+          "One-click registration from Discord for linked accounts",
+          "Mobile and desktop app: calendar, player portal, notifications",
+          "In-app notifications and push notifications on phones",
+          "Weekly digest by email and notification",
+          "MCP server and WebMCP tools: your events answer compatible AI assistants"
+        ]
+      },
+      "registrations": {
+        "title": "Registrations, without rereading a chat thread",
+        "description": "Who is registered, who is still waiting for approval, who has arrived, who has handed in a decklist: it all reads from a single page, and your participants are told as soon as anything changes.",
+        "bullets": [
+          "Registration from the web, from Discord or from mobile",
+          "Capped seat count, with a live tally",
+          "Pre-registration: you approve each request one by one",
+          "Check-in on the day of the event",
+          "Custom registration form: text, number, choice, a card from the game, decklist parsed automatically",
+          "Answer deadline, with late answers flagged as such",
+          "Event cancelled: every registered player is notified, reason included",
+          "Organizer announcements pushed to participants"
+        ],
+        "soon": [
+          "Automatic waiting list that promotes the next player as soon as a seat frees up"
+        ]
+      },
+      "tournaments": {
+        "title": "The tournament runs itself",
+        "description": "You start the round, Joutes does the rest: pairings, tables, a timer broadcast to the whole room, results reported by players and standings recomputed on every match.",
+        "bullets": [
+          "Chained phases: Swiss rounds, elimination, seeded bracket, freeform, time race",
+          "Pairings generated automatically, top cut between two phases",
+          "Configurable tiebreakers: opponents' win rate (OMW), game difference, game statistics",
+          "Timer broadcast to everyone, time extensions granted table by table",
+          "Room screen to project: timer, announcements, standings or pairings",
+          "“Info” or “urgent” announcements pushed to players",
+          "Results reported by players, then confirmed or disputed",
+          "Judging: penalties, internal notes and an activity log",
+          "Players join by code or QR code, with or without an account",
+          "Pairing and standings exports"
+        ]
+      },
+      "leagues": {
+        "title": "Leagues that hold up over a season",
+        "description": "A league runs for weeks, which is exactly what a shared spreadsheet handles worst. Joutes keeps the standings, reminds players and closes rounds on their deadline.",
+        "bullets": [
+          "Points format: participation, win, loss and feats you define yourself",
+          "Killer format: assigned targets, eliminations, confirmation by the venue",
+          "Dated season, registration deadline, public league or invitation code",
+          "Standings recomputed on every reported match",
+          "Asynchronous rounds: each round is a multi-day window players schedule themselves",
+          "Automatic reminders before the deadline, and a set outcome for unplayed matches",
+          "Several organizers, several games, several venues"
+        ]
+      },
+      "integrations": {
+        "title": "Your own tools keep working",
+        "description": "Joutes is not a dead end: what you put in comes back out through an open API, an MCP server and exports, to feed your website, your Discord or your own tools.",
+        "bullets": [
+          "Open, documented REST API (OpenAPI): events, venues, games, rules",
+          "Authentication via OAuth2 or a personal API key",
+          "MCP server to connect your AI agents to your data",
+          "Discord bot you can install on your server",
+          "CSV exports of pairings and standings"
+        ],
+        "soon": [
+          "Embeddable widgets for your own site: calendar, next event, league standings"
+        ]
+      }
+    },
+    "links": {
+      "title": "Going further",
+      "subtitle": "The documentation for those who plug Joutes into something else.",
+      "discord": {
+        "title": "Discord bot",
+        "description": "Commands, synchronized board and registration from your server."
+      },
+      "api": {
+        "title": "Open API",
+        "description": "Full OpenAPI reference, authentication and examples."
+      },
+      "mcp": {
+        "title": "MCP server",
+        "description": "Connect an AI agent to games, rules, venues and events."
+      },
+      "players": {
+        "title": "Joutes for players",
+        "description": "Collection, decks, play groups: what your participants find here."
+      }
+    },
+    "cta": {
+      "title": "Organizing something? Start with one event.",
+      "subtitle": "Creating it takes two minutes. Spreading the word is on Joutes.",
+      "ctaPrimary": "Create an event",
+      "ctaSecondary": "Talk to us on Discord"
+    },
+    "mockup": {
+      "hero": {
+        "title": "Friday night · Draft",
+        "registered": "{count} registered",
+        "capacity": "{count} seats",
+        "channelDiscord": "Discord",
+        "channelMobile": "Mobile",
+        "channelWeb": "Web"
+      },
+      "calendar": {
+        "month": "March",
+        "eventShort": "Tournament",
+        "nearby": "Under 10 km away"
+      },
+      "engagement": {
+        "discord": "Discord board updated",
+        "push": "Notification sent · {count} players",
+        "ai": "AI assistant · “any tournaments this weekend?”"
+      },
+      "registrations": {
+        "title": "Registrations",
+        "registered": "Registered",
+        "pending": "To approve",
+        "checkedIn": "Checked in",
+        "player1": "Alex",
+        "player2": "Sam",
+        "player3": "Lou",
+        "formField": "Decklist · parsed"
+      },
+      "tournaments": {
+        "round": "Round 3 of 5",
+        "timer": "12:40",
+        "table": "Table {number}",
+        "versus": "vs",
+        "announcement": "Announcement · round ends in 5 min"
+      },
+      "leagues": {
+        "name": "Spring season",
+        "points": "{count} pts",
+        "deadline": "Window · 3 days left"
+      },
+      "integrations": {
+        "endpoint": "GET /api/events",
+        "field1": "\"name\": \"Saturday tournament\"",
+        "field2": "\"registeredParticipantsCount\": 18"
+      }
     }
   }
 }
