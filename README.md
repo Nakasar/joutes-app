@@ -65,6 +65,12 @@ Une carte peut être marquée « toujours foil » et porter une liste de variant
 
 Pour plus de détails, voir [docs/CARD_PRINTINGS.md](docs/CARD_PRINTINGS.md).
 
+### Outils du site pour les agents IA (WebMCP)
+
+Toutes les pages déclarent au navigateur, via WebMCP, les actions principales de Joutes : recherche globale, catalogue de cartes d'un jeu, événements, lieux de jeu, ouverture d'une page. Un agent qui ouvre le site s'en sert avec la session de l'utilisateur, au lieu de simuler des clics.
+
+Pour plus de détails, voir [docs/WEBMCP.md](docs/WEBMCP.md).
+
 ### Documents d'export hors ligne
 
 Chaque jeu expose un document JSON (cartes, erratas, policies, règles) que les clients téléchargent pour fonctionner hors ligne. Il est généré en flux, une génération à la fois par jeu.
