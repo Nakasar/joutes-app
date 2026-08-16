@@ -1111,7 +1111,33 @@
       "detailsTitle": "Ortsinformationen",
       "detailsDescription": "Name, Banner und verfügbare Spiele dieses Ortes aktualisieren",
       "ownersTitle": "Besitzer",
-      "ownersDescription": "Personen verwalten, die diesen Ort administrieren dürfen"
+      "ownersDescription": "Personen verwalten, die diesen Ort administrieren dürfen",
+      "pro": {
+        "title": "Pro-Abo",
+        "description": "Binde diesen Spielort an ein Joutes-Pro-Abo, um seine Veranstalterfunktionen zu öffnen.",
+        "statusActive": "Pro aktiv",
+        "statusInactive": "Kein Abo",
+        "statusMine": "Von dir gebunden",
+        "activeDescription": "Dieser Spielort hat die Pro-Funktionen. Alle seine Eigentümer profitieren davon.",
+        "inactiveDescription": "Dieser Spielort ist an kein Pro-Abo gebunden.",
+        "lapsed": "Du hast diesen Spielort gebunden, aber dein Pro-Abo ist nicht mehr aktiv: der Spielort hat seine Rechte verloren. Sie kommen unverändert zurück, wenn dein Abo wieder läuft.",
+        "attach": "Diesen Spielort binden",
+        "attached": "Spielort gebunden.",
+        "attachFailed": "Das Binden ist fehlgeschlagen.",
+        "detach": "Diesen Spielort lösen",
+        "detached": "Spielort gelöst.",
+        "detachFailed": "Das Lösen ist fehlgeschlagen.",
+        "mySubscription": "Mein Abo",
+        "refusal": {
+          "not-pro": "Zum Binden eines Spielorts braucht es ein Joutes-Pro-Abo.",
+          "seats-full": "Dein Abo erlaubt keinen weiteren Spielort.",
+          "already-attached": "Dieser Spielort ist bereits an dein Abo gebunden.",
+          "private-lair": "Ein privater Spielort kann nicht gebunden werden: Pro-Funktionen betreffen die öffentliche Außenseite.",
+          "lair-not-found": "Dieser Spielort wurde nicht gefunden.",
+          "not-authenticated": "Du musst angemeldet sein.",
+          "not-attached": "Dieser Spielort war an kein Abo gebunden."
+        }
+      }
     },
     "eventNew": {
       "notFound": "Ort nicht gefunden",

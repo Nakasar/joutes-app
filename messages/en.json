@@ -1111,7 +1111,33 @@
       "detailsTitle": "Venue information",
       "detailsDescription": "Update the name, banner, and available games for this venue",
       "ownersTitle": "Owners",
-      "ownersDescription": "Manage the people who can administer this venue"
+      "ownersDescription": "Manage the people who can administer this venue",
+      "pro": {
+        "title": "Pro subscription",
+        "description": "Attach this venue to a Joutes Pro subscription to open its organizer features.",
+        "statusActive": "Pro active",
+        "statusInactive": "No subscription",
+        "statusMine": "Attached by you",
+        "activeDescription": "This venue has the Pro features. All of its owners benefit.",
+        "inactiveDescription": "This venue is not attached to any Pro subscription.",
+        "lapsed": "You attached this venue, but your Pro subscription is no longer active: the venue has lost its rights. They return as they were if your subscription resumes.",
+        "attach": "Attach this venue",
+        "attached": "Venue attached.",
+        "attachFailed": "Attaching failed.",
+        "detach": "Detach this venue",
+        "detached": "Venue detached.",
+        "detachFailed": "Detaching failed.",
+        "mySubscription": "My subscription",
+        "refusal": {
+          "not-pro": "A Joutes Pro subscription is required to attach a venue.",
+          "seats-full": "Your subscription does not allow attaching another venue.",
+          "already-attached": "This venue is already attached to your subscription.",
+          "private-lair": "A private venue cannot be attached: Pro features concern the public storefront.",
+          "lair-not-found": "This venue was not found.",
+          "not-authenticated": "You must be signed in.",
+          "not-attached": "This venue was not attached to any subscription."
+        }
+      }
     },
     "eventNew": {
       "notFound": "Venue not found",

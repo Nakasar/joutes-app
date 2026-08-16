@@ -1112,7 +1112,33 @@
       "detailsTitle": "Informations du lieu",
       "detailsDescription": "Modifiez le nom, la bannière et les jeux disponibles dans ce lieu",
       "ownersTitle": "Propriétaires",
-      "ownersDescription": "Gérez les personnes qui peuvent administrer ce lieu"
+      "ownersDescription": "Gérez les personnes qui peuvent administrer ce lieu",
+      "pro": {
+        "title": "Abonnement Pro",
+        "description": "Rattachez ce lieu à un abonnement Joutes Pro pour lui ouvrir les fonctionnalités organisateur.",
+        "statusActive": "Pro actif",
+        "statusInactive": "Pas d'abonnement",
+        "statusMine": "Rattaché par vous",
+        "activeDescription": "Ce lieu bénéficie des fonctionnalités Pro. Tous ses propriétaires en profitent.",
+        "inactiveDescription": "Ce lieu n'est rattaché à aucun abonnement Pro.",
+        "lapsed": "Vous avez rattaché ce lieu, mais votre abonnement Pro n'est plus actif : le lieu a perdu ses droits. Ils reviendront tels quels si votre abonnement reprend.",
+        "attach": "Rattacher ce lieu",
+        "attached": "Lieu rattaché.",
+        "attachFailed": "Le rattachement a échoué.",
+        "detach": "Détacher ce lieu",
+        "detached": "Lieu détaché.",
+        "detachFailed": "Le détachement a échoué.",
+        "mySubscription": "Mon abonnement",
+        "refusal": {
+          "not-pro": "Il faut un abonnement Joutes Pro pour rattacher un lieu.",
+          "seats-full": "Votre abonnement ne permet pas de rattacher un lieu de plus.",
+          "already-attached": "Ce lieu est déjà rattaché à votre abonnement.",
+          "private-lair": "Un lieu privé ne peut pas être rattaché : les fonctionnalités Pro concernent la vitrine publique.",
+          "lair-not-found": "Ce lieu est introuvable.",
+          "not-authenticated": "Vous devez être connecté.",
+          "not-attached": "Ce lieu n'était rattaché à aucun abonnement."
+        }
+      }
     },
     "eventNew": {
       "notFound": "Lieu non trouvé",

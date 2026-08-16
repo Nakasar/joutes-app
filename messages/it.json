@@ -1053,7 +1053,33 @@
       "detailsTitle": "Informazioni sul luogo",
       "detailsDescription": "Aggiorna il nome, il banner e i giochi disponibili in questo luogo",
       "ownersTitle": "Proprietari",
-      "ownersDescription": "Gestisci le persone che possono amministrare questo luogo"
+      "ownersDescription": "Gestisci le persone che possono amministrare questo luogo",
+      "pro": {
+        "title": "Abbonamento Pro",
+        "description": "Collega questo locale a un abbonamento Joutes Pro per aprirne le funzionalità da organizzatore.",
+        "statusActive": "Pro attivo",
+        "statusInactive": "Nessun abbonamento",
+        "statusMine": "Collegato da te",
+        "activeDescription": "Questo locale ha le funzionalità Pro. Ne beneficiano tutti i suoi proprietari.",
+        "inactiveDescription": "Questo locale non è collegato ad alcun abbonamento Pro.",
+        "lapsed": "Hai collegato questo locale, ma il tuo abbonamento Pro non è più attivo: il locale ha perso i suoi diritti. Torneranno com'erano se l'abbonamento riprende.",
+        "attach": "Collega questo locale",
+        "attached": "Locale collegato.",
+        "attachFailed": "Il collegamento non è riuscito.",
+        "detach": "Scollega questo locale",
+        "detached": "Locale scollegato.",
+        "detachFailed": "Lo scollegamento non è riuscito.",
+        "mySubscription": "Il mio abbonamento",
+        "refusal": {
+          "not-pro": "Serve un abbonamento Joutes Pro per collegare un locale.",
+          "seats-full": "Il tuo abbonamento non permette di collegare un altro locale.",
+          "already-attached": "Questo locale è già collegato al tuo abbonamento.",
+          "private-lair": "Un locale privato non può essere collegato: le funzionalità Pro riguardano la vetrina pubblica.",
+          "lair-not-found": "Questo locale non è stato trovato.",
+          "not-authenticated": "Devi aver effettuato l'accesso.",
+          "not-attached": "Questo locale non era collegato ad alcun abbonamento."
+        }
+      }
     },
     "eventNew": {
       "notFound": "Luogo non trovato",
