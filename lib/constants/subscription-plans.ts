@@ -67,7 +67,9 @@ export const SUBSCRIPTION_PLANS = {
     lairSeats: 1,
     includes: ["supporter"],
     entitlements: ["sub:lair-pro"],
-    tone: "gold",
+    // Bleu nuit et non doré : Pro s'adresse à une boutique, pas au meilleur
+    // joueur de la salle. Un contour doré se lirait comme un rang.
+    tone: "midnight",
   },
 } as const;
 
