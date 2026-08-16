@@ -57,17 +57,28 @@ export async function getAchievementsForUser(userId: string): Promise<Achievemen
   }));
 }
 
-export async function unlockAchievementById(userId: string, achievementId: string): Promise<boolean> {
+/**
+ * Résultat d'un déblocage. Le booléen d'origine confondait « ce succès n'existe
+ * pas » et « il l'a déjà », si bien que l'interface ne pouvait qu'afficher les
+ * deux à la fois — le message disait littéralement « déjà débloqué ou n'existe
+ * pas ». Deux causes, deux réponses.
+ */
+export type UnlockOutcome = "unlocked" | "already-unlocked" | "not-found";
+
+export async function unlockAchievementById(
+  userId: string,
+  achievementId: string
+): Promise<UnlockOutcome> {
   // Vérifier que l'achievement existe
   try {
     const achievement = await db.collection(ACHIEVEMENTS_COLLECTION).findOne({ _id: new ObjectId(achievementId) });
     if (!achievement) {
       console.error(`Achievement not found: ${achievementId}`);
-      return false;
+      return "not-found";
     }
-  } catch (e) {
+  } catch {
     console.error(`Invalid achievement ID: ${achievementId}`);
-    return false;
+    return "not-found";
   }
 
   const existing = await db.collection(USER_ACHIEVEMENTS_COLLECTION).findOne({
@@ -76,7 +87,7 @@ export async function unlockAchievementById(userId: string, achievementId: strin
   });
 
   if (existing) {
-    return false; // Déjà débloqué
+    return "already-unlocked";
   }
 
   await db.collection(USER_ACHIEVEMENTS_COLLECTION).insertOne({
@@ -85,7 +96,28 @@ export async function unlockAchievementById(userId: string, achievementId: strin
     unlockedAt: new Date(),
   });
 
-  return true;
+  return "unlocked";
+}
+
+/**
+ * Retire un succès à un compte.
+ *
+ * N'existait pas : jusqu'ici, un succès accordé ne pouvait être retiré qu'en
+ * supprimant le succès lui-même, pour tout le monde. Un statut, lui, doit
+ * pouvoir se reprendre.
+ *
+ * ⚠️ `achievementId` est comparé **en tant que chaîne**, sans `new ObjectId(...)`.
+ * C'est ainsi que `unlockAchievementById` l'insère, et c'est aussi ce que fait la
+ * cascade de `deleteAchievement`. L'envelopper « pour faire propre » ferait
+ * silencieusement ne rien supprimer.
+ */
+export async function revokeAchievementById(userId: string, achievementId: string): Promise<boolean> {
+  const result = await db.collection(USER_ACHIEVEMENTS_COLLECTION).deleteOne({
+    userId,
+    achievementId,
+  });
+
+  return result.deletedCount === 1;
 }
 
 export async function createAchievement(achievement: Omit<Achievement, "id">): Promise<Achievement> {

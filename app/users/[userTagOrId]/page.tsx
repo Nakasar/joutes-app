@@ -14,6 +14,9 @@ import { Lair } from "@/lib/types/Lair";
 import {Achievement, AchievementWithUnlockInfo} from "@/lib/types/Achievement";
 import { checkAdmin } from "@/lib/middleware/admin";
 import { UnlockAchievementButton } from "@/app/users/UnlockAchievementButton";
+import GrantPlanButton from "@/app/users/GrantPlanButton";
+import RevokeAchievementButton from "@/app/users/RevokeAchievementButton";
+import { getSubscriptionByUserId } from "@/lib/db/subscriptions";
 import ReportButton from "@/components/ReportButton";
 import { PlanBadge } from "@/components/PlanBadge";
 import { plansForUserId } from "@/lib/subscriptions/access";
@@ -87,13 +90,14 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
     userLairs = lairsResults.filter((lair): lair is Lair => lair !== null);
   }
 
-  // Récupérer les succès si le profil est public
-  let userAchievements: AchievementWithUnlockInfo[] = [];
-  if (isPublic) {
-    const allAchievements = await getAchievementsForUser(user.id);
-    // On ne garde que les succès débloqués pour l'affichage public
-    userAchievements = allAchievements.filter(a => a.unlockedAt);
-  }
+  // Une seule lecture des succès, trois usages. Elle était faite deux fois quand
+  // le visiteur était administrateur, et elle vivait dans le `if (isPublic)` —
+  // ce qui empêchait d'afficher un statut sur un profil privé.
+  const allAchievements = await getAchievementsForUser(user.id);
+  const unlocked = allAchievements.filter(a => a.unlockedAt);
+
+  // La grille de succès, elle, reste réservée aux profils publics.
+  const userAchievements: AchievementWithUnlockInfo[] = isPublic ? unlocked : [];
 
   // Listes de souhaits publiques (affichées quel que soit isPublic : c'est un choix explicite par liste)
   const publicWishlists = await getPublicWishlistsForOwner({ type: "user", id: user.id });
@@ -104,21 +108,14 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
   // Vérifier si l'utilisateur connecté est admin
   const isAdmin = await checkAdmin();
 
-  // Récupérer tous les succès disponibles pour les admins
-  let allAvailableAchievements: Achievement[] = [];
-  let unlockedAchievements: string[] = [];
-  if (isAdmin) {
-    allAvailableAchievements = await getAllAchievements();
-    const userAllAchievements = await getAchievementsForUser(user.id);
-    unlockedAchievements = userAllAchievements
-      .filter(a => a.unlockedAt)
-      .map(a => a.id);
-  }
-
-  // Filtrer les succès non encore débloqués pour l'admin
-  const availableToUnlock = isAdmin
-    ? allAvailableAchievements.filter(a => !unlockedAchievements.includes(a.id))
-    : [];
+  // Le catalogue complet n'intéresse que l'administration : on ne le charge que
+  // pour elle.
+  const allAvailableAchievements: Achievement[] = isAdmin ? await getAllAchievements() : [];
+  // L'abonnement brut : le dialogue d'octroi a besoin de distinguer ce qui est
+  // offert de ce qui vient de Patreon, ce que les plans composés ne disent plus.
+  const adminSubscription = isAdmin ? await getSubscriptionByUserId(user.id) : null;
+  const unlockedIds = new Set(unlocked.map(a => a.id));
+  const availableToUnlock = allAvailableAchievements.filter(a => !unlockedIds.has(a.id));
 
   const userTag = user.displayName && user.discriminator
     ? `${user.displayName}#${user.discriminator}`
@@ -162,14 +159,28 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
                       <PlanBadge plan={profilePlan} />
                     </h1>
 
-                    <div className="flex items-center gap-2">
-                      {/* Bouton admin pour débloquer un succès */}
+                    {/* `flex-wrap` : trois boutons d'administration peuvent
+                        s'y trouver, tous en `shrink-0`. */}
+                    <div className="flex flex-wrap items-center gap-2">
                       {isAdmin && (
-                        <UnlockAchievementButton
-                          userId={user.id}
-                          userTag={userTag}
-                          availableAchievements={availableToUnlock}
-                        />
+                        <>
+                          <GrantPlanButton
+                            userId={user.id}
+                            userTag={userTag}
+                            grantedPlans={adminSubscription?.grantedPlans ?? []}
+                            paidPlans={adminSubscription?.plans ?? []}
+                          />
+                          <UnlockAchievementButton
+                            userId={user.id}
+                            userTag={userTag}
+                            availableAchievements={availableToUnlock}
+                          />
+                          <RevokeAchievementButton
+                            userId={user.id}
+                            userTag={userTag}
+                            unlockedAchievements={unlocked}
+                          />
+                        </>
                       )}
                       <ReportButton contentType="user" contentId={user.id} />
                     </div>
