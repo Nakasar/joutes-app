@@ -3671,35 +3671,41 @@
       "supporter": {
         "tagline": "Dire grazie, e mostrarlo sul profilo.",
         "features": [
-          "Il badge Supporter accanto al tuo nome",
+          "Un badge «Supporter» accanto al tuo nome su Joutes",
           "Un bordo argentato attorno al tuo avatar"
         ],
-        "soon": []
+        "soon": [
+          "Un ruolo «Supporter» sul server Discord",
+          "L'accesso a una sezione dedicata sul server Discord"
+        ]
       },
       "expert": {
         "tagline": "Per chi conosce la propria collezione carta per carta.",
         "features": [
-          "Il badge Expert e un bordo viola",
-          "Tutto quello che comprende Supporter"
+          "Un badge «Expert» accanto al tuo nome su Joutes",
+          "Un bordo ametista attorno al tuo avatar"
         ],
         "soon": [
-          "Un'IA che conosce le tue carte e i tuoi mazzi",
-          "Le statistiche dei tuoi gruppi di gioco",
-          "I tuoi prestiti di carte tracciati, per non perderne nessuno"
+          "Un ruolo «Expert» sul server Discord",
+          "L'accesso a una sezione dedicata sul server Discord",
+          "Funzionalità avanzate per i tuoi gruppi di gioco"
         ]
       },
       "pro": {
         "tagline": "Per il negozio, il club o l'associazione che fa giocare tutti.",
         "features": [
-          "Il badge Pro e un bordo blu notte",
-          "Tutto quello che comprende Supporter"
+          "Un badge «Pro» accanto al tuo nome su Joutes",
+          "Un bordo blu notte attorno al tuo avatar"
         ],
         "soon": [
-          "Il tuo locale collegato all'abbonamento",
-          "Iscrizioni gestite dall'inizio alla fine",
+          "Un ruolo «Pro» sul server Discord",
+          "L'accesso a una sezione dedicata sul server Discord",
+          "Un sistema di prenotazione per i tuoi eventi",
           "I tuoi eventi messi in primo piano",
-          "La pagina del tuo locale, a modo tuo"
-        ]
+          "La personalizzazione della pagina del tuo locale",
+          "Un canale di assistenza"
+        ],
+        "billingNote": "Disponibile anche su fattura, per negozi e associazioni."
       }
     },
     "cta": {

@@ -3729,35 +3729,41 @@
       "supporter": {
         "tagline": "Say thanks, and show it on your profile.",
         "features": [
-          "The Supporter badge next to your name",
+          "A “Supporter” badge next to your name on Joutes",
           "A silver border around your avatar"
         ],
-        "soon": []
+        "soon": [
+          "A “Supporter” role on the Discord server",
+          "Access to a dedicated section on the Discord server"
+        ]
       },
       "expert": {
         "tagline": "For anyone who knows their collection card by card.",
         "features": [
-          "The Expert badge and a violet border",
-          "Everything Supporter includes"
+          "An “Expert” badge next to your name on Joutes",
+          "An amethyst border around your avatar"
         ],
         "soon": [
-          "An AI that knows your cards and your decks",
-          "Stats for your play groups",
-          "Your card loans tracked, so none go missing"
+          "An “Expert” role on the Discord server",
+          "Access to a dedicated section on the Discord server",
+          "Advanced features for your play groups"
         ]
       },
       "pro": {
         "tagline": "For the store, club or association that gets everyone playing.",
         "features": [
-          "The Pro badge and a midnight-blue border",
-          "Everything Supporter includes"
+          "A “Pro” badge next to your name on Joutes",
+          "A midnight-blue border around your avatar"
         ],
         "soon": [
-          "Your venue attached to the subscription",
-          "Registrations handled end to end",
+          "A “Pro” role on the Discord server",
+          "Access to a dedicated section on the Discord server",
+          "A registration system for your events",
           "Your events put front and centre",
-          "Your venue page, your way"
-        ]
+          "Customization of your venue page",
+          "A support channel"
+        ],
+        "billingNote": "Also available on invoice, for stores and associations."
       }
     },
     "cta": {

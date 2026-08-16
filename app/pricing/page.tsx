@@ -136,6 +136,17 @@ export default async function PricingPage() {
                   ))}
                 </ul>
 
+                {/* Une note de facturation, portée par la seule offre qui en a
+                    une : une boutique ou une association a souvent besoin d'une
+                    facture, et l'apprendre après avoir renoncé à Patreon serait
+                    dommage. `t.has` plutôt qu'un test sur la clé du palier — la
+                    copie décide, pas le code. */}
+                {t.has(`plans.${plan.value}.billingNote`) && (
+                  <p className="mt-4 rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                    {t(`plans.${plan.value}.billingNote`)}
+                  </p>
+                )}
+
                 <div className="mt-6">
                   {patreonUrl ? (
                     <Button asChild className="w-full">

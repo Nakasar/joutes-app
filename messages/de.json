@@ -3646,35 +3646,41 @@
       "supporter": {
         "tagline": "Danke sagen, und es im Profil zeigen.",
         "features": [
-          "Das Supporter-Abzeichen neben deinem Namen",
+          "Ein „Supporter“-Abzeichen neben deinem Namen auf Joutes",
           "Ein silberner Rand um deinen Avatar"
         ],
-        "soon": []
+        "soon": [
+          "Eine „Supporter“-Rolle auf dem Discord-Server",
+          "Zugang zu einem eigenen Bereich auf dem Discord-Server"
+        ]
       },
       "expert": {
         "tagline": "Für alle, die ihre Sammlung Karte für Karte kennen.",
         "features": [
-          "Das Expert-Abzeichen und ein violetter Rand",
-          "Alles aus Supporter"
+          "Ein „Expert“-Abzeichen neben deinem Namen auf Joutes",
+          "Ein amethystfarbener Rand um deinen Avatar"
         ],
         "soon": [
-          "Eine KI, die deine Karten und Decks kennt",
-          "Statistiken deiner Spielgruppen",
-          "Deine Kartenverleihe nachverfolgt, damit nichts verloren geht"
+          "Eine „Expert“-Rolle auf dem Discord-Server",
+          "Zugang zu einem eigenen Bereich auf dem Discord-Server",
+          "Erweiterte Funktionen für deine Spielgruppen"
         ]
       },
       "pro": {
         "tagline": "Für den Laden, den Club oder den Verein, der alle zum Spielen bringt.",
         "features": [
-          "Das Pro-Abzeichen und ein mitternachtsblauer Rand",
-          "Alles aus Supporter"
+          "Ein „Pro“-Abzeichen neben deinem Namen auf Joutes",
+          "Ein mitternachtsblauer Rand um deinen Avatar"
         ],
         "soon": [
-          "Dein Spielort an das Abo gebunden",
-          "Anmeldungen von Anfang bis Ende verwaltet",
+          "Eine „Pro“-Rolle auf dem Discord-Server",
+          "Zugang zu einem eigenen Bereich auf dem Discord-Server",
+          "Ein Anmeldesystem für deine Veranstaltungen",
           "Deine Veranstaltungen nach vorn geholt",
-          "Die Seite deines Spielorts, ganz nach dir"
-        ]
+          "Anpassung deiner Spielort-Seite",
+          "Ein Support-Kanal"
+        ],
+        "billingNote": "Auch auf Rechnung erhältlich, für Läden und Vereine."
       }
     },
     "cta": {

@@ -3730,35 +3730,41 @@
       "supporter": {
         "tagline": "Dire merci, et le montrer sur votre profil.",
         "features": [
-          "Le badge Supporter à côté de votre pseudo",
+          "Badge « Supporter » à côté de votre pseudo sur Joutes",
           "Un contour argenté autour de votre avatar"
         ],
-        "soon": []
+        "soon": [
+          "Un rôle « Supporter » sur le serveur Discord",
+          "L'accès à une section dédiée sur le serveur Discord"
+        ]
       },
       "expert": {
         "tagline": "Pour qui connaît sa collection carte par carte.",
         "features": [
-          "Le badge Expert et un contour violet",
-          "Tout ce que comprend Supporter"
+          "Badge « Expert » à côté de votre pseudo sur Joutes",
+          "Un contour améthyste autour de votre avatar"
         ],
         "soon": [
-          "Une IA qui connaît vos cartes et vos decks",
-          "Les stats de vos groupes de jeu",
-          "Vos prêts de cartes suivis, pour ne plus les perdre"
+          "Un rôle « Expert » sur le serveur Discord",
+          "L'accès à une section dédiée sur le serveur Discord",
+          "Des fonctionnalités avancées pour vos groupes de jeu"
         ]
       },
       "pro": {
         "tagline": "Pour la boutique, le club ou l'association qui fait jouer tout le monde.",
         "features": [
-          "Le badge Pro et un contour bleu nuit",
-          "Tout ce que comprend Supporter"
+          "Badge « Pro » à côté de votre pseudo sur Joutes",
+          "Un contour bleu nuit autour de votre avatar"
         ],
         "soon": [
-          "Votre lieu de jeu rattaché à l'abonnement",
-          "Des inscriptions gérées de bout en bout",
-          "Vos évènements mis en avant",
-          "La page de votre lieu à votre image"
-        ]
+          "Un rôle « Pro » sur le serveur Discord",
+          "L'accès à une section dédiée sur le serveur Discord",
+          "Un système de réservation pour vos évènements",
+          "La mise en avant de vos évènements",
+          "La personnalisation de votre page de lieu de jeu",
+          "Un canal d'assistance"
+        ],
+        "billingNote": "Également disponible sur facturation, pour les boutiques et les associations."
       }
     },
     "cta": {
