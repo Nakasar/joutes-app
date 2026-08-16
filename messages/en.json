@@ -3153,6 +3153,32 @@
       "badgeCompleted": "Completed",
       "badgeCancelled": "Cancelled"
     },
+    "history": {
+      "windowNote": "The last {days} days",
+      "loading": "Searching…",
+      "noMatch": "No trade matches these filters.",
+      "results": "{count, plural, =0 {No trades} one {# trade} other {# trades}}",
+      "page": "Page {page} of {totalPages}",
+      "previous": "Previous",
+      "next": "Next",
+      "filters": {
+        "card": "Card",
+        "cardPlaceholder": "Card name…",
+        "partner": "Partner",
+        "allPartners": "All partners",
+        "from": "From",
+        "to": "To",
+        "sort": "Sort by",
+        "sortRecent": "Newest first",
+        "sortOldest": "Oldest first",
+        "reset": "Clear filters"
+      },
+      "locked": {
+        "title": "{count, plural, one {# older trade is hidden} other {# older trades are hidden}}",
+        "description": "The full history and its search filters come with Joutes Expert or Joutes Pro.",
+        "cta": "See the plans"
+      }
+    },
     "offer": {
       "title": "My offer",
       "subtitle": "The cards you give away, removed from your collection."

@@ -5,9 +5,9 @@ import {ObjectId} from "bson";
 import {auth} from "@/lib/auth";
 import {headers} from "next/headers";
 import {isAdmin} from "@/lib/config/admins";
-import type {SubscriptionPlanKey} from "@/lib/constants/subscription-plans";
+import {isPlanPermission, type SubscriptionPlanKey} from "@/lib/constants/subscription-plans";
 import {plansForUserId} from "@/lib/subscriptions/access";
-import {resolveEntitlements} from "@/lib/subscriptions/entitlements";
+import {resolveEntitlements, resolvePlanPermissions} from "@/lib/subscriptions/entitlements";
 
 // Anciens noms de permissions, toujours honorés : les comptes qui les portent
 // conservent leurs droits sans migration de la base.
@@ -67,7 +67,20 @@ export async function hasPermission(permission: string) {
     return true;
   }
 
-  return isAdmin(session.user.email);
+  if (isAdmin(session.user.email)) {
+    return true;
+  }
+
+  // Dernier recours, et seulement pour les permissions qu'un palier peut
+  // ouvrir : les trois vérifications précédentes ne coûtent qu'une lecture
+  // indexée et un test en mémoire, celle-ci va lire l'abonnement. `hasPermission`
+  // est appelée partout, y compris pour des permissions qu'aucune offre ne
+  // donne — `isPlanPermission` garde ces appels-là inchangés.
+  if (isPlanPermission(permission)) {
+    return resolvePlanPermissions(await plansForUserId(session.user.id)).includes(permission);
+  }
+
+  return false;
 }
 
 /**
@@ -83,10 +96,15 @@ export async function hasPermission(permission: string) {
  * Ils restent pourtant **deux listes séparées**, et c'est délibéré : une
  * permission s'accorde à la main et vaut capacité d'équipe (modérer les erratas,
  * importer un quizz) ; un droit d'abonnement s'achète et se recalcule tout seul
- * depuis Patreon. Fusionner leurs chemins d'écriture ferait qu'un abonnement
- * expiré pourrait retirer un droit de modérateur. Les deux espaces de noms sont
- * d'ailleurs disjoints par construction : tout droit d'abonnement porte le
- * préfixe `sub:`.
+ * depuis Patreon. Tout droit d'abonnement porte d'ailleurs le préfixe `sub:`,
+ * qu'aucune permission n'emploie.
+ *
+ * Une offre peut malgré tout ouvrir une **permission** — `trades:full_history`
+ * arrive avec Expert ou Pro, et s'accorde aussi à la main. La séparation qui
+ * compte n'est pas celle des noms mais celle des **écritures** : les paliers ne
+ * touchent jamais à `user.permissions[]`, ils s'ajoutent en lecture. Un
+ * abonnement qui s'arrête ne peut donc pas effacer un droit de modérateur ; il
+ * cesse seulement d'apporter le sien.
  */
 export async function getMyPermissions(): Promise<{
   permissions: string[];
@@ -117,6 +135,15 @@ export async function getMyPermissions(): Promise<{
   // `plansForUserId` et non `getMyPlans` : la session est déjà lue plus haut,
   // et `getMyPlans` la relirait pour retrouver le même identifiant.
   const plans = await plansForUserId(session.user.id);
+
+  // Les permissions ouvertes par un palier rejoignent la liste plutôt que de
+  // former une troisième catégorie : un client se demande « ai-je le droit ? »,
+  // pas « d'où me vient ce droit ? ». Elles n'entrent que dans cette réponse —
+  // rien ne les écrit jamais dans `user.permissions[]`, de sorte qu'une fin
+  // d'abonnement les retire d'elle-même au prochain appel.
+  for (const permission of resolvePlanPermissions(plans)) {
+    granted.add(permission);
+  }
 
   return {
     permissions: [...granted].sort(),

@@ -3,6 +3,7 @@ import {
   SUBSCRIPTION_PLANS,
   SUBSCRIPTION_PLAN_KEYS,
   type EntitlementKey,
+  type PlanPermission,
   type SubscriptionPlanKey,
 } from "@/lib/constants/subscription-plans";
 
@@ -31,6 +32,25 @@ import {
  */
 export function resolveEntitlements(plans: readonly SubscriptionPlanKey[]): EntitlementKey[] {
   const granted = new Set<EntitlementKey>();
+
+  for (const plan of expandPlans(plans)) {
+    for (const entitlement of SUBSCRIPTION_PLANS[plan].entitlements) {
+      granted.add(entitlement);
+    }
+  }
+
+  return [...granted].sort();
+}
+
+/**
+ * Les paliers réellement portés, `includes` suivi de proche en proche.
+ *
+ * La traversée se garde des cycles — une table mal saisie (A inclut B, B inclut
+ * A) doit rendre une réponse, pas boucler indéfiniment — et écarte au passage
+ * les clés inconnues : un palier lu en base et supprimé de la table depuis ne
+ * doit rien ouvrir.
+ */
+function expandPlans(plans: readonly SubscriptionPlanKey[]): SubscriptionPlanKey[] {
   const seen = new Set<SubscriptionPlanKey>();
   const queue = [...plans];
 
@@ -42,11 +62,28 @@ export function resolveEntitlements(plans: readonly SubscriptionPlanKey[]): Enti
     }
     seen.add(plan);
 
-    const definition = SUBSCRIPTION_PLANS[plan];
-    for (const entitlement of definition.entitlements) {
-      granted.add(entitlement);
+    queue.push(...SUBSCRIPTION_PLANS[plan].includes);
+  }
+
+  return [...seen];
+}
+
+/**
+ * Les permissions qu'ouvrent ces paliers.
+ *
+ * Jumelle de `resolveEntitlements`, pour l'autre espace de noms : ce qu'elle
+ * rend se compare à `user.permissions[]` et se lit par `hasPermission`. Le
+ * détour par une fonction plutôt que par la table directement existe pour
+ * `includes` — le jour où Pro inclura Expert, ses permissions suivront ici sans
+ * qu'on ait à les recopier.
+ */
+export function resolvePlanPermissions(plans: readonly SubscriptionPlanKey[]): PlanPermission[] {
+  const granted = new Set<PlanPermission>();
+
+  for (const plan of expandPlans(plans)) {
+    for (const permission of SUBSCRIPTION_PLANS[plan].permissions) {
+      granted.add(permission);
     }
-    queue.push(...definition.includes);
   }
 
   return [...granted].sort();

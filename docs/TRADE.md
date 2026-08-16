@@ -18,7 +18,7 @@ jeu.
 
 | Page | Rôle |
 | --- | --- |
-| `/trade` | Accueil : nouvel échange, jointure par code, échanges en cours, historique |
+| `/trade` | Accueil : nouvel échange, jointure par code, échanges en cours, [historique](#historique) |
 | `/trade/[tradeId]` | L'échange lui-même : les deux offres, l'invitation, la validation |
 | `/trade/join/[code]` | Cible du QR code d'invitation : montre qui invite, puis rejoint |
 
@@ -75,6 +75,37 @@ confirmation** récapitulant les deux offres.
 la révision de l'échange. La validation transmet la révision affichée : on ne peut
 pas valider un contenu modifié depuis (réponse `409 conflict`, le client se
 resynchronise).
+
+## Historique
+
+Les échanges terminés ou annulés restent consultables. Ce qu'on en voit dépend
+d'un seul droit, `trades:full_history`, ouvert par **Joutes Expert** et **Joutes
+Pro** — et accordable à la main, c'est une permission ordinaire (voir
+`docs/SUBSCRIPTIONS.md`).
+
+| | Sans le droit | Avec le droit |
+| --- | --- | --- |
+| Profondeur | Les **7 derniers jours** | Tout |
+| Filtres | Aucun | Nom de carte, partenaire, plage de dates, tri |
+| Pagination | Oui | Oui |
+
+La fenêtre porte sur `updatedAt`, et non sur `completedAt`/`cancelledAt` : rien
+ne touche plus à un échange une fois clos, les trois dates coïncident, mais seul
+`updatedAt` est indexé avec `sides.userId`.
+
+**La restriction est appliquée côté serveur**, dans `resolveHistoryQuery`
+(`lib/trade/history.ts`) : sans le droit, les filtres reçus sont **écartés** et
+la fenêtre imposée à leur place. Masquer les champs dans l'écran n'aurait rien
+protégé — l'API reste appelable, et un `from=2020-01-01` aurait rendu tout
+l'historique. C'est ce que vérifie `lib/trade/history.test.ts`.
+
+Le filtre par partenaire se rapproche **en mémoire**, sur la liste des gens avec
+qui on a effectivement échangé (`listTradeHistoryPartners`), jamais sur
+l'annuaire : filtrer son propre historique ne doit pas pouvoir servir à savoir
+qui existe ailleurs sur la plateforme.
+
+`hiddenCount` compte les échanges clos plus anciens que la fenêtre. L'écran ne
+propose l'abonnement que s'il est non nul.
 
 ## Modèle de données
 
@@ -143,7 +174,8 @@ Toutes les routes exigent une session.
 
 | Route | Rôle |
 | --- | --- |
-| `GET /api/trades` | `{ open, past }` — échanges de l'utilisateur |
+| `GET /api/trades` | `{ open, past, pastTotal, hiddenCount }` — échanges de l'utilisateur |
+| `GET /api/trades/history` | Historique filtré et paginé (`card`, `partner`, `from`, `to`, `sort`, `page`, `limit`) |
 | `POST /api/trades` | Ouvre un échange (contrepartie libre) → `201 { trade }` |
 | `GET /api/trades/[tradeId]` | État courant (offres, validations, révision) ; 404 hors participants |
 | `DELETE /api/trades/[tradeId]` | Annule l'échange |
@@ -190,12 +222,15 @@ l'autre offre, d'échange effectué et d'annulation.
 | Fichier | Rôle |
 | --- | --- |
 | `app/trade/page.tsx`, `TradeHubClient.tsx` | Accueil : création, jointure, en cours, historique |
+| `app/trade/TradeHistory.tsx` | Historique : filtres, pagination, invitation à s'abonner |
+| `app/trade/TradeRow.tsx` | Une ligne d'échange, commune aux deux listes |
 | `app/trade/[tradeId]/page.tsx`, `TradeEditor.tsx` | L'échange : offres, validation, polling |
 | `app/trade/[tradeId]/TradeInviteDialog.tsx` | QR code, code d'invitation, invitation directe |
 | `app/trade/join/[code]/page.tsx`, `JoinTradeClient.tsx` | Jointure depuis le QR code |
 | `app/trade/TradePanel.tsx` | Un espace : recherche, résultats paginés, cartes retenues |
 | `app/api/trades/**` | Endpoints |
 | `lib/db/trades.ts` | Recherche de cartes et cycle de vie des échanges |
+| `lib/trade/history.ts` | Fenêtre visible, normalisation et restriction des filtres |
 | `lib/schemas/trade.schema.ts` | Validation Zod des corps de requête |
 | `lib/constants/trade.ts` | Bornes partagées serveur / client |
 | `lib/api/trade-errors.ts` | Correspondance erreur d'échange → statut HTTP |

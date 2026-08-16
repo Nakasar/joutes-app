@@ -55,19 +55,63 @@ Sur une **liste** de lieux, ne jamais boucler `lairHasPro` : un seul appel à
 Les droits d'abonnement **ne se mélangent pas aux permissions**
 (`lib/db/permissions.ts`). Une permission s'accorde à la main et vaut capacité
 d'équipe ; un droit d'abonnement s'achète et se recalcule. Les fusionner ferait
-qu'un abonnement expiré pourrait retirer un droit de modérateur. Les deux espaces
-de noms sont disjoints par construction : tout droit d'abonnement porte le
-préfixe `sub:`.
+qu'un abonnement expiré pourrait retirer un droit de modérateur. Tout droit
+d'abonnement porte d'ailleurs le préfixe `sub:`, qu'aucune permission n'emploie.
+
+## Une offre qui ouvre une permission
+
+Certaines capacités ont besoin des **deux** portes : `trades:full_history`
+arrive avec Joutes Expert et Joutes Pro, et doit aussi pouvoir s'accorder à la
+main — une boutique partenaire sans abonnement, un bêta-testeur. Un droit `sub:`
+ne le permettrait pas : il ne s'obtient qu'en donnant le palier entier.
+
+Ces capacités-là se déclarent dans le champ `permissions` du palier, **sans
+préfixe** :
+
+```ts
+expert: { …, entitlements: [], permissions: ["trades:full_history"] },
+```
+
+et se vérifient comme n'importe quelle permission :
+
+```ts
+import { hasPermission } from "@/lib/db/permissions";
+
+if (await hasPermission("trades:full_history")) { … }
+```
+
+`hasPermission` compose alors trois sources : `user.permissions[]`, le statut
+d'administrateur, et les paliers portés. `getMyPermissions` les rend dans la
+même liste — un client se demande « ai-je le droit ? », pas « d'où me vient ce
+droit ? ».
+
+**La séparation qui protège les deux systèmes ne porte pas sur les noms mais sur
+les écritures** : aucun abonnement n'écrit jamais dans `user.permissions[]`, la
+composition a lieu en lecture. Une rétrogradation Patreon ne peut donc pas
+effacer un droit de modérateur ; elle cesse seulement d'apporter le sien.
+
+Deux tests gardent la frontière (`lib/constants/subscription-plans.test.ts`) :
+aucune permission de palier ne porte `sub:`, et aucune ne figure parmi les
+capacités d'équipe.
 
 ## Ajouter un droit à une offre
 
-Une ligne dans `lib/constants/subscription-plans.ts`, puis l'appel
-`requireEntitlement` là où la fonctionnalité vit. Rien d'autre — ni migration, ni
-liste à tenir ailleurs.
+Une ligne dans `lib/constants/subscription-plans.ts` — `entitlements` pour un
+droit propre à l'abonnement, `permissions` pour une capacité qui s'accorde aussi
+à la main — puis l'appel `requireEntitlement` ou `hasPermission` là où la
+fonctionnalité vit. Rien d'autre : ni migration, ni liste à tenir ailleurs.
 
 Ne déclarer que des droits que le code lit réellement. Un droit déclaré sans
 vérification correspondante donne une page d'offres qui promet ce que personne
 ne contrôle.
+
+### Ce que chaque offre ouvre aujourd'hui
+
+| Palier | Droits `sub:` | Permissions |
+| --- | --- | --- |
+| Supporter | `sub:profile-badge`, `sub:profile-border` | — |
+| Joutes Expert | *(hérite de Supporter)* | `trades:full_history` |
+| Joutes Pro | `sub:lair-pro` *(+ Supporter)* | `trades:full_history` |
 
 ## Configuration
 

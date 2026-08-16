@@ -29,6 +29,20 @@
  * s'arrête. Le droit `sub:profile-border` dit « cet avatar a droit à un
  * contour », `tone` dit lequel.
  *
+ * **`permissions` est l'autre porte, et elle est volontairement dans l'espace de
+ * noms d'à côté.** Un droit `sub:` ne s'accorde qu'en donnant le palier entier ;
+ * une permission, elle, se pose aussi à la main sur un compte
+ * (`user.permissions[]`). Certaines capacités ont besoin des deux chemins —
+ * `trades:full_history` arrive avec Expert ou Pro, mais on veut pouvoir
+ * l'accorder à une boutique partenaire sans abonnement. Ces chaînes-là sont donc
+ * de vraies permissions, sans préfixe `sub:`, et `lib/db/permissions.ts` les
+ * compose **en lecture** avec celles du document utilisateur.
+ *
+ * La séparation qui compte tient toujours : aucun abonnement n'**écrit** jamais
+ * dans `user.permissions[]`. Une rétrogradation Patreon ne peut donc pas
+ * effacer un droit accordé à la main — elle retire seulement ce que le palier
+ * apportait de lui-même.
+ *
  * **Seuls les droits réellement lus par le code sont déclarés.** La tentation
  * est d'inscrire ici tout ce que les deux offres promettent un jour — l'IA, les
  * statistiques de groupe, la mise en avant d'évènements. Ce serait déclarer des
@@ -48,6 +62,7 @@ export const SUBSCRIPTION_PLANS = {
     // typer sans que la table ne se référence circulairement.
     includes: [],
     entitlements: ["sub:profile-badge", "sub:profile-border"],
+    permissions: [],
     tone: "silver",
   },
   expert: {
@@ -58,6 +73,7 @@ export const SUBSCRIPTION_PLANS = {
     lairSeats: 0,
     includes: ["supporter"],
     entitlements: [],
+    permissions: ["trades:full_history"],
     tone: "amethyst",
   },
   pro: {
@@ -67,6 +83,10 @@ export const SUBSCRIPTION_PLANS = {
     lairSeats: 1,
     includes: ["supporter"],
     entitlements: ["sub:lair-pro"],
+    // Répétée et non héritée : Pro n'inclut pas Expert (deux publics, pas deux
+    // barreaux). Une boutique qui tient l'historique de ses échanges y a droit
+    // au même titre qu'un joueur.
+    permissions: ["trades:full_history"],
     // Bleu nuit et non doré : Pro s'adresse à une boutique, pas au meilleur
     // joueur de la salle. Un contour doré se lirait comme un rang.
     tone: "midnight",
@@ -113,4 +133,24 @@ export const ALL_ENTITLEMENTS = [
 
 export function isEntitlementKey(key: string): key is EntitlementKey {
   return (ALL_ENTITLEMENTS as string[]).includes(key);
+}
+
+/**
+ * Les permissions qu'un palier apporte — dans l'espace de noms des permissions
+ * accordées à la main, sans préfixe réservé. Voir l'en-tête du fichier.
+ */
+export type PlanPermission = (typeof SUBSCRIPTION_PLANS)[SubscriptionPlanKey]["permissions"][number];
+
+export const ALL_PLAN_PERMISSIONS = [
+  ...new Set(SUBSCRIPTION_PLAN_OPTIONS.flatMap((plan) => plan.permissions)),
+].sort() as PlanPermission[];
+
+/**
+ * Vrai si cette permission peut venir d'un abonnement.
+ *
+ * Sert de garde-fou de performance à `hasPermission` : sans elle, vérifier
+ * `erratas:manage` irait lire l'abonnement de l'appelant pour rien.
+ */
+export function isPlanPermission(permission: string): permission is PlanPermission {
+  return (ALL_PLAN_PERMISSIONS as string[]).includes(permission);
 }

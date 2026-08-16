@@ -2,13 +2,15 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   ALL_ENTITLEMENTS,
+  ALL_PLAN_PERMISSIONS,
   ENTITLEMENT_PREFIX,
   SUBSCRIPTION_PLANS,
   SUBSCRIPTION_PLAN_KEYS,
   isEntitlementKey,
+  isPlanPermission,
   isSubscriptionPlanKey,
 } from "./subscription-plans";
-import { resolveEntitlements } from "@/lib/subscriptions/entitlements";
+import { resolveEntitlements, resolvePlanPermissions } from "@/lib/subscriptions/entitlements";
 
 /**
  * La table des abonnements est une déclaration, pas du code : ces tests
@@ -99,6 +101,40 @@ describe("table des abonnements", () => {
     assert.deepEqual(SUBSCRIPTION_PLANS.expert.includes, ["supporter"]);
   });
 
+  it("n'emploie jamais le préfixe réservé pour une permission de palier", () => {
+    // Ces chaînes-là vivent dans l'espace de noms des permissions accordées à
+    // la main, et c'est leur raison d'être : `trades:full_history` doit pouvoir
+    // se poser sur un compte sans abonnement. Une qui porterait `sub:` serait
+    // cherchée dans le mauvais système et ne s'accorderait jamais.
+    for (const permission of ALL_PLAN_PERMISSIONS) {
+      assert.ok(
+        !permission.startsWith(ENTITLEMENT_PREFIX),
+        `${permission} est une permission, elle ne doit pas porter ${ENTITLEMENT_PREFIX}`
+      );
+    }
+  });
+
+  it("n'ouvre jamais par abonnement une permission de modération", () => {
+    // Le garde-fou du sujet : une offre ne doit pas pouvoir donner le pouvoir
+    // de modérer les erratas ou d'importer un quizz. Une permission de palier
+    // s'arrête à ce que le palier vend.
+    for (const permission of ALL_PLAN_PERMISSIONS) {
+      assert.ok(
+        !PERMISSIONS_ACCORDEES_A_LA_MAIN.includes(permission),
+        `${permission} est une capacité d'équipe : aucun abonnement ne doit l'ouvrir`
+      );
+    }
+  });
+
+  it("ouvre l'historique complet des échanges aux deux offres payantes", () => {
+    // L'exigence produit, écrite noir sur blanc : Expert et Pro y ont droit,
+    // Supporter non — c'est un palier de remerciement, pas d'outillage.
+    assert.ok(resolvePlanPermissions(["expert"]).includes("trades:full_history"));
+    assert.ok(resolvePlanPermissions(["pro"]).includes("trades:full_history"));
+    assert.deepEqual(resolvePlanPermissions(["supporter"]), []);
+    assert.deepEqual(resolvePlanPermissions([]), []);
+  });
+
   it("ne référence dans « includes » que des plans existants", () => {
     for (const key of SUBSCRIPTION_PLAN_KEYS) {
       for (const included of SUBSCRIPTION_PLANS[key].includes) {
@@ -132,5 +168,14 @@ describe("gardes-types", () => {
     assert.equal(isEntitlementKey("sub:inexistant"), false);
     assert.equal(isEntitlementKey("scanner:ai"), false);
     assert.equal(isEntitlementKey("toString"), false);
+  });
+
+  it("ne reconnaît comme permission de palier que celles de la table", () => {
+    // `hasPermission` s'en sert pour décider s'il vaut la peine d'aller lire un
+    // abonnement : un faux positif ferait une lecture inutile à chaque appel,
+    // un faux négatif priverait un abonné de son droit.
+    assert.equal(isPlanPermission("trades:full_history"), true);
+    assert.equal(isPlanPermission("erratas:manage"), false);
+    assert.equal(isPlanPermission("toString"), false);
   });
 });
