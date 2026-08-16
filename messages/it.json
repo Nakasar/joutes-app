@@ -3699,5 +3699,33 @@
       "subtitle": "Il modo più semplice è scriverci su Discord.",
       "cta": "Entra nel Discord"
     }
+  },
+  "AccountSubscription": {
+    "back": "Indietro",
+    "title": "Il mio abbonamento",
+    "activeTitle": "Abbonamento attivo",
+    "noneTitle": "Nessun abbonamento",
+    "activeSubtitle": "Grazie! I tuoi diritti sono aggiornati.",
+    "noneSubtitle": "Joutes resta gratuito. Sostenerlo sblocca qualche funzionalità in più.",
+    "syncedAt": "Ultima sincronizzazione: {date}",
+    "notConfigured": "Patreon non è configurato su questo ambiente: il collegamento non è disponibile qui.",
+    "notConfiguredHint": "Patreon non è configurato su questo ambiente.",
+    "link": "Collega il mio account Patreon",
+    "linkFailed": "Il collegamento non è riuscito.",
+    "linkHint": "Collega il tuo account Patreon perché il tuo abbonamento sia riconosciuto qui.",
+    "resync": "Risincronizza",
+    "resyncDone": "Abbonamento risincronizzato.",
+    "resyncFailed": "La risincronizzazione non è riuscita.",
+    "unlink": "Scollega Patreon",
+    "unlinkDone": "Account Patreon scollegato.",
+    "unlinkFailed": "Lo scollegamento non è riuscito.",
+    "discover": "Vedi le offerte su Patreon",
+    "seatsTitle": "Locali sostenuti",
+    "seatsCount": "{used} su {total}",
+    "seatsSubtitle": "I locali a cui il tuo abbonamento Pro apre dei diritti.",
+    "seatsEmpty": "Nessun locale collegato per ora.",
+    "seatsHint": "Il collegamento si fa dalla pagina di gestione di un locale di cui sei proprietario.",
+    "manageLair": "Gestisci",
+    "seePlans": "Vedi tutte le offerte"
   }
 }

@@ -14,7 +14,7 @@ import ProfileVisibilitySwitch from "./ProfileVisibilitySwitch";
 import QuizScores from "./QuizScores";
 import { getUserQuizScores } from "@/lib/db/quiz-scores";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {User as UserIcon, Mail, Gamepad2, MapPin, FileText, Settings, Shield, Trophy, MailIcon, GraduationCap} from "lucide-react";
+import {User as UserIcon, Mail, Gamepad2, MapPin, FileText, Settings, Shield, Trophy, MailIcon, GraduationCap, Heart} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
@@ -69,7 +69,15 @@ export default async function AccountPage() {
                 Gérez votre profil et vos préférences
               </p>
             </div>
-            <div className="flex gap-4">
+            {/* `flex-wrap` : les boutons portent `whitespace-nowrap shrink-0`,
+                et un cinquième élargirait toute la page sur un téléphone. */}
+            <div className="flex flex-wrap gap-4">
+              <Link href="/account/subscription">
+                <Button variant="outline" size="sm">
+                  <Heart className="h-4 w-4 mr-2" />
+                  Abonnement
+                </Button>
+              </Link>
               <Link href="/account/achievements">
                 <Button variant="outline" size="sm">
                   <Trophy className="h-4 w-4 mr-2" />

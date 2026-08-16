@@ -3757,5 +3757,33 @@
       "subtitle": "The easiest way is to ask us on Discord.",
       "cta": "Join the Discord"
     }
+  },
+  "AccountSubscription": {
+    "back": "Back",
+    "title": "My subscription",
+    "activeTitle": "Active subscription",
+    "noneTitle": "No subscription",
+    "activeSubtitle": "Thank you! Your entitlements are up to date.",
+    "noneSubtitle": "Joutes stays free. Backing it unlocks a few extra features.",
+    "syncedAt": "Last synced: {date}",
+    "notConfigured": "Patreon is not configured on this environment: linking is unavailable here.",
+    "notConfiguredHint": "Patreon is not configured on this environment.",
+    "link": "Link my Patreon account",
+    "linkFailed": "Linking failed.",
+    "linkHint": "Link your Patreon account so your subscription is recognised here.",
+    "resync": "Resync",
+    "resyncDone": "Subscription resynced.",
+    "resyncFailed": "Resync failed.",
+    "unlink": "Unlink Patreon",
+    "unlinkDone": "Patreon account unlinked.",
+    "unlinkFailed": "Unlinking failed.",
+    "discover": "See the plans on Patreon",
+    "seatsTitle": "Sponsored venues",
+    "seatsCount": "{used} of {total}",
+    "seatsSubtitle": "The venues your Pro subscription grants rights to.",
+    "seatsEmpty": "No venue attached yet.",
+    "seatsHint": "Attaching is done from the management page of a venue you own.",
+    "manageLair": "Manage",
+    "seePlans": "See all plans"
   }
 }

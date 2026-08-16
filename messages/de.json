@@ -3674,5 +3674,33 @@
       "subtitle": "Am einfachsten schreibst du uns auf Discord.",
       "cta": "Zum Discord"
     }
+  },
+  "AccountSubscription": {
+    "back": "Zurück",
+    "title": "Mein Abo",
+    "activeTitle": "Aktives Abo",
+    "noneTitle": "Kein Abo",
+    "activeSubtitle": "Danke! Deine Rechte sind aktuell.",
+    "noneSubtitle": "Joutes bleibt kostenlos. Wer unterstützt, schaltet ein paar Funktionen mehr frei.",
+    "syncedAt": "Zuletzt abgeglichen: {date}",
+    "notConfigured": "Patreon ist in dieser Umgebung nicht konfiguriert: die Verknüpfung ist hier nicht verfügbar.",
+    "notConfiguredHint": "Patreon ist in dieser Umgebung nicht konfiguriert.",
+    "link": "Patreon-Konto verknüpfen",
+    "linkFailed": "Die Verknüpfung ist fehlgeschlagen.",
+    "linkHint": "Verknüpfe dein Patreon-Konto, damit dein Abo hier erkannt wird.",
+    "resync": "Neu abgleichen",
+    "resyncDone": "Abo neu abgeglichen.",
+    "resyncFailed": "Der Abgleich ist fehlgeschlagen.",
+    "unlink": "Patreon trennen",
+    "unlinkDone": "Patreon-Konto getrennt.",
+    "unlinkFailed": "Das Trennen ist fehlgeschlagen.",
+    "discover": "Angebote auf Patreon ansehen",
+    "seatsTitle": "Unterstützte Spielorte",
+    "seatsCount": "{used} von {total}",
+    "seatsSubtitle": "Die Spielorte, denen dein Pro-Abo Rechte eröffnet.",
+    "seatsEmpty": "Noch kein Spielort gebunden.",
+    "seatsHint": "Das Binden erfolgt auf der Verwaltungsseite eines Spielorts, dem du gehörst.",
+    "manageLair": "Verwalten",
+    "seePlans": "Alle Angebote ansehen"
   }
 }

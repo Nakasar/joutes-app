@@ -3758,5 +3758,33 @@
       "subtitle": "Le plus simple est de nous écrire sur Discord.",
       "cta": "Rejoindre le Discord"
     }
+  },
+  "AccountSubscription": {
+    "back": "Retour",
+    "title": "Mon abonnement",
+    "activeTitle": "Abonnement actif",
+    "noneTitle": "Aucun abonnement",
+    "activeSubtitle": "Merci ! Vos droits sont à jour.",
+    "noneSubtitle": "Joutes reste gratuit. Le soutenir débloque quelques fonctionnalités en plus.",
+    "syncedAt": "Dernière synchronisation : {date}",
+    "notConfigured": "Patreon n'est pas configuré sur cet environnement : la liaison est indisponible ici.",
+    "notConfiguredHint": "Patreon n'est pas configuré sur cet environnement.",
+    "link": "Lier mon compte Patreon",
+    "linkFailed": "La liaison a échoué.",
+    "linkHint": "Liez votre compte Patreon pour que votre abonnement soit reconnu ici.",
+    "resync": "Resynchroniser",
+    "resyncDone": "Abonnement resynchronisé.",
+    "resyncFailed": "La resynchronisation a échoué.",
+    "unlink": "Délier Patreon",
+    "unlinkDone": "Compte Patreon délié.",
+    "unlinkFailed": "La déliaison a échoué.",
+    "discover": "Voir les offres sur Patreon",
+    "seatsTitle": "Lieux parrainés",
+    "seatsCount": "{used} sur {total}",
+    "seatsSubtitle": "Les lieux auxquels votre abonnement Pro ouvre des droits.",
+    "seatsEmpty": "Aucun lieu rattaché pour l'instant.",
+    "seatsHint": "Le rattachement se fait depuis la page de gestion d'un lieu dont vous êtes propriétaire.",
+    "manageLair": "Gérer",
+    "seePlans": "Voir toutes les offres"
   }
 }
