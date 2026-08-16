@@ -7,6 +7,7 @@ import { DateTime } from "luxon";
 import Link from "next/link";
 import { Github } from "lucide-react";
 import WinterDecorations from "@/components/WinterDecorations";
+import WebMcpTools from "@/components/WebMcpTools";
 import { Toaster } from "@/components/ui/sonner";
 import {NextIntlClientProvider} from "next-intl";
 import {ThemeProvider} from "next-themes";
@@ -67,6 +68,8 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
+            {/* Expose les outils du site aux agents IA (WebMCP) ; ne rend rien. */}
+            <WebMcpTools />
             {isWinterTheme && <WinterDecorations />}
             <div className="relative min-h-screen flex flex-col">
               <Header />
