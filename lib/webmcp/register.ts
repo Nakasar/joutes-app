@@ -62,81 +62,114 @@ function defaultScope(): WebMcpScope {
 }
 
 /**
+ * Déclare les outils un par un via `registerTool`, la forme de la
+ * spécification : l'`AbortSignal` passé à chaque appel les retire, ce qui
+ * permet de suivre la navigation client (les outils d'une page démontée
+ * disparaissent).
+ *
+ * Rend `true` si au moins un outil a été accepté. Un refus se lit aussi bien
+ * sur une exception que sur une promesse rejetée : les deux sont attendues
+ * avant de conclure, sans quoi l'appelant croirait la page outillée alors
+ * qu'elle ne l'est pas.
+ */
+async function registerToolByTool(
+    surface: WebMcpSurface,
+    context: ModelContextLike,
+    tools: WebMcpTool[],
+    signal: AbortSignal | undefined,
+    report: WebMcpRegistrationReport
+): Promise<boolean> {
+    if (typeof context.registerTool !== "function") return false;
+    const registerTool = context.registerTool.bind(context);
+
+    const outcomes = await Promise.all(
+        tools.map(async (tool) => {
+            try {
+                await registerTool(tool, { signal });
+                return tool.name;
+            } catch (error) {
+                report.errors.push(`${surface}.registerTool(${tool.name}): ${String(error)}`);
+                return null;
+            }
+        })
+    );
+
+    const registered = outcomes.filter((name): name is string => name !== null);
+    if (registered.length === 0) return false;
+
+    report.surfaces.push({ surface, method: "registerTool", tools: registered });
+    return true;
+}
+
+/**
+ * Déclare l'ensemble des outils d'un bloc via `provideContext`, la forme de
+ * l'early preview Chrome. Elle ne connaît pas d'`AbortSignal` : le retrait se
+ * fait en redéclarant un jeu d'outils vide.
+ */
+async function provideAllTools(
+    surface: WebMcpSurface,
+    context: ModelContextLike,
+    tools: WebMcpTool[],
+    signal: AbortSignal | undefined,
+    report: WebMcpRegistrationReport
+): Promise<void> {
+    if (typeof context.provideContext !== "function") return;
+    const provideContext = context.provideContext.bind(context);
+
+    const clear = () => {
+        try {
+            void Promise.resolve(provideContext({ tools: [] })).catch((error) => {
+                console.error("[WebMCP] Retrait des outils refusé :", error);
+            });
+        } catch (error) {
+            console.error("[WebMCP] Retrait des outils impossible :", error);
+        }
+    };
+
+    try {
+        await provideContext({ tools });
+    } catch (error) {
+        report.errors.push(`${surface}.provideContext: ${String(error)}`);
+        return;
+    }
+
+    // Le signal a pu se déclencher pendant la déclaration : `addEventListener`
+    // ne rappellerait alors jamais, et les outils resteraient exposés.
+    if (signal?.aborted) {
+        clear();
+        return;
+    }
+
+    report.surfaces.push({ surface, method: "provideContext", tools: tools.map((tool) => tool.name) });
+    signal?.addEventListener("abort", clear, { once: true });
+}
+
+/**
  * Déclare les outils auprès de toutes les implémentations WebMCP présentes.
  *
- * Deux formes d'API coexistent aujourd'hui et sont gérées dans cet ordre :
+ * Deux formes d'API coexistent aujourd'hui : `registerTool`, préférée parce
+ * qu'elle porte le signal de retrait, et `provideContext` en repli — y compris
+ * quand `registerTool` existe mais refuse tous les outils, plutôt que de
+ * laisser la page sans rien.
  *
- * 1. `registerTool(tool, { signal })` — la spécification. Chaque outil est
- *    déclaré séparément et l'`AbortSignal` le retire, ce qui permet de suivre
- *    la navigation client (les outils d'une page démontée disparaissent).
- * 2. `provideContext({ tools })` — l'early preview Chrome, qui remplace d'un
- *    bloc l'ensemble des outils de la page. Le retrait passe alors par un
- *    second appel avec une liste vide.
- *
- * Une surface qui échoue n'empêche pas les autres : la fonction ne lève jamais,
- * elle rend compte de ce qui a été déclaré. Sur un navigateur sans WebMCP,
- * `surfaces` est simplement vide.
+ * Une surface qui échoue n'empêche pas les autres : la fonction ne rejette
+ * jamais, elle rend compte de ce qui a été déclaré. Sur un navigateur sans
+ * WebMCP, `surfaces` est simplement vide.
  */
-export function registerWebMcpTools(
+export async function registerWebMcpTools(
     tools: WebMcpTool[],
     options: RegisterWebMcpToolsOptions = {}
-): WebMcpRegistrationReport {
+): Promise<WebMcpRegistrationReport> {
     const { signal } = options;
     const report: WebMcpRegistrationReport = { surfaces: [], errors: [] };
 
     if (signal?.aborted) return report;
 
     for (const { surface, context } of findModelContexts(options.scope ?? defaultScope())) {
-        if (typeof context.registerTool === "function") {
-            const registered: string[] = [];
-            for (const tool of tools) {
-                try {
-                    // La promesse renvoyée se résout après notification des
-                    // agents : rien à attendre ici, mais un rejet ne doit pas
-                    // remonter en « unhandled rejection ».
-                    const result = context.registerTool(tool, { signal });
-                    void Promise.resolve(result).catch((error) => {
-                        console.error(`[WebMCP] Enregistrement de l'outil "${tool.name}" refusé :`, error);
-                    });
-                    registered.push(tool.name);
-                } catch (error) {
-                    report.errors.push(`${surface}.registerTool(${tool.name}): ${String(error)}`);
-                }
-            }
+        const registered = await registerToolByTool(surface, context, tools, signal, report);
+        if (registered) continue;
 
-            if (registered.length > 0) {
-                report.surfaces.push({ surface, method: "registerTool", tools: registered });
-                continue;
-            }
-            // Aucun outil accepté : on retombe sur `provideContext` si l'objet
-            // le porte aussi, plutôt que de laisser la page sans outil.
-        }
-
-        if (typeof context.provideContext === "function") {
-            const provideContext = context.provideContext.bind(context);
-            try {
-                void Promise.resolve(provideContext({ tools })).catch((error) => {
-                    console.error("[WebMCP] Déclaration des outils refusée :", error);
-                });
-                report.surfaces.push({ surface, method: "provideContext", tools: tools.map((tool) => tool.name) });
-
-                // `provideContext` ne connaît pas d'`AbortSignal` : le retrait
-                // se fait en redéclarant un jeu d'outils vide.
-                signal?.addEventListener(
-                    "abort",
-                    () => {
-                        try {
-                            void Promise.resolve(provideContext({ tools: [] })).catch(() => {});
-                        } catch (error) {
-                            console.error("[WebMCP] Retrait des outils impossible :", error);
-                        }
-                    },
-                    { once: true }
-                );
-            } catch (error) {
-                report.errors.push(`${surface}.provideContext: ${String(error)}`);
-            }
-        }
+        await provideAllTools(surface, context, tools, signal, report);
     }
 
     return report;

@@ -78,18 +78,18 @@ describe("findModelContexts", () => {
 });
 
 describe("registerWebMcpTools", () => {
-    it("ne fait rien, sans échouer, quand WebMCP est absent", () => {
-        const report = registerWebMcpTools(TOOLS, { scope: { navigator: {}, document: {} } });
+    it("ne fait rien, sans échouer, quand WebMCP est absent", async () => {
+        const report = await registerWebMcpTools(TOOLS, { scope: { navigator: {}, document: {} } });
 
         assert.deepEqual(report.surfaces, []);
         assert.deepEqual(report.errors, []);
     });
 
-    it("déclare chaque outil via registerTool, avec le signal de retrait", () => {
+    it("déclare chaque outil via registerTool, avec le signal de retrait", async () => {
         const { context, calls } = registerToolContext();
         const controller = new AbortController();
 
-        const report = registerWebMcpTools(TOOLS, {
+        const report = await registerWebMcpTools(TOOLS, {
             scope: { navigator: { modelContext: context } },
             signal: controller.signal,
         });
@@ -103,20 +103,20 @@ describe("registerWebMcpTools", () => {
         assert.deepEqual(report.surfaces, [{ surface: "navigator", method: "registerTool", tools: ["a", "b"] }]);
     });
 
-    it("passe par provideContext quand registerTool n'existe pas", () => {
+    it("passe par provideContext quand registerTool n'existe pas", async () => {
         const { context, calls } = provideContextContext();
 
-        const report = registerWebMcpTools(TOOLS, { scope: { navigator: { modelContext: context } } });
+        const report = await registerWebMcpTools(TOOLS, { scope: { navigator: { modelContext: context } } });
 
         assert.deepEqual(calls, [["a", "b"]]);
         assert.deepEqual(report.surfaces, [{ surface: "navigator", method: "provideContext", tools: ["a", "b"] }]);
     });
 
-    it("retire les outils déclarés par provideContext quand le signal est déclenché", () => {
+    it("retire les outils déclarés par provideContext quand le signal est déclenché", async () => {
         const { context, calls } = provideContextContext();
         const controller = new AbortController();
 
-        registerWebMcpTools(TOOLS, { scope: { navigator: { modelContext: context } }, signal: controller.signal });
+        await registerWebMcpTools(TOOLS, { scope: { navigator: { modelContext: context } }, signal: controller.signal });
         controller.abort();
 
         // `provideContext` remplace le jeu d'outils : le vider est le seul
@@ -124,12 +124,12 @@ describe("registerWebMcpTools", () => {
         assert.deepEqual(calls, [["a", "b"], []]);
     });
 
-    it("ne déclare rien si le signal est déjà déclenché", () => {
+    it("ne déclare rien si le signal est déjà déclenché", async () => {
         const { context, calls } = registerToolContext();
         const controller = new AbortController();
         controller.abort();
 
-        const report = registerWebMcpTools(TOOLS, {
+        const report = await registerWebMcpTools(TOOLS, {
             scope: { navigator: { modelContext: context } },
             signal: controller.signal,
         });
@@ -138,7 +138,7 @@ describe("registerWebMcpTools", () => {
         assert.deepEqual(report.surfaces, []);
     });
 
-    it("ne déclare qu'une fois par surface, sans doubler avec provideContext", () => {
+    it("ne déclare qu'une fois par surface, sans doubler avec provideContext", async () => {
         const provideCalls: string[][] = [];
         const registerCalls: string[] = [];
         const context: ModelContextLike = {
@@ -150,13 +150,13 @@ describe("registerWebMcpTools", () => {
             },
         };
 
-        registerWebMcpTools(TOOLS, { scope: { navigator: { modelContext: context } } });
+        await registerWebMcpTools(TOOLS, { scope: { navigator: { modelContext: context } } });
 
         assert.deepEqual(registerCalls, ["a", "b"]);
         assert.deepEqual(provideCalls, []);
     });
 
-    it("retombe sur provideContext quand registerTool rejette tous les outils", () => {
+    it("retombe sur provideContext quand registerTool rejette tous les outils", async () => {
         const provideCalls: string[][] = [];
         const context: ModelContextLike = {
             registerTool: () => {
@@ -167,18 +167,69 @@ describe("registerWebMcpTools", () => {
             },
         };
 
-        const report = registerWebMcpTools(TOOLS, { scope: { navigator: { modelContext: context } } });
+        const report = await registerWebMcpTools(TOOLS, { scope: { navigator: { modelContext: context } } });
 
         assert.deepEqual(provideCalls, [["a", "b"]]);
         assert.equal(report.errors.length, 2);
         assert.deepEqual(report.surfaces, [{ surface: "navigator", method: "provideContext", tools: ["a", "b"] }]);
     });
 
-    it("déclare sur les deux surfaces quand elles sont distinctes", () => {
+    it("traite une promesse rejetée comme un refus, pas comme une déclaration", async () => {
+        // Un navigateur peut accepter l'appel et refuser ensuite : conclure sur
+        // le retour synchrone laisserait croire la page outillée alors qu'aucun
+        // outil n'est déclaré, et le repli ne serait jamais tenté.
+        const provideCalls: string[][] = [];
+        const context: ModelContextLike = {
+            registerTool: () => Promise.reject(new Error("refusé")),
+            provideContext: ({ tools }) => {
+                provideCalls.push(tools.map((registered) => registered.name));
+            },
+        };
+
+        const report = await registerWebMcpTools(TOOLS, { scope: { navigator: { modelContext: context } } });
+
+        assert.deepEqual(provideCalls, [["a", "b"]]);
+        assert.deepEqual(report.surfaces, [{ surface: "navigator", method: "provideContext", tools: ["a", "b"] }]);
+    });
+
+    it("ne rend compte que des outils réellement acceptés", async () => {
+        const context: ModelContextLike = {
+            registerTool: (tool) => (tool.name === "a" ? Promise.reject(new Error("refusé")) : Promise.resolve()),
+        };
+
+        const report = await registerWebMcpTools(TOOLS, { scope: { navigator: { modelContext: context } } });
+
+        assert.deepEqual(report.surfaces, [{ surface: "navigator", method: "registerTool", tools: ["b"] }]);
+        assert.equal(report.errors.length, 1);
+    });
+
+    it("retire les outils quand le signal se déclenche pendant la déclaration", async () => {
+        const calls: string[][] = [];
+        const controller = new AbortController();
+        const context: ModelContextLike = {
+            provideContext: async ({ tools }) => {
+                calls.push(tools.map((registered) => registered.name));
+                // La page est démontée avant que la déclaration n'aboutisse.
+                if (tools.length > 0) controller.abort();
+            },
+        };
+
+        const report = await registerWebMcpTools(TOOLS, {
+            scope: { navigator: { modelContext: context } },
+            signal: controller.signal,
+        });
+
+        // Sans ce rattrapage, l'écouteur « abort » posé après coup ne serait
+        // jamais rappelé et les outils resteraient exposés.
+        assert.deepEqual(calls, [["a", "b"], []]);
+        assert.deepEqual(report.surfaces, []);
+    });
+
+    it("déclare sur les deux surfaces quand elles sont distinctes", async () => {
         const navigatorContext = registerToolContext();
         const documentContext = provideContextContext();
 
-        const report = registerWebMcpTools(TOOLS, {
+        const report = await registerWebMcpTools(TOOLS, {
             scope: {
                 navigator: { modelContext: navigatorContext.context },
                 document: { modelContext: documentContext.context },

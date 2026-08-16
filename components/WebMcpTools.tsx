@@ -15,9 +15,9 @@ import { createJoutesWebMcpTools } from "@/lib/webmcp/tools";
  * développement) ne laisse pas de doublons derrière lui.
  *
  * WebMCP peut aussi être injecté par une extension après le chargement : la
- * déclaration est donc retentée quelques fois, sur un peu plus de deux
- * secondes, puis abandonnée — le site n'a pas à sonder le navigateur
- * indéfiniment.
+ * déclaration est donc retentée quelques fois, sur les quatre premières
+ * secondes de la page, puis abandonnée — le site n'a pas à sonder le
+ * navigateur indéfiniment.
  */
 const RETRY_DELAYS_MS = [250, 500, 1_000, 2_000];
 
@@ -38,10 +38,14 @@ export default function WebMcpTools() {
 
         const timers: ReturnType<typeof setTimeout>[] = [];
 
-        const attempt = (remainingDelays: number[]) => {
+        const attempt = async (remainingDelays: number[]) => {
             if (controller.signal.aborted) return;
 
-            const report = registerWebMcpTools(tools, { signal: controller.signal });
+            // Le rapport n'est fiable qu'une fois les déclarations résolues :
+            // un navigateur peut accepter l'appel et rejeter la promesse.
+            const report = await registerWebMcpTools(tools, { signal: controller.signal });
+            if (controller.signal.aborted) return;
+
             for (const error of report.errors) {
                 console.error(`[WebMCP] ${error}`);
             }
@@ -49,10 +53,10 @@ export default function WebMcpTools() {
 
             const [delay, ...rest] = remainingDelays;
             if (delay === undefined) return;
-            timers.push(setTimeout(() => attempt(rest), delay));
+            timers.push(setTimeout(() => void attempt(rest), delay));
         };
 
-        attempt(RETRY_DELAYS_MS);
+        void attempt(RETRY_DELAYS_MS);
 
         return () => {
             controller.abort();

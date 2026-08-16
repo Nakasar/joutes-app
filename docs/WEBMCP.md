@@ -53,8 +53,14 @@ vide. Sur un navigateur sans WebMCP, il ne se passe rien : pas d'erreur, pas de
 requête, pas une ligne de rendu en plus.
 
 Une extension peut aussi injecter l'API après le chargement de la page : la
-déclaration est donc retentée quelques fois sur un peu plus de deux secondes,
-puis abandonnée.
+déclaration est donc retentée quelques fois sur les quatre premières secondes
+de la page, puis abandonnée.
+
+`registerWebMcpTools` est asynchrone et attend l'aboutissement de chaque
+déclaration avant de rendre son rapport : un navigateur peut accepter l'appel
+et rejeter la promesse ensuite, et conclure sur le retour synchrone laisserait
+croire la page outillée alors qu'elle ne l'est pas — le repli ne serait jamais
+tenté, ni la tentative suivante planifiée.
 
 ## Ce que les outils ne font pas
 
