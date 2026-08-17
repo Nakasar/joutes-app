@@ -3814,6 +3814,7 @@
     "notConfiguredHint": "Patreon n'est pas configuré sur cet environnement.",
     "link": "Lier mon compte Patreon",
     "linkFailed": "La liaison a échoué.",
+    "linkedNotSynced": "Compte Patreon lié. Aucune adhésion à la campagne Joutes n'y est encore rattachée — c'est normal si vous venez de vous abonner ou si vous êtes le porteur de la campagne.",
     "linkHint": "Liez votre compte Patreon pour que votre abonnement soit reconnu ici.",
     "resync": "Resynchroniser",
     "resyncDone": "Abonnement resynchronisé.",

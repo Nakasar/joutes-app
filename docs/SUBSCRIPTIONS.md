@@ -274,6 +274,37 @@ n'existerait tout simplement pas.
 que l'adhésion à *notre* campagne, ce qui est exactement ce qu'il nous faut.
 L'ajouter exposerait les adhésions du mécène à tous les autres créateurs.
 
+**« Le compte est-il lié ? » se lit dans `account`, pas dans `subscriptions`.**
+`subscriptions.providerUserId` n'est écrit que par une synchronisation réussie :
+c'est une *projection*, pas le lien. Les confondre a produit un blocage complet —
+un compte que better-auth tenait pour lié se voyait annoncer « non lié », et
+proposer de lier de nouveau, ce que better-auth refuse ; le bouton
+« resynchroniser », réservé aux comptes liés, restait invisible. Aucune sortie.
+`findPatreonAccountId` (`lib/patreon/sync.ts`) interroge la seule autorité sur le
+lien.
+
+**Trois états, et non deux.** Lier un compte qui n'est mécène de rien réussit
+parfaitement et ne rapporte aucune adhésion — c'est le cas du porteur de la
+campagne, et de quiconque lie son compte avant de choisir un palier.
+
+| État | `linkedToProvider` | `hasProviderMembership` |
+| --- | --- | --- |
+| Aucun compte Patreon rattaché | faux | faux |
+| Rattaché, sans adhésion à la campagne | vrai | faux |
+| Rattaché, adhésion trouvée | vrai | vrai |
+
+`hasProviderMembership` se dérive de `providerMemberId`, et **surtout pas** de
+`providerUserId` : celui-ci est écrit dès qu'une lecture aboutit, adhésion ou
+non. L'en tirer rendrait le drapeau toujours vrai après une liaison, et
+l'explication « aucune adhésion rattachée » ne s'afficherait jamais à ceux à qui
+elle est destinée.
+
+**Lier ne synchronise pas tout seul.** better-auth écrit `account` et redirige ;
+il ne sait rien des paliers. C'est `SyncAfterLink`, sur la page de compte, qui
+appelle la resynchronisation au retour — reconnaissable au paramètre
+`?linked=patreon` de son `callbackURL`. Changer ce paramètre d'un côté sans
+l'autre laisse des comptes liés sans aucun palier.
+
 **Patreon est un fournisseur de liaison, pas de connexion.** `disableSignUp: true`
 dans `lib/auth.ts` : sans lui, un inconnu se créerait un compte Joutes via
 Patreon.

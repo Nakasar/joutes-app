@@ -2,6 +2,7 @@ import 'server-only';
 
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
+import { ObjectId } from "mongodb";
 import db from "@/lib/mongodb";
 import type { SubscriptionPlanKey } from "@/lib/constants/subscription-plans";
 import { getSubscriptionByProviderUserId, upsertFromSnapshot } from "@/lib/db/subscriptions";
@@ -149,4 +150,33 @@ export async function findUserIdByPatreonId(patreonUserId: string): Promise<User
     .findOne({ providerId: PATREON_PROVIDER_ID, accountId: patreonUserId });
 
   return account?.userId ? String(account.userId) : null;
+}
+
+/**
+ * L'identifiant Patreon lié à un compte, ou `null`.
+ *
+ * **C'est ici que se lit « mon compte Patreon est-il lié ? »**, et non dans
+ * `subscriptions.providerUserId`. La distinction a coûté un blocage : cette
+ * colonne-là n'est qu'une *projection*, écrite par une synchronisation réussie.
+ * Tant qu'aucune n'avait abouti, l'écran de compte annonçait « non lié » à
+ * quelqu'un que better-auth considérait comme lié — et lui proposait de lier de
+ * nouveau, ce que better-auth refuse. Sans bouton « resynchroniser » (réservé
+ * aux comptes « liés »), il n'y avait plus aucune sortie.
+ *
+ * La collection `account` est la seule autorité sur le lien lui-même.
+ */
+export async function findPatreonAccountId(userId: User['id']): Promise<string | null> {
+  // `userId` y est écrit par l'adaptateur MongoDB de better-auth, qui le range
+  // en `ObjectId`. On accepte les deux formes : une base migrée d'une version
+  // antérieure peut porter la chaîne.
+  const candidates: unknown[] = [userId];
+  if (ObjectId.isValid(userId)) {
+    candidates.push(new ObjectId(userId));
+  }
+
+  const account = await db
+    .collection<{ accountId: unknown }>("account")
+    .findOne({ providerId: PATREON_PROVIDER_ID, userId: { $in: candidates } });
+
+  return account?.accountId ? String(account.accountId) : null;
 }

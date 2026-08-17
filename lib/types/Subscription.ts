@@ -115,7 +115,21 @@ export type SubscriptionSummary = {
   seats: SubscriptionSeat[];
   seatsTotal: number;
   seatsRemaining: number;
+  /**
+   * Le compte Patreon est rattaché — d'après la collection `account` de
+   * better-auth, seule autorité sur le lien lui-même.
+   */
   linkedToProvider: boolean;
+  /**
+   * Patreon a rattaché une **adhésion à la campagne** à ce compte.
+   *
+   * Distinct de `linkedToProvider`, et pas seulement en théorie : lier un compte
+   * qui n'est mécène de rien réussit parfaitement et ne rapporte aucune
+   * adhésion. C'est le cas du porteur de la campagne, et de quiconque vient de
+   * lier avant de choisir un palier. Se dérive de `providerMemberId`, seul champ
+   * qui distingue « lecture aboutie » de « adhésion trouvée ».
+   */
+  hasProviderMembership: boolean;
   patronStatus: PatreonPatronStatus | null;
   syncedAt: Date | null;
 };
