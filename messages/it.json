@@ -3105,6 +3105,8 @@
       "previous": "Precedenti",
       "next": "Successivi",
       "filters": {
+        "title": "Filtri",
+        "unlockedBy": "Incluso nel tuo abbonamento",
         "card": "Carta",
         "cardPlaceholder": "Nome di una carta…",
         "partner": "Partner",
@@ -3118,8 +3120,7 @@
       },
       "locked": {
         "title": "{count, plural, one {# scambio più vecchio è nascosto} other {# scambi più vecchi sono nascosti}}",
-        "description": "Lo storico completo e i suoi filtri di ricerca arrivano con Joutes Expert o Joutes Pro.",
-        "cta": "Vedi le offerte"
+        "unlock": "Sblocca lo storico con {plan}"
       }
     },
     "offer": {
@@ -3710,6 +3711,7 @@
           "Un bordo ametista attorno al tuo avatar",
           "Un ruolo «Expert» sul server Discord",
           "L'accesso a una sezione dedicata sul server Discord",
+          "Lo storico completo dei tuoi scambi, con filtri e ricerca",
           "Funzionalità avanzate per i tuoi gruppi di gioco"
         ]
       },
@@ -3720,6 +3722,7 @@
           "Un bordo blu notte attorno al tuo avatar",
           "Un ruolo «Pro» sul server Discord",
           "L'accesso a una sezione dedicata sul server Discord",
+          "Lo storico completo dei tuoi scambi, con filtri e ricerca",
           "Un sistema di prenotazione per i tuoi eventi",
           "I tuoi eventi messi in primo piano",
           "La personalizzazione della pagina del tuo locale",

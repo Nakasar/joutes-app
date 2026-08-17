@@ -5,6 +5,8 @@ import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
 import { listTradeHistoryPartners, listUserTrades } from "@/lib/db/trades";
 import { hasPermission } from "@/lib/db/permissions";
+import { getMyPlans } from "@/lib/subscriptions/access";
+import { planGrantingPermission } from "@/lib/subscriptions/entitlements";
 import { TRADE_HISTORY_PAGE_SIZE } from "@/lib/trade/history";
 import TradeHubClient from "./TradeHubClient";
 
@@ -35,6 +37,11 @@ export default async function TradeHubPage() {
   // permission comme une autre.
   const canFilter = await hasPermission("trades:full_history");
 
+  // Le palier auquel attribuer ces filtres, pour l'écrire sans se tromper : un
+  // abonné Pro doit lire « Joutes Pro ». `null` pour un administrateur ou une
+  // permission accordée à la main — il n'y a alors aucun abonnement à créditer.
+  const unlockedByPlan = planGrantingPermission(await getMyPlans(), "trades:full_history");
+
   const [trades, partners] = await Promise.all([
     // La même taille de page que `/api/trades/history` : sans cela, l'écran
     // afficherait cinquante échanges au chargement puis vingt dès la première
@@ -57,6 +64,7 @@ export default async function TradeHubPage() {
         hiddenCount={trades.hiddenCount}
         partners={partners}
         canFilter={canFilter}
+        unlockedByPlan={unlockedByPlan}
         currentUserId={session.user.id}
       />
     </div>

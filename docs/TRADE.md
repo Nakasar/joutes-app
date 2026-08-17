@@ -104,8 +104,17 @@ qui on a effectivement échangé (`listTradeHistoryPartners`), jamais sur
 l'annuaire : filtrer son propre historique ne doit pas pouvoir servir à savoir
 qui existe ailleurs sur la plateforme.
 
-`hiddenCount` compte les échanges clos plus anciens que la fenêtre. L'écran ne
-propose l'abonnement que s'il est non nul.
+L'écran dit d'où vient ce droit, dans les deux sens : le cadre de filtres porte
+le badge du palier qui les ouvre (`planGrantingPermission`, qui rend `null` pour
+un administrateur ou une permission accordée à la main — il n'y a alors aucun
+abonnement à créditer) ; à qui n'y a pas droit, il montre le même cadre éteint,
+avec un bouton « Débloquer l'historique avec Joutes Expert » qui mène aux offres.
+
+Le bouton **reste cliquable** malgré son apparence verrouillée : montrer une
+fonctionnalité hors d'atteinte sans dire où la trouver en ferait un cul-de-sac.
+
+`hiddenCount` compte les échanges clos plus anciens que la fenêtre, et s'affiche
+sous le bouton quand il est non nul.
 
 ## Modèle de données
 

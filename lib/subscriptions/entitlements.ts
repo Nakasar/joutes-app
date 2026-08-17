@@ -133,6 +133,26 @@ export function displayPlan(plans: readonly SubscriptionPlanKey[]): Subscription
   return best;
 }
 
+/**
+ * Le palier auquel attribuer une permission, parmi ceux qu'un compte porte.
+ *
+ * Sert à écrire « vous avez ceci grâce à votre abonnement » en nommant le bon :
+ * un abonné Pro doit lire « Joutes Pro », pas « Joutes Expert ».
+ *
+ * Rend `null` quand aucun palier porté n'ouvre cette permission — le cas d'un
+ * administrateur, ou de quelqu'un à qui elle a été accordée à la main. Il ne
+ * faut alors rien afficher : la lui attribuer à un abonnement qu'il n'a pas
+ * serait faux, et le pousser à s'abonner pour ce qu'il a déjà, absurde.
+ */
+export function planGrantingPermission(
+  plans: readonly SubscriptionPlanKey[],
+  permission: PlanPermission
+): SubscriptionPlanKey | null {
+  return displayPlan(
+    plans.filter((plan) => resolvePlanPermissions([plan]).includes(permission))
+  );
+}
+
 /** Un abonnement est actif tant qu'il porte au moins un plan. */
 export function isActive(plans: readonly SubscriptionPlanKey[]): boolean {
   return plans.some((plan) => SUBSCRIPTION_PLAN_KEYS.includes(plan));

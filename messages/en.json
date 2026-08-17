@@ -3163,6 +3163,8 @@
       "previous": "Previous",
       "next": "Next",
       "filters": {
+        "title": "Filters",
+        "unlockedBy": "Included in your subscription",
         "card": "Card",
         "cardPlaceholder": "Card name…",
         "partner": "Partner",
@@ -3176,8 +3178,7 @@
       },
       "locked": {
         "title": "{count, plural, one {# older trade is hidden} other {# older trades are hidden}}",
-        "description": "The full history and its search filters come with Joutes Expert or Joutes Pro.",
-        "cta": "See the plans"
+        "unlock": "Unlock the full history with {plan}"
       }
     },
     "offer": {
@@ -3768,6 +3769,7 @@
           "An amethyst border around your avatar",
           "An “Expert” role on the Discord server",
           "Access to a dedicated section on the Discord server",
+          "Your full trade history, with filters and search",
           "Advanced features for your play groups"
         ]
       },
@@ -3778,6 +3780,7 @@
           "A midnight-blue border around your avatar",
           "A “Pro” role on the Discord server",
           "Access to a dedicated section on the Discord server",
+          "Your full trade history, with filters and search",
           "A registration system for your events",
           "Your events put front and centre",
           "Customization of your venue page",
