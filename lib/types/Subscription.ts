@@ -115,7 +115,17 @@ export type SubscriptionSummary = {
   seats: SubscriptionSeat[];
   seatsTotal: number;
   seatsRemaining: number;
+  /**
+   * Le compte Patreon est rattaché — d'après la collection `account` de
+   * better-auth, seule autorité sur le lien lui-même.
+   */
   linkedToProvider: boolean;
+  /**
+   * Une synchronisation a abouti et écrit sa projection. Peut être faux alors
+   * que `linkedToProvider` est vrai : lien établi, mais Patreon n'a encore rien
+   * dit de cette personne — ou la première lecture a échoué.
+   */
+  syncedFromProvider: boolean;
   patronStatus: PatreonPatronStatus | null;
   syncedAt: Date | null;
 };

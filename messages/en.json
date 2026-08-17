@@ -3813,6 +3813,7 @@
     "notConfiguredHint": "Patreon is not configured on this environment.",
     "link": "Link my Patreon account",
     "linkFailed": "Linking failed.",
+    "linkedNotSynced": "Patreon account linked. No membership of the Joutes campaign is attached to it yet — that is expected if you have just subscribed, or if you run the campaign.",
     "linkHint": "Link your Patreon account so your subscription is recognised here.",
     "resync": "Resync",
     "resyncDone": "Subscription resynced.",

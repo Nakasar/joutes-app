@@ -14,6 +14,7 @@ import {
 import type { Lair } from "@/lib/types/Lair";
 import type { Subscription, SubscriptionSummary } from "@/lib/types/Subscription";
 import { displayPlan, grantsEntitlement, resolveEntitlements, seatsFor } from "./entitlements";
+import { findPatreonAccountId } from "@/lib/patreon/sync";
 import { effectivePlans, grantedPlanKeys } from "./grants";
 
 /**
@@ -165,7 +166,10 @@ export async function getMySubscriptionSummary(): Promise<SubscriptionSummary | 
 
   // Les plans se déduisent de l'abonnement qu'on vient de lire : repasser par
   // `getMyPlans` relirait la session et le document pour rien.
-  const subscription = await getSubscriptionByUserId(session.user.id);
+  const [subscription, patreonAccountId] = await Promise.all([
+    getSubscriptionByUserId(session.user.id),
+    findPatreonAccountId(session.user.id),
+  ]);
   const plans = plansFromSubscription(subscription);
   const seats = subscription?.seats ?? [];
   const seatsTotal = seatsFor(plans);
@@ -180,7 +184,16 @@ export async function getMySubscriptionSummary(): Promise<SubscriptionSummary | 
     seats,
     seatsTotal,
     seatsRemaining: Math.max(0, seatsTotal - seats.length),
-    linkedToProvider: Boolean(subscription?.providerUserId),
+    // La collection `account` de better-auth fait foi, et non
+    // `subscription.providerUserId` : celui-ci n'est écrit que par une
+    // synchronisation réussie, si bien qu'un compte lié dont la première
+    // synchronisation a échoué se voyait annoncer « non lié » — sans aucun moyen
+    // d'en sortir. Voir `findPatreonAccountId`.
+    linkedToProvider: Boolean(patreonAccountId),
+    // Vrai quand une synchronisation a réellement abouti. Lié sans projection,
+    // c'est le cas à montrer : le compte est bien rattaché, Patreon n'a
+    // simplement encore rien dit de cette personne.
+    syncedFromProvider: Boolean(subscription?.providerUserId),
     patronStatus: subscription?.patronStatus ?? null,
     syncedAt: subscription?.syncedAt ?? null,
   };

@@ -3730,6 +3730,7 @@
     "notConfiguredHint": "Patreon ist in dieser Umgebung nicht konfiguriert.",
     "link": "Patreon-Konto verknüpfen",
     "linkFailed": "Die Verknüpfung ist fehlgeschlagen.",
+    "linkedNotSynced": "Patreon-Konto verknüpft. Es ist noch keine Mitgliedschaft der Joutes-Kampagne damit verbunden — das ist normal, wenn du gerade abonniert hast oder die Kampagne selbst betreibst.",
     "linkHint": "Verknüpfe dein Patreon-Konto, damit dein Abo hier erkannt wird.",
     "resync": "Neu abgleichen",
     "resyncDone": "Abo neu abgeglichen.",

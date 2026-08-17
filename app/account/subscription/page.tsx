@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { headers } from "next/headers";
@@ -13,7 +14,7 @@ import { getLairsByIds } from "@/lib/db/lairs";
 import { patreonConfig, patreonPublicUrl } from "@/lib/patreon/config";
 import { getMySubscriptionSummary } from "@/lib/subscriptions/access";
 import { displayPlan } from "@/lib/subscriptions/entitlements";
-import { LinkPatreonButton, ResyncButton, UnlinkPatreonButton } from "./components";
+import { LinkPatreonButton, ResyncButton, SyncAfterLink, UnlinkPatreonButton } from "./components";
 
 export const metadata: Metadata = {
   title: "Mon abonnement",
@@ -40,6 +41,12 @@ export default async function SubscriptionPage() {
 
   return (
     <div className="container mx-auto max-w-3xl px-4 py-8">
+      {/* `useSearchParams` impose une frontière de suspense : le composant ne
+          rend rien, la frontière n'a donc pas de repli à montrer. */}
+      <Suspense fallback={null}>
+        <SyncAfterLink />
+      </Suspense>
+
       <div className="space-y-6">
         <div className="flex flex-wrap items-center gap-4">
           <Button variant="ghost" size="sm" asChild>
@@ -96,6 +103,16 @@ export default async function SubscriptionPage() {
 
             {!summary?.linkedToProvider && (
               <p className="text-sm text-muted-foreground">{t("linkHint")}</p>
+            )}
+
+            {/* Lié, mais Patreon n'a encore rien dit de cette personne : le
+                propriétaire de la campagne, ou quelqu'un qui n'a pas encore
+                choisi de palier. Le dire évite de chercher une panne là où il
+                n'y en a pas. */}
+            {summary?.linkedToProvider && !summary.syncedFromProvider && (
+              <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                {t("linkedNotSynced")}
+              </p>
             )}
           </CardContent>
         </Card>
