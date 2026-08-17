@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getUserById, getUserByUsername, getUsersByIds, toPublicUser } from "@/lib/db/users";
 import { areUsersFriends, createFriendRequest, DuplicateFriendRequestError, getPendingRequestBetween } from "@/lib/db/friends";
+import { withUserBadges } from "@/lib/db/user-badges";
 import { notifyUser } from "@/lib/services/notifications";
 
 export async function GET(request: NextRequest) {
@@ -13,7 +14,10 @@ export async function GET(request: NextRequest) {
     }
 
     const currentUser = await getUserById(session.user.id);
-    const friends = (await getUsersByIds(currentUser?.friends || [])).map(toPublicUser);
+    // Badges résolus en un coup : un appel par ami ferait un N+1 sur la liste.
+    const friends = await withUserBadges(
+      (await getUsersByIds(currentUser?.friends || [])).map(toPublicUser)
+    );
 
     return NextResponse.json({ friends });
   } catch (error) {

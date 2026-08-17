@@ -5,6 +5,7 @@ import { ObjectId, WithId, Document } from "mongodb";
 import { News } from "@/lib/types/News";
 import { CreateNewsInput, NewsTranslationPayload, UpdateNewsInput } from "@/lib/schemas/news.schema";
 import { defaultLocale, type Locale } from "@/i18n/config";
+import { getUserBadges, NO_BADGES } from "@/lib/db/user-badges";
 
 const COLLECTION_NAME = "news";
 
@@ -37,6 +38,22 @@ function toNews(doc: WithId<Document>, userId?: string): News {
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };
+}
+
+/**
+ * Attache à chaque actualité les badges de son auteur.
+ *
+ * En lot, et non par article : la liste en affiche vingt, et une lecture par
+ * auteur ferait vingt allers-retours pour deux badges.
+ */
+async function withAuthorBadges(news: News[]): Promise<News[]> {
+  const badges = await getUserBadges(news.map((item) => String(item.authorId)));
+
+  return news.map((item) =>
+    item.author
+      ? { ...item, author: { ...item.author, badges: badges[String(item.authorId)] ?? NO_BADGES } }
+      : item
+  );
 }
 
 export type GetNewsOptions = {
@@ -130,7 +147,9 @@ export async function getNews(options: GetNewsOptions = {}): Promise<PaginatedNe
   const result = results[0];
   const total = result.total?.[0]?.count ?? 0;
 
-  const news = (result.data ?? []).map((doc: WithId<Document>) => toNews(doc, userId));
+  const news = await withAuthorBadges(
+    (result.data ?? []).map((doc: WithId<Document>) => toNews(doc, userId))
+  );
 
   return {
     news,
@@ -185,7 +204,7 @@ export async function getNewsById(id: string, userId?: string): Promise<News | n
 
     const docs = await db.collection(COLLECTION_NAME).aggregate(pipeline).toArray();
     if (!docs.length) return null;
-    return toNews(docs[0] as WithId<Document>, userId);
+    return (await withAuthorBadges([toNews(docs[0] as WithId<Document>, userId)]))[0];
   } catch {
     return null;
   }

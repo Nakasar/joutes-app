@@ -13,6 +13,7 @@ import PolicyVoteButtons from "@/components/PolicyVoteButtons";
 import ReportButton from "@/components/ReportButton";
 import { useTranslations } from "next-intl";
 import { DateTime } from "luxon";
+import { UserLabel } from "@/components/UserLabel";
 
 export default function PolicyDetailView({
   policy,
@@ -93,6 +94,12 @@ export default function PolicyDetailView({
               date: DateTime.fromJSDate(policy.createdAt).setLocale(interfaceLocale).toLocaleString(DateTime.DATE_MED),
             })}
           </span>
+          {policy.author && (
+            <span className="inline-flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+              {t("policies.proposedBy")}
+              <UserLabel user={policy.author} />
+            </span>
+          )}
           {policy.source && (
             <a
               href={policy.source}

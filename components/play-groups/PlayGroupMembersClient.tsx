@@ -6,6 +6,8 @@ import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { PlayGroupToolsNavBar } from "@/components/play-groups/PlayGroupToolsNavBar";
+import { UserBadges as UserBadgesRow } from "@/components/UserBadges";
+import type { UserBadges } from "@/lib/db/user-badges";
 
 type GroupMember = {
   userId: string;
@@ -15,8 +17,10 @@ type GroupMember = {
     id: string;
     username?: string;
     displayName?: string;
+    discriminator?: string;
     email?: string;
     avatar?: string;
+    badges?: UserBadges;
   } | null;
 };
 
@@ -167,11 +171,22 @@ export default function PlayGroupMembersClient() {
         {!loading && data?.members.length === 0 ? <p className="mt-4 text-sm text-muted-foreground">{t("page.noMembers")}</p> : null}
         <div className="mt-4 space-y-3">
           {data?.members.map((member) => {
-            const displayName = member.user?.displayName || member.user?.username || member.user?.email || member.userId;
+            // Le tag complet plutôt que le seul pseudonyme : deux membres
+            // peuvent porter le même, et c'est le discriminant qui les sépare.
+            const displayName =
+              (member.user?.displayName && member.user?.discriminator
+                ? `${member.user.displayName}#${member.user.discriminator}`
+                : member.user?.displayName) ||
+              member.user?.username ||
+              member.user?.email ||
+              member.userId;
             return (
               <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between" key={member.userId}>
                 <div>
-                  <p className="font-medium">{displayName}</p>
+                  <p className="flex flex-wrap items-center gap-2 font-medium">
+                    {displayName}
+                    <UserBadgesRow badges={member.user?.badges} />
+                  </p>
                   <p className="text-sm text-muted-foreground">{member.role}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">

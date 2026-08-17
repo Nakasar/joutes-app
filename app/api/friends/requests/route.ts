@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getPendingFriendRequestsForUser } from "@/lib/db/friends";
 import { getUsersByIds, toPublicUser } from "@/lib/db/users";
+import { withUserBadges } from "@/lib/db/user-badges";
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +13,9 @@ export async function GET(request: NextRequest) {
     }
 
     const requests = await getPendingFriendRequestsForUser(session.user.id);
-    const requesters = (await getUsersByIds(requests.map((r) => r.requesterId))).map(toPublicUser);
+    const requesters = await withUserBadges(
+      (await getUsersByIds(requests.map((r) => r.requesterId))).map(toPublicUser)
+    );
     const requesterById = new Map(requesters.map((user) => [user.id, user]));
 
     return NextResponse.json({

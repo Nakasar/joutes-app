@@ -30,6 +30,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TRADE_MAX_QUANTITY } from "@/lib/constants/trade";
 import TradePanel, { TradePanelCard } from "../TradePanel";
 import TradeInviteDialog from "./TradeInviteDialog";
+import { UserBadges } from "@/components/UserBadges";
 import type { PublicUser } from "@/lib/db/users";
 import type { Trade, TradeCard, TradeCardSnapshot, TradeGame } from "@/lib/db/trades";
 import { sideTotal, tradeDifference } from "@/lib/trade/pricing";
@@ -504,8 +505,9 @@ export default function TradeEditor({
             {t("backToList")}
           </Link>
           <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             {partnerName ? t("withPartner", { name: partnerName }) : t("noPartner")}
+            <UserBadges badges={partner?.badges} />
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

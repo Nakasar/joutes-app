@@ -64,7 +64,10 @@ export default async function SubscriptionPage() {
             <CardTitle className="flex flex-wrap items-center gap-2">
               <Heart className="h-5 w-5 text-primary" />
               {plan ? t("activeTitle") : t("noneTitle")}
-              <PlanBadge plan={plan} />
+              {/* Inerte : ce badge décrit l'abonnement de la page elle-même, s'y
+                  renvoyer n'apprendrait rien. Le lien vers les offres est en
+                  bas de page. */}
+              <PlanBadge plan={plan} interactive={false} />
             </CardTitle>
             <CardDescription>
               {plan ? t("activeSubtitle") : t("noneSubtitle")}

@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import db from "@/lib/mongodb";
 import { createPlayGroupInvitation, getPlayGroupByIdAndUser } from "@/lib/db/play-groups";
 import { getUserByEmail, getUserByTagOrId, getUsersByIds } from "@/lib/db/users";
+import { getUserBadges, NO_BADGES } from "@/lib/db/user-badges";
 import { ObjectId } from "mongodb";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ playGroupId: string }> }) {
@@ -21,8 +22,30 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const memberIds = group.members.map((member) => member.userId);
-    const users = await getUsersByIds(memberIds);
-    const userById = new Map(users.map((user) => [user.id, user]));
+    const [users, badges] = await Promise.all([
+      getUsersByIds(memberIds),
+      // En lot : un groupe peut compter des dizaines de membres, et une lecture
+      // par membre ferait autant d'allers-retours pour deux badges.
+      getUserBadges(memberIds),
+    ]);
+    // Champs choisis un par un, et non le document entier : celui-ci porte les
+    // permissions, l'identifiant Discord et le drapeau d'administration, qu'un
+    // membre du groupe n'a aucune raison de recevoir. `email` reste, il sert de
+    // dernier repli d'affichage pour un compte invité sans pseudonyme.
+    const userById = new Map(
+      users.map((user) => [
+        user.id,
+        {
+          id: user.id,
+          username: user.username,
+          displayName: user.displayName,
+          discriminator: user.discriminator,
+          avatar: user.avatar,
+          email: user.email,
+          badges: badges[user.id] ?? NO_BADGES,
+        },
+      ])
+    );
     const currentMember = group.members.find((member) => member.userId === session.user.id);
 
     return NextResponse.json({

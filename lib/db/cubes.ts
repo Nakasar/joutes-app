@@ -4,6 +4,7 @@ import db from "@/lib/mongodb";
 import { ObjectId, WithId, Document } from "mongodb";
 import { Cube, CubeCard, CubeDrawConfig, CubePack, CubeVisibility } from "@/lib/types/Cube";
 import { getUserById } from "@/lib/db/users";
+import { getBadgesForUser, type UserBadges } from "@/lib/db/user-badges";
 
 export const CUBES_COLLECTION = "cubes";
 export const CUBE_PACKS_COLLECTION = "cube-packs";
@@ -215,7 +216,7 @@ export function getCubeAccess(cube: Cube, userId?: string): { canView: boolean; 
   };
 }
 
-export type CubeOwnerInfo = { label: string; href: string };
+export type CubeOwnerInfo = { label: string; href: string; badges: UserBadges };
 
 /** Nom affichable et lien de profil du propriétaire, pour les cubes consultés par un tiers. */
 export async function getCubeOwnerInfo(cube: Pick<Cube, "ownerId">): Promise<CubeOwnerInfo | null> {
@@ -228,7 +229,7 @@ export async function getCubeOwnerInfo(cube: Pick<Cube, "ownerId">): Promise<Cub
   const label = hasTag ? `${owner.displayName}#${owner.discriminator}` : owner.username;
   const tagForUrl = hasTag ? `${owner.displayName}${owner.discriminator}` : owner.username;
 
-  return { label, href: `/users/${tagForUrl}` };
+  return { label, href: `/users/${tagForUrl}`, badges: await getBadgesForUser(owner.id) };
 }
 
 export async function getCubePacks(cubeId: string): Promise<CubePack[]> {

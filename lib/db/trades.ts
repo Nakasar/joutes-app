@@ -6,6 +6,7 @@ import { DateTime } from "luxon";
 import { customAlphabet } from "nanoid";
 import { removeSellListItemsByCollectionEntryIds } from "@/lib/db/sell-lists";
 import { getUsersByIds, toPublicUser, type PublicUser } from "@/lib/db/users";
+import { withUserBadges } from "@/lib/db/user-badges";
 import {
   TRADE_CATALOG_MIN_QUERY,
   TRADE_MAX_CARDS_PER_SIDE,
@@ -496,7 +497,10 @@ async function hydrateTrades(docs: TradeDocument[]): Promise<Trade[]> {
     ...new Set(docs.flatMap((doc) => doc.sides.map((side) => side.userId?.toString()).filter((id): id is string => !!id))),
   ];
   const [users, marketPrices] = await Promise.all([getUsersByIds(userIds), marketPricesFor(docs)]);
-  const usersById = new Map(users.map((user) => [user.id, toPublicUser(user)]));
+  // Les badges passent par l'hydratation commune : les trois écrans d'échange
+  // — l'accueil, l'échange lui-même, la jointure — en héritent sans rien savoir.
+  const publicUsers = await withUserBadges(users.map(toPublicUser));
+  const usersById = new Map(publicUsers.map((user) => [user.id, user]));
   return docs.map((doc) => toTrade(doc, usersById, marketPrices));
 }
 

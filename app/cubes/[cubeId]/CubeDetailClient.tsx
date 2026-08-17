@@ -41,6 +41,8 @@ import type { Cube, CubeDrawConfig, CubePack, CubeVisibility } from "@/lib/types
 import { VISIBILITY_ICONS } from "../CubesClient";
 import ExportCardListDialog from "../ExportCardListDialog";
 import DrawSettingsDialog from "./DrawSettingsDialog";
+import { UserBadges } from "@/components/UserBadges";
+import type { UserBadges as UserBadgesData } from "@/lib/db/user-badges";
 
 type Props = {
   cube: Cube;
@@ -48,6 +50,7 @@ type Props = {
   canEdit: boolean;
   ownerLabel?: string;
   ownerHref?: string;
+  ownerBadges?: UserBadgesData;
   drawConfig: CubeDrawConfig;
   /** Vide pour les visiteurs : les options ne servent qu'à la configuration. */
   attributeOptions: CubeAttributeOption[];
@@ -59,6 +62,7 @@ export default function CubeDetailClient({
   canEdit,
   ownerLabel,
   ownerHref,
+  ownerBadges,
   drawConfig,
   attributeOptions,
 }: Props) {
@@ -192,9 +196,12 @@ export default function CubeDetailClient({
                 {t("packCount", { count: cube.packsCount })} · {t("cardCount", { count: cube.cardsCount })}
               </span>
               {ownerLabel && ownerHref ? (
-                <Link href={ownerHref} className="text-xs text-muted-foreground underline-offset-2 hover:underline">
-                  {t("byOwner", { owner: ownerLabel })}
-                </Link>
+                <span className="inline-flex flex-wrap items-center gap-1.5">
+                  <Link href={ownerHref} className="text-xs text-muted-foreground underline-offset-2 hover:underline">
+                    {t("byOwner", { owner: ownerLabel })}
+                  </Link>
+                  <UserBadges badges={ownerBadges} />
+                </span>
               ) : null}
             </div>
           </div>

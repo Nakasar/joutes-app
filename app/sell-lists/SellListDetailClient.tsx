@@ -37,6 +37,7 @@ import {
 import ReportButton from "@/components/ReportButton";
 import type { SellList, SellListItem } from "@/lib/types/SellList";
 import type { PaginatedSellListItems, SellListOwnerInfo } from "@/lib/db/sell-lists";
+import { UserBadges } from "@/components/UserBadges";
 
 const CURRENCIES = ["EUR", "USD", "GBP", "JPY", "CNY"] as const;
 type CurrencyCode = (typeof CURRENCIES)[number];
@@ -176,9 +177,12 @@ export default function SellListDetailClient({
             </Badge>
           </div>
           {ownerInfo && (
-            <Link href={ownerInfo.href} className="text-sm text-muted-foreground hover:text-foreground hover:underline w-fit">
-              {t(sellList.ownerType === "playGroup" ? "detail.ownerGroup" : "detail.ownerUser", { name: ownerInfo.label })}
-            </Link>
+            <span className="flex flex-wrap items-center gap-1.5">
+              <Link href={ownerInfo.href} className="text-sm text-muted-foreground hover:text-foreground hover:underline w-fit">
+                {t(sellList.ownerType === "playGroup" ? "detail.ownerGroup" : "detail.ownerUser", { name: ownerInfo.label })}
+              </Link>
+              <UserBadges badges={ownerInfo.badges} />
+            </span>
           )}
           {sellList.description && <p className="text-muted-foreground whitespace-pre-wrap">{sellList.description}</p>}
         </div>

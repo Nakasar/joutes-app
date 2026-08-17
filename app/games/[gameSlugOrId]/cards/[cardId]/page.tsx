@@ -39,6 +39,7 @@ import {CARD_ATTRIBUTE_KEYS, type CardPrinting} from "@/lib/types/card";
 import ErrataList, {type ErrataEntry} from "@/app/games/[gameSlugOrId]/cards/[cardId]/ErrataList";
 import CardPriceDetails from "@/components/cards/CardPriceDetails";
 import {getCardPrices} from "@/lib/db/card-prices";
+import { UserLabel } from "@/components/UserLabel";
 
 function hasNegativeVoteRatio(errata: Errata): boolean {
   return errata.votes.negative > errata.votes.positive;
@@ -257,6 +258,12 @@ export default async function RiftboundCardDetailPage({
               <span className="text-xs text-muted-foreground">
                 {DateTime.fromJSDate(new Date(errata.errataDate)).setLocale(locale).toLocaleString(DateTime.DATE_MED)}
               </span>
+              {errata.author && (
+                <span className="inline-flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                  {t("policies.proposedBy")}
+                  <UserLabel user={errata.author} />
+                </span>
+              )}
             </div>
             {(userCanManageErratas || errata.createdBy === userId) && (
               <div className="flex gap-1">

@@ -1,6 +1,7 @@
 import 'server-only';
 
 import db from "@/lib/mongodb";
+import { getAuthorSummaries } from "@/lib/db/user-badges";
 import {
   Errata,
   ErrataDb,
@@ -21,6 +22,17 @@ type ErrataAggregateResult = ErrataDb & {
   cards?: Errata['cards'];
   votesList?: { userId: ObjectId; vote: string }[];
 };
+
+/**
+ * Attache à chaque errata l'auteur qui l'a proposé.
+ *
+ * En lot : une page de carte en affiche plusieurs, souvent du même auteur, et
+ * une lecture par errata ferait autant d'allers-retours pour un même nom.
+ */
+async function withErrataAuthors(erratas: Errata[]): Promise<Errata[]> {
+  const authors = await getAuthorSummaries(erratas.map((errata) => errata.createdBy));
+  return erratas.map((errata) => ({ ...errata, author: authors[errata.createdBy] }));
+}
 
 function toErrata(errata: ErrataAggregateResult, userId?: string): Errata {
   return {
@@ -116,7 +128,7 @@ export async function getErratasByGameId({
     ])
     .toArray();
 
-  return erratasDb.map((errata) => toErrata(errata, userId));
+  return withErrataAuthors(erratasDb.map((errata) => toErrata(errata, userId)));
 }
 
 export async function getErratasByCardId(cardId: string, userId?: string): Promise<Errata[]> {
@@ -164,7 +176,7 @@ export async function getErratasByCardId(cardId: string, userId?: string): Promi
     ])
     .toArray();
 
-  return erratasDb.map((errata) => toErrata(errata, userId));
+  return withErrataAuthors(erratasDb.map((errata) => toErrata(errata, userId)));
 }
 
 async function buildErrataMatchFilter({
@@ -251,7 +263,7 @@ export async function getAllErratas({
     ])
     .toArray();
 
-  return erratasDb.map((errata) => toErrata(errata, userId));
+  return withErrataAuthors(erratasDb.map((errata) => toErrata(errata, userId)));
 }
 
 /**

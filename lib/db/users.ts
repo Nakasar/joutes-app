@@ -7,6 +7,7 @@ import {
   type AdminUserSummary,
   parseAdminUserSearch,
 } from "@/lib/users/admin-search";
+import type { UserBadges } from "@/lib/db/user-badges";
 
 const COLLECTION_NAME = "user";
 
@@ -193,7 +194,17 @@ export async function createUserFriendCodeIndex() {
   await db.collection(COLLECTION_NAME).createIndex({ friendCode: 1 }, { unique: true, sparse: true });
 }
 
-export type PublicUser = Pick<User, "id" | "username" | "displayName" | "discriminator" | "avatar">;
+export type PublicUser = Pick<User, "id" | "username" | "displayName" | "discriminator" | "avatar"> & {
+  /**
+   * Palier et statuts, à montrer à côté du pseudonyme.
+   *
+   * Facultatif, et jamais rempli par `toPublicUser` : ce serait une lecture de
+   * plus par utilisateur, donc un N+1 sur toute liste. L'appelant qui affiche
+   * des badges passe sa liste par `withUserBadges` (`lib/db/user-badges.ts`),
+   * qui les résout toutes en un coup.
+   */
+  badges?: UserBadges;
+};
 
 /**
  * Ne conserve que les champs publics d'un utilisateur, pour éviter d'exposer

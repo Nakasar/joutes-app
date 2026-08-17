@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
+import { UserBadges } from "@/components/UserBadges";
 
 type NewsListClientProps = {
   games: Game[];
@@ -312,7 +313,10 @@ function NewsCard({ news, canWrite, isLiking, onLike }: NewsCardProps) {
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <span>{date}</span>
           <span>·</span>
-          <span>{authorName}</span>
+          <span className="inline-flex flex-wrap items-center gap-1.5">
+            {authorName}
+            <UserBadges badges={news.author?.badges} />
+          </span>
           {/* Une actualité reprise d'ailleurs le dit dès la liste. */}
           {news.source && (
             <>

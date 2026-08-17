@@ -55,6 +55,7 @@ export default async function CubePage({ params }: { params: Promise<{ cubeId: s
         canEdit={access.canEdit}
         ownerLabel={owner?.label}
         ownerHref={owner?.href}
+        ownerBadges={owner?.badges}
         drawConfig={cube.draw ?? DEFAULT_CUBE_DRAW}
         attributeOptions={attributeOptions}
       />

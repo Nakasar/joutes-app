@@ -5,6 +5,7 @@ import { ObjectId, WithId, Document } from "mongodb";
 import { Wishlist, WishlistItem, WishlistOwnerType, WishlistVisibility } from "@/lib/types/Wishlist";
 import { getPlayGroupByIdAndUser, getPlayGroupById, getPlayGroupsForUser } from "@/lib/db/play-groups";
 import { getUserById } from "@/lib/db/users";
+import { getBadgesForUser, type UserBadges } from "@/lib/db/user-badges";
 
 const WISHLISTS_COLLECTION = "wishlists";
 const WISHLIST_ITEMS_COLLECTION = "wishlist-items";
@@ -205,7 +206,12 @@ export async function getWishlistAccess(
   };
 }
 
-export type WishlistOwnerInfo = { label: string; href: string };
+export type WishlistOwnerInfo = {
+  label: string;
+  href: string;
+  /** Badges du propriétaire — absents quand la liste appartient à un groupe. */
+  badges?: UserBadges;
+};
 
 /** Display name + profile/group link for a wishlist's owner, for "wishlist by X" labels. */
 export async function getWishlistOwnerInfo(
@@ -221,7 +227,7 @@ export async function getWishlistOwnerInfo(
     const label = hasTag ? `${owner.displayName}#${owner.discriminator}` : owner.username;
     const tagForUrl = hasTag ? `${owner.displayName}${owner.discriminator}` : owner.username;
 
-    return { label, href: `/users/${tagForUrl}` };
+    return { label, href: `/users/${tagForUrl}`, badges: await getBadgesForUser(owner.id) };
   }
 
   const group = await getPlayGroupById(wishlist.ownerId);
