@@ -281,7 +281,23 @@ un compte que better-auth tenait pour lié se voyait annoncer « non lié », et
 proposer de lier de nouveau, ce que better-auth refuse ; le bouton
 « resynchroniser », réservé aux comptes liés, restait invisible. Aucune sortie.
 `findPatreonAccountId` (`lib/patreon/sync.ts`) interroge la seule autorité sur le
-lien, et `syncedFromProvider` dit séparément si une synchronisation a abouti.
+lien.
+
+**Trois états, et non deux.** Lier un compte qui n'est mécène de rien réussit
+parfaitement et ne rapporte aucune adhésion — c'est le cas du porteur de la
+campagne, et de quiconque lie son compte avant de choisir un palier.
+
+| État | `linkedToProvider` | `hasProviderMembership` |
+| --- | --- | --- |
+| Aucun compte Patreon rattaché | faux | faux |
+| Rattaché, sans adhésion à la campagne | vrai | faux |
+| Rattaché, adhésion trouvée | vrai | vrai |
+
+`hasProviderMembership` se dérive de `providerMemberId`, et **surtout pas** de
+`providerUserId` : celui-ci est écrit dès qu'une lecture aboutit, adhésion ou
+non. L'en tirer rendrait le drapeau toujours vrai après une liaison, et
+l'explication « aucune adhésion rattachée » ne s'afficherait jamais à ceux à qui
+elle est destinée.
 
 **Lier ne synchronise pas tout seul.** better-auth écrit `account` et redirige ;
 il ne sait rien des paliers. C'est `SyncAfterLink`, sur la page de compte, qui

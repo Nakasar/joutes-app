@@ -48,15 +48,27 @@ export function SyncAfterLink() {
     done.current = true;
 
     void (async () => {
-      const result = await resyncMySubscriptionAction();
+      try {
+        const result = await resyncMySubscriptionAction();
 
-      // Un compte lié sans adhésion à la campagne est un cas normal — le
-      // propriétaire de la campagne, par exemple. On ne crie pas à l'erreur.
-      if (result.success) {
-        toast.success(t("resyncDone"));
+        if (result.success) {
+          toast.success(t("resyncDone"));
+        } else {
+          // Pas de message d'erreur : un compte lié sans adhésion à la campagne
+          // est un cas parfaitement normal — le porteur de la campagne, ou
+          // quelqu'un qui n'a pas encore choisi de palier —, et la page
+          // l'explique déjà en toutes lettres. Une alerte rouge ferait chercher
+          // une panne inexistante. La raison va en console pour le diagnostic.
+          console.info("Synchronisation Patreon sans effet:", result.error);
+        }
+      } catch (error) {
+        console.error("Échec de la synchronisation après liaison:", error);
+        toast.error(t("resyncFailed"));
+      } finally {
+        // Dans le `finally` : sans cela, une exception laisserait `?linked` dans
+        // l'URL, et chaque rechargement relancerait la synchronisation.
+        router.replace("/account/subscription");
       }
-
-      router.replace("/account/subscription");
     })();
   }, [justLinked, router, t]);
 

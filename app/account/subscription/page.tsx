@@ -105,11 +105,10 @@ export default async function SubscriptionPage() {
               <p className="text-sm text-muted-foreground">{t("linkHint")}</p>
             )}
 
-            {/* Lié, mais Patreon n'a encore rien dit de cette personne : le
-                propriétaire de la campagne, ou quelqu'un qui n'a pas encore
-                choisi de palier. Le dire évite de chercher une panne là où il
-                n'y en a pas. */}
-            {summary?.linkedToProvider && !summary.syncedFromProvider && (
+            {/* Lié, mais aucune adhésion rattachée : le porteur de la
+                campagne, ou quelqu'un qui n'a pas encore choisi de palier. Le
+                dire évite de chercher une panne là où il n'y en a pas. */}
+            {summary?.linkedToProvider && !summary.hasProviderMembership && (
               <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
                 {t("linkedNotSynced")}
               </p>

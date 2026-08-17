@@ -190,10 +190,13 @@ export async function getMySubscriptionSummary(): Promise<SubscriptionSummary | 
     // synchronisation a échoué se voyait annoncer « non lié » — sans aucun moyen
     // d'en sortir. Voir `findPatreonAccountId`.
     linkedToProvider: Boolean(patreonAccountId),
-    // Vrai quand une synchronisation a réellement abouti. Lié sans projection,
-    // c'est le cas à montrer : le compte est bien rattaché, Patreon n'a
-    // simplement encore rien dit de cette personne.
-    syncedFromProvider: Boolean(subscription?.providerUserId),
+    // `providerMemberId` et non `providerUserId` : ce dernier est écrit dès
+    // qu'une lecture aboutit, **y compris quand elle ne rapporte aucune
+    // adhésion** — `resolveMembership` rend alors `patreonUserId` seul et
+    // `memberId: null`. S'en servir aurait rendu ce drapeau toujours vrai après
+    // une liaison, et l'explication « aucune adhésion rattachée » ne serait
+    // jamais apparue à ceux à qui elle est destinée.
+    hasProviderMembership: Boolean(subscription?.providerMemberId),
     patronStatus: subscription?.patronStatus ?? null,
     syncedAt: subscription?.syncedAt ?? null,
   };

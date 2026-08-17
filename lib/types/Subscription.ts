@@ -121,11 +121,15 @@ export type SubscriptionSummary = {
    */
   linkedToProvider: boolean;
   /**
-   * Une synchronisation a abouti et écrit sa projection. Peut être faux alors
-   * que `linkedToProvider` est vrai : lien établi, mais Patreon n'a encore rien
-   * dit de cette personne — ou la première lecture a échoué.
+   * Patreon a rattaché une **adhésion à la campagne** à ce compte.
+   *
+   * Distinct de `linkedToProvider`, et pas seulement en théorie : lier un compte
+   * qui n'est mécène de rien réussit parfaitement et ne rapporte aucune
+   * adhésion. C'est le cas du porteur de la campagne, et de quiconque vient de
+   * lier avant de choisir un palier. Se dérive de `providerMemberId`, seul champ
+   * qui distingue « lecture aboutie » de « adhésion trouvée ».
    */
-  syncedFromProvider: boolean;
+  hasProviderMembership: boolean;
   patronStatus: PatreonPatronStatus | null;
   syncedAt: Date | null;
 };
