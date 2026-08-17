@@ -3164,6 +3164,8 @@
       "previous": "Précédents",
       "next": "Suivants",
       "filters": {
+        "title": "Filtres",
+        "unlockedBy": "Inclus dans votre abonnement",
         "card": "Carte",
         "cardPlaceholder": "Nom d'une carte…",
         "partner": "Partenaire",
@@ -3177,8 +3179,7 @@
       },
       "locked": {
         "title": "{count, plural, one {# échange plus ancien est masqué} other {# échanges plus anciens sont masqués}}",
-        "description": "L'historique complet et les filtres de recherche arrivent avec Joutes Expert ou Joutes Pro.",
-        "cta": "Voir les offres"
+        "unlock": "Débloquer l'historique avec {plan}"
       }
     },
     "offer": {
@@ -3769,6 +3770,7 @@
           "Un contour améthyste autour de votre avatar",
           "Un rôle « Expert » sur le serveur Discord",
           "L'accès à une section dédiée sur le serveur Discord",
+          "L'historique complet de vos échanges, avec filtres et recherche",
           "Des fonctionnalités avancées pour vos groupes de jeu"
         ]
       },
@@ -3779,6 +3781,7 @@
           "Un contour bleu nuit autour de votre avatar",
           "Un rôle « Pro » sur le serveur Discord",
           "L'accès à une section dédiée sur le serveur Discord",
+          "L'historique complet de vos échanges, avec filtres et recherche",
           "Un système de réservation pour vos évènements",
           "La mise en avant de vos évènements",
           "La personnalisation de votre page de lieu de jeu",

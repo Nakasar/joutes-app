@@ -1,7 +1,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { SubscriptionPlanKey } from "@/lib/constants/subscription-plans";
-import { displayPlan, grantsEntitlement, isActive, resolveEntitlements, seatsFor } from "./entitlements";
+import {
+  displayPlan,
+  grantsEntitlement,
+  isActive,
+  planGrantingPermission,
+  resolveEntitlements,
+  seatsFor,
+} from "./entitlements";
 
 /**
  * Le calcul des droits à partir des plans portés par un compte.
@@ -109,5 +116,26 @@ describe("isActive", () => {
 
   it("est faux si le seul plan porté est inconnu", () => {
     assert.equal(isActive(["gold" as SubscriptionPlanKey]), false);
+  });
+});
+
+describe("palier auquel attribuer une permission", () => {
+  it("nomme le palier porté qui l'ouvre", () => {
+    assert.equal(planGrantingPermission(["expert"], "trades:full_history"), "expert");
+    assert.equal(planGrantingPermission(["pro"], "trades:full_history"), "pro");
+  });
+
+  it("retient le plus haut quand plusieurs l'ouvrent", () => {
+    // Un abonné qui cumule doit lire « Joutes Pro », pas « Joutes Expert » :
+    // c'est l'ordre de la table qui départage, comme pour les badges.
+    assert.equal(planGrantingPermission(["expert", "pro"], "trades:full_history"), "pro");
+    assert.equal(planGrantingPermission(["pro", "expert"], "trades:full_history"), "pro");
+  });
+
+  it("ne nomme rien quand aucun palier porté ne l'ouvre", () => {
+    // Le cas de l'administrateur, et de la permission accordée à la main : lui
+    // attribuer un abonnement qu'il n'a pas serait faux.
+    assert.equal(planGrantingPermission(["supporter"], "trades:full_history"), null);
+    assert.equal(planGrantingPermission([], "trades:full_history"), null);
   });
 });

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { PublicUser } from "@/lib/db/users";
 import type { Trade } from "@/lib/db/trades";
+import type { SubscriptionPlanKey } from "@/lib/constants/subscription-plans";
 import TradeHistory from "./TradeHistory";
 import { TradeRow } from "./TradeRow";
 
@@ -23,6 +24,7 @@ export default function TradeHubClient({
   hiddenCount,
   partners,
   canFilter,
+  unlockedByPlan,
   currentUserId,
 }: {
   initialOpen: Trade[];
@@ -34,6 +36,8 @@ export default function TradeHubClient({
   partners: PublicUser[];
   /** Reflet de `trades:full_history` : la règle, elle, est appliquée au serveur. */
   canFilter: boolean;
+  /** Le palier à créditer des filtres, ou `null` si aucun abonnement ne les ouvre. */
+  unlockedByPlan: SubscriptionPlanKey | null;
   currentUserId: string;
 }) {
   const t = useTranslations("Trade");
@@ -157,6 +161,7 @@ export default function TradeHubClient({
         hiddenCount={hiddenCount}
         partners={partners}
         canFilter={canFilter}
+        unlockedByPlan={unlockedByPlan}
         currentUserId={currentUserId}
       />
     </div>

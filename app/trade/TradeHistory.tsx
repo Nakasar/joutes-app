@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, Loader2, Lock, Search, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Lock, Search, SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -23,7 +23,16 @@ import {
   hasActiveHistoryFilters,
   type TradeHistorySort,
 } from "@/lib/trade/history";
+import { PlanBadge } from "@/components/PlanBadge";
+import { SUBSCRIPTION_PLANS, type SubscriptionPlanKey } from "@/lib/constants/subscription-plans";
 import { TradeRow, userLabel } from "./TradeRow";
+
+/**
+ * Le palier mis en avant auprès de qui n'est pas abonné : le moins cher qui
+ * ouvre l'historique. Lu dans la table plutôt qu'écrit dans la traduction, pour
+ * qu'un renommage de l'offre suive tout seul.
+ */
+const UNLOCKING_PLAN_LABEL = SUBSCRIPTION_PLANS.expert.label;
 
 /** Valeur du menu déroulant pour « tous les partenaires » : `""` est refusé par Select. */
 const ALL_PARTNERS = "__all__";
@@ -61,6 +70,7 @@ export default function TradeHistory({
   hiddenCount,
   partners,
   canFilter,
+  unlockedByPlan,
   currentUserId,
 }: {
   initialItems: Trade[];
@@ -68,6 +78,8 @@ export default function TradeHistory({
   hiddenCount: number;
   partners: PublicUser[];
   canFilter: boolean;
+  /** Le palier à créditer des filtres, ou `null` si aucun abonnement ne les ouvre. */
+  unlockedByPlan: SubscriptionPlanKey | null;
   currentUserId: string;
 }) {
   const t = useTranslations("Trade");
@@ -162,6 +174,21 @@ export default function TradeHistory({
 
       {canFilter && (
         <div className="grid gap-3 rounded-xl border bg-card p-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Dire d'où viennent ces filtres : sans cela, personne ne fait le
+              lien entre son abonnement et ce qu'il lui apporte ici. Rien à
+              afficher quand aucun palier ne les ouvre — un administrateur, ou
+              une permission accordée à la main. */}
+          {unlockedByPlan && (
+            <div className="flex flex-wrap items-center gap-2 sm:col-span-2 lg:col-span-4">
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium">
+                <SlidersHorizontal className="size-4 text-muted-foreground" />
+                {t("history.filters.title")}
+              </span>
+              <PlanBadge plan={unlockedByPlan} />
+              <span className="text-xs text-muted-foreground">{t("history.filters.unlockedBy")}</span>
+            </div>
+          )}
+
           <div className="space-y-1.5">
             <label htmlFor="trade-history-card" className="text-xs font-medium text-muted-foreground">
               {t("history.filters.card")}
@@ -267,6 +294,30 @@ export default function TradeHistory({
         </div>
       )}
 
+      {/* Le pendant du cadre de filtres pour qui n'y a pas droit : la
+          fonctionnalité se montre, éteinte, plutôt que de ne pas exister. Le
+          bouton reste cliquable et mène aux offres — l'affichage dit qu'il est
+          verrouillé, il ne doit pas pour autant être un cul-de-sac. */}
+      {!canFilter && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-dashed bg-muted/30 p-4">
+          <Button
+            asChild
+            variant="outline"
+            className="gap-2 text-muted-foreground"
+          >
+            <Link href="/pricing">
+              <Lock className="size-4" />
+              {t("history.locked.unlock", { plan: UNLOCKING_PLAN_LABEL })}
+            </Link>
+          </Button>
+          {hiddenCount > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {t("history.locked.title", { count: hiddenCount })}
+            </p>
+          )}
+        </div>
+      )}
+
       {loading ? (
         <p className="flex items-center justify-center gap-2 rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" />
@@ -316,23 +367,6 @@ export default function TradeHistory({
         </div>
       )}
 
-      {/* L'invitation à s'abonner, et seulement quand il y a réellement quelque
-          chose derrière : proposer l'offre à qui n'a aucun échange plus ancien
-          serait une réclame, pas un service. */}
-      {!canFilter && hiddenCount > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-muted/40 p-4">
-          <div className="flex items-start gap-3">
-            <Lock className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-            <div>
-              <p className="text-sm font-medium">{t("history.locked.title", { count: hiddenCount })}</p>
-              <p className="text-sm text-muted-foreground">{t("history.locked.description")}</p>
-            </div>
-          </div>
-          <Button asChild size="sm" variant="outline">
-            <Link href="/pricing">{t("history.locked.cta")}</Link>
-          </Button>
-        </div>
-      )}
     </section>
   );
 }

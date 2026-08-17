@@ -3080,6 +3080,8 @@
       "previous": "Zurück",
       "next": "Weiter",
       "filters": {
+        "title": "Filter",
+        "unlockedBy": "In deinem Abo enthalten",
         "card": "Karte",
         "cardPlaceholder": "Kartenname…",
         "partner": "Tauschpartner",
@@ -3093,8 +3095,7 @@
       },
       "locked": {
         "title": "{count, plural, one {# älterer Tausch ist ausgeblendet} other {# ältere Tauschvorgänge sind ausgeblendet}}",
-        "description": "Die vollständige Historie und ihre Suchfilter gehören zu Joutes Expert und Joutes Pro.",
-        "cta": "Angebote ansehen"
+        "unlock": "Vollständige Historie mit {plan} freischalten"
       }
     },
     "offer": {
@@ -3685,6 +3686,7 @@
           "Ein amethystfarbener Rand um deinen Avatar",
           "Eine „Expert“-Rolle auf dem Discord-Server",
           "Zugang zu einem eigenen Bereich auf dem Discord-Server",
+          "Deine vollständige Tauschhistorie, mit Filtern und Suche",
           "Erweiterte Funktionen für deine Spielgruppen"
         ]
       },
@@ -3695,6 +3697,7 @@
           "Ein mitternachtsblauer Rand um deinen Avatar",
           "Eine „Pro“-Rolle auf dem Discord-Server",
           "Zugang zu einem eigenen Bereich auf dem Discord-Server",
+          "Deine vollständige Tauschhistorie, mit Filtern und Suche",
           "Ein Anmeldesystem für deine Veranstaltungen",
           "Deine Veranstaltungen nach vorn geholt",
           "Anpassung deiner Spielort-Seite",
