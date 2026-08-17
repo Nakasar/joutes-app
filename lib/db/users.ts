@@ -200,8 +200,9 @@ export type PublicUser = Pick<User, "id" | "username" | "displayName" | "discrim
    *
    * Facultatif, et jamais rempli par `toPublicUser` : ce serait une lecture de
    * plus par utilisateur, donc un N+1 sur toute liste. L'appelant qui affiche
-   * des badges passe sa liste par `withUserBadges` (`lib/db/user-badges.ts`),
-   * qui les résout toutes en un coup.
+   * des badges les résout en lot par `getUserBadges` (`lib/db/user-badges.ts`),
+   * en parallèle de la lecture des profils : les deux ne dépendent que des
+   * mêmes identifiants.
    */
   badges?: UserBadges;
 };

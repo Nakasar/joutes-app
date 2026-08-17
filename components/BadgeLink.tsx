@@ -14,7 +14,9 @@ import type { ReactNode } from "react";
  *
  * On navigue donc à la main, en arrêtant la propagation pour que le clic ne
  * suive pas aussi le lien de la carte. `role="link"` et la touche Entrée
- * rendent au clavier ce que le `<span>` retire.
+ * rendent au clavier ce que le `<span>` retire — Entrée seule, comme un vrai
+ * lien : sur un lien, la barre d'espace fait défiler la page, et l'intercepter
+ * retirerait au clavier un geste que rien ne remplace.
  */
 export function BadgeLink({
   children,
@@ -42,7 +44,7 @@ export function BadgeLink({
         go();
       }}
       onKeyDown={(event) => {
-        if (event.key !== "Enter" && event.key !== " ") {
+        if (event.key !== "Enter") {
           return;
         }
         event.preventDefault();

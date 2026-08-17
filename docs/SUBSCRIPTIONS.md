@@ -254,9 +254,13 @@ chacun de ces écrans.
 
 | Besoin | Fonction |
 | --- | --- |
-| Une liste de `PublicUser` | `withUserBadges(users)` |
+| Une liste de comptes déjà lue | `getUserBadges(ids)` |
 | Des identifiants seuls (auteur d'un contenu) | `getAuthorSummaries(ids)` |
 | Un compte isolé | `getBadgesForUser(id)` — mémoïsé par requête |
+
+**Lancer la lecture des badges en parallèle de celle des profils**, et non après :
+les badges ne dépendent que des identifiants, connus avant les deux. Les
+enchaîner allonge le chemin critique d'un aller-retour pour rien.
 
 À l'affichage : `<UserBadges badges={…} />`, ou `<UserLabel user={…} />` quand il
 faut aussi écrire le pseudonyme. **La rangée qui les accueille doit porter

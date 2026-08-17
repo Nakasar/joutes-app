@@ -132,19 +132,6 @@ async function statusesByUser(userIds: string[]): Promise<Record<string, StatusV
 }
 
 /**
- * Attache leurs badges à une liste de profils publics.
- *
- * C'est la porte à utiliser : elle prend la liste qu'un écran s'apprête à
- * rendre et la rend enrichie, en un nombre de requêtes qui ne dépend pas de sa
- * longueur. Les profils sont recopiés plutôt que modifiés — un appelant peut
- * tenir la même référence ailleurs.
- */
-export async function withUserBadges<T extends { id: string }>(users: T[]): Promise<(T & { badges: UserBadges })[]> {
-  const badges = await getUserBadges(users.map((user) => user.id));
-  return users.map((user) => ({ ...user, badges: badges[user.id] ?? NO_BADGES }));
-}
-
-/**
  * L'auteur d'un contenu : de quoi l'écrire, et ses badges.
  *
  * Les erratas, les politiques, les cubes et les listes ne rangent qu'un
@@ -182,10 +169,4 @@ export async function getAuthorSummaries(
       },
     ])
   );
-}
-
-/** Idem, pour un profil seul ou absent. */
-export async function withBadges<T extends { id: string }>(user: T | null): Promise<(T & { badges: UserBadges }) | null> {
-  if (!user) return null;
-  return { ...user, badges: await getBadgesForUser(user.id) };
 }
