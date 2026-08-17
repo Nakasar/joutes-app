@@ -6,6 +6,7 @@ import { DateTime } from "luxon";
 import { customAlphabet } from "nanoid";
 import { removeSellListItemsByCollectionEntryIds } from "@/lib/db/sell-lists";
 import { getUsersByIds, toPublicUser, type PublicUser } from "@/lib/db/users";
+import { getUserBadges, NO_BADGES } from "@/lib/db/user-badges";
 import {
   TRADE_CATALOG_MIN_QUERY,
   TRADE_MAX_CARDS_PER_SIDE,
@@ -495,8 +496,23 @@ async function hydrateTrades(docs: TradeDocument[]): Promise<Trade[]> {
   const userIds = [
     ...new Set(docs.flatMap((doc) => doc.sides.map((side) => side.userId?.toString()).filter((id): id is string => !!id))),
   ];
-  const [users, marketPrices] = await Promise.all([getUsersByIds(userIds), marketPricesFor(docs)]);
-  const usersById = new Map(users.map((user) => [user.id, toPublicUser(user)]));
+  // Les badges passent par l'hydratation commune : les trois écrans d'échange
+  // — l'accueil, l'échange lui-même, la jointure — en héritent sans rien savoir.
+  //
+  // Les trois lectures sont lancées ensemble, et non les badges après les
+  // profils : ils ne dépendent que des identifiants, déjà connus ici. Les
+  // enchaîner allongerait le chemin critique d'un aller-retour pour rien.
+  const [users, marketPrices, badges] = await Promise.all([
+    getUsersByIds(userIds),
+    marketPricesFor(docs),
+    getUserBadges(userIds),
+  ]);
+  const usersById = new Map(
+    users.map((user) => {
+      const publicUser = toPublicUser(user);
+      return [publicUser.id, { ...publicUser, badges: badges[publicUser.id] ?? NO_BADGES }];
+    })
+  );
   return docs.map((doc) => toTrade(doc, usersById, marketPrices));
 }
 

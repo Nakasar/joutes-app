@@ -4,6 +4,7 @@ import db from "@/lib/mongodb";
 import { Policy, PolicyDb, PolicyVoteDb, PolicyVoteType } from "@/lib/types/policies";
 import { Locale } from "@/i18n/config";
 import { tallyVotes } from "@/lib/db/votes";
+import { getAuthorSummaries } from "@/lib/db/user-badges";
 import { ObjectId } from "bson";
 
 // Shape of an aggregation pipeline result that joins in votes and the game,
@@ -104,7 +105,7 @@ export async function getAllPolicies({
     .aggregate<PolicyAggregateResult>(pipeline)
     .toArray();
 
-  return policiesDb.map((p) => ({
+  return withPolicyAuthors(policiesDb.map((p) => ({
     id: p._id.toString(),
     title: p.title,
     content: p.content,
@@ -128,7 +129,18 @@ export async function getAllPolicies({
         )?.vote
         : undefined,
     },
-  }));
+  })));
+}
+
+/**
+ * Attache à chaque politique l'auteur qui l'a proposée.
+ *
+ * En lot : la liste en affiche plusieurs, souvent du même modérateur, et une
+ * lecture par politique ferait autant d'allers-retours pour un même nom.
+ */
+async function withPolicyAuthors(policies: Policy[]): Promise<Policy[]> {
+  const authors = await getAuthorSummaries(policies.map((policy) => policy.createdBy));
+  return policies.map((policy) => ({ ...policy, author: authors[policy.createdBy] }));
 }
 
 export async function getPolicyById(id: string, userId?: string, gameId?: string): Promise<Policy | null> {
@@ -172,7 +184,7 @@ export async function getPolicyById(id: string, userId?: string, gameId?: string
   const [p] = await db.collection<PolicyDb>("policies").aggregate<PolicyAggregateResult>(pipeline).toArray();
   if (!p) return null;
 
-  return {
+  const policy: Policy = {
     id: p._id.toString(),
     title: p.title,
     content: p.content,
@@ -197,7 +209,10 @@ export async function getPolicyById(id: string, userId?: string, gameId?: string
         : undefined,
     },
   };
+
+  return (await withPolicyAuthors([policy]))[0];
 }
+
 /**
  * Insère une politique pour un jeu. Renvoie son identifiant ; l'appelant se
  * charge de revalider les pages concernées.

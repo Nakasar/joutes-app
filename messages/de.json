@@ -675,6 +675,7 @@
       "pageLabel": "Seite {currentPage} / {totalPages}",
       "empty": "Keine Richtlinie entspricht den Suchkriterien.",
       "deprecated": "Veraltet",
+      "proposedBy": "Vorgeschlagen von",
       "addedOn": "Hinzugefügt am {date}",
       "source": "Quelle",
       "deprecatedOn": "Veraltet seit dem {date}",

@@ -241,6 +241,42 @@ offres, et un test vérifie qu'aucune ne coïncide — un « Fondateur » qui po
 les classes de Supporter se lirait comme un abonné.
 
 
+## Montrer un badge à côté d'un pseudonyme
+
+Palier et statuts s'affichent partout où un nom de compte apparaît : liste
+d'amis, écrans d'échange, auteur d'une actualité, d'un errata ou d'une politique,
+créateur d'un cube, propriétaire d'une liste de vente ou de souhaits, membres
+d'un groupe de jeu.
+
+**Toujours en lot.** `lib/db/user-badges.ts` résout une liste entière en trois
+lectures, quelle que soit sa longueur ; les chercher un par un ferait un N+1 sur
+chacun de ces écrans.
+
+| Besoin | Fonction |
+| --- | --- |
+| Une liste de comptes déjà lue | `getUserBadges(ids)` |
+| Des identifiants seuls (auteur d'un contenu) | `getAuthorSummaries(ids)` |
+| Un compte isolé | `getBadgesForUser(id)` — mémoïsé par requête |
+
+**Lancer la lecture des badges en parallèle de celle des profils**, et non après :
+les badges ne dépendent que des identifiants, connus avant les deux. Les
+enchaîner allonge le chemin critique d'un aller-retour pour rien.
+
+À l'affichage : `<UserBadges badges={…} />`, ou `<UserLabel user={…} />` quand il
+faut aussi écrire le pseudonyme. **La rangée qui les accueille doit porter
+`flex-wrap`** — `Badge` est `shrink-0`, et `scripts/check-flex-rows.mjs` le
+vérifie.
+
+Les badges mènent à `/pricing`, sans quoi personne ne saurait ce que le mot
+désigne. Ils naviguent par `BadgeLink`, qui **n'est pas un `<a>`** : la plupart
+vivent dans une carte déjà enveloppée d'un lien, et une ancre dans une ancre est
+du HTML invalide — le navigateur referme la première, et la moitié de la carte
+cesse de mener où elle promettait.
+
+Le forçage `PATREON_DEV_FORCE_PLAN` ne s'applique **pas** aux badges d'une liste :
+il vaut pour « mes » droits, et l'appliquer en lot badgerait tout le monde du
+même palier.
+
 ## Pièges à connaître
 
 **Ne jamais éteindre un abonnement sur un échec de lecture.** C'est la règle qui

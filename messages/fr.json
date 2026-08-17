@@ -675,6 +675,7 @@
       "pageLabel": "page {currentPage} / {totalPages}",
       "empty": "Aucune politique ne correspond aux critères de recherche.",
       "deprecated": "Obsolète",
+      "proposedBy": "Proposé par",
       "addedOn": "Ajouté le {date}",
       "source": "Source",
       "deprecatedOn": "Obsolète depuis le {date}",

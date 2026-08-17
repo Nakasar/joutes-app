@@ -61,6 +61,7 @@ import type { PaginatedWishlistItems, WishlistOwnerInfo } from "@/lib/db/wishlis
 import type { Game } from "@/lib/types/Game";
 import type { BoosterCard } from "@/lib/types/booster";
 import { useRouter } from "next/navigation";
+import { UserBadges } from "@/components/UserBadges";
 
 const VISIBILITY_ICONS: Record<WishlistVisibility, React.ReactNode> = {
   private: <Lock className="size-3.5" />,
@@ -219,9 +220,12 @@ export default function WishlistDetailClient({
             </Badge>
           </div>
           {ownerInfo && (
-            <Link href={ownerInfo.href} className="text-sm text-muted-foreground hover:text-foreground hover:underline w-fit">
-              {t(wishlist.ownerType === "playGroup" ? "detail.ownerGroup" : "detail.ownerUser", { name: ownerInfo.label })}
-            </Link>
+            <span className="flex flex-wrap items-center gap-1.5">
+              <Link href={ownerInfo.href} className="text-sm text-muted-foreground hover:text-foreground hover:underline w-fit">
+                {t(wishlist.ownerType === "playGroup" ? "detail.ownerGroup" : "detail.ownerUser", { name: ownerInfo.label })}
+              </Link>
+              <UserBadges badges={ownerInfo.badges} />
+            </span>
           )}
           {wishlist.description && <p className="text-muted-foreground">{wishlist.description}</p>}
         </div>

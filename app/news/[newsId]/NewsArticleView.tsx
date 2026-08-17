@@ -27,6 +27,7 @@ import {
   resolveNewsLang,
 } from "@/lib/news/localize";
 import { locales, type Locale } from "@/i18n/config";
+import { UserBadges } from "@/components/UserBadges";
 
 /**
  * La page d'une actualité, dans une langue.
@@ -188,7 +189,10 @@ export default async function NewsArticleView({ newsId, requestedLang }: Props) 
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <span>{date}</span>
             <span>·</span>
-            <span>Par {authorName}</span>
+            <span className="inline-flex flex-wrap items-center gap-1.5">
+              Par {authorName}
+              <UserBadges badges={news.author?.badges} />
+            </span>
           </div>
 
           <NewsLanguageLinks

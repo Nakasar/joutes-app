@@ -5,6 +5,7 @@ import { ObjectId, WithId, Document, MongoServerError } from "mongodb";
 import { SellList, SellListItem, SellListOwnerType } from "@/lib/types/SellList";
 import { getPlayGroupByIdAndUser, getPlayGroupById } from "@/lib/db/play-groups";
 import { getUserById } from "@/lib/db/users";
+import { getBadgesForUser, type UserBadges } from "@/lib/db/user-badges";
 
 const SELL_LISTS_COLLECTION = "sellLists";
 const SELL_LIST_ITEMS_COLLECTION = "sellListItems";
@@ -169,7 +170,12 @@ export async function getSellListAccess(
   return { canView: true, canEdit };
 }
 
-export type SellListOwnerInfo = { label: string; href: string };
+export type SellListOwnerInfo = {
+  label: string;
+  href: string;
+  /** Badges du propriétaire — absents quand la liste appartient à un groupe. */
+  badges?: UserBadges;
+};
 
 /** Display name + profile/group link for a sell list's owner, for "sell list by X" labels. */
 export async function getSellListOwnerInfo(
@@ -185,7 +191,7 @@ export async function getSellListOwnerInfo(
     const label = hasTag ? `${owner.displayName}#${owner.discriminator}` : owner.username;
     const tagForUrl = hasTag ? `${owner.displayName}${owner.discriminator}` : owner.username;
 
-    return { label, href: `/users/${tagForUrl}` };
+    return { label, href: `/users/${tagForUrl}`, badges: await getBadgesForUser(owner.id) };
   }
 
   const group = await getPlayGroupById(sellList.ownerId);

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { DateTime } from "luxon";
 import { BadgeCheck, Ban, CheckCircle2, Users } from "lucide-react";
+import { UserBadges } from "@/components/UserBadges";
 import type { PublicUser } from "@/lib/db/users";
 import type { Trade } from "@/lib/db/trades";
 
@@ -40,9 +41,10 @@ export function TradeRow({ trade, currentUserId }: { trade: Trade; currentUserId
       className="flex h-full flex-col gap-2 rounded-xl border bg-card p-4 transition-shadow hover:shadow-md"
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <p className="flex items-center gap-1.5 text-sm font-medium">
+        <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium">
           <Users className="size-4 text-muted-foreground" />
           {partner ? userLabel(partner) : t("noPartner")}
+          <UserBadges badges={partner?.badges} />
         </p>
         <TradeStatusBadge trade={trade} mineValidated={!!mySide.validatedAt} />
       </div>

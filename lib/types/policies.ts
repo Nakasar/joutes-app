@@ -1,3 +1,4 @@
+import type { AuthorSummary } from "@/lib/db/user-badges";
 import {ObjectId} from "bson";
 import {Game} from "@/lib/types/Game";
 import {Locale} from "@/i18n/config";
@@ -28,6 +29,8 @@ export type Policy = {
   source?: string;
 
   createdBy: string;
+  /** Auteur résolu (nom + badges), attaché en lot par `lib/db/policies.ts`. */
+  author?: AuthorSummary;
   createdAt: Date;
   deprecatedAt?: Date;
 

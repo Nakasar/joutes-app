@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { UserBadges as UserBadgesRow } from "@/components/UserBadges";
+import type { UserBadges } from "@/lib/db/user-badges";
 import FriendCodeQR from "@/components/friends/FriendCodeQR";
 import FriendCodeScanner from "@/components/friends/FriendCodeScanner";
 
@@ -13,6 +15,7 @@ type FriendUser = {
   displayName?: string;
   discriminator?: string;
   avatar?: string;
+  badges?: UserBadges;
 };
 
 type FriendRequest = {
@@ -167,7 +170,10 @@ export default function FriendsPageClient() {
           <div className="mt-4 space-y-3">
             {requests.map((request) => (
               <div className="flex flex-wrap items-center justify-between rounded-lg border p-4 gap-2" key={request.id}>
-                <p className="font-medium">{displayNameFor(request.requester)}</p>
+                <p className="flex flex-wrap items-center gap-2 font-medium">
+                  {displayNameFor(request.requester)}
+                  <UserBadgesRow badges={request.requester?.badges} />
+                </p>
                 <div className="flex gap-2">
                   <Button size="sm" onClick={() => void handleAcceptRequest(request.id)}>
                     {t("page.accept")}
@@ -193,9 +199,12 @@ export default function FriendsPageClient() {
                 {friend.avatar ? (
                   <img src={friend.avatar} alt={displayNameFor(friend)} className="h-10 w-10 rounded-full object-cover" />
                 ) : null}
-                <Link href={`/users/${friend.id}`} className="font-semibold truncate hover:underline">
-                  {displayNameFor(friend)}
-                </Link>
+                <span className="flex flex-wrap items-center gap-2 min-w-0">
+                  <Link href={`/users/${friend.id}`} className="font-semibold truncate hover:underline">
+                    {displayNameFor(friend)}
+                  </Link>
+                  <UserBadgesRow badges={friend.badges} />
+                </span>
               </div>
               <Button size="sm" variant="destructive" onClick={() => void handleRemoveFriend(friend.id)}>
                 {t("page.remove")}

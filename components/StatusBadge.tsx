@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { AchievementIcon } from "@/components/AchievementIcon";
+import { BadgeLink } from "@/components/BadgeLink";
 import { statusBadgeClass } from "@/lib/achievements/status-tone";
 import type { StatusView } from "@/lib/achievements/status";
 import { cn } from "@/lib/utils";
@@ -11,8 +12,16 @@ import { cn } from "@/lib/utils";
  * cherche pas. Les deux se côtoient dans le même titre, et ne disent pas la
  * même chose — l'un est acheté, l'autre accordé.
  */
-export function StatusBadge({ status, className }: { status: StatusView; className?: string }) {
-  return (
+export function StatusBadge({
+  status,
+  className,
+  interactive = true,
+}: {
+  status: StatusView;
+  className?: string;
+  interactive?: boolean;
+}) {
+  const badge = (
     <Badge variant="outline" className={cn(statusBadgeClass(status.tone), className)}>
       {(status.icon || status.iconImage) && (
         <AchievementIcon
@@ -26,4 +35,6 @@ export function StatusBadge({ status, className }: { status: StatusView; classNa
       {status.name}
     </Badge>
   );
+
+  return interactive ? <BadgeLink label={status.name}>{badge}</BadgeLink> : badge;
 }

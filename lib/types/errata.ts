@@ -1,3 +1,4 @@
+import type { AuthorSummary } from "@/lib/db/user-badges";
 import { ObjectId } from "bson";
 import {BoosterCard} from "@/lib/types/booster";
 import {Locale} from "@/i18n/config";
@@ -31,6 +32,8 @@ export type Errata = {
   source?: string;
   errataDate: Date;
   createdBy: string;
+  /** Auteur résolu (nom + badges), attaché en lot par `lib/db/erratas.ts`. */
+  author?: AuthorSummary;
   createdAt: Date;
   deprecatedAt?: Date;
   votes: {

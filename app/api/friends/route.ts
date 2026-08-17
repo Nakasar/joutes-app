@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getUserById, getUserByUsername, getUsersByIds, toPublicUser } from "@/lib/db/users";
 import { areUsersFriends, createFriendRequest, DuplicateFriendRequestError, getPendingRequestBetween } from "@/lib/db/friends";
+import { getUserBadges, NO_BADGES } from "@/lib/db/user-badges";
 import { notifyUser } from "@/lib/services/notifications";
 
 export async function GET(request: NextRequest) {
@@ -13,7 +14,19 @@ export async function GET(request: NextRequest) {
     }
 
     const currentUser = await getUserById(session.user.id);
-    const friends = (await getUsersByIds(currentUser?.friends || [])).map(toPublicUser);
+    const friendIds = currentUser?.friends || [];
+
+    // Les deux lectures ensemble : les badges ne dépendent que des
+    // identifiants, déjà connus. Et en lot — un appel par ami ferait un N+1.
+    const [users, badges] = await Promise.all([
+      getUsersByIds(friendIds),
+      getUserBadges(friendIds),
+    ]);
+
+    const friends = users.map((user) => ({
+      ...toPublicUser(user),
+      badges: badges[user.id] ?? NO_BADGES,
+    }));
 
     return NextResponse.json({ friends });
   } catch (error) {

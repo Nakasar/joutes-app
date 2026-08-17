@@ -1,3 +1,4 @@
+import type { UserBadges } from "@/lib/db/user-badges";
 import { Locale } from "@/i18n/config";
 
 /**
@@ -54,7 +55,13 @@ export type News = {
   games?: Array<{ id: string; name: string; icon?: string; slug?: string }>;
   tags: string[];
   authorId: string;
-  author?: { id: string; displayName?: string; discriminator?: string };
+  author?: {
+    id: string;
+    displayName?: string;
+    discriminator?: string;
+    /** Palier et statuts, résolus en lot par `lib/db/news.ts`. */
+    badges?: UserBadges;
+  };
   likedBy: string[];
   likesCount: number;
   userHasLiked?: boolean;
