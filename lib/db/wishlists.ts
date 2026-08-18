@@ -6,6 +6,8 @@ import { Wishlist, WishlistItem, WishlistOwnerType, WishlistVisibility } from "@
 import { getPlayGroupByIdAndUser, getPlayGroupById, getPlayGroupsForUser } from "@/lib/db/play-groups";
 import { getUserById } from "@/lib/db/users";
 import { getBadgesForUser, type UserBadges } from "@/lib/db/user-badges";
+import { ownerHasAdvancedCollection } from "@/lib/db/collection-access";
+import { FREE_WISHLIST_LIMIT, canCreateWishlist } from "@/lib/wishlists/limits";
 
 const WISHLISTS_COLLECTION = "wishlists";
 const WISHLIST_ITEMS_COLLECTION = "wishlist-items";
@@ -108,6 +110,35 @@ export async function getWishlistById(wishlistId: string): Promise<Wishlist | nu
   return wishlist;
 }
 
+/**
+ * Refus d'une liste de plus, faute de gestion avancée de collection.
+ *
+ * Une classe à part et non un `Error` au message reconnaissable : les appelants
+ * doivent pouvoir répondre « il vous faut Joutes Expert » sans lire une chaîne
+ * traduite, et l'écran a besoin du chiffre pour l'écrire.
+ */
+export class WishlistLimitError extends Error {
+  constructor(readonly limit: number) {
+    // Le message dit aussi la sortie, et pas seulement le refus : il ressort tel
+    // quel par l'outil MCP, où un agent n'a que lui pour comprendre quoi
+    // répondre. Les routes HTTP, elles, ajoutent un code machine.
+    super(
+      `Limite de ${limit} liste de souhaits atteinte. La gestion avancée de collection, ` +
+        `qui en permet plusieurs, arrive avec Joutes Expert ou Joutes Pro.`
+    );
+    this.name = "WishlistLimitError";
+  }
+}
+
+/**
+ * Crée une liste de souhaits.
+ *
+ * **La limite se vérifie ici et non dans les routes**, et c'est délibéré : trois
+ * chemins mènent à cette fonction — l'API personnelle, celle d'un groupe de jeu,
+ * et l'outil MCP. Une vérification par route en aurait laissé échapper au moins
+ * un, et le prochain chemin ajouté serait passé au travers sans que rien ne le
+ * signale.
+ */
 export async function createWishlist(
   owner: WishlistOwner,
   input: { name: string; description?: string; visibility?: WishlistVisibility }
@@ -115,6 +146,15 @@ export async function createWishlist(
   const existing = await db.collection(WISHLISTS_COLLECTION).findOne({ ...ownerQuery(owner), name: input.name });
   if (existing) {
     throw new Error("Une liste de souhaits avec ce nom existe déjà");
+  }
+
+  const [count, advanced] = await Promise.all([
+    db.collection(WISHLISTS_COLLECTION).countDocuments(ownerQuery(owner)),
+    ownerHasAdvancedCollection(owner),
+  ]);
+
+  if (!canCreateWishlist({ existing: count, advanced })) {
+    throw new WishlistLimitError(FREE_WISHLIST_LIMIT);
   }
 
   const now = new Date();

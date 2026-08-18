@@ -3,6 +3,7 @@ import 'server-only';
 import db from "@/lib/mongodb";
 import { ObjectId, type Document, type WithId } from "mongodb";
 import { isSubscriptionPlanKey, type SubscriptionPlanKey } from "@/lib/constants/subscription-plans";
+import { effectivePlans, grantedPlanKeys } from "@/lib/subscriptions/grants";
 import type { MembershipSnapshot } from "@/lib/patreon/types";
 import type { Lair } from "@/lib/types/Lair";
 import type { GrantedPlan, Subscription, SubscriptionSeat, SubscriptionSyncSource } from "@/lib/types/Subscription";
@@ -84,6 +85,45 @@ export async function getSubscriptionByUserId(userId: User['id']): Promise<Subsc
   await indexesReady;
   const doc = await collection().findOne({ userId });
   return doc ? toSubscription(doc) : null;
+}
+
+/**
+ * Les paliers effectifs de plusieurs comptes, en une lecture.
+ *
+ * Pour tout ce qui raisonne sur un groupe de gens : les badges d'une liste, ou
+ * « un membre de ce groupe est-il abonné ? ». Les interroger un par un ferait un
+ * N+1 dont la longueur suit celle du groupe.
+ *
+ * Payés et offerts composés, comme partout ailleurs — un palier offert par
+ * l'équipe vaut exactement un palier payé. Le forçage de développement, lui, ne
+ * s'applique pas ici : il vaut pour « mes » droits, et l'appliquer en lot
+ * donnerait le même palier à tout le monde.
+ */
+export async function getPlansByUserIds(
+  userIds: readonly User['id'][]
+): Promise<Record<string, SubscriptionPlanKey[]>> {
+  const ids = [...new Set(userIds.filter(Boolean))];
+  if (ids.length === 0) {
+    return {};
+  }
+
+  const docs = await collection()
+    .find({ userId: { $in: ids } }, { projection: { userId: 1, plans: 1, grantedPlans: 1 } })
+    .toArray();
+
+  return Object.fromEntries(
+    docs.map((doc) => [
+      doc.userId,
+      effectivePlans({
+        paid: (doc.plans ?? []).filter(isSubscriptionPlanKey),
+        granted: grantedPlanKeys(
+          ((doc.grantedPlans ?? []) as GrantedPlan[]).filter((granted) =>
+            isSubscriptionPlanKey(granted?.plan)
+          )
+        ),
+      }),
+    ])
+  );
 }
 
 export async function getSubscriptionByProviderUserId(

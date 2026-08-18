@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { createWishlist, getWishlistsForOwner } from "@/lib/db/wishlists";
+import { createWishlist, getWishlistsForOwner, WishlistLimitError } from "@/lib/db/wishlists";
 import { wishlistSchema } from "@/lib/schemas/wishlist.schema";
 
 export async function GET() {
@@ -40,6 +40,14 @@ export async function POST(request: NextRequest) {
     const wishlist = await createWishlist({ type: "user", id: session.user.id }, validationResult.data);
     return NextResponse.json(wishlist, { status: 201 });
   } catch (error) {
+    if (error instanceof WishlistLimitError) {
+      // 403 et non 409 : ce n'est pas un conflit avec l'existant, c'est un droit
+      // qui manque. Le code machine évite au client de lire le message.
+      return NextResponse.json(
+        { error: error.message, code: "wishlist-limit", limit: error.limit },
+        { status: 403 }
+      );
+    }
     console.error("Error creating wishlist:", error);
     if (error instanceof Error && error.message.includes("existe déjà")) {
       return NextResponse.json({ error: error.message }, { status: 409 });
