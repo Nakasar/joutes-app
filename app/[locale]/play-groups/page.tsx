@@ -1,10 +1,6 @@
 import PlayGroupsPageClient from "@/components/play-groups/PlayGroupsPageClient";
 import type { Metadata } from "next";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
 export const metadata: Metadata = {
   title: "Groupes de jeu",
   description: "Gérez vos groupes de jeu sur Joutes : partagez collections et wishlists, invitez des membres et organisez vos parties avec votre communauté.",

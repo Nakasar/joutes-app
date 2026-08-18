@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Analytics } from "@vercel/analytics/next"
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -107,8 +108,17 @@ export default async function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            {/* Expose les outils du site aux agents IA (WebMCP) ; ne rend rien. */}
-            <WebMcpTools />
+            {/* Expose les outils du site aux agents IA (WebMCP) ; ne rend rien.
+
+                La frontière n'est pas décorative : le composant lit le chemin
+                courant, inconnu au prérendu d'une route à segment dynamique. Sans
+                elle, il bloquait toutes ces routes depuis le layout — les routes
+                statiques passaient, leur chemin étant connu, ce qui masquait la
+                cause. Le repli est vide parce qu'il n'y a rien à approcher : ce
+                composant ne rend rien. */}
+            <Suspense fallback={null}>
+              <WebMcpTools />
+            </Suspense>
             {isWinterTheme && <WinterDecorations />}
             <div className="relative min-h-screen flex flex-col">
               <Header />
