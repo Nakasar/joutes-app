@@ -289,6 +289,18 @@ export async function ensureDefaultWishlist(owner: WishlistOwner): Promise<void>
 }
 
 /**
+ * L'identifiant de la liste par défaut, rattrapage compris.
+ *
+ * À préférer à `wishlist.isDefault` partout où l'on **décide** quelque chose :
+ * ce champ vaut `false` sur les listes créées avant lui, tant que le rattrapage
+ * n'est pas passé. S'y fier ferait afficher en lecture seule l'unique liste d'un
+ * compte ancien — exactement ce que le rattrapage existe pour éviter.
+ */
+export async function getDefaultWishlistId(owner: WishlistOwner): Promise<string | null> {
+  return ensureDefaultWishlistId(owner);
+}
+
+/**
  * Refus d'une écriture sur une liste verrouillée.
  *
  * Sans gestion avancée, seule la liste par défaut reste modifiable. Les autres
@@ -391,17 +403,26 @@ export async function setDefaultWishlist(wishlistId: string, owner: WishlistOwne
     return false;
   }
 
-  // Retirer avant de poser, jamais l'inverse : l'index unique partiel refuserait
-  // la seconde écriture s'il existait un instant deux listes marquées.
-  await db
-    .collection(WISHLISTS_COLLECTION)
-    .updateMany({ ...ownerQuery(owner), isDefault: true }, { $unset: { isDefault: "" } });
+  try {
+    // Retirer avant de poser, jamais l'inverse : l'index unique partiel
+    // refuserait la seconde écriture s'il existait un instant deux listes
+    // marquées.
+    await db
+      .collection(WISHLISTS_COLLECTION)
+      .updateMany({ ...ownerQuery(owner), isDefault: true }, { $unset: { isDefault: "" } });
 
-  await db
-    .collection(WISHLISTS_COLLECTION)
-    .updateOne({ _id }, { $set: { isDefault: true, updatedAt: new Date() } });
+    await db
+      .collection(WISHLISTS_COLLECTION)
+      .updateOne({ _id }, { $set: { isDefault: true, updatedAt: new Date() } });
 
-  return true;
+    return true;
+  } finally {
+    // L'ordre ci-dessus ouvre une fenêtre : si la seconde écriture échoue, le
+    // propriétaire n'a plus de liste par défaut — et sans gestion avancée, plus
+    // aucune liste modifiable. Le rattrapage en repose une ; il ne coûte qu'une
+    // lecture indexée quand tout s'est bien passé.
+    await ensureDefaultWishlistId(owner);
+  }
 }
 
 /**

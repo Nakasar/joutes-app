@@ -58,14 +58,14 @@ import { resolvePrinting } from "@/lib/cards/printings";
 import type { CardPrinting } from "@/lib/types/card";
 import type { Wishlist, WishlistItem, WishlistVisibility } from "@/lib/types/Wishlist";
 import { SUBSCRIPTION_PLANS } from "@/lib/constants/subscription-plans";
-
-/** Le palier mis en avant : le moins cher qui ouvre la gestion avancée. */
-const UNLOCKING_PLAN_LABEL = SUBSCRIPTION_PLANS.expert.label;
 import type { PaginatedWishlistItems, WishlistOwnerInfo } from "@/lib/db/wishlists";
 import type { Game } from "@/lib/types/Game";
 import type { BoosterCard } from "@/lib/types/booster";
 import { useRouter } from "next/navigation";
 import { UserBadges } from "@/components/UserBadges";
+
+/** Le palier mis en avant : le moins cher qui ouvre la gestion avancée. */
+const UNLOCKING_PLAN_LABEL = SUBSCRIPTION_PLANS.expert.label;
 
 const VISIBILITY_ICONS: Record<WishlistVisibility, React.ReactNode> = {
   private: <Lock className="size-3.5" />,
