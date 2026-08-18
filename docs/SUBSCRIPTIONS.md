@@ -110,8 +110,29 @@ ne contrôle.
 | Palier | Droits `sub:` | Permissions |
 | --- | --- | --- |
 | Supporter | `sub:profile-badge`, `sub:profile-border` | — |
-| Joutes Expert | *(hérite de Supporter)* | `trades:full_history` |
-| Joutes Pro | `sub:lair-pro` *(+ Supporter)* | `trades:full_history` |
+| Joutes Expert | *(hérite de Supporter)* | `trades:full_history`, `collection:advanced` |
+| Joutes Pro | `sub:lair-pro` *(+ Supporter)* | `trades:full_history`, `collection:advanced` |
+
+### Un droit qui profite à un groupe
+
+`collection:advanced` — plusieurs listes de souhaits — se vérifie aussi à
+l'échelle d'un **groupe de jeu**, où il suffit qu'un seul membre soit abonné.
+
+Le droit reste celui d'une personne ; le groupe en profite. C'est
+`anyUserHasPermission(ids, permission)` qui répond, en deux lectures quelle que
+soit la taille du groupe — boucler `hasPermission` ferait un N+1, et ne
+marcherait pas de toute façon, celle-ci ne sachant regarder que le compte
+connecté.
+
+`ownerHasAdvancedCollection` (`lib/db/collection-access.ts`) tranche entre les
+deux cas et **ne consulte pas la session** : elle porte sur le propriétaire, qui
+n'est pas toujours l'appelant. C'est ce qui lui permet de vivre sous
+`createWishlist` plutôt que dans chaque route — trois chemins y mènent (API
+personnelle, API de groupe, outil MCP), et une vérification par route en aurait
+laissé échapper au moins un.
+
+La limite ne vaut qu'à la **création** : un compte qui tenait déjà plusieurs
+listes les garde toutes.
 
 ## Configuration
 

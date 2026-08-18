@@ -7,6 +7,8 @@ import { DateTime } from "luxon";
 import { toast } from "sonner";
 import { Heart, Loader2, Lock, Plus, Globe, Link as LinkIcon, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SUBSCRIPTION_PLANS } from "@/lib/constants/subscription-plans";
+import { canCreateWishlist } from "@/lib/wishlists/limits";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,7 +43,19 @@ import type { Wishlist, WishlistVisibility } from "@/lib/types/Wishlist";
 type WishlistsClientProps = {
   initialWishlists: Wishlist[];
   apiBasePath: string;
+  /**
+   * Le propriétaire a la gestion avancée de collection — pour un groupe de jeu,
+   * si l'un de ses membres l'a. Reflet d'une règle appliquée au serveur, dans
+   * `createWishlist` : la masquer ici ne protégerait rien.
+   */
+  advanced: boolean;
 };
+
+/**
+ * Le palier mis en avant : le moins cher qui ouvre la gestion avancée. Lu dans
+ * la table plutôt qu'écrit dans la traduction, pour qu'un renommage suive.
+ */
+const UNLOCKING_PLAN_LABEL = SUBSCRIPTION_PLANS.expert.label;
 
 const VISIBILITY_ICONS: Record<WishlistVisibility, React.ReactNode> = {
   private: <Lock className="size-3.5" />,
@@ -100,9 +114,17 @@ function WishlistFormFields({
   );
 }
 
-export default function WishlistsClient({ initialWishlists, apiBasePath }: WishlistsClientProps) {
+export default function WishlistsClient({
+  initialWishlists,
+  apiBasePath,
+  advanced,
+}: WishlistsClientProps) {
   const t = useTranslations("Wishlists");
   const [wishlists, setWishlists] = useState(initialWishlists);
+
+  // Recalculé à chaque rendu, et non reçu tout fait : supprimer une liste doit
+  // rendre le bouton de création, sans aller redemander au serveur.
+  const canCreate = canCreateWishlist({ existing: wishlists.length, advanced });
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createName, setCreateName] = useState("");
@@ -198,6 +220,23 @@ export default function WishlistsClient({ initialWishlists, apiBasePath }: Wishl
           <p className="text-muted-foreground">{t("subtitle")}</p>
         </div>
 
+        {/* Le bouton verrouillé plutôt que le bouton absent : la fonctionnalité
+            se montre, éteinte, et dit où la débloquer. Il reste cliquable — un
+            bouton inerte serait un cul-de-sac. La même règle est appliquée au
+            serveur, dans `createWishlist` : ceci n'en est que le reflet. */}
+        {!canCreate ? (
+          <div className="flex flex-col items-end gap-1">
+            <Button asChild variant="outline" className="gap-2 text-muted-foreground">
+              <Link href="/pricing">
+                <Lock className="size-4" />
+                {t("create.locked", { plan: UNLOCKING_PLAN_LABEL })}
+              </Link>
+            </Button>
+            <p className="max-w-xs text-right text-xs text-muted-foreground">
+              {t("create.lockedHint")}
+            </p>
+          </div>
+        ) : (
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
             <Button className="gap-2">
@@ -229,6 +268,7 @@ export default function WishlistsClient({ initialWishlists, apiBasePath }: Wishl
             </div>
           </DialogContent>
         </Dialog>
+      )}
       </div>
 
       {wishlists.length === 0 ? (

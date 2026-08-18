@@ -1286,6 +1286,8 @@
       "title": "Mes listes de souhaits",
       "subtitle": "Suivez les cartes que vous souhaitez acquérir, tous jeux confondus.",
       "create": {
+        "locked": "Débloquer avec {plan}",
+        "lockedHint": "Une seule liste de souhaits sans abonnement. Pour un groupe de jeu, il suffit qu'un membre soit abonné.",
         "trigger": "Nouvelle liste",
         "title": "Créer une liste de souhaits",
         "submit": "Créer"
@@ -3771,6 +3773,7 @@
           "Un rôle « Expert » sur le serveur Discord",
           "L'accès à une section dédiée sur le serveur Discord",
           "L'historique complet de vos échanges, avec filtres et recherche",
+          "Gestion avancée de collection",
           "Des fonctionnalités avancées pour vos groupes de jeu"
         ]
       },
@@ -3782,6 +3785,7 @@
           "Un rôle « Pro » sur le serveur Discord",
           "L'accès à une section dédiée sur le serveur Discord",
           "L'historique complet de vos échanges, avec filtres et recherche",
+          "Gestion avancée de collection",
           "Un système de réservation pour vos évènements",
           "La mise en avant de vos évènements",
           "La personnalisation de votre page de lieu de jeu",

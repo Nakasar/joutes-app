@@ -1285,6 +1285,8 @@
       "title": "My wishlists",
       "subtitle": "Track the cards you'd like to get, across every game.",
       "create": {
+        "locked": "Unlock with {plan}",
+        "lockedHint": "One wishlist without a subscription. For a play group, a single subscribed member is enough.",
         "trigger": "New wishlist",
         "title": "Create a wishlist",
         "submit": "Create"
@@ -3770,6 +3772,7 @@
           "An “Expert” role on the Discord server",
           "Access to a dedicated section on the Discord server",
           "Your full trade history, with filters and search",
+          "Advanced collection management",
           "Advanced features for your play groups"
         ]
       },
@@ -3781,6 +3784,7 @@
           "A “Pro” role on the Discord server",
           "Access to a dedicated section on the Discord server",
           "Your full trade history, with filters and search",
+          "Advanced collection management",
           "A registration system for your events",
           "Your events put front and centre",
           "Customization of your venue page",

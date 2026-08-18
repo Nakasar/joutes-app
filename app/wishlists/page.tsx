@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
 import { getWishlistsForOwner } from "@/lib/db/wishlists";
 import WishlistsClient from "./WishlistsClient";
+import { ownerHasAdvancedCollection } from "@/lib/db/collection-access";
 
 export const dynamic = "force-dynamic";
 
@@ -28,11 +29,15 @@ export default async function WishlistsPage() {
     redirect("/login");
   }
 
-  const wishlists = await getWishlistsForOwner({ type: "user", id: session.user.id });
+  const owner = { type: "user", id: session.user.id } as const;
+  const [wishlists, advanced] = await Promise.all([
+    getWishlistsForOwner(owner),
+    ownerHasAdvancedCollection(owner),
+  ]);
 
   return (
     <div className="container mx-auto p-4 sm:p-6">
-      <WishlistsClient initialWishlists={wishlists} apiBasePath="/api/wishlists" />
+      <WishlistsClient initialWishlists={wishlists} apiBasePath="/api/wishlists" advanced={advanced} />
     </div>
   );
 }

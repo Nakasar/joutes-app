@@ -1202,6 +1202,8 @@
       "title": "Meine Wunschlisten",
       "subtitle": "Verfolge die Karten, die du erwerben möchtest, über alle Spiele hinweg.",
       "create": {
+        "locked": "Mit {plan} freischalten",
+        "lockedHint": "Eine Wunschliste ohne Abo. Für eine Spielgruppe genügt ein einziges abonniertes Mitglied.",
         "trigger": "Neue Wunschliste",
         "title": "Wunschliste erstellen",
         "submit": "Erstellen"
@@ -3687,6 +3689,7 @@
           "Eine „Expert“-Rolle auf dem Discord-Server",
           "Zugang zu einem eigenen Bereich auf dem Discord-Server",
           "Deine vollständige Tauschhistorie, mit Filtern und Suche",
+          "Erweiterte Sammlungsverwaltung",
           "Erweiterte Funktionen für deine Spielgruppen"
         ]
       },
@@ -3698,6 +3701,7 @@
           "Eine „Pro“-Rolle auf dem Discord-Server",
           "Zugang zu einem eigenen Bereich auf dem Discord-Server",
           "Deine vollständige Tauschhistorie, mit Filtern und Suche",
+          "Erweiterte Sammlungsverwaltung",
           "Ein Anmeldesystem für deine Veranstaltungen",
           "Deine Veranstaltungen nach vorn geholt",
           "Anpassung deiner Spielort-Seite",
