@@ -16,7 +16,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useSession } from "@/lib/auth-client";
-import { reportContent } from "@/app/reports/actions";
+import { reportContent } from "@/app/[locale]/reports/actions";
 import { ReportableContentType } from "@/lib/types/Report";
 import { cn } from "@/lib/utils";
 

@@ -42,8 +42,15 @@ function parseLinkHeader(header: string) {
  * au sens de la RFC 9727, et pas une adresse qui répond.
  */
 function routeFilesFor(path: string): string[] {
-  const base = `app${path}`;
-  return [`${base}/route.ts`, `${base}/page.tsx`, base];
+  // Les pages vivent sous le segment de langue, les routes techniques
+  // (`.well-known`, plans de site, MCP) sont restées à la racine : une adresse
+  // annoncée peut légitimement se trouver dans l'un ou l'autre arbre. La
+  // langue par défaut n'étant pas préfixée, l'adresse annoncée, elle, ne
+  // change pas.
+  return ["app", "app/[locale]"].flatMap((root) => {
+    const base = `${root}${path}`;
+    return [`${base}/route.ts`, `${base}/page.tsx`, base];
+  });
 }
 
 describe("HOMEPAGE_LINK_HEADER", () => {

@@ -12,8 +12,8 @@ import {
   validateDeckList,
   type DeckList,
   type DeckListCard,
-} from "@/app/games/riftbound/deck-checker/action";
-import { parseDeckList, stringifyDeckList } from "@/app/games/riftbound/deck-checker/utils";
+} from "@/app/[locale]/games/riftbound/deck-checker/action";
+import { parseDeckList, stringifyDeckList } from "@/app/[locale]/games/riftbound/deck-checker/utils";
 
 // Jeux dont une liste de deck peut être analysée. Ailleurs la saisie du joueur
 // est conservée telle quelle : mieux vaut une liste brute lisible qu'une

@@ -1,12 +1,12 @@
 import {getGameBySlugOrId} from "@/lib/db/games";
 import {NextResponse} from "next/server";
-import {parseDeckList, serializeDeckList} from "@/app/games/riftbound/deck-checker/utils";
+import {parseDeckList, serializeDeckList} from "@/app/[locale]/games/riftbound/deck-checker/utils";
 import {
   DeckList,
   getDeckFromPiltover,
   getDeckFromPiltoverCode,
   validateDeckList
-} from "@/app/games/riftbound/deck-checker/action";
+} from "@/app/[locale]/games/riftbound/deck-checker/action";
 
 export async function POST(request: Request, { params }: { params: Promise<{ gameId: string }> }) {
   const { gameId } = await params;

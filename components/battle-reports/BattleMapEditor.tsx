@@ -36,7 +36,7 @@ import type {
   BattleReportArmy,
   GameMatchPlayer,
 } from "@/lib/types/Match";
-import { updateBattleMapAction } from "@/app/game-matches/actions";
+import { updateBattleMapAction } from "@/app/[locale]/game-matches/actions";
 
 /**
  * Table de jeu vue de dessus.
