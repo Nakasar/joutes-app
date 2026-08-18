@@ -21,8 +21,14 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: "in-progress", label: "En cours" },
 ];
 
+/**
+ * Même fuseau que `yearOf` côté serveur, et pour la même raison : sans lui, un
+ * tournoi du 31 décembre au soir s'afficherait « 31 décembre 2025 » sous un
+ * en-tête « 2026 ». Fixer le fuseau évite aussi que le texte rendu au serveur
+ * diffère de celui rendu chez un visiteur qui n'est pas à l'heure de Paris.
+ */
 function formatDate(iso: string) {
-  const date = DateTime.fromISO(iso).setLocale("fr");
+  const date = DateTime.fromISO(iso).setZone("Europe/Paris").setLocale("fr");
   return date.isValid ? date.toFormat("d LLLL yyyy") : "";
 }
 
@@ -285,8 +291,13 @@ export default function LeagueTimelineClient({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
+        {/* Le total ne bouge pas avec le filtre : annoncer « 1 tournoi
+            rattaché » parce qu'un filtre n'en laisse qu'un mentirait sur ce que
+            contient la ligue. */}
         <p className="text-sm text-muted-foreground">
-          {shown} tournoi{shown > 1 ? "s" : ""} rattaché{shown > 1 ? "s" : ""} à la ligue
+          {counts.all} tournoi{counts.all > 1 ? "s" : ""} rattaché
+          {counts.all > 1 ? "s" : ""} à la ligue
+          {filter !== "all" && ` · ${shown} affiché${shown > 1 ? "s" : ""}`}
         </p>
         <div className="flex flex-wrap gap-2">
           {FILTERS.map((option) => (
@@ -305,6 +316,12 @@ export default function LeagueTimelineClient({
           ))}
         </div>
       </div>
+
+      {shown === 0 && (
+        <p className="rounded-xl border border-dashed bg-card px-6 py-10 text-center text-sm text-muted-foreground">
+          Aucun tournoi ne correspond à ce filtre.
+        </p>
+      )}
 
       <div className="flex flex-col">
         {visibleGroups.map((group) => (

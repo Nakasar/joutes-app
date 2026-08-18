@@ -11,6 +11,8 @@ Organiser des leagues étalées dans le temps et des tournois sur la plateforme 
 - `/leagues/:leagueId` - Détails d'une ligue (classement, règles, inscription)
 - `/leagues/:leagueId/manage` - Gestion d'une ligue (pour les organisateurs), avec
   l'onglet « Tournois » des tournois rattachés
+- `/leagues/:leagueId/timeline` - Timeline des tournois rattachés, du plus récent
+  au plus ancien
 - `/tournaments/new?leagueId=:leagueId` - Création d'un tournoi au nom d'une ligue
 
 ## Modèle de données
@@ -267,3 +269,20 @@ le calcul de la clôture qui tranche, avec l'état réel de la ligue sous les ye
   retrait des hauts faits (calqué sur les notes internes).
 - `app/tournaments/[tournamentId]/FeatAwardPicker.tsx` - Sélecteur partagé par la
   fiche joueur et la saisie de match.
+
+### Timeline
+
+- `lib/leagues/timeline.ts` - Mise en forme : tri, regroupement par année,
+  libellé « Pseudo#1234 », ordinaux, bilan compact. Module pur, testé. L'année
+  se lit dans le fuseau `Europe/Paris`, sans quoi un tournoi joué le 31 décembre
+  au soir basculerait dans l'année suivante.
+- `lib/leagues/timeline-data.ts` - Assemblage : tournois rattachés, classement de
+  chacun, points apportés, hauts faits décernés, comptes des joueurs cités.
+  Un classement se recalcule à la lecture (`getStandings`) : c'est le coût de
+  cette page, et la raison pour laquelle elle vit à part de la page de ligue.
+- `app/leagues/[leagueId]/timeline/` - Page serveur (même garde d'accès que la
+  ligue) et composant client (filtres, dépliage d'une entrée).
+
+Un tournoi en cours n'affiche pas de vainqueur, et son classement est annoncé
+comme provisoire : une position à mi-parcours n'est pas un résultat. Les
+brouillons sont écartés — ils n'ont ni date publique ni résultat.

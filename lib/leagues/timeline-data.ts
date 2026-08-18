@@ -1,8 +1,8 @@
 import "server-only";
 
-import { getAllGames } from "@/lib/db/games";
+import { getGameSummariesByIds } from "@/lib/db/games";
 import { getLeagueById, getLeagueTournamentFeats } from "@/lib/db/leagues";
-import { getStandings, listPlayers, listTournamentsByLeagueId } from "@/lib/db/tournaments";
+import { getStandings, listTournamentsByLeagueId } from "@/lib/db/tournaments";
 import { getUsersByIds } from "@/lib/db/users";
 import type { User } from "@/lib/types/User";
 import {
@@ -29,11 +29,10 @@ import {
 const PODIUM_SIZE = 3;
 
 export async function getLeagueTimeline(leagueId: string): Promise<TimelineYearGroup[]> {
-  const [tournaments, league, tournamentFeats, games] = await Promise.all([
+  const [tournaments, league, tournamentFeats] = await Promise.all([
     listTournamentsByLeagueId(leagueId),
     getLeagueById(leagueId, { includeParticipants: true }),
     getLeagueTournamentFeats(leagueId),
-    getAllGames(),
   ]);
 
   // Un brouillon n'est pas encore une étape de la saison : il n'a ni date
@@ -41,6 +40,11 @@ export async function getLeagueTimeline(leagueId: string): Promise<TimelineYearG
   const visible = tournaments.filter((tournament) => tournament.status !== "draft");
   if (visible.length === 0) return [];
 
+  // Les seuls jeux cités, et seulement leur nom : charger le catalogue entier
+  // pour en tirer trois libellés se paie sur chaque affichage de la page.
+  const games = await getGameSummariesByIds([
+    ...new Set(visible.map((tournament) => tournament.gameId).filter((id): id is string => Boolean(id))),
+  ]);
   const gameNames = new Map(games.map((game) => [game.id, game.name]));
   const featTitles = new Map(
     (league?.pointsConfig?.pointsRules.feats ?? []).map((feat) => [feat.id, feat.title])
@@ -74,15 +78,6 @@ export async function getLeagueTimeline(leagueId: string): Promise<TimelineYearG
       visible.map(
         async (tournament) =>
           [tournament.id, await getStandings(tournament.id)] as const
-      )
-    )
-  );
-
-  const playerCounts = new Map(
-    await Promise.all(
-      visible.map(
-        async (tournament) =>
-          [tournament.id, (await listPlayers(tournament.id)).length] as const
       )
     )
   );
@@ -147,7 +142,9 @@ export async function getLeagueTimeline(leagueId: string): Promise<TimelineYearG
       date: date.toISOString(),
       year: yearOf(date),
       gameName: tournament.gameId ? gameNames.get(tournament.gameId) : tournament.customGameName,
-      playersCount: playerCounts.get(tournament.id) ?? 0,
+      // `getStandings` rend exactement une ligne par joueur inscrit : le
+      // nombre de joueurs s'y lit, sans requête de plus.
+      playersCount: standings.length,
       points: pointsByTournament.get(tournament.id) ?? 0,
       winner,
       podium,

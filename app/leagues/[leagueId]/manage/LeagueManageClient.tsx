@@ -59,6 +59,7 @@ import {
   Crown,
   RefreshCw,
   ChevronDown,
+  CalendarClock,
 } from "lucide-react";
 import {
   updateLeagueAction,
@@ -2728,6 +2729,12 @@ export default function LeagueManageClient({
                   <Link href={`/tournaments/new?leagueId=${league.id}`}>
                     <Plus className="h-4 w-4 mr-2" />
                     Créer un tournoi
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href={`/leagues/${league.id}/timeline`}>
+                    <CalendarClock className="h-4 w-4 mr-2" />
+                    Voir la timeline
                   </Link>
                 </Button>
                 <Button
