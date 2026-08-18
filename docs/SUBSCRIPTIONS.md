@@ -132,7 +132,35 @@ personnelle, API de groupe, outil MCP), et une vérification par route en aurait
 laissé échapper au moins un.
 
 La limite ne vaut qu'à la **création** : un compte qui tenait déjà plusieurs
-listes les garde toutes.
+listes les garde toutes. Elles ne restent pourtant pas toutes utilisables — voir
+ci-dessous.
+
+### La liste par défaut
+
+Chaque propriétaire en a exactement une : la première qu'il crée, la plus
+ancienne restante si celle-là est supprimée, ou celle qu'il désigne. L'unicité
+est portée par un **index unique partiel** plutôt que par le code — deux
+requêtes concurrentes qui promeuvent chacune une liste ne peuvent pas en laisser
+deux marquées.
+
+Elle sert à deux choses :
+
+- **l'ajout rapide** d'une carte y verse toujours ;
+- sans gestion avancée, **elle seule reste modifiable**. Les autres s'affichent
+  en grisé, consultables : rien n'est perdu, et tout redevient utilisable le jour
+  où le propriétaire s'abonne.
+
+Deux gestes restent permis sur une liste verrouillée : la **supprimer** — sans
+quoi on garderait une liste dont on ne peut ni se servir ni se défaire — et la
+**désigner par défaut**, ce qui ne donne aucune capacité de plus, seulement le
+choix de celle dont on se sert. C'est pourquoi la désignation a sa propre route,
+`PUT /api/wishlists/[id]/default`, que le garde de lecture seule ne couvre pas.
+
+⚠️ Il n'y a **aucun système de migration** dans ce dépôt :
+`ensureDefaultWishlistId` rattrape les propriétaires d'avant ce champ. Sans ce
+rattrapage, aucune de leurs listes ne porterait le marqueur, et la règle « sauf
+celle par défaut » n'en épargnerait aucune — elles seraient toutes verrouillées
+d'un coup.
 
 ## Configuration
 

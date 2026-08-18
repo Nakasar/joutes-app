@@ -57,6 +57,10 @@ import PrintingPicker from "@/components/PrintingPicker";
 import { resolvePrinting } from "@/lib/cards/printings";
 import type { CardPrinting } from "@/lib/types/card";
 import type { Wishlist, WishlistItem, WishlistVisibility } from "@/lib/types/Wishlist";
+import { SUBSCRIPTION_PLANS } from "@/lib/constants/subscription-plans";
+
+/** Le palier mis en avant : le moins cher qui ouvre la gestion avancée. */
+const UNLOCKING_PLAN_LABEL = SUBSCRIPTION_PLANS.expert.label;
 import type { PaginatedWishlistItems, WishlistOwnerInfo } from "@/lib/db/wishlists";
 import type { Game } from "@/lib/types/Game";
 import type { BoosterCard } from "@/lib/types/booster";
@@ -75,6 +79,7 @@ export default function WishlistDetailClient({
   wishlist: initialWishlist,
   initialItems,
   canEdit,
+  readOnly,
   games,
   isLoggedIn,
   ownerInfo,
@@ -82,6 +87,12 @@ export default function WishlistDetailClient({
   wishlist: Wishlist;
   initialItems: PaginatedWishlistItems;
   canEdit: boolean;
+  /**
+   * La liste est consultable mais verrouillée faute de gestion avancée. Distinct
+   * de `!canEdit`, qui couvre aussi le simple visiteur : celui-ci n'a que faire
+   * d'une invitation à s'abonner.
+   */
+  readOnly: boolean;
   games: Game[];
   isLoggedIn: boolean;
   ownerInfo: WishlistOwnerInfo | null;
@@ -228,6 +239,15 @@ export default function WishlistDetailClient({
             </span>
           )}
           {wishlist.description && <p className="text-muted-foreground">{wishlist.description}</p>}
+          {readOnly && (
+            <p className="flex flex-wrap items-center gap-2 rounded-md border border-dashed bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+              <Lock className="size-4 shrink-0" />
+              {t("detail.readOnly")}
+              <Link href="/pricing" className="font-medium underline underline-offset-2">
+                {t("detail.readOnlyLink", { plan: UNLOCKING_PLAN_LABEL })}
+              </Link>
+            </p>
+          )}
         </div>
 
         {/* Quatre contrôles, dont trois au libellé long : sans repli, la barre
@@ -237,9 +257,14 @@ export default function WishlistDetailClient({
           {canEdit && (
             <>
               <EditWishlistDialog wishlist={wishlist} onSaved={setWishlist} />
-              <DeleteWishlistButton wishlist={wishlist} onDeleted={() => router.push(wishlist.ownerType === "playGroup" ? `/play-groups/${wishlist.ownerId}/wishlists` : "/wishlists")} />
               <AddItemDialog wishlistId={wishlist.id} games={games} onAdded={handleItemAdded} />
             </>
+          )}
+          {/* La suppression reste offerte sur une liste verrouillée : c'est la
+              seule façon de repasser sous la limite, et garder une liste dont on
+              ne peut plus rien faire ni se défaire serait une impasse. */}
+          {(canEdit || readOnly) && (
+            <DeleteWishlistButton wishlist={wishlist} onDeleted={() => router.push(wishlist.ownerType === "playGroup" ? `/play-groups/${wishlist.ownerId}/wishlists` : "/wishlists")} />
           )}
           <ReportButton contentType="wishlist" contentId={wishlist.id} />
         </div>

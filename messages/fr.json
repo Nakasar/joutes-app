@@ -1315,6 +1315,10 @@
         "description": "Créez une liste pour suivre les cartes que vous aimeriez acquérir."
       },
       "card": {
+        "defaultSet": "Liste par défaut mise à jour",
+        "setDefault": "Définir comme liste par défaut",
+        "readOnly": "Lecture seule",
+        "default": "Par défaut",
         "itemsCount": "{count, plural, =0 {Aucune carte} one {# carte} other {# cartes}}",
         "updatedAt": "mise à jour {date}",
         "open": "Ouvrir",
@@ -1327,6 +1331,7 @@
         "confirm": "Supprimer"
       },
       "errors": {
+        "setDefault": "Impossible de changer de liste par défaut",
         "create": "Impossible de créer la liste de souhaits",
         "update": "Impossible de mettre à jour la liste de souhaits",
         "delete": "Impossible de supprimer la liste de souhaits",
@@ -1335,6 +1340,8 @@
         "addItem": "Impossible d'ajouter cette carte"
       },
       "detail": {
+        "readOnlyLink": "Débloquer avec {plan}",
+        "readOnly": "Cette liste est en lecture seule : sans la gestion avancée de collection, seule votre liste par défaut reste modifiable.",
         "back": "Retour",
         "ownerUser": "Liste de {name}",
         "ownerGroup": "Liste du groupe {name}",

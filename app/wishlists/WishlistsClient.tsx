@@ -5,10 +5,12 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { DateTime } from "luxon";
 import { toast } from "sonner";
-import { Heart, Loader2, Lock, Plus, Globe, Link as LinkIcon, Pencil, Trash2 } from "lucide-react";
+import { Heart, Loader2, Lock, Plus, Globe, Link as LinkIcon, Pencil, Star, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SUBSCRIPTION_PLANS } from "@/lib/constants/subscription-plans";
-import { canCreateWishlist } from "@/lib/wishlists/limits";
+import { canCreateWishlist, isWishlistReadOnly } from "@/lib/wishlists/limits";
+import { invalidateMyWishlists } from "@/lib/wishlists/my-wishlists-client";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -125,6 +127,39 @@ export default function WishlistsClient({
   // Recalculé à chaque rendu, et non reçu tout fait : supprimer une liste doit
   // rendre le bouton de création, sans aller redemander au serveur.
   const canCreate = canCreateWishlist({ existing: wishlists.length, advanced });
+
+  const [settingDefault, setSettingDefault] = useState<string | null>(null);
+
+  /**
+   * Désigne une liste comme liste par défaut.
+   *
+   * L'état local suit la réponse plutôt que de l'anticiper : marquer la nouvelle
+   * avant confirmation laisserait, en cas d'échec, deux listes affichées par
+   * défaut alors que la base n'en connaît qu'une.
+   */
+  async function handleSetDefault(wishlistId: string) {
+    setSettingDefault(wishlistId);
+    try {
+      const res = await fetch(`/api/wishlists/${wishlistId}/default`, { method: "PUT" });
+      if (!res.ok) {
+        toast.error(t("errors.setDefault"));
+        return;
+      }
+
+      setWishlists((current) =>
+        current.map((wishlist) => ({ ...wishlist, isDefault: wishlist.id === wishlistId }))
+      );
+      // Le raccourci d'ajout rapide vise la liste par défaut : son cache doit
+      // apprendre le changement, sinon il continue de viser l'ancienne.
+      invalidateMyWishlists();
+      toast.success(t("card.defaultSet"));
+    } catch (error) {
+      console.error("Failed to set the default wishlist:", error);
+      toast.error(t("errors.setDefault"));
+    } finally {
+      setSettingDefault(null);
+    }
+  }
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createName, setCreateName] = useState("");
@@ -279,16 +314,47 @@ export default function WishlistsClient({
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {wishlists.map((wishlist) => (
-            <div key={wishlist.id} className="flex flex-col gap-3 rounded-xl border bg-card p-4">
-              <div className="flex items-start justify-between gap-2">
-                <Link href={`/wishlists/${wishlist.id}`} className="font-semibold leading-tight hover:text-primary">
+          {wishlists.map((wishlist) => {
+            const readOnly = isWishlistReadOnly({ isDefault: wishlist.isDefault, advanced });
+
+            return (
+            <div
+              key={wishlist.id}
+              /* Grisée, pas cachée : la liste reste consultable, et son
+                 propriétaire doit voir ce qu'il retrouvera en s'abonnant. */
+              className={cn(
+                "flex flex-col gap-3 rounded-xl border bg-card p-4",
+                readOnly && "border-dashed bg-muted/30"
+              )}
+            >
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <Link
+                  href={`/wishlists/${wishlist.id}`}
+                  className={cn(
+                    "font-semibold leading-tight hover:text-primary",
+                    readOnly && "text-muted-foreground"
+                  )}
+                >
                   {wishlist.name}
                 </Link>
-                <Badge variant="outline" className="shrink-0 gap-1">
-                  {VISIBILITY_ICONS[wishlist.visibility]}
-                  {t(`visibility.${wishlist.visibility}`)}
-                </Badge>
+                <span className="flex flex-wrap items-center gap-1">
+                  {wishlist.isDefault && (
+                    <Badge variant="outline" className="shrink-0 gap-1">
+                      <Star className="size-3.5" />
+                      {t("card.default")}
+                    </Badge>
+                  )}
+                  {readOnly && (
+                    <Badge variant="outline" className="shrink-0 gap-1 text-muted-foreground">
+                      <Lock className="size-3.5" />
+                      {t("card.readOnly")}
+                    </Badge>
+                  )}
+                  <Badge variant="outline" className="shrink-0 gap-1">
+                    {VISIBILITY_ICONS[wishlist.visibility]}
+                    {t(`visibility.${wishlist.visibility}`)}
+                  </Badge>
+                </span>
               </div>
               {wishlist.description && (
                 <p className="line-clamp-2 text-sm text-muted-foreground">{wishlist.description}</p>
@@ -299,11 +365,36 @@ export default function WishlistsClient({
                   date: DateTime.fromJSDate(new Date(wishlist.updatedAt)).toRelative() ?? "",
                 })}
               </p>
-              <div className="mt-auto flex items-center gap-2 pt-1">
-                <Button asChild size="sm" className="flex-1">
+              <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
+                <Button asChild size="sm" variant={readOnly ? "outline" : "default"} className="flex-1">
                   <Link href={`/wishlists/${wishlist.id}`}>{t("card.open")}</Link>
                 </Button>
-                <Button variant="outline" size="icon-sm" onClick={() => openEdit(wishlist)} aria-label={t("card.edit")}>
+                {/* Désigner sa liste par défaut reste permis même sur une liste
+                    verrouillée : cela ne donne aucune capacité de plus, cela
+                    déplace seulement celle dont on se sert. */}
+                {!wishlist.isDefault && (
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
+                    onClick={() => void handleSetDefault(wishlist.id)}
+                    disabled={settingDefault === wishlist.id}
+                    aria-label={t("card.setDefault")}
+                    title={t("card.setDefault")}
+                  >
+                    {settingDefault === wishlist.id ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <Star className="size-3.5" />
+                    )}
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  onClick={() => openEdit(wishlist)}
+                  disabled={readOnly}
+                  aria-label={t("card.edit")}
+                >
                   <Pencil className="size-3.5" />
                 </Button>
                 <AlertDialog>
@@ -335,7 +426,8 @@ export default function WishlistsClient({
                 </AlertDialog>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

@@ -7,6 +7,8 @@ import { getWishlistAccess, getWishlistById, getWishlistItems, getWishlistOwnerI
 import { getAllGames } from "@/lib/db/games";
 import { getPlayGroupById, isGameEnabledForPlayGroup } from "@/lib/db/play-groups";
 import WishlistDetailClient from "./WishlistDetailClient";
+import { ownerHasAdvancedCollection } from "@/lib/db/collection-access";
+import { isWishlistReadOnly } from "@/lib/wishlists/limits";
 
 export const dynamic = "force-dynamic";
 
@@ -55,11 +57,22 @@ export default async function WishlistDetailPage({
     notFound();
   }
 
-  const [initialItems, allGames, ownerInfo] = await Promise.all([
+  const [initialItems, allGames, ownerInfo, advanced] = await Promise.all([
     getWishlistItems(wishlistId, { page: 1, limit: 48, viewerId: session?.user?.id }),
     getAllGames(),
     getWishlistOwnerInfo(wishlist),
+    ownerHasAdvancedCollection({ type: wishlist.ownerType, id: wishlist.ownerId }),
   ]);
+
+  // Sans gestion avancée, seule la liste par défaut reste modifiable. On éteint
+  // `canEdit` plutôt que d'ajouter une condition partout : tout ce qui écrit sur
+  // cet écran en dépend déjà, et le serveur refuserait de toute façon.
+  const readOnly = isWishlistReadOnly({ isDefault: wishlist.isDefault, advanced });
+
+  // L'explication ne s'adresse qu'à qui aurait pu écrire : un simple visiteur
+  // n'a que faire d'une invitation à s'abonner pour une liste qui n'est pas la
+  // sienne.
+  const showsReadOnlyNotice = canEdit && readOnly;
 
   let games = allGames;
   if (wishlist.ownerType === "playGroup") {
@@ -74,7 +87,8 @@ export default async function WishlistDetailPage({
       <WishlistDetailClient
         wishlist={wishlist}
         initialItems={initialItems}
-        canEdit={canEdit}
+        canEdit={canEdit && !readOnly}
+        readOnly={showsReadOnlyNotice}
         games={games}
         isLoggedIn={!!session?.user?.id}
         ownerInfo={ownerInfo}
