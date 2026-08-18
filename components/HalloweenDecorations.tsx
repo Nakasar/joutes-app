@@ -60,20 +60,20 @@ export default function HalloweenDecorations() {
 
       {/* Chauves-souris : trois, en vol lent, décalées les unes des autres */}
       <div
-        className="decor-heavy fixed top-32 left-8 pointer-events-none z-0 opacity-50 text-[var(--decor-ink)] halloween-bat hidden md:block"
+        className="decor-heavy fixed top-32 left-8 pointer-events-none z-0 opacity-70 text-[var(--decor-fly)] halloween-bat hidden md:block"
         aria-hidden="true"
       >
         <Bat className="w-8 h-8" />
       </div>
       <div
-        className="decor-heavy fixed top-24 right-16 pointer-events-none z-0 opacity-40 text-[var(--decor-ink)] halloween-bat hidden md:block"
+        className="decor-heavy fixed top-24 right-16 pointer-events-none z-0 opacity-60 text-[var(--decor-fly)] halloween-bat hidden md:block"
         style={{ animationDelay: "1.8s" }}
         aria-hidden="true"
       >
         <Bat className="w-6 h-6" />
       </div>
       <div
-        className="decor-heavy fixed top-56 right-8 pointer-events-none z-0 opacity-35 text-[var(--decor-ink)] halloween-bat hidden lg:block"
+        className="decor-heavy fixed top-56 right-8 pointer-events-none z-0 opacity-55 text-[var(--decor-fly)] halloween-bat hidden lg:block"
         style={{ animationDelay: "3.6s" }}
         aria-hidden="true"
       >

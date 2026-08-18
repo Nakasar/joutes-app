@@ -83,8 +83,22 @@
   --bone: oklch(0.97 0.015 80);
   --night: oklch(0.23 0.045 300);
 
-  /* Encre des silhouettes du décor, et fil des toiles d'araignée. */
-  --decor-ink: oklch(0.45 0.08 300);
+  /*
+   * Deux encres, parce que le décor se lit de deux façons.
+   *
+   * `--decor-ink` peint ce qui est *posé au sol* — colline, tombes, grille,
+   * arbre. En clair, une masse trop soutenue donnait une bande lavande en bas
+   * de l'écran : elle reste donc claire et peu saturée, une brume plutôt
+   * qu'un aplat.
+   *
+   * `--decor-fly` peint ce qui est *en l'air* — les chauves-souris. Une
+   * silhouette au sol peut être plus sombre que le fond, c'est ce qui la fait
+   * lire comme une masse ; en vol, elle doit trancher sur le ciel. En nuit,
+   * cette encre est donc plus claire que le fond, sans quoi les
+   * chauves-souris disparaissent purement et simplement.
+   */
+  --decor-ink: oklch(0.66 0.05 300);
+  --decor-fly: oklch(0.42 0.07 300);
   --web: oklch(0.23 0.045 300 / 16%);
 }
 
@@ -135,7 +149,9 @@
   --bone: oklch(0.93 0.02 85);
   --night: oklch(0.1 0.03 300);
 
+  /* Au sol, plus sombre que le ciel ; en vol, plus clair. Voir le mode clair. */
   --decor-ink: oklch(0.1 0.03 300);
+  --decor-fly: oklch(0.55 0.05 300);
   --web: oklch(0.98 0.02 85 / 22%);
 }
 
