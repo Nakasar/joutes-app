@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { createPrivateLair } from "@/app/[locale]/account/private-lairs-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

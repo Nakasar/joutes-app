@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import SellListDetailClient from "@/app/[locale]/sell-lists/SellListDetailClient";
 import { PlayGroupToolsNavBar } from "@/components/play-groups/PlayGroupToolsNavBar";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
 // See: https://nextjs.org/docs/app/guides/migrating-to-cache-components

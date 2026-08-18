@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Languages } from "lucide-react";
 import { localeLabels, type Locale } from "@/i18n/config";
 

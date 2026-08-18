@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { Game } from "@/lib/types/Game";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Badge } from "@/components/ui/badge";
 import { GAME_TYPES } from "@/lib/constants/game-types";
 import { useTranslations } from "next-intl";

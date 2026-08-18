@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Gamepad2 } from "lucide-react";
 import type { QuizScoreEntry } from "@/lib/db/quiz-scores";
 

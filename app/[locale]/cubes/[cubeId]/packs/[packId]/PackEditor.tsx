@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import { Link, useRouter } from "@/i18n/navigation";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ArrowLeft, Info, Layers, Loader2, Minus, Pencil, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";

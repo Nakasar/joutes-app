@@ -3,7 +3,7 @@ import EventsCalendarClient from "@/components/EventsCalendarClient";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { getUserById } from "@/lib/db/users";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";

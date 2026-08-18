@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ChevronLeft, ChevronRight, Loader2, Lock, Search, SlidersHorizontal, X } from "lucide-react";

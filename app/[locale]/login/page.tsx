@@ -2,7 +2,8 @@
 
 import { authClient } from "@/lib/auth-client";
 import { useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import {Button} from "@/components/ui/button";
 import {Key} from "lucide-react";
 import {useTranslations} from "next-intl";

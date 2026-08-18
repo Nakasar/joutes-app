@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { addLairToUserList, removeLairFromUserList } from "@/app/[locale]/account/actions";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 
 interface FollowLairButtonProps {

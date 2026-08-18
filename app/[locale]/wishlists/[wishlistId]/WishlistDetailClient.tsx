@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { Link, useRouter } from "@/i18n/navigation";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -61,7 +61,6 @@ import { SUBSCRIPTION_PLANS } from "@/lib/constants/subscription-plans";
 import type { PaginatedWishlistItems, WishlistOwnerInfo } from "@/lib/db/wishlists";
 import type { Game } from "@/lib/types/Game";
 import type { BoosterCard } from "@/lib/types/booster";
-import { useRouter } from "next/navigation";
 import { UserBadges } from "@/components/UserBadges";
 
 /** Le palier mis en avant : le moins cher qui ouvre la gestion avancée. */

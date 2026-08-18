@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Star } from "lucide-react";
 import { toggleEventFavoriteAction } from "../actions";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 
 type FavoriteButtonProps = {

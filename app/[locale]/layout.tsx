@@ -5,7 +5,7 @@ import "../globals.css";
 import Header from "@/components/Header";
 import { DateTime } from "luxon";
 import { cacheLife } from "next/cache";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Github } from "lucide-react";
 import WinterDecorations from "@/components/WinterDecorations";
 import WebMcpTools from "@/components/WebMcpTools";

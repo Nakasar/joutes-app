@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { DateTime } from "luxon";
 import { Maximize2, Megaphone, Pause, Play, RotateCcw, Trash2 } from "lucide-react";

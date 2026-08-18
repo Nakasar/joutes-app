@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { deleteGameExportAction } from "./actions";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 
 export function DeleteExportButton({ id }: { id: string }) {
   const [isPending, startTransition] = useTransition();

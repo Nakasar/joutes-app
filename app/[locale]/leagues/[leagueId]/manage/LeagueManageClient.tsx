@@ -1,8 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { DateTime } from "luxon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

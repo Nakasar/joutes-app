@@ -22,7 +22,7 @@ import { Trophy, Plus, AlertCircle, CheckCircle } from "lucide-react";
 import { Achievement } from "@/lib/types/Achievement";
 import { AchievementIcon } from "@/components/AchievementIcon";
 import { unlockAchievementForUserAction } from "./admin-actions";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface UnlockAchievementButtonProps {

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { setRequestLocale } from "next-intl/server";
 import { ArrowLeft, Bot, Code2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,7 +22,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RiftboundDevelopersMcpPage() {
+export default async function RiftboundDevelopersMcpPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  // Fixe la langue pour cette page : sans cet appel, le `Link` localisé la lit
+  // à la requête et fait basculer toute la route en rendu dynamique.
+  const { locale } = await params;
+  setRequestLocale(locale);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8">
       <div className="container mx-auto px-4 max-w-5xl space-y-8">

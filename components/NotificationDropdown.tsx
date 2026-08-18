@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Notification } from "@/lib/types/Notification";
 import { DateTime } from "luxon";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { markNotificationAsReadAction, getRecentNotificationsAction } from "@/app/[locale]/notifications/actions";
 import { useState, useEffect } from "react";
 import { NotificationTemplate } from "@/components/notifications/NotificationTemplate";

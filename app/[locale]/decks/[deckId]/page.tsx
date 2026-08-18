@@ -8,7 +8,7 @@ import { Library, Eye, EyeOff, ExternalLink, Edit } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { DateTime } from "luxon";
 import DeleteDeckButton from "./DeleteDeckButton";
 import FavoriteDeckButton from "../FavoriteDeckButton";

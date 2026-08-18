@@ -8,7 +8,7 @@ import { getWishlistsForOwner } from "@/lib/db/wishlists";
 import WishlistsClient from "@/app/[locale]/wishlists/WishlistsClient";
 import { PlayGroupToolsNavBar } from "@/components/play-groups/PlayGroupToolsNavBar";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ownerHasAdvancedCollection } from "@/lib/db/collection-access";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.

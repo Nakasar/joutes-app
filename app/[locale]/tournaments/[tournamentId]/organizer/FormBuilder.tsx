@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { DateTime } from "luxon";
 import { ArrowDown, ArrowUp, Check, Plus, Trash2, X } from "lucide-react";

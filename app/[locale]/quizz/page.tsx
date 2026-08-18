@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { Metadata } from "next";
 import { HelpCircle, PenSquare } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { getTranslations } from "next-intl/server";
 import QuizListClient from "./QuizListClient";

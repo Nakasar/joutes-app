@@ -11,7 +11,7 @@ import {
 import { useLocale } from "next-intl";
 import type { Locale } from "@/i18n/config";
 import { Game } from "@/lib/types/Game";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { DateTime } from "luxon";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

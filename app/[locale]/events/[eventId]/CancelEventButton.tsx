@@ -17,7 +17,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cancelEventAction } from "../actions";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 
 type CancelEventButtonProps = {
   eventId: string;

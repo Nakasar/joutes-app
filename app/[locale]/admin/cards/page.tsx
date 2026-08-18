@@ -1,5 +1,5 @@
 import { ObjectId } from "mongodb";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { getAllGames } from "@/lib/db/games";
 import {
   countGameCards,

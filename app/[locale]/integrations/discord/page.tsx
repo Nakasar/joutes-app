@@ -12,7 +12,8 @@ import {
   Ticket,
   Users,
 } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { setRequestLocale } from "next-intl/server";
 import DiscordEventBoard from './discord-event-board.png';
 import Image from "next/image";
 import type {Metadata} from "next";
@@ -31,7 +32,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default function IntegrationsDiscordPage() {
+export default async function IntegrationsDiscordPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  // Fixe la langue pour cette page : sans cet appel, le `Link` localisé la lit
+  // à la requête et fait basculer toute la route en rendu dynamique.
+  const { locale } = await params;
+  setRequestLocale(locale);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8">
       <div className="container mx-auto px-4 max-w-5xl">

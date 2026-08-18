@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { DateTime } from "luxon";
 import { AlertCircle, CheckCircle, ChevronsUpDown, Loader2, MapPin, Swords } from "lucide-react";
 import { Button } from "@/components/ui/button";

@@ -3,7 +3,7 @@
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 import { togglePreRegistrationAction } from "../actions";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 
 type PreRegistrationSwitchProps = {
   eventId: string;

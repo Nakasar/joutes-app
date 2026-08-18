@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";

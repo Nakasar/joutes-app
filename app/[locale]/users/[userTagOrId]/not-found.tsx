@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { UserIcon } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 
 export default function UserNotFound() {
   return (

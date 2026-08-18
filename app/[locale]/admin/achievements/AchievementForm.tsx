@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Achievement } from "@/lib/types/Achievement";
 import { createAchievementAction, updateAchievementAction } from "./actions";
 import { AchievementIconUploader } from "./AchievementIconUploader";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useState } from "react";
 import {
   DEFAULT_STATUS_TONE,

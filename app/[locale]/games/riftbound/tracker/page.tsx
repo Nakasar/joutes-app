@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { GameToolsNavBar } from "@/components/games/GameToolsNavBar";
 import db from "@/lib/mongodb";
 import { Game } from "@/lib/types/Game";

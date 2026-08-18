@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import type { GameCardSummary } from "@/lib/db/cards";
 import { searchCards } from "./actions";
 import CardOriginBadges from "./CardOriginBadges";

@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { getGameBySlugOrId } from "@/lib/db/games";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
 import { GameToolsNavBar } from "@/components/games/GameToolsNavBar";

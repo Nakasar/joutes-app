@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Link2Icon, CheckIcon, ChevronDownIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
-import {usePathname, useRouter, useSearchParams} from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import type {RuleTreeNode, RuleSection, SearchRuleEntry, RuleDocument, RuleLang} from '@/lib/rules/riftbound';
 import {KeywordBadge} from '@/components/games/KeywordBadge';
 

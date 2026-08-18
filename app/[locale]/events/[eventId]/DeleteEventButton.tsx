@@ -16,7 +16,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { deleteEventAction } from "../actions";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 
 type DeleteEventButtonProps = {
   eventId: string;

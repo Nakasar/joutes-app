@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { PRODUCT_KINDS } from "@/lib/constants/product-kinds";
 import type { GameProductSummary } from "@/lib/db/products";
 import { searchProducts } from "./actions";

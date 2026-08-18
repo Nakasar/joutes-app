@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { DateTime } from "luxon";
 import { ChevronDown, Crown, Plus, Trophy, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";

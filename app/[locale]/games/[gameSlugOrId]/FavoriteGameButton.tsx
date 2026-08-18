@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Star } from "lucide-react";
 import { setFavoriteGameAction } from "@/app/[locale]/account/actions";
 import { notifyGamesChanged } from "@/lib/games/games-changed";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 
 /**

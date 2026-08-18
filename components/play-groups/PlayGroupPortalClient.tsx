@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { DateTime } from "luxon";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";

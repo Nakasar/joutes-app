@@ -3,7 +3,7 @@
 import { Lair } from "@/lib/types/Lair";
 import { useState, useTransition } from "react";
 import { removeLairFromUserList } from "./actions";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";

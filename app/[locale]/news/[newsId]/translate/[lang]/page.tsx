@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { Metadata } from "next";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ArrowLeft } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";

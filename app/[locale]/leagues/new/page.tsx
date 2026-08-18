@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { Metadata } from "next";
 import { getAllGames } from "@/lib/db/games";
 import { getAllLairs } from "@/lib/db/lairs";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import LeagueForm from "./LeagueForm";

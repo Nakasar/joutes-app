@@ -6,7 +6,7 @@ import { Lair } from "@/lib/types/Lair";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin, Clock, ExternalLink } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { DateTime } from "luxon";
 

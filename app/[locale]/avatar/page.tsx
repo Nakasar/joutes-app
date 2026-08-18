@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import type { Metadata } from "next";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.

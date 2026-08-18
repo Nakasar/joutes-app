@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { nanoid } from "nanoid";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { Game } from "@/lib/types/Game";
 import { Quiz, QuizBlock } from "@/lib/types/Quiz";
 import { locales, localeLabels, type Locale } from "@/i18n/config";

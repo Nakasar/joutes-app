@@ -1,6 +1,7 @@
 'use client';
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { joinEventAction } from "../../actions";
 import { useEffect } from "react";
 import { useSession } from "@/lib/auth-client";

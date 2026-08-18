@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { DateTime } from "luxon";
 import { Button } from "@/components/ui/button";
 import { buildCardId, buildPrintingId } from "@/lib/constants/card-ids";
