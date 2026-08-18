@@ -280,7 +280,11 @@ export async function attachLairSeat({
     const result = await collection().updateOne(
       {
         userId,
-        plans: plan,
+        // Payé **ou** offert, comme `getLairIdsWithPlan` : filtrer sur le seul
+        // `plans` refusait l'écriture à un palier accordé par l'équipe. L'écran
+        // proposait alors un bouton qui échouait toujours — et sur un motif
+        // faux, la garde ne sachant dire que « plus de sièges ».
+        $or: [{ plans: plan }, { "grantedPlans.plan": plan }],
         "seats.lairId": { $ne: lairId },
         // « le tableau compte moins de maxSeats éléments »
         [`seats.${maxSeats - 1}`]: { $exists: false },
