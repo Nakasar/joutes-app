@@ -1,5 +1,5 @@
 import { Link } from "@/i18n/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,10 +26,6 @@ import {
   WishlistsMockup,
 } from "./Mockups";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Features");
   return {
@@ -54,7 +50,14 @@ const FEATURES = [
   { id: "leagues", icon: Trophy, accent: "from-orange-500 to-red-500", Mockup: LeaguesMockup },
 ] as const;
 
-export default async function FeaturesPage() {
+export default async function FeaturesPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+
   const t = await getTranslations("Features");
 
   return (

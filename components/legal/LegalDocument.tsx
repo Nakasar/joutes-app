@@ -1,4 +1,6 @@
 import { ReactNode } from "react";
+import { DateTime } from "luxon";
+import { cacheLife } from "next/cache";
 import { Languages } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,6 +54,22 @@ export type LegalDocumentContent = {
  */
 export function resolveLegalLocale(locale: string): "fr" | "en" {
   return locale === "en" ? "en" : "fr";
+}
+
+/**
+ * Met en forme la date de dernière mise à jour d'un document légal.
+ *
+ * La date est une constante et la langue est connue à la construction : la
+ * valeur ne change donc jamais. Luxon consulte pourtant l'horloge pour
+ * résoudre le fuseau, ce qu'un prérendu ne sait pas figer — d'où la mise en
+ * cache sans échéance, qui garde la date dans la coquille statique au lieu d'y
+ * ouvrir un trou.
+ */
+export async function formatLegalDate(iso: string, locale: "fr" | "en"): Promise<string> {
+  "use cache";
+  cacheLife("max");
+
+  return DateTime.fromISO(iso).setLocale(locale).toLocaleString(DateTime.DATE_FULL);
 }
 
 export function LegalDocumentView({
