@@ -16,6 +16,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { getSubscriptionByUserId, getSubscriptionForLair } from "@/lib/db/subscriptions";
 import { canAttachPro } from "@/lib/subscriptions/seats";
+import { plansFromSubscription } from "@/lib/subscriptions/access";
 import PrivateLairInvitationManager from "./PrivateLairInvitationManager";
 import PrivateLairFollowersManager from "./PrivateLairFollowersManager";
 import { getTranslations } from "next-intl/server";
@@ -55,13 +56,17 @@ export default async function ManageLairPage({
   const sponsor = await getSubscriptionForLair(lairId);
   const mySubscription = session?.user?.id ? await getSubscriptionByUserId(session.user.id) : null;
   const proState = {
-    isPro: sponsor?.plans.includes("pro") ?? false,
+    // Les paliers composés, et non `sponsor.plans` : un lieu parrainé par
+    // quelqu'un dont le Pro a été offert par l'équipe est un lieu Pro.
+    isPro: plansFromSubscription(sponsor).includes("pro"),
     attachedByMe: Boolean(
       session?.user?.id && sponsor?.seats.some((seat) => seat.attachedBy === session.user.id)
     ),
     ...(() => {
       const check = canAttachPro({
-        plans: mySubscription?.plans ?? [],
+        // Idem pour le sien : lire le champ brut annonçait « pas d'abonnement »
+        // à qui en avait reçu un de l'équipe.
+        plans: plansFromSubscription(mySubscription),
         seats: mySubscription?.seats ?? [],
         lair,
       });

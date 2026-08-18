@@ -10,6 +10,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { attachLairSeat, detachLairSeat, getSubscriptionByUserId } from "@/lib/db/subscriptions";
 import { canAttachPro } from "@/lib/subscriptions/seats";
+import { plansFromSubscription } from "@/lib/subscriptions/access";
 import { seatsFor } from "@/lib/subscriptions/entitlements";
 
 const emailSchema = z.string().email("Email invalide");
@@ -146,7 +147,9 @@ export async function attachProToLair(lairId: string) {
   }
 
   const subscription = await getSubscriptionByUserId(session.user.id);
-  const plans = subscription?.plans ?? [];
+  // Composés, jamais bruts : un palier offert par l'équipe vaut un palier payé,
+  // et lire `subscription.plans` refusait le rattachement à qui l'avait reçu.
+  const plans = plansFromSubscription(subscription);
 
   // La règle est calculée à part, et testée : l'action ne fait que la porter.
   const check = canAttachPro({ plans, seats: subscription?.seats ?? [], lair });

@@ -71,15 +71,18 @@ export const plansForUserId = cache(async (userId: string): Promise<Subscription
 /**
  * Les plans que porte un abonnement déjà lu.
  *
- * Un seul endroit applique le forçage de développement, et c'est celui-ci : un
- * appelant qui déduirait les plans de `subscription.plans` sans passer par ici
- * verrait un écran différent des vérifications de droits, sur un aperçu.
+ * **À appeler partout où l'on tient un document d'abonnement.** Lire
+ * `subscription.plans` directement ne rend que la part venue de Patreon : un
+ * palier offert par l'équipe vit dans `grantedPlans`, et l'écran qui l'ignore
+ * annonce « pas d'abonnement » à quelqu'un qui en a un. C'est exactement ce qui
+ * était arrivé au rattachement d'un lieu.
  *
- * Développement et aperçus seulement : sans campagne Patreon, c'est le seul
- * moyen de montrer les écrans, et `readForcedPlans` refuse de rien forcer en
- * production.
+ * Un seul endroit applique aussi le forçage de développement, et c'est celui-ci :
+ * un appelant qui déduirait les plans lui-même verrait un écran différent des
+ * vérifications de droits, sur un aperçu. Développement et aperçus seulement —
+ * `readForcedPlans` refuse de rien forcer en production.
  */
-function plansFromSubscription(subscription: Subscription | null): SubscriptionPlanKey[] {
+export function plansFromSubscription(subscription: Subscription | null): SubscriptionPlanKey[] {
   const forced = devForcedPlans();
   if (forced.length > 0) {
     return forced;
