@@ -2,7 +2,7 @@
 
 import { Event } from "@/lib/types/Event";
 import { Game } from "@/lib/types/Game";
-import EventsCalendar from "@/app/events/EventsCalendar";
+import EventsCalendar from "@/app/[locale]/events/EventsCalendar";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useCallback, useTransition, useRef } from "react";
 

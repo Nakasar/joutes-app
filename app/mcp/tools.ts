@@ -48,14 +48,14 @@ import { getUserByEmail, getUserByTagOrId, getUsersByIds } from "@/lib/db/users"
 import { formatDuration } from "@/lib/tournament-timer";
 import { removeSellListItemByCollectionEntryId } from "@/lib/db/sell-lists";
 import { collectionLanguage } from "@/lib/schemas/collection.schema";
-import { parseDeckList, serializeDeckList } from "@/app/games/riftbound/deck-checker/utils";
+import { parseDeckList, serializeDeckList } from "@/app/[locale]/games/riftbound/deck-checker/utils";
 import {
     DeckList,
     DeckListCard,
     getDeckFromPiltover,
     getDeckFromPiltoverCode,
     validateDeckList,
-} from "@/app/games/riftbound/deck-checker/action";
+} from "@/app/[locale]/games/riftbound/deck-checker/action";
 import type { Game } from "@/lib/types/Game";
 import type { Wishlist } from "@/lib/types/Wishlist";
 

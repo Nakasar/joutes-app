@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { updateErrata } from "@/app/games/[gameSlugOrId]/actions";
+import { updateErrata } from "@/app/[locale]/games/[gameSlugOrId]/actions";
 import { Errata, ErrataType } from "@/lib/types/errata";
 import { BoosterCard } from "@/lib/types/booster";
 import { Pencil, X } from "lucide-react";
