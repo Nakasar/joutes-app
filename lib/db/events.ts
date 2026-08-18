@@ -1055,6 +1055,57 @@ export async function getEventById(eventId: string): Promise<Event | null> {
  * @param registrationStatus - The registration status (defaults to REGISTERED)
  * @returns True if the participant was added, false otherwise
  */
+/**
+ * Compte les événements d'une période auxquels un utilisateur a participé.
+ *
+ * Sert le défi de saison : on compte des présences, pas des intentions. Un
+ * `EXCLUDED` ne compte donc pas, et un participant sans statut explicite est
+ * `REGISTERED` par défaut — même règle que `registeredParticipantsCount`, à
+ * laquelle s'ajoutent deux exclusions propres à un bilan :
+ *
+ * — les événements annulés, qui n'ont pas eu lieu ;
+ * — ceux qui n'ont pas encore commencé, qu'on ne peut pas porter au crédit de
+ *   quelqu'un avant qu'ils arrivent.
+ *
+ * `startDateTime` est stocké en ISO 8601 : la comparaison de chaînes suffit
+ * et reste indexable, les deux bornes étant produites dans le même format.
+ *
+ * @param userId - L'utilisateur dont on fait le bilan
+ * @param from - Début de la période, inclus
+ * @param to - Fin de la période, incluse
+ * @param now - Instant de référence pour « déjà commencé ». Par défaut, maintenant.
+ * @returns Le nombre d'événements retenus
+ */
+export async function countUserAttendanceBetween(
+  userId: string,
+  from: Date,
+  to: Date,
+  now: Date = new Date()
+): Promise<number> {
+  const events = await db.collection<EventDocument>(COLLECTION_NAME)
+    .find(
+      {
+        participants: userId,
+        status: {$ne: 'cancelled'},
+        startDateTime: {
+          $gte: from.toISOString(),
+          $lte: to.toISOString(),
+        },
+      },
+      // Seuls ces deux champs décident du compte : inutile de tirer des
+      // documents entiers pour n'en lire que le statut d'inscription.
+      {projection: {startDateTime: 1, participantRegistrations: 1}}
+    )
+    .toArray();
+
+  const nowIso = now.toISOString();
+
+  return events.filter((event) =>
+    event.startDateTime <= nowIso &&
+    (event.participantRegistrations?.[userId] ?? 'REGISTERED') !== 'EXCLUDED'
+  ).length;
+}
+
 export async function addParticipantToEvent(eventId: string, userId: string, registrationStatus: RegistrationStatus = 'REGISTERED'): Promise<boolean> {
   const result = await db.collection<EventDocument>(COLLECTION_NAME).updateOne(
     {id: eventId},

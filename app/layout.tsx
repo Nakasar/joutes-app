@@ -7,6 +7,7 @@ import { DateTime } from "luxon";
 import Link from "next/link";
 import { Github } from "lucide-react";
 import WinterDecorations from "@/components/WinterDecorations";
+import HalloweenDecorations from "@/components/HalloweenDecorations";
 import WebMcpTools from "@/components/WebMcpTools";
 import { Toaster } from "@/components/ui/sonner";
 import {NextIntlClientProvider} from "next-intl";
@@ -15,6 +16,9 @@ import {ThemeToggle} from "@/components/theme-toggle";
 
 // Charger le thème hivernal si activé
 const isWinterTheme = process.env.NEXT_PUBLIC_THEME === "winter";
+// Idem pour l'habillage d'Halloween. Les deux ne peuvent pas coexister :
+// NEXT_PUBLIC_THEME ne porte qu'une valeur, et deux palettes ne se mélangent pas.
+const isHalloweenTheme = process.env.NEXT_PUBLIC_THEME === "halloween";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -59,7 +63,7 @@ export default function RootLayout({
   return (
     <html lang="fr" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen${isWinterTheme ? ' winter-theme' : ''}`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen${isWinterTheme ? ' winter-theme' : ''}${isHalloweenTheme ? ' halloween-theme' : ''}`}
       >
         <NextIntlClientProvider>
           <ThemeProvider
@@ -71,6 +75,7 @@ export default function RootLayout({
             {/* Expose les outils du site aux agents IA (WebMCP) ; ne rend rien. */}
             <WebMcpTools />
             {isWinterTheme && <WinterDecorations />}
+            {isHalloweenTheme && <HalloweenDecorations />}
             <div className="relative min-h-screen flex flex-col">
               <Header />
               <main className="flex-1">

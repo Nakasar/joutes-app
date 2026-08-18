@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import {getTranslations} from "next-intl/server";
+import HalloweenSeasonBanner from "@/components/HalloweenSeasonBanner";
 
 type HomeProps = {
   searchParams: Promise<{
@@ -32,6 +33,10 @@ export default async function Home({ searchParams }: HomeProps) {
             {t('createEvent')}
           </Link>
         </Button>
+      </div>
+      {/* Hors saison — et hors habillage — le bandeau ne rend rien. */}
+      <div className="container mx-auto px-4">
+        <HalloweenSeasonBanner />
       </div>
       <EventsCalendarWrapper searchParams={params} />
     </div>

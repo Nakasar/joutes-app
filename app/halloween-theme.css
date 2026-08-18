@@ -1,0 +1,292 @@
+/*
+ * Habillage « Halloween » pour Joutes.
+ *
+ * Chargé par `HalloweenDecorations`, monté par la mise en page quand
+ * NEXT_PUBLIC_THEME vaut "halloween".
+ *
+ * Contrairement à `winter-theme.css`, les jetons ne sont pas posés sur
+ * `:root` mais sur `.halloween-theme` — la classe que la mise en page ajoute
+ * au `body`.
+ *
+ * La raison est vérifiable : la mise en page importe le composant de
+ * décoration sans condition et ne le *rend* que sous condition, si bien que
+ * la feuille part dans le paquet quelle que soit la saison. Un build avec
+ * NEXT_PUBLIC_THEME=halloween embarque ainsi `--christmas-red`, jeton
+ * hivernal. Une palette posée sur `:root` ne dépend alors plus que de l'ordre
+ * des feuilles pour repeindre — ou non — toute l'application ; sous une
+ * classe, la question ne se pose pas.
+ *
+ * Les jetons portent les noms de `globals.css`. Posés sur le `body`, ils
+ * l'emportent pour toute sa descendance — y compris les surcouches Radix,
+ * rendues dans `document.body` — sans qu'aucun composant ait à changer.
+ */
+
+.halloween-theme {
+  /* Fond de parchemin, encre violette. */
+  --background: oklch(0.975 0.012 75);
+  --foreground: oklch(0.23 0.045 300);
+  --card: oklch(0.995 0.006 75);
+  --card-foreground: oklch(0.23 0.045 300);
+  --popover: oklch(0.995 0.006 75);
+  --popover-foreground: oklch(0.23 0.045 300);
+
+  /*
+   * La braise du mode clair est plus sombre que celle de la nuit : un orange
+   * lumineux sur blanc plafonne à 3,8:1, sous le seuil de 4,5:1 exigé pour du
+   * texte. Celle-ci tient 4,8:1 avec `--primary-foreground`.
+   */
+  --primary: oklch(0.56 0.17 45);
+  --primary-foreground: oklch(0.99 0.01 75);
+  --secondary: oklch(0.9 0.03 300);
+  --secondary-foreground: oklch(0.23 0.045 300);
+  --muted: oklch(0.93 0.02 70);
+  --muted-foreground: oklch(0.5 0.04 300);
+
+  /*
+   * `--accent` reste ce qu'il est dans `globals.css` : la surface de survol
+   * des entrées de menu et des boutons fantômes, pas une couleur vive. Le
+   * violet saturé de la saison vit dans `--wisp`, plus bas.
+   */
+  --accent: oklch(0.94 0.02 300);
+  --accent-foreground: oklch(0.23 0.045 300);
+
+  --destructive: oklch(0.55 0.2 25);
+  --border: oklch(0.87 0.02 65);
+  --input: oklch(0.89 0.02 65);
+  --ring: oklch(0.56 0.15 45);
+
+  --chart-1: oklch(0.56 0.17 45);
+  --chart-2: oklch(0.56 0.17 300);
+  --chart-3: oklch(0.55 0.14 155);
+  --chart-4: oklch(0.62 0.12 25);
+  --chart-5: oklch(0.5 0.1 260);
+
+  --sidebar: oklch(0.96 0.015 70);
+  --sidebar-foreground: oklch(0.23 0.045 300);
+  --sidebar-primary: oklch(0.56 0.17 45);
+  --sidebar-primary-foreground: oklch(0.99 0.01 75);
+  --sidebar-accent: oklch(0.94 0.02 300);
+  --sidebar-accent-foreground: oklch(0.23 0.045 300);
+  --sidebar-border: oklch(0.87 0.02 65);
+  --sidebar-ring: oklch(0.56 0.15 45);
+
+  /*
+   * Jetons propres à la saison, comme `--christmas-red` l'est à l'hiver.
+   * Braise (teinte 45) et violet spectral (teinte 300) partagent clarté et
+   * chroma : ils s'équilibrent au lieu de se disputer la page. Le vert
+   * phosphorescent est un troisième ton, réservé aux flammes et aux états
+   * rares — jamais à du texte courant.
+   */
+  --pumpkin: oklch(0.56 0.17 45);
+  --wisp: oklch(0.56 0.17 300);
+  --spectre: oklch(0.55 0.14 155);
+  --bone: oklch(0.97 0.015 80);
+  --night: oklch(0.23 0.045 300);
+
+  /* Encre des silhouettes du décor, et fil des toiles d'araignée. */
+  --decor-ink: oklch(0.45 0.08 300);
+  --web: oklch(0.23 0.045 300 / 16%);
+}
+
+/*
+ * `next-themes` pose `.dark` sur `<html>`, la mise en page pose
+ * `.halloween-theme` sur `<body>` : le descendant est bien le `body`.
+ */
+.dark .halloween-theme {
+  --background: oklch(0.16 0.035 300);
+  --foreground: oklch(0.95 0.015 85);
+  --card: oklch(0.215 0.04 300);
+  --card-foreground: oklch(0.95 0.015 85);
+  --popover: oklch(0.215 0.04 300);
+  --popover-foreground: oklch(0.95 0.015 85);
+
+  --primary: oklch(0.72 0.17 50);
+  --primary-foreground: oklch(0.18 0.045 50);
+  --secondary: oklch(0.3 0.05 300);
+  --secondary-foreground: oklch(0.95 0.015 85);
+  --muted: oklch(0.265 0.04 300);
+  --muted-foreground: oklch(0.7 0.03 300);
+  --accent: oklch(0.3 0.05 300);
+  --accent-foreground: oklch(0.95 0.015 85);
+
+  --destructive: oklch(0.62 0.19 25);
+  --border: oklch(0.98 0.02 85 / 12%);
+  --input: oklch(0.98 0.02 85 / 16%);
+  --ring: oklch(0.68 0.15 50);
+
+  --chart-1: oklch(0.72 0.17 50);
+  --chart-2: oklch(0.72 0.17 300);
+  --chart-3: oklch(0.78 0.16 155);
+  --chart-4: oklch(0.68 0.16 25);
+  --chart-5: oklch(0.62 0.13 260);
+
+  --sidebar: oklch(0.19 0.04 300);
+  --sidebar-foreground: oklch(0.95 0.015 85);
+  --sidebar-primary: oklch(0.72 0.17 50);
+  --sidebar-primary-foreground: oklch(0.18 0.045 50);
+  --sidebar-accent: oklch(0.3 0.05 300);
+  --sidebar-accent-foreground: oklch(0.95 0.015 85);
+  --sidebar-border: oklch(0.98 0.02 85 / 12%);
+  --sidebar-ring: oklch(0.68 0.15 50);
+
+  --pumpkin: oklch(0.72 0.17 50);
+  --wisp: oklch(0.72 0.17 300);
+  --spectre: oklch(0.78 0.16 155);
+  --bone: oklch(0.93 0.02 85);
+  --night: oklch(0.1 0.03 300);
+
+  --decor-ink: oklch(0.1 0.03 300);
+  --web: oklch(0.98 0.02 85 / 22%);
+}
+
+/*
+ * Trois niveaux de décor. `data-decor` est posé sur le conteneur des
+ * décorations : « complet » tout montrer, « discret » couper ce qui bouge,
+ * « aucun » ne garder que la palette.
+ */
+[data-decor="aucun"] {
+  display: none;
+}
+
+[data-decor="discret"] .decor-heavy {
+  display: none;
+}
+
+/*
+ * Le halo de braise : la variante saisonnière de `.first-copy-halo`
+ * (globals.css). Même rythme, même ombre à l'arrêt — seule la teinte change,
+ * pour que la carte reste repérable animations coupées.
+ */
+@keyframes halloween-ember-halo {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px color-mix(in oklab, var(--pumpkin) 75%, transparent),
+      0 0 10px 0 color-mix(in oklab, var(--pumpkin) 30%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px color-mix(in oklab, var(--pumpkin) 95%, transparent),
+      0 0 20px 4px color-mix(in oklab, var(--pumpkin) 55%, transparent);
+  }
+}
+
+.halloween-theme .first-copy-halo {
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--pumpkin) 75%, transparent),
+    0 0 10px 0 color-mix(in oklab, var(--pumpkin) 30%, transparent);
+  animation: halloween-ember-halo 2.2s ease-in-out infinite;
+}
+
+/* Vol lent : deux ou trois silhouettes, là où l'hiver lâchait cinquante flocons. */
+@keyframes halloween-flit {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(-4deg);
+  }
+  50% {
+    transform: translate3d(26px, -14px, 0) rotate(5deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-4deg);
+  }
+}
+
+.halloween-bat {
+  animation: halloween-flit 9s ease-in-out infinite;
+}
+
+/* La lueur d'une citrouille bat comme une bougie, jamais en rythme régulier. */
+@keyframes halloween-flicker {
+  0%,
+  100% {
+    opacity: 0.85;
+    filter: drop-shadow(0 0 6px var(--pumpkin));
+  }
+  45% {
+    opacity: 1;
+    filter: drop-shadow(0 0 16px var(--pumpkin));
+  }
+  70% {
+    opacity: 0.78;
+    filter: drop-shadow(0 0 5px var(--pumpkin));
+  }
+}
+
+.halloween-lantern {
+  animation: halloween-flicker 3.4s ease-in-out infinite;
+}
+
+/*
+ * La mèche penche et se pince sur son point d'attache ; le halo respire au
+ * même rythme. Chaque bougie part décalée (`animation-delay` en ligne), sinon
+ * les flammes battent à l'unisson et l'illusion tombe.
+ */
+@keyframes halloween-wick {
+  0%,
+  100% {
+    transform: rotate(-3deg) scaleY(1);
+  }
+  30% {
+    transform: rotate(2.5deg) scaleY(1.09);
+  }
+  60% {
+    transform: rotate(-1.5deg) scaleY(0.94);
+  }
+}
+
+.halloween-wick {
+  transform-origin: 50% 31%;
+  animation: halloween-wick 1.5s ease-in-out infinite;
+}
+
+@keyframes halloween-glow {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(1);
+  }
+  30% {
+    opacity: 0.32;
+    transform: scale(1.14);
+  }
+}
+
+.halloween-glow {
+  opacity: 0.2;
+  transform-origin: 50% 50%;
+  animation: halloween-glow 1.5s ease-in-out infinite;
+}
+
+/* Une bougie flottante, et le revenant des états vides. */
+@keyframes halloween-hover {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+.halloween-float {
+  animation: halloween-hover 6s ease-in-out infinite;
+}
+
+/*
+ * Une seule règle décide de tout : plus rien ne bouge, et le décor lourd
+ * disparaît — le repli est exactement le niveau « discret ».
+ */
+@media (prefers-reduced-motion: reduce) {
+  .halloween-theme .first-copy-halo,
+  .halloween-bat,
+  .halloween-lantern,
+  .halloween-wick,
+  .halloween-glow,
+  .halloween-float {
+    animation: none;
+  }
+
+  .decor-heavy {
+    display: none;
+  }
+}

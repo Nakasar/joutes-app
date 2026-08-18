@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Gamepad2, Euro, Filter, List, CalendarDays, Clock, Navigation, X, User2Icon, AlertCircle, CheckCircle, Star, HelpCircle, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { Ghost } from "@/components/HalloweenSVGs";
+import { isHalloweenTheme } from "@/lib/utils/halloween-theme";
 import { DateTime } from "luxon";
 import { useSession } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
@@ -1159,6 +1161,27 @@ export default function EventsCalendar({
   );
 }
 
+/**
+ * L'état vide de la saison. Le revenant flotte doucement — et s'immobilise
+ * pour qui a demandé moins d'animations, la règle vivant dans
+ * `halloween-theme.css`.
+ */
+function HauntedEmptyState() {
+  const t = useTranslations("HalloweenSeason");
+
+  return (
+    <Card>
+      <CardContent className="py-16 text-center">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center halloween-float">
+          <Ghost className="h-14 w-14" />
+        </div>
+        <p className="font-medium">{t("emptyTitle")}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{t("emptyBody")}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
 // Composant pour la vue liste
 type ListViewProps = {
   eventsInMonth: Event[];
@@ -1184,6 +1207,13 @@ function ListView({
   const t = useTranslations("EventsCalendar");
 
   if (eventsInMonth.length === 0) {
+    // Pendant l'habillage d'Halloween, un revenant tient la place du
+    // calendrier barré. Même anatomie — carte, un rond, un titre, une ligne
+    // d'aide : seuls le dessin et la seconde ligne changent.
+    if (isHalloweenTheme()) {
+      return <HauntedEmptyState />;
+    }
+
     return (
       <Card>
         <CardContent className="py-16 text-center">

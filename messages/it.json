@@ -3819,5 +3819,18 @@
     "seatsHint": "Il collegamento si fa dalla pagina di gestione di un locale di cui sei proprietario.",
     "manageLair": "Gestisci",
     "seePlans": "Vedi tutte le offerte"
+  },
+  "HalloweenSeason": {
+    "title": "Il distintivo della stagione",
+    "earnedTitle": "Distintivo ottenuto",
+    "badgeName": "Sentinella della Notte",
+    "deadline": "fino al {day} ottobre",
+    "body": "Partecipa a {goal} eventi durante la stagione per ottenere il distintivo «Sentinella della Notte» e il traguardo che lo accompagna.",
+    "earnedBody": "Il distintivo della stagione è tuo, e il traguardo è sul tuo profilo — vi resterà, con la data di quest'anno.",
+    "progress": "{done} su {goal}",
+    "findEvent": "Trova un evento",
+    "seeBadge": "Vedi il distintivo",
+    "emptyTitle": "Nessun evento questo mese",
+    "emptyBody": "Anche i fantasmi se ne sono andati. Prova un altro mese, o organizzane uno tu."
   }
 }
