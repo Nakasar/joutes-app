@@ -8,8 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { UserPlus, X, CheckCircle, AlertCircle } from "lucide-react";
 import { addParticipantByTagAction, removeParticipantAction } from "../actions";
 import { User } from "@/lib/types/User";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 
 type ParticipantManagerProps = {
   eventId: string;

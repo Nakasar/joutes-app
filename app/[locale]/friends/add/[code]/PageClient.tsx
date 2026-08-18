@@ -1,10 +1,10 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/auth-client";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
 import { Loader2, UserCheck, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 

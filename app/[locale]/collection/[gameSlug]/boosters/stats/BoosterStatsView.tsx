@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { ArrowLeft, BarChart3, Package, Sparkles, Layers } from "lucide-react";
 import { Badge } from "@/components/ui/badge";

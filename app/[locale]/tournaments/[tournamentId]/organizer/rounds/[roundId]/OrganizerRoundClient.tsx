@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Check, LayoutGrid, List, LockOpen, Plus, Trash2, Trophy, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";

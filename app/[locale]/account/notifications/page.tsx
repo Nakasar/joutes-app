@@ -1,7 +1,7 @@
 import {auth} from "@/lib/auth";
 import {headers} from "next/headers";
 import {redirect} from "next/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import {Button} from "@/components/ui/button";
 import {ArrowLeft, BellIcon, Calendar1Icon, MailIcon, SmartphoneIcon} from "lucide-react";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";

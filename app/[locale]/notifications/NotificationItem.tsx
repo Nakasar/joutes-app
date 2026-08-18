@@ -5,7 +5,7 @@ import { DateTime } from "luxon";
 import { Bell, Check, CheckCheck, MapPin, Calendar, X } from "lucide-react";
 import { markNotificationAsReadAction, hideNotificationAction } from "./actions";
 import { useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { NotificationTemplate } from "@/components/notifications/NotificationTemplate";
 
 type EnrichedNotification = {

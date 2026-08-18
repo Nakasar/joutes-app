@@ -4,7 +4,7 @@ import { canManageQuiz } from "@/lib/quizzes/authorization";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { Metadata } from "next";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ArrowLeft, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ObjectId } from "mongodb";

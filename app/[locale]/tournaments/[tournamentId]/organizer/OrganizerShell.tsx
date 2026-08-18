@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import type { ReactNode } from "react";
 import { getTranslations } from "next-intl/server";
 import { cn } from "@/lib/utils";

@@ -3,7 +3,7 @@ import { getQuizzes } from "@/lib/db/quizzes";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import QuizCard from "./QuizCard";

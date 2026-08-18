@@ -5,7 +5,7 @@ import { getGameMatchesByUser } from "@/lib/db/game-matches";
 import { getAllGames } from "@/lib/db/games";
 import { getAllLairs } from "@/lib/db/lairs";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Plus } from "lucide-react";
 import GameMatchesClient from "./GameMatchesClient";
 import type { Metadata } from "next";

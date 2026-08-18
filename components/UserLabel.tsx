@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { UserBadges } from "@/components/UserBadges";
 import type { AuthorSummary } from "@/lib/db/user-badges";
 import { cn } from "@/lib/utils";

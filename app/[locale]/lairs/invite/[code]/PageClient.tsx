@@ -1,13 +1,12 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { acceptInvitationAction } from "@/app/[locale]/account/private-lairs-actions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, CheckCircle, XCircle, Lock, MapPin } from "lucide-react";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 interface InvitePageProps {

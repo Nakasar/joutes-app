@@ -7,7 +7,7 @@ import {notFound} from "next/navigation";
 import {Metadata} from "next/types";
 import PoliciesClientView from "./PoliciesClientView";
 import {Button} from "@/components/ui/button";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import {hasPermission} from "@/lib/db/permissions";
 import AddPolicyDialog from "@/app/[locale]/games/[gameSlugOrId]/policies/AddPolicyDialog";
 import { getLocale, getTranslations } from "next-intl/server";

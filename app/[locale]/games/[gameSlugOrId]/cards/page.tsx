@@ -5,7 +5,7 @@ import db from "@/lib/mongodb";
 import {notFound} from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import {Button} from "@/components/ui/button";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import {GameToolsNavBar} from "@/components/games/GameToolsNavBar";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.

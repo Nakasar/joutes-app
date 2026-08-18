@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Check, Clock, Pause, Play, RotateCcw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";

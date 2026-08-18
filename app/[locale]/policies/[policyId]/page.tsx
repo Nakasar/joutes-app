@@ -9,7 +9,7 @@ import { ObjectId } from "mongodb";
 import { resolveCardMentions } from "@/lib/game-content-cards";
 import PolicyDetailView from "./PolicyDetailView";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Locale } from "@/i18n/config";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { Game } from "@/lib/types/Game";
 import { Deck } from "@/lib/types/Deck";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,6 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import Link from "next/link";
 
 type EditDeckFormProps = {
   deck: Deck;

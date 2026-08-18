@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {ArrowLeft, BotIcon, BubblesIcon, Key} from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { setRequestLocale } from "next-intl/server";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
 // See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
@@ -18,7 +19,14 @@ export const metadata: Metadata = {
     },
 };
 
-export default function IntegrationsPage() {
+export default async function IntegrationsPage({
+    params,
+}: {
+    params: Promise<{ locale: string }>;
+}) {
+    const { locale } = await params;
+    setRequestLocale(locale);
+
     return (
         <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8">
             <div className="container mx-auto px-4 max-w-5xl">

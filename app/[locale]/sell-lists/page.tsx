@@ -6,7 +6,7 @@ import { getSellListForOwner } from "@/lib/db/sell-lists";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tag } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
 // See: https://nextjs.org/docs/app/guides/migrating-to-cache-components

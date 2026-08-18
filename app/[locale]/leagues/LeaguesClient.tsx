@@ -5,7 +5,7 @@ import { League, LeagueFormat, LeagueStatus, PaginatedLeaguesResult } from "@/li
 import { Game } from "@/lib/types/Game";
 import { searchLeaguesAction } from "./actions";
 import LeaguesFilters, { LeaguesFiltersValues } from "./LeaguesFilters";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

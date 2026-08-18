@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 import { GAME_TYPES } from "@/lib/constants/game-types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ArrowLeft, Calendar, Users, MapPin } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";

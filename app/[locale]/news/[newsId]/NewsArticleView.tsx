@@ -6,7 +6,7 @@ import { getNewsById } from "@/lib/db/news";
 import { hasPermission } from "@/lib/db/permissions";
 import { Metadata } from "next";
 import { DateTime } from "luxon";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ArrowLeft, ExternalLink, Pencil, Tag, Gamepad2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

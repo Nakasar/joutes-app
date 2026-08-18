@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DateTime } from "luxon";
 import { Calendar, MapPin, Users, Eye, Trophy, Medal, Angry, Frown, Meh, Smile, Laugh, Swords } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import GameMatchActions from "./GameMatchActions";
 import AddPlayerToMatch from "./AddPlayerToMatch";
 

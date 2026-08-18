@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import ApiKeysManager from "../ApiKeysManager";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Key, ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.

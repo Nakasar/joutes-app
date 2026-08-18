@@ -9,7 +9,7 @@ import {headers} from "next/headers";
 import {Metadata} from "next/types";
 import {getErratasByCardId} from "@/lib/db/erratas";
 import {Button} from "@/components/ui/button";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import BanCardButton from "@/app/[locale]/games/[gameSlugOrId]/cards/[cardId]/BanCardButton";
 import EditErrataDialog from "@/components/EditErrataDialog";
 import DeleteErrataButton from "@/components/DeleteErrataButton";

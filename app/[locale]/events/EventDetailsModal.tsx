@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin, Clock, Gamepad2, Euro, User2Icon, Users, Star, Lock } from "lucide-react";
 import { DateTime } from "luxon";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type EventDetailsModalProps = {

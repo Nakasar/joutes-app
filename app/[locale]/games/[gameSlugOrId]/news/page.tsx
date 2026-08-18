@@ -3,7 +3,7 @@ import { getNews } from "@/lib/db/news";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";

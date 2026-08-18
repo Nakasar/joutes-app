@@ -1,7 +1,7 @@
 import EventsCalendarWrapper from "@/components/EventsCalendarWrapper";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import {getTranslations} from "next-intl/server";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.

@@ -7,7 +7,7 @@ import { getNewsById, getAllTags } from "@/lib/db/news";
 import { getAllGames } from "@/lib/db/games";
 import { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import NewsForm from "../../NewsForm";
 import { Locale } from "@/i18n/config";

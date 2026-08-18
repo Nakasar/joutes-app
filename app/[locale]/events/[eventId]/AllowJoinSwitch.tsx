@@ -3,7 +3,7 @@
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 import { toggleAllowJoinAction } from "../actions";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 
 type AllowJoinSwitchProps = {
   eventId: string;

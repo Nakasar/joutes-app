@@ -1,8 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { DateTime } from "luxon";
 import { ChevronLeft, ChevronRight, Plus, RotateCw, Trash2 } from "lucide-react";

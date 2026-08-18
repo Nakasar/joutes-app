@@ -4,7 +4,7 @@ import { getAllGames } from "@/lib/db/games";
 import { getUserById, getUsersFollowingLair } from "@/lib/db/users";
 import { User } from "@/lib/types/User";
 import { notFound } from "next/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ArrowLeft, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

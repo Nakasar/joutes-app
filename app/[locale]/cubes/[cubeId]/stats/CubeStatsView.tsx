@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { ArrowLeft, BarChart3, Boxes, Layers, Copy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";

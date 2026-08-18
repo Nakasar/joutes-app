@@ -7,7 +7,7 @@ import { canManageQuiz } from "@/lib/quizzes/authorization";
 import { getAllGames } from "@/lib/db/games";
 import { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import QuizForm from "../../QuizForm";
 

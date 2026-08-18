@@ -6,12 +6,11 @@ import { Game } from "@/lib/types/Game";
 import { PaginatedLairsResult } from "@/lib/db/lairs";
 import { searchLairsAction } from "./actions";
 import LairsFilters, { LairsFiltersValues } from "./LairsFilters";
-import Link from "next/link";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, ArrowRight, Gamepad2, Lock, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
-import {usePathname, useRouter} from "next/navigation";
 import { useTranslations } from "next-intl";
 
 type LairsClientProps = {

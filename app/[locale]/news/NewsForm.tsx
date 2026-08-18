@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { Game } from "@/lib/types/Game";
 import { News, NewsSource } from "@/lib/types/News";
 import { locales, localeLabels, type Locale } from "@/i18n/config";

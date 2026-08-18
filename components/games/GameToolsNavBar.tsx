@@ -1,5 +1,5 @@
 import {Button} from "@/components/ui/button";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import {getGameBySlugOrId} from "@/lib/db/games";
 import {getTranslations} from "next-intl/server";
 import {

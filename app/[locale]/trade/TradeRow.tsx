@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { DateTime } from "luxon";
 import { BadgeCheck, Ban, CheckCircle2, Users } from "lucide-react";

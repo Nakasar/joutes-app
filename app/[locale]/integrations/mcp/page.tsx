@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { setRequestLocale } from "next-intl/server";
 import type {Metadata} from "next";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
@@ -17,7 +18,16 @@ export const metadata: Metadata = {
     },
 };
 
-export default function IntegrationsMPCPage() {
+export default async function IntegrationsMPCPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  // Fixe la langue pour cette page : sans cet appel, le `Link` localisé la lit
+  // à la requête et fait basculer toute la route en rendu dynamique.
+  const { locale } = await params;
+  setRequestLocale(locale);
+
     return (
         <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8">
             <div className="container mx-auto px-4 max-w-5xl">

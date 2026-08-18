@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Heart } from "lucide-react";
 import { addGameToUserList, removeGameFromUserList } from "@/app/[locale]/account/actions";
 import { notifyGamesChanged } from "@/lib/games/games-changed";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 
 interface FollowGameButtonProps {

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { GameMatch } from "@/lib/types/GameMatch";
 import { Game } from "@/lib/types/Game";
 import { Lair } from "@/lib/types/Lair";

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { deleteAchievementAction } from "./actions";
 import { useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 
 export function DeleteAchievementButton({ id }: { id: string }) {
   const [isPending, startTransition] = useTransition();

@@ -5,7 +5,7 @@ import { hasPermission } from "@/lib/db/permissions";
 import { getAllGames } from "@/lib/db/games";
 import { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { getLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/config";

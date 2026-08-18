@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, MapPin, ExternalLink, Users, Star, Info } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import Link from 'next/link';
+import { Link } from "@/i18n/navigation";
 import { useState } from 'react';
 import { useSession } from '@/lib/auth-client';
 import EventDetailsModal from '@/app/[locale]/events/EventDetailsModal';

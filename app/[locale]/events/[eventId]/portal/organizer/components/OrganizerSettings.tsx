@@ -34,7 +34,7 @@ import {
   updatePhaseStatus,
   setCurrentPhase,
 } from "../../actions";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { DateTime } from "luxon";
 import { updateEventDetailsAction } from "@/app/[locale]/events/actions";
 import { Textarea } from "@/components/ui/textarea";
