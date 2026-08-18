@@ -8,6 +8,10 @@ import {Button} from "@/components/ui/button";
 import Link from "next/link";
 import {GameToolsNavBar} from "@/components/games/GameToolsNavBar";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 export async function generateMetadata({
                                          params
                                        }: {

@@ -2,8 +2,6 @@ import { NextRequest } from "next/server";
 import { buildDeckCheckerOgImage, buildOgImage, CARD_GRID_MAX_ITEMS, type CardGridItem } from "@/lib/og";
 import { getDeckFromPiltoverCode, validateDeckList, type DeckListCard } from "@/app/games/riftbound/deck-checker/action";
 
-export const dynamic = "force-dynamic";
-
 const FALLBACK_TITLE = "Vérification de deck";
 const FALLBACK_SUBTITLE = "Vérifiez la légalité de votre deck Riftbound sur Joutes.";
 

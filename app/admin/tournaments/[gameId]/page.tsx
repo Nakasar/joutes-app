@@ -8,6 +8,10 @@ import { presetOptionsForGame } from "@/lib/tournaments/game-defaults";
 import { defaultPresetForGameSlug } from "@/lib/tournaments/game-presets";
 import { GameTournamentDefaultsForm } from "../GameTournamentDefaultsForm";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 /**
  * Réglages de tournoi d'un jeu.
  *

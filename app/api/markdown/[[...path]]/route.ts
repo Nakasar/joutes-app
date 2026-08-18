@@ -19,8 +19,6 @@ import {
  */
 
 /** Le rendu dépend de la requête : rien à figer au build. */
-export const dynamic = "force-dynamic";
-
 /**
  * Ce dont la réponse dépend, et donc ce sur quoi un cache partagé doit
  * l'indexer.

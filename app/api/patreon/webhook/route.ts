@@ -31,8 +31,6 @@ import {
  * une livraison que personne ne saura jamais traiter. Seules la signature
  * invalide (401) et l'absence de secret (503) sortent en erreur.
  */
-export const runtime = "nodejs";
-
 export async function POST(req: Request) {
   const secret = patreonWebhookSecret();
 

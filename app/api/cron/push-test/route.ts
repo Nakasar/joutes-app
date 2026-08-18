@@ -20,10 +20,9 @@ import { buildApnsPayload, buildFcmMessage } from "@/lib/push/payload";
  *   curl -H "Authorization: Bearer $CRON_SECRET" \
  *     "https://joutes.app/api/cron/push-test?platform=ios&token=..."
  *
- * `node:http2` n'existe pas hors du runtime Node : la déclaration ci-dessous
- * n'est pas décorative.
+ * `node:http2` n'existe pas hors du runtime Node, que Cache Components impose
+ * désormais à toute l'application.
  */
-export const runtime = "nodejs";
 export const maxDuration = 30;
 
 export async function GET(req: Request) {

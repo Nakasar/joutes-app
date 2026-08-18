@@ -7,6 +7,10 @@ import { Library } from "lucide-react";
 import DecksClient from "./DecksClient";
 import { redirect } from "next/navigation";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 export const metadata: Metadata = {
   title: 'Decks',
   description: 'Construisez, gérez et partagez vos decks de jeux de cartes à collectionner. Vérifiez leur légalité et analysez votre courbe de coûts.',

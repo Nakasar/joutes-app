@@ -27,8 +27,6 @@ async function checkDatabase(): Promise<{ ok: boolean; error?: string }> {
  * Sans cela, Next servirait une réponse figée au build : un état de santé mis
  * en cache ne dit plus rien de l'état présent.
  */
-export const dynamic = "force-dynamic";
-
 export async function GET() {
   const database = await checkDatabase();
   const healthy = database.ok;

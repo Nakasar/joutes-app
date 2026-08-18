@@ -9,6 +9,10 @@ import { Button } from "@/components/ui/button";
 import { getTranslations } from "next-intl/server";
 import QuizListClient from "./QuizListClient";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 /**
  * La description nomme ce qu'un quizz fait travailler — règles, rulings,
  * politiques de tournoi — plutôt que de répéter le mot « quizz » : c'est ce
@@ -34,8 +38,6 @@ export async function generateMetadata(): Promise<Metadata> {
     },
   };
 }
-
-export const dynamic = "force-dynamic";
 
 export default async function QuizzPage() {
   const [games, session, canManageAll] = await Promise.all([

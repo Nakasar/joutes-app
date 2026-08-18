@@ -5,6 +5,10 @@ import { searchUsersForAdmin } from "@/lib/db/users";
 import { adminUserProfilePath, adminUserTag } from "@/lib/users/admin-search";
 import { Button } from "@/components/ui/button";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 /**
  * Recherche d'utilisateurs, pour atteindre un profil sans passer par un lien
  * trouvé ailleurs.

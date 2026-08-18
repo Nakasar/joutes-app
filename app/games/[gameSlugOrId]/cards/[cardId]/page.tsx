@@ -41,6 +41,10 @@ import CardPriceDetails from "@/components/cards/CardPriceDetails";
 import {getCardPrices} from "@/lib/db/card-prices";
 import { UserLabel } from "@/components/UserLabel";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 function hasNegativeVoteRatio(errata: Errata): boolean {
   return errata.votes.negative > errata.votes.positive;
 }
@@ -155,7 +159,7 @@ export default async function RiftboundCardDetailPage({
   // de présumer laquelle.
   const [cardPrice] = await getCardPrices(new ObjectId(game.id), card.id);
 
-  const erratas = [...await getErratasByCardId(cardId, userId)].sort(
+  const erratas = [...(await getErratasByCardId(cardId, userId))].sort(
     (a, b) => Number(hasNegativeVoteRatio(a)) - Number(hasNegativeVoteRatio(b))
   );
   const userIsAdmin = isAdmin(session?.user?.email);

@@ -10,6 +10,10 @@ import { canManageQuiz } from "@/lib/quizzes/authorization";
 import { locales, localeLabels, type Locale } from "@/i18n/config";
 import QuizTranslationEditor from "./QuizTranslationEditor";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 type Props = { params: Promise<{ quizId: string; lang: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

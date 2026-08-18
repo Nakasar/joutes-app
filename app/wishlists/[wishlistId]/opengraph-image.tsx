@@ -1,8 +1,6 @@
 import { buildOgImage, buildWishlistOgImage, CARD_GRID_MAX_ITEMS, type CardGridItem } from "@/lib/og";
 import { getWishlistById, getWishlistItems, getWishlistOwnerInfo } from "@/lib/db/wishlists";
 
-export const dynamic = "force-dynamic";
-
 export const alt = "Liste de souhaits - Joutes";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";

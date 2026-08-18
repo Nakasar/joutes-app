@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import { DateTime } from "luxon";
+import { cacheLife } from "next/cache";
 import Link from "next/link";
 import { Github } from "lucide-react";
 import WinterDecorations from "@/components/WinterDecorations";
@@ -13,8 +14,25 @@ import {NextIntlClientProvider} from "next-intl";
 import {ThemeProvider} from "next-themes";
 import {ThemeToggle} from "@/components/theme-toggle";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 // Charger le thème hivernal si activé
 const isWinterTheme = process.env.NEXT_PUBLIC_THEME === "winter";
+
+/**
+ * L'année du pied de page est lue au rendu, ce qu'un prérendu ne sait pas
+ * figer : mise en cache sans échéance, elle reste dans la coquille statique de
+ * toutes les pages au lieu d'y ouvrir un trou qui n'attend qu'un changement
+ * d'année.
+ */
+async function getCurrentYear() {
+  "use cache";
+  cacheLife("max");
+
+  return DateTime.now().year;
+}
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -51,7 +69,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -153,7 +171,7 @@ export default function RootLayout({
                   </div>
 
                   <div className="mt-6 text-center text-sm text-muted-foreground">
-                    <p>© {DateTime.now().year} Joutes - Ligues et rencontres multi-jeux</p>
+                    <p>© {await getCurrentYear()} Joutes - Ligues et rencontres multi-jeux</p>
                   </div>
                 </div>
               </footer>

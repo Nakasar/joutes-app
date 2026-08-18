@@ -16,6 +16,10 @@ import { getMySubscriptionSummary } from "@/lib/subscriptions/access";
 import { displayPlan } from "@/lib/subscriptions/entitlements";
 import { LinkPatreonButton, ResyncButton, SyncAfterLink, UnlinkPatreonButton } from "./components";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Mon abonnement",
   robots: { index: false, follow: false },

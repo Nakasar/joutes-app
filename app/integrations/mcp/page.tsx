@@ -3,6 +3,10 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import type {Metadata} from "next";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 export const metadata: Metadata = {
     title: "Documentation server MCP",
     description: "Un serveur MCP pour intégrer la plateforme Joutes avec vos agents IA.",
