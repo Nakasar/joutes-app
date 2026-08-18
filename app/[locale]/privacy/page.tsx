@@ -1,14 +1,9 @@
 import { Metadata } from "next";
-import { getLocale } from "next-intl/server";
-import { DateTime } from "luxon";
-import { LegalDocumentView, resolveLegalLocale } from "@/components/legal/LegalDocument";
+import { getLocale, setRequestLocale } from "next-intl/server";
+import { LegalDocumentView, formatLegalDate, resolveLegalLocale } from "@/components/legal/LegalDocument";
 import { PRIVACY_LAST_UPDATED } from "@/lib/constants/legal";
 import { privacyFr } from "./content.fr";
 import { privacyEn } from "./content.en";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 /**
  * La langue vient du sélecteur de l'en-tête (cookie `NEXT_LOCALE`), comme
@@ -21,9 +16,7 @@ async function getDocument() {
 
   return {
     content: locale === "en" ? privacyEn : privacyFr,
-    formattedDate: DateTime.fromISO(PRIVACY_LAST_UPDATED)
-      .setLocale(locale)
-      .toLocaleString(DateTime.DATE_FULL),
+    formattedDate: await formatLegalDate(PRIVACY_LAST_UPDATED, locale),
   };
 }
 
@@ -41,7 +34,14 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function PrivacyPage() {
+export default async function PrivacyPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+
   const { content, formattedDate } = await getDocument();
 
   return <LegalDocumentView content={content} formattedDate={formattedDate} />;
