@@ -1140,6 +1140,26 @@ export async function getLeaguesManagedBy(userId: string): Promise<League[]> {
   return Promise.all(docs.map((doc) => toLeague(doc)));
 }
 
+/**
+ * Hauts faits de la ligue venus d'un tournoi rattaché, tous tournois confondus.
+ * Une seule requête plutôt qu'une par tournoi : la timeline les regroupe
+ * ensuite elle-même.
+ */
+export async function getLeagueTournamentFeats(
+  leagueId: string
+): Promise<{ tournamentId: string; userId: string; featId: string }[]> {
+  const docs = await db
+    .collection(FEATS_COLLECTION)
+    .find({ leagueId: new ObjectId(leagueId), tournamentId: { $exists: true } })
+    .toArray();
+
+  return docs.map((doc) => ({
+    tournamentId: String(doc.tournamentId),
+    userId: String(doc.userId),
+    featId: String(doc.featId),
+  }));
+}
+
 // Recalculer tous les points des participants d'une ligue POINTS
 export async function recalculateLeaguePoints(
   leagueId: string

@@ -20,6 +20,7 @@ import {
   MapPin,
   Gamepad2,
   Swords,
+  CalendarClock,
 } from "lucide-react";
 import { LeagueStatus, LeagueFormat } from "@/lib/types/League";
 import JoinLeagueButton from "./JoinLeagueButton";
@@ -338,6 +339,14 @@ export default async function LeagueDetailPage({
                       </Badge>
                     </Link>
                   ))}
+                  <div className="flex flex-wrap pt-1">
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={`/leagues/${league.id}/timeline`}>
+                        <CalendarClock className="h-4 w-4" />
+                        Voir la timeline
+                      </Link>
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             )}
