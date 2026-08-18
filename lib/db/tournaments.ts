@@ -220,6 +220,9 @@ function toTournament(doc: WithId<TournamentDb>): Tournament {
     eventId: doc.eventId,
     leagueId: doc.leagueId,
     gameId: doc.gameId,
+    // Jeu hors catalogue. Sans cette ligne le nom est écrit puis perdu à la
+    // relecture : le tournoi s'affiche sans jeu alors qu'un nom a été saisi.
+    customGameName: doc.customGameName,
     status: doc.status,
     currentPhaseId: doc.currentPhaseId,
     joinCode: doc.joinCode,

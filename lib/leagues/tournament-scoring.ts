@@ -1,5 +1,6 @@
 import type { Feat, PointsRules } from "@/lib/types/League";
 import type { TournamentPlayerStatus } from "@/lib/types/Tournament";
+import { decideFeatAward } from "@/lib/leagues/feat-limits";
 import { normalizePointsRules, pointsForRank } from "@/lib/leagues/points-rules";
 
 /**
@@ -272,29 +273,20 @@ export function computeTournamentLeagueContribution(
 
     const scopeKey = `${award.playerId}:${award.featId}:${award.matchId ?? "sheet"}`;
     const inScope = grantedInScope.get(scopeKey) ?? 0;
-    if (feat.maxPerEvent !== undefined && inScope >= feat.maxPerEvent) {
-      skippedFeats.push({
-        awardId: award.id,
-        playerId: award.playerId,
-        displayName,
-        featId: award.featId,
-        featTitle: feat.title,
-        reason: "max-per-event",
-      });
-      continue;
-    }
-
     const leagueKey = `${credit.userId}:${award.featId}`;
     const alreadyHeld = input.existingFeatCounts?.[credit.userId]?.[award.featId] ?? 0;
     const inLeague = alreadyHeld + (grantedInLeague.get(leagueKey) ?? 0);
-    if (feat.maxPerLeague !== undefined && inLeague >= feat.maxPerLeague) {
+
+    // Même règle que pour un match de ligue : elle n'existe qu'à un endroit.
+    const decision = decideFeatAward(feat, { inLeague, inEvent: inScope });
+    if (!decision.counted) {
       skippedFeats.push({
         awardId: award.id,
         playerId: award.playerId,
         displayName,
         featId: award.featId,
         featTitle: feat.title,
-        reason: "max-per-league",
+        reason: decision.reason,
       });
       continue;
     }

@@ -114,10 +114,12 @@ export type CreateLeagueParams = {
   killerTargets?: number;
   killerRequireLair?: boolean;
   killerEliminateOnDefeat?: boolean;
+  // Chaque valeur est optionnelle : absente, le serveur pose son défaut via
+  // `normalizePointsRules`. Un zéro reste un zéro — c'est une valeur choisie.
   pointsRules?: {
-    participation: number;
-    victory: number;
-    defeat: number;
+    participation?: number;
+    victory?: number;
+    defeat?: number;
     draw?: number;
     // Points par rang final d'un tournoi rattaché : index 0 = 1er.
     rankPoints?: number[];
@@ -258,8 +260,24 @@ export async function updateLeagueAction(
       };
     }
     if (params.format === "POINTS" && params.pointsRules !== undefined) {
+      // Fusion sur le barème en place, et non remplacement : une mise à jour
+      // partielle ne doit pas remettre aux valeurs par défaut les champs
+      // qu'elle ne mentionne pas. Une ligue en cours perdrait sinon son barème
+      // parce qu'un écran n'a envoyé que les hauts faits.
+      // Champ par champ plutôt qu'en diffusion : une clé présente mais à
+      // `undefined` écraserait la valeur en place au lieu de la laisser.
+      const base = (await getLeagueById(leagueId))?.pointsConfig?.pointsRules;
+      const next = params.pointsRules;
       input.pointsConfig = {
-        pointsRules: normalizePointsRules(params.pointsRules),
+        pointsRules: normalizePointsRules({
+          participation: next.participation ?? base?.participation,
+          victory: next.victory ?? base?.victory,
+          defeat: next.defeat ?? base?.defeat,
+          draw: next.draw ?? base?.draw,
+          rankPoints: next.rankPoints ?? base?.rankPoints,
+          rankPointsBeyond: next.rankPointsBeyond ?? base?.rankPointsBeyond,
+          feats: next.feats ?? base?.feats,
+        }),
       };
     }
 
