@@ -13,9 +13,9 @@ import { getNotificationById } from "@/lib/db/notifications";
  * Le cron réclame plusieurs travaux plutôt que d'en vider un seul — une
  * annonce massive ne doit pas retarder indéfiniment celles qui suivent.
  *
- * `node:http2`, dont dépend l'envoi à Apple, n'existe pas hors du runtime Node.
+ * `node:http2`, dont dépend l'envoi à Apple, n'existe pas hors du runtime Node,
+ * que Cache Components impose désormais à toute l'application.
  */
-export const runtime = "nodejs";
 export const maxDuration = 300;
 
 export async function GET(req: Request) {

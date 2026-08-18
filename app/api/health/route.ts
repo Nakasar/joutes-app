@@ -1,4 +1,5 @@
 import db from "@/lib/mongodb";
+import { connection } from "next/server";
 
 /**
  * État de santé de l'API, vers lequel pointe la relation `status` du catalogue
@@ -23,13 +24,13 @@ async function checkDatabase(): Promise<{ ok: boolean; error?: string }> {
   }
 }
 
-/**
- * Sans cela, Next servirait une réponse figée au build : un état de santé mis
- * en cache ne dit plus rien de l'état présent.
- */
-export const dynamic = "force-dynamic";
-
 export async function GET() {
+  // Le ping suffirait à sortir du prérendu, mais l'y laisser dépendrait de ce
+  // que la base répond au build. Une santé figée à la construction ne dit rien
+  // de l'état présent : la lecture est donc déclarée liée à la requête, et le
+  // reste quoi qu'il arrive.
+  await connection();
+
   const database = await checkDatabase();
   const healthy = database.ok;
 

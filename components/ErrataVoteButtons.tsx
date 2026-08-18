@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { ErrataVoteType } from "@/lib/types/errata";
-import { voteErrata } from "@/app/games/[gameSlugOrId]/actions";
+import { voteErrata } from "@/app/[locale]/games/[gameSlugOrId]/actions";
 
 export default function ErrataVoteButtons({
   errataId,

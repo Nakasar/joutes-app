@@ -23,7 +23,6 @@ import { applySnapshot, PATREON_PROVIDER_ID } from "@/lib/patreon/sync";
  *    plus dans `account`. C'est le rattrapage de la déliaison faite ailleurs que
  *    par notre propre action — sans lui, un droit survivrait à sa preuve.
  */
-export const runtime = "nodejs";
 export const maxDuration = 300;
 
 export async function GET(req: Request) {

@@ -54,8 +54,8 @@ import {
   getDeckFromPiltover,
   getDeckFromPiltoverCode,
   validateDeckList
-} from "@/app/games/riftbound/deck-checker/action";
-import {parseDeckList, serializeDeckList} from "@/app/games/riftbound/deck-checker/utils";
+} from "@/app/[locale]/games/riftbound/deck-checker/action";
+import {parseDeckList, serializeDeckList} from "@/app/[locale]/games/riftbound/deck-checker/utils";
 import {getLairById, LairDocument} from "@/lib/db/lairs";
 import {DiscordEmojis} from "@/app/discord/utils";
 import {inspect} from "node:util";

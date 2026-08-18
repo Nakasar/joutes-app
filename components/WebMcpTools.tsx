@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { registerWebMcpTools } from "@/lib/webmcp/register";
 import { createJoutesWebMcpTools } from "@/lib/webmcp/tools";
 
