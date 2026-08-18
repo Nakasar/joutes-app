@@ -235,11 +235,11 @@
         </div>
         <div style="min-width: 0">
           <div class="display" style="font-size: 24px; font-weight: 700; line-height: 1.1">Veilleur de la Nuit</div>
-          <p style="margin: 4px 0 0; font-size: 13px; color: var(--muted-fg)">Avoir joué trois soirées de la Veillée dans trois lieux différents.</p>
+          <p style="margin: 4px 0 0; font-size: 13px; color: var(--muted-fg)">Avoir participé à trois événements pendant la saison.</p>
           <div style="margin-top: 12px; height: 8px; border-radius: 9999px; background: var(--muted); overflow: hidden">
             <div style="width: 66%; height: 100%; background: var(--pumpkin)"></div>
           </div>
-          <div style="margin-top: 6px; font-size: 12px; color: var(--muted-fg)">2 lieux sur 3</div>
+          <div style="margin-top: 6px; font-size: 12px; color: var(--muted-fg)">2 événements sur 3</div>
         </div>
       </div>
       <p class="note">Un haut fait limité à la saison, décerné par la même mécanique que les autres — il reste ensuite au profil, daté de l'année.</p>
@@ -251,13 +251,7 @@
       <div style="display: flex; align-items: center; gap: 48px; margin-top: 16px; flex-wrap: wrap">
 
         <div style="display: flex; align-items: center; gap: 18px">
-          <svg viewBox="0 0 48 48" style="width: 72px; height: 72px" aria-hidden="true">
-            <polygon points="24,2 44,13 44,35 24,46 4,35 4,13" fill="oklch(0.24 0.05 200)"></polygon>
-            <polygon points="24,7 39,15.5 39,32.5 24,41 9,32.5 9,15.5" fill="none" stroke="oklch(0.55 0.09 200)" stroke-width="2.4"></polygon>
-            <path d="M24 14 L31.5 27 L16.5 27 Z" fill="none" stroke="oklch(0.78 0.08 85)" stroke-width="2.4" stroke-linejoin="round"></path>
-            <path d="M24 34 L16.5 21 L31.5 21 Z" fill="none" stroke="oklch(0.78 0.08 85)" stroke-width="2.4" stroke-linejoin="round"></path>
-            <circle cx="24" cy="24" r="2.6" fill="oklch(0.93 0.03 85)"></circle>
-          </svg>
+          <img src="joutes_logo.png" alt="Sceau permanent" style="width: 72px; height: 72px; border-radius: 9999px; object-fit: cover">
           <div>
             <div style="font-size: 14px; font-weight: 600">Sceau permanent</div>
             <div style="font-size: 13px; color: var(--muted-fg)">sarcelle &amp; or</div>
@@ -267,20 +261,22 @@
         <svg viewBox="0 0 24 24" style="width: 24px; height: 24px; color: var(--muted-fg)" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
 
         <div style="display: flex; align-items: center; gap: 18px">
-          <svg class="flicker" viewBox="0 0 48 48" style="width: 72px; height: 72px" aria-hidden="true">
-            <polygon points="24,2 44,13 44,35 24,46 4,35 4,13" fill="var(--night)"></polygon>
-            <polygon points="24,7 39,15.5 39,32.5 24,41 9,32.5 9,15.5" fill="none" stroke="var(--wisp)" stroke-width="2.4"></polygon>
-            <path d="M24 14 L31.5 27 L16.5 27 Z" fill="none" stroke="var(--pumpkin)" stroke-width="2.4" stroke-linejoin="round"></path>
-            <path d="M24 34 L16.5 21 L31.5 21 Z" fill="none" stroke="var(--pumpkin)" stroke-width="2.4" stroke-linejoin="round"></path>
-            <circle cx="24" cy="24" r="2.6" fill="var(--bone)"></circle>
-          </svg>
+          <img src="joutes_logohalloween.png" alt="Sceau de saison" style="width: 72px; height: 72px; border-radius: 9999px; object-fit: cover">
           <div>
             <div style="font-size: 14px; font-weight: 600">Sceau de saison</div>
-            <div style="font-size: 13px; color: var(--muted-fg)">braise &amp; violet spectral</div>
+            <div style="font-size: 13px; color: var(--muted-fg)">chauves-souris, toiles &amp; crâne</div>
           </div>
         </div>
 
-        <p class="note" style="flex: 1 1 320px; min-width: 260px; margin: 0">Le sceau ne change ni de forme ni de géométrie : à 24 px dans l'en-tête, seul le duo de couleurs se lit. C'est le dessin ici qui sert de consigne — le fichier attendu est <span style="font-family: ui-monospace, monospace">public/logo/joutes_logohalloween.png</span>, exactement comme la variante hivernale.</p>
+        <div style="display: flex; align-items: center; gap: 18px">
+          <img src="joutes_logohalloween.png" alt="" style="width: 24px; height: 24px; border-radius: 9999px; object-fit: cover">
+          <div>
+            <div style="font-size: 14px; font-weight: 600">À 24 px</div>
+            <div style="font-size: 13px; color: var(--muted-fg)">la taille de l'en-tête</div>
+          </div>
+        </div>
+
+        <p class="note" style="flex: 1 1 320px; min-width: 260px; margin: 0">Le sceau garde sa géométrie hexagonale ; la saison passe par les chauves-souris serties dans le cadre, les toiles du champ et le crâne au centre. Livré comme <span style="font-family: ui-monospace, monospace">public/logo/joutes_logohalloween.png</span>, il est pris automatiquement par l'en-tête dès que le thème est actif. À vérifier : sur fond de nuit, le blanc du fichier forme un disque clair derrière le sceau — un détourage réglerait la question.</p>
       </div>
     </div>
 

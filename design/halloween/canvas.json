@@ -7,32 +7,32 @@
     { "file": "Main.dc.html", "title": "Accueil — calendrier", "page": "page-1", "x": 0, "y": 0, "w": 1280, "h": 1300 },
     { "file": "Moments.dc.html", "title": "Moments dédiés", "page": "page-1", "x": 1380, "y": 0, "w": 1180, "h": 1000 },
     { "file": "Palette.dc.html", "title": "Jetons de couleur", "page": "page-2", "x": 0, "y": 0, "w": 1060, "h": 1180 },
-    { "file": "Decor.dc.html", "title": "Décor", "page": "page-2", "x": 1160, "y": 0, "w": 1060, "h": 860 }
+    { "file": "Decor.dc.html", "title": "Décor", "page": "page-2", "x": 1160, "y": 0, "w": 1060, "h": 1180 }
   ],
   "annotations": [
     {
       "id": "mecanique",
       "page": "page-1",
       "x": 0,
-      "y": -230,
+      "y": -250,
       "w": 560,
-      "text": "Même mécanique que le thème hivernal : NEXT_PUBLIC_THEME=halloween charge app/halloween-theme.css et pose la classe .halloween-theme sur <body>.\n\nDeux réglages en haut de cet écran :\n— clair / sombre, pour vérifier les deux modes ;\n— complet / discret / aucun, l'intensité du décor.\n\nLa vue Calendrier / Liste, les flèches de mois et les étoiles de favori répondent au clic."
+      "text": "Même mécanique que le thème hivernal : NEXT_PUBLIC_THEME=halloween charge app/halloween-theme.css et pose la classe .halloween-theme sur <body>.\n\nTrois réglages en haut de cet écran :\n— clair / sombre, pour vérifier les deux modes ;\n— complet / discret / aucun, l'intensité du décor ;\n— l'avancement du défi, de 0 à 3, pour voir le bandeau à chaque palier (à 3, le badge s'allume).\n\nLa vue Calendrier / Liste, les flèches de mois et les étoiles de favori répondent au clic."
     },
     {
-      "id": "a-decider",
+      "id": "defi",
       "page": "page-1",
       "x": 620,
-      "y": -230,
+      "y": -250,
       "w": 560,
-      "text": "Deux choses restent à trancher :\n\n1. Les dates d'ouverture et de fermeture de l'habillage. Le dessin part du 24 au 31 octobre en « complet », le reste du mois en « discret ».\n\n2. Le nom public de l'opération. « La Veillée des Joutes » est une proposition, pas une décision — elle apparaît dans le bandeau, le badge d'événement et le haut fait."
+      "text": "Le bandeau annonce le défi : trois événements pendant la saison donnent le badge « Veilleur de la Nuit » et le haut fait qui va avec.\n\nLa règle est volontairement la plus simple qui tienne : trois événements, sans condition de lieu ni de jeu. Ce qui se vérifie d'un coup d'œil se raconte en une phrase, et personne n'a à ouvrir les conditions pour savoir où il en est.\n\nÀ trancher : les dates d'ouverture et de fermeture de la saison, et le nom du badge — « Veilleur de la Nuit » est une proposition."
     },
     {
-      "id": "assets",
+      "id": "sceau",
       "page": "page-2",
       "x": 0,
-      "y": -180,
+      "y": -200,
       "w": 620,
-      "text": "Ce qui manque encore côté fichiers : public/logo/joutes_logohalloween.png, la variante saisonnière du sceau. Le dessin de l'artboard « Moments dédiés » sert de consigne — même géométrie, braise et violet à la place du sarcelle et de l'or."
+      "text": "Le sceau de saison que vous avez fourni est en place : en-tête à 24 px sur l'écran d'accueil, et comparé au sceau permanent sur la planche « Moments dédiés ».\n\nUn point à vérifier avant livraison : le fichier a un fond blanc opaque. Rogné en cercle il passe, mais sur le fond de nuit un disque clair reste visible autour du sceau. Un détourage en PNG transparent réglerait la question."
     }
   ],
   "launch": { "view": "canvas", "page": "page-1" }
