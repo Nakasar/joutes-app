@@ -156,11 +156,19 @@ quoi on garderait une liste dont on ne peut ni se servir ni se défaire — et l
 choix de celle dont on se sert. C'est pourquoi la désignation a sa propre route,
 `PUT /api/wishlists/[id]/default`, que le garde de lecture seule ne couvre pas.
 
-⚠️ Il n'y a **aucun système de migration** dans ce dépôt :
+⚠️ Il n'y a **aucun système de migration** dans ce dépôt, et cela mord ici deux
+fois.
+
 `ensureDefaultWishlistId` rattrape les propriétaires d'avant ce champ. Sans ce
 rattrapage, aucune de leurs listes ne porterait le marqueur, et la règle « sauf
 celle par défaut » n'en épargnerait aucune — elles seraient toutes verrouillées
 d'un coup.
+
+Et les index des listes de souhaits n'existaient que par une fonction
+`createWishlistIndexes` **que personne n'appelait**. Ils vivent désormais dans
+une promesse mémoïsée au chargement du module, comme ceux des abonnements et des
+échanges : sans elle, l'index d'unicité de la liste par défaut n'aurait jamais
+été créé, et la garantie décrite plus haut serait restée sur le papier.
 
 ## Configuration
 

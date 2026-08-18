@@ -149,6 +149,8 @@ export async function createWishlist(
   owner: WishlistOwner,
   input: { name: string; description?: string; visibility?: WishlistVisibility }
 ): Promise<Wishlist> {
+  await indexesReady;
+
   const existing = await db.collection(WISHLISTS_COLLECTION).findOne({ ...ownerQuery(owner), name: input.name });
   if (existing) {
     throw new Error("Une liste de souhaits avec ce nom existe déjà");
@@ -260,6 +262,8 @@ export async function deleteWishlist(wishlistId: string, owner: WishlistOwner): 
  * et converge : une fois la promotion écrite, il ne coûte plus qu'une lecture.
  */
 async function ensureDefaultWishlistId(owner: WishlistOwner): Promise<string | null> {
+  await indexesReady;
+
   const existing = await db
     .collection(WISHLISTS_COLLECTION)
     .findOne({ ...ownerQuery(owner), isDefault: true }, { projection: { _id: 1 } });
@@ -340,6 +344,8 @@ export async function setDefaultWishlist(wishlistId: string, owner: WishlistOwne
   if (!ObjectId.isValid(wishlistId)) {
     return false;
   }
+
+  await indexesReady;
 
   const _id = new ObjectId(wishlistId);
   const target = await db
@@ -689,19 +695,32 @@ export async function getWishlistIdsContainingCard(
   return containing.map((id) => id.toString());
 }
 
-export async function createWishlistIndexes() {
-  await db.collection(WISHLISTS_COLLECTION).createIndex({ ownerType: 1, ownerId: 1, name: 1 }, { unique: true });
-  await db.collection(WISHLISTS_COLLECTION).createIndex({ visibility: 1 });
-  // Au plus une liste par défaut et par propriétaire. L'unicité est portée par
-  // la base plutôt que par le code : deux requêtes concurrentes qui promeuvent
-  // chacune une liste ne peuvent pas en laisser deux marquées.
-  await db.collection(WISHLISTS_COLLECTION).createIndex(
+/**
+ * Les index, créés une fois par instance.
+ *
+ * **Cette promesse est ce qui les fait exister.** Il n'y a aucun système de
+ * migration dans ce dépôt, et `createWishlistIndexes` n'avait, elle, aucun
+ * appelant : les index qu'elle décrivait n'ont jamais été créés ailleurs qu'à la
+ * main. L'unicité de la liste par défaut en dépend — sans elle, deux requêtes
+ * concurrentes peuvent en laisser deux marquées, et la règle « seule la liste
+ * par défaut est modifiable » en désignerait deux.
+ *
+ * `createIndex` est idempotent. Même motif que `lib/db/subscriptions.ts` et
+ * `lib/db/trades.ts`, et pour la même raison.
+ */
+const indexesReady = Promise.all([
+  db.collection(WISHLISTS_COLLECTION).createIndex({ ownerType: 1, ownerId: 1, name: 1 }, { unique: true }),
+  db.collection(WISHLISTS_COLLECTION).createIndex({ visibility: 1 }),
+  // Au plus une liste par défaut et par propriétaire.
+  db.collection(WISHLISTS_COLLECTION).createIndex(
     { ownerType: 1, ownerId: 1 },
     { unique: true, partialFilterExpression: { isDefault: true } }
-  );
-  await db.collection(WISHLIST_ITEMS_COLLECTION).createIndex({ wishlistId: 1 });
-  await db.collection(WISHLIST_ITEMS_COLLECTION).createIndex({ wishlistId: 1, gameId: 1 });
-}
+  ),
+  db.collection(WISHLIST_ITEMS_COLLECTION).createIndex({ wishlistId: 1 }),
+  db.collection(WISHLIST_ITEMS_COLLECTION).createIndex({ wishlistId: 1, gameId: 1 }),
+]).catch((error) => {
+  console.error("Impossible de créer les index des listes de souhaits:", error);
+});
 
 /** Suppression d'une liste de souhaits sans contrôle du propriétaire (modération). */
 export async function deleteWishlistAsModerator(wishlistId: string): Promise<boolean> {
