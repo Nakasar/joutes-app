@@ -3136,6 +3136,39 @@
       "tableAndOpponent": "Table {table} · contre {name}",
       "iWon": "J'ai gagné",
       "opponentWon": "{name} a gagné"
+    },
+    "feats": {
+      "title": "Hauts faits · {count}",
+      "sheetHint": "Ils créditeront la ligue à la clôture du tournoi.",
+      "matchTitle": "Hauts faits de la table",
+      "matchHint": "Décernés ici, ils suivent le joueur jusqu'au classement de la ligue.",
+      "award": "Attribuer un haut fait",
+      "points": "+{points} pts",
+      "awardedCount": "{count} obtenu(s)",
+      "awardedOfMax": "{count}/{max} obtenu(s)",
+      "none": "Aucun haut fait attribué.",
+      "unknown": "Haut fait retiré de la ligue",
+      "inMatch": "En match",
+      "removeAria": "Retirer ce haut fait"
+    },
+    "leagueLink": {
+      "title": "Ligue",
+      "description": "Un tournoi rattaché alimente le classement de sa ligue à sa clôture.",
+      "noneLinked": "Aucune ligue",
+      "selectPlaceholder": "Choisir une ligue",
+      "noLeagues": "Vous n'organisez aucune ligue au format points.",
+      "open": "Ouvrir la ligue",
+      "unlink": "Détacher la ligue",
+      "pendingHint": "Les résultats seront reportés dans la ligue à la clôture du tournoi.",
+      "creditedHint": "Les résultats de ce tournoi sont comptés dans la ligue. Rouvrir le tournoi les retirera.",
+      "wizardNotice": "Ce tournoi alimentera la ligue « {league} »."
+    },
+    "leagueReport": {
+      "credited": "{points} points répartis entre {players} joueur(s) dans « {league} ».",
+      "autoEnrolled": "Inscrits à la ligue au passage : {names}.",
+      "skippedGuests": "Non crédités, faute de compte : {names}.",
+      "notEnrolled": "N'ont pas pu être inscrits à la ligue : {names}.",
+      "skippedFeats": "{count} haut(s) fait(s) non comptés (limite atteinte)."
     }
   },
   "Trade": {

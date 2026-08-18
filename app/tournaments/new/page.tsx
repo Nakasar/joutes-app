@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { getAllGames } from "@/lib/db/games";
+import { getLeagueById, isLeagueOrganizer } from "@/lib/db/leagues";
 import { resolveGameTournamentDefaults } from "@/lib/tournaments/game-defaults";
 import { CreateTournamentWizard, type WizardGame } from "./CreateTournamentWizard";
 
@@ -14,13 +15,29 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function NewTournamentPage() {
+export default async function NewTournamentPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ leagueId?: string }>;
+}) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) {
     redirect("/login");
   }
 
   const locale = await getLocale();
+
+  // Création depuis la gestion d'une ligue. Le rattachement n'est proposé que
+  // si l'utilisateur organise vraiment cette ligue : sinon on crée un tournoi
+  // ordinaire plutôt que d'échouer à la dernière étape du tunnel.
+  const { leagueId } = await searchParams;
+  const league = leagueId ? await getLeagueById(leagueId).catch(() => null) : null;
+  const linkedLeague =
+    league &&
+    league.format === "POINTS" &&
+    (await isLeagueOrganizer(league.id, session.user.id))
+      ? { id: league.id, name: league.name }
+      : null;
 
   // Les réglages sont résolus ici, et non dans le tunnel : ils vivent à côté
   // des types de tournoi, dont le module tire des dépendances serveur. Un jeu
@@ -54,5 +71,5 @@ export default async function NewTournamentPage() {
     })
     .sort((a, b) => a.name.localeCompare(b.name, locale));
 
-  return <CreateTournamentWizard games={games} />;
+  return <CreateTournamentWizard games={games} league={linkedLeague} />;
 }

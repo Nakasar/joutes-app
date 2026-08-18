@@ -6,12 +6,14 @@ import {
   getRoundById,
   getTournamentById,
   canManageTournament,
+  listFeatAwards,
   listMatchesByRound,
   listPhases,
   listPlayers,
   listRounds,
   sanitizePlayer,
 } from "@/lib/db/tournaments";
+import { getTournamentLeagueContext } from "@/lib/leagues/tournament-results";
 
 /**
  * Chargement commun aux sous-pages de détail d'une ronde (matchs / classement) :
@@ -29,12 +31,17 @@ export async function loadOrganizerRoundContext(tournamentId: string, roundId: s
   const round = await getRoundById(tournamentId, roundId);
   if (!round) notFound();
 
-  const [matches, players, phase, phases, allRounds] = await Promise.all([
+  const [matches, players, phase, phases, allRounds, featAwards, league] = await Promise.all([
     listMatchesByRound(tournamentId, roundId),
     listPlayers(tournamentId),
     getPhaseById(tournamentId, round.phaseId),
     listPhases(tournamentId),
     listRounds(tournamentId),
+    // Toutes les attributions du tournoi, pas seulement celles de la ronde :
+    // l'arbitre a besoin de voir combien de fois un joueur a déjà reçu un haut
+    // fait avant de le lui décerner à nouveau.
+    listFeatAwards(tournamentId),
+    getTournamentLeagueContext(tournament),
   ]);
 
   if (!phase) notFound();
@@ -58,5 +65,12 @@ export async function loadOrganizerRoundContext(tournamentId: string, roundId: s
     players: players.map(sanitizePlayer),
     isLastRound,
     reopenCascades,
+    feats: league?.feats ?? [],
+    featAwards: featAwards.map((award) => ({
+      id: award.id,
+      playerId: award.playerId,
+      featId: award.featId,
+      matchId: award.matchId,
+    })),
   };
 }

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { DateTime } from "luxon";
-import { CalendarDays, CalendarPlus, Trash2 } from "lucide-react";
+import { CalendarDays, CalendarPlus, Trash2, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -50,6 +50,23 @@ export type LinkedEvent = {
   location?: string;
 };
 
+/** Ligue alimentée par le tournoi à sa clôture. */
+export type LinkedLeague = { id: string; name: string };
+
+/** Récapitulatif renvoyé par l'API après une clôture qui a crédité la ligue. */
+export type LeagueReport = {
+  leagueName: string;
+  creditedPlayers: number;
+  totalPoints: number;
+  autoEnrolled: { userId: string; displayName: string }[];
+  notEnrolled: { displayName: string; reason: string }[];
+  skippedGuests: { displayName: string; wouldHaveScored: number }[];
+  skippedFeats: { displayName: string; featTitle: string; reason: string }[];
+};
+
+// Valeur sentinelle du Select de ligue.
+const NO_LEAGUE = "none";
+
 export function SettingsSection({
   tournament,
   games,
@@ -58,6 +75,9 @@ export function SettingsSection({
   phases = [],
   registeredCount = 0,
   event = null,
+  league = null,
+  manageableLeagues = [],
+  canLinkLeague = false,
 }: {
   tournament: Tournament;
   games: { id: string; name: string }[];
@@ -67,6 +87,11 @@ export function SettingsSection({
   phases?: PhaseSummary[];
   registeredCount?: number;
   event?: LinkedEvent | null;
+  league?: LinkedLeague | null;
+  /** Ligues POINTS que l'utilisateur organise et peut donc rattacher. */
+  manageableLeagues?: LinkedLeague[];
+  /** Rattacher engage le classement d'une ligue : réservé aux organisateurs. */
+  canLinkLeague?: boolean;
 }) {
   const t = useTranslations("Tournaments");
   const router = useRouter();
@@ -74,6 +99,8 @@ export function SettingsSection({
 
   const [status, setStatus] = useState<Tournament["status"]>(tournament.status);
   const [gameId, setGameId] = useState(tournament.gameId ?? NO_GAME);
+  const [leagueId, setLeagueId] = useState(tournament.leagueId ?? NO_LEAGUE);
+  const [leagueReport, setLeagueReport] = useState<LeagueReport | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -117,21 +144,36 @@ export function SettingsSection({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
         throw new Error(data.error ?? t("common.error"));
       }
-      return true;
+      // Le corps est renvoyé plutôt qu'un simple booléen : la clôture d'un
+      // tournoi rattaché y joint le récapitulatif de ce qu'elle a crédité.
+      return data as Record<string, unknown>;
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
-      return false;
+      return null;
     } finally {
       setBusy(false);
     }
   };
 
   const changeStatus = async (next: Tournament["status"]) => {
-    if (await patch({ status: next })) setStatus(next);
+    const result = await patch({ status: next });
+    if (!result) return;
+    setStatus(next);
+    setLeagueReport((result.leagueReport as LeagueReport | undefined) ?? null);
+    if (typeof result.leagueError === "string") setError(result.leagueError);
+  };
+
+  const changeLeague = async (next: string) => {
+    const result = await patch({ leagueId: next === NO_LEAGUE ? null : next });
+    if (!result) return;
+    setLeagueId(next);
+    setLeagueReport((result.leagueReport as LeagueReport | undefined) ?? null);
+    if (typeof result.leagueError === "string") setError(result.leagueError);
+    router.refresh();
   };
 
   const changeGame = async (next: string) => {
@@ -393,6 +435,107 @@ export function SettingsSection({
               </div>
             )}
           </section>
+
+          {/* Ligue. Un tournoi rattaché n'est plus une soirée isolée : à sa
+              clôture, il pèse sur un classement qui vit des semaines. D'où
+              l'avertissement, et le récapitulatif après coup. */}
+          {(canLinkLeague || league) && (
+            <section className="rounded-xl border bg-card p-4">
+              <h2 className="text-sm font-semibold">{t("leagueLink.title")}</h2>
+              <p className="mb-3.5 mt-0.5 text-[13px] text-muted-foreground">
+                {t("leagueLink.description")}
+              </p>
+
+              {league ? (
+                <div className="rounded-lg border p-3">
+                  <p className="text-sm font-semibold">{league.name}</p>
+                  <p className="mt-1 text-[13px] text-muted-foreground">
+                    {status === "completed"
+                      ? t("leagueLink.creditedHint")
+                      : t("leagueLink.pendingHint")}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={`/leagues/${league.id}`}>
+                        <Trophy className="size-4" />
+                        {t("leagueLink.open")}
+                      </Link>
+                    </Button>
+                    {canLinkLeague && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={busy}
+                        onClick={() => changeLeague(NO_LEAGUE)}
+                      >
+                        {t("leagueLink.unlink")}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ) : manageableLeagues.length === 0 ? (
+                <p className="rounded-lg border border-dashed p-3 text-[13px] text-muted-foreground">
+                  {t("leagueLink.noLeagues")}
+                </p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <Select value={leagueId} onValueChange={changeLeague} disabled={busy}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("leagueLink.selectPlaceholder")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_LEAGUE}>{t("leagueLink.noneLinked")}</SelectItem>
+                      {manageableLeagues.map((candidate) => (
+                        <SelectItem key={candidate.id} value={candidate.id}>
+                          {candidate.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {leagueReport && (
+                <div className="mt-3 rounded-lg border bg-muted/40 p-3 text-[13px]">
+                  <p className="font-medium">
+                    {t("leagueReport.credited", {
+                      players: leagueReport.creditedPlayers,
+                      points: leagueReport.totalPoints,
+                      league: leagueReport.leagueName,
+                    })}
+                  </p>
+                  {leagueReport.autoEnrolled.length > 0 && (
+                    <p className="mt-1 text-muted-foreground">
+                      {t("leagueReport.autoEnrolled", {
+                        names: leagueReport.autoEnrolled.map((p) => p.displayName).join(", "),
+                      })}
+                    </p>
+                  )}
+                  {leagueReport.skippedGuests.length > 0 && (
+                    <p className="mt-1 text-muted-foreground">
+                      {t("leagueReport.skippedGuests", {
+                        names: leagueReport.skippedGuests.map((p) => p.displayName).join(", "),
+                      })}
+                    </p>
+                  )}
+                  {leagueReport.notEnrolled.length > 0 && (
+                    <p className="mt-1 text-orange-600 dark:text-orange-400">
+                      {t("leagueReport.notEnrolled", {
+                        names: leagueReport.notEnrolled.map((p) => p.displayName).join(", "),
+                      })}
+                    </p>
+                  )}
+                  {leagueReport.skippedFeats.length > 0 && (
+                    <p className="mt-1 text-muted-foreground">
+                      {t("leagueReport.skippedFeats", {
+                        count: leagueReport.skippedFeats.length,
+                      })}
+                    </p>
+                  )}
+                </div>
+              )}
+            </section>
+          )}
 
           <section className="rounded-xl border bg-card p-4">
             <h2 className="text-sm font-semibold">{t("organizerSettings.reportingTitle")}</h2>

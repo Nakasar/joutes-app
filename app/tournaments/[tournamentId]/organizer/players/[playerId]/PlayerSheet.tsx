@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { DateTime } from "luxon";
-import { ArrowLeft, Table as TableIcon, Trash2 } from "lucide-react";
+import { ArrowLeft, Table as TableIcon, Trash2, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import type {
   TournamentPenaltyType,
 } from "@/lib/types/Tournament";
 import { TournamentFormEditor } from "../../../TournamentFormEditor";
+import { FeatAwardPicker, type TournamentFeat } from "../../../FeatAwardPicker";
 
 const PENALTY_TYPES: TournamentPenaltyType[] = [
   "warning",
@@ -62,6 +63,14 @@ export type SheetNote = {
   createdAt: string;
 };
 
+export type SheetFeatAward = {
+  id: string;
+  featId: string;
+  matchId?: string;
+  roundNumber?: number;
+  createdAt: string;
+};
+
 export type SheetStanding = { rank: number; matchPoints: number; record: string } | null;
 
 export function PlayerSheet({
@@ -73,6 +82,8 @@ export function PlayerSheet({
   currentMatch,
   initialPenalties,
   initialNotes,
+  feats,
+  initialFeatAwards,
 }: {
   tournamentId: string;
   player: SheetPlayer;
@@ -83,12 +94,16 @@ export function PlayerSheet({
   currentMatch: { roundId: string; tableNumber?: number; opponentName: string; status: string } | null;
   initialPenalties: TournamentPenalty[];
   initialNotes: SheetNote[];
+  /** Catalogue de la ligue rattachée. Vide = tournoi autonome, rien à décerner. */
+  feats: TournamentFeat[];
+  initialFeatAwards: SheetFeatAward[];
 }) {
   const t = useTranslations("Tournaments");
   const router = useRouter();
 
   const [penalties, setPenalties] = useState(initialPenalties);
   const [notes, setNotes] = useState(initialNotes);
+  const [featAwards, setFeatAwards] = useState(initialFeatAwards);
   const [decklist, setDecklist] = useState(player.decklist);
 
   const [penaltyOpen, setPenaltyOpen] = useState(false);
@@ -163,6 +178,27 @@ export function PlayerSheet({
       await call(`${base}/notes/${id}`, { method: "DELETE" });
       setNotes((current) => current.filter((n) => n.id !== id));
     });
+
+  const awardFeat = (featId: string) =>
+    run(async () => {
+      const created = await call(`${base}/feats`, {
+        method: "POST",
+        body: JSON.stringify({ featId }),
+      });
+      setFeatAwards((current) => [created, ...current]);
+    });
+
+  const removeFeatAward = (id: string) =>
+    run(async () => {
+      await call(`${base}/feats/${id}`, { method: "DELETE" });
+      setFeatAwards((current) => current.filter((a) => a.id !== id));
+    });
+
+  const featsById = new Map(feats.map((feat) => [feat.id, feat]));
+  const awardedCounts = featAwards.reduce<Record<string, number>>((counts, awardEntry) => {
+    counts[awardEntry.featId] = (counts[awardEntry.featId] ?? 0) + 1;
+    return counts;
+  }, {});
 
   const saveDecklist = (updates: { content?: string; checked?: boolean }) =>
     run(async () => {
@@ -499,6 +535,66 @@ export function PlayerSheet({
               )}
             </div>
           </section>
+
+          {feats.length > 0 && (
+            <section className="rounded-xl border bg-card p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold">
+                  {t("feats.title", { count: featAwards.length })}
+                </h2>
+                <FeatAwardPicker
+                  feats={feats}
+                  awardedCounts={awardedCounts}
+                  disabled={busy}
+                  onAward={awardFeat}
+                />
+              </div>
+              <p className="mb-2.5 mt-0.5 text-xs text-muted-foreground">{t("feats.sheetHint")}</p>
+              {featAwards.length === 0 ? (
+                <p className="text-[13px] text-muted-foreground">{t("feats.none")}</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {featAwards.map((awardEntry) => {
+                    const catalogFeat = featsById.get(awardEntry.featId);
+                    return (
+                      <div
+                        key={awardEntry.id}
+                        className="rounded-lg border bg-muted/40 p-2.5"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-[13px] leading-snug">
+                            <Trophy className="mr-1 inline size-3.5 text-amber-500" />
+                            {catalogFeat?.title ?? t("feats.unknown")}
+                            {catalogFeat && (
+                              <span className="ml-1 text-muted-foreground">
+                                {t("feats.points", { points: catalogFeat.points })}
+                              </span>
+                            )}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => removeFeatAward(awardEntry.id)}
+                            disabled={busy}
+                            aria-label={t("feats.removeAria")}
+                            className="shrink-0 text-muted-foreground hover:text-foreground disabled:opacity-40"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </div>
+                        <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+                          {awardEntry.matchId ? `${t("feats.inMatch")} · ` : ""}
+                          {awardEntry.roundNumber
+                            ? `${t("common.roundN", { number: awardEntry.roundNumber })} · `
+                            : ""}
+                          {DateTime.fromISO(awardEntry.createdAt).toFormat("dd/MM HH:mm")}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          )}
 
           <section className="rounded-xl border bg-card p-4">
             <h2 className="text-sm font-semibold">

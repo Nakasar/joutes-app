@@ -3077,6 +3077,39 @@
       "tableAndOpponent": "Tavolo {table} · contro {name}",
       "iWon": "Ho vinto",
       "opponentWon": "{name} ha vinto"
+    },
+    "feats": {
+      "title": "Imprese · {count}",
+      "sheetHint": "Verranno accreditate alla lega alla chiusura del torneo.",
+      "matchTitle": "Imprese di questo tavolo",
+      "matchHint": "Assegnate qui, seguono chi gioca fino alla classifica della lega.",
+      "award": "Assegnare un'impresa",
+      "points": "+{points} pt",
+      "awardedCount": "{count} ottenute",
+      "awardedOfMax": "{count}/{max} ottenute",
+      "none": "Nessuna impresa assegnata.",
+      "unknown": "Impresa rimossa dalla lega",
+      "inMatch": "In partita",
+      "removeAria": "Rimuovere questa impresa"
+    },
+    "leagueLink": {
+      "title": "Lega",
+      "description": "Un torneo collegato alimenta la classifica della sua lega alla chiusura.",
+      "noneLinked": "Nessuna lega",
+      "selectPlaceholder": "Scegliere una lega",
+      "noLeagues": "Non organizzi nessuna lega a punti.",
+      "open": "Aprire la lega",
+      "unlink": "Scollegare la lega",
+      "pendingHint": "I risultati saranno riportati nella lega alla chiusura del torneo.",
+      "creditedHint": "Questo torneo conta per la lega. Riaprirlo ne toglierà i punti.",
+      "wizardNotice": "Questo torneo alimenterà la lega «{league}»."
+    },
+    "leagueReport": {
+      "credited": "{points} punti distribuiti tra {players} giocanti in «{league}».",
+      "autoEnrolled": "Iscritti alla lega nel frattempo: {names}.",
+      "skippedGuests": "Non accreditati, senza account: {names}.",
+      "notEnrolled": "Non è stato possibile iscriverli alla lega: {names}.",
+      "skippedFeats": "{count} impresa/e non conteggiate (limite raggiunto)."
     }
   },
   "Trade": {
