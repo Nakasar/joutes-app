@@ -59,6 +59,24 @@ describe("decideFeatAward", () => {
     });
   });
 
+  it("laisse retirer maxPerEvent hors de tout événement", () => {
+    // Une attribution manuelle n'appartient à aucun match ni événement. Une
+    // limite « par événement » n'a alors rien à quoi se rapporter : l'appelant
+    // la retire, sans quoi un `maxPerEvent: 0` refuserait tout — un décompte de
+    // zéro atteint immédiatement une limite de zéro.
+    const rule = feat({ maxPerEvent: 0, maxPerLeague: 5 });
+    assert.deepEqual(decideFeatAward(rule, { inLeague: 0, inEvent: 0 }), {
+      counted: false,
+      reason: "max-per-event",
+    });
+
+    const unscoped = { ...rule, maxPerEvent: undefined };
+    assert.deepEqual(decideFeatAward(unscoped, { inLeague: 0, inEvent: 0 }), {
+      counted: true,
+      feat: unscoped,
+    });
+  });
+
   it("n'oppose pas une limite de match à une limite de ligue", () => {
     // Deux quotas indépendants : trois fois dans la ligue n'empêche pas une
     // première attribution dans un match qui en autorise deux.

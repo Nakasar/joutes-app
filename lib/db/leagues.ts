@@ -965,10 +965,13 @@ export async function awardFeatToParticipant(
   );
   if (!feat) return null;
 
-  // Les deux limites s'appliquent. `maxPerEvent` n'a de sens que rapporté à un
-  // événement : sans `eventId`, l'attribution n'appartient à aucun, et seule la
-  // limite de ligue peut lui être opposée.
-  const decision = decideFeatAward(feat, {
+  // `maxPerEvent` n'a de sens que rapporté à un événement. Sans `eventId`,
+  // l'attribution n'appartient à aucun : on retire la limite plutôt que de la
+  // confronter à un décompte de zéro, qui refuserait tout dès qu'elle vaut
+  // elle-même zéro. Seule la limite de ligue s'applique alors.
+  const scopedFeat = eventId ? feat : { ...feat, maxPerEvent: undefined };
+
+  const decision = decideFeatAward(scopedFeat, {
     inLeague: participant.feats.filter((f) => f.featId === featId).length,
     inEvent: eventId
       ? participant.feats.filter((f) => f.featId === featId && f.eventId === eventId).length
