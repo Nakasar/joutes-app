@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { canAttachPro, remainingSeats, type Seat } from "./seats";
+import { effectivePlans } from "./grants";
 
 /**
  * Les règles de rattachement d'un lieu à un abonnement Pro.
@@ -97,5 +98,30 @@ describe("remainingSeats", () => {
     // L'abonnement s'est éteint mais les sièges restent : ils enregistrent une
     // intention, pas un droit. L'écran doit afficher « 0 », pas « -1 ».
     assert.equal(remainingSeats({ plans: [], seats: [siege("lair-1")] }), 0);
+  });
+});
+
+describe("un palier offert rattache comme un palier payé", () => {
+  /**
+   * Le rattachement d'un lieu se calculait sur `subscription.plans`, la seule
+   * part venue de Patreon : un Pro offert par l'équipe vit dans `grantedPlans`,
+   * et l'écran répondait « il faut un abonnement Joutes Pro » à quelqu'un qui en
+   * avait un. Ces deux assertions fixent l'invariant que le correctif rétablit —
+   * elles portent sur la composition, seul maillon testable sans base.
+   */
+  it("ouvre un siège", () => {
+    const plans = effectivePlans({ paid: [], granted: ["pro"] });
+
+    assert.deepEqual(canAttachPro({ plans, seats: [], lair: { id: "lair-1" } }), { ok: true });
+    assert.equal(remainingSeats({ plans, seats: [] }), 1);
+  });
+
+  it("n'en ouvre toujours aucun sans Pro", () => {
+    const plans = effectivePlans({ paid: [], granted: ["expert"] });
+
+    assert.deepEqual(canAttachPro({ plans, seats: [], lair: { id: "lair-1" } }), {
+      ok: false,
+      reason: "not-pro",
+    });
   });
 });
