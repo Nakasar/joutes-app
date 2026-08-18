@@ -16,6 +16,14 @@ import {
 } from "@/lib/db/tournaments";
 import { resolveTournamentPrincipal, tournamentErrorResponse, unauthorizedResponse } from "../utils";
 import { notifyTournamentStatus } from "@/lib/tournaments/notifications";
+import { isLeagueOrganizer } from "@/lib/db/leagues";
+import {
+  LeagueLinkError,
+  requireLinkableLeague,
+  revertTournamentFromLeague,
+  syncTournamentLeague,
+  type TournamentLeagueReport,
+} from "@/lib/leagues/tournament-results";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ tournamentId: string }> }) {
   try {
@@ -91,6 +99,23 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       }
     }
 
+    // Rattacher un tournoi à une ligue engage le classement de cette ligue :
+    // il faut pouvoir gérer les deux. Réservé aux organisateurs du tournoi —
+    // un arbitre gère la salle, pas les engagements pris envers une ligue.
+    if (validated.leagueId !== undefined) {
+      assertIsOrganizer(tournament, user.userId);
+
+      if (typeof validated.leagueId === "string") {
+        const league = await requireLinkableLeague(validated.leagueId);
+        if (!(await isLeagueOrganizer(league.id, user.userId))) {
+          return NextResponse.json(
+            { error: "Vous ne pouvez pas rattacher un tournoi à une ligue que vous n'organisez pas" },
+            { status: 403 }
+          );
+        }
+      }
+    }
+
     const updated = await updateTournament(tournamentId, details);
 
     // Les deux bornes du tournoi, et elles seules : on compare au statut d'avant
@@ -104,7 +129,26 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       }
     }
 
-    return NextResponse.json(updated);
+    // Contrairement à la notification, la contribution à la ligue n'est pas
+    // « au mieux » : c'est le classement de la ligue qui en dépend. Un échec
+    // est donc rapporté à l'organisateur — mais sans annuler le changement de
+    // statut, qui lui a bien eu lieu. Rejouer est sans risque, l'application
+    // commence toujours par annuler.
+    let leagueReport: TournamentLeagueReport | null = null;
+    let leagueError: string | undefined;
+    try {
+      leagueReport = await syncTournamentLeague(tournament, updated);
+    } catch (error) {
+      console.error("Contribution du tournoi à la ligue échouée", error);
+      leagueError =
+        error instanceof Error ? error.message : "La ligue n'a pas pu être mise à jour";
+    }
+
+    return NextResponse.json({
+      ...updated,
+      ...(leagueReport ? { leagueReport } : {}),
+      ...(leagueError ? { leagueError } : {}),
+    });
   } catch (error) {
     return tournamentErrorResponse(error);
   }
@@ -118,6 +162,12 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const { tournamentId } = await params;
     const tournament = await requireTournament(tournamentId);
     assertIsOrganizer(tournament, user.userId);
+
+    // Un tournoi supprimé ne doit pas laisser ses points dans la ligue : plus
+    // aucun écran ne permettrait alors de les retirer.
+    if (tournament.leagueId && tournament.status === "completed") {
+      await revertTournamentFromLeague(tournamentId, tournament.leagueId);
+    }
 
     await deleteTournament(tournamentId);
     return NextResponse.json({ deleted: true });

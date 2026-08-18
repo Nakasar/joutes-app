@@ -127,6 +127,11 @@ export type Tournament = {
   id: string;
   name: string;
   eventId?: string;
+  // Ligue alimentée par ce tournoi. À la clôture, le classement, les résultats
+  // et les hauts faits du tournoi créditent les participants de la ligue selon
+  // son barème ; rouvrir le tournoi annule ce crédit. Seules les ligues au
+  // format POINTS peuvent être rattachées.
+  leagueId?: string;
   gameId?: string;
   // Jeu saisi à la main, pour un jeu absent du catalogue. Il ne sert qu'à
   // nommer le jeu joué : sans fiche de jeu, ni preset de format ni analyse de
@@ -540,6 +545,24 @@ export type TournamentPenalty = {
   createdAt: Date;
 };
 
+// Haut fait attribué à un joueur pendant un tournoi rattaché à une ligue, soit
+// depuis sa fiche, soit dans le cadre d'un match. `featId` désigne une entrée
+// du catalogue de la ligue : le tournoi ne stocke ni le libellé ni les points,
+// qui restent la propriété de la ligue et peuvent changer jusqu'à la clôture.
+export type TournamentFeatAward = {
+  id: string;
+  tournamentId: string;
+  // Identifiant de TournamentPlayer, pas de compte : un invité sans compte peut
+  // recevoir un haut fait, il ne sera simplement pas crédité dans la ligue.
+  playerId: string;
+  featId: string;
+  // Match du tournoi où le haut fait a été attribué. Absent = fiche joueur.
+  matchId?: string;
+  roundNumber?: number;
+  createdBy: string;
+  createdAt: Date;
+};
+
 // Note interne sur un joueur, visible du staff du tournoi uniquement.
 export type TournamentNote = {
   id: string;
@@ -610,6 +633,14 @@ export type TournamentPenaltyDb = Omit<TournamentPenalty, "id" | "tournamentId" 
 export type TournamentNoteDb = Omit<TournamentNote, "id" | "tournamentId" | "playerId"> & {
   tournamentId: ObjectId;
   playerId: ObjectId;
+};
+export type TournamentFeatAwardDb = Omit<
+  TournamentFeatAward,
+  "id" | "tournamentId" | "playerId" | "matchId"
+> & {
+  tournamentId: ObjectId;
+  playerId: ObjectId;
+  matchId?: ObjectId;
 };
 export type TournamentActivityDb = Omit<TournamentActivity, "id" | "tournamentId"> & {
   tournamentId: ObjectId;

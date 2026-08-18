@@ -15,11 +15,22 @@ export type Feat = {
   maxPerLeague?: number;
 };
 
-// Règles de points pour le format POINTS
+// Règles de points pour le format POINTS. Le même barème sert aux matchs de
+// ligue déclarés à la main et aux tournois rattachés à la ligue : un point
+// gagné doit valoir la même chose quel que soit le chemin qui l'a produit.
 export type PointsRules = {
   participation: number;
   victory: number;
   defeat: number;
+  // Match nul : uniquement lorsqu'aucun vainqueur n'est désigné. Des
+  // co-vainqueurs (scores à égalité sur un match de ligue) restent des
+  // vainqueurs, pour ne pas réécrire les classements déjà établis.
+  draw: number;
+  // Points selon le rang final d'un tournoi rattaché : index 0 = 1er. Vide =
+  // le classement du tournoi ne rapporte rien par lui-même.
+  rankPoints: number[];
+  // Points des rangs situés au-delà de `rankPoints`.
+  rankPointsBeyond: number;
   feats: Feat[];
 };
 
@@ -59,6 +70,7 @@ export type PointHistoryEntry = {
   eventId?: string;
   featId?: string;
   matchId?: string; // ID du match de ligue associé
+  tournamentId?: string; // ID du tournoi rattaché dont la clôture a produit l'entrée
 };
 
 // Hauts faits obtenus par un participant
@@ -67,6 +79,7 @@ export type ParticipantFeat = {
   earnedAt: Date;
   eventId?: string;
   matchId?: string; // ID du match de ligue associé
+  tournamentId?: string; // Haut fait attribué dans un tournoi rattaché
 };
 
 // Haut fait attribué lors d'un match
