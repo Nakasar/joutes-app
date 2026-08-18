@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "../globals.css";
 import Header from "@/components/Header";
+import HeaderFallback from "@/components/HeaderFallback";
 import { DateTime } from "luxon";
 import { cacheLife } from "next/cache";
 import { Link } from "@/i18n/navigation";
@@ -121,7 +122,14 @@ export default async function RootLayout({
             </Suspense>
             {isWinterTheme && <WinterDecorations />}
             <div className="relative min-h-screen flex flex-col">
-              <Header />
+              {/* L'en-tête lit le chemin courant à travers ses liens localisés,
+                  inconnu au prérendu d'une route à segment dynamique : sans cette
+                  frontière il bloquait toutes ces routes, soit la majorité du
+                  site. Le repli en reprend la silhouette pour que rien ne saute
+                  quand le vrai en-tête le remplace. */}
+              <Suspense fallback={<HeaderFallback />}>
+                <Header />
+              </Suspense>
               <main className="flex-1">
                 {children}
               </main>
