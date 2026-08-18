@@ -25,27 +25,20 @@ export function allWishlists(data: MyWishlists): Wishlist[] {
 /**
  * La liste que vise le raccourci, ou `null` s'il ne doit pas s'afficher.
  *
- * Dans l'ordre :
+ * C'est la **liste par défaut** de l'utilisateur, celle qu'il désigne lui-même
+ * depuis l'écran de ses listes, et qui est automatiquement la première qu'il a
+ * créée.
  *
- *  1. la **dernière liste utilisée**, si elle existe toujours. C'est le seul
- *     signal qui vient de l'utilisateur, il passe donc avant ;
- *  2. à défaut, son **unique liste personnelle** : là où il n'y a pas de choix,
- *     il n'y a pas de doute ;
- *  3. sinon rien. Deux listes et aucune préférence, c'est à l'utilisateur de
- *     trancher — un raccourci qui choisirait à sa place ferait perdre plus de
- *     temps à défaire qu'il n'en fait gagner.
+ * La version précédente suivait la dernière liste utilisée, mémorisée dans le
+ * navigateur. Cette préférence-là était une approximation du même signal — « où
+ * veut-il que ça aille ? » — mais devinée plutôt que dite, et invisible. La
+ * liste par défaut la remplace : elle s'affiche, elle se change, et elle vaut
+ * d'un appareil à l'autre.
  *
- * Les listes de groupe ne servent jamais de repli : elles appartiennent à
- * plusieurs, et y verser une carte d'un geste distrait se voit.
+ * Les listes de groupe ne sont jamais visées : elles appartiennent à plusieurs,
+ * et y verser une carte d'un geste distrait se voit. Un utilisateur qui n'a que
+ * des listes de groupe n'a donc pas de raccourci.
  */
-export function pickShortcutWishlist(
-  data: MyWishlists,
-  preferredId: string | null
-): Wishlist | null {
-  if (preferredId) {
-    const preferred = allWishlists(data).find((wishlist) => wishlist.id === preferredId);
-    if (preferred) return preferred;
-  }
-
-  return data.personal.length === 1 ? data.personal[0] : null;
+export function pickShortcutWishlist(data: MyWishlists): Wishlist | null {
+  return data.personal.find((wishlist) => wishlist.isDefault) ?? null;
 }

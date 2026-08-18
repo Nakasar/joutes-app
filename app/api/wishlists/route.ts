@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { createWishlist, getWishlistsForOwner, WishlistLimitError } from "@/lib/db/wishlists";
+import { createWishlist, getWishlistsForOwner } from "@/lib/db/wishlists";
 import { wishlistSchema } from "@/lib/schemas/wishlist.schema";
+import { wishlistErrorResponse } from "@/lib/api/wishlist-errors";
 
 export async function GET() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -15,6 +16,9 @@ export async function GET() {
     const wishlists = await getWishlistsForOwner({ type: "user", id: session.user.id });
     return NextResponse.json({ wishlists });
   } catch (error) {
+    const known = wishlistErrorResponse(error);
+    if (known) return known;
+
     console.error("Error fetching wishlists:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
@@ -40,18 +44,10 @@ export async function POST(request: NextRequest) {
     const wishlist = await createWishlist({ type: "user", id: session.user.id }, validationResult.data);
     return NextResponse.json(wishlist, { status: 201 });
   } catch (error) {
-    if (error instanceof WishlistLimitError) {
-      // 403 et non 409 : ce n'est pas un conflit avec l'existant, c'est un droit
-      // qui manque. Le code machine évite au client de lire le message.
-      return NextResponse.json(
-        { error: error.message, code: "wishlist-limit", limit: error.limit },
-        { status: 403 }
-      );
-    }
+    const known = wishlistErrorResponse(error);
+    if (known) return known;
+
     console.error("Error creating wishlist:", error);
-    if (error instanceof Error && error.message.includes("existe déjà")) {
-      return NextResponse.json({ error: error.message }, { status: 409 });
-    }
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }

@@ -10,13 +10,12 @@ import type { MyWishlists } from "@/lib/wishlists/shortcut";
  * raccourci — sans cache partagé, cela ferait soixante requêtes identiques à
  * l'affichage d'une page.
  *
- * La préférence (dernière liste utilisée) vit dans le stockage local : elle
- * n'engage rien, ne mérite pas un aller-retour serveur, et se perdre d'un
- * appareil à l'autre est sans conséquence — le raccourci retombe alors sur la
- * liste unique, ou s'efface.
+ * Ce module ne mémorise plus de « dernière liste utilisée ». Cette préférence
+ * approximait le même signal que la liste par défaut — « où veut-il que ça
+ * aille ? » —, mais devinée plutôt que dite, invisible, et propre à un seul
+ * navigateur. La liste par défaut la remplace : elle s'affiche, elle se change,
+ * et elle vaut d'un appareil à l'autre.
  */
-
-const PREFERRED_WISHLIST_KEY = "joutes.wishlists.preferred";
 
 let pending: Promise<MyWishlists> | null = null;
 let loaded: MyWishlists | null = null;
@@ -59,32 +58,4 @@ export function getLoadedMyWishlists(): MyWishlists | null {
 export function invalidateMyWishlists(): void {
   pending = null;
   loaded = null;
-}
-
-// Lue une fois par page : le bouton est rendu par carte, et soixante lectures
-// de stockage pour une valeur qui ne bouge pas seraient soixante de trop.
-let preferredId: string | null | undefined;
-
-export function readPreferredWishlistId(): string | null {
-  if (typeof window === "undefined") return null;
-  if (preferredId !== undefined) return preferredId;
-  try {
-    preferredId = window.localStorage.getItem(PREFERRED_WISHLIST_KEY);
-  } catch {
-    // Stockage refusé (navigation privée, réglages stricts) : le raccourci se
-    // débrouille sans préférence plutôt que de faire échouer l'affichage.
-    preferredId = null;
-  }
-  return preferredId;
-}
-
-export function writePreferredWishlistId(wishlistId: string): void {
-  preferredId = wishlistId;
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(PREFERRED_WISHLIST_KEY, wishlistId);
-  } catch {
-    // Sans mémoire, le raccourci reste utilisable — il vise simplement la
-    // liste unique, ou disparaît.
-  }
 }

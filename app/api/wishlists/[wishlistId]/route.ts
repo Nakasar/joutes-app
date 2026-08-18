@@ -8,6 +8,7 @@ import {
   updateWishlist,
 } from "@/lib/db/wishlists";
 import { wishlistIdSchema, wishlistUpdateSchema } from "@/lib/schemas/wishlist.schema";
+import { wishlistErrorResponse } from "@/lib/api/wishlist-errors";
 
 type Params = Promise<{ wishlistId: string }>;
 
@@ -71,10 +72,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Params }
     }
     return NextResponse.json(updated);
   } catch (error) {
+    const known = wishlistErrorResponse(error);
+    if (known) return known;
+
     console.error("Error updating wishlist:", error);
-    if (error instanceof Error && error.message.includes("existe déjà")) {
-      return NextResponse.json({ error: error.message }, { status: 409 });
-    }
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }

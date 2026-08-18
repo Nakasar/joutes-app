@@ -40,6 +40,28 @@ export function wishlistLimitFor(advanced: boolean): number | null {
 }
 
 /**
+ * Vrai si cette liste est en lecture seule.
+ *
+ * Sans gestion avancée, un propriétaire qui possède plusieurs listes — parce
+ * qu'il les avait avant la limite, ou qu'un abonnement s'est arrêté — les
+ * conserve toutes, mais **seule celle par défaut reste modifiable**. Les autres
+ * s'affichent en grisé : rien n'est perdu, et le jour où il s'abonne, tout
+ * redevient utilisable sans qu'on ait eu à toucher à ses données.
+ *
+ * Changer de liste par défaut reste possible : cela ne donne pas plus de
+ * capacité, cela déplace seulement celle dont on se sert.
+ */
+export function isWishlistReadOnly({
+  isDefault,
+  advanced,
+}: {
+  isDefault: boolean;
+  advanced: boolean;
+}): boolean {
+  return !advanced && !isDefault;
+}
+
+/**
  * Vrai si ce propriétaire a atteint sa limite.
  *
  * Le pendant de `canCreateWishlist` pour l'affichage. **Supérieur ou égal**, et

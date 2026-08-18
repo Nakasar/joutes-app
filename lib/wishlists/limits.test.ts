@@ -4,6 +4,7 @@ import {
   FREE_WISHLIST_LIMIT,
   canCreateWishlist,
   hasReachedWishlistLimit,
+  isWishlistReadOnly,
   wishlistLimitFor,
 } from "./limits";
 
@@ -33,5 +34,20 @@ describe("limite de listes de souhaits", () => {
   it("n'annonce une limite qu'à ceux qui en ont une", () => {
     assert.equal(wishlistLimitFor(false), FREE_WISHLIST_LIMIT);
     assert.equal(wishlistLimitFor(true), null);
+  });
+});
+
+describe("lecture seule", () => {
+  it("laisse la liste par défaut modifiable sans abonnement", () => {
+    assert.equal(isWishlistReadOnly({ isDefault: true, advanced: false }), false);
+  });
+
+  it("verrouille les autres sans abonnement", () => {
+    assert.equal(isWishlistReadOnly({ isDefault: false, advanced: false }), true);
+  });
+
+  it("ne verrouille rien avec la gestion avancée", () => {
+    assert.equal(isWishlistReadOnly({ isDefault: false, advanced: true }), false);
+    assert.equal(isWishlistReadOnly({ isDefault: true, advanced: true }), false);
   });
 });

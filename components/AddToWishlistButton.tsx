@@ -22,8 +22,6 @@ import {
   getLoadedMyWishlists,
   invalidateMyWishlists,
   loadMyWishlists,
-  readPreferredWishlistId,
-  writePreferredWishlistId,
 } from "@/lib/wishlists/my-wishlists-client";
 import { type MyWishlists, pickShortcutWishlist } from "@/lib/wishlists/shortcut";
 
@@ -76,7 +74,6 @@ export default function AddToWishlistButton({
   const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
   const [printingId, setPrintingId] = useState("");
-  const [preferredId, setPreferredId] = useState<string | null>(null);
   const printingChoice = resolvePrinting({ foil: cardFoil, image, printings }, printingId || undefined);
 
   // Les listes sont chargées d'emblée — le raccourci doit pouvoir nommer sa
@@ -93,13 +90,12 @@ export default function AddToWishlistButton({
       // l'ouverture du panneau, où l'utilisateur attend une réponse, que
       // l'erreur se dit.
       .catch(() => {});
-    setPreferredId(readPreferredWishlistId());
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const shortcut = data ? pickShortcutWishlist(data, preferredId) : null;
+  const shortcut = data ? pickShortcutWishlist(data) : null;
 
   async function loadWishlists() {
     setLoading(true);
@@ -166,8 +162,6 @@ export default function AddToWishlistButton({
       const item: { quantity?: number } = await res.json().catch(() => ({}));
       setAddedIds((prev) => new Set(prev).add(wishlist.id));
       // La liste qu'on vient de choisir devient celle que le raccourci visera.
-      writePreferredWishlistId(wishlist.id);
-      setPreferredId(wishlist.id);
       if (typeof item.quantity === "number" && item.quantity > 1) {
         toast.success(
           t("addToWishlist.quantityIncreased", { wishlist: wishlist.name, quantity: item.quantity })
