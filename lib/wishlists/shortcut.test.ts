@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { Wishlist } from "@/lib/types/Wishlist";
-import { type MyWishlists, allWishlists, pickShortcutWishlist } from "./shortcut";
+import {
+  DEFAULT_WISHLIST_NAME,
+  type MyWishlists,
+  allWishlists,
+  pickShortcutTarget,
+  pickShortcutWishlist,
+} from "./shortcut";
 
 /**
  * Tests du raccourci « ajouter à ma liste ». Ce qui compte ici : le raccourci
@@ -53,5 +59,31 @@ describe("allWishlists", () => {
       allWishlists({ ...twoPersonal, groups: groupOnly.groups }).map((w) => w.id),
       ["w1", "w2", "g1"]
     );
+  });
+});
+
+describe("pickShortcutTarget", () => {
+  it("vise la liste par défaut quand elle existe", () => {
+    assert.deepEqual(pickShortcutTarget(twoPersonal), { kind: "existing", wishlist: mine });
+  });
+
+  it("propose de créer « Générale » à un compte sans liste", () => {
+    assert.deepEqual(pickShortcutTarget({ personal: [], groups: [] }), {
+      kind: "create",
+      name: DEFAULT_WISHLIST_NAME,
+    });
+  });
+
+  it("propose aussi la création à qui n'a que des listes de groupe", () => {
+    // Le raccourci ne vise jamais une liste de groupe : sans liste personnelle,
+    // il n'a rien à viser, et en créer une est ce qui rend le geste possible.
+    assert.deepEqual(pickShortcutTarget(groupOnly), { kind: "create", name: DEFAULT_WISHLIST_NAME });
+  });
+
+  it("ne crée rien quand des listes existent sans liste par défaut", () => {
+    // Ne devrait pas arriver — la création en désigne une, et `lib/db` rattrape
+    // les comptes d'avant le champ. En créer une de plus ici pourrait buter sur
+    // la limite au lieu d'ajouter la carte.
+    assert.equal(pickShortcutTarget(noDefault), null);
   });
 });

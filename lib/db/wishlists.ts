@@ -339,6 +339,41 @@ async function assertWishlistWritable(wishlistId: string): Promise<void> {
   }
 }
 
+/**
+ * La liste par défaut du propriétaire, créée si elle n'existe pas encore.
+ *
+ * Le premier ajout rapide d'un compte tout neuf passe par ici : sans liste, il
+ * n'y avait rien à viser, et il fallait ouvrir le panneau, nommer une liste,
+ * puis ajouter. Une liste est créée à la place, nommée `name`.
+ *
+ * Passe par `createWishlist`, donc par la limite — inutile de la contourner :
+ * créer la **première** liste est toujours permis, avec ou sans abonnement.
+ *
+ * Deux ajouts rapides simultanés sur un compte vide se croiseraient ; l'index
+ * unique `{ownerType, ownerId, name}` refuse alors le second, et on relit ce que
+ * le premier vient d'écrire plutôt que de rendre une erreur pour une course que
+ * l'utilisateur n'a pas provoquée.
+ */
+export async function getOrCreateDefaultWishlist(
+  owner: WishlistOwner,
+  name: string
+): Promise<Wishlist | null> {
+  const defaultId = await ensureDefaultWishlistId(owner);
+  if (defaultId) {
+    return getWishlistById(defaultId);
+  }
+
+  try {
+    return await createWishlist(owner, { name, visibility: "private" });
+  } catch (error) {
+    if ((error as { code?: number }).code === 11000 || (error as Error)?.message?.includes("existe déjà")) {
+      const raced = await ensureDefaultWishlistId(owner);
+      return raced ? getWishlistById(raced) : null;
+    }
+    throw error;
+  }
+}
+
 /** Désigne une autre liste comme liste par défaut du propriétaire. */
 export async function setDefaultWishlist(wishlistId: string, owner: WishlistOwner): Promise<boolean> {
   if (!ObjectId.isValid(wishlistId)) {

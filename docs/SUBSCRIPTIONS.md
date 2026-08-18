@@ -145,7 +145,11 @@ deux marquées.
 
 Elle sert à deux choses :
 
-- **l'ajout rapide** d'une carte y verse toujours ;
+- **l'ajout rapide** d'une carte y verse toujours — et sur un compte qui n'a
+  encore aucune liste, il en crée une, nommée « Générale »
+  (`getOrCreateDefaultWishlist`). Le nom vient du serveur : une liste créée
+  d'office ne doit pas pouvoir être nommée par un appel forgé. Ce n'est pas un
+  contournement de la limite, créer la *première* liste étant toujours permis ;
 - sans gestion avancée, **elle seule reste modifiable**. Les autres s'affichent
   en grisé, consultables : rien n'est perdu, et tout redevient utilisable le jour
   où le propriétaire s'abonne.

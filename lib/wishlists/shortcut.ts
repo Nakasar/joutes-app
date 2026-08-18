@@ -42,3 +42,41 @@ export function allWishlists(data: MyWishlists): Wishlist[] {
 export function pickShortcutWishlist(data: MyWishlists): Wishlist | null {
   return data.personal.find((wishlist) => wishlist.isDefault) ?? null;
 }
+
+/**
+ * Le nom donné à la liste créée d'office au premier ajout rapide.
+ *
+ * Une donnée stockée, pas un libellé d'interface : elle n'est donc pas traduite.
+ * La faire dépendre de la langue du navigateur au moment de la création
+ * donnerait à deux comptes de la même personne deux noms différents, pour une
+ * liste qu'elle peut de toute façon renommer.
+ */
+export const DEFAULT_WISHLIST_NAME = "Générale";
+
+/**
+ * Ce que vise le raccourci : une liste existante, ou la création de la
+ * première.
+ *
+ * Un compte tout neuf n'a aucune liste, et le raccourci disparaissait — le
+ * premier ajout demandait donc d'ouvrir le panneau, de nommer une liste, puis
+ * d'ajouter. Il crée maintenant « Générale » au passage, en le disant sur le
+ * bouton : le raccourci ne devine toujours rien en silence.
+ *
+ * La création n'est proposée que si le compte n'a **aucune liste personnelle**.
+ * En proposer une à qui en a déjà — mais sans liste par défaut, ce qui ne
+ * devrait pas arriver — ajouterait une liste de plus, et pourrait buter sur la
+ * limite au lieu d'ajouter la carte.
+ */
+export type ShortcutTarget =
+  | { kind: "existing"; wishlist: Wishlist }
+  | { kind: "create"; name: string }
+  | null;
+
+export function pickShortcutTarget(data: MyWishlists): ShortcutTarget {
+  const wishlist = pickShortcutWishlist(data);
+  if (wishlist) {
+    return { kind: "existing", wishlist };
+  }
+
+  return data.personal.length === 0 ? { kind: "create", name: DEFAULT_WISHLIST_NAME } : null;
+}
