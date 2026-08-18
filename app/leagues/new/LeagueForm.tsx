@@ -42,6 +42,19 @@ type LeagueFormProps = {
   lairs: Lair[];
 };
 
+/**
+ * Lit un champ numérique du barème. Un champ laissé vide rend `undefined`, ce
+ * qui laisse le serveur poser sa valeur par défaut ; un zéro saisi reste zéro.
+ *
+ * C'est toute la différence avec le `parseInt(...) || défaut` d'avant, qui
+ * confondait « rien » et « zéro » : une victoire délibérément mise à 0 se
+ * retrouvait réécrite à 2 sans que personne l'ait demandé.
+ */
+function optionalNumber(value: string): number | undefined {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
+
 export default function LeagueForm({ games, lairs }: LeagueFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -120,15 +133,10 @@ export default function LeagueForm({ games, lairs }: LeagueFormProps) {
         pointsRules:
           formData.format === "POINTS"
             ? {
-                participation: parseInt(formData.pointsParticipation, 10) || 0,
-                victory: parseInt(formData.pointsVictory, 10) || 2,
-                defeat: parseInt(formData.pointsDefeat, 10) || 1,
-                // Un champ vidé laisse le serveur poser le défaut ; `|| 0`
-                // écraserait le barème avec une valeur que personne n'a choisie.
-                // Zéro saisi, en revanche, est une valeur qui doit survivre.
-                draw: Number.isNaN(parseInt(formData.pointsDraw, 10))
-                  ? undefined
-                  : parseInt(formData.pointsDraw, 10),
+                participation: optionalNumber(formData.pointsParticipation),
+                victory: optionalNumber(formData.pointsVictory),
+                defeat: optionalNumber(formData.pointsDefeat),
+                draw: optionalNumber(formData.pointsDraw),
                 feats: formData.feats,
               }
             : undefined,

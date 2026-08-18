@@ -18,6 +18,7 @@ import {User} from "@/lib/types/User";
 import { getUserById, getUsersByIds } from "@/lib/db/users";
 import { notifyLairOwnersWithTemplate, notifyUserWithTemplate } from "@/lib/services/notifications";
 import { getLairById } from "@/lib/db/lairs";
+import { FEAT_REFUSAL_MESSAGES, decideFeatAward } from "@/lib/leagues/feat-limits";
 import {
   OUTCOME_REASONS,
   normalizePointsRules,
@@ -959,17 +960,22 @@ export async function awardFeatToParticipant(
   const participant = await getLeagueParticipant(leagueId, userId);
   if (!participant) return null;
 
-  // Vérifier si le haut fait existe dans la configuration
   const feat = league.pointsConfig?.pointsRules.feats.find(
     (f) => f.id === featId
   );
   if (!feat) return null;
 
-  // Vérifier les limites du haut fait
-  const featCount = participant.feats.filter((f) => f.featId === featId).length;
-
-  if (feat.maxPerLeague && featCount >= feat.maxPerLeague) {
-    throw new Error("Limite de ce haut fait atteinte pour la ligue");
+  // Les deux limites s'appliquent. `maxPerEvent` n'a de sens que rapporté à un
+  // événement : sans `eventId`, l'attribution n'appartient à aucun, et seule la
+  // limite de ligue peut lui être opposée.
+  const decision = decideFeatAward(feat, {
+    inLeague: participant.feats.filter((f) => f.featId === featId).length,
+    inEvent: eventId
+      ? participant.feats.filter((f) => f.featId === featId && f.eventId === eventId).length
+      : 0,
+  });
+  if (!decision.counted) {
+    throw new Error(FEAT_REFUSAL_MESSAGES[decision.reason]);
   }
 
   const now = new Date();
@@ -1255,32 +1261,25 @@ export async function recalculateLeaguePoints(
         continue;
       }
 
-      const featRule = featRulesById.get(featAward.featId);
-      if (!featRule) {
-        continue;
-      }
-
       const perMatchKey = `${featAward.playerId}:${featAward.featId}`;
       const countInCurrentMatch = perMatchFeatCounts.get(perMatchKey) || 0;
-      if (
-        featRule.maxPerEvent !== undefined &&
-        countInCurrentMatch >= featRule.maxPerEvent
-      ) {
-        continue;
-      }
-
       const userFeatCounts =
         featCountsByUser.get(featAward.playerId) || new Map<string, number>();
       const countInLeague = userFeatCounts.get(featAward.featId) || 0;
-      if (featRule.maxPerLeague !== undefined && countInLeague >= featRule.maxPerLeague) {
+
+      const decision = decideFeatAward(featRulesById.get(featAward.featId), {
+        inLeague: countInLeague,
+        inEvent: countInCurrentMatch,
+      });
+      if (!decision.counted) {
         continue;
       }
 
       const userHistory = historiesByUser.get(featAward.playerId) || [];
       userHistory.push({
         date: matchDate,
-        points: featRule.points,
-        reason: `Haut fait: ${featRule.title}`,
+        points: decision.feat.points,
+        reason: `Haut fait: ${decision.feat.title}`,
         featId: featAward.featId,
         matchId: match.id,
       });
@@ -1428,28 +1427,21 @@ export async function recalculateLeagueParticipantPoints(
         continue;
       }
 
-      const featRule = featRulesById.get(featAward.featId);
-      if (!featRule) {
-        continue;
-      }
-
       const countInCurrentMatch = perMatchFeatCounts.get(featAward.featId) || 0;
-      if (
-        featRule.maxPerEvent !== undefined &&
-        countInCurrentMatch >= featRule.maxPerEvent
-      ) {
-        continue;
-      }
-
       const countInLeague = featCounts.get(featAward.featId) || 0;
-      if (featRule.maxPerLeague !== undefined && countInLeague >= featRule.maxPerLeague) {
+
+      const decision = decideFeatAward(featRulesById.get(featAward.featId), {
+        inLeague: countInLeague,
+        inEvent: countInCurrentMatch,
+      });
+      if (!decision.counted) {
         continue;
       }
 
       rebuiltHistory.push({
         date: matchDate,
-        points: featRule.points,
-        reason: `Haut fait: ${featRule.title}`,
+        points: decision.feat.points,
+        reason: `Haut fait: ${decision.feat.title}`,
         featId: featAward.featId,
         matchId: match.id,
       });
@@ -1914,6 +1906,12 @@ async function applyConfirmedPointsForMatch(
       } as Document
     );
   }
+
+  // Aucun haut fait n'est traité ici, volontairement : les matchs qui passent
+  // par la confirmation viennent de `reportPointsLeagueMatch`, où les joueurs
+  // déclarent eux-mêmes leur résultat et n'ont donc pas à s'attribuer de hauts
+  // faits. Ceux que l'organisation décerne arrivent par `addLeagueMatch`, qui
+  // les comptabilise à la création. Les traiter ici les compterait deux fois.
 }
 
 async function tryFinalizePointsMatch(
@@ -2076,6 +2074,12 @@ export async function addLeagueMatch(
 
     // Attribuer les hauts faits du match
     if (matchInput.featAwards && matchInput.featAwards.length > 0) {
+      // Décompte de départ, figé avant la boucle. Le relire à chaque tour
+      // remonterait les hauts faits que la boucle vient elle-même d'insérer,
+      // et les additionner au compteur du match les compterait deux fois : à
+      // partir du deuxième, chacun consommerait deux places du quota de ligue.
+      const leagueCountsAtStart = new Map<string, number>();
+
       for (const featAward of matchInput.featAwards) {
         const participant = await getLeagueParticipant(leagueId, featAward.playerId);
         if (!participant) {
@@ -2088,36 +2092,33 @@ export async function addLeagueMatch(
         }
 
         const feat = pointsRules.feats.find((f) => f.id === featAward.featId);
-        if (!feat) {
-          // Haut fait non trouvé, on l'ajoute sans points
-          processedFeatAwards.push({
-            ...featAward,
-            pointsCounted: false,
-          });
-          continue;
-        }
 
-        // Compter combien de fois ce joueur a déjà obtenu ce haut fait dans la ligue
-        const existingFeatCount = participant.feats.filter(
-          (f) => f.featId === featAward.featId
-        ).length;
-
-        // Compter combien de fois ce haut fait est attribué dans CE match pour ce joueur
-        // (pour gérer les doublons dans le même match)
+        // Déjà attribué dans ce match, pour ce joueur : c'est ce que
+        // `maxPerEvent` limite. Seules les attributions comptabilisées entrent
+        // dans le décompte — un haut fait refusé n'a rien consommé.
         const featCountInThisMatch = processedFeatAwards.filter(
           (fa) => fa.playerId === featAward.playerId &&
             fa.featId === featAward.featId &&
             fa.pointsCounted === true
         ).length;
 
-        const totalFeatCount = existingFeatCount + featCountInThisMatch;
+        const leagueKey = `${featAward.playerId}:${featAward.featId}`;
+        if (!leagueCountsAtStart.has(leagueKey)) {
+          leagueCountsAtStart.set(
+            leagueKey,
+            participant.feats.filter((f) => f.featId === featAward.featId).length
+          );
+        }
 
-        // Vérifier la limite par ligue
-        const limitReached = feat.maxPerLeague !== undefined &&
-          totalFeatCount >= feat.maxPerLeague;
+        const decision = decideFeatAward(feat, {
+          inLeague: (leagueCountsAtStart.get(leagueKey) ?? 0) + featCountInThisMatch,
+          inEvent: featCountInThisMatch,
+        });
 
-        if (limitReached) {
-          // Limite atteinte, on enregistre le haut fait mais sans points
+        if (!decision.counted) {
+          // Le haut fait reste décerné, mais sans points : l'organisateur voit
+          // ce qu'il a attribué, et le récapitulatif dit pourquoi ça ne compte
+          // pas.
           processedFeatAwards.push({
             ...featAward,
             pointsCounted: false,
@@ -2144,8 +2145,8 @@ export async function addLeagueMatch(
           // Ajouter les points dans l'historique
           const featHistoryEntry = {
             date: matchDate,
-            points: feat.points,
-            reason: `Haut fait: ${feat.title}`,
+            points: decision.feat.points,
+            reason: `Haut fait: ${decision.feat.title}`,
             featId: featAward.featId,
             matchId,
           };
@@ -2153,7 +2154,7 @@ export async function addLeagueMatch(
           await db.collection(PARTICIPANTS_COLLECTION).updateOne(
             { leagueId: new ObjectId(leagueId), userId: featAward.playerId },
             {
-              $inc: { points: feat.points },
+              $inc: { points: decision.feat.points },
               $push: { pointsHistory: featHistoryEntry },
             } as Document
           );

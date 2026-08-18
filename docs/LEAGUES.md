@@ -100,8 +100,15 @@ Paramètres:
   - `feats: array` (default: [])
     - `title: string` : titre du haut-fait
     - `points: number` (default: 1) : points rapportés par le haut fait
-    - `maxPerEvent?: number` (default: 1)
+    - `maxPerEvent?: number` (default: undefined) : par match de ligue, par match
+      de tournoi, ou par événement selon le chemin d'attribution
     - `maxPerLeague?: number` (default: undefined)
+
+Les deux limites sont appliquées par `decideFeatAward`
+(`lib/leagues/feat-limits.ts`), seul endroit où la règle existe. Un haut fait
+au-delà d'une limite reste décerné mais ne rapporte rien (`pointsCounted:
+false`) : l'organisateur voit ce qu'il a attribué. Seule l'attribution manuelle
+refuse franchement, puisqu'elle n'a rien à conserver.
 
 Le même barème sert aux matchs de ligue et aux tournois rattachés : un point
 gagné vaut la même chose quel que soit le chemin qui l'a produit.
@@ -241,6 +248,13 @@ le calcul de la clôture qui tranche, avec l'état réel de la ligue sous les ye
 
 - `lib/leagues/points-rules.ts` - Barème : valeurs par défaut, lecture tolérante,
   issue d'un match. Module pur, testé.
+- `lib/leagues/feat-limits.ts` - `decideFeatAward` : la règle unique qui dit si
+  un haut fait rapporte ses points. Module pur, testé, appelé par les quatre
+  chemins qui attribuent (attribution manuelle, ajout d'un match par
+  l'organisation, recalcul complet ou par participant, clôture de tournoi).
+  La confirmation d'un match déclaré par un joueur n'en fait pas partie : ces
+  matchs ne portent pas de hauts faits, les joueurs n'ayant pas à s'en
+  attribuer.
 - `lib/leagues/tournament-scoring.ts` - Ce qu'un tournoi rapporte à sa ligue.
   Module pur sans accès base, testé : un barème faux ne se voit jamais à l'écran,
   le classement a toujours l'air plausible.
