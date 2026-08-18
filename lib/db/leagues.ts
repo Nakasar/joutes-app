@@ -1140,6 +1140,52 @@ export async function getLeaguesManagedBy(userId: string): Promise<League[]> {
   return Promise.all(docs.map((doc) => toLeague(doc)));
 }
 
+/**
+ * Hauts faits de la ligue venus d'un tournoi rattaché, tous tournois confondus.
+ * Une seule requête plutôt qu'une par tournoi : la timeline les regroupe
+ * ensuite elle-même.
+ */
+export async function getLeagueTournamentFeats(
+  leagueId: string
+): Promise<{ tournamentId: string; userId: string; featId: string }[]> {
+  const docs = await db
+    .collection(FEATS_COLLECTION)
+    .find({ leagueId: new ObjectId(leagueId), tournamentId: { $exists: true } })
+    .toArray();
+
+  return docs.map((doc) => ({
+    tournamentId: String(doc.tournamentId),
+    userId: String(doc.userId),
+    featId: String(doc.featId),
+  }));
+}
+
+/**
+ * Points apportés par chaque tournoi rattaché, tournoi → total.
+ *
+ * Lit `league-participants` en une requête, en ne ramenant que l'historique.
+ * `getLeagueById(..., { includeParticipants: true })` conviendrait aussi, mais
+ * il charge en prime les hauts faits de chaque participant — une requête par
+ * personne, pour une donnée dont l'appelant n'a que faire.
+ */
+export async function getLeagueTournamentPoints(
+  leagueId: string
+): Promise<Record<string, number>> {
+  const docs = await db
+    .collection(PARTICIPANTS_COLLECTION)
+    .find({ leagueId: new ObjectId(leagueId) }, { projection: { pointsHistory: 1 } })
+    .toArray();
+
+  const totals: Record<string, number> = {};
+  for (const doc of docs) {
+    for (const line of (doc.pointsHistory || []) as PointHistoryEntry[]) {
+      if (!line.tournamentId) continue;
+      totals[line.tournamentId] = (totals[line.tournamentId] ?? 0) + line.points;
+    }
+  }
+  return totals;
+}
+
 // Recalculer tous les points des participants d'une ligue POINTS
 export async function recalculateLeaguePoints(
   leagueId: string
