@@ -1160,6 +1160,32 @@ export async function getLeagueTournamentFeats(
   }));
 }
 
+/**
+ * Points apportés par chaque tournoi rattaché, tournoi → total.
+ *
+ * Lit `league-participants` en une requête, en ne ramenant que l'historique.
+ * `getLeagueById(..., { includeParticipants: true })` conviendrait aussi, mais
+ * il charge en prime les hauts faits de chaque participant — une requête par
+ * personne, pour une donnée dont l'appelant n'a que faire.
+ */
+export async function getLeagueTournamentPoints(
+  leagueId: string
+): Promise<Record<string, number>> {
+  const docs = await db
+    .collection(PARTICIPANTS_COLLECTION)
+    .find({ leagueId: new ObjectId(leagueId) }, { projection: { pointsHistory: 1 } })
+    .toArray();
+
+  const totals: Record<string, number> = {};
+  for (const doc of docs) {
+    for (const line of (doc.pointsHistory || []) as PointHistoryEntry[]) {
+      if (!line.tournamentId) continue;
+      totals[line.tournamentId] = (totals[line.tournamentId] ?? 0) + line.points;
+    }
+  }
+  return totals;
+}
+
 // Recalculer tous les points des participants d'une ligue POINTS
 export async function recalculateLeaguePoints(
   leagueId: string

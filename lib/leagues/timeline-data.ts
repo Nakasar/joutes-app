@@ -1,7 +1,11 @@
 import "server-only";
 
 import { getGameSummariesByIds } from "@/lib/db/games";
-import { getLeagueById, getLeagueTournamentFeats } from "@/lib/db/leagues";
+import {
+  getLeagueById,
+  getLeagueTournamentFeats,
+  getLeagueTournamentPoints,
+} from "@/lib/db/leagues";
 import { getStandings, listTournamentsByLeagueId } from "@/lib/db/tournaments";
 import { getUsersByIds } from "@/lib/db/users";
 import type { User } from "@/lib/types/User";
@@ -29,10 +33,14 @@ import {
 const PODIUM_SIZE = 3;
 
 export async function getLeagueTimeline(leagueId: string): Promise<TimelineYearGroup[]> {
-  const [tournaments, league, tournamentFeats] = await Promise.all([
+  // La ligue est lue SANS ses participants : on n'a besoin que du catalogue de
+  // hauts faits, et les charger entraînerait une requête de feats par
+  // participant pour une donnée déjà obtenue autrement.
+  const [tournaments, league, tournamentFeats, pointsByTournament] = await Promise.all([
     listTournamentsByLeagueId(leagueId),
-    getLeagueById(leagueId, { includeParticipants: true }),
+    getLeagueById(leagueId),
     getLeagueTournamentFeats(leagueId),
+    getLeagueTournamentPoints(leagueId),
   ]);
 
   // Un brouillon n'est pas encore une étape de la saison : il n'a ni date
@@ -49,19 +57,6 @@ export async function getLeagueTimeline(leagueId: string): Promise<TimelineYearG
   const featTitles = new Map(
     (league?.pointsConfig?.pointsRules.feats ?? []).map((feat) => [feat.id, feat.title])
   );
-
-  // Points apportés par chaque tournoi : ils vivent dans l'historique des
-  // participants, seule source qui les porte (voir docs/LEAGUES.md).
-  const pointsByTournament = new Map<string, number>();
-  for (const participant of league?.participants ?? []) {
-    for (const line of participant.pointsHistory) {
-      if (!line.tournamentId) continue;
-      pointsByTournament.set(
-        line.tournamentId,
-        (pointsByTournament.get(line.tournamentId) ?? 0) + line.points
-      );
-    }
-  }
 
   const featsByTournament = new Map<string, { userId: string; featId: string }[]>();
   for (const award of tournamentFeats) {
@@ -145,7 +140,7 @@ export async function getLeagueTimeline(leagueId: string): Promise<TimelineYearG
       // `getStandings` rend exactement une ligne par joueur inscrit : le
       // nombre de joueurs s'y lit, sans requête de plus.
       playersCount: standings.length,
-      points: pointsByTournament.get(tournament.id) ?? 0,
+      points: pointsByTournament[tournament.id] ?? 0,
       winner,
       podium,
       feats,
