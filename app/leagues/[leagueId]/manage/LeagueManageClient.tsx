@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DateTime } from "luxon";
 import { Button } from "@/components/ui/button";
@@ -74,6 +75,11 @@ import {
   deleteParticipantFeatAction,
   deleteParticipantManualPointsEntryAction,
   recalculateLeagueParticipantPointsAction,
+  listLeagueTournamentsAction,
+  listAttachableTournamentsAction,
+  attachTournamentToLeagueAction,
+  detachTournamentFromLeagueAction,
+  type LeagueTournamentView,
 } from "../../actions";
 import DeckSelector from "@/components/DeckSelector";
 import { League, LeagueStatus, LeagueParticipant, Feat, LeagueMatch, MatchFeatAward } from "@/lib/types/League";
@@ -82,6 +88,12 @@ import { Lair } from "@/lib/types/Lair";
 import { User } from "@/lib/types/User";
 
 type ParticipantWithUser = LeagueParticipant & { user?: Pick<User, 'id' | 'displayName' | 'discriminator' | 'username' | 'avatar'> | null };
+
+const TOURNAMENT_STATUS_LABELS: Record<LeagueTournamentView["status"], string> = {
+  draft: "Brouillon",
+  "in-progress": "En cours",
+  completed: "Terminé",
+};
 
 type ParticipantManageDetails = {
   feats: Array<{
@@ -92,6 +104,7 @@ type ParticipantManageDetails = {
     earnedAt: string;
     eventId?: string;
     matchId?: string;
+    tournamentId?: string;
   }>;
   manualPoints: Array<{
     historyIndex: number;
@@ -126,9 +139,9 @@ export default function LeagueManageClient({
   allLairs,
 }: LeagueManageClientProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"settings" | "participants" | "points" | "matches">(
-    "settings"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "settings" | "participants" | "points" | "matches" | "tournaments"
+  >("settings");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -181,7 +194,23 @@ export default function LeagueManageClient({
     participation: league.pointsConfig?.pointsRules.participation ?? 0,
     victory: league.pointsConfig?.pointsRules.victory ?? 2,
     defeat: league.pointsConfig?.pointsRules.defeat ?? 1,
+    draw: league.pointsConfig?.pointsRules.draw ?? 1,
+    rankPointsBeyond: league.pointsConfig?.pointsRules.rankPointsBeyond ?? 0,
   });
+
+  // Table des points par rang d'un tournoi rattaché : index 0 = 1re place.
+  const [rankPointsForm, setRankPointsForm] = useState<number[]>(
+    league.pointsConfig?.pointsRules.rankPoints ?? []
+  );
+
+  // Tournois rattachés. Chargés à l'ouverture de l'onglet plutôt qu'au rendu de
+  // la page : la plupart des visites de la gestion ne les regardent pas.
+  const [leagueTournaments, setLeagueTournaments] = useState<LeagueTournamentView[]>([]);
+  const [attachableTournaments, setAttachableTournaments] = useState<
+    { id: string; name: string; status: string }[]
+  >([]);
+  const [tournamentToAttach, setTournamentToAttach] = useState("");
+  const [tournamentsLoading, setTournamentsLoading] = useState(false);
 
   // État pour l'édition des hauts faits
   const [featsForm, setFeatsForm] = useState<Feat[]>(
@@ -788,6 +817,9 @@ export default function LeagueManageClient({
           participation: pointsRulesForm.participation,
           victory: pointsRulesForm.victory,
           defeat: pointsRulesForm.defeat,
+          draw: pointsRulesForm.draw,
+          rankPoints: rankPointsForm,
+          rankPointsBeyond: pointsRulesForm.rankPointsBeyond,
           feats: featsForm,
         },
       });
@@ -796,6 +828,77 @@ export default function LeagueManageClient({
         router.refresh();
       } else {
         setError(result.error || "Erreur lors de la sauvegarde");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Une erreur est survenue");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadTournaments = useCallback(async () => {
+    setTournamentsLoading(true);
+    try {
+      const [linked, attachable] = await Promise.all([
+        listLeagueTournamentsAction(league.id),
+        listAttachableTournamentsAction(),
+      ]);
+      if (linked.success && linked.tournaments) setLeagueTournaments(linked.tournaments);
+      if (attachable.success && attachable.tournaments) {
+        setAttachableTournaments(attachable.tournaments);
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Erreur lors du chargement des tournois");
+    } finally {
+      setTournamentsLoading(false);
+    }
+  }, [league.id]);
+
+  useEffect(() => {
+    if (activeTab === "tournaments") {
+      void loadTournaments();
+    }
+  }, [activeTab, loadTournaments]);
+
+  const handleAttachTournament = async () => {
+    if (!tournamentToAttach) return;
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const result = await attachTournamentToLeagueAction(league.id, tournamentToAttach);
+      if (result.success) {
+        setSuccess("Tournoi rattaché à la ligue");
+        setTournamentToAttach("");
+        await loadTournaments();
+        router.refresh();
+      } else {
+        setError(result.error || "Erreur lors du rattachement");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Une erreur est survenue");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDetachTournament = async (tournamentId: string) => {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const result = await detachTournamentFromLeagueAction(league.id, tournamentId);
+      if (result.success) {
+        setSuccess("Tournoi détaché : ses points ont été retirés de la ligue");
+        await loadTournaments();
+        router.refresh();
+      } else {
+        setError(result.error || "Erreur lors du détachement");
       }
     } catch (err) {
       console.error(err);
@@ -886,6 +989,15 @@ export default function LeagueManageClient({
           <Swords className="h-4 w-4 mr-2" />
           Matchs ({league.matches?.length || 0})
         </Button>
+        {league.format === "POINTS" && (
+          <Button
+            variant={activeTab === "tournaments" ? "default" : "ghost"}
+            onClick={() => setActiveTab("tournaments")}
+          >
+            <Trophy className="h-4 w-4 mr-2" />
+            Tournois
+          </Button>
+        )}
       </div>
 
       {/* Tab: Settings */}
@@ -1432,20 +1544,33 @@ export default function LeagueManageClient({
                                         {formatManageDateTime(feat.earnedAt)}
                                       </p>
                                     </div>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() =>
-                                        handleDeleteParticipantFeat(
-                                          participant.userId,
-                                          feat.id
-                                        )
-                                      }
-                                      disabled={loading}
-                                      title="Supprimer ce haut fait"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
+                                    {/* Un haut fait gagné en tournoi se retire
+                                        depuis le tournoi : le supprimer ici le
+                                        ferait revenir au prochain recalcul. */}
+                                    {feat.tournamentId ? (
+                                      <Button variant="ghost" size="sm" asChild>
+                                        <Link
+                                          href={`/tournaments/${feat.tournamentId}/organizer`}
+                                        >
+                                          Voir le tournoi
+                                        </Link>
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() =>
+                                          handleDeleteParticipantFeat(
+                                            participant.userId,
+                                            feat.id
+                                          )
+                                        }
+                                        disabled={loading}
+                                        title="Supprimer ce haut fait"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    )}
                                   </div>
                                 ))}
                               </div>
@@ -1735,6 +1860,99 @@ export default function LeagueManageClient({
                   />
                   <p className="text-xs text-muted-foreground">
                     Points pour une défaite (généralement 0)
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Points de match nul
+                  </label>
+                  <Input
+                    type="number"
+                    value={pointsRulesForm.draw}
+                    onChange={(e) =>
+                      setPointsRulesForm({
+                        ...pointsRulesForm,
+                        draw: parseInt(e.target.value, 10) || 0,
+                      })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Comptés lorsqu&apos;aucun vainqueur n&apos;est désigné
+                  </p>
+                </div>
+              </div>
+
+              {/* Points de classement des tournois rattachés. Une table courte
+                  suffit à décrire « podium plus participation » : tous les rangs
+                  qu'elle ne couvre pas valent la même chose. */}
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-sm font-medium">Points de classement (tournois)</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Attribués selon le rang final d&apos;un tournoi rattaché à la ligue.
+                  </p>
+                </div>
+
+                {rankPointsForm.length > 0 && (
+                  <div className="space-y-2">
+                    {rankPointsForm.map((points, index) => (
+                      <div key={index} className="flex flex-wrap items-center gap-2">
+                        <span className="w-24 text-sm text-muted-foreground">
+                          {index === 0 ? "1re place" : `${index + 1}e place`}
+                        </span>
+                        <Input
+                          type="number"
+                          className="w-28"
+                          value={points}
+                          onChange={(e) =>
+                            setRankPointsForm(
+                              rankPointsForm.map((value, i) =>
+                                i === index ? parseInt(e.target.value, 10) || 0 : value
+                              )
+                            )
+                          }
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            setRankPointsForm(rankPointsForm.filter((_, i) => i !== index))
+                          }
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRankPointsForm([...rankPointsForm, 0])}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter un rang
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Rangs suivants</label>
+                  <Input
+                    type="number"
+                    className="w-28"
+                    value={pointsRulesForm.rankPointsBeyond}
+                    onChange={(e) =>
+                      setPointsRulesForm({
+                        ...pointsRulesForm,
+                        rankPointsBeyond: parseInt(e.target.value, 10) || 0,
+                      })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Points de tous les rangs au-delà du tableau ci-dessus
                   </p>
                 </div>
               </div>
@@ -2484,6 +2702,139 @@ export default function LeagueManageClient({
                       </div>
                     );
                   })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Tab: Tournois rattachés */}
+      {activeTab === "tournaments" && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Tournois de la ligue</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Un tournoi rattaché reporte ses résultats dans la ligue au moment de sa
+                clôture : classement, bilan des matchs et hauts faits décernés. Le
+                détacher ou le rouvrir retire ces points.
+              </p>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" asChild>
+                  <Link href={`/tournaments/new?leagueId=${league.id}`}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Créer un tournoi
+                  </Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={loadTournaments}
+                  disabled={tournamentsLoading}
+                >
+                  <RefreshCw
+                    className={`h-4 w-4 mr-2 ${tournamentsLoading ? "animate-spin" : ""}`}
+                  />
+                  Rafraîchir
+                </Button>
+              </div>
+
+              {leagueTournaments.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Aucun tournoi n&apos;est rattaché à cette ligue.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {leagueTournaments.map((tournament) => (
+                    <div
+                      key={tournament.id}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium">{tournament.name}</span>
+                          <Badge
+                            variant={
+                              tournament.status === "completed" ? "default" : "secondary"
+                            }
+                          >
+                            {TOURNAMENT_STATUS_LABELS[tournament.status]}
+                          </Badge>
+                          {tournament.status === "completed" && (
+                            <Badge variant="outline">
+                              {tournament.contributedPoints} pts distribués
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {formatManageDateTime(tournament.startsAt ?? tournament.createdAt)}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/tournaments/${tournament.id}/organizer`}>
+                            Ouvrir
+                          </Link>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={loading}
+                          onClick={() => handleDetachTournament(tournament.id)}
+                        >
+                          Détacher
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Rattacher un tournoi existant</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Seuls les tournois que vous organisez et qui ne sont rattachés à aucune
+                ligue sont proposés. Un tournoi déjà clôturé est comptabilisé
+                immédiatement.
+              </p>
+              {attachableTournaments.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Aucun tournoi disponible.
+                </p>
+              ) : (
+                <div className="flex flex-wrap items-end gap-2">
+                  <div className="min-w-56 flex-1 space-y-2">
+                    <label className="text-sm font-medium">Tournoi</label>
+                    <Select
+                      value={tournamentToAttach}
+                      onValueChange={setTournamentToAttach}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choisir un tournoi" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {attachableTournaments.map((tournament) => (
+                          <SelectItem key={tournament.id} value={tournament.id}>
+                            {tournament.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    disabled={!tournamentToAttach || loading}
+                    onClick={handleAttachTournament}
+                  >
+                    Rattacher
+                  </Button>
                 </div>
               )}
             </CardContent>

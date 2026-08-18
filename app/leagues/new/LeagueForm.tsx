@@ -68,6 +68,7 @@ export default function LeagueForm({ games, lairs }: LeagueFormProps) {
     pointsParticipation: "0",
     pointsVictory: "2",
     pointsDefeat: "1",
+    pointsDraw: "1",
     feats: [] as Feat[],
   });
 
@@ -122,6 +123,7 @@ export default function LeagueForm({ games, lairs }: LeagueFormProps) {
                 participation: parseInt(formData.pointsParticipation, 10) || 0,
                 victory: parseInt(formData.pointsVictory, 10) || 2,
                 defeat: parseInt(formData.pointsDefeat, 10) || 1,
+                draw: parseInt(formData.pointsDraw, 10) || 0,
                 feats: formData.feats,
               }
             : undefined,
@@ -518,7 +520,28 @@ export default function LeagueForm({ games, lairs }: LeagueFormProps) {
                         }
                       />
                     </div>
+                    <div className="space-y-2">
+                      <label htmlFor="pointsDraw" className="text-sm font-medium">
+                        Match nul
+                      </label>
+                      <Input
+                        id="pointsDraw"
+                        type="number"
+                        min="0"
+                        value={formData.pointsDraw}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            pointsDraw: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Le barème de classement des tournois rattachés se règle depuis la
+                    gestion de la ligue, une fois celle-ci créée.
+                  </p>
 
                   {/* Hauts faits */}
                   <div className="space-y-3">

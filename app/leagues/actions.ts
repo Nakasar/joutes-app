@@ -39,6 +39,7 @@ import {
 } from "@/lib/db/tournaments";
 import { normalizePointsRules } from "@/lib/leagues/points-rules";
 import {
+  applyTournamentToLeague,
   requireLinkableLeague,
   syncTournamentLeague,
 } from "@/lib/leagues/tournament-results";
@@ -489,6 +490,17 @@ export async function recalculateLeaguePointsAction(
     }
 
     await recalculateLeaguePoints(leagueId);
+
+    // Le recalcul recopie les lignes de tournoi telles quelles : il faut
+    // rejouer chaque tournoi clos pour qu'un barème modifié (table de rangs,
+    // points de nul) s'y applique aussi. Rejouer est sans risque, l'application
+    // commence par annuler.
+    const tournaments = await listTournamentsByLeagueId(leagueId);
+    for (const tournament of tournaments) {
+      if (tournament.status !== "completed") continue;
+      await applyTournamentToLeague(tournament.id);
+    }
+
     revalidatePath(`/leagues/${leagueId}`);
     revalidatePath(`/leagues/${leagueId}/manage`);
 
@@ -541,6 +553,9 @@ export type ParticipantManageFeatView = {
   earnedAt: string;
   eventId?: string;
   matchId?: string;
+  // Renseigné pour un haut fait gagné dans un tournoi rattaché : il se retire
+  // depuis le tournoi, pas depuis la ligue.
+  tournamentId?: string;
 };
 
 export type ParticipantManageManualPointView = {
@@ -581,6 +596,7 @@ export async function getParticipantManageDetailsAction(
           earnedAt: DateTime.fromJSDate(feat.earnedAt).toISO() || new Date().toISOString(),
           eventId: feat.eventId,
           matchId: feat.matchId,
+          tournamentId: feat.tournamentId,
         })),
         manualPoints: details.manualPoints.map((entry) => ({
           historyIndex: entry.historyIndex,
