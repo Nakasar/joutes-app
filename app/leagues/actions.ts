@@ -30,6 +30,20 @@ import {
 } from "@/lib/db/leagues";
 import { searchLairs } from "@/lib/db/lairs";
 import {
+  assertIsOrganizer,
+  detachTournamentsFromLeague,
+  listTournamentsByLeagueId,
+  listTournamentsForUser,
+  requireTournament,
+  updateTournament,
+} from "@/lib/db/tournaments";
+import { normalizePointsRules } from "@/lib/leagues/points-rules";
+import {
+  applyTournamentToLeague,
+  requireLinkableLeague,
+  syncTournamentLeague,
+} from "@/lib/leagues/tournament-results";
+import {
   League,
   CreateLeagueInput,
   UpdateLeagueInput,
@@ -104,6 +118,10 @@ export type CreateLeagueParams = {
     participation: number;
     victory: number;
     defeat: number;
+    draw?: number;
+    // Points par rang final d'un tournoi rattaché : index 0 = 1er.
+    rankPoints?: number[];
+    rankPointsBeyond?: number;
     feats?: Array<{
       id: string;
       title: string;
@@ -159,12 +177,15 @@ export async function createLeagueAction(
       };
     } else if (params.format === "POINTS") {
       input.pointsConfig = {
-        pointsRules: {
-          participation: params.pointsRules?.participation || 0,
-          victory: params.pointsRules?.victory || 2,
-          defeat: params.pointsRules?.defeat || 1,
-          feats: params.pointsRules?.feats || [],
-        },
+        pointsRules: normalizePointsRules({
+          participation: params.pointsRules?.participation,
+          victory: params.pointsRules?.victory,
+          defeat: params.pointsRules?.defeat,
+          draw: params.pointsRules?.draw,
+          rankPoints: params.pointsRules?.rankPoints,
+          rankPointsBeyond: params.pointsRules?.rankPointsBeyond,
+          feats: params.pointsRules?.feats,
+        }),
       };
     }
 
@@ -238,12 +259,7 @@ export async function updateLeagueAction(
     }
     if (params.format === "POINTS" && params.pointsRules !== undefined) {
       input.pointsConfig = {
-        pointsRules: {
-          participation: params.pointsRules.participation ?? 0,
-          victory: params.pointsRules.victory ?? 2,
-          defeat: params.pointsRules.defeat ?? 1,
-          feats: params.pointsRules.feats || [],
-        },
+        pointsRules: normalizePointsRules(params.pointsRules),
       };
     }
 
@@ -308,6 +324,11 @@ export async function deleteLeagueAction(
     if (league.creatorId !== user.id) {
       throw new Error("Seul le créateur peut supprimer cette ligue");
     }
+
+    // Les tournois survivent à la ligue : on les détache plutôt que de les
+    // laisser pointer vers une ligue disparue, ce qui ferait échouer toute
+    // clôture ultérieure.
+    await detachTournamentsFromLeague(leagueId);
 
     await deleteLeague(leagueId);
     revalidatePath("/leagues");
@@ -469,6 +490,17 @@ export async function recalculateLeaguePointsAction(
     }
 
     await recalculateLeaguePoints(leagueId);
+
+    // Le recalcul recopie les lignes de tournoi telles quelles : il faut
+    // rejouer chaque tournoi clos pour qu'un barème modifié (table de rangs,
+    // points de nul) s'y applique aussi. Rejouer est sans risque, l'application
+    // commence par annuler.
+    const tournaments = await listTournamentsByLeagueId(leagueId);
+    for (const tournament of tournaments) {
+      if (tournament.status !== "completed") continue;
+      await applyTournamentToLeague(tournament.id);
+    }
+
     revalidatePath(`/leagues/${leagueId}`);
     revalidatePath(`/leagues/${leagueId}/manage`);
 
@@ -521,6 +553,9 @@ export type ParticipantManageFeatView = {
   earnedAt: string;
   eventId?: string;
   matchId?: string;
+  // Renseigné pour un haut fait gagné dans un tournoi rattaché : il se retire
+  // depuis le tournoi, pas depuis la ligue.
+  tournamentId?: string;
 };
 
 export type ParticipantManageManualPointView = {
@@ -561,6 +596,7 @@ export async function getParticipantManageDetailsAction(
           earnedAt: DateTime.fromJSDate(feat.earnedAt).toISO() || new Date().toISOString(),
           eventId: feat.eventId,
           matchId: feat.matchId,
+          tournamentId: feat.tournamentId,
         })),
         manualPoints: details.manualPoints.map((entry) => ({
           historyIndex: entry.historyIndex,
@@ -1050,6 +1086,174 @@ export async function confirmLeagueMatchLairAction(
       success: false,
       error:
         error instanceof Error ? error.message : "Erreur lors de la confirmation du lieu",
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// TOURNOIS RATTACHÉS
+// ---------------------------------------------------------------------------
+
+export type LeagueTournamentView = {
+  id: string;
+  name: string;
+  status: "draft" | "in-progress" | "completed";
+  startsAt?: string;
+  createdAt: string;
+  /** Points que ce tournoi a apportés à la ligue. 0 tant qu'il n'est pas clos. */
+  contributedPoints: number;
+};
+
+/** Tournois rattachés à la ligue, avec ce que chacun lui a rapporté. */
+export async function listLeagueTournamentsAction(
+  leagueId: string
+): Promise<{ success: boolean; tournaments?: LeagueTournamentView[]; error?: string }> {
+  try {
+    const user = await requireAuth();
+
+    const canManage = await isLeagueOrganizer(leagueId, user.id);
+    if (!canManage) {
+      throw new Error("Vous n'êtes pas autorisé à gérer cette ligue");
+    }
+
+    const [tournaments, league] = await Promise.all([
+      listTournamentsByLeagueId(leagueId),
+      getLeagueById(leagueId, { includeParticipants: true }),
+    ]);
+
+    // Les points d'un tournoi se relisent dans l'historique des participants :
+    // c'est là qu'ils vivent, et cela évite de les stocker deux fois.
+    const pointsByTournament = new Map<string, number>();
+    for (const participant of league?.participants ?? []) {
+      for (const entry of participant.pointsHistory) {
+        if (!entry.tournamentId) continue;
+        pointsByTournament.set(
+          entry.tournamentId,
+          (pointsByTournament.get(entry.tournamentId) ?? 0) + entry.points
+        );
+      }
+    }
+
+    return {
+      success: true,
+      tournaments: tournaments.map((tournament) => ({
+        id: tournament.id,
+        name: tournament.name,
+        status: tournament.status,
+        startsAt: tournament.startsAt?.toISOString(),
+        createdAt: tournament.createdAt.toISOString(),
+        contributedPoints: pointsByTournament.get(tournament.id) ?? 0,
+      })),
+    };
+  } catch (error) {
+    console.error("Error listing league tournaments:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erreur lors du chargement des tournois",
+    };
+  }
+}
+
+/** Tournois que l'utilisateur gère et qui ne sont rattachés à aucune ligue. */
+export async function listAttachableTournamentsAction(): Promise<{
+  success: boolean;
+  tournaments?: { id: string; name: string; status: string }[];
+  error?: string;
+}> {
+  try {
+    const user = await requireAuth();
+    const tournaments = await listTournamentsForUser(user.id);
+
+    return {
+      success: true,
+      tournaments: tournaments
+        .filter((tournament) => !tournament.leagueId)
+        .map((tournament) => ({
+          id: tournament.id,
+          name: tournament.name,
+          status: tournament.status,
+        })),
+    };
+  } catch (error) {
+    console.error("Error listing attachable tournaments:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erreur lors du chargement des tournois",
+    };
+  }
+}
+
+/**
+ * Rattache un tournoi existant à la ligue. Un tournoi déjà clos est aussitôt
+ * comptabilisé : rattacher après coup doit donner le même résultat que
+ * rattacher avant la clôture.
+ */
+export async function attachTournamentToLeagueAction(
+  leagueId: string,
+  tournamentId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await requireAuth();
+
+    const canManage = await isLeagueOrganizer(leagueId, user.id);
+    if (!canManage) {
+      throw new Error("Vous n'êtes pas autorisé à gérer cette ligue");
+    }
+
+    await requireLinkableLeague(leagueId);
+
+    const tournament = await requireTournament(tournamentId);
+    assertIsOrganizer(tournament, user.id);
+    if (tournament.leagueId && tournament.leagueId !== leagueId) {
+      throw new Error("Ce tournoi est déjà rattaché à une autre ligue");
+    }
+
+    const updated = await updateTournament(tournamentId, { leagueId });
+    await syncTournamentLeague(tournament, updated);
+
+    revalidatePath(`/leagues/${leagueId}`);
+    revalidatePath(`/tournaments/${tournamentId}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error attaching tournament to league:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erreur lors du rattachement du tournoi",
+    };
+  }
+}
+
+/** Détache un tournoi et retire de la ligue les points qu'il lui avait apportés. */
+export async function detachTournamentFromLeagueAction(
+  leagueId: string,
+  tournamentId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await requireAuth();
+
+    const canManage = await isLeagueOrganizer(leagueId, user.id);
+    if (!canManage) {
+      throw new Error("Vous n'êtes pas autorisé à gérer cette ligue");
+    }
+
+    const tournament = await requireTournament(tournamentId);
+    if (tournament.leagueId !== leagueId) {
+      throw new Error("Ce tournoi n'est pas rattaché à cette ligue");
+    }
+
+    const updated = await updateTournament(tournamentId, { leagueId: null });
+    await syncTournamentLeague(tournament, updated);
+
+    revalidatePath(`/leagues/${leagueId}`);
+    revalidatePath(`/tournaments/${tournamentId}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error detaching tournament from league:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erreur lors du détachement du tournoi",
     };
   }
 }

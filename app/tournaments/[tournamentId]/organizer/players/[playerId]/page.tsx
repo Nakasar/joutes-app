@@ -3,10 +3,12 @@ import { getTranslations } from "next-intl/server";
 import {
   getPlayerById,
   getStandings,
+  listFeatAwards,
   listMatchesByTournament,
   listNotes,
   listPenalties,
 } from "@/lib/db/tournaments";
+import { getTournamentLeagueContext } from "@/lib/leagues/tournament-results";
 import { loadOrganizerContext } from "../../organizerContext";
 import {
   PlayerSheet,
@@ -25,11 +27,13 @@ export default async function OrganizerPlayerSheetPage({
   const player = await getPlayerById(tournamentId, playerId);
   if (!player) notFound();
 
-  const [penalties, notes, matches, standings, t] = await Promise.all([
+  const [penalties, notes, matches, standings, featAwards, league, t] = await Promise.all([
     listPenalties(tournamentId, playerId),
     listNotes(tournamentId, playerId),
     listMatchesByTournament(tournamentId),
     getStandings(tournamentId),
+    listFeatAwards(tournamentId, { playerId }),
+    getTournamentLeagueContext(tournament),
     getTranslations("Tournaments"),
   ]);
 
@@ -117,6 +121,14 @@ export default async function OrganizerPlayerSheetPage({
         content: n.content,
         roundNumber: n.roundNumber,
         createdAt: n.createdAt.toISOString(),
+      }))}
+      feats={league?.feats ?? []}
+      initialFeatAwards={featAwards.map((a) => ({
+        id: a.id,
+        featId: a.featId,
+        matchId: a.matchId,
+        roundNumber: a.roundNumber,
+        createdAt: a.createdAt.toISOString(),
       }))}
     />
   );

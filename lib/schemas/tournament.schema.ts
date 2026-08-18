@@ -76,6 +76,8 @@ const tournamentDetailsUpdateShape = {
 export const createTournamentSchema = z.object({
   name: z.string().min(1, "Le nom du tournoi est requis").max(200),
   eventId: z.string().optional(),
+  // Ligue POINTS alimentée par ce tournoi à sa clôture.
+  leagueId: z.string().min(1).optional(),
   gameId: z.string().optional(),
   // Jeu hors catalogue, saisi à la main. Sans effet si `gameId` est fourni.
   customGameName: z.string().min(1).max(200).optional(),
@@ -98,6 +100,9 @@ export const updateTournamentSchema = z.object({
   customGameName: z.string().min(1).max(200).nullable().optional(),
   // null = détacher le tournoi de son événement (la chaîne vide est refusée).
   eventId: z.string().min(1).nullable().optional(),
+  // null = détacher le tournoi de sa ligue, ce qui retire aussi les points
+  // qu'il lui avait apportés.
+  leagueId: z.string().min(1).nullable().optional(),
   currentPhaseId: z.string().nullable().optional(),
   // Panneau montré sur l'écran de projection de la salle.
   liveDisplay: z.enum(["timer", "announcements", "standings", "matches"]).optional(),
@@ -369,6 +374,13 @@ export const createTournamentPenaltySchema = z.object({
 
 export const createTournamentNoteSchema = z.object({
   content: z.string().min(1, "La note ne peut pas être vide").max(2000),
+});
+
+// Haut fait attribué pendant un tournoi rattaché. `featId` est validé contre le
+// catalogue de la ligue par la route : le schéma ne connaît pas les ligues.
+export const createTournamentFeatAwardSchema = z.object({
+  featId: z.string().min(1).max(64),
+  matchId: z.string().min(1).optional(),
 });
 
 // Liste de deck : `content` remplace la liste, `checked` bascule la vérification

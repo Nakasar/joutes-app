@@ -18,6 +18,12 @@ import {User} from "@/lib/types/User";
 import { getUserById, getUsersByIds } from "@/lib/db/users";
 import { notifyLairOwnersWithTemplate, notifyUserWithTemplate } from "@/lib/services/notifications";
 import { getLairById } from "@/lib/db/lairs";
+import {
+  OUTCOME_REASONS,
+  normalizePointsRules,
+  outcomeForPlayer,
+  pointsForOutcome,
+} from "@/lib/leagues/points-rules";
 import { 
   createMatch,
   getMatches,
@@ -46,6 +52,10 @@ export type LeagueParticipantFeatDocument = {
   earnedAt: Date;
   eventId?: string;
   matchId?: string;
+  // Tournoi rattaché dont la clôture a produit ce haut fait. Exclusif de
+  // `matchId`, qui désigne un match de ligue.
+  tournamentId?: string;
+  tournamentMatchId?: string;
   createdAt: Date;
 };
 
@@ -57,6 +67,7 @@ export type LeagueParticipantManageFeat = {
   earnedAt: Date;
   eventId?: string;
   matchId?: string;
+  tournamentId?: string;
 };
 
 export type LeagueParticipantManualPointEntry = {
@@ -109,6 +120,7 @@ async function toLeague(
           earnedAt: new Date(f.earnedAt),
           eventId: f.eventId,
           matchId: f.matchId,
+          tournamentId: f.tournamentId,
         })),
         joinedAt: new Date(p.joinedAt),
         eliminatedAt: p.eliminatedAt ? new Date(p.eliminatedAt) : undefined,
@@ -125,7 +137,13 @@ async function toLeague(
     banner: doc.banner,
     format: doc.format,
     killerConfig: doc.killerConfig,
-    pointsConfig: doc.pointsConfig,
+    // Le barème est complété à la lecture : une ligue créée avant les tournois
+    // rattachés n'a en base ni points de nul ni table de rangs, et tout ce qui
+    // lit `pointsConfig` doit pouvoir compter dessus sans se méfier.
+    pointsConfig: doc.pointsConfig && {
+      ...doc.pointsConfig,
+      pointsRules: normalizePointsRules(doc.pointsConfig.pointsRules),
+    },
     startDate: doc.startDate ? new Date(doc.startDate) : undefined,
     endDate: doc.endDate ? new Date(doc.endDate) : undefined,
     registrationDeadline: doc.registrationDeadline
@@ -592,6 +610,7 @@ export async function getLeagueParticipantManageDetails(
       earnedAt: new Date(featDoc.earnedAt),
       eventId: featDoc.eventId,
       matchId: featDoc.matchId,
+      tournamentId: featDoc.tournamentId,
     };
   });
 
@@ -603,6 +622,7 @@ export async function getLeagueParticipantManageDetails(
     eventId?: string;
     featId?: string;
     matchId?: string;
+    tournamentId?: string;
   };
 
   const participantPointsHistory: PointHistoryEntry[] =
@@ -618,11 +638,17 @@ export async function getLeagueParticipantManageDetails(
         eventId: entry.eventId,
         featId: entry.featId,
         matchId: entry.matchId,
+        tournamentId: entry.tournamentId,
       })
     );
 
+  // Une ligne issue d'un tournoi n'a rien de manuel : la proposer à la
+  // suppression laisserait croire qu'on peut la retirer, alors que la
+  // prochaine application du tournoi la réécrirait à l'identique.
   const manualPoints: LeagueParticipantManualPointEntry[] = manualPointCandidates
-    .filter((entry: ManualPointCandidate) => !entry.featId && !entry.matchId)
+    .filter(
+      (entry: ManualPointCandidate) => !entry.featId && !entry.matchId && !entry.tournamentId
+    )
     .map((entry: ManualPointCandidate) => ({
       historyIndex: entry.historyIndex,
       date: entry.date,
@@ -662,6 +688,14 @@ export async function deleteLeagueParticipantFeat(
 
   if (!featDoc) {
     throw new Error("Haut fait non trouvé");
+  }
+
+  // Un haut fait gagné dans un tournoi se retire depuis le tournoi : le
+  // supprimer ici le ferait réapparaître à la prochaine application.
+  if (featDoc.tournamentId) {
+    throw new Error(
+      "Ce haut fait vient d'un tournoi rattaché : retirez-le depuis le tournoi."
+    );
   }
 
   const participantDoc = await db.collection(PARTICIPANTS_COLLECTION).findOne({
@@ -778,7 +812,7 @@ export async function deleteLeagueParticipantManualPointsEntry(
   }
 
   const targetEntry = pointsHistory[historyIndex];
-  if (targetEntry.matchId || targetEntry.featId) {
+  if (targetEntry.matchId || targetEntry.featId || targetEntry.tournamentId) {
     throw new Error("Seuls les ajouts manuels de points peuvent être supprimés ici");
   }
 
@@ -977,6 +1011,126 @@ export async function awardFeatToParticipant(
   return getLeagueById(leagueId, { includeParticipants: true });
 }
 
+// ---------------------------------------------------------------------------
+// CONTRIBUTION D'UN TOURNOI RATTACHÉ
+// ---------------------------------------------------------------------------
+//
+// Ces deux fonctions sont les seules à écrire — et à effacer — les points et
+// hauts faits issus d'un tournoi. Elles ne connaissent rien des tournois : le
+// calcul se fait en amont (lib/leagues/tournament-scoring.ts) et l'orchestration
+// dans lib/leagues/tournament-results.ts, qui seul lit les deux domaines.
+//
+// Invariant : une ligne d'historique produite par un tournoi porte
+// `tournamentId` et JAMAIS `matchId`. `matchId` désigne un match de ligue et
+// sert de clé à recalculateLeaguePoints ; le réutiliser ferait effacer la
+// contribution du tournoi au premier recalcul.
+
+export type TournamentContributionEntry = {
+  userId: string;
+  points: number;
+  history: PointHistoryEntry[];
+  feats: { featId: string; earnedAt: Date; tournamentMatchId?: string }[];
+};
+
+/**
+ * Retire tout ce qu'un tournoi a apporté à une ligue. Appelée avant chaque
+ * application — c'est ce qui rend une clôture rejouable — et à la réouverture
+ * ou au détachement du tournoi.
+ */
+export async function revertTournamentContribution(
+  leagueId: string,
+  tournamentId: string
+): Promise<{ removedPoints: number; affectedParticipants: number }> {
+  const leagueObjectId = new ObjectId(leagueId);
+
+  const participantDocs = await db
+    .collection(PARTICIPANTS_COLLECTION)
+    .find({ leagueId: leagueObjectId, "pointsHistory.tournamentId": tournamentId })
+    .toArray();
+
+  let removedPoints = 0;
+
+  for (const participant of participantDocs) {
+    const history: PointHistoryEntry[] = participant.pointsHistory || [];
+    const points = history
+      .filter((entry) => entry.tournamentId === tournamentId)
+      .reduce((sum, entry) => sum + entry.points, 0);
+    removedPoints += points;
+
+    await db.collection(PARTICIPANTS_COLLECTION).updateOne(
+      { _id: participant._id },
+      {
+        $inc: { points: -points },
+        $pull: { pointsHistory: { tournamentId } },
+      } as Document
+    );
+  }
+
+  await db
+    .collection(FEATS_COLLECTION)
+    .deleteMany({ leagueId: leagueObjectId, tournamentId });
+
+  await db
+    .collection(COLLECTION_NAME)
+    .updateOne({ _id: leagueObjectId }, { $set: { updatedAt: DateTime.now().toJSDate() } });
+
+  return { removedPoints, affectedParticipants: participantDocs.length };
+}
+
+/**
+ * Écrit la contribution d'un tournoi. Commence par l'annuler : appliquer deux
+ * fois de suite donne exactement le même état, ce qui autorise à rejouer une
+ * clôture après une correction de résultat ou un changement de barème.
+ */
+export async function applyTournamentContribution(
+  leagueId: string,
+  tournamentId: string,
+  entries: TournamentContributionEntry[]
+): Promise<void> {
+  const leagueObjectId = new ObjectId(leagueId);
+
+  await revertTournamentContribution(leagueId, tournamentId);
+
+  for (const entry of entries) {
+    if (entry.history.length > 0) {
+      await db.collection(PARTICIPANTS_COLLECTION).updateOne(
+        { leagueId: leagueObjectId, userId: entry.userId },
+        {
+          $inc: { points: entry.points },
+          $push: { pointsHistory: { $each: entry.history } },
+        } as Document
+      );
+    }
+
+    if (entry.feats.length > 0) {
+      const featDocs = entry.feats.map((feat) => ({
+        leagueId: leagueObjectId,
+        userId: entry.userId,
+        featId: feat.featId,
+        earnedAt: feat.earnedAt,
+        tournamentId,
+        tournamentMatchId: feat.tournamentMatchId,
+        createdAt: new Date(),
+      }));
+      await db.collection(FEATS_COLLECTION).insertMany(featDocs as Document[]);
+    }
+  }
+
+  await db
+    .collection(COLLECTION_NAME)
+    .updateOne({ _id: leagueObjectId }, { $set: { updatedAt: DateTime.now().toJSDate() } });
+}
+
+/** Ligues dont l'utilisateur est créateur ou organisateur. */
+export async function getLeaguesManagedBy(userId: string): Promise<League[]> {
+  const docs = await db
+    .collection(COLLECTION_NAME)
+    .find({ $or: [{ creatorId: userId }, { organizerIds: userId }] })
+    .sort({ createdAt: -1 })
+    .toArray();
+  return Promise.all(docs.map((doc) => toLeague(doc)));
+}
+
 // Recalculer tous les points des participants d'une ligue POINTS
 export async function recalculateLeaguePoints(
   leagueId: string
@@ -1006,6 +1160,15 @@ export async function recalculateLeaguePoints(
   for (const participant of league.participants) {
     const preservedEntries = participant.pointsHistory
       .filter((entry) => {
+        // Les lignes venues d'un tournoi rattaché appartiennent à ce tournoi :
+        // seules applyTournamentContribution / revertTournamentContribution les
+        // écrivent et les effacent. Un recalcul les recopie telles quelles,
+        // même si le haut fait a depuis quitté le catalogue — sinon les points
+        // disparaîtraient alors que le haut fait resterait en base.
+        if (entry.tournamentId) {
+          return true;
+        }
+
         if (entry.matchId) {
           return false;
         }
@@ -1025,6 +1188,9 @@ export async function recalculateLeaguePoints(
 
     const manualFeatCounts = new Map<string, number>();
     for (const feat of participant.feats) {
+      // Les hauts faits de match sont rejoués plus bas depuis les matchs. Ceux
+      // d'un tournoi rattaché, en revanche, sont bien acquis : ils comptent
+      // dans le quota `maxPerLeague` opposé aux matchs qui suivront.
       if (feat.matchId) {
         continue;
       }
@@ -1061,16 +1227,14 @@ export async function recalculateLeaguePoints(
         continue;
       }
 
-      const isWinner = match.winnerIds.includes(playerId);
-      const points =
-        pointsRules.participation +
-        (isWinner ? pointsRules.victory : pointsRules.defeat);
+      const outcome = outcomeForPlayer(match.winnerIds, playerId);
+      const points = pointsForOutcome(pointsRules, outcome);
 
       const userHistory = historiesByUser.get(playerId) || [];
       userHistory.push({
         date: matchDate,
         points,
-        reason: isWinner ? "Victoire" : "Défaite",
+        reason: OUTCOME_REASONS[outcome],
         matchId: match.id,
       });
       historiesByUser.set(playerId, userHistory);
@@ -1189,6 +1353,13 @@ export async function recalculateLeagueParticipantPoints(
 
   const rebuiltHistory: PointHistoryEntry[] = participant.pointsHistory
     .filter((entry) => {
+      // Même règle que recalculateLeaguePoints : les lignes venues d'un tournoi
+      // rattaché lui appartiennent et survivent au recalcul, même si le haut
+      // fait a depuis quitté le catalogue.
+      if (entry.tournamentId) {
+        return true;
+      }
+
       if (entry.matchId) {
         return false;
       }
@@ -1235,15 +1406,13 @@ export async function recalculateLeagueParticipantPoints(
     const matchDate = DateTime.fromJSDate(match.playedAt).toJSDate();
 
     if (match.playerIds.includes(userId)) {
-      const isWinner = match.winnerIds.includes(userId);
-      const points =
-        pointsRules.participation +
-        (isWinner ? pointsRules.victory : pointsRules.defeat);
+      const outcome = outcomeForPlayer(match.winnerIds, userId);
+      const points = pointsForOutcome(pointsRules, outcome);
 
       rebuiltHistory.push({
         date: matchDate,
         points,
-        reason: isWinner ? "Victoire" : "Défaite",
+        reason: OUTCOME_REASONS[outcome],
         matchId: match.id,
       });
     }
@@ -1727,15 +1896,13 @@ async function applyConfirmedPointsForMatch(
   const { pointsRules } = league.pointsConfig;
 
   for (const playerId of match.playerIds) {
-    const isWinner = match.winnerIds.includes(playerId);
-    const points =
-      pointsRules.participation +
-      (isWinner ? pointsRules.victory : pointsRules.defeat);
+    const outcome = outcomeForPlayer(match.winnerIds, playerId);
+    const points = pointsForOutcome(pointsRules, outcome);
 
     const historyEntry = {
       date: matchDate,
       points,
-      reason: isWinner ? "Victoire" : "Défaite",
+      reason: OUTCOME_REASONS[outcome],
       matchId: match.id,
     };
 
@@ -1880,19 +2047,12 @@ export async function addLeagueMatch(
     const matchDate = new Date();
 
     for (const playerId of matchInput.playerIds) {
-      const isWinner = computedWinnerIds.includes(playerId);
-      let points = pointsRules.participation;
-
-      if (isWinner) {
-        points += pointsRules.victory;
-      } else {
-        points += pointsRules.defeat;
-      }
+      const outcome = outcomeForPlayer(computedWinnerIds, playerId);
 
       pointsUpdates.push({
         userId: playerId,
-        points,
-        reason: isWinner ? "Victoire" : "Défaite",
+        points: pointsForOutcome(pointsRules, outcome),
+        reason: OUTCOME_REASONS[outcome],
       });
     }
 

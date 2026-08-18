@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { authenticateApiRequest } from "@/lib/api/authenticate";
 import { getPlayerBySyncKey, TournamentError, TournamentPrincipal } from "@/lib/db/tournaments";
+import { LeagueLinkError } from "@/lib/leagues/tournament-results";
 
 /**
  * Résout le principal d'une requête sur l'API tournoi : un joueur via sa clé
@@ -36,9 +37,23 @@ const STATUS_BY_CODE: Record<TournamentError["code"], number> = {
   invalid: 400,
 };
 
+const STATUS_BY_LEAGUE_CODE: Record<LeagueLinkError["code"], number> = {
+  "not-found": 404,
+  forbidden: 403,
+  conflict: 400,
+};
+
 export function tournamentErrorResponse(error: unknown): NextResponse {
   if (error instanceof TournamentError) {
     return NextResponse.json({ error: error.message }, { status: STATUS_BY_CODE[error.code] });
+  }
+  // Le rattachement à une ligue échoue avec ses propres motifs (format, statut,
+  // droits) : ils méritent le même traitement que les erreurs de tournoi.
+  if (error instanceof LeagueLinkError) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: STATUS_BY_LEAGUE_CODE[error.code] }
+    );
   }
   if (error instanceof z.ZodError) {
     return NextResponse.json(

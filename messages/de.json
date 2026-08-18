@@ -3052,6 +3052,39 @@
       "tableAndOpponent": "Tisch {table} · gegen {name}",
       "iWon": "Ich habe gewonnen",
       "opponentWon": "{name} hat gewonnen"
+    },
+    "feats": {
+      "title": "Glanzleistungen · {count}",
+      "sheetHint": "Sie werden der Liga beim Abschluss des Turniers gutgeschrieben.",
+      "matchTitle": "Glanzleistungen an diesem Tisch",
+      "matchHint": "Hier vergeben, folgen sie der spielenden Person in die Ligawertung.",
+      "award": "Glanzleistung vergeben",
+      "points": "+{points} Pkt.",
+      "awardedCount": "{count} in diesem Turnier",
+      "leagueCap": "max. {max} pro Liga",
+      "none": "Keine Glanzleistung vergeben.",
+      "unknown": "Aus der Liga entfernte Glanzleistung",
+      "inMatch": "Im Match",
+      "removeAria": "Diese Glanzleistung entfernen"
+    },
+    "leagueLink": {
+      "title": "Liga",
+      "description": "Ein verknüpftes Turnier speist beim Abschluss die Wertung seiner Liga.",
+      "noneLinked": "Keine Liga",
+      "selectPlaceholder": "Liga wählen",
+      "noLeagues": "Du organisierst keine Punkte-Liga.",
+      "open": "Liga öffnen",
+      "unlink": "Liga trennen",
+      "pendingHint": "Die Ergebnisse fließen beim Abschluss des Turniers in die Liga ein.",
+      "creditedHint": "Dieses Turnier zählt für die Liga. Ein erneutes Öffnen entfernt diese Punkte.",
+      "wizardNotice": "Dieses Turnier speist die Liga „{league}“."
+    },
+    "leagueReport": {
+      "credited": "{points} Punkte auf {players} Spielende in „{league}“ verteilt.",
+      "autoEnrolled": "Dabei in die Liga aufgenommen: {names}.",
+      "skippedGuests": "Ohne Konto nicht gutgeschrieben: {names}.",
+      "notEnrolled": "Konnten der Liga nicht hinzugefügt werden: {names}.",
+      "skippedFeats": "{count} Glanzleistung(en) nicht gezählt (Grenze erreicht)."
     }
   },
   "Trade": {

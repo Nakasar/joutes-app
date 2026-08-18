@@ -3,7 +3,8 @@
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Check, LayoutGrid, List, LockOpen, Plus, Trash2, X } from "lucide-react";
+import { Check, LayoutGrid, List, LockOpen, Plus, Trash2, Trophy, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -18,6 +19,7 @@ import type {
   TournamentResultMode,
   TournamentRound,
 } from "@/lib/types/Tournament";
+import { FeatAwardPicker, type TournamentFeat } from "../../../FeatAwardPicker";
 import { MatchGamesEditor } from "../../../MatchGamesEditor";
 import { PlayerNameTag } from "../../../PlayerNameTag";
 import { buildQuickResults, shortName, type QuickResult } from "../../../quickResults";
@@ -48,6 +50,17 @@ type Props = {
   isLastRound: boolean;
   // Rouvrir cette ronde annulera aussi les phases démarrées ensuite.
   reopenCascades: boolean;
+  // Catalogue de hauts faits de la ligue rattachée. Vide = tournoi autonome,
+  // et toute la section disparaît.
+  feats: TournamentFeat[];
+  initialFeatAwards: RoundFeatAward[];
+};
+
+export type RoundFeatAward = {
+  id: string;
+  playerId: string;
+  featId: string;
+  matchId?: string;
 };
 
 export function OrganizerRoundClient({
@@ -62,11 +75,14 @@ export function OrganizerRoundClient({
   phaseId,
   isLastRound,
   reopenCascades,
+  feats,
+  initialFeatAwards,
 }: Props) {
   const t = useTranslations("Tournaments");
   const router = useRouter();
 
   const [matches, setMatches] = useState<TournamentMatch[]>(initialMatches);
+  const [featAwards, setFeatAwards] = useState<RoundFeatAward[]>(initialFeatAwards);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -94,6 +110,76 @@ export function OrganizerRoundClient({
   const cardPlayers = useMemo(
     () => players.map((p) => ({ id: p.id, name: p.displayName, discriminator: p.discriminator })),
     [players]
+  );
+
+  const featTitle = useCallback(
+    (featId: string) => feats.find((feat) => feat.id === featId)?.title ?? t("feats.unknown"),
+    [feats, t]
+  );
+  // Hauts faits décernés à ce joueur à cette table.
+  const awardsFor = useCallback(
+    (playerId: string, matchId: string) =>
+      featAwards.filter((a) => a.playerId === playerId && a.matchId === matchId),
+    [featAwards]
+  );
+  // Décompte sur tout le tournoi : c'est la limite « par ligue » qui intéresse
+  // l'arbitre au moment de décerner, pas celle de la seule table.
+  const awardedCountsFor = useCallback(
+    (playerId: string) =>
+      featAwards
+        .filter((a) => a.playerId === playerId)
+        .reduce<Record<string, number>>((counts, a) => {
+          counts[a.featId] = (counts[a.featId] ?? 0) + 1;
+          return counts;
+        }, {}),
+    [featAwards]
+  );
+
+  const awardFeat = useCallback(
+    async (playerId: string, featId: string, matchId: string) => {
+      setError(null);
+      try {
+        const res = await fetch(
+          `/api/tournaments/${tournamentId}/players/${playerId}/feats`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ featId, matchId }),
+          }
+        );
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error ?? t("common.error"));
+        setFeatAwards((current) => [
+          ...current,
+          { id: body.id, playerId, featId, matchId },
+        ]);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t("common.error"));
+      }
+    },
+    [tournamentId, t]
+  );
+
+  const removeFeatAward = useCallback(
+    async (awardId: string) => {
+      const target = featAwards.find((a) => a.id === awardId);
+      if (!target) return;
+      setError(null);
+      try {
+        const res = await fetch(
+          `/api/tournaments/${tournamentId}/players/${target.playerId}/feats/${awardId}`,
+          { method: "DELETE" }
+        );
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error ?? t("common.error"));
+        }
+        setFeatAwards((current) => current.filter((a) => a.id !== awardId));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t("common.error"));
+      }
+    },
+    [featAwards, tournamentId, t]
   );
 
   const doneCount = matches.filter((m) => m.status === "completed").length;
@@ -774,6 +860,48 @@ export function OrganizerRoundClient({
                       {t("roundClient.forfeitDoubleLoss")}
                     </Button>
                   </div>
+                </div>
+              )}
+
+              {/* Hauts faits de la table. Le beau geste se constate à la table
+                  et se récompense dans la ligue : on l'attribue ici, sans
+                  quitter la saisie du résultat. */}
+              {feats.length > 0 && (
+                <div className="space-y-2 border-t pt-3">
+                  <p className="text-sm font-medium">{t("feats.matchTitle")}</p>
+                  <p className="text-xs text-muted-foreground">{t("feats.matchHint")}</p>
+                  {editMatch.players.map((p) => {
+                    const awarded = awardsFor(p.playerId, editMatch.id);
+                    return (
+                      <div
+                        key={p.playerId}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-2"
+                      >
+                        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+                          <span className="truncate text-sm">{playerName(p.playerId)}</span>
+                          {awarded.map((entry) => (
+                            <Badge
+                              key={entry.id}
+                              variant="secondary"
+                              className="cursor-pointer"
+                              title={t("feats.removeAria")}
+                              onClick={() => removeFeatAward(entry.id)}
+                            >
+                              <Trophy className="size-3 text-amber-500" />
+                              {featTitle(entry.featId)}
+                              <X className="size-3" />
+                            </Badge>
+                          ))}
+                        </div>
+                        <FeatAwardPicker
+                          feats={feats}
+                          awardedCounts={awardedCountsFor(p.playerId)}
+                          disabled={anyBusy}
+                          onAward={(featId) => awardFeat(p.playerId, featId, editMatch.id)}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 

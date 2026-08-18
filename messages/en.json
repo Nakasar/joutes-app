@@ -3135,6 +3135,39 @@
       "tableAndOpponent": "Table {table} · against {name}",
       "iWon": "I won",
       "opponentWon": "{name} won"
+    },
+    "feats": {
+      "title": "Feats · {count}",
+      "sheetHint": "They will credit the league when the tournament closes.",
+      "matchTitle": "Feats at this table",
+      "matchHint": "Awarded here, they follow the player into the league standings.",
+      "award": "Award a feat",
+      "points": "+{points} pts",
+      "awardedCount": "{count} in this tournament",
+      "leagueCap": "max {max} per league",
+      "none": "No feat awarded.",
+      "unknown": "Feat removed from the league",
+      "inMatch": "In a match",
+      "removeAria": "Remove this feat"
+    },
+    "leagueLink": {
+      "title": "League",
+      "description": "A linked tournament feeds its league standings when it closes.",
+      "noneLinked": "No league",
+      "selectPlaceholder": "Choose a league",
+      "noLeagues": "You do not organise any points league.",
+      "open": "Open the league",
+      "unlink": "Unlink the league",
+      "pendingHint": "Results will be carried over to the league when the tournament closes.",
+      "creditedHint": "This tournament counts towards the league. Reopening it will remove those points.",
+      "wizardNotice": "This tournament will feed the “{league}” league."
+    },
+    "leagueReport": {
+      "credited": "{points} points spread across {players} player(s) in “{league}”.",
+      "autoEnrolled": "Enrolled in the league along the way: {names}.",
+      "skippedGuests": "Not credited, no account: {names}.",
+      "notEnrolled": "Could not be enrolled in the league: {names}.",
+      "skippedFeats": "{count} feat(s) not counted (limit reached)."
     }
   },
   "Trade": {

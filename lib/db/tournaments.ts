@@ -4,7 +4,7 @@ import crypto from "crypto";
 import { DateTime } from "luxon";
 import { customAlphabet } from "nanoid";
 import db from "@/lib/mongodb";
-import { ObjectId, WithId } from "mongodb";
+import { ClientSession, ObjectId, WithId } from "mongodb";
 import {
   DEFAULT_FIXED_SCORING,
   DEFAULT_INTERVAL_HOURS,
@@ -20,6 +20,8 @@ import {
   TournamentDb,
   TournamentDeadlineResolution,
   TournamentDecklist,
+  TournamentFeatAward,
+  TournamentFeatAwardDb,
   TournamentEliminationSeeding,
   TournamentFixedScoring,
   TournamentForm,
@@ -101,6 +103,10 @@ const MATCHES = "tournament-matches";
 const ANNOUNCEMENTS = "tournament-announcements";
 const PENALTIES = "tournament-penalties";
 const NOTES = "tournament-notes";
+// Hauts faits attribués pendant un tournoi rattaché à une ligue. Vit ici plutôt
+// que dans la ligue tant que le tournoi n'est pas clos : jusqu'à la clôture,
+// l'organisateur peut encore se raviser sans toucher au classement de la ligue.
+const FEAT_AWARDS = "tournament-feat-awards";
 const ACTIVITY = "tournament-activity";
 // Temps relevés sur les phases chronométrées (type `time-race`). Le type de
 // phase porte un nom générique — d'autres épreuves au chrono pourront s'y
@@ -212,6 +218,7 @@ function toTournament(doc: WithId<TournamentDb>): Tournament {
     id: doc._id.toString(),
     name: doc.name,
     eventId: doc.eventId,
+    leagueId: doc.leagueId,
     gameId: doc.gameId,
     status: doc.status,
     currentPhaseId: doc.currentPhaseId,
@@ -503,6 +510,7 @@ async function generateUniqueLiveCode(): Promise<string> {
 export async function createTournament(data: {
   name: string;
   eventId?: string;
+  leagueId?: string;
   gameId?: string;
   customGameName?: string;
   location?: string;
@@ -518,6 +526,7 @@ export async function createTournament(data: {
     const doc: TournamentDb = {
       name: data.name,
       eventId: data.eventId,
+      leagueId: data.leagueId,
       gameId: data.gameId,
       // Un jeu du catalogue prime toujours sur un nom saisi à la main : les
       // deux renseignés, le tournoi afficherait deux jeux différents.
@@ -1132,6 +1141,8 @@ export async function updateTournament(
     customGameName?: string | null;
     // null = détacher le tournoi de son événement.
     eventId?: string | null;
+    // null = détacher le tournoi de sa ligue.
+    leagueId?: string | null;
     // Informations pratiques ; null retire la valeur.
     location?: string | null;
     startsAt?: Date | null;
@@ -1181,6 +1192,13 @@ export async function updateTournament(
       );
     }
     set.eventId = updates.eventId;
+  }
+  // Contrairement à l'événement, une ligue accueille autant de tournois qu'elle
+  // veut : aucune unicité à vérifier ici.
+  if (updates.leagueId === null) {
+    unset.leagueId = "";
+  } else if (updates.leagueId !== undefined) {
+    set.leagueId = updates.leagueId;
   }
   for (const field of ["location", "startsAt", "capacity"] as const) {
     const value = updates[field];
@@ -1235,6 +1253,7 @@ export async function deleteTournament(tournamentId: string): Promise<void> {
     db.collection(ANNOUNCEMENTS).deleteMany({ tournamentId: _id }),
     db.collection(PENALTIES).deleteMany({ tournamentId: _id }),
     db.collection(NOTES).deleteMany({ tournamentId: _id }),
+    db.collection(FEAT_AWARDS).deleteMany({ tournamentId: _id }),
     db.collection(ACTIVITY).deleteMany({ tournamentId: _id }),
     db.collection(PUZZLE_RESULTS).deleteMany({ tournamentId: _id }),
   ]);
@@ -1374,6 +1393,19 @@ function toPenalty(doc: WithId<TournamentPenaltyDb>): TournamentPenalty {
   };
 }
 
+function toFeatAward(doc: WithId<TournamentFeatAwardDb>): TournamentFeatAward {
+  return {
+    id: doc._id.toString(),
+    tournamentId: doc.tournamentId.toString(),
+    playerId: doc.playerId.toString(),
+    featId: doc.featId,
+    matchId: doc.matchId?.toString(),
+    roundNumber: doc.roundNumber,
+    createdBy: doc.createdBy,
+    createdAt: doc.createdAt,
+  };
+}
+
 function toNote(doc: WithId<TournamentNoteDb>): TournamentNote {
   return {
     id: doc._id.toString(),
@@ -1498,6 +1530,129 @@ export async function deleteNote(tournamentId: string, noteId: string): Promise<
   if (result.deletedCount === 0) {
     throw new TournamentError("not-found", "Note non trouvée");
   }
+}
+
+// ---------------------------------------------------------------------------
+// HAUTS FAITS (tournoi rattaché à une ligue)
+// ---------------------------------------------------------------------------
+
+const featAwardsIndexReady = db
+  .collection<TournamentFeatAwardDb>(FEAT_AWARDS)
+  .createIndex({ tournamentId: 1, playerId: 1 })
+  .catch((error) => {
+    console.error("Index des hauts faits de tournoi non créé", error);
+  });
+
+/**
+ * Hauts faits d'un tournoi, éventuellement restreints à un joueur ou à un
+ * match. La liste complète alimente les compteurs affichés dans la ronde sans
+ * avoir à interroger la fiche de chaque joueur.
+ */
+export async function listFeatAwards(
+  tournamentId: string,
+  filter?: { playerId?: string; matchId?: string }
+): Promise<TournamentFeatAward[]> {
+  await featAwardsIndexReady;
+  const query: Record<string, unknown> = { tournamentId: parseObjectId(tournamentId, "Tournoi") };
+  if (filter?.playerId) query.playerId = parseObjectId(filter.playerId, "Joueur");
+  if (filter?.matchId) query.matchId = parseObjectId(filter.matchId, "Match");
+
+  const docs = await db
+    .collection<TournamentFeatAwardDb>(FEAT_AWARDS)
+    .find(query)
+    .sort({ createdAt: -1 })
+    .toArray();
+  return docs.map(toFeatAward);
+}
+
+/**
+ * Attribue un haut fait. Le `featId` n'est pas validé ici : le catalogue
+ * appartient à la ligue, et cette couche ignore tout des ligues — la route
+ * appelante s'en charge, comme elle le fait déjà pour la liaison à un événement.
+ */
+export async function createFeatAward(
+  tournamentId: string,
+  playerId: string,
+  data: { featId: string; matchId?: string; roundNumber?: number; createdBy: string }
+): Promise<TournamentFeatAward> {
+  const tId = parseObjectId(tournamentId, "Tournoi");
+  const pId = parseObjectId(playerId, "Joueur");
+
+  const player = await getPlayerById(tournamentId, playerId);
+  if (!player) {
+    throw new TournamentError("not-found", "Joueur non trouvé");
+  }
+
+  const doc: TournamentFeatAwardDb = {
+    tournamentId: tId,
+    playerId: pId,
+    featId: data.featId,
+    matchId: data.matchId ? parseObjectId(data.matchId, "Match") : undefined,
+    roundNumber: data.roundNumber,
+    createdBy: data.createdBy,
+    createdAt: new Date(),
+  };
+  const result = await db.collection<TournamentFeatAwardDb>(FEAT_AWARDS).insertOne(doc);
+  return toFeatAward({ ...doc, _id: result.insertedId });
+}
+
+export async function deleteFeatAward(
+  tournamentId: string,
+  awardId: string,
+  // Joueur attendu, tiré du chemin de la route. Le filtre le vérifie plutôt que
+  // de faire confiance à l'appelant : une URL cohérente vaut mieux qu'une URL
+  // dont seule une partie compte.
+  playerId?: string
+): Promise<void> {
+  const tId = parseObjectId(tournamentId, "Tournoi");
+  const id = parseObjectId(awardId, "Haut fait");
+  const filter: Record<string, unknown> = { _id: id, tournamentId: tId };
+  if (playerId) filter.playerId = parseObjectId(playerId, "Joueur");
+
+  const result = await db.collection<TournamentFeatAwardDb>(FEAT_AWARDS).deleteOne(filter);
+  if (result.deletedCount === 0) {
+    throw new TournamentError("not-found", "Haut fait non trouvé");
+  }
+}
+
+/**
+ * Retire les hauts faits attribués aux tables sur le point de disparaître.
+ * Supprimer un match, c'est défaire ce qui s'y est joué : le haut fait décerné
+ * à cette table part avec elle, sans quoi il créditerait la ligue au nom d'un
+ * match qui n'existe plus.
+ */
+async function deleteFeatAwardsOfMatches(
+  tournamentId: ObjectId,
+  matchFilter: Record<string, unknown>,
+  session?: ClientSession
+): Promise<void> {
+  const matchIds = await db
+    .collection<TournamentMatchDb>(MATCHES)
+    .find(matchFilter, { projection: { _id: 1 }, session })
+    .map((doc) => doc._id)
+    .toArray();
+  if (matchIds.length === 0) return;
+  await db
+    .collection(FEAT_AWARDS)
+    .deleteMany({ tournamentId, matchId: { $in: matchIds } }, { session });
+}
+
+/** Tournois rattachés à une ligue, du plus récent au plus ancien. */
+export async function listTournamentsByLeagueId(leagueId: string): Promise<Tournament[]> {
+  const docs = await db
+    .collection<TournamentDb>(TOURNAMENTS)
+    .find({ leagueId })
+    .sort({ createdAt: -1 })
+    .toArray();
+  return docs.map(toTournament);
+}
+
+/** Détache tous les tournois d'une ligue — appelé quand la ligue disparaît. */
+export async function detachTournamentsFromLeague(leagueId: string): Promise<number> {
+  const result = await db
+    .collection<TournamentDb>(TOURNAMENTS)
+    .updateMany({ leagueId }, { $unset: { leagueId: "" }, $set: { updatedAt: new Date() } });
+  return result.modifiedCount;
 }
 
 // Liste de deck d'un joueur. Modifier le contenu invalide la vérification
@@ -2517,6 +2672,10 @@ export async function removePlayer(tournamentId: string, playerId: string): Prom
   if (result.deletedCount === 0) {
     throw new TournamentError("not-found", "Joueur non trouvé");
   }
+
+  // Les hauts faits suivent le joueur : sans lui, ils ne créditeraient personne
+  // à la clôture et resteraient affichés dans les compteurs de la ronde.
+  await db.collection(FEAT_AWARDS).deleteMany({ tournamentId: tId, playerId: pId });
 }
 
 // =====================
@@ -3186,6 +3345,7 @@ export async function deleteRound(tournamentId: string, roundId: string): Promis
 
   const tId = new ObjectId(tournamentId);
   const rId = new ObjectId(roundId);
+  await deleteFeatAwardsOfMatches(tId, { tournamentId: tId, roundId: rId });
   await db.collection(MATCHES).deleteMany({ tournamentId: tId, roundId: rId });
   await db.collection(ROUNDS).deleteOne({ _id: rId, tournamentId: tId });
 }
@@ -3252,6 +3412,7 @@ export async function reopenRound(tournamentId: string, roundId: string): Promis
             { session }
           );
         }
+        await deleteFeatAwardsOfMatches(tId, { tournamentId: tId, phaseId: laterId }, session);
         await db.collection(MATCHES).deleteMany({ tournamentId: tId, phaseId: laterId }, { session });
         await db.collection(ROUNDS).deleteMany({ tournamentId: tId, phaseId: laterId }, { session });
         await db
@@ -4036,6 +4197,10 @@ export async function deleteMatch(tournamentId: string, matchId: string): Promis
   if (result.deletedCount === 0) {
     throw new TournamentError("not-found", "Match non trouvé");
   }
+
+  // Les hauts faits attribués à cette table n'ont plus de table : les laisser
+  // ferait créditer la ligue au nom d'un match qui n'existe plus.
+  await db.collection(FEAT_AWARDS).deleteMany({ tournamentId: tId, matchId: mId });
 
   // La suppression peut compléter la ronde (plus aucun match en attente).
   await completeRoundIfAllMatchesDone(tId, new ObjectId(match.roundId));

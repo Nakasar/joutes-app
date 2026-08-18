@@ -1,5 +1,6 @@
 import { getLeagueById, isLeagueOrganizer, getLeagueRanking, getLeagueParticipant } from "@/lib/db/leagues";
 import { getLairById } from "@/lib/db/lairs";
+import { listTournamentsByLeagueId } from "@/lib/db/tournaments";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
@@ -18,6 +19,7 @@ import {
   Award,
   MapPin,
   Gamepad2,
+  Swords,
 } from "lucide-react";
 import { LeagueStatus, LeagueFormat } from "@/lib/types/League";
 import JoinLeagueButton from "./JoinLeagueButton";
@@ -103,6 +105,12 @@ export default async function LeagueDetailPage({
 
   const games = league.games;
   const lairs = league.lairs;
+
+  // Tournois rattachés. Un brouillon n'est pas encore une étape de la ligue :
+  // seuls ceux qui ont commencé méritent d'être annoncés aux participants.
+  const leagueTournaments = (await listTournamentsByLeagueId(league.id)).filter(
+    (tournament) => tournament.status !== "draft"
+  );
 
   const lairDetails = session?.user?.id
     ? await Promise.all(league.lairIds.map((lairId) => getLairById(lairId)))
@@ -230,7 +238,7 @@ export default async function LeagueDetailPage({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="text-center p-4 bg-muted/50 rounded-lg">
                       <div className="text-2xl font-bold">
                         {league.pointsConfig.pointsRules.participation}
@@ -251,7 +259,36 @@ export default async function LeagueDetailPage({
                       </div>
                       <div className="text-sm text-muted-foreground">Défaite</div>
                     </div>
+                    <div className="text-center p-4 bg-muted/50 rounded-lg">
+                      <div className="text-2xl font-bold">
+                        {league.pointsConfig.pointsRules.draw}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Match nul</div>
+                    </div>
                   </div>
+
+                  {/* Barème de classement des tournois rattachés. Affiché
+                      seulement s'il rapporte quelque chose : une ligue sans
+                      tournoi n'a pas à s'encombrer d'une table vide. */}
+                  {(league.pointsConfig.pointsRules.rankPoints.length > 0 ||
+                    league.pointsConfig.pointsRules.rankPointsBeyond > 0) && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium">Classement des tournois</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {league.pointsConfig.pointsRules.rankPoints.map((points, index) => (
+                          <Badge key={index} variant="secondary">
+                            {index === 0 ? "1re" : `${index + 1}e`} : +{points} pts
+                          </Badge>
+                        ))}
+                        {league.pointsConfig.pointsRules.rankPointsBeyond > 0 && (
+                          <Badge variant="outline">
+                            Rangs suivants : +
+                            {league.pointsConfig.pointsRules.rankPointsBeyond} pts
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {league.pointsConfig.pointsRules.feats.length > 0 && (
                     <div className="space-y-2">
@@ -276,6 +313,31 @@ export default async function LeagueDetailPage({
                       </div>
                     </div>
                   )}
+                </CardContent>
+              </Card>
+            )}
+
+            {leagueTournaments.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Swords className="h-5 w-5" />
+                    Tournois de la ligue
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {leagueTournaments.map((tournament) => (
+                    <Link
+                      key={tournament.id}
+                      href={`/tournaments/${tournament.id}`}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/50 p-3 hover:bg-muted"
+                    >
+                      <span className="font-medium">{tournament.name}</span>
+                      <Badge variant={tournament.status === "completed" ? "default" : "secondary"}>
+                        {tournament.status === "completed" ? "Terminé" : "En cours"}
+                      </Badge>
+                    </Link>
+                  ))}
                 </CardContent>
               </Card>
             )}

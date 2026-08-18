@@ -8,6 +8,8 @@ import {
   listTournamentsForUser,
 } from "@/lib/db/tournaments";
 import { tournamentErrorResponse, unauthorizedResponse } from "./utils";
+import { isLeagueOrganizer } from "@/lib/db/leagues";
+import { requireLinkableLeague } from "@/lib/leagues/tournament-results";
 
 export async function GET(request: NextRequest) {
   const user = await authenticateApiRequest(request);
@@ -54,6 +56,18 @@ export async function POST(request: NextRequest) {
         if (details.startsAt === undefined && !Number.isNaN(startsAt.getTime())) {
           details.startsAt = startsAt;
         }
+      }
+    }
+
+    // Créer un tournoi au nom d'une ligue engage le classement de celle-ci :
+    // même contrôle qu'au rattachement d'un tournoi existant.
+    if (validated.leagueId) {
+      const league = await requireLinkableLeague(validated.leagueId);
+      if (!(await isLeagueOrganizer(league.id, user.userId))) {
+        return NextResponse.json(
+          { error: "Vous ne pouvez pas créer un tournoi pour une ligue que vous n'organisez pas" },
+          { status: 403 }
+        );
       }
     }
 

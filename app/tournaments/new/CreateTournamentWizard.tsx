@@ -91,7 +91,14 @@ function initialsOf(name: string): string {
  * format des parties, listes à l'inscription) ; tout le reste vit dans le
  * portail organisateur, où « Configuration avancée » mène directement.
  */
-export function CreateTournamentWizard({ games }: { games: WizardGame[] }) {
+export function CreateTournamentWizard({
+  games,
+  league = null,
+}: {
+  games: WizardGame[];
+  /** Ligue au nom de laquelle le tournoi est créé, si le tunnel vient de là. */
+  league?: { id: string; name: string } | null;
+}) {
   const t = useTranslations("Tournaments");
   const router = useRouter();
 
@@ -287,6 +294,7 @@ export function CreateTournamentWizard({ games }: { games: WizardGame[] }) {
         {
           name: name.trim(),
           ...(gameId ? { gameId } : customGame.trim() ? { customGameName: customGame.trim() } : {}),
+          ...(league ? { leagueId: league.id } : {}),
           settings: { allowSelfReporting: true, requireConfirmation: false, preRegistration: false },
         },
         { fallback: t("new.createError") }
@@ -364,6 +372,12 @@ export function CreateTournamentWizard({ games }: { games: WizardGame[] }) {
       {error && (
         <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
+        </div>
+      )}
+
+      {league && (
+        <div className="mb-6 rounded-lg border bg-muted/40 p-3 text-sm">
+          {t("leagueLink.wizardNotice", { league: league.name })}
         </div>
       )}
 
