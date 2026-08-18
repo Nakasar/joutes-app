@@ -1,0 +1,681 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Grenze+Gotisch:wght@500;700&amp;display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { color: var(--wisp); }
+
+    /*
+     * L'habillage ne change qu'un jeu de variables : c'est exactement la
+     * mécanique de `app/winter-theme.css`, chargée quand NEXT_PUBLIC_THEME
+     * vaut "halloween". Les composants shadcn ne sont pas touchés.
+     */
+    .hw.dark {
+      --bg: oklch(0.16 0.035 300);
+      --fg: oklch(0.95 0.015 85);
+      --card: oklch(0.215 0.04 300);
+      --muted: oklch(0.265 0.04 300);
+      --muted-fg: oklch(0.7 0.03 300);
+      --border: oklch(0.98 0.02 85 / 12%);
+      --primary: oklch(0.72 0.17 50);
+      --primary-fg: oklch(0.18 0.045 50);
+      --secondary: oklch(0.3 0.05 300);
+      --wisp: oklch(0.72 0.17 300);
+      --accent: oklch(0.3 0.05 300);
+      --accent-fg: oklch(0.95 0.015 85);
+      --destructive: oklch(0.62 0.19 25);
+      --ok: oklch(0.68 0.15 155);
+      --pumpkin: oklch(0.72 0.17 50);
+      --spectre: oklch(0.78 0.16 155);
+      --bone: oklch(0.93 0.02 85);
+      --night: oklch(0.1 0.03 300);
+      --decor-ink: oklch(0.1 0.03 300);
+      --web: oklch(0.98 0.02 85 / 22%);
+    }
+    .hw.light {
+      --bg: oklch(0.975 0.012 75);
+      --fg: oklch(0.23 0.045 300);
+      --card: oklch(0.995 0.006 75);
+      --muted: oklch(0.93 0.02 70);
+      --muted-fg: oklch(0.5 0.04 300);
+      --border: oklch(0.87 0.02 65);
+      --primary: oklch(0.56 0.17 45);
+      --primary-fg: oklch(0.99 0.01 75);
+      --secondary: oklch(0.9 0.03 300);
+      --wisp: oklch(0.56 0.17 300);
+      --accent: oklch(0.94 0.02 300);
+      --accent-fg: oklch(0.23 0.045 300);
+      --destructive: oklch(0.55 0.2 25);
+      --ok: oklch(0.55 0.13 155);
+      --pumpkin: oklch(0.56 0.17 45);
+      --spectre: oklch(0.55 0.14 155);
+      --bone: oklch(0.97 0.015 80);
+      --night: oklch(0.23 0.045 300);
+      --decor-ink: oklch(0.45 0.08 300);
+      --web: oklch(0.23 0.045 300 / 16%);
+    }
+
+    .hw {
+      font-family: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      -webkit-font-smoothing: antialiased;
+    }
+    .hw .display { font-family: 'Grenze Gotisch', Georgia, 'Times New Roman', serif; }
+
+    /* Trois niveaux de décor, réglables par l'organisateur du site. */
+    .decor-aucun .decor { display: none; }
+    .decor-discret .decor-heavy { display: none; }
+
+    /* Cellules du calendrier : mêmes règles que EventsCalendar.tsx. */
+    .cell {
+      display: flex;
+      flex-direction: column;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      padding: 6px;
+      min-height: 120px;
+      transition: border-color .15s ease;
+    }
+    .cell.empty { border-color: transparent; background: transparent; }
+    .cell.normal { background: var(--card); }
+    .cell.normal:hover { border-color: color-mix(in oklab, var(--muted-fg) 30%, transparent); }
+    .cell.weekend { border-color: transparent; background: color-mix(in oklab, var(--muted) 45%, transparent); }
+    .cell.weekend:hover { border-color: var(--border); }
+    .cell.today {
+      border-color: color-mix(in oklab, var(--primary) 50%, transparent);
+      background: color-mix(in oklab, var(--primary) 7%, transparent);
+      box-shadow: 0 0 0 1px color-mix(in oklab, var(--primary) 30%, transparent);
+    }
+    /* Moment dédié : le 31 respire la braise. */
+    .cell.veillee {
+      border-color: color-mix(in oklab, var(--pumpkin) 60%, transparent);
+      background: color-mix(in oklab, var(--pumpkin) 9%, transparent);
+      box-shadow: 0 0 0 1px color-mix(in oklab, var(--pumpkin) 35%, transparent), 0 0 26px -6px var(--pumpkin);
+    }
+
+    .pill {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      border-radius: 6px;
+      padding: 4px 6px;
+      font-size: 11px;
+      line-height: 1.25;
+      text-align: left;
+      border: 0;
+      width: 100%;
+      cursor: pointer;
+      background: color-mix(in oklab, var(--muted) 55%, transparent);
+      color: var(--fg);
+      font-family: inherit;
+    }
+    .pill:hover { background: var(--muted); }
+    /* Un événement d'Halloween porte la braise, pas un emoji. */
+    .pill.hallow {
+      background: color-mix(in oklab, var(--pumpkin) 16%, transparent);
+      box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--pumpkin) 40%, transparent);
+    }
+    .pill.hallow:hover { background: color-mix(in oklab, var(--pumpkin) 26%, transparent); }
+    .pill .star { opacity: 0; transition: opacity .12s ease; }
+    .pill:hover .star { opacity: 1; }
+    .pill .star.on { opacity: 1; }
+
+    /* Pastilles de statut : mêmes couleurs que getStatusDotClass(). */
+    .dot-ok { background: var(--ok); }
+    .dot-full { background: var(--destructive); }
+    .dot-off { background: color-mix(in oklab, var(--muted-fg) 50%, transparent); }
+
+    .day-today { background: var(--primary); color: var(--primary-fg); }
+    .day-plain { color: var(--fg); }
+
+    .badge-ok { background: var(--primary); color: var(--primary-fg); }
+    .badge-full { background: var(--destructive); color: oklch(0.99 0 0); }
+    .badge-off { background: var(--secondary); color: var(--fg); }
+
+    .row-hallow {
+      border-color: color-mix(in oklab, var(--pumpkin) 45%, transparent) !important;
+      background-image: linear-gradient(100deg, color-mix(in oklab, var(--pumpkin) 12%, transparent), transparent 60%);
+    }
+
+    .seg {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      border: 0;
+      cursor: pointer;
+      background: transparent;
+      color: var(--muted-fg);
+      font-family: inherit;
+    }
+    .seg.on { background: var(--card); color: var(--fg); box-shadow: 0 1px 2px oklch(0 0 0 / 12%); }
+
+    .ghost-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: 36px;
+      padding: 0 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--fg);
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .ghost-btn:hover { background: var(--muted); }
+
+    .navitem {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 36px;
+      padding: 0 10px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--fg);
+    }
+    .navitem:hover { background: var(--accent); color: var(--accent-fg); }
+
+    /* Chauves-souris : lent, discret, coupé si l'on réduit les animations. */
+    @keyframes hw-flit {
+      0%   { transform: translate3d(0,0,0) rotate(-4deg); }
+      50%  { transform: translate3d(26px,-14px,0) rotate(5deg); }
+      100% { transform: translate3d(0,0,0) rotate(-4deg); }
+    }
+    .bat { animation: hw-flit 9s ease-in-out infinite; color: var(--decor-ink); }
+
+    @keyframes hw-flicker {
+      0%, 100% { opacity: .85; filter: drop-shadow(0 0 6px var(--pumpkin)); }
+      45%      { opacity: 1;   filter: drop-shadow(0 0 16px var(--pumpkin)); }
+      70%      { opacity: .78; filter: drop-shadow(0 0 5px var(--pumpkin)); }
+    }
+    .lantern { animation: hw-flicker 3.4s ease-in-out infinite; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .bat, .lantern { animation: none; }
+    }
+  </style>
+</helmet>
+
+<div class="hw {{themeClass}} decor-{{decor}}" style="position: relative; width: 1280px; min-height: 1300px; overflow: hidden">
+
+  <!-- ================= DÉCOR — couche haute ================= -->
+  <div class="decor" style="position: absolute; inset: 0; pointer-events: none; z-index: 3">
+    <!-- Toile d'araignée, coin haut gauche -->
+    <svg viewBox="0 0 120 120" style="position: absolute; top: 0; left: 0; width: 132px; height: 132px; color: var(--web)" aria-hidden="true">
+      <g fill="none" stroke="currentColor" stroke-width="1.1">
+        <path d="M0 0 L120 0 M0 0 L0 120 M0 0 L118 34 M0 0 L100 74 M0 0 L74 100 M0 0 L34 118"></path>
+        <path d="M26 0 Q20 20 0 26 M52 0 Q39 39 0 52 M78 0 Q58 58 0 78 M104 0 Q78 78 0 104"></path>
+      </g>
+    </svg>
+    <!-- Toile d'araignée, coin haut droit -->
+    <svg viewBox="0 0 120 120" style="position: absolute; top: 0; right: 0; width: 132px; height: 132px; color: var(--web); transform: scaleX(-1)" aria-hidden="true">
+      <g fill="none" stroke="currentColor" stroke-width="1.1">
+        <path d="M0 0 L120 0 M0 0 L0 120 M0 0 L118 34 M0 0 L100 74 M0 0 L74 100 M0 0 L34 118"></path>
+        <path d="M26 0 Q20 20 0 26 M52 0 Q39 39 0 52 M78 0 Q58 58 0 78 M104 0 Q78 78 0 104"></path>
+      </g>
+    </svg>
+
+    <!-- Chauves-souris : l'équivalent des flocons, en trois exemplaires seulement -->
+    <svg class="decor-heavy bat" viewBox="0 0 24 24" style="position: absolute; top: 168px; left: 214px; width: 30px; height: 30px; opacity: .55" aria-hidden="true">
+      <path fill="currentColor" d="M12 6.6c-.9 0-1.5.7-1.9 1.4C9 6.9 7.5 6.3 6 6.7c.6.6.9 1.4.9 2.2-1-.5-2.2-.5-3.2 0 1.2.4 2 1.2 2.4 2.4.5 1.5 1.9 2.5 3.4 2.5.7 0 1.4.4 1.7 1 .3-.6 1-1 1.7-1 1.5 0 2.9-1 3.4-2.5.4-1.2 1.2-2 2.4-2.4-1-.5-2.2-.5-3.2 0 0-.8.3-1.6.9-2.2-1.5-.4-3 .2-4.1 1.3-.4-.7-1-1.4-1.9-1.4z"></path>
+    </svg>
+    <svg class="decor-heavy bat" viewBox="0 0 24 24" style="position: absolute; top: 132px; right: 268px; width: 22px; height: 22px; opacity: .42; animation-delay: 1.8s" aria-hidden="true">
+      <path fill="currentColor" d="M12 6.6c-.9 0-1.5.7-1.9 1.4C9 6.9 7.5 6.3 6 6.7c.6.6.9 1.4.9 2.2-1-.5-2.2-.5-3.2 0 1.2.4 2 1.2 2.4 2.4.5 1.5 1.9 2.5 3.4 2.5.7 0 1.4.4 1.7 1 .3-.6 1-1 1.7-1 1.5 0 2.9-1 3.4-2.5.4-1.2 1.2-2 2.4-2.4-1-.5-2.2-.5-3.2 0 0-.8.3-1.6.9-2.2-1.5-.4-3 .2-4.1 1.3-.4-.7-1-1.4-1.9-1.4z"></path>
+    </svg>
+    <svg class="decor-heavy bat" viewBox="0 0 24 24" style="position: absolute; top: 236px; right: 118px; width: 26px; height: 26px; opacity: .35; animation-delay: 3.6s" aria-hidden="true">
+      <path fill="currentColor" d="M12 6.6c-.9 0-1.5.7-1.9 1.4C9 6.9 7.5 6.3 6 6.7c.6.6.9 1.4.9 2.2-1-.5-2.2-.5-3.2 0 1.2.4 2 1.2 2.4 2.4.5 1.5 1.9 2.5 3.4 2.5.7 0 1.4.4 1.7 1 .3-.6 1-1 1.7-1 1.5 0 2.9-1 3.4-2.5.4-1.2 1.2-2 2.4-2.4-1-.5-2.2-.5-3.2 0 0-.8.3-1.6.9-2.2-1.5-.4-3 .2-4.1 1.3-.4-.7-1-1.4-1.9-1.4z"></path>
+    </svg>
+  </div>
+
+  <!-- ================= EN-TÊTE (h-16, container px-4) ================= -->
+  <header style="position: relative; z-index: 4; border-bottom: 1px solid var(--border); background: color-mix(in oklab, var(--bg) 72%, transparent); backdrop-filter: blur(8px)">
+    <nav style="max-width: 1216px; margin: 0 auto; padding: 0 32px">
+      <div style="display: flex; height: 64px; align-items: center; justify-content: space-between">
+
+        <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 24px">
+          <!-- Le sceau hexagonal de Joutes, recoloré pour la saison : même
+               géométrie, braise et violet à la place du sarcelle et de l'or. -->
+          <svg viewBox="0 0 48 48" style="width: 24px; height: 24px; border-radius: 9999px" aria-hidden="true">
+            <polygon points="24,2 44,13 44,35 24,46 4,35 4,13" fill="var(--night)"></polygon>
+            <polygon points="24,7 39,15.5 39,32.5 24,41 9,32.5 9,15.5" fill="none" stroke="var(--wisp)" stroke-width="2.4"></polygon>
+            <path d="M24 14 L31.5 27 L16.5 27 Z" fill="none" stroke="var(--pumpkin)" stroke-width="2.4" stroke-linejoin="round"></path>
+            <path d="M24 34 L16.5 21 L31.5 21 Z" fill="none" stroke="var(--pumpkin)" stroke-width="2.4" stroke-linejoin="round"></path>
+            <circle cx="24" cy="24" r="2.6" fill="var(--bone)"></circle>
+          </svg>
+          <span style="background-image: linear-gradient(to right, var(--pumpkin), var(--wisp)); -webkit-background-clip: text; background-clip: text; color: transparent">Joutes</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 2px">
+          <span class="navitem">
+            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3.6 15.1 5.3 5.3a2 2 0 0 0 2.8 0l8.7-8.7a2 2 0 0 0 0-2.8l-5.3-5.3a2 2 0 0 0-2.8 0l-8.7 8.7a2 2 0 0 0 0 2.8Z"></path><circle cx="9" cy="9" r="1"></circle><circle cx="15" cy="15" r="1"></circle></svg>
+            Jeux
+            <svg viewBox="0 0 24 24" style="width: 12px; height: 12px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+          </span>
+          <span class="navitem" style="background: var(--accent); color: var(--accent-fg)">
+            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>
+            Événements
+            <svg viewBox="0 0 24 24" style="width: 12px; height: 12px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+          </span>
+          <span class="navitem">
+            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            Lieux
+          </span>
+          <span class="navitem">
+            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"></path></svg>
+            Fonctionnalités
+          </span>
+          <span class="navitem">
+            <svg viewBox="0 0 24 24" style="width: 16px; height: 16px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 6 4 14M12 6v14M8 8v12M4 4v16"></path></svg>
+            Collection
+          </span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px">
+          <div style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--card); color: var(--muted-fg); font-size: 14px; width: 168px">
+            <svg viewBox="0 0 24 24" style="width: 14px; height: 14px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+            Rechercher
+            <span style="margin-left: auto; font-size: 11px; border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px">⌘K</span>
+          </div>
+          <button type="button" style="display: inline-flex; align-items: center; justify-content: center; height: 36px; padding: 0 16px; border-radius: 6px; border: 0; background: var(--primary); color: var(--primary-fg); font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit">Se connecter</button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ================= CORPS ================= -->
+  <div style="position: relative; z-index: 2; padding-bottom: 200px">
+
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: 16px 32px">
+      <h1 style="font-size: 36px; font-weight: 700; letter-spacing: -0.025em; margin: 0">Calendrier des Événements</h1>
+      <button type="button" style="display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 16px; border-radius: 6px; border: 0; background: var(--primary); color: var(--primary-fg); font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit">
+        <svg viewBox="0 0 24 24" style="width: 16px; height: 16px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5v14"></path></svg>
+        Créer un Événement
+      </button>
+    </div>
+
+    <div style="max-width: 1216px; margin: 0 auto; padding: 0 32px">
+
+      <!-- Moment dédié : le bandeau de la Veillée, présent le seul mois d'octobre -->
+      <sc-if value="{{month.hasVeillee}}" hint-placeholder-val="{{ true }}">
+        <div class="decor" style="position: relative; overflow: hidden; display: flex; align-items: center; gap: 20px; border-radius: 12px; padding: 18px 22px; margin-bottom: 24px; border: 1px solid color-mix(in oklab, var(--pumpkin) 45%, transparent); background-image: linear-gradient(100deg, color-mix(in oklab, var(--pumpkin) 16%, transparent), color-mix(in oklab, var(--wisp) 14%, transparent))">
+          <svg class="lantern" viewBox="0 0 48 48" style="width: 52px; height: 52px; flex-shrink: 0" aria-hidden="true">
+            <path d="M24 12c-1.5-3-1-5.5 1.5-7.5-.5 3 .5 4.5 2.5 5" fill="none" stroke="var(--spectre)" stroke-width="2.2" stroke-linecap="round"></path>
+            <ellipse cx="24" cy="28" rx="17" ry="14" fill="var(--pumpkin)"></ellipse>
+            <path d="M13 17c-3 4-3 18 0 22M35 17c3 4 3 18 0 22" fill="none" stroke="color-mix(in oklab, var(--night) 45%, transparent)" stroke-width="1.6"></path>
+            <path d="M16 25l4.5-3 1.5 4.5z" fill="var(--night)"></path>
+            <path d="M32 25l-4.5-3-1.5 4.5z" fill="var(--night)"></path>
+            <path d="M17 33c2-2.5 4-1 5 0s3 2.5 5 0 3-1 4 1c-1.5 3-4.5 4.5-7 4.5s-5.5-1.5-7-5.5z" fill="var(--night)"></path>
+          </svg>
+          <div style="flex: 1 1 auto; min-width: 0">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px">
+              <span class="display" style="font-size: 26px; font-weight: 700; letter-spacing: .01em">La Veillée des Joutes</span>
+              <span style="display: inline-flex; align-items: center; border-radius: 9999px; padding: 2px 10px; font-size: 12px; font-weight: 500; background: var(--pumpkin); color: var(--primary-fg)">31 octobre</span>
+            </div>
+            <p style="margin: 0; font-size: 14px; color: var(--muted-fg); text-wrap: pretty">Une nuit, tous les jeux : tournoi masqué, draft à la bougie et quiz des ombres, chez les lieux qui ouvrent tard.</p>
+          </div>
+          <button type="button" class="ghost-btn" style="flex-shrink: 0; background: var(--card)">Voir les 7 soirées</button>
+        </div>
+      </sc-if>
+
+      <!-- Carte calendrier — Card: rounded-xl border py-6 shadow-sm -->
+      <div style="border-radius: 12px; border: 1px solid var(--border); background: var(--card); padding: 24px 0; box-shadow: 0 1px 2px oklch(0 0 0 / 8%); overflow: hidden">
+
+        <div style="padding: 0 24px; display: flex; flex-direction: column; gap: 16px">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px">
+            <button type="button" class="ghost-btn" style="width: 36px; padding: 0" onClick="{{prevMonth}}" aria-label="Mois précédent">
+              <svg viewBox="0 0 24 24" style="width: 16px; height: 16px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>
+            </button>
+            <div style="flex: 1 1 auto; min-width: 0; text-align: center">
+              <div style="font-size: 24px; font-weight: 600; text-transform: capitalize; line-height: 1.1">{{month.label}}</div>
+              <p style="margin: 2px 0 0; font-size: 12px; color: var(--muted-fg)">{{month.subtitle}}</p>
+            </div>
+            <button type="button" class="ghost-btn" style="width: 36px; padding: 0" onClick="{{nextMonth}}" aria-label="Mois suivant">
+              <svg viewBox="0 0 24 24" style="width: 16px; height: 16px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+            </button>
+          </div>
+
+          <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px">
+            <div style="display: inline-flex; border-radius: 8px; border: 1px solid var(--border); background: color-mix(in oklab, var(--muted) 50%, transparent); padding: 2px">
+              <button type="button" class="seg {{calSegCls}}" onClick="{{showCalendar}}">
+                <svg viewBox="0 0 24 24" style="width: 16px; height: 16px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"></path></svg>
+                Calendrier
+              </button>
+              <button type="button" class="seg {{listSegCls}}" onClick="{{showList}}">
+                <svg viewBox="0 0 24 24" style="width: 16px; height: 16px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h.01M3 18h.01M3 6h.01M8 12h13M8 18h13M8 6h13"></path></svg>
+                Liste
+              </button>
+            </div>
+            <div style="display: inline-flex; align-items: center; justify-content: space-between; gap: 8px; height: 36px; min-width: 220px; padding: 0 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--card); font-size: 14px; color: var(--muted-fg)">
+              Tous les jeux
+              <svg viewBox="0 0 24 24" style="width: 14px; height: 14px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+            </div>
+            <button type="button" class="ghost-btn">
+              <svg viewBox="0 0 24 24" style="width: 16px; height: 16px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l19-9-9 19-2-8-8-2Z"></path></svg>
+              Proches de moi
+            </button>
+            <button type="button" class="ghost-btn">
+              <svg viewBox="0 0 24 24" style="width: 16px; height: 16px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18l-7 8v6l-4 2v-8Z"></path></svg>
+              Filtres
+            </button>
+          </div>
+        </div>
+
+        <div style="padding: 20px 24px 0">
+
+          <!-- Vue calendrier -->
+          <sc-if value="{{isCalendarView}}" hint-placeholder-val="{{ true }}">
+            <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-bottom: 6px">
+              <sc-for list="{{weekdays}}" as="wd" hint-placeholder-count="7">
+                <div style="text-align: center; font-size: 12px; font-weight: 500; color: var(--muted-fg); padding-bottom: 4px">{{wd.label}}</div>
+              </sc-for>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px">
+              <sc-for list="{{cells}}" as="cell" hint-placeholder-count="35">
+                <div class="cell {{cell.cls}}">
+                  <sc-if value="{{cell.filled}}" hint-placeholder-val="{{ true }}">
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 2px; margin-bottom: 4px">
+                      <span class="{{cell.dayCls}}" style="display: flex; height: 24px; width: 24px; align-items: center; justify-content: center; border-radius: 9999px; font-size: 14px; font-weight: 600">{{cell.day}}</span>
+                      <span style="font-size: 10px; font-weight: 500; color: var(--muted-fg)">{{cell.countLabel}}</span>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 4px">
+                      <sc-for list="{{cell.pills}}" as="pill" hint-placeholder-count="2">
+                        <button type="button" class="pill {{pill.cls}}" onClick="{{pill.toggleFav}}">
+                          <span class="{{pill.dotCls}}" style="height: 8px; width: 8px; flex-shrink: 0; border-radius: 9999px"></span>
+                          <span style="min-width: 0; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500">{{pill.name}}</span>
+                          <span class="star {{pill.starCls}}" style="flex-shrink: 0; display: inline-flex">
+                            <svg viewBox="0 0 24 24" style="width: 12px; height: 12px" fill="{{pill.starFill}}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.5 2.9a.6.6 0 0 1 1 0l2.4 4.9 5.4.8a.6.6 0 0 1 .3 1l-3.9 3.8.9 5.4a.6.6 0 0 1-.8.6L12 16.9l-4.8 2.5a.6.6 0 0 1-.8-.6l.9-5.4-3.9-3.8a.6.6 0 0 1 .3-1l5.4-.8Z"></path></svg>
+                          </span>
+                        </button>
+                      </sc-for>
+                      <sc-if value="{{cell.hasMore}}" hint-placeholder-val="{{ false }}">
+                        <span style="border-radius: 6px; padding: 4px 6px; font-size: 11px; font-weight: 500; color: var(--muted-fg)">{{cell.moreLabel}}</span>
+                      </sc-if>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <!-- Vue liste -->
+          <sc-if value="{{isListView}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; flex-direction: column; gap: 10px">
+              <sc-for list="{{listRows}}" as="row" hint-placeholder-count="6">
+                <div class="{{row.cls}}" style="display: flex; align-items: center; gap: 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); padding: 14px 16px">
+                  <div style="flex-shrink: 0; width: 56px; text-align: center">
+                    <div style="font-size: 22px; font-weight: 700; line-height: 1">{{row.day}}</div>
+                    <div style="font-size: 11px; color: var(--muted-fg); text-transform: uppercase; letter-spacing: .04em">{{row.weekday}}</div>
+                  </div>
+                  <div style="min-width: 0; flex: 1 1 auto">
+                    <div style="font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{row.name}}</div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 3px; font-size: 13px; color: var(--muted-fg)">
+                      <svg viewBox="0 0 24 24" style="width: 13px; height: 13px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+                      {{row.time}}
+                      <span style="opacity: .5">•</span>
+                      <svg viewBox="0 0 24 24" style="width: 13px; height: 13px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                      {{row.place}}
+                    </div>
+                  </div>
+                  <span class="{{row.badgeCls}}" style="flex-shrink: 0; display: inline-flex; align-items: center; border-radius: 9999px; padding: 2px 10px; font-size: 12px; font-weight: 500">{{row.badge}}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= DÉCOR — le cimetière, en pied de page ================= -->
+  <div class="decor" style="position: absolute; left: 0; right: 0; bottom: 0; height: 190px; pointer-events: none; z-index: 1">
+    <svg viewBox="0 0 1280 190" preserveAspectRatio="none" style="position: absolute; inset: 0; width: 100%; height: 100%" aria-hidden="true">
+      <!-- colline -->
+      <path d="M0 190 L0 132 Q220 104 470 124 Q760 148 1010 116 Q1160 98 1280 122 L1280 190 Z" fill="var(--decor-ink)" opacity="0.5"></path>
+      <!-- arbre mort, à gauche -->
+      <g class="decor-heavy" fill="none" stroke="var(--decor-ink)" stroke-width="5" stroke-linecap="round" opacity="0.75">
+        <path d="M120 190 L120 96"></path>
+        <path d="M120 130 L92 104 M92 104 L78 108 M92 104 L88 88"></path>
+        <path d="M120 118 L152 92 M152 92 L168 96 M152 92 L154 76"></path>
+        <path d="M120 100 L104 78 M120 100 L136 80"></path>
+      </g>
+      <!-- pierres tombales -->
+      <g fill="var(--decor-ink)" opacity="0.72">
+        <path d="M300 190 L300 148 A18 18 0 0 1 336 148 L336 190 Z"></path>
+        <path d="M392 190 L392 158 A14 14 0 0 1 420 158 L420 190 Z"></path>
+        <path d="M1064 190 L1064 152 A17 17 0 0 1 1098 152 L1098 190 Z"></path>
+        <rect x="880" y="156" width="30" height="34"></rect>
+      </g>
+      <!-- croix gravées -->
+      <g stroke="var(--bg)" stroke-width="3" opacity="0.4">
+        <path d="M318 154 L318 174 M310 162 L326 162"></path>
+        <path d="M1081 158 L1081 176 M1074 165 L1088 165"></path>
+      </g>
+      <!-- grille de fer -->
+      <g stroke="var(--decor-ink)" stroke-width="4" opacity="0.62" stroke-linecap="round">
+        <path d="M470 190 L470 142 M502 190 L502 136 M534 190 L534 142 M566 190 L566 136 M598 190 L598 142 M630 190 L630 136 M662 190 L662 142"></path>
+        <path d="M462 154 L670 148 M462 174 L670 168"></path>
+      </g>
+    </svg>
+
+    <!-- Deux citrouilles allumées, posées au sol -->
+    <svg class="decor-heavy lantern" viewBox="0 0 48 48" style="position: absolute; bottom: 16px; left: 214px; width: 56px; height: 56px" aria-hidden="true">
+      <path d="M24 12c-1.4-3-1-5.4 1.5-7.4-.5 3 .5 4.4 2.5 4.9" fill="none" stroke="var(--spectre)" stroke-width="2.2" stroke-linecap="round"></path>
+      <ellipse cx="24" cy="28" rx="17" ry="14" fill="var(--pumpkin)"></ellipse>
+      <path d="M13 17c-3 4-3 18 0 22M35 17c3 4 3 18 0 22" fill="none" stroke="color-mix(in oklab, var(--night) 45%, transparent)" stroke-width="1.6"></path>
+      <path d="M16 25l4.5-3 1.5 4.5z" fill="var(--night)"></path>
+      <path d="M32 25l-4.5-3-1.5 4.5z" fill="var(--night)"></path>
+      <path d="M17 33c2-2.5 4-1 5 0s3 2.5 5 0 3-1 4 1c-1.5 3-4.5 4.5-7 4.5s-5.5-1.5-7-5.5z" fill="var(--night)"></path>
+    </svg>
+    <svg class="decor-heavy lantern" viewBox="0 0 48 48" style="position: absolute; bottom: 10px; right: 176px; width: 40px; height: 40px; animation-delay: 1.2s" aria-hidden="true">
+      <path d="M24 12c-1.4-3-1-5.4 1.5-7.4-.5 3 .5 4.4 2.5 4.9" fill="none" stroke="var(--spectre)" stroke-width="2.2" stroke-linecap="round"></path>
+      <ellipse cx="24" cy="28" rx="17" ry="14" fill="var(--pumpkin)"></ellipse>
+      <path d="M13 17c-3 4-3 18 0 22M35 17c3 4 3 18 0 22" fill="none" stroke="color-mix(in oklab, var(--night) 45%, transparent)" stroke-width="1.6"></path>
+      <path d="M16 25l4.5-3 1.5 4.5z" fill="var(--night)"></path>
+      <path d="M32 25l-4.5-3-1.5 4.5z" fill="var(--night)"></path>
+      <path d="M17 33c2-2.5 4-1 5 0s3 2.5 5 0 3-1 4 1c-1.5 3-4.5 4.5-7 4.5s-5.5-1.5-7-5.5z" fill="var(--night)"></path>
+    </svg>
+  </div>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{
+  "theme": { "editor": "enum", "options": ["sombre", "clair"], "default": "sombre", "section": "Habillage" },
+  "decor": { "editor": "enum", "options": ["complet", "discret", "aucun"], "default": "complet", "section": "Habillage" },
+  "$preview": { "width": 1280, "height": 1300 }
+}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { view: 'calendar', monthIndex: 1, favorites: { 'oct-31-veillee': true } };
+  }
+
+  months() {
+    return [
+      {
+        label: 'septembre 2026',
+        subtitle: '6 événements ce mois-ci',
+        offset: 1,
+        days: 30,
+        today: null,
+        hasVeillee: false,
+        events: {
+          5: [{ id: 'sep-5', name: 'Ligue d’automne — J1', time: '14:00', place: 'La Caverne, Lyon', status: 'available' }],
+          12: [{ id: 'sep-12', name: 'Tournoi MTG Modern', time: '13:30', place: 'Terre de Jeux, Lyon', status: 'available' }],
+          17: [{ id: 'sep-17', name: 'Soirée découverte SWU', time: '19:00', place: 'Le Repaire, Villeurbanne', status: 'available' }],
+          19: [{ id: 'sep-19', name: 'Ligue d’automne — J2', time: '14:00', place: 'La Caverne, Lyon', status: 'available' }],
+          24: [{ id: 'sep-24', name: 'Soirée jeux de société', time: '20:00', place: 'Le Dé Perché, Lyon', status: 'available' }],
+          26: [{ id: 'sep-26', name: 'Prerelease Riftbound', time: '10:00', place: 'Terre de Jeux, Lyon', status: 'sold-out' }],
+        },
+      },
+      {
+        label: 'octobre 2026',
+        subtitle: '14 événements ce mois-ci — dont 7 pour la Veillée',
+        offset: 3,
+        days: 31,
+        today: 31,
+        hasVeillee: true,
+        events: {
+          2: [{ id: 'oct-2', name: 'Ligue d’automne — J3', time: '14:00', place: 'La Caverne, Lyon', status: 'available' }],
+          6: [{ id: 'oct-6', name: 'Tournoi MTG Modern', time: '13:30', place: 'Terre de Jeux, Lyon', status: 'available' }],
+          9: [{ id: 'oct-9', name: 'Draft Riftbound', time: '19:30', place: 'Le Repaire, Villeurbanne', status: 'available' }],
+          10: [{ id: 'oct-10', name: 'Tournoi Lorcana', time: '10:00', place: 'Le Dé Perché, Lyon', status: 'sold-out' }],
+          14: [{ id: 'oct-14', name: 'Soirée jeux de société', time: '20:00', place: 'Le Dé Perché, Lyon', status: 'available' }],
+          17: [{ id: 'oct-17', name: 'Ligue d’automne — J4', time: '14:00', place: 'La Caverne, Lyon', status: 'available' }],
+          21: [{ id: 'oct-21', name: 'Draft à la bougie', time: '20:00', place: 'Le Repaire, Villeurbanne', status: 'available', hallow: true }],
+          23: [{ id: 'oct-23', name: 'Tournoi MTG Commander', time: '19:00', place: 'Terre de Jeux, Lyon', status: 'available' }],
+          25: [{ id: 'oct-25', name: 'Quiz des Ombres', time: '18:00', place: 'La Caverne, Lyon', status: 'available', hallow: true }],
+          28: [{ id: 'oct-28', name: 'Nuit blanche Riftbound', time: '21:00', place: 'Le Repaire, Villeurbanne', status: 'available', hallow: true }],
+          30: [{ id: 'oct-30', name: 'Veillée — ouverture', time: '19:00', place: 'Le Dé Perché, Lyon', status: 'sold-out', hallow: true }],
+          31: [
+            { id: 'oct-31-veillee', name: 'Tournoi masqué', time: '18:00', place: 'La Caverne, Lyon', status: 'available', hallow: true },
+            { id: 'oct-31-draft', name: 'Draft d’Halloween', time: '21:00', place: 'Terre de Jeux, Lyon', status: 'available', hallow: true },
+            { id: 'oct-31-cluedo', name: 'Cluedo géant', time: '20:00', place: 'Le Dé Perché, Lyon', status: 'sold-out', hallow: true },
+          ],
+        },
+      },
+      {
+        label: 'novembre 2026',
+        subtitle: '5 événements ce mois-ci',
+        offset: 6,
+        days: 30,
+        today: null,
+        hasVeillee: false,
+        events: {
+          4: [{ id: 'nov-4', name: 'Ligue d’hiver — J1', time: '14:00', place: 'La Caverne, Lyon', status: 'available' }],
+          11: [{ id: 'nov-11', name: 'Tournoi Lorcana', time: '10:00', place: 'Le Dé Perché, Lyon', status: 'available' }],
+          14: [{ id: 'nov-14', name: 'Draft Riftbound', time: '19:30', place: 'Le Repaire, Villeurbanne', status: 'available' }],
+          21: [{ id: 'nov-21', name: 'Soirée jeux de société', time: '20:00', place: 'Le Dé Perché, Lyon', status: 'cancelled' }],
+          28: [{ id: 'nov-28', name: 'Ligue d’hiver — J2', time: '14:00', place: 'La Caverne, Lyon', status: 'available' }],
+        },
+      },
+    ];
+  }
+
+  dotClass(status) {
+    if (status === 'available') return 'dot-ok';
+    if (status === 'sold-out') return 'dot-full';
+    return 'dot-off';
+  }
+
+  renderVals() {
+    const months = this.months();
+    const month = months[this.state.monthIndex];
+    const isCalendar = this.state.view === 'calendar';
+
+    const weekdays = ['lun', 'mar', 'mer', 'jeu', 'ven', 'sam', 'dim'].map((label, i) => ({ label, key: i }));
+
+    const rows = Math.ceil((month.offset + month.days) / 7);
+    const cells = [];
+    for (let i = 0; i < rows * 7; i++) {
+      const day = i - month.offset + 1;
+      const col = i % 7;
+      const inMonth = day >= 1 && day <= month.days;
+
+      if (!inMonth) {
+        cells.push({ key: 'e' + i, filled: false, empty: true, cls: 'empty', day: '', dayCls: '', countLabel: '', pills: [], hasMore: false, moreLabel: '' });
+        continue;
+      }
+
+      const dayEvents = month.events[day] || [];
+      const visible = dayEvents.slice(0, 2);
+      const hidden = dayEvents.length - visible.length;
+      const isToday = month.today === day;
+      const isVeillee = month.hasVeillee && day === 31;
+
+      let cls = col >= 5 ? 'weekend' : 'normal';
+      if (isToday) cls = 'today';
+      if (isVeillee) cls = 'veillee';
+
+      cells.push({
+        key: 'd' + day,
+        filled: true,
+        empty: false,
+        cls,
+        day: String(day),
+        dayCls: isToday || isVeillee ? 'day-today' : 'day-plain',
+        countLabel: dayEvents.length > 0 ? String(dayEvents.length) : '',
+        hasMore: hidden > 0,
+        moreLabel: hidden > 0 ? '+' + hidden + ' autre' + (hidden > 1 ? 's' : '') : '',
+        pills: visible.map((ev) => {
+          const fav = !!this.state.favorites[ev.id];
+          return {
+            key: ev.id,
+            name: ev.name,
+            cls: ev.hallow ? 'hallow' : '',
+            dotCls: this.dotClass(ev.status),
+            starCls: fav ? 'on' : '',
+            starFill: fav ? 'currentColor' : 'none',
+            toggleFav: () => {
+              const favorites = Object.assign({}, this.state.favorites);
+              if (favorites[ev.id]) { delete favorites[ev.id]; } else { favorites[ev.id] = true; }
+              this.setState({ favorites });
+            },
+          };
+        }),
+      });
+    }
+
+    const weekdayNames = ['lun', 'mar', 'mer', 'jeu', 'ven', 'sam', 'dim'];
+    const listRows = [];
+    Object.keys(month.events)
+      .map(Number)
+      .sort((a, b) => a - b)
+      .forEach((day) => {
+        month.events[day].forEach((ev) => {
+          const statusLabel = ev.status === 'sold-out' ? 'Complet' : ev.status === 'cancelled' ? 'Annulé' : 'Places libres';
+          listRows.push({
+            key: ev.id,
+            day: String(day),
+            weekday: weekdayNames[(day + month.offset - 1) % 7],
+            name: ev.name,
+            time: ev.time,
+            place: ev.place,
+            badge: statusLabel,
+            badgeCls: ev.status === 'sold-out' ? 'badge-full' : ev.status === 'cancelled' ? 'badge-off' : 'badge-ok',
+            cls: ev.hallow ? 'row-hallow' : '',
+          });
+        });
+      });
+
+    return {
+      themeClass: this.props.theme === 'clair' ? 'light' : 'dark',
+      decor: this.props.decor ?? 'complet',
+      month,
+      weekdays,
+      cells,
+      listRows: listRows.slice(0, 12),
+      isCalendarView: isCalendar,
+      isListView: !isCalendar,
+      calSegCls: isCalendar ? 'on' : '',
+      listSegCls: isCalendar ? '' : 'on',
+      showCalendar: () => this.setState({ view: 'calendar' }),
+      showList: () => this.setState({ view: 'list' }),
+      prevMonth: () => this.setState({ monthIndex: Math.max(0, this.state.monthIndex - 1) }),
+      nextMonth: () => this.setState({ monthIndex: Math.min(2, this.state.monthIndex + 1) }),
+    };
+  }
+}
+</script>
+</body>
+</html>

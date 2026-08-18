@@ -1,0 +1,39 @@
+{
+  "pages": [
+    { "id": "page-1", "name": "L'habillage" },
+    { "id": "page-2", "name": "Fondations" }
+  ],
+  "artboards": [
+    { "file": "Main.dc.html", "title": "Accueil — calendrier", "page": "page-1", "x": 0, "y": 0, "w": 1280, "h": 1300 },
+    { "file": "Moments.dc.html", "title": "Moments dédiés", "page": "page-1", "x": 1380, "y": 0, "w": 1180, "h": 1000 },
+    { "file": "Palette.dc.html", "title": "Jetons de couleur", "page": "page-2", "x": 0, "y": 0, "w": 1060, "h": 1180 },
+    { "file": "Decor.dc.html", "title": "Décor", "page": "page-2", "x": 1160, "y": 0, "w": 1060, "h": 860 }
+  ],
+  "annotations": [
+    {
+      "id": "mecanique",
+      "page": "page-1",
+      "x": 0,
+      "y": -230,
+      "w": 560,
+      "text": "Même mécanique que le thème hivernal : NEXT_PUBLIC_THEME=halloween charge app/halloween-theme.css et pose la classe .halloween-theme sur <body>.\n\nDeux réglages en haut de cet écran :\n— clair / sombre, pour vérifier les deux modes ;\n— complet / discret / aucun, l'intensité du décor.\n\nLa vue Calendrier / Liste, les flèches de mois et les étoiles de favori répondent au clic."
+    },
+    {
+      "id": "a-decider",
+      "page": "page-1",
+      "x": 620,
+      "y": -230,
+      "w": 560,
+      "text": "Deux choses restent à trancher :\n\n1. Les dates d'ouverture et de fermeture de l'habillage. Le dessin part du 24 au 31 octobre en « complet », le reste du mois en « discret ».\n\n2. Le nom public de l'opération. « La Veillée des Joutes » est une proposition, pas une décision — elle apparaît dans le bandeau, le badge d'événement et le haut fait."
+    },
+    {
+      "id": "assets",
+      "page": "page-2",
+      "x": 0,
+      "y": -180,
+      "w": 620,
+      "text": "Ce qui manque encore côté fichiers : public/logo/joutes_logohalloween.png, la variante saisonnière du sceau. Le dessin de l'artboard « Moments dédiés » sert de consigne — même géométrie, braise et violet à la place du sarcelle et de l'or."
+    }
+  ],
+  "launch": { "view": "canvas", "page": "page-1" }
+}
