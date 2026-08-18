@@ -3,10 +3,18 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
-import { getWishlistAccess, getWishlistById, getWishlistItems, getWishlistOwnerInfo } from "@/lib/db/wishlists";
+import {
+  getDefaultWishlistId,
+  getWishlistAccess,
+  getWishlistById,
+  getWishlistItems,
+  getWishlistOwnerInfo,
+} from "@/lib/db/wishlists";
 import { getAllGames } from "@/lib/db/games";
 import { getPlayGroupById, isGameEnabledForPlayGroup } from "@/lib/db/play-groups";
 import WishlistDetailClient from "./WishlistDetailClient";
+import { ownerHasAdvancedCollection } from "@/lib/db/collection-access";
+import { isWishlistReadOnly } from "@/lib/wishlists/limits";
 
 export const dynamic = "force-dynamic";
 
@@ -55,11 +63,28 @@ export default async function WishlistDetailPage({
     notFound();
   }
 
-  const [initialItems, allGames, ownerInfo] = await Promise.all([
+  const owner = { type: wishlist.ownerType, id: wishlist.ownerId } as const;
+  const [initialItems, allGames, ownerInfo, advanced, defaultId] = await Promise.all([
     getWishlistItems(wishlistId, { page: 1, limit: 48, viewerId: session?.user?.id }),
     getAllGames(),
     getWishlistOwnerInfo(wishlist),
+    ownerHasAdvancedCollection(owner),
+    // L'identifiant résolu, et non `wishlist.isDefault` : ce champ vaut `false`
+    // sur les listes créées avant lui, et cette page est atteignable par son URL
+    // sans passer par la liste de gestion, donc sans rattrapage préalable. S'y
+    // fier afficherait en lecture seule l'unique liste d'un compte ancien.
+    getDefaultWishlistId(owner),
   ]);
+
+  // Sans gestion avancée, seule la liste par défaut reste modifiable. On éteint
+  // `canEdit` plutôt que d'ajouter une condition partout : tout ce qui écrit sur
+  // cet écran en dépend déjà, et le serveur refuserait de toute façon.
+  const readOnly = isWishlistReadOnly({ isDefault: defaultId === wishlist.id, advanced });
+
+  // L'explication ne s'adresse qu'à qui aurait pu écrire : un simple visiteur
+  // n'a que faire d'une invitation à s'abonner pour une liste qui n'est pas la
+  // sienne.
+  const showsReadOnlyNotice = canEdit && readOnly;
 
   let games = allGames;
   if (wishlist.ownerType === "playGroup") {
@@ -74,7 +99,8 @@ export default async function WishlistDetailPage({
       <WishlistDetailClient
         wishlist={wishlist}
         initialItems={initialItems}
-        canEdit={canEdit}
+        canEdit={canEdit && !readOnly}
+        readOnly={showsReadOnlyNotice}
         games={games}
         isLoggedIn={!!session?.user?.id}
         ownerInfo={ownerInfo}

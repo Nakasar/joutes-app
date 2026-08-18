@@ -7,6 +7,7 @@ import {headers} from "next/headers";
 import {isAdmin} from "@/lib/config/admins";
 import {isPlanPermission, type SubscriptionPlanKey} from "@/lib/constants/subscription-plans";
 import {plansForUserId} from "@/lib/subscriptions/access";
+import {getPlansByUserIds} from "@/lib/db/subscriptions";
 import {resolveEntitlements, resolvePlanPermissions} from "@/lib/subscriptions/entitlements";
 
 // Anciens noms de permissions, toujours honorés : les comptes qui les portent
@@ -81,6 +82,69 @@ export async function hasPermission(permission: string) {
   }
 
   return false;
+}
+
+/**
+ * Vrai si **au moins un** de ces comptes détient cette permission.
+ *
+ * Existe pour les droits qui se raisonnent à l'échelle d'un groupe : un groupe
+ * de jeu débloque la gestion avancée de collection dès qu'un seul de ses membres
+ * est abonné. Le droit appartient toujours à une personne — c'est le groupe qui
+ * en profite, et personne n'y perd si un autre membre se désabonne.
+ *
+ * Deux lectures, quelle que soit la taille du groupe : les comptes, puis leurs
+ * abonnements. Boucler `hasPermission` ferait un N+1 — et ne marcherait pas, ne
+ * sachant regarder que le compte connecté.
+ */
+export async function anyUserHasPermission(
+  userIds: readonly string[],
+  permission: string
+): Promise<boolean> {
+  const ids = [...new Set(userIds.filter(Boolean))].filter((id) => ObjectId.isValid(id));
+
+  if (ids.length === 0) {
+    return false;
+  }
+
+  if (IMPLICIT_PERMISSIONS.includes(permission)) {
+    return true;
+  }
+
+  const acceptedPermissions = [permission, ...(PERMISSION_ALIASES[permission] ?? [])];
+  const objectIds = ids.map((id) => new ObjectId(id));
+
+  const [holder, plansByUser] = await Promise.all([
+    db.collection('user').findOne({
+      _id: { $in: objectIds },
+      $or: [{ permissions: { $in: acceptedPermissions } }, { isAdmin: true }],
+    }),
+    // Seulement pour les permissions qu'un palier peut ouvrir : les autres
+    // n'ont aucune raison d'aller lire des abonnements.
+    isPlanPermission(permission)
+      ? getPlansByUserIds(ids)
+      : Promise.resolve({} as Record<string, SubscriptionPlanKey[]>),
+  ]);
+
+  if (holder) {
+    return true;
+  }
+
+  if (
+    Object.values(plansByUser).some((plans) =>
+      (resolvePlanPermissions(plans) as string[]).includes(permission)
+    )
+  ) {
+    return true;
+  }
+
+  // Les administrateurs listés par configuration ne portent pas forcément le
+  // drapeau en base : ils se reconnaissent à leur adresse.
+  const admins = await db
+    .collection<{ email?: string }>('user')
+    .find({ _id: { $in: objectIds } }, { projection: { email: 1 } })
+    .toArray();
+
+  return admins.some((user) => !!user.email && isAdmin(user.email));
 }
 
 /**

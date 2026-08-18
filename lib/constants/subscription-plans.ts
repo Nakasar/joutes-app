@@ -73,7 +73,7 @@ export const SUBSCRIPTION_PLANS = {
     lairSeats: 0,
     includes: ["supporter"],
     entitlements: [],
-    permissions: ["trades:full_history"],
+    permissions: ["trades:full_history", "collection:advanced"],
     tone: "amethyst",
   },
   pro: {
@@ -83,10 +83,10 @@ export const SUBSCRIPTION_PLANS = {
     lairSeats: 1,
     includes: ["supporter"],
     entitlements: ["sub:lair-pro"],
-    // Répétée et non héritée : Pro n'inclut pas Expert (deux publics, pas deux
-    // barreaux). Une boutique qui tient l'historique de ses échanges y a droit
-    // au même titre qu'un joueur.
-    permissions: ["trades:full_history"],
+    // Répétées et non héritées : Pro n'inclut pas Expert (deux publics, pas deux
+    // barreaux). Une boutique qui tient l'historique de ses échanges, ou
+    // plusieurs listes de souhaits, y a droit au même titre qu'un joueur.
+    permissions: ["trades:full_history", "collection:advanced"],
     // Bleu nuit et non doré : Pro s'adresse à une boutique, pas au meilleur
     // joueur de la salle. Un contour doré se lirait comme un rang.
     tone: "midnight",

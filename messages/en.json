@@ -1285,6 +1285,8 @@
       "title": "My wishlists",
       "subtitle": "Track the cards you'd like to get, across every game.",
       "create": {
+        "locked": "Unlock with {plan}",
+        "lockedHint": "One wishlist without a subscription. For a play group, a single subscribed member is enough.",
         "trigger": "New wishlist",
         "title": "Create a wishlist",
         "submit": "Create"
@@ -1312,6 +1314,10 @@
         "description": "Create a wishlist to track cards you'd like to acquire."
       },
       "card": {
+        "defaultSet": "Default wishlist updated",
+        "setDefault": "Set as default wishlist",
+        "readOnly": "Read-only",
+        "default": "Default",
         "itemsCount": "{count, plural, =0 {No cards} one {# card} other {# cards}}",
         "updatedAt": "updated {date}",
         "open": "Open",
@@ -1324,6 +1330,7 @@
         "confirm": "Delete"
       },
       "errors": {
+        "setDefault": "Could not change the default wishlist",
         "create": "Unable to create the wishlist",
         "update": "Unable to update the wishlist",
         "delete": "Unable to delete the wishlist",
@@ -1332,6 +1339,8 @@
         "addItem": "Unable to add this card"
       },
       "detail": {
+        "readOnlyLink": "Unlock with {plan}",
+        "readOnly": "This wishlist is read-only: without advanced collection management, only your default wishlist stays editable.",
         "back": "Back",
         "ownerUser": "Wishlist by {name}",
         "ownerGroup": "Wishlist of group {name}",
@@ -3770,6 +3779,7 @@
           "An “Expert” role on the Discord server",
           "Access to a dedicated section on the Discord server",
           "Your full trade history, with filters and search",
+          "Advanced collection management",
           "Advanced features for your play groups"
         ]
       },
@@ -3781,6 +3791,7 @@
           "A “Pro” role on the Discord server",
           "Access to a dedicated section on the Discord server",
           "Your full trade history, with filters and search",
+          "Advanced collection management",
           "A registration system for your events",
           "Your events put front and centre",
           "Customization of your venue page",

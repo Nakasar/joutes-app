@@ -1286,6 +1286,8 @@
       "title": "Mes listes de souhaits",
       "subtitle": "Suivez les cartes que vous souhaitez acquérir, tous jeux confondus.",
       "create": {
+        "locked": "Débloquer avec {plan}",
+        "lockedHint": "Une seule liste de souhaits sans abonnement. Pour un groupe de jeu, il suffit qu'un membre soit abonné.",
         "trigger": "Nouvelle liste",
         "title": "Créer une liste de souhaits",
         "submit": "Créer"
@@ -1313,6 +1315,10 @@
         "description": "Créez une liste pour suivre les cartes que vous aimeriez acquérir."
       },
       "card": {
+        "defaultSet": "Liste par défaut mise à jour",
+        "setDefault": "Définir comme liste par défaut",
+        "readOnly": "Lecture seule",
+        "default": "Par défaut",
         "itemsCount": "{count, plural, =0 {Aucune carte} one {# carte} other {# cartes}}",
         "updatedAt": "mise à jour {date}",
         "open": "Ouvrir",
@@ -1325,6 +1331,7 @@
         "confirm": "Supprimer"
       },
       "errors": {
+        "setDefault": "Impossible de changer de liste par défaut",
         "create": "Impossible de créer la liste de souhaits",
         "update": "Impossible de mettre à jour la liste de souhaits",
         "delete": "Impossible de supprimer la liste de souhaits",
@@ -1333,6 +1340,8 @@
         "addItem": "Impossible d'ajouter cette carte"
       },
       "detail": {
+        "readOnlyLink": "Débloquer avec {plan}",
+        "readOnly": "Cette liste est en lecture seule : sans la gestion avancée de collection, seule votre liste par défaut reste modifiable.",
         "back": "Retour",
         "ownerUser": "Liste de {name}",
         "ownerGroup": "Liste du groupe {name}",
@@ -3771,6 +3780,7 @@
           "Un rôle « Expert » sur le serveur Discord",
           "L'accès à une section dédiée sur le serveur Discord",
           "L'historique complet de vos échanges, avec filtres et recherche",
+          "Gestion avancée de collection",
           "Des fonctionnalités avancées pour vos groupes de jeu"
         ]
       },
@@ -3782,6 +3792,7 @@
           "Un rôle « Pro » sur le serveur Discord",
           "L'accès à une section dédiée sur le serveur Discord",
           "L'historique complet de vos échanges, avec filtres et recherche",
+          "Gestion avancée de collection",
           "Un système de réservation pour vos évènements",
           "La mise en avant de vos évènements",
           "La personnalisation de votre page de lieu de jeu",

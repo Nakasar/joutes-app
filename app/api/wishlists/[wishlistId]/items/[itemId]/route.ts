@@ -8,6 +8,7 @@ import {
   updateWishlistItem,
 } from "@/lib/db/wishlists";
 import { wishlistItemUpdateSchema } from "@/lib/schemas/wishlist.schema";
+import { wishlistErrorResponse } from "@/lib/api/wishlist-errors";
 
 type Params = Promise<{ wishlistId: string; itemId: string }>;
 
@@ -45,12 +46,20 @@ export async function PATCH(request: NextRequest, { params }: { params: Params }
     );
   }
 
-  const item = await updateWishlistItem(wishlistId, itemId, validationResult.data);
-  if (!item) {
-    return NextResponse.json({ error: "Carte introuvable dans la liste de souhaits" }, { status: 404 });
-  }
+  try {
+    const item = await updateWishlistItem(wishlistId, itemId, validationResult.data);
+    if (!item) {
+      return NextResponse.json({ error: "Carte introuvable dans la liste de souhaits" }, { status: 404 });
+    }
 
-  return NextResponse.json(item);
+    return NextResponse.json(item);
+  } catch (error) {
+    const known = wishlistErrorResponse(error);
+    if (known) return known;
+
+    console.error("Error updating wishlist item:", error);
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+  }
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Params }) {
@@ -60,10 +69,18 @@ export async function DELETE(request: NextRequest, { params }: { params: Params 
   const access = await requireEditAccess(wishlistId, session?.user?.id);
   if (access.error) return access.error;
 
-  const result = await removeWishlistItem(wishlistId, itemId);
-  if (!result) {
-    return NextResponse.json({ error: "Carte introuvable dans la liste de souhaits" }, { status: 404 });
-  }
+  try {
+    const result = await removeWishlistItem(wishlistId, itemId);
+    if (!result) {
+      return NextResponse.json({ error: "Carte introuvable dans la liste de souhaits" }, { status: 404 });
+    }
 
-  return new NextResponse(null, { status: 204 });
+    return new NextResponse(null, { status: 204 });
+  } catch (error) {
+    const known = wishlistErrorResponse(error);
+    if (known) return known;
+
+    console.error("Error removing wishlist item:", error);
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+  }
 }

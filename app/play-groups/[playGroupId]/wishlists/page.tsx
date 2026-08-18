@@ -9,6 +9,7 @@ import WishlistsClient from "@/app/wishlists/WishlistsClient";
 import { PlayGroupToolsNavBar } from "@/components/play-groups/PlayGroupToolsNavBar";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { ownerHasAdvancedCollection } from "@/lib/db/collection-access";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +45,12 @@ export default async function PlayGroupWishlistsPage({
     notFound();
   }
 
-  const wishlists = await getWishlistsForOwner({ type: "playGroup", id: group.id });
+  const owner = { type: "playGroup", id: group.id } as const;
+  const [wishlists, advanced] = await Promise.all([
+    getWishlistsForOwner(owner),
+    // Un seul membre abonné suffit à ouvrir la gestion avancée au groupe entier.
+    ownerHasAdvancedCollection(owner),
+  ]);
   const tNav = await getTranslations("PlayGroups.page");
   const member = group.members.find((m) => m.userId === session.user.id);
   const canManageSettings = member?.role === "owner" || member?.role === "admin";
@@ -57,7 +63,11 @@ export default async function PlayGroupWishlistsPage({
         </Button>
         <PlayGroupToolsNavBar playGroupId={group.id} currentTab="wishlists" canManageSettings={canManageSettings} />
       </div>
-      <WishlistsClient initialWishlists={wishlists} apiBasePath={`/api/play-groups/${group.id}/wishlists`} />
+      <WishlistsClient
+        initialWishlists={wishlists}
+        apiBasePath={`/api/play-groups/${group.id}/wishlists`}
+        advanced={advanced}
+      />
     </div>
   );
 }

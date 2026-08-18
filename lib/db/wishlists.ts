@@ -6,6 +6,8 @@ import { Wishlist, WishlistItem, WishlistOwnerType, WishlistVisibility } from "@
 import { getPlayGroupByIdAndUser, getPlayGroupById, getPlayGroupsForUser } from "@/lib/db/play-groups";
 import { getUserById } from "@/lib/db/users";
 import { getBadgesForUser, type UserBadges } from "@/lib/db/user-badges";
+import { ownerHasAdvancedCollection } from "@/lib/db/collection-access";
+import { FREE_WISHLIST_LIMIT, canCreateWishlist, isWishlistReadOnly } from "@/lib/wishlists/limits";
 
 const WISHLISTS_COLLECTION = "wishlists";
 const WISHLIST_ITEMS_COLLECTION = "wishlist-items";
@@ -24,6 +26,7 @@ function toWishlist(doc: WithId<Document>, itemsCount = 0): Wishlist {
     ownerType: doc.ownerType,
     ownerId: doc.ownerId,
     visibility: doc.visibility || "private",
+    isDefault: doc.isDefault === true,
     itemsCount,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
@@ -74,6 +77,11 @@ async function attachItemsCounts(docs: WithId<Document>[]): Promise<Wishlist[]> 
  * used by the owner's own management page.
  */
 export async function getWishlistsForOwner(owner: WishlistOwner): Promise<Wishlist[]> {
+  // Rattrape les propriétaires d'avant `isDefault`, qui n'en auraient aucune :
+  // toutes leurs listes seraient alors en lecture seule. C'est le chemin
+  // qu'emprunte aussi `/api/wishlists/mine`, donc l'ajout rapide.
+  await ensureDefaultWishlist(owner);
+
   const docs = await db
     .collection(WISHLISTS_COLLECTION)
     .find(ownerQuery(owner))
@@ -108,13 +116,53 @@ export async function getWishlistById(wishlistId: string): Promise<Wishlist | nu
   return wishlist;
 }
 
+/**
+ * Refus d'une liste de plus, faute de gestion avancée de collection.
+ *
+ * Une classe à part et non un `Error` au message reconnaissable : les appelants
+ * doivent pouvoir répondre « il vous faut Joutes Expert » sans lire une chaîne
+ * traduite, et l'écran a besoin du chiffre pour l'écrire.
+ */
+export class WishlistLimitError extends Error {
+  constructor(readonly limit: number) {
+    // Le message dit aussi la sortie, et pas seulement le refus : il ressort tel
+    // quel par l'outil MCP, où un agent n'a que lui pour comprendre quoi
+    // répondre. Les routes HTTP, elles, ajoutent un code machine.
+    super(
+      `Limite de ${limit} liste de souhaits atteinte. La gestion avancée de collection, ` +
+        `qui en permet plusieurs, arrive avec Joutes Expert ou Joutes Pro.`
+    );
+    this.name = "WishlistLimitError";
+  }
+}
+
+/**
+ * Crée une liste de souhaits.
+ *
+ * **La limite se vérifie ici et non dans les routes**, et c'est délibéré : trois
+ * chemins mènent à cette fonction — l'API personnelle, celle d'un groupe de jeu,
+ * et l'outil MCP. Une vérification par route en aurait laissé échapper au moins
+ * un, et le prochain chemin ajouté serait passé au travers sans que rien ne le
+ * signale.
+ */
 export async function createWishlist(
   owner: WishlistOwner,
   input: { name: string; description?: string; visibility?: WishlistVisibility }
 ): Promise<Wishlist> {
+  await indexesReady;
+
   const existing = await db.collection(WISHLISTS_COLLECTION).findOne({ ...ownerQuery(owner), name: input.name });
   if (existing) {
     throw new Error("Une liste de souhaits avec ce nom existe déjà");
+  }
+
+  const [count, advanced] = await Promise.all([
+    db.collection(WISHLISTS_COLLECTION).countDocuments(ownerQuery(owner)),
+    ownerHasAdvancedCollection(owner),
+  ]);
+
+  if (!canCreateWishlist({ existing: count, advanced })) {
+    throw new WishlistLimitError(FREE_WISHLIST_LIMIT);
   }
 
   const now = new Date();
@@ -123,6 +171,13 @@ export async function createWishlist(
     name: input.name,
     description: input.description,
     visibility: input.visibility || "private",
+    // La première liste d'un propriétaire est sa liste par défaut. Le test porte
+    // sur l'existence d'une liste **par défaut** et non sur le compte : un
+    // propriétaire dont la liste par défaut a été supprimée sans promotion — une
+    // base d'avant ce champ — en retrouve une plutôt que de rester sans.
+    isDefault: !(await db
+      .collection(WISHLISTS_COLLECTION)
+      .findOne({ ...ownerQuery(owner), isDefault: true }, { projection: { _id: 1 } })),
     createdAt: now,
     updatedAt: now,
   };
@@ -140,6 +195,8 @@ export async function updateWishlist(
   if (!ObjectId.isValid(wishlistId)) {
     return null;
   }
+
+  await assertWishlistWritable(wishlistId);
 
   if (updates.name) {
     const existing = await db.collection(WISHLISTS_COLLECTION).findOne({
@@ -172,13 +229,200 @@ export async function deleteWishlist(wishlistId: string, owner: WishlistOwner): 
   }
 
   const _id = new ObjectId(wishlistId);
-  const result = await db.collection(WISHLISTS_COLLECTION).deleteOne({ _id, ...ownerQuery(owner) });
-  if (result.deletedCount === 0) {
+  const deleted = await db
+    .collection(WISHLISTS_COLLECTION)
+    .findOneAndDelete({ _id, ...ownerQuery(owner) });
+  if (!deleted) {
     return false;
   }
 
   await db.collection(WISHLIST_ITEMS_COLLECTION).deleteMany({ wishlistId: _id });
+
+  // Supprimer la liste par défaut ne doit pas laisser le propriétaire sans :
+  // sans gestion avancée, il n'aurait plus aucune liste modifiable.
+  if (deleted.isDefault === true) {
+    await ensureDefaultWishlistId(owner);
+  }
+
   return true;
+}
+
+/**
+ * L'identifiant de la liste par défaut du propriétaire, en la désignant si
+ * aucune ne l'est.
+ *
+ * « La suivante » se lit dans l'ordre de création, celui-là même qui a désigné
+ * la première : c'est la seule lecture qui reste stable quand on renomme ou
+ * qu'on réordonne.
+ *
+ * Sert aussi de rattrapage. Il n'y a **aucun système de migration** dans ce
+ * dépôt : les listes créées avant ce champ n'en portent aucune, et sans cela
+ * leur propriétaire se retrouverait avec des listes toutes en lecture seule — la
+ * règle « sauf celle par défaut » n'en épargnant aucune. L'appel est idempotent
+ * et converge : une fois la promotion écrite, il ne coûte plus qu'une lecture.
+ */
+async function ensureDefaultWishlistId(owner: WishlistOwner): Promise<string | null> {
+  await indexesReady;
+
+  const existing = await db
+    .collection(WISHLISTS_COLLECTION)
+    .findOne({ ...ownerQuery(owner), isDefault: true }, { projection: { _id: 1 } });
+
+  if (existing) {
+    return existing._id.toString();
+  }
+
+  const promoted = await db
+    .collection(WISHLISTS_COLLECTION)
+    .findOneAndUpdate(
+      { ...ownerQuery(owner) },
+      { $set: { isDefault: true } },
+      { sort: { createdAt: 1 }, returnDocument: "after", projection: { _id: 1 } }
+    );
+
+  return promoted ? promoted._id.toString() : null;
+}
+
+/** S'assure que ce propriétaire a bien une liste par défaut. */
+export async function ensureDefaultWishlist(owner: WishlistOwner): Promise<void> {
+  await ensureDefaultWishlistId(owner);
+}
+
+/**
+ * L'identifiant de la liste par défaut, rattrapage compris.
+ *
+ * À préférer à `wishlist.isDefault` partout où l'on **décide** quelque chose :
+ * ce champ vaut `false` sur les listes créées avant lui, tant que le rattrapage
+ * n'est pas passé. S'y fier ferait afficher en lecture seule l'unique liste d'un
+ * compte ancien — exactement ce que le rattrapage existe pour éviter.
+ */
+export async function getDefaultWishlistId(owner: WishlistOwner): Promise<string | null> {
+  return ensureDefaultWishlistId(owner);
+}
+
+/**
+ * Refus d'une écriture sur une liste verrouillée.
+ *
+ * Sans gestion avancée, seule la liste par défaut reste modifiable. Les autres
+ * se consultent — rien n'est perdu, et tout redevient utilisable le jour où le
+ * propriétaire s'abonne.
+ */
+export class WishlistReadOnlyError extends Error {
+  constructor() {
+    super(
+      "Cette liste de souhaits est en lecture seule. Sans la gestion avancée de collection " +
+        "(Joutes Expert ou Joutes Pro), seule votre liste par défaut reste modifiable."
+    );
+    this.name = "WishlistReadOnlyError";
+  }
+}
+
+/**
+ * Jette si cette liste ne peut pas être modifiée.
+ *
+ * Posée sous les écritures plutôt que dans les routes, pour la même raison que
+ * la limite de création : plusieurs chemins y mènent — les routes personnelles
+ * et de groupe, l'outil MCP —, et une vérification par route en aurait laissé
+ * échapper au moins un.
+ */
+async function assertWishlistWritable(wishlistId: string): Promise<void> {
+  if (!ObjectId.isValid(wishlistId)) {
+    return;
+  }
+
+  const doc = await db
+    .collection(WISHLISTS_COLLECTION)
+    .findOne({ _id: new ObjectId(wishlistId) }, { projection: { ownerType: 1, ownerId: 1 } });
+
+  // Liste inexistante : ce n'est pas à ce garde de le dire, l'appelant rendra
+  // son propre « introuvable ».
+  if (!doc) {
+    return;
+  }
+
+  const owner = { type: doc.ownerType, id: doc.ownerId } as WishlistOwner;
+  const [defaultId, advanced] = await Promise.all([
+    ensureDefaultWishlistId(owner),
+    ownerHasAdvancedCollection(owner),
+  ]);
+
+  if (isWishlistReadOnly({ isDefault: defaultId === wishlistId, advanced })) {
+    throw new WishlistReadOnlyError();
+  }
+}
+
+/**
+ * La liste par défaut du propriétaire, créée si elle n'existe pas encore.
+ *
+ * Le premier ajout rapide d'un compte tout neuf passe par ici : sans liste, il
+ * n'y avait rien à viser, et il fallait ouvrir le panneau, nommer une liste,
+ * puis ajouter. Une liste est créée à la place, nommée `name`.
+ *
+ * Passe par `createWishlist`, donc par la limite — inutile de la contourner :
+ * créer la **première** liste est toujours permis, avec ou sans abonnement.
+ *
+ * Deux ajouts rapides simultanés sur un compte vide se croiseraient ; l'index
+ * unique `{ownerType, ownerId, name}` refuse alors le second, et on relit ce que
+ * le premier vient d'écrire plutôt que de rendre une erreur pour une course que
+ * l'utilisateur n'a pas provoquée.
+ */
+export async function getOrCreateDefaultWishlist(
+  owner: WishlistOwner,
+  name: string
+): Promise<Wishlist | null> {
+  const defaultId = await ensureDefaultWishlistId(owner);
+  if (defaultId) {
+    return getWishlistById(defaultId);
+  }
+
+  try {
+    return await createWishlist(owner, { name, visibility: "private" });
+  } catch (error) {
+    if ((error as { code?: number }).code === 11000 || (error as Error)?.message?.includes("existe déjà")) {
+      const raced = await ensureDefaultWishlistId(owner);
+      return raced ? getWishlistById(raced) : null;
+    }
+    throw error;
+  }
+}
+
+/** Désigne une autre liste comme liste par défaut du propriétaire. */
+export async function setDefaultWishlist(wishlistId: string, owner: WishlistOwner): Promise<boolean> {
+  if (!ObjectId.isValid(wishlistId)) {
+    return false;
+  }
+
+  await indexesReady;
+
+  const _id = new ObjectId(wishlistId);
+  const target = await db
+    .collection(WISHLISTS_COLLECTION)
+    .findOne({ _id, ...ownerQuery(owner) }, { projection: { _id: 1 } });
+
+  if (!target) {
+    return false;
+  }
+
+  try {
+    // Retirer avant de poser, jamais l'inverse : l'index unique partiel
+    // refuserait la seconde écriture s'il existait un instant deux listes
+    // marquées.
+    await db
+      .collection(WISHLISTS_COLLECTION)
+      .updateMany({ ...ownerQuery(owner), isDefault: true }, { $unset: { isDefault: "" } });
+
+    await db
+      .collection(WISHLISTS_COLLECTION)
+      .updateOne({ _id }, { $set: { isDefault: true, updatedAt: new Date() } });
+
+    return true;
+  } finally {
+    // L'ordre ci-dessus ouvre une fenêtre : si la seconde écriture échoue, le
+    // propriétaire n'a plus de liste par défaut — et sans gestion avancée, plus
+    // aucune liste modifiable. Le rattrapage en repose une ; il ne coûte qu'une
+    // lecture indexée quand tout s'est bien passé.
+    await ensureDefaultWishlistId(owner);
+  }
 }
 
 /**
@@ -357,6 +601,8 @@ export async function addWishlistItem(
   },
   addedByUserId?: string
 ): Promise<WishlistItem> {
+  await assertWishlistWritable(wishlistId);
+
   const now = new Date();
 
   // Ré-ajouter une carte déjà présente (même impression, même variante)
@@ -412,6 +658,8 @@ export async function updateWishlistItem(
     return null;
   }
 
+  await assertWishlistWritable(wishlistId);
+
   const result = await db.collection(WISHLIST_ITEMS_COLLECTION).findOneAndUpdate(
     { _id: new ObjectId(itemId), wishlistId: new ObjectId(wishlistId) },
     { $set: updates },
@@ -425,6 +673,8 @@ export async function removeWishlistItem(wishlistId: string, itemId: string): Pr
   if (!ObjectId.isValid(itemId)) {
     return false;
   }
+
+  await assertWishlistWritable(wishlistId);
 
   const result = await db.collection(WISHLIST_ITEMS_COLLECTION).deleteOne({
     _id: new ObjectId(itemId),
@@ -501,12 +751,32 @@ export async function getWishlistIdsContainingCard(
   return containing.map((id) => id.toString());
 }
 
-export async function createWishlistIndexes() {
-  await db.collection(WISHLISTS_COLLECTION).createIndex({ ownerType: 1, ownerId: 1, name: 1 }, { unique: true });
-  await db.collection(WISHLISTS_COLLECTION).createIndex({ visibility: 1 });
-  await db.collection(WISHLIST_ITEMS_COLLECTION).createIndex({ wishlistId: 1 });
-  await db.collection(WISHLIST_ITEMS_COLLECTION).createIndex({ wishlistId: 1, gameId: 1 });
-}
+/**
+ * Les index, créés une fois par instance.
+ *
+ * **Cette promesse est ce qui les fait exister.** Il n'y a aucun système de
+ * migration dans ce dépôt, et `createWishlistIndexes` n'avait, elle, aucun
+ * appelant : les index qu'elle décrivait n'ont jamais été créés ailleurs qu'à la
+ * main. L'unicité de la liste par défaut en dépend — sans elle, deux requêtes
+ * concurrentes peuvent en laisser deux marquées, et la règle « seule la liste
+ * par défaut est modifiable » en désignerait deux.
+ *
+ * `createIndex` est idempotent. Même motif que `lib/db/subscriptions.ts` et
+ * `lib/db/trades.ts`, et pour la même raison.
+ */
+const indexesReady = Promise.all([
+  db.collection(WISHLISTS_COLLECTION).createIndex({ ownerType: 1, ownerId: 1, name: 1 }, { unique: true }),
+  db.collection(WISHLISTS_COLLECTION).createIndex({ visibility: 1 }),
+  // Au plus une liste par défaut et par propriétaire.
+  db.collection(WISHLISTS_COLLECTION).createIndex(
+    { ownerType: 1, ownerId: 1 },
+    { unique: true, partialFilterExpression: { isDefault: true } }
+  ),
+  db.collection(WISHLIST_ITEMS_COLLECTION).createIndex({ wishlistId: 1 }),
+  db.collection(WISHLIST_ITEMS_COLLECTION).createIndex({ wishlistId: 1, gameId: 1 }),
+]).catch((error) => {
+  console.error("Impossible de créer les index des listes de souhaits:", error);
+});
 
 /** Suppression d'une liste de souhaits sans contrôle du propriétaire (modération). */
 export async function deleteWishlistAsModerator(wishlistId: string): Promise<boolean> {

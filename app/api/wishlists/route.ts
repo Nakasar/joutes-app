@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { createWishlist, getWishlistsForOwner } from "@/lib/db/wishlists";
 import { wishlistSchema } from "@/lib/schemas/wishlist.schema";
+import { wishlistErrorResponse } from "@/lib/api/wishlist-errors";
 
 export async function GET() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -15,6 +16,9 @@ export async function GET() {
     const wishlists = await getWishlistsForOwner({ type: "user", id: session.user.id });
     return NextResponse.json({ wishlists });
   } catch (error) {
+    const known = wishlistErrorResponse(error);
+    if (known) return known;
+
     console.error("Error fetching wishlists:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
@@ -40,10 +44,10 @@ export async function POST(request: NextRequest) {
     const wishlist = await createWishlist({ type: "user", id: session.user.id }, validationResult.data);
     return NextResponse.json(wishlist, { status: 201 });
   } catch (error) {
+    const known = wishlistErrorResponse(error);
+    if (known) return known;
+
     console.error("Error creating wishlist:", error);
-    if (error instanceof Error && error.message.includes("existe déjà")) {
-      return NextResponse.json({ error: error.message }, { status: 409 });
-    }
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }

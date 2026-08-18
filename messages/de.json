@@ -1202,6 +1202,8 @@
       "title": "Meine Wunschlisten",
       "subtitle": "Verfolge die Karten, die du erwerben möchtest, über alle Spiele hinweg.",
       "create": {
+        "locked": "Mit {plan} freischalten",
+        "lockedHint": "Eine Wunschliste ohne Abo. Für eine Spielgruppe genügt ein einziges abonniertes Mitglied.",
         "trigger": "Neue Wunschliste",
         "title": "Wunschliste erstellen",
         "submit": "Erstellen"
@@ -1229,6 +1231,10 @@
         "description": "Erstelle eine Wunschliste, um Karten zu verfolgen, die du erwerben möchtest."
       },
       "card": {
+        "defaultSet": "Standard-Wunschliste aktualisiert",
+        "setDefault": "Als Standard-Wunschliste festlegen",
+        "readOnly": "Nur lesbar",
+        "default": "Standard",
         "itemsCount": "{count, plural, =0 {Keine Karten} one {# Karte} other {# Karten}}",
         "updatedAt": "aktualisiert {date}",
         "open": "Öffnen",
@@ -1241,6 +1247,7 @@
         "confirm": "Löschen"
       },
       "errors": {
+        "setDefault": "Standard-Wunschliste konnte nicht geändert werden",
         "create": "Wunschliste konnte nicht erstellt werden",
         "update": "Wunschliste konnte nicht aktualisiert werden",
         "delete": "Wunschliste konnte nicht gelöscht werden",
@@ -1249,6 +1256,8 @@
         "addItem": "Diese Karte konnte nicht hinzugefügt werden"
       },
       "detail": {
+        "readOnlyLink": "Mit {plan} freischalten",
+        "readOnly": "Diese Wunschliste ist nur lesbar: ohne erweiterte Sammlungsverwaltung bleibt nur deine Standard-Wunschliste bearbeitbar.",
         "back": "Zurück",
         "ownerUser": "Wunschliste von {name}",
         "ownerGroup": "Wunschliste der Gruppe {name}",
@@ -3687,6 +3696,7 @@
           "Eine „Expert“-Rolle auf dem Discord-Server",
           "Zugang zu einem eigenen Bereich auf dem Discord-Server",
           "Deine vollständige Tauschhistorie, mit Filtern und Suche",
+          "Erweiterte Sammlungsverwaltung",
           "Erweiterte Funktionen für deine Spielgruppen"
         ]
       },
@@ -3698,6 +3708,7 @@
           "Eine „Pro“-Rolle auf dem Discord-Server",
           "Zugang zu einem eigenen Bereich auf dem Discord-Server",
           "Deine vollständige Tauschhistorie, mit Filtern und Suche",
+          "Erweiterte Sammlungsverwaltung",
           "Ein Anmeldesystem für deine Veranstaltungen",
           "Deine Veranstaltungen nach vorn geholt",
           "Anpassung deiner Spielort-Seite",

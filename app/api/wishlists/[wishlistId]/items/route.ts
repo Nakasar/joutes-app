@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { addWishlistItem, getWishlistAccess, getWishlistById, getWishlistItems } from "@/lib/db/wishlists";
 import { wishlistItemSchema } from "@/lib/schemas/wishlist.schema";
 import { getGameBySlugOrId } from "@/lib/db/games";
+import { wishlistErrorResponse } from "@/lib/api/wishlist-errors";
 
 type Params = Promise<{ wishlistId: string }>;
 
@@ -42,6 +43,9 @@ export async function GET(request: NextRequest, { params }: { params: Params }) 
     });
     return NextResponse.json(result);
   } catch (error) {
+    const known = wishlistErrorResponse(error);
+    if (known) return known;
+
     console.error("Error fetching wishlist items:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
@@ -88,6 +92,9 @@ export async function POST(request: NextRequest, { params }: { params: Params })
     );
     return NextResponse.json(item, { status: 201 });
   } catch (error) {
+    const known = wishlistErrorResponse(error);
+    if (known) return known;
+
     console.error("Error adding wishlist item:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }

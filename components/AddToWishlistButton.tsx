@@ -22,10 +22,8 @@ import {
   getLoadedMyWishlists,
   invalidateMyWishlists,
   loadMyWishlists,
-  readPreferredWishlistId,
-  writePreferredWishlistId,
 } from "@/lib/wishlists/my-wishlists-client";
-import { type MyWishlists, pickShortcutWishlist } from "@/lib/wishlists/shortcut";
+import { type MyWishlists, pickShortcutTarget } from "@/lib/wishlists/shortcut";
 
 type AddToWishlistButtonProps = {
   cardId: string;
@@ -76,7 +74,6 @@ export default function AddToWishlistButton({
   const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
   const [printingId, setPrintingId] = useState("");
-  const [preferredId, setPreferredId] = useState<string | null>(null);
   const printingChoice = resolvePrinting({ foil: cardFoil, image, printings }, printingId || undefined);
 
   // Les listes sont chargées d'emblée — le raccourci doit pouvoir nommer sa
@@ -93,13 +90,13 @@ export default function AddToWishlistButton({
       // l'ouverture du panneau, où l'utilisateur attend une réponse, que
       // l'erreur se dit.
       .catch(() => {});
-    setPreferredId(readPreferredWishlistId());
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const shortcut = data ? pickShortcutWishlist(data, preferredId) : null;
+  const shortcutTarget = data ? pickShortcutTarget(data) : null;
+  const [creatingDefault, setCreatingDefault] = useState(false);
 
   async function loadWishlists() {
     setLoading(true);
@@ -166,8 +163,6 @@ export default function AddToWishlistButton({
       const item: { quantity?: number } = await res.json().catch(() => ({}));
       setAddedIds((prev) => new Set(prev).add(wishlist.id));
       // La liste qu'on vient de choisir devient celle que le raccourci visera.
-      writePreferredWishlistId(wishlist.id);
-      setPreferredId(wishlist.id);
       if (typeof item.quantity === "number" && item.quantity > 1) {
         toast.success(
           t("addToWishlist.quantityIncreased", { wishlist: wishlist.name, quantity: item.quantity })
@@ -215,32 +210,78 @@ export default function AddToWishlistButton({
    * bouton. Il ne remplace pas le panneau, qui reste le chemin dès qu'on veut
    * choisir — une autre liste, une variante d'impression.
    */
-  const shortcutButton = shortcut ? (
+  /**
+   * Crée la liste par défaut puis y verse la carte.
+   *
+   * Le nom vient du serveur : le raccourci ne fait que déclencher, il n'invente
+   * pas de nom. Le cache des listes est invalidé au passage, sans quoi les
+   * autres boutons de la page continueraient de proposer la création.
+   */
+  async function handleCreateDefaultAndAdd() {
+    setCreatingDefault(true);
+    try {
+      const res = await fetch("/api/wishlists/mine/default", { method: "POST" });
+      const body: { wishlist?: Wishlist; error?: string } = await res.json().catch(() => ({}));
+
+      if (!res.ok || !body.wishlist) {
+        toast.error(body.error || t("errors.create"));
+        return;
+      }
+
+      invalidateMyWishlists();
+      setData((prev) =>
+        prev
+          ? { ...prev, personal: [body.wishlist!, ...prev.personal] }
+          : { personal: [body.wishlist!], groups: [] }
+      );
+      await handleAdd(body.wishlist);
+    } catch (error) {
+      console.error("Failed to create the default wishlist:", error);
+      toast.error(t("errors.create"));
+    } finally {
+      setCreatingDefault(false);
+    }
+  }
+
+  const shortcutName = shortcutTarget
+    ? shortcutTarget.kind === "existing"
+      ? shortcutTarget.wishlist.name
+      : shortcutTarget.name
+    : null;
+  const shortcutId = shortcutTarget?.kind === "existing" ? shortcutTarget.wishlist.id : null;
+  const shortcutBusy = creatingDefault || (!!shortcutId && addingId === shortcutId);
+  const shortcutDone = !!shortcutId && addedIds.has(shortcutId);
+
+  const shortcutButton = shortcutTarget ? (
     <Button
       type="button"
       variant={iconOnly ? undefined : "outline"}
       size={iconOnly ? undefined : "sm"}
       onClick={(e) => {
         e.stopPropagation();
-        void handleAdd(shortcut);
+        if (shortcutTarget.kind === "existing") {
+          void handleAdd(shortcutTarget.wishlist);
+        } else {
+          void handleCreateDefaultAndAdd();
+        }
       }}
-      disabled={addingId === shortcut.id}
-      aria-label={t("addToWishlist.quickAdd", { wishlist: shortcut.name })}
-      title={t("addToWishlist.quickAdd", { wishlist: shortcut.name })}
+      disabled={shortcutBusy}
+      aria-label={t("addToWishlist.quickAdd", { wishlist: shortcutName ?? "" })}
+      title={t("addToWishlist.quickAdd", { wishlist: shortcutName ?? "" })}
       className={
         iconOnly
           ? "flex size-7 items-center justify-center rounded-full bg-black/60 p-0 text-white shadow transition-colors hover:bg-black/80"
           : "gap-1.5"
       }
     >
-      {addingId === shortcut.id ? (
+      {shortcutBusy ? (
         <Loader2 className={iconOnly ? "size-3.5 animate-spin" : "size-4 animate-spin"} />
-      ) : addedIds.has(shortcut.id) ? (
+      ) : shortcutDone ? (
         <Check className={iconOnly ? "size-3.5" : "size-4 text-emerald-500"} />
       ) : (
         <Plus className={iconOnly ? "size-3.5" : "size-4"} />
       )}
-      {!iconOnly && <span className="max-w-32 truncate">{shortcut.name}</span>}
+      {!iconOnly && <span className="max-w-32 truncate">{shortcutName}</span>}
     </Button>
   ) : null;
 

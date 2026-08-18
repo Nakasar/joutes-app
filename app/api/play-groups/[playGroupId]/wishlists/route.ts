@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { getPlayGroupByIdAndUser } from "@/lib/db/play-groups";
 import { createWishlist, getWishlistsForOwner } from "@/lib/db/wishlists";
 import { wishlistSchema } from "@/lib/schemas/wishlist.schema";
+import { wishlistErrorResponse } from "@/lib/api/wishlist-errors";
 
 type Params = Promise<{ playGroupId: string }>;
 
@@ -23,6 +24,9 @@ export async function GET(request: NextRequest, { params }: { params: Params }) 
     const wishlists = await getWishlistsForOwner({ type: "playGroup", id: group.id });
     return NextResponse.json({ wishlists });
   } catch (error) {
+    const known = wishlistErrorResponse(error);
+    if (known) return known;
+
     console.error("Error fetching play-group wishlists:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
@@ -54,10 +58,10 @@ export async function POST(request: NextRequest, { params }: { params: Params })
     const wishlist = await createWishlist({ type: "playGroup", id: group.id }, validationResult.data);
     return NextResponse.json(wishlist, { status: 201 });
   } catch (error) {
+    const known = wishlistErrorResponse(error);
+    if (known) return known;
+
     console.error("Error creating play-group wishlist:", error);
-    if (error instanceof Error && error.message.includes("existe déjà")) {
-      return NextResponse.json({ error: error.message }, { status: 409 });
-    }
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }

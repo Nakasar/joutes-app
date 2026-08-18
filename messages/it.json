@@ -1227,6 +1227,8 @@
       "title": "Le mie liste dei desideri",
       "subtitle": "Tieni traccia delle carte che vorresti ottenere, in tutti i giochi.",
       "create": {
+        "locked": "Sblocca con {plan}",
+        "lockedHint": "Una sola lista dei desideri senza abbonamento. Per un gruppo di gioco basta un membro abbonato.",
         "trigger": "Nuova lista",
         "title": "Crea una lista dei desideri",
         "submit": "Crea"
@@ -1254,6 +1256,10 @@
         "description": "Crea una lista per tenere traccia delle carte che vorresti ottenere."
       },
       "card": {
+        "defaultSet": "Lista predefinita aggiornata",
+        "setDefault": "Imposta come lista predefinita",
+        "readOnly": "Sola lettura",
+        "default": "Predefinita",
         "itemsCount": "{count, plural, =0 {Nessuna carta} one {# carta} other {# carte}}",
         "updatedAt": "aggiornata {date}",
         "open": "Apri",
@@ -1266,6 +1272,7 @@
         "confirm": "Elimina"
       },
       "errors": {
+        "setDefault": "Impossibile cambiare la lista predefinita",
         "create": "Impossibile creare la lista dei desideri",
         "update": "Impossibile aggiornare la lista dei desideri",
         "delete": "Impossibile eliminare la lista dei desideri",
@@ -1274,6 +1281,8 @@
         "addItem": "Impossibile aggiungere questa carta"
       },
       "detail": {
+        "readOnlyLink": "Sblocca con {plan}",
+        "readOnly": "Questa lista è in sola lettura: senza la gestione avanzata della collezione, solo la tua lista predefinita resta modificabile.",
         "back": "Indietro",
         "ownerUser": "Lista di {name}",
         "ownerGroup": "Lista del gruppo {name}",
@@ -3712,6 +3721,7 @@
           "Un ruolo «Expert» sul server Discord",
           "L'accesso a una sezione dedicata sul server Discord",
           "Lo storico completo dei tuoi scambi, con filtri e ricerca",
+          "Gestione avanzata della collezione",
           "Funzionalità avanzate per i tuoi gruppi di gioco"
         ]
       },
@@ -3723,6 +3733,7 @@
           "Un ruolo «Pro» sul server Discord",
           "L'accesso a una sezione dedicata sul server Discord",
           "Lo storico completo dei tuoi scambi, con filtri e ricerca",
+          "Gestione avanzata della collezione",
           "Un sistema di prenotazione per i tuoi eventi",
           "I tuoi eventi messi in primo piano",
           "La personalizzazione della pagina del tuo locale",

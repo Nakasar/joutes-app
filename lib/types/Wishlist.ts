@@ -9,6 +9,12 @@ export type Wishlist = {
   ownerType: WishlistOwnerType;
   ownerId: string;
   visibility: WishlistVisibility;
+  /**
+   * La liste que vise l'ajout rapide, et la seule qui reste modifiable quand le
+   * propriétaire n'a pas la gestion avancée. Exactement une par propriétaire —
+   * un index unique partiel le garantit.
+   */
+  isDefault: boolean;
   itemsCount: number;
   createdAt: Date;
   updatedAt: Date;
