@@ -11,6 +11,10 @@ import { localeLabels } from "@/i18n/config";
 import { newsOriginalLang, parseLocale } from "@/lib/news/localize";
 import NewsTranslationEditor from "./NewsTranslationEditor";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 type Props = { params: Promise<{ newsId: string; lang: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

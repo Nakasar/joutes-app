@@ -2,6 +2,10 @@ import type { ReactNode } from "react";
 import { OrganizerShell } from "./OrganizerShell";
 import { loadOrganizerContext } from "./organizerContext";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 /**
  * Enveloppe toutes les pages du portail organisateur dans le cadre à barre
  * latérale, et centralise l'authentification : chaque page peut se concentrer

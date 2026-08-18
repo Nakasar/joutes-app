@@ -4,6 +4,10 @@ import { auth } from "@/lib/auth";
 import { getTournamentByJoinCode, listPlayers } from "@/lib/db/tournaments";
 import { JoinTournamentClient } from "./JoinTournamentClient";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 export default async function JoinTournamentPage({
   params,
 }: {

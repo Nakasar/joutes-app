@@ -9,6 +9,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import NewsListClient from "./NewsListClient";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Actualités",
   description: "Toutes les actualités de la communauté Joutes : annonces, extensions, événements et mises à jour des jeux.",
@@ -20,8 +24,6 @@ export const metadata: Metadata = {
     description: "Toutes les actualités de la communauté Joutes : annonces, extensions, événements et mises à jour des jeux.",
   },
 };
-
-export const dynamic = "force-dynamic";
 
 export default async function NewsPage() {
   const [session, games, tags, canWrite] = await Promise.all([

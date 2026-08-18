@@ -6,6 +6,10 @@ import { PRIVACY_LAST_UPDATED } from "@/lib/constants/legal";
 import { privacyFr } from "./content.fr";
 import { privacyEn } from "./content.en";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 /**
  * La langue vient du sélecteur de l'en-tête (cookie `NEXT_LOCALE`), comme
  * partout ailleurs sur le site, mais elle est d'abord ramenée aux deux langues

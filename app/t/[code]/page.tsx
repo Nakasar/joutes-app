@@ -2,6 +2,10 @@ import { notFound, redirect } from "next/navigation";
 import { getTournamentByJoinCode, getTournamentByLiveCode } from "@/lib/db/tournaments";
 import { ProjectionScreen } from "./ProjectionScreen";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 /**
  * Écran de la salle, joignable à l'URL courte affichée sur le panneau de
  * projection de l'organisateur. Public et en lecture seule : la machine du

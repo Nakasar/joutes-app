@@ -2,6 +2,10 @@ import { Metadata } from "next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Swords, Users, MapPin, Calendar, Heart } from "lucide-react";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "À propos",
   description: "Découvrez Joutes, la plateforme qui connecte les passionnés de jeux de cartes à collectionner et de jeux de société avec leur communauté locale.",

@@ -12,6 +12,10 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, ChevronLeft, ChevronRight, MapPin, Swords, Trophy } from "lucide-react";
 import { LeagueTypeMatch } from "@/lib/types/Match";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 const PAGE_SIZE = 20;
 
 type LeagueMatchesPageProps = {

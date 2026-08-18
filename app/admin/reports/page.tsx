@@ -1,9 +1,14 @@
 import { getPendingReportGroups } from "@/lib/db/reports";
 import ReportsList from "./ReportsList";
+import { connection } from "next/server";
 
-export const dynamic = "force-dynamic";
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
 
 export default async function AdminReportsPage() {
+  // TODO: Cache Components adoption. Added to unblock the build: remove this connection() to re-trigger the error and review the fix options.
+  await connection();
   const groups = await getPendingReportGroups();
 
   const totalReports = groups.reduce((total, group) => total + group.count, 0);

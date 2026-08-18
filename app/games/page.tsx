@@ -1,6 +1,11 @@
 import { getAllGames } from "@/lib/db/games";
 import GamesExplorer from "./GamesExplorer";
 import type { Metadata } from "next";
+import { connection } from "next/server";
+
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
 
 export const metadata: Metadata = {
   title: "Jeux",
@@ -15,6 +20,8 @@ export const metadata: Metadata = {
 };
 
 export default async function GamesPage() {
+  // TODO: Cache Components adoption. Added to unblock the build: remove this connection() to re-trigger the error and review the fix options.
+  await connection();
   const games = await getAllGames();
 
   return <GamesExplorer games={games} />;

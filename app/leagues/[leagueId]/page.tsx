@@ -30,6 +30,10 @@ import PointsMatchReportingClient from "./PointsMatchReportingClient";
 import LeagueRankingClient from "./LeagueRankingClient";
 import ReportButton from "@/components/ReportButton";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 const STATUS_LABELS: Record<LeagueStatus, string> = {
   DRAFT: "Brouillon",
   OPEN: "Inscriptions ouvertes",

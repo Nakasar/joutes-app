@@ -22,9 +22,9 @@ import {
  * milliers de documents dans l'inbox chaque lundi matin, pour un message qui
  * n'a pas vocation à y rester. Il appelle l'envoi directement.
  *
- * `node:http2`, dont dépend APNs, n'existe pas hors du runtime Node.
+ * `node:http2`, dont dépend APNs, n'existe pas hors du runtime Node, que Cache
+ * Components impose désormais à toute l'application.
  */
-export const runtime = "nodejs";
 export const maxDuration = 300;
 
 export async function GET(req: Request) {

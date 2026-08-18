@@ -8,6 +8,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getTranslations } from "next-intl/server";
 import QuizListClient from "./QuizListClient";
+import { connection } from "next/server";
+
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
 
 /**
  * La description nomme ce qu'un quizz fait travailler — règles, rulings,
@@ -35,9 +40,9 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export const dynamic = "force-dynamic";
-
 export default async function QuizzPage() {
+  // TODO: Cache Components adoption. Added to unblock the build: remove this connection() to re-trigger the error and review the fix options.
+  await connection();
   const [games, session, canManageAll] = await Promise.all([
     getAllGames(),
     auth.api.getSession({ headers: await headers() }),

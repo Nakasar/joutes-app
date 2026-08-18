@@ -9,6 +9,10 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import LeagueForm from "./LeagueForm";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Créer une ligue",
   description: "Créer une nouvelle ligue ou tournoi",

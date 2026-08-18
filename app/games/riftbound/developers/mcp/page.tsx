@@ -4,6 +4,10 @@ import { ArrowLeft, Bot, Code2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Joutes MCP pour Riftbound | Intégrer les règles et cartes via MCP",
   description: "Découvrez comment utiliser le serveur MCP de Joutes pour Riftbound avec les assistants IA : recherche d’événements, cartes, règles, erratas et plus encore.",

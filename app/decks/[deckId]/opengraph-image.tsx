@@ -2,8 +2,6 @@ import { buildDeckOgImage, buildOgImage } from "@/lib/og";
 import { getDeckById, getDeckCardPreviews } from "@/lib/db/decks";
 import { getGameById } from "@/lib/db/games";
 
-export const dynamic = "force-dynamic";
-
 export const alt = "Deck - Joutes";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";

@@ -10,6 +10,10 @@ import { Plus } from "lucide-react";
 import GameMatchesClient from "./GameMatchesClient";
 import type { Metadata } from "next";
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Historique des parties",
   description: "Consultez et enregistrez l'historique de vos parties de jeux de cartes à collectionner : résultats, adversaires et statistiques.",
