@@ -173,12 +173,20 @@ export async function applyTournamentToLeague(
     }
   }
 
-  // Relecture après inscription et après annulation implicite : les compteurs
-  // de hauts faits doivent refléter ce que chacun détient *hors* de ce tournoi.
+  // On annule avant de compter : les compteurs de hauts faits doivent refléter
+  // ce que chacun détient *hors* de ce tournoi, sinon une seconde clôture
+  // opposerait au joueur la limite que la première lui a fait atteindre.
+  // `applyTournamentContribution` annulera de nouveau, sans effet.
   await revertTournamentContribution(leagueId, tournamentId);
   const refreshed = await getLeagueById(leagueId, { includeParticipants: true });
+  // La contribution vient d'être retirée : sans cette relecture on écrirait un
+  // crédit vide et on annoncerait un succès, laissant la ligue amputée.
+  if (!refreshed) {
+    throw new LeagueLinkError("not-found", "Ligue introuvable pendant la clôture du tournoi");
+  }
+
   const existingFeatCounts: Record<string, Record<string, number>> = {};
-  for (const participant of refreshed?.participants ?? []) {
+  for (const participant of refreshed.participants) {
     const counts: Record<string, number> = {};
     for (const feat of participant.feats) {
       counts[feat.featId] = (counts[feat.featId] ?? 0) + 1;
@@ -186,9 +194,7 @@ export async function applyTournamentToLeague(
     existingFeatCounts[participant.userId] = counts;
   }
 
-  const enrolled = new Set(
-    (refreshed?.participants ?? []).map((participant) => participant.userId)
-  );
+  const enrolled = new Set(refreshed.participants.map((participant) => participant.userId));
 
   const contribution = computeTournamentLeagueContribution({
     tournament: { name: tournament.name },
@@ -207,12 +213,15 @@ export async function applyTournamentToLeague(
     existingFeatCounts,
   });
 
-  const now = new Date();
+  // Les lignes sont datées du tournoi, pas de l'instant du calcul : rejouer une
+  // clôture en mars ne doit pas faire remonter un tournoi de janvier en tête de
+  // l'historique de la ligue.
+  const playedAt = tournament.startsAt ?? tournament.createdAt;
   const entries: TournamentContributionEntry[] = contribution.credits.map((credit) => ({
     userId: credit.userId,
     points: credit.total,
     history: credit.lines.map((line) => ({
-      date: now,
+      date: playedAt,
       points: line.points,
       reason: line.reason,
       featId: line.featId,
@@ -220,7 +229,7 @@ export async function applyTournamentToLeague(
     })),
     feats: credit.feats.map((feat) => ({
       featId: feat.featId,
-      earnedAt: now,
+      earnedAt: playedAt,
       tournamentMatchId: feat.tournamentMatchId,
     })),
   }));
@@ -256,6 +265,13 @@ export async function syncTournamentLeague(
   before: Pick<Tournament, "status" | "leagueId">,
   after: Pick<Tournament, "id" | "status" | "leagueId">
 ): Promise<TournamentLeagueReport | null> {
+  // Rien n'a bougé côté ligue : on ne touche à rien. Sans cette garde, renommer
+  // un tournoi clos rejouerait toute sa contribution — et réinscrirait au
+  // passage les participants que l'organisateur de la ligue avait retirés.
+  if (before.status === after.status && before.leagueId === after.leagueId) {
+    return null;
+  }
+
   const wasCredited = before.status === "completed" && Boolean(before.leagueId);
   const leftPreviousLeague = before.leagueId && before.leagueId !== after.leagueId;
   const stoppedBeingClosed = after.status !== "completed";

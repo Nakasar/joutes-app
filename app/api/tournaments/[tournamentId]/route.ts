@@ -99,9 +99,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       }
     }
 
-    // Rattacher un tournoi à une ligue engage le classement de cette ligue :
-    // il faut pouvoir gérer les deux. Réservé aux organisateurs du tournoi —
-    // un arbitre gère la salle, pas les engagements pris envers une ligue.
+    // Réservé aux organisateurs du tournoi — un arbitre gère la salle, pas les
+    // engagements pris envers une ligue.
+    //
+    // Rattacher engage le classement d'une ligue tierce : il faut aussi
+    // l'organiser. Détacher, non : personne ne doit être retenu de force dans
+    // une ligue, et l'organisateur du tournoi peut toujours en sortir. Côté
+    // ligue, `detachTournamentFromLeagueAction` offre le chemin symétrique.
     if (validated.leagueId !== undefined) {
       assertIsOrganizer(tournament, user.userId);
 

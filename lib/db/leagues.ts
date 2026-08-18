@@ -1353,6 +1353,13 @@ export async function recalculateLeagueParticipantPoints(
 
   const rebuiltHistory: PointHistoryEntry[] = participant.pointsHistory
     .filter((entry) => {
+      // Même règle que recalculateLeaguePoints : les lignes venues d'un tournoi
+      // rattaché lui appartiennent et survivent au recalcul, même si le haut
+      // fait a depuis quitté le catalogue.
+      if (entry.tournamentId) {
+        return true;
+      }
+
       if (entry.matchId) {
         return false;
       }

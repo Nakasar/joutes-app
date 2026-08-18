@@ -4582,10 +4582,10 @@ components:
           type: array
           items:
             type: object
-            properties: { date: { type: string, format: date-time }, points: { type: integer }, reason: { type: string }, eventId: { type: string }, featId: { type: string }, matchId: { type: string } }
+            properties: { date: { type: string, format: date-time }, points: { type: integer }, reason: { type: string }, eventId: { type: string }, featId: { type: string }, matchId: { type: string }, tournamentId: { type: string, description: "Set when the entry comes from a linked tournament's closure. Mutually exclusive with `matchId`, which names a league match." } }
         feats:
           type: array
-          items: { type: object, properties: { featId: { type: string }, earnedAt: { type: string, format: date-time }, eventId: { type: string }, matchId: { type: string } } }
+          items: { type: object, properties: { featId: { type: string }, earnedAt: { type: string, format: date-time }, eventId: { type: string }, matchId: { type: string }, tournamentId: { type: string } } }
         joinedAt: { type: string, format: date-time }
         targets: { type: array, items: { type: object } }
         eliminatedBy: { type: string }

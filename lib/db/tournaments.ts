@@ -4,7 +4,7 @@ import crypto from "crypto";
 import { DateTime } from "luxon";
 import { customAlphabet } from "nanoid";
 import db from "@/lib/mongodb";
-import { ObjectId, WithId } from "mongodb";
+import { ClientSession, ObjectId, WithId } from "mongodb";
 import {
   DEFAULT_FIXED_SCORING,
   DEFAULT_INTERVAL_HOURS,
@@ -1596,12 +1596,20 @@ export async function createFeatAward(
   return toFeatAward({ ...doc, _id: result.insertedId });
 }
 
-export async function deleteFeatAward(tournamentId: string, awardId: string): Promise<void> {
+export async function deleteFeatAward(
+  tournamentId: string,
+  awardId: string,
+  // Joueur attendu, tiré du chemin de la route. Le filtre le vérifie plutôt que
+  // de faire confiance à l'appelant : une URL cohérente vaut mieux qu'une URL
+  // dont seule une partie compte.
+  playerId?: string
+): Promise<void> {
   const tId = parseObjectId(tournamentId, "Tournoi");
   const id = parseObjectId(awardId, "Haut fait");
-  const result = await db
-    .collection<TournamentFeatAwardDb>(FEAT_AWARDS)
-    .deleteOne({ _id: id, tournamentId: tId });
+  const filter: Record<string, unknown> = { _id: id, tournamentId: tId };
+  if (playerId) filter.playerId = parseObjectId(playerId, "Joueur");
+
+  const result = await db.collection<TournamentFeatAwardDb>(FEAT_AWARDS).deleteOne(filter);
   if (result.deletedCount === 0) {
     throw new TournamentError("not-found", "Haut fait non trouvé");
   }
@@ -1615,17 +1623,18 @@ export async function deleteFeatAward(tournamentId: string, awardId: string): Pr
  */
 async function deleteFeatAwardsOfMatches(
   tournamentId: ObjectId,
-  matchFilter: Record<string, unknown>
+  matchFilter: Record<string, unknown>,
+  session?: ClientSession
 ): Promise<void> {
   const matchIds = await db
     .collection<TournamentMatchDb>(MATCHES)
-    .find(matchFilter, { projection: { _id: 1 } })
+    .find(matchFilter, { projection: { _id: 1 }, session })
     .map((doc) => doc._id)
     .toArray();
   if (matchIds.length === 0) return;
   await db
     .collection(FEAT_AWARDS)
-    .deleteMany({ tournamentId, matchId: { $in: matchIds } });
+    .deleteMany({ tournamentId, matchId: { $in: matchIds } }, { session });
 }
 
 /** Tournois rattachés à une ligue, du plus récent au plus ancien. */
@@ -3403,7 +3412,7 @@ export async function reopenRound(tournamentId: string, roundId: string): Promis
             { session }
           );
         }
-        await deleteFeatAwardsOfMatches(tId, { tournamentId: tId, phaseId: laterId });
+        await deleteFeatAwardsOfMatches(tId, { tournamentId: tId, phaseId: laterId }, session);
         await db.collection(MATCHES).deleteMany({ tournamentId: tId, phaseId: laterId }, { session });
         await db.collection(ROUNDS).deleteMany({ tournamentId: tId, phaseId: laterId }, { session });
         await db

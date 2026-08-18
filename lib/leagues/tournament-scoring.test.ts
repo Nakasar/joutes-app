@@ -438,6 +438,30 @@ describe("stabilité du calcul", () => {
     );
   });
 
+  it("ne consomme pas deux fois la même limite d'une clôture à l'autre", () => {
+    // Rejouer une clôture repart des hauts faits détenus *hors* de ce tournoi :
+    // sinon la seconde application opposerait au joueur la limite que la
+    // première lui a fait atteindre, et le haut fait disparaîtrait.
+    const capped = { feats: [feat({ points: 4, maxPerLeague: 1 })] };
+    const first = computeTournamentLeagueContribution({
+      tournament: TOURNAMENT,
+      rules: rules(capped),
+      players: [player({ rank: undefined })],
+      featAwards: [award()],
+      existingFeatCounts: {},
+    });
+    const replayed = computeTournamentLeagueContribution({
+      tournament: TOURNAMENT,
+      rules: rules(capped),
+      players: [player({ rank: undefined })],
+      featAwards: [award()],
+      existingFeatCounts: {},
+    });
+
+    assert.equal(totalFor(first, "u1"), 4);
+    assert.deepEqual(replayed, first);
+  });
+
   it("supporte un tournoi vide", () => {
     const result = computeTournamentLeagueContribution({
       tournament: TOURNAMENT,
