@@ -128,8 +128,10 @@ describe("bilan des matchs", () => {
     assert.equal(result.credits[0].lines[0].reason, "Tournoi « Coupe d'hiver » — 2V/1N/1D");
   });
 
-  it("ne rapporte rien pour un nul quand le barème hérité ne le connaît pas", () => {
-    // `draw` absent en base : normalizePointsRules pose la valeur par défaut (1).
+  it("paie un nul comme une défaite quand le barème hérité ne connaît pas le nul", () => {
+    // `draw` absent en base = ligue antérieure aux tournois rattachés. Un match
+    // sans vainqueur y payait `defeat` : il doit continuer de le payer, sinon
+    // le premier recalcul déplacerait le classement de ligues en cours.
     const inherited = { participation: 0, victory: 2, defeat: 0, feats: [] } as unknown as PointsRules;
     const result = computeTournamentLeagueContribution({
       tournament: TOURNAMENT,
@@ -138,7 +140,7 @@ describe("bilan des matchs", () => {
       featAwards: [],
     });
 
-    assert.equal(totalFor(result, "u1"), 2);
+    assert.equal(totalFor(result, "u1"), 0);
   });
 
   it("compte un BYE comme une victoire, comme au classement du tournoi", () => {

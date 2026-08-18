@@ -58,7 +58,11 @@ export function FeatAwardPicker({
         <div className="flex flex-col gap-1">
           {feats.map((feat) => {
             const awarded = awardedCounts[feat.id] ?? 0;
-            const atLimit = feat.maxPerLeague !== undefined && awarded >= feat.maxPerLeague;
+            // `awarded` ne compte que ce tournoi ; `maxPerLeague` porte sur
+            // toute la ligue. Les deux ne se comparent donc pas : on affiche
+            // l'un et l'autre sans les mettre en fraction, et sans teinte
+            // d'alerte qui prétendrait savoir où en est le quota.
+            const leagueCap = feat.maxPerLeague;
             return (
               <Button
                 key={feat.id}
@@ -78,16 +82,14 @@ export function FeatAwardPicker({
                 />
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate">{feat.title}</span>
-                  {awarded > 0 && (
-                    <span
-                      className={cn(
-                        "text-xs",
-                        atLimit ? "text-orange-500" : "text-muted-foreground"
-                      )}
-                    >
-                      {feat.maxPerLeague !== undefined
-                        ? t("feats.awardedOfMax", { count: awarded, max: feat.maxPerLeague })
-                        : t("feats.awardedCount", { count: awarded })}
+                  {(awarded > 0 || leagueCap !== undefined) && (
+                    <span className="text-xs text-muted-foreground">
+                      {[
+                        awarded > 0 ? t("feats.awardedCount", { count: awarded }) : null,
+                        leagueCap !== undefined ? t("feats.leagueCap", { max: leagueCap }) : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </span>
                   )}
                 </span>

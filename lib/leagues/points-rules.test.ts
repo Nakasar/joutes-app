@@ -11,10 +11,19 @@ describe("normalizePointsRules", () => {
     assert.equal(rules.participation, 1);
     assert.equal(rules.victory, 3);
     assert.equal(rules.defeat, 0);
-    assert.equal(rules.draw, DEFAULT_POINTS_RULES.draw);
     assert.deepEqual(rules.rankPoints, []);
     assert.equal(rules.rankPointsBeyond, 0);
     assert.deepEqual(rules.feats, []);
+  });
+
+  it("fait valoir un nul absent ce que valait une défaite", () => {
+    // Avant les tournois rattachés, un match de ligue sans vainqueur payait
+    // `defeat` à tout le monde. Une ligue en cours doit continuer de marquer
+    // exactement pareil : le défaut suit `defeat`, il n'est pas décidé d'avance.
+    assert.equal(normalizePointsRules({ defeat: 0 }).draw, 0);
+    assert.equal(normalizePointsRules({ defeat: 3 }).draw, 3);
+    // `draw` explicitement à zéro reste zéro : c'est une valeur, pas une absence.
+    assert.equal(normalizePointsRules({ defeat: 3, draw: 0 }).draw, 0);
   });
 
   it("rend le barème par défaut quand rien n'est fourni", () => {

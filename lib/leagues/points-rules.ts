@@ -10,6 +10,10 @@ import type { Feat, PointsRules } from "@/lib/types/League";
  * de marquer exactement comme avant.
  */
 
+/**
+ * Barème d'une ligue à laquelle on n'a rien réglé. `draw` y vaut `defeat` : sur
+ * un barème hérité, c'est ce qu'un match sans vainqueur payait déjà.
+ */
 export const DEFAULT_POINTS_RULES: PointsRules = {
   participation: 0,
   victory: 2,
@@ -41,11 +45,17 @@ function normalizeFeats(raw: unknown): Feat[] {
  * par défaut. Ne modifie jamais une valeur présente et valide.
  */
 export function normalizePointsRules(raw: Partial<PointsRules> | undefined | null): PointsRules {
+  const defeat = finiteNumber(raw?.defeat, DEFAULT_POINTS_RULES.defeat);
   return {
     participation: finiteNumber(raw?.participation, DEFAULT_POINTS_RULES.participation),
     victory: finiteNumber(raw?.victory, DEFAULT_POINTS_RULES.victory),
-    defeat: finiteNumber(raw?.defeat, DEFAULT_POINTS_RULES.defeat),
-    draw: finiteNumber(raw?.draw, DEFAULT_POINTS_RULES.draw),
+    defeat,
+    // Un barème sans `draw` vient d'une ligue antérieure aux tournois
+    // rattachés. À l'époque, un match sans vainqueur payait `defeat` à tout le
+    // monde : c'est donc `defeat`, et non une valeur choisie d'avance, qui
+    // laisse ces ligues marquer exactement comme avant. Les nouvelles ligues
+    // reçoivent leur valeur du formulaire, qui propose 1.
+    draw: finiteNumber(raw?.draw, defeat),
     rankPoints: Array.isArray(raw?.rankPoints)
       ? raw.rankPoints.map((points) => finiteNumber(points, 0))
       : [],

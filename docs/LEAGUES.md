@@ -94,7 +94,7 @@ Paramètres:
   - `participation: number` (default: 0) : par match, de ligue comme de tournoi
   - `victory: number` (default: 2)
   - `defeat: number` (default: 1)
-  - `draw: number` (default: 1) : uniquement quand aucun vainqueur n'est désigné
+  - `draw: number` (default: la valeur de `defeat`) : uniquement quand aucun vainqueur n'est désigné
   - `rankPoints: number[]` (default: []) : points par rang final d'un tournoi rattaché, index 0 = 1er
   - `rankPointsBeyond: number` (default: 0) : points des rangs au-delà de `rankPoints`
   - `feats: array` (default: [])
@@ -111,6 +111,11 @@ n'ont en base ni `draw` ni table de rangs. Aucune migration : le barème est
 complété à la lecture par `normalizePointsRules` (`lib/leagues/points-rules.ts`),
 appelé dans `toLeague`. Une ligue existante continue donc de marquer exactement
 comme avant tant que l'organisateur ne touche pas à sa configuration.
+
+C'est pour cela que `draw` absent vaut `defeat` et non une valeur décidée
+d'avance : avant, un match sans vainqueur payait `defeat` à tout le monde.
+Poser 1 par défaut aurait déplacé le classement de toute ligue réglée avec
+`defeat: 0`. Les nouvelles ligues, elles, reçoivent la valeur du formulaire.
 
 **Match nul.** `draw` ne s'applique que lorsque `winnerIds` est vide. Des
 co-vainqueurs — ce que produit une égalité de score sur un match de ligue —

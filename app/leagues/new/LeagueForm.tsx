@@ -123,7 +123,12 @@ export default function LeagueForm({ games, lairs }: LeagueFormProps) {
                 participation: parseInt(formData.pointsParticipation, 10) || 0,
                 victory: parseInt(formData.pointsVictory, 10) || 2,
                 defeat: parseInt(formData.pointsDefeat, 10) || 1,
-                draw: parseInt(formData.pointsDraw, 10) || 0,
+                // Un champ vidé laisse le serveur poser le défaut ; `|| 0`
+                // écraserait le barème avec une valeur que personne n'a choisie.
+                // Zéro saisi, en revanche, est une valeur qui doit survivre.
+                draw: Number.isNaN(parseInt(formData.pointsDraw, 10))
+                  ? undefined
+                  : parseInt(formData.pointsDraw, 10),
                 feats: formData.feats,
               }
             : undefined,
