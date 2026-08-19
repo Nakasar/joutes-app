@@ -17,10 +17,11 @@ Next 16.3.1, `cacheComponents: true` sur `main`.
 
 891 pages construites. Avant l'adoption : **zéro** route avec coquille statique.
 
-**117 pages portent encore un opt-out `export const instant = false`** — 116
-marqueurs `TODO: Cache Components adoption`, plus le layout du portail
-organisateur, qui est un blocage assumé et porte une raison au lieu d'un TODO.
-Sept pages portent un déblocage `await connection()`.
+**107 pages portent encore un opt-out `export const instant = false`** — 103
+marqueurs `TODO: Cache Components adoption`, plus quatre blocages assumés qui
+portent une raison au lieu d'un TODO : le layout du portail organisateur de
+tournoi, les deux layouts du portail d'événement, et son aiguillage `portal/page.tsx`.
+Neuf pages portent un déblocage `await connection()`.
 
 Les pages vivent sous `app/[locale]/(app)/` depuis la correction de collision de
 chemins ; le groupe `(oauth2)` est à côté. Les chemins cités ici en tiennent
@@ -28,7 +29,7 @@ compte — ceux des messages de commit antérieurs, non.
 
 ## La méthode — à lire avant de toucher quoi que ce soit
 
-Six oracles se sont révélés menteurs au cours de l'adoption. Chacun a coûté un
+Sept oracles se sont révélés menteurs au cours de l'adoption. Chacun a coûté un
 aller-retour ou une régression avant d'être remplacé.
 
 Ils ont un trait commun : **aucun ne se signale**. Ils rendent vert, ou muet, et
@@ -122,7 +123,30 @@ routes, est la validation du serveur de dev, chargement par chargement. Quand la
 section est sous un layout qui porte `instant = false`, ne pas chercher de
 signal du côté du build : il n'y en a pas.
 
-### 6. Comparer la table des routes route par route
+### 6. Un serveur de dev qui tourne depuis longtemps ment sur son environnement
+
+`next dev` lit `.env` **au démarrage**. S'il tourne depuis avant un changement
+de base, de secret ou de variable, il répond avec l'ancien monde — sans rien
+signaler.
+
+Symptôme vécu : un `notFound()` inexplicable dans un layout tout juste écrit,
+alors que la requête Mongo équivalente trouvait l'objet depuis un script. Le
+serveur interrogeait encore la base précédente. Une passe entière passée à
+chercher le défaut dans du code qui n'en avait pas.
+
+**Ce qui l'a tranché en une commande** : ouvrir une page publique *qu'on n'a pas
+touchée*. Elle renvoyait le même 404.
+
+    curl -sL -o /dev/null -w "%{http_code}\n" http://localhost:3000/fr/<page-non-touchée>
+
+Un fichier qu'on n'a pas modifié ne peut pas casser à cause de nous. S'il casse
+aussi, la panne est en dessous du code — dans l'environnement. C'est le pendant
+de la règle §3 : avant de s'attribuer une panne, vérifier le commit précédent ;
+et ici, l'état du serveur.
+
+Redémarrer `next dev` après toute modification de `.env` ou de la base.
+
+### 7. Comparer la table des routes route par route
 
 Les totaux masquent les compensations. Une bascule d'imports a fait perdre sept
 coquilles statiques tout en gardant un build vert — visible seulement en
@@ -250,13 +274,13 @@ ignorait la bascule Grille/Tableau et toute la colonne « À traiter ».
 
 ## Ce qui reste
 
-Répartition des 117 opt-outs par ce qui bloque la page :
+Répartition des 107 opt-outs par ce qui bloque la page :
 
 | ce que lit `page.tsx` | pages |
 |---|---|
-| paramètres + session + base | 58 |
+| paramètres + session + base | 46 |
 | session + base | 25 |
-| paramètres + base | 9 |
+| paramètres + base | 11 |
 | base seule | 8 |
 | session seule | 5 |
 | rien (lecture dans un composant client) | 4 |
@@ -268,22 +292,53 @@ Répartition des 117 opt-outs par ce qui bloque la page :
 **Plus aucun lot mécanique n'est disponible.** Chaque route restante demande de
 décider ce qui appartient à la coquille et ce qui arrive en flux.
 
-Les 58 du haut sont le gros morceau, et ils sont désormais abordables : le pied
-de page ne les bloque plus.
+Par zone : `games` 15, `admin` 12, `play-groups` 8, `collection` 7, `account` 7,
+`news` 6, `leagues` 6, `events` 6. `games` et `news` sont publiques — donc
+vérifiables sans session, et visibles par un visiteur non connecté, ce qui en
+fait les plus rentables à traiter ensuite.
 
-### Le portail organisateur, comme modèle
+### Les portails, comme modèle
 
-Seize sections adoptées, une seule ligne de conduite, transposable telle quelle :
+Deux portails adoptés — tournoi (16 sections) et événement (13) — et une seule
+ligne de conduite, transposable telle quelle :
 
 - la page ne devient **pas** `async` et transmet la promesse de `params` à un
   composant sous `<Suspense>` ;
-- le `layout` garde `instant = false` quand il authentifie et redirige — c'est le
-  motif que la documentation Next cite comme légitime, et son TODO devient un
-  commentaire de raison, pas une dette ;
+- un `layout` porte le cadre commun et garde `instant = false` quand la zone est
+  réservée — c'est le motif que la documentation Next cite comme légitime, et son
+  TODO devient un commentaire de raison, pas une dette ;
 - conséquence à annoncer avant de mesurer : **la table des routes ne bouge pas
   d'un glyphe et les coquilles restent à 0 octet**. Avec la porte devant, rien ne
   prérend à froid ; tout le gain est en navigation client, invisible au build
   comme à `inspect-shells.mjs`.
+
+#### Où placer la porte d'authentification
+
+Le portail d'événement n'avait pas de `layout.tsx` : chaque page authentifiait,
+chargeait l'événement, puis réinstanciait le cadre — qui disparaissait et
+revenait à chaque changement de section. Deux layouts ont été introduits, un par
+rôle.
+
+**La porte est restée dans les pages**, et c'est délibéré. Chacune redirige vers
+`/login?from=…` avec **son propre chemin**, et la page de connexion consomme ce
+paramètre pour ramener le visiteur là où il allait ; un contrôle dans le layout
+ne connaîtrait que le chemin du layout et lui ferait perdre sa section.
+
+Le layout ne rend alors rien de sensible par lui-même : sur un visiteur sans
+droit, la redirection de la page interrompt le rendu avant que le cadre
+n'atteigne le navigateur. Ça se vérifie sans cookie :
+
+    307 → /login?from=/events/<id>/portal/organizer/standings
+
+Corollaire : **le layout devient la première entrée-sortie de la route**. Sa
+lecture en base n'a plus rien de lié à la requête devant elle, donc le piège
+Mongo se referme — d'où `await connection()` dans les deux layouts. Les pages y
+échappent parce que leur lecture de session vient avant.
+
+Dernier détail : une page qui **n'aiguille que** — elle authentifie, choisit un
+rôle, redirige — reste bloquante. Elle n'a pas de coquille à montrer, et les
+layouts qui portent les cadres sont en dessous d'elle, pas au-dessus. Vérifié
+plutôt que supposé : retirer son opt-out casse le build.
 
 ### Les écrans entièrement client
 
@@ -326,6 +381,9 @@ une porte utilisable.
 - **Le portail joueur**, ses quatre écrans en 375 px, silhouette et écran réel
   comparés repère par repère : en-tête 133 px, haut du contenu 182 px, blocs de
   « mon match » à 294 / 56 / 117 / 36, barre d'onglets 70 px.
+- **Le portail d'événement**, ses treize sections ouvertes une à une sur deux
+  événements réels — l'un comme organisateur, l'autre comme participant. Carte de
+  section à 356 px, hauteur 318, en-tête 44 et corps 200, identiques au contenu.
 
 Reste à vérifier : les squelettes des six écrans client restants, quand ils
 seront écrits.
@@ -364,6 +422,11 @@ Et comparer la table des routes à celle de `main`, route par route.
 Pour les routes derrière authentification, ajouter : **les ouvrir une à une dans
 un navigateur connecté**, sur des données qui mènent au rendu et non à une
 redirection. Aucune commande ne remplace ça.
+
+Et avant d'ouvrir une session : **redémarrer `next dev` si `.env` ou la base ont
+changé depuis son lancement** (§6). Une session ouverte contre un serveur resté
+sur l'ancienne base est écrite dans l'ancienne base — elle n'existera pas dans
+la nouvelle, et la connexion semblera échouer sans raison.
 
 **Aucune de ces portes ne remplace le déploiement.** Après un push, lire l'état
 du commit (§3) avant de considérer le travail terminé.
