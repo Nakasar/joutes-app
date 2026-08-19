@@ -1,14 +1,12 @@
+import { Suspense } from "react";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events.ts";
-import { getPortalSettings } from "../actions.ts";
-import OrganizerLayoutServer from "./components/OrganizerLayoutServer.tsx";
+import { readPortalSettings } from "../portalSettings.ts";
 import OrganizerSettings from "./components/OrganizerSettings.tsx";
+import { EventFormSkeleton } from "./components/EventPortalSkeletons.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 type OrganizerPortalPageProps = {
   params: Promise<{
@@ -16,7 +14,21 @@ type OrganizerPortalPageProps = {
   }>;
 };
 
-export default async function OrganizerPortalPage({ params }: OrganizerPortalPageProps) {
+/**
+ * La promesse de `params` descend sans être attendue : l'événement est un segment
+ * dynamique, donc la lire ici retiendrait toute la section. Elle s'attend sous la
+ * frontière, avec la session et les données. Le cadre du portail vient du layout
+ * et reste en place d'une section à l'autre.
+ */
+export default function OrganizerPortalPage({ params }: OrganizerPortalPageProps) {
+  return (
+    <Suspense fallback={<EventFormSkeleton fields={5} />}>
+      <OrganizerPortalPageSection params={params} />
+    </Suspense>
+  );
+}
+
+async function OrganizerPortalPageSection({ params }: OrganizerPortalPageProps) {
   const { eventId } = await params;
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -41,13 +53,10 @@ export default async function OrganizerPortalPage({ params }: OrganizerPortalPag
     redirect(`/events/${eventId}/portal/player`);
   }
 
-  const settingsResult = await getPortalSettings(eventId);
-  const settings = settingsResult.success ? settingsResult.data : null;
+  const settings = await readPortalSettings(eventId);
 
   return (
-    <OrganizerLayoutServer event={event} settings={settings}>
-      <OrganizerSettings event={event} settings={settings} />
-    </OrganizerLayoutServer>
+    <OrganizerSettings event={event} settings={settings} />
   );
 }
 
