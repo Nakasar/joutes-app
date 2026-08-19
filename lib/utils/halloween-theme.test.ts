@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { DateTime } from "luxon";
 
-import { decorLevelAt, isInSeason, seasonBounds } from "@/lib/utils/halloween-theme";
+import { decorLevelAt, isInSeason, seasonBounds } from "@/lib/utils/halloween-theme.ts";
 
 const at = (iso: string) => DateTime.fromISO(iso, { zone: "Europe/Paris" });
 

@@ -1,12 +1,13 @@
-import Link from "next/link";
-import { DateTime } from "luxon";
+// Le `Link` conscient de la langue : `next/link` perdrait le préfixe de locale
+// et renverrait vers une route qui n'existe plus depuis le passage à /[locale].
+import { Link } from "@/i18n/navigation.ts";
 import { getTranslations } from "next-intl/server";
 
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
-import { Button } from "@/components/ui/button";
-import { countUserAttendanceBetween } from "@/lib/db/events";
-import { isHalloweenTheme, isInSeason, seasonBounds } from "@/lib/utils/halloween-theme";
+import { Button } from "@/components/ui/button.tsx";
+import { countUserAttendanceBetween } from "@/lib/db/events.ts";
+import { isHalloweenTheme, isInSeason, seasonBounds } from "@/lib/utils/halloween-theme.ts";
 
 /** Nombre d'événements à faire pour décrocher le badge. */
 export const SEASON_GOAL = 3;

@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { DateTime } from "luxon";
 
 import "@/app/halloween-theme.css";
-import { Bat, Candle, Cobweb, DeadTree, Graveyard, Pumpkin } from "./HalloweenSVGs";
-import { decorLevelAt, type DecorLevel } from "@/lib/utils/halloween-theme";
+import { Bat, Candle, Cobweb, DeadTree, Graveyard, Pumpkin } from "./HalloweenSVGs.tsx";
+import { decorLevelAt, type DecorLevel } from "@/lib/utils/halloween-theme.ts";
 
 /**
  * Le décor de la saison.
