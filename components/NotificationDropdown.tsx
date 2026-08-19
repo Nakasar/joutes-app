@@ -13,7 +13,7 @@ import {
 import { Notification } from "@/lib/types/Notification";
 import { DateTime } from "luxon";
 import { Link } from "@/i18n/navigation";
-import { markNotificationAsReadAction, getRecentNotificationsAction } from "@/app/[locale]/notifications/actions";
+import { markNotificationAsReadAction, getRecentNotificationsAction } from "@/app/[locale]/(app)/notifications/actions";
 import { useState, useEffect } from "react";
 import { NotificationTemplate } from "@/components/notifications/NotificationTemplate";
 

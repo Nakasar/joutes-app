@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { describe, it } from "node:test";
 import {
   ADVERTISED_PATHS,
@@ -41,13 +41,28 @@ function parseLinkHeader(header: string) {
  * page, ou le dossier lui-même — `/api` est une ancre, l'identifiant de l'API
  * au sens de la RFC 9727, et pas une adresse qui répond.
  */
+/**
+ * Les racines sous lesquelles une adresse annoncée peut se trouver.
+ *
+ * Les pages vivent sous le segment de langue, les routes techniques
+ * (`.well-known`, plans de site, MCP) sont restées à la racine. S'y ajoutent
+ * les groupes de routes — `(app)`, `(oauth2)` — qui n'apparaissent pas dans
+ * l'URL : ils sont lus sur le disque plutôt qu'énumérés ici, sans quoi le
+ * prochain regroupement casserait cette vérification en silence.
+ */
+function routeRoots(): string[] {
+  const localized = "app/[locale]";
+  const groups = readdirSync(localized, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && /^\(.*\)$/.test(entry.name))
+    .map((entry) => `${localized}/${entry.name}`);
+
+  return ["app", localized, ...groups];
+}
+
 function routeFilesFor(path: string): string[] {
-  // Les pages vivent sous le segment de langue, les routes techniques
-  // (`.well-known`, plans de site, MCP) sont restées à la racine : une adresse
-  // annoncée peut légitimement se trouver dans l'un ou l'autre arbre. La
-  // langue par défaut n'étant pas préfixée, l'adresse annoncée, elle, ne
-  // change pas.
-  return ["app", "app/[locale]"].flatMap((root) => {
+  // La langue par défaut n'étant pas préfixée, l'adresse annoncée, elle, ne
+  // change pas quel que soit l'arbre où la page se trouve.
+  return routeRoots().flatMap((root) => {
     const base = `${root}${path}`;
     return [`${base}/route.ts`, `${base}/page.tsx`, base];
   });

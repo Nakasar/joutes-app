@@ -13,7 +13,7 @@ import {
   MAX_UNIT_QUANTITY,
   countArmyUnits,
 } from "@/lib/battle-reports/army";
-import { searchBattleReportUnitsAction } from "@/app/[locale]/game-matches/actions";
+import { searchBattleReportUnitsAction } from "@/app/[locale]/(app)/game-matches/actions";
 
 /**
  * Saisie d'une liste d'armée.

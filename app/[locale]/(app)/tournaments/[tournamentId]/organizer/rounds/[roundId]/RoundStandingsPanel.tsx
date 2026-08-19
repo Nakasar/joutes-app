@@ -1,0 +1,168 @@
+"use client";
+
+import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { DateTime } from "luxon";
+import { RotateCw } from "lucide-react";
+import { Button } from "@/components/ui/button.tsx";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
+import { Input } from "@/components/ui/input.tsx";
+import { usePaginatedSearch } from "@/lib/use-paginated-search.ts";
+import type { TournamentRoundStanding } from "@/lib/types/Tournament.ts";
+import { PlayerNameTag } from "../../../PlayerNameTag.tsx";
+import { TablePagination } from "../../../TablePagination.tsx";
+
+export function RoundStandingsPanel({
+  tournamentId,
+  roundId,
+  roundStatus,
+  initialStandings,
+  initialValidatedAt,
+}: {
+  tournamentId: string;
+  roundId: string;
+  roundStatus: string;
+  initialStandings?: TournamentRoundStanding[];
+  initialValidatedAt?: string;
+}) {
+  const t = useTranslations("Tournaments");
+  const locale = useLocale();
+  const [standings, setStandings] = useState<TournamentRoundStanding[] | undefined>(initialStandings);
+  const [validatedAt, setValidatedAt] = useState<string | undefined>(initialValidatedAt);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const ranked = (standings ?? []).map((standing, index) => ({ ...standing, rank: index + 1 }));
+  const search = usePaginatedSearch(ranked, (s) => s.displayName, 25);
+  const canValidate = roundStatus === "completed";
+
+  const validate = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/tournaments/${tournamentId}/rounds/${roundId}/standings`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? t("roundStandings.validateError"));
+      }
+      const round = await res.json();
+      setStandings(round.standings ?? []);
+      setValidatedAt(round.standingsValidatedAt);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("roundStandings.validateError"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
+        <CardTitle>{t("roundStandings.title")}</CardTitle>
+        {standings ? (
+          <Button variant="outline" size="sm" onClick={validate} disabled={busy || !canValidate}>
+            <RotateCw className="mr-2 h-4 w-4" />
+            {t("roundStandings.recalculate")}
+          </Button>
+        ) : (
+          <Button size="sm" onClick={validate} disabled={busy || !canValidate}>
+            {t("roundStandings.validateStandings")}
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {error && <p className="text-sm text-destructive">{error}</p>}
+
+        {!standings ? (
+          <p className="text-sm text-muted-foreground">
+            {canValidate
+              ? t("roundStandings.notValidatedHint")
+              : t("roundStandings.mustBeCompletedHint")}
+          </p>
+        ) : (
+          <>
+            <Input
+              value={search.query}
+              onChange={(e) => search.setQuery(e.target.value)}
+              placeholder={t("roundStandings.searchPlayer")}
+              className="max-w-xs"
+            />
+            <div className="overflow-x-auto rounded-lg border">
+              <table className="min-w-full divide-y divide-border text-sm">
+                <thead className="bg-muted">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-medium uppercase text-muted-foreground">#</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium uppercase text-muted-foreground">
+                      {t("roundStandings.headerPlayer")}
+                    </th>
+                    <th className="px-3 py-2 text-right text-xs font-medium uppercase text-muted-foreground">
+                      {t("roundStandings.headerPoints")}
+                    </th>
+                    <th className="px-3 py-2 text-right text-xs font-medium uppercase text-muted-foreground">
+                      {t("roundStandings.headerRecord")}
+                    </th>
+                    <th className="px-3 py-2 text-right text-xs font-medium uppercase text-muted-foreground">
+                      OMW%
+                    </th>
+                    <th className="px-3 py-2 text-right text-xs font-medium uppercase text-muted-foreground">
+                      {t("roundStandings.headerDiff")}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {search.pageItems.map((standing) => (
+                    <tr key={standing.playerId}>
+                      <td className="px-3 py-2">{standing.rank}</td>
+                      <td className="px-3 py-2 font-medium">
+                        <PlayerNameTag
+                          name={standing.displayName}
+                          discriminator={standing.discriminator}
+                        />
+                        {standing.playerStatus === "dropped" ? ` ${t("roundStandings.dropSuffix")}` : ""}
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono">{standing.matchPoints}</td>
+                      <td className="px-3 py-2 text-right font-mono">
+                        {standing.wins}/{standing.draws}/{standing.losses}
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono">
+                        {((standing.opponentMatchWinPercentage ?? 0) * 100).toFixed(1)}%
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono">
+                        {standing.gamesDiff > 0 ? `+${standing.gamesDiff}` : standing.gamesDiff}
+                      </td>
+                    </tr>
+                  ))}
+                  {search.pageItems.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-3 py-3 text-center text-muted-foreground">
+                        {t("roundStandings.noSearchResults")}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <TablePagination
+              page={search.page}
+              totalPages={search.totalPages}
+              total={search.total}
+              onPage={search.setPage}
+            />
+            {validatedAt && (
+              <p className="text-xs text-muted-foreground">
+                {t("roundStandings.validatedAt", {
+                  date: DateTime.fromISO(validatedAt)
+                    .toLocal()
+                    .setLocale(locale)
+                    .toFormat("dd/MM/yyyy HH:mm"),
+                })}
+              </p>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

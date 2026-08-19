@@ -11,29 +11,43 @@ import { Calendar, MapPin, Gamepad2, AlertCircle, Info, Plus } from "lucide-reac
 import { DateTime } from "luxon";
 import { Event } from "@/lib/types/Event";
 import {getTranslations} from "next-intl/server";
+import { connection } from "next/server";
 
 type EventsCalendarWrapperProps = {
   basePath?: string;
-  searchParams?: {
+  /**
+   * La promesse, pas sa valeur : la page la transmet sans l'attendre, pour que
+   * la lecture de l'URL ait lieu ici, sous la frontière `<Suspense>`. L'attendre
+   * en tête de page ferait sortir tout le reste de la coquille statique.
+   */
+  searchParams?: Promise<{
     month?: string;
     year?: string;
     gameId?: string;
-  };
+  }>;
 };
 
-export default async function EventsCalendarWrapper({ 
+export default async function EventsCalendarWrapper({
   basePath = "/",
-  searchParams = {},
+  searchParams,
 }: EventsCalendarWrapperProps) {
+  // Le calendrier s'ouvre sur le mois courant et sur les jeux que le visiteur
+  // suit : sa date et sa session ne se prérendent pas. Il rend donc à la
+  // requête, et c'est la frontière `<Suspense>` de la page qui garde la
+  // coquille statique.
+  await connection();
+
   const t = await getTranslations('EventsCalendar');
 
+  const params = (await searchParams) ?? {};
+
   const today = DateTime.now();
-  
+
   // Parse search params
-  const month = searchParams.month ? parseInt(searchParams.month, 10) : today.month;
-  const year = searchParams.year ? parseInt(searchParams.year, 10) : today.year;
+  const month = params.month ? parseInt(params.month, 10) : today.month;
+  const year = params.year ? parseInt(params.year, 10) : today.year;
   // Par défaut, afficher les jeux suivis
-  const gameId = searchParams.gameId || "followed";
+  const gameId = params.gameId || "followed";
   
   // Récupérer tous les jeux disponibles
   const allGames = await getAllGames();

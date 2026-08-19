@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { PolicyVoteType } from "@/lib/types/policies";
-import { votePolicy } from "@/app/[locale]/games/[gameSlugOrId]/policies/actions";
+import { votePolicy } from "@/app/[locale]/(app)/games/[gameSlugOrId]/policies/actions";
 
 export default function PolicyVoteButtons({
   policyId,
