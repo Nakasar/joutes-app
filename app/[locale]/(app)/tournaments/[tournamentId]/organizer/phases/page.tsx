@@ -1,17 +1,22 @@
+import { Suspense } from "react";
 import { getGameById } from "@/lib/db/games.ts";
 import { presetOptionsForGame, resolveGameTournamentDefaults } from "@/lib/tournaments/game-defaults.ts";
 import { PhasesSection } from "../PhasesSection.tsx";
 import { loadOrganizerContext } from "../organizerContext.ts";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
+import { CardSectionSkeleton } from "../OrganizerSkeletons.tsx";
 
-export default async function OrganizerPhasesPage({
-  params,
-}: {
-  params: Promise<{ tournamentId: string }>;
-}) {
+type Params = Promise<{ tournamentId: string }>;
+
+export default function OrganizerPhasesPage({ params }: { params: Params }) {
+  return (
+    <Suspense fallback={<div className="p-6"><CardSectionSkeleton cards={3} /></div>}>
+      <OrganizerPhasesPageSection params={params} />
+    </Suspense>
+  );
+}
+
+async function OrganizerPhasesPageSection({ params }: { params: Params }) {
   const { tournamentId } = await params;
   const { tournament, phases, rounds, players } = await loadOrganizerContext(tournamentId);
 

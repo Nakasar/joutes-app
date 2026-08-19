@@ -1,16 +1,21 @@
+import { Suspense } from "react";
 import { gameSupportsDecklistParsing } from "@/lib/tournaments/decklist-parsing.ts";
 import { FormBuilder } from "../FormBuilder.tsx";
 import { loadOrganizerContext } from "../organizerContext.ts";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
+import { CardSectionSkeleton } from "../OrganizerSkeletons.tsx";
 
-export default async function OrganizerFormPage({
-  params,
-}: {
-  params: Promise<{ tournamentId: string }>;
-}) {
+type Params = Promise<{ tournamentId: string }>;
+
+export default function OrganizerFormPage({ params }: { params: Params }) {
+  return (
+    <Suspense fallback={<div className="p-6"><CardSectionSkeleton cards={2} /></div>}>
+      <OrganizerFormPageSection params={params} />
+    </Suspense>
+  );
+}
+
+async function OrganizerFormPageSection({ params }: { params: Params }) {
   const { tournamentId } = await params;
   const { tournament } = await loadOrganizerContext(tournamentId);
 

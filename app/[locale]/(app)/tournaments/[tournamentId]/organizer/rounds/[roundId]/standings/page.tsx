@@ -1,18 +1,23 @@
+import { Suspense } from "react";
 import { listMatchesByRound } from "@/lib/db/tournaments.ts";
 import { RoundHeaderBar } from "../RoundHeaderBar.tsx";
 import { RoundStandingsPanel } from "../RoundStandingsPanel.tsx";
 import { RoundSubNav } from "../RoundSubNav.tsx";
 import { loadOrganizerRoundContext } from "../roundContext.ts";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
+import { RoundStandingsSkeleton } from "../../../OrganizerSkeletons.tsx";
 
-export default async function OrganizerRoundStandingsPage({
-  params,
-}: {
-  params: Promise<{ tournamentId: string; roundId: string }>;
-}) {
+type Params = Promise<{ tournamentId: string; roundId: string }>;
+
+export default function OrganizerRoundStandingsPage({ params }: { params: Params }) {
+  return (
+    <Suspense fallback={<RoundStandingsSkeleton />}>
+      <OrganizerRoundStandingsPageSection params={params} />
+    </Suspense>
+  );
+}
+
+async function OrganizerRoundStandingsPageSection({ params }: { params: Params }) {
   const { tournamentId, roundId } = await params;
   const { round, phase } = await loadOrganizerRoundContext(tournamentId, roundId);
   const roundMatches = await listMatchesByRound(tournamentId, roundId);
