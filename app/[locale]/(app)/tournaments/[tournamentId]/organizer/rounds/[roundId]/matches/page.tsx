@@ -5,13 +5,13 @@ import { RoundHeaderBar } from "../RoundHeaderBar.tsx";
 import { RoundSubNav } from "../RoundSubNav.tsx";
 import { loadOrganizerRoundContext } from "../roundContext.ts";
 
-import { TableSectionSkeleton } from "../../../OrganizerSkeletons.tsx";
+import { RoundMatchesSkeleton } from "../../../OrganizerSkeletons.tsx";
 
 type Params = Promise<{ tournamentId: string; roundId: string }>;
 
 export default function OrganizerRoundMatchesPage({ params }: { params: Params }) {
   return (
-    <Suspense fallback={<div className="p-6"><TableSectionSkeleton rows={10} columns={5} /></div>}>
+    <Suspense fallback={<RoundMatchesSkeleton />}>
       <OrganizerRoundMatchesPageSection params={params} />
     </Suspense>
   );

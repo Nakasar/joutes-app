@@ -1,16 +1,23 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { listMatchesByPhase, listMatchesByRound, listRounds } from "@/lib/db/tournaments.ts";
 import { BracketTree } from "../BracketTree.tsx";
 import { RoundHeaderBar } from "../RoundHeaderBar.tsx";
 import { RoundSubNav } from "../RoundSubNav.tsx";
 import { loadOrganizerRoundContext } from "../roundContext.ts";
+import { RoundBracketSkeleton } from "../../../OrganizerSkeletons.tsx";
 
+type Params = Promise<{ tournamentId: string; roundId: string }>;
 
-export default async function OrganizerRoundBracketPage({
-  params,
-}: {
-  params: Promise<{ tournamentId: string; roundId: string }>;
-}) {
+export default function OrganizerRoundBracketPage({ params }: { params: Params }) {
+  return (
+    <Suspense fallback={<RoundBracketSkeleton />}>
+      <OrganizerRoundBracketPageSection params={params} />
+    </Suspense>
+  );
+}
+
+async function OrganizerRoundBracketPageSection({ params }: { params: Params }) {
   const { tournamentId, roundId } = await params;
   const { round, phase, players } = await loadOrganizerRoundContext(tournamentId, roundId);
 

@@ -104,6 +104,113 @@ export function TableSectionSkeleton({
   );
 }
 
+/**
+ * Ossature commune aux trois écrans de ronde : bandeau collant (titre, minuteur
+ * et actions) puis la rangée d'onglets. Hauteurs relevées sur la vraie page :
+ * 71 px pour le bandeau, 40 px pour les onglets.
+ */
+function RoundChrome() {
+  return (
+    <>
+      <div className="sticky top-0 z-20 flex h-[71px] items-center justify-between gap-4 border-b bg-card/95 px-6">
+        <div className="space-y-2">
+          <div className="h-5 w-40 rounded bg-muted" />
+          <div className="h-3.5 w-52 rounded bg-muted" />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {Array.from({ length: 5 }, (_, i) => (
+            <div key={i} className="h-9 w-24 rounded bg-muted" />
+          ))}
+        </div>
+      </div>
+      <div className="px-6 pt-4">
+        <div className="flex h-10 w-fit gap-1 rounded-lg bg-muted p-1">
+          {Array.from({ length: 2 }, (_, i) => (
+            <div key={i} className="h-8 w-28 rounded bg-card" />
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+/**
+ * Colonne « À traiter » et « Activité ». Elle passe sous le contenu en dessous
+ * de `xl`, exactement comme `RoundSidePanel`.
+ */
+function RoundAside() {
+  return (
+    <div className="w-full shrink-0 space-y-5 border-t bg-card p-5 xl:w-[300px] xl:border-l xl:border-t-0">
+      <div className="space-y-2">
+        <div className="h-3 w-20 rounded bg-muted" />
+        <div className="h-24 rounded-xl border" />
+      </div>
+      <div className="space-y-2">
+        <div className="h-3 w-20 rounded bg-muted" />
+        <div className="h-16 rounded-xl border" />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Matchs d'une ronde : bandeau, onglets, puis deux colonnes — la grille des
+ * tables à gauche, « À traiter » à droite. La grille reprend les points de
+ * rupture réels (`md:grid-cols-2 2xl:grid-cols-3`) et la hauteur de carte,
+ * 117 px, pour que la bascule Grille/Tableau ne fasse pas sauter la page.
+ */
+export function RoundMatchesSkeleton() {
+  return (
+    <div className="animate-pulse" aria-hidden>
+      <RoundChrome />
+      <div className="flex min-h-0 flex-1 flex-col xl:flex-row">
+        <div className="min-w-0 flex-1 p-6 pb-28">
+          <div className="mb-4 h-[88px] rounded-xl border bg-card" />
+          <div className="mb-4 flex h-9 flex-wrap items-center justify-between gap-2">
+            <div className="h-9 w-56 rounded bg-muted" />
+            <div className="flex gap-2">
+              <div className="h-9 w-32 rounded bg-muted" />
+              <div className="h-9 w-36 rounded bg-muted" />
+            </div>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
+            {Array.from({ length: 8 }, (_, i) => (
+              <div key={i} className="h-[117px] overflow-hidden rounded-xl border bg-card" />
+            ))}
+          </div>
+        </div>
+        <RoundAside />
+      </div>
+    </div>
+  );
+}
+
+/** Classement d'une ronde : même ossature, tableau à la place de la grille. */
+export function RoundStandingsSkeleton() {
+  return (
+    <div className="animate-pulse" aria-hidden>
+      <RoundChrome />
+      <div className="p-6">
+        <Header actions={4} />
+        <Tiles />
+        <Rows count={8} columns={7} />
+      </div>
+    </div>
+  );
+}
+
+/** Arbre d'élimination : même ossature, un grand bloc à la place du tableau. */
+export function RoundBracketSkeleton() {
+  return (
+    <div className="animate-pulse" aria-hidden>
+      <RoundChrome />
+      <div className="space-y-4 p-6">
+        <div className="h-[420px] rounded-xl border bg-card" />
+      </div>
+    </div>
+  );
+}
+
 /** Section en cartes : en-tête puis blocs empilés. */
 export function CardSectionSkeleton({
   actions = 1,
