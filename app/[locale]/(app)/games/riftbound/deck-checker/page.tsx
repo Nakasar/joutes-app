@@ -4,7 +4,6 @@ import {getTranslations} from "next-intl/server";
 import {Button} from "@/components/ui/button.tsx";
 import { Link } from "@/i18n/navigation.ts";
 import {GameToolsNavBar} from "@/components/games/GameToolsNavBar.tsx";
-import {Game} from "@/lib/types/Game.ts";
 import {notFound} from "next/navigation";
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 
