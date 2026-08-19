@@ -788,6 +788,7 @@
     },
     "DeckChecker": {
       "title": "Controllore mazzo Riftbound",
+      "back": "Torna al portale del gioco",
       "description": "Verifica la legalità del tuo mazzo e ottieni informazioni sulle sue carte e sui loro ruling",
       "form": {
         "label": "Lista mazzo (testo o link Piltover Archive)",
@@ -942,6 +943,64 @@
     "OTP": "Codice di verifica",
     "verifyPending": "Verifica in corso...",
     "verifyCode": "Verifica codice"
+  },
+  "EventCreate": {
+    "page": {
+      "title": "Nuovo evento",
+      "description": "Crea un evento per riunire i giocatori",
+      "noOwnedLairs": "Non possiedi alcun luogo. Il tuo evento sarà privato e visibile solo a te e ai partecipanti che inviterai."
+    },
+    "form": {
+      "title": "Crea un evento",
+      "descriptionWithLairs": "Crea un evento pubblico collegato a uno dei tuoi luoghi, oppure un evento privato",
+      "descriptionWithoutLairs": "Crea un evento privato (non possiedi alcun luogo)",
+      "fields": {
+        "name": {
+          "label": "Nome dell'evento *",
+          "placeholder": "Torneo Magic: The Gathering"
+        },
+        "game": {
+          "label": "Gioco *",
+          "placeholder": "Seleziona un gioco"
+        },
+        "lair": {
+          "label": "Luogo (facoltativo)",
+          "placeholder": "Evento privato (senza luogo)",
+          "help": "Se non selezioni alcun luogo, l'evento sarà privato e visibile solo a te e ai partecipanti."
+        },
+        "startDate": {
+          "label": "Data e ora di inizio *"
+        },
+        "endDate": {
+          "label": "Data e ora di fine *"
+        },
+        "url": {
+          "label": "URL (facoltativo)",
+          "placeholder": "https://example.com/event"
+        },
+        "price": {
+          "label": "Prezzo (€, facoltativo)",
+          "placeholder": "0.00"
+        },
+        "maxParticipants": {
+          "label": "Numero massimo di partecipanti (facoltativo)",
+          "placeholder": "Illimitato"
+        },
+        "preRegistration": {
+          "label": "Attiva la pre-iscrizione",
+          "help": "Se attiva, i partecipanti che si iscrivono avranno lo stato « Pre-iscritto » e dovranno essere convalidati dall'organizzatore."
+        }
+      },
+      "actions": {
+        "create": "Crea l'evento",
+        "creating": "Creazione...",
+        "cancel": "Annulla"
+      },
+      "errors": {
+        "generic": "Si è verificato un errore",
+        "createFailed": "Si è verificato un errore durante la creazione dell'evento"
+      }
+    }
   },
   "Lairs": {
     "page": {
