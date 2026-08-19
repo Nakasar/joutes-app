@@ -6,6 +6,7 @@ import { GameToolsNavBar } from "@/components/games/GameToolsNavBar.tsx";
 import db from "@/lib/mongodb.ts";
 import { Game } from "@/lib/types/Game.ts";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import TrackerClient from "./TrackerClient.tsx";
 
 // TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
@@ -29,6 +30,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RiftboundTrackerPage() {
+  // TODO: Cache Components adoption. Added to unblock the build: remove this connection() to re-trigger the error and review the fix options.
+  await connection();
   const t = await getTranslations("Games.Tracker");
 
   const game = await db.collection<Game>("games").findOne({ slug: "riftbound" });
