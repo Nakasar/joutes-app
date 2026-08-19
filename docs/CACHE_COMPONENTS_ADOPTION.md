@@ -17,7 +17,7 @@ Next 16.3.1, `cacheComponents: true` sur `main`.
 
 891 pages construites. Avant l'adoption : **zéro** route avec coquille statique.
 
-**121 pages portent encore un opt-out `export const instant = false`** — 120
+**117 pages portent encore un opt-out `export const instant = false`** — 116
 marqueurs `TODO: Cache Components adoption`, plus le layout du portail
 organisateur, qui est un blocage assumé et porte une raison au lieu d'un TODO.
 Sept pages portent un déblocage `await connection()`.
@@ -200,14 +200,37 @@ Mongo suffit à rouvrir le piège, sans qu'aucune porte locale ne le signale.
 qu'au clic. Aucune option de configuration ne l'évite (4.13.7 non plus).
 
 Conséquence : tout composant client contenant des liens bloque les routes à
-segment dynamique. Le `Header` et `WebMcpTools` sont derrière une frontière
-`<Suspense>` pour cette raison. **Si une route à paramètre refuse de prérender,
-chercher un composant client porteur de liens avant toute autre hypothèse.**
+segment dynamique. **Si une route à paramètre refuse de prérender, chercher un
+composant client porteur de liens avant toute autre hypothèse.**
+
+Le layout en contient trois, et ils ont chacun leur frontière : `WebMcpTools`,
+le `Header`, et le pied de page.
 
 Corollaire pour les replis : un repli ne doit contenir **aucun `Link` localisé**,
 sinon il rebloque ce que la frontière vient de débloquer (voir
-`components/HeaderFallback.tsx`, `components/EventsCalendarSkeleton.tsx` et
-`OrganizerSkeletons.tsx`).
+`components/HeaderFallback.tsx`, `components/FooterFallback.tsx`,
+`components/EventsCalendarSkeleton.tsx`, `OrganizerSkeletons.tsx` et
+`PlayerSkeletons.tsx`).
+
+#### Un bloqueur partagé se cache derrière les opt-outs
+
+Le pied de page a été le troisième trouvé, et le plus coûteux à repérer : il
+bloquait **toutes** les routes à segment dynamique, soit la majeure partie de ce
+qui restait à adopter, et personne ne l'avait vu.
+
+La raison vaut d'être retenue : tant que ces routes portaient un opt-out, aucune
+n'exerçait le pied de page au prérendu. Il a fallu qu'un premier écran perde le
+sien — le portail joueur — pour que le build tombe. Et la trace ne pointait pas
+la page, mais `footer`.
+
+    at div  →  at footer  →  at body  →  at html
+
+**Une trace qui remonte au-dessus de la page désigne le layout, pas la route.**
+Chercher dans la page ce qui vient du cadre fait perdre une passe entière.
+
+La frontière est gratuite pour les routes statiques : leur chemin est connu au
+prérendu, le vrai composant ne suspend pas et le repli ne s'affiche jamais. La
+table des routes le confirme, identique avant et après.
 
 ### Dessiner un squelette
 
@@ -227,7 +250,7 @@ ignorait la bascule Grille/Tableau et toute la colonne « À traiter ».
 
 ## Ce qui reste
 
-Répartition des 121 opt-outs par ce qui bloque la page :
+Répartition des 117 opt-outs par ce qui bloque la page :
 
 | ce que lit `page.tsx` | pages |
 |---|---|
@@ -235,19 +258,18 @@ Répartition des 121 opt-outs par ce qui bloque la page :
 | session + base | 25 |
 | paramètres + base | 9 |
 | base seule | 8 |
-| paramètres seuls, écran client | 6 |
 | session seule | 5 |
 | rien (lecture dans un composant client) | 4 |
 | paramètres seuls | 3 |
+| paramètres seuls, écran client | 2 |
 | écran client sans lecture | 2 |
 | paramètres + session | 1 |
 
 **Plus aucun lot mécanique n'est disponible.** Chaque route restante demande de
 décider ce qui appartient à la coquille et ce qui arrive en flux.
 
-Les 58 du haut sont le gros morceau. Le portail joueur
-(`/tournaments/[tournamentId]/player/**`) est le prochain ensemble cohérent : il
-a la même forme que le portail organisateur, qui vient d'être fait.
+Les 58 du haut sont le gros morceau, et ils sont désormais abordables : le pied
+de page ne les bloque plus.
 
 ### Le portail organisateur, comme modèle
 
@@ -263,20 +285,29 @@ Seize sections adoptées, une seule ligne de conduite, transposable telle quelle
   prérend à froid ; tout le gain est en navigation client, invisible au build
   comme à `inspect-shells.mjs`.
 
-### Les dix écrans entièrement client
+### Les écrans entièrement client
 
 ```
-/events/[eventId]/join          /tournaments/[tournamentId]/player
-/friends/add/[code]             /tournaments/[tournamentId]/player/form
-/lairs/invite/[code]            /tournaments/[tournamentId]/player/players
-/play-groups/[playGroupId]      /tournaments/[tournamentId]/player/standings
-/play-groups/[playGroupId]/members   /tournaments/[tournamentId]/timer
+/events/[eventId]/join               /tournaments/[tournamentId]/timer
+/friends/add/[code]                  /play-groups/[playGroupId]
+/lairs/invite/[code]                 /play-groups/[playGroupId]/members
 ```
 
-Leur contenu tient entièrement au paramètre d'URL. Un `<Suspense>` global n'y
-produirait que la coquille vide contre laquelle la documentation met en garde :
-il leur faut de **vrais squelettes**, dessinés écran par écran, et mesurés
-contre la vraie page comme celui du calendrier.
+Leur contenu tient entièrement au paramètre d'URL, lu côté client avec
+`use(params)`. L'enveloppe serveur ne sert qu'à porter l'opt-out — ou, une fois
+adoptée, la frontière et sa silhouette.
+
+**Les quatre écrans du portail joueur ont été faits ; ils servent de modèle.**
+Contrairement au portail organisateur, ici le gain se voit au chargement à
+froid : rien ne bloque au-dessus, donc la silhouette part vraiment dans la
+coquille — de rien à ~20 Ko, avec le cadre du portail dedans.
+
+La recette est celle de
+[`blocking-prerender-current-time-client`](https://nextjs.org/docs/messages/blocking-prerender-current-time-client) :
+frontière posée depuis l'enveloppe serveur, silhouette en repli. Un `<Suspense>`
+global ne suffit pas s'il enveloppe un repli vide — c'est la coquille vide
+contre laquelle la documentation met en garde. Il faut de **vrais squelettes**,
+dessinés écran par écran et mesurés contre la vraie page.
 
 ## Ce qui a été vérifié au navigateur
 
@@ -292,8 +323,12 @@ une porte utilisable.
   ce qui montre exactement le premier rendu. Squelette et contenu réel à 1310 px.
 - **Le portail organisateur**, les seize sections ouvertes une à une dans un
   navigateur authentifié, sur un tournoi réel de 19 joueurs et 9 rondes.
+- **Le portail joueur**, ses quatre écrans en 375 px, silhouette et écran réel
+  comparés repère par repère : en-tête 133 px, haut du contenu 182 px, blocs de
+  « mon match » à 294 / 56 / 117 / 36, barre d'onglets 70 px.
 
-Reste à vérifier : les squelettes des dix écrans client, quand ils seront écrits.
+Reste à vérifier : les squelettes des six écrans client restants, quand ils
+seront écrits.
 
 ### Voir un repli qui ne dure que quelques millisecondes
 
