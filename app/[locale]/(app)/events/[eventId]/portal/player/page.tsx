@@ -1,14 +1,12 @@
+import { Suspense } from "react";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events.ts";
 import { getPortalSettings, getMatchResults } from "../actions.ts";
-import PlayerLayoutServer from "./components/PlayerLayoutServer.tsx";
 import PlayerCurrentMatch from "./components/PlayerCurrentMatch.tsx";
+import { EventSectionSkeleton } from "../organizer/components/EventPortalSkeletons.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 type PlayerPortalPageProps = {
   params: Promise<{
@@ -16,7 +14,20 @@ type PlayerPortalPageProps = {
   }>;
 };
 
-export default async function PlayerPortalPage({ params }: PlayerPortalPageProps) {
+/**
+ * La promesse de `params` descend sans être attendue : l'événement est un segment
+ * dynamique. Elle s'attend sous la frontière, avec la session et les données. Le
+ * cadre du portail vient du layout et reste en place d'une section à l'autre.
+ */
+export default function PlayerPortalPage({ params }: PlayerPortalPageProps) {
+  return (
+    <Suspense fallback={<EventSectionSkeleton rows={3} />}>
+      <PlayerPortalPageSection params={params} />
+    </Suspense>
+  );
+}
+
+async function PlayerPortalPageSection({ params }: PlayerPortalPageProps) {
   const { eventId } = await params;
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -55,13 +66,11 @@ export default async function PlayerPortalPage({ params }: PlayerPortalPageProps
   const matches = matchesResult.success ? matchesResult.data || [] : [];
 
   return (
-    <PlayerLayoutServer event={event} settings={settings}>
-      <PlayerCurrentMatch
-        event={event}
-        settings={settings}
-        userId={session.user.id}
-        matches={matches}
-      />
-    </PlayerLayoutServer>
+    <PlayerCurrentMatch
+      event={event}
+      settings={settings}
+      userId={session.user.id}
+      matches={matches}
+    />
   );
 }

@@ -1,15 +1,13 @@
+import { Suspense } from "react";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events.ts";
 import { getPortalSettings, getMatchResults, getPhaseStandings } from "../../actions.ts";
-import PlayerLayoutServer from "../components/PlayerLayoutServer.tsx";
 import PlayerStandings from "../components/PlayerStandings.tsx";
 import type { EnrichedStanding } from "../../types.ts";
+import { EventTableSkeleton } from "../../organizer/components/EventPortalSkeletons.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 type PlayerStandingsPageProps = {
   params: Promise<{
@@ -17,7 +15,20 @@ type PlayerStandingsPageProps = {
   }>;
 };
 
-export default async function PlayerStandingsPage({ params }: PlayerStandingsPageProps) {
+/**
+ * La promesse de `params` descend sans être attendue : l'événement est un segment
+ * dynamique. Elle s'attend sous la frontière, avec la session et les données. Le
+ * cadre du portail vient du layout et reste en place d'une section à l'autre.
+ */
+export default function PlayerStandingsPage({ params }: PlayerStandingsPageProps) {
+  return (
+    <Suspense fallback={<EventTableSkeleton rows={8} columns={5} />}>
+      <PlayerStandingsPageSection params={params} />
+    </Suspense>
+  );
+}
+
+async function PlayerStandingsPageSection({ params }: PlayerStandingsPageProps) {
   const { eventId } = await params;
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -53,14 +64,12 @@ export default async function PlayerStandingsPage({ params }: PlayerStandingsPag
   }
 
   return (
-    <PlayerLayoutServer event={event} settings={settings}>
-      <PlayerStandings
-        event={event}
-        settings={settings}
-        userId={session.user.id}
-        matches={matches}
-        standings={standings}
-      />
-    </PlayerLayoutServer>
+    <PlayerStandings
+      event={event}
+      settings={settings}
+      userId={session.user.id}
+      matches={matches}
+      standings={standings}
+    />
   );
 }

@@ -1,16 +1,14 @@
+import { Suspense } from "react";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events.ts";
 import { getPortalSettings, getPhaseStandings } from "../../actions.ts";
 import { getEventParticipants } from "../../participant-actions.ts";
-import OrganizerLayoutServer from "../components/OrganizerLayoutServer.tsx";
 import OrganizerStandings from "../components/OrganizerStandings.tsx";
 import type { EnrichedStanding } from "../../types.ts";
+import { EventTableSkeleton } from "../components/EventPortalSkeletons.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 type OrganizerStandingsPageProps = {
   params: Promise<{
@@ -18,7 +16,21 @@ type OrganizerStandingsPageProps = {
   }>;
 };
 
-export default async function OrganizerStandingsPage({ params }: OrganizerStandingsPageProps) {
+/**
+ * La promesse de `params` descend sans être attendue : l'événement est un segment
+ * dynamique, donc la lire ici retiendrait toute la section. Elle s'attend sous la
+ * frontière, avec la session et les données. Le cadre du portail vient du layout
+ * et reste en place d'une section à l'autre.
+ */
+export default function OrganizerStandingsPage({ params }: OrganizerStandingsPageProps) {
+  return (
+    <Suspense fallback={<EventTableSkeleton rows={8} columns={5} />}>
+      <OrganizerStandingsPageSection params={params} />
+    </Suspense>
+  );
+}
+
+async function OrganizerStandingsPageSection({ params }: OrganizerStandingsPageProps) {
   const { eventId } = await params;
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -63,13 +75,11 @@ export default async function OrganizerStandingsPage({ params }: OrganizerStandi
   const participants = participantsResult.success ? participantsResult.data || [] : [];
 
   return (
-    <OrganizerLayoutServer event={event} settings={settings}>
-      <OrganizerStandings
-        event={event}
-        settings={settings}
-        standings={standings}
-        participants={participants}
-      />
-    </OrganizerLayoutServer>
+    <OrganizerStandings
+      event={event}
+      settings={settings}
+      standings={standings}
+      participants={participants}
+    />
   );
 }

@@ -4,9 +4,14 @@ import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events.ts";
 import { getTranslations } from "next-intl/server";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+// Blocage délibéré, pas une étape d'adoption restante.
+//
+// Cette page n'affiche rien : elle authentifie, puis aiguille vers le portail
+// organisateur ou joueur selon le rôle. Il n'y a pas de coquille qui vaille la
+// peine d'être prérendue avant que ce choix soit fait, et les deux layouts qui
+// portent les cadres sont en dessous, pas au-dessus d'elle.
 export const instant = false;
+
 
 type PortalPageProps = {
   params: Promise<{

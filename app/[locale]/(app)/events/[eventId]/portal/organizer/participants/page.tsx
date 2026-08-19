@@ -1,23 +1,29 @@
+import { Suspense } from "react";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events.ts";
-import { getPortalSettings } from "../../actions.ts";
 import { getEventParticipants } from "../../participant-actions.ts";
-import OrganizerLayoutServer from "../components/OrganizerLayoutServer.tsx";
 import OrganizerParticipants from "../components/OrganizerParticipants.tsx";
+import { EventSectionSkeleton } from "../components/EventPortalSkeletons.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
+type Params = Promise<{ eventId: string }>;
 
-type OrganizerParticipantsPageProps = {
-  params: Promise<{
-    eventId: string;
-  }>;
-};
+/**
+ * La promesse de `params` descend sans être attendue : l'événement est un segment
+ * dynamique, donc la lire ici retiendrait toute la section. Elle s'attend sous la
+ * frontière, avec la session et la liste des participants. Le cadre du portail
+ * vient du layout et reste en place d'une section à l'autre.
+ */
+export default function OrganizerParticipantsPage({ params }: { params: Params }) {
+  return (
+    <Suspense fallback={<EventSectionSkeleton rows={8} />}>
+      <ParticipantsSection params={params} />
+    </Suspense>
+  );
+}
 
-export default async function OrganizerParticipantsPage({ params }: OrganizerParticipantsPageProps) {
+async function ParticipantsSection({ params }: { params: Params }) {
   const { eventId } = await params;
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -42,20 +48,15 @@ export default async function OrganizerParticipantsPage({ params }: OrganizerPar
     redirect(`/events/${eventId}/portal/player`);
   }
 
-  const settingsResult = await getPortalSettings(eventId);
-  const settings = settingsResult.success ? settingsResult.data : null;
-
   const participantsResult = await getEventParticipants(eventId);
   const participants = participantsResult.success ? participantsResult.data || [] : [];
 
   return (
-    <OrganizerLayoutServer event={event} settings={settings}>
-      <OrganizerParticipants 
-        eventId={event.id} 
-        participants={participants} 
-        runningState={event.runningState}
-        preRegistration={event.preRegistration}
-      />
-    </OrganizerLayoutServer>
+    <OrganizerParticipants
+      eventId={event.id}
+      participants={participants}
+      runningState={event.runningState}
+      preRegistration={event.preRegistration}
+    />
   );
 }
