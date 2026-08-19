@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { updatePolicy } from "@/app/[locale]/games/[gameSlugOrId]/policies/actions";
+import { updatePolicy } from "@/app/[locale]/(app)/games/[gameSlugOrId]/policies/actions";
 import { Policy, PolicyTranslationInput } from "@/lib/types/policies";
 import { Pencil, X } from "lucide-react";
 import { useTranslations } from "next-intl";

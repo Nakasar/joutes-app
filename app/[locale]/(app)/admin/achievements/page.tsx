@@ -1,0 +1,71 @@
+import { getAllAchievements } from "@/lib/db/achievements.ts";
+import { Button } from "@/components/ui/button.tsx";
+import { Plus } from "lucide-react";
+import { Link } from "@/i18n/navigation.ts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
+import { Badge } from "@/components/ui/badge.tsx";
+import { AchievementIcon } from "@/components/AchievementIcon.tsx";
+import { DeleteAchievementButton } from "@/app/[locale]/(app)/admin/achievements/DeleteAchievementButton.tsx";
+import { connection } from "next/server";
+
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
+export default async function AdminAchievementsPage() {
+  // TODO: Cache Components adoption. Added to unblock the build: remove this connection() to re-trigger the error and review the fix options.
+  await connection();
+  const achievements = await getAllAchievements();
+
+  return (
+    <div className="p-8 max-w-6xl mx-auto">
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">Gestion des Succès</h1>
+          <Button asChild>
+            <Link href="/admin/achievements/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Nouveau Succès
+            </Link>
+          </Button>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {achievements.map((achievement) => (
+            <Card key={achievement.id}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  {achievement.name}
+                </CardTitle>
+                <AchievementIcon
+                  icon={achievement.icon}
+                  iconImage={achievement.iconImage}
+                  name={achievement.name}
+                  size={32}
+                />
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm mb-4 h-10 overflow-hidden">{achievement.description}</p>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex gap-2">
+                    <Badge variant="secondary">{achievement.points} pts</Badge>
+                    {achievement.category && <Badge variant="outline">{achievement.category}</Badge>}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link href={`/admin/achievements/${achievement.id}/edit`}>
+                        Editer
+                      </Link>
+                    </Button>
+                    <DeleteAchievementButton id={achievement.id} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+

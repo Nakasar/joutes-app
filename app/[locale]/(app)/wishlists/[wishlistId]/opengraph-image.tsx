@@ -1,0 +1,36 @@
+import { buildOgImage, buildWishlistOgImage, CARD_GRID_MAX_ITEMS, type CardGridItem } from "@/lib/og.tsx";
+import { getWishlistById, getWishlistItems, getWishlistOwnerInfo } from "@/lib/db/wishlists.ts";
+
+export const alt = "Liste de souhaits - Joutes";
+export const size = { width: 1200, height: 630 };
+export const contentType = "image/png";
+
+export default async function Image({ params }: { params: Promise<{ wishlistId: string }> }) {
+  const { wishlistId } = await params;
+  const wishlist = await getWishlistById(wishlistId);
+
+  // Une wishlist introuvable ou privée ne doit pas divulguer son contenu à un
+  // crawler de réseau social non authentifié : on retombe sur le mockup générique.
+  if (!wishlist || wishlist.visibility === "private") {
+    return buildOgImage({
+      title: "Liste de souhaits",
+      subtitle: "Suivez les cartes recherchées par la communauté Joutes.",
+      variant: "wishlists",
+    });
+  }
+
+  const [{ items }, ownerInfo] = await Promise.all([
+    getWishlistItems(wishlistId, { page: 1, limit: CARD_GRID_MAX_ITEMS }),
+    getWishlistOwnerInfo(wishlist),
+  ]);
+  const cardItems: CardGridItem[] = items
+    .filter((item) => !!item.image)
+    .map((item) => ({ name: item.name, image: item.image?.split('?')[0], quantity: item.quantity }));
+
+  return buildWishlistOgImage({
+    wishlistName: wishlist.name,
+    ownerLabel: ownerInfo?.label,
+    totalCount: wishlist.itemsCount,
+    items: cardItems,
+  });
+}

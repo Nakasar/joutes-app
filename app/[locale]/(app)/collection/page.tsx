@@ -1,0 +1,40 @@
+import { auth } from "@/lib/auth.ts";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
+import { Metadata } from "next/types";
+import { getCollectionOverview } from "@/lib/db/collection.ts";
+import CollectionOverview from "./CollectionOverview.tsx";
+
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("Collection");
+  return {
+    title: t("metadata.title"),
+    description: t("metadata.description"),
+    keywords: ["collection de cartes", "suivi de collection", "jeux de cartes à collectionner", "master set", "cartes possédées"],
+    openGraph: {
+      title: `${t("metadata.title")} - Joutes`,
+      description: t("metadata.description"),
+    },
+  };
+}
+
+export default async function CollectionPage() {
+  const session = await auth.api.getSession({ headers: await headers() });
+
+  if (!session?.user?.id) {
+    redirect("/login");
+  }
+
+  const overview = await getCollectionOverview({ type: "user", id: session.user.id });
+
+  return (
+    <div className="container mx-auto p-4 sm:p-6">
+      <CollectionOverview initialOverview={overview} valuePath="/api/collection/value" />
+    </div>
+  );
+}
