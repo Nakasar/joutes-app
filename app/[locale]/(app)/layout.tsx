@@ -5,6 +5,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "../../globals.css";
 import Header from "@/components/Header.tsx";
 import HeaderFallback from "@/components/HeaderFallback.tsx";
+import FooterFallback from "@/components/FooterFallback.tsx";
 import { DateTime } from "luxon";
 import { cacheLife } from "next/cache";
 import { Link } from "@/i18n/navigation.ts";
@@ -133,6 +134,13 @@ export default async function RootLayout({
               <main className="flex-1">
                 {children}
               </main>
+              {/* Même raison que pour l'en-tête : les liens localisés du pied
+                  lisent le chemin courant, inconnu au prérendu d'une route à
+                  segment dynamique. C'était le dernier des trois à ne pas avoir
+                  sa frontière, et il bloquait à lui seul tout ce qui reste à
+                  adopter. Sur une route statique le chemin est connu, le vrai
+                  pied ne suspend pas et le repli ne s'affiche jamais. */}
+              <Suspense fallback={<FooterFallback />}>
               <footer data-print-hidden className="border-t py-8 mt-auto bg-muted/30">
                 <div className="container mx-auto px-4">
                   <div className="flex flex-col md:flex-row justify-between items-center gap-6">
@@ -214,6 +222,7 @@ export default async function RootLayout({
                   </div>
                 </div>
               </footer>
+              </Suspense>
             </div>
             <Toaster />
           </ThemeProvider>
