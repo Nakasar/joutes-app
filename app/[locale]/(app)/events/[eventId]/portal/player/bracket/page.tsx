@@ -3,10 +3,11 @@ import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events.ts";
-import { getPortalSettings, getMatchResults } from "../../actions.ts";
+import { getMatchResults } from "../../actions.ts";
 import { getEventParticipants } from "../../participant-actions.ts";
 import PlayerBracket from "../components/PlayerBracket.tsx";
 import { EventBracketSkeleton } from "../../organizer/components/EventPortalSkeletons.tsx";
+import { readPortalSettings } from "../../portalSettings.ts";
 
 
 type PlayerBracketPageProps = {
@@ -51,8 +52,7 @@ async function PlayerBracketPageSection({ params }: PlayerBracketPageProps) {
     redirect(`/events/${eventId}`);
   }
 
-  const settingsResult = await getPortalSettings(eventId);
-  const settings = settingsResult.success ? settingsResult.data : null;
+  const settings = await readPortalSettings(eventId);
 
   const matchesResult = await getMatchResults(eventId);
   const matches = matchesResult.success ? matchesResult.data || [] : [];

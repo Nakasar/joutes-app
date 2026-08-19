@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { getEventById } from "@/lib/db/events.ts";
-import { getPortalSettings } from "../actions.ts";
+import { readPortalSettings } from "../portalSettings.ts";
 import PlayerLayoutServer from "./components/PlayerLayoutServer.tsx";
 
 // Blocage délibéré, pas une étape d'adoption restante.
@@ -48,8 +48,7 @@ export default async function EventPlayerLayout({
     notFound();
   }
 
-  const settingsResult = await getPortalSettings(eventId);
-  const settings = settingsResult.success ? settingsResult.data : null;
+  const settings = await readPortalSettings(eventId);
 
   return (
     <PlayerLayoutServer event={event} settings={settings}>

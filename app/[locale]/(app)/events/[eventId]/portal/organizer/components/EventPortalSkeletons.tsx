@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 /**
  * Silhouettes des sections du portail d'événement.
  *
@@ -15,7 +17,7 @@
  * vient de rendre instantanée (voir `components/HeaderFallback.tsx`).
  */
 
-function SectionCard({ children }: { children: React.ReactNode }) {
+function SectionCard({ children }: { children: ReactNode }) {
   return (
     <div className="flex animate-pulse flex-col gap-6 rounded-xl border bg-card py-6" aria-hidden>
       <div className="grid auto-rows-min gap-1.5 px-6">

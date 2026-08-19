@@ -3,10 +3,11 @@ import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events.ts";
-import { getPortalSettings, getMatchResults, getPhaseStandings } from "../../actions.ts";
+import { getMatchResults, getPhaseStandings } from "../../actions.ts";
 import PlayerStandings from "../components/PlayerStandings.tsx";
 import type { EnrichedStanding } from "../../types.ts";
 import { EventTableSkeleton } from "../../organizer/components/EventPortalSkeletons.tsx";
+import { readPortalSettings } from "../../portalSettings.ts";
 
 
 type PlayerStandingsPageProps = {
@@ -51,8 +52,7 @@ async function PlayerStandingsPageSection({ params }: PlayerStandingsPageProps) 
     redirect(`/events/${eventId}`);
   }
 
-  const settingsResult = await getPortalSettings(eventId);
-  const settings = settingsResult.success ? settingsResult.data : null;
+  const settings = await readPortalSettings(eventId);
 
   const matchesResult = await getMatchResults(eventId);
   const matches = matchesResult.success ? matchesResult.data || [] : [];

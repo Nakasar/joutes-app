@@ -3,10 +3,11 @@ import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events.ts";
-import { getPortalSettings, getMatchResults } from "../../actions.ts";
+import { getMatchResults } from "../../actions.ts";
 import { getEventParticipants } from "../../participant-actions.ts";
 import OrganizerMatches from "../components/OrganizerMatches.tsx";
 import { EventTableSkeleton } from "../components/EventPortalSkeletons.tsx";
+import { readPortalSettings } from "../../portalSettings.ts";
 
 
 type OrganizerMatchesPageProps = {
@@ -54,8 +55,7 @@ async function OrganizerMatchesPageSection({ params }: OrganizerMatchesPageProps
     redirect(`/events/${eventId}/portal/player`);
   }
 
-  const settingsResult = await getPortalSettings(eventId);
-  const settings = settingsResult.success ? settingsResult.data : null;
+  const settings = await readPortalSettings(eventId);
 
   if (!settings) {
     return (

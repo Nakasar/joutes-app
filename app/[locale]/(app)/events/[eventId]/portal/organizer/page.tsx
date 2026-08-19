@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events.ts";
-import { getPortalSettings } from "../actions.ts";
+import { readPortalSettings } from "../portalSettings.ts";
 import OrganizerSettings from "./components/OrganizerSettings.tsx";
 import { EventFormSkeleton } from "./components/EventPortalSkeletons.tsx";
 
@@ -53,8 +53,7 @@ async function OrganizerPortalPageSection({ params }: OrganizerPortalPageProps) 
     redirect(`/events/${eventId}/portal/player`);
   }
 
-  const settingsResult = await getPortalSettings(eventId);
-  const settings = settingsResult.success ? settingsResult.data : null;
+  const settings = await readPortalSettings(eventId);
 
   return (
     <OrganizerSettings event={event} settings={settings} />

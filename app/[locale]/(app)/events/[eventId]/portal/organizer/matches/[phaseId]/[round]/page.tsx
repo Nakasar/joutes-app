@@ -7,6 +7,7 @@ import { getPortalSettings, getMatchResults } from "../../../../actions.ts";
 import { getEventParticipants } from "../../../../participant-actions.ts";
 import OrganizerMatches from "../../../components/OrganizerMatches.tsx";
 import { EventTableSkeleton } from "../../../components/EventPortalSkeletons.tsx";
+import { readPortalSettings } from "../../../../portalSettings.ts";
 
 
 type OrganizerMatchesRoundPageProps = {

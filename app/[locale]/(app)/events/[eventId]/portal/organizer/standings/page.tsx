@@ -8,6 +8,7 @@ import { getEventParticipants } from "../../participant-actions.ts";
 import OrganizerStandings from "../components/OrganizerStandings.tsx";
 import type { EnrichedStanding } from "../../types.ts";
 import { EventTableSkeleton } from "../components/EventPortalSkeletons.tsx";
+import { readPortalSettings } from "../../portalSettings.ts";
 
 
 type OrganizerStandingsPageProps = {

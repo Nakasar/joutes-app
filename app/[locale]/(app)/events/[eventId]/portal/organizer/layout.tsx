@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { getEventById } from "@/lib/db/events.ts";
-import { getPortalSettings } from "../actions.ts";
 import OrganizerLayoutServer from "./components/OrganizerLayoutServer.tsx";
+import { readPortalSettings } from "../portalSettings.ts";
 
 // Blocage délibéré, pas une étape d'adoption restante.
 //
@@ -54,8 +54,7 @@ export default async function EventOrganizerLayout({
   // `getPortalSettings` renvoie un échec plutôt que de lever quand la session
   // manque : le cadre retombe alors sur son avertissement « portail non
   // configuré », que la redirection de la page emporte de toute façon.
-  const settingsResult = await getPortalSettings(eventId);
-  const settings = settingsResult.success ? settingsResult.data : null;
+  const settings = await readPortalSettings(eventId);
 
   return (
     <OrganizerLayoutServer event={event} settings={settings}>

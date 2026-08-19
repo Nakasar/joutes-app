@@ -6,6 +6,7 @@ import { getEventById } from "@/lib/db/events.ts";
 import { getPortalSettings, getMatchResults } from "../actions.ts";
 import PlayerCurrentMatch from "./components/PlayerCurrentMatch.tsx";
 import { EventSectionSkeleton } from "../organizer/components/EventPortalSkeletons.tsx";
+import { readPortalSettings } from "../portalSettings.ts";
 
 
 type PlayerPortalPageProps = {
