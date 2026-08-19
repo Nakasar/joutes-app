@@ -1,17 +1,12 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Button } from "@/components/ui/button.tsx";
 import { Link } from "@/i18n/navigation.ts";
 import { GameToolsNavBar } from "@/components/games/GameToolsNavBar.tsx";
-import db from "@/lib/mongodb.ts";
-import { Game } from "@/lib/types/Game.ts";
 import { notFound } from "next/navigation";
-import { connection } from "next/server";
 import TrackerClient from "./TrackerClient.tsx";
+import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Games.Tracker");
@@ -29,12 +24,25 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function RiftboundTrackerPage() {
-  // TODO: Cache Components adoption. Added to unblock the build: remove this connection() to re-trigger the error and review the fix options.
-  await connection();
+/**
+ * Le suivi de partie ne dépend ni de la session ni de l'URL : la lecture du jeu
+ * étant en cache, la page prérend entièrement. Le `await connection()` qui était
+ * ici débloquait le pilote Mongo au prix du rendu à la requête.
+ */
+export default async function RiftboundTrackerPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  // Sans cet appel, les fonctions serveur de next-intl lisent la langue à la
+  // requête, ce qui suffit à rendre toute la route dynamique. La langue, elle,
+  // est statiquement énumérée.
+  const { locale } = await params;
+  setRequestLocale(locale);
+
   const t = await getTranslations("Games.Tracker");
 
-  const game = await db.collection<Game>("games").findOne({ slug: "riftbound" });
+  const game = await readGameBySlugOrId("riftbound");
   if (!game || !game.slug) notFound();
 
   return (
