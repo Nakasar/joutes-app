@@ -1,0 +1,225 @@
+import { Suspense } from "react";
+import { Analytics } from "@vercel/analytics/next"
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "../../globals.css";
+import Header from "@/components/Header.tsx";
+import HeaderFallback from "@/components/HeaderFallback.tsx";
+import { DateTime } from "luxon";
+import { cacheLife } from "next/cache";
+import { Link } from "@/i18n/navigation.ts";
+import { Github } from "lucide-react";
+import WinterDecorations from "@/components/WinterDecorations.tsx";
+import WebMcpTools from "@/components/WebMcpTools.tsx";
+import { Toaster } from "@/components/ui/sonner.tsx";
+import {NextIntlClientProvider} from "next-intl";
+import {setRequestLocale} from "next-intl/server";
+import {notFound} from "next/navigation";
+import {locales, type Locale} from "@/i18n/config.ts";
+import {ThemeProvider} from "next-themes";
+import {ThemeToggle} from "@/components/theme-toggle.tsx";
+
+/**
+ * Les quatre langues sont connues à la construction : chacune reçoit sa propre
+ * coquille préfabriquée, au lieu d'une seule coquille impossible à figer parce
+ * qu'un cookie en décidait le contenu.
+ */
+export function generateStaticParams() {
+  return locales.map((locale) => ({ locale }));
+}
+
+// Charger le thème hivernal si activé
+const isWinterTheme = process.env.NEXT_PUBLIC_THEME === "winter";
+
+/**
+ * L'année du pied de page est lue au rendu, ce qu'un prérendu ne sait pas
+ * figer : mise en cache sans échéance, elle reste dans la coquille statique de
+ * toutes les pages au lieu d'y ouvrir un trou qui n'attend qu'un changement
+ * d'année.
+ */
+async function getCurrentYear() {
+  "use cache";
+  cacheLife("max");
+
+  return DateTime.now().year;
+}
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  metadataBase: new URL("https://joutes.app"),
+  title: {
+    default: "Joutes - Ligues et rencontres multi-jeux à proximité",
+    template: "%s - Joutes",
+  },
+  description: "Ligues et rencontres multi-jeux à proximité pour les passionnés de jeux de cartes à collectionner et de jeux de société. Trouvez des événements organisés et consultez les règles et rulings communautaires.",
+  applicationName: "Joutes App",
+  keywords: ["tcg", "board games", "events", "organized play", "rules", "rulings", "cards", "local gaming community", "local game stores"],
+  creator: "Nakasar",
+  publisher: "Nakasar",
+  openGraph: {
+    url: "https://joutes.app",
+    title: "Ligues et rencontres multi-jeux à proximité",
+    description: "Ligues et rencontres multi-jeux à proximité pour les passionnés de jeux de cartes à collectionner et de jeux de société. Trouvez des événements organisés et consultez les règles et rulings communautaires.",
+    siteName: "Joutes",
+    locale: "fr_FR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: "@JoutesApp",
+  },
+};
+
+export default async function RootLayout({
+  children,
+  params,
+}: Readonly<{
+  children: React.ReactNode;
+  params: Promise<{ locale: string }>;
+}>) {
+  const { locale } = await params;
+
+  if (!locales.includes(locale as Locale)) {
+    notFound();
+  }
+
+  // Fixe la langue pour tout le sous-arbre rendu ici. Sans cet appel, les
+  // fonctions de traduction retomberaient sur une lecture par requête et
+  // rouvriraient le trou que cette migration vient de fermer.
+  setRequestLocale(locale);
+
+  return (
+    <html lang={locale} suppressHydrationWarning>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen${isWinterTheme ? ' winter-theme' : ''}`}
+      >
+        <NextIntlClientProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {/* Expose les outils du site aux agents IA (WebMCP) ; ne rend rien.
+
+                La frontière n'est pas décorative : le composant lit le chemin
+                courant, inconnu au prérendu d'une route à segment dynamique. Sans
+                elle, il bloquait toutes ces routes depuis le layout — les routes
+                statiques passaient, leur chemin étant connu, ce qui masquait la
+                cause. Le repli est vide parce qu'il n'y a rien à approcher : ce
+                composant ne rend rien. */}
+            <Suspense fallback={null}>
+              <WebMcpTools />
+            </Suspense>
+            {isWinterTheme && <WinterDecorations />}
+            <div className="relative min-h-screen flex flex-col">
+              {/* L'en-tête lit le chemin courant à travers ses liens localisés,
+                  inconnu au prérendu d'une route à segment dynamique : sans cette
+                  frontière il bloquait toutes ces routes, soit la majorité du
+                  site. Le repli en reprend la silhouette pour que rien ne saute
+                  quand le vrai en-tête le remplace. */}
+              <Suspense fallback={<HeaderFallback />}>
+                <Header />
+              </Suspense>
+              <main className="flex-1">
+                {children}
+              </main>
+              <footer data-print-hidden className="border-t py-8 mt-auto bg-muted/30">
+                <div className="container mx-auto px-4">
+                  <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                    {/* Liens sociaux et externes */}
+                    <div className="flex flex-wrap justify-center gap-4 items-center">
+                      <Link
+                        href="https://discord.gg/dZEGkZwJGB"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/>
+                        </svg>
+                        Discord
+                      </Link>
+
+                      <Link
+                        href="https://github.com/Joutes"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <Github className="w-5 h-5" />
+                        GitHub
+                      </Link>
+
+                      <Link
+                        href="https://x.com/JoutesApp"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                        </svg>
+                        X
+                      </Link>
+                    </div>
+
+                    <div>
+                      <ThemeToggle />
+                    </div>
+
+                    {/* Liens légaux et info */}
+                    <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
+                      <Link href="/about" className="hover:text-foreground transition-colors">
+                        À propos
+                      </Link>
+                      <span className="text-muted-foreground/50">•</span>
+                      <Link href="/features/organizers" className="hover:text-foreground transition-colors">
+                        Organisateurs
+                      </Link>
+                      <span className="text-muted-foreground/50">•</span>
+                      <Link href="/pricing" className="hover:text-foreground transition-colors">
+                        Soutenir
+                      </Link>
+                      <span className="text-muted-foreground/50">•</span>
+                      <Link href="/cgu" className="hover:text-foreground transition-colors">
+                        CGU
+                      </Link>
+                      <span className="text-muted-foreground/50">•</span>
+                      <Link href="/privacy" className="hover:text-foreground transition-colors">
+                        Confidentialité
+                      </Link>
+                      <span className="text-muted-foreground/50">•</span>
+                      <Link href="/integrations" className="hover:text-foreground transition-colors">
+                        Développeurs
+                      </Link>
+                      <span className="text-muted-foreground/50">•</span>
+                      <Link href="/open-source" className="hover:text-foreground transition-colors">
+                        Open Source
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 text-center text-sm text-muted-foreground">
+                    <p>© {await getCurrentYear()} Joutes - Ligues et rencontres multi-jeux</p>
+                  </div>
+                </div>
+              </footer>
+            </div>
+            <Toaster />
+          </ThemeProvider>
+        </NextIntlClientProvider>
+        <Analytics />
+      </body>
+    </html>
+  );
+}

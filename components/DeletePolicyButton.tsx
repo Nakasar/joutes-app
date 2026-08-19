@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { deletePolicy } from "@/app/[locale]/games/[gameSlugOrId]/policies/actions";
+import { deletePolicy } from "@/app/[locale]/(app)/games/[gameSlugOrId]/policies/actions";
 import { Trash2 } from "lucide-react";
 
 export default function DeletePolicyButton({
