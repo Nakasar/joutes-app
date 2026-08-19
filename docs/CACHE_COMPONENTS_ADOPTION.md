@@ -17,8 +17,10 @@ Next 16.3.1, `cacheComponents: true` sur `main`.
 
 891 pages construites. Avant l'adoption : **zéro** route avec coquille statique.
 
-**137 pages portent encore un opt-out `export const instant = false`**, dont six
-qui portent aussi un déblocage `await connection()`.
+**121 pages portent encore un opt-out `export const instant = false`** — 120
+marqueurs `TODO: Cache Components adoption`, plus le layout du portail
+organisateur, qui est un blocage assumé et porte une raison au lieu d'un TODO.
+Sept pages portent un déblocage `await connection()`.
 
 Les pages vivent sous `app/[locale]/(app)/` depuis la correction de collision de
 chemins ; le groupe `(oauth2)` est à côté. Les chemins cités ici en tiennent
@@ -26,8 +28,12 @@ compte — ceux des messages de commit antérieurs, non.
 
 ## La méthode — à lire avant de toucher quoi que ce soit
 
-Cinq oracles se sont révélés menteurs au cours de l'adoption. Chacun a coûté un
+Six oracles se sont révélés menteurs au cours de l'adoption. Chacun a coûté un
 aller-retour ou une régression avant d'être remplacé.
+
+Ils ont un trait commun : **aucun ne se signale**. Ils rendent vert, ou muet, et
+c'est le silence qu'on prend pour une réussite. Avant de conclure qu'une route
+est adoptée, se demander laquelle de ces portes a réellement pu répondre.
 
 ### 1. Construire sur une base semée, jamais vide
 
@@ -76,10 +82,22 @@ Avant de conclure qu'une panne de déploiement vient de son propre travail,
 **vérifier l'état du commit précédent**. Celle-ci était déjà là sur le commit de
 restructuration.
 
-### 4. Le glyphe ne dit pas ce qu'il y a dans la coquille
+### 4. Le glyphe ne dit pas ce qu'il y a dans la coquille — ni si elle existe
 
-`◐` dit qu'une coquille existe. Une frontière `<Suspense>` posée trop haut passe
-la validation en ne prérendant que `<html><body>` : vert, sans bénéfice.
+`◐` est censé dire qu'une coquille existe. Une frontière `<Suspense>` posée trop
+haut passe la validation en ne prérendant que `<html><body>` : vert, sans
+bénéfice.
+
+Pire : tout le portail organisateur s'affichait `◐` alors que ses fichiers
+prérendus font **0 octet**. Le glyphe ne ment pas seulement sur le contenu de la
+coquille, il ment sur son existence.
+
+```bash
+ls -l ".next/server/app/fr/<route>.html"     # 0 octet = aucune coquille
+```
+
+`inspect-shells.mjs` fait la distinction (il lit la taille avant le contenu) ;
+la table des routes, non.
 
 ```bash
 node scripts/inspect-shells.mjs /fr/about /fr/cgu
@@ -93,7 +111,18 @@ Le squelette d'un repli ne se juge pas non plus au nombre de caractères : il se
 mesure. `EventsCalendarSkeleton` et le vrai calendrier font 1310 px tous les
 deux, document total 1620 px — c'est ce qui garantit que rien ne saute.
 
-### 5. Comparer la table des routes route par route
+### 5. Sous un layout bloquant, le build ne valide rien
+
+L'opt-out d'un `layout` couvre **tout son sous-arbre** au moment du build. Une
+page qui attend toujours la session passe alors sans un mot — y compris avec
+`--debug-build-paths` braqué sur elle seule.
+
+C'est le cas de tout le portail organisateur. Le seul oracle qui parle, pour ces
+routes, est la validation du serveur de dev, chargement par chargement. Quand la
+section est sous un layout qui porte `instant = false`, ne pas chercher de
+signal du côté du build : il n'y en a pas.
+
+### 6. Comparer la table des routes route par route
 
 Les totaux masquent les compensations. Une bascule d'imports a fait perdre sept
 coquilles statiques tout en gardant un build vert — visible seulement en
@@ -101,13 +130,30 @@ comparant chaque route à son état sur `main`.
 
 Extraire `([○◐ƒ])\s+(/\S+)` des deux sorties de build et diffuser par clé.
 
-### Un piège de mesure, pas de code
+### Deux pièges de mesure, pas de code
 
-La console du navigateur **accumule** les messages d'un onglet à l'autre
-navigation. Une erreur lue après avoir visité trois pages peut venir de la
-première. Pour attribuer une erreur à une route : **un onglet neuf par route**.
-Une erreur d'hydratation a été attribuée à tort à toute l'application avant que
-cette précaution soit prise.
+**La console accumule.** Le navigateur garde les messages d'une navigation à
+l'autre dans le même onglet : une erreur lue après avoir visité trois pages peut
+venir de la première. Pour attribuer une erreur à une route, **un onglet neuf
+par route**. Une erreur d'hydratation a été imputée à toute l'application avant
+que cette précaution soit prise ; elle ne concernait qu'une page, et ne survit
+pas au build de production.
+
+**Une route derrière une authentification ne se teste pas avec `curl`.** Sans
+session, elle redirige vers `/login` : rien ne rend, donc rien n'est validé, et
+l'absence d'erreur se lit comme un succès. Sept sections du portail organisateur
+ont été déclarées vérifiées ainsi, à tort. Le serveur le disait pourtant :
+
+    Could not validate `instant` because the target segment was prevented
+    from rendering
+
+**Ce message est un échec de mesure, pas un feu vert.** Corollaire : une page
+qui redirige — parce que la phase n'est pas la bonne, parce que le tournoi n'a
+pas démarré — échappe à la validation pour la même raison. `bracket` est passée
+entre les mailles ainsi.
+
+Vérifier ces routes demande une session ouverte dans le navigateur piloté, et
+des données qui mènent au vrai rendu plutôt qu'à une redirection.
 
 ## Les pièges déjà rencontrés
 
@@ -122,6 +168,8 @@ Chacun a été payé une fois ; inutile de les redécouvrir.
 | **`instant` interdit en client** | `E1344` | enveloppe serveur qui rend le composant client et porte l'opt-out |
 | **`Link` de next-intl** | `usePathname()` inconditionnel (`BaseLink.js:28`) | bloque toute route à segment dynamique depuis un composant client — voir ci-dessous |
 | **Groupes de routes invisibles** | un test qui résout des chemins ne trouve plus rien | lire les groupes sur le disque, ne pas les énumérer (voir `api-catalog.test.ts`) |
+| **`params` d'un segment non énumérable** | la page ne peut rien attendre en tête, pas même la langue | `[tournamentId]` n'est pas statiquement connu : `await params` est une lecture requête, donc `setRequestLocale` non plus n'est possible. La partie instantanée d'une telle page est un squelette sans texte — c'est normal, pas un échec |
+| **Squelette écrit sans regarder l'écran** | le contenu remplace le repli et la page saute | relever les classes du vrai composant (points de rupture, `rounded-xl`, hauteurs) et comparer les repères mesurés avant/après — voir ci-dessous |
 
 ### Une lecture requête en amont désarme le piège Mongo
 
@@ -158,30 +206,62 @@ chercher un composant client porteur de liens avant toute autre hypothèse.**
 
 Corollaire pour les replis : un repli ne doit contenir **aucun `Link` localisé**,
 sinon il rebloque ce que la frontière vient de débloquer (voir
-`components/HeaderFallback.tsx` et `components/EventsCalendarSkeleton.tsx`).
+`components/HeaderFallback.tsx`, `components/EventsCalendarSkeleton.tsx` et
+`OrganizerSkeletons.tsx`).
+
+### Dessiner un squelette
+
+Un squelette ne s'invente pas, il se relève. La méthode qui a marché :
+
+1. ouvrir le vrai écran et lire les classes du conteneur et de ses enfants —
+   `getComputedStyle` et `getBoundingClientRect` depuis la console, pas le code ;
+2. reprendre **les mêmes primitives**, pas une approximation : `min-w-36 flex-1`
+   plutôt qu'un `grid-cols-4` qui se replie autrement, `md:grid-cols-2
+   2xl:grid-cols-3` plutôt qu'un nombre de colonnes figé, `rounded-xl` si
+   l'original l'est ;
+3. mesurer les mêmes repères des deux côtés et les comparer.
+
+Deux squelettes ont dû être repris pour l'avoir sauté : celui du calendrier
+(tuiles sur deux colonnes au lieu de quatre) et celui des matchs de ronde, qui
+ignorait la bascule Grille/Tableau et toute la colonne « À traiter ».
 
 ## Ce qui reste
 
-Répartition des 137 opt-outs par ce qui bloque la page :
+Répartition des 121 opt-outs par ce qui bloque la page :
 
 | ce que lit `page.tsx` | pages |
 |---|---|
-| paramètres + session + base | 59 |
+| paramètres + session + base | 58 |
 | session + base | 25 |
-| paramètres + base | 18 |
-| paramètres seuls | 9 |
+| paramètres + base | 9 |
 | base seule | 8 |
 | paramètres seuls, écran client | 6 |
 | session seule | 5 |
 | rien (lecture dans un composant client) | 4 |
+| paramètres seuls | 3 |
 | écran client sans lecture | 2 |
 | paramètres + session | 1 |
 
 **Plus aucun lot mécanique n'est disponible.** Chaque route restante demande de
 décider ce qui appartient à la coquille et ce qui arrive en flux.
 
-Les 59 du haut sont le gros morceau. Le portail organisateur (4 pages, un
-`layout` partagé, une session lue en amont) est le prochain ensemble cohérent.
+Les 58 du haut sont le gros morceau. Le portail joueur
+(`/tournaments/[tournamentId]/player/**`) est le prochain ensemble cohérent : il
+a la même forme que le portail organisateur, qui vient d'être fait.
+
+### Le portail organisateur, comme modèle
+
+Seize sections adoptées, une seule ligne de conduite, transposable telle quelle :
+
+- la page ne devient **pas** `async` et transmet la promesse de `params` à un
+  composant sous `<Suspense>` ;
+- le `layout` garde `instant = false` quand il authentifie et redirige — c'est le
+  motif que la documentation Next cite comme légitime, et son TODO devient un
+  commentaire de raison, pas une dette ;
+- conséquence à annoncer avant de mesurer : **la table des routes ne bouge pas
+  d'un glyphe et les coquilles restent à 0 octet**. Avec la porte devant, rien ne
+  prérend à froid ; tout le gain est en navigation client, invisible au build
+  comme à `inspect-shells.mjs`.
 
 ### Les dix écrans entièrement client
 
@@ -210,8 +290,24 @@ une porte utilisable.
   la même rangée `h-16` — 65 px mesurés.
 - **La coquille de `/events`** : lue en servant le fichier prérendu lui-même,
   ce qui montre exactement le premier rendu. Squelette et contenu réel à 1310 px.
+- **Le portail organisateur**, les seize sections ouvertes une à une dans un
+  navigateur authentifié, sur un tournoi réel de 19 joueurs et 9 rondes.
 
 Reste à vérifier : les squelettes des dix écrans client, quand ils seront écrits.
+
+### Voir un repli qui ne dure que quelques millisecondes
+
+En local le flux se résout trop vite pour être capturé, et la navigation client
+ne repasse même pas par le réseau quand la route a été préchargée. Deux moyens,
+dans cet ordre :
+
+1. **ralentir la section** — un `await new Promise((r) => setTimeout(r, 4000))`
+   en tête du composant sous la frontière, le temps d'une capture, puis retiré ;
+2. **rendre le squelette seul** — remplacer temporairement le `<Suspense>` par le
+   repli, ce qui permet de mesurer ses repères et de les comparer au vrai écran.
+
+Les deux sont des expériences locales : vérifier qu'il n'en reste rien avant de
+livrer (`grep -rn "MESURE" app`).
 
 Un préaperçu Vercel se lit avec l'en-tête `x-vercel-protection-bypass`
 (le secret est côté projet, pas dans le dépôt).
@@ -219,14 +315,20 @@ Un préaperçu Vercel se lit avec l'en-tête `x-vercel-protection-bypass`
 ## Vérifications avant de livrer
 
 ```bash
+npx tsc --noEmit                      # les refontes de signature cassent en silence
 npx next build --debug-prerender      # énumère les routes bloquantes
 npm run build                         # le vrai build de production
 npm test                              # 1008 tests
 node scripts/check-flex-rows.mjs      # rangées flex à risque
 node scripts/inspect-shells.mjs       # contenu des coquilles
+grep -rn "MESURE" app                 # aucun ralentissement de mesure oublié
 ```
 
 Et comparer la table des routes à celle de `main`, route par route.
+
+Pour les routes derrière authentification, ajouter : **les ouvrir une à une dans
+un navigateur connecté**, sur des données qui mènent au rendu et non à une
+redirection. Aucune commande ne remplace ça.
 
 **Aucune de ces portes ne remplace le déploiement.** Après un push, lire l'état
 du commit (§3) avant de considérer le travail terminé.
