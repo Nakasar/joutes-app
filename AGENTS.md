@@ -4,3 +4,13 @@
 - Utilise la librairie `luxon` pour gérer les dates et leurs formats (object `DateTime`).
 - N'utilise pas d'imports dynamique.
 - Les composants `Button` et `Badge` portent `whitespace-nowrap shrink-0` : ils ne se coupent ni ne rétrécissent. Une rangée `flex` qui en aligne plusieurs doit porter `flex-wrap`, faute de quoi elle élargit **le document entier** sur un téléphone — ce n'est pas la rangée qui déborde, c'est toute la page qui se décale. `node scripts/check-flex-rows.mjs` relève les rangées à risque (il sort en erreur s'il en trouve).
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
