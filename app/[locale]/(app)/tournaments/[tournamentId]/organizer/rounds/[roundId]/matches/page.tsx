@@ -1,18 +1,23 @@
+import { Suspense } from "react";
 import { getPreset } from "@/lib/tournaments/game-presets.ts";
 import { OrganizerRoundClient } from "../OrganizerRoundClient.tsx";
 import { RoundHeaderBar } from "../RoundHeaderBar.tsx";
 import { RoundSubNav } from "../RoundSubNav.tsx";
 import { loadOrganizerRoundContext } from "../roundContext.ts";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
+import { TableSectionSkeleton } from "../../../OrganizerSkeletons.tsx";
 
-export default async function OrganizerRoundMatchesPage({
-  params,
-}: {
-  params: Promise<{ tournamentId: string; roundId: string }>;
-}) {
+type Params = Promise<{ tournamentId: string; roundId: string }>;
+
+export default function OrganizerRoundMatchesPage({ params }: { params: Params }) {
+  return (
+    <Suspense fallback={<div className="p-6"><TableSectionSkeleton rows={10} columns={5} /></div>}>
+      <OrganizerRoundMatchesPageSection params={params} />
+    </Suspense>
+  );
+}
+
+async function OrganizerRoundMatchesPageSection({ params }: { params: Params }) {
   const { tournamentId, roundId } = await params;
   const { round, phase, matches, players, isLastRound, reopenCascades, feats, featAwards } =
     await loadOrganizerRoundContext(tournamentId, roundId);
