@@ -1,14 +1,13 @@
+import { Suspense } from "react";
 import EventsCalendarWrapper from "@/components/EventsCalendarWrapper.tsx";
+import EventsCalendarSkeleton from "@/components/EventsCalendarSkeleton.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Plus } from "lucide-react";
 import { Link } from "@/i18n/navigation.ts";
-import {getTranslations} from "next-intl/server";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
+import {getTranslations, setRequestLocale} from "next-intl/server";
 
 type HomeProps = {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<{
     month?: string;
     year?: string;
@@ -16,8 +15,9 @@ type HomeProps = {
   }>;
 };
 
-export default async function Home({ searchParams }: HomeProps) {
-  const params = await searchParams;
+export default async function Home({ params, searchParams }: HomeProps) {
+  const { locale } = await params;
+  setRequestLocale(locale);
 
   const t = await getTranslations('Home');
 
@@ -37,7 +37,9 @@ export default async function Home({ searchParams }: HomeProps) {
           </Link>
         </Button>
       </div>
-      <EventsCalendarWrapper searchParams={params} />
+      <Suspense fallback={<EventsCalendarSkeleton />}>
+        <EventsCalendarWrapper searchParams={searchParams} />
+      </Suspense>
     </div>
   );
 }

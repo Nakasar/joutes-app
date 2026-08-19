@@ -1,13 +1,11 @@
+import { Suspense } from "react";
 import EventsCalendarWrapper from "@/components/EventsCalendarWrapper.tsx";
+import EventsCalendarSkeleton from "@/components/EventsCalendarSkeleton.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Plus } from "lucide-react";
 import { Link } from "@/i18n/navigation.ts";
-import {getTranslations} from "next-intl/server";
+import {getTranslations, setRequestLocale} from "next-intl/server";
 import type { Metadata } from "next";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 export const metadata: Metadata = {
   title: "Événements",
@@ -22,6 +20,7 @@ export const metadata: Metadata = {
 };
 
 type EventsPageProps = {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<{
     month?: string;
     year?: string;
@@ -29,10 +28,11 @@ type EventsPageProps = {
   }>;
 };
 
-export default async function EventsPage({ searchParams }: EventsPageProps) {
-  const t = await getTranslations('EventsCalendar');
+export default async function EventsPage({ params, searchParams }: EventsPageProps) {
+  const { locale } = await params;
+  setRequestLocale(locale);
 
-  const params = await searchParams;
+  const t = await getTranslations('EventsCalendar');
 
   return (
     <div>
@@ -52,7 +52,9 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
           </Link>
         </Button>
       </div>
-      <EventsCalendarWrapper basePath="/events" searchParams={params} />
+      <Suspense fallback={<EventsCalendarSkeleton />}>
+        <EventsCalendarWrapper basePath="/events" searchParams={searchParams} />
+      </Suspense>
     </div>
   );
 }
