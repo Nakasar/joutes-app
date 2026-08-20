@@ -1031,7 +1031,11 @@
         "stopConfirmDescription": "Il player sparirà dalla pagina per tutti i visitatori.",
         "started": "La diretta è online.",
         "stopped": "La diretta è stata interrotta.",
-        "invalidUrl": "URL non valido: sono accettati solo link Twitch e YouTube."
+        "errors": {
+          "invalidUrl": "URL non valido: sono accettati solo link Twitch e YouTube.",
+          "notFound": "Questo locale non è stato trovato.",
+          "failed": "L'operazione non è riuscita. Riprova tra un istante."
+        }
       },
       "news": {
         "title": "Notizie",

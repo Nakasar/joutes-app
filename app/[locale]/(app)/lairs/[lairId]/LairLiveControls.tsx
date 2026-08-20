@@ -10,7 +10,14 @@ import { Input } from "@/components/ui/input.tsx";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog.tsx";
 import { isSupportedLiveUrl } from "@/lib/lairs/live.ts";
 
-import { setLairLiveStream, stopLairLiveStream } from "./live-actions.ts";
+import { setLairLiveStream, stopLairLiveStream, type LairLiveError } from "./live-actions.ts";
+
+/** Les échecs de l'action serveur, traduits ici — elle ne renvoie que des codes. */
+const ERROR_KEYS: Record<LairLiveError, string> = {
+  INVALID_URL: "errors.invalidUrl",
+  NOT_FOUND: "errors.notFound",
+  FAILED: "errors.failed",
+};
 
 /**
  * Les commandes du direct, réservées au staff du lieu.
@@ -39,7 +46,7 @@ export default function LairLiveControls({
     const value = url.trim();
 
     if (!isSupportedLiveUrl(value)) {
-      toast.error(t("invalidUrl"));
+      toast.error(t("errors.invalidUrl"));
       return;
     }
 
@@ -50,7 +57,7 @@ export default function LairLiveControls({
         toast.success(t("started"));
         setIsEditing(false);
       } else {
-        toast.error(result.error ?? t("invalidUrl"));
+        toast.error(t(ERROR_KEYS[result.error]));
       }
     });
   };
@@ -65,7 +72,7 @@ export default function LairLiveControls({
         setIsConfirmingStop(false);
         setIsEditing(true);
       } else {
-        toast.error(result.error ?? t("invalidUrl"));
+        toast.error(t(ERROR_KEYS[result.error]));
       }
     });
   };

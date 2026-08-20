@@ -4,6 +4,7 @@ import { Car, Mail, MessageCircle, Phone, TrainFront, User2 } from "lucide-react
 
 import GameMarkdown from "@/components/GameMarkdown.tsx";
 import { Button } from "@/components/ui/button.tsx";
+import { embedVideoUrl, externalUrl } from "@/lib/lairs/urls.ts";
 import type { Lair } from "@/lib/types/Lair";
 
 import LairMap from "./LairMap.tsx";
@@ -24,7 +25,12 @@ export default async function LairAboutTab({ lair }: { lair: Lair }) {
   const amenities = about?.amenities ?? [];
   const ruleLang = locale === "fr" ? "fr" : "en";
 
-  if (!about?.description && amenities.length === 0 && photos.length === 0 && !about?.videoUrl) {
+  // Une `iframe` donne à l'hôte appelé la page entière qu'il rend : la vidéo de
+  // présentation n'est intégrée que si elle vient d'une plateforme attendue,
+  // les formes publiques de YouTube étant traduites au passage.
+  const video = embedVideoUrl(about?.videoUrl);
+
+  if (!about?.description && amenities.length === 0 && photos.length === 0 && !video) {
     return <p className="text-sm text-muted-foreground">{t("empty")}</p>;
   }
 
@@ -54,12 +60,12 @@ export default async function LairAboutTab({ lair }: { lair: Lair }) {
 
       {photos.length > 0 && <LairGallery photos={photos} title={t("photos")} />}
 
-      {about?.videoUrl && (
+      {video && (
         <section className="flex flex-col gap-4">
           <h2 className="text-[22px] font-bold">{t("video")}</h2>
           <div className="overflow-hidden rounded-xl border bg-black">
             <iframe
-              src={about.videoUrl}
+              src={video}
               title={t("video")}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture"
               allowFullScreen
@@ -118,7 +124,8 @@ export async function LairAboutSidebar({ lair }: { lair: Lair }) {
   const about = lair.options?.about;
   const phone = lair.options?.contact?.phone;
   const email = lair.options?.contact?.email;
-  const discord = lair.options?.links?.find((link) => link.type === "discord");
+  const discordLink = lair.options?.links?.find((link) => link.type === "discord");
+  const discord = externalUrl(discordLink?.url);
   const organizers = about?.organizers ?? [];
 
   const directionsUrl = lair.location
@@ -178,13 +185,13 @@ export async function LairAboutSidebar({ lair }: { lair: Lair }) {
             )}
             {discord && (
               <a
-                href={discord.url}
+                href={discord}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 hover:text-foreground"
               >
                 <MessageCircle className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-                {discord.label ?? t("discord")}
+                {discordLink?.label ?? t("discord")}
               </a>
             )}
           </div>

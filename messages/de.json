@@ -1031,7 +1031,11 @@
         "stopConfirmDescription": "Der Player verschwindet für alle Besucher von der Seite.",
         "started": "Der Stream ist live.",
         "stopped": "Der Stream wurde beendet.",
-        "invalidUrl": "Ungültige URL: nur Twitch- und YouTube-Links werden akzeptiert."
+        "errors": {
+          "invalidUrl": "Ungültige URL: nur Twitch- und YouTube-Links werden akzeptiert.",
+          "notFound": "Dieser Ort wurde nicht gefunden.",
+          "failed": "Der Vorgang ist fehlgeschlagen. Versuche es gleich noch einmal."
+        }
       },
       "news": {
         "title": "Neuigkeiten",

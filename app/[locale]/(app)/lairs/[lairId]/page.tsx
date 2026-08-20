@@ -296,7 +296,7 @@ async function LairTabSidebar({ lairId, tab }: { lairId: string; tab: LairTab })
       <LairPracticalInfoCard lair={lair} />
       <LairOpeningHoursCard lair={lair} />
       <LairFollowCard lair={lair} followersCount={followersCount} />
-      <LairGamesCard games={games} upcomingByGame={countUpcomingByGame(events)} />
+      <LairGamesCard lairId={lairId} games={games} upcomingByGame={countUpcomingByGame(events)} />
     </>
   );
 }

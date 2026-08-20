@@ -22,12 +22,19 @@ export default async function LairMap({
   name: string;
   className?: string;
 }) {
-  if (!location) {
+  const [longitude, latitude] = location?.coordinates ?? [];
+
+  // Des coordonnées lues en base finissent dans l'URL de la carte : si elles
+  // ne sont pas deux nombres, il n'y a pas de carte à dessiner.
+  if (typeof longitude !== "number" || typeof latitude !== "number") {
+    return null;
+  }
+
+  if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) {
     return null;
   }
 
   const t = await getTranslations("Lairs.portal.info");
-  const [longitude, latitude] = location.coordinates;
   const span = 0.006;
   const bbox = [longitude - span, latitude - span / 2, longitude + span, latitude + span / 2].join(",");
 

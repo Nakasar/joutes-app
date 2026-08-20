@@ -17,6 +17,7 @@ import { Link } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { cn } from "@/lib/utils.ts";
 import { formatOpeningRange, readOpeningState, weekOf } from "@/lib/lairs/opening-hours.ts";
+import { externalUrl } from "@/lib/lairs/urls.ts";
 import type { LairLink, Lair } from "@/lib/types/Lair";
 import type { Game } from "@/lib/types/Game";
 
@@ -65,6 +66,7 @@ export async function LairPracticalInfoCard({ lair }: { lair: Lair }) {
   const opening = readOpeningState(lair.options?.openingHours, locale);
   const phone = lair.options?.contact?.phone;
   const email = lair.options?.contact?.email;
+  const website = externalUrl(lair.website);
 
   const directionsUrl = lair.location
     ? `https://www.google.com/maps/dir/?api=1&destination=${lair.location.coordinates[1]},${lair.location.coordinates[0]}`
@@ -72,7 +74,7 @@ export async function LairPracticalInfoCard({ lair }: { lair: Lair }) {
       ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lair.address)}`
       : null;
 
-  if (!lair.address && !lair.website && !lair.location && !phone && !email) {
+  if (!lair.address && !website && !lair.location && !phone && !email) {
     return null;
   }
 
@@ -108,14 +110,14 @@ export async function LairPracticalInfoCard({ lair }: { lair: Lair }) {
             {email}
           </a>
         )}
-        {lair.website && (
+        {website && (
           <a
-            href={lair.website}
+            href={website}
             target="_blank"
             rel="noopener noreferrer"
             className="break-all text-[var(--lair-accent-text)] hover:underline"
           >
-            {lair.website.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
+            {website.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
           </a>
         )}
       </div>
@@ -206,7 +208,13 @@ export async function LairFollowCard({
   lair: Lair;
   followersCount: number;
 }) {
-  const links = lair.options?.links ?? [];
+  // Les liens dont le protocole n'est pas http(s) sont retirés plutôt que
+  // rendus inertes : une ligne « Instagram » qui ne mène nulle part vaut moins
+  // que pas de ligne du tout.
+  const links = (lair.options?.links ?? []).flatMap((link) => {
+    const url = externalUrl(link.url);
+    return url ? [{ ...link, url }] : [];
+  });
 
   if (links.length === 0 && followersCount === 0) {
     return null;
@@ -262,10 +270,12 @@ export async function LairFollowCard({
  * venir jouer samedi. Il passe à l'accent au-delà de trois.
  */
 export async function LairGamesCard({
+  lairId,
   games,
   upcomingByGame,
   limit = 5,
 }: {
+  lairId: string;
   games: Game[];
   upcomingByGame: Record<string, number>;
   limit?: number;
@@ -287,9 +297,11 @@ export async function LairGamesCard({
         {shown.map((game) => (
           <GameTile key={game.id} game={game} upcoming={upcomingByGame[game.name] ?? 0} />
         ))}
+        {/* Vers l'onglet du lieu, non vers le catalogue : « autres jeux »
+            promet les autres jeux *d'ici*. */}
         {remaining > 0 && (
           <Link
-            href="/games"
+            href={`/lairs/${lairId}?tab=games`}
             className="flex h-[74px] flex-col items-center justify-center gap-0.5 rounded-[9px] border border-dashed transition-colors hover:border-[var(--lair-accent-45)]"
           >
             <span className="text-sm font-semibold">+{remaining}</span>

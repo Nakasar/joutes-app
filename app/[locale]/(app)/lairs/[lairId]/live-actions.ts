@@ -7,7 +7,17 @@ import { lairIdSchema } from "@/lib/schemas/lair.schema.ts";
 import * as lairsDb from "@/lib/db/lairs.ts";
 import { isSupportedLiveUrl } from "@/lib/lairs/live.ts";
 
-type LiveActionResult = { success: true } | { success: false; error: string };
+/**
+ * Les échecs possibles, en codes plutôt qu'en phrases.
+ *
+ * Ces actions ne savent pas dans quelle langue la page est rendue : elles sont
+ * appelées depuis un composant client qui, lui, a ses traductions sous la
+ * main. Un message écrit ici sortirait en français sur les trois autres
+ * langues du catalogue.
+ */
+export type LairLiveError = "INVALID_URL" | "NOT_FOUND" | "FAILED";
+
+type LiveActionResult = { success: true } | { success: false; error: LairLiveError };
 
 /**
  * Ouvre — ou remplace — le direct du lieu.
@@ -23,12 +33,12 @@ export async function setLairLiveStream(lairId: string, url: string): Promise<Li
 
     const value = url.trim();
     if (!isSupportedLiveUrl(value)) {
-      return { success: false, error: "URL de direct invalide" };
+      return { success: false, error: "INVALID_URL" };
     }
 
     const lair = await lairsDb.getLairById(validatedId);
     if (!lair) {
-      return { success: false, error: "Lieu non trouvé" };
+      return { success: false, error: "NOT_FOUND" };
     }
 
     const current = lair.options?.live ?? null;
@@ -49,7 +59,7 @@ export async function setLairLiveStream(lairId: string, url: string): Promise<Li
     return { success: true };
   } catch (error) {
     console.error("Erreur lors de la mise à jour du direct du lieu:", error);
-    return { success: false, error: "Erreur lors de la mise à jour du direct" };
+    return { success: false, error: "FAILED" };
   }
 }
 
@@ -61,7 +71,7 @@ export async function stopLairLiveStream(lairId: string): Promise<LiveActionResu
 
     const lair = await lairsDb.getLairById(validatedId);
     if (!lair) {
-      return { success: false, error: "Lieu non trouvé" };
+      return { success: false, error: "NOT_FOUND" };
     }
 
     await lairsDb.updateLair(validatedId, {
@@ -73,6 +83,6 @@ export async function stopLairLiveStream(lairId: string): Promise<LiveActionResu
     return { success: true };
   } catch (error) {
     console.error("Erreur lors de l'arrêt du direct du lieu:", error);
-    return { success: false, error: "Erreur lors de l'arrêt du direct" };
+    return { success: false, error: "FAILED" };
   }
 }

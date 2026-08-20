@@ -1031,7 +1031,11 @@
         "stopConfirmDescription": "Le lecteur disparaîtra de la page pour tous les visiteurs.",
         "started": "Le direct est en ligne.",
         "stopped": "Le direct est arrêté.",
-        "invalidUrl": "URL invalide : seuls les liens Twitch et YouTube sont acceptés."
+        "errors": {
+          "invalidUrl": "URL invalide : seuls les liens Twitch et YouTube sont acceptés.",
+          "notFound": "Ce lieu est introuvable.",
+          "failed": "L'opération a échoué. Réessayez dans un instant."
+        }
       },
       "news": {
         "title": "Actualités",

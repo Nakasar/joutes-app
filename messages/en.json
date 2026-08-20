@@ -1031,7 +1031,11 @@
         "stopConfirmDescription": "The player will disappear from the page for every visitor.",
         "started": "The stream is live.",
         "stopped": "The stream has been stopped.",
-        "invalidUrl": "Invalid URL: only Twitch and YouTube links are accepted."
+        "errors": {
+          "invalidUrl": "Invalid URL: only Twitch and YouTube links are accepted.",
+          "notFound": "This venue could not be found.",
+          "failed": "The operation failed. Try again in a moment."
+        }
       },
       "news": {
         "title": "News",

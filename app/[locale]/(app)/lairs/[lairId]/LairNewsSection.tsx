@@ -4,6 +4,7 @@ import { DateTime } from "luxon";
 import { Pin } from "lucide-react";
 
 import GameMarkdown from "@/components/GameMarkdown.tsx";
+import { externalUrl } from "@/lib/lairs/urls.ts";
 import type { LairNewsItem } from "@/lib/types/Lair";
 
 /** Les annonces les plus récentes d'abord, l'épinglée mise à part. */
@@ -45,6 +46,10 @@ export default async function LairNewsSection({ news }: { news: LairNewsItem[] }
   const { pinned, rest } = sortNews(news);
   const ruleLang = locale === "fr" ? "fr" : "en";
 
+  // Le lien contextuel d'une annonce est saisi par le lieu : hors http(s), il
+  // n'est pas rendu du tout.
+  const pinnedLink = externalUrl(pinned?.link);
+
   return (
     <section className="flex flex-col gap-3.5">
       <div className="flex flex-wrap items-baseline gap-3">
@@ -77,9 +82,9 @@ export default async function LairNewsSection({ news }: { news: LairNewsItem[] }
               <time className="font-mono text-[11px] text-muted-foreground" dateTime={pinned.publishedAt}>
                 {formatDate(pinned.publishedAt, locale)}
               </time>
-              {pinned.link && (
+              {pinnedLink && (
                 <a
-                  href={pinned.link}
+                  href={pinnedLink}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-[13px] text-[var(--lair-accent-text)] hover:underline"
@@ -104,6 +109,10 @@ export default async function LairNewsSection({ news }: { news: LairNewsItem[] }
 }
 
 function NewsCard({ item, locale }: { item: LairNewsItem; locale: string }) {
+  // Le lien d'une annonce est saisi par le lieu : hors http(s), la carte reste
+  // une carte plutôt que de devenir un lien à protocole arbitraire.
+  const link = externalUrl(item.link);
+
   const body = (
     <>
       {item.banner && (
@@ -137,8 +146,8 @@ function NewsCard({ item, locale }: { item: LairNewsItem; locale: string }) {
   const className =
     "flex flex-col overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-lg";
 
-  return item.link ? (
-    <a href={item.link} target="_blank" rel="noopener noreferrer" className={className}>
+  return link ? (
+    <a href={link} target="_blank" rel="noopener noreferrer" className={className}>
       {body}
     </a>
   ) : (
