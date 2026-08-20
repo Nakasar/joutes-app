@@ -1,8 +1,11 @@
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import { ArticleSkeleton } from "@/components/ArticleSkeleton.tsx";
 import { getQuizById } from "@/lib/db/quizzes.ts";
 import { canManageQuiz } from "@/lib/quizzes/authorization.ts";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
+import { connection } from "next/server";
 import { Metadata } from "next";
 import { Link } from "@/i18n/navigation.ts";
 import { ArrowLeft, Pencil } from "lucide-react";
@@ -19,10 +22,6 @@ import QuizTranslateMenu from "./QuizTranslateMenu.tsx";
 import DeleteQuizButton from "./DeleteQuizButton.tsx";
 import ReportButton from "@/components/ReportButton.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
 type Props = { params: Promise<{ quizId: string }> };
 
 /**
@@ -37,6 +36,11 @@ type Props = { params: Promise<{ quizId: string }> };
  */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { quizId } = await params;
+
+  // Même piège Mongo que dans le corps, à désarmer une seconde fois : les
+  // métadonnées s'exécutent hors de la frontière de la page, avec leur propre
+  // lecture du quizz.
+  await connection();
   const [quiz, t] = await Promise.all([getQuizById(quizId), getTranslations("Quizz.metadata")]);
   if (!quiz) return { title: t("notFoundTitle") };
 
@@ -68,8 +72,34 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function QuizzDetailPage({ params }: Props) {
+/**
+ * Une seule frontière : tout ce que cette page affiche vient du quizz et de la
+ * session — il n'y a rien à en sortir qui tiendrait dans une coquille.
+ */
+export default function QuizzDetailPage({ params }: Props) {
+  return (
+    <Suspense fallback={<QuizFallback />}>
+      <QuizArticle params={params} />
+    </Suspense>
+  );
+}
+
+function QuizFallback() {
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <ArticleSkeleton paragraphs={4} />
+    </div>
+  );
+}
+
+async function QuizArticle({ params }: Props) {
   const { quizId } = await params;
+
+  // Le pilote Mongo touche à l'horloge en lisant le quizz, ce qu'un prérendu ne
+  // sait pas figer. Aucune frontière n'y change rien : c'est de la sync-IO, pas
+  // une donnée de requête. `connection()` marque ce rendu comme lié à la
+  // requête, ce qu'il est déjà — il lit la session juste après.
+  await connection();
 
   const [quiz, session] = await Promise.all([
     getQuizById(quizId),

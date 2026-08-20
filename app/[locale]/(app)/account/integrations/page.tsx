@@ -1,3 +1,5 @@
+import { AccountPanelSkeleton } from "@/components/AccountPanelSkeleton.tsx";
+import { Suspense } from "react";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -7,11 +9,7 @@ import { Key, ArrowLeft } from "lucide-react";
 import { Link } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
-export default async function IntegrationsPage() {
+async function IntegrationsPageContent() {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -58,5 +56,26 @@ export default async function IntegrationsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte, titre compris : on ne montre pas la
+ * mise en page d'un espace personnel avant de savoir à qui il appartient. La
+ * coquille ne garde que le conteneur et la silhouette.
+ */
+export default function IntegrationsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8">
+      <div className="container mx-auto px-4 max-w-5xl">
+          <AccountPanelSkeleton cards={1} label="Chargement des intégrations" />
+        </div>
+    </div>
+      }
+    >
+      <IntegrationsPageContent />
+    </Suspense>
   );
 }

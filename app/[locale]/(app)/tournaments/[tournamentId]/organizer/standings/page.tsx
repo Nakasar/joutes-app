@@ -1,18 +1,33 @@
+import { Suspense } from "react";
 import { getStandings } from "@/lib/db/tournaments.ts";
 import { resolveDisplayPhase } from "@/lib/tournaments/current-round.ts";
 import { getPreset } from "@/lib/tournaments/game-presets.ts";
 import { loadOrganizerContext } from "../organizerContext.ts";
+import { StandingsSkeleton } from "../OrganizerSkeletons.tsx";
 import { StandingsBoard, type StandingsSnapshot } from "./StandingsBoard.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
+type Params = Promise<{ tournamentId: string }>;
 
-export default async function OrganizerStandingsPage({
-  params,
-}: {
-  params: Promise<{ tournamentId: string }>;
-}) {
+/**
+ * La promesse de `params` descend sans être attendue : le tournoi est un segment
+ * dynamique, donc la lire ici retiendrait toute la section. Elle s'attend sous la
+ * frontière, avec la session et le classement.
+ */
+export default function OrganizerStandingsPage({ params }: { params: Params }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-6">
+          <StandingsSkeleton />
+        </div>
+      }
+    >
+      <StandingsSection params={params} />
+    </Suspense>
+  );
+}
+
+async function StandingsSection({ params }: { params: Params }) {
   const { tournamentId } = await params;
   const { rounds, tournament, phases } = await loadOrganizerContext(tournamentId);
 

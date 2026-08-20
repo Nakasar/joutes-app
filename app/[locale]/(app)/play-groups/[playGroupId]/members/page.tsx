@@ -1,14 +1,18 @@
+import { Suspense } from "react";
 import PlayGroupMembersClient from "@/components/play-groups/PlayGroupMembersClient.tsx";
+import { PlayGroupScreenSkeleton } from "@/components/play-groups/PlayGroupSkeletons.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
+/**
+ * Même forme que le portail du groupe : écran entièrement client, paramètre
+ * d'URL lu par `useParams()`, donc frontière et silhouette depuis l'enveloppe
+ * serveur.
+ */
 export default function PlayGroupMembersPage() {
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
-      <PlayGroupMembersClient />
+      <Suspense fallback={<PlayGroupScreenSkeleton rows={5} label="Chargement des membres" />}>
+        <PlayGroupMembersClient />
+      </Suspense>
     </div>
   );
 }
-

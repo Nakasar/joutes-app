@@ -1,29 +1,29 @@
-import { getGameBySlugOrId } from "@/lib/db/games.ts";
+import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { getNews } from "@/lib/db/news.ts";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Button } from "@/components/ui/button.tsx";
 import { Link } from "@/i18n/navigation.ts";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
+import { GameToolGridSkeleton } from "@/components/games/GameToolSkeletons.tsx";
 import NewsCard from "./NewsCard.tsx";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 const PAGE_SIZE = 9;
 
+type GameParams = Promise<{ gameSlugOrId: string }>;
+
 interface GameNewsPageProps {
-  params: Promise<{ gameSlugOrId: string }>;
+  params: GameParams;
   searchParams: Promise<{ page?: string }>;
 }
 
 export async function generateMetadata({ params }: GameNewsPageProps): Promise<Metadata> {
   const { gameSlugOrId } = await params;
-  const game = await getGameBySlugOrId(gameSlugOrId);
+  const game = await readGameBySlugOrId(gameSlugOrId);
   const t = await getTranslations("Games.news");
 
   if (!game) {
@@ -44,9 +44,60 @@ export async function generateMetadata({ params }: GameNewsPageProps): Promise<M
   };
 }
 
-export default async function GameNewsPage({ params, searchParams }: GameNewsPageProps) {
+/**
+ * Deux frontières : l'en-tête ne dépend que du jeu, la liste dépend en plus de
+ * la session — elle décide de ce que chaque carte propose — et de la page
+ * demandée. Les séparer garde le titre en place quand on tourne les pages.
+ */
+export default function GameNewsPage({ params, searchParams }: GameNewsPageProps) {
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-7xl space-y-6">
+      <Suspense fallback={<NewsHeaderSkeleton />}>
+        <NewsHeader params={params} />
+      </Suspense>
+
+      <Suspense fallback={<GameToolGridSkeleton />}>
+        <NewsList params={params} searchParams={searchParams} />
+      </Suspense>
+    </div>
+  );
+}
+
+function NewsHeaderSkeleton() {
+  return (
+    <div className="flex animate-pulse flex-row flex-wrap items-center gap-4" aria-hidden>
+      <div className="h-9 w-28 rounded-md bg-muted" />
+      <div className="h-9 w-72 max-w-full rounded bg-muted" />
+    </div>
+  );
+}
+
+async function NewsHeader({ params }: { params: GameParams }) {
   const { gameSlugOrId } = await params;
-  const game = await getGameBySlugOrId(gameSlugOrId);
+  const game = await readGameBySlugOrId(gameSlugOrId);
+
+  if (!game) {
+    notFound();
+  }
+
+  const t = await getTranslations("Games.news");
+
+  return (
+    <div className="flex flex-row flex-wrap items-center gap-4">
+      <Button asChild variant="outline">
+        <Link href={`/games/${game.slug ?? gameSlugOrId}`}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          {t("back")}
+        </Link>
+      </Button>
+      <h1 className="text-3xl font-bold">{t("title", { gameName: game.name })}</h1>
+    </div>
+  );
+}
+
+async function NewsList({ params, searchParams }: GameNewsPageProps) {
+  const { gameSlugOrId } = await params;
+  const game = await readGameBySlugOrId(gameSlugOrId);
 
   if (!game) {
     notFound();
@@ -68,17 +119,7 @@ export default async function GameNewsPage({ params, searchParams }: GameNewsPag
   ]);
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl space-y-6">
-      <div className="flex flex-row flex-wrap items-center gap-4">
-        <Button asChild variant="outline">
-          <Link href={`/games/${game.slug ?? gameSlugOrId}`}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            {t("back")}
-          </Link>
-        </Button>
-        <h1 className="text-3xl font-bold">{t("title", { gameName: game.name })}</h1>
-      </div>
-
+    <div className="space-y-6">
       {news.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">{t("empty")}</div>
       ) : (

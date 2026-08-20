@@ -8,12 +8,9 @@ import { AchievementIcon } from "@/components/AchievementIcon.tsx";
 import { DeleteAchievementButton } from "@/app/[locale]/(app)/admin/achievements/DeleteAchievementButton.tsx";
 import { connection } from "next/server";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
 export default async function AdminAchievementsPage() {
-  // TODO: Cache Components adoption. Added to unblock the build: remove this connection() to re-trigger the error and review the fix options.
+  // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
+  // pas figer. Vérifié en le retirant : la route redevient bloquante.
   await connection();
   const achievements = await getAllAchievements();
 

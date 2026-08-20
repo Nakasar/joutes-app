@@ -1,6 +1,6 @@
 import {Button} from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
-import {getGameBySlugOrId} from "@/lib/db/games";
+import { readGameBySlugOrId } from "@/lib/db/games-cached";
 import {getTranslations} from "next-intl/server";
 import {
   DropdownMenu,
@@ -13,7 +13,9 @@ import {ArrowDownSquareIcon} from "lucide-react";
 export async function GameToolsNavBar({gameSlug, currentTab}: { gameSlug: string; currentTab?: string }) {
   const t = await getTranslations('Games.nav');
 
-  const game = await getGameBySlugOrId(gameSlug);
+  // Lecture en cache : cette barre est rendue par onze pages de jeu, et une
+  // lecture brute suffirait à les empêcher toutes de prérendre.
+  const game = await readGameBySlugOrId(gameSlug);
 
   if (!game) {
     return (<></>);

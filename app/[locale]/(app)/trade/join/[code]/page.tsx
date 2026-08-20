@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { AccountPanelSkeleton } from "@/components/AccountPanelSkeleton.tsx";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
@@ -5,10 +7,6 @@ import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
 import { getTradeByCode } from "@/lib/db/trades.ts";
 import JoinTradeClient from "./JoinTradeClient.tsx";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Trade");
@@ -23,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * Cible du QR code d'invitation. Le code fait office de droit d'accès : on
  * affiche qui invite, puis la jointure occupe la place libre de l'échange.
  */
-export default async function JoinTradePage({ params }: { params: Promise<{ code: string }> }) {
+async function JoinTradePageContent({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
   const normalizedCode = code.trim().toUpperCase();
 
@@ -54,5 +52,24 @@ export default async function JoinTradePage({ params }: { params: Promise<{ code
         isFull={isFull}
       />
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
+ * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
+ * porte ait répondu.
+ */
+export default function JoinTradePage(props: Parameters<typeof JoinTradePageContent>[0]) {
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-lg p-6 sm:p-8">
+          <AccountPanelSkeleton cards={2} label="Chargement de l’échange" />
+        </div>
+      }
+    >
+      <JoinTradePageContent {...props} />
+    </Suspense>
   );
 }

@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { EditorFormSkeleton } from "@/components/EditorFormSkeleton.tsx";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import type { Metadata } from "next";
@@ -8,10 +10,6 @@ import { getLeagueById, isLeagueOrganizer } from "@/lib/db/leagues.ts";
 import { resolveGameTournamentDefaults } from "@/lib/tournaments/game-defaults.ts";
 import { CreateTournamentWizard, type WizardGame } from "./CreateTournamentWizard.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Tournaments");
   return {
@@ -19,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function NewTournamentPage({
+async function NewTournamentPageContent({
   searchParams,
 }: {
   searchParams: Promise<{ leagueId?: string }>;
@@ -76,4 +74,23 @@ export default async function NewTournamentPage({
     .sort((a, b) => a.name.localeCompare(b.name, locale));
 
   return <CreateTournamentWizard games={games} league={linkedLeague} />;
+}
+
+/**
+ * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
+ * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
+ * porte ait répondu.
+ */
+export default function NewTournamentPage(props: Parameters<typeof NewTournamentPageContent>[0]) {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-4 py-8">
+          <EditorFormSkeleton fields={4} label="Chargement du formulaire" />
+        </div>
+      }
+    >
+      <NewTournamentPageContent {...props} />
+    </Suspense>
+  );
 }

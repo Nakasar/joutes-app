@@ -4,12 +4,18 @@ import {getTranslations} from "next-intl/server";
 import {Button} from "@/components/ui/button.tsx";
 import { Link } from "@/i18n/navigation.ts";
 import {GameToolsNavBar} from "@/components/games/GameToolsNavBar.tsx";
-import db from "@/lib/mongodb.ts";
-import {Game} from "@/lib/types/Game.ts";
 import {notFound} from "next/navigation";
+import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+
+// Blocage délibéré, pas une étape d'adoption restante.
+//
+// `generateMetadata` lit `?input=` pour choisir l'image de partage : un lien de
+// deck partagé produit l'aperçu de ce deck, pas l'image générique. Les
+// métadonnées se calculent hors de toute frontière `<Suspense>`, donc cette
+// dépendance à l'URL rend la route dynamique par construction. La retirer
+// rendrait la page prérendable au prix de l'aperçu, ce qui n'est pas un bon
+// échange pour une page faite pour être partagée.
 export const instant = false;
 
 export async function generateMetadata({
@@ -44,11 +50,13 @@ export async function generateMetadata({
   };
 }
 
-export default async function RiftboundDeckCheckerPage({ searchParams }: { searchParams: Promise<{ input?: string }> }) {
+type SearchParams = Promise<{ input?: string }>;
+
+export default async function RiftboundDeckCheckerPage({ searchParams }: { searchParams: SearchParams }) {
   const t = await getTranslations("Games.DeckChecker");
 
   const { input } = await searchParams;
-  const game = await db.collection<Game>("games").findOne({slug: 'riftbound' });
+  const game = await readGameBySlugOrId("riftbound");
   if (!game || !game.slug) notFound();
 
   return (

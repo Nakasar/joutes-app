@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { Metadata } from "next";
+import { Suspense } from "react";
 import { Link } from "@/i18n/navigation.ts";
 import { ArrowLeft } from "lucide-react";
 import { auth } from "@/lib/auth.ts";
@@ -9,11 +10,8 @@ import { getNewsById } from "@/lib/db/news.ts";
 import { hasPermission } from "@/lib/db/permissions.ts";
 import { localeLabels } from "@/i18n/config.ts";
 import { newsOriginalLang, parseLocale } from "@/lib/news/localize.ts";
+import { EditorFormSkeleton } from "@/components/EditorFormSkeleton.tsx";
 import NewsTranslationEditor from "./NewsTranslationEditor.tsx";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 type Props = { params: Promise<{ newsId: string; lang: string }> };
 
@@ -23,7 +21,54 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: locale ? `Traduire en ${localeLabels[locale]}` : "Traduire une actualité" };
 }
 
-export default async function TranslateNewsPage({ params }: Props) {
+/**
+ * Le titre nomme la langue visée, qui vient de l'URL : il descend donc sous
+ * frontière avec le reste. La porte — session puis droit de rédaction — répond
+ * avant que l'éditeur n'apparaisse.
+ */
+export default function TranslateNewsPage({ params }: Props) {
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <Suspense fallback={<TranslateNewsHeaderSkeleton />}>
+        <TranslateNewsHeader params={params} />
+      </Suspense>
+
+      <Suspense fallback={<EditorFormSkeleton fields={2} />}>
+        <TranslateNewsEditor params={params} />
+      </Suspense>
+    </div>
+  );
+}
+
+function TranslateNewsHeaderSkeleton() {
+  return (
+    <div className="mb-6 animate-pulse space-y-4" aria-hidden>
+      <div className="h-8 w-48 rounded-md bg-muted" />
+      <div className="h-9 w-64 rounded bg-muted" />
+    </div>
+  );
+}
+
+async function TranslateNewsHeader({ params }: Props) {
+  const { newsId, lang } = await params;
+  const locale = parseLocale(lang);
+
+  return (
+    <div className="mb-6">
+      <Button asChild variant="ghost" size="sm" className="mb-4">
+        <Link href={`/news/${newsId}`}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Retour à l&apos;actualité
+        </Link>
+      </Button>
+      <h1 className="text-3xl font-bold tracking-tight">
+        {locale ? `Traduire en ${localeLabels[locale]}` : "Traduire une actualité"}
+      </h1>
+    </div>
+  );
+}
+
+async function TranslateNewsEditor({ params }: Props) {
   const { newsId, lang } = await params;
 
   const session = await auth.api.getSession({ headers: await headers() });
@@ -61,17 +106,8 @@ export default async function TranslateNewsPage({ params }: Props) {
   const importGameId = news.gameIds.length === 1 ? news.gameIds[0] : undefined;
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="mb-6">
-        <Button asChild variant="ghost" size="sm" className="mb-4">
-          <Link href={`/news/${newsId}`}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Retour à l&apos;actualité
-          </Link>
-        </Button>
-        <h1 className="text-3xl font-bold tracking-tight">Traduire en {localeLabels[locale]}</h1>
-        <p className="text-muted-foreground mt-1 truncate">{news.title}</p>
-      </div>
+    <>
+      <p className="text-muted-foreground -mt-4 mb-6 truncate">{news.title}</p>
 
       <NewsTranslationEditor
         newsId={newsId}
@@ -86,6 +122,6 @@ export default async function TranslateNewsPage({ params }: Props) {
         hasExisting={!!existing}
         importGameId={importGameId}
       />
-    </div>
+    </>
   );
 }

@@ -1,17 +1,16 @@
 import {Button} from "@/components/ui/button.tsx";
-import {getGameBySlugOrId} from "@/lib/db/games.ts";
+import {readGameBySlugOrId} from "@/lib/db/games-cached.ts";
 import { Link } from "@/i18n/navigation.ts";
-import {getTranslations} from "next-intl/server";
+import {getTranslations, setRequestLocale} from "next-intl/server";
 import {GameToolsNavBar} from "@/components/games/GameToolsNavBar.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
+export default async function GameRulesPage({params}: { params: Promise<{ locale: string; gameSlugOrId: string }> }) {
+  const {locale, gameSlugOrId} = await params;
+  // Sans cet appel, les fonctions serveur de next-intl lisent la langue à la
+  // requête, ce qui suffit à rendre toute la route dynamique.
+  setRequestLocale(locale);
 
-export default async function GameRulesPage({params}: { params: Promise<{ gameSlugOrId: string }> }) {
-  const {gameSlugOrId} = await params;
-
-  const game = await getGameBySlugOrId(gameSlugOrId);
+  const game = await readGameBySlugOrId(gameSlugOrId);
   const t = await getTranslations("Games");
   if (!game?.features?.rules) {
     return (

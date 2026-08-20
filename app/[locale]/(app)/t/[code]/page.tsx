@@ -1,10 +1,9 @@
+import { connection } from "next/server";
+import { Suspense } from "react";
+import { AccountPanelSkeleton } from "@/components/AccountPanelSkeleton.tsx";
 import { notFound, redirect } from "next/navigation";
 import { getTournamentByJoinCode, getTournamentByLiveCode } from "@/lib/db/tournaments.ts";
 import { ProjectionScreen } from "./ProjectionScreen.tsx";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 /**
  * Écran de la salle, joignable à l'URL courte affichée sur le panneau de
@@ -17,11 +16,15 @@ export const instant = false;
  * participation tapé sans `/join` est redirigé plutôt que rejeté : les deux
  * codes circulent dans la même salle, la confusion est le cas courant.
  */
-export default async function TournamentProjectionPage({
+async function TournamentProjectionPageContent({
   params,
 }: {
   params: Promise<{ code: string }>;
 }) {
+  // Cet écran est public : aucune lecture de session ne vient désarmer le
+  // piège Mongo, dont le pilote touche à l'horloge en cherchant le tournoi.
+  await connection();
+
   const { code } = await params;
 
   const tournament = await getTournamentByLiveCode(code);
@@ -35,4 +38,23 @@ export default async function TournamentProjectionPage({
   }
 
   notFound();
+}
+
+/**
+ * Pas de porte ici — l'écran est public. Ce qui le fait suspendre est le code
+ * de l'URL : la coquille ne sait pas encore de quel tournoi il s'agit, donc
+ * elle ne garde que le conteneur et la silhouette.
+ */
+export default function TournamentProjectionPage(props: Parameters<typeof TournamentProjectionPageContent>[0]) {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-4 py-8">
+          <AccountPanelSkeleton cards={2} label="Chargement de l’écran de salle" />
+        </div>
+      }
+    >
+      <TournamentProjectionPageContent {...props} />
+    </Suspense>
+  );
 }

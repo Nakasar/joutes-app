@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { getLocale } from "next-intl/server";
 import { getNewsById } from "@/lib/db/news.ts";
@@ -51,6 +52,12 @@ import { UserBadges } from "@/components/UserBadges.tsx";
  * le même sujet plutôt que deux traductions l'une de l'autre.
  */
 export async function buildNewsMetadata(newsId: string, requested?: Locale): Promise<Metadata> {
+  // Même piège que dans le corps, et il faut le désarmer deux fois : les
+  // métadonnées s'exécutent hors de la frontière de la page, avec leur propre
+  // lecture de l'actualité — donc leur propre passage du pilote Mongo sur
+  // l'horloge.
+  await connection();
+
   const news = await getNewsById(newsId);
   if (!news) return { title: "Actualité introuvable" };
 
@@ -88,6 +95,13 @@ type Props = {
 };
 
 export default async function NewsArticleView({ newsId, requestedLang }: Props) {
+  // Le pilote Mongo touche à l'horloge en lisant l'actualité, ce qu'un prérendu
+  // ne sait pas figer. Aucune frontière n'y change rien : c'est de la sync-IO,
+  // pas une donnée de requête. Séquencer la session avant la base ne le désarme
+  // pas non plus — vérifié. `connection()` marque explicitement ce rendu comme
+  // lié à la requête, ce qu'il est déjà : il lit la session juste après.
+  await connection();
+
   const [session, news, canWrite, interfaceLocale] = await Promise.all([
     auth.api.getSession({ headers: await headers() }),
     getNewsById(newsId),

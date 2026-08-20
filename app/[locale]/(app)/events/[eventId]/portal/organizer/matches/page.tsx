@@ -1,15 +1,14 @@
+import { Suspense } from "react";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events.ts";
-import { getPortalSettings, getMatchResults } from "../../actions.ts";
+import { getMatchResults } from "../../actions.ts";
 import { getEventParticipants } from "../../participant-actions.ts";
-import OrganizerLayoutServer from "../components/OrganizerLayoutServer.tsx";
 import OrganizerMatches from "../components/OrganizerMatches.tsx";
+import { EventTableSkeleton } from "../components/EventPortalSkeletons.tsx";
+import { readPortalSettings } from "../../portalSettings.ts";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 type OrganizerMatchesPageProps = {
   params: Promise<{
@@ -17,7 +16,21 @@ type OrganizerMatchesPageProps = {
   }>;
 };
 
-export default async function OrganizerMatchesPage({ params }: OrganizerMatchesPageProps) {
+/**
+ * La promesse de `params` descend sans être attendue : l'événement est un segment
+ * dynamique, donc la lire ici retiendrait toute la section. Elle s'attend sous la
+ * frontière, avec la session et les données. Le cadre du portail vient du layout
+ * et reste en place d'une section à l'autre.
+ */
+export default function OrganizerMatchesPage({ params }: OrganizerMatchesPageProps) {
+  return (
+    <Suspense fallback={<EventTableSkeleton rows={6} columns={4} />}>
+      <OrganizerMatchesPageSection params={params} />
+    </Suspense>
+  );
+}
+
+async function OrganizerMatchesPageSection({ params }: OrganizerMatchesPageProps) {
   const { eventId } = await params;
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -42,14 +55,11 @@ export default async function OrganizerMatchesPage({ params }: OrganizerMatchesP
     redirect(`/events/${eventId}/portal/player`);
   }
 
-  const settingsResult = await getPortalSettings(eventId);
-  const settings = settingsResult.success ? settingsResult.data : null;
+  const settings = await readPortalSettings(eventId);
 
   if (!settings) {
     return (
-      <OrganizerLayoutServer event={event} settings={null}>
-        <p>Veuillez initialiser le portail dans les paramètres</p>
-      </OrganizerLayoutServer>
+      <p>Veuillez initialiser le portail dans les paramètres</p>
     );
   }
 
@@ -60,15 +70,13 @@ export default async function OrganizerMatchesPage({ params }: OrganizerMatchesP
   const participants = participantsResult.success ? participantsResult.data || [] : [];
 
   return (
-    <OrganizerLayoutServer event={event} settings={settings}>
-      <OrganizerMatches
-        event={event}
-        settings={settings}
-        matches={matches}
-        participants={participants}
-        userId={session.user.id}
-      />
-    </OrganizerLayoutServer>
+    <OrganizerMatches
+      event={event}
+      settings={settings}
+      matches={matches}
+      participants={participants}
+      userId={session.user.id}
+    />
   );
 }
 

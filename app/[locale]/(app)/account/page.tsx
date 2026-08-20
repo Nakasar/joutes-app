@@ -1,3 +1,5 @@
+import { AccountPanelSkeleton } from "@/components/AccountPanelSkeleton.tsx";
+import { Suspense } from "react";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -18,11 +20,7 @@ import {User as UserIcon, Mail, Gamepad2, MapPin, FileText, Settings, Shield, Tr
 import { Button } from "@/components/ui/button.tsx";
 import { Link } from "@/i18n/navigation.ts";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
-export default async function AccountPage() {
+async function AccountPageContent() {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -265,5 +263,24 @@ export default async function AccountPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte, titre compris : on ne montre pas la
+ * mise en page d'un espace personnel avant de savoir à qui il appartient. La
+ * coquille ne garde que le conteneur et la silhouette.
+ */
+export default function AccountPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-4 py-8">
+          <AccountPanelSkeleton cards={3} label="Chargement de votre compte" />
+        </div>
+      }
+    >
+      <AccountPageContent />
+    </Suspense>
   );
 }

@@ -1,18 +1,15 @@
-import { getAllGames } from "@/lib/db/games.ts";
+import { readAllGames } from "@/lib/db/games-cached.ts";
 import { hasPermission } from "@/lib/db/permissions.ts";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { Metadata } from "next";
+import { Suspense } from "react";
 import { HelpCircle, PenSquare } from "lucide-react";
 import { Link } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { getTranslations } from "next-intl/server";
 import QuizListClient from "./QuizListClient.tsx";
-import { connection } from "next/server";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
+import { ContentListSkeleton } from "@/components/ContentListSkeleton.tsx";
 
 /**
  * La description nomme ce qu'un quizz fait travailler — règles, rulings,
@@ -40,20 +37,15 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function QuizzPage() {
-  // TODO: Cache Components adoption. Added to unblock the build: remove this connection() to re-trigger the error and review the fix options.
-  await connection();
-  const [games, session, canManageAll] = await Promise.all([
-    getAllGames(),
-    auth.api.getSession({ headers: await headers() }),
-    hasPermission("quizzes:update-all").catch(() => false),
-  ]);
-
-  // Écrire un quizz est ouvert à tout compte connecté ; le crayon de la liste
-  // ne s'affiche en revanche que sur ses propres quizz, ou pour la modération.
-  const canWrite = Boolean(session?.user);
-  const currentUserId = session?.user?.id;
-
+/**
+ * Le titre et l'accroche ne dépendent de rien : ils restent dans la coquille.
+ *
+ * Le `await connection()` qui était ici débloquait le pilote Mongo — il lit
+ * l'horloge, ce qu'un prérendu ne sait pas figer — au prix du rendu à la
+ * requête de toute la page. La lecture qui l'appelait est maintenant sous
+ * frontière, donc déjà rendue à la requête : le déblocage n'a plus d'objet.
+ */
+export default function QuizzPage() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="space-y-6">
@@ -67,22 +59,49 @@ export default async function QuizzPage() {
               Testez vos connaissances avec les quizz de la communauté
             </p>
           </div>
-          {canWrite && (
-            <Button asChild>
-              <Link href="/quizz/create">
-                <PenSquare className="h-4 w-4 mr-2" />
-                Créer un quizz
-              </Link>
-            </Button>
-          )}
+          {/* Pas de silhouette : ce bouton ne s'affiche qu'aux comptes
+              connectés, et lui réserver sa place la ferait sauter aux autres. */}
+          <Suspense fallback={null}>
+            <CreateQuizButton />
+          </Suspense>
         </div>
 
-        <QuizListClient
-          games={games}
-          currentUserId={currentUserId}
-          canManageAll={canManageAll}
-        />
+        <Suspense fallback={<ContentListSkeleton />}>
+          <QuizList />
+        </Suspense>
       </div>
     </div>
+  );
+}
+
+async function CreateQuizButton() {
+  // Écrire un quizz est ouvert à tout compte connecté ; le crayon de la liste
+  // ne s'affiche en revanche que sur ses propres quizz, ou pour la modération.
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) return null;
+
+  return (
+    <Button asChild>
+      <Link href="/quizz/create">
+        <PenSquare className="h-4 w-4 mr-2" />
+        Créer un quizz
+      </Link>
+    </Button>
+  );
+}
+
+async function QuizList() {
+  const [games, session, canManageAll] = await Promise.all([
+    readAllGames(),
+    auth.api.getSession({ headers: await headers() }),
+    hasPermission("quizzes:update-all").catch(() => false),
+  ]);
+
+  return (
+    <QuizListClient
+      games={games}
+      currentUserId={session?.user?.id}
+      canManageAll={canManageAll}
+    />
   );
 }

@@ -1,22 +1,58 @@
 import { requireAdmin } from "@/lib/middleware/admin.ts";
 import { Link } from "@/i18n/navigation.ts";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import type { Metadata } from "next";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 export const metadata: Metadata = {
   title: "Administration",
   robots: { index: false, follow: false },
 };
 
-export default async function AdminLayout({
+/**
+ * La porte reste devant, et elle couvre toute l'administration.
+ *
+ * `requireAdmin()` lit la session : hors frontière, elle bloquait le prérendu de
+ * la zone entière. Sous frontière, elle laisse une coquille — mais alors
+ * `{children}` passe derrière elle, et les pages n'ajoutent rien à cette
+ * coquille. C'est le prix assumé : personne ne doit voir l'ombre d'un écran
+ * d'administration avant que la porte ait répondu, pas même sa mise en page.
+ *
+ * Ce qui reste devant est donc le fond et la silhouette de la barre d'onglets.
+ */
+export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  return (
+    <div className="bg-muted/50">
+      <Suspense fallback={<AdminChromeSkeleton />}>
+        <AdminChrome>{children}</AdminChrome>
+      </Suspense>
+    </div>
+  );
+}
+
+/** La barre d'onglets, le temps que la porte réponde. */
+function AdminChromeSkeleton() {
+  return (
+    <div role="status" aria-busy="true">
+      <span className="sr-only">Vérification des droits d&apos;administration…</span>
+      <div className="border-b border-border bg-card shadow-sm">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 animate-pulse items-center gap-8" aria-hidden>
+            {[64, 40, 88, 64, 56, 64, 48].map((width, index) => (
+              <div key={index} className="h-4 shrink-0 rounded bg-muted" style={{ width }} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+async function AdminChrome({ children }: { children: React.ReactNode }) {
   try {
     await requireAdmin();
   } catch {
@@ -24,7 +60,7 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="bg-muted/50">
+    <>
       {/* Deuxième repère « navigation » de la page, après celui de l'en-tête du
           site : sans nom, un lecteur d'écran les annonce tous deux « navigation »
           et ne donne aucun moyen de les distinguer. */}
@@ -114,6 +150,6 @@ export default async function AdminLayout({
         </div>
       </nav>
       <main>{children}</main>
-    </div>
+    </>
   );
 }

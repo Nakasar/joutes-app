@@ -1,8 +1,11 @@
+import { LeagueDetailSkeleton } from "./LeagueDetailSkeleton.tsx";
+import { Suspense } from "react";
 import { getLeagueById, isLeagueOrganizer, getLeagueRanking, getLeagueParticipant } from "@/lib/db/leagues.ts";
 import { getLairById } from "@/lib/db/lairs.ts";
 import { listTournamentsByLeagueId } from "@/lib/db/tournaments.ts";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { Link } from "@/i18n/navigation.ts";
@@ -29,10 +32,6 @@ import KillerTargetsClient from "./KillerTargetsClient.tsx";
 import PointsMatchReportingClient from "./PointsMatchReportingClient.tsx";
 import LeagueRankingClient from "./LeagueRankingClient.tsx";
 import ReportButton from "@/components/ReportButton.tsx";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 const STATUS_LABELS: Record<LeagueStatus, string> = {
   DRAFT: "Brouillon",
@@ -61,6 +60,11 @@ export async function generateMetadata({
   params: Promise<{ leagueId: string }>;
 }): Promise<Metadata> {
   const { leagueId } = await params;
+
+  // Le pilote Mongo touche à l'horloge en lisant la ligue — les métadonnées s'exécutent hors
+  // de la frontière de la page, avec leur propre lecture, ce qu'un prérendu ne
+  // sait pas figer, et aucune frontière n'y change rien.
+  await connection();
   const league = await getLeagueById(leagueId);
 
   if (!league) {
@@ -79,12 +83,16 @@ export async function generateMetadata({
   };
 }
 
-export default async function LeagueDetailPage({
+async function LeagueDetailContent({
   params,
 }: {
   params: Promise<{ leagueId: string }>;
 }) {
   const { leagueId } = await params;
+
+  // Le pilote Mongo touche à l'horloge en lisant la ligue, ce qu'un prérendu ne
+  // sait pas figer, et aucune frontière n'y change rien.
+  await connection();
   const league = await getLeagueById(leagueId);
 
   if (!league) {
@@ -158,7 +166,6 @@ export default async function LeagueDetailPage({
     : [];
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -528,6 +535,21 @@ export default async function LeagueDetailPage({
           </div>
         </div>
       </div>
+  );
+}
+
+/**
+ * Une seule frontière, et c'est délibéré : toutes les sections de cette page
+ * dépendent de la session — le classement pour savoir qui lit, les boutons
+ * Rejoindre et Quitter, les tournois pour les droits d'organisation. Les
+ * découper ferait quatre frontières qui attendent toutes la même chose.
+ */
+export default function LeagueDetailPage(props: Parameters<typeof LeagueDetailContent>[0]) {
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <Suspense fallback={<LeagueDetailSkeleton />}>
+        <LeagueDetailContent {...props} />
+      </Suspense>
     </div>
   );
 }

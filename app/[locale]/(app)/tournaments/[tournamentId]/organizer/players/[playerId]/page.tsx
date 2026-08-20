@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import {
@@ -16,15 +17,19 @@ import {
   type SheetStanding,
 } from "./PlayerSheet.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
+import { CardSectionSkeleton } from "../../OrganizerSkeletons.tsx";
 
-export default async function OrganizerPlayerSheetPage({
-  params,
-}: {
-  params: Promise<{ tournamentId: string; playerId: string }>;
-}) {
+type Params = Promise<{ tournamentId: string; playerId: string }>;
+
+export default function OrganizerPlayerSheetPage({ params }: { params: Params }) {
+  return (
+    <Suspense fallback={<div className="p-6"><CardSectionSkeleton cards={3} /></div>}>
+      <OrganizerPlayerSheetPageSection params={params} />
+    </Suspense>
+  );
+}
+
+async function OrganizerPlayerSheetPageSection({ params }: { params: Params }) {
   const { tournamentId, playerId } = await params;
   const { tournament, players, rounds } = await loadOrganizerContext(tournamentId);
 

@@ -2,10 +2,11 @@
 
 import { requireAdmin } from "@/lib/middleware/admin.ts";
 import { Game } from "@/lib/types/Game.ts";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { gameSchema, gameIdSchema } from "@/lib/schemas/game.schema.ts";
 import { z } from "zod";
 import * as gamesDb from "@/lib/db/games.ts";
+import { GAMES_CACHE_TAG } from "@/lib/db/games-cached.ts";
 import { mergeGameFeatures, type GameFeatureKey } from "@/lib/constants/game-features.ts";
 
 export async function getGames(): Promise<Game[]> {
@@ -49,6 +50,9 @@ export async function createGame(data: GameFormData) {
         popularityScore: 0,
       },
     });
+    // Les pages publiques lisent le catalogue en cache : sans cette invalidation,
+    // une édition n'y apparaîtrait qu'à l'expiration de `cacheLife`.
+    updateTag(GAMES_CACHE_TAG);
     revalidatePath("/admin/games");
     revalidatePath(`/games`);
     revalidatePath(`/games/${newGame.slug ?? newGame.id}`);
@@ -91,6 +95,9 @@ export async function updateGame(id: string, data: GameFormData) {
       return { success: false, error: "Jeu non trouvé" };
     }
     
+    // Les pages publiques lisent le catalogue en cache : sans cette invalidation,
+    // une édition n'y apparaîtrait qu'à l'expiration de `cacheLife`.
+    updateTag(GAMES_CACHE_TAG);
     revalidatePath("/admin/games");
     revalidatePath("/admin/lairs");
     revalidatePath(`/games`);
@@ -129,6 +136,9 @@ export async function deleteGame(id: string) {
       return { success: false, error: "Jeu non trouvé" };
     }
     
+    // Les pages publiques lisent le catalogue en cache : sans cette invalidation,
+    // une édition n'y apparaîtrait qu'à l'expiration de `cacheLife`.
+    updateTag(GAMES_CACHE_TAG);
     revalidatePath("/admin/games");
     revalidatePath("/admin/lairs");
     revalidatePath(`/games`);
@@ -172,6 +182,9 @@ export async function updateGameFeaturedLairs(
       return { success: false, error: "Jeu non trouvé" };
     }
 
+    // Les pages publiques lisent le catalogue en cache : sans cette invalidation,
+    // une édition n'y apparaîtrait qu'à l'expiration de `cacheLife`.
+    updateTag(GAMES_CACHE_TAG);
     revalidatePath("/admin/games");
     revalidatePath(`/games/${game.slug ?? game.id}`);
 

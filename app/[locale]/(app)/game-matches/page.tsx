@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { CollectionSkeleton } from "@/components/CollectionSkeleton.tsx";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -9,10 +11,6 @@ import { Link } from "@/i18n/navigation.ts";
 import { Plus } from "lucide-react";
 import GameMatchesClient from "./GameMatchesClient.tsx";
 import type { Metadata } from "next";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 export const metadata: Metadata = {
   title: "Historique des parties",
@@ -26,7 +24,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function GameMatchesPage() {
+async function GameMatchesPageContent() {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -60,5 +58,24 @@ export default async function GameMatchesPage() {
 
       <GameMatchesClient matches={matches} games={games} lairs={lairs} currentUserId={session.user.id} />
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
+ * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
+ * porte ait répondu.
+ */
+export default function GameMatchesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-4 py-8">
+          <CollectionSkeleton tiles={8} label="Chargement de vos parties" />
+        </div>
+      }
+    >
+      <GameMatchesPageContent />
+    </Suspense>
   );
 }

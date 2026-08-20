@@ -788,6 +788,7 @@
     },
     "DeckChecker": {
       "title": "Riftbound Deck Checker",
+      "back": "Back to the game portal",
       "description": "Check the legality of your deck and get information about its cards and their rulings",
       "form": {
         "label": "Deck list (text or Piltover Archive link)",

@@ -1,14 +1,12 @@
+import { Suspense } from "react";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { getEventById } from "@/lib/db/events.ts";
-import { getPortalSettings, getAnnouncements } from "../../actions.ts";
-import OrganizerLayoutServer from "../components/OrganizerLayoutServer.tsx";
+import { getAnnouncements } from "../../actions.ts";
 import OrganizerAnnouncements from "../components/OrganizerAnnouncements.tsx";
+import { EventSectionSkeleton } from "../components/EventPortalSkeletons.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 type OrganizerAnnouncementsPageProps = {
   params: Promise<{
@@ -16,7 +14,21 @@ type OrganizerAnnouncementsPageProps = {
   }>;
 };
 
-export default async function OrganizerAnnouncementsPage({ params }: OrganizerAnnouncementsPageProps) {
+/**
+ * La promesse de `params` descend sans être attendue : l'événement est un segment
+ * dynamique, donc la lire ici retiendrait toute la section. Elle s'attend sous la
+ * frontière, avec la session et les données. Le cadre du portail vient du layout
+ * et reste en place d'une section à l'autre.
+ */
+export default function OrganizerAnnouncementsPage({ params }: OrganizerAnnouncementsPageProps) {
+  return (
+    <Suspense fallback={<EventSectionSkeleton rows={3} />}>
+      <OrganizerAnnouncementsPageSection params={params} />
+    </Suspense>
+  );
+}
+
+async function OrganizerAnnouncementsPageSection({ params }: OrganizerAnnouncementsPageProps) {
   const { eventId } = await params;
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -41,16 +53,11 @@ export default async function OrganizerAnnouncementsPage({ params }: OrganizerAn
     redirect(`/events/${eventId}/portal/player`);
   }
 
-  const settingsResult = await getPortalSettings(eventId);
-  const settings = settingsResult.success ? settingsResult.data : null;
-
   const announcementsResult = await getAnnouncements(eventId);
   const announcements = announcementsResult.success ? announcementsResult.data || [] : [];
 
   return (
-    <OrganizerLayoutServer event={event} settings={settings}>
-      <OrganizerAnnouncements event={event} announcements={announcements} />
-    </OrganizerLayoutServer>
+    <OrganizerAnnouncements event={event} announcements={announcements} />
   );
 }
 
