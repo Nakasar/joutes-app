@@ -1,11 +1,12 @@
 import {auth} from "@/lib/auth.ts";
 import {getAllPolicies, countAllPolicies} from "@/lib/db/policies.ts";
-import db from "@/lib/mongodb.ts";
-import {Game} from "@/lib/types/Game.ts";
+import {readGameBySlugOrId} from "@/lib/db/games-cached.ts";
 import {headers} from "next/headers";
 import {notFound} from "next/navigation";
 import {Metadata} from "next/types";
+import {Suspense} from "react";
 import PoliciesClientView from "./PoliciesClientView.tsx";
+import {PoliciesHeaderSkeleton, PoliciesListSkeleton} from "./PoliciesSkeletons.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import { Link } from "@/i18n/navigation.ts";
 import {hasPermission} from "@/lib/db/permissions.ts";
@@ -15,19 +16,17 @@ import {GameToolsNavBar} from "@/components/games/GameToolsNavBar.tsx";
 import {ObjectId} from "mongodb";
 import {resolveCardMentions} from "@/lib/game-content-cards.ts";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
 const PAGE_SIZE = 20;
+
+type GameParams = Promise<{ gameSlugOrId: string }>;
 
 export async function generateMetadata({
                                          params
                                        }: {
-  params: Promise<{ gameSlugOrId: string }>
+  params: GameParams
 }): Promise<Metadata> {
   const {gameSlugOrId} = await params;
-  const game = await db.collection<Game>("games").findOne({slug: gameSlugOrId});
+  const game = await readGameBySlugOrId(gameSlugOrId);
   const t = await getTranslations("Games");
 
   if (!game) {
@@ -47,19 +46,70 @@ export async function generateMetadata({
   };
 }
 
-export default async function GamePoliciesPage({
-                                                 params,
-                                                 searchParams,
-                                               }: {
-  params: Promise<{ gameSlugOrId: string }>;
+/**
+ * Deux frontières : l'en-tête ne dépend que du jeu, la liste dépend en plus de
+ * la session — les droits d'ajout et de vote — et de la page demandée.
+ *
+ * La page n'attend plus rien elle-même. Les promesses descendent telles quelles
+ * et ne sont attendues que sous frontière ; les attendre ici rendrait toute la
+ * route dynamique.
+ */
+export default function GamePoliciesPage({
+                                           params,
+                                           searchParams,
+                                         }: {
+  params: GameParams;
+  searchParams: Promise<{ page?: string }>;
+}) {
+  return (
+    <div className="container mx-auto p-6">
+      <Suspense fallback={<PoliciesHeaderSkeleton />}>
+        <PoliciesHeader params={params} />
+      </Suspense>
+
+      <Suspense fallback={<PoliciesListSkeleton />}>
+        <PoliciesList params={params} searchParams={searchParams} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function PoliciesHeader({ params }: { params: GameParams }) {
+  const {gameSlugOrId} = await params;
+
+  const game = await readGameBySlugOrId(gameSlugOrId);
+  if (!game || !game.slug) notFound();
+
+  const t = await getTranslations("Games");
+
+  return (
+    <div className="flex flex-row flex-wrap justify-between">
+      <div className="flex flex-row flex-wrap gap-4">
+        <Button asChild>
+          <Link href={`/games/${game.slug}`} className="text-blue-600 hover:underline">
+            ← {t("policies.back")}
+          </Link>
+        </Button>
+        <h1 className="text-3xl font-bold">{t("policies.title", { gameName: game.name })}</h1>
+      </div>
+      <GameToolsNavBar gameSlug={gameSlugOrId} currentTab={'policies'} />
+    </div>
+  );
+}
+
+async function PoliciesList({
+                              params,
+                              searchParams,
+                            }: {
+  params: GameParams;
   searchParams: Promise<{ page?: string }>;
 }) {
   const {gameSlugOrId} = await params;
 
-  const game = await db.collection<Game>("games").findOne({slug: gameSlugOrId});
+  const game = await readGameBySlugOrId(gameSlugOrId);
   if (!game || !game.slug) notFound();
 
-  const gameId = game._id.toString();
+  const gameId = game.id;
 
   const session = await auth.api.getSession({headers: await headers()});
   const userId = session?.user?.id;
@@ -80,21 +130,9 @@ export default async function GamePoliciesPage({
   );
   const locale = await getLocale();
   const ruleLang = locale === "fr" ? "fr" : "en";
-  const t = await getTranslations("Games");
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex flex-row flex-wrap justify-between">
-        <div className="flex flex-row flex-wrap gap-4">
-          <Button asChild>
-            <Link href={`/games/${game.slug}`} className="text-blue-600 hover:underline">
-              ← {t("policies.back")}
-            </Link>
-          </Button>
-          <h1 className="text-3xl font-bold">{t("policies.title", { gameName: game.name })}</h1>
-        </div>
-        <GameToolsNavBar gameSlug={gameSlugOrId} currentTab={'policies'} />
-      </div>
+    <>
       <div className="flex items-center justify-end my-4 w-full">
         {userCanUpdatePolicies && <AddPolicyDialog gameId={gameId} gameSlug={game.slug}/>}
       </div>
@@ -112,6 +150,6 @@ export default async function GamePoliciesPage({
         userCanUpdatePolicies={userCanUpdatePolicies}
         userCanVotePolicies={userCanVotePolicies}
       />
-    </div>
+    </>
   );
 }

@@ -17,7 +17,7 @@ Next 16.3.1, `cacheComponents: true` sur `main`.
 
 891 pages construites. Avant l'adoption : **zéro** route avec coquille statique.
 
-**107 pages portent encore un opt-out `export const instant = false`** — 103
+**102 pages portent encore un opt-out `export const instant = false`** — 97
 marqueurs `TODO: Cache Components adoption`, plus quatre blocages assumés qui
 portent une raison au lieu d'un TODO : le layout du portail organisateur de
 tournoi, les deux layouts du portail d'événement, et son aiguillage `portal/page.tsx`.
@@ -414,9 +414,32 @@ Sur les routes à segment dynamique, on passe de *rien de prérendu du tout* à
 *le cadre prérendu, le contenu en flux*. C'est exactement l'objectif de
 l'adoption.
 
+### Ce que la coquille contient — et ce qu'elle ne contiendra jamais
+
+Sur une route à segment dynamique, la coquille est **exactement
+`AppFrameFallback`**, rien de plus. Vérifié sur `quizz` : le fichier de 4 151 o
+contient une seule balise `<header`, et ni le conteneur de la page
+(`max-w-7xl`), ni la grille des cartes, ni aucun `animate-pulse`.
+
+La raison est structurelle : `{children}` est rendu *à l'intérieur* de
+`LocalizedFrame`, qui suspend sur ces routes. Tout ce qui est sous cette
+frontière — y compris les frontières propres à la page — part avec le flux.
+
+**Conséquence pour les pages qui restent : une silhouette de page ne fait pas
+grossir la coquille.** Elle sert au flux, pas au premier rendu. Ce qui reste
+gagné en découpant une page :
+
+- l'opt-out saute, ce qui est la condition pour que la route soit adoptée ;
+- les morceaux arrivent dans l'ordre, au lieu que la page entière attende sa
+  lecture la plus lente — sur `quizz`, l'en-tête n'attend que le jeu, la liste
+  attend en plus la page demandée.
+
+Ne pas dessiner de silhouette en espérant un meilleur premier rendu : sur ces
+routes, le premier rendu est le cadre, et lui seul.
+
 ## Ce qui reste
 
-Répartition des 107 opt-outs par ce qui bloque la page :
+Répartition des opt-outs par ce qui bloque la page :
 
 | ce que lit `page.tsx` | pages |
 |---|---|
