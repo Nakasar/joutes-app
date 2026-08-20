@@ -17,7 +17,7 @@ Next 16.3.1, `cacheComponents: true` sur `main`.
 
 891 pages construites. Avant l'adoption : **zéro** route avec coquille statique.
 
-**95 pages portent encore un opt-out `export const instant = false`** — 90
+**84 pages portent encore un opt-out `export const instant = false`** — 79
 marqueurs `TODO: Cache Components adoption`, plus quatre blocages assumés qui
 portent une raison au lieu d'un TODO : le layout du portail organisateur de
 tournoi, les deux layouts du portail d'événement, et son aiguillage `portal/page.tsx`.
@@ -29,7 +29,7 @@ compte — ceux des messages de commit antérieurs, non.
 
 ## La méthode — à lire avant de toucher quoi que ce soit
 
-Sept oracles se sont révélés menteurs au cours de l'adoption. Chacun a coûté un
+Huit oracles se sont révélés menteurs au cours de l'adoption. Chacun a coûté un
 aller-retour ou une régression avant d'être remplacé.
 
 Ils ont un trait commun : **aucun ne se signale**. Ils rendent vert, ou muet, et
@@ -154,7 +154,41 @@ comparant chaque route à son état sur `main`.
 
 Extraire `([○◐ƒ])\s+(/\S+)` des deux sorties de build et diffuser par clé.
 
-### Deux pièges de mesure, pas de code
+### 8. Un `not-found.tsx` fait partie de la coquille de tout son sous-arbre
+
+**Ce piège a coûté une conclusion fausse, écrite dans ce document même.**
+
+Constat : les onze pages d'outils de jeu sortaient une coquille de 4 321 octets
+— le seul cadre de l'application, sans rien de la page — alors que les pages
+d'actualités, découpées exactement pareil, en sortaient 17 500 avec leurs
+silhouettes. J'en ai d'abord conclu qu'une silhouette de page ne pouvait pas
+tenir dans la coquille d'une route à segment dynamique. C'était faux.
+
+La cause était dans `games/[gameSlugOrId]/not-found.tsx`, un fichier que je
+n'avais jamais ouvert. Il contenait deux `Link` localisés. **Next prépare la
+limite `not-found` dans la coquille de chaque route du sous-arbre**, même quand
+aucune n'échoue : ces deux liens lisaient le chemin courant — inconnu au
+prérendu d'une route à segment dynamique — et suspendaient les onze coquilles.
+
+Mesuré sur la galerie de cartes, même build, seul ce fichier changeant :
+
+| `not-found.tsx` | coquille |
+|---|---|
+| avec `Link` localisé | 4 321 o, silhouettes absentes |
+| sans | 18 522 o, silhouettes comprises |
+
+**Une frontière `<Suspense>` autour des liens ne suffit pas** — vérifié : Next
+prérend ce fichier hors du contexte de la page, et la frontière n'y arrête rien.
+Il faut que le `Link` disparaisse. Les `<a>` coûtent une navigation complète et
+un aller-retour par le proxy pour retrouver la langue, que le cookie porte ; sur
+un écran d'erreur, c'est sans conséquence.
+
+Corollaire, à vérifier avant de conclure quoi que ce soit sur une coquille
+maigre : **`not-found.tsx`, `error.tsx` et `loading.tsx` d'un segment comptent
+dans la coquille de tout ce qui est en dessous.** La règle du `Link` localisé
+s'y applique comme aux replis.
+
+### Trois pièges de mesure, pas de code
 
 **La console accumule.** Le navigateur garde les messages d'une navigation à
 l'autre dans le même onglet : une erreur lue après avoir visité trois pages peut
@@ -162,6 +196,18 @@ venir de la première. Pour attribuer une erreur à une route, **un onglet neuf
 par route**. Une erreur d'hydratation a été imputée à toute l'application avant
 que cette précaution soit prise ; elle ne concernait qu'une page, et ne survit
 pas au build de production.
+
+**Un onglet dont le socket HMR est mort montre un état figé.** Après un
+redémarrage de `next dev`, l'onglet resté ouvert continue de répondre, mais son
+flux ne se termine plus : il affiche indéfiniment les silhouettes, comme si le
+contenu ne venait jamais. La page des produits d'un jeu a été prise pour une
+régression à ce titre — le serveur diffusait pourtant bien son écran d'erreur,
+et un onglet neuf l'affichait correctement.
+
+Le signe est dans la console : `WebSocket connection to '.../_next/hmr' failed`,
+répété. **Rouvrir un onglet, pas recharger celui-ci.** C'est le même réflexe que
+pour la console qui accumule, et pour la même raison : l'onglet est un état, pas
+une mesure.
 
 **Une route derrière une authentification ne se teste pas avec `curl`.** Sans
 session, elle redirige vers `/login` : rien ne rend, donc rien n'est validé, et
@@ -218,6 +264,18 @@ première position. Les quatre autres s'en sortent par accident :
 Cette dépendance est fragile : déplacer un `await searchParams` sous la lecture
 Mongo suffit à rouvrir le piège, sans qu'aucune porte locale ne le signale.
 
+**Une frontière `<Suspense>` ne le désarme pas.** C'est de la sync-IO, pas une
+donnée de requête : le mécanisme qui met le contenu en flux n'y change rien.
+Séquencer la session avant la lecture Mongo, plutôt que de les lancer ensemble
+en `Promise.all`, ne suffit pas non plus — vérifié sur la page d'une actualité.
+Seul `await connection()` le désarme.
+
+**Et il faut le désarmer deux fois** quand `generateMetadata` lit la même base.
+Les métadonnées s'exécutent hors de la frontière de la page, avec leur propre
+lecture, donc leur propre passage du pilote sur l'horloge. Un `connection()`
+dans le corps laisse celui des métadonnées armé — c'est ce qui restait allumé
+sur `/news/[newsId]` après avoir cru l'avoir corrigé.
+
 ### `setRequestLocale` se pose à deux endroits, pas un
 
 Le document disait « l'appeler dans la page ». C'est insuffisant :
@@ -227,6 +285,13 @@ requête et rend toute la route dynamique — quoi que fasse le corps.
 
 Le symptôme est un `blocking-prerender-runtime` sur une page dont le corps est
 pourtant irréprochable. Vérifié sur `games/[gameSlugOrId]/page.tsx`.
+
+**Et il en faut un dans toute page qui garde un `Link` localisé hors frontière.**
+L'appel du layout ne porte pas jusque-là : layout et page rendent chacun de leur
+côté. Un `Link` laissé dans la coquille compose son adresse avec la langue, que
+next-intl relit alors à la requête — et toute la route redevient dynamique. La
+trace désigne `i18n/request.ts`, jamais le `Link`. Vu sur `/news/create` et
+`/quizz/create`, dont le seul lien statique est le bouton de retour.
 
 ### Le cas du `Link` localisé
 
@@ -414,29 +479,20 @@ Sur les routes à segment dynamique, on passe de *rien de prérendu du tout* à
 *le cadre prérendu, le contenu en flux*. C'est exactement l'objectif de
 l'adoption.
 
-### Ce que la coquille contient — et ce qu'elle ne contiendra jamais
+### Ce que la coquille contient, mesuré
 
-Sur une route à segment dynamique, la coquille est **exactement
-`AppFrameFallback`**, rien de plus. Vérifié sur `quizz` : le fichier de 4 151 o
-contient une seule balise `<header`, et ni le conteneur de la page
-(`max-w-7xl`), ni la grille des cartes, ni aucun `animate-pulse`.
+Deux formes de coquille, selon la route :
 
-La raison est structurelle : `{children}` est rendu *à l'intérieur* de
-`LocalizedFrame`, qui suspend sur ces routes. Tout ce qui est sous cette
-frontière — y compris les frontières propres à la page — part avec le flux.
+| route | coquille |
+|---|---|
+| sans segment dynamique (`/news`, `/quizz`) | la page prérendue, titre et accroche compris — 32 Ko |
+| avec segment dynamique (`/news/[newsId]`, outils de jeu) | le cadre plus les silhouettes de la page — 18 Ko |
 
-**Conséquence pour les pages qui restent : une silhouette de page ne fait pas
-grossir la coquille.** Elle sert au flux, pas au premier rendu. Ce qui reste
-gagné en découpant une page :
-
-- l'opt-out saute, ce qui est la condition pour que la route soit adoptée ;
-- les morceaux arrivent dans l'ordre, au lieu que la page entière attende sa
-  lecture la plus lente — sur `quizz`, l'en-tête n'attend que le jeu, la liste
-  attend en plus la page demandée.
-
-Ne pas dessiner de silhouette en espérant un meilleur premier rendu : sur ces
-routes, le premier rendu est le cadre, et lui seul.
-
+Sur une route à segment dynamique, le contenu localisé part toujours en flux :
+`{children}` est rendu sous `LocalizedFrame`, qui suspend là (voir « Le verrou du
+layout racine »). Mais **les silhouettes, elles, tiennent dans la coquille** —
+à condition qu'aucun `Link` localisé ne traîne dans la page, ses replis, ou les
+fichiers de limite du segment.
 ## Ce qui reste
 
 Répartition des opt-outs par ce qui bloque la page :
@@ -457,15 +513,15 @@ Répartition des opt-outs par ce qui bloque la page :
 **Plus aucun lot mécanique n'est disponible.** Chaque route restante demande de
 décider ce qui appartient à la coquille et ce qui arrive en flux.
 
-Par zone : `admin` 12, `play-groups` 8, `collection` 7, `account` 7, `news` 6,
-`leagues` 6, `events` 6, `quizz` 5, `games` 3, `tournaments` 3.
+Par zone : `admin` 12, `play-groups` 8, `collection` 7, `account` 7,
+`leagues` 6, `events` 6, `games` 3, `tournaments` 3.
 
-`games` est presque faite : il ne reste que le portail du jeu, la fiche de
-carte — les deux plus grosses pages de l'application — et le vérificateur de
-deck, dont le blocage est assumé.
+`news` et `quizz` sont faites entièrement. `games` est presque faite : il ne
+reste que le portail du jeu, la fiche de carte — les deux plus grosses pages de
+l'application — et le vérificateur de deck, dont le blocage est assumé.
 
-`news` et `quizz` sont publiques, donc vérifiables sans session et visibles
-d'un visiteur non connecté : ce sont les plus rentables à traiter ensuite.
+Les zones qui restent sont toutes derrière une session. Ce sont donc celles où
+les pièges de mesure comptent le plus : ni `curl`, ni onglet recyclé.
 
 ### Les portails, comme modèle
 

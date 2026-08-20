@@ -1,11 +1,9 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import NewsArticleView, { buildNewsMetadata } from "../NewsArticleView.tsx";
 import { parseLocale } from "@/lib/news/localize.ts";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
+import { ArticleSkeleton } from "@/components/ArticleSkeleton.tsx";
 
 type Props = { params: Promise<{ newsId: string; lang: string }> };
 
@@ -27,7 +25,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return buildNewsMetadata(newsId, locale);
 }
 
-export default async function NewsDetailInLanguagePage({ params }: Props) {
+/**
+ * Une seule frontière, comme `/news/:newsId` : tout vient de l'actualité et de
+ * la session.
+ */
+export default function NewsDetailInLanguagePage({ params }: Props) {
+  return (
+    <Suspense fallback={<NewsArticleFallback />}>
+      <NewsArticleInLanguage params={params} />
+    </Suspense>
+  );
+}
+
+function NewsArticleFallback() {
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <ArticleSkeleton />
+    </div>
+  );
+}
+
+async function NewsArticleInLanguage({ params }: Props) {
   const { newsId, lang } = await params;
 
   const locale = parseLocale(lang);
