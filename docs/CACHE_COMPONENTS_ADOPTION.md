@@ -17,7 +17,7 @@ Next 16.3.1, `cacheComponents: true` sur `main`.
 
 891 pages construites. Avant l'adoption : **zéro** route avec coquille statique.
 
-**12 pages portent encore un opt-out `export const instant = false`** : 7 avec
+**11 pages portent encore un opt-out `export const instant = false`** : 6 avec
 un marqueur `TODO: Cache Components adoption`, et 5 blocages assumés qui portent
 une raison à la place — le layout du portail organisateur de tournoi, les deux
 layouts du portail d'événement, son aiguillage `portal/page.tsx`, et le
@@ -26,7 +26,7 @@ composer l'image de partage.
 
 **Attention en comptant : les marqueurs `TODO` ne comptent pas les opt-outs.**
 Ils marquent aussi les déblocages `await connection()`, qui n'ont rien à voir.
-Il y en a 10 en tout pour 7 opt-outs marqués. Les deux commandes qui donnent
+Il y en a 9 en tout pour 6 opt-outs marqués. Les deux commandes qui donnent
 les vrais chiffres :
 
 ```bash
@@ -36,7 +36,7 @@ comm -23 <(grep -rl 'instant = false' app/ | sort) \
          <(grep -rl 'TODO: Cache Components adoption' app/ | sort)
 ```
 
-40 pages portent un déblocage `await connection()` — le piège Mongo est devenu
+41 pages portent un déblocage `await connection()` — le piège Mongo est devenu
 la contrainte la plus fréquente sur ce qui reste.
 
 Les pages vivent sous `app/[locale]/(app)/` depuis la correction de collision de
@@ -590,7 +590,7 @@ Répartition des opt-outs par ce qui bloque la page :
 **Plus aucun lot mécanique n'est disponible.** Chaque route restante demande de
 décider ce qui appartient à la coquille et ce qui arrive en flux.
 
-**Il ne reste que sept pages à adopter**, et ce sont les sept plus grosses de
+**Il ne reste que six pages à adopter**, et ce sont les sept plus grosses de
 l'application :
 
 | page | lignes |
@@ -601,11 +601,39 @@ l'application :
 | `events/[eventId]` | 474 |
 | `leagues/[leagueId]/matches` | 360 |
 | `lairs/[lairId]` | 359 |
-| `games/[gameSlugOrId]` | 330 |
 
 Chacune demande sa propre passe : ce sont des écrans composés de plusieurs
 sections aux dépendances différentes, où le découpage se décide section par
 section plutôt qu'au gabarit.
+
+### Le portail d'un jeu, comme modèle pour les six autres
+
+C'est la première de ces grosses pages à être passée, et sa forme se
+généralise. Trois dépendances s'y croisaient, et les mélanger faisait attendre
+le tout à la plus lente :
+
+| dépendance | sections | ce qu'elle coûte |
+|---|---|---|
+| le jeu seul | héros, présentation, outils, communauté | une lecture en cache — quasi immédiat |
+| la session | les boutons Suivre et Favori | session, puis lecture du compte |
+| une seconde lecture en base | actualités, agenda des lieux | une requête chacune |
+
+Deux décisions valent d'être reprises ailleurs :
+
+- **La frontière des boutons de suivi est *dans* le héros**, pas autour de lui.
+  Le nom du jeu n'a aucune raison d'attendre l'identité du visiteur.
+- **Une seule section s'annonce.** Cinq silhouettes chargent en même temps ; si
+  chacune portait `role="status"`, une synthèse vocale débiterait cinq
+  « Chargement de… » d'affilée. Le héros parle au nom de la page, les autres
+  sont décoratives.
+
+Le fond du repli est sombre, comme l'écran : le portail est le seul de
+l'application à l'être, et des rectangles clairs y auraient éclairé la page
+avant de disparaître.
+
+Coquille : **20 610 octets**, contre 18 289 sur `main` — soit le cadre de
+l'application seul. La différence est faible en octets et grande à l'écran :
+c'est la page entière qui apparaît d'un coup au lieu de rien.
 
 Toutes les autres zones sont faites. Les cinq opt-outs restants sont les
 blocages assumés.
