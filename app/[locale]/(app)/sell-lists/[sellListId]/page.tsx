@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { CollectionSkeleton } from "@/components/CollectionSkeleton.tsx";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
@@ -13,6 +14,11 @@ export async function generateMetadata({
 }: {
   params: Promise<{ sellListId: string }>;
 }): Promise<Metadata> {
+  // Le pilote Mongo touche à l'horloge en lisant la base, ce qu'un prérendu
+  // ne sait pas figer. Les métadonnées s'exécutent hors de la frontière de la
+  // page : le déblocage du corps ne les couvre pas.
+  await connection();
+
   const { sellListId } = await params;
   const t = await getTranslations("SellLists");
   const sellList = await getSellListById(sellListId);

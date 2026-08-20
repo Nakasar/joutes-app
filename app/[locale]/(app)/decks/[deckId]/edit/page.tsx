@@ -4,6 +4,7 @@ import { getDeckById } from "@/lib/db/decks.ts";
 import { getAllGames } from "@/lib/db/games.ts";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
+import { connection } from "next/server";
 import { notFound, redirect } from "next/navigation";
 import { Metadata } from "next";
 import EditDeckForm from "./EditDeckForm.tsx";
@@ -11,6 +12,11 @@ import EditDeckForm from "./EditDeckForm.tsx";
 type Params = Promise<{ deckId: string }>;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  // Le pilote Mongo touche à l'horloge en lisant la base, ce qu'un prérendu
+  // ne sait pas figer. Les métadonnées s'exécutent hors de la frontière de la
+  // page : le déblocage du corps ne les couvre pas.
+  await connection();
+
   const { deckId } = await params;
   const deck = await getDeckById(deckId);
 

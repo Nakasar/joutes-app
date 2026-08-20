@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { AccountPanelSkeleton } from "@/components/AccountPanelSkeleton.tsx";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { getPolicyById } from "@/lib/db/policies.ts";
 import { hasPermission } from "@/lib/db/permissions.ts";
@@ -17,6 +18,11 @@ import { Locale } from "@/i18n/config.ts";
 type Props = { params: Promise<{ policyId: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  // Le pilote Mongo touche à l'horloge en lisant la base, ce qu'un prérendu
+  // ne sait pas figer. Les métadonnées s'exécutent hors de la frontière de la
+  // page : le déblocage du corps ne les couvre pas.
+  await connection();
+
   const { policyId } = await params;
   const policy = await getPolicyById(policyId);
 

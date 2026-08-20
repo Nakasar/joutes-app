@@ -17,7 +17,7 @@ Next 16.3.1, `cacheComponents: true` sur `main`.
 
 891 pages construites. Avant l'adoption : **zéro** route avec coquille statique.
 
-**7 pages portent encore un opt-out `export const instant = false`** : 2 avec
+**6 pages portent encore un opt-out `export const instant = false`** : 1 avec
 un marqueur `TODO: Cache Components adoption`, et 5 blocages assumés qui portent
 une raison à la place — le layout du portail organisateur de tournoi, les deux
 layouts du portail d'événement, son aiguillage `portal/page.tsx`, et le
@@ -26,7 +26,7 @@ composer l'image de partage.
 
 **Attention en comptant : les marqueurs `TODO` ne comptent pas les opt-outs.**
 Ils marquent aussi les déblocages `await connection()`, qui n'ont rien à voir.
-Il y en a 5 en tout pour 2 opt-outs marqués. Les deux commandes qui donnent
+Il y en a 4 en tout pour 1 opt-outs marqués. Les deux commandes qui donnent
 les vrais chiffres :
 
 ```bash
@@ -36,7 +36,7 @@ comm -23 <(grep -rl 'instant = false' app/ | sort) \
          <(grep -rl 'TODO: Cache Components adoption' app/ | sort)
 ```
 
-44 pages portent un déblocage `await connection()` — le piège Mongo est devenu
+51 pages portent un déblocage `await connection()` — le piège Mongo est devenu
 la contrainte la plus fréquente sur ce qui reste.
 
 Les pages vivent sous `app/[locale]/(app)/` depuis la correction de collision de
@@ -590,13 +590,12 @@ Répartition des opt-outs par ce qui bloque la page :
 **Plus aucun lot mécanique n'est disponible.** Chaque route restante demande de
 décider ce qui appartient à la coquille et ce qui arrive en flux.
 
-**Il ne reste que deux pages à adopter**, et ce sont les sept plus grosses de
+**Il ne reste qu'une page à adopter**, et ce sont les sept plus grosses de
 l'application :
 
 | page | lignes |
 |---|---|
 | `events/[eventId]` | 474 |
-| `leagues/[leagueId]/matches` | 360 |
 
 Chacune demande sa propre passe : ce sont des écrans composés de plusieurs
 sections aux dépendances différentes, où le découpage se décide section par
@@ -698,6 +697,35 @@ frontière **sans silhouette** : leur réserver une place déplacerait la mise e
 page pour la majorité qui ne les verra jamais.
 
 Coquille du profil : **18 585 octets**.
+
+### Un identifiant inventé est un mauvais oracle
+
+Balayer une route à segment dynamique avec un identifiant qui n'existe pas —
+`/decks/d1`, `/wishlists/w1` — ne prouve pas grand-chose : **une requête qui ne
+trouve rien ne déclenche pas toujours le piège Mongo.** Le pilote n'a pas besoin
+d'aller assez loin pour toucher à l'horloge.
+
+C'est ainsi que neuf `generateMetadata` sont passés entre les mailles pendant
+plusieurs passes : leurs pages étaient « vertes » au balayage, avec des
+identifiants inventés. Le piège n'est apparu que sur une page testée avec une
+vraie ligue.
+
+La liste se sort en une commande, et vaut mieux que le balayage :
+
+```bash
+# les métadonnées qui lisent la base sans avoir désarmé le piège
+for f in $(find app -name page.tsx); do
+  awk '/^export async function generateMetadata/,/^}/' "$f" > /tmp/mb
+  grep -qE 'get[A-Z]|db\.collection' /tmp/mb && ! grep -q 'await connection()' /tmp/mb \
+    && echo "$f"
+done
+```
+
+**Attention en l'appliquant** : le déblocage n'a de sens que là où la lecture
+touche vraiment Mongo. Posé sur `/cgu` et `/privacy`, dont les métadonnées ne
+lisent qu'un document statique, il a rendu leurs routes dynamiques et fait
+apparaître une erreur `uncached data` qui n'existait pas. Les deux ont été
+remises en l'état. Le balayage donne des candidats, pas des corrections.
 
 Toutes les autres zones sont faites. Les cinq opt-outs restants sont les
 blocages assumés.
