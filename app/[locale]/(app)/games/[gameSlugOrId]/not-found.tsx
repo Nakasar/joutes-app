@@ -37,20 +37,24 @@ export default function GameNotFound() {
           Le jeu que vous recherchez n&apos;existe pas ou a été supprimé.
         </p>
 
+        {/* `asChild` pour que le bouton *soit* le lien. Enveloppé, il rendait un
+            `<button>` dans un `<a>` — contenu interactif imbriqué, invalide en
+            HTML et confus au clavier comme à la synthèse vocale. Le défaut
+            existait déjà avec le `Link`. */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <a href="/games">
-            <Button size="lg" variant="secondary" className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20">
+          <Button asChild size="lg" variant="secondary" className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20">
+            <a href="/games">
               <Search className="h-5 w-5 mr-2" />
               Parcourir tous les jeux
-            </Button>
-          </a>
+            </a>
+          </Button>
 
-          <a href="/">
-            <Button size="lg" className="bg-white text-black hover:bg-gray-200">
+          <Button asChild size="lg" className="bg-white text-black hover:bg-gray-200">
+            <a href="/">
               <ArrowLeft className="h-5 w-5 mr-2" />
               Retour à l&apos;accueil
-            </Button>
-          </a>
+            </a>
+          </Button>
         </div>
       </div>
     </div>
