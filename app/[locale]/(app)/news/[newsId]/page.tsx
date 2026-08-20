@@ -1,9 +1,7 @@
 import { Metadata } from "next";
+import { Suspense } from "react";
 import NewsArticleView, { buildNewsMetadata } from "./NewsArticleView.tsx";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
+import { ArticleSkeleton } from "@/components/ArticleSkeleton.tsx";
 
 type Props = { params: Promise<{ newsId: string }> };
 
@@ -17,7 +15,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return buildNewsMetadata(newsId);
 }
 
-export default async function NewsDetailPage({ params }: Props) {
+/**
+ * Une seule frontière : tout ce que cette page affiche vient de l'actualité et
+ * de la session — il n'y a rien à en sortir qui tiendrait dans une coquille.
+ */
+export default function NewsDetailPage({ params }: Props) {
+  return (
+    <Suspense fallback={<NewsArticleFallback />}>
+      <NewsArticle params={params} />
+    </Suspense>
+  );
+}
+
+function NewsArticleFallback() {
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <ArticleSkeleton />
+    </div>
+  );
+}
+
+async function NewsArticle({ params }: Props) {
   const { newsId } = await params;
   return <NewsArticleView newsId={newsId} />;
 }
