@@ -15,6 +15,7 @@ import WebMcpTools from "@/components/WebMcpTools.tsx";
 import { Toaster } from "@/components/ui/sonner.tsx";
 import {NextIntlClientProvider} from "next-intl";
 import {setRequestLocale} from "next-intl/server";
+import {locale as rootLocale} from "next/root-params";
 import {notFound} from "next/navigation";
 import {locales, type Locale} from "@/i18n/config.ts";
 import {ThemeProvider} from "next-themes";
@@ -80,14 +81,90 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+/**
+ * La coquille : tout ce qui se prérend sans connaître la langue.
+ *
+ * Sous Cache Components, `dynamicParams` est interdit : toute route à segment
+ * dynamique a donc forcément une coquille de repli, servie quand le paramètre
+ * n'était pas connu au build. Dans cette coquille **aucun paramètre n'est
+ * résolu, pas même `[locale]`** — lire la langue ici la vidait, et avec elle le
+ * prérendu de toutes ces routes (mesuré : fichiers de 0 octet).
+ *
+ * D'où le partage : ce composant ne contient que du non-localisé — la structure
+ * du document, les polices, le thème. Le reste est derrière `<Suspense>`.
+ *
+ * Ça ne coûte rien aux chemins connus. Une frontière ne suspend que si quelque
+ * chose suspend réellement : quand la langue est connue — route sans segment
+ * dynamique, ou chemin énuméré par `generateStaticParams` — `LocalizedFrame`
+ * rend d'un trait et son contenu atterrit dans le HTML statique. Le repli n'est
+ * servi que là où il n'existait, avant, aucun prérendu du tout.
+ */
+export default function RootLayout({
   children,
-  params,
 }: Readonly<{
   children: React.ReactNode;
-  params: Promise<{ locale: string }>;
 }>) {
-  const { locale } = await params;
+  return (
+    // `lang` est posé par `HtmlLang`, plus bas : c'est un attribut, il ne peut
+    // pas attendre une frontière, et le calculer ici viderait la coquille.
+    <html suppressHydrationWarning>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen${isWinterTheme ? ' winter-theme' : ''}`}
+      >
+        {/* Le thème ne dépend pas de la langue : il reste dans la coquille,
+            sinon le repli s'afficherait en clair avant de basculer. */}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Suspense fallback={<AppFrameFallback />}>
+            <LocalizedFrame>{children}</LocalizedFrame>
+          </Suspense>
+          <Toaster />
+        </ThemeProvider>
+        <Analytics />
+      </body>
+    </html>
+  );
+}
+
+/** La silhouette du cadre, le temps que la langue soit connue. */
+function AppFrameFallback() {
+  return (
+    <div className="relative min-h-screen flex flex-col">
+      <HeaderFallback />
+      <main className="flex-1" />
+      <FooterFallback />
+    </div>
+  );
+}
+
+/**
+ * Pose `lang` sur `<html>` depuis une frontière.
+ *
+ * L'attribut ne peut pas être calculé dans la coquille. Sur un chemin connu, ce
+ * script est inclus dans le HTML statique et s'exécute avant tout rendu
+ * visible ; sur la coquille de repli il arrive avec le flux. Ce qu'on perd est
+ * précis : `lang` absent à l'analyse du document. Une langue non déclarée
+ * plutôt qu'une langue fausse.
+ */
+function HtmlLang({ locale }: { locale: string }) {
+  return (
+    <script
+      dangerouslySetInnerHTML={{
+        __html: `document.documentElement.lang=${JSON.stringify(locale)}`,
+      }}
+    />
+  );
+}
+
+async function LocalizedFrame({ children }: { children: React.ReactNode }) {
+  // `next/root-params` plutôt que la prop `params` : la promesse `params` porte
+  // les paramètres de la route entière, et l'attendre depuis le layout obligeait
+  // à connaître des segments situés plus bas.
+  const locale = await rootLocale();
 
   if (!locales.includes(locale as Locale)) {
     notFound();
@@ -99,17 +176,8 @@ export default async function RootLayout({
   setRequestLocale(locale);
 
   return (
-    <html lang={locale} suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen${isWinterTheme ? ' winter-theme' : ''}`}
-      >
-        <NextIntlClientProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
+    <NextIntlClientProvider>
+      <HtmlLang locale={locale} />
             {/* Expose les outils du site aux agents IA (WebMCP) ; ne rend rien.
 
                 La frontière n'est pas décorative : le composant lit le chemin
@@ -224,11 +292,6 @@ export default async function RootLayout({
               </footer>
               </Suspense>
             </div>
-            <Toaster />
-          </ThemeProvider>
-        </NextIntlClientProvider>
-        <Analytics />
-      </body>
-    </html>
+    </NextIntlClientProvider>
   );
 }
