@@ -15,6 +15,7 @@ import LairLiveSection from "./LairLiveSection.tsx";
 import LairNewsSection from "./LairNewsSection.tsx";
 import LairFeaturedEvent from "./LairFeaturedEvent.tsx";
 import LairUpcomingEvents from "./LairUpcomingEvents.tsx";
+import { readLairSections } from "@/lib/lairs/sections.ts";
 import LairAgendaTab, { LairAgendaRegistrations, LairAgendaRhythm } from "./LairAgendaTab.tsx";
 import LairGamesTab from "./LairGamesTab.tsx";
 import LairAboutTab, { LairAboutSidebar } from "./LairAboutTab.tsx";
@@ -235,15 +236,16 @@ async function LairNewsTab({ lairId, scope }: { lairId: string; scope?: string }
 
   const hasNews = (lair.options?.news?.length ?? 0) > 0;
 
-  return (
-    <>
-      <LairLiveSection lair={lair} canManageLair={canManageLair} />
-
-      {hasNews && <LairNewsSection news={lair.options?.news ?? []} />}
-
-      {featured && <LairFeaturedEvent event={featured} />}
-
+  // L'ordre et l'activation réglés par le lieu. Une section éteinte disparaît ;
+  // une section vide ne s'affichait déjà pas — le réglage ne sert qu'à cacher
+  // ce qui a du contenu.
+  const sections = readLairSections(lair);
+  const blocks: Record<string, React.ReactNode> = {
+    news: hasNews ? <LairNewsSection key="news" news={lair.options?.news ?? []} /> : null,
+    featured: featured ? <LairFeaturedEvent key="featured" event={featured} /> : null,
+    calendar: (
       <LairUpcomingEvents
+        key="calendar"
         lairId={lairId}
         events={upcoming}
         followedGameNames={followedGameNames}
@@ -251,6 +253,19 @@ async function LairNewsTab({ lairId, scope }: { lairId: string; scope?: string }
         featuredEventId={featuredId}
         initialScope={userId && followedGameNames.length > 0 ? "mine" : "all"}
       />
+    ),
+  };
+
+  return (
+    <>
+      {/* Le direct reste en tête, hors du réglage : c'est ce qui se passe
+          maintenant, et il ne dure que le temps du direct. */}
+      <LairLiveSection lair={lair} canManageLair={canManageLair} />
+
+      {sections
+        .filter((section) => section.enabled)
+        .map((section) => blocks[section.key])
+        .filter(Boolean)}
 
       {canManageLair && (
         <div>

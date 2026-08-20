@@ -1218,6 +1218,164 @@
       "eventSite": "Sito dell'evento"
     },
     "manage": {
+      "tabs": {
+        "details": "Dettagli",
+        "customization": "Personalizzazione",
+        "news": "Notizie",
+        "owners": "Proprietari",
+        "subscription": "Abbonamento"
+      },
+      "customization": {
+        "proBadge": "JOUTES PRO ATTIVO",
+        "proLocked": "Joutes Pro",
+        "save": "Salva",
+        "cancel": "Annulla",
+        "saved": "Personalizzazione salvata.",
+        "unsaved": "modifiche non salvate",
+        "errors": {
+          "invalid": "Alcuni campi non sono validi.",
+          "notFound": "Questo locale non è stato trovato.",
+          "proRequired": "Questa opzione richiede un abbonamento Joutes Pro.",
+          "failed": "Salvataggio non riuscito. Riprova tra un istante."
+        },
+        "upload": {
+          "failed": "Il caricamento dell'immagine non è riuscito.",
+          "remove": "Rimuovi immagine"
+        },
+        "identity": {
+          "title": "Identità",
+          "description": "Logo e colore d'accento della pagina pubblica.",
+          "logoLabel": "trascina il logo",
+          "bannerNote": "Il banner si imposta nella scheda Dettagli.",
+          "accent": "Colore d'accento",
+          "noAccent": "nessun accento",
+          "tint": "Colora schede e pulsanti",
+          "tintHint": "Applica l'accento oltre i titoli."
+        },
+        "sections": {
+          "title": "Sezioni della pagina",
+          "description": "Trascina per riordinare. Una sezione vuota non compare.",
+          "alwaysShown": "sempre visibile",
+          "moveUp": "Sposta {section} in alto",
+          "moveDown": "Sposta {section} in basso",
+          "labels": {
+            "news": "Notizie e annunci",
+            "featured": "Evento in evidenza",
+            "calendar": "Calendario degli eventi",
+            "media": "Contenuti (video, stream)",
+            "about": "Presentazione e galleria"
+          }
+        },
+        "links": {
+          "title": "Link e social",
+          "max": "max {count}",
+          "add": "Aggiungi un link",
+          "remove": "Rimuovi il link",
+          "url": "URL del link",
+          "types": {
+            "website": "Sito web",
+            "instagram": "Instagram",
+            "facebook": "Facebook",
+            "discord": "Discord",
+            "twitch": "Twitch",
+            "youtube": "YouTube",
+            "x": "X",
+            "other": "Altro"
+          }
+        },
+        "hours": {
+          "title": "Orari",
+          "description": "Lascia vuoto per un giorno di chiusura.",
+          "closed": "Chiuso",
+          "opensAt": "Apertura {day}",
+          "closesAt": "Chiusura {day}",
+          "days": {
+            "0": "Domenica",
+            "1": "Lunedì",
+            "2": "Martedì",
+            "3": "Mercoledì",
+            "4": "Giovedì",
+            "5": "Venerdì",
+            "6": "Sabato"
+          }
+        },
+        "contact": {
+          "phone": "Telefono",
+          "email": "E-mail"
+        },
+        "about": {
+          "title": "Presentazione e galleria",
+          "description": "Il testo, i servizi e le foto della scheda « Chi siamo ».",
+          "category": "Tipo di locale",
+          "categoryPlaceholder": "Negozio e sala da gioco",
+          "text": "Presentazione",
+          "textPlaceholder": "Descrivi il locale, la sua atmosfera, cosa ci si trova…",
+          "markdown": "Markdown supportato",
+          "amenities": "Servizi",
+          "amenityPlaceholder": "8 tavoli",
+          "addAmenity": "Aggiungi",
+          "removeAmenity": "Rimuovi {amenity}",
+          "photos": "Foto (massimo {count})",
+          "photoLabel": "foto {index}",
+          "video": "Video di presentazione",
+          "transit": "Mezzi pubblici",
+          "transitPlaceholder": "Stazione a 7 min a piedi",
+          "parking": "Parcheggio",
+          "parkingPlaceholder": "Parcheggio gratuito a 100 m"
+        },
+        "featured": {
+          "title": "Evento in evidenza",
+          "none": "Nessuno"
+        },
+        "preview": {
+          "title": "Anteprima",
+          "viewPublic": "Vedi la pagina pubblica →"
+        },
+        "pro": {
+          "title": "Riservato a Joutes Pro",
+          "description": "Logo personalizzato, colore d'accento, ordine delle sezioni, contenuti integrati. Il locale resta visibile e il suo calendario pubblico senza abbonamento.",
+          "manage": "Gestisci l'abbonamento"
+        },
+        "news": {
+          "title": "Notizie e annunci",
+          "cardDescription": "Ciò che il locale pubblica sulla sua pagina: chiusure, promozioni, novità.",
+          "description": "Solo un annuncio può essere fissato in cima alla pagina.",
+          "add": "Nuova notizia",
+          "empty": "Ancora nessuna notizia.",
+          "untitled": "Senza titolo",
+          "edit": "Modifica",
+          "save": "Salva",
+          "cancel": "Annulla",
+          "saved": "Notizia salvata.",
+          "delete": "Elimina",
+          "deleted": "Notizia eliminata.",
+          "deleteConfirmTitle": "Eliminare questa notizia?",
+          "deleteConfirmDescription": "Sparirà dalla pagina pubblica. L'operazione è definitiva.",
+          "pin": "Fissa",
+          "unpin": "Rimuovi dai fissati",
+          "pinned": "Notizia fissata.",
+          "unpinned": "Notizia rimossa dai fissati.",
+          "errors": {
+            "invalid": "Alcuni campi non sono validi.",
+            "notFound": "Questo locale non è stato trovato.",
+            "proRequired": "Questa opzione richiede un abbonamento Joutes Pro.",
+            "failed": "Salvataggio non riuscito. Riprova tra un istante."
+          },
+          "fields": {
+            "title": "Titolo",
+            "category": "Categoria",
+            "categoryPlaceholder": "Promozione, Novità…",
+            "publishedAt": "Data",
+            "summary": "Riassunto",
+            "content": "Contenuto",
+            "markdown": "Markdown supportato",
+            "link": "Link",
+            "linkLabel": "Etichetta del link",
+            "banner": "Immagine",
+            "bannerLabel": "trascina un'immagine 16:9"
+          }
+        }
+      },
       "backToLair": "Torna al luogo",
       "title": "Gestisci {name}",
       "privateBadge": "Privato",

@@ -1218,6 +1218,164 @@
       "eventSite": "Event website"
     },
     "manage": {
+      "tabs": {
+        "details": "Details",
+        "customization": "Customization",
+        "news": "News",
+        "owners": "Owners",
+        "subscription": "Subscription"
+      },
+      "customization": {
+        "proBadge": "JOUTES PRO ACTIVE",
+        "proLocked": "Joutes Pro",
+        "save": "Save",
+        "cancel": "Cancel",
+        "saved": "Customization saved.",
+        "unsaved": "unsaved changes",
+        "errors": {
+          "invalid": "Some fields are invalid.",
+          "notFound": "This venue could not be found.",
+          "proRequired": "This option requires a Joutes Pro subscription.",
+          "failed": "Saving failed. Try again in a moment."
+        },
+        "upload": {
+          "failed": "The image upload failed.",
+          "remove": "Remove image"
+        },
+        "identity": {
+          "title": "Identity",
+          "description": "Logo and accent colour of the public page.",
+          "logoLabel": "drop the logo",
+          "bannerNote": "The banner is set in the Details tab.",
+          "accent": "Accent colour",
+          "noAccent": "no accent",
+          "tint": "Tint cards and buttons",
+          "tintHint": "Applies the accent beyond headings."
+        },
+        "sections": {
+          "title": "Page sections",
+          "description": "Drag to reorder. An empty section is not shown.",
+          "alwaysShown": "always shown",
+          "moveUp": "Move {section} up",
+          "moveDown": "Move {section} down",
+          "labels": {
+            "news": "News & announcements",
+            "featured": "Featured event",
+            "calendar": "Event calendar",
+            "media": "Media (videos, streams)",
+            "about": "About & photo gallery"
+          }
+        },
+        "links": {
+          "title": "Links & socials",
+          "max": "{count} max",
+          "add": "Add a link",
+          "remove": "Remove link",
+          "url": "Link URL",
+          "types": {
+            "website": "Website",
+            "instagram": "Instagram",
+            "facebook": "Facebook",
+            "discord": "Discord",
+            "twitch": "Twitch",
+            "youtube": "YouTube",
+            "x": "X",
+            "other": "Other"
+          }
+        },
+        "hours": {
+          "title": "Opening hours",
+          "description": "Leave empty for a closing day.",
+          "closed": "Closed",
+          "opensAt": "{day} opening time",
+          "closesAt": "{day} closing time",
+          "days": {
+            "0": "Sunday",
+            "1": "Monday",
+            "2": "Tuesday",
+            "3": "Wednesday",
+            "4": "Thursday",
+            "5": "Friday",
+            "6": "Saturday"
+          }
+        },
+        "contact": {
+          "phone": "Phone",
+          "email": "Email"
+        },
+        "about": {
+          "title": "About & gallery",
+          "description": "The text, amenities and photos of the About tab.",
+          "category": "Venue type",
+          "categoryPlaceholder": "Shop & game room",
+          "text": "About",
+          "textPlaceholder": "Describe the venue, its atmosphere, what players find there…",
+          "markdown": "Markdown supported",
+          "amenities": "Amenities",
+          "amenityPlaceholder": "8 tables",
+          "addAmenity": "Add",
+          "removeAmenity": "Remove {amenity}",
+          "photos": "Photos ({count} max)",
+          "photoLabel": "photo {index}",
+          "video": "Presentation video",
+          "transit": "Public transport",
+          "transitPlaceholder": "Station 7 min away on foot",
+          "parking": "Parking",
+          "parkingPlaceholder": "Free parking 100 m away"
+        },
+        "featured": {
+          "title": "Featured event",
+          "none": "None"
+        },
+        "preview": {
+          "title": "Preview",
+          "viewPublic": "View the public page →"
+        },
+        "pro": {
+          "title": "Joutes Pro only",
+          "description": "Custom logo, accent colour, section order, embedded media. The venue stays visible and its agenda public without a subscription.",
+          "manage": "Manage subscription"
+        },
+        "news": {
+          "title": "News & announcements",
+          "cardDescription": "What the venue posts on its page: closures, promotions, new arrivals.",
+          "description": "Only one announcement can be pinned at the top of the page.",
+          "add": "New post",
+          "empty": "No news yet.",
+          "untitled": "Untitled",
+          "edit": "Edit",
+          "save": "Save",
+          "cancel": "Cancel",
+          "saved": "Post saved.",
+          "delete": "Delete",
+          "deleted": "Post deleted.",
+          "deleteConfirmTitle": "Delete this post?",
+          "deleteConfirmDescription": "It will disappear from the public page. This cannot be undone.",
+          "pin": "Pin",
+          "unpin": "Unpin",
+          "pinned": "Post pinned.",
+          "unpinned": "Post unpinned.",
+          "errors": {
+            "invalid": "Some fields are invalid.",
+            "notFound": "This venue could not be found.",
+            "proRequired": "This option requires a Joutes Pro subscription.",
+            "failed": "Saving failed. Try again in a moment."
+          },
+          "fields": {
+            "title": "Title",
+            "category": "Category",
+            "categoryPlaceholder": "Promotion, New arrival…",
+            "publishedAt": "Date",
+            "summary": "Summary",
+            "content": "Content",
+            "markdown": "Markdown supported",
+            "link": "Link",
+            "linkLabel": "Link label",
+            "banner": "Image",
+            "bannerLabel": "drop a 16:9 image"
+          }
+        }
+      },
       "backToLair": "Back to venue",
       "title": "Manage {name}",
       "privateBadge": "Private",

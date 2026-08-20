@@ -20,6 +20,12 @@ import { plansFromSubscription } from "@/lib/subscriptions/access.ts";
 import PrivateLairInvitationManager from "./PrivateLairInvitationManager.tsx";
 import PrivateLairFollowersManager from "./PrivateLairFollowersManager.tsx";
 import { getTranslations } from "next-intl/server";
+import { getEventsByLairId } from "@/lib/db/events.ts";
+import { isLairPro } from "@/lib/lairs/pro.ts";
+import ManageTabsBar, { readManageTab } from "./ManageTabsBar.tsx";
+import LairCustomizationForm from "./LairCustomizationForm.tsx";
+import LairCustomizationSidebar from "./LairCustomizationSidebar.tsx";
+import LairNewsEditor from "./LairNewsEditor.tsx";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { EditorFormSkeleton } from "@/components/EditorFormSkeleton.tsx";
@@ -38,8 +44,10 @@ import { EditorFormSkeleton } from "@/components/EditorFormSkeleton.tsx";
  */
 export default function ManageLairPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ lairId: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
@@ -50,7 +58,7 @@ export default function ManageLairPage({
       </div>
 
       <Suspense fallback={<ManageLairSkeleton />}>
-        <ManageLairContent params={params} />
+        <ManageLairContent params={params} searchParams={searchParams} />
       </Suspense>
     </div>
   );
@@ -79,8 +87,15 @@ async function BackToLair({ params }: { params: Promise<{ lairId: string }> }) {
   );
 }
 
-async function ManageLairContent({ params }: { params: Promise<{ lairId: string }> }) {
+async function ManageLairContent({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ lairId: string }>;
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const { lairId } = await params;
+  const tab = readManageTab((await searchParams).tab);
   const t = await getTranslations("Lairs");
 
   // Le pilote Mongo touche à l'horloge en lisant le lieu, ce qu'un prérendu ne
@@ -131,6 +146,16 @@ async function ManageLairContent({ params }: { params: Promise<{ lairId: string 
     })(),
   };
 
+  // Les événements à venir, pour le choix de « À la une ». Lus seulement quand
+  // l'onglet les demande : c'est une requête de plus sur une page qui en fait
+  // déjà cinq, et quatre onglets sur cinq n'en ont aucun usage.
+  const upcomingEvents =
+    tab === "customization"
+      ? (await getEventsByLairId(lairId, { year: new Date().getFullYear(), gameId: "all" })).map(
+          (event) => ({ id: event.id, name: event.name, startDateTime: event.startDateTime })
+        )
+      : [];
+
   // Récupérer les abonnés pour les lairs privés
   let followers: User[] = [];
   if (lair.isPrivate) {
@@ -140,7 +165,7 @@ async function ManageLairContent({ params }: { params: Promise<{ lairId: string 
 
   return (
     <>
-      <div className="flex items-center gap-3 mb-8">
+      <div className="flex flex-wrap items-center gap-3 mb-6">
         <h1 className="text-4xl font-bold">{t("manage.title", { name: lair.name })}</h1>
         {lair.isPrivate && (
           <Badge variant="secondary" className="bg-muted">
@@ -148,11 +173,41 @@ async function ManageLairContent({ params }: { params: Promise<{ lairId: string 
             {t("manage.privateBadge")}
           </Badge>
         )}
+        {proState.isPro && (
+          <Badge variant="outline" className="border-primary/50 font-mono text-[11px] text-primary">
+            {t("manage.customization.proBadge")}
+          </Badge>
+        )}
       </div>
+
+      <ManageTabsBar lairId={lairId} active={tab} />
+
+      {tab === "customization" && (
+        <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+          <LairCustomizationForm
+            lair={lair}
+            isPro={proState.isPro}
+            upcomingEvents={upcomingEvents}
+          />
+          <LairCustomizationSidebar lair={lair} isPro={proState.isPro} />
+        </div>
+      )}
+
+      {tab === "news" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("manage.customization.news.title")}</CardTitle>
+            <CardDescription>{t("manage.customization.news.cardDescription")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <LairNewsEditor lairId={lairId} news={lair.options?.news ?? []} />
+          </CardContent>
+        </Card>
+      )}
 
       <div className="space-y-6">
         {/* Gestion des invitations pour les lairs privés */}
-        {lair.isPrivate && lair.invitationCode && (
+        {tab === "details" && lair.isPrivate && lair.invitationCode && (
           <PrivateLairInvitationManager
             lairId={lairId}
             lairName={lair.name}
@@ -161,7 +216,7 @@ async function ManageLairContent({ params }: { params: Promise<{ lairId: string 
         )}
 
         {/* Gestion des abonnés pour les lairs privés */}
-        {lair.isPrivate && (
+        {tab === "details" && lair.isPrivate && (
           <PrivateLairFollowersManager
             lairId={lairId}
             followers={followers}
@@ -170,6 +225,7 @@ async function ManageLairContent({ params }: { params: Promise<{ lairId: string 
         )}
 
         {/* Formulaire de modification des détails */}
+        {tab === "details" && (
         <Card>
           <CardHeader>
             <CardTitle>{t("manage.detailsTitle")}</CardTitle>
@@ -181,8 +237,10 @@ async function ManageLairContent({ params }: { params: Promise<{ lairId: string 
             <LairDetailsForm lair={lair} games={games} />
           </CardContent>
         </Card>
+        )}
 
         {/* Gestion des owners */}
+        {tab === "owners" && (
         <Card>
           <CardHeader>
             <CardTitle>{t("manage.ownersTitle")}</CardTitle>
@@ -194,8 +252,10 @@ async function ManageLairContent({ params }: { params: Promise<{ lairId: string 
             <OwnersManager lairId={lairId} owners={owners} />
           </CardContent>
         </Card>
+        )}
 
         {/* Abonnement Pro */}
+        {tab === "subscription" && (
         <Card>
           <CardHeader>
             <CardTitle>{t("manage.pro.title")}</CardTitle>
@@ -211,6 +271,7 @@ async function ManageLairContent({ params }: { params: Promise<{ lairId: string 
             />
           </CardContent>
         </Card>
+        )}
       </div>
     </>
   );

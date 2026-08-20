@@ -5,6 +5,7 @@ import { Car, Mail, MessageCircle, Phone, TrainFront, User2 } from "lucide-react
 import GameMarkdown from "@/components/GameMarkdown.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { embedVideoUrl, externalUrl } from "@/lib/lairs/urls.ts";
+import { isSectionEnabled, readLairSections } from "@/lib/lairs/sections.ts";
 import type { Lair } from "@/lib/types/Lair";
 
 import LairMap from "./LairMap.tsx";
@@ -20,7 +21,13 @@ import { SidebarCard } from "./LairSidebar.tsx";
 export default async function LairAboutTab({ lair }: { lair: Lair }) {
   const [t, locale] = await Promise.all([getTranslations("Lairs.portal.about"), getLocale()]);
 
-  const about = lair.options?.about;
+  // Les deux réglages qui portent sur cet onglet : `about` pour le texte et la
+  // galerie, `media` pour la vidéo intégrée.
+  const sections = readLairSections(lair);
+  const showAbout = isSectionEnabled(sections, "about");
+  const showMedia = isSectionEnabled(sections, "media");
+
+  const about = showAbout ? lair.options?.about : undefined;
   const photos = about?.photos ?? [];
   const amenities = about?.amenities ?? [];
   const ruleLang = locale === "fr" ? "fr" : "en";
@@ -28,7 +35,7 @@ export default async function LairAboutTab({ lair }: { lair: Lair }) {
   // Une `iframe` donne à l'hôte appelé la page entière qu'il rend : la vidéo de
   // présentation n'est intégrée que si elle vient d'une plateforme attendue,
   // les formes publiques de YouTube étant traduites au passage.
-  const video = embedVideoUrl(about?.videoUrl);
+  const video = showMedia ? embedVideoUrl(lair.options?.about?.videoUrl) : null;
 
   if (!about?.description && amenities.length === 0 && photos.length === 0 && !video) {
     return <p className="text-sm text-muted-foreground">{t("empty")}</p>;

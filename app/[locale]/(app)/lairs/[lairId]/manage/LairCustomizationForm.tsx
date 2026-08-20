@@ -1,0 +1,624 @@
+"use client";
+
+import { useMemo, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
+import { toast } from "sonner";
+import { Loader2, Lock, Plus, X } from "lucide-react";
+
+import { Button } from "@/components/ui/button.tsx";
+import { Input } from "@/components/ui/input.tsx";
+import { Label } from "@/components/ui/label.tsx";
+import { Switch } from "@/components/ui/switch.tsx";
+import { Textarea } from "@/components/ui/textarea.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select.tsx";
+import { cn } from "@/lib/utils.ts";
+import { LAIR_ACCENT_PALETTE } from "@/lib/lairs/theme.ts";
+import type { LairAccentColor } from "@/lib/lairs/theme.ts";
+import { readLairSections, type LairSection } from "@/lib/lairs/sections.ts";
+import type { Lair, LairLink } from "@/lib/types/Lair";
+
+import ImageDropzone from "./ImageDropzone.tsx";
+import LairSectionsField from "./LairSectionsField.tsx";
+import {
+  updateLairCustomization,
+  type LairCustomizationError,
+} from "./customization-actions.ts";
+
+const ERROR_KEYS: Record<LairCustomizationError, string> = {
+  INVALID: "errors.invalid",
+  NOT_FOUND: "errors.notFound",
+  PRO_REQUIRED: "errors.proRequired",
+  FAILED: "errors.failed",
+};
+
+const LINK_TYPES = [
+  "website",
+  "instagram",
+  "facebook",
+  "discord",
+  "twitch",
+  "youtube",
+  "x",
+  "other",
+] as const;
+
+const MAX_LINKS = 6;
+const MAX_PHOTOS = 4;
+const DAYS = [1, 2, 3, 4, 5, 6, 0];
+
+type FormState = {
+  logo?: string;
+  accentColor?: LairAccentColor;
+  tintSurfaces: boolean;
+  sections: LairSection[];
+  links: LairLink[];
+  phone: string;
+  email: string;
+  openingHours: Record<number, { open: string; close: string }>;
+  description: string;
+  category: string;
+  amenities: string[];
+  photos: string[];
+  videoUrl: string;
+  transit: string;
+  parking: string;
+  featuredEventId: string;
+};
+
+function initialState(lair: Lair): FormState {
+  const options = lair.options ?? {};
+
+  return {
+    logo: options.theme?.logo,
+    // Un accent hors palette — écrit avant qu'elle soit fermée, ou à la main
+    // en base — n'est pas proposé comme sélection : aucune pastille ne s'allume.
+    accentColor: LAIR_ACCENT_PALETTE.find((color) => color === options.theme?.accentColor),
+    tintSurfaces: options.theme?.tintSurfaces ?? false,
+    sections: readLairSections(lair),
+    links: options.links ?? [],
+    phone: options.contact?.phone ?? "",
+    email: options.contact?.email ?? "",
+    openingHours: Object.fromEntries(
+      (options.openingHours ?? []).map((entry) => [
+        entry.day,
+        { open: entry.open ?? "", close: entry.close ?? "" },
+      ]),
+    ),
+    description: options.about?.description ?? "",
+    category: options.about?.category ?? "",
+    amenities: options.about?.amenities ?? [],
+    photos: options.about?.photos ?? [],
+    videoUrl: options.about?.videoUrl ?? "",
+    transit: options.about?.transit ?? "",
+    parking: options.about?.parking ?? "",
+    featuredEventId: options.featuredEventId ?? "",
+  };
+}
+
+/**
+ * L'écran de configuration de la vitrine.
+ *
+ * Un seul formulaire et une seule sauvegarde pour tout ce qui est réglage —
+ * identité, sections, liens, horaires, contact, présentation. Les actualités
+ * ont leur propre onglet : ce sont des contenus qu'on publie au fil de l'eau,
+ * pas des réglages qu'on ajuste puis qu'on enregistre.
+ *
+ * `isPro` grise ce qui relève de la marque blanche. C'est un confort
+ * d'affichage, pas une sécurité : l'action serveur refait le contrôle et
+ * conserve les valeurs existantes pour ces champs.
+ */
+export default function LairCustomizationForm({
+  lair,
+  isPro,
+  upcomingEvents,
+}: {
+  lair: Lair;
+  isPro: boolean;
+  upcomingEvents: { id: string; name: string; startDateTime: string }[];
+}) {
+  const t = useTranslations("Lairs.manage.customization");
+  const [isPending, startTransition] = useTransition();
+  const [state, setState] = useState<FormState>(() => initialState(lair));
+  const [issues, setIssues] = useState<Record<string, string>>({});
+  const [amenityDraft, setAmenityDraft] = useState("");
+
+  const pristine = useMemo(() => JSON.stringify(initialState(lair)), [lair]);
+  const isDirty = JSON.stringify(state) !== pristine;
+
+  const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
+    setState((current) => ({ ...current, [key]: value }));
+
+  const save = () => {
+    setIssues({});
+
+    startTransition(async () => {
+      const result = await updateLairCustomization(lair.id, {
+        theme: {
+          logo: state.logo ?? "",
+          accentColor: state.accentColor ?? "",
+          tintSurfaces: state.tintSurfaces,
+        },
+        sections: state.sections.map(({ key, enabled }) => ({ key, enabled })),
+        links: state.links,
+        contact: { phone: state.phone, email: state.email },
+        openingHours: DAYS.flatMap((day) => {
+          const entry = state.openingHours[day];
+          return entry?.open && entry?.close
+            ? [{ day, open: entry.open, close: entry.close }]
+            : [];
+        }),
+        about: {
+          description: state.description,
+          category: state.category,
+          amenities: state.amenities,
+          photos: state.photos,
+          videoUrl: state.videoUrl,
+          transit: state.transit,
+          parking: state.parking,
+          organizers: lair.options?.about?.organizers,
+          rhythm: lair.options?.about?.rhythm,
+        },
+        featuredEventId: state.featuredEventId,
+      });
+
+      if (result.success) {
+        toast.success(t("saved"));
+        return;
+      }
+
+      setIssues(result.issues ?? {});
+      toast.error(t(ERROR_KEYS[result.error]));
+    });
+  };
+
+  const proHint = (field: string) =>
+    isPro ? null : (
+      <span className="inline-flex items-center gap-1 font-mono text-[10px] text-muted-foreground">
+        <Lock className="size-3" aria-hidden />
+        {t("proLocked")}
+        <span className="sr-only">{field}</span>
+      </span>
+    );
+
+  return (
+    <form
+      className="flex flex-col gap-6"
+      onSubmit={(event) => {
+        event.preventDefault();
+        save();
+      }}
+    >
+      {/* Identité — logo, accent, teinte des surfaces. */}
+      <section className="flex flex-col gap-4 rounded-xl border bg-card p-5">
+        <header className="flex flex-col gap-1">
+          <h3 className="text-base font-semibold">{t("identity.title")}</h3>
+          <p className="text-[13px] text-muted-foreground">{t("identity.description")}</p>
+        </header>
+
+        <div className="flex flex-wrap items-start gap-4">
+          <ImageDropzone
+            lairId={lair.id}
+            value={state.logo}
+            onChange={(url) => set("logo", url)}
+            label={t("identity.logoLabel")}
+            disabled={!isPro}
+            className="w-[84px]"
+            previewClassName="h-[84px] rounded-xl"
+          />
+          <p className="flex-1 text-[13px] text-muted-foreground">
+            {t("identity.bannerNote")}
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Label>{t("identity.accent")}</Label>
+            {proHint(t("identity.accent"))}
+          </div>
+          <div className="flex flex-wrap items-center gap-2.5">
+            {LAIR_ACCENT_PALETTE.map((color) => (
+              <button
+                key={color}
+                type="button"
+                disabled={!isPro}
+                aria-label={color}
+                aria-pressed={state.accentColor === color}
+                onClick={() => set("accentColor", state.accentColor === color ? undefined : color)}
+                style={{ backgroundColor: color }}
+                className={cn(
+                  "size-[30px] rounded-lg transition-transform disabled:cursor-not-allowed disabled:opacity-50",
+                  state.accentColor === color
+                    ? "ring-2 ring-foreground/70 ring-offset-2 ring-offset-card"
+                    : "hover:scale-105",
+                )}
+              />
+            ))}
+            <span className="font-mono text-xs text-muted-foreground">
+              {state.accentColor ?? t("identity.noAccent")}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-col">
+            <span className="text-sm">{t("identity.tint")}</span>
+            <span className="text-[13px] text-muted-foreground">{t("identity.tintHint")}</span>
+          </div>
+          <Switch
+            checked={state.tintSurfaces}
+            disabled={!isPro}
+            aria-label={t("identity.tint")}
+            onCheckedChange={(checked) => set("tintSurfaces", checked)}
+          />
+        </div>
+      </section>
+
+      {/* Sections de la page. */}
+      <section className="flex flex-col gap-4 rounded-xl border bg-card p-5">
+        <header className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-base font-semibold">{t("sections.title")}</h3>
+            {proHint(t("sections.title"))}
+          </div>
+          <p className="text-[13px] text-muted-foreground">{t("sections.description")}</p>
+        </header>
+
+        <LairSectionsField
+          sections={state.sections}
+          onChange={(sections) => set("sections", sections)}
+          disabled={!isPro}
+        />
+      </section>
+
+      {/* Liens & réseaux. */}
+      <section className="flex flex-col gap-4 rounded-xl border bg-card p-5">
+        <header className="flex flex-wrap items-center gap-2">
+          <h3 className="text-base font-semibold">{t("links.title")}</h3>
+          <span className="rounded-full border px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
+            {t("links.max", { count: MAX_LINKS })}
+          </span>
+        </header>
+
+        <div className="flex flex-col gap-2">
+          {state.links.map((link, index) => (
+            <div key={index} className="flex flex-wrap items-center gap-2">
+              <Select
+                value={link.type}
+                onValueChange={(type) =>
+                  set(
+                    "links",
+                    state.links.map((item, i) =>
+                      i === index ? { ...item, type: type as LairLink["type"] } : item,
+                    ),
+                  )
+                }
+              >
+                <SelectTrigger className="w-36">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {LINK_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {t(`links.types.${type}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Input
+                type="url"
+                value={link.url}
+                placeholder="https://"
+                aria-label={t("links.url")}
+                className="min-w-0 flex-1 font-mono text-xs"
+                onChange={(event) =>
+                  set(
+                    "links",
+                    state.links.map((item, i) =>
+                      i === index ? { ...item, url: event.target.value } : item,
+                    ),
+                  )
+                }
+              />
+
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                aria-label={t("links.remove")}
+                onClick={() => set("links", state.links.filter((_, i) => i !== index))}
+              >
+                <X className="size-4" aria-hidden />
+              </Button>
+            </div>
+          ))}
+
+          {issues["links"] && <p className="text-xs text-destructive">{issues["links"]}</p>}
+
+          {state.links.length < MAX_LINKS && (
+            <Button
+              type="button"
+              variant="outline"
+              className="justify-start border-dashed"
+              onClick={() => set("links", [...state.links, { type: "website", url: "" }])}
+            >
+              <Plus className="mr-2 size-4" aria-hidden />
+              {t("links.add")}
+            </Button>
+          )}
+        </div>
+      </section>
+
+      {/* Horaires et contact. */}
+      <section className="flex flex-col gap-4 rounded-xl border bg-card p-5">
+        <header className="flex flex-col gap-1">
+          <h3 className="text-base font-semibold">{t("hours.title")}</h3>
+          <p className="text-[13px] text-muted-foreground">{t("hours.description")}</p>
+        </header>
+
+        <div className="flex flex-col gap-2">
+          {DAYS.map((day) => {
+            const entry = state.openingHours[day] ?? { open: "", close: "" };
+            const update = (next: { open: string; close: string }) =>
+              set("openingHours", { ...state.openingHours, [day]: next });
+
+            return (
+              <div key={day} className="flex flex-wrap items-center gap-2">
+                <span className="w-28 shrink-0 text-sm">{t(`hours.days.${day}`)}</span>
+                <Input
+                  type="time"
+                  value={entry.open}
+                  aria-label={t("hours.opensAt", { day: t(`hours.days.${day}`) })}
+                  className="w-32"
+                  onChange={(event) => update({ ...entry, open: event.target.value })}
+                />
+                <span className="text-muted-foreground">—</span>
+                <Input
+                  type="time"
+                  value={entry.close}
+                  aria-label={t("hours.closesAt", { day: t(`hours.days.${day}`) })}
+                  className="w-32"
+                  onChange={(event) => update({ ...entry, close: event.target.value })}
+                />
+                {(entry.open || entry.close) && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => update({ open: "", close: "" })}
+                  >
+                    {t("hours.closed")}
+                  </Button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="lair-phone">{t("contact.phone")}</Label>
+            <Input
+              id="lair-phone"
+              value={state.phone}
+              onChange={(event) => set("phone", event.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="lair-email">{t("contact.email")}</Label>
+            <Input
+              id="lair-email"
+              type="email"
+              value={state.email}
+              onChange={(event) => set("email", event.target.value)}
+            />
+            {issues["contact.email"] && (
+              <p className="text-xs text-destructive">{issues["contact.email"]}</p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Présentation & galerie. */}
+      <section className="flex flex-col gap-4 rounded-xl border bg-card p-5">
+        <header className="flex flex-col gap-1">
+          <h3 className="text-base font-semibold">{t("about.title")}</h3>
+          <p className="text-[13px] text-muted-foreground">{t("about.description")}</p>
+        </header>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="lair-category">{t("about.category")}</Label>
+          <Input
+            id="lair-category"
+            value={state.category}
+            placeholder={t("about.categoryPlaceholder")}
+            onChange={(event) => set("category", event.target.value)}
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="lair-description">{t("about.text")}</Label>
+          <Textarea
+            id="lair-description"
+            rows={6}
+            value={state.description}
+            placeholder={t("about.textPlaceholder")}
+            onChange={(event) => set("description", event.target.value)}
+          />
+          <p className="font-mono text-[11px] text-muted-foreground">{t("about.markdown")}</p>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label>{t("about.amenities")}</Label>
+          <div className="flex flex-wrap gap-2">
+            {state.amenities.map((amenity, index) => (
+              <span
+                key={`${amenity}-${index}`}
+                className="flex items-center gap-1.5 rounded-full border px-3 py-1 text-[13px]"
+              >
+                {amenity}
+                <button
+                  type="button"
+                  aria-label={t("about.removeAmenity", { amenity })}
+                  onClick={() => set("amenities", state.amenities.filter((_, i) => i !== index))}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <X className="size-3" aria-hidden />
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Input
+              value={amenityDraft}
+              placeholder={t("about.amenityPlaceholder")}
+              aria-label={t("about.amenities")}
+              className="w-52"
+              onChange={(event) => setAmenityDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  // Sans ça, la touche Entrée d'un champ de saisie soumet le
+                  // formulaire entier au lieu d'ajouter l'équipement.
+                  event.preventDefault();
+                  const value = amenityDraft.trim();
+                  if (value && state.amenities.length < 12) {
+                    set("amenities", [...state.amenities, value]);
+                    setAmenityDraft("");
+                  }
+                }
+              }}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!amenityDraft.trim() || state.amenities.length >= 12}
+              onClick={() => {
+                set("amenities", [...state.amenities, amenityDraft.trim()]);
+                setAmenityDraft("");
+              }}
+            >
+              <Plus className="mr-2 size-4" aria-hidden />
+              {t("about.addAmenity")}
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label>{t("about.photos", { count: MAX_PHOTOS })}</Label>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            {Array.from({ length: MAX_PHOTOS }, (_, index) => (
+              <ImageDropzone
+                key={index}
+                lairId={lair.id}
+                value={state.photos[index]}
+                label={t("about.photoLabel", { index: index + 1 })}
+                previewClassName="h-24"
+                onChange={(url) => {
+                  const next = [...state.photos];
+                  if (url) {
+                    next[index] = url;
+                  } else {
+                    next.splice(index, 1);
+                  }
+                  // Les trous rendraient la quatrième photo invisible tant que
+                  // la deuxième manque : la galerie publique lit une liste
+                  // continue.
+                  set("photos", next.filter(Boolean));
+                }}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <Label htmlFor="lair-video">{t("about.video")}</Label>
+              {proHint(t("about.video"))}
+            </div>
+            <Input
+              id="lair-video"
+              type="url"
+              value={state.videoUrl}
+              disabled={!isPro}
+              placeholder="https://youtube.com/watch?v=…"
+              className="font-mono text-xs"
+              onChange={(event) => set("videoUrl", event.target.value)}
+            />
+            {issues["about.videoUrl"] && (
+              <p className="text-xs text-destructive">{issues["about.videoUrl"]}</p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="lair-featured">{t("featured.title")}</Label>
+            <Select
+              value={state.featuredEventId || "none"}
+              onValueChange={(value) => set("featuredEventId", value === "none" ? "" : value)}
+            >
+              <SelectTrigger id="lair-featured">
+                <SelectValue placeholder={t("featured.none")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">{t("featured.none")}</SelectItem>
+                {upcomingEvents.map((event) => (
+                  <SelectItem key={event.id} value={event.id}>
+                    {event.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="lair-transit">{t("about.transit")}</Label>
+            <Input
+              id="lair-transit"
+              value={state.transit}
+              placeholder={t("about.transitPlaceholder")}
+              onChange={(event) => set("transit", event.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="lair-parking">{t("about.parking")}</Label>
+            <Input
+              id="lair-parking"
+              value={state.parking}
+              placeholder={t("about.parkingPlaceholder")}
+              onChange={(event) => set("parking", event.target.value)}
+            />
+          </div>
+        </div>
+      </section>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="submit" disabled={isPending || !isDirty}>
+          {isPending && <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />}
+          {t("save")}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={isPending || !isDirty}
+          onClick={() => {
+            setState(initialState(lair));
+            setIssues({});
+          }}
+        >
+          {t("cancel")}
+        </Button>
+        {isDirty && (
+          <span className="font-mono text-[11px] text-muted-foreground">{t("unsaved")}</span>
+        )}
+      </div>
+    </form>
+  );
+}

@@ -1218,6 +1218,164 @@
       "eventSite": "Site de l'événement"
     },
     "manage": {
+      "tabs": {
+        "details": "Détails",
+        "customization": "Personnalisation",
+        "news": "Actualités",
+        "owners": "Propriétaires",
+        "subscription": "Abonnement"
+      },
+      "customization": {
+        "proBadge": "JOUTES PRO ACTIF",
+        "proLocked": "Joutes Pro",
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "saved": "Personnalisation enregistrée.",
+        "unsaved": "modifications non enregistrées",
+        "errors": {
+          "invalid": "Certains champs sont invalides.",
+          "notFound": "Ce lieu est introuvable.",
+          "proRequired": "Cette option demande un abonnement Joutes Pro.",
+          "failed": "L'enregistrement a échoué. Réessayez dans un instant."
+        },
+        "upload": {
+          "failed": "L'envoi de l'image a échoué.",
+          "remove": "Retirer l'image"
+        },
+        "identity": {
+          "title": "Identité",
+          "description": "Logo et couleur d'accent de la page publique.",
+          "logoLabel": "déposer le logo",
+          "bannerNote": "La bannière se règle dans l'onglet Détails.",
+          "accent": "Couleur d'accent",
+          "noAccent": "aucun accent",
+          "tint": "Teinter les cartes et les boutons",
+          "tintHint": "Applique l'accent au-delà des titres."
+        },
+        "sections": {
+          "title": "Sections de la page",
+          "description": "Glisser pour réordonner. Une section vide n'apparaît pas.",
+          "alwaysShown": "toujours affiché",
+          "moveUp": "Monter {section}",
+          "moveDown": "Descendre {section}",
+          "labels": {
+            "news": "Actualités & annonces",
+            "featured": "Événement à la une",
+            "calendar": "Calendrier des événements",
+            "media": "Contenus (vidéos, streams)",
+            "about": "Présentation & galerie photos"
+          }
+        },
+        "links": {
+          "title": "Liens & réseaux",
+          "max": "{count} max",
+          "add": "Ajouter un lien",
+          "remove": "Retirer le lien",
+          "url": "URL du lien",
+          "types": {
+            "website": "Site web",
+            "instagram": "Instagram",
+            "facebook": "Facebook",
+            "discord": "Discord",
+            "twitch": "Twitch",
+            "youtube": "YouTube",
+            "x": "X",
+            "other": "Autre"
+          }
+        },
+        "hours": {
+          "title": "Horaires",
+          "description": "Laissez vide pour un jour de fermeture.",
+          "closed": "Fermé",
+          "opensAt": "Ouverture {day}",
+          "closesAt": "Fermeture {day}",
+          "days": {
+            "0": "Dimanche",
+            "1": "Lundi",
+            "2": "Mardi",
+            "3": "Mercredi",
+            "4": "Jeudi",
+            "5": "Vendredi",
+            "6": "Samedi"
+          }
+        },
+        "contact": {
+          "phone": "Téléphone",
+          "email": "E-mail"
+        },
+        "about": {
+          "title": "Présentation & galerie",
+          "description": "Le texte, les équipements et les photos de l'onglet « À propos ».",
+          "category": "Type de lieu",
+          "categoryPlaceholder": "Boutique & salle de jeu",
+          "text": "Présentation",
+          "textPlaceholder": "Décrivez le lieu, son ambiance, ce qu'on y trouve…",
+          "markdown": "Markdown accepté",
+          "amenities": "Équipements",
+          "amenityPlaceholder": "8 tables",
+          "addAmenity": "Ajouter",
+          "removeAmenity": "Retirer {amenity}",
+          "photos": "Photos ({count} maximum)",
+          "photoLabel": "photo {index}",
+          "video": "Vidéo de présentation",
+          "transit": "Accès en transports",
+          "transitPlaceholder": "Gare à 7 min à pied",
+          "parking": "Stationnement",
+          "parkingPlaceholder": "Parking gratuit à 100 m"
+        },
+        "featured": {
+          "title": "Événement à la une",
+          "none": "Aucun"
+        },
+        "preview": {
+          "title": "Aperçu",
+          "viewPublic": "Voir la page publique →"
+        },
+        "pro": {
+          "title": "Réservé à Joutes Pro",
+          "description": "Logo personnalisé, couleur d'accent, ordre des sections, contenus intégrés. Le lieu reste visible et son agenda public sans abonnement.",
+          "manage": "Gérer l'abonnement"
+        },
+        "news": {
+          "title": "Actualités & annonces",
+          "cardDescription": "Ce que le lieu publie sur sa page : fermetures, promotions, nouveautés.",
+          "description": "Une seule annonce peut être épinglée en tête de page.",
+          "add": "Nouvelle actualité",
+          "empty": "Aucune actualité pour l'instant.",
+          "untitled": "Sans titre",
+          "edit": "Modifier",
+          "save": "Enregistrer",
+          "cancel": "Annuler",
+          "saved": "Actualité enregistrée.",
+          "delete": "Supprimer",
+          "deleted": "Actualité supprimée.",
+          "deleteConfirmTitle": "Supprimer cette actualité ?",
+          "deleteConfirmDescription": "Elle disparaîtra de la page publique. Cette action est définitive.",
+          "pin": "Épingler",
+          "unpin": "Dépingler",
+          "pinned": "Actualité épinglée.",
+          "unpinned": "Actualité dépinglée.",
+          "errors": {
+            "invalid": "Certains champs sont invalides.",
+            "notFound": "Ce lieu est introuvable.",
+            "proRequired": "Cette option demande un abonnement Joutes Pro.",
+            "failed": "L'enregistrement a échoué. Réessayez dans un instant."
+          },
+          "fields": {
+            "title": "Titre",
+            "category": "Catégorie",
+            "categoryPlaceholder": "Promotion, Nouveauté…",
+            "publishedAt": "Date",
+            "summary": "Résumé",
+            "content": "Contenu",
+            "markdown": "Markdown accepté",
+            "link": "Lien",
+            "linkLabel": "Libellé du lien",
+            "banner": "Visuel",
+            "bannerLabel": "déposer un visuel 16:9"
+          }
+        }
+      },
       "backToLair": "Retour au lieu",
       "title": "Gérer {name}",
       "privateBadge": "Privé",

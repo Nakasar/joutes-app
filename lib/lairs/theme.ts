@@ -17,6 +17,9 @@ export const LAIR_ACCENT_PALETTE = [
   "#F87171",
 ] as const;
 
+/** L'un des cinq accents proposés. */
+export type LairAccentColor = (typeof LAIR_ACCENT_PALETTE)[number];
+
 const HEX_COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 
 function expandHex(hex: string): string {
