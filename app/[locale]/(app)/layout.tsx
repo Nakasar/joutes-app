@@ -15,6 +15,7 @@ import WebMcpTools from "@/components/WebMcpTools.tsx";
 import { Toaster } from "@/components/ui/sonner.tsx";
 import {NextIntlClientProvider} from "next-intl";
 import {setRequestLocale} from "next-intl/server";
+import {locale as rootLocale} from "next/root-params";
 import {notFound} from "next/navigation";
 import {locales, type Locale} from "@/i18n/config.ts";
 import {ThemeProvider} from "next-themes";
@@ -80,14 +81,96 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+/**
+ * La coquille : tout ce qui se prérend sans connaître la langue.
+ *
+ * Sous Cache Components, `dynamicParams` est interdit : toute route à segment
+ * dynamique a donc forcément une coquille de repli, servie quand le paramètre
+ * n'était pas connu au build. Dans cette coquille **aucun paramètre n'est
+ * résolu, pas même `[locale]`** — lire la langue ici la vidait, et avec elle le
+ * prérendu de toutes ces routes (mesuré : fichiers de 0 octet).
+ *
+ * D'où le partage : ce composant ne contient que du non-localisé — la structure
+ * du document, les polices, le thème. Le reste est derrière `<Suspense>`.
+ *
+ * Ça ne coûte rien aux routes **sans segment dynamique** : elles n'ont pas de
+ * coquille partagée, la langue y est connue, `LocalizedFrame` rend d'un trait
+ * et son contenu atterrit dans le HTML statique comme avant. Mesuré :
+ * `/fr/games.html` fait 235 690 o après la bascule, contre 223 738 o avant.
+ *
+ * Sur une route **à segment dynamique**, en revanche, la frontière suspend
+ * toujours — y compris sur un chemin énuméré par `generateStaticParams`, la
+ * lecture de la langue y restant une donnée de requête. Le cadre est prérendu,
+ * le contenu part en flux : `◐` et non `○`. C'est le prix de la coquille
+ * partagée, et c'est un gain net, puisque ces routes ne prérendaient rien du
+ * tout auparavant.
+ */
+export default function RootLayout({
   children,
-  params,
 }: Readonly<{
   children: React.ReactNode;
-  params: Promise<{ locale: string }>;
 }>) {
-  const { locale } = await params;
+  return (
+    // `lang` est posé par `HtmlLang`, plus bas : c'est un attribut, il ne peut
+    // pas attendre une frontière, et le calculer ici viderait la coquille.
+    <html suppressHydrationWarning>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen${isWinterTheme ? ' winter-theme' : ''}`}
+      >
+        {/* Le thème ne dépend pas de la langue : il reste dans la coquille,
+            sinon le repli s'afficherait en clair avant de basculer. */}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Suspense fallback={<AppFrameFallback />}>
+            <LocalizedFrame>{children}</LocalizedFrame>
+          </Suspense>
+          <Toaster />
+        </ThemeProvider>
+        <Analytics />
+      </body>
+    </html>
+  );
+}
+
+/** La silhouette du cadre, le temps que la langue soit connue. */
+function AppFrameFallback() {
+  return (
+    <div className="relative min-h-screen flex flex-col">
+      <HeaderFallback />
+      <main className="flex-1" />
+      <FooterFallback />
+    </div>
+  );
+}
+
+/**
+ * Pose `lang` sur `<html>` depuis une frontière.
+ *
+ * L'attribut ne peut pas être calculé dans la coquille. Sur un chemin connu, ce
+ * script est inclus dans le HTML statique et s'exécute avant tout rendu
+ * visible ; sur la coquille de repli il arrive avec le flux. Ce qu'on perd est
+ * précis : `lang` absent à l'analyse du document. Une langue non déclarée
+ * plutôt qu'une langue fausse.
+ */
+function HtmlLang({ locale }: { locale: string }) {
+  return (
+    <script
+      dangerouslySetInnerHTML={{
+        __html: `document.documentElement.lang=${JSON.stringify(locale)}`,
+      }}
+    />
+  );
+}
+
+async function LocalizedFrame({ children }: { children: React.ReactNode }) {
+  // `next/root-params` plutôt que la prop `params` : la promesse `params` porte
+  // les paramètres de la route entière, et l'attendre depuis le layout obligeait
+  // à connaître des segments situés plus bas.
+  const locale = await rootLocale();
 
   if (!locales.includes(locale as Locale)) {
     notFound();
@@ -99,136 +182,121 @@ export default async function RootLayout({
   setRequestLocale(locale);
 
   return (
-    <html lang={locale} suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen${isWinterTheme ? ' winter-theme' : ''}`}
-      >
-        <NextIntlClientProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {/* Expose les outils du site aux agents IA (WebMCP) ; ne rend rien.
+    <NextIntlClientProvider>
+      <HtmlLang locale={locale} />
+      {/* Expose les outils du site aux agents IA (WebMCP) ; ne rend rien.
 
-                La frontière n'est pas décorative : le composant lit le chemin
-                courant, inconnu au prérendu d'une route à segment dynamique. Sans
-                elle, il bloquait toutes ces routes depuis le layout — les routes
-                statiques passaient, leur chemin étant connu, ce qui masquait la
-                cause. Le repli est vide parce qu'il n'y a rien à approcher : ce
-                composant ne rend rien. */}
-            <Suspense fallback={null}>
-              <WebMcpTools />
-            </Suspense>
-            {isWinterTheme && <WinterDecorations />}
-            <div className="relative min-h-screen flex flex-col">
-              {/* L'en-tête lit le chemin courant à travers ses liens localisés,
-                  inconnu au prérendu d'une route à segment dynamique : sans cette
-                  frontière il bloquait toutes ces routes, soit la majorité du
-                  site. Le repli en reprend la silhouette pour que rien ne saute
-                  quand le vrai en-tête le remplace. */}
-              <Suspense fallback={<HeaderFallback />}>
-                <Header />
-              </Suspense>
-              <main className="flex-1">
-                {children}
-              </main>
-              {/* Même raison que pour l'en-tête : les liens localisés du pied
-                  lisent le chemin courant, inconnu au prérendu d'une route à
-                  segment dynamique. C'était le dernier des trois à ne pas avoir
-                  sa frontière, et il bloquait à lui seul tout ce qui reste à
-                  adopter. Sur une route statique le chemin est connu, le vrai
-                  pied ne suspend pas et le repli ne s'affiche jamais. */}
-              <Suspense fallback={<FooterFallback />}>
-              <footer data-print-hidden className="border-t py-8 mt-auto bg-muted/30">
-                <div className="container mx-auto px-4">
-                  <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-                    {/* Liens sociaux et externes */}
-                    <div className="flex flex-wrap justify-center gap-4 items-center">
-                      <Link
-                        href="https://discord.gg/dZEGkZwJGB"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/>
-                        </svg>
-                        Discord
-                      </Link>
+          La frontière n'est pas décorative : le composant lit le chemin
+          courant, inconnu au prérendu d'une route à segment dynamique. Sans
+          elle, il bloquait toutes ces routes depuis le layout — les routes
+          statiques passaient, leur chemin étant connu, ce qui masquait la
+          cause. Le repli est vide parce qu'il n'y a rien à approcher : ce
+          composant ne rend rien. */}
+      <Suspense fallback={null}>
+        <WebMcpTools />
+      </Suspense>
+      {isWinterTheme && <WinterDecorations />}
+      <div className="relative min-h-screen flex flex-col">
+        {/* L'en-tête lit le chemin courant à travers ses liens localisés,
+            inconnu au prérendu d'une route à segment dynamique : sans cette
+            frontière il bloquait toutes ces routes, soit la majorité du
+            site. Le repli en reprend la silhouette pour que rien ne saute
+            quand le vrai en-tête le remplace. */}
+        <Suspense fallback={<HeaderFallback />}>
+          <Header />
+        </Suspense>
+        <main className="flex-1">
+          {children}
+        </main>
+        {/* Même raison que pour l'en-tête : les liens localisés du pied
+            lisent le chemin courant, inconnu au prérendu d'une route à
+            segment dynamique. C'était le dernier des trois à recevoir sa
+            frontière. Sur une route statique le chemin est connu, le vrai
+            pied ne suspend pas et le repli ne s'affiche jamais. */}
+        <Suspense fallback={<FooterFallback />}>
+          <footer data-print-hidden className="border-t py-8 mt-auto bg-muted/30">
+            <div className="container mx-auto px-4">
+              <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                {/* Liens sociaux et externes */}
+                <div className="flex flex-wrap justify-center gap-4 items-center">
+                  <Link
+                    href="https://discord.gg/dZEGkZwJGB"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/>
+                    </svg>
+                    Discord
+                  </Link>
 
-                      <Link
-                        href="https://github.com/Joutes"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <Github className="w-5 h-5" />
-                        GitHub
-                      </Link>
+                  <Link
+                    href="https://github.com/Joutes"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Github className="w-5 h-5" />
+                    GitHub
+                  </Link>
 
-                      <Link
-                        href="https://x.com/JoutesApp"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                        </svg>
-                        X
-                      </Link>
-                    </div>
-
-                    <div>
-                      <ThemeToggle />
-                    </div>
-
-                    {/* Liens légaux et info */}
-                    <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
-                      <Link href="/about" className="hover:text-foreground transition-colors">
-                        À propos
-                      </Link>
-                      <span className="text-muted-foreground/50">•</span>
-                      <Link href="/features/organizers" className="hover:text-foreground transition-colors">
-                        Organisateurs
-                      </Link>
-                      <span className="text-muted-foreground/50">•</span>
-                      <Link href="/pricing" className="hover:text-foreground transition-colors">
-                        Soutenir
-                      </Link>
-                      <span className="text-muted-foreground/50">•</span>
-                      <Link href="/cgu" className="hover:text-foreground transition-colors">
-                        CGU
-                      </Link>
-                      <span className="text-muted-foreground/50">•</span>
-                      <Link href="/privacy" className="hover:text-foreground transition-colors">
-                        Confidentialité
-                      </Link>
-                      <span className="text-muted-foreground/50">•</span>
-                      <Link href="/integrations" className="hover:text-foreground transition-colors">
-                        Développeurs
-                      </Link>
-                      <span className="text-muted-foreground/50">•</span>
-                      <Link href="/open-source" className="hover:text-foreground transition-colors">
-                        Open Source
-                      </Link>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 text-center text-sm text-muted-foreground">
-                    <p>© {await getCurrentYear()} Joutes - Ligues et rencontres multi-jeux</p>
-                  </div>
+                  <Link
+                    href="https://x.com/JoutesApp"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    X
+                  </Link>
                 </div>
-              </footer>
-              </Suspense>
+
+                <div>
+                  <ThemeToggle />
+                </div>
+
+                {/* Liens légaux et info */}
+                <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
+                  <Link href="/about" className="hover:text-foreground transition-colors">
+                    À propos
+                  </Link>
+                  <span className="text-muted-foreground/50">•</span>
+                  <Link href="/features/organizers" className="hover:text-foreground transition-colors">
+                    Organisateurs
+                  </Link>
+                  <span className="text-muted-foreground/50">•</span>
+                  <Link href="/pricing" className="hover:text-foreground transition-colors">
+                    Soutenir
+                  </Link>
+                  <span className="text-muted-foreground/50">•</span>
+                  <Link href="/cgu" className="hover:text-foreground transition-colors">
+                    CGU
+                  </Link>
+                  <span className="text-muted-foreground/50">•</span>
+                  <Link href="/privacy" className="hover:text-foreground transition-colors">
+                    Confidentialité
+                  </Link>
+                  <span className="text-muted-foreground/50">•</span>
+                  <Link href="/integrations" className="hover:text-foreground transition-colors">
+                    Développeurs
+                  </Link>
+                  <span className="text-muted-foreground/50">•</span>
+                  <Link href="/open-source" className="hover:text-foreground transition-colors">
+                    Open Source
+                  </Link>
+                </div>
+              </div>
+
+              <div className="mt-6 text-center text-sm text-muted-foreground">
+                <p>© {await getCurrentYear()} Joutes - Ligues et rencontres multi-jeux</p>
+              </div>
             </div>
-            <Toaster />
-          </ThemeProvider>
-        </NextIntlClientProvider>
-        <Analytics />
-      </body>
-    </html>
+          </footer>
+        </Suspense>
+      </div>
+    </NextIntlClientProvider>
   );
 }
