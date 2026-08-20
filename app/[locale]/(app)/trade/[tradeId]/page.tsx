@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { AccountPanelSkeleton } from "@/components/AccountPanelSkeleton.tsx";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
@@ -5,10 +7,6 @@ import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
 import { getTrade, listTradeGames } from "@/lib/db/trades.ts";
 import TradeEditor from "./TradeEditor.tsx";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Trade");
@@ -19,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function TradePage({ params }: { params: Promise<{ tradeId: string }> }) {
+async function TradePageContent({ params }: { params: Promise<{ tradeId: string }> }) {
   const { tradeId } = await params;
   const session = await auth.api.getSession({ headers: await headers() });
 
@@ -39,5 +37,24 @@ export default async function TradePage({ params }: { params: Promise<{ tradeId:
     <div className="container mx-auto p-4 sm:p-6">
       <TradeEditor initialTrade={trade} currentUserId={session.user.id} games={games} />
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
+ * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
+ * porte ait répondu.
+ */
+export default function TradePage(props: Parameters<typeof TradePageContent>[0]) {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto p-4 sm:p-6">
+          <AccountPanelSkeleton cards={2} label="Chargement de l’échange" />
+        </div>
+      }
+    >
+      <TradePageContent {...props} />
+    </Suspense>
   );
 }

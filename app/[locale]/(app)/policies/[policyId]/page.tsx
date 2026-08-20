@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { AccountPanelSkeleton } from "@/components/AccountPanelSkeleton.tsx";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
@@ -11,10 +13,6 @@ import PolicyDetailView from "./PolicyDetailView.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Link } from "@/i18n/navigation.ts";
 import { Locale } from "@/i18n/config.ts";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 type Props = { params: Promise<{ policyId: string }> };
 
@@ -36,7 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function PolicyDetailPage({ params }: Props) {
+async function PolicyDetailPageContent({ params }: Props) {
   const { policyId } = await params;
 
   const session = await auth.api.getSession({ headers: await headers() });
@@ -83,5 +81,24 @@ export default async function PolicyDetailPage({ params }: Props) {
         userCanVotePolicies={userCanVotePolicies}
       />
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
+ * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
+ * porte ait répondu.
+ */
+export default function PolicyDetailPage(props: Parameters<typeof PolicyDetailPageContent>[0]) {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto p-6 max-w-3xl">
+          <AccountPanelSkeleton cards={2} label="Chargement du ruling" />
+        </div>
+      }
+    >
+      <PolicyDetailPageContent {...props} />
+    </Suspense>
   );
 }

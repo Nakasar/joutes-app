@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { EditorFormSkeleton } from "@/components/EditorFormSkeleton.tsx";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -9,11 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert.tsx";
 import { Info } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
-export default async function NewEventPage({
+async function NewEventPageContent({
   searchParams,
 }: {
   searchParams: Promise<{ tournamentId?: string }>;
@@ -66,5 +64,24 @@ export default async function NewEventPage({
         <EventForm ownedLairs={ownedLairs} games={games} linkTournament={linkTournament} />
       </div>
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
+ * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
+ * porte ait répondu.
+ */
+export default function NewEventPage(props: Parameters<typeof NewEventPageContent>[0]) {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto p-6 max-w-4xl">
+          <EditorFormSkeleton fields={4} label="Chargement du formulaire" />
+        </div>
+      }
+    >
+      <NewEventPageContent {...props} />
+    </Suspense>
   );
 }

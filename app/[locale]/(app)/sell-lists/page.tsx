@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { CollectionSkeleton } from "@/components/CollectionSkeleton.tsx";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -8,11 +10,7 @@ import { Button } from "@/components/ui/button.tsx";
 import { Tag } from "lucide-react";
 import { Link } from "@/i18n/navigation.ts";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
-export default async function MySellListPage() {
+async function MySellListPageContent() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
     redirect("/login");
@@ -40,5 +38,24 @@ export default async function MySellListPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
+ * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
+ * porte ait répondu.
+ */
+export default function MySellListPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto max-w-2xl p-4 sm:p-6">
+          <CollectionSkeleton tiles={8} label="Chargement de vos listes de vente" />
+        </div>
+      }
+    >
+      <MySellListPageContent />
+    </Suspense>
   );
 }

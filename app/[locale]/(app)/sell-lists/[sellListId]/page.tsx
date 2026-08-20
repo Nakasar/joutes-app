@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { CollectionSkeleton } from "@/components/CollectionSkeleton.tsx";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
@@ -5,10 +7,6 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
 import { getSellListAccess, getSellListById, getSellListItems, getSellListOwnerInfo } from "@/lib/db/sell-lists.ts";
 import SellListDetailClient from "../SellListDetailClient.tsx";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 export async function generateMetadata({
   params,
@@ -36,7 +34,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function SellListDetailPage({
+async function SellListDetailPageContent({
   params,
 }: {
   params: Promise<{ sellListId: string }>;
@@ -68,5 +66,24 @@ export default async function SellListDetailPage({
         locale={locale}
       />
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
+ * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
+ * porte ait répondu.
+ */
+export default function SellListDetailPage(props: Parameters<typeof SellListDetailPageContent>[0]) {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto p-4 sm:p-6">
+          <CollectionSkeleton tiles={8} label="Chargement de la liste de vente" />
+        </div>
+      }
+    >
+      <SellListDetailPageContent {...props} />
+    </Suspense>
   );
 }

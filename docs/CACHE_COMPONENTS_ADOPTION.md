@@ -17,7 +17,7 @@ Next 16.3.1, `cacheComponents: true` sur `main`.
 
 891 pages construites. Avant l'adoption : **zéro** route avec coquille statique.
 
-**34 pages portent encore un opt-out `export const instant = false`** : 29 avec
+**12 pages portent encore un opt-out `export const instant = false`** : 7 avec
 un marqueur `TODO: Cache Components adoption`, et 5 blocages assumés qui portent
 une raison à la place — le layout du portail organisateur de tournoi, les deux
 layouts du portail d'événement, son aiguillage `portal/page.tsx`, et le
@@ -26,7 +26,7 @@ composer l'image de partage.
 
 **Attention en comptant : les marqueurs `TODO` ne comptent pas les opt-outs.**
 Ils marquent aussi les déblocages `await connection()`, qui n'ont rien à voir.
-Il y en a 32 en tout pour 29 opt-outs marqués. Les deux commandes qui donnent
+Il y en a 10 en tout pour 7 opt-outs marqués. Les deux commandes qui donnent
 les vrais chiffres :
 
 ```bash
@@ -36,7 +36,7 @@ comm -23 <(grep -rl 'instant = false' app/ | sort) \
          <(grep -rl 'TODO: Cache Components adoption' app/ | sort)
 ```
 
-38 pages portent un déblocage `await connection()` — le piège Mongo est devenu
+40 pages portent un déblocage `await connection()` — le piège Mongo est devenu
 la contrainte la plus fréquente sur ce qui reste.
 
 Les pages vivent sous `app/[locale]/(app)/` depuis la correction de collision de
@@ -590,16 +590,25 @@ Répartition des opt-outs par ce qui bloque la page :
 **Plus aucun lot mécanique n'est disponible.** Chaque route restante demande de
 décider ce qui appartient à la coquille et ce qui arrive en flux.
 
-Par zone : `events` 5, `trade` 3, `games` 3, `game-matches` 3, `decks` 3,
-`tournaments` 2, `leagues` 2, `wishlists` 2, `t` 2, `sell-lists` 2, puis une page
-chacune pour `friends`, `lairs`, `users`, `policies`, `oauth`, `notifications` et
-`login`.
+**Il ne reste que sept pages à adopter**, et ce sont les sept plus grosses de
+l'application :
 
-**`news`, `quizz`, `play-groups`, `collection`, `cubes`, `admin` et `account`
-sont faites entièrement.** `games`, `leagues` et `lairs` sont presque faites : il
-n'y reste que les très grosses pages — portail du jeu, fiche de carte, page
-d'une ligue, ses matchs, page d'un lieu — toutes entre 350 et 550 lignes, qui
-demandent chacune leur propre passe.
+| page | lignes |
+|---|---|
+| `games/[gameSlugOrId]/cards/[cardId]` | 555 |
+| `leagues/[leagueId]` | 533 |
+| `users/[userTagOrId]` | 495 |
+| `events/[eventId]` | 474 |
+| `leagues/[leagueId]/matches` | 360 |
+| `lairs/[lairId]` | 359 |
+| `games/[gameSlugOrId]` | 330 |
+
+Chacune demande sa propre passe : ce sont des écrans composés de plusieurs
+sections aux dépendances différentes, où le découpage se décide section par
+section plutôt qu'au gabarit.
+
+Toutes les autres zones sont faites. Les cinq opt-outs restants sont les
+blocages assumés.
 
 **Le motif est stabilisé**, et il tient en trois formes :
 
@@ -609,10 +618,9 @@ demandent chacune leur propre passe.
 | derrière une porte, sans segment dynamique | le cadre et la silhouette | ~30 Ko |
 | derrière une porte, avec segment dynamique | le cadre et la silhouette | ~18 à 20 Ko |
 
-Ce qui reste demande surtout de décider, page par page, ce que la coquille a le
-droit de montrer avant que la porte d'authentification ait répondu. La réponse
-retenue partout jusqu'ici : **rien de ce que la porte protège**, pas même le nom
-de l'objet, ni la mise en page d'un espace personnel.
+La règle retenue partout pour ce qui est derrière une porte : **rien de ce que
+la porte protège** ne s'affiche avant sa réponse, pas même le nom de l'objet, ni
+la mise en page d'un espace personnel.
 
 ### Une porte au niveau du layout couvre tout, y compris les pages
 

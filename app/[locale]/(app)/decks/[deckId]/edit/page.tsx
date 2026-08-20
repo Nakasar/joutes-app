@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { EditorFormSkeleton } from "@/components/EditorFormSkeleton.tsx";
 import { getDeckById } from "@/lib/db/decks.ts";
 import { getAllGames } from "@/lib/db/games.ts";
 import { auth } from "@/lib/auth.ts";
@@ -5,10 +7,6 @@ import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { Metadata } from "next";
 import EditDeckForm from "./EditDeckForm.tsx";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 type Params = Promise<{ deckId: string }>;
 
@@ -28,7 +26,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   };
 }
 
-export default async function EditDeckPage({ params }: { params: Params }) {
+async function EditDeckPageContent({ params }: { params: Params }) {
   const { deckId } = await params;
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -67,5 +65,24 @@ export default async function EditDeckPage({ params }: { params: Params }) {
         <EditDeckForm deck={deck} games={games} />
       </div>
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
+ * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
+ * porte ait répondu.
+ */
+export default function EditDeckPage(props: Parameters<typeof EditDeckPageContent>[0]) {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-4 py-8 max-w-3xl">
+          <EditorFormSkeleton fields={4} label="Chargement du deck" />
+        </div>
+      }
+    >
+      <EditDeckPageContent {...props} />
+    </Suspense>
   );
 }

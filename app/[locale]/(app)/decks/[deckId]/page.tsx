@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { AccountPanelSkeleton } from "@/components/AccountPanelSkeleton.tsx";
 import { getDeckById } from "@/lib/db/decks.ts";
 import { getGameById } from "@/lib/db/games.ts";
 import { auth } from "@/lib/auth.ts";
@@ -13,10 +15,6 @@ import { DateTime } from "luxon";
 import DeleteDeckButton from "./DeleteDeckButton.tsx";
 import FavoriteDeckButton from "../FavoriteDeckButton.tsx";
 import ReportButton from "@/components/ReportButton.tsx";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 type Params = Promise<{ deckId: string }>;
 
@@ -49,7 +47,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   };
 }
 
-export default async function DeckPage({ params }: { params: Params }) {
+async function DeckPageContent({ params }: { params: Params }) {
   const { deckId } = await params;
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -183,5 +181,24 @@ export default async function DeckPage({ params }: { params: Params }) {
         </Card>
       </div>
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
+ * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
+ * porte ait répondu.
+ */
+export default function DeckPage(props: Parameters<typeof DeckPageContent>[0]) {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+          <AccountPanelSkeleton cards={2} label="Chargement du deck" />
+        </div>
+      }
+    >
+      <DeckPageContent {...props} />
+    </Suspense>
   );
 }
