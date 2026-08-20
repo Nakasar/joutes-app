@@ -13,13 +13,11 @@ import { ObjectId } from "mongodb";
 import { collectionFormatsForGame } from "@/lib/collection/formats";
 import GameCollectionBrowser from "./GameCollectionBrowser.tsx";
 
-
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ gameSlug: string }>;
 }): Promise<Metadata> {
-
   // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
   // pas figer, et aucune frontière n'y change rien.
   await connection();
@@ -36,7 +34,6 @@ async function GameCollectionPageContent({
 }: {
   params: Promise<{ gameSlug: string }>;
 }) {
-
   // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
   // pas figer, et aucune frontière n'y change rien.
   await connection();

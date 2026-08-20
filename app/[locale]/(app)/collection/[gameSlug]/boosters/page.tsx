@@ -21,7 +21,6 @@ import { isBoosterType, normalizeBoosterType } from "@/lib/constants/booster-typ
 import { parseBoosterCardIds } from "@/lib/constants/boosters.ts";
 import BoostersList from "./BoostersList.tsx";
 
-
 const PAGE_SIZE = 24;
 
 export async function generateMetadata({
@@ -29,7 +28,6 @@ export async function generateMetadata({
 }: {
   params: Promise<{ gameSlug: string }>;
 }): Promise<Metadata> {
-
   // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
   // pas figer, et aucune frontière n'y change rien.
   await connection();
@@ -46,7 +44,6 @@ async function BoostersPageContent({
   params: Promise<{ gameSlug: string }>;
   searchParams: Promise<{ page?: string; type?: string; sort?: string; cards?: string }>;
 }) {
-
   // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
   // pas figer, et aucune frontière n'y change rien.
   await connection();

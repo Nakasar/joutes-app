@@ -10,13 +10,11 @@ import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { getBooster } from "@/lib/db/boosters.ts";
 import BoosterEditor from "./BoosterEditor.tsx";
 
-
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ gameSlug: string; boosterId: string }>;
 }): Promise<Metadata> {
-
   // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
   // pas figer, et aucune frontière n'y change rien.
   await connection();
@@ -31,7 +29,6 @@ async function BoosterEditorPageContent({
 }: {
   params: Promise<{ gameSlug: string; boosterId: string }>;
 }) {
-
   // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
   // pas figer, et aucune frontière n'y change rien.
   await connection();

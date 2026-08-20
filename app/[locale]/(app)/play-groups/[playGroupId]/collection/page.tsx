@@ -93,7 +93,7 @@ export default function PlayGroupCollectionPage(props: Parameters<typeof PlayGro
     <Suspense
       fallback={
         <div className="container mx-auto p-4 sm:p-6">
-        <PlayGroupToolsRowSkeleton />
+          <PlayGroupToolsRowSkeleton />
           <PlayGroupCollectionSkeleton />
         </div>
       }

@@ -8,9 +8,7 @@ import { getCubeAccess, getCubeById } from "@/lib/db/cubes.ts";
 import { DEFAULT_CUBE_DRAW } from "@/lib/constants/cubes.ts";
 import CubePlayClient from "./CubePlayClient.tsx";
 
-
 async function CubePlayPageContent({ params }: { params: Promise<{ cubeId: string }> }) {
-
   // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
   // pas figer, et aucune frontière n'y change rien.
   await connection();

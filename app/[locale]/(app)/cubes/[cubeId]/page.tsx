@@ -10,9 +10,7 @@ import { getCubeAttributeOptions } from "@/lib/db/cube-draw.ts";
 import { DEFAULT_CUBE_DRAW } from "@/lib/constants/cubes.ts";
 import CubeDetailClient from "./CubeDetailClient.tsx";
 
-
 export async function generateMetadata({ params }: { params: Promise<{ cubeId: string }> }): Promise<Metadata> {
-
   // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
   // pas figer, et aucune frontière n'y change rien.
   await connection();
@@ -32,7 +30,6 @@ export async function generateMetadata({ params }: { params: Promise<{ cubeId: s
 }
 
 async function CubePageContent({ params }: { params: Promise<{ cubeId: string }> }) {
-
   // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
   // pas figer, et aucune frontière n'y change rien.
   await connection();

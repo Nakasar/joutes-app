@@ -7,7 +7,7 @@ import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
 import { getPlayGroupByIdAndUser } from "@/lib/db/play-groups.ts";
-import { getAllGames } from "@/lib/db/games.ts";
+import { readAllGames } from "@/lib/db/games-cached.ts";
 import PlayGroupGamesSettings from "@/components/play-groups/PlayGroupGamesSettings.tsx";
 
 
@@ -56,7 +56,7 @@ async function PlayGroupSettingsPageContent({
     redirect(`/play-groups/${group.id}`);
   }
 
-  const games = await getAllGames();
+  const games = await readAllGames();
 
   return (
     <div className="container mx-auto max-w-3xl px-4 py-8">

@@ -13,10 +13,6 @@ import CardBrowser from "./CardBrowser.tsx";
 import ReindexButton from "./ReindexButton.tsx";
 import BulkPrintingsForm from "./BulkPrintingsForm.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
 export default async function AdminCardsPage({
   searchParams,
 }: {

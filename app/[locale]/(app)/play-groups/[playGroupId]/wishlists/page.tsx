@@ -92,8 +92,8 @@ export default function PlayGroupWishlistsPage(props: Parameters<typeof PlayGrou
     <Suspense
       fallback={
         <div className="container mx-auto p-4 sm:p-6">
-        <PlayGroupToolsRowSkeleton />
-          <PlayGroupCollectionSkeleton tiles={6} label="Chargement des listes d&apos;envies" />
+          <PlayGroupToolsRowSkeleton />
+          <PlayGroupCollectionSkeleton tiles={6} label="Chargement des listes d’envies" />
         </div>
       }
     >

@@ -92,7 +92,7 @@ export default function PlayGroupSellListPage(props: Parameters<typeof PlayGroup
     <Suspense
       fallback={
         <div className="container mx-auto p-4 sm:p-6">
-        <PlayGroupToolsRowSkeleton />
+          <PlayGroupToolsRowSkeleton />
           <PlayGroupCollectionSkeleton tiles={6} label="Chargement de la liste de vente" />
         </div>
       }

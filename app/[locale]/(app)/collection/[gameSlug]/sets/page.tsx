@@ -11,13 +11,11 @@ import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { getGamesStats } from "@/lib/db/collection.ts";
 import SetsOverview from "./SetsOverview.tsx";
 
-
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ gameSlug: string }>;
 }): Promise<Metadata> {
-
   // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
   // pas figer, et aucune frontière n'y change rien.
   await connection();
@@ -34,7 +32,6 @@ async function GameSetsPageContent({
 }: {
   params: Promise<{ gameSlug: string }>;
 }) {
-
   // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
   // pas figer, et aucune frontière n'y change rien.
   await connection();

@@ -8,13 +8,11 @@ import { getTranslations } from "next-intl/server";
 import { getCubeAccess, getCubeById, getCubePack, getCubePackCards, getCubePacks } from "@/lib/db/cubes.ts";
 import PackEditor from "./PackEditor.tsx";
 
-
 async function CubePackPageContent({
   params,
 }: {
   params: Promise<{ cubeId: string; packId: string }>;
 }) {
-
   // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
   // pas figer, et aucune frontière n'y change rien.
   await connection();

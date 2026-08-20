@@ -8,9 +8,7 @@ import { getCubeAccess, getCubeById } from "@/lib/db/cubes.ts";
 import { getCubeStats } from "@/lib/db/cube-stats.ts";
 import CubeStatsView from "./CubeStatsView.tsx";
 
-
 async function CubeStatsPageContent({ params }: { params: Promise<{ cubeId: string }> }) {
-
   // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
   // pas figer, et aucune frontière n'y change rien.
   await connection();

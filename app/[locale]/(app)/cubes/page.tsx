@@ -10,7 +10,6 @@ import { getCubesForOwner, getPublicCubes } from "@/lib/db/cubes.ts";
 import { readAllGames } from "@/lib/db/games-cached.ts";
 import CubesClient from "./CubesClient.tsx";
 
-
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Cubes");
   return {
@@ -20,7 +19,6 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 async function CubesPageContent() {
-
   // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
   // pas figer, et aucune frontière n'y change rien.
   await connection();

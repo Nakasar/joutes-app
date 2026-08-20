@@ -9,7 +9,6 @@ import { Metadata } from "next/types";
 import { getCollectionOverview } from "@/lib/db/collection.ts";
 import CollectionOverview from "./CollectionOverview.tsx";
 
-
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Collection");
   return {
@@ -24,7 +23,6 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 async function CollectionPageContent() {
-
   // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
   // pas figer, et aucune frontière n'y change rien.
   await connection();

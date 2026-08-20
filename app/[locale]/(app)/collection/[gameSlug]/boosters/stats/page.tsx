@@ -10,13 +10,11 @@ import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { getBoosterStats } from "@/lib/db/booster-stats.ts";
 import BoosterStatsView from "./BoosterStatsView.tsx";
 
-
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ gameSlug: string }>;
 }): Promise<Metadata> {
-
   // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
   // pas figer, et aucune frontière n'y change rien.
   await connection();
@@ -33,7 +31,6 @@ async function BoosterStatsPageContent({
 }: {
   params: Promise<{ gameSlug: string }>;
 }) {
-
   // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
   // pas figer, et aucune frontière n'y change rien.
   await connection();
