@@ -1,3 +1,5 @@
+import { AccountPanelSkeleton } from "@/components/AccountPanelSkeleton.tsx";
+import { Suspense } from "react";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -8,11 +10,7 @@ import { Trophy, Lock } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
 import { AchievementIcon } from "@/components/AchievementIcon.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
-export default async function AchievementsPage() {
+async function AchievementsPageContent() {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -108,3 +106,21 @@ export default async function AchievementsPage() {
   );
 }
 
+/**
+ * Tout cet écran est derrière la porte, titre compris : on ne montre pas la
+ * mise en page d'un espace personnel avant de savoir à qui il appartient. La
+ * coquille ne garde que le conteneur et la silhouette.
+ */
+export default function AchievementsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto py-8">
+          <AccountPanelSkeleton cards={2} label="Chargement de vos succès" />
+        </div>
+      }
+    >
+      <AchievementsPageContent />
+    </Suspense>
+  );
+}

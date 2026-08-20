@@ -1,5 +1,8 @@
+import { Suspense } from "react";
+import { CollectionSkeleton } from "@/components/CollectionSkeleton.tsx";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
@@ -16,15 +19,16 @@ import WishlistDetailClient from "./WishlistDetailClient.tsx";
 import { ownerHasAdvancedCollection } from "@/lib/db/collection-access.ts";
 import { isWishlistReadOnly } from "@/lib/wishlists/limits.ts";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ wishlistId: string }>;
 }): Promise<Metadata> {
+  // Le pilote Mongo touche à l'horloge en lisant la base, ce qu'un prérendu
+  // ne sait pas figer. Les métadonnées s'exécutent hors de la frontière de la
+  // page : le déblocage du corps ne les couvre pas.
+  await connection();
+
   const { wishlistId } = await params;
   const t = await getTranslations("Wishlists");
   const wishlist = await getWishlistById(wishlistId);
@@ -46,7 +50,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function WishlistDetailPage({
+async function WishlistDetailPageContent({
   params,
 }: {
   params: Promise<{ wishlistId: string }>;
@@ -108,5 +112,24 @@ export default async function WishlistDetailPage({
         ownerInfo={ownerInfo}
       />
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
+ * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
+ * porte ait répondu.
+ */
+export default function WishlistDetailPage(props: Parameters<typeof WishlistDetailPageContent>[0]) {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto p-4 sm:p-6">
+          <CollectionSkeleton tiles={8} label="Chargement de la liste d’envies" />
+        </div>
+      }
+    >
+      <WishlistDetailPageContent {...props} />
+    </Suspense>
   );
 }

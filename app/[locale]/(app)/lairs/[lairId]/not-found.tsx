@@ -1,5 +1,15 @@
-import { Link } from "@/i18n/navigation.ts";
 
+/**
+ * Next prépare cette limite dans la coquille de chaque route du sous-arbre,
+ * même quand aucune n'échoue : ce fichier fait partie du prérendu de toutes les
+ * pages en dessous.
+ *
+ * D'où le `<a>` plutôt que le `Link` localisé. Le `Link` lit le chemin courant,
+ * inconnu au prérendu d'une route à segment dynamique, et suspendait la
+ * coquille de tout le sous-arbre — voir « Un `not-found.tsx` fait partie de la
+ * coquille de tout son sous-arbre » dans le document d'adoption. Le proxy
+ * retrouve la langue au clic, que le cookie porte.
+ */
 export default function NotFound() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -11,7 +21,7 @@ export default function NotFound() {
         <p className="text-gray-600 mb-8">
           Désolé, nous n&apos;avons pas trouvé le lieu de jeu que vous recherchez.
         </p>
-        <Link
+        <a
           href="/lairs"
           className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
@@ -19,7 +29,7 @@ export default function NotFound() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
           Retour à la liste des lieux
-        </Link>
+        </a>
       </div>
     </div>
   );

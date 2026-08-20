@@ -10,7 +10,8 @@
  */
 export function ContentListSkeleton({ cards = 6 }: { cards?: number }) {
   return (
-    <div className="animate-pulse space-y-6" aria-hidden>
+    <div className="animate-pulse space-y-6" role="status" aria-busy="true">
+      <span className="sr-only">Chargement de la liste…</span>
       <div className="flex flex-wrap gap-3">
         <div className="h-10 min-w-0 flex-1 rounded-md bg-muted" />
         <div className="h-10 w-40 rounded-md bg-muted/60" />

@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { CollectionSkeleton } from "@/components/CollectionSkeleton.tsx";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -9,10 +11,6 @@ import { getMyPlans } from "@/lib/subscriptions/access.ts";
 import { planGrantingPermission } from "@/lib/subscriptions/entitlements.ts";
 import { TRADE_HISTORY_PAGE_SIZE } from "@/lib/trade/history.ts";
 import TradeHubClient from "./TradeHubClient.tsx";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Trade");
@@ -27,7 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function TradeHubPage() {
+async function TradeHubPageContent() {
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session?.user?.id) {
@@ -70,5 +68,24 @@ export default async function TradeHubPage() {
         currentUserId={session.user.id}
       />
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
+ * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
+ * porte ait répondu.
+ */
+export default function TradeHubPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto p-4 sm:p-6">
+          <CollectionSkeleton tiles={8} label="Chargement de vos échanges" />
+        </div>
+      }
+    >
+      <TradeHubPageContent />
+    </Suspense>
   );
 }

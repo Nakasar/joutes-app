@@ -9,7 +9,8 @@
  */
 export function ArticleSkeleton({ paragraphs = 6 }: { paragraphs?: number }) {
   return (
-    <div className="animate-pulse space-y-6" aria-hidden>
+    <div className="animate-pulse space-y-6" role="status" aria-busy="true">
+      <span className="sr-only">Chargement de l&apos;article…</span>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="h-8 w-40 rounded-md bg-muted" />
         <div className="h-8 w-28 rounded-md bg-muted/60" />

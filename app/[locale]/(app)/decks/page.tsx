@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { CollectionSkeleton } from "@/components/CollectionSkeleton.tsx";
 import { searchDecks } from "@/lib/db/decks.ts";
 import { getAllGames } from "@/lib/db/games.ts";
 import { auth } from "@/lib/auth.ts";
@@ -6,10 +8,6 @@ import { Metadata } from "next";
 import { Library } from "lucide-react";
 import DecksClient from "./DecksClient.tsx";
 import { redirect } from "next/navigation";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 export const metadata: Metadata = {
   title: 'Decks',
@@ -21,7 +19,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function DecksPage({ searchParams }: { searchParams: Promise<{ gameId?: string; scope?: string; favoritesOnly?: string }> }) {
+async function DecksPageContent({ searchParams }: { searchParams: Promise<{ gameId?: string; scope?: string; favoritesOnly?: string }> }) {
   // Récupérer l'utilisateur connecté
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -66,5 +64,24 @@ export default async function DecksPage({ searchParams }: { searchParams: Promis
         <DecksClient currentUserId={session.user.id} initialData={initialDecksData} games={games} initialFilters={{ gameId, scope: scope === "all" ? "all" : "mine", favoritesOnly: favoritesOnly === "true" }} />
       </div>
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
+ * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
+ * porte ait répondu.
+ */
+export default function DecksPage(props: Parameters<typeof DecksPageContent>[0]) {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
+          <CollectionSkeleton tiles={8} label="Chargement de vos decks" />
+        </div>
+      }
+    >
+      <DecksPageContent {...props} />
+    </Suspense>
   );
 }

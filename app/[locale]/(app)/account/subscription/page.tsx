@@ -1,3 +1,4 @@
+import { AccountPanelSkeleton } from "@/components/AccountPanelSkeleton.tsx";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { Link } from "@/i18n/navigation.ts";
@@ -16,16 +17,12 @@ import { getMySubscriptionSummary } from "@/lib/subscriptions/access.ts";
 import { displayPlan } from "@/lib/subscriptions/entitlements.ts";
 import { LinkPatreonButton, ResyncButton, SyncAfterLink, UnlinkPatreonButton } from "./components.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
 export const metadata: Metadata = {
   title: "Mon abonnement",
   robots: { index: false, follow: false },
 };
 
-export default async function SubscriptionPage() {
+async function SubscriptionPageContent() {
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session?.user) {
@@ -168,5 +165,24 @@ export default async function SubscriptionPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte, titre compris : on ne montre pas la
+ * mise en page d'un espace personnel avant de savoir à qui il appartient. La
+ * coquille ne garde que le conteneur et la silhouette.
+ */
+export default function SubscriptionPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto max-w-3xl px-4 py-8">
+          <AccountPanelSkeleton cards={2} label="Chargement de votre abonnement" />
+        </div>
+      }
+    >
+      <SubscriptionPageContent />
+    </Suspense>
   );
 }

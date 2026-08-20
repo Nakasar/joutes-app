@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { CollectionSkeleton } from "@/components/CollectionSkeleton.tsx";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -6,10 +8,6 @@ import { Metadata } from "next/types";
 import { getWishlistsForOwner } from "@/lib/db/wishlists.ts";
 import WishlistsClient from "./WishlistsClient.tsx";
 import { ownerHasAdvancedCollection } from "@/lib/db/collection-access.ts";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Wishlists");
@@ -24,7 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function WishlistsPage() {
+async function WishlistsPageContent() {
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session?.user?.id) {
@@ -41,5 +39,24 @@ export default async function WishlistsPage() {
     <div className="container mx-auto p-4 sm:p-6">
       <WishlistsClient initialWishlists={wishlists} apiBasePath="/api/wishlists" advanced={advanced} />
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
+ * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
+ * porte ait répondu.
+ */
+export default function WishlistsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto p-4 sm:p-6">
+          <CollectionSkeleton tiles={8} label="Chargement de vos listes d’envies" />
+        </div>
+      }
+    >
+      <WishlistsPageContent />
+    </Suspense>
   );
 }
