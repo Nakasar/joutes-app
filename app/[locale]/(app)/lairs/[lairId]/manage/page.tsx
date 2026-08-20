@@ -1,6 +1,6 @@
 import { requireAdminOrOwner } from "@/lib/middleware/admin.ts";
 import { getLairById } from "@/lib/db/lairs.ts";
-import { getAllGames } from "@/lib/db/games.ts";
+import { readAllGames } from "@/lib/db/games-cached.ts";
 import { getUserById, getUsersFollowingLair } from "@/lib/db/users.ts";
 import { User } from "@/lib/types/User.ts";
 import { notFound } from "next/navigation";
@@ -20,19 +20,73 @@ import { plansFromSubscription } from "@/lib/subscriptions/access.ts";
 import PrivateLairInvitationManager from "./PrivateLairInvitationManager.tsx";
 import PrivateLairFollowersManager from "./PrivateLairFollowersManager.tsx";
 import { getTranslations } from "next-intl/server";
+import { connection } from "next/server";
+import { Suspense } from "react";
+import { EditorFormSkeleton } from "@/components/EditorFormSkeleton.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
-export default async function ManageLairPage({
+/**
+ * Rien de traduit ne reste dans la coquille, et c'est structurel.
+ *
+ * Le bouton de retour est un `Link` localisé : il lui faut `setRequestLocale`,
+ * qui lui-même demande la langue — donc `await params`, une lecture de requête
+ * sur une route à segment dynamique. La chaîne se referme : **sur ces routes,
+ * rien de localisé ne peut tenir dans la coquille.** Une première version posait
+ * le bouton devant et n'obtenait qu'une coquille de 5 Ko, réduite au cadre de
+ * l'application.
+ *
+ * Ce qui reste devant est donc muet : le conteneur et deux silhouettes.
+ */
+export default function ManageLairPage({
   params,
 }: {
   params: Promise<{ lairId: string }>;
 }) {
-  const t = await getTranslations("Lairs");
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-5xl">
+      <div className="mb-6">
+        <Suspense fallback={<div className="h-8 w-40 animate-pulse rounded-md bg-muted" aria-hidden />}>
+          <BackToLair params={params} />
+        </Suspense>
+      </div>
+
+      <Suspense fallback={<ManageLairSkeleton />}>
+        <ManageLairContent params={params} />
+      </Suspense>
+    </div>
+  );
+}
+
+function ManageLairSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="mb-8 h-10 w-96 max-w-full animate-pulse rounded bg-muted" aria-hidden />
+      <EditorFormSkeleton fields={4} label="Chargement du lieu" />
+    </div>
+  );
+}
+
+async function BackToLair({ params }: { params: Promise<{ lairId: string }> }) {
   const { lairId } = await params;
-  
+  const t = await getTranslations("Lairs");
+
+  return (
+    <Button variant="secondary" asChild size="sm">
+      <Link href={`/lairs/${lairId}`}>
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        {t("manage.backToLair")}
+      </Link>
+    </Button>
+  );
+}
+
+async function ManageLairContent({ params }: { params: Promise<{ lairId: string }> }) {
+  const { lairId } = await params;
+  const t = await getTranslations("Lairs");
+
+  // Le pilote Mongo touche à l'horloge en lisant le lieu, ce qu'un prérendu ne
+  // sait pas figer, et aucune frontière n'y change rien.
+  await connection();
+
   // Vérifier que l'utilisateur est admin ou owner du lair
   await requireAdminOrOwner(lairId);
   const lair = await getLairById(lairId);
@@ -41,8 +95,7 @@ export default async function ManageLairPage({
     notFound();
   }
 
-  // Récupérer tous les jeux disponibles
-  const games = await getAllGames();
+  const games = await readAllGames();
 
   // Récupérer les détails des owners
   const ownersDetails = await Promise.all(
@@ -86,16 +139,7 @@ export default async function ManageLairPage({
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-5xl">
-      <div className="mb-6">
-        <Button variant="secondary" asChild size="sm">
-          <Link href={`/lairs/${lairId}`}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            {t("manage.backToLair")}
-          </Link>
-        </Button>
-      </div>
-
+    <>
       <div className="flex items-center gap-3 mb-8">
         <h1 className="text-4xl font-bold">{t("manage.title", { name: lair.name })}</h1>
         {lair.isPrivate && (
@@ -168,6 +212,6 @@ export default async function ManageLairPage({
           </CardContent>
         </Card>
       </div>
-    </div>
+    </>
   );
 }

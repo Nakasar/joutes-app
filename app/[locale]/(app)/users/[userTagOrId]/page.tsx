@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { getPublicUserProfileAction } from "@/app/[locale]/(app)/account/user-actions.ts";
 import { getAllGames } from "@/lib/db/games.ts";
 import { getLairById } from "@/lib/db/lairs.ts";
@@ -41,6 +42,11 @@ export async function generateMetadata({
   params,
 }: UserProfilePageProps): Promise<Metadata> {
   const { userTagOrId } = await params;
+  // TODO: Cache Components adoption. Added to unblock the build: remove this connection() to re-trigger the error and review the fix options.
+  // Révélé en corrigeant le `not-found.tsx` de ce segment : tant qu'il
+  // suspendait la coquille, ce piège Mongo restait invisible.
+  await connection();
+
   const decodedUserTagOrId = decodeURIComponent(userTagOrId);
   const result = await getPublicUserProfileAction(decodedUserTagOrId);
 
@@ -67,6 +73,12 @@ export async function generateMetadata({
 
 export default async function UserProfilePage({ params }: UserProfilePageProps) {
   const { userTagOrId } = await params;
+
+  // TODO: Cache Components adoption. Added to unblock the build: remove this connection() to re-trigger the error and review the fix options.
+  // Révélé en corrigeant le `not-found.tsx` de ce segment : tant qu'il
+  // suspendait la coquille, ce piège Mongo restait invisible.
+  await connection();
+
   
   // Décoder l'URL au cas où le userTag contient des caractères spéciaux
   const decodedUserTagOrId = decodeURIComponent(userTagOrId);
