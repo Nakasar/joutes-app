@@ -17,23 +17,27 @@ Next 16.3.1, `cacheComponents: true` sur `main`.
 
 891 pages construites. Avant l'adoption : **zéro** route avec coquille statique.
 
-**76 pages portent encore un opt-out `export const instant = false`** — 71
-marqueurs `TODO: Cache Components adoption`, plus **cinq** blocages assumés qui
-portent une raison au lieu d'un TODO : le layout du portail organisateur de
-tournoi, les deux layouts du portail d'événement, son aiguillage
-`portal/page.tsx`, et le vérificateur de deck de Riftbound — dont les
-métadonnées lisent `?input=` pour composer l'image de partage.
+**34 pages portent encore un opt-out `export const instant = false`** : 29 avec
+un marqueur `TODO: Cache Components adoption`, et 5 blocages assumés qui portent
+une raison à la place — le layout du portail organisateur de tournoi, les deux
+layouts du portail d'événement, son aiguillage `portal/page.tsx`, et le
+vérificateur de deck de Riftbound, dont les métadonnées lisent `?input=` pour
+composer l'image de partage.
 
-Le décompte se vérifie en une commande, et c'est ainsi qu'une cinquième page
-oubliée dans cette liste s'est signalée :
+**Attention en comptant : les marqueurs `TODO` ne comptent pas les opt-outs.**
+Ils marquent aussi les déblocages `await connection()`, qui n'ont rien à voir.
+Il y en a 32 en tout pour 29 opt-outs marqués. Les deux commandes qui donnent
+les vrais chiffres :
 
 ```bash
+# les opt-outs, et ceux d'entre eux qui sont des blocages assumés
+grep -rl 'instant = false' app/ | wc -l
 comm -23 <(grep -rl 'instant = false' app/ | sort) \
          <(grep -rl 'TODO: Cache Components adoption' app/ | sort)
 ```
 
-Dix-neuf pages portent un déblocage `await connection()` — le piège Mongo est
-désormais la contrainte la plus fréquente sur ce qui reste.
+38 pages portent un déblocage `await connection()` — le piège Mongo est devenu
+la contrainte la plus fréquente sur ce qui reste.
 
 Les pages vivent sous `app/[locale]/(app)/` depuis la correction de collision de
 chemins ; le groupe `(oauth2)` est à côté. Les chemins cités ici en tiennent
@@ -586,21 +590,44 @@ Répartition des opt-outs par ce qui bloque la page :
 **Plus aucun lot mécanique n'est disponible.** Chaque route restante demande de
 décider ce qui appartient à la coquille et ce qui arrive en flux.
 
-Par zone : `admin` 12, `play-groups` 8, `collection` 7, `account` 7, `events` 6,
-`cubes` 5, `trade` 3, `tournaments` 3, `games` 3, `game-matches` 3, `decks` 3,
-`leagues` 2, `wishlists` 2, `t` 2, `sell-lists` 2, `friends` 2, puis une page
-chacune pour `lairs`, `users`, `policies`, `oauth`, `notifications` et `login`.
+Par zone : `events` 5, `trade` 3, `games` 3, `game-matches` 3, `decks` 3,
+`tournaments` 2, `leagues` 2, `wishlists` 2, `t` 2, `sell-lists` 2, puis une page
+chacune pour `friends`, `lairs`, `users`, `policies`, `oauth`, `notifications` et
+`login`.
 
-`news` et `quizz` sont faites entièrement. `games`, `leagues` et `lairs` sont
-presque faites : il n'y reste que les très grosses pages — portail du jeu, fiche
-de carte, page d'une ligue, ses matchs, page d'un lieu — toutes entre 350 et 550
-lignes, qui demandent chacune leur propre passe.
+**`news`, `quizz`, `play-groups`, `collection`, `cubes`, `admin` et `account`
+sont faites entièrement.** `games`, `leagues` et `lairs` sont presque faites : il
+n'y reste que les très grosses pages — portail du jeu, fiche de carte, page
+d'une ligue, ses matchs, page d'un lieu — toutes entre 350 et 550 lignes, qui
+demandent chacune leur propre passe.
 
-**Le motif est stabilisé.** Les listes publiques sans segment dynamique
-prérendent leur en-tête (~33 Ko) ; les pages à segment dynamique prérendent le
-cadre et leurs silhouettes (~18 Ko). Ce qui reste demande surtout de décider,
-page par page, ce que la coquille a le droit de montrer avant que la porte
-d'authentification ait répondu.
+**Le motif est stabilisé**, et il tient en trois formes :
+
+| forme de route | ce que la coquille contient | ordre de grandeur |
+|---|---|---|
+| publique, sans segment dynamique | l'en-tête traduit, prérendu | ~33 Ko |
+| derrière une porte, sans segment dynamique | le cadre et la silhouette | ~30 Ko |
+| derrière une porte, avec segment dynamique | le cadre et la silhouette | ~18 à 20 Ko |
+
+Ce qui reste demande surtout de décider, page par page, ce que la coquille a le
+droit de montrer avant que la porte d'authentification ait répondu. La réponse
+retenue partout jusqu'ici : **rien de ce que la porte protège**, pas même le nom
+de l'objet, ni la mise en page d'un espace personnel.
+
+### Une porte au niveau du layout couvre tout, y compris les pages
+
+L'administration a montré le cas le plus net. Sa porte est dans son `layout` :
+posée hors frontière, elle bloquait le prérendu des douze écrans ; posée sous
+frontière, elle laisse une coquille — mais `{children}` passe alors derrière
+elle, et **les pages n'ajoutent plus rien à cette coquille**.
+
+C'est un échange assumé : personne ne doit voir l'ombre d'un écran
+d'administration avant que la porte ait répondu, pas même sa mise en page. Le
+gain reste net — de rien à ~30 Ko de cadre et de silhouette.
+
+Conséquence pratique : sous un tel layout, **retirer l'opt-out d'une page suffit
+souvent**. Ses lectures suspendent à la frontière du layout au lieu de bloquer.
+Les dix pages d'administration n'ont demandé aucune autre modification.
 
 Les zones qui restent sont toutes derrière une session. Ce sont donc celles où
 les pièges de mesure comptent le plus : ni `curl`, ni onglet recyclé.
