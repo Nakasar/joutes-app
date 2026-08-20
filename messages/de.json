@@ -3879,5 +3879,18 @@
     "seatsHint": "Das Binden erfolgt auf der Verwaltungsseite eines Spielorts, dem du gehörst.",
     "manageLair": "Verwalten",
     "seePlans": "Alle Angebote ansehen"
+  },
+  "HalloweenSeason": {
+    "title": "Das Abzeichen der Saison",
+    "earnedTitle": "Abzeichen erhalten",
+    "badgeName": "Wächter der Nacht",
+    "deadline": "bis zum {day}. Oktober",
+    "body": "Nimm während der Saison an {goal} Veranstaltungen teil, um das Abzeichen „Wächter der Nacht“ und den zugehörigen Erfolg zu erhalten.",
+    "earnedBody": "Drei Abende geschafft — das Abzeichen der Saison gehört dir.",
+    "progress": "{done} von {goal}",
+    "findEvent": "Veranstaltung finden",
+    "seeBadge": "Meine Erfolge ansehen",
+    "emptyTitle": "Diesen Monat keine Veranstaltungen",
+    "emptyBody": "Selbst die Gespenster sind fort. Probier einen anderen Monat, oder richte selbst etwas aus."
   }
 }

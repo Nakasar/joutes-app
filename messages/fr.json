@@ -3879,5 +3879,18 @@
     "seatsHint": "Le rattachement se fait depuis la page de gestion d'un lieu dont vous êtes propriétaire.",
     "manageLair": "Gérer",
     "seePlans": "Voir toutes les offres"
+  },
+  "HalloweenSeason": {
+    "title": "Le badge de la saison",
+    "earnedTitle": "Badge décroché",
+    "badgeName": "Veilleur de la Nuit",
+    "deadline": "jusqu'au {day} octobre",
+    "body": "Participez à {goal} événements pendant la saison pour décrocher le badge « Veilleur de la Nuit » et le haut fait qui l'accompagne.",
+    "earnedBody": "Les trois soirées sont faites : le badge de la saison est à vous.",
+    "progress": "{done} sur {goal}",
+    "findEvent": "Trouver un événement",
+    "seeBadge": "Voir mes succès",
+    "emptyTitle": "Aucun événement ce mois-ci",
+    "emptyBody": "Même les revenants ont déserté. Changez de mois, ou ouvrez le vôtre."
   }
 }

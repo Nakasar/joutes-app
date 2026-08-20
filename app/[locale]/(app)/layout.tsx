@@ -11,6 +11,7 @@ import { cacheLife } from "next/cache";
 import { Link } from "@/i18n/navigation.ts";
 import { Github } from "lucide-react";
 import WinterDecorations from "@/components/WinterDecorations.tsx";
+import HalloweenDecorations from "@/components/HalloweenDecorations.tsx";
 import WebMcpTools from "@/components/WebMcpTools.tsx";
 import { Toaster } from "@/components/ui/sonner.tsx";
 import {NextIntlClientProvider} from "next-intl";
@@ -32,6 +33,9 @@ export function generateStaticParams() {
 
 // Charger le thème hivernal si activé
 const isWinterTheme = process.env.NEXT_PUBLIC_THEME === "winter";
+// Idem pour l'habillage d'Halloween. Les deux ne peuvent pas coexister :
+// NEXT_PUBLIC_THEME ne porte qu'une valeur, et deux palettes ne se mélangent pas.
+const isHalloweenTheme = process.env.NEXT_PUBLIC_THEME === "halloween";
 
 /**
  * L'année du pied de page est lue au rendu, ce qu'un prérendu ne sait pas
@@ -115,7 +119,7 @@ export default function RootLayout({
     // pas attendre une frontière, et le calculer ici viderait la coquille.
     <html suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen${isWinterTheme ? ' winter-theme' : ''}`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen${isWinterTheme ? ' winter-theme' : ''}${isHalloweenTheme ? ' halloween-theme' : ''}`}
       >
         {/* Le thème ne dépend pas de la langue : il reste dans la coquille,
             sinon le repli s'afficherait en clair avant de basculer. */}
@@ -196,6 +200,7 @@ async function LocalizedFrame({ children }: { children: React.ReactNode }) {
         <WebMcpTools />
       </Suspense>
       {isWinterTheme && <WinterDecorations />}
+      {isHalloweenTheme && <HalloweenDecorations />}
       <div className="relative min-h-screen flex flex-col">
         {/* L'en-tête lit le chemin courant à travers ses liens localisés,
             inconnu au prérendu d'une route à segment dynamique : sans cette

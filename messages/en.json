@@ -3879,5 +3879,18 @@
     "seatsHint": "Attaching is done from the management page of a venue you own.",
     "manageLair": "Manage",
     "seePlans": "See all plans"
+  },
+  "HalloweenSeason": {
+    "title": "This season's badge",
+    "earnedTitle": "Badge earned",
+    "badgeName": "Night Watcher",
+    "deadline": "until October {day}",
+    "body": "Attend {goal} events during the season to earn the “Night Watcher” badge and the achievement that comes with it.",
+    "earnedBody": "Three evenings done — this season's badge is yours.",
+    "progress": "{done} of {goal}",
+    "findEvent": "Find an event",
+    "seeBadge": "See my achievements",
+    "emptyTitle": "No events this month",
+    "emptyBody": "Even the ghosts have left. Try another month, or host your own."
   }
 }

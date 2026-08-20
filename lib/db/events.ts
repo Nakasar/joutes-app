@@ -1049,6 +1049,82 @@ export async function getEventById(eventId: string): Promise<Event | null> {
 }
 
 /**
+ * Marge de sécurité du filtre de dates de `countUserAttendanceBetween`.
+ *
+ * `startDateTime` n'est pas stocké dans une forme unique : `refresh-events`
+ * écrit ce que rend `DateTime.toISO()` en Europe/Paris — donc un décalage
+ * explicite, `…+01:00` — tandis que `event.schema.ts` impose `z.string()
+ * .datetime()`, qui exige la forme `Z`. Comparer ces deux formes caractère
+ * par caractère revient à comparer une heure locale à un instant UTC : un
+ * événement du 31 octobre à 23 h à Paris (22 h UTC) sort après une borne
+ * écrite `…22:59:59Z` et se retrouve écarté à tort.
+ *
+ * D'où la marge : la requête ratisse un peu large — elle reste indexable —
+ * et le tri fin se fait en mémoire, sur des instants réellement analysés.
+ * Une journée couvre tous les décalages en usage.
+ */
+const ATTENDANCE_SCAN_MARGIN_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Compte les événements d'une période auxquels un utilisateur a participé.
+ *
+ * Sert le défi de saison : on compte des présences, pas des intentions. Seul
+ * un `REGISTERED` compte donc — un participant sans statut explicite l'est
+ * par défaut (`addParticipantToEvent`), mais un `PRE_REGISTERED` qui n'a
+ * jamais confirmé n'est venu à rien, et un `EXCLUDED` encore moins. C'est la
+ * règle de `registeredParticipantsCount`, à laquelle s'ajoutent deux
+ * exclusions propres à un bilan :
+ *
+ * — les événements annulés, qui n'ont pas eu lieu ;
+ * — ceux qui n'ont pas encore commencé, qu'on ne peut pas porter au crédit de
+ *   quelqu'un avant qu'ils arrivent.
+ *
+ * @param userId - L'utilisateur dont on fait le bilan
+ * @param from - Début de la période, inclus
+ * @param to - Fin de la période, incluse
+ * @param now - Instant de référence pour « déjà commencé ». Par défaut, maintenant.
+ * @returns Le nombre d'événements retenus
+ */
+export async function countUserAttendanceBetween(
+  userId: string,
+  from: Date,
+  to: Date,
+  now: Date = new Date()
+): Promise<number> {
+  const events = await db.collection<EventDocument>(COLLECTION_NAME)
+    .find(
+      {
+        participants: userId,
+        status: {$ne: 'cancelled'},
+        startDateTime: {
+          $gte: new Date(from.getTime() - ATTENDANCE_SCAN_MARGIN_MS).toISOString(),
+          $lte: new Date(to.getTime() + ATTENDANCE_SCAN_MARGIN_MS).toISOString(),
+        },
+      },
+      // Seuls ces deux champs décident du compte : inutile de tirer des
+      // documents entiers pour n'en lire que le statut d'inscription.
+      {projection: {startDateTime: 1, participantRegistrations: 1}}
+    )
+    .toArray();
+
+  const fromMs = from.getTime();
+  const toMs = to.getTime();
+  const nowMs = now.getTime();
+
+  return events.filter((event) => {
+    // `fromISO` lit les deux formes et rend le même instant : c'est ici, et
+    // pas dans la requête, que la période est vraiment tranchée.
+    const start = DateTime.fromISO(event.startDateTime);
+    if (!start.isValid) return false;
+
+    const startMs = start.toMillis();
+    if (startMs < fromMs || startMs > toMs || startMs > nowMs) return false;
+
+    return (event.participantRegistrations?.[userId] ?? 'REGISTERED') === 'REGISTERED';
+  }).length;
+}
+
+/**
  * Add a participant to an event
  * @param eventId - The event's UUID
  * @param userId - The user's ID
