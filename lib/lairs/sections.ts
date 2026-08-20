@@ -40,10 +40,27 @@ export function readLairSections(lair: Pick<Lair, "options">): LairSection[] {
     }
   }
 
-  const ordered: LairSectionKey[] = [
-    ...[...known.keys()],
-    ...LAIR_SECTION_KEYS.filter((key) => !known.has(key)),
-  ];
+  // Les clés manquantes reprennent leur place par défaut plutôt que la fin :
+  // une section ajoutée après la dernière sauvegarde d'un lieu doit apparaître
+  // là où elle a été pensée, non reléguée en bas de page chez tous les lieux
+  // qui avaient déjà réordonné.
+  const ordered: LairSectionKey[] = [...known.keys()];
+
+  for (const key of LAIR_SECTION_KEYS) {
+    if (known.has(key)) {
+      continue;
+    }
+
+    // La section se pose **après** le dernier de ses prédécesseurs déjà placés,
+    // et non avant son premier successeur : un lieu qui a délibérément mis
+    // « À propos » en tête verrait sinon trois sections qu'il n'a jamais
+    // ordonnées se glisser au-dessus. Sans prédécesseur placé, elle prend la
+    // tête ; sans repère du tout, la fin.
+    const predecessors = LAIR_SECTION_KEYS.slice(0, LAIR_SECTION_KEYS.indexOf(key));
+    const anchor = predecessors.filter((previous) => ordered.includes(previous)).pop();
+
+    ordered.splice(anchor ? ordered.indexOf(anchor) + 1 : 0, 0, key);
+  }
 
   return ordered.map((key) => ({
     key,

@@ -37,9 +37,15 @@ describe("readLairSections", () => {
     assert.equal(sections[0].key, "about");
     assert.equal(sections[1].key, "news");
     assert.equal(sections[1].enabled, false);
+    // Les sections jamais ordonnées suivent, sans s'insérer au-dessus de celle
+    // que le lieu a délibérément mise en tête.
+    assert.deepEqual(
+      sections.map((section) => section.key),
+      ["about", "news", "featured", "calendar", "media"],
+    );
   });
 
-  it("complète les sections absentes du réglage, à la fin", () => {
+  it("complète les sections absentes du réglage", () => {
     const sections = readLairSections({
       options: { sections: [{ key: "about", enabled: true }] },
     });
@@ -47,6 +53,27 @@ describe("readLairSections", () => {
     assert.equal(sections.length, LAIR_SECTION_KEYS.length);
     // Chaque clé connue, exactement une fois.
     assert.equal(new Set(sections.map((section) => section.key)).size, LAIR_SECTION_KEYS.length);
+  });
+
+  it("réinsère une section absente à sa place par défaut, non à la fin", () => {
+    // Le lieu a enregistré son ordre avant que « featured » n'existe. Elle doit
+    // revenir entre « news » et « calendar », comme dans l'ordre par défaut —
+    // la reléguer en bas de page la ferait passer après le calendrier chez
+    // tous les lieux ayant déjà réordonné.
+    const sections = readLairSections({
+      options: {
+        sections: [
+          { key: "news", enabled: true },
+          { key: "calendar", enabled: true },
+          { key: "about", enabled: true },
+        ],
+      },
+    });
+
+    assert.deepEqual(
+      sections.map((section) => section.key),
+      ["news", "featured", "calendar", "media", "about"],
+    );
   });
 
   it("garde le calendrier affiché même si le réglage l'éteint", () => {

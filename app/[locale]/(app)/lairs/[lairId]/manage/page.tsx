@@ -149,11 +149,17 @@ async function ManageLairContent({
   // Les événements à venir, pour le choix de « À la une ». Lus seulement quand
   // l'onglet les demande : c'est une requête de plus sur une page qui en fait
   // déjà cinq, et quatre onglets sur cinq n'en ont aucun usage.
+  // `getEventsByLairId` n'applique sa fenêtre de dates que si `month` **et**
+  // `year` sont fournis : passer l'année seule ne filtrait rien, et le select
+  // listait tout l'historique du lieu, sans ordre. Le tri et la coupe se font
+  // donc ici.
   const upcomingEvents =
     tab === "customization"
-      ? (await getEventsByLairId(lairId, { year: new Date().getFullYear(), gameId: "all" })).map(
-          (event) => ({ id: event.id, name: event.name, startDateTime: event.startDateTime })
-        )
+      ? (await getEventsByLairId(lairId, { gameId: "all" }))
+          .filter((event) => event.startDateTime >= new Date().toISOString())
+          .sort((a, b) => a.startDateTime.localeCompare(b.startDateTime))
+          .slice(0, 50)
+          .map((event) => ({ id: event.id, name: event.name, startDateTime: event.startDateTime }))
       : [];
 
   // Récupérer les abonnés pour les lairs privés

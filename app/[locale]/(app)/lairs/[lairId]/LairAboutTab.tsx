@@ -128,7 +128,11 @@ function LairGallery({ photos, title }: { photos: string[]; title: string }) {
 export async function LairAboutSidebar({ lair }: { lair: Lair }) {
   const t = await getTranslations("Lairs.portal.about");
 
-  const about = lair.options?.about;
+  // La colonne suit la même bascule que le corps de l'onglet : éteindre la
+  // section devait tout cacher, pas seulement le texte et la galerie.
+  const about = isSectionEnabled(readLairSections(lair), "about")
+    ? lair.options?.about
+    : undefined;
   const phone = lair.options?.contact?.phone;
   const email = lair.options?.contact?.email;
   const discordLink = lair.options?.links?.find((link) => link.type === "discord");

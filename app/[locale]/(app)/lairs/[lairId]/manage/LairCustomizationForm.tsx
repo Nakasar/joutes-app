@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Loader2, Lock, Plus, X } from "lucide-react";
@@ -128,8 +128,13 @@ export default function LairCustomizationForm({
   const [issues, setIssues] = useState<Record<string, string>>({});
   const [amenityDraft, setAmenityDraft] = useState("");
 
-  const pristine = useMemo(() => JSON.stringify(initialState(lair)), [lair]);
-  const isDirty = JSON.stringify(state) !== pristine;
+  // Le repère de comparaison est ce qui a été **envoyé et accepté**, non ce
+  // que le serveur a relu. Le serveur normalise — il retire une plage horaire
+  // à moitié saisie, rogne les espaces — et comparer au lieu relu laisserait
+  // le formulaire éternellement « modifié » après un enregistrement pourtant
+  // réussi, sans qu'aucune sauvegarde puisse jamais faire converger les deux.
+  const [saved, setSaved] = useState(() => JSON.stringify(initialState(lair)));
+  const isDirty = JSON.stringify(state) !== saved;
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setState((current) => ({ ...current, [key]: value }));
@@ -168,6 +173,7 @@ export default function LairCustomizationForm({
       });
 
       if (result.success) {
+        setSaved(JSON.stringify(state));
         toast.success(t("saved"));
         return;
       }
@@ -599,6 +605,20 @@ export default function LairCustomizationForm({
         </div>
       </section>
 
+      {/* Les chemins renvoyés par Zod sont fins (`links.0.url`,
+          `about.photos.1`) et ne correspondent pas tous à un message posé sous
+          un champ : ce récapitulatif garantit qu'aucun refus ne se réduit à un
+          toast rouge sans dire ce qui cloche. */}
+      {Object.keys(issues).length > 0 && (
+        <ul className="flex flex-col gap-1 rounded-lg border border-destructive/40 bg-destructive/5 p-3">
+          {Object.entries(issues).map(([path, message]) => (
+            <li key={path} className="text-xs text-destructive">
+              <span className="font-mono opacity-70">{path}</span> — {message}
+            </li>
+          ))}
+        </ul>
+      )}
+
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={isPending || !isDirty}>
           {isPending && <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />}
@@ -610,6 +630,7 @@ export default function LairCustomizationForm({
           disabled={isPending || !isDirty}
           onClick={() => {
             setState(initialState(lair));
+            setSaved(JSON.stringify(initialState(lair)));
             setIssues({});
           }}
         >

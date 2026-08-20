@@ -38,8 +38,17 @@ function issuesOf(error: z.ZodError): Record<string, string> {
 /**
  * Enregistre la personnalisation de la vitrine.
  *
- * Le contrôle Pro est refait ici et non seulement dans le formulaire : un
- * champ désactivé dans le navigateur ne protège rien, l'action reste appelable
+ * Ce que l'abonnement déverrouille : la **marque blanche** — logo, accent,
+ * teinte des surfaces, ordre des sections — et les **contenus intégrés**
+ * (`about.videoUrl`). Le reste — actualités, présentation, photos, horaires,
+ * contact, liens, événement à la une — reste ouvert à tout lieu, qui garde
+ * ainsi une page complète et un agenda public sans abonnement. La bannière
+ * n'en fait pas partie bien que la maquette la cite : elle se règle déjà
+ * librement dans l'onglet « Détails », et la fermer ici retirerait à des lieux
+ * existants quelque chose dont ils se servent.
+ *
+ * Le contrôle est refait ici et non seulement dans le formulaire : un champ
+ * désactivé dans le navigateur ne protège rien, l'action reste appelable
  * telle quelle. Les champs réservés ne sont pas refusés en bloc — la
  * sauvegarde **conserve la valeur déjà en base** pour eux et enregistre le
  * reste. Un lieu dont l'abonnement s'est arrêté peut ainsi continuer à tenir

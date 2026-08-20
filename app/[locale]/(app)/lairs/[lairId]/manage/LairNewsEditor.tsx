@@ -57,7 +57,7 @@ export default function LairNewsEditor({
   const [issues, setIssues] = useState<Record<string, string>>({});
   const [isPending, startTransition] = useTransition();
 
-  const persist = (next: LairNewsItem[], message: string) => {
+  const persist = (next: LairNewsItem[], message: string, onSuccess?: () => void) => {
     setIssues({});
 
     startTransition(async () => {
@@ -66,9 +66,13 @@ export default function LairNewsEditor({
       if (result.success) {
         setItems(next);
         toast.success(message);
+        onSuccess?.();
         return;
       }
 
+      // L'éditeur reste ouvert : c'est le seul endroit où les messages de
+      // champ sont rendus, et le refermer sur un refus laissait le gérant
+      // devant un toast rouge sans savoir quoi corriger.
       setIssues(result.issues ?? {});
       toast.error(t(ERROR_KEYS[result.error]));
     });
@@ -86,7 +90,7 @@ export default function LairNewsEditor({
         <Button
           type="button"
           size="sm"
-          disabled={isPending || items.length >= 30}
+          disabled={isPending || editing !== null || items.length >= 30}
           onClick={() => {
             const item = blankItem();
             setItems((current) => [item, ...current]);
@@ -214,10 +218,7 @@ export default function LairNewsEditor({
                     type="button"
                     size="sm"
                     disabled={isPending}
-                    onClick={() => {
-                      persist(items, t("saved"));
-                      setEditing(null);
-                    }}
+                    onClick={() => persist(items, t("saved"), () => setEditing(null))}
                   >
                     {isPending && <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />}
                     {t("save")}
@@ -227,9 +228,15 @@ export default function LairNewsEditor({
                     size="sm"
                     variant="outline"
                     onClick={() => {
-                      // Une annonce jamais enregistrée disparaît en annulant ;
-                      // une annonce existante retrouve sa version en base.
-                      setItems(news.some((entry) => entry.id === item.id) ? news : items.filter((entry) => entry.id !== item.id));
+                      // Annuler ne défait que la ligne éditée. Remplacer toute
+                      // la liste par la version serveur emporterait au passage
+                      // les autres modifications en cours.
+                      const saved = news.find((entry) => entry.id === item.id);
+                      setItems((current) =>
+                        saved
+                          ? current.map((entry) => (entry.id === item.id ? saved : entry))
+                          : current.filter((entry) => entry.id !== item.id),
+                      );
                       setEditing(null);
                       setIssues({});
                     }}
@@ -255,7 +262,7 @@ export default function LairNewsEditor({
                   type="button"
                   size="sm"
                   variant="ghost"
-                  disabled={isPending}
+                  disabled={isPending || editing !== null}
                   className={cn(item.pinned && "text-primary")}
                   onClick={() =>
                     persist(
@@ -277,6 +284,7 @@ export default function LairNewsEditor({
                   type="button"
                   size="sm"
                   variant="ghost"
+                  disabled={editing !== null}
                   onClick={() => setEditing(item.id)}
                 >
                   <Pencil className="mr-2 size-3.5" aria-hidden />
@@ -288,7 +296,7 @@ export default function LairNewsEditor({
                   size="icon"
                   variant="ghost"
                   aria-label={t("delete")}
-                  disabled={isPending}
+                  disabled={isPending || editing !== null}
                   onClick={() => setDeleting(item.id)}
                 >
                   <Trash2 className="size-4 text-destructive" aria-hidden />

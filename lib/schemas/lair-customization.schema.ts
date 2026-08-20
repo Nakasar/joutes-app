@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { LAIR_ACCENT_PALETTE } from "@/lib/lairs/theme";
 import { LAIR_SECTION_KEYS } from "@/lib/lairs/sections";
+import { externalUrl } from "@/lib/lairs/urls";
 
 /**
  * Ce qu'un lieu peut écrire sur sa propre vitrine.
@@ -18,17 +19,20 @@ import { LAIR_SECTION_KEYS } from "@/lib/lairs/sections";
  *
  * `url()` seul accepte `javascript:` et `data:` : ces valeurs finissent dans
  * des `href` et des `src` sur la page publique. Le refus est posé ici, à
- * l'écriture, en plus du filtre au rendu (`lib/lairs/urls.ts`) — les deux se
- * justifient, l'un protège les données à venir, l'autre celles déjà en base.
+ * l'écriture, en plus du filtre au rendu — les deux se justifient, l'un
+ * protège les données à venir, l'autre celles déjà en base.
+ *
+ * Le contrôle délègue à `externalUrl`, qui porte déjà la règle du dépôt **et**
+ * la garde qu'un `refine` seul n'a pas : en Zod, l'échec de `.url()` ne coupe
+ * pas la chaîne, le raffinement suivant s'exécute quand même. Un `new URL()`
+ * nu y rencontrait donc les valeurs que `.url()` venait de rejeter — une
+ * chaîne vide, un `instagram.com/joutes` sans schéma — et **levait** au lieu
+ * de refuser, faisant remonter une `TypeError` jusqu'à l'action serveur.
  */
 const externalUrlSchema = z
   .string()
   .trim()
-  .url("L'URL doit être valide")
-  .refine(
-    (value) => /^https?:$/.test(new URL(value).protocol),
-    "L'URL doit être en http(s)"
-  );
+  .refine((value) => externalUrl(value) !== null, "L'URL doit être une adresse http(s) valide");
 
 /** Une chaîne facultative : le vide vaut « non renseigné », pas « chaîne vide ». */
 const optionalText = (max: number, label: string) =>
@@ -143,8 +147,14 @@ export const lairCustomizationSchema = z.object({
     .optional(),
   openingHours: z.array(lairOpeningHoursSchema).max(7, "Sept jours au maximum").optional(),
   about: lairAboutSchema.optional(),
+  // Les événements ne portent pas d'ObjectId : ils sont créés en `nanoid(12)`
+  // ou en `crypto.randomUUID()` selon le chemin. Le gabarit couvre les deux —
+  // et l'ObjectId, pour les documents les plus anciens.
   featuredEventId: z
-    .union([z.string().regex(/^[0-9a-fA-F]{24}$/, "L'identifiant doit être un ObjectId"), z.literal("")])
+    .union([
+      z.string().regex(/^[A-Za-z0-9_-]{1,64}$/, "L'identifiant d'événement est invalide"),
+      z.literal(""),
+    ])
     .transform((value) => (value ? value : undefined))
     .optional(),
 });

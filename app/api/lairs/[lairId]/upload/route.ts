@@ -47,10 +47,17 @@ export async function POST(
       );
     }
 
-    // Le nom du fichier vient du poste du déposant : préfixé par le lieu et
-    // suffixé par le stockage (`addRandomSuffix` par défaut), il ne peut ni
-    // écraser l'image d'un autre lieu ni sortir de son préfixe.
-    const blob = await put(`lairs/${lairId}/${file.name}`, file, { access: "public" });
+    // Le nom du fichier vient du poste du déposant : réduit à son dernier
+    // segment, il ne peut pas remonter hors du préfixe du lieu.
+    const name = file.name.split(/[\\/]/).pop() || "image";
+
+    // `addRandomSuffix` vaut `false` par défaut sur cette version, et `put`
+    // **jette** sur un chemin déjà pris : sans lui, redéposer un `logo.png`
+    // corrigé — ou deux photos sorties du même appareil — finirait en 500.
+    const blob = await put(`lairs/${lairId}/${name}`, file, {
+      access: "public",
+      addRandomSuffix: true,
+    });
 
     return NextResponse.json({ url: blob.url, pathname: blob.pathname });
   } catch (error) {

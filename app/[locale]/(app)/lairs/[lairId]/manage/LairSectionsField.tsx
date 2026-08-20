@@ -72,45 +72,47 @@ export default function LairSectionsField({
 
           <span className="min-w-0 flex-1 text-sm">{t(`labels.${section.key}`)}</span>
 
-          {section.locked ? (
+          {/* Le verrou porte sur l'activation, pas sur la position : le
+              calendrier garde ses flèches, seul son interrupteur disparaît. */}
+          {section.locked && (
             <span className="font-mono text-[11px] text-muted-foreground">{t("alwaysShown")}</span>
-          ) : (
-            <>
-              <div className="flex shrink-0 items-center">
-                <button
-                  type="button"
-                  disabled={disabled || index === 0}
-                  onClick={() => move(index, index - 1)}
-                  aria-label={t("moveUp", { section: t(`labels.${section.key}`) })}
-                  className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
-                >
-                  <ChevronUp className="size-4" aria-hidden />
-                </button>
-                <button
-                  type="button"
-                  disabled={disabled || index === sections.length - 1}
-                  onClick={() => move(index, index + 1)}
-                  aria-label={t("moveDown", { section: t(`labels.${section.key}`) })}
-                  className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
-                >
-                  <ChevronDown className="size-4" aria-hidden />
-                </button>
-              </div>
+          )}
 
-              <Switch
-                checked={section.enabled}
-                disabled={disabled}
-                aria-label={t(`labels.${section.key}`)}
-                onCheckedChange={(enabled) =>
-                  onChange(
-                    sections.map((item) =>
-                      item.key === section.key ? { ...item, enabled } : item,
-                    ),
-                  )
-                }
-                className="data-[state=checked]:bg-[var(--lair-accent,var(--primary))]"
-              />
-            </>
+          <div className="flex shrink-0 items-center">
+            <button
+              type="button"
+              disabled={disabled || index === 0}
+              onClick={() => move(index, index - 1)}
+              aria-label={t("moveUp", { section: t(`labels.${section.key}`) })}
+              className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
+            >
+              <ChevronUp className="size-4" aria-hidden />
+            </button>
+            <button
+              type="button"
+              disabled={disabled || index === sections.length - 1}
+              onClick={() => move(index, index + 1)}
+              aria-label={t("moveDown", { section: t(`labels.${section.key}`) })}
+              className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
+            >
+              <ChevronDown className="size-4" aria-hidden />
+            </button>
+          </div>
+
+          {!section.locked && (
+            <Switch
+              checked={section.enabled}
+              disabled={disabled}
+              aria-label={t(`labels.${section.key}`)}
+              onCheckedChange={(enabled) =>
+                onChange(
+                  sections.map((item) =>
+                    item.key === section.key ? { ...item, enabled } : item,
+                  ),
+                )
+              }
+              className="data-[state=checked]:bg-[var(--lair-accent,var(--primary))]"
+            />
           )}
         </li>
       ))}
