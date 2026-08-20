@@ -19,42 +19,38 @@ import { canAttachPro } from "@/lib/subscriptions/seats.ts";
 import { plansFromSubscription } from "@/lib/subscriptions/access.ts";
 import PrivateLairInvitationManager from "./PrivateLairInvitationManager.tsx";
 import PrivateLairFollowersManager from "./PrivateLairFollowersManager.tsx";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { EditorFormSkeleton } from "@/components/EditorFormSkeleton.tsx";
 
 /**
- * Le bouton de retour ne tient qu'à l'identifiant du lieu : il reste dans la
- * coquille. Tout le reste — à commencer par le titre, qui nomme le lieu —
- * attend la porte.
+ * Rien de traduit ne reste dans la coquille, et c'est structurel.
+ *
+ * Le bouton de retour est un `Link` localisé : il lui faut `setRequestLocale`,
+ * qui lui-même demande la langue — donc `await params`, une lecture de requête
+ * sur une route à segment dynamique. La chaîne se referme : **sur ces routes,
+ * rien de localisé ne peut tenir dans la coquille.** Une première version posait
+ * le bouton devant et n'obtenait qu'une coquille de 5 Ko, réduite au cadre de
+ * l'application.
+ *
+ * Ce qui reste devant est donc muet : le conteneur et deux silhouettes.
  */
-export default async function ManageLairPage({
+export default function ManageLairPage({
   params,
 }: {
-  params: Promise<{ locale: string; lairId: string }>;
+  params: Promise<{ lairId: string }>;
 }) {
-  const { locale, lairId } = await params;
-  // Le bouton de retour est un `Link` localisé, resté dans la coquille : sans
-  // cet appel, next-intl relit la langue à la requête et rend toute la route
-  // dynamique.
-  setRequestLocale(locale);
-
-  const t = await getTranslations("Lairs");
-
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
       <div className="mb-6">
-        <Button variant="secondary" asChild size="sm">
-          <Link href={`/lairs/${lairId}`}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            {t("manage.backToLair")}
-          </Link>
-        </Button>
+        <Suspense fallback={<div className="h-8 w-40 animate-pulse rounded-md bg-muted" aria-hidden />}>
+          <BackToLair params={params} />
+        </Suspense>
       </div>
 
       <Suspense fallback={<ManageLairSkeleton />}>
-        <ManageLairContent lairId={lairId} />
+        <ManageLairContent params={params} />
       </Suspense>
     </div>
   );
@@ -62,14 +58,29 @@ export default async function ManageLairPage({
 
 function ManageLairSkeleton() {
   return (
-    <div className="space-y-6" aria-hidden>
-      <div className="mb-8 h-10 w-96 max-w-full animate-pulse rounded bg-muted" />
-      <EditorFormSkeleton fields={4} />
+    <div className="space-y-6">
+      <div className="mb-8 h-10 w-96 max-w-full animate-pulse rounded bg-muted" aria-hidden />
+      <EditorFormSkeleton fields={4} label="Chargement du lieu" />
     </div>
   );
 }
 
-async function ManageLairContent({ lairId }: { lairId: string }) {
+async function BackToLair({ params }: { params: Promise<{ lairId: string }> }) {
+  const { lairId } = await params;
+  const t = await getTranslations("Lairs");
+
+  return (
+    <Button variant="secondary" asChild size="sm">
+      <Link href={`/lairs/${lairId}`}>
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        {t("manage.backToLair")}
+      </Link>
+    </Button>
+  );
+}
+
+async function ManageLairContent({ params }: { params: Promise<{ lairId: string }> }) {
+  const { lairId } = await params;
   const t = await getTranslations("Lairs");
 
   // Le pilote Mongo touche à l'horloge en lisant le lieu, ce qu'un prérendu ne

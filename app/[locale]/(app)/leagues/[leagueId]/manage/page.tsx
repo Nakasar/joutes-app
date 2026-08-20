@@ -55,12 +55,12 @@ export default function LeagueManagePage({ params }: Props) {
 
 function LeagueManageSkeleton() {
   return (
-    <div className="space-y-6" aria-hidden>
+    <div className="space-y-6">
       <div className="flex animate-pulse items-center gap-4">
         <div className="h-9 w-9 rounded-md bg-muted" />
         <div className="h-9 w-72 max-w-full rounded bg-muted" />
       </div>
-      <EditorFormSkeleton fields={4} />
+      <EditorFormSkeleton fields={4} label="Chargement de la ligue" />
     </div>
   );
 }

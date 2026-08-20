@@ -18,9 +18,20 @@ Next 16.3.1, `cacheComponents: true` sur `main`.
 891 pages construites. Avant l'adoption : **zéro** route avec coquille statique.
 
 **76 pages portent encore un opt-out `export const instant = false`** — 71
-marqueurs `TODO: Cache Components adoption`, plus quatre blocages assumés qui
+marqueurs `TODO: Cache Components adoption`, plus **cinq** blocages assumés qui
 portent une raison au lieu d'un TODO : le layout du portail organisateur de
-tournoi, les deux layouts du portail d'événement, et son aiguillage `portal/page.tsx`.
+tournoi, les deux layouts du portail d'événement, son aiguillage
+`portal/page.tsx`, et le vérificateur de deck de Riftbound — dont les
+métadonnées lisent `?input=` pour composer l'image de partage.
+
+Le décompte se vérifie en une commande, et c'est ainsi qu'une cinquième page
+oubliée dans cette liste s'est signalée :
+
+```bash
+comm -23 <(grep -rl 'instant = false' app/ | sort) \
+         <(grep -rl 'TODO: Cache Components adoption' app/ | sort)
+```
+
 Dix-neuf pages portent un déblocage `await connection()` — le piège Mongo est
 désormais la contrainte la plus fréquente sur ce qui reste.
 
@@ -189,6 +200,20 @@ maigre : **`not-found.tsx`, `error.tsx` et `loading.tsx` d'un segment comptent
 dans la coquille de tout ce qui est en dessous.** La règle du `Link` localisé
 s'y applique comme aux replis.
 
+**Le piège s'est reproduit à l'identique** sur `lairs/[lairId]/not-found.tsx`,
+une passe plus tard, sur une zone sans rapport. Le balayage se fait en une
+commande — à passer avant de toucher une zone :
+
+```bash
+for f in $(find app -name "not-found.tsx" -o -name "error.tsx" \
+                 -o -name "loading.tsx" -o -name "global-error.tsx"); do
+  grep -q 'from "@/i18n/navigation' "$f" && echo "⚠ $f"
+done
+```
+
+Il restait deux fichiers concernés au moment de ce balayage : celui des lieux et
+celui des profils.
+
 ### Trois pièges de mesure, pas de code
 
 **La console accumule.** Le navigateur garde les messages d'une navigation à
@@ -348,6 +373,26 @@ Deux squelettes ont dû être repris pour l'avoir sauté : celui du calendrier
 (tuiles sur deux colonnes au lieu de quatre) et celui des matchs de ronde, qui
 ignorait la bascule Grille/Tableau et toute la colonne « À traiter ».
 
+### Un squelette seul à l'écran doit s'annoncer
+
+`aria-hidden` sur un squelette part d'une bonne intention — des rectangles gris
+n'ont rien à dire — mais quand le squelette est **le seul contenu de l'écran**,
+il ne reste rien du tout à annoncer : la synthèse vocale se tait pendant tout le
+chargement.
+
+La règle retenue :
+
+- **Silhouette qui occupe seule sa frontière** → `role="status"`,
+  `aria-busy="true"`, et un `<span className="sr-only">` qui nomme ce qui
+  arrive. Les rectangles n'ont pas besoin d'`aria-hidden` : un `<div>` vide ne
+  produit déjà aucune sortie.
+- **Placeholder posé à côté d'un contenu réel** — une barre à la place d'un
+  titre, un bouton de retour — → il reste décoratif, `aria-hidden`.
+
+Corollaire : **ne pas imbriquer deux régions `status`**, elles annoncent deux
+fois. Une silhouette composée passe son intitulé à celle qu'elle contient
+(`EditorFormSkeleton` accepte un `label`) plutôt que d'en ajouter une autour.
+
 ## Le verrou du layout racine — levé
 
 **Presque tout ce qui restait était bloqué par une seule ligne, et elle n'était
@@ -494,6 +539,33 @@ Sur une route à segment dynamique, le contenu localisé part toujours en flux :
 layout racine »). Mais **les silhouettes, elles, tiennent dans la coquille** —
 à condition qu'aucun `Link` localisé ne traîne dans la page, ses replis, ou les
 fichiers de limite du segment.
+
+### Sur une route à segment dynamique, rien de localisé ne tient dans la coquille
+
+La chaîne se referme sur elle-même :
+
+1. afficher du texte traduit, ou un `Link` localisé, demande `setRequestLocale` ;
+2. `setRequestLocale` demande la langue ;
+3. obtenir la langue demande `await params` ;
+4. `await params` est une lecture de requête sur une route à segment dynamique.
+
+**Donc la page ne peut garder devant que du muet** : ses conteneurs et ses
+silhouettes. Toute tentative de laisser un titre traduit ou un bouton de retour
+dans la coquille fait retomber la page entière derrière la frontière du cadre.
+
+Mesuré sur `lairs/[lairId]/manage` et `lairs/[lairId]/events/new` : **4 236 et
+5 156 octets** avec l'en-tête traduit devant — le seul cadre de l'application —
+contre **17 832 et 17 839** une fois l'en-tête passé derrière une frontière et
+remplacé par une silhouette.
+
+Corollaire : sur ces routes, un bouton de retour n'a pas à rester devant « parce
+qu'il ne tient qu'à l'identifiant d'URL ». Il est localisé, donc il coûte la
+coquille entière. Il vaut mieux une silhouette de bouton, et le vrai bouton avec
+le flux.
+
+Sur une route **sans** segment dynamique, la chaîne ne se referme pas :
+`await params` y est statique, et le titre traduit reste bien dans la coquille —
+c'est ce qui donne les 33 Ko de `/news`, `/quizz`, `/leagues` et `/lairs`.
 ## Ce qui reste
 
 Répartition des opt-outs par ce qui bloque la page :

@@ -25,7 +25,8 @@ export default function Page(props: ComponentProps<typeof PageClient>) {
 
 function InviteLoadingFallback() {
   return (
-    <div className="container mx-auto px-4 py-16 max-w-2xl" aria-hidden>
+    <div className="container mx-auto px-4 py-16 max-w-2xl" role="status" aria-busy="true">
+      <span className="sr-only">Vérification de l&apos;invitation…</span>
       <div className="rounded-xl border bg-card">
         <div className="flex flex-col items-center justify-center py-16">
           <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />

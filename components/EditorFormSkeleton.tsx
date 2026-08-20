@@ -12,9 +12,21 @@
  * Aucun `Link` localisé dedans : il rebloquerait la navigation que la frontière
  * vient de rendre instantanée (voir `components/HeaderFallback.tsx`).
  */
-export function EditorFormSkeleton({ fields = 3 }: { fields?: number }) {
+export function EditorFormSkeleton({
+  fields = 3,
+  label = "Chargement du formulaire",
+}: {
+  fields?: number;
+  /**
+   * Ce que la synthèse vocale annonce. Une silhouette composée passe son propre
+   * intitulé plutôt que d'ajouter une seconde région autour de celle-ci : deux
+   * régions imbriquées annonceraient deux fois.
+   */
+  label?: string;
+}) {
   return (
-    <div className="animate-pulse space-y-6" aria-hidden>
+    <div className="animate-pulse space-y-6" role="status" aria-busy="true">
+      <span className="sr-only">{label}…</span>
       {Array.from({ length: fields }, (_, index) => (
         <div key={index} className="space-y-2">
           <div className="h-4 w-32 rounded bg-muted/60" />

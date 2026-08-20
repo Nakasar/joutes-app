@@ -70,7 +70,8 @@ function BackToLeagueSkeleton() {
 
 function TimelineSkeleton() {
   return (
-    <div className="animate-pulse space-y-6" aria-hidden>
+    <div className="animate-pulse space-y-6" role="status" aria-busy="true">
+      <span className="sr-only">Chargement de la chronologie…</span>
       <div className="-mt-6 mb-8 h-5 w-56 rounded bg-muted/60" />
       {Array.from({ length: 3 }, (_, index) => (
         <div key={index} className="space-y-3">

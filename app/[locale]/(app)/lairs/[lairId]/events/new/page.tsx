@@ -5,23 +5,19 @@ import { checkAdminOrOwner } from "@/lib/middleware/admin.ts";
 import { headers } from "next/headers";
 import { connection } from "next/server";
 import { notFound, redirect } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, cache } from "react";
 import { Metadata } from "next";
 import EventForm from "./EventForm.tsx";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card.tsx";
+import { Card, CardContent } from "@/components/ui/card.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { ArrowLeft, CalendarPlus } from "lucide-react";
 import { Link } from "@/i18n/navigation.ts";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { EditorFormSkeleton } from "@/components/EditorFormSkeleton.tsx";
 
-type Props = { params: Promise<{ locale: string; lairId: string }> };
+type Props = { params: Promise<{ lairId: string }> };
 
-export async function generateMetadata({
-  params
-}: {
-  params: Promise<{ lairId: string }>
-}): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lairId } = await params;
   const t = await getTranslations("Lairs");
 
@@ -44,51 +40,30 @@ export async function generateMetadata({
 }
 
 /**
- * Le cadre — retour, titre, en-tête du formulaire — ne dépend que de la langue
- * et de l'identifiant du lair : il reste dans la coquille. Seuls la phrase qui
- * nomme le lair et le formulaire attendent la porte.
+ * Rien de traduit ne reste dans la coquille, et c'est structurel.
+ *
+ * Traduire demande `setRequestLocale`, qui demande la langue, donc
+ * `await params` — une lecture de requête sur une route à segment dynamique.
+ * La chaîne se referme : **sur ces routes, rien de localisé ne peut tenir dans
+ * la coquille.** Une première version gardait l'en-tête devant et n'obtenait
+ * qu'un cadre d'application, sans une ligne de la page.
+ *
+ * Ce qui reste devant est donc muet : les conteneurs et deux silhouettes.
  */
-export default async function NewEventPage({ params }: Props) {
-  const { locale, lairId } = await params;
-  // Le bouton de retour est un `Link` localisé, resté dans la coquille : sans
-  // cet appel, next-intl relit la langue à la requête et rend toute la route
-  // dynamique.
-  setRequestLocale(locale);
-
-  const t = await getTranslations("Lairs");
-
+export default function NewEventPage({ params }: Props) {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-8">
-          <Button variant="ghost" asChild className="mb-4">
-            <Link href={`/lairs/${lairId}`}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              {t("eventNew.backToLair")}
-            </Link>
-          </Button>
-
-          <div className="flex items-center gap-3 mb-2">
-            <CalendarPlus className="h-8 w-8 text-primary" />
-            <h1 className="text-4xl font-bold">{t("eventNew.title")}</h1>
-          </div>
-          {/* La phrase nomme le lair : elle attend la porte, comme le
-              formulaire. Sa place est réservée pour que rien ne saute. */}
-          <Suspense fallback={<div className="h-7 w-96 max-w-full animate-pulse rounded bg-muted/60" aria-hidden />}>
-            <LairIntro lairId={lairId} />
+          <Suspense fallback={<EventNewHeaderSkeleton />}>
+            <EventNewHeader params={params} />
           </Suspense>
         </div>
 
         <Card>
-          <CardHeader>
-            <CardTitle>{t("eventNew.formTitle")}</CardTitle>
-            <CardDescription>
-              {t("eventNew.formDescription")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <Suspense fallback={<EditorFormSkeleton fields={4} />}>
-              <NewEventForm lairId={lairId} />
+              <NewEventForm params={params} />
             </Suspense>
           </CardContent>
         </Card>
@@ -97,15 +72,29 @@ export default async function NewEventPage({ params }: Props) {
   );
 }
 
+function EventNewHeaderSkeleton() {
+  return (
+    <div className="animate-pulse space-y-4" aria-hidden>
+      <div className="h-9 w-40 rounded-md bg-muted" />
+      <div className="h-10 w-80 max-w-full rounded bg-muted" />
+      <div className="h-7 w-96 max-w-full rounded bg-muted/60" />
+    </div>
+  );
+}
+
 /**
- * La porte, une fois : session, puis droit de gestion sur ce lair.
+ * La porte : session, puis droit de gestion sur ce lieu.
  *
- * Elle est franchie deux fois — ici et dans le formulaire — parce que les deux
- * morceaux rendent séparément. C'est deux vérifications au lieu d'une, contre
- * la certitude qu'aucun des deux ne s'affiche sans elle.
+ * Deux frontières la franchissent — l'en-tête et le formulaire — parce qu'elles
+ * rendent séparément. Sans mémoïsation, c'était deux vérifications de session et
+ * deux lectures Mongo pour une même réponse.
+ *
+ * `cache` de React mémoïse l'appel pour la durée d'un rendu : la seconde
+ * frontière reçoit la promesse de la première. Même motif que
+ * `events/[eventId]/portal/portalSettings.ts`, et pour la même raison.
  */
-async function requireLairManager(lairId: string) {
-  // Le pilote Mongo touche à l'horloge en lisant le lair, ce qu'un prérendu ne
+const requireLairManager = cache(async (lairId: string) => {
+  // Le pilote Mongo touche à l'horloge en lisant le lieu, ce qu'un prérendu ne
   // sait pas figer, et aucune frontière n'y change rien.
   await connection();
 
@@ -128,28 +117,54 @@ async function requireLairManager(lairId: string) {
   }
 
   return lair;
-}
+});
 
-async function LairIntro({ lairId }: { lairId: string }) {
+async function EventNewHeader({ params }: Props) {
+  const { lairId } = await params;
   const [lair, t] = await Promise.all([
     requireLairManager(lairId),
     getTranslations("Lairs"),
   ]);
 
   return (
-    <p className="text-muted-foreground text-lg">
-      {t("eventNew.description", { name: lair.name })}
-    </p>
+    <>
+      <Button variant="ghost" asChild className="mb-4">
+        <Link href={`/lairs/${lairId}`}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          {t("eventNew.backToLair")}
+        </Link>
+      </Button>
+
+      <div className="flex items-center gap-3 mb-2">
+        <CalendarPlus className="h-8 w-8 text-primary" />
+        <h1 className="text-4xl font-bold">{t("eventNew.title")}</h1>
+      </div>
+      <p className="text-muted-foreground text-lg">
+        {t("eventNew.description", { name: lair.name })}
+      </p>
+    </>
   );
 }
 
-async function NewEventForm({ lairId }: { lairId: string }) {
-  const lair = await requireLairManager(lairId);
+async function NewEventForm({ params }: Props) {
+  const { lairId } = await params;
+  const [lair, t] = await Promise.all([
+    requireLairManager(lairId),
+    getTranslations("Lairs"),
+  ]);
 
   const gamesDetails = await Promise.all(
     lair.games.map(async (gameId) => getGameById(gameId))
   );
   const games = gamesDetails.filter((game): game is NonNullable<typeof game> => game !== null);
 
-  return <EventForm lairId={lairId} games={games} />;
+  return (
+    <>
+      <div className="mb-6 space-y-1.5">
+        <h2 className="font-semibold leading-none">{t("eventNew.formTitle")}</h2>
+        <p className="text-sm text-muted-foreground">{t("eventNew.formDescription")}</p>
+      </div>
+      <EventForm lairId={lairId} games={games} />
+    </>
+  );
 }
