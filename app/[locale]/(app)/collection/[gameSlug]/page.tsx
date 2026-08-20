@@ -1,37 +1,45 @@
+import { Suspense } from "react";
+import { CollectionSkeleton } from "@/components/CollectionSkeleton.tsx";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
+import { connection } from "next/server";
 import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
-import { getGameBySlugOrId } from "@/lib/db/games.ts";
+import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { getGameCollection } from "@/lib/db/collection.ts";
 import { hasProducts } from "@/lib/db/products.ts";
 import { ObjectId } from "mongodb";
 import { collectionFormatsForGame } from "@/lib/collection/formats";
 import GameCollectionBrowser from "./GameCollectionBrowser.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ gameSlug: string }>;
 }): Promise<Metadata> {
+
+  // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
+  // pas figer, et aucune frontière n'y change rien.
+  await connection();
   const { gameSlug } = await params;
   const t = await getTranslations("Collection");
-  const game = await getGameBySlugOrId(gameSlug);
+  const game = await readGameBySlugOrId(gameSlug);
   return {
     title: game ? t("gameMetadata.title", { game: game.name }) : t("metadata.title"),
   };
 }
 
-export default async function GameCollectionPage({
+async function GameCollectionPageContent({
   params,
 }: {
   params: Promise<{ gameSlug: string }>;
 }) {
+
+  // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
+  // pas figer, et aucune frontière n'y change rien.
+  await connection();
   const { gameSlug } = await params;
 
   const session = await auth.api.getSession({ headers: await headers() });
@@ -39,7 +47,7 @@ export default async function GameCollectionPage({
     redirect("/login");
   }
 
-  const game = await getGameBySlugOrId(gameSlug);
+  const game = await readGameBySlugOrId(gameSlug);
   if (!game) {
     notFound();
   }
@@ -76,5 +84,24 @@ export default async function GameCollectionPage({
         }))}
       />
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
+ * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
+ * porte ait répondu.
+ */
+export default function GameCollectionPage(props: Parameters<typeof GameCollectionPageContent>[0]) {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto p-4 sm:p-6">
+          <CollectionSkeleton tiles={12} label="Chargement de la collection" />
+        </div>
+      }
+    >
+      <GameCollectionPageContent {...props} />
+    </Suspense>
   );
 }

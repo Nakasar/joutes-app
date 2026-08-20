@@ -17,7 +17,7 @@ Next 16.3.1, `cacheComponents: true` sur `main`.
 
 891 pages construites. Avant l'adoption : **zéro** route avec coquille statique.
 
-**65 pages portent encore un opt-out `export const instant = false`** — 60
+**53 pages portent encore un opt-out `export const instant = false`** — 48
 marqueurs `TODO: Cache Components adoption`, plus **cinq** blocages assumés qui
 portent une raison au lieu d'un TODO : le layout du portail organisateur de
 tournoi, les deux layouts du portail d'événement, son aiguillage
@@ -32,7 +32,7 @@ comm -23 <(grep -rl 'instant = false' app/ | sort) \
          <(grep -rl 'TODO: Cache Components adoption' app/ | sort)
 ```
 
-26 pages portent un déblocage `await connection()` — le piège Mongo est
+38 pages portent un déblocage `await connection()` — le piège Mongo est
 désormais la contrainte la plus fréquente sur ce qui reste.
 
 Les pages vivent sous `app/[locale]/(app)/` depuis la correction de collision de
@@ -586,21 +586,29 @@ Répartition des opt-outs par ce qui bloque la page :
 **Plus aucun lot mécanique n'est disponible.** Chaque route restante demande de
 décider ce qui appartient à la coquille et ce qui arrive en flux.
 
-Par zone : `admin` 12, `collection` 7, `account` 7, `events` 5, `cubes` 5,
-`trade` 3, `games` 3, `game-matches` 3, `decks` 3, `tournaments` 2, `leagues` 2,
-`wishlists` 2, `t` 2, `sell-lists` 2, puis une page chacune pour `friends`,
-`lairs`, `users`, `policies`, `oauth`, `notifications` et `login`.
+Par zone : `admin` 12, `account` 7, `events` 5, `trade` 3, `games` 3,
+`game-matches` 3, `decks` 3, `tournaments` 2, `leagues` 2, `wishlists` 2, `t` 2,
+`sell-lists` 2, puis une page chacune pour `friends`, `lairs`, `users`,
+`policies`, `oauth`, `notifications` et `login`.
 
-**`news`, `quizz` et `play-groups` sont faites entièrement.** `games`, `leagues`
-et `lairs` sont presque faites : il n'y reste que les très grosses pages —
-portail du jeu, fiche de carte, page d'une ligue, ses matchs, page d'un lieu —
-toutes entre 350 et 550 lignes, qui demandent chacune leur propre passe.
+**`news`, `quizz`, `play-groups`, `collection` et `cubes` sont faites
+entièrement.** `games`, `leagues` et `lairs` sont presque faites : il n'y reste
+que les très grosses pages — portail du jeu, fiche de carte, page d'une ligue,
+ses matchs, page d'un lieu — toutes entre 350 et 550 lignes, qui demandent
+chacune leur propre passe.
 
-**Le motif est stabilisé.** Les listes publiques sans segment dynamique
-prérendent leur en-tête (~33 Ko) ; les pages à segment dynamique prérendent le
-cadre et leurs silhouettes (~18 à 20 Ko). Ce qui reste demande surtout de
-décider, page par page, ce que la coquille a le droit de montrer avant que la
-porte d'authentification ait répondu.
+**Le motif est stabilisé**, et il tient en trois formes :
+
+| forme de route | ce que la coquille contient | ordre de grandeur |
+|---|---|---|
+| publique, sans segment dynamique | l'en-tête traduit, prérendu | ~33 Ko |
+| derrière une porte, sans segment dynamique | le cadre et la silhouette | ~31 Ko |
+| derrière une porte, avec segment dynamique | le cadre et la silhouette | ~18 à 20 Ko |
+
+Ce qui reste demande surtout de décider, page par page, ce que la coquille a le
+droit de montrer avant que la porte d'authentification ait répondu. La réponse
+par défaut, retenue partout jusqu'ici : **rien de ce que la porte protège**, pas
+même le nom de l'objet.
 
 Les zones qui restent sont toutes derrière une session. Ce sont donc celles où
 les pièges de mesure comptent le plus : ni `curl`, ni onglet recyclé.

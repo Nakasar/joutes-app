@@ -1,5 +1,8 @@
+import { Suspense } from "react";
+import { CollectionSkeleton } from "@/components/CollectionSkeleton.tsx";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { Metadata } from "next/types";
 import { getCubeAccess, getCubeById, getCubeOwnerInfo, getCubePacks } from "@/lib/db/cubes.ts";
@@ -7,11 +10,12 @@ import { getCubeAttributeOptions } from "@/lib/db/cube-draw.ts";
 import { DEFAULT_CUBE_DRAW } from "@/lib/constants/cubes.ts";
 import CubeDetailClient from "./CubeDetailClient.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 export async function generateMetadata({ params }: { params: Promise<{ cubeId: string }> }): Promise<Metadata> {
+
+  // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
+  // pas figer, et aucune frontière n'y change rien.
+  await connection();
   const { cubeId } = await params;
   const cube = await getCubeById(cubeId);
   if (!cube) {
@@ -27,7 +31,11 @@ export async function generateMetadata({ params }: { params: Promise<{ cubeId: s
   };
 }
 
-export default async function CubePage({ params }: { params: Promise<{ cubeId: string }> }) {
+async function CubePageContent({ params }: { params: Promise<{ cubeId: string }> }) {
+
+  // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
+  // pas figer, et aucune frontière n'y change rien.
+  await connection();
   const { cubeId } = await params;
   const session = await auth.api.getSession({ headers: await headers() });
 
@@ -62,5 +70,24 @@ export default async function CubePage({ params }: { params: Promise<{ cubeId: s
         attributeOptions={attributeOptions}
       />
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
+ * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
+ * porte ait répondu.
+ */
+export default function CubePage(props: Parameters<typeof CubePageContent>[0]) {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto p-4 sm:p-6">
+          <CollectionSkeleton tiles={8} label="Chargement du cube" />
+        </div>
+      }
+    >
+      <CubePageContent {...props} />
+    </Suspense>
   );
 }

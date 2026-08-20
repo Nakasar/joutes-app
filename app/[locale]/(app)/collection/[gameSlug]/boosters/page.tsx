@@ -1,11 +1,14 @@
+import { Suspense } from "react";
+import { CollectionSkeleton } from "@/components/CollectionSkeleton.tsx";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
+import { connection } from "next/server";
 import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
 import { ObjectId } from "mongodb";
 import db from "@/lib/mongodb.ts";
-import { getGameBySlugOrId } from "@/lib/db/games.ts";
+import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import {
   countBoosters,
   getBoosterFilterCards,
@@ -18,9 +21,6 @@ import { isBoosterType, normalizeBoosterType } from "@/lib/constants/booster-typ
 import { parseBoosterCardIds } from "@/lib/constants/boosters.ts";
 import BoostersList from "./BoostersList.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 const PAGE_SIZE = 24;
 
@@ -29,19 +29,27 @@ export async function generateMetadata({
 }: {
   params: Promise<{ gameSlug: string }>;
 }): Promise<Metadata> {
+
+  // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
+  // pas figer, et aucune frontière n'y change rien.
+  await connection();
   const { gameSlug } = await params;
   const t = await getTranslations("Collection");
-  const game = await getGameBySlugOrId(gameSlug);
+  const game = await readGameBySlugOrId(gameSlug);
   return { title: game ? t("boosters.metadataTitle", { game: game.name }) : t("boosters.title") };
 }
 
-export default async function BoostersPage({
+async function BoostersPageContent({
   params,
   searchParams,
 }: {
   params: Promise<{ gameSlug: string }>;
   searchParams: Promise<{ page?: string; type?: string; sort?: string; cards?: string }>;
 }) {
+
+  // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
+  // pas figer, et aucune frontière n'y change rien.
+  await connection();
   const { gameSlug } = await params;
   const { page: pageParam, type: typeParam, sort: sortParam, cards: cardsParam } = await searchParams;
 
@@ -50,7 +58,7 @@ export default async function BoostersPage({
     redirect("/login");
   }
 
-  const game = await getGameBySlugOrId(gameSlug);
+  const game = await readGameBySlugOrId(gameSlug);
   if (!game) {
     notFound();
   }
@@ -101,5 +109,24 @@ export default async function BoostersPage({
         total={total}
       />
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
+ * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
+ * porte ait répondu.
+ */
+export default function BoostersPage(props: Parameters<typeof BoostersPageContent>[0]) {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto p-4 sm:p-6">
+          <CollectionSkeleton tiles={12} label="Chargement des boosters" />
+        </div>
+      }
+    >
+      <BoostersPageContent {...props} />
+    </Suspense>
   );
 }

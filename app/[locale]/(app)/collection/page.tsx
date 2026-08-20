@@ -1,14 +1,14 @@
+import { Suspense } from "react";
+import { CollectionSkeleton } from "@/components/CollectionSkeleton.tsx";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
+import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
 import { getCollectionOverview } from "@/lib/db/collection.ts";
 import CollectionOverview from "./CollectionOverview.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Collection");
@@ -23,7 +23,11 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function CollectionPage() {
+async function CollectionPageContent() {
+
+  // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
+  // pas figer, et aucune frontière n'y change rien.
+  await connection();
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session?.user?.id) {
@@ -36,5 +40,24 @@ export default async function CollectionPage() {
     <div className="container mx-auto p-4 sm:p-6">
       <CollectionOverview initialOverview={overview} valuePath="/api/collection/value" />
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
+ * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
+ * porte ait répondu.
+ */
+export default function CollectionPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto p-4 sm:p-6">
+          <CollectionSkeleton tiles={8} label="Chargement de la collection" />
+        </div>
+      }
+    >
+      <CollectionPageContent />
+    </Suspense>
   );
 }

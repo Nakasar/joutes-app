@@ -1,3 +1,5 @@
+import { CollectionSkeleton } from "@/components/CollectionSkeleton.tsx";
+
 /**
  * Silhouettes des écrans de groupe de jeu.
  *
@@ -66,8 +68,9 @@ export function PlayGroupToolsRowSkeleton() {
 }
 
 /**
- * Une vue de collection : titre, sous-titre, puis une grille de vignettes de
- * jeu ou d'extension.
+ * La vue de collection d'un groupe : c'est la silhouette de grille commune, avec
+ * son intitulé propre. Le dessin vit dans `components/CollectionSkeleton.tsx`,
+ * partagé avec les collections personnelles et les cubes.
  */
 export function PlayGroupCollectionSkeleton({
   tiles = 8,
@@ -76,24 +79,5 @@ export function PlayGroupCollectionSkeleton({
   tiles?: number;
   label?: string;
 }) {
-  return (
-    <div role="status" aria-busy="true">
-      <span className="sr-only">{label}…</span>
-
-      <div className="animate-pulse space-y-2">
-        <div className="h-8 w-72 max-w-full rounded bg-muted" />
-        <div className="h-5 w-96 max-w-full rounded bg-muted/60" />
-      </div>
-
-      <div className="mt-6 grid animate-pulse gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {Array.from({ length: tiles }, (_, index) => (
-          <div key={index} className="space-y-3 rounded-xl border p-4">
-            <div className="aspect-[3/2] rounded-lg bg-muted" />
-            <div className="h-5 w-2/3 rounded bg-muted" />
-            <div className="h-4 w-1/2 rounded bg-muted/60" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  return <CollectionSkeleton tiles={tiles} label={label} />;
 }

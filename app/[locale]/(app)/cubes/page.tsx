@@ -1,15 +1,15 @@
+import { Suspense } from "react";
+import { CollectionSkeleton } from "@/components/CollectionSkeleton.tsx";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
+import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
 import { getCubesForOwner, getPublicCubes } from "@/lib/db/cubes.ts";
-import { getAllGames } from "@/lib/db/games.ts";
+import { readAllGames } from "@/lib/db/games-cached.ts";
 import CubesClient from "./CubesClient.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Cubes");
@@ -19,7 +19,11 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function CubesPage() {
+async function CubesPageContent() {
+
+  // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
+  // pas figer, et aucune frontière n'y change rien.
+  await connection();
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
     redirect("/login");
@@ -28,7 +32,7 @@ export default async function CubesPage() {
   const [cubes, publicCubes, games] = await Promise.all([
     getCubesForOwner(session.user.id),
     getPublicCubes(),
-    getAllGames(),
+    readAllGames(),
   ]);
 
   return (
@@ -42,5 +46,24 @@ export default async function CubesPage() {
           .map((game) => ({ id: game.id, name: game.name, slug: game.slug }))}
       />
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
+ * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
+ * porte ait répondu.
+ */
+export default function CubesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto p-4 sm:p-6">
+          <CollectionSkeleton tiles={8} label="Chargement des cubes" />
+        </div>
+      }
+    >
+      <CubesPageContent />
+    </Suspense>
   );
 }

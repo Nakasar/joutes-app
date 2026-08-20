@@ -1,19 +1,23 @@
+import { Suspense } from "react";
+import { CollectionSkeleton } from "@/components/CollectionSkeleton.tsx";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { getCubeAccess, getCubeById, getCubePack, getCubePackCards, getCubePacks } from "@/lib/db/cubes.ts";
 import PackEditor from "./PackEditor.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
-export default async function CubePackPage({
+async function CubePackPageContent({
   params,
 }: {
   params: Promise<{ cubeId: string; packId: string }>;
 }) {
+
+  // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
+  // pas figer, et aucune frontière n'y change rien.
+  await connection();
   const { cubeId, packId } = await params;
   const session = await auth.api.getSession({ headers: await headers() });
   const t = await getTranslations("Cubes");
@@ -60,5 +64,24 @@ export default async function CubePackPage({
         canEdit={access.canEdit}
       />
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
+ * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
+ * porte ait répondu.
+ */
+export default function CubePackPage(props: Parameters<typeof CubePackPageContent>[0]) {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto p-4 sm:p-6">
+          <CollectionSkeleton tiles={6} label="Chargement du paquet" />
+        </div>
+      }
+    >
+      <CubePackPageContent {...props} />
+    </Suspense>
   );
 }
