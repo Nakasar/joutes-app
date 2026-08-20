@@ -153,17 +153,40 @@ export async function getEventsByLairId(lairId: string, {year, month, gameId, us
     id: event.id,
     lairId: event.lairId,
     name: event.name,
+    description: event.description,
     startDateTime: event.startDateTime,
     endDateTime: event.endDateTime,
     gameName: event.gameName,
-    game: event.matchedGame,
+    // Champ par champ, et non `event.matchedGame` tel quel : la jointure y
+    // laisse l'`_id` de Mongo — inutile à `Event.game`, qui ne porte pas
+    // d'identifiant, mais qui n'est pas un objet simple et fait échouer la
+    // sérialisation dès qu'un composant serveur passe ces événements à un
+    // composant client. Le retirer de la projection ne suffirait pas : le
+    // filtre par jeu, plus bas, s'appuie sur `matchedGame._id`.
+    game: event.matchedGame
+      ? {
+          name: event.matchedGame.name,
+          icon: event.matchedGame.icon,
+          banner: event.matchedGame.banner,
+          type: event.matchedGame.type,
+          slug: event.matchedGame.slug,
+        }
+      : undefined,
     url: event.url,
     price: event.price,
     status: event.status,
     addedBy: event.addedBy,
     creatorId: event.creatorId,
     participants: event.participants,
+    participantRegistrations: event.participantRegistrations,
+    // Ne compter que les REGISTERED (cf. joinEventAction) : un participant
+    // sans statut explicite est REGISTERED par défaut (addParticipantToEvent),
+    // mais PRE_REGISTERED/EXCLUDED ne doivent pas compter dans le remplissage.
+    registeredParticipantsCount: (event.participants ?? []).filter(
+      (userId: string) => (event.participantRegistrations?.[userId] ?? 'REGISTERED') === 'REGISTERED'
+    ).length,
     maxParticipants: event.maxParticipants,
+    allowJoin: event.allowJoin,
     favoritedBy: event.favoritedBy,
     lair: event.lairDetails && event.lairDetails.length > 0 ? {
       id: event.lairDetails[0].id,

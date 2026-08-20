@@ -1003,6 +1003,111 @@
     }
   },
   "Lairs": {
+    "portal": {
+      "openUntil": "Heute geöffnet bis {time}",
+      "closedNow": "Derzeit geschlossen",
+      "tabs": {
+        "label": "Bereiche des Ortes",
+        "news": "Neuigkeiten",
+        "agenda": "Kalender",
+        "games": "Hier gespielte Spiele",
+        "about": "Über uns"
+      },
+      "live": {
+        "badge": "LIVE",
+        "since": "seit {duration}",
+        "viewers": "{count, plural, one {# Zuschauer} other {# Zuschauer}}",
+        "staffOnlyNotice": "nur für das Team des Ortes sichtbar — Besucher sehen nur den Player",
+        "emptyTitle": "Kein laufender Livestream",
+        "emptyDescription": "Twitch- oder YouTube-URL einfügen: der Player erscheint für alle oben auf der Seite.",
+        "urlLabel": "Stream-URL",
+        "urlPlaceholder": "https://twitch.tv/…",
+        "goLive": "Live gehen",
+        "save": "Speichern",
+        "cancel": "Abbrechen",
+        "editUrl": "URL bearbeiten",
+        "stopLive": "Stream beenden",
+        "stopConfirmTitle": "Stream beenden?",
+        "stopConfirmDescription": "Der Player verschwindet für alle Besucher von der Seite.",
+        "started": "Der Stream ist live.",
+        "stopped": "Der Stream wurde beendet.",
+        "invalidUrl": "Ungültige URL: nur Twitch- und YouTube-Links werden akzeptiert."
+      },
+      "news": {
+        "title": "Neuigkeiten",
+        "subtitle": "vom Ort veröffentlicht",
+        "pinned": "ANGEHEFTET",
+        "readMore": "Mehr erfahren"
+      },
+      "featured": {
+        "title": "Im Fokus",
+        "subtitle": "vom Ort ausgewählt",
+        "badge": "IM FOKUS",
+        "registered": "{registered} / {capacity} angemeldet",
+        "register": "Anmelden",
+        "details": "Details zum Event"
+      },
+      "upcoming": {
+        "title": "Nächste Events",
+        "scopeLabel": "Events filtern",
+        "scopeMine": "Meine Spiele",
+        "scopeAll": "Alle Spiele",
+        "seeAgenda": "Vollständigen Kalender ansehen →",
+        "filterExplanation": "Gefiltert nach {games, plural, one {dem Spiel, dem du folgst} other {den # Spielen, denen du folgst}} — {hidden, plural, =0 {kein weiteres kommendes Event} one {# weiteres kommendes Event} other {# weitere kommende Events}} zu den anderen Spielen des Ortes.",
+        "empty": "Keine kommenden Events an diesem Ort.",
+        "emptyForMyGames": "Keine kommenden Events zu den Spielen, denen du folgst.",
+        "seats": "{registered} / {capacity} angemeldet",
+        "noRegistration": "ohne Anmeldung",
+        "free": "freier Eintritt",
+        "register": "Anmelden",
+        "attend": "Hingehen"
+      },
+      "info": {
+        "title": "Praktische Informationen",
+        "open": "Geöffnet",
+        "closed": "Geschlossen",
+        "directions": "Route",
+        "call": "Anrufen",
+        "mapTitle": "Karte — {name}"
+      },
+      "hours": {
+        "title": "Öffnungszeiten",
+        "today": "Heute",
+        "closed": "Geschlossen"
+      },
+      "follow": {
+        "title": "Diesem Ort folgen",
+        "followers": "{count, plural, one {# Spieler folgt diesem Ort und erhält seine Ankündigungen.} other {# Spieler folgen diesem Ort und erhalten seine Ankündigungen.}}"
+      },
+      "games": {
+        "title": "Hier gespielte Spiele",
+        "count": "{count, plural, one {# Spiel} other {# Spiele}}",
+        "others": "weitere Spiele",
+        "legend": "die Zahl = kommende Events zu diesem Spiel",
+        "empty": "Dieser Ort hat noch keine Spiele angegeben.",
+        "upcoming": "{count, plural, one {# Event} other {# Events}}"
+      },
+      "agenda": {
+        "legend": {
+          "available": "Anmeldung offen",
+          "soldOut": "Ausgebucht",
+          "cancelled": "Abgesagt"
+        },
+        "yourRegistrations": "Deine Anmeldungen hier",
+        "rhythm": "Üblicher Rhythmus"
+      },
+      "about": {
+        "title": "Der Ort",
+        "photos": "Fotos",
+        "video": "Videorundgang",
+        "empty": "Dieser Ort hat noch keine Vorstellung verfasst.",
+        "access": "Anfahrt",
+        "contact": "Kontakt",
+        "discord": "Discord des Ortes",
+        "organizers": "Organisatoren",
+        "directions": "Route"
+      }
+    },
     "page": {
       "title": "Spielorte",
       "description": "Entdecke alle Spielorte und ihre kommenden Veranstaltungen"
@@ -1081,6 +1186,7 @@
     },
     "follow": {
       "follow": "Folgen",
+      "following": "Folgst du",
       "unfollow": "Nicht mehr folgen",
       "errors": {
         "generic": "Ein Fehler ist aufgetreten"

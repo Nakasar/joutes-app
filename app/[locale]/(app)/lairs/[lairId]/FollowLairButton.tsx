@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { addLairToUserList, removeLairFromUserList } from "@/app/[locale]/(app)/account/actions.ts";
 import { useRouter } from "@/i18n/navigation.ts";
 import { useTranslations } from "next-intl";
+import { Bell, Check, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button.tsx";
 
 interface FollowLairButtonProps {
   lairId: string;
@@ -11,10 +13,17 @@ interface FollowLairButtonProps {
   isAuthenticated: boolean;
 }
 
-export default function FollowLairButton({ 
-  lairId, 
+/**
+ * Suivre le lieu.
+ *
+ * Une fois suivi, le bouton porte l'accent du lieu : c'est le seul point de la
+ * bannière où la marque blanche s'exprime en aplat, et l'état « suivi » est
+ * justement celui qu'on doit reconnaître d'un coup d'œil.
+ */
+export default function FollowLairButton({
+  lairId,
   isFollowing: initialIsFollowing,
-  isAuthenticated 
+  isAuthenticated,
 }: FollowLairButtonProps) {
   const t = useTranslations("Lairs");
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
@@ -51,23 +60,29 @@ export default function FollowLairButton({
   };
 
   return (
-    <div>
-      {error && (
-        <div className="mb-2 text-sm text-red-600">
-          {error}
-        </div>
-      )}
-      <button
+    <div className="flex flex-col gap-1">
+      <Button
+        type="button"
+        size="sm"
+        variant={isFollowing ? "default" : "secondary"}
         onClick={handleToggleFollow}
         disabled={isPending}
-        className={`px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+        className={
           isFollowing
-            ? "bg-gray-200 text-gray-800 hover:bg-gray-300"
-            : "bg-blue-500 text-white hover:bg-blue-600"
-        }`}
+            ? "bg-[var(--lair-accent)] text-[var(--lair-accent-foreground)] hover:bg-[var(--lair-accent)]/90"
+            : undefined
+        }
       >
-        {isPending ? "..." : isFollowing ? t("follow.unfollow") : t("follow.follow")}
-      </button>
+        {isPending ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+        ) : isFollowing ? (
+          <Check className="mr-2 h-4 w-4" aria-hidden />
+        ) : (
+          <Bell className="mr-2 h-4 w-4" aria-hidden />
+        )}
+        {isFollowing ? t("follow.following") : t("follow.follow")}
+      </Button>
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }

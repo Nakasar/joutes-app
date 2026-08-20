@@ -1003,6 +1003,111 @@
     }
   },
   "Lairs": {
+    "portal": {
+      "openUntil": "Ouvert aujourd'hui jusqu'à {time}",
+      "closedNow": "Fermé actuellement",
+      "tabs": {
+        "label": "Sections du lieu",
+        "news": "Actualités",
+        "agenda": "Agenda",
+        "games": "Jeux joués ici",
+        "about": "À propos"
+      },
+      "live": {
+        "badge": "EN DIRECT",
+        "since": "depuis {duration}",
+        "viewers": "{count, plural, one {# spectateur} other {# spectateurs}}",
+        "staffOnlyNotice": "visible par le staff du lieu uniquement — les visiteurs ne voient que le lecteur",
+        "emptyTitle": "Aucun direct en cours",
+        "emptyDescription": "Collez l'URL Twitch ou YouTube : le cadre passe en tête de page pour tout le monde.",
+        "urlLabel": "URL du direct",
+        "urlPlaceholder": "https://twitch.tv/…",
+        "goLive": "Passer en direct",
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "editUrl": "Modifier l'URL",
+        "stopLive": "Arrêter le direct",
+        "stopConfirmTitle": "Arrêter le direct ?",
+        "stopConfirmDescription": "Le lecteur disparaîtra de la page pour tous les visiteurs.",
+        "started": "Le direct est en ligne.",
+        "stopped": "Le direct est arrêté.",
+        "invalidUrl": "URL invalide : seuls les liens Twitch et YouTube sont acceptés."
+      },
+      "news": {
+        "title": "Actualités",
+        "subtitle": "mises à jour par le lieu",
+        "pinned": "ÉPINGLÉ",
+        "readMore": "En savoir plus"
+      },
+      "featured": {
+        "title": "À la une",
+        "subtitle": "choisi par le lieu",
+        "badge": "À LA UNE",
+        "registered": "{registered} / {capacity} inscrits",
+        "register": "S'inscrire",
+        "details": "Détails de l'événement"
+      },
+      "upcoming": {
+        "title": "Prochains événements",
+        "scopeLabel": "Filtrer les événements",
+        "scopeMine": "Mes jeux",
+        "scopeAll": "Tous les jeux",
+        "seeAgenda": "Voir l'agenda complet →",
+        "filterExplanation": "Filtré sur {games, plural, one {le jeu que vous suivez} other {les # jeux que vous suivez}} — {hidden, plural, =0 {aucun autre événement à venir} one {# autre événement à venir} other {# autres événements à venir}} sur les autres jeux du lieu.",
+        "empty": "Aucun événement à venir dans ce lieu.",
+        "emptyForMyGames": "Aucun événement à venir sur les jeux que vous suivez.",
+        "seats": "{registered} / {capacity} inscrits",
+        "noRegistration": "sans inscription",
+        "free": "entrée libre",
+        "register": "S'inscrire",
+        "attend": "Y aller"
+      },
+      "info": {
+        "title": "Informations pratiques",
+        "open": "Ouvert",
+        "closed": "Fermé",
+        "directions": "Itinéraire",
+        "call": "Appeler",
+        "mapTitle": "Carte — {name}"
+      },
+      "hours": {
+        "title": "Horaires",
+        "today": "Aujourd'hui",
+        "closed": "Fermé"
+      },
+      "follow": {
+        "title": "Suivre le lieu",
+        "followers": "{count, plural, one {# joueur suit ce lieu et reçoit ses annonces.} other {# joueurs suivent ce lieu et reçoivent ses annonces.}}"
+      },
+      "games": {
+        "title": "Jeux joués ici",
+        "count": "{count, plural, one {# jeu} other {# jeux}}",
+        "others": "autres jeux",
+        "legend": "le chiffre = événements à venir sur ce jeu",
+        "empty": "Ce lieu n'a pas encore déclaré de jeux.",
+        "upcoming": "{count, plural, one {# événement} other {# événements}}"
+      },
+      "agenda": {
+        "legend": {
+          "available": "Inscriptions ouvertes",
+          "soldOut": "Complet",
+          "cancelled": "Annulé"
+        },
+        "yourRegistrations": "Vos inscriptions ici",
+        "rhythm": "Rythme habituel"
+      },
+      "about": {
+        "title": "Le lieu",
+        "photos": "Photos",
+        "video": "Visite en vidéo",
+        "empty": "Ce lieu n'a pas encore rédigé de présentation.",
+        "access": "Accès",
+        "contact": "Contact",
+        "discord": "Discord du lieu",
+        "organizers": "Organisateurs",
+        "directions": "Itinéraire"
+      }
+    },
     "page": {
       "title": "Lieux de jeu",
       "description": "Découvrez tous les lieux de jeu et leurs événements à venir"
@@ -1081,6 +1186,7 @@
     },
     "follow": {
       "follow": "Suivre",
+      "following": "Suivi",
       "unfollow": "Ne plus suivre",
       "errors": {
         "generic": "Une erreur est survenue"

@@ -1,37 +1,50 @@
-import { getLairById } from "@/lib/db/lairs.ts";
-import { getEventsByLairId } from "@/lib/db/events.ts";
-import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
-import { getUserById } from "@/lib/db/users.ts";
-import { auth } from "@/lib/auth.ts";
-import { checkAdminOrOwner } from "@/lib/middleware/admin.ts";
-import { headers } from "next/headers";
-import { notFound } from "next/navigation";
-import Image from "next/image";
-import { Link } from "@/i18n/navigation.ts";
 import { Metadata } from "next";
-import FollowLairButton from "./FollowLairButton.tsx";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card.tsx";
-import { Badge } from "@/components/ui/badge.tsx";
-import { Button } from "@/components/ui/button.tsx";
-import { ArrowLeft, Gamepad2, Calendar, Settings } from "lucide-react";
-import EventsCalendarClient from "@/components/EventsCalendarClient.tsx";
-import EventsAgendaList from "./EventsAgendaList.tsx";
-import ReportButton from "@/components/ReportButton.tsx";
-import EventsConferenceView from "./EventsConferenceView.tsx";
-import { getTranslations } from "next-intl/server";
-import { Suspense, cache } from "react";
+import { Suspense } from "react";
 import { connection } from "next/server";
+import { getTranslations } from "next-intl/server";
+import { Calendar } from "lucide-react";
+
+import { Link } from "@/i18n/navigation.ts";
+import { Button } from "@/components/ui/button.tsx";
+import { getLairById } from "@/lib/db/lairs.ts";
+import { readLairAccent } from "@/lib/lairs/theme.ts";
+
+import LairHero from "./LairHero.tsx";
+import LairTabsBar from "./LairTabsBar.tsx";
+import LairLiveSection from "./LairLiveSection.tsx";
+import LairNewsSection from "./LairNewsSection.tsx";
+import LairFeaturedEvent from "./LairFeaturedEvent.tsx";
+import LairUpcomingEvents from "./LairUpcomingEvents.tsx";
+import LairAgendaTab, { LairAgendaRegistrations, LairAgendaRhythm } from "./LairAgendaTab.tsx";
+import LairGamesTab from "./LairGamesTab.tsx";
+import LairAboutTab, { LairAboutSidebar } from "./LairAboutTab.tsx";
+import {
+  LairFollowCard,
+  LairGamesCard,
+  LairOpeningHoursCard,
+  LairPracticalInfoCard,
+} from "./LairSidebar.tsx";
+import {
+  countUpcomingByGame,
+  readFollowersCount,
+  readLairEvents,
+  readLairGames,
+  readLairTab,
+  readViewer,
+  requireVisibleLair,
+  upcomingOf,
+  type LairTab,
+} from "./lair-data.ts";
 import {
   LairEventsSkeleton,
-  LairGamesSkeleton,
-  LairHeroSkeleton,
-  LairInfoSkeleton,
+  LairPortalSkeleton,
+  LairSidebarSkeleton,
 } from "./LairPortalSkeletons.tsx";
 
 export async function generateMetadata({
-  params
+  params,
 }: {
-  params: Promise<{ lairId: string }>
+  params: Promise<{ lairId: string }>;
 }): Promise<Metadata> {
   const { lairId } = await params;
   const t = await getTranslations("Lairs");
@@ -61,71 +74,32 @@ export async function generateMetadata({
 }
 
 type LairParams = Promise<{ lairId: string }>;
-type LairSearchParams = Promise<{ month?: string; year?: string; gameId?: string }>;
+type LairSearchParams = Promise<{
+  tab?: string;
+  scope?: string;
+  month?: string;
+  year?: string;
+  gameId?: string;
+}>;
 
 /**
- * Le lieu, lu une fois par rendu — et la porte de confidentialité avec lui.
+ * La vitrine d'un lieu.
  *
- * Un lieu privé ne s'ouvre qu'à ceux qui le suivent et à son équipe. Ce contrôle
- * ne peut pas rester en tête de page : il faudrait alors lire la session avant
- * d'afficher quoi que ce soit, y compris pour les lieux publics, qui sont la
- * majorité.
+ * Quatre onglets — actualités, agenda, jeux, à propos — au lieu d'une seule
+ * page à dérouler : un lieu actif publie assez pour que chacun de ces sujets
+ * mérite sa page, et un habitué vient toujours chercher l'un des quatre.
  *
- * D'où cette forme : la confidentialité se lit sur le lieu, et **la session
- * n'est interrogée que si le lieu est privé**. Un lieu public s'affiche dès sa
- * lecture ; un lieu privé attend sa porte, et n'a alors rien montré — pas même
- * son nom.
+ * Tout ce que la page dessine dépend du lieu : la barre d'onglets porte son
+ * logo et son nom, et son accent devient `--lair-accent` sur le conteneur —
+ * or ces déclinaisons se dérivent en CSS **sur l'élément qui pose l'accent**,
+ * si bien qu'il n'y a pas d'échelon plus haut où l'appliquer. La lecture du
+ * lieu vit donc sous une frontière commune, avec la vitrine derrière elle, et
+ * la coquille de la page reste statique. Les deux colonnes gardent en plus la
+ * leur : elles dépendent des événements et des jeux, qui coûtent davantage.
  *
- * `cache` de React mémoïse le tout : quatre sections le demandent.
- */
-const requireVisibleLair = cache(async (lairId: string) => {
-  // Le pilote Mongo touche à l'horloge en lisant le lieu, ce qu'un prérendu ne
-  // sait pas figer, et aucune frontière n'y change rien.
-  await connection();
-
-  const lair = await getLairById(lairId);
-  if (!lair) {
-    notFound();
-  }
-
-  if (!lair.isPrivate) {
-    return lair;
-  }
-
-  const session = await auth.api.getSession({ headers: await headers() });
-  const user = session?.user?.id ? await getUserById(session.user.id) : null;
-  const isFollowing = user?.lairs?.includes(lairId) ?? false;
-  const canManageLair = await checkAdminOrOwner(lairId);
-
-  if (!isFollowing && !canManageLair) {
-    notFound();
-  }
-
-  return lair;
-});
-
-/** La session et les droits sur ce lieu, une fois par rendu. */
-const readViewer = cache(async (lairId: string) => {
-  const session = await auth.api.getSession({ headers: await headers() });
-  const user = session?.user?.id ? await getUserById(session.user.id) : null;
-
-  return {
-    session,
-    isFollowing: user?.lairs?.includes(lairId) ?? false,
-    hasGames: Boolean(user?.games && user.games.length > 0),
-    canManageLair: await checkAdminOrOwner(lairId),
-  };
-});
-
-/**
- * La page d'un lieu, découpée par ce dont chaque section dépend.
- *
- * - **le lieu seul** — la bannière et les informations pratiques ;
- * - **la session** — les boutons Suivre et Gérer, sous leur propre frontière
- *   *dans* la bannière : le nom du lieu n'a pas à attendre l'identité du
- *   visiteur ;
- * - **une lecture par jeu proposé** — le carrousel ;
- * - **les événements** — l'agenda, qui dépend en plus de la page demandée.
+ * Un lieu sans personnalisation retombe naturellement sur la page nue :
+ * chaque bloc de la vitrine disparaît quand son contenu est absent, et
+ * `--lair-accent` retombe sur `--primary`.
  */
 export default function LairDetailPage({
   params,
@@ -135,338 +109,194 @@ export default function LairDetailPage({
   searchParams: LairSearchParams;
 }) {
   return (
-    <div className="min-h-screen">
-      <Suspense fallback={<LairHeroSkeleton />}>
-        <LairHero params={params} />
-      </Suspense>
-
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <Suspense fallback={<LairInfoSkeleton />}>
-          <LairPracticalInfo params={params} />
-        </Suspense>
-
-        <Suspense fallback={<LairGamesSkeleton />}>
-          <LairGames params={params} />
-        </Suspense>
-
-        <Suspense fallback={<LairEventsSkeleton />}>
-          <LairEvents params={params} searchParams={searchParams} />
-        </Suspense>
-      </div>
-    </div>
+    <Suspense fallback={<LairPortalSkeleton />}>
+      <LairPortal params={params} searchParams={searchParams} />
+    </Suspense>
   );
 }
 
-async function LairHero({ params }: { params: LairParams }) {
-  const { lairId } = await params;
-  const [lair, t] = await Promise.all([requireVisibleLair(lairId), getTranslations("Lairs")]);
-
-  return (
-    <div className="relative w-full h-64 md:h-96 bg-gradient-to-br from-primary/80 to-purple-600/80">
-      {lair.banner ? (
-        <img
-          src={lair.banner}
-          alt={lair.name}
-          className="absolute inset-0 w-full h-full object-cover object-center"
-        />
-      ) : (
-        <div className="flex items-center justify-center h-full">
-          <Gamepad2 className="h-24 w-24 text-white" />
-        </div>
-      )}
-      <div className="absolute inset-0 bg-black/40 flex items-end">
-        <div className="container mx-auto px-4 py-8">
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
-            {lair.name}
-          </h1>
-          <div className="flex flex-wrap items-center gap-4">
-            <Button variant="secondary" asChild size="sm">
-              <Link href="/lairs">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                {t("detail.backToList")}
-              </Link>
-            </Button>
-            {/* Suivre et Gérer demandent la session, et le compte derrière elle.
-                Leur frontière est ici plutôt qu'autour de la bannière : le nom
-                du lieu n'a aucune raison d'attendre l'identité du visiteur. */}
-            <Suspense fallback={<div className="h-8 w-32 animate-pulse rounded-md bg-white/20" aria-hidden />}>
-              <LairHeroActions lairId={lairId} />
-            </Suspense>
-            <ReportButton contentType="lair" contentId={lairId} variant="outline" size="sm" withLabel />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-async function LairHeroActions({ lairId }: { lairId: string }) {
-  const [{ session, isFollowing, canManageLair }, t] = await Promise.all([
-    readViewer(lairId),
-    getTranslations("Lairs"),
-  ]);
-
-  return (
-    <>
-      {session?.user && (
-        <FollowLairButton
-          lairId={lairId}
-          isFollowing={isFollowing}
-          isAuthenticated={!!session?.user}
-        />
-      )}
-      {canManageLair && (
-        <Button variant="default" asChild size="sm">
-          <Link href={`/lairs/${lairId}/manage`}>
-            <Settings className="mr-2 h-4 w-4" />
-            {t("detail.manage")}
-          </Link>
-        </Button>
-      )}
-    </>
-  );
-}
-
-async function LairPracticalInfo({ params }: { params: LairParams }) {
-  const { lairId } = await params;
-  const [lair, t] = await Promise.all([requireVisibleLair(lairId), getTranslations("Lairs")]);
-
-  return (
-    <>
-    {(lair.address || lair.website || lair.location) && (
-      <div className="mb-8 p-6 bg-card rounded-lg border">
-        <h2 className="text-xl font-semibold mb-4">{t("detail.practicalInfo")}</h2>
-        <div className="space-y-3">
-          {lair.address && (
-            <div className="flex items-start gap-3">
-              <span className="text-sm font-medium text-muted-foreground min-w-[100px]">{t("detail.address")}</span>
-              <span className="text-sm">{lair.address}</span>
-            </div>
-          )}
-          {lair.website && (
-            <div className="flex items-start gap-3">
-              <span className="text-sm font-medium text-muted-foreground min-w-[100px]">{t("detail.website")}</span>
-              <a
-                href={lair.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-primary hover:underline"
-              >
-                {lair.website}
-              </a>
-            </div>
-          )}
-          {lair.location && (
-            <div className="flex items-start gap-3">
-              <span className="text-sm font-medium text-muted-foreground min-w-[100px]">{t("detail.coordinates")}</span>
-              <a
-                href={`https://www.google.com/maps?q=${lair.location.coordinates[1]},${lair.location.coordinates[0]}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-primary hover:underline"
-              >
-                {lair.location.coordinates[1]}, {lair.location.coordinates[0]} ({t("detail.mapLink")})
-              </a>
-            </div>
-          )}
-        </div>
-      </div>
-    )}
-    </>
-  );
-}
-
-async function LairGames({ params }: { params: LairParams }) {
-  const { lairId } = await params;
-  const [lair, t] = await Promise.all([requireVisibleLair(lairId), getTranslations("Lairs")]);
-
-  const gamesDetails = await Promise.all(
-    lair.games.map(async (gameId) => readGameBySlugOrId(gameId))
-  );
-  const games = gamesDetails.filter((game): game is NonNullable<typeof game> => game !== null);
-
-  return (
-    <>
-    {games.length > 0 && (
-      <div className="mb-12">
-        <div className="mb-6">
-          <h2 className="text-3xl font-bold flex items-center gap-3">
-            <Gamepad2 className="h-8 w-8" />
-            {t("detail.availableGamesTitle")}
-          </h2>
-          <p className="text-muted-foreground mt-2">
-            {games.length === 1
-              ? t("detail.availableGamesDescriptionOne", { count: games.length })
-              : t("detail.availableGamesDescriptionOther", { count: games.length })}
-          </p>
-        </div>
-
-        <div className="relative">
-          <div className="flex gap-6 overflow-x-auto pb-6 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent hover:scrollbar-thumb-gray-500">
-            {games.map((game) => (
-              <div
-                key={game.id}
-                className="relative flex-shrink-0 w-80 h-48 rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer snap-start group"
-              >
-                {/* Image de fond : bannière ou dégradé */}
-                <div className="absolute inset-0">
-                  {game.banner ? (
-                    <Image
-                      src={game.banner}
-                      alt={game.name}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 320px"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 bg-linear-to-br from-blue-600 via-blue-500 to-amber-500" />
-                  )}
-                </div>
-
-                {/* Overlay sombre pour améliorer la lisibilité */}
-                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/40 to-transparent group-hover:from-black/90 transition-colors duration-300" />
-
-                {/* Contenu */}
-                <div className="relative h-full flex flex-col justify-between p-6">
-                  {/* Logo en haut si disponible */}
-                  {game.icon && (
-                    <div className="flex justify-start">
-                      <div className="relative w-20 h-20 bg-white/10 backdrop-blur-sm rounded-lg p-2 shadow-xl">
-                        <Image
-                          src={game.icon}
-                          alt={game.name}
-                          fill
-                          className="object-contain p-1"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Informations en bas */}
-                  <div className="space-y-2">
-                    <h3 className="font-bold text-2xl text-white drop-shadow-lg">
-                      {game.name}
-                    </h3>
-                    <Badge
-                      variant="secondary"
-                      className="bg-white/20 text-white backdrop-blur-sm border-white/30 hover:bg-white/30"
-                    >
-                      {game.type}
-                    </Badge>
-                    {game.description && (
-                      <p className="text-sm text-white/90 line-clamp-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        {game.description}
-                      </p>
-                    )}
-
-                  </div>
-                </div>
-
-                {/* Indicateur hover subtil */}
-                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                    <Gamepad2 className="h-4 w-4 text-white" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Gradient fade sur les bords pour l'effet carousel */}
-          {games.length > 3 && (
-            <>
-              <div className="absolute left-0 top-0 bottom-6 w-12 bg-gradient-to-r from-background to-transparent pointer-events-none z-10" />
-              <div className="absolute right-0 top-0 bottom-6 w-12 bg-gradient-to-l from-background to-transparent pointer-events-none z-10" />
-            </>
-          )}
-        </div>
-      </div>
-    )}
-    </>
-  );
-}
-
-async function LairEvents({
+async function LairPortal({
   params,
   searchParams,
 }: {
   params: LairParams;
   searchParams: LairSearchParams;
 }) {
-  const { lairId } = await params;
-  const [lair, t] = await Promise.all([requireVisibleLair(lairId), getTranslations("Lairs")]);
-  const { month, year, gameId } = await searchParams;
-  const { session, hasGames, canManageLair } = await readViewer(lairId);
+  const [{ lairId }, search] = await Promise.all([params, searchParams]);
+  const lair = await requireVisibleLair(lairId);
 
-  const calendarMode = lair.options?.calendar?.mode || 'CALENDAR';
-
-  // Si le mode est AGENDA, récupérer tous les événements de l'année
-  // Sinon, récupérer uniquement les événements du mois actuel
-  const upcomingEvents = await getEventsByLairId(lairId, {
-    year: new Date().getFullYear(),
-    month: (calendarMode === 'AGENDA' || calendarMode === "CONFERENCE") ? undefined : new Date().getMonth() + 1,
-    userId: session?.user?.id,
-    gameId: "all", // Afficher tous les jeux sur la page d'un lair
-  });
+  const accent = readLairAccent(lair);
+  const activeTab = readLairTab(search.tab);
+  const { canManageLair } = await readViewer(lairId);
 
   return (
-  <Card>
-    <CardHeader>
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <CardTitle className="text-3xl flex items-center gap-2">
-            <Calendar className="h-8 w-8" />
-            {t("detail.upcomingEventsTitle")}
-          </CardTitle>
+    <div className="lair-theme min-h-screen" style={accent.style}>
+      <LairHero lairId={lairId} />
+
+      <LairTabsBar
+        lairId={lairId}
+        lairName={lair.name}
+        logo={lair.options?.theme?.logo}
+        activeTab={activeTab}
+        canManageLair={canManageLair}
+      />
+
+      <div className="container mx-auto max-w-7xl px-4 pt-8 pb-11 lg:px-10">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="flex min-w-0 flex-col gap-[34px]">
+            <Suspense fallback={<LairEventsSkeleton />}>
+              <LairTabContent lairId={lairId} tab={activeTab} search={search} />
+            </Suspense>
+          </div>
+
+          <aside className="flex flex-col gap-4">
+            <Suspense fallback={<LairSidebarSkeleton />}>
+              <LairTabSidebar lairId={lairId} tab={activeTab} />
+            </Suspense>
+          </aside>
         </div>
-        {canManageLair && (
-          <Button asChild>
+      </div>
+    </div>
+  );
+}
+
+async function LairTabContent({
+  lairId,
+  tab,
+  search,
+}: {
+  lairId: string;
+  tab: LairTab;
+  search: Awaited<LairSearchParams>;
+}) {
+  const lair = await requireVisibleLair(lairId);
+
+  if (tab === "about") {
+    return <LairAboutTab lair={lair} />;
+  }
+
+  const events = await readLairEvents(lairId);
+
+  if (tab === "agenda") {
+    return (
+      <LairAgendaTab
+        lair={lair}
+        events={events}
+        month={search.month}
+        year={search.year}
+        gameId={search.gameId}
+      />
+    );
+  }
+
+  if (tab === "games") {
+    const games = await readLairGames(lairId);
+    return <LairGamesTab games={games} upcomingByGame={countUpcomingByGame(events)} />;
+  }
+
+  return <LairNewsTab lairId={lairId} scope={search.scope} />;
+}
+
+/**
+ * L'onglet d'accueil : ce qui se passe maintenant, ce qui change, ce qui vient.
+ *
+ * L'ordre n'est pas négociable — le direct passe avant tout parce qu'il est
+ * périssable, les annonces avant l'agenda parce qu'elles le corrigent parfois.
+ */
+async function LairNewsTab({ lairId, scope }: { lairId: string; scope?: string }) {
+  const [lair, events, games, { canManageLair, followedGameIds, userId }, t] = await Promise.all([
+    requireVisibleLair(lairId),
+    readLairEvents(lairId),
+    readLairGames(lairId),
+    readViewer(lairId),
+    getTranslations("Lairs.detail"),
+  ]);
+
+  const upcoming = upcomingOf(events);
+
+  // L'événement à la une ne compte que s'il est encore à venir : un lieu qui
+  // oublie de changer son choix après le tournoi ne doit pas garder une
+  // affiche périmée en tête de page. Il reste dans la liste en dessous, à sa
+  // date et marqué de l'accent : la liste dit *quand* on peut venir, et y
+  // creuser un trou au jour du plus gros tournoi serait un contresens.
+  const featuredId = lair.options?.featuredEventId;
+  const featured = featuredId ? upcoming.find((event) => event.id === featuredId) : undefined;
+
+  // Les événements portent le nom de leur jeu, jamais son identifiant : les
+  // jeux suivis par le visiteur doivent donc être traduits en noms, et seuls
+  // ceux que le lieu propose comptent pour la bascule.
+  const followedGameNames = games
+    .filter((game) => followedGameIds.includes(game.id))
+    .map((game) => game.name);
+
+  const gameColors = Object.fromEntries(
+    games.filter((game) => game.color).map((game) => [game.name, game.color]),
+  );
+
+  const hasNews = (lair.options?.news?.length ?? 0) > 0;
+
+  return (
+    <>
+      <LairLiveSection lair={lair} canManageLair={canManageLair} />
+
+      {hasNews && <LairNewsSection news={lair.options?.news ?? []} />}
+
+      {featured && <LairFeaturedEvent event={featured} />}
+
+      <LairUpcomingEvents
+        lairId={lairId}
+        events={upcoming}
+        followedGameNames={followedGameNames}
+        gameColors={gameColors}
+        featuredEventId={featuredId}
+        initialScope={userId && followedGameNames.length > 0 ? "mine" : "all"}
+      />
+
+      {canManageLair && (
+        <div>
+          <Button asChild size="sm" variant="outline">
             <Link href={`/lairs/${lairId}/events/new`}>
               <Calendar className="mr-2 h-4 w-4" />
-              {t("detail.addEvent")}
+              {t("addEvent")}
             </Link>
           </Button>
-        )}
-      </div>
-    </CardHeader>
-    <CardContent>
-      <div>
-        {!hasGames && (
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <Gamepad2 className="h-8 w-8 text-primary mb-2" />
-                <CardTitle>{t("detail.followGamesTitle")}</CardTitle>
-                <CardDescription>
-                  {t("detail.followGamesDescription")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild className="w-full">
-                  <Link href="/account">
-                    {t("detail.manageGames")}
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-        {calendarMode === 'AGENDA' ? (
-          <EventsAgendaList events={upcomingEvents} />
-        ) : calendarMode === 'CONFERENCE' ? (
-          <EventsConferenceView events={upcomingEvents} />
-        ) : (
-          <EventsCalendarClient
-            initialEvents={upcomingEvents}
-            initialMonth={+(month ?? new Date().getMonth() + 1)}
-            initialYear={+(year ?? new Date().getFullYear())}
-            initialGameId={gameId || "all"}
-            basePath={`/lairs/${lairId}`}
-            lairId={lairId}
-          />
-        )}
-      </div>
-    </CardContent>
-  </Card>
+        </div>
+      )}
+    </>
+  );
+}
+
+async function LairTabSidebar({ lairId, tab }: { lairId: string; tab: LairTab }) {
+  const lair = await requireVisibleLair(lairId);
+
+  if (tab === "about") {
+    return <LairAboutSidebar lair={lair} />;
+  }
+
+  if (tab === "agenda") {
+    const [events, { userId }] = await Promise.all([readLairEvents(lairId), readViewer(lairId)]);
+
+    return (
+      <>
+        <LairAgendaRegistrations events={events} userId={userId} />
+        <LairPracticalInfoCard lair={lair} />
+        <LairAgendaRhythm lair={lair} />
+      </>
+    );
+  }
+
+  const [events, games, followersCount] = await Promise.all([
+    readLairEvents(lairId),
+    readLairGames(lairId),
+    readFollowersCount(lairId),
+  ]);
+
+  return (
+    <>
+      <LairPracticalInfoCard lair={lair} />
+      <LairOpeningHoursCard lair={lair} />
+      <LairFollowCard lair={lair} followersCount={followersCount} />
+      <LairGamesCard games={games} upcomingByGame={countUpcomingByGame(events)} />
+    </>
   );
 }
