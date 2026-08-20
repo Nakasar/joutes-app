@@ -134,6 +134,40 @@
   }
 }
 
+/*
+ * La marque blanche d'un lieu.
+ *
+ * Un lieu abonné choisit un accent dans une palette fermée ; il arrive sur la
+ * page comme `--lair-accent`, posé en ligne par `readLairAccent` sur le
+ * conteneur qui porte `.lair-theme`. Toutes les déclinaisons employées par la
+ * page — fonds translucides, bordures, texte éclairci — se dérivent ici, sur
+ * ce même élément : les propriétés personnalisées étant substituées au moment
+ * de l'usage, ces `color-mix` voient la valeur posée en ligne.
+ *
+ * Sans accent enregistré, `--lair-accent` retombe sur `--primary` et la page
+ * garde les couleurs de Joutes — c'est le cas d'un lieu sans personnalisation.
+ */
+.lair-theme {
+  --lair-accent: var(--primary);
+  --lair-accent-foreground: var(--primary-foreground);
+
+  /* Le texte à l'accent : éclairci, pour tenir sur le fond sombre des cartes. */
+  --lair-accent-text: color-mix(in oklab, var(--lair-accent) 88%, white 12%);
+
+  --lair-accent-4: color-mix(in oklab, var(--lair-accent) 4%, transparent);
+  --lair-accent-8: color-mix(in oklab, var(--lair-accent) 8%, transparent);
+  --lair-accent-16: color-mix(in oklab, var(--lair-accent) 16%, transparent);
+  --lair-accent-18: color-mix(in oklab, var(--lair-accent) 18%, transparent);
+  --lair-accent-20: color-mix(in oklab, var(--lair-accent) 20%, transparent);
+  --lair-accent-22: color-mix(in oklab, var(--lair-accent) 22%, transparent);
+  --lair-accent-28: color-mix(in oklab, var(--lair-accent) 28%, transparent);
+  --lair-accent-32: color-mix(in oklab, var(--lair-accent) 32%, transparent);
+  --lair-accent-45: color-mix(in oklab, var(--lair-accent) 45%, transparent);
+
+  /* Le dégradé de l'annonce épinglée. */
+  --lair-accent-sweep: linear-gradient(90deg, var(--lair-accent-16), var(--lair-accent-4));
+}
+
 @layer utilities {
   @keyframes fade-in {
     from {

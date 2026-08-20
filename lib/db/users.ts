@@ -533,6 +533,17 @@ export async function getUsersFollowingLair(lairId: string): Promise<User[]> {
   return users.map(toUser);
 }
 
+/**
+ * Combien de joueurs suivent ce lieu.
+ *
+ * Un compte, et non la liste : la page publique n'affiche que le nombre, et
+ * ramener tous les documents pour en mesurer la longueur coûterait la
+ * collection entière sur un lieu populaire.
+ */
+export async function countUsersFollowingLair(lairId: string): Promise<number> {
+  return db.collection(COLLECTION_NAME).countDocuments({ lairs: lairId });
+}
+
 
 /**
  * Remplace la description publique d'un profil par un texte de modération.

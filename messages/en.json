@@ -1003,6 +1003,115 @@
     }
   },
   "Lairs": {
+    "portal": {
+      "openUntil": "Open today until {time}",
+      "closedNow": "Currently closed",
+      "tabs": {
+        "label": "Venue sections",
+        "news": "News",
+        "agenda": "Schedule",
+        "games": "Games played here",
+        "about": "About"
+      },
+      "live": {
+        "badge": "LIVE",
+        "since": "for {duration}",
+        "viewers": "{count, plural, one {# viewer} other {# viewers}}",
+        "staffOnlyNotice": "visible to venue staff only — visitors only see the player",
+        "emptyTitle": "No live stream running",
+        "emptyDescription": "Paste a Twitch or YouTube URL: the player moves to the top of the page for everyone.",
+        "urlLabel": "Stream URL",
+        "urlPlaceholder": "https://twitch.tv/…",
+        "goLive": "Go live",
+        "save": "Save",
+        "cancel": "Cancel",
+        "editUrl": "Edit URL",
+        "stopLive": "Stop the stream",
+        "stopConfirmTitle": "Stop the stream?",
+        "stopConfirmDescription": "The player will disappear from the page for every visitor.",
+        "started": "The stream is live.",
+        "stopped": "The stream has been stopped.",
+        "errors": {
+          "invalidUrl": "Invalid URL: only Twitch and YouTube links are accepted.",
+          "notFound": "This venue could not be found.",
+          "failed": "The operation failed. Try again in a moment."
+        }
+      },
+      "news": {
+        "title": "News",
+        "subtitle": "posted by the venue",
+        "pinned": "PINNED",
+        "readMore": "Read more"
+      },
+      "featured": {
+        "title": "Featured",
+        "subtitle": "picked by the venue",
+        "badge": "FEATURED",
+        "registered": "{registered} / {capacity} registered",
+        "register": "Register",
+        "details": "Event details"
+      },
+      "upcoming": {
+        "title": "Upcoming events",
+        "scopeLabel": "Filter events",
+        "scopeMine": "My games",
+        "scopeAll": "All games",
+        "seeAgenda": "See the full schedule →",
+        "filterExplanation": "Filtered on {games, plural, one {the game you follow} other {the # games you follow}} — {hidden, plural, =0 {no other upcoming event} one {# other upcoming event} other {# other upcoming events}} on the venue's other games.",
+        "empty": "No upcoming event at this venue.",
+        "emptyForMyGames": "No upcoming event on the games you follow.",
+        "seats": "{registered} / {capacity} registered",
+        "noRegistration": "no registration",
+        "free": "free entry",
+        "register": "Register",
+        "attend": "Attend"
+      },
+      "info": {
+        "title": "Practical information",
+        "open": "Open",
+        "closed": "Closed",
+        "directions": "Directions",
+        "call": "Call",
+        "mapTitle": "Map — {name}"
+      },
+      "hours": {
+        "title": "Opening hours",
+        "today": "Today",
+        "closed": "Closed"
+      },
+      "follow": {
+        "title": "Follow this venue",
+        "followers": "{count, plural, one {# player follows this venue and gets its announcements.} other {# players follow this venue and get its announcements.}}"
+      },
+      "games": {
+        "title": "Games played here",
+        "count": "{count, plural, one {# game} other {# games}}",
+        "others": "more games",
+        "legend": "the number = upcoming events for that game",
+        "empty": "This venue has not listed any game yet.",
+        "upcoming": "{count, plural, one {# event} other {# events}}"
+      },
+      "agenda": {
+        "legend": {
+          "available": "Registration open",
+          "soldOut": "Sold out",
+          "cancelled": "Cancelled"
+        },
+        "yourRegistrations": "Your registrations here",
+        "rhythm": "Usual rhythm"
+      },
+      "about": {
+        "title": "The venue",
+        "photos": "Photos",
+        "video": "Video tour",
+        "empty": "This venue has not written a presentation yet.",
+        "access": "Getting there",
+        "contact": "Contact",
+        "discord": "Venue Discord",
+        "organizers": "Organisers",
+        "directions": "Directions"
+      }
+    },
     "page": {
       "title": "Game venues",
       "description": "Discover all game venues and their upcoming events"
@@ -1081,6 +1190,7 @@
     },
     "follow": {
       "follow": "Follow",
+      "following": "Following",
       "unfollow": "Unfollow",
       "errors": {
         "generic": "An error occurred"

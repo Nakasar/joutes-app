@@ -133,19 +133,27 @@ export default function EventsCalendarClient({
     gameId: string,
     locParams: LocationParams
   ) => {
-    const newParams = new URLSearchParams();
+    // On repart des paramètres en place plutôt que d'une chaîne vide : la page
+    // qui héberge le calendrier en pose d'autres — l'onglet actif de la vitrine
+    // d'un lieu, par exemple —, et les effacer à chaque changement de mois
+    // renverrait le visiteur sur un autre onglet que celui qu'il regarde.
+    const newParams = new URLSearchParams(searchParams.toString());
     newParams.set("month", month.toString());
     newParams.set("year", year.toString());
     newParams.set("gameId", gameId);
-    
+
     if (locParams) {
       newParams.set("lat", locParams.latitude.toString());
       newParams.set("lon", locParams.longitude.toString());
       newParams.set("distance", locParams.distance.toString());
+    } else {
+      newParams.delete("lat");
+      newParams.delete("lon");
+      newParams.delete("distance");
     }
-    
+
     router.push(`${basePath}?${newParams.toString()}`, { scroll: false });
-  }, [router, basePath]);
+  }, [router, basePath, searchParams]);
 
   // Gérer le changement de mois
   const handleMonthChange = useCallback((newMonth: number, newYear: number) => {

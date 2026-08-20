@@ -1003,6 +1003,115 @@
     }
   },
   "Lairs": {
+    "portal": {
+      "openUntil": "Aperto oggi fino alle {time}",
+      "closedNow": "Attualmente chiuso",
+      "tabs": {
+        "label": "Sezioni del locale",
+        "news": "Notizie",
+        "agenda": "Calendario",
+        "games": "Giochi giocati qui",
+        "about": "Informazioni"
+      },
+      "live": {
+        "badge": "IN DIRETTA",
+        "since": "da {duration}",
+        "viewers": "{count, plural, one {# spettatore} other {# spettatori}}",
+        "staffOnlyNotice": "visibile solo allo staff del locale — i visitatori vedono solo il player",
+        "emptyTitle": "Nessuna diretta in corso",
+        "emptyDescription": "Incolla l'URL Twitch o YouTube: il player passa in cima alla pagina per tutti.",
+        "urlLabel": "URL della diretta",
+        "urlPlaceholder": "https://twitch.tv/…",
+        "goLive": "Vai in diretta",
+        "save": "Salva",
+        "cancel": "Annulla",
+        "editUrl": "Modifica l'URL",
+        "stopLive": "Interrompi la diretta",
+        "stopConfirmTitle": "Interrompere la diretta?",
+        "stopConfirmDescription": "Il player sparirà dalla pagina per tutti i visitatori.",
+        "started": "La diretta è online.",
+        "stopped": "La diretta è stata interrotta.",
+        "errors": {
+          "invalidUrl": "URL non valido: sono accettati solo link Twitch e YouTube.",
+          "notFound": "Questo locale non è stato trovato.",
+          "failed": "L'operazione non è riuscita. Riprova tra un istante."
+        }
+      },
+      "news": {
+        "title": "Notizie",
+        "subtitle": "pubblicate dal locale",
+        "pinned": "IN EVIDENZA",
+        "readMore": "Scopri di più"
+      },
+      "featured": {
+        "title": "In primo piano",
+        "subtitle": "scelto dal locale",
+        "badge": "IN PRIMO PIANO",
+        "registered": "{registered} / {capacity} iscritti",
+        "register": "Iscriviti",
+        "details": "Dettagli dell'evento"
+      },
+      "upcoming": {
+        "title": "Prossimi eventi",
+        "scopeLabel": "Filtra gli eventi",
+        "scopeMine": "I miei giochi",
+        "scopeAll": "Tutti i giochi",
+        "seeAgenda": "Vedi il calendario completo →",
+        "filterExplanation": "Filtrato su {games, plural, one {il gioco che segui} other {i # giochi che segui}} — {hidden, plural, =0 {nessun altro evento in arrivo} one {# altro evento in arrivo} other {# altri eventi in arrivo}} sugli altri giochi del locale.",
+        "empty": "Nessun evento in arrivo in questo locale.",
+        "emptyForMyGames": "Nessun evento in arrivo sui giochi che segui.",
+        "seats": "{registered} / {capacity} iscritti",
+        "noRegistration": "senza iscrizione",
+        "free": "ingresso libero",
+        "register": "Iscriviti",
+        "attend": "Vai"
+      },
+      "info": {
+        "title": "Informazioni pratiche",
+        "open": "Aperto",
+        "closed": "Chiuso",
+        "directions": "Itinerario",
+        "call": "Chiama",
+        "mapTitle": "Mappa — {name}"
+      },
+      "hours": {
+        "title": "Orari",
+        "today": "Oggi",
+        "closed": "Chiuso"
+      },
+      "follow": {
+        "title": "Segui il locale",
+        "followers": "{count, plural, one {# giocatore segue questo locale e riceve i suoi annunci.} other {# giocatori seguono questo locale e ricevono i suoi annunci.}}"
+      },
+      "games": {
+        "title": "Giochi giocati qui",
+        "count": "{count, plural, one {# gioco} other {# giochi}}",
+        "others": "altri giochi",
+        "legend": "il numero = eventi in arrivo per quel gioco",
+        "empty": "Questo locale non ha ancora indicato giochi.",
+        "upcoming": "{count, plural, one {# evento} other {# eventi}}"
+      },
+      "agenda": {
+        "legend": {
+          "available": "Iscrizioni aperte",
+          "soldOut": "Esaurito",
+          "cancelled": "Annullato"
+        },
+        "yourRegistrations": "Le tue iscrizioni qui",
+        "rhythm": "Ritmo abituale"
+      },
+      "about": {
+        "title": "Il locale",
+        "photos": "Foto",
+        "video": "Visita in video",
+        "empty": "Questo locale non ha ancora scritto una presentazione.",
+        "access": "Come arrivare",
+        "contact": "Contatti",
+        "discord": "Discord del locale",
+        "organizers": "Organizzatori",
+        "directions": "Itinerario"
+      }
+    },
     "page": {
       "title": "Luoghi di gioco",
       "description": "Scopri tutti i luoghi di gioco e i loro prossimi eventi"
@@ -1081,6 +1190,7 @@
     },
     "follow": {
       "follow": "Segui",
+      "following": "Seguito",
       "unfollow": "Smetti di seguire",
       "errors": {
         "generic": "Si è verificato un errore"
