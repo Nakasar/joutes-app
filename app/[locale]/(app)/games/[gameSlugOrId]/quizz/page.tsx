@@ -1,27 +1,27 @@
-import { getGameBySlugOrId } from "@/lib/db/games.ts";
+import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { getQuizzes } from "@/lib/db/quizzes.ts";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Button } from "@/components/ui/button.tsx";
 import { Link } from "@/i18n/navigation.ts";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import QuizCard from "./QuizCard.tsx";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
+import { QuizzHeaderSkeleton, QuizzListSkeleton } from "./QuizzSkeletons.tsx";
 
 const PAGE_SIZE = 9;
 
+type GameParams = Promise<{ gameSlugOrId: string }>;
+
 interface GameQuizzPageProps {
-  params: Promise<{ gameSlugOrId: string }>;
+  params: GameParams;
   searchParams: Promise<{ page?: string }>;
 }
 
 export async function generateMetadata({ params }: GameQuizzPageProps): Promise<Metadata> {
   const { gameSlugOrId } = await params;
-  const game = await getGameBySlugOrId(gameSlugOrId);
+  const game = await readGameBySlugOrId(gameSlugOrId);
   const [t, tQuizz] = await Promise.all([
     getTranslations("Games.quizz"),
     getTranslations("Quizz.metadata"),
@@ -49,9 +49,55 @@ export async function generateMetadata({ params }: GameQuizzPageProps): Promise<
   };
 }
 
-export default async function GameQuizzPage({ params, searchParams }: GameQuizzPageProps) {
+/**
+ * Deux frontières plutôt qu'une : l'en-tête ne dépend que du jeu, la liste
+ * dépend en plus de la page demandée. Les séparer garde le titre en place
+ * quand on tourne les pages, au lieu de le faire clignoter avec la liste.
+ *
+ * La page ne fait plus qu'assembler : les promesses `params` et `searchParams`
+ * descendent telles quelles, et ne sont attendues que sous frontière. Les
+ * attendre ici rendrait toute la route dynamique.
+ */
+export default function GameQuizzPage({ params, searchParams }: GameQuizzPageProps) {
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-7xl space-y-6">
+      <Suspense fallback={<QuizzHeaderSkeleton />}>
+        <QuizzHeader params={params} />
+      </Suspense>
+
+      <Suspense fallback={<QuizzListSkeleton />}>
+        <QuizzList params={params} searchParams={searchParams} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function QuizzHeader({ params }: { params: GameParams }) {
   const { gameSlugOrId } = await params;
-  const game = await getGameBySlugOrId(gameSlugOrId);
+  const game = await readGameBySlugOrId(gameSlugOrId);
+
+  if (!game) {
+    notFound();
+  }
+
+  const t = await getTranslations("Games.quizz");
+
+  return (
+    <div className="flex flex-row flex-wrap items-center gap-4">
+      <Button asChild variant="outline">
+        <Link href={`/games/${game.slug ?? gameSlugOrId}`}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          {t("back")}
+        </Link>
+      </Button>
+      <h1 className="text-3xl font-bold">{t("title", { gameName: game.name })}</h1>
+    </div>
+  );
+}
+
+async function QuizzList({ params, searchParams }: GameQuizzPageProps) {
+  const { gameSlugOrId } = await params;
+  const game = await readGameBySlugOrId(gameSlugOrId);
 
   if (!game) {
     notFound();
@@ -66,17 +112,7 @@ export default async function GameQuizzPage({ params, searchParams }: GameQuizzP
   ]);
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl space-y-6">
-      <div className="flex flex-row flex-wrap items-center gap-4">
-        <Button asChild variant="outline">
-          <Link href={`/games/${game.slug ?? gameSlugOrId}`}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            {t("back")}
-          </Link>
-        </Button>
-        <h1 className="text-3xl font-bold">{t("title", { gameName: game.name })}</h1>
-      </div>
-
+    <div className="space-y-6">
       {quizzes.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">{t("empty")}</div>
       ) : (
