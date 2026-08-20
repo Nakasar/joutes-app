@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { getEventById } from "@/lib/db/events.ts";
+import { canViewEvent } from "@/lib/events/rules.ts";
 import { getTournamentByEventId, canManageTournament } from "@/lib/db/tournaments.ts";
 import { Metadata } from "next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card.tsx";
@@ -119,7 +120,7 @@ export default async function EventPage({ params, searchParams }: EventPageProps
     (s) => s.userId === session.user.id && s.role === "organizer"
   );
   const isParticipant = session?.user && event.participants?.includes(session.user.id);
-  const hasAccess = !isPrivateEvent || isCreator || isParticipant;
+  const hasAccess = canViewEvent(event, session?.user?.id);
 
   if (!hasAccess) {
     return (

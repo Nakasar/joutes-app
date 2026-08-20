@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { getEventById, addStaffToEvent, removeStaffFromEvent, updateStaffRole } from "@/lib/db/events.ts";
 import { getUserByEmail, getUserByUsernameAndDiscriminator, getUserById } from "@/lib/db/users.ts";
-import { isUserOrganizer } from "@/lib/utils/permissions.ts";
+import { canAddStaffMember, canManageStaff } from "@/lib/events/rules.ts";
 
 /**
  * Ajouter un membre au staff de l'événement
@@ -27,9 +27,10 @@ export async function addStaffMemberAction(
       return { success: false, error: "Événement introuvable" };
     }
 
-    // Seul le créateur peut gérer le staff
-    if (!isUserOrganizer(event, session.user.id)) {
-      return { success: false, error: "Seuls les organisateurs de l'événement peuvent gérer l'équipe" };
+    // Seuls les organisateurs peuvent gérer le staff
+    const allowed = canManageStaff(event, session.user.id);
+    if (!allowed.ok) {
+      return { success: false, error: allowed.error };
     }
 
     // Chercher l'utilisateur par email ou par tag (displayName#discriminator)
@@ -52,15 +53,10 @@ export async function addStaffMemberAction(
       return { success: false, error: "Utilisateur introuvable. Vérifiez le tag (ex: Pseudo#1234) ou l'email." };
     }
 
-    // Vérifier que l'utilisateur n'est pas le créateur
-    if (user.id === event.creatorId) {
-      return { success: false, error: "Le créateur ne peut pas être ajouté comme staff" };
-    }
-
-    // Vérifier si l'utilisateur est déjà staff
-    const existingStaff = event.staff?.find((s) => s.userId === user.id);
-    if (existingStaff) {
-      return { success: false, error: "Cet utilisateur fait déjà partie de l'équipe" };
+    // Ni le créateur, ni quelqu'un déjà dans l'équipe
+    const addable = canAddStaffMember(event, user.id);
+    if (!addable.ok) {
+      return { success: false, error: addable.error };
     }
 
     const result = await addStaffToEvent(eventId, user.id, role);
@@ -103,8 +99,9 @@ export async function removeStaffMemberAction(eventId: string, userId: string) {
       return { success: false, error: "Événement introuvable" };
     }
 
-    if (!isUserOrganizer(event, session.user.id)) {
-      return { success: false, error: "Seuls les organisateurs de l'événement peuvent gérer l'équipe" };
+    const allowed = canManageStaff(event, session.user.id);
+    if (!allowed.ok) {
+      return { success: false, error: allowed.error };
     }
 
     const result = await removeStaffFromEvent(eventId, userId);
@@ -142,8 +139,9 @@ export async function updateStaffRoleAction(
       return { success: false, error: "Événement introuvable" };
     }
 
-    if (!isUserOrganizer(event, session.user.id)) {
-      return { success: false, error: "Seuls les organisateurs de l'événement peuvent gérer l'équipe" };
+    const allowed = canManageStaff(event, session.user.id);
+    if (!allowed.ok) {
+      return { success: false, error: allowed.error };
     }
 
     const result = await updateStaffRole(eventId, userId, role);

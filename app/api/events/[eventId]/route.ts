@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { getEventById } from "@/lib/db/events";
+import { canViewEvent } from "@/lib/events/rules";
 
 type Params = { params: Promise<{ eventId: string }> };
 
@@ -26,9 +27,7 @@ export async function GET(request: NextRequest, { params }: Params) {
     const isPrivateEvent = !event.lairId;
     if (isPrivateEvent) {
       const session = await auth.api.getSession({ headers: await headers() });
-      const isCreator = session?.user && event.creatorId === session.user.id;
-      const isParticipant = session?.user && event.participants?.includes(session.user.id);
-      if (!isCreator && !isParticipant) {
+      if (!canViewEvent(event, session?.user?.id)) {
         return NextResponse.json({ error: "Accès non autorisé" }, { status: 403 });
       }
     }
