@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 import { AccountPanelSkeleton } from "@/components/AccountPanelSkeleton.tsx";
 import OAuthConsentComponent from "@/app/[locale]/(app)/oauth/consent/ConsentComponent.tsx";
-import {auth} from "@/lib/auth.ts";
-import {headers} from "next/headers";
+import { auth } from "@/lib/auth.ts";
+import { headers } from "next/headers";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

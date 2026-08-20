@@ -44,9 +44,9 @@ async function JoinTournamentPageContent({
 }
 
 /**
- * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
- * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
- * porte ait répondu.
+ * Pas de porte ici — l'inscription par code est ouverte. Ce qui fait suspendre
+ * est le code de l'URL : la coquille ne sait pas encore de quel tournoi il
+ * s'agit, donc elle ne garde que le conteneur et la silhouette.
  */
 export default function JoinTournamentPage(props: Parameters<typeof JoinTournamentPageContent>[0]) {
   return (

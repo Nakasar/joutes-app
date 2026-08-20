@@ -41,9 +41,9 @@ async function TournamentProjectionPageContent({
 }
 
 /**
- * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
- * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
- * porte ait répondu.
+ * Pas de porte ici — l'écran est public. Ce qui le fait suspendre est le code
+ * de l'URL : la coquille ne sait pas encore de quel tournoi il s'agit, donc
+ * elle ne garde que le conteneur et la silhouette.
  */
 export default function TournamentProjectionPage(props: Parameters<typeof TournamentProjectionPageContent>[0]) {
   return (

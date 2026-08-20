@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { Bell } from "lucide-react";
 import { AccountPanelSkeleton } from "@/components/AccountPanelSkeleton.tsx";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
@@ -11,7 +12,6 @@ export const metadata: Metadata = {
   title: "Notifications",
   robots: { index: false, follow: false },
 };
-import { Bell } from "lucide-react";
 
 type NotificationsPageProps = {
   searchParams: Promise<{
