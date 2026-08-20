@@ -1,7 +1,10 @@
+import { LeagueMatchesSkeleton } from "./LeagueMatchesSkeleton.tsx";
+import { Suspense, cache } from "react";
 import { getLeagueById, getLeagueParticipant, isLeagueOrganizer } from "@/lib/db/leagues.ts";
 import { getMatches } from "@/lib/db/matches.ts";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { DateTime } from "luxon";
 import { Link } from "@/i18n/navigation.ts";
@@ -11,10 +14,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge.tsx";
 import { ArrowLeft, ChevronLeft, ChevronRight, MapPin, Swords, Trophy } from "lucide-react";
 import { LeagueTypeMatch } from "@/lib/types/Match.ts";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
 
 const PAGE_SIZE = 20;
 
@@ -94,6 +93,11 @@ export async function generateMetadata({
 }: {
   params: Promise<{ leagueId: string }>;
 }): Promise<Metadata> {
+  // Le pilote Mongo touche à l'horloge en lisant la base, ce qu'un prérendu
+  // ne sait pas figer. Les métadonnées s'exécutent hors de la frontière de la
+  // page : le déblocage du corps ne les couvre pas.
+  await connection();
+
   const { leagueId } = await params;
   const league = await getLeagueById(leagueId);
 
@@ -113,37 +117,107 @@ export async function generateMetadata({
   };
 }
 
-export default async function LeagueMatchesPage({
-  params,
-  searchParams,
-}: LeagueMatchesPageProps) {
-  const [{ leagueId }, { page: pageParam }] = await Promise.all([params, searchParams]);
-
-  const requestedPage = Number.parseInt(pageParam || "1", 10);
-  const parsedPage = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+/**
+ * La ligue, lue une fois par rendu — et sa porte de confidentialité avec elle.
+ *
+ * Même forme que la page d'un lieu : une ligue publique s'affiche dès sa
+ * lecture, une ligue privée n'ouvre qu'à ses participants et à son
+ * organisation, et **la session n'est interrogée que dans ce second cas**.
+ */
+const requireVisibleLeague = cache(async (leagueId: string) => {
+  // Le pilote Mongo touche à l'horloge en lisant la ligue, ce qu'un prérendu ne
+  // sait pas figer, et aucune frontière n'y change rien.
+  await connection();
 
   const league = await getLeagueById(leagueId);
   if (!league) {
     notFound();
   }
 
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  if (league.isPublic) {
+    return league;
+  }
 
+  const session = await auth.api.getSession({ headers: await headers() });
   const leagueParticipant = session?.user?.id
     ? await getLeagueParticipant(league.id, session.user.id)
     : null;
-
   const canManage = session?.user?.id
     ? await isLeagueOrganizer(leagueId, session.user.id)
     : false;
 
-  const isParticipant = !!leagueParticipant;
-
-  if (!league.isPublic && !isParticipant && !canManage) {
+  if (!leagueParticipant && !canManage) {
     notFound();
   }
+
+  return league;
+});
+
+/**
+ * Deux dépendances, donc deux frontières.
+ *
+ * L'en-tête — le titre, le nom de la ligue, le nombre de matchs — sort du
+ * document de ligue, déjà lu. La liste demande une seconde requête, paginée.
+ * Les séparer fait apparaître le titre sans attendre la page de résultats, et
+ * le garde en place quand on tourne les pages.
+ */
+export default function LeagueMatchesPage({ params, searchParams }: LeagueMatchesPageProps) {
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="space-y-6">
+        <Suspense fallback={<LeagueMatchesSkeleton section="header" />}>
+          <LeagueMatchesHeader params={params} />
+        </Suspense>
+
+        <Suspense fallback={<LeagueMatchesSkeleton section="list" />}>
+          <LeagueMatchesList params={params} searchParams={searchParams} />
+        </Suspense>
+      </div>
+    </div>
+  );
+}
+
+async function LeagueMatchesHeader({ params }: Pick<LeagueMatchesPageProps, "params">) {
+  const { leagueId } = await params;
+  const league = await requireVisibleLeague(leagueId);
+  const totalMatches = (league.matches || []).length;
+
+  return (
+    <>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-start gap-4">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href={`/leagues/${league.id}`}>
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Swords className="h-7 w-7" />
+              Historique des matchs
+            </h1>
+            <p className="text-muted-foreground">
+              {totalMatches} match{totalMatches > 1 ? "s" : ""} dans la ligue {league.name}
+            </p>
+          </div>
+        </div>
+
+        <Button variant="outline" asChild>
+          <Link href={`/leagues/${league.id}`}>
+            Retour a la ligue
+          </Link>
+        </Button>
+      </div>
+    </>
+  );
+}
+
+async function LeagueMatchesList({ params, searchParams }: LeagueMatchesPageProps) {
+  const [{ leagueId }, { page: pageParam }] = await Promise.all([params, searchParams]);
+  const league = await requireVisibleLeague(leagueId);
+
+  const requestedPage = Number.parseInt(pageParam || "1", 10);
+  const parsedPage = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
 
   const gameById = new Map(league.games.map((game) => [game.id, game]));
   const lairById = new Map(league.lairs.map((lair) => [lair.id, lair]));
@@ -184,177 +258,150 @@ export default async function LeagueMatchesPage({
   const buildPageHref = (page: number) => `/leagues/${league.id}/matches?page=${page}`;
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="space-y-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <Button variant="ghost" size="icon" asChild>
-              <Link href={`/leagues/${league.id}`}>
-                <ArrowLeft className="h-4 w-4" />
-              </Link>
-            </Button>
-            <div className="space-y-1">
-              <h1 className="text-3xl font-bold flex items-center gap-2">
-                <Swords className="h-7 w-7" />
-                Historique des matchs
-              </h1>
-              <p className="text-muted-foreground">
-                {totalMatches} match{totalMatches > 1 ? "s" : ""} dans la ligue {league.name}
-              </p>
-            </div>
-          </div>
+    <>
+      {pageMatches.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            Aucun match n&apos;a encore ete enregistre dans cette ligue.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {pageMatches.map((match) => {
+            const playedAt = toDateTime(match.playedAt).setLocale("fr");
+            const winners = new Set(match.winnerIds || []);
+            const playersAwaitingConfirmation = match.playerIds.filter(
+              (playerId) => !(match.confirmedPlayerIds || []).includes(playerId)
+            );
+            const game = gameById.get(match.gameId);
+            const lairName =
+              (match.lairId ? lairById.get(match.lairId)?.name : undefined) ||
+              match.lairName ||
+              "Lieu non renseigne";
 
-          <Button variant="outline" asChild>
-            <Link href={`/leagues/${league.id}`}>
-              Retour a la ligue
-            </Link>
-          </Button>
-        </div>
-
-        {pageMatches.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center text-muted-foreground">
-              Aucun match n&apos;a encore ete enregistre dans cette ligue.
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {pageMatches.map((match) => {
-              const playedAt = toDateTime(match.playedAt).setLocale("fr");
-              const winners = new Set(match.winnerIds || []);
-              const playersAwaitingConfirmation = match.playerIds.filter(
-                (playerId) => !(match.confirmedPlayerIds || []).includes(playerId)
-              );
-              const game = gameById.get(match.gameId);
-              const lairName =
-                (match.lairId ? lairById.get(match.lairId)?.name : undefined) ||
-                match.lairName ||
-                "Lieu non renseigne";
-
-              return (
-                <Card key={match.id}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between gap-2">
-                      <CardTitle className="text-lg">
-                        {game?.name || "Jeu inconnu"}
-                      </CardTitle>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={match.status === "CONFIRMED" ? "default" : "secondary"}>
-                          {match.status === "CONFIRMED"
-                            ? "Confirme"
-                            : match.status === "REPORTED"
-                            ? "Rapporte"
-                            : "En attente"}
-                        </Badge>
-                      </div>
+            return (
+              <Card key={match.id}>
+                <CardHeader>
+                  <div className="flex items-center justify-between gap-2">
+                    <CardTitle className="text-lg">
+                      {game?.name || "Jeu inconnu"}
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={match.status === "CONFIRMED" ? "default" : "secondary"}>
+                        {match.status === "CONFIRMED"
+                          ? "Confirme"
+                          : match.status === "REPORTED"
+                          ? "Rapporte"
+                          : "En attente"}
+                      </Badge>
                     </div>
-                    <CardDescription>
-                      {playedAt.isValid
-                        ? playedAt.toFormat("dd LLL yyyy a HH:mm")
-                        : "Date inconnue"}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Joueurs</p>
-                      <div className="flex flex-wrap gap-2">
-                        {match.playerIds.map((playerId) => {
-                          const player = playerById.get(playerId);
-                          const playerName = formatPlayerName(player);
-                          const isWinner = winners.has(playerId);
+                  </div>
+                  <CardDescription>
+                    {playedAt.isValid
+                      ? playedAt.toFormat("dd LLL yyyy a HH:mm")
+                      : "Date inconnue"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Joueurs</p>
+                    <div className="flex flex-wrap gap-2">
+                      {match.playerIds.map((playerId) => {
+                        const player = playerById.get(playerId);
+                        const playerName = formatPlayerName(player);
+                        const isWinner = winners.has(playerId);
 
-                          return (
-                            <Badge key={`${match.id}-${playerId}`} variant={isWinner ? "default" : "outline"}>
-                              {isWinner && <Trophy className="h-3 w-3 mr-1" />}
-                              {playerName}
-                            </Badge>
-                          );
-                        })}
-                      </div>
+                        return (
+                          <Badge key={`${match.id}-${playerId}`} variant={isWinner ? "default" : "outline"}>
+                            {isWinner && <Trophy className="h-3 w-3 mr-1" />}
+                            {playerName}
+                          </Badge>
+                        );
+                      })}
                     </div>
+                  </div>
 
-                    {playersAwaitingConfirmation.length > 0 && (
-                      <p className="text-xs text-muted-foreground">
-                        En attente de confirmation joueur :{" "}
-                        {playersAwaitingConfirmation
-                          .map((playerId) => formatPlayerName(playerById.get(playerId)))
-                          .join(", ")}
-                      </p>
-                    )}
-
-                    {league.lairIds.length > 0 && match.lairId && !match.lairConfirmedBy && (
-                      <p className="text-xs text-muted-foreground">
-                        En attente de validation du lieu
-                      </p>
-                    )}
-
-                    <p className="text-sm text-muted-foreground flex items-center gap-1">
-                      <MapPin className="h-3.5 w-3.5" />
-                      {lairName}
+                  {playersAwaitingConfirmation.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      En attente de confirmation joueur :{" "}
+                      {playersAwaitingConfirmation
+                        .map((playerId) => formatPlayerName(playerById.get(playerId)))
+                        .join(", ")}
                     </p>
+                  )}
 
-                    {match.notes && (
-                      <p className="text-sm text-muted-foreground border-t pt-2">
-                        {match.notes}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+                  {league.lairIds.length > 0 && match.lairId && !match.lairConfirmedBy && (
+                    <p className="text-xs text-muted-foreground">
+                      En attente de validation du lieu
+                    </p>
+                  )}
 
-        {totalPages > 1 && (
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {currentPage > 1 ? (
-              <Button variant="outline" size="sm" asChild>
-                <Link href={buildPageHref(currentPage - 1)}>
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Precedent
-                </Link>
-              </Button>
-            ) : (
-              <Button variant="outline" size="sm" disabled>
+                  <p className="text-sm text-muted-foreground flex items-center gap-1">
+                    <MapPin className="h-3.5 w-3.5" />
+                    {lairName}
+                  </p>
+
+                  {match.notes && (
+                    <p className="text-sm text-muted-foreground border-t pt-2">
+                      {match.notes}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {currentPage > 1 ? (
+            <Button variant="outline" size="sm" asChild>
+              <Link href={buildPageHref(currentPage - 1)}>
                 <ChevronLeft className="h-4 w-4 mr-1" />
                 Precedent
-              </Button>
-            )}
+              </Link>
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" disabled>
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Precedent
+            </Button>
+          )}
 
-            <div className="flex items-center gap-1">
-              {getPaginationPages(currentPage, totalPages).map((page, index) =>
-                page === "..." ? (
-                  <span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">
-                    ...
-                  </span>
-                ) : page === currentPage ? (
-                  <Button key={page} size="sm" className="min-w-[40px]" disabled>
-                    {page}
-                  </Button>
-                ) : (
-                  <Button key={page} variant="outline" size="sm" className="min-w-[40px]" asChild>
-                    <Link href={buildPageHref(page)}>{page}</Link>
-                  </Button>
-                )
-              )}
-            </div>
-
-            {currentPage < totalPages ? (
-              <Button variant="outline" size="sm" asChild>
-                <Link href={buildPageHref(currentPage + 1)}>
-                  Suivant
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Link>
-              </Button>
-            ) : (
-              <Button variant="outline" size="sm" disabled>
-                Suivant
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
+          <div className="flex items-center gap-1">
+            {getPaginationPages(currentPage, totalPages).map((page, index) =>
+              page === "..." ? (
+                <span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">
+                  ...
+                </span>
+              ) : page === currentPage ? (
+                <Button key={page} size="sm" className="min-w-[40px]" disabled>
+                  {page}
+                </Button>
+              ) : (
+                <Button key={page} variant="outline" size="sm" className="min-w-[40px]" asChild>
+                  <Link href={buildPageHref(page)}>{page}</Link>
+                </Button>
+              )
             )}
           </div>
-        )}
-      </div>
-    </div>
+
+          {currentPage < totalPages ? (
+            <Button variant="outline" size="sm" asChild>
+              <Link href={buildPageHref(currentPage + 1)}>
+                Suivant
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Link>
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" disabled>
+              Suivant
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          )}
+        </div>
+      )}
+    </>
   );
 }

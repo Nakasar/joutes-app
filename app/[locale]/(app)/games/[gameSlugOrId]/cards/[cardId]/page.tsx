@@ -19,8 +19,11 @@ import {isAdmin} from "@/lib/config/admins.ts";
 import {hasPermission} from "@/lib/db/permissions.ts";
 import AddErrataButton from "@/app/[locale]/(app)/games/[gameSlugOrId]/cards/[cardId]/AddErrataButton.tsx";
 import {getLocale, getTranslations} from "next-intl/server";
+import {Suspense} from "react";
+import {connection} from "next/server";
+import {CardDetailSkeleton, CardNavSkeleton} from "./CardDetailSkeletons.tsx";
 import {DateTime} from "luxon";
-import {getGameBySlugOrId} from "@/lib/db/games.ts";
+import {readGameBySlugOrId} from "@/lib/db/games-cached.ts";
 import {ObjectId} from "mongodb";
 import {GameToolsNavBar} from "@/components/games/GameToolsNavBar.tsx";
 import {Errata} from "@/lib/types/errata.ts";
@@ -41,10 +44,6 @@ import CardPriceDetails from "@/components/cards/CardPriceDetails.tsx";
 import {getCardPrices} from "@/lib/db/card-prices.ts";
 import { UserLabel } from "@/components/UserLabel.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
 function hasNegativeVoteRatio(errata: Errata): boolean {
   return errata.votes.negative > errata.votes.positive;
 }
@@ -56,6 +55,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const {cardId} = await params;
   const t = await getTranslations("Games");
+
+  // Même piège Mongo que dans le corps, à désarmer une seconde fois : les
+  // métadonnées s'exécutent hors de la frontière de la page, avec leur propre
+  // lecture de la carte.
+  await connection();
 
   const card = await db.collection<BoosterCard>("cards").findOne({id: cardId});
 
@@ -86,12 +90,17 @@ export async function generateMetadata({
   };
 }
 
-export default async function RiftboundCardDetailPage({
+async function CardDetail({
                                                         params,
                                                       }: {
   params: Promise<{ cardId: string; gameSlugOrId: string }>;
 }) {
   const {cardId, gameSlugOrId} = await params;
+
+  // Le pilote Mongo touche à l'horloge en lisant la carte, ce qu'un prérendu ne
+  // sait pas figer, et aucune frontière n'y change rien.
+  await connection();
+
   const locale = await getLocale();
   const ruleLang = locale === "fr" ? "fr" : "en";
   const t = await getTranslations("Games");
@@ -99,7 +108,7 @@ export default async function RiftboundCardDetailPage({
   const session = await auth.api.getSession({headers: await headers()});
   const userId = session?.user?.id;
 
-  const game = await getGameBySlugOrId(gameSlugOrId);
+  const game = await readGameBySlugOrId(gameSlugOrId);
   if (!game) {
     return (
       <div className="container mx-auto p-6">
@@ -358,198 +367,233 @@ export default async function RiftboundCardDetailPage({
   });
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex flex-row flex-wrap justify-between gap-4">
-        <div className="flex flex-row flex-wrap items-center gap-4">
-          <Button asChild variant="outline">
-            <Link href={`/games/${gameSlugOrId}/cards`}>
-              ← {t("cards.detail.backToList")}
-            </Link>
-          </Button>
-        </div>
-        <GameToolsNavBar gameSlug={gameSlugOrId} currentTab={'cards'} />
+  <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,22rem)_1fr] lg:items-start">
+    {/* Collante, mais jamais plus haute que l'écran : sur un portable, une
+        carte suivie de ses variantes dépasse la fenêtre, et son bas
+        deviendrait alors impossible à atteindre. */}
+    <div className="flex flex-col gap-4 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
+      {/* Une carte toujours foil est présentée comme telle : voile irisé sur
+          l'illustration, comme dans la collection. */}
+      <div className={`relative overflow-hidden rounded-xl shadow-lg ${card.foil ? "foil-shine" : ""}`}>
+        <img
+          src={card.image}
+          alt={card.name}
+          className="w-full"
+        />
       </div>
+
+      {userId && (
+        <div className="flex flex-wrap items-center gap-2">
+          <CollectionManager
+            cardId={card.id}
+            gameSlug={game.slug ?? gameSlugOrId}
+            cardName={card.name}
+            setCode={card.setCode}
+            collectorNumber={card.collectorNumber}
+            image={card.image}
+            alwaysFoil={card.foil === true}
+            printings={printings}
+          />
+          <AddToWishlistButton
+            cardId={card.id}
+            gameSlug={game.slug ?? gameSlugOrId}
+            cardName={card.name}
+            setCode={card.setCode}
+            collectorNumber={card.collectorNumber}
+            image={card.image}
+            cardFoil={card.foil === true}
+            printings={printings}
+            inWishlist={cardInWishlist}
+          />
+        </div>
+      )}
+
+      <CardPriceDetails price={cardPrice} gameSlug={game.slug ?? gameSlugOrId} />
+
+      {printings.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {t("cards.detail.printingsTitle")} · {printings.length}
+          </span>
+          <ul className="grid grid-cols-3 gap-2">
+            {printings.map((printing) => (
+              <li key={printing.id} className="flex flex-col gap-1">
+                <div
+                  className={`relative overflow-hidden rounded-md border ${printing.foil ? "foil-shine" : ""}`}
+                >
+                  <img
+                    src={printing.image || card.image}
+                    alt={`${card.name} — ${printing.name}`}
+                    className="w-full"
+                  />
+                </div>
+                <span className="text-xs font-medium leading-tight">{printing.name}</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {printing.foil ? t("cards.detail.foil") : null}
+                  {printing.foil && !printing.image ? " · " : null}
+                  {!printing.image ? t("cards.detail.printingsBaseImage") : null}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+
+    <div className="flex min-w-0 flex-col gap-6">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-3xl font-bold tracking-tight">{card.name}</h1>
+          <span className="font-mono text-sm text-muted-foreground">
+            #{card.setCode}-{card.collectorNumber}
+          </span>
+          {card.foil && (
+            <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:text-amber-300">
+              {t("cards.detail.foil")}
+            </span>
+          )}
+          {card.banned && (
+            <span className="rounded-full bg-red-600 px-2.5 py-0.5 text-xs font-semibold text-white">
+              {t("cards.detail.banned")}
+            </span>
+          )}
+          {userIsAdmin && (
+            <div className="ml-auto">
+              <BanCardButton cardId={cardId} banned={card.banned}/>
+            </div>
+          )}
+        </div>
+
+        {attributeChips.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {attributeChips.map((chip) => (
+              <div
+                key={chip.key}
+                className="flex items-center gap-2 rounded-lg border bg-muted/40 px-3 py-1.5"
+              >
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{chip.label}</span>
+                <span className="text-sm font-semibold">{chip.value}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {card.text && (
+        <div className="flex flex-col gap-2 rounded-xl border bg-muted/30 p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              {t("cards.detail.cardTextTitle")}
+            </span>
+            <CopyCardTextButton
+              text={card.text}
+              label={t("cards.detail.copyCardText")}
+              copiedLabel={t("cards.detail.copyCardTextCopied")}
+            />
+          </div>
+          <div className="prose prose-sm dark:prose-invert max-w-none">
+            <GameMarkdown
+              markdown={annotateCardText(card.text)}
+              gameSlug={game.slug ?? gameSlugOrId}
+              ruleLang={ruleLang}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Ce que les amis et les groupes possèdent demande une lecture par
+          propriétaire : c'est la partie la plus lente de la fiche, et elle
+          n'est qu'un complément. Elle arrive donc après le reste, sans
+          silhouette — lui réserver sa place laisserait un trou pour qui n'a ni
+          amis ni groupe. */}
+      <Suspense fallback={null}>
+        <CardSocialOwnership friends={friendOwnership} playGroups={playGroupOwnership} />
+      </Suspense>
+
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold">
+            {t("cards.detail.errataSectionTitle")}
+          </h2>
+          {userId && (
+            <AddErrataButton
+              cardId={cardId}
+              cardName={card.name}
+              setCode={card.setCode}
+              collectorNumber={card.collectorNumber}
+              image={card.image}
+              gameSlugOrId={gameSlugOrId}
+            />
+          )}
+        </div>
+
+        {errataEntries.length === 0 ? (
+          <p className="text-muted-foreground">
+            {t("cards.detail.noErrata")}
+          </p>
+        ) : (
+          <ErrataList
+            entries={errataEntries}
+            allLabel={t("cards.detail.errataFilterAll")}
+            typeLabels={{
+              errata: t("cards.detail.errataTypes.errata"),
+              clarification: t("cards.detail.errataTypes.clarification"),
+              ruling: t("cards.detail.errataTypes.ruling"),
+            }}
+            emptyForFilter={t("cards.detail.errataNoneForFilter")}
+            showMutedLabel={t("cards.detail.errataShowMuted")}
+            hideMutedLabel={t("cards.detail.errataHideMuted")}
+          />
+        )}
+      </div>
+    </div>
+  </div>
+  );
+}
+
+/**
+ * La fiche d'une carte, découpée par ce dont chaque partie dépend.
+ *
+ * La rangée de navigation ne tient qu'au jeu — lecture en cache — quand le
+ * corps demande la carte, ses errata, les cartes qu'ils mentionnent, les droits
+ * du visiteur et sa collection. Les séparer fait apparaître le retour et la
+ * barre d'outils sans attendre tout cela.
+ *
+ * La barre de recherche est un composant client sans donnée : elle reste
+ * devant, entre les deux.
+ */
+export default function CardDetailPage(props: Parameters<typeof CardDetail>[0]) {
+  return (
+    <div className="container mx-auto p-6">
+      <Suspense fallback={<CardNavSkeleton />}>
+        <CardNav params={props.params} />
+      </Suspense>
 
       <div className="mb-8 mt-4 flex justify-center">
         <CardSearchBar/>
       </div>
 
-      {/* La carte reste sous les yeux pendant qu'on lit ses errata : colonne
-          étroite et collante à gauche, tout le texte à droite. */}
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,22rem)_1fr] lg:items-start">
-        {/* Collante, mais jamais plus haute que l'écran : sur un portable, une
-            carte suivie de ses variantes dépasse la fenêtre, et son bas
-            deviendrait alors impossible à atteindre. */}
-        <div className="flex flex-col gap-4 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
-          {/* Une carte toujours foil est présentée comme telle : voile irisé sur
-              l'illustration, comme dans la collection. */}
-          <div className={`relative overflow-hidden rounded-xl shadow-lg ${card.foil ? "foil-shine" : ""}`}>
-            <img
-              src={card.image}
-              alt={card.name}
-              className="w-full"
-            />
-          </div>
+      <Suspense fallback={<CardDetailSkeleton />}>
+        <CardDetail {...props} />
+      </Suspense>
+    </div>
+  );
+}
 
-          {userId && (
-            <div className="flex flex-wrap items-center gap-2">
-              <CollectionManager
-                cardId={card.id}
-                gameSlug={game.slug ?? gameSlugOrId}
-                cardName={card.name}
-                setCode={card.setCode}
-                collectorNumber={card.collectorNumber}
-                image={card.image}
-                alwaysFoil={card.foil === true}
-                printings={printings}
-              />
-              <AddToWishlistButton
-                cardId={card.id}
-                gameSlug={game.slug ?? gameSlugOrId}
-                cardName={card.name}
-                setCode={card.setCode}
-                collectorNumber={card.collectorNumber}
-                image={card.image}
-                cardFoil={card.foil === true}
-                printings={printings}
-                inWishlist={cardInWishlist}
-              />
-            </div>
-          )}
+async function CardNav({params}: {params: Promise<{ cardId: string; gameSlugOrId: string }>}) {
+  const {gameSlugOrId} = await params;
+  const t = await getTranslations("Games");
 
-          <CardPriceDetails price={cardPrice} gameSlug={game.slug ?? gameSlugOrId} />
-
-          {printings.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {t("cards.detail.printingsTitle")} · {printings.length}
-              </span>
-              <ul className="grid grid-cols-3 gap-2">
-                {printings.map((printing) => (
-                  <li key={printing.id} className="flex flex-col gap-1">
-                    <div
-                      className={`relative overflow-hidden rounded-md border ${printing.foil ? "foil-shine" : ""}`}
-                    >
-                      <img
-                        src={printing.image || card.image}
-                        alt={`${card.name} — ${printing.name}`}
-                        className="w-full"
-                      />
-                    </div>
-                    <span className="text-xs font-medium leading-tight">{printing.name}</span>
-                    <span className="text-[10px] text-muted-foreground">
-                      {printing.foil ? t("cards.detail.foil") : null}
-                      {printing.foil && !printing.image ? " · " : null}
-                      {!printing.image ? t("cards.detail.printingsBaseImage") : null}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-
-        <div className="flex min-w-0 flex-col gap-6">
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-tight">{card.name}</h1>
-              <span className="font-mono text-sm text-muted-foreground">
-                #{card.setCode}-{card.collectorNumber}
-              </span>
-              {card.foil && (
-                <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:text-amber-300">
-                  {t("cards.detail.foil")}
-                </span>
-              )}
-              {card.banned && (
-                <span className="rounded-full bg-red-600 px-2.5 py-0.5 text-xs font-semibold text-white">
-                  {t("cards.detail.banned")}
-                </span>
-              )}
-              {userIsAdmin && (
-                <div className="ml-auto">
-                  <BanCardButton cardId={cardId} banned={card.banned}/>
-                </div>
-              )}
-            </div>
-
-            {attributeChips.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {attributeChips.map((chip) => (
-                  <div
-                    key={chip.key}
-                    className="flex items-center gap-2 rounded-lg border bg-muted/40 px-3 py-1.5"
-                  >
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{chip.label}</span>
-                    <span className="text-sm font-semibold">{chip.value}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {card.text && (
-            <div className="flex flex-col gap-2 rounded-xl border bg-muted/30 p-4">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  {t("cards.detail.cardTextTitle")}
-                </span>
-                <CopyCardTextButton
-                  text={card.text}
-                  label={t("cards.detail.copyCardText")}
-                  copiedLabel={t("cards.detail.copyCardTextCopied")}
-                />
-              </div>
-              <div className="prose prose-sm dark:prose-invert max-w-none">
-                <GameMarkdown
-                  markdown={annotateCardText(card.text)}
-                  gameSlug={game.slug ?? gameSlugOrId}
-                  ruleLang={ruleLang}
-                />
-              </div>
-            </div>
-          )}
-
-          {userId && <CardSocialOwnership friends={friendOwnership} playGroups={playGroupOwnership} />}
-
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-xl font-semibold">
-                {t("cards.detail.errataSectionTitle")}
-              </h2>
-              {userId && (
-                <AddErrataButton
-                  cardId={cardId}
-                  cardName={card.name}
-                  setCode={card.setCode}
-                  collectorNumber={card.collectorNumber}
-                  image={card.image}
-                  gameSlugOrId={gameSlugOrId}
-                />
-              )}
-            </div>
-
-            {errataEntries.length === 0 ? (
-              <p className="text-muted-foreground">
-                {t("cards.detail.noErrata")}
-              </p>
-            ) : (
-              <ErrataList
-                entries={errataEntries}
-                allLabel={t("cards.detail.errataFilterAll")}
-                typeLabels={{
-                  errata: t("cards.detail.errataTypes.errata"),
-                  clarification: t("cards.detail.errataTypes.clarification"),
-                  ruling: t("cards.detail.errataTypes.ruling"),
-                }}
-                emptyForFilter={t("cards.detail.errataNoneForFilter")}
-                showMutedLabel={t("cards.detail.errataShowMuted")}
-                hideMutedLabel={t("cards.detail.errataHideMuted")}
-              />
-            )}
-          </div>
-        </div>
+  return (
+    <div className="flex flex-row flex-wrap justify-between gap-4">
+      <div className="flex flex-row flex-wrap items-center gap-4">
+        <Button asChild variant="outline">
+          <Link href={`/games/${gameSlugOrId}/cards`}>
+            ← {t("cards.detail.backToList")}
+          </Link>
+        </Button>
       </div>
+      <GameToolsNavBar gameSlug={gameSlugOrId} currentTab={'cards'} />
     </div>
   );
 }

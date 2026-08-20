@@ -17,7 +17,8 @@ function formatSize(bytes: number): string {
 }
 
 export default async function AdminExportsPage() {
-  // TODO: Cache Components adoption. Added to unblock the build: remove this connection() to re-trigger the error and review the fix options.
+  // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
+  // pas figer. Vérifié en le retirant : la route redevient bloquante.
   await connection();
   const [games, exports] = await Promise.all([getAllGames(), getLatestGameExports()]);
 

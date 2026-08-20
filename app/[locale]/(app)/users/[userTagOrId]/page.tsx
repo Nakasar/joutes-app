@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { getPublicUserProfileAction } from "@/app/[locale]/(app)/account/user-actions.ts";
-import { getAllGames } from "@/lib/db/games.ts";
+import { readAllGames } from "@/lib/db/games-cached.ts";
 import { getLairById } from "@/lib/db/lairs.ts";
 import { getAchievementsForUser, getAllAchievements } from "@/lib/db/achievements.ts";
 import { getPublicWishlistsForOwner } from "@/lib/db/wishlists.ts";
@@ -27,10 +27,8 @@ import { displayPlan } from "@/lib/subscriptions/entitlements.ts";
 import { appearanceForPlan } from "@/lib/subscriptions/tone.ts";
 import { cn } from "@/lib/utils.ts";
 import { Metadata } from "next";
-
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
+import { Suspense } from "react";
+import { ProfileSkeleton } from "./ProfileSkeleton.tsx";
 
 interface UserProfilePageProps {
   params: Promise<{
@@ -42,9 +40,8 @@ export async function generateMetadata({
   params,
 }: UserProfilePageProps): Promise<Metadata> {
   const { userTagOrId } = await params;
-  // TODO: Cache Components adoption. Added to unblock the build: remove this connection() to re-trigger the error and review the fix options.
-  // Révélé en corrigeant le `not-found.tsx` de ce segment : tant qu'il
-  // suspendait la coquille, ce piège Mongo restait invisible.
+  // Le pilote Mongo touche à l'horloge en lisant le profil, ce qu'un prérendu ne
+  // sait pas figer, et aucune frontière n'y change rien.
   await connection();
 
   const decodedUserTagOrId = decodeURIComponent(userTagOrId);
@@ -71,12 +68,11 @@ export async function generateMetadata({
   };
 }
 
-export default async function UserProfilePage({ params }: UserProfilePageProps) {
+async function UserProfileContent({ params }: UserProfilePageProps) {
   const { userTagOrId } = await params;
 
-  // TODO: Cache Components adoption. Added to unblock the build: remove this connection() to re-trigger the error and review the fix options.
-  // Révélé en corrigeant le `not-found.tsx` de ce segment : tant qu'il
-  // suspendait la coquille, ce piège Mongo restait invisible.
+  // Le pilote Mongo touche à l'horloge en lisant le profil, ce qu'un prérendu ne
+  // sait pas figer, et aucune frontière n'y change rien.
   await connection();
 
   
@@ -94,7 +90,7 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
   // Récupérer les détails des jeux si le profil est public
   let userGames: Game[] = [];
   if (isPublic && user.games && user.games.length > 0) {
-    const allGames = await getAllGames();
+    const allGames = await readAllGames();
     userGames = user.games
       .map(gameId => allGames.find(g => g.id === gameId))
       .filter((game): game is Game => game !== undefined);
@@ -123,17 +119,6 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
   // Liste de vente (toujours publique, affichée quel que soit isPublic)
   const sellList = await getSellListForOwner({ type: "user", id: user.id });
 
-  // Vérifier si l'utilisateur connecté est admin
-  const isAdmin = await checkAdmin();
-
-  // Le catalogue complet n'intéresse que l'administration : on ne le charge que
-  // pour elle.
-  const allAvailableAchievements: Achievement[] = isAdmin ? await getAllAchievements() : [];
-  // L'abonnement brut : le dialogue d'octroi a besoin de distinguer ce qui est
-  // offert de ce qui vient de Patreon, ce que les plans composés ne disent plus.
-  const adminSubscription = isAdmin ? await getSubscriptionByUserId(user.id) : null;
-  const unlockedIds = new Set(unlocked.map(a => a.id));
-  const availableToUnlock = allAvailableAchievements.filter(a => !unlockedIds.has(a.id));
 
   const userTag = user.displayName && user.discriminator
     ? `${user.displayName}#${user.discriminator}`
@@ -151,8 +136,6 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
   const statuses = visibleStatuses(unlocked);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8">
-      <div className="container mx-auto px-4 max-w-5xl">
         <div className="space-y-8">
           {/* En-tête du profil */}
           <Card>
@@ -190,26 +173,18 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
                     {/* `flex-wrap` : trois boutons d'administration peuvent
                         s'y trouver, tous en `shrink-0`. */}
                     <div className="flex flex-wrap items-center gap-2">
-                      {isAdmin && (
-                        <>
-                          <GrantPlanButton
-                            userId={user.id}
-                            userTag={userTag}
-                            grantedPlans={adminSubscription?.grantedPlans ?? []}
-                            paidPlans={adminSubscription?.plans ?? []}
-                          />
-                          <UnlockAchievementButton
-                            userId={user.id}
-                            userTag={userTag}
-                            availableAchievements={availableToUnlock}
-                          />
-                          <RevokeAchievementButton
-                            userId={user.id}
-                            userTag={userTag}
-                            unlockedAchievements={unlocked}
-                          />
-                        </>
-                      )}
+                      {/* Trois lectures — droits, catalogue de succès,
+                          abonnement brut — pour trois boutons que seule
+                          l'administration voit. Sous leur propre frontière, et
+                          sans silhouette : leur réserver la place déplacerait
+                          le bouton de signalement pour tout le monde. */}
+                      <Suspense fallback={null}>
+                        <ProfileAdminTools
+                          userId={user.id}
+                          userTag={userTag}
+                          unlocked={unlocked}
+                        />
+                      </Suspense>
                       <ReportButton contentType="user" contentId={user.id} />
                     </div>
                   </div>
@@ -489,7 +464,74 @@ export default async function UserProfilePage({ params }: UserProfilePageProps) 
             </Card>
           )}
         </div>
+  );
+}
+
+/**
+ * Le profil, découpé par ce dont chaque partie dépend.
+ *
+ * Le corps tient à une lecture du profil et à quelques lectures de contenu —
+ * jeux suivis, lieux, succès, listes. L'outillage d'administration, lui, coûte
+ * trois lectures de plus pour trois boutons que presque personne ne voit : il a
+ * sa propre frontière, à l'intérieur.
+ */
+export default function UserProfilePage(props: UserProfilePageProps) {
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8">
+      <div className="container mx-auto px-4 max-w-5xl">
+        <Suspense fallback={<ProfileSkeleton />}>
+          <UserProfileContent {...props} />
+        </Suspense>
       </div>
     </div>
+  );
+}
+
+async function ProfileAdminTools({
+  userId,
+  userTag,
+  unlocked,
+}: {
+  userId: string;
+  userTag: string;
+  unlocked: AchievementWithUnlockInfo[];
+}) {
+  const isAdmin = await checkAdmin();
+  if (!isAdmin) {
+    return null;
+  }
+
+  // Le catalogue complet n'intéresse que l'administration : on ne le charge que
+  // pour elle. L'abonnement brut lui sert à distinguer ce qui est offert de ce
+  // qui vient de Patreon, ce que les plans composés ne disent plus.
+  const [allAvailableAchievements, adminSubscription] = await Promise.all([
+    getAllAchievements(),
+    getSubscriptionByUserId(userId),
+  ]);
+
+  const unlockedIds = new Set(unlocked.map((achievement) => achievement.id));
+  const availableToUnlock: Achievement[] = allAvailableAchievements.filter(
+    (achievement) => !unlockedIds.has(achievement.id)
+  );
+
+  return (
+    <>
+      <GrantPlanButton
+        userId={userId}
+        userTag={userTag}
+        grantedPlans={adminSubscription?.grantedPlans ?? []}
+        paidPlans={adminSubscription?.plans ?? []}
+      />
+      <UnlockAchievementButton
+        userId={userId}
+        userTag={userTag}
+        availableAchievements={availableToUnlock}
+      />
+      <RevokeAchievementButton
+        userId={userId}
+        userTag={userTag}
+        unlockedAchievements={unlocked}
+      />
+    </>
   );
 }
