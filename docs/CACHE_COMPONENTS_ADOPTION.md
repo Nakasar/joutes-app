@@ -17,7 +17,7 @@ Next 16.3.1, `cacheComponents: true` sur `main`.
 
 891 pages construites. Avant l'adoption : **zéro** route avec coquille statique.
 
-**8 pages portent encore un opt-out `export const instant = false`** : 3 avec
+**7 pages portent encore un opt-out `export const instant = false`** : 2 avec
 un marqueur `TODO: Cache Components adoption`, et 5 blocages assumés qui portent
 une raison à la place — le layout du portail organisateur de tournoi, les deux
 layouts du portail d'événement, son aiguillage `portal/page.tsx`, et le
@@ -26,7 +26,7 @@ composer l'image de partage.
 
 **Attention en comptant : les marqueurs `TODO` ne comptent pas les opt-outs.**
 Ils marquent aussi les déblocages `await connection()`, qui n'ont rien à voir.
-Il y en a 6 en tout pour 3 opt-outs marqués. Les deux commandes qui donnent
+Il y en a 5 en tout pour 2 opt-outs marqués. Les deux commandes qui donnent
 les vrais chiffres :
 
 ```bash
@@ -590,12 +590,11 @@ Répartition des opt-outs par ce qui bloque la page :
 **Plus aucun lot mécanique n'est disponible.** Chaque route restante demande de
 décider ce qui appartient à la coquille et ce qui arrive en flux.
 
-**Il ne reste que trois pages à adopter**, et ce sont les sept plus grosses de
+**Il ne reste que deux pages à adopter**, et ce sont les sept plus grosses de
 l'application :
 
 | page | lignes |
 |---|---|
-| `users/[userTagOrId]` | 495 |
 | `events/[eventId]` | 474 |
 | `leagues/[leagueId]/matches` | 360 |
 
@@ -681,6 +680,24 @@ pour quatre silhouettes au lieu d'une. Coquille : **17 976 octets**.
 couper », mais : *ces sections attendent-elles des choses différentes ?* Si la
 réponse est non, une frontière suffit, et le commentaire doit dire pourquoi —
 sans quoi la prochaine passe croira à un oubli.
+
+### Sortir ce que presque personne ne voit
+
+Le profil public a confirmé un motif qui s'était déjà présenté sur la fiche
+d'une carte, et qui vaut d'être cherché systématiquement : **une portion
+d'écran qui coûte cher et que presque personne ne voit**.
+
+Ici, trois boutons réservés à l'administration coûtaient trois lectures — droits,
+catalogue complet des succès, abonnement brut — sur le chemin critique de
+*chaque* visiteur du profil. Sous leur propre frontière, ils ne coûtent plus
+rien à personne d'autre.
+
+Ces portions se reconnaissent à deux traits : elles sont **conditionnelles**
+(`{isAdmin && …}`, `{userId && …}`) et **coûteuses**. Elles partent sous
+frontière **sans silhouette** : leur réserver une place déplacerait la mise en
+page pour la majorité qui ne les verra jamais.
+
+Coquille du profil : **18 585 octets**.
 
 Toutes les autres zones sont faites. Les cinq opt-outs restants sont les
 blocages assumés.
