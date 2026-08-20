@@ -86,7 +86,7 @@ async function DocumentHeader({params}: { params: DocumentParams }) {
         </Button>
         <h1 className="text-3xl font-bold">{t('rules.document.title', {gameName: game.name})}</h1>
       </div>
-      <GameToolsNavBar gameSlug={gameSlugOrId} currentTab={'rules'}/>
+      <GameToolsNavBar gameSlug={game.slug} currentTab={'rules'}/>
     </div>
   );
 }

@@ -92,7 +92,7 @@ async function PoliciesHeader({ params }: { params: GameParams }) {
         </Button>
         <h1 className="text-3xl font-bold">{t("policies.title", { gameName: game.name })}</h1>
       </div>
-      <GameToolsNavBar gameSlug={gameSlugOrId} currentTab={'policies'} />
+      <GameToolsNavBar gameSlug={game.slug} currentTab={'policies'} />
     </div>
   );
 }
@@ -145,7 +145,11 @@ async function PoliciesList({
         initialCardsById={cardsById}
         pageSize={PAGE_SIZE}
         gameId={gameId}
-        gameSlug={gameSlugOrId}
+        // Le slug canonique, pas celui de l'URL : cette valeur remonte dans les
+        // `revalidatePath` des actions de ruling. Entré par identifiant, l'URL
+        // aurait invalidé `/games/<id>/policies` quand la création invalide
+        // `/games/<slug>/policies` — deux chemins qui ne se rejoignent jamais.
+        gameSlug={game.slug}
         ruleLang={ruleLang}
         userCanUpdatePolicies={userCanUpdatePolicies}
         userCanVotePolicies={userCanVotePolicies}

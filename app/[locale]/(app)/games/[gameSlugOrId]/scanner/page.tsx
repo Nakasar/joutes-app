@@ -78,7 +78,7 @@ async function ScannerHeader({ params }: { params: GameParams }) {
           {enabled && game ? t("title", { gameName: game.name }) : t("notFoundTitle")}
         </h1>
       </div>
-      <GameToolsNavBar gameSlug={gameSlugOrId} currentTab={"scanner"} />
+      <GameToolsNavBar gameSlug={game?.slug ?? gameSlugOrId} currentTab={"scanner"} />
     </div>
   );
 }

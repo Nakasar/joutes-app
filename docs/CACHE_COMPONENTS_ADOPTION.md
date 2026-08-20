@@ -17,7 +17,7 @@ Next 16.3.1, `cacheComponents: true` sur `main`.
 
 891 pages construites. Avant l'adoption : **zéro** route avec coquille statique.
 
-**102 pages portent encore un opt-out `export const instant = false`** — 97
+**95 pages portent encore un opt-out `export const instant = false`** — 90
 marqueurs `TODO: Cache Components adoption`, plus quatre blocages assumés qui
 portent une raison au lieu d'un TODO : le layout du portail organisateur de
 tournoi, les deux layouts du portail d'événement, et son aiguillage `portal/page.tsx`.
@@ -457,10 +457,15 @@ Répartition des opt-outs par ce qui bloque la page :
 **Plus aucun lot mécanique n'est disponible.** Chaque route restante demande de
 décider ce qui appartient à la coquille et ce qui arrive en flux.
 
-Par zone : `games` 15, `admin` 12, `play-groups` 8, `collection` 7, `account` 7,
-`news` 6, `leagues` 6, `events` 6. `games` et `news` sont publiques — donc
-vérifiables sans session, et visibles par un visiteur non connecté, ce qui en
-fait les plus rentables à traiter ensuite.
+Par zone : `admin` 12, `play-groups` 8, `collection` 7, `account` 7, `news` 6,
+`leagues` 6, `events` 6, `quizz` 5, `games` 3, `tournaments` 3.
+
+`games` est presque faite : il ne reste que le portail du jeu, la fiche de
+carte — les deux plus grosses pages de l'application — et le vérificateur de
+deck, dont le blocage est assumé.
+
+`news` et `quizz` sont publiques, donc vérifiables sans session et visibles
+d'un visiteur non connecté : ce sont les plus rentables à traiter ensuite.
 
 ### Les portails, comme modèle
 

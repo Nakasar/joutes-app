@@ -77,7 +77,7 @@ async function LoopHeader({ params }: { params: GameParams }) {
           {enabled && game ? t("title", { gameName: game.name }) : t("notFoundTitle")}
         </h1>
       </div>
-      <GameToolsNavBar gameSlug={gameSlugOrId} currentTab={"loop"} />
+      <GameToolsNavBar gameSlug={game?.slug ?? gameSlugOrId} currentTab={"loop"} />
     </div>
   );
 }

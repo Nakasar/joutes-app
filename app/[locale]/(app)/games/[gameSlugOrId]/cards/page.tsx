@@ -62,17 +62,24 @@ async function CardsHeader({ params }: { params: GameParams }) {
   const {gameSlugOrId} = await params;
   const t = await getTranslations("Games");
 
+  // Le slug canonique, pas celui de l'URL : entrée par identifiant, la page
+  // afficherait des liens en `/games/<id>/…` à côté d'une barre d'outils qui
+  // pointe ailleurs. La lecture est la même que celle de la barre d'outils, et
+  // elle est en cache : elle ne coûte rien de plus.
+  const game = await readGameBySlugOrId(gameSlugOrId);
+  const gameSlug = game?.slug ?? gameSlugOrId;
+
   return (
     <div className="flex flex-row flex-wrap justify-between">
       <div className="flex flex-row flex-wrap gap-4">
         <Button asChild>
-          <Link href={`/games/${gameSlugOrId}`} className="text-blue-600 hover:underline">
+          <Link href={`/games/${gameSlug}`} className="text-blue-600 hover:underline">
             ← <span className="hidden lg:inline">{t("cards.back")}</span>
           </Link>
         </Button>
         <h1 className="text-3xl font-bold mb-6">{t("cards.search.title")}</h1>
       </div>
-      <GameToolsNavBar gameSlug={gameSlugOrId} currentTab={'cards'} />
+      <GameToolsNavBar gameSlug={gameSlug} currentTab={'cards'} />
     </div>
   );
 }

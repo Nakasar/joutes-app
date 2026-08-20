@@ -74,7 +74,7 @@ async function CubesHeader({ params }: { params: GameParams }) {
           {enabled && game ? t("title", { gameName: game.name }) : t("notFoundTitle")}
         </h1>
       </div>
-      <GameToolsNavBar gameSlug={gameSlugOrId} currentTab={"cubes"} />
+      <GameToolsNavBar gameSlug={game?.slug ?? gameSlugOrId} currentTab={"cubes"} />
     </div>
   );
 }
