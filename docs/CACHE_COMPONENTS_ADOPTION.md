@@ -17,11 +17,12 @@ Next 16.3.1, `cacheComponents: true` sur `main`.
 
 891 pages construites. Avant l'adoption : **zéro** route avec coquille statique.
 
-**84 pages portent encore un opt-out `export const instant = false`** — 79
+**76 pages portent encore un opt-out `export const instant = false`** — 71
 marqueurs `TODO: Cache Components adoption`, plus quatre blocages assumés qui
 portent une raison au lieu d'un TODO : le layout du portail organisateur de
 tournoi, les deux layouts du portail d'événement, et son aiguillage `portal/page.tsx`.
-Neuf pages portent un déblocage `await connection()`.
+Dix-neuf pages portent un déblocage `await connection()` — le piège Mongo est
+désormais la contrainte la plus fréquente sur ce qui reste.
 
 Les pages vivent sous `app/[locale]/(app)/` depuis la correction de collision de
 chemins ; le groupe `(oauth2)` est à côté. Les chemins cités ici en tiennent
@@ -513,12 +514,21 @@ Répartition des opt-outs par ce qui bloque la page :
 **Plus aucun lot mécanique n'est disponible.** Chaque route restante demande de
 décider ce qui appartient à la coquille et ce qui arrive en flux.
 
-Par zone : `admin` 12, `play-groups` 8, `collection` 7, `account` 7,
-`leagues` 6, `events` 6, `games` 3, `tournaments` 3.
+Par zone : `admin` 12, `play-groups` 8, `collection` 7, `account` 7, `events` 6,
+`cubes` 5, `trade` 3, `tournaments` 3, `games` 3, `game-matches` 3, `decks` 3,
+`leagues` 2, `wishlists` 2, `t` 2, `sell-lists` 2, `friends` 2, puis une page
+chacune pour `lairs`, `users`, `policies`, `oauth`, `notifications` et `login`.
 
-`news` et `quizz` sont faites entièrement. `games` est presque faite : il ne
-reste que le portail du jeu, la fiche de carte — les deux plus grosses pages de
-l'application — et le vérificateur de deck, dont le blocage est assumé.
+`news` et `quizz` sont faites entièrement. `games`, `leagues` et `lairs` sont
+presque faites : il n'y reste que les très grosses pages — portail du jeu, fiche
+de carte, page d'une ligue, ses matchs, page d'un lieu — toutes entre 350 et 550
+lignes, qui demandent chacune leur propre passe.
+
+**Le motif est stabilisé.** Les listes publiques sans segment dynamique
+prérendent leur en-tête (~33 Ko) ; les pages à segment dynamique prérendent le
+cadre et leurs silhouettes (~18 Ko). Ce qui reste demande surtout de décider,
+page par page, ce que la coquille a le droit de montrer avant que la porte
+d'authentification ait répondu.
 
 Les zones qui restent sont toutes derrière une session. Ce sont donc celles où
 les pièges de mesure comptent le plus : ni `curl`, ni onglet recyclé.

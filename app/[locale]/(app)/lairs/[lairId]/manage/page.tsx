@@ -1,6 +1,6 @@
 import { requireAdminOrOwner } from "@/lib/middleware/admin.ts";
 import { getLairById } from "@/lib/db/lairs.ts";
-import { getAllGames } from "@/lib/db/games.ts";
+import { readAllGames } from "@/lib/db/games-cached.ts";
 import { getUserById, getUsersFollowingLair } from "@/lib/db/users.ts";
 import { User } from "@/lib/types/User.ts";
 import { notFound } from "next/navigation";
@@ -19,20 +19,63 @@ import { canAttachPro } from "@/lib/subscriptions/seats.ts";
 import { plansFromSubscription } from "@/lib/subscriptions/access.ts";
 import PrivateLairInvitationManager from "./PrivateLairInvitationManager.tsx";
 import PrivateLairFollowersManager from "./PrivateLairFollowersManager.tsx";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { connection } from "next/server";
+import { Suspense } from "react";
+import { EditorFormSkeleton } from "@/components/EditorFormSkeleton.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
+/**
+ * Le bouton de retour ne tient qu'à l'identifiant du lieu : il reste dans la
+ * coquille. Tout le reste — à commencer par le titre, qui nomme le lieu —
+ * attend la porte.
+ */
 export default async function ManageLairPage({
   params,
 }: {
-  params: Promise<{ lairId: string }>;
+  params: Promise<{ locale: string; lairId: string }>;
 }) {
+  const { locale, lairId } = await params;
+  // Le bouton de retour est un `Link` localisé, resté dans la coquille : sans
+  // cet appel, next-intl relit la langue à la requête et rend toute la route
+  // dynamique.
+  setRequestLocale(locale);
+
   const t = await getTranslations("Lairs");
-  const { lairId } = await params;
-  
+
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-5xl">
+      <div className="mb-6">
+        <Button variant="secondary" asChild size="sm">
+          <Link href={`/lairs/${lairId}`}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            {t("manage.backToLair")}
+          </Link>
+        </Button>
+      </div>
+
+      <Suspense fallback={<ManageLairSkeleton />}>
+        <ManageLairContent lairId={lairId} />
+      </Suspense>
+    </div>
+  );
+}
+
+function ManageLairSkeleton() {
+  return (
+    <div className="space-y-6" aria-hidden>
+      <div className="mb-8 h-10 w-96 max-w-full animate-pulse rounded bg-muted" />
+      <EditorFormSkeleton fields={4} />
+    </div>
+  );
+}
+
+async function ManageLairContent({ lairId }: { lairId: string }) {
+  const t = await getTranslations("Lairs");
+
+  // Le pilote Mongo touche à l'horloge en lisant le lieu, ce qu'un prérendu ne
+  // sait pas figer, et aucune frontière n'y change rien.
+  await connection();
+
   // Vérifier que l'utilisateur est admin ou owner du lair
   await requireAdminOrOwner(lairId);
   const lair = await getLairById(lairId);
@@ -41,8 +84,7 @@ export default async function ManageLairPage({
     notFound();
   }
 
-  // Récupérer tous les jeux disponibles
-  const games = await getAllGames();
+  const games = await readAllGames();
 
   // Récupérer les détails des owners
   const ownersDetails = await Promise.all(
@@ -86,16 +128,7 @@ export default async function ManageLairPage({
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-5xl">
-      <div className="mb-6">
-        <Button variant="secondary" asChild size="sm">
-          <Link href={`/lairs/${lairId}`}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            {t("manage.backToLair")}
-          </Link>
-        </Button>
-      </div>
-
+    <>
       <div className="flex items-center gap-3 mb-8">
         <h1 className="text-4xl font-bold">{t("manage.title", { name: lair.name })}</h1>
         {lair.isPrivate && (
@@ -168,6 +201,6 @@ export default async function ManageLairPage({
           </CardContent>
         </Card>
       </div>
-    </div>
+    </>
   );
 }

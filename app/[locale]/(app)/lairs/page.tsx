@@ -1,16 +1,17 @@
 import { searchLairs } from "@/lib/db/lairs.ts";
-import { getAllGames } from "@/lib/db/games.ts";
+import { readAllGames } from "@/lib/db/games-cached.ts";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
+import { connection } from "next/server";
 import { Metadata } from "next";
+import { Suspense } from "react";
 import { MapPin } from "lucide-react";
 import CreatePrivateLairButton from "./CreatePrivateLairButton.tsx";
 import LairsClient from "./LairsClient.tsx";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { ContentListSkeleton } from "@/components/ContentListSkeleton.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
+type SearchParams = Promise<{ gameId?: string }>;
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Lairs");
@@ -26,25 +27,22 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function LairsPage({ searchParams }: { searchParams: Promise<{ gameId?: string }> }) {
+/**
+ * Le titre et l'accroche ne dépendent que de la langue : ils restent dans la
+ * coquille. Cette route n'a pas de segment dynamique, donc pas de coquille de
+ * repli partagée — ce qui est en dehors des frontières est réellement prérendu.
+ */
+export default async function LairsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: SearchParams;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+
   const t = await getTranslations("Lairs");
-
-  // Récupérer l'utilisateur connecté pour afficher ses lairs privés
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-  const { gameId } = await searchParams;
-
-  // Fetch initial data with pagination
-  const [initialLairsData, games] = await Promise.all([
-    searchLairs({
-      gameIds: gameId ? [gameId] : undefined,
-      userId: session?.user?.id,
-      page: 1,
-      limit: 10,
-    }),
-    getAllGames(),
-  ]);
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -59,11 +57,47 @@ export default async function LairsPage({ searchParams }: { searchParams: Promis
               {t("page.description")}
             </p>
           </div>
-          {session?.user && <CreatePrivateLairButton />}
+          {/* Pas de silhouette : ce bouton ne s'affiche qu'aux comptes
+              connectés, et lui réserver sa place la ferait sauter aux autres. */}
+          <Suspense fallback={null}>
+            <PrivateLairButton />
+          </Suspense>
         </div>
-        
-        <LairsClient initialData={initialLairsData} games={games} initialFilters={{ gameId }} />
+
+        <Suspense fallback={<ContentListSkeleton />}>
+          <LairsList searchParams={searchParams} />
+        </Suspense>
       </div>
     </div>
   );
+}
+
+async function PrivateLairButton() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) return null;
+
+  return <CreatePrivateLairButton />;
+}
+
+async function LairsList({ searchParams }: { searchParams: SearchParams }) {
+  // Le pilote Mongo touche à l'horloge en cherchant les lairs, ce qu'un
+  // prérendu ne sait pas figer. Aucune frontière n'y change rien : c'est de la
+  // sync-IO, pas une donnée de requête.
+  await connection();
+
+  // La session sert à faire apparaître ses propres lairs privés dans la liste.
+  const session = await auth.api.getSession({ headers: await headers() });
+  const { gameId } = await searchParams;
+
+  const [initialLairsData, games] = await Promise.all([
+    searchLairs({
+      gameIds: gameId ? [gameId] : undefined,
+      userId: session?.user?.id,
+      page: 1,
+      limit: 10,
+    }),
+    readAllGames(),
+  ]);
+
+  return <LairsClient initialData={initialLairsData} games={games} initialFilters={{ gameId }} />;
 }
