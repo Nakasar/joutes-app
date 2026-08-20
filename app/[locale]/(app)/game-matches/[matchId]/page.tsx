@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { AccountPanelSkeleton } from "@/components/AccountPanelSkeleton.tsx";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { getGameMatchById } from "@/lib/db/game-matches.ts";
@@ -6,17 +8,13 @@ import { getAllLairs } from "@/lib/db/lairs.ts";
 import { notFound, redirect } from "next/navigation";
 import GameMatchDetailsWrapper from "./GameMatchDetailsWrapper.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
 type PageProps = {
   params: Promise<{
     matchId: string;
   }>;
 };
 
-export default async function GameMatchDetailPage({ params }: PageProps) {
+async function GameMatchDetailPageContent({ params }: PageProps) {
   const resolvedParams = await params;
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -68,5 +66,24 @@ export default async function GameMatchDetailPage({ params }: PageProps) {
         currentUserId={session.user.id}
       />
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
+ * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
+ * porte ait répondu.
+ */
+export default function GameMatchDetailPage(props: Parameters<typeof GameMatchDetailPageContent>[0]) {
+  return (
+    <Suspense
+      fallback={
+        <div className="container max-w-4xl mx-auto px-4 py-8">
+          <AccountPanelSkeleton cards={2} label="Chargement de la partie" />
+        </div>
+      }
+    >
+      <GameMatchDetailPageContent {...props} />
+    </Suspense>
   );
 }

@@ -1,18 +1,21 @@
+import { connection } from "next/server";
+import { Suspense } from "react";
+import { AccountPanelSkeleton } from "@/components/AccountPanelSkeleton.tsx";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth.ts";
 import { getTournamentByJoinCode, listPlayers } from "@/lib/db/tournaments.ts";
 import { JoinTournamentClient } from "./JoinTournamentClient.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
-export default async function JoinTournamentPage({
+async function JoinTournamentPageContent({
   params,
 }: {
   params: Promise<{ code: string }>;
 }) {
+  // Cet écran est public : aucune lecture de session ne vient désarmer le
+  // piège Mongo, dont le pilote touche à l'horloge en cherchant le tournoi.
+  await connection();
+
   const { code } = await params;
 
   const tournament = await getTournamentByJoinCode(code);
@@ -37,5 +40,24 @@ export default async function JoinTournamentPage({
         alreadyJoined={alreadyJoined}
       />
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
+ * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
+ * porte ait répondu.
+ */
+export default function JoinTournamentPage(props: Parameters<typeof JoinTournamentPageContent>[0]) {
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-lg p-8">
+          <AccountPanelSkeleton cards={2} label="Chargement de l’inscription" />
+        </div>
+      }
+    >
+      <JoinTournamentPageContent {...props} />
+    </Suspense>
   );
 }

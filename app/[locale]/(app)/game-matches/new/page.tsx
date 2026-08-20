@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { EditorFormSkeleton } from "@/components/EditorFormSkeleton.tsx";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -6,11 +8,7 @@ import { getAllLairs } from "@/lib/db/lairs.ts";
 import { getUserById } from "@/lib/db/users.ts";
 import GameMatchForm from "./GameMatchForm.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
-export default async function NewGameMatchPage({
+async function NewGameMatchPageContent({
   searchParams,
 }: {
   // `gameId` pré-sélectionne le jeu : la tuile « rapports de bataille » d'une
@@ -56,5 +54,24 @@ export default async function NewGameMatchPage({
         />
       </div>
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
+ * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
+ * porte ait répondu.
+ */
+export default function NewGameMatchPage(props: Parameters<typeof NewGameMatchPageContent>[0]) {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-4 py-8 max-w-2xl">
+          <EditorFormSkeleton fields={4} label="Chargement du formulaire" />
+        </div>
+      }
+    >
+      <NewGameMatchPageContent {...props} />
+    </Suspense>
   );
 }

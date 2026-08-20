@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { AccountPanelSkeleton } from "@/components/AccountPanelSkeleton.tsx";
 import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -11,17 +13,13 @@ export const metadata: Metadata = {
 };
 import { Bell } from "lucide-react";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
 type NotificationsPageProps = {
   searchParams: Promise<{
     page?: string;
   }>;
 };
 
-export default async function NotificationsPage({ searchParams }: NotificationsPageProps) {
+async function NotificationsPageContent({ searchParams }: NotificationsPageProps) {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -74,5 +72,24 @@ export default async function NotificationsPage({ searchParams }: NotificationsP
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Tout cet écran est derrière la porte. La coquille ne garde que le conteneur
+ * et la silhouette : ce que l'écran contient n'a pas à s'afficher avant que la
+ * porte ait répondu.
+ */
+export default function NotificationsPage(props: Parameters<typeof NotificationsPageContent>[0]) {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 p-6">
+          <AccountPanelSkeleton cards={2} label="Chargement de vos notifications" />
+        </div>
+      }
+    >
+      <NotificationsPageContent {...props} />
+    </Suspense>
   );
 }
