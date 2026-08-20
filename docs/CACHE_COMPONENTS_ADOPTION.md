@@ -282,17 +282,21 @@ Deux squelettes ont dû être repris pour l'avoir sauté : celui du calendrier
 (tuiles sur deux colonnes au lieu de quatre) et celui des matchs de ronde, qui
 ignorait la bascule Grille/Tableau et toute la colonne « À traiter ».
 
-## Le verrou du layout racine
+## Le verrou du layout racine — levé
 
-**Presque tout ce qui reste est bloqué par une seule ligne, et ce n'est dans
-aucune des pages.** Tant qu'elle est là, il est inutile de travailler une route
-à segment dynamique : elle ne prérendra pas, quoi qu'on fasse dans son fichier.
+**Presque tout ce qui restait était bloqué par une seule ligne, et elle n'était
+dans aucune des pages.** Tant qu'elle était là, travailler une route à segment
+dynamique ne servait à rien : elle ne prérendait pas, quoi qu'on fasse dans son
+fichier.
 
-La ligne est dans `app/[locale]/(app)/layout.tsx` :
+La ligne était dans `app/[locale]/(app)/layout.tsx` :
 
 ```tsx
 const { locale } = await params;
 ```
+
+La section garde le diagnostic complet : il explique la forme actuelle du
+layout, et il évite de refaire les mêmes essais.
 
 ### Pourquoi ça ne casse que les routes à segment dynamique
 
@@ -354,24 +358,61 @@ Mesuré en neutralisant la lecture dans le layout, puis en construisant
 Le lot complet, sans rien changer d'autre. Ce seul `await params` bloque **la
 totalité des routes à segment dynamique restantes**.
 
-### L'arbitrage, qui reste à trancher
+### Le déplacement du layout : piste écartée
 
-Il oppose deux choses réelles :
+Le layout racine est dans le groupe `(app)`, sous `app/[locale]/`. L'hypothèse
+était que Next n'énumérait pas correctement `[locale]` pour les coquilles à
+cause de cette position. Testé dans les deux variantes, avec `next typegen`
+rejoué entre les deux : `app/[locale]/layout.tsx` avec `await params`, puis avec
+`next/root-params`. Les deux bloquent. Ne pas y revenir.
 
-- **`<html lang>` par langue.** Il faut la langue au sommet du layout, donc pas
-  de coquille statique sur les routes dynamiques : elles restent `ƒ` avec leur
-  opt-out, et l'adoption s'arrête où elle en est.
-- **Des coquilles statiques partout.** Il faut renoncer au `lang` calculé dans
-  le HTML servi. Coût réel : moteurs de recherche et lecteurs d'écran voient la
-  même langue sur les quatre versions.
+### La sortie : une coquille indépendante de la langue
 
-Une troisième piste n'a pas encore été testée : le layout racine est dans le
-groupe `(app)`, sous `app/[locale]/`, à côté d'un groupe `(oauth2)` qui ne
-contient qu'un gestionnaire de route. Il se peut que Next n'énumère pas
-correctement `[locale]` pour les coquilles à cause de cette position, et que
-déplacer le layout en `app/[locale]/layout.tsx` lève le verrou sans rien
-sacrifier. C'est le seul scénario connu où l'on garde les deux — à tester avant
-d'arbitrer.
+Le layout ne lit plus la langue du tout. Il ne rend que ce qui se prérend sans
+elle — structure du document, polices, thème — et passe le reste derrière une
+frontière :
+
+```tsx
+<html suppressHydrationWarning>          {/* plus de lang ici */}
+  <body className={…}>
+    <ThemeProvider …>                    {/* ne dépend pas de la langue */}
+      <Suspense fallback={<AppFrameFallback />}>
+        <LocalizedFrame>{children}</LocalizedFrame>
+      </Suspense>
+```
+
+`LocalizedFrame` lit la langue via `next/root-params`, appelle
+`setRequestLocale`, et rend `NextIntlClientProvider` avec tout le cadre
+localisé. L'attribut `lang`, lui, ne peut pas attendre une frontière : il est
+posé par un `<script>` d'une ligne rendu depuis `LocalizedFrame`.
+
+**Ce que ça ne coûte pas.** Une frontière ne suspend que si quelque chose
+suspend réellement. Sur une route sans segment dynamique, la langue est connue :
+`LocalizedFrame` rend d'un trait et son contenu atterrit dans le HTML statique.
+Vérifié — `/fr/games.html` fait 235 690 o après la bascule, contre 223 738 o
+avant. Rien n'est dégradé.
+
+**Ce que ça coûte, précisément.** `lang` est absent à l'analyse du document. Il
+est posé avant tout rendu visible, donc les lecteurs d'écran et les moteurs qui
+exécutent JavaScript le voient. Ceux qui ne l'exécutent pas voient une langue
+**non déclarée**, pas une langue fausse.
+
+Deuxième coût, plus discret : sur une route à segment dynamique, même un chemin
+énuméré par `generateStaticParams` ne prérend plus son contenu localisé — il
+part en flux derrière la silhouette. `◐` au lieu du `○` qu'on aurait eu si la
+langue n'était pas lue du tout. C'est le prix de la coquille partagée.
+
+### Avant / après, mesuré
+
+| fichier prérendu | avant | après |
+|---|---|---|
+| `/fr/games.html` (sans segment dynamique) | 223 738 o | 235 690 o |
+| `/fr/games/[gameSlugOrId]/rules.html` | **0 o** | **4 236 o** |
+| `/fr/games/[gameSlugOrId]/rules/[documentId].html` | **0 o** | 5 156 o |
+
+Sur les routes à segment dynamique, on passe de *rien de prérendu du tout* à
+*le cadre prérendu, le contenu en flux*. C'est exactement l'objectif de
+l'adoption.
 
 ## Ce qui reste
 
