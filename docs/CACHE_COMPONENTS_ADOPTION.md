@@ -11,33 +11,32 @@ Next 16.3.1, `cacheComponents: true` sur `main`.
 
 | | routes |
 |---|---|
-| `○` entièrement statiques | 53 |
-| `◐` coquille partielle | 314 |
-| `ƒ` rendu à la requête | 348 |
+| `○` entièrement statiques | 58 |
+| `◐` coquille partielle | 599 |
+| `ƒ` rendu à la requête | 224 |
 
 891 pages construites. Avant l'adoption : **zéro** route avec coquille statique.
 
-**6 pages portent encore un opt-out `export const instant = false`** : 1 avec
-un marqueur `TODO: Cache Components adoption`, et 5 blocages assumés qui portent
-une raison à la place — le layout du portail organisateur de tournoi, les deux
-layouts du portail d'événement, son aiguillage `portal/page.tsx`, et le
-vérificateur de deck de Riftbound, dont les métadonnées lisent `?input=` pour
-composer l'image de partage.
+**L'adoption est terminée.** Il ne reste que **5 opt-outs
+`export const instant = false`**, et ce sont les cinq blocages assumés — chacun
+porte sa raison au lieu d'un TODO.
 
-**Attention en comptant : les marqueurs `TODO` ne comptent pas les opt-outs.**
-Ils marquent aussi les déblocages `await connection()`, qui n'ont rien à voir.
-Il y en a 4 en tout pour 1 opt-outs marqués. Les deux commandes qui donnent
-les vrais chiffres :
+**Zéro marqueur `TODO: Cache Components adoption`** ne subsiste.
+
+51 pages portent un déblocage `await connection()` : le piège Mongo a été, de
+loin, la contrainte la plus fréquente de cette adoption.
+
+Les trois commandes qui vérifient cet état :
 
 ```bash
-# les opt-outs, et ceux d'entre eux qui sont des blocages assumés
-grep -rl 'instant = false' app/ | wc -l
-comm -23 <(grep -rl 'instant = false' app/ | sort) \
-         <(grep -rl 'TODO: Cache Components adoption' app/ | sort)
+grep -rl 'instant = false' app/ | wc -l                        # attendu : 5
+grep -rl 'TODO: Cache Components adoption' app/ | wc -l        # attendu : 0
+grep -rl 'await connection()' app/ | wc -l                     # attendu : 51
 ```
 
-51 pages portent un déblocage `await connection()` — le piège Mongo est devenu
-la contrainte la plus fréquente sur ce qui reste.
+**Attention en comptant** : les marqueurs `TODO` ne comptaient jamais les
+opt-outs seuls — ils marquaient aussi les déblocages `connection()`. C'est
+l'origine d'une arithmétique fausse restée plusieurs passes dans ce document.
 
 Les pages vivent sous `app/[locale]/(app)/` depuis la correction de collision de
 chemins ; le groupe `(oauth2)` est à côté. Les chemins cités ici en tiennent
@@ -590,16 +589,27 @@ Répartition des opt-outs par ce qui bloque la page :
 **Plus aucun lot mécanique n'est disponible.** Chaque route restante demande de
 décider ce qui appartient à la coquille et ce qui arrive en flux.
 
-**Il ne reste qu'une page à adopter**, et ce sont les sept plus grosses de
-l'application :
+**L'adoption est terminée.** Toutes les pages de l'application ont été
+adoptées. Il ne reste que **cinq blocages assumés**, qui portent chacun leur
+raison :
 
-| page | lignes |
+| page | pourquoi elle bloque |
 |---|---|
-| `events/[eventId]` | 474 |
+| `tournaments/[tournamentId]/organizer/layout.tsx` | la porte de l'organisation couvre tout le portail |
+| `events/[eventId]/portal/organizer/layout.tsx` | idem pour le portail d'événement |
+| `events/[eventId]/portal/player/layout.tsx` | idem côté joueur |
+| `events/[eventId]/portal/page.tsx` | aiguillage : il redirige selon le rôle |
+| `games/riftbound/deck-checker/page.tsx` | ses métadonnées lisent `?input=` pour composer l'image de partage |
 
-Chacune demande sa propre passe : ce sont des écrans composés de plusieurs
-sections aux dépendances différentes, où le découpage se décide section par
-section plutôt qu'au gabarit.
+**Zéro marqueur `TODO: Cache Components adoption`** ne subsiste. La commande qui
+le vérifie :
+
+```bash
+grep -rl 'TODO: Cache Components adoption' app/ | wc -l   # attendu : 0
+```
+
+Les sept grosses pages — de 330 à 555 lignes — ont demandé chacune leur passe,
+et les sections qui suivent gardent ce qu'elles ont appris.
 
 ### Le portail d'un jeu, comme modèle pour les six autres
 
@@ -726,6 +736,29 @@ touche vraiment Mongo. Posé sur `/cgu` et `/privacy`, dont les métadonnées ne
 lisent qu'un document statique, il a rendu leurs routes dynamiques et fait
 apparaître une erreur `uncached data` qui n'existait pas. Les deux ont été
 remises en l'état. Le balayage donne des candidats, pas des corrections.
+
+### La page d'un événement : la porte au niveau de la donnée, une fois de plus
+
+Dernière page adoptée, et elle n'a rien appris de neuf — c'est le signe que le
+motif tient. Un événement sans lieu est privé : la confidentialité se lit sur
+l'événement, la session n'est interrogée que dans ce cas, et l'en-tête (nom,
+jeu, état) se sépare du corps qui demande la session, le tournoi rattaché et,
+pour l'organisation seule, la liste des participants.
+
+Une seule différence avec les lieux et les ligues : un événement privé rend un
+**écran de refus**, pas un `notFound()`. Il existe, il n'est simplement pas
+ouvert, et le dire vaut mieux que prétendre le contraire.
+
+Coquille : **18 088 octets**.
+
+### `--debug-build-paths` ne remplace pas le build complet
+
+Vérifier qu'un `connection()` est encore nécessaire en construisant seulement sa
+route a donné un faux négatif : trois déblocages d'administration semblaient
+retirables, le build complet en a rejeté un. La coquille de repli d'une route
+n'est pas toujours produite quand on construit cette route seule.
+
+**Avant de retirer un déblocage, le build complet, pas le ciblé.**
 
 Toutes les autres zones sont faites. Les cinq opt-outs restants sont les
 blocages assumés.

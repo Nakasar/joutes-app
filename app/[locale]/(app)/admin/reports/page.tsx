@@ -3,7 +3,8 @@ import ReportsList from "./ReportsList.tsx";
 import { connection } from "next/server";
 
 export default async function AdminReportsPage() {
-  // TODO: Cache Components adoption. Added to unblock the build: remove this connection() to re-trigger the error and review the fix options.
+  // Le pilote Mongo touche à l'horloge en chemin, ce qu'un prérendu ne sait
+  // pas figer. Vérifié en le retirant : la route redevient bloquante.
   await connection();
   const groups = await getPendingReportGroups();
 
