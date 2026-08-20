@@ -17,7 +17,7 @@ Next 16.3.1, `cacheComponents: true` sur `main`.
 
 891 pages construites. Avant l'adoption : **zéro** route avec coquille statique.
 
-**11 pages portent encore un opt-out `export const instant = false`** : 6 avec
+**10 pages portent encore un opt-out `export const instant = false`** : 5 avec
 un marqueur `TODO: Cache Components adoption`, et 5 blocages assumés qui portent
 une raison à la place — le layout du portail organisateur de tournoi, les deux
 layouts du portail d'événement, son aiguillage `portal/page.tsx`, et le
@@ -26,7 +26,7 @@ composer l'image de partage.
 
 **Attention en comptant : les marqueurs `TODO` ne comptent pas les opt-outs.**
 Ils marquent aussi les déblocages `await connection()`, qui n'ont rien à voir.
-Il y en a 9 en tout pour 6 opt-outs marqués. Les deux commandes qui donnent
+Il y en a 8 en tout pour 5 opt-outs marqués. Les deux commandes qui donnent
 les vrais chiffres :
 
 ```bash
@@ -36,7 +36,7 @@ comm -23 <(grep -rl 'instant = false' app/ | sort) \
          <(grep -rl 'TODO: Cache Components adoption' app/ | sort)
 ```
 
-41 pages portent un déblocage `await connection()` — le piège Mongo est devenu
+42 pages portent un déblocage `await connection()` — le piège Mongo est devenu
 la contrainte la plus fréquente sur ce qui reste.
 
 Les pages vivent sous `app/[locale]/(app)/` depuis la correction de collision de
@@ -590,7 +590,7 @@ Répartition des opt-outs par ce qui bloque la page :
 **Plus aucun lot mécanique n'est disponible.** Chaque route restante demande de
 décider ce qui appartient à la coquille et ce qui arrive en flux.
 
-**Il ne reste que six pages à adopter**, et ce sont les sept plus grosses de
+**Il ne reste que cinq pages à adopter**, et ce sont les sept plus grosses de
 l'application :
 
 | page | lignes |
@@ -600,7 +600,6 @@ l'application :
 | `users/[userTagOrId]` | 495 |
 | `events/[eventId]` | 474 |
 | `leagues/[leagueId]/matches` | 360 |
-| `lairs/[lairId]` | 359 |
 
 Chacune demande sa propre passe : ce sont des écrans composés de plusieurs
 sections aux dépendances différentes, où le découpage se décide section par
@@ -634,6 +633,32 @@ avant de disparaître.
 Coquille : **20 610 octets**, contre 18 289 sur `main` — soit le cadre de
 l'application seul. La différence est faible en octets et grande à l'écran :
 c'est la page entière qui apparaît d'un coup au lieu de rien.
+
+### La page d'un lieu : quand la porte dépend de la donnée
+
+Deuxième grosse page, et elle a posé un cas que les autres n'avaient pas : **un
+lieu privé ne doit rien montrer avant la vérification d'accès, pas même son
+nom** — mais on ne sait qu'il est privé qu'après l'avoir lu.
+
+Mettre la porte en tête de page aurait fait lire la session avant tout
+affichage, y compris pour les lieux publics, qui sont la majorité. La forme
+retenue met la décision dans la lecture elle-même :
+
+```tsx
+const requireVisibleLair = cache(async (lairId: string) => {
+  const lair = await getLairById(lairId);
+  if (!lair) notFound();
+  if (!lair.isPrivate) return lair;        // public : rien d'autre à attendre
+  // privé seulement : session, suivi, droits de gestion
+});
+```
+
+Un lieu public s'affiche dès sa lecture ; un lieu privé attend sa porte, et n'a
+alors rien montré. **La règle générale se précise : ce n'est pas « la porte
+devant » ou « la porte derrière », c'est la porte au niveau où la donnée dit
+qu'elle est nécessaire.**
+
+Coquille : **19 206 octets**.
 
 Toutes les autres zones sont faites. Les cinq opt-outs restants sont les
 blocages assumés.
