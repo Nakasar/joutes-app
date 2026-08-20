@@ -1,17 +1,31 @@
 import {Button} from "@/components/ui/button.tsx";
-import {getGameBySlugOrId} from "@/lib/db/games.ts";
+import {readGameBySlugOrId} from "@/lib/db/games-cached.ts";
 import { Link } from "@/i18n/navigation.ts";
-import {getTranslations} from "next-intl/server";
+import {getTranslations, setRequestLocale} from "next-intl/server";
 import {GameToolsNavBar} from "@/components/games/GameToolsNavBar.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+/**
+ * Bloquée par le layout racine, pas par cette page.
+ *
+ * La page elle-même ne lit plus rien qui empêche le prérendu : la lecture du
+ * jeu est en cache, la langue est fixée. Ce qui bloque est en amont — le
+ * `await params` du layout racine, qui rend indispensable la coquille de repli
+ * de toute route à segment dynamique. Voir le document d'adoption, « Le verrou
+ * du layout racine ».
+ *
+ * Mesuré : en neutralisant cette lecture dans le layout, cette page construit
+ * en `○` sur les 28 chemins concrets. L'opt-out saute avec le verrou, pas
+ * avant.
+ */
 export const instant = false;
 
-export default async function GameRulesPage({params}: { params: Promise<{ gameSlugOrId: string }> }) {
-  const {gameSlugOrId} = await params;
+export default async function GameRulesPage({params}: { params: Promise<{ locale: string; gameSlugOrId: string }> }) {
+  const {locale, gameSlugOrId} = await params;
+  // Sans cet appel, les fonctions serveur de next-intl lisent la langue à la
+  // requête, ce qui suffit à rendre toute la route dynamique.
+  setRequestLocale(locale);
 
-  const game = await getGameBySlugOrId(gameSlugOrId);
+  const game = await readGameBySlugOrId(gameSlugOrId);
   const t = await getTranslations("Games");
   if (!game?.features?.rules) {
     return (

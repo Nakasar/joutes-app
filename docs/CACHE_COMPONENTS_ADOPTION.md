@@ -218,6 +218,16 @@ première position. Les quatre autres s'en sortent par accident :
 Cette dépendance est fragile : déplacer un `await searchParams` sous la lecture
 Mongo suffit à rouvrir le piège, sans qu'aucune porte locale ne le signale.
 
+### `setRequestLocale` se pose à deux endroits, pas un
+
+Le document disait « l'appeler dans la page ». C'est insuffisant :
+`generateMetadata` s'exécute hors de la portée de l'appel fait dans le corps de
+la page. Sans son propre `setRequestLocale`, `next-intl` y relit la langue à la
+requête et rend toute la route dynamique — quoi que fasse le corps.
+
+Le symptôme est un `blocking-prerender-runtime` sur une page dont le corps est
+pourtant irréprochable. Vérifié sur `games/[gameSlugOrId]/page.tsx`.
+
 ### Le cas du `Link` localisé
 
 `Link` appelle `usePathname()` à chaque rendu, pour un chemin qui ne lui sert
@@ -271,6 +281,97 @@ Un squelette ne s'invente pas, il se relève. La méthode qui a marché :
 Deux squelettes ont dû être repris pour l'avoir sauté : celui du calendrier
 (tuiles sur deux colonnes au lieu de quatre) et celui des matchs de ronde, qui
 ignorait la bascule Grille/Tableau et toute la colonne « À traiter ».
+
+## Le verrou du layout racine
+
+**Presque tout ce qui reste est bloqué par une seule ligne, et ce n'est dans
+aucune des pages.** Tant qu'elle est là, il est inutile de travailler une route
+à segment dynamique : elle ne prérendra pas, quoi qu'on fasse dans son fichier.
+
+La ligne est dans `app/[locale]/(app)/layout.tsx` :
+
+```tsx
+const { locale } = await params;
+```
+
+### Pourquoi ça ne casse que les routes à segment dynamique
+
+Sous Cache Components, `dynamicParams` est **interdit** — le build le refuse
+explicitement :
+
+```
+Route segment config "dynamicParams" is not compatible with
+`nextConfig.cacheComponents`. Please remove it.
+```
+
+Toute route à segment dynamique a donc forcément une *coquille d'application* :
+la page servie instantanément quand le paramètre n'était pas connu au build,
+remplacée en arrière-plan une fois le paramètre résolu. Dans cette coquille,
+**aucun paramètre n'est résolu — pas même `[locale]`**. Y lire la langue, c'est
+lire une donnée de requête.
+
+Sur `/games` ou `/games/riftbound/tracker`, il n'y a pas de segment dynamique
+sous `[locale]` : pas de coquille de repli, la langue est connue, la page sort
+en `○`. C'est exactement ce qui a masqué la cause pendant deux sessions — les
+pages qui passaient et celles qui bloquaient ne différaient que par là.
+
+### La trace ne le dit pas
+
+Elle désigne `<NextIntlClientProvider>`, une vingtaine de lignes plus bas, avec
+« Show 13 ignore-listed frames » et aucune frame applicative. `next-intl` n'y
+est pour rien. Le seul moyen de le prouver a été de bissecter : remplacer
+`await params` par une langue en dur suffit à rendre le rendu propre.
+
+**Règle générale à en tirer :** quand la trace ne nomme qu'un élément JSX du
+layout racine sans aucune frame applicative, elle désigne l'endroit où React a
+attribué l'erreur, pas la lecture fautive. Bissecter le layout ligne à ligne
+est plus rapide que d'interpréter la trace.
+
+### Ce qui a été essayé, et qui ne marche pas
+
+| piste | résultat |
+|---|---|
+| `generateStaticParams` depuis les slugs en base | génère bien les 28 chemins, la coquille bloque quand même |
+| `dynamicParams = false` | interdit sous Cache Components |
+| `next/root-params` (l'API prévue pour ça, Next 16.3) | bloque aussi |
+| ce même appel enveloppé dans `"use cache"` | bloque aussi |
+| props explicites (`locale`, `messages`) sur `NextIntlClientProvider` | hors sujet, ce n'était pas lui |
+| `<Analytics />` sous frontière | hors sujet également |
+
+Ne pas les retenter sans nouvelle information : chacun a été vérifié au build
+**et** au navigateur.
+
+### Ce que sa levée débloquerait
+
+Mesuré en neutralisant la lecture dans le layout, puis en construisant
+`games/[gameSlugOrId]/rules` sans opt-out :
+
+```
+├ ○ /en/games/mtg/rules      ← les 28 chemins concrets : statiques
+└ ◐ [+30 more paths]         ← la coquille de repli
+```
+
+Le lot complet, sans rien changer d'autre. Ce seul `await params` bloque **la
+totalité des routes à segment dynamique restantes**.
+
+### L'arbitrage, qui reste à trancher
+
+Il oppose deux choses réelles :
+
+- **`<html lang>` par langue.** Il faut la langue au sommet du layout, donc pas
+  de coquille statique sur les routes dynamiques : elles restent `ƒ` avec leur
+  opt-out, et l'adoption s'arrête où elle en est.
+- **Des coquilles statiques partout.** Il faut renoncer au `lang` calculé dans
+  le HTML servi. Coût réel : moteurs de recherche et lecteurs d'écran voient la
+  même langue sur les quatre versions.
+
+Une troisième piste n'a pas encore été testée : le layout racine est dans le
+groupe `(app)`, sous `app/[locale]/`, à côté d'un groupe `(oauth2)` qui ne
+contient qu'un gestionnaire de route. Il se peut que Next n'énumère pas
+correctement `[locale]` pour les coquilles à cause de cette position, et que
+déplacer le layout en `app/[locale]/layout.tsx` lève le verrou sans rien
+sacrifier. C'est le seul scénario connu où l'on garde les deux — à tester avant
+d'arbitrer.
 
 ## Ce qui reste
 
