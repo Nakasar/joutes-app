@@ -3886,10 +3886,10 @@
     "badgeName": "Sentinella della Notte",
     "deadline": "fino al {day} ottobre",
     "body": "Partecipa a {goal} eventi durante la stagione per ottenere il distintivo «Sentinella della Notte» e il traguardo che lo accompagna.",
-    "earnedBody": "Il distintivo della stagione è tuo, e il traguardo è sul tuo profilo — vi resterà, con la data di quest'anno.",
+    "earnedBody": "Tre serate fatte: il distintivo della stagione è tuo.",
     "progress": "{done} su {goal}",
     "findEvent": "Trova un evento",
-    "seeBadge": "Vedi il distintivo",
+    "seeBadge": "Vedi i miei traguardi",
     "emptyTitle": "Nessun evento questo mese",
     "emptyBody": "Anche i fantasmi se ne sono andati. Prova un altro mese, o organizzane uno tu."
   }

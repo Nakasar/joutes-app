@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, Gamepad2, Euro, Filter, List, CalendarDays, Clock, Navigation, X, User2Icon, AlertCircle, CheckCircle, Star, HelpCircle, Loader2 } from "lucide-react";
 import { Link } from "@/i18n/navigation.ts";
 import { Ghost } from "@/components/HalloweenSVGs.tsx";
-import { isHalloweenTheme } from "@/lib/utils/halloween-theme.ts";
+import { isHalloweenTheme, SEASON } from "@/lib/utils/halloween-theme.ts";
 import { DateTime } from "luxon";
 import { useSession } from "@/lib/auth-client.ts";
 import { cn } from "@/lib/utils.ts";
@@ -1095,6 +1095,7 @@ export default function EventsCalendar({
           {viewMode === "list" && (
             <ListView
               eventsInMonth={eventsInMonth}
+              shownMonth={currentMonth}
               eventsByDayForList={eventsByDayForList}
               today={today}
               userId={session.data?.user?.id}
@@ -1185,6 +1186,8 @@ function HauntedEmptyState() {
 // Composant pour la vue liste
 type ListViewProps = {
   eventsInMonth: Event[];
+  /** Mois actuellement à l'écran (1-12), et non la date du jour. */
+  shownMonth: number;
   eventsByDayForList: Map<string, Event[]>;
   today: DateTime;
   userId?: string;
@@ -1196,6 +1199,7 @@ type ListViewProps = {
 
 function ListView({
   eventsInMonth,
+  shownMonth,
   eventsByDayForList,
   today,
   userId,
@@ -1210,7 +1214,13 @@ function ListView({
     // Pendant l'habillage d'Halloween, un revenant tient la place du
     // calendrier barré. Même anatomie — carte, un rond, un titre, une ligne
     // d'aide : seuls le dessin et la seconde ligne changent.
-    if (isHalloweenTheme()) {
+    //
+    // Il est rattaché au **mois regardé**, pas à la date du jour : c'est le
+    // seul critère que le serveur et le navigateur lisent pareil, une horloge
+    // consultée des deux côtés pouvant tomber de part et d'autre de minuit le
+    // 31. Et c'est aussi le plus juste — le revenant appartient à la vue
+    // d'octobre, qu'on l'ouvre pendant la saison ou en la remontant en mars.
+    if (isHalloweenTheme() && shownMonth === SEASON.month) {
       return <HauntedEmptyState />;
     }
 

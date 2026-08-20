@@ -3886,10 +3886,10 @@
     "badgeName": "Night Watcher",
     "deadline": "until October {day}",
     "body": "Attend {goal} events during the season to earn the “Night Watcher” badge and the achievement that comes with it.",
-    "earnedBody": "The season's badge is yours, and the achievement now sits on your profile — it stays there, dated to this year.",
+    "earnedBody": "Three evenings done — this season's badge is yours.",
     "progress": "{done} of {goal}",
     "findEvent": "Find an event",
-    "seeBadge": "See the badge",
+    "seeBadge": "See my achievements",
     "emptyTitle": "No events this month",
     "emptyBody": "Even the ghosts have left. Try another month, or host your own."
   }

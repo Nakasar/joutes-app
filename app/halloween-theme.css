@@ -302,7 +302,13 @@
     animation: none;
   }
 
-  .decor-heavy {
+  /*
+   * Portée au conteneur du décor, et non à `.decor-heavy` seule : cette
+   * feuille part dans le paquet même hors saison, l'import du composant
+   * suffisant à l'embarquer. Une règle globale masquerait donc n'importe
+   * quel `.decor-heavy` que le reste de l'application viendrait à porter.
+   */
+  [data-decor] .decor-heavy {
     display: none;
   }
 }

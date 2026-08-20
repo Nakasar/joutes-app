@@ -3886,10 +3886,10 @@
     "badgeName": "Veilleur de la Nuit",
     "deadline": "jusqu'au {day} octobre",
     "body": "Participez à {goal} événements pendant la saison pour décrocher le badge « Veilleur de la Nuit » et le haut fait qui l'accompagne.",
-    "earnedBody": "Le badge de la saison est à vous, et le haut fait est posé sur votre profil — il y restera, daté de cette année.",
+    "earnedBody": "Les trois soirées sont faites : le badge de la saison est à vous.",
     "progress": "{done} sur {goal}",
     "findEvent": "Trouver un événement",
-    "seeBadge": "Voir le badge",
+    "seeBadge": "Voir mes succès",
     "emptyTitle": "Aucun événement ce mois-ci",
     "emptyBody": "Même les revenants ont déserté. Changez de mois, ou ouvrez le vôtre."
   }
