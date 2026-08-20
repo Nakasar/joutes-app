@@ -1,25 +1,28 @@
 import { Button } from "@/components/ui/button.tsx";
 import { Link } from "@/i18n/navigation.ts";
 import { headers } from "next/headers";
+import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import { Metadata } from "next/types";
 import { auth } from "@/lib/auth.ts";
-import { getGameBySlugOrId } from "@/lib/db/games.ts";
+import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { getPublicCubes } from "@/lib/db/cubes.ts";
 import { GameToolsNavBar } from "@/components/games/GameToolsNavBar.tsx";
+import {
+  GameToolGridSkeleton,
+  GameToolHeaderSkeleton,
+} from "@/components/games/GameToolSkeletons.tsx";
 import GameCubesClient from "./GameCubesClient.tsx";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
+type GameParams = Promise<{ gameSlugOrId: string }>;
 
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ gameSlugOrId: string }>;
+  params: GameParams;
 }): Promise<Metadata> {
   const { gameSlugOrId } = await params;
-  const game = await getGameBySlugOrId(gameSlugOrId);
+  const game = await readGameBySlugOrId(gameSlugOrId);
   const t = await getTranslations("Games.cubes");
 
   if (!game?.features?.cubes) {
@@ -32,52 +35,64 @@ export async function generateMetadata({
   };
 }
 
-export default async function GameCubesPage({
-  params,
-}: {
-  params: Promise<{ gameSlugOrId: string }>;
-}) {
+/**
+ * Deux frontières : la tête ne dépend que du jeu, la liste des cubes dépend en
+ * plus de la session — c'est elle qui décide du bouton de création.
+ */
+export default function GameCubesPage({ params }: { params: GameParams }) {
+  return (
+    <div className="container mx-auto p-6">
+      <Suspense fallback={<GameToolHeaderSkeleton />}>
+        <CubesHeader params={params} />
+      </Suspense>
+
+      <Suspense fallback={<GameToolGridSkeleton />}>
+        <CubesContent params={params} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function CubesHeader({ params }: { params: GameParams }) {
   const { gameSlugOrId } = await params;
-  const game = await getGameBySlugOrId(gameSlugOrId);
+  const game = await readGameBySlugOrId(gameSlugOrId);
   const t = await getTranslations("Games.cubes");
 
   // Même traitement que les autres outils de jeu : une fonctionnalité désactivée
   // affiche un écran d'explication plutôt qu'un 404 sec.
-  if (!game?.features?.cubes) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="flex flex-row flex-wrap justify-between">
-          <div className="flex flex-row flex-wrap gap-4">
-            <Button asChild>
-              <Link href={`/games/${gameSlugOrId}`}>
-                ← <span className="hidden lg:inline">{t("back")}</span>
-              </Link>
-            </Button>
-            <h1 className="mb-4 text-3xl font-bold">{t("notFoundTitle")}</h1>
-          </div>
-          <GameToolsNavBar gameSlug={gameSlugOrId} currentTab={"cubes"} />
-        </div>
-        <p>{t("notFoundDescription")}</p>
+  const enabled = Boolean(game?.features?.cubes);
+
+  return (
+    <div className="flex flex-row flex-wrap justify-between">
+      <div className="flex flex-row flex-wrap gap-4">
+        <Button asChild>
+          <Link href={`/games/${game?.slug ?? gameSlugOrId}`}>
+            ← <span className={enabled ? undefined : "hidden lg:inline"}>{t("back")}</span>
+          </Link>
+        </Button>
+        <h1 className="mb-4 text-3xl font-bold">
+          {enabled && game ? t("title", { gameName: game.name }) : t("notFoundTitle")}
+        </h1>
       </div>
-    );
+      <GameToolsNavBar gameSlug={gameSlugOrId} currentTab={"cubes"} />
+    </div>
+  );
+}
+
+async function CubesContent({ params }: { params: GameParams }) {
+  const { gameSlugOrId } = await params;
+  const game = await readGameBySlugOrId(gameSlugOrId);
+  const t = await getTranslations("Games.cubes");
+
+  if (!game?.features?.cubes) {
+    return <p>{t("notFoundDescription")}</p>;
   }
 
   const session = await auth.api.getSession({ headers: await headers() });
   const cubes = await getPublicCubes({ gameId: game.id });
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex flex-row flex-wrap justify-between">
-        <div className="flex flex-row flex-wrap gap-4">
-          <Button asChild>
-            <Link href={`/games/${game.slug ?? gameSlugOrId}`}>
-              ← {t("back")}
-            </Link>
-          </Button>
-          <h1 className="mb-4 text-3xl font-bold">{t("title", { gameName: game.name })}</h1>
-        </div>
-        <GameToolsNavBar gameSlug={gameSlugOrId} currentTab={"cubes"} />
-      </div>
+    <>
       <p className="mb-6">{t("description", { gameName: game.name })}</p>
 
       <GameCubesClient
@@ -85,6 +100,6 @@ export default async function GameCubesPage({
         cubes={cubes}
         canCreate={Boolean(session?.user?.id)}
       />
-    </div>
+    </>
   );
 }
