@@ -17,7 +17,7 @@ Next 16.3.1, `cacheComponents: true` sur `main`.
 
 891 pages construites. Avant l'adoption : **zéro** route avec coquille statique.
 
-**10 pages portent encore un opt-out `export const instant = false`** : 5 avec
+**8 pages portent encore un opt-out `export const instant = false`** : 3 avec
 un marqueur `TODO: Cache Components adoption`, et 5 blocages assumés qui portent
 une raison à la place — le layout du portail organisateur de tournoi, les deux
 layouts du portail d'événement, son aiguillage `portal/page.tsx`, et le
@@ -26,7 +26,7 @@ composer l'image de partage.
 
 **Attention en comptant : les marqueurs `TODO` ne comptent pas les opt-outs.**
 Ils marquent aussi les déblocages `await connection()`, qui n'ont rien à voir.
-Il y en a 8 en tout pour 5 opt-outs marqués. Les deux commandes qui donnent
+Il y en a 6 en tout pour 3 opt-outs marqués. Les deux commandes qui donnent
 les vrais chiffres :
 
 ```bash
@@ -36,7 +36,7 @@ comm -23 <(grep -rl 'instant = false' app/ | sort) \
          <(grep -rl 'TODO: Cache Components adoption' app/ | sort)
 ```
 
-42 pages portent un déblocage `await connection()` — le piège Mongo est devenu
+44 pages portent un déblocage `await connection()` — le piège Mongo est devenu
 la contrainte la plus fréquente sur ce qui reste.
 
 Les pages vivent sous `app/[locale]/(app)/` depuis la correction de collision de
@@ -590,13 +590,11 @@ Répartition des opt-outs par ce qui bloque la page :
 **Plus aucun lot mécanique n'est disponible.** Chaque route restante demande de
 décider ce qui appartient à la coquille et ce qui arrive en flux.
 
-**Il ne reste que cinq pages à adopter**, et ce sont les sept plus grosses de
+**Il ne reste que trois pages à adopter**, et ce sont les sept plus grosses de
 l'application :
 
 | page | lignes |
 |---|---|
-| `games/[gameSlugOrId]/cards/[cardId]` | 555 |
-| `leagues/[leagueId]` | 533 |
 | `users/[userTagOrId]` | 495 |
 | `events/[eventId]` | 474 |
 | `leagues/[leagueId]/matches` | 360 |
@@ -659,6 +657,30 @@ devant » ou « la porte derrière », c'est la porte au niveau où la donnée d
 qu'elle est nécessaire.**
 
 Coquille : **19 206 octets**.
+
+### Toutes ne se découpent pas — et c'est une décision, pas un abandon
+
+La fiche d'une carte et la page d'une ligue ont été traitées ensemble, et elles
+ont appelé deux réponses opposées.
+
+**La fiche d'une carte se découpe.** Sa rangée de navigation ne tient qu'au jeu,
+lu en cache, quand le corps demande la carte, ses errata, les cartes qu'ils
+mentionnent, les droits du visiteur et sa collection. Et l'appartenance sociale
+— ce que les amis et les groupes possèdent — coûte une lecture par propriétaire
+pour un simple complément : elle part sous sa propre frontière, sans silhouette,
+puisque lui réserver sa place laisserait un trou à qui n'a ni amis ni groupe.
+Coquille : **20 815 octets**.
+
+**La page d'une ligue ne se découpe pas**, et c'est délibéré : *toutes* ses
+sections dépendent de la session. Le classement en dépend pour savoir qui lit,
+les boutons Rejoindre et Quitter évidemment, les tournois pour les droits
+d'organisation. Quatre frontières auraient attendu la même chose au même moment,
+pour quatre silhouettes au lieu d'une. Coquille : **17 976 octets**.
+
+**La question à se poser sur les trois pages restantes** n'est donc pas « où
+couper », mais : *ces sections attendent-elles des choses différentes ?* Si la
+réponse est non, une frontière suffit, et le commentaire doit dire pourquoi —
+sans quoi la prochaine passe croira à un oubli.
 
 Toutes les autres zones sont faites. Les cinq opt-outs restants sont les
 blocages assumés.
