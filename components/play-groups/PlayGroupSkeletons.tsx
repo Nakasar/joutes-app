@@ -3,12 +3,12 @@ import { CollectionSkeleton } from "@/components/CollectionSkeleton.tsx";
 /**
  * Silhouettes des écrans de groupe de jeu.
  *
- * Les deux écrans — portail et membres — ont la même tête : un titre, une
- * phrase d'explication, et à droite un bouton de retour suivi de la barre
- * d'outils. Ils partagent donc la même silhouette.
+ * Les vues du hub ont la même tête : un titre, une phrase d'explication, et à
+ * droite de quoi agir. Elles partagent donc la même silhouette, posée derrière
+ * la frontière de chaque écran pendant que le groupe se lit.
  *
  * Les hauteurs sont relevées sur l'écran réel : titre en `text-3xl`,
- * explication en `mt-2`, boutons de 36 px, cartes de membre bordées en `p-4`.
+ * explication en `mt-2`, boutons de 36 px, cartes bordées en `p-4`.
  *
  * Aucun `Link` localisé dedans : il rebloquerait la coquille que la frontière
  * vient de rendre possible (voir `components/HeaderFallback.tsx`).

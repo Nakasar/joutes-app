@@ -2,18 +2,26 @@ import db from "@/lib/mongodb";
 import { Filter, ObjectId, UpdateFilter, WithId } from "mongodb";
 import type {
   PlayGroup,
+  PlayGroupAnnouncement,
+  PlayGroupContentItem,
   PlayGroupDocument,
+  PlayGroupFollowerDocument,
   PlayGroupInvitation,
   PlayGroupInvitationDocument,
+  PlayGroupLiveStream,
   PlayGroupMember,
   PlayGroupMemberRole,
+  PlayGroupOptions,
 } from "@/lib/types/PlayGroup";
+import { PLAY_GROUP_MAX_LIVES } from "@/lib/types/PlayGroup";
 
 const PLAY_GROUPS_COLLECTION = "playGroups";
 const PLAY_GROUP_INVITATIONS_COLLECTION = "playGroupInvitations";
+const PLAY_GROUP_FOLLOWERS_COLLECTION = "playGroupFollowers";
 
 const playGroupsCollection = db.collection<PlayGroupDocument>(PLAY_GROUPS_COLLECTION);
 const playGroupInvitationsCollection = db.collection<PlayGroupInvitationDocument>(PLAY_GROUP_INVITATIONS_COLLECTION);
+const playGroupFollowersCollection = db.collection<PlayGroupFollowerDocument>(PLAY_GROUP_FOLLOWERS_COLLECTION);
 
 function toPlayGroup(doc: WithId<PlayGroupDocument>): PlayGroup {
   return {
@@ -27,6 +35,7 @@ function toPlayGroup(doc: WithId<PlayGroupDocument>): PlayGroup {
       joinedAt: member.joinedAt,
     })),
     enabledGameIds: doc.enabledGameIds ?? null,
+    options: doc.options,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
   };
@@ -95,6 +104,213 @@ export async function updatePlayGroupEnabledGames(playGroupId: string, enabledGa
   return result ? toPlayGroup(result) : null;
 }
 
+/** Le nom et la description du groupe — le reste de l'identité vit dans `options`. */
+export async function updatePlayGroupProfile(
+  playGroupId: string,
+  input: { name: string; description?: string },
+): Promise<PlayGroup | null> {
+  const now = new Date().toISOString();
+  const name = input.name.trim();
+  const description = input.description?.trim();
+
+  const result = await playGroupsCollection.findOneAndUpdate(
+    { id: playGroupId },
+    description
+      ? { $set: { name, description, updatedAt: now } }
+      : { $set: { name, updatedAt: now }, $unset: { description: "" } },
+    { returnDocument: "after" },
+  );
+
+  return result ? toPlayGroup(result) : null;
+}
+
+/**
+ * Réécrit une partie de la personnalisation du groupe.
+ *
+ * Une fusion superficielle suffit — et vaut mieux qu'une fusion profonde : le
+ * thème, les liens et le rythme sont éditables ensemble depuis le même
+ * formulaire, tandis que les annonces, les contenus et les directs passent par
+ * les fonctions dédiées plus bas, qui lisent puis réécrivent leur liste
+ * entière.
+ */
+export async function updatePlayGroupOptions(
+  playGroupId: string,
+  patch: Partial<PlayGroupOptions>,
+): Promise<PlayGroup | null> {
+  const now = new Date().toISOString();
+  const current = await playGroupsCollection.findOne({ id: playGroupId });
+  if (!current) {
+    return null;
+  }
+
+  const result = await playGroupsCollection.findOneAndUpdate(
+    { id: playGroupId },
+    { $set: { options: { ...current.options, ...patch }, updatedAt: now } },
+    { returnDocument: "after" },
+  );
+
+  return result ? toPlayGroup(result) : null;
+}
+
+/** Les annonces du groupe, de la plus récente à la plus ancienne. */
+export function sortPlayGroupAnnouncements(announcements: PlayGroupAnnouncement[]): PlayGroupAnnouncement[] {
+  return [...announcements].sort((a, b) => (b.publishedAt ?? "").localeCompare(a.publishedAt ?? ""));
+}
+
+export async function addPlayGroupAnnouncement(
+  playGroupId: string,
+  announcement: PlayGroupAnnouncement,
+): Promise<PlayGroup | null> {
+  const group = await getPlayGroupById(playGroupId);
+  if (!group) {
+    return null;
+  }
+
+  return updatePlayGroupOptions(playGroupId, {
+    announcements: [announcement, ...(group.options?.announcements ?? [])],
+  });
+}
+
+export async function updatePlayGroupAnnouncement(
+  playGroupId: string,
+  announcementId: string,
+  patch: Partial<Pick<PlayGroupAnnouncement, "title" | "body" | "scope">>,
+): Promise<PlayGroup | null> {
+  const group = await getPlayGroupById(playGroupId);
+  if (!group) {
+    return null;
+  }
+
+  const now = new Date().toISOString();
+  const announcements = (group.options?.announcements ?? []).map((item) =>
+    item.id === announcementId ? { ...item, ...patch, updatedAt: now } : item,
+  );
+
+  return updatePlayGroupOptions(playGroupId, { announcements });
+}
+
+export async function removePlayGroupAnnouncement(playGroupId: string, announcementId: string): Promise<PlayGroup | null> {
+  const group = await getPlayGroupById(playGroupId);
+  if (!group) {
+    return null;
+  }
+
+  return updatePlayGroupOptions(playGroupId, {
+    announcements: (group.options?.announcements ?? []).filter((item) => item.id !== announcementId),
+  });
+}
+
+export async function addPlayGroupContent(playGroupId: string, content: PlayGroupContentItem): Promise<PlayGroup | null> {
+  const group = await getPlayGroupById(playGroupId);
+  if (!group) {
+    return null;
+  }
+
+  return updatePlayGroupOptions(playGroupId, {
+    contents: [content, ...(group.options?.contents ?? [])],
+  });
+}
+
+export async function updatePlayGroupContent(
+  playGroupId: string,
+  contentId: string,
+  patch: Partial<Omit<PlayGroupContentItem, "id" | "authorId">>,
+): Promise<PlayGroup | null> {
+  const group = await getPlayGroupById(playGroupId);
+  if (!group) {
+    return null;
+  }
+
+  const now = new Date().toISOString();
+  const contents = (group.options?.contents ?? []).map((item) =>
+    item.id === contentId ? { ...item, ...patch, updatedAt: now } : item,
+  );
+
+  return updatePlayGroupOptions(playGroupId, { contents });
+}
+
+export async function removePlayGroupContent(playGroupId: string, contentId: string): Promise<PlayGroup | null> {
+  const group = await getPlayGroupById(playGroupId);
+  if (!group) {
+    return null;
+  }
+
+  return updatePlayGroupOptions(playGroupId, {
+    contents: (group.options?.contents ?? []).filter((item) => item.id !== contentId),
+  });
+}
+
+/**
+ * Déclare — ou remplace — le direct d'un membre.
+ *
+ * Un membre ne tient qu'un direct à la fois : redéclarer remplace le sien
+ * plutôt que d'en empiler un second. `startedAt` n'est réécrit que si l'URL
+ * change, pour qu'une faute de frappe corrigée ne ramène pas « depuis 42 min »
+ * à zéro.
+ */
+export async function setPlayGroupLiveStream(
+  playGroupId: string,
+  live: PlayGroupLiveStream,
+): Promise<PlayGroup | null> {
+  const group = await getPlayGroupById(playGroupId);
+  if (!group) {
+    return null;
+  }
+
+  const lives = group.options?.lives ?? [];
+  const existing = lives.find((item) => item.memberId === live.memberId);
+  const others = lives.filter((item) => item.memberId !== live.memberId);
+
+  if (!existing && others.length >= PLAY_GROUP_MAX_LIVES) {
+    return null;
+  }
+
+  const merged: PlayGroupLiveStream = {
+    ...live,
+    id: existing?.id ?? live.id,
+    startedAt: existing && existing.url === live.url ? existing.startedAt : live.startedAt,
+  };
+
+  return updatePlayGroupOptions(playGroupId, { lives: [...others, merged] });
+}
+
+export async function removePlayGroupLiveStream(playGroupId: string, liveId: string): Promise<PlayGroup | null> {
+  const group = await getPlayGroupById(playGroupId);
+  if (!group) {
+    return null;
+  }
+
+  return updatePlayGroupOptions(playGroupId, {
+    lives: (group.options?.lives ?? []).filter((item) => item.id !== liveId),
+  });
+}
+
+export async function countPlayGroupFollowers(playGroupId: string): Promise<number> {
+  return playGroupFollowersCollection.countDocuments({ playGroupId });
+}
+
+export async function isFollowingPlayGroup(playGroupId: string, userId: string): Promise<boolean> {
+  const follower = await playGroupFollowersCollection.findOne({ playGroupId, userId });
+  return !!follower;
+}
+
+/** Bascule l'abonnement à la vitrine, et renvoie l'état obtenu. */
+export async function togglePlayGroupFollower(playGroupId: string, userId: string): Promise<boolean> {
+  const deleted = await playGroupFollowersCollection.deleteOne({ playGroupId, userId });
+  if (deleted.deletedCount > 0) {
+    return false;
+  }
+
+  await playGroupFollowersCollection.insertOne({
+    _id: new ObjectId(),
+    playGroupId,
+    userId,
+    createdAt: new Date().toISOString(),
+  });
+
+  return true;
+}
+
 export async function addPlayGroupMember(playGroupId: string, userId: string, role: Exclude<PlayGroupMemberRole, "owner"> = "member"): Promise<boolean> {
   const now = new Date().toISOString();
   const filter: Filter<PlayGroupDocument> = { id: playGroupId, "members.userId": { $ne: userId } };
@@ -156,6 +372,27 @@ export async function createPlayGroupInvitation(input: {
   return toPlayGroupInvitation(invitation);
 }
 
+/** Les invitations encore en attente d'un groupe — l'écran des membres les liste. */
+export async function getPendingInvitationsForPlayGroup(playGroupId: string): Promise<PlayGroupInvitation[]> {
+  const invitations = await playGroupInvitationsCollection
+    .find({ playGroupId, status: "pending" })
+    .sort({ createdAt: -1 })
+    .toArray();
+
+  return invitations.map(toPlayGroupInvitation);
+}
+
+/**
+ * Annule une invitation en attente.
+ *
+ * Supprimée plutôt que marquée « refusée » : le refus appartient à l'invité,
+ * et lui prêter un geste qu'il n'a pas fait fausserait son historique.
+ */
+export async function cancelPlayGroupInvitation(invitationId: string, playGroupId: string): Promise<boolean> {
+  const result = await playGroupInvitationsCollection.deleteOne({ id: invitationId, playGroupId, status: "pending" });
+  return result.deletedCount > 0;
+}
+
 export async function getPendingInvitationsForUser(userId: string): Promise<PlayGroupInvitation[]> {
   const invitations = await playGroupInvitationsCollection.find({ invitedUserId: userId, status: "pending" }).sort({ createdAt: -1 }).toArray();
 
@@ -208,5 +445,6 @@ export async function deletePlayGroup(playGroupId: string): Promise<boolean> {
   }
 
   await playGroupInvitationsCollection.deleteMany({ playGroupId });
+  await playGroupFollowersCollection.deleteMany({ playGroupId });
   return true;
 }

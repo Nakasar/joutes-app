@@ -1,15 +1,20 @@
 import { Suspense } from "react";
-import { EditorFormSkeleton } from "@/components/EditorFormSkeleton.tsx";
-import { auth } from "@/lib/auth.ts";
-import { headers } from "next/headers";
+import type { Metadata } from "next";
 import { connection } from "next/server";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { Metadata } from "next/types";
-import { getPlayGroupByIdAndUser } from "@/lib/db/play-groups.ts";
+
+import { EditorFormSkeleton } from "@/components/EditorFormSkeleton.tsx";
+import { getPlayGroupById } from "@/lib/db/play-groups.ts";
+import { getLairsByIds } from "@/lib/db/lairs.ts";
+import { readPlayGroupPlaces } from "@/lib/db/play-group-sessions.ts";
+import { getUserById } from "@/lib/db/users.ts";
 import { readAllGames } from "@/lib/db/games-cached.ts";
 import PlayGroupGamesSettings from "@/components/play-groups/PlayGroupGamesSettings.tsx";
 
+import PlayGroupShell from "../PlayGroupShell.tsx";
+import PlayGroupIdentityForm from "./PlayGroupIdentityForm.tsx";
+import { requirePlayGroup, requirePlayGroupMember } from "../group-data.ts";
 
 export async function generateMetadata({
   params,
@@ -22,71 +27,90 @@ export async function generateMetadata({
   // ne sait pas figer, et aucune frontière n'y change rien.
   await connection();
   const t = await getTranslations("PlayGroups.settings");
-  const session = await auth.api.getSession({ headers: await headers() });
-  const group = session?.user?.id ? await getPlayGroupByIdAndUser(playGroupId, session.user.id) : null;
+  const group = await getPlayGroupById(playGroupId);
 
-  return {
-    title: group ? t("metadataTitle", { group: group.name }) : t("title"),
-  };
+  return { title: group ? t("metadataTitle", { group: group.name }) : t("title") };
 }
 
-async function PlayGroupSettingsPageContent({
-  params,
-}: {
-  params: Promise<{ playGroupId: string }>;
-}) {
+/**
+ * Les réglages du groupe : sa personnalisation, puis ses jeux.
+ *
+ * Réservés au fondateur et aux admins — le rail ne montre l'entrée qu'à eux, et
+ * la page le vérifie de son côté : un lien partagé ne doit pas suffire.
+ */
+export default function PlayGroupSettingsPage({ params }: { params: Promise<{ playGroupId: string }> }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="px-4 py-6 lg:px-8">
+          <EditorFormSkeleton fields={5} label="Chargement des réglages" />
+        </div>
+      }
+    >
+      <SettingsView params={params} />
+    </Suspense>
+  );
+}
+
+async function SettingsView({ params }: { params: Promise<{ playGroupId: string }> }) {
   const { playGroupId } = await params;
 
-  // Le pilote Mongo touche à l'horloge en lisant le groupe, ce qu'un prérendu
-  // ne sait pas figer, et aucune frontière n'y change rien.
-  await connection();
+  return (
+    <PlayGroupShell playGroupId={playGroupId} active="settings">
+      <SettingsContent playGroupId={playGroupId} />
+    </PlayGroupShell>
+  );
+}
 
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
+async function SettingsContent({ playGroupId }: { playGroupId: string }) {
+  const [group, viewer, t] = await Promise.all([
+    requirePlayGroup(playGroupId),
+    requirePlayGroupMember(playGroupId),
+    getTranslations("PlayGroups.hub.settings"),
+  ]);
 
-  const group = await getPlayGroupByIdAndUser(playGroupId, session.user.id);
-  if (!group) {
+  if (!viewer.canManage) {
     notFound();
   }
 
-  const member = group.members.find((m) => m.userId === session.user.id);
-  if (!member || (member.role !== "owner" && member.role !== "admin")) {
-    redirect(`/play-groups/${group.id}`);
-  }
+  const [games, places, user] = await Promise.all([
+    readAllGames(),
+    readPlayGroupPlaces(playGroupId),
+    viewer.userId ? getUserById(viewer.userId) : null,
+  ]);
 
-  const games = await readAllGames();
+  const lairIds = [
+    ...new Set(
+      [
+        group.options?.rhythm?.defaultPlace?.lairId,
+        ...places.filter((entry) => entry.place.kind === "joutes").map((entry) => entry.place.lairId),
+        ...(user?.lairs ?? []),
+      ].filter((id): id is string => !!id),
+    ),
+  ];
+
+  const lairs = await getLairsByIds(lairIds);
 
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-8">
+    <div className="flex max-w-3xl flex-col gap-6">
+      <header className="flex flex-col gap-1">
+        <h1 className="text-[26px] font-bold tracking-[-0.02em]">{t("title")}</h1>
+        <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
+      </header>
+
+      <PlayGroupIdentityForm
+        group={group}
+        lairs={lairs.map((lair) => ({ id: lair.id, name: lair.name }))}
+      />
+
       <PlayGroupGamesSettings
         playGroupId={group.id}
         groupName={group.name}
         games={games
-          .map((g) => ({ id: g.id, name: g.name, slug: g.slug }))
+          .map((game) => ({ id: game.id, name: game.name, slug: game.slug }))
           .sort((a, b) => a.name.localeCompare(b.name))}
         initialEnabledGameIds={group.enabledGameIds ?? null}
       />
     </div>
-  );
-}
-
-/**
- * Tout cet écran est derrière la porte : il faut être membre du groupe. La
- * coquille ne garde donc que le conteneur et la silhouette — le nom du groupe
- * lui-même n'a pas à s'afficher avant que la porte ait répondu.
- */
-export default function PlayGroupSettingsPage(props: Parameters<typeof PlayGroupSettingsPageContent>[0]) {
-  return (
-    <Suspense
-      fallback={
-        <div className="container mx-auto max-w-3xl px-4 py-8">
-          <EditorFormSkeleton fields={3} label="Chargement des réglages" />
-        </div>
-      }
-    >
-      <PlayGroupSettingsPageContent {...props} />
-    </Suspense>
   );
 }
