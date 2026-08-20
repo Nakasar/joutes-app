@@ -17,7 +17,7 @@ Next 16.3.1, `cacheComponents: true` sur `main`.
 
 891 pages construites. Avant l'adoption : **zéro** route avec coquille statique.
 
-**41 pages portent encore un opt-out `export const instant = false`** : 36 avec
+**34 pages portent encore un opt-out `export const instant = false`** : 29 avec
 un marqueur `TODO: Cache Components adoption`, et 5 blocages assumés qui portent
 une raison à la place — le layout du portail organisateur de tournoi, les deux
 layouts du portail d'événement, son aiguillage `portal/page.tsx`, et le
@@ -26,7 +26,7 @@ composer l'image de partage.
 
 **Attention en comptant : les marqueurs `TODO` ne comptent pas les opt-outs.**
 Ils marquent aussi les déblocages `await connection()`, qui n'ont rien à voir.
-Il y en a 39 en tout pour 36 opt-outs marqués. Les deux commandes qui donnent
+Il y en a 32 en tout pour 29 opt-outs marqués. Les deux commandes qui donnent
 les vrais chiffres :
 
 ```bash
@@ -590,16 +590,16 @@ Répartition des opt-outs par ce qui bloque la page :
 **Plus aucun lot mécanique n'est disponible.** Chaque route restante demande de
 décider ce qui appartient à la coquille et ce qui arrive en flux.
 
-Par zone : `account` 7, `events` 5, `trade` 3, `games` 3, `game-matches` 3,
-`decks` 3, `tournaments` 2, `leagues` 2, `wishlists` 2, `t` 2, `sell-lists` 2,
-puis une page chacune pour `friends`, `lairs`, `users`, `policies`, `oauth`,
-`notifications` et `login`.
+Par zone : `events` 5, `trade` 3, `games` 3, `game-matches` 3, `decks` 3,
+`tournaments` 2, `leagues` 2, `wishlists` 2, `t` 2, `sell-lists` 2, puis une page
+chacune pour `friends`, `lairs`, `users`, `policies`, `oauth`, `notifications` et
+`login`.
 
-**`news`, `quizz`, `play-groups`, `collection`, `cubes` et `admin` sont faites
-entièrement.** `games`, `leagues` et `lairs` sont presque faites : il n'y reste
-que les très grosses pages — portail du jeu, fiche de carte, page d'une ligue,
-ses matchs, page d'un lieu — toutes entre 350 et 550 lignes, qui demandent
-chacune leur propre passe.
+**`news`, `quizz`, `play-groups`, `collection`, `cubes`, `admin` et `account`
+sont faites entièrement.** `games`, `leagues` et `lairs` sont presque faites : il
+n'y reste que les très grosses pages — portail du jeu, fiche de carte, page
+d'une ligue, ses matchs, page d'un lieu — toutes entre 350 et 550 lignes, qui
+demandent chacune leur propre passe.
 
 **Le motif est stabilisé**, et il tient en trois formes :
 
@@ -611,8 +611,8 @@ chacune leur propre passe.
 
 Ce qui reste demande surtout de décider, page par page, ce que la coquille a le
 droit de montrer avant que la porte d'authentification ait répondu. La réponse
-par défaut, retenue partout jusqu'ici : **rien de ce que la porte protège**, pas
-même le nom de l'objet.
+retenue partout jusqu'ici : **rien de ce que la porte protège**, pas même le nom
+de l'objet, ni la mise en page d'un espace personnel.
 
 ### Une porte au niveau du layout couvre tout, y compris les pages
 

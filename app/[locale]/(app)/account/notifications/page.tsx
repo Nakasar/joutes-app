@@ -1,3 +1,5 @@
+import { AccountPanelSkeleton } from "@/components/AccountPanelSkeleton.tsx";
+import { Suspense } from "react";
 import {auth} from "@/lib/auth.ts";
 import {headers} from "next/headers";
 import {redirect} from "next/navigation";
@@ -13,11 +15,7 @@ import db from "@/lib/mongodb.ts";
 import {ObjectId} from "mongodb";
 import {User} from "@/lib/types/User.ts";
 
-// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
-// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
-export const instant = false;
-
-export default async function AccountNotificationsPage() {
+async function AccountNotificationsPageContent() {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -124,4 +122,25 @@ export default async function AccountNotificationsPage() {
       </div>
     </div>
   )
+}
+
+/**
+ * Tout cet écran est derrière la porte, titre compris : on ne montre pas la
+ * mise en page d'un espace personnel avant de savoir à qui il appartient. La
+ * coquille ne garde que le conteneur et la silhouette.
+ */
+export default function AccountNotificationsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8">
+      <div className="container mx-auto px-4 max-w-5xl">
+          <AccountPanelSkeleton cards={1} label="Chargement des préférences" />
+        </div>
+    </div>
+      }
+    >
+      <AccountNotificationsPageContent />
+    </Suspense>
+  );
 }
