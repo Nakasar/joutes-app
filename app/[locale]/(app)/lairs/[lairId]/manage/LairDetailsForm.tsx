@@ -3,10 +3,19 @@
 import { useState, useTransition } from "react";
 import { Game } from "@/lib/types/Game.ts";
 import { Lair } from "@/lib/types/Lair.ts";
-import { updateLairDetails } from "./actions.ts";
+import { useTranslations } from "next-intl";
+import { updateLairDetails, type LairManageError } from "./actions.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
+
+/** Les échecs de l'action serveur, traduits ici — elle ne renvoie que des codes. */
+const ERROR_KEYS: Record<LairManageError, string> = {
+  NOT_FOUND: "errors.notFound",
+  USER_NOT_FOUND: "errors.userNotFound",
+  INVALID: "errors.invalid",
+  FAILED: "errors.failed",
+};
 
 export default function LairDetailsForm({
   lair,
@@ -15,6 +24,7 @@ export default function LairDetailsForm({
   lair: Lair;
   games: Game[];
 }) {
+  const t = useTranslations("Lairs.manage.details");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -80,7 +90,15 @@ export default function LairDetailsForm({
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
       } else {
-        setError(result.error || "Erreur lors de la mise à jour");
+        // Le champ visé, quand la validation en désigne un : « Site web est
+        // invalide » situe la faute, là où « certains champs » la laisse
+        // chercher.
+        const field = "field" in result ? result.field : undefined;
+        setError(
+          result.error === "INVALID" && field
+            ? t("errors.invalidField", { field: t(`fields.${field}`) })
+            : t(ERROR_KEYS[result.error]),
+        );
       }
     });
   };
@@ -104,12 +122,12 @@ export default function LairDetailsForm({
 
       {success && (
         <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
-          Les modifications ont été enregistrées avec succès
+          {t("saved")}
         </div>
       )}
 
       <div>
-        <label className="block text-sm font-medium mb-2">Nom du lieu</label>
+        <label className="block text-sm font-medium mb-2">{t("fields.name")}</label>
         <Input
           type="text"
           required
@@ -119,54 +137,54 @@ export default function LairDetailsForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">URL de la bannière</label>
+        <label className="block text-sm font-medium mb-2">{t("fields.banner")}</label>
         <Input
           type="url"
           value={formData.banner}
           onChange={(e) => setFormData({ ...formData, banner: e.target.value })}
-          placeholder="https://exemple.com/banniere.jpg"
+          placeholder={t("placeholders.banner")}
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Adresse (optionnel)</label>
+        <label className="block text-sm font-medium mb-2">{t("fields.address")}</label>
         <Input
           type="text"
           value={formData.address}
           onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-          placeholder="123 rue de la Joute, 75001 Paris"
+          placeholder={t("placeholders.address")}
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Site web (optionnel)</label>
+        <label className="block text-sm font-medium mb-2">{t("fields.website")}</label>
         <Input
           type="url"
           value={formData.website}
           onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-          placeholder="https://exemple.com"
+          placeholder={t("placeholders.website")}
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Coordonnées GPS (optionnel)</label>
+        <label className="block text-sm font-medium mb-2">{t("fields.location")}</label>
         <Input
           type="text"
           value={formData.coordinates}
           onChange={(e) => setFormData({ ...formData, coordinates: e.target.value })}
-          placeholder="48.8566, 2.3522"
+          placeholder={t("placeholders.location")}
         />
         <p className="text-xs text-muted-foreground mt-1">
-          Format : latitude, longitude (exemple : 48.8566, 2.3522 pour Paris)
+          {t("locationHint")}
         </p>
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Jeux disponibles</label>
+        <label className="block text-sm font-medium mb-2">{t("fields.games")}</label>
         <div className="space-y-2 max-h-64 overflow-y-auto border rounded-lg p-3">
           {games.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Aucun jeu disponible. Ajoutez-en d&apos;abord dans la section administration.
+              {t("noGames")}
             </p>
           ) : (
             games.map((game) => (
@@ -190,7 +208,7 @@ export default function LairDetailsForm({
 
       <div className="flex justify-end pt-4">
         <Button type="submit" disabled={isPending}>
-          {isPending ? "Enregistrement..." : "Enregistrer les modifications"}
+          {isPending ? t("saving") : t("save")}
         </Button>
       </div>
     </form>

@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils.ts";
 import { LAIR_ACCENT_PALETTE } from "@/lib/lairs/theme.ts";
 import type { LairAccentColor } from "@/lib/lairs/theme.ts";
 import { readLairSections, type LairSection } from "@/lib/lairs/sections.ts";
-import type { Lair, LairLink } from "@/lib/types/Lair";
+import type { Lair, LairLink, LairOrganizer } from "@/lib/types/Lair";
 
 import ImageDropzone from "./ImageDropzone.tsx";
 import LairSectionsField from "./LairSectionsField.tsx";
@@ -68,8 +68,13 @@ type FormState = {
   videoUrl: string;
   transit: string;
   parking: string;
+  organizers: LairOrganizer[];
+  rhythm: { label: string; value: string }[];
   featuredEventId: string;
 };
+
+const MAX_ORGANIZERS = 8;
+const MAX_RHYTHM = 6;
 
 function initialState(lair: Lair): FormState {
   const options = lair.options ?? {};
@@ -97,6 +102,8 @@ function initialState(lair: Lair): FormState {
     videoUrl: options.about?.videoUrl ?? "",
     transit: options.about?.transit ?? "",
     parking: options.about?.parking ?? "",
+    organizers: options.about?.organizers ?? [],
+    rhythm: options.about?.rhythm ?? [],
     featuredEventId: options.featuredEventId ?? "",
   };
 }
@@ -166,8 +173,13 @@ export default function LairCustomizationForm({
           videoUrl: state.videoUrl,
           transit: state.transit,
           parking: state.parking,
-          organizers: lair.options?.about?.organizers,
-          rhythm: lair.options?.about?.rhythm,
+          // Les lignes vides ne partent pas : une ligne à moitié saisie ferait
+          // refuser tout le formulaire pour un champ que le gérant croyait
+          // avoir laissé de côté.
+          organizers: state.organizers.filter((entry) => entry.name.trim().length > 0),
+          rhythm: state.rhythm.filter(
+            (entry) => entry.label.trim().length > 0 && entry.value.trim().length > 0,
+          ),
         },
         featuredEventId: state.featuredEventId,
       });
@@ -602,6 +614,126 @@ export default function LairCustomizationForm({
               onChange={(event) => set("parking", event.target.value)}
             />
           </div>
+        </div>
+
+        {/* L'équipe du lieu, affichée dans la colonne de l'onglet « À propos ». */}
+        <div className="flex flex-col gap-2">
+          <Label>{t("organizers.title")}</Label>
+          <p className="text-[13px] text-muted-foreground">{t("organizers.description")}</p>
+
+          {state.organizers.map((organizer, index) => (
+            <div key={index} className="flex flex-wrap items-center gap-2">
+              <Input
+                value={organizer.name}
+                placeholder={t("organizers.namePlaceholder")}
+                aria-label={t("organizers.name")}
+                className="min-w-0 flex-1"
+                onChange={(event) =>
+                  set(
+                    "organizers",
+                    state.organizers.map((item, i) =>
+                      i === index ? { ...item, name: event.target.value } : item,
+                    ),
+                  )
+                }
+              />
+              <Input
+                value={organizer.role ?? ""}
+                placeholder={t("organizers.rolePlaceholder")}
+                aria-label={t("organizers.role")}
+                className="min-w-0 flex-1"
+                onChange={(event) =>
+                  set(
+                    "organizers",
+                    state.organizers.map((item, i) =>
+                      i === index ? { ...item, role: event.target.value } : item,
+                    ),
+                  )
+                }
+              />
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                aria-label={t("organizers.remove", { name: organizer.name })}
+                onClick={() => set("organizers", state.organizers.filter((_, i) => i !== index))}
+              >
+                <X className="size-4" aria-hidden />
+              </Button>
+            </div>
+          ))}
+
+          {state.organizers.length < MAX_ORGANIZERS && (
+            <Button
+              type="button"
+              variant="outline"
+              className="justify-start border-dashed"
+              onClick={() => set("organizers", [...state.organizers, { name: "" }])}
+            >
+              <Plus className="mr-2 size-4" aria-hidden />
+              {t("organizers.add")}
+            </Button>
+          )}
+        </div>
+
+        {/* Le rythme habituel, affiché dans la colonne de l'onglet « Agenda ». */}
+        <div className="flex flex-col gap-2">
+          <Label>{t("rhythm.title")}</Label>
+          <p className="text-[13px] text-muted-foreground">{t("rhythm.description")}</p>
+
+          {state.rhythm.map((entry, index) => (
+            <div key={index} className="flex flex-wrap items-center gap-2">
+              <Input
+                value={entry.label}
+                placeholder={t("rhythm.labelPlaceholder")}
+                aria-label={t("rhythm.label")}
+                className="min-w-0 flex-1"
+                onChange={(event) =>
+                  set(
+                    "rhythm",
+                    state.rhythm.map((item, i) =>
+                      i === index ? { ...item, label: event.target.value } : item,
+                    ),
+                  )
+                }
+              />
+              <Input
+                value={entry.value}
+                placeholder={t("rhythm.valuePlaceholder")}
+                aria-label={t("rhythm.value")}
+                className="min-w-0 flex-1"
+                onChange={(event) =>
+                  set(
+                    "rhythm",
+                    state.rhythm.map((item, i) =>
+                      i === index ? { ...item, value: event.target.value } : item,
+                    ),
+                  )
+                }
+              />
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                aria-label={t("rhythm.remove", { label: entry.label })}
+                onClick={() => set("rhythm", state.rhythm.filter((_, i) => i !== index))}
+              >
+                <X className="size-4" aria-hidden />
+              </Button>
+            </div>
+          ))}
+
+          {state.rhythm.length < MAX_RHYTHM && (
+            <Button
+              type="button"
+              variant="outline"
+              className="justify-start border-dashed"
+              onClick={() => set("rhythm", [...state.rhythm, { label: "", value: "" }])}
+            >
+              <Plus className="mr-2 size-4" aria-hidden />
+              {t("rhythm.add")}
+            </Button>
+          )}
         </div>
       </section>
 

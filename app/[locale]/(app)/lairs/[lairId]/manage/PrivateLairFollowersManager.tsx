@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState, useTransition } from "react";
 import { removeFollowerFromPrivateLair } from "@/app/[locale]/(app)/account/private-lairs-actions.ts";
 import { User } from "@/lib/types/User.ts";
@@ -20,6 +22,7 @@ export default function PrivateLairFollowersManager({
   followers,
   owners,
 }: PrivateLairFollowersManagerProps) {
+  const t = useTranslations("Lairs.manage.followers");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -45,7 +48,7 @@ export default function PrivateLairFollowersManager({
         setError(null);
         setTimeout(() => setSuccess(null), 3000);
       } else {
-        setError(result.error || "Erreur lors du retrait de l'utilisateur");
+        setError(t("errors.removeFailed"));
         setSuccess(null);
       }
     });
@@ -60,16 +63,16 @@ export default function PrivateLairFollowersManager({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Abonnés
+            {t("title")}
           </CardTitle>
           <CardDescription>
-            Gérez les utilisateurs qui suivent ce lieu privé
+            {t("description")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-muted-foreground">
             <Users className="h-12 w-12 mx-auto opacity-50 mb-2" />
-            <p>Aucun abonné pour le moment.</p>
+            <p>{t("empty")}</p>
             <p className="text-sm mt-1">
               Partagez le code d&apos;invitation pour inviter des utilisateurs.
             </p>
@@ -87,7 +90,7 @@ export default function PrivateLairFollowersManager({
           Abonnés ({nonOwnerFollowers.length})
         </CardTitle>
         <CardDescription>
-          Gérez les utilisateurs qui suivent ce lieu privé
+          {t("description")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
