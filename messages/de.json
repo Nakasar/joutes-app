@@ -2100,13 +2100,13 @@
     "Features": {
       "metadata": {
         "title": "Funktionen",
-        "description": "Entdecke alles, was Joutes für deine Sammelkartenspiel-Leidenschaft bietet: Sammlung, Wunschlisten, Spielgruppen, Events und mehr."
+        "description": "Entdecke alles, was Joutes für deine Sammelkartenspiel-Leidenschaft bietet: Sammlung, Wunschlisten, Spielgruppen und ihre öffentliche Seite, Spielorte, Events und mehr."
       },
       "hero": {
         "eyebrow": "Joutes",
         "titleHighlight": "Eine App",
         "title": "für all deine Sammelkartenspiele",
-        "subtitle": "Kartenkataloge, Sammlung, Wunschlisten, Spielgruppen, Events… Joutes bündelt alles, was du für deine TCG-Leidenschaft brauchst, allein oder mit Freunden.",
+        "subtitle": "Kartenkataloge, Sammlung, Wunschlisten, Spielgruppen und ihre öffentliche Seite, Spielorte, Events… Joutes bündelt alles, was du für deine TCG-Leidenschaft brauchst, allein oder mit Freunden.",
         "ctaPrimary": "Spiele entdecken",
         "ctaSecondary": "Konto erstellen"
       },
@@ -2139,12 +2139,39 @@
           ]
         },
         "playGroups": {
-          "title": "Spiele gemeinsam mit deinen Gruppen",
-          "description": "Erstelle Spielgruppen, teile eine gemeinsame Sammlung, die jedes Mitglied bearbeiten kann, und behalte den Überblick, wer welche Karte ausgeliehen hat.",
+          "title": "Deine Spielgruppe bekommt ihre Werkbank",
+          "description": "Eine Gruppe, eine Seite: kommende Sessions, Terminumfragen, Ankündigungen und die Listen der Gruppe auf einen Blick — ohne einen Chatverlauf zurückzulesen.",
           "bullets": [
-            "Eine Sammlung, geteilt von allen Mitgliedern",
-            "Kartenweise Verfolgung von Ausleihen",
-            "Einladungen und Rollen (Besitzer, Admin, Mitglied)"
+            "Sessions mit festem Datum oder als Terminumfrage geöffnet",
+            "Zusage, vielleicht, Absage: jede Person antwortet, die Zählung läuft von selbst",
+            "Ort der Session: ein Joutes-Ort mit eigener Seite, ein frei benannter Ort oder bei einem Mitglied",
+            "Ankündigungen der Gruppe, nur für Mitglieder oder auch auf der öffentlichen Seite",
+            "Rollen Gründer, Admin und Mitglied, Einladungen per Benutzername oder E-Mail",
+            "Gemeinsame Sammlung, Wunschlisten und Verkaufsliste der Gruppe",
+            "Tauschgeschäfte ganz von selbst zusammengeführt: wer sucht, wer verkauft"
+          ]
+        },
+        "groupShowcase": {
+          "title": "Eine öffentliche Seite im Namen der Gruppe",
+          "description": "Eine Gruppe ist nicht mehr nur ein privater Raum: Sie hat eine öffentliche Seite in ihren eigenen Farben, der man folgen kann. Eure Sessions und internen Ankündigungen bleiben intern.",
+          "bullets": [
+            "Logo, Banner und Akzentfarbe: Werkbank und öffentliche Seite übernehmen eure Farben",
+            "Untertitel, Beschreibung, gewohnter Rhythmus und Links zu euren Netzwerken",
+            "Abonnenten, die der Gruppe folgen und sehen, was sie veröffentlicht",
+            "Turnierbilanz, Spiele und Orte der Gruppe, auf der öffentlichen Seite übernommen",
+            "Wappenrolle: öffentliche Gruppen findet man nach Aktivität, Entfernung oder Neuzugang",
+            "Private Gruppe: sie verlässt die Wappenrolle, und ihre Seite bittet darum, nicht indexiert zu werden"
+          ]
+        },
+        "groupContents": {
+          "title": "Artikel, Videos und Livestreams",
+          "description": "Was eure Gruppe produziert, hat endlich einen Ort: Artikel in Markdown, Videos und Replays, und eure Twitch- oder YouTube-Streams ganz oben auf der öffentlichen Seite.",
+          "bullets": [
+            "Artikel in Markdown, mit Zusammenfassung, Vorschaubild und zugehörigem Spiel",
+            "Videos und Replays von YouTube oder Twitch, mit ihrer Laufzeit",
+            "Filter Alles, Videos, Artikel und Replays auf der öffentlichen Seite",
+            "Bis zu drei gleichzeitige Streams, von Mitgliedern gemeldet, samt Zuschauerzahl",
+            "Streams und Veröffentlichungen erscheinen auch in der Wappenrolle"
           ]
         },
         "wishlists": {
@@ -2157,12 +2184,14 @@
           ]
         },
         "lairs": {
-          "title": "Spielorte und Events in deiner Nähe",
-          "description": "Entdecke Spielorte, ihre Events, und melde dich in wenigen Sekunden an.",
+          "title": "Spielorte, als Schaufenster",
+          "description": "Die Seite eines Ortes ist kein Eintrag mehr: Sie ist sein Schaufenster, mit News, Kalender, den Spielen, die dort gespielt werden, und einer richtigen Vorstellung — und mit seinem Livestream ganz oben, wenn er sendet.",
           "bullets": [
-            "Eventkalender für jeden Ort",
-            "Ortsseiten mit praktischen Infos",
-            "Erinnerungen und Benachrichtigungen"
+            "Vier Tabs: News, Kalender, hier gespielte Spiele, Über den Ort",
+            "News des Ortes, eine davon angeheftet, und ein hervorgehobenes Event",
+            "Kalender, gefiltert auf die Spiele, denen du folgst, Anmeldung in Sekunden",
+            "Öffnungszeiten des Tages, Anfahrt, Fotos und Ausstattung",
+            "Folge einem Ort, um seine Ankündigungen zu erhalten"
           ]
         },
         "decks": {
@@ -2209,11 +2238,27 @@
           "gameSet": "Game Set"
         },
         "playGroups": {
-          "sharedCollection": "Geteilte Sammlung",
-          "cardName1": "Runensplitter",
-          "cardName2": "Stahlwache",
-          "borrowedBy": "Ausgeliehen · {name}",
-          "available": "×{count} verfügbar"
+          "hub": "Werkbank der Gruppe",
+          "pollBadge": "Umfrage offen",
+          "slot1": "Donnerstag 19:30",
+          "slot2": "Samstag 14:00",
+          "availability": "{count}/{total} verfügbar",
+          "rsvp": "Ich komme · {count} dabei"
+        },
+        "groupShowcase": {
+          "name": "Die Raben",
+          "tagline": "Spielgruppe · Thionville",
+          "follow": "Folgen",
+          "followers": "{count} Abonnenten",
+          "accent": "Akzent"
+        },
+        "groupContents": {
+          "liveBadge": "LIVE",
+          "viewers": "{count} Zuschauer",
+          "article": "Artikel",
+          "articleTitle": "Rückblick auf den GP in Metz",
+          "video": "Video",
+          "videoTitle": "Kommentierter Draft · 12 Min."
         },
         "wishlists": {
           "title": "Meine Wunschliste",
@@ -2225,6 +2270,11 @@
         },
         "lairs": {
           "name": "Die Drachenhöhle",
+          "tabNews": "News",
+          "tabAgenda": "Kalender",
+          "tabAbout": "Über den Ort",
+          "pinned": "ANGEHEFTET",
+          "newsTitle": "Neue Ware am Samstag",
           "event": "Riftbound-Turnier · Samstag 14 Uhr"
         },
         "decks": {
@@ -2240,7 +2290,7 @@
       "organizersLink": {
         "eyebrow": "Du organisierst?",
         "title": "Joutes für Veranstalter",
-        "subtitle": "Läden, Vereine, Veranstalter, Verlage: Kalender, Anmeldungen, Turniere, Ligen und Schnittstellen — auf einer eigenen Seite.",
+        "subtitle": "Läden, Vereine, Veranstalter, Verlage: das Schaufenster deines Ortes, Kalender, Anmeldungen, Turniere, Ligen und Schnittstellen — auf einer eigenen Seite.",
         "cta": "Zur Veranstalterseite"
       }
     },
@@ -4469,13 +4519,13 @@
   "FeaturesOrganizers": {
     "metadata": {
       "title": "Joutes für Veranstalter",
-      "description": "Kalender, Anmeldungen, Turniere, Ligen und Schnittstellen: alles, was du brauchst, um deine Spielveranstaltungen zu organisieren und deine Tische zu füllen — Läden, Vereine, Veranstalter und Verlage."
+      "description": "Das Schaufenster deines Ortes, Kalender, Anmeldungen, Turniere, Ligen und Schnittstellen: alles, was du brauchst, um zu deinen Spielern zu sprechen und deine Tische zu füllen — Läden, Vereine, Veranstalter und Verlage."
     },
     "hero": {
       "eyebrow": "Läden · Vereine · Veranstalter · Verlage",
       "titleHighlight": "Füll deine Tische,",
       "title": "nicht deine Tabellen",
-      "subtitle": "Veröffentliche deinen Kalender, öffne die Anmeldung, führe deine Turniere und Ligen durch. Joutes erreicht deine Spielerinnen und Spieler dort, wo sie ohnehin sind: Discord, Mobil-App, Web, Benachrichtigungen.",
+      "subtitle": "Mach aus der Seite deines Ortes ein Schaufenster, veröffentliche deinen Kalender, öffne die Anmeldung, führe deine Turniere und Ligen durch. Joutes erreicht deine Spielerinnen und Spieler dort, wo sie ohnehin sind: Discord, Mobil-App, Web, Benachrichtigungen.",
       "ctaPrimary": "Veranstaltung erstellen",
       "ctaSecondary": "Turnier organisieren"
     },
@@ -4485,7 +4535,7 @@
       "items": {
         "stores": {
           "title": "Spieleläden",
-          "description": "Dein Wochenprogramm sichtbar für die Spielerinnen und Spieler im Viertel, und deine Anmeldungen aktuell ohne Papierliste."
+          "description": "Ein Schaufenster in deiner Marke, dein Wochenprogramm sichtbar für die Spielerinnen und Spieler im Viertel, und deine Anmeldungen aktuell ohne Papierliste."
         },
         "associations": {
           "title": "Vereine und Clubs",
@@ -4502,7 +4552,28 @@
       }
     },
     "soonLabel": "Demnächst",
+    "proLabel": "Joutes Pro",
     "items": {
+      "lairPage": {
+        "title": "Die Seite deines Ortes wird zum Schaufenster",
+        "description": "Früher war sie ein Eintrag mit Adresse und Eventliste. Jetzt ist sie die Seite, auf der du zu deinen Spielern sprichst: vier Tabs, deine News, deine Marke — und dein Livestream ganz oben, wenn du sendest.",
+        "bullets": [
+          "Vier Tabs — News, Kalender, hier gespielte Spiele, Über den Ort — jeder mit eigener Spalte für praktische Infos",
+          "News des Ortes: Schließungen, Neuzugänge, Aktionen, mit einer angehefteten Ankündigung ganz oben",
+          "Ein hervorgehobenes Event nach deiner Wahl, mit freien Plätzen und Anmeldeknopf",
+          "Twitch- oder YouTube-Stream: eine eingefügte URL, und der Player steht für alle Besucher oben auf der Seite",
+          "Öffnungszeiten Tag für Tag, geteilte Zeiten inklusive, und „geöffnet bis 19 Uhr“ für den Besucher berechnet",
+          "Gewohnter Rhythmus: was es hier am Freitagabend gibt, auch ohne eingetragenes Event",
+          "Vorstellung in Markdown, Fotogalerie, Ausstattung, Anfahrt mit dem Nahverkehr und Parkmöglichkeiten",
+          "Dein Team namentlich, deine Links und Netzwerke, dein Discord",
+          "Abonnenten, die dem Ort folgen und seine Ankündigungen erhalten"
+        ],
+        "pro": [
+          "Logo und Akzentfarbe: die Seite übernimmt deine Farben, bis zu Karten und Schaltflächen",
+          "Reihenfolge der Abschnitte der Seite, von dir festgelegt",
+          "Vorstellungsvideo, eingebettet im Tab „Über den Ort“"
+        ]
+      },
       "calendar": {
         "title": "Ein Kalender, den deine Spieler ohnehin ansehen",
         "description": "Deine Veranstaltungen liegen nicht auf einer einsamen Seite: Sie landen im öffentlichen Joutes-Kalender, auf der Seite deines Spielorts, in der Suche nach Spiel und in der Umkreissuche.",
@@ -4654,6 +4725,18 @@
         "name": "Frühlingssaison",
         "points": "{count} Pkt.",
         "deadline": "Fenster · noch 3 Tage"
+      },
+      "lairPage": {
+        "name": "Die Drachenhöhle",
+        "tabNews": "News",
+        "tabAgenda": "Kalender",
+        "tabAbout": "Über den Ort",
+        "live": "LIVE",
+        "pinned": "ANGEHEFTET",
+        "newsTitle": "Neuzugang: neues Set am Samstag",
+        "featured": "Im Fokus · Samstagsturnier",
+        "seats": "18 / 24 angemeldet",
+        "openUntil": "Geöffnet bis 19 Uhr"
       },
       "integrations": {
         "endpoint": "GET /api/events",

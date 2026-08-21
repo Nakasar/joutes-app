@@ -8,6 +8,7 @@ import {
   MapPin,
   Medal,
   Megaphone,
+  Radio,
   Smartphone,
   Sparkles,
   Timer,
@@ -61,6 +62,53 @@ export async function HeroMockup() {
             {channel.label}
           </div>
         ))}
+      </div>
+    </DeviceFrame>
+  );
+}
+
+export async function LairPageMockup() {
+  const t = await mockupT();
+  const tabs = [t("lairPage.tabNews"), t("lairPage.tabAgenda"), t("lairPage.tabAbout")];
+  return (
+    <DeviceFrame accent="from-cyan-500 to-blue-500">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <span className="flex items-center gap-1.5 text-xs font-semibold">
+          <span className="flex size-5 items-center justify-center rounded bg-gradient-to-br from-cyan-400 to-blue-600 text-[9px] font-bold text-white">
+            RD
+          </span>
+          {t("lairPage.name")}
+        </span>
+        <span className="flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[9px] font-bold text-red-600 dark:text-red-300">
+          <Radio className="size-2.5" />
+          {t("lairPage.live")}
+        </span>
+      </div>
+      <div className="mb-3 flex flex-wrap gap-1.5">
+        {tabs.map((tab, i) => (
+          <span
+            key={tab}
+            className={`rounded-full px-2.5 py-1 text-[9px] font-semibold ${
+              i === 0 ? "bg-cyan-500 text-white" : "bg-muted text-muted-foreground"
+            }`}
+          >
+            {tab}
+          </span>
+        ))}
+      </div>
+      <div className="flex items-center gap-2 rounded-md border px-2.5 py-2 text-[10px]">
+        <span className="rounded bg-cyan-500/15 px-1.5 py-0.5 text-[8px] font-bold text-cyan-700 dark:text-cyan-300">
+          {t("lairPage.pinned")}
+        </span>
+        <span className="min-w-0 flex-1 truncate font-medium">{t("lairPage.newsTitle")}</span>
+      </div>
+      <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 rounded-md bg-blue-500/10 px-2.5 py-2 text-[10px] text-blue-700 dark:text-blue-300">
+        <span className="font-medium">{t("lairPage.featured")}</span>
+        <span>{t("lairPage.seats")}</span>
+      </div>
+      <div className="mt-3 flex items-center gap-1.5 text-[10px] text-muted-foreground">
+        <Clock className="size-3" />
+        {t("lairPage.openUntil")}
       </div>
     </DeviceFrame>
   );

@@ -2657,13 +2657,13 @@
     "Features": {
       "metadata": {
         "title": "Features",
-        "description": "Discover everything Joutes offers for your trading card game passion: collection tracking, wishlists, play groups, events and more."
+        "description": "Discover everything Joutes offers for your trading card game passion: collection tracking, wishlists, play groups and their public page, game venues, events and more."
       },
       "hero": {
         "eyebrow": "Joutes",
         "titleHighlight": "One app",
         "title": "for all your trading card games",
-        "subtitle": "Card catalogs, collection tracking, wishlists, play groups, events… Joutes brings together everything you need to live your TCG passion, solo or with friends.",
+        "subtitle": "Card catalogs, collection tracking, wishlists, play groups and their public page, game venues, events… Joutes brings together everything you need to live your TCG passion, solo or with friends.",
         "ctaPrimary": "Explore games",
         "ctaSecondary": "Create an account"
       },
@@ -2696,12 +2696,39 @@
           ]
         },
         "playGroups": {
-          "title": "Play together with your groups",
-          "description": "Create play groups, share a collection that any member can update, and keep track of who borrowed which card.",
+          "title": "Your play group gets its Workbench",
+          "description": "One group, one page: upcoming sessions, availability polls, announcements and the group's lists, all readable at a glance — with no chat thread to scroll back through.",
           "bullets": [
-            "A collection shared across all members",
-            "Card-by-card borrow tracking",
-            "Invitations and roles (owner, admin, member)"
+            "Sessions set on a known date, or opened as an availability poll",
+            "In, maybe, out: everyone answers and the count keeps itself",
+            "Session venue: a Joutes location with its own page, a free-form place, or a member's home",
+            "Group announcements, members-only or carried over to the public page",
+            "Founder, admin and member roles, invitations by username or email",
+            "Shared collection, wishlists and the group's sale list",
+            "Trades matched on their own: who is after a card, who is selling it"
+          ]
+        },
+        "groupShowcase": {
+          "title": "A public page in your group's name",
+          "description": "A group is no longer just a private space: it has a public page, in its own colors, that players can follow. Your sessions and internal announcements stay internal.",
+          "bullets": [
+            "Logo, banner and accent color: the Workbench and the public page take your colors",
+            "Tagline, description, usual rhythm and links to your networks",
+            "Followers who subscribe to the group and see what it publishes",
+            "Tournament record, games and venues, carried over to the public page",
+            "Roll of arms: public groups are found by activity, by distance or by how new they are",
+            "Private group: it leaves the roll of arms, and its page asks not to be indexed"
+          ]
+        },
+        "groupContents": {
+          "title": "Articles, videos and live streams",
+          "description": "What your group produces finally has somewhere to live: articles written in markdown, videos and replays, and your Twitch or YouTube streams announced at the top of the public page.",
+          "bullets": [
+            "Articles written in markdown, with summary, thumbnail and related game",
+            "YouTube or Twitch videos and replays, with their running time",
+            "All, videos, articles and replays filters on the public page",
+            "Up to three simultaneous streams declared by members, viewer counts included",
+            "Streams and posts also surface on the roll of arms"
           ]
         },
         "wishlists": {
@@ -2714,12 +2741,14 @@
           ]
         },
         "lairs": {
-          "title": "Local game stores and events near you",
-          "description": "Discover game stores (lairs), their events, and sign up in a few seconds.",
+          "title": "Game venues, turned into showcases",
+          "description": "A venue's page is no longer a listing: it is its showcase, with news, an agenda, the games played there and a proper introduction — plus its live stream at the top of the page whenever it is broadcasting.",
           "bullets": [
-            "Event calendar for every location",
-            "Store pages with practical info",
-            "Reminders and notifications"
+            "Four tabs: news, agenda, games played here, about",
+            "Venue news, one of them pinned, and a featured event",
+            "Agenda filtered on the games you follow, sign-up in seconds",
+            "Today's opening hours, directions, photos and amenities",
+            "Follow a venue to receive its announcements"
           ]
         },
         "decks": {
@@ -2766,11 +2795,27 @@
           "gameSet": "Game set"
         },
         "playGroups": {
-          "sharedCollection": "Shared collection",
-          "cardName1": "Runic Flare",
-          "cardName2": "Steel Guard",
-          "borrowedBy": "Borrowed · {name}",
-          "available": "×{count} available"
+          "hub": "Group Workbench",
+          "pollBadge": "Poll open",
+          "slot1": "Thursday 7:30pm",
+          "slot2": "Saturday 2pm",
+          "availability": "{count}/{total} available",
+          "rsvp": "I'm in · {count} coming"
+        },
+        "groupShowcase": {
+          "name": "The Ravens",
+          "tagline": "Play group · Thionville",
+          "follow": "Follow",
+          "followers": "{count} followers",
+          "accent": "Accent"
+        },
+        "groupContents": {
+          "liveBadge": "LIVE",
+          "viewers": "{count} viewers",
+          "article": "Article",
+          "articleTitle": "Looking back at the Metz GP",
+          "video": "Video",
+          "videoTitle": "Commentated draft · 12 min"
         },
         "wishlists": {
           "title": "My wishlist",
@@ -2782,6 +2827,11 @@
         },
         "lairs": {
           "name": "The Dragon's Lair",
+          "tabNews": "News",
+          "tabAgenda": "Agenda",
+          "tabAbout": "About",
+          "pinned": "PINNED",
+          "newsTitle": "New stock in on Saturday",
           "event": "Riftbound tournament · Saturday 2pm"
         },
         "decks": {
@@ -2797,7 +2847,7 @@
       "organizersLink": {
         "eyebrow": "Running events?",
         "title": "Joutes for event organizers",
-        "subtitle": "Stores, clubs, organizers, publishers: calendar, registrations, tournaments, leagues and integrations, on a page of their own.",
+        "subtitle": "Stores, clubs, organizers, publishers: your venue's showcase, calendar, registrations, tournaments, leagues and integrations, on a page of their own.",
         "cta": "See the organizers page"
       }
     },
@@ -4469,13 +4519,13 @@
   "FeaturesOrganizers": {
     "metadata": {
       "title": "Joutes for organizers",
-      "description": "Calendar, registrations, tournaments, leagues and integrations: everything you need to run your gaming events and fill your tables — stores, clubs, organizers and publishers."
+      "description": "Your venue's showcase, calendar, registrations, tournaments, leagues and integrations: everything you need to talk to your players and fill your tables — stores, clubs, organizers and publishers."
     },
     "hero": {
       "eyebrow": "Stores · Clubs · Organizers · Publishers",
       "titleHighlight": "Fill your tables,",
       "title": "not your spreadsheets",
-      "subtitle": "Publish your calendar, open registrations, run your tournaments and leagues. Joutes reaches your players where they already are: Discord, mobile, web, notifications.",
+      "subtitle": "Turn your venue's page into a showcase, publish your calendar, open registrations, run your tournaments and leagues. Joutes reaches your players where they already are: Discord, mobile, web, notifications.",
       "ctaPrimary": "Create an event",
       "ctaSecondary": "Run a tournament"
     },
@@ -4485,7 +4535,7 @@
       "items": {
         "stores": {
           "title": "Game stores",
-          "description": "Your weekly schedule visible to players nearby, and your registrations kept up to date without a paper sign-up sheet."
+          "description": "A showcase in your own brand, your weekly schedule visible to players nearby, and your registrations kept up to date without a paper sign-up sheet."
         },
         "associations": {
           "title": "Clubs and associations",
@@ -4502,7 +4552,28 @@
       }
     },
     "soonLabel": "Coming soon",
+    "proLabel": "Joutes Pro",
     "items": {
+      "lairPage": {
+        "title": "Your venue's page becomes your showcase",
+        "description": "It used to be a listing with an address and a list of events. It is now the page where you talk to your players: four tabs, your news, your brand, and your live stream at the top of the page whenever you are broadcasting.",
+        "bullets": [
+          "Four tabs — news, agenda, games played here, about — each with its own column of practical information",
+          "Venue news: closures, new stock, promotions, with one announcement pinned at the top",
+          "A featured event of your choosing, with its remaining seats and its sign-up button",
+          "Twitch or YouTube stream: paste a URL and the player moves to the top of the page for every visitor",
+          "Opening hours day by day, split hours included, with \"open until 7pm\" worked out for the visitor",
+          "Usual rhythm: what players find here on a Friday night, even with no event listed",
+          "Markdown introduction, photo gallery, amenities, public transport access and parking",
+          "Your team named, your links and networks, your Discord",
+          "Followers who subscribe to the venue and receive its announcements"
+        ],
+        "pro": [
+          "Logo and accent color: the page takes your colors, down to the cards and buttons",
+          "The order of the page's sections, set by you",
+          "Introduction video embedded in the \"About\" tab"
+        ]
+      },
       "calendar": {
         "title": "A calendar your players already check",
         "description": "Your events do not sit on an isolated page: they land in the public Joutes calendar, on your venue's page, in per-game search and in search around a location.",
@@ -4654,6 +4725,18 @@
         "name": "Spring season",
         "points": "{count} pts",
         "deadline": "Window · 3 days left"
+      },
+      "lairPage": {
+        "name": "The Dragon's Lair",
+        "tabNews": "News",
+        "tabAgenda": "Agenda",
+        "tabAbout": "About",
+        "live": "LIVE",
+        "pinned": "PINNED",
+        "newsTitle": "New stock: the new set lands Saturday",
+        "featured": "Featured · Saturday tournament",
+        "seats": "18 / 24 registered",
+        "openUntil": "Open until 7pm"
       },
       "integrations": {
         "endpoint": "GET /api/events",
