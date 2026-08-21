@@ -61,6 +61,11 @@ export const playGroupIdentitySchema = z.object({
   defaultPlace: playGroupPlaceSchema.optional(),
 });
 
+/** La visibilité du groupe : deux valeurs, rien d'autre. */
+export const playGroupVisibilitySchema = z.object({
+  visibility: z.enum(["public", "private"]),
+});
+
 export const playGroupAnnouncementSchema = z.object({
   title: z.string().trim().min(1).max(140),
   body: optionalText(2000),

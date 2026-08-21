@@ -18,6 +18,7 @@ import {
   playGroupLiveSchema,
   playGroupRsvpSchema,
   playGroupSessionSchema,
+  playGroupVisibilitySchema,
 } from "@/lib/schemas/play-group.schema.ts";
 import type { PlayGroupRsvpAnswer } from "@/lib/types/PlayGroupSession";
 
@@ -105,6 +106,13 @@ function fail(error: unknown, context: string): PlayGroupActionResult {
 function revalidateGroup(playGroupId: string) {
   for (const locale of locales) {
     revalidatePath(`/${locale}/play-groups/${playGroupId}`, "layout");
+  }
+}
+
+/** Le rôle d'armes, par langue lui aussi — il liste tous les groupes. */
+function revalidateRoll() {
+  for (const locale of locales) {
+    revalidatePath(`/${locale}/play-groups/explore`);
   }
 }
 
@@ -530,6 +538,38 @@ export async function updatePlayGroupIdentity(
     return { success: true };
   } catch (error) {
     return fail(error, "Erreur lors de la personnalisation d'un groupe:");
+  }
+}
+
+/**
+ * Rendre le groupe public, ou le retirer du rôle d'armes.
+ *
+ * Réservé au fondateur et aux admins : c'est un réglage de gouvernance, pas une
+ * préférence d'affichage. Le rôle d'armes est revalidé en même temps que le
+ * groupe — sans quoi un groupe passé en privé y resterait affiché jusqu'à la
+ * prochaine écriture.
+ */
+export async function updatePlayGroupVisibility(
+  playGroupId: string,
+  input: unknown,
+): Promise<PlayGroupActionResult> {
+  try {
+    await requireMember(playGroupId, true);
+    const parsed = playGroupVisibilitySchema.safeParse(input);
+    if (!parsed.success) {
+      return { success: false, error: "INVALID" };
+    }
+
+    const updated = await groupsDb.setPlayGroupVisibility(playGroupId, parsed.data.visibility);
+    if (!updated) {
+      return { success: false, error: "NOT_FOUND" };
+    }
+
+    revalidateGroup(playGroupId);
+    revalidateRoll();
+    return { success: true };
+  } catch (error) {
+    return fail(error, "Erreur lors du changement de visibilité d'un groupe:");
   }
 }
 

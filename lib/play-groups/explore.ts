@@ -1,4 +1,4 @@
-import type { PlayGroupPlace } from "@/lib/types/PlayGroup";
+import type { PlayGroupPlace, PlayGroupVisibility } from "@/lib/types/PlayGroup";
 
 /**
  * L'exploration des groupes de jeu : ce qui se classe, et comment.
@@ -22,6 +22,12 @@ export type ExploreGroup = {
   id: string;
   name: string;
   initials: string;
+  /**
+   * Un groupe privé n'arrive ici que pour ses membres : la ligne le dit, sans
+   * quoi celui qui a posé le réglage ne saurait pas lequel de ses groupes est
+   * caché aux autres.
+   */
+  visibility: PlayGroupVisibility;
   tagline: string | null;
   accentColor: string | null;
   logo: string | null;

@@ -2288,6 +2288,7 @@
       "entry": {
         "liveCry": "{streamer} streamt · {count, plural, one {# Zuschauer} other {# Zuschauer}}",
         "liveCryPlain": "{streamer} streamt gerade",
+        "private": "Privat",
         "quiet": "Seit einer Weile nichts Neues",
         "deeds": {
           "content": "{title} — {at}",
@@ -2561,6 +2562,22 @@
         "cancelInvitation": "Abbrechen"
       },
       "settings": {
+        "visibility": {
+          "title": "Sichtbarkeit",
+          "hint": "Wer diese Gruppe über Joutes finden kann.",
+          "public": {
+            "label": "Öffentlich",
+            "detail": "Die Gruppe erscheint auf der Wappenrolle: jede und jeder kann sie entdecken, ihrer Vitrine folgen und sehen, was sie veröffentlicht."
+          },
+          "private": {
+            "label": "Privat",
+            "detail": "Die Gruppe verschwindet für alle außer ihren Mitgliedern von der Wappenrolle."
+          },
+          "privateNotice": "Ihre Vitrine bleibt für alle mit dem Link offen und bittet Suchmaschinen, sie nicht zu indexieren.",
+          "savedPublic": "Die Gruppe erscheint wieder auf der Wappenrolle.",
+          "savedPrivate": "Die Gruppe wurde von der Wappenrolle genommen.",
+          "error": "Die Sichtbarkeit der Gruppe konnte nicht geändert werden."
+        },
         "title": "Einstellungen der Gruppe",
         "metadataTitle": "Einstellungen · {group}",
         "subtitle": "Die Identität der Gruppe, ihre Marke, ihre Links und ihr Rhythmus.",

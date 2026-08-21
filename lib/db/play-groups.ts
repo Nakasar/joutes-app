@@ -1,5 +1,6 @@
 import db from "@/lib/mongodb";
 import { Filter, ObjectId, UpdateFilter, WithId } from "mongodb";
+import { readRollFilter } from "@/lib/play-groups/access";
 import type {
   PlayGroup,
   PlayGroupAnnouncement,
@@ -12,6 +13,7 @@ import type {
   PlayGroupMember,
   PlayGroupMemberRole,
   PlayGroupOptions,
+  PlayGroupVisibility,
 } from "@/lib/types/PlayGroup";
 import { PLAY_GROUP_MAX_LIVES } from "@/lib/types/PlayGroup";
 
@@ -29,6 +31,7 @@ function toPlayGroup(doc: WithId<PlayGroupDocument>): PlayGroup {
     name: doc.name,
     description: doc.description || undefined,
     ownerId: doc.ownerId,
+    visibility: doc.visibility,
     members: (doc.members || []).map((member: PlayGroupMember) => ({
       userId: member.userId,
       role: member.role,
@@ -299,10 +302,18 @@ export async function removePlayGroupLiveStream(playGroupId: string, liveId: str
  * La borne existe parce que la page classe et cherche en mémoire : au-delà,
  * c'est une pagination qu'il faudra, pas une limite plus haute.
  */
-export async function listPlayGroups(limit = 120): Promise<PlayGroup[]> {
+export async function listPlayGroups(
+  limit = 120,
+  viewerId: string | null = null,
+): Promise<PlayGroup[]> {
+  // Le filtre est posé dans la requête, pas après : un groupe privé ne doit pas
+  // seulement être caché à l'écran, il ne doit pas quitter la base. C'est aussi
+  // ce qui fait porter la borne sur les groupes visibles plutôt que sur un
+  // paquet dont une partie serait ensuite jetée. La règle elle-même vit dans
+  // `readRollFilter`, à côté de `isPlayGroupListable` qui la dit en clair.
   const docs = await playGroupsCollection
     .find(
-      {},
+      readRollFilter(viewerId) as Filter<PlayGroupDocument>,
       {
         // Le corps d'un article fait des dizaines de milliers de caractères et
         // la page n'en montre que le titre : les tirer pour cent groupes à
@@ -316,6 +327,20 @@ export async function listPlayGroups(limit = 120): Promise<PlayGroup[]> {
     .toArray();
 
   return docs.map(toPlayGroup);
+}
+
+/** Rendre le groupe public, ou le retirer du rôle d'armes. */
+export async function setPlayGroupVisibility(
+  playGroupId: string,
+  visibility: PlayGroupVisibility,
+): Promise<PlayGroup | null> {
+  const result = await playGroupsCollection.findOneAndUpdate(
+    { id: playGroupId },
+    { $set: { visibility, updatedAt: new Date().toISOString() } },
+    { returnDocument: "after" },
+  );
+
+  return result ? toPlayGroup(result) : null;
 }
 
 /**

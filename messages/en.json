@@ -1642,6 +1642,7 @@
       "entry": {
         "liveCry": "{streamer} is streaming · {count, plural, one {# viewer} other {# viewers}}",
         "liveCryPlain": "{streamer} is streaming right now",
+        "private": "Private",
         "quiet": "No news for a while",
         "deeds": {
           "content": "{title} — {at}",
@@ -1915,6 +1916,22 @@
         "cancelInvitation": "Cancel"
       },
       "settings": {
+        "visibility": {
+          "title": "Visibility",
+          "hint": "Who can find this group from Joutes.",
+          "public": {
+            "label": "Public",
+            "detail": "The group appears on the roll of arms: anyone can discover it, follow its showcase and see what it publishes."
+          },
+          "private": {
+            "label": "Private",
+            "detail": "The group disappears from the roll of arms for everyone but its members."
+          },
+          "privateNotice": "Its showcase stays open to anyone with the link, and asks search engines not to index it.",
+          "savedPublic": "The group appears on the roll of arms again.",
+          "savedPrivate": "The group has been taken off the roll of arms.",
+          "error": "We could not change the group visibility."
+        },
         "title": "Group settings",
         "metadataTitle": "Settings · {group}",
         "subtitle": "The group's identity, its brand, its links and its rhythm.",

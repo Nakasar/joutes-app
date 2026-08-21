@@ -1642,6 +1642,7 @@
       "entry": {
         "liveCry": "{streamer} diffuse · {count, plural, one {# spectateur} other {# spectateurs}}",
         "liveCryPlain": "{streamer} diffuse en ce moment",
+        "private": "Privé",
         "quiet": "Pas de nouvelle depuis un moment",
         "deeds": {
           "content": "{title} — {at}",
@@ -1915,6 +1916,22 @@
         "cancelInvitation": "Annuler"
       },
       "settings": {
+        "visibility": {
+          "title": "Visibilité",
+          "hint": "Qui peut trouver ce groupe depuis Joutes.",
+          "public": {
+            "label": "Public",
+            "detail": "Le groupe paraît au rôle d'armes : n'importe qui peut le découvrir, suivre sa vitrine et voir ce qu'il publie."
+          },
+          "private": {
+            "label": "Privé",
+            "detail": "Le groupe disparaît du rôle d'armes pour tout le monde sauf ses membres."
+          },
+          "privateNotice": "Sa vitrine reste ouverte à qui en a l'adresse, et demande aux moteurs de ne pas l'indexer.",
+          "savedPublic": "Le groupe paraît de nouveau au rôle d'armes.",
+          "savedPrivate": "Le groupe est retiré du rôle d'armes.",
+          "error": "Impossible de changer la visibilité du groupe."
+        },
         "title": "Réglages du groupe",
         "metadataTitle": "Réglages · {group}",
         "subtitle": "L'identité du groupe, sa marque, ses liens et son rythme.",

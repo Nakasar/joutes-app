@@ -1642,6 +1642,7 @@
       "entry": {
         "liveCry": "{streamer} trasmette · {count, plural, one {# spettatore} other {# spettatori}}",
         "liveCryPlain": "{streamer} sta trasmettendo ora",
+        "private": "Privato",
         "quiet": "Nessuna novità da un po'",
         "deeds": {
           "content": "{title} — {at}",
@@ -1915,6 +1916,22 @@
         "cancelInvitation": "Annulla"
       },
       "settings": {
+        "visibility": {
+          "title": "Visibilità",
+          "hint": "Chi può trovare questo gruppo da Joutes.",
+          "public": {
+            "label": "Pubblico",
+            "detail": "Il gruppo appare nel rotolo d'armi: chiunque può scoprirlo, seguire la sua vetrina e vedere ciò che pubblica."
+          },
+          "private": {
+            "label": "Privato",
+            "detail": "Il gruppo scompare dal rotolo d'armi per tutti tranne i suoi membri."
+          },
+          "privateNotice": "La sua vetrina resta aperta a chi ne ha l'indirizzo e chiede ai motori di ricerca di non indicizzarla.",
+          "savedPublic": "Il gruppo appare di nuovo nel rotolo d'armi.",
+          "savedPrivate": "Il gruppo è stato tolto dal rotolo d'armi.",
+          "error": "Impossibile cambiare la visibilità del gruppo."
+        },
         "title": "Impostazioni del gruppo",
         "metadataTitle": "Impostazioni · {group}",
         "subtitle": "L'identità del gruppo, il suo marchio, i suoi link e il suo ritmo.",

@@ -5,6 +5,7 @@ import { getLairsByIds } from "@/lib/db/lairs";
 import { getUsersByIds } from "@/lib/db/users";
 import { readLiveEmbed } from "@/lib/media/live-embed";
 import { externalUrl } from "@/lib/lairs/urls";
+import { readPlayGroupVisibility } from "@/lib/play-groups/access";
 import {
   isFreshLive,
   readActivityRank,
@@ -23,6 +24,9 @@ import type { PlayGroup, PlayGroupContentItem } from "@/lib/types/PlayGroup";
  * sessions, jeux, lieux, diffuseurs — plutôt que groupe par groupe dans le
  * rendu : une page qui affiche cent groupes ferait sinon plusieurs centaines
  * d'allers-retours pour trois chiffres et deux noms par ligne.
+ *
+ * Les groupes privés sont écartés par la requête elle-même, avant toute
+ * jointure : un groupe qu'on ne doit pas voir ne doit pas quitter la base.
  */
 export type ExploreRoll = {
   groups: ExploreGroup[];
@@ -36,8 +40,13 @@ export type ExploreRoll = {
 const HERALD_LIMIT = 3;
 const HERALD_MAX_AGE_DAYS = 120;
 
-export async function readExploreRoll(options: { host: string; limit?: number }): Promise<ExploreRoll> {
-  const groups = await listPlayGroups(options.limit);
+export async function readExploreRoll(options: {
+  host: string;
+  limit?: number;
+  /** Le lecteur : ses groupes privés lui restent visibles, ceux des autres non. */
+  viewerId?: string | null;
+}): Promise<ExploreRoll> {
+  const groups = await listPlayGroups(options.limit, options.viewerId ?? null);
   const ids = groups.map((group) => group.id);
 
   const lairIds = groups
@@ -124,6 +133,7 @@ export async function readExploreRoll(options: { host: string; limit?: number })
       id: group.id,
       name: group.name,
       initials,
+      visibility: readPlayGroupVisibility(group),
       tagline: theme?.tagline ?? group.description ?? null,
       accentColor,
       logo: theme?.logo ?? null,

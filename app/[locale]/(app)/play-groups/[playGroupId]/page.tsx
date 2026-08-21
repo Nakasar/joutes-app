@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { getTranslations } from "next-intl/server";
 
 import { getPlayGroupById } from "@/lib/db/play-groups.ts";
+import { readPlayGroupVisibility } from "@/lib/play-groups/access.ts";
 import { PlayGroupScreenSkeleton } from "@/components/play-groups/PlayGroupSkeletons.tsx";
 
 import PlayGroupShell from "./PlayGroupShell.tsx";
@@ -51,6 +52,12 @@ export async function generateMetadata({
   const viewer = await readGroupViewer(playGroupId);
   const view = viewer.isMember ? readPlayGroupView(search.view) : "showcase";
 
+  // Un groupe privé garde sa vitrine ouverte à qui en a l'adresse — c'est ce
+  // qui permet d'inviter quelqu'un à la regarder — mais demande aux moteurs de
+  // ne pas l'indexer : un groupe retiré du rôle d'armes qui ressortirait d'une
+  // recherche ne serait pas privé.
+  const robots = readPlayGroupVisibility(group) === "private" ? { index: false, follow: false } : undefined;
+
   // La vitrine est la seule vue qui sorte du groupe : c'est la seule qui mérite
   // une description et une image sociale.
   if (view === "showcase") {
@@ -62,6 +69,7 @@ export async function generateMetadata({
       return {
         title: article.title,
         description: article.summary,
+        robots,
         openGraph: {
           title: article.title,
           description: article.summary,
@@ -73,6 +81,7 @@ export async function generateMetadata({
     return {
       title: group.name,
       description: group.options?.theme?.tagline ?? group.description,
+      robots,
       openGraph: {
         title: group.name,
         description: group.options?.theme?.tagline ?? group.description ?? undefined,
