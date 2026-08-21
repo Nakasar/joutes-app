@@ -191,8 +191,11 @@ async function ShowcaseHero({ playGroupId }: { playGroupId: string }) {
       <div className="absolute inset-x-0 bottom-0">
         <div className="container mx-auto flex max-w-7xl flex-wrap items-end gap-5 px-4 pb-6 lg:px-10">
           {theme?.logo && (
-            <div className="relative hidden size-[84px] shrink-0 overflow-hidden rounded-[14px] border border-[var(--group-accent-40)] bg-black/40 sm:block">
-              <Image src={theme.logo} alt="" fill className="object-cover" sizes="84px" />
+            <div className="hidden size-[84px] shrink-0 overflow-hidden rounded-[14px] border border-[var(--group-accent-40)] bg-black/40 sm:block">
+              {/* `next/image` refuserait l'hôte : l'emblème est une URL saisie
+                  par le groupe, comme la bannière juste au-dessus. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={theme.logo} alt="" className="size-full object-cover" />
             </div>
           )}
 

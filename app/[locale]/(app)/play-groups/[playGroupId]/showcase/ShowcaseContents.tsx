@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { FileText, Play, Radio } from "lucide-react";
 
@@ -76,14 +75,12 @@ export default function ShowcaseContents({ contents }: { contents: ShowcaseConte
             const body = (
               <>
                 {content.thumbnail ? (
-                  <span className="relative block h-[120px] w-full shrink-0 overflow-hidden bg-muted">
-                    <Image
-                      src={content.thumbnail}
-                      alt=""
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 640px) 100vw, 360px"
-                    />
+                  <span className="block h-[120px] w-full shrink-0 overflow-hidden bg-muted">
+                    {/* Une adresse saisie à la publication : le composant image
+                        de Next refuserait l'hôte, seul le stockage blob étant
+                        déclaré dans `next.config.ts`. */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={content.thumbnail} alt="" className="size-full object-cover" />
                   </span>
                 ) : (
                   <span className="flex h-[120px] w-full shrink-0 items-center justify-center bg-[var(--group-accent-10)]">

@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import Image from "next/image";
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -108,8 +107,11 @@ async function MembersContent({ playGroupId }: { playGroupId: string }) {
               >
                 <div className="flex min-w-0 items-center gap-3">
                   {member.avatar ? (
-                    <span className="relative size-[34px] shrink-0 overflow-hidden rounded-full">
-                      <Image src={member.avatar} alt="" fill className="object-cover" sizes="34px" />
+                    <span className="size-[34px] shrink-0 overflow-hidden rounded-full">
+                      {/* `next/image` refuserait l'hôte : les avatars viennent
+                          de Discord et d'ailleurs, comme partout dans le site. */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={member.avatar} alt="" className="size-full object-cover" />
                     </span>
                   ) : (
                     <span

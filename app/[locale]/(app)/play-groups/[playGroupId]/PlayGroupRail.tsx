@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useTranslations } from "next-intl";
 import {
   Calendar,
@@ -174,8 +173,11 @@ function RailLink({ entry, active, label }: { entry: RailEntry; active: PlayGrou
 function GroupEmblem({ logo, name }: { logo?: string; name: string }) {
   if (logo) {
     return (
-      <span className="relative size-10 shrink-0 overflow-hidden rounded-[11px] border border-[var(--group-accent-34)]">
-        <Image src={logo} alt="" fill className="object-cover" sizes="40px" />
+      <span className="size-10 shrink-0 overflow-hidden rounded-[11px] border border-[var(--group-accent-34)]">
+        {/* `next/image` refuserait l'hôte : le logo est une URL saisie par le
+            groupe, et `next.config.ts` n'autorise que le stockage blob. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={logo} alt="" className="size-full object-cover" />
       </span>
     );
   }

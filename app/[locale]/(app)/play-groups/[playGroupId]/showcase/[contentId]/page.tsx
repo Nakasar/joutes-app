@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import Image from "next/image";
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
@@ -90,8 +89,11 @@ async function Article({ params }: { params: ArticleParams }) {
         </Button>
 
         {content.thumbnail && (
-          <div className="relative mt-6 h-56 w-full overflow-hidden rounded-xl border bg-muted">
-            <Image src={content.thumbnail} alt="" fill className="object-cover" sizes="768px" priority />
+          <div className="mt-6 h-56 w-full overflow-hidden rounded-xl border bg-muted">
+            {/* Une adresse saisie à la publication : le composant image de Next
+                refuserait l'hôte, seul le stockage blob étant déclaré. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={content.thumbnail} alt="" className="size-full object-cover" />
           </div>
         )}
 
