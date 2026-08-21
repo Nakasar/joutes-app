@@ -77,8 +77,11 @@ export default function PlayGroupLiveControls({
     );
   }
 
+  // `basis-full` plutôt que `w-full` : dans une rangée qui passe à la ligne,
+  // le formulaire réclame sa propre ligne entière au lieu de prendre toute la
+  // largeur de la rangée et d'écraser ce qui l'accompagne.
   return (
-    <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+    <div className="flex basis-full flex-col gap-2 sm:flex-row sm:items-center">
       <Input
         value={url}
         onChange={(event) => setUrl(event.target.value)}
