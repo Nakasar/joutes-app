@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import type { MarketPrice } from "@/lib/prices/display";
 import { appliedUnitPrice, isNegotiatedPrice, sideTotal, tradeDifference } from "./pricing";
 
 /**
@@ -9,9 +10,10 @@ import { appliedUnitPrice, isNegotiatedPrice, sideTotal, tradeDifference } from 
  * Exécution : `npm run test`.
  */
 
-const market = (amount: number, currency = "EUR") => ({
+const market = (amount: number, currency = "EUR"): MarketPrice => ({
   amount,
   currency,
+  source: "cardmarket",
   updatedAt: "2026-08-14T00:43:53.000Z",
 });
 

@@ -1,23 +1,32 @@
-import type { CardPriceValues } from "@/lib/types/card-price";
+import type { CardPriceSource, CardPriceValues } from "@/lib/types/card-price";
 
 /**
  * Prix d'une carte tel que l'interface le montre : un seul montant, sa devise,
- * et la date à laquelle la place de marché l'a calculé.
+ * la place de marché qui l'a relevé et la date à laquelle elle l'a calculé.
  *
  * Les relevés en portent bien plus (prix bas, moyen, tendance, moyennes
  * glissantes, un jeu de valeurs par tirage — cf. docs/CARD_PRICES.md), mais à
  * côté du nom d'une carte, dans une grille, il n'y a la place que pour un
  * chiffre.
  */
-export type CardMarketPrice = {
+export type MarketPrice = {
   amount: number;
   /** Devise ISO 4217 (`EUR`). */
   currency: string;
+  /** Place de marché d'où vient le montant : elle le date, et le nomme. */
+  source: CardPriceSource;
   /** Date du relevé de la place de marché, pas celle de l'affichage. */
   updatedAt: string;
   /** Produit de la place de marché d'où vient le montant, pour y renvoyer. */
   productId?: number;
 };
+
+/**
+ * Devise dans laquelle un total s'affiche quand rien ne le renseigne — un
+ * booster sans carte cotée, une offre d'échange encore vide. Les deux places de
+ * marché relèvent en euros ; c'est un repli d'affichage, pas une conversion.
+ */
+export const DEFAULT_MARKET_CURRENCY = "EUR";
 
 /**
  * Le montant qui représente la carte : sa tendance, le prix lissé par la place
@@ -37,16 +46,16 @@ export function cardPriceAmount(prices: CardPriceValues): number | undefined {
  * booster à 3 € d'un booster dont trois cartes sur douze seulement ont un
  * prix, et sans lui le total se lirait comme une valeur complète.
  *
- * Les devises ne s'additionnent pas : si le lot en mélange plusieurs — ce
- * qu'aucune place de marché ne produit aujourd'hui —, seule la plus répandue
- * est retenue, les autres comptant comme des cartes sans prix.
+ * Les devises ne s'additionnent pas : si le lot en mélange plusieurs — deux
+ * places de marché n'ont pas forcément la même —, seule la plus répandue est
+ * retenue, les autres comptant comme des cartes sans prix.
  */
-export function sumCardPrices(prices: (CardMarketPrice | undefined)[]): {
+export function sumCardPrices(prices: (MarketPrice | undefined)[]): {
   amount: number;
   currency: string;
   priced: number;
 } | undefined {
-  const known = prices.filter((price): price is CardMarketPrice => price !== undefined);
+  const known = prices.filter((price): price is MarketPrice => price !== undefined);
 
   if (known.length === 0) {
     return undefined;
@@ -70,8 +79,11 @@ export function sumCardPrices(prices: (CardMarketPrice | undefined)[]): {
  * Montant dans la langue de l'utilisateur (`1,29 €`, `€1.29`). Une devise
  * inconnue de l'environnement ne doit pas faire tomber la page : le montant
  * est alors affiché tel quel, suivi de son code.
+ *
+ * Un montant et une devise suffisent : les totaux calculés à l'écran — l'écart
+ * entre deux offres d'échange, par exemple — ne viennent d'aucun relevé.
  */
-export function formatCardPrice(price: CardMarketPrice, locale: string): string {
+export function formatCardPrice(price: { amount: number; currency: string }, locale: string): string {
   try {
     return new Intl.NumberFormat(locale, { style: "currency", currency: price.currency }).format(price.amount);
   } catch {

@@ -36,9 +36,9 @@ non plus un `Buffer.byteLength` sur le document entier.
 
 ## Les prix suivent les cartes
 
-Chaque carte cotée porte son `marketPrice` — montant de référence, devise, date
-du relevé et produit Cardmarket d'origine — comme le fait déjà la recherche en
-ligne (cf. docs/CARD_PRICES.md). Une carte sans relevé n'a pas le champ : hors
+Chaque carte cotée porte son `marketPrice` — montant de référence, devise, place
+de marché d'origine, date du relevé et produit d'origine — comme le fait déjà la
+recherche en ligne (cf. docs/CARD_PRICES.md). Une carte sans relevé n'a pas le champ : hors
 ligne comme en ligne, l'absence de prix se lit à ce vide, jamais à un zéro.
 
 Les relevés sont lus **par paquets de cartes** (`withMarketPricesStream`, sur

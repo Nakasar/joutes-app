@@ -4,8 +4,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { DateTime } from "luxon";
 import { ExternalLink } from "lucide-react";
 import { cardPriceAmount, formatCardPrice } from "@/lib/prices/display";
-import { referenceOffer } from "@/lib/prices/cardmarket-prices";
-import { cardmarketProductUrl } from "@/lib/prices/cardmarket";
+import { referenceOffer } from "@/lib/prices/offers";
+import { PRICE_SOURCE_LABELS, marketProductUrl } from "@/lib/prices/sources";
 import type { CardPrice } from "@/lib/types/card-price";
 
 /**
@@ -33,7 +33,9 @@ export default function CardPriceDetails({ price, gameSlug }: { price?: CardPric
 
   // Le lien mène au tirage d'où vient le prix de référence, pas à un autre
   // tirage de la même carte.
-  const url = cardmarketProductUrl(gameSlug, referenceOffer(price.offers)?.productId);
+  const url = marketProductUrl(price.source, gameSlug, referenceOffer(price.offers)?.productId);
+
+  const market = PRICE_SOURCE_LABELS[price.source];
 
   const sourceDate = DateTime.fromISO(price.sourceUpdatedAt).setLocale(locale).toLocaleString(DateTime.DATE_MED);
 
@@ -57,7 +59,7 @@ export default function CardPriceDetails({ price, gameSlug }: { price?: CardPric
             target="_blank"
             rel="noopener noreferrer"
             className="ml-auto inline-flex items-center gap-1 text-lg font-bold tabular-nums text-emerald-700 hover:underline dark:text-emerald-400"
-            title={t("openOnCardmarket", { date: sourceDate })}
+            title={t("openOnMarket", { market, date: sourceDate })}
           >
             {format(amount)}
             <ExternalLink className="size-3.5" aria-hidden="true" />
@@ -81,7 +83,7 @@ export default function CardPriceDetails({ price, gameSlug }: { price?: CardPric
       ) : null}
 
       <p className="text-[11px] leading-snug text-muted-foreground">
-        {t("source", { date: sourceDate })}
+        {t("source", { market, date: sourceDate })}
         {price.offers.length > 1 ? ` · ${t("printings", { count: price.offers.length })}` : null}
       </p>
     </section>

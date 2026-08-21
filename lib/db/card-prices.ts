@@ -3,8 +3,9 @@ import 'server-only';
 import db from "@/lib/mongodb";
 import { ObjectId, type AnyBulkWriteOperation } from "mongodb";
 import type { CardPrice, CardPriceSource } from "@/lib/types/card-price";
-import { cardPriceAmount, type CardMarketPrice } from "@/lib/prices/display";
-import { referenceOffer } from "@/lib/prices/cardmarket-prices";
+import { CARD_PRICE_SOURCES } from "@/lib/types/card-price";
+import { cardPriceAmount, type MarketPrice } from "@/lib/prices/display";
+import { referenceOffer } from "@/lib/prices/offers";
 import { attachInBatches } from "@/lib/prices/stream";
 
 /**
@@ -13,6 +14,12 @@ import { attachInBatches } from "@/lib/prices/stream";
  * Un document par (jeu, carte, place de marché) : le relevé est un
  * instantané, réécrit à chaque import et jamais accumulé — cf.
  * docs/CARD_PRICES.md.
+ *
+ * Une carte peut donc en porter plusieurs, un par fournisseur importé. À
+ * l'écran il n'y a de place que pour un prix : c'est celui du premier
+ * fournisseur de `CARD_PRICE_SOURCES` qui en a un pour cette carte-là, carte
+ * par carte — un jeu à demi couvert par le plus sûr des deux garde ainsi les
+ * prix de l'autre pour le reste.
  */
 
 type CardPriceDoc = Omit<CardPrice, "sourceUpdatedAt" | "updatedAt"> & {
@@ -76,28 +83,74 @@ export async function upsertCardPrices(gameId: ObjectId, prices: CardPrice[]): P
   return { written };
 }
 
-/** Relevés d'une carte, toutes places de marché confondues. */
+/**
+ * Relevés d'une carte, toutes places de marché confondues, celui qui la
+ * représente en tête : la fiche d'une carte n'en montre qu'un, et c'est le
+ * premier de cette liste.
+ *
+ * Un relevé sans montant passe derrière ceux qui en ont un, quel que soit son
+ * fournisseur : il ne représente pas la carte, il constate qu'elle ne se vend
+ * pas.
+ */
 export async function getCardPrices(gameId: ObjectId, cardId: string): Promise<CardPrice[]> {
   const docs = await collection().find({ gameId, cardId }).toArray();
-  return docs.map(toCardPrice);
+
+  const rank = (doc: CardPriceDoc): [number, number] => {
+    const priority = CARD_PRICE_SOURCES.indexOf(doc.source);
+    // Un fournisseur retiré de la liste garde ses relevés en base : ils passent
+    // derrière, plutôt que devant à la faveur d'un `indexOf` négatif.
+    return [cardPriceAmount(doc.prices) === undefined ? 1 : 0, priority < 0 ? CARD_PRICE_SOURCES.length : priority];
+  };
+
+  return docs
+    .sort((a, b) => {
+      const [left, right] = [rank(a), rank(b)];
+      return left[0] - right[0] || left[1] - right[1];
+    })
+    .map(toCardPrice);
 }
 
 /**
  * Relevés de plusieurs cartes d'un coup, par identifiant de carte : de quoi
  * chiffrer une collection ou une liste de vente sans une requête par carte.
+ *
+ * Un relevé par carte : celui du fournisseur le mieux placé parmi `sources`.
  */
 export async function getCardPricesByCardId(
   gameId: ObjectId,
   cardIds: string[],
-  source: CardPriceSource = "cardmarket"
+  sources: readonly CardPriceSource[] = CARD_PRICE_SOURCES
 ): Promise<Map<string, CardPrice>> {
   if (cardIds.length === 0) {
     return new Map();
   }
 
-  const docs = await collection().find({ gameId, source, cardId: { $in: cardIds } }).toArray();
+  const docs = await collection()
+    .find({ gameId, source: { $in: [...sources] }, cardId: { $in: cardIds } })
+    .toArray();
 
-  return new Map(docs.map((doc) => [doc.cardId, toCardPrice(doc)]));
+  return new Map(preferredBySource(docs, sources).map((doc) => [doc.cardId, toCardPrice(doc)]));
+}
+
+/**
+ * Un document par carte : celui du fournisseur le mieux placé parmi ceux qui en
+ * ont un. Le choix se fait carte par carte — un fournisseur qui ignore une
+ * carte laisse la place au suivant, sans que toute la requête bascule.
+ */
+function preferredBySource<T extends { cardId: string; source: CardPriceSource }>(
+  docs: T[],
+  sources: readonly CardPriceSource[]
+): T[] {
+  const best = new Map<string, T>();
+
+  for (const doc of docs) {
+    const current = best.get(doc.cardId);
+    if (!current || sources.indexOf(doc.source) < sources.indexOf(current.source)) {
+      best.set(doc.cardId, doc);
+    }
+  }
+
+  return [...best.values()];
 }
 
 /**
@@ -109,40 +162,45 @@ export async function getCardPricesByCardId(
  * absentes du résultat : c'est ce qui distingue « pas de prix connu » de
  * « gratuit ».
  */
-export async function getCardMarketPrices(
+export async function getMarketPrices(
   gameId: ObjectId,
   cardIds: string[],
-  source: CardPriceSource = "cardmarket"
-): Promise<Map<string, CardMarketPrice>> {
+  sources: readonly CardPriceSource[] = CARD_PRICE_SOURCES
+): Promise<Map<string, MarketPrice>> {
   if (cardIds.length === 0) {
     return new Map();
   }
 
   const docs = await collection()
     .find(
-      { gameId, source, cardId: { $in: [...new Set(cardIds)] } },
-      { projection: { _id: 0, cardId: 1, prices: 1, offers: 1, currency: 1, sourceUpdatedAt: 1 } }
+      { gameId, source: { $in: [...sources] }, cardId: { $in: [...new Set(cardIds)] } },
+      { projection: { _id: 0, cardId: 1, source: 1, prices: 1, offers: 1, currency: 1, sourceUpdatedAt: 1 } }
     )
     .toArray();
 
+  // Un relevé sans montant ne représente pas la carte : il laisse la place au
+  // fournisseur suivant, au lieu de la faire passer pour sans prix.
+  const priced = docs.flatMap((doc) => {
+    const amount = cardPriceAmount(doc.prices);
+    return amount === undefined ? [] : [{ ...doc, amount }];
+  });
+
   return new Map(
-    docs.flatMap((doc) => {
-      const amount = cardPriceAmount(doc.prices);
+    preferredBySource(priced, sources).map((doc) => {
       // Le montant vient du tirage le moins cher : c'est vers ce produit-là que
       // le lien renvoie, pas vers un autre tirage de la même carte.
       const productId = referenceOffer(doc.offers ?? [])?.productId;
 
-      return amount === undefined
-        ? []
-        : [[
-            doc.cardId,
-            {
-              amount,
-              currency: doc.currency,
-              updatedAt: doc.sourceUpdatedAt.toISOString(),
-              ...(productId === undefined ? {} : { productId }),
-            },
-          ] as const];
+      return [
+        doc.cardId,
+        {
+          amount: doc.amount,
+          currency: doc.currency,
+          source: doc.source,
+          updatedAt: doc.sourceUpdatedAt.toISOString(),
+          ...(productId === undefined ? {} : { productId }),
+        },
+      ] as const;
     })
   );
 }
@@ -159,12 +217,12 @@ export async function getCardMarketPrices(
 export async function withMarketPrices<T extends { id: string; cardId?: string }>(
   gameId: ObjectId,
   cards: T[]
-): Promise<(T & { marketPrice?: CardMarketPrice })[]> {
+): Promise<(T & { marketPrice?: MarketPrice })[]> {
   if (cards.length === 0) {
     return cards;
   }
 
-  const prices = await getCardMarketPrices(gameId, cards.map((card) => card.cardId ?? card.id));
+  const prices = await getMarketPrices(gameId, cards.map((card) => card.cardId ?? card.id));
 
   return cards.map((card) => {
     const marketPrice = prices.get(card.cardId ?? card.id);
@@ -184,11 +242,11 @@ export function withMarketPricesStream<T extends { id: string; cardId?: string }
   gameId: ObjectId,
   cards: AsyncIterable<T>,
   batchSize = 500
-): AsyncGenerator<T & { marketPrice?: CardMarketPrice }> {
+): AsyncGenerator<T & { marketPrice?: MarketPrice }> {
   return attachInBatches(cards, (batch) => withMarketPrices(gameId, batch), batchSize);
 }
 
-/** Nombre de cartes du jeu qui portent un relevé, pour l'écran d'administration. */
-export async function countCardPrices(gameId: ObjectId, source: CardPriceSource = "cardmarket"): Promise<number> {
+/** Nombre de cartes du jeu qui portent un relevé de ce fournisseur. */
+export async function countCardPrices(gameId: ObjectId, source: CardPriceSource): Promise<number> {
   return collection().countDocuments({ gameId, source });
 }

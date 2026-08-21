@@ -87,7 +87,7 @@ export default function CollectionValueSection({
       <div className="ml-auto flex flex-wrap items-center gap-3">
         {value ? (
           <span className="shrink-0 text-xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
-            {formatCardPrice({ amount: value.amount, currency: value.currency, updatedAt: value.computedAt }, locale)}
+            {formatCardPrice({ amount: value.amount, currency: value.currency }, locale)}
           </span>
         ) : null}
 

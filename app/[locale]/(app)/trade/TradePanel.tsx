@@ -14,12 +14,12 @@ import {
   SelectValue,
 } from "@/components/ui/select.tsx";
 import type { TradeCard, TradeCardScope, TradeCardSearchResult, TradeGame } from "@/lib/db/trades.ts";
-import type { CardMarketPrice } from "@/lib/prices/display.ts";
+import type { MarketPrice } from "@/lib/prices/display.ts";
 import type { CardOrientation } from "@/lib/types/card.ts";
-import { formatCardPrice } from "@/lib/prices/display.ts";
+import { DEFAULT_MARKET_CURRENCY, formatCardPrice } from "@/lib/prices/display.ts";
 import { appliedUnitPrice, isNegotiatedPrice, sideTotal } from "@/lib/trade/pricing.ts";
 import { CardPriceTag } from "@/components/cards/CardPriceTag.tsx";
-import { CARDMARKET_CURRENCY, cardmarketProductUrl } from "@/lib/prices/cardmarket.ts";
+import { PRICE_SOURCE_LABELS, marketProductUrl } from "@/lib/prices/sources.ts";
 import { TRADE_MAX_UNIT_PRICE } from "@/lib/constants/trade.ts";
 
 /** Une carte affichée dans un espace d'échange, avec son plafond de quantité. */
@@ -38,7 +38,7 @@ export type TradePanelCard = {
   /** Plafond du bouton « + » : exemplaires possédés connus, sinon la borne d'échange. */
   maxQuantity: number;
   /** Prix de marché relevé pour la carte (cf. docs/CARD_PRICES.md). */
-  marketPrice?: CardMarketPrice;
+  marketPrice?: MarketPrice;
   /** Prix décidé pour cet échange, à l'unité ; à défaut, celui du marché. */
   unitPrice?: number;
 };
@@ -51,7 +51,7 @@ const ALL_GAMES = "all";
  * a été laissé de côté au profit d'un prix négocié.
  *
  * Modifiable, le montant se saisit ; sinon il se lit. Dans les deux cas, le
- * relevé de marché renvoie à la fiche Cardmarket du produit.
+ * relevé de marché renvoie à la fiche du produit chez la place de marché.
  */
 function CardPriceLine({
   card,
@@ -96,9 +96,12 @@ function CardPriceLine({
   };
 
   const unit = appliedUnitPrice(card);
-  const currency = card.marketPrice?.currency ?? CARDMARKET_CURRENCY;
-  const format = (amount: number) => formatCardPrice({ amount, currency, updatedAt: "" }, locale);
-  const marketUrl = cardmarketProductUrl(card.gameSlug, card.marketPrice?.productId);
+  const currency = card.marketPrice?.currency ?? DEFAULT_MARKET_CURRENCY;
+  const format = (amount: number) => formatCardPrice({ amount, currency }, locale);
+  // Le lien porte le nom de la place de marché : un prix ne se lit pas sans
+  // savoir qui le publie, et les deux ne cotent pas la même chose le même jour.
+  const market = card.marketPrice?.source;
+  const marketUrl = market ? marketProductUrl(market, card.gameSlug, card.marketPrice?.productId) : undefined;
 
   return (
     <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -165,14 +168,14 @@ function CardPriceLine({
         </span>
       ) : null}
 
-      {marketUrl ? (
+      {market && marketUrl ? (
         <a
           href={marketUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground hover:underline"
         >
-          {t("panel.cardmarket")}
+          {PRICE_SOURCE_LABELS[market]}
           <ExternalLink className="size-2.5" aria-hidden="true" />
         </a>
       ) : null}
@@ -303,7 +306,7 @@ export default function TradePanel({
   };
 
   const totalCopies = cards.reduce((sum, card) => sum + card.quantity, 0);
-  const total = sideTotal(cards, CARDMARKET_CURRENCY);
+  const total = sideTotal(cards, DEFAULT_MARKET_CURRENCY);
 
   return (
     <section className="flex flex-col gap-4 rounded-xl border bg-card p-4">
@@ -402,7 +405,7 @@ export default function TradePanel({
             ) : null}
             <span className="ml-auto text-base font-bold tabular-nums">
               {total.currency
-                ? formatCardPrice({ amount: total.amount, currency: total.currency, updatedAt: "" }, locale)
+                ? formatCardPrice({ amount: total.amount, currency: total.currency }, locale)
                 : t("panel.noTotal")}
             </span>
           </div>

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { sumOwnedCardPrices, totalCollectionValue, type CollectionValue } from "@/lib/collection/value";
-import type { CardMarketPrice } from "@/lib/prices/display";
+import type { MarketPrice } from "@/lib/prices/display";
 
 /**
  * Tests de la valeur d'une collection. Le chiffre est montré comme un total
@@ -12,8 +12,8 @@ import type { CardMarketPrice } from "@/lib/prices/display";
 
 const COMPUTED_AT = new Date("2026-08-15T10:00:00.000Z");
 
-function price(amount: number, currency = "EUR"): CardMarketPrice {
-  return { amount, currency, updatedAt: "2026-08-14T00:00:00.000Z" };
+function price(amount: number, currency = "EUR"): MarketPrice {
+  return { amount, currency, source: "cardmarket", updatedAt: "2026-08-14T00:00:00.000Z" };
 }
 
 function value(overrides: Partial<CollectionValue> = {}): CollectionValue {

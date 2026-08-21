@@ -1,11 +1,38 @@
 # Prix des cartes
 
 Les cartes portent un relevé de prix du marché de l'occasion, importé à la
-main depuis Cardmarket. C'est un indicateur, pas une cotation : le relevé date
-du dernier import, il ne vaut que pour l'édition anglaise, et toutes les cartes
-n'en ont pas.
+main depuis Cardmarket ou CardNexus. C'est un indicateur, pas une cotation : le
+relevé date du dernier import, il ne vaut que pour l'édition anglaise, et
+toutes les cartes n'en ont pas.
 
-Pour l'instant, une seule place de marché (Cardmarket) et trois jeux :
+## Deux fournisseurs, un relevé par carte
+
+Chaque fournisseur a son import, écrit ses propres relevés et ne touche pas à
+ceux de l'autre. Une carte peut donc en porter deux ; l'écran n'en montre qu'un,
+et c'est **CardNexus qui passe devant, carte par carte** (`CARD_PRICE_SOURCES`,
+`lib/types/card-price.ts`) : là où il ne dit rien, Cardmarket reprend la main.
+
+|  | Cardmarket | CardNexus |
+| --- | --- | --- |
+| Accès | fichiers publics, sans compte | clé d'API (`CARDNEXUS_API_KEY`) |
+| Rapprochement | par **nom** de carte, avec seuils et appariements | par **extension et numéro de collection** |
+| Tirages | plusieurs produits que rien ne distingue | un produit, ses tirages cotés à part (`Standard`, `Foil`…) |
+| Devise | euros | euros (voir plus bas) |
+
+L'ordre n'est pas un jugement de valeur sur les prix eux-mêmes : le catalogue de
+CardNexus **nomme l'extension et le numéro** de chaque produit, si bien que ses
+prix se rattachent à la bonne carte par identité, quand ceux de Cardmarket le
+sont par une ressemblance de noms qui, elle, peut se tromper de carte. Un prix
+sûrement attribué vaut mieux qu'un prix peut-être mieux coté.
+
+Le choix se fait carte par carte, et non jeu par jeu : un jeu que CardNexus ne
+couvre qu'à moitié garde les prix Cardmarket sur le reste, plutôt que de perdre
+la moitié de ses cotes. Un relevé qui ne porte aucun montant ne compte pas comme
+une réponse et laisse la place au suivant.
+
+## Ce que ça couvre
+
+Les chiffres ci-dessous sont ceux du seul import Cardmarket, le premier écrit :
 
 | Jeu | Cartes cotées | Ce qui limite |
 | --- | --- | --- |
@@ -56,12 +83,19 @@ c'est un chantier à part.
 ### Magic n'est pas branché
 
 Deux raisons, et la première suffit : les cartes Magic ne sont pas dans
-MongoDB — elles ne vivent que dans l'index de recherche — alors que l'import
-des prix lit le catalogue en base. Et elles portent déjà `prices.eur` et
-`prices.eur_foil`, que Scryfall tient de Cardmarket et rattache à l'impression
-exacte : mieux que ce qu'un rapprochement par nom saurait retrouver.
+MongoDB — elles ne vivent que dans l'index de recherche — alors que les imports
+de prix, l'un comme l'autre, lisent le catalogue en base. Et elles portent déjà
+`prices.eur` et `prices.eur_foil`, que Scryfall tient de Cardmarket et rattache
+à l'impression exacte — jusqu'au numéro et au tirage, ce qu'aucun de nos deux
+relevés ne fait.
+
+Les deux places de marché vendent pourtant Magic, et CardNexus rattache même ses
+produits à leur `scryfallId` : le jour où les cartes Magic seront en base, c'est
+par là qu'il faudra commencer.
 
 ## D'où viennent les prix
+
+### Cardmarket
 
 Cardmarket publie deux fichiers par jeu, en accès libre et sans compte, sur
 [sa page de téléchargement](https://www.cardmarket.com/Data/Download) :
@@ -71,12 +105,55 @@ Cardmarket publie deux fichiers par jeu, en accès libre et sans compte, sur
 | `productList/products_singles_<jeu>.json` | les cartes à l'unité : `idProduct`, nom, `idExpansion` | à chaque sortie |
 | `priceGuide/price_guide_<jeu>.json` | pour chaque `idProduct` : prix bas, moyen, tendance, moyennes glissantes 1/7/30 jours, et les mêmes en foil | une fois par jour |
 
-Ce sont les seules sources utilisées. Le site lui-même est derrière Cloudflare
-et le refuse à un serveur, et l'API de Cardmarket demande un compte applicatif
-qui n'est plus ouvert : ces deux fichiers sont ce que Cardmarket met à
-disposition, et ils suffisent.
+Ce sont les seules sources utilisées chez lui. Le site lui-même est derrière
+Cloudflare et le refuse à un serveur, et l'API de Cardmarket demande un compte
+applicatif qui n'est plus ouvert : ces deux fichiers sont ce que Cardmarket met
+à disposition, et ils suffisent.
 
 Les montants sont en euros.
+
+### CardNexus
+
+CardNexus publie trois « feeds » par jeu, sous clé d'API
+([documentation](https://docs.cardnexus.com/feeds)) :
+
+| Feed | Contenu | Reconstruit quand |
+| --- | --- | --- |
+| `expansions` | les extensions du jeu : identifiant, nom, **code d'éditeur** | le catalogue change |
+| `catalog` | les produits : identifiant, nom, extension, **numéro de collection**, variante, tirages | le catalogue change |
+| `prices` | pour chaque produit et chaque tirage : les prix Cardmarket, TCGplayer et CardNexus | les prix sont rafraîchis |
+
+Chaque feed se télécharge en deux temps : l'API rend des métadonnées portant un
+lien signé à durée limitée, puis le lien rend un fichier NDJSON gzippé, une ligne
+par produit. Les fichiers sont lus **ligne à ligne** et jamais chargés d'un
+bloc — le catalogue d'un gros jeu compte des dizaines de milliers de produits.
+
+Deux dates accompagnent un feed : `generatedAt` n'avance que si le contenu
+change, `lastRefreshedAt` à chaque reconstruction, même à l'identique. C'est
+`generatedAt` qui date nos relevés.
+
+La clé (`CARDNEXUS_API_KEY`, préfixée `cnk_live_`) se crée sur cardnexus.com,
+dans *Settings → API keys* ; les feeds n'exigent aucune portée particulière.
+**Seul l'import s'en sert** : le site, lui, ne parle jamais à CardNexus, il lit
+les relevés déjà écrits.
+
+#### Quelles valeurs sont retenues
+
+CardNexus cote chaque tirage jusqu'à trois fois : l'instantané quotidien de
+Cardmarket (en euros), celui de TCGplayer (en dollars) et les annonces vivant sur
+sa propre place de marché (converties en euros). Un relevé ne portant qu'une
+devise et l'application comptant en euros :
+
+1. l'instantané Cardmarket est retenu en premier — c'est le plus complet, et le
+   seul à porter un prix agrégé ;
+2. à défaut, l'annonce la moins chère de la place de marché CardNexus ;
+3. TCGplayer est laissé de côté : convertir des dollars reviendrait à inventer
+   un prix que personne n'affiche.
+
+Les trois valeurs se rangent dans les nôtres : le prix agrégé — celui que
+CardNexus montre comme prix de la carte — devient la tendance, le prix médian
+tient lieu de moyenne, le prix bas reste le prix bas. Le prix haut et les
+variations sur 24 h, 7 et 30 jours ne sont pas conservés : rien ne les affiche.
 
 ## Ce qui est écrit en base
 
@@ -86,43 +163,82 @@ Un document par (jeu, carte, place de marché) dans la collection
 ```ts
 type CardPrice = {
   cardId: string;            // « WTR020 », l'identifiant de la carte dans le jeu
-  source: "cardmarket";
+  source: "cardnexus" | "cardmarket";
   currency: string;          // « EUR »
   prices: CardPriceValues;   // le prix de référence de la carte
-  offers: CardPriceOffer[];  // chaque produit Cardmarket retenu, avec ses prix
-  sourceUpdatedAt: string;   // date du fichier de Cardmarket
+  offers: CardPriceOffer[];  // chaque tirage retenu, avec ses prix
+  sourceUpdatedAt: string;   // date du fichier de la place de marché
   updatedAt: string;         // date de l'import
 };
 
 type CardPriceValues = { low?, avg?, trend?, avg1?, avg7?, avg30? };
 ```
 
-Une valeur absente n'est pas écrite : Cardmarket note `null` (ou `0` sur ses
-colonnes de tendance) ce qu'il ne sait pas, et une carte ne vaut pas zéro euro.
-Une carte dont aucun produit n'est coté n'a pas de document du tout.
+Une valeur absente n'est pas écrite : une place de marché note `null` (ou `0`
+sur ses colonnes de tendance) ce qu'elle ne sait pas, et une carte ne vaut pas
+zéro euro. Une carte dont aucun produit n'est coté n'a pas de document du tout.
+
+C'est `source` qui rend les deux fournisseurs indépendants : l'unicité porte sur
+`{gameId, cardId, source}`, si bien qu'un import réécrit ses propres relevés sans
+jamais effacer ceux de l'autre.
 
 ### Prix de référence et `offers`
 
-Une carte de l'application est un numéro de collection ; chez Cardmarket, un
-même numéro est vendu comme plusieurs produits — le tirage normal, le rainbow
-foil, le cold foil, la réédition Unlimited — et **rien dans ses fichiers ne dit
-lequel est lequel**. Tous les produits reconnus sont donc conservés dans
-`offers`, et `prices` reprend le moins cher d'entre eux : une version foil ne
-vaut jamais moins que la carte dont elle est tirée, et une réédition vaut moins
-que la première édition, donc le moins cher est le tirage de base. C'est un
-prix « à partir de ».
+Une carte de l'application est un numéro de collection ; une place de marché en
+vend plusieurs tirages. Tous ceux qui sont reconnus sont conservés dans
+`offers`, et `prices` reprend **le moins cher** d'entre eux : une version foil
+ne vaut jamais moins que la carte dont elle est tirée, et une réédition vaut
+moins que la première édition, donc le moins cher est le tirage de base. C'est
+un prix « à partir de ».
 
-Le moins cher se lit sur la tendance (`trend`), le prix lissé par Cardmarket.
-Le prix bas ne dit que ce que demande une seule offre, parfois une carte
+Le moins cher se lit sur la tendance (`trend`), le prix lissé par la place de
+marché. Le prix bas ne dit que ce que demande une seule offre, parfois une carte
 abîmée : il ne sert qu'à départager deux tendances égales. Un produit sans
-tendance — Cardmarket ne sait pas le situer, faute de ventes — passe en
-dernier, quel que soit son prix bas.
+tendance — la place de marché ne sait pas le situer, faute de ventes — passe en
+dernier, quel que soit son prix bas. Ce choix est le même pour les deux
+fournisseurs (`lib/prices/offers.ts`).
+
+Ce qu'une offre représente, en revanche, diffère :
+
+- **Cardmarket** vend un même numéro comme plusieurs produits — tirage normal,
+  rainbow foil, cold foil, réédition Unlimited — et **rien dans ses fichiers ne
+  dit lequel est lequel**. Une offre est donc un produit, sans plus de précision.
+- **CardNexus** garde un seul produit et cote chacun de ses tirages à part. Une
+  offre est donc un tirage : elle porte son nom (`finish`), et deux offres d'une
+  même carte peuvent partager leur `productId`.
 
 `offers` garde `productId` et `expansionId` : de quoi retrouver le produit chez
-Cardmarket, et de quoi rattacher un jour les prix aux variantes d'impression
-(cf. docs/CARD_PRINTINGS.md) si Cardmarket finit par les distinguer.
+la place de marché, et de quoi rattacher un jour les prix aux variantes
+d'impression (cf. docs/CARD_PRINTINGS.md). Chez CardNexus le `finish` dit déjà
+de quel tirage il s'agit — c'est ce qui rendrait ce rattachement possible.
 
 ## Comment les cartes sont reconnues
+
+### Chez CardNexus : par extension et numéro
+
+Rien à deviner : le catalogue donne de chaque produit son extension — nommée,
+et portant le code de l'éditeur — et son numéro de collection. Une carte et un
+produit sont la même carte quand ils portent **le même code d'extension et le
+même numéro**. C'est une identité, pas une ressemblance : ni seuil, ni score, ni
+appariement dans l'ordre.
+
+Ne restent que deux détails d'écriture, traduits des deux côtés à la fois : les
+codes se comparent sans casse ni ponctuation, et les numéros sans leurs zéros de
+tête — `027a` et `27a` sont le même numéro, et restent distincts de `027`.
+
+Le reste est écarté et compté dans le bilan de l'import : les produits scellés,
+ceux dont l'extension n'a pas de code, ceux sans numéro de collection, ceux dont
+aucune carte ne porte le numéro, et ceux qui tomberaient sur **deux** cartes de
+même numéro — leur donner le même prix reviendrait à en inventer un.
+
+Quand un code d'extension s'écrit franchement autrement des deux côtés, ou que
+CardNexus n'en publie pas, le profil du jeu le dit
+(`CARDNEXUS_GAME_PROFILES`) : c'est une table, pas une heuristique. Elle est
+vide aujourd'hui — les deux catalogues tiennent leur code de l'éditeur — et le
+bilan de l'import (`--sets`) montre extension par extension ce qui a été
+rapproché, de quoi la remplir si besoin.
+
+### Chez Cardmarket : par le nom, et par déduction
 
 Les deux catalogues n'ont aucun identifiant commun : le fichier de Cardmarket
 ne donne d'une carte que son nom, sa catégorie et un numéro d'extension — ni
@@ -204,7 +320,7 @@ renvoient déjà. Une carte de l'index de recherche est retrouvée par son
 L'application mobile lit le même champ `marketPrice` que le web, aux mêmes
 endroits : vignette de la galerie, vignette de la collection — personnelle ou
 de groupe — et fiche de la carte, où il est accompagné de sa date de relevé et
-du lien vers Cardmarket.
+du lien vers la place de marché d'où il vient.
 
 Elle n'y montre que le montant de référence, jamais les valeurs qui
 l'entourent (prix bas, tendance, moyenne 30 jours) : un téléphone en manque de
@@ -217,15 +333,26 @@ Les prix d'un jeu téléchargé datent donc de la génération de son document :
 c'est déjà le cas de ses cartes et de ses erratas, et l'écran « Hors ligne »
 affiche cette date.
 
-### Lien vers Cardmarket
+### Lien vers la place de marché
 
-Un prix renvoie à la fiche du produit d'où il vient :
-`https://www.cardmarket.com/en/<Jeu>/Products?idProduct=<id>`. Cardmarket
-redirige cette forme vers la bonne page à partir de l'identifiant de son
-catalogue public — celui que portent nos relevés — et c'est la forme que
-Scryfall publie dans ses `purchase_uris`. Le segment de jeu ne se devine pas
-(`fab` s'y écrit `FleshAndBlood`) : il vient de `CARDMARKET_GAME_PATHS`, et un
-jeu absent de cette table n'a pas de lien plutôt qu'un lien mort.
+Un prix renvoie à la fiche du produit d'où il vient, **chez la place de marché
+qui l'a relevé** — un lien construit pour l'une mène à une page inexistante chez
+l'autre. Le relevé porte donc sa `source`, jusque dans le prix compact qu'un
+écran affiche, et `marketProductUrl` (`lib/prices/sources.ts`) est le seul
+endroit qui en tire une adresse.
+
+| Place de marché | Adresse |
+| --- | --- |
+| Cardmarket | `https://www.cardmarket.com/en/<Jeu>/Products?idProduct=<id>` |
+| CardNexus | `https://cardnexus.com/en/explore/<jeu>/card/card/card-<id>` |
+
+Les deux se construisent à partir du **seul identifiant du produit** : chacune
+redirige vers la bonne page. Chez CardNexus, les segments d'extension et de nom
+ne servent qu'à la lisibilité de l'adresse et sont ignorés — nos relevés ne les
+portent pas, d'où les segments neutres. Le segment de jeu, lui, ne se devine
+d'aucun côté (`fab` s'écrit `FleshAndBlood` chez Cardmarket) : il vient de
+`CARDMARKET_GAME_PATHS` et de `CARDNEXUS_GAME_IDS`, et un jeu absent de sa table
+n'a pas de lien plutôt qu'un lien mort.
 
 Le lien mène au **tirage retenu comme prix de référence**, pas à un autre
 tirage de la même carte.
@@ -324,25 +451,50 @@ compareraient sur des bases différentes sans que rien ne le signale.
 
 ## Lancer un import
 
-Depuis la racine du dépôt :
+Un script par fournisseur, tous deux lancés à la main depuis la racine du dépôt.
+Ils sont indépendants et rejouables : deux imports de suite réécrivent les mêmes
+documents, et l'un n'efface jamais les relevés de l'autre.
 
 ```sh
+node --conditions=react-server --import ./scripts/ts-paths-hook.mjs \
+  scripts/prices/import-cardnexus.ts --game riftbound
+
 node --conditions=react-server --import ./scripts/ts-paths-hook.mjs \
   scripts/prices/import-cardmarket.ts --game fab
 ```
 
-- `--game <slug>` : le jeu à traiter (`fab` par défaut) ;
-- `--dry-run` : rapproche et affiche le bilan sans rien écrire ;
-- `--expansions` : détaille les extensions reconnues, une par ligne.
+| Option | CardNexus | Cardmarket |
+| --- | --- | --- |
+| `--game <slug>` | le jeu à traiter (`riftbound` par défaut) | idem (`fab` par défaut) |
+| `--dry-run` | rapproche et affiche le bilan sans rien écrire | idem |
+| détail des extensions | `--sets`, la moins couverte en tête | `--expansions` |
 
-Le script affiche à chaque fois combien de cartes ont été rapprochées, combien
+Les deux affichent à chaque fois combien de cartes ont été rapprochées, combien
 de produits ont été écartés et pourquoi, et les extensions les moins couvertes.
-Il est rejouable : deux imports de suite réécrivent les mêmes documents.
 
-Seule `MONGODB_URI` est nécessaire — les fichiers de Cardmarket ne demandent
-aucune authentification.
+`MONGODB_URI` est nécessaire aux deux ; l'import CardNexus demande en plus
+`CARDNEXUS_API_KEY`, quand les fichiers de Cardmarket ne demandent aucune
+authentification.
 
 ## Ajouter un jeu
+
+Le jeu doit avoir ses cartes dans MongoDB : c'est de là que les deux scripts
+lisent le catalogue. Magic fait exception (voir plus haut).
+
+### Chez CardNexus
+
+`CARDNEXUS_GAME_IDS` (`lib/prices/cardnexus.ts`) : l'identifiant du jeu chez
+CardNexus, un slug. La liste à jour se lit sur `GET /v1/games` ; les connus sont
+`mtg`, `pokemon`, `fab`, `onepiece`, `lorcana`, `swu`, `riftbound`, et une
+douzaine d'autres jeux que la plateforme n'a pas encore. Yu-Gi-Oh n'y est pas.
+
+Rien d'autre n'est nécessaire : le rapprochement se fait par extension et
+numéro, sans profil. Lancez l'import en `--dry-run --sets` et regardez ce que
+les extensions donnent — c'est là qu'un code d'extension divergent se voit, et
+`CARDNEXUS_GAME_PROFILES` (`lib/prices/cardnexus-matching.ts`) sert à le
+traduire.
+
+### Chez Cardmarket
 
 1. `CARDMARKET_GAME_IDS` (`lib/prices/cardmarket.ts`) : l'identifiant du jeu
    chez Cardmarket. Il se vérifie en ouvrant
@@ -358,26 +510,36 @@ aucune authentification.
    pour un jeu qui, comme lui, écrit une variante entre parenthèses ; celui de
    Star Wars Unlimited, pour un jeu dont le catalogue n'est pas en anglais.
 
-   Le jeu doit aussi avoir ses cartes dans MongoDB : c'est de là que le script
-   lit le catalogue. Magic fait exception (voir plus haut).
-
 ## Implémentation
 
-- `lib/types/card-price.ts` : le relevé et ses valeurs.
+- `lib/types/card-price.ts` : le relevé, ses valeurs, et l'ordre des
+  fournisseurs (`CARD_PRICE_SOURCES`).
+- `lib/prices/sources.ts` : le nom d'une place de marché et le lien vers son
+  produit, couverts par `sources.test.ts`.
+- `lib/prices/offers.ts` : le choix du tirage de référence, commun aux deux
+  fournisseurs.
+- `lib/prices/cardnexus.ts` : les identifiants de jeu, les types des feeds et le
+  lien vers un produit.
+- `lib/prices/cardnexus-feed.ts` : les métadonnées d'un feed et sa lecture ligne
+  à ligne, couvertes par `cardnexus-feed.test.ts`.
+- `lib/prices/cardnexus-matching.ts` : le rapprochement par extension et numéro,
+  couvert par `cardnexus-matching.test.ts`.
+- `lib/prices/cardnexus-prices.ts` : construction du relevé et choix des valeurs
+  retenues, couverts par `cardnexus-prices.test.ts`.
 - `lib/prices/cardmarket.ts` : les deux fichiers publics, leurs types et les
   identifiants de jeu.
 - `lib/prices/cardmarket-matching.ts` : reconnaissance des extensions et des
   cartes, couverte par `cardmarket-matching.test.ts`.
-- `lib/prices/cardmarket-prices.ts` : construction du relevé et choix du prix
-  de référence, couverte par `cardmarket-prices.test.ts`.
+- `lib/prices/cardmarket-prices.ts` : construction du relevé, couverte par
+  `cardmarket-prices.test.ts`.
 - `lib/db/card-prices.ts` : écriture et lecture de `card-prices`, dont
-  `getCardMarketPrices` et `withMarketPrices`, qui rattachent leur prix à un lot
-  de cartes sans une requête par carte.
+  `getMarketPrices` et `withMarketPrices`, qui rattachent leur prix à un lot
+  de cartes sans une requête par carte — et qui choisissent, carte par carte, le
+  fournisseur qui la représente.
 - `lib/prices/display.ts` : le montant qui représente une carte, la somme d'un
   lot et leur mise en forme, couverts par `display.test.ts`.
 - `components/cards/CardPriceTag.tsx` et `CardPriceDetails.tsx` : l'affichage,
   partagé par tous les écrans qui listent des cartes.
-- `lib/prices/cardmarket.ts` : `cardmarketProductUrl` et les segments de jeu.
 - `lib/trade/pricing.ts` : prix appliqué, total d'une face et écart entre les
   deux, couverts par `pricing.test.ts`.
 - `lib/db/boosters.ts` : `computeBoosterValue`, derrière
@@ -388,4 +550,5 @@ aucune authentification.
   `app/api/collection/value` et `app/api/collection/games/[gameSlug]/value`.
 - `app/collection/CollectionValueSection.tsx` : l'affichage et son bouton,
   partagé par la vue d'ensemble et la page d'un jeu.
-- `scripts/prices/import-cardmarket.ts` : l'import, lancé à la main.
+- `scripts/prices/import-cardnexus.ts` et `scripts/prices/import-cardmarket.ts` :
+  les deux imports, lancés à la main.

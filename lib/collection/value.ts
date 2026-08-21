@@ -1,4 +1,4 @@
-import type { CardMarketPrice } from "@/lib/prices/display";
+import type { MarketPrice } from "@/lib/prices/display";
 
 /**
  * Valeur d'une collection : ce qu'elle vaudrait au prix du marché de
@@ -55,7 +55,7 @@ function dominantCurrency(counts: Map<string, number>): string | undefined {
  * exemplaires cotés — elle ne vaut pas zéro, on ignore ce qu'elle vaut.
  */
 export function sumOwnedCardPrices(
-  entries: { copies: number; price?: CardMarketPrice }[],
+  entries: { copies: number; price?: MarketPrice }[],
   computedAt: Date
 ): CollectionValue {
   const copies = entries.reduce((total, entry) => total + entry.copies, 0);

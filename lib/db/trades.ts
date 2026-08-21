@@ -17,9 +17,9 @@ import {
   partnerMatches,
   type TradeHistoryQuery,
 } from "@/lib/trade/history";
-import { getCardMarketPrices } from "@/lib/db/card-prices";
+import { getMarketPrices } from "@/lib/db/card-prices";
 import { findLandscapeCards, type LandscapeCards } from "@/lib/db/card-orientations";
-import type { CardMarketPrice } from "@/lib/prices/display";
+import type { MarketPrice } from "@/lib/prices/display";
 import type { CardOrientation } from "@/lib/types/card";
 
 /**
@@ -56,7 +56,7 @@ export type TradeCard = {
   /** Nombre d'exemplaires de cette impression possédés par l'utilisateur. */
   owned: number;
   /** Prix de marché relevé pour la carte (cf. docs/CARD_PRICES.md). */
-  marketPrice?: CardMarketPrice;
+  marketPrice?: MarketPrice;
 };
 
 export type TradeCardSearchResult = {
@@ -369,7 +369,7 @@ export type TradeCardSnapshot = {
    * Prix de marché relevé pour la carte. Relu à chaque lecture de l'échange
    * plutôt qu'enregistré : c'est une référence, elle doit suivre les imports.
    */
-  marketPrice?: CardMarketPrice;
+  marketPrice?: MarketPrice;
 };
 
 export type TradeSideId = "a" | "b";
@@ -444,7 +444,7 @@ const tradeIndexesReady = Promise.all([
 function toTrade(
   doc: TradeDocument,
   usersById: Map<string, PublicUser>,
-  marketPrices: Map<string, CardMarketPrice>,
+  marketPrices: Map<string, MarketPrice>,
   landscapeCards: LandscapeCards
 ): Trade {
   return {
@@ -480,7 +480,7 @@ function toTrade(
  */
 async function marketPricesForCards(
   cards: { cardId?: string; gameId?: string }[]
-): Promise<Map<string, CardMarketPrice>> {
+): Promise<Map<string, MarketPrice>> {
   const cardIdsByGame = new Map<string, Set<string>>();
   for (const card of cards) {
     if (!card.cardId || !card.gameId) continue;
@@ -493,12 +493,12 @@ async function marketPricesForCards(
   // enchaîner ajouterait un aller-retour d'attente par jeu.
   const perGame = await Promise.all(
     [...cardIdsByGame].map(async ([gameId, cardIds]) => {
-      const gamePrices = await getCardMarketPrices(new ObjectId(gameId), [...cardIds]);
+      const gamePrices = await getMarketPrices(new ObjectId(gameId), [...cardIds]);
       return [gameId, gamePrices] as const;
     })
   );
 
-  const prices = new Map<string, CardMarketPrice>();
+  const prices = new Map<string, MarketPrice>();
   for (const [gameId, gamePrices] of perGame) {
     for (const [cardId, price] of gamePrices) {
       prices.set(`${gameId}|${cardId}`, price);
@@ -509,7 +509,7 @@ async function marketPricesForCards(
 }
 
 /** Prix de marché des cartes offertes dans un lot d'échanges. */
-function marketPricesFor(docs: TradeDocument[]): Promise<Map<string, CardMarketPrice>> {
+function marketPricesFor(docs: TradeDocument[]): Promise<Map<string, MarketPrice>> {
   return marketPricesForCards(docs.flatMap((doc) => doc.sides.flatMap((side) => side.cards ?? [])));
 }
 

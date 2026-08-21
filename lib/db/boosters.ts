@@ -6,9 +6,8 @@ import {boosterTypeStoredValues, normalizeBoosterType, OTHER_BOOSTER_TYPE} from 
 import {ObjectId} from "bson";
 import {removeSellListItemsByCollectionEntryIds} from "@/lib/db/sell-lists";
 import {getCardsByIds} from "@/lib/db/cards";
-import {getCardMarketPrices} from "@/lib/db/card-prices";
-import {sumCardPrices} from "@/lib/prices/display";
-import {CARDMARKET_CURRENCY} from "@/lib/prices/cardmarket";
+import {getMarketPrices} from "@/lib/db/card-prices";
+import {DEFAULT_MARKET_CURRENCY, sumCardPrices} from "@/lib/prices/display";
 
 type CardAttributesDoc = CardAttributes & { id?: string; setCode?: string; collectorNumber?: string };
 
@@ -89,7 +88,7 @@ async function withCardAttributes(gameId: ObjectId, cards: BoosterCard[]): Promi
   }
 
   const catalogId = (card: BoosterCard) => card.cardId ?? catalogIdByPrint.get(printKey(card.setCode, card.collectorNumber));
-  const prices = await getCardMarketPrices(gameId, cards.flatMap((card) => catalogId(card) ?? []));
+  const prices = await getMarketPrices(gameId, cards.flatMap((card) => catalogId(card) ?? []));
 
   return cards.map((card) => {
     const attributes = (card.cardId ? byId.get(card.cardId) : undefined) ?? byPrint.get(printKey(card.setCode, card.collectorNumber));
@@ -409,7 +408,7 @@ export async function computeBoosterValue(boosterId: string): Promise<BoosterVal
 
   const value: BoosterValue = {
     amount: sum?.amount ?? 0,
-    currency: sum?.currency ?? CARDMARKET_CURRENCY,
+    currency: sum?.currency ?? DEFAULT_MARKET_CURRENCY,
     cardCount: booster.cards.length,
     pricedCards: sum?.priced ?? 0,
     computedAt: computedAt.toISOString(),

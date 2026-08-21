@@ -759,7 +759,7 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
         </div>
         {boosterValue ? (
           <span className="text-xl font-bold tabular-nums text-emerald-700 dark:text-emerald-400">
-            {formatCardPrice({ amount: boosterValue.amount, currency: boosterValue.currency, updatedAt: boosterValue.computedAt }, locale)}
+            {formatCardPrice({ amount: boosterValue.amount, currency: boosterValue.currency }, locale)}
           </span>
         ) : null}
         <Button
