@@ -11,12 +11,12 @@ import {
   getSubscriptionByUserId,
   getSubscriptionForLair,
 } from "@/lib/db/subscriptions";
-import { getLairById, getLairIdsWithProGrant } from "@/lib/db/lairs";
+import { getLairIdsWithProGrant, lairHasProGrant } from "@/lib/db/lairs";
 import type { Lair } from "@/lib/types/Lair";
 import type { Subscription, SubscriptionSummary } from "@/lib/types/Subscription";
 import { displayPlan, grantsEntitlement, resolveEntitlements, seatsFor } from "./entitlements";
 import { findPatreonAccountId } from "@/lib/patreon/sync";
-import { effectivePlans, grantedPlanKeys } from "./grants";
+import { effectivePlans, grantedPlanKeys, lairHoldsPro } from "./grants";
 
 /**
  * Les droits d'abonnement du compte connecté.
@@ -143,20 +143,24 @@ export async function requireEntitlement(entitlement: EntitlementKey): Promise<t
  * octroi ne touche à l'abonnement de personne.
  */
 export const lairHasPro = cache(async (lairId: Lair['id']): Promise<boolean> => {
-  const [subscription, lair] = await Promise.all([
+  const [subscription, hasGrant] = await Promise.all([
     getSubscriptionForLair(lairId),
-    getLairById(lairId),
+    // Un booléen, pas l'octroi : le motif et son auteur n'ont rien à faire ici.
+    lairHasProGrant(lairId),
   ]);
 
-  if (lair?.proGrant) {
-    return true;
-  }
-
-  // Les paliers composés, et non `subscription.plans` : un lieu parrainé par
+  // La composition elle-même vit dans `grants.ts`, module pur — c'est ce qui la
+  // rend éprouvable, et ce qui garantit qu'il n'en existe qu'une copie.
+  //
+  // `plansFromSubscription` et non `subscription.plans` : un lieu parrainé par
   // quelqu'un dont le Pro a été offert par l'équipe ouvre les mêmes droits qu'un
   // lieu parrainé par un abonné payant. Lire le champ brut ici, c'était créer
   // deux classes de Pro.
-  return plansFromSubscription(subscription).includes("pro");
+  return lairHoldsPro({
+    hasGrant,
+    paid: plansFromSubscription(subscription),
+    granted: [],
+  });
 });
 
 /**

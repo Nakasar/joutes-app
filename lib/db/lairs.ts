@@ -45,7 +45,8 @@ function toLair(doc: WithId<Document>): Lair {
     website: doc.website,
     isPrivate: doc.isPrivate || false,
     invitationCode: doc.invitationCode,
-    proGrant: doc.proGrant ?? null,
+    // `proGrant` n'est volontairement pas repris : voir `LairProGrant`. Il sort
+    // par `getLairProGrant`, et seulement là.
     options: doc.options,
   };
 }
@@ -247,7 +248,14 @@ export async function grantProToLair({
   grantedBy: string;
   reason: string;
 }): Promise<LairProGrant | null> {
-  const grant: LairProGrant = { grantedAt: new Date(), grantedBy, reason };
+  // Sur un octroi déjà en place, seul le motif change : réécrire `grantedAt` et
+  // `grantedBy` ferait qu'une faute de frappe corrigée six mois plus tard
+  // effacerait la date et l'auteur réels — c'est-à-dire précisément la trace
+  // pour laquelle ces deux champs existent.
+  const existing = await getLairProGrant(lairId);
+  const grant: LairProGrant = existing
+    ? { ...existing, reason }
+    : { grantedAt: new Date(), grantedBy, reason };
 
   const result = await db.collection(COLLECTION_NAME).findOneAndUpdate(
     { _id: new ObjectId(lairId) },
@@ -258,14 +266,56 @@ export async function grantProToLair({
   return result ? grant : null;
 }
 
+/**
+ * L'octroi d'un lieu, en entier — motif et auteur compris.
+ *
+ * **Réservé à l'écran d'administration.** Partout ailleurs, `lairHasProGrant`
+ * suffit et ne divulgue rien.
+ */
+export async function getLairProGrant(lairId: string): Promise<LairProGrant | null> {
+  const doc = await db
+    .collection(COLLECTION_NAME)
+    .findOne({ _id: new ObjectId(lairId) }, { projection: { proGrant: 1 } });
+
+  return (doc?.proGrant as LairProGrant | undefined) ?? null;
+}
+
+/**
+ * Ce lieu tient-il un octroi ? Un booléen, sans le motif ni son auteur.
+ *
+ * C'est ce que `lairHasPro` appelle : la vérification a lieu à chaque rendu de
+ * page de lieu, et n'a aucun besoin de la partie confidentielle.
+ */
+export async function lairHasProGrant(lairId: string): Promise<boolean> {
+  const doc = await db
+    .collection(COLLECTION_NAME)
+    .findOne({ _id: new ObjectId(lairId), proGrant: { $ne: null } }, { projection: { _id: 1 } });
+
+  return doc !== null;
+}
+
 /** Retire l'accès offert. Le lieu peut rester Pro par son parrainage. */
-export async function revokeProFromLair(lairId: string): Promise<boolean> {
+export async function revokeProFromLair(
+  lairId: string
+): Promise<"revoked" | "not-granted" | "not-found"> {
   const result = await db.collection(COLLECTION_NAME).updateOne(
     { _id: new ObjectId(lairId), proGrant: { $ne: null } },
     { $unset: { proGrant: "" } }
   );
 
-  return result.modifiedCount > 0;
+  if (result.modifiedCount > 0) {
+    return "revoked";
+  }
+
+  // `modifiedCount` à zéro confond deux causes très différentes : le lieu
+  // n'existe pas, ou il n'avait pas d'octroi. Les distinguer coûte une lecture
+  // et évite d'annoncer « ce lieu n'a pas d'accès offert » à propos d'un lieu
+  // supprimé entre-temps.
+  const exists = await db
+    .collection(COLLECTION_NAME)
+    .findOne({ _id: new ObjectId(lairId) }, { projection: { _id: 1 } });
+
+  return exists ? "not-granted" : "not-found";
 }
 
 /**

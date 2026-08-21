@@ -18,6 +18,7 @@ import { getSubscriptionByUserId, getSubscriptionForLair } from "@/lib/db/subscr
 import { canAttachPro } from "@/lib/subscriptions/seats.ts";
 import { plansFromSubscription, lairHasPro } from "@/lib/subscriptions/access.ts";
 import { checkAdmin } from "@/lib/middleware/admin.ts";
+import { getLairProGrant } from "@/lib/db/lairs.ts";
 import LairProGrantCard from "./LairProGrantCard.tsx";
 import PrivateLairInvitationManager from "./PrivateLairInvitationManager.tsx";
 import PrivateLairFollowersManager from "./PrivateLairFollowersManager.tsx";
@@ -130,11 +131,9 @@ async function ManageLairContent({
   const sponsor = await getSubscriptionForLair(lairId);
   const mySubscription = session?.user?.id ? await getSubscriptionByUserId(session.user.id) : null;
   const proState = {
-    // Les paliers composés, et non `sponsor.plans` : un lieu parrainé par
-    // quelqu'un dont le Pro a été offert par l'équipe est un lieu Pro.
-    // `lairHasPro` et non le seul parrainage : un lieu équipé par l'équipe doit
-    // ouvrir exactement les mêmes options, sinon l'écran de personnalisation
-    // refuserait ce que sa vitrine accorde déjà.
+    // Les deux voies composées : un lieu équipé par l'équipe doit ouvrir
+    // exactement les mêmes options, sinon l'écran de personnalisation refuserait
+    // ce que sa vitrine accorde déjà.
     isPro: await lairHasPro(lairId),
     // Le parrainage seul, pour distinguer les deux voies dans la carte d'équipe.
     isSponsored: plansFromSubscription(sponsor).includes("pro"),
@@ -172,6 +171,10 @@ async function ManageLairContent({
   // Le statut d'administrateur, pour la carte d'octroi réservée à l'équipe.
   // L'action serveur refait le contrôle : ceci ne décide que de l'affichage.
   const viewerIsAdmin = tab === "subscription" ? await checkAdmin() : false;
+
+  // Le motif et son auteur ne se lisent que pour l'écran d'équipe, et seulement
+  // si c'en est bien un qui regarde.
+  const proGrant = viewerIsAdmin ? await getLairProGrant(lairId) : null;
 
   // Récupérer les abonnés pour les lairs privés
   let followers: User[] = [];
@@ -279,9 +282,13 @@ async function ManageLairContent({
             <CardDescription>{t("manage.pro.description")}</CardDescription>
           </CardHeader>
           <CardContent>
+            {/* `isSponsored` et non `isPro` : cette carte ne parle que du
+                siège. Lui passer le Pro composé faisait qu'un lieu équipé par
+                l'équipe affichait « Détacher » alors qu'aucun siège n'existe —
+                bouton qui échoue —, et privait son gérant du rattachement. */}
             <ProSubscriptionCard
               lairId={lairId}
-              isPro={proState.isPro}
+              isPro={proState.isSponsored}
               attachedByMe={proState.attachedByMe}
               canAttach={proState.canAttach}
               refusal={proState.refusal}
@@ -302,7 +309,7 @@ async function ManageLairContent({
               <LairProGrantCard
                 lairId={lairId}
                 lairName={lair.name}
-                grant={lair.proGrant ?? null}
+                grant={proGrant}
                 isSponsored={proState.isSponsored}
               />
             </CardContent>

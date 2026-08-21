@@ -149,6 +149,13 @@ export type LairAbout = {
  * Hors de `options` à dessein : `options` est la surface que le gérant du lieu
  * écrit lui-même. Un droit ne doit jamais se trouver là où celui à qui il
  * profite peut écrire.
+ *
+ * **Absent du type `Lair`, et c'est voulu.** Le motif est du texte libre écrit
+ * par l'équipe et `grantedBy` un identifiant interne : les rendre sur `Lair`
+ * les faisait sortir par `GET /api/lairs`, qui n'exige aucune session, et par
+ * la charge cliente de la page d'index. Ils se lisent par `getLairProGrant`, appelé
+ * du seul écran d'administration ; partout ailleurs, `lairHasProGrant` ne rend
+ * qu'un booléen.
  */
 export type LairProGrant = {
   grantedAt: Date;
@@ -181,14 +188,6 @@ export type Lair = {
   isPrivate?: boolean;
   
   invitationCode?: string;
-
-  /**
-   * L'accès Pro offert par l'équipe, s'il existe.
-   *
-   * S'ajoute au parrainage par un abonnement : `lairHasPro` compose les deux, et
-   * un lieu peut très bien tenir Pro des deux côtés à la fois.
-   */
-  proGrant?: LairProGrant | null;
 
   
   options?: {
