@@ -177,17 +177,33 @@ par les deux hubs.
 
 ## Index MongoDB
 
-Sur `stream_links` :
+`scripts/db/ensure-indexes.ts` les pose. Il est idempotent — le rejouer ne coûte
+rien :
 
-```js
-db.stream_links.createIndex({ userId: 1, platform: 1 }, { unique: true })
-db.stream_links.createIndex({ platform: 1, channelId: 1 }, { unique: true })
-db.stream_links.createIndex({ "subscription.expiresAt": 1 })
+```sh
+node --conditions=react-server --import ./scripts/ts-paths-hook.mjs \
+  scripts/db/ensure-indexes.ts
 ```
 
-Les deux unicités sont des règles, pas des optimisations : une personne ne lie
-qu'une chaîne par plateforme, et une chaîne n'appartient qu'à un compte — sans
-quoi un même direct s'annoncerait chez deux personnes.
+Les deux drapeaux ne sont pas décoratifs. `--conditions=react-server` fait
+résoudre `server-only` vers son module vide, sans quoi l'import de
+`lib/mongodb.ts` échoue hors du serveur Next ; `--import` installe la résolution
+de l'alias `@/`. Le typage est retiré nativement depuis Node 22.18 — pas
+d'exécuteur TypeScript à installer.
+
+Ce qu'il crée, sur `stream_links` :
+
+| Index | À quoi il sert |
+| --- | --- |
+| `{ userId: 1, platform: 1 }` **unique** | Une liaison par compte et par plateforme |
+| `{ platform: 1, channelId: 1 }` **unique** | Le chemin des webhooks, qui n'apprennent qu'une plateforme et une chaîne |
+| `{ "subscription.expiresAt": 1 }` | Le renouvellement des baux WebSub |
+
+Les deux unicités sont des **règles**, pas des optimisations : une personne ne
+lie qu'une chaîne par plateforme, et une chaîne n'appartient qu'à un compte —
+sans quoi un même direct s'annoncerait chez deux personnes. MongoDB refuse de
+créer un index unique sur des doublons existants ; c'est le comportement voulu,
+et le message d'erreur nomme alors la clé fautive.
 
 ## Mettre au point en local
 
