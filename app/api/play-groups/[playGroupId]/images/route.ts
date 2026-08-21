@@ -3,6 +3,7 @@ import { put } from "@vercel/blob";
 
 import { auth } from "@/lib/auth";
 import { getPlayGroupById } from "@/lib/db/play-groups";
+import { readBlobFilename } from "@/lib/media/blob-filename";
 import { canManagePlayGroup, readMemberRole } from "@/lib/play-groups/access";
 
 /** Ce que le stockage accepte, et ce que `next.config.ts` sait afficher. */
@@ -59,7 +60,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Le chemin porte l'identifiant du groupe, et un suffixe aléatoire :
     // deux groupes qui téléversent chacun leur « logo.png » ne s'écrasent pas,
     // et remplacer une image ne laisse pas l'ancienne servie par un cache.
-    const blob = await put(`play-groups/${playGroupId}/${file.name}`, file, {
+    //
+    // Le nom, lui, vient du client : sans nettoyage, un envoi fabriqué à la
+    // main annonce `../../autre-groupe/logo.png` et va écrire hors du préfixe.
+    const blob = await put(`play-groups/${playGroupId}/${readBlobFilename(file.name, "image")}`, file, {
       access: "public",
       addRandomSuffix: true,
     });
