@@ -149,6 +149,19 @@ export default function LairCustomizationForm({
   const save = () => {
     setIssues({});
 
+    // Les lignes incomplètes sont retirées de l'état **avant** l'envoi, et non
+    // seulement de la charge : garder l'état non filtré comme repère faisait
+    // annoncer « enregistré » pour une ligne qui n'était jamais partie, et qui
+    // disparaissait au rechargement suivant.
+    const cleaned: FormState = {
+      ...state,
+      organizers: state.organizers.filter((entry) => entry.name.trim().length > 0),
+      rhythm: state.rhythm.filter(
+        (entry) => entry.label.trim().length > 0 && entry.value.trim().length > 0,
+      ),
+    };
+    setState(cleaned);
+
     startTransition(async () => {
       const result = await updateLairCustomization(lair.id, {
         theme: {
@@ -166,26 +179,21 @@ export default function LairCustomizationForm({
             : [];
         }),
         about: {
-          description: state.description,
-          category: state.category,
-          amenities: state.amenities,
-          photos: state.photos,
-          videoUrl: state.videoUrl,
-          transit: state.transit,
-          parking: state.parking,
-          // Les lignes vides ne partent pas : une ligne à moitié saisie ferait
-          // refuser tout le formulaire pour un champ que le gérant croyait
-          // avoir laissé de côté.
-          organizers: state.organizers.filter((entry) => entry.name.trim().length > 0),
-          rhythm: state.rhythm.filter(
-            (entry) => entry.label.trim().length > 0 && entry.value.trim().length > 0,
-          ),
+          description: cleaned.description,
+          category: cleaned.category,
+          amenities: cleaned.amenities,
+          photos: cleaned.photos,
+          videoUrl: cleaned.videoUrl,
+          transit: cleaned.transit,
+          parking: cleaned.parking,
+          organizers: cleaned.organizers,
+          rhythm: cleaned.rhythm,
         },
         featuredEventId: state.featuredEventId,
       });
 
       if (result.success) {
-        setSaved(JSON.stringify(state));
+        setSaved(JSON.stringify(cleaned));
         toast.success(t("saved"));
         return;
       }

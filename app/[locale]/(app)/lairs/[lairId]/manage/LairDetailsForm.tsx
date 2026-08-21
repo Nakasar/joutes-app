@@ -96,7 +96,10 @@ export default function LairDetailsForm({
         const field = "field" in result ? result.field : undefined;
         setError(
           result.error === "INVALID" && field
-            ? t("errors.invalidField", { field: t(`fields.${field}`) })
+            // `fieldNames` et non `fields` : les libellés du formulaire portent
+            // « (optionnel) », qui n'a aucun sens repris dans une phrase
+            // d'erreur — « Le champ "Site web (optionnel)" est invalide ».
+            ? t("errors.invalidField", { field: t(`fieldNames.${field}`) })
             : t(ERROR_KEYS[result.error]),
         );
       }

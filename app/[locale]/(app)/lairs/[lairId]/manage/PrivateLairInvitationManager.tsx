@@ -3,7 +3,22 @@
 import { useTranslations } from "next-intl";
 
 import { useState, useTransition, useEffect } from "react";
-import { regenerateInvitationCodeAction } from "@/app/[locale]/(app)/account/private-lairs-actions.ts";
+import { regenerateInvitationCodeAction, type PrivateLairError } from "@/app/[locale]/(app)/account/private-lairs-actions.ts";
+
+/**
+ * Les refus de l'action serveur, traduits ici.
+ *
+ * Ils sont distingués parce qu'ils ne se valent pas : « vous n'êtes pas
+ * propriétaire » ne passera jamais, et inviter à réessayer y était trompeur.
+ */
+const ERROR_KEYS: Record<PrivateLairError, string> = {
+  NOT_AUTHENTICATED: "errors.notAuthenticated",
+  LAIR_NOT_FOUND: "errors.lairNotFound",
+  NOT_OWNER: "errors.notOwner",
+  NOT_PRIVATE: "errors.notPrivate",
+  IS_OWNER: "errors.isOwner",
+  FAILED: "errors.failed",
+};
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Alert, AlertDescription } from "@/components/ui/alert.tsx";
@@ -75,12 +90,12 @@ export default function PrivateLairInvitationManager({
     startTransition(async () => {
       const result = await regenerateInvitationCodeAction(lairId);
 
-      if (result.success && result.invitationCode) {
+      if (result.success) {
         setSuccess(t("regenerated"));
         setInvitationCode(result.invitationCode);
         setError(null);
       } else {
-        setError(t("errors.regenerateFailed"));
+        setError(t(ERROR_KEYS[result.error]));
         setSuccess(null);
       }
     });

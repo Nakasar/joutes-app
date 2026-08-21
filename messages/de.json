@@ -1219,6 +1219,7 @@
     },
     "manage": {
       "details": {
+        "fieldNames": {"name":"Name des Ortes","banner":"Banner","address":"Adresse","website":"Website","location":"GPS-Koordinaten","games":"Verfügbare Spiele"},
         "saved": "Änderungen gespeichert.",
         "save": "Änderungen speichern",
         "saving": "Wird gespeichert…",
@@ -1253,6 +1254,8 @@
         "empty": "Noch kein Eigentümer.",
         "emailPlaceholder": "email@beispiel.de",
         "errors": {
+          "invalidEmail": "Diese E-Mail-Adresse ist ungültig.",
+          "invalid": "Die Anfrage ist ungültig.",
           "emailRequired": "Gib eine E-Mail-Adresse ein.",
           "notFound": "Dieser Ort wurde nicht gefunden.",
           "userNotFound": "Kein Konto passt zu dieser Adresse.",
@@ -1270,14 +1273,31 @@
         "copied": "Kopiert!",
         "qrAlt": "Einladungs-QR-Code",
         "errors": {
+          "notAuthenticated": "Du bist nicht angemeldet.",
+          "lairNotFound": "Dieser Ort wurde nicht gefunden.",
+          "notOwner": "Nur ein Eigentümer dieses Ortes kann seinen Code neu erzeugen.",
+          "notPrivate": "Dieser Ort ist nicht privat.",
+          "isOwner": "Du kannst keinen Eigentümer entfernen.",
+          "failed": "Das Neuerzeugen des Codes ist fehlgeschlagen. Versuche es gleich noch einmal.",
           "regenerateFailed": "Das Neuerzeugen des Codes ist fehlgeschlagen. Versuche es gleich noch einmal."
         }
       },
       "followers": {
+        "remove": "Entfernen",
+        "removeConfirm": "{name} von diesem Ort entfernen? Diese Person sieht seine Veranstaltungen dann nicht mehr.",
+        "removed": "{name} wurde entfernt.",
+        "titleWithCount": "Abonnenten ({count})",
+        "emptyHint": "Teile den Einladungscode, um Spieler einzuladen.",
         "title": "Abonnenten",
         "description": "Verwalte die Personen, die diesem privaten Ort folgen.",
         "empty": "Noch keine Abonnenten.",
         "errors": {
+          "notAuthenticated": "Du bist nicht angemeldet.",
+          "lairNotFound": "Dieser Ort wurde nicht gefunden.",
+          "notOwner": "Nur ein Eigentümer dieses Ortes kann einen Abonnenten entfernen.",
+          "notPrivate": "Dieser Ort ist nicht privat.",
+          "isOwner": "Ein Eigentümer kann nicht aus den Abonnenten entfernt werden.",
+          "failed": "Das Entfernen ist fehlgeschlagen. Versuche es gleich noch einmal.",
           "removeFailed": "Das Entfernen ist fehlgeschlagen. Versuche es gleich noch einmal."
         }
       },

@@ -6,11 +6,24 @@ import { useTranslations } from "next-intl";
 import { addOwner, removeOwner, type LairManageError } from "./actions.ts";
 
 /** Les échecs de l'action serveur, traduits ici — elle ne renvoie que des codes. */
-const ERROR_KEYS: Record<LairManageError, string> = {
+/**
+ * Les échecs de l'action serveur, traduits ici — elle ne renvoie que des codes.
+ *
+ * Deux tables : « invalide » ne veut pas dire la même chose selon le geste.
+ * Ajouter valide une adresse saisie ; retirer valide un identifiant que
+ * l'utilisateur n'a jamais tapé, et lui parler de son e-mail l'enverrait
+ * corriger un champ qui n'est pas en cause.
+ */
+const ADD_ERROR_KEYS: Record<LairManageError, string> = {
   NOT_FOUND: "errors.notFound",
   USER_NOT_FOUND: "errors.userNotFound",
-  INVALID: "errors.invalid",
+  INVALID: "errors.invalidEmail",
   FAILED: "errors.failed",
+};
+
+const REMOVE_ERROR_KEYS: Record<LairManageError, string> = {
+  ...ADD_ERROR_KEYS,
+  INVALID: "errors.invalid",
 };
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
@@ -48,7 +61,7 @@ export default function OwnersManager({
         setEmail("");
         setTimeout(() => setSuccess(null), 3000);
       } else {
-        setError(t(ERROR_KEYS[result.error]));
+        setError(t(ADD_ERROR_KEYS[result.error]));
       }
     });
   };
@@ -64,7 +77,7 @@ export default function OwnersManager({
         setSuccess(t("removed"));
         setTimeout(() => setSuccess(null), 3000);
       } else {
-        setError(t(ERROR_KEYS[result.error]));
+        setError(t(REMOVE_ERROR_KEYS[result.error]));
       }
     });
   };

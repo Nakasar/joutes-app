@@ -1219,6 +1219,7 @@
     },
     "manage": {
       "details": {
+        "fieldNames": {"name":"Nom du lieu","banner":"Bannière","address":"Adresse","website":"Site web","location":"Coordonnées GPS","games":"Jeux disponibles"},
         "saved": "Les modifications ont été enregistrées.",
         "save": "Enregistrer les modifications",
         "saving": "Enregistrement…",
@@ -1253,6 +1254,8 @@
         "empty": "Aucun propriétaire pour le moment.",
         "emailPlaceholder": "email@exemple.com",
         "errors": {
+          "invalidEmail": "Cette adresse e-mail est invalide.",
+          "invalid": "La demande est invalide.",
           "emailRequired": "Saisissez une adresse e-mail.",
           "notFound": "Ce lieu est introuvable.",
           "userNotFound": "Aucun compte ne correspond à cette adresse.",
@@ -1270,14 +1273,31 @@
         "copied": "Copié !",
         "qrAlt": "QR code d'invitation",
         "errors": {
+          "notAuthenticated": "Vous n'êtes pas connecté.",
+          "lairNotFound": "Ce lieu est introuvable.",
+          "notOwner": "Seul un propriétaire de ce lieu peut régénérer son code.",
+          "notPrivate": "Ce lieu n'est pas privé.",
+          "isOwner": "Vous ne pouvez pas retirer un propriétaire.",
+          "failed": "La régénération du code a échoué. Réessayez dans un instant.",
           "regenerateFailed": "La régénération du code a échoué. Réessayez dans un instant."
         }
       },
       "followers": {
+        "remove": "Retirer",
+        "removeConfirm": "Retirer {name} de ce lieu ? Cette personne ne verra plus ses événements.",
+        "removed": "{name} a été retiré.",
+        "titleWithCount": "Abonnés ({count})",
+        "emptyHint": "Partagez le code d'invitation pour inviter des joueurs.",
         "title": "Abonnés",
         "description": "Gérez les personnes qui suivent ce lieu privé.",
         "empty": "Aucun abonné pour le moment.",
         "errors": {
+          "notAuthenticated": "Vous n'êtes pas connecté.",
+          "lairNotFound": "Ce lieu est introuvable.",
+          "notOwner": "Seul un propriétaire de ce lieu peut retirer un abonné.",
+          "notPrivate": "Ce lieu n'est pas privé.",
+          "isOwner": "Un propriétaire ne peut pas être retiré des abonnés.",
+          "failed": "Le retrait a échoué. Réessayez dans un instant.",
           "removeFailed": "Le retrait a échoué. Réessayez dans un instant."
         }
       },

@@ -2,7 +2,7 @@
 
 import { requireAdminOrOwner } from "@/lib/middleware/admin.ts";
 import { revalidatePath } from "next/cache";
-import { lairSchema, lairIdSchema } from "@/lib/schemas/lair.schema.ts";
+import { lairDetailsSchema, lairIdSchema } from "@/lib/schemas/lair.schema.ts";
 import { z } from "zod";
 import * as lairsDb from "@/lib/db/lairs.ts";
 import * as usersDb from "@/lib/db/users.ts";
@@ -64,8 +64,9 @@ export async function updateLairDetails(
     // Valider l'ID
     const validatedId = lairIdSchema.parse(lairId);
 
-    // Valider les données avec Zod
-    const validatedData = lairSchema.omit({ eventsSourceUrls: true }).parse(data);
+    // `lairDetailsSchema` et non `lairSchema.omit(...)` : voir le schéma, cet
+    // `omit` levait sur un objet à refinements et l'onglet n'enregistrait rien.
+    const validatedData = lairDetailsSchema.parse(data);
 
     const updatedLair = await lairsDb.updateLair(validatedId, validatedData);
 
