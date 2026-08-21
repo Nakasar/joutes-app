@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { isLandscapeCard } from "@/lib/types/card";
+import { isLandscapeCard, type CardOrientation } from "@/lib/types/card";
 
 /** Proportions `largeur/hauteur` d'une vignette de carte, par défaut celles d'une carte à jouer. */
 const DEFAULT_FRAME = "63/88";
@@ -8,7 +8,7 @@ type Props = {
   src: string;
   alt: string;
   /** Sens d'impression de la carte ; tout ce qui n'est pas `landscape` reste vertical. */
-  orientation?: string;
+  orientation?: CardOrientation;
   /**
    * Classes de l'élément qui occupe la place dans la mise en page : l'image
    * elle-même en portrait, le cadre qui la contient en paysage.
