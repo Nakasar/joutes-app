@@ -54,6 +54,7 @@ import {
 } from "@/components/ui/alert-dialog.tsx";
 import ReportButton from "@/components/ReportButton.tsx";
 import PrintingPicker from "@/components/PrintingPicker.tsx";
+import CardImage from "@/components/cards/CardImage.tsx";
 import { resolvePrinting } from "@/lib/cards/printings.ts";
 import type { CardPrinting } from "@/lib/types/card.ts";
 import type { Wishlist, WishlistItem, WishlistVisibility } from "@/lib/types/Wishlist.ts";
@@ -779,7 +780,14 @@ function AddItemDialog({
               {results.map((card) => (
                 <div key={card.id} className="flex flex-col overflow-hidden rounded-lg border">
                   <div className="relative aspect-[3/4] w-full bg-muted">
-                    <Image src={card.image} alt={card.name} fill unoptimized sizes="150px" className="object-cover" />
+                    <CardImage
+                      src={card.image}
+                      alt={card.name}
+                      orientation={card.orientation}
+                      frame="3/4"
+                      loading="lazy"
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
                   </div>
                   <div className="flex flex-col gap-1 p-1.5">
                     <p className="truncate text-xs font-medium" title={card.name}>

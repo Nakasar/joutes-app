@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation.ts";
-import Image from "next/image";
+import CardImage from "@/components/cards/CardImage.tsx";
 import { useTranslations } from "next-intl";
 import {
   ArrowLeft,
@@ -71,7 +71,7 @@ type Props = {
 
 type ManageableCard = Pick<
   CollectionItem,
-  "id" | "name" | "setCode" | "collectorNumber" | "image" | "quantity" | "foil" | "printings"
+  "id" | "name" | "setCode" | "collectorNumber" | "image" | "orientation" | "quantity" | "foil" | "printings"
 >;
 
 export default function GameCollectionBrowser({
@@ -506,13 +506,13 @@ export default function GameCollectionBrowser({
                   className="relative block aspect-[3/4] w-full overflow-hidden bg-muted"
                   aria-label={t("card.manage", { name: card.name })}
                 >
-                  <Image
+                  <CardImage
                     src={card.image}
                     alt={card.name}
-                    fill
-                    unoptimized
-                    sizes="(max-width: 640px) 45vw, (max-width: 1280px) 20vw, 160px"
-                    className={`object-cover transition-transform group-hover:scale-[1.03] ${owned ? "" : "opacity-60 grayscale-[35%]"}`}
+                    orientation={card.orientation}
+                    frame="3/4"
+                    loading="lazy"
+                    className={`absolute inset-0 h-full w-full object-cover transition-transform group-hover:scale-[1.03] ${owned ? "" : "opacity-60 grayscale-[35%]"}`}
                   />
                   {owned ? (
                     <span className="absolute right-1.5 top-1.5 rounded-full bg-emerald-500 px-2 py-0.5 text-xs font-bold text-white shadow tabular-nums">
@@ -622,12 +622,10 @@ export default function GameCollectionBrowser({
               </DialogHeader>
               <div className="flex flex-col gap-4 sm:flex-row">
                 <div className="mx-auto flex w-40 flex-col gap-2 sm:mx-0">
-                  <Image
+                  <CardImage
                     src={manageCard.image}
                     alt={manageCard.name}
-                    width={200}
-                    height={280}
-                    unoptimized
+                    orientation={manageCard.orientation}
                     className="h-auto w-40 rounded-lg shadow"
                   />
                   <Button asChild variant="outline" size="sm" className="gap-1.5">
@@ -688,12 +686,12 @@ export default function GameCollectionBrowser({
                           onClick={() => setManageCard(variant)}
                           className="flex items-center gap-2 rounded-lg border p-1.5 text-left transition-colors hover:bg-accent"
                         >
-                          <Image
+                          <CardImage
                             src={variant.image}
                             alt={variant.name}
-                            width={40}
-                            height={56}
-                            unoptimized
+                            orientation={variant.orientation}
+                            frame="10/14"
+                            loading="lazy"
                             className="h-14 w-10 shrink-0 rounded object-cover"
                           />
                           <div className="min-w-0 flex-1">

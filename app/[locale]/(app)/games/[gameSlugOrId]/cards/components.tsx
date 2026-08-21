@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input.tsx";
 import { BoosterCard } from "@/lib/types/booster.ts";
 import { Link, usePathname, useRouter } from "@/i18n/navigation.ts";
-import Image from "next/image";
+import CardImage from "@/components/cards/CardImage.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import {
   Select,
@@ -809,7 +809,13 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
                 <Link href={`/games/${gameSlug}/cards/${card.id}`} className="block">
                   {/* Une carte toujours foil se reconnaît dans la liste comme sur sa fiche. */}
                   <div className={`relative overflow-hidden ${card.foil ? "foil-shine" : ""}`}>
-                    <Image src={card.image} alt={card.name} width={600} height={840} unoptimized className="w-full" />
+                    <CardImage
+                      src={card.image}
+                      alt={card.name}
+                      orientation={card.orientation}
+                      loading="lazy"
+                      className="w-full"
+                    />
                   </div>
                   <div className="flex flex-col gap-0.5 px-2.5 py-2">
                     <span className="flex min-w-0 items-start justify-between gap-1.5">
@@ -849,7 +855,13 @@ export function CardsComponent({ gameSlug }: { gameSlug: string }) {
                   className="flex min-w-0 flex-1 items-center gap-3"
                 >
                   <span className={`relative w-8 shrink-0 overflow-hidden rounded ${card.foil ? "foil-shine" : ""}`}>
-                    <Image src={card.image} alt={card.name} width={64} height={90} unoptimized className="w-full" />
+                    <CardImage
+                      src={card.image}
+                      alt={card.name}
+                      orientation={card.orientation}
+                      loading="lazy"
+                      className="w-full"
+                    />
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="flex min-w-0 items-center gap-1.5">

@@ -36,6 +36,19 @@ function numericValue(field?: WebSiteValue): number | undefined {
   return Number.isNaN(parsed) ? undefined : parsed;
 }
 
+/**
+ * Les champs de bataille sont les seules cartes de Riftbound imprimées dans le
+ * sens de la largeur : leur illustration est plus large que haute, et
+ * l'application l'affiche pivotée d'un quart de tour. Les autres types n'ont
+ * pas de sens d'impression à déclarer — l'absence de la propriété vaut
+ * `portrait`.
+ */
+const LANDSCAPE_TYPE = 'Battlefield';
+
+function orientationOf(types: (string | undefined)[]): 'landscape' | undefined {
+  return types.includes(LANDSCAPE_TYPE) ? 'landscape' : undefined;
+}
+
 /** `{ values: [{ label: "Chaos" }] }` -> ["Chaos"], `undefined` si la liste est vide. */
 function labels(field?: WebSiteValues): string[] | undefined {
   const values = field?.values?.map((value) => value.label).filter(Boolean);
@@ -85,12 +98,14 @@ async function main() {
 
     const isLegend = card.cardType.type?.[0]?.label === 'Legend';
     const tag = card.tags?.tags?.[0];
+    const types = card.cardType.type?.map((type) => type.label).filter(Boolean);
 
     return {
       id: `${match.groups?.set}${match.groups?.cn}`,
       name: (isLegend && tag) ? `${tag}, ${card.name}` : card.name,
       type: card.cardType.type[0]?.label,
-      types: card.cardType.type?.map((type) => type.label).filter(Boolean),
+      types,
+      orientation: orientationOf(types ?? []),
       tags: card.tags?.tags,
       superType: card.cardType.superType?.[0]?.label,
       isToken: card.cardType.superType?.[0]?.label === 'Token',

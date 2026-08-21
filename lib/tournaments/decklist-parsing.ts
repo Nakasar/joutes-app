@@ -165,6 +165,7 @@ function toParsedDecklist(deck: DeckList): TournamentParsedDecklist {
       quantity: card.quantity,
       cardId: card.cardId,
       image: card.image,
+      orientation: card.orientation,
       recognized: card.recognized ?? false,
       banned: card.banned ?? false,
     }));

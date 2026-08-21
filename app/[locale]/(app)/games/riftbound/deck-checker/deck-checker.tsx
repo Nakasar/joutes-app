@@ -32,6 +32,7 @@ import {parseDeckList, serializeDeckList, stringifyDeckList} from "@/app/[locale
 import {upload} from "@vercel/blob/client";
 import {Pencil} from "lucide-react";
 import {useLocale, useTranslations} from "next-intl";
+import CardImage from "@/components/cards/CardImage.tsx";
 
 const ConstructionRules = {
   legends: {
@@ -142,8 +143,12 @@ function EditCardDialog({
                     className="cursor-pointer gap-3 py-2"
                   >
                     {result.image && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={result.image} alt={result.name} className="w-10 h-auto rounded shrink-0" />
+                      <CardImage
+                        src={result.image}
+                        alt={result.name}
+                        orientation={result.orientation}
+                        className="w-10 h-auto rounded shrink-0"
+                      />
                     )}
                     <div className="min-w-0">
                       <div className="font-medium text-sm">{result.name}</div>
@@ -196,8 +201,14 @@ function CardTile({card, onEdit, onQuantityChange}: {card: DeckListCard; onEdit?
         style={{aspectRatio: '2.5 / 3.5'}}
       >
         {card.image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={card.image} alt={card.name} className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105" />
+          <CardImage
+            src={card.image}
+            alt={card.name}
+            orientation={card.orientation}
+            frame="2.5/3.5"
+            loading="lazy"
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+          />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center bg-gray-700 p-2 gap-1">
             <span className="text-3xl opacity-40">?</span>
@@ -250,10 +261,10 @@ function CardTile({card, onEdit, onQuantityChange}: {card: DeckListCard; onEdit?
         <div className="flex gap-6 mt-1">
           {/* Card image */}
           {card.image && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <CardImage
               src={card.image}
               alt={card.name}
+              orientation={card.orientation}
               className="w-40 shrink-0 rounded-lg shadow-md self-start"
             />
           )}

@@ -1,5 +1,6 @@
 import { ObjectId } from "bson";
 import type { PlayerStanding } from "@/lib/utils/pairing";
+import type { CardOrientation } from "@/lib/types/card";
 
 export type TournamentStatus = "draft" | "in-progress" | "completed";
 // - freeform : pas de génération automatique des matchs.
@@ -262,6 +263,8 @@ export type TournamentDecklistCard = {
   quantity: number;
   cardId?: string;
   image?: string;
+  /** Sens d'impression de la carte : un champ de bataille s'affiche pivoté. */
+  orientation?: CardOrientation;
   // Carte absente de la base du jeu : nom mal orthographié, ou carte inconnue.
   recognized?: boolean;
   banned?: boolean;
