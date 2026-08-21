@@ -330,7 +330,14 @@ export async function WishlistsMockup() {
 
 export async function LairsMockup() {
   const t = await mockupT();
-  const tabs = [t("lairs.tabNews"), t("lairs.tabAgenda"), t("lairs.tabAbout")];
+  // Les quatre onglets de la vitrine d'un lieu, dans leur ordre réel : la
+  // maquette illustre ce que la copie annonce, elle n'en montre pas trois.
+  const tabs = [
+    t("lairs.tabNews"),
+    t("lairs.tabAgenda"),
+    t("lairs.tabGames"),
+    t("lairs.tabAbout"),
+  ];
   return (
     <DeviceFrame accent="from-cyan-500 to-sky-500">
       <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold">

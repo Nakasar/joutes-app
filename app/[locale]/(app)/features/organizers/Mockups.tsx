@@ -69,7 +69,13 @@ export async function HeroMockup() {
 
 export async function LairPageMockup() {
   const t = await mockupT();
-  const tabs = [t("lairPage.tabNews"), t("lairPage.tabAgenda"), t("lairPage.tabAbout")];
+  // Quatre onglets, comme la vitrine réelle et comme la copie de la section.
+  const tabs = [
+    t("lairPage.tabNews"),
+    t("lairPage.tabAgenda"),
+    t("lairPage.tabGames"),
+    t("lairPage.tabAbout"),
+  ];
   return (
     <DeviceFrame accent="from-cyan-500 to-blue-500">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">

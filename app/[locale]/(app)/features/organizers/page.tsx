@@ -192,14 +192,19 @@ export default async function OrganizersFeaturesPage({
                     </li>
                   ))}
                   {pro.map((bullet) => (
-                    <li key={bullet} className="flex flex-wrap items-start gap-2.5 text-sm">
+                    <li key={bullet} className="flex items-start gap-2.5 text-sm">
                       <span
                         className={`mt-1.5 size-1.5 shrink-0 rounded-full bg-gradient-to-br ${feature.accent}`}
                       />
-                      <span>{bullet}</span>
-                      <Badge variant="secondary" className="text-[10px]">
-                        {t("proLabel")}
-                      </Badge>
+                      {/* Le badge vit dans le texte, et non à côté : ces lignes
+                          passent à deux lignes, et un badge frère se retrouverait
+                          seul à la ligne, décollé de ce qu'il qualifie. */}
+                      <span className="min-w-0">
+                        {bullet}{" "}
+                        <Badge variant="secondary" className="align-middle text-[10px]">
+                          {t("proLabel")}
+                        </Badge>
+                      </span>
                     </li>
                   ))}
                   {soon.map((bullet) => (
