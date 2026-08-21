@@ -216,7 +216,10 @@ export default function StreamAccountCard({
                 <Radio className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium">{live.title ?? "Direct en cours"}</span>
                 <span className="text-sm text-muted-foreground">
-                  depuis {DateTime.fromISO(live.startedAt).toRelative({ locale: "fr" })}
+                  {/* `toRelative` rend `null` sur une date illisible — et
+                      `startedAt` vient des plateformes, pas de nous. Sans repli,
+                      la ligne afficherait « depuis » suivi de rien. */}
+                  depuis {DateTime.fromISO(live.startedAt).toRelative({ locale: "fr" }) ?? "à l'instant"}
                 </span>
               </div>
             )}

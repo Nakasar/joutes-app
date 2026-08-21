@@ -352,7 +352,17 @@ export async function deleteLair(id: string): Promise<boolean> {
   // Le lieu disparaît, les directs qui devaient s'y annoncer aussi : une
   // destination fantôme ferait échouer une annonce sur deux sans que son
   // propriétaire comprenne pourquoi (voir `docs/STREAM_LINKING.md`).
-  await purgeStreamTarget({ kind: "lair", id });
+  //
+  // Au mieux, et jamais au prix de la suppression : le lieu est **déjà** parti
+  // quand on arrive ici, et jeter maintenant ferait rendre un échec pour une
+  // opération réussie — voire retenter une suppression sans objet. Une
+  // destination restée en place est inoffensive : l'annonce la saute faute de
+  // droit, et l'écran de compte l'affiche comme supprimée pour qu'on l'ôte.
+  try {
+    await purgeStreamTarget({ kind: "lair", id });
+  } catch (error) {
+    console.error(`Purge des destinations de direct du lieu ${id} impossible:`, error);
+  }
 
   return true;
 }

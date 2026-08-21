@@ -88,7 +88,15 @@ export async function upsertStreamLink(input: UpsertStreamLinkInput): Promise<St
         channelName: input.channelName ?? null,
         channelUrl: input.channelUrl ?? null,
         updatedAt: now,
-        ...(channelChanged ? { subscription: { state: "pending" }, live: null, watched: [] } : {}),
+        // `watched` n'existe que pour YouTube : le poser sur une liaison Twitch
+        // écrirait un champ que rien ne lit et contredirait le type.
+        ...(channelChanged
+          ? {
+              subscription: { state: "pending" },
+              live: null,
+              ...(input.platform === "youtube" ? { watched: [] } : {}),
+            }
+          : {}),
       },
       $setOnInsert: {
         userId: input.userId,
