@@ -8,7 +8,7 @@ import { connection } from "next/server";
 import { auth } from "@/lib/auth.ts";
 import { getPlayGroupById } from "@/lib/db/play-groups.ts";
 import { listPlayGroupSessions } from "@/lib/db/play-group-sessions.ts";
-import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
+import { readAllGames, readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { getUsersByIds } from "@/lib/db/users.ts";
 import { canManagePlayGroup, readMemberRole } from "@/lib/play-groups/access.ts";
 import type { Game } from "@/lib/types/Game";
@@ -100,11 +100,21 @@ export const readGroupSessions = cache(async (playGroupId: string): Promise<Play
   listPlayGroupSessions(playGroupId),
 );
 
-/** Les jeux activés du groupe — la liste proposée à la création d'une session ou d'un contenu. */
+/**
+ * Les jeux du groupe — la liste proposée à la création d'une session ou d'un
+ * contenu, et les vignettes de la vitrine.
+ *
+ * `enabledGameIds` absent ou nul veut dire « tous les jeux », comme partout
+ * ailleurs (`isGameEnabledForPlayGroup`) : rendre une liste vide dans ce cas
+ * privait de sélecteur de jeu la majorité des groupes, ceux qui n'ont jamais
+ * restreint quoi que ce soit. Une liste *explicitement* vide, elle, reste vide
+ * — le groupe a choisi de ne rien activer.
+ */
 export const readGroupGames = cache(async (playGroupId: string): Promise<Game[]> => {
   const group = await requirePlayGroup(playGroupId);
-  if (!group.enabledGameIds || group.enabledGameIds.length === 0) {
-    return [];
+
+  if (!group.enabledGameIds) {
+    return readAllGames();
   }
 
   const games = await Promise.all(group.enabledGameIds.map((gameId) => readGameBySlugOrId(gameId)));
@@ -112,23 +122,32 @@ export const readGroupGames = cache(async (playGroupId: string): Promise<Game[]>
   return games.filter((game): game is Game => game !== null);
 });
 
+/** Une session est-elle encore devant nous ? Sa fin fait foi quand elle est connue. */
+export function isUpcoming(session: PlayGroupSession, now = new Date().toISOString()): boolean {
+  return (session.endsAt ?? session.startsAt ?? "") >= now;
+}
+
 /**
- * Ce qui attend une réponse du membre : sondages non votés et sessions sans
- * réponse.
+ * Ce qui attend une réponse du membre : sondages non votés et sessions à venir
+ * sans réponse.
  *
  * C'est le chiffre de la pastille du rail et la phrase de l'en-tête de
- * l'Établi. Compté ici, une fois, plutôt que deux fois de deux manières.
+ * l'Établi. Les sessions passées en sont exclues : on ne peut plus rien y
+ * répondre, et les compter présentait à un nouveau membre tout l'historique du
+ * groupe comme une pile de choses à traiter.
  */
 export function countPending(sessions: PlayGroupSession[], userId: string | null): number {
   if (!userId) {
     return 0;
   }
 
+  const now = new Date().toISOString();
+
   return sessions.filter((session) => {
     if (session.status === "poll") {
       return !(session.slots ?? []).some((slot) => slot.voterIds.includes(userId));
     }
 
-    return !session.rsvps.some((rsvp) => rsvp.userId === userId);
+    return isUpcoming(session, now) && !session.rsvps.some((rsvp) => rsvp.userId === userId);
   }).length;
 }

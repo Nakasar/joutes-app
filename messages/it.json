@@ -1418,6 +1418,7 @@
         "title": "Sessioni",
         "metadataTitle": "Sessioni · {group}",
         "confirmed": "Confermate",
+        "past": "Passate",
         "empty": "Nessuna sessione confermata. Proponine una, o apri un sondaggio di disponibilità.",
         "badgeConfirmed": "Confermata",
         "badgeEvent": "Evento Joutes",

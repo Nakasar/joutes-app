@@ -16,6 +16,18 @@ import {
 
 export type PlayGroupInvitationResult = { success: true } | { success: false; error: "FORBIDDEN" | "NOT_FOUND" | "FAILED" };
 
+/**
+ * Les vues d'un groupe vivent toutes sur sa route, choisies par `?view=` :
+ * c'est elle qu'il faut invalider, et par langue — un chemin sans langue ne
+ * correspondrait à aucune route rendue. Viser `…/members` ne rafraîchissait
+ * plus rien depuis que ce segment a disparu.
+ */
+function revalidateGroup(playGroupId: string) {
+  for (const locale of locales) {
+    revalidatePath(`/${locale}/play-groups/${playGroupId}`, "layout");
+  }
+}
+
 /** Fondateur ou admin du groupe, et le groupe avec. */
 async function requireManager(playGroupId: string) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -48,9 +60,7 @@ export async function cancelPlayGroupInvitationAction(
       return { success: false, error: "NOT_FOUND" };
     }
 
-    for (const locale of locales) {
-      revalidatePath(`/${locale}/play-groups/${playGroupId}/members`);
-    }
+    revalidateGroup(playGroupId);
     return { success: true };
   } catch (error) {
     console.error("Erreur lors de l'annulation d'une invitation de groupe:", error);
@@ -97,9 +107,7 @@ export async function resendPlayGroupInvitationAction(
       target: "user",
     });
 
-    for (const locale of locales) {
-      revalidatePath(`/${locale}/play-groups/${playGroupId}/members`);
-    }
+    revalidateGroup(playGroupId);
     return { success: true };
   } catch (error) {
     console.error("Erreur lors de la relance d'une invitation de groupe:", error);

@@ -38,12 +38,18 @@ export async function generateMetadata({
   await connection();
 
   const group = await getPlayGroupById(playGroupId);
-  const view = readPlayGroupView(search.view);
 
   if (!group) {
     const t = await getTranslations("PlayGroups.hub");
     return { title: t("title") };
   }
+
+  // Le même repli que l'aiguillage : un visiteur — un moteur d'indexation, un
+  // aperçu de lien — reçoit la vitrine, et doit donc en recevoir le titre, la
+  // description et l'image. Décider autrement ici donnerait « Établi du
+  // groupe » à une page qui montre la vitrine.
+  const viewer = await readGroupViewer(playGroupId);
+  const view = viewer.isMember ? readPlayGroupView(search.view) : "showcase";
 
   // La vitrine est la seule vue qui sorte du groupe : c'est la seule qui mérite
   // une description et une image sociale.

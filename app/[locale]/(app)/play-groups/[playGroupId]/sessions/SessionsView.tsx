@@ -13,6 +13,7 @@ import PlayGroupRsvpButtons from "../PlayGroupRsvpButtons.tsx";
 import PlayGroupPlaceCard from "../PlayGroupPlaceCard.tsx";
 import NewSessionPanel, { type LairChoice } from "./NewSessionPanel.tsx";
 import {
+  isUpcoming,
   memberName,
   readGroupGames,
   readGroupMembers,
@@ -43,6 +44,14 @@ export default async function SessionsView({ playGroupId }: { playGroupId: strin
   const polls = sessions.filter((session) => session.status === "poll");
   const confirmed = sessions.filter((session) => session.status === "confirmed");
 
+  // À venir du plus proche au plus lointain — c'est la prochaine soirée qu'on
+  // vient chercher ici, pas la première de l'histoire du groupe. Les passées
+  // suivent à l'envers, de la plus récente à la plus ancienne.
+  const upcoming = confirmed.filter((session) => isUpcoming(session));
+  const past = confirmed
+    .filter((session) => !isUpcoming(session))
+    .reverse();
+
   return (
     <div className="grid gap-[26px] xl:grid-cols-[minmax(0,1fr)_300px]">
       <div className="flex min-w-0 flex-col gap-4">
@@ -67,12 +76,23 @@ export default async function SessionsView({ playGroupId }: { playGroupId: strin
 
         <h2 className="font-mono text-[11px] tracking-[.1em] text-muted-foreground uppercase">{t("confirmed")}</h2>
 
-        {confirmed.length === 0 ? (
+        {upcoming.length === 0 ? (
           <p className="rounded-xl border border-dashed bg-card/60 p-5 text-sm text-muted-foreground">{t("empty")}</p>
         ) : (
-          confirmed.map((session) => (
+          upcoming.map((session) => (
             <SessionCard key={session.id} playGroupId={playGroupId} session={session} userId={viewer.userId} />
           ))
+        )}
+
+        {past.length > 0 && (
+          <>
+            <h2 className="mt-2 font-mono text-[11px] tracking-[.1em] text-muted-foreground uppercase">
+              {t("past")}
+            </h2>
+            {past.map((session) => (
+              <SessionCard key={session.id} playGroupId={playGroupId} session={session} userId={viewer.userId} />
+            ))}
+          </>
         )}
       </div>
 

@@ -2064,6 +2064,7 @@
         "title": "Sessions",
         "metadataTitle": "Sessions · {group}",
         "confirmed": "Bestätigt",
+        "past": "Vergangen",
         "empty": "Keine bestätigte Session. Schlag eine vor oder starte eine Verfügbarkeitsumfrage.",
         "badgeConfirmed": "Bestätigt",
         "badgeEvent": "Joutes-Event",

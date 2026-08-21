@@ -1418,6 +1418,7 @@
         "title": "Sessions",
         "metadataTitle": "Sessions · {group}",
         "confirmed": "Confirmed",
+        "past": "Past",
         "empty": "No confirmed session. Propose one, or open an availability poll.",
         "badgeConfirmed": "Confirmed",
         "badgeEvent": "Joutes event",

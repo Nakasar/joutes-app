@@ -125,27 +125,42 @@ export async function updatePlayGroupProfile(
 }
 
 /**
- * Réécrit une partie de la personnalisation du groupe.
+ * Écrit une partie de la personnalisation du groupe.
  *
- * Une fusion superficielle suffit — et vaut mieux qu'une fusion profonde : le
- * thème, les liens et le rythme sont éditables ensemble depuis le même
- * formulaire, tandis que les annonces, les contenus et les directs passent par
- * les fonctions dédiées plus bas, qui lisent puis réécrivent leur liste
- * entière.
+ * Chaque clé est posée sur son propre sous-chemin (`options.theme`,
+ * `options.links`…) plutôt qu'en réécrivant tout le bloc depuis une relecture :
+ * deux admins qui enregistrent en même temps — l'un la marque, l'autre le
+ * rythme — ne s'effacent plus l'un l'autre. Les listes (annonces, contenus,
+ * directs) ont en plus leurs propres écritures ciblées, plus bas.
  */
 export async function updatePlayGroupOptions(
   playGroupId: string,
   patch: Partial<PlayGroupOptions>,
 ): Promise<PlayGroup | null> {
   const now = new Date().toISOString();
-  const current = await playGroupsCollection.findOne({ id: playGroupId });
-  if (!current) {
-    return null;
+
+  const set: Record<string, unknown> = { updatedAt: now };
+  for (const [key, value] of Object.entries(patch)) {
+    set[`options.${key}`] = value;
   }
 
   const result = await playGroupsCollection.findOneAndUpdate(
     { id: playGroupId },
-    { $set: { options: { ...current.options, ...patch }, updatedAt: now } },
+    { $set: set },
+    { returnDocument: "after" },
+  );
+
+  return result ? toPlayGroup(result) : null;
+}
+
+/** Une écriture ciblée sur une liste d'`options`, sans relire ni réécrire le reste. */
+async function updateOptionsList(
+  playGroupId: string,
+  update: UpdateFilter<PlayGroupDocument>,
+): Promise<PlayGroup | null> {
+  const result = await playGroupsCollection.findOneAndUpdate(
+    { id: playGroupId },
+    { ...update, $set: { ...(update.$set ?? {}), updatedAt: new Date().toISOString() } },
     { returnDocument: "after" },
   );
 
@@ -161,14 +176,11 @@ export async function addPlayGroupAnnouncement(
   playGroupId: string,
   announcement: PlayGroupAnnouncement,
 ): Promise<PlayGroup | null> {
-  const group = await getPlayGroupById(playGroupId);
-  if (!group) {
-    return null;
-  }
-
-  return updatePlayGroupOptions(playGroupId, {
-    announcements: [announcement, ...(group.options?.announcements ?? [])],
-  });
+  // En tête de liste, sans relire : deux annonces publiées coup sur coup se
+  // suivent au lieu de s'écraser.
+  return updateOptionsList(playGroupId, {
+    $push: { "options.announcements": { $each: [announcement], $position: 0 } },
+  } as UpdateFilter<PlayGroupDocument>);
 }
 
 export async function updatePlayGroupAnnouncement(
@@ -182,33 +194,30 @@ export async function updatePlayGroupAnnouncement(
   }
 
   const now = new Date().toISOString();
-  const announcements = (group.options?.announcements ?? []).map((item) =>
-    item.id === announcementId ? { ...item, ...patch, updatedAt: now } : item,
+  const fields: Record<string, unknown> = { "options.announcements.$[item].updatedAt": now };
+  for (const [key, value] of Object.entries(patch)) {
+    fields[`options.announcements.$[item].${key}`] = value;
+  }
+
+  const result = await playGroupsCollection.findOneAndUpdate(
+    { id: playGroupId },
+    { $set: { ...fields, updatedAt: now } },
+    { arrayFilters: [{ "item.id": announcementId }], returnDocument: "after" },
   );
 
-  return updatePlayGroupOptions(playGroupId, { announcements });
+  return result ? toPlayGroup(result) : null;
 }
 
 export async function removePlayGroupAnnouncement(playGroupId: string, announcementId: string): Promise<PlayGroup | null> {
-  const group = await getPlayGroupById(playGroupId);
-  if (!group) {
-    return null;
-  }
-
-  return updatePlayGroupOptions(playGroupId, {
-    announcements: (group.options?.announcements ?? []).filter((item) => item.id !== announcementId),
-  });
+  return updateOptionsList(playGroupId, {
+    $pull: { "options.announcements": { id: announcementId } },
+  } as UpdateFilter<PlayGroupDocument>);
 }
 
 export async function addPlayGroupContent(playGroupId: string, content: PlayGroupContentItem): Promise<PlayGroup | null> {
-  const group = await getPlayGroupById(playGroupId);
-  if (!group) {
-    return null;
-  }
-
-  return updatePlayGroupOptions(playGroupId, {
-    contents: [content, ...(group.options?.contents ?? [])],
-  });
+  return updateOptionsList(playGroupId, {
+    $push: { "options.contents": { $each: [content], $position: 0 } },
+  } as UpdateFilter<PlayGroupDocument>);
 }
 
 export async function updatePlayGroupContent(
@@ -222,22 +231,24 @@ export async function updatePlayGroupContent(
   }
 
   const now = new Date().toISOString();
-  const contents = (group.options?.contents ?? []).map((item) =>
-    item.id === contentId ? { ...item, ...patch, updatedAt: now } : item,
+  const fields: Record<string, unknown> = { "options.contents.$[item].updatedAt": now };
+  for (const [key, value] of Object.entries(patch)) {
+    fields[`options.contents.$[item].${key}`] = value;
+  }
+
+  const result = await playGroupsCollection.findOneAndUpdate(
+    { id: playGroupId },
+    { $set: { ...fields, updatedAt: now } },
+    { arrayFilters: [{ "item.id": contentId }], returnDocument: "after" },
   );
 
-  return updatePlayGroupOptions(playGroupId, { contents });
+  return result ? toPlayGroup(result) : null;
 }
 
 export async function removePlayGroupContent(playGroupId: string, contentId: string): Promise<PlayGroup | null> {
-  const group = await getPlayGroupById(playGroupId);
-  if (!group) {
-    return null;
-  }
-
-  return updatePlayGroupOptions(playGroupId, {
-    contents: (group.options?.contents ?? []).filter((item) => item.id !== contentId),
-  });
+  return updateOptionsList(playGroupId, {
+    $pull: { "options.contents": { id: contentId } },
+  } as UpdateFilter<PlayGroupDocument>);
 }
 
 /**
@@ -275,14 +286,9 @@ export async function setPlayGroupLiveStream(
 }
 
 export async function removePlayGroupLiveStream(playGroupId: string, liveId: string): Promise<PlayGroup | null> {
-  const group = await getPlayGroupById(playGroupId);
-  if (!group) {
-    return null;
-  }
-
-  return updatePlayGroupOptions(playGroupId, {
-    lives: (group.options?.lives ?? []).filter((item) => item.id !== liveId),
-  });
+  return updateOptionsList(playGroupId, {
+    $pull: { "options.lives": { id: liveId } },
+  } as UpdateFilter<PlayGroupDocument>);
 }
 
 export async function countPlayGroupFollowers(playGroupId: string): Promise<number> {

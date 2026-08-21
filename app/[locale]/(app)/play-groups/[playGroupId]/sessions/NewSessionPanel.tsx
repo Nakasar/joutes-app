@@ -42,7 +42,9 @@ export default function NewSessionPanel({
   const [open, setOpen] = useState(false);
 
   const [title, setTitle] = useState("");
-  const [gameId, setGameId] = useState(games[0]?.id ?? "");
+  // Vide par défaut : le sélecteur offre « aucun jeu en particulier », et
+  // préchoisir le premier de la liste le contredirait en silence.
+  const [gameId, setGameId] = useState("");
   const [placeKind, setPlaceKind] = useState<PlayGroupPlaceKind>(defaultPlace?.kind ?? (lairs.length > 0 ? "joutes" : "free"));
   const [lairId, setLairId] = useState(defaultPlace?.lairId ?? lairs[0]?.id ?? "");
   const [placeLabel, setPlaceLabel] = useState(defaultPlace?.kind !== "joutes" ? (defaultPlace?.label ?? "") : "");

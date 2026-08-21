@@ -5,7 +5,6 @@ import type {
   PlayGroupRsvpAnswer,
   PlayGroupSession,
   PlayGroupSessionDocument,
-  PlayGroupSessionSlot,
   PlayGroupSessionStatus,
 } from "@/lib/types/PlayGroupSession";
 
@@ -122,7 +121,14 @@ export async function createPlayGroupSession(input: {
   return toSession(doc);
 }
 
-/** Bascule la disponibilité du membre sur un créneau du sondage. */
+/**
+ * Bascule la disponibilité du membre sur un créneau du sondage.
+ *
+ * L'écriture ne touche que le créneau visé, et n'ajoute ou ne retire qu'un
+ * identifiant : relire le sondage puis réécrire tout son tableau ferait perdre
+ * la voix de qui a répondu entre les deux — or un sondage se remplit
+ * précisément quand tout le monde répond en même temps.
+ */
 export async function togglePlayGroupSlotVote(
   sessionId: string,
   slotId: string,
@@ -133,21 +139,22 @@ export async function togglePlayGroupSlotVote(
     return null;
   }
 
-  const slots: PlayGroupSessionSlot[] = (session.slots ?? []).map((slot) =>
-    slot.id === slotId
-      ? {
-          ...slot,
-          voterIds: slot.voterIds.includes(userId)
-            ? slot.voterIds.filter((id) => id !== userId)
-            : [...slot.voterIds, userId],
-        }
-      : slot,
-  );
+  const slot = (session.slots ?? []).find((item) => item.id === slotId);
+  if (!slot) {
+    return null;
+  }
+
+  const voting = !slot.voterIds.includes(userId);
 
   const result = await sessionsCollection.findOneAndUpdate(
-    { id: sessionId },
-    { $set: { slots, updatedAt: new Date().toISOString() } },
-    { returnDocument: "after" },
+    { id: sessionId, status: "poll" },
+    {
+      ...(voting
+        ? { $addToSet: { "slots.$[slot].voterIds": userId } }
+        : { $pull: { "slots.$[slot].voterIds": userId } }),
+      $set: { updatedAt: new Date().toISOString() },
+    },
+    { arrayFilters: [{ "slot.id": slotId }], returnDocument: "after" },
   );
 
   return result ? toSession(result) : null;
@@ -192,7 +199,17 @@ export async function confirmPlayGroupSessionSlot(
   return result ? toSession(result) : null;
 }
 
-/** Pose — ou retire, si la réponse est identique — la présence d'un membre. */
+/**
+ * Pose — ou retire, si la réponse est identique — la présence d'un membre.
+ *
+ * Trois écritures possibles, toutes ciblées sur la seule entrée du membre :
+ * la retirer, la modifier là où elle est, ou l'ajouter si elle manque. Comme
+ * pour les créneaux, réécrire le tableau entier perdrait la réponse d'un autre
+ * membre arrivée entre la lecture et l'écriture.
+ *
+ * L'ajout porte sa propre garde (`$ne`) : deux clics simultanés du même membre
+ * ne peuvent pas insérer deux entrées.
+ */
 export async function setPlayGroupSessionRsvp(
   sessionId: string,
   userId: string,
@@ -204,19 +221,37 @@ export async function setPlayGroupSessionRsvp(
   }
 
   const current = session.rsvps.find((rsvp) => rsvp.userId === userId);
-  const others = session.rsvps.filter((rsvp) => rsvp.userId !== userId);
   const now = new Date().toISOString();
 
-  const rsvps =
-    current?.answer === answer ? others : [...others, { userId, answer, respondedAt: now }];
+  if (current?.answer === answer) {
+    const result = await sessionsCollection.findOneAndUpdate(
+      { id: sessionId },
+      { $pull: { rsvps: { userId } }, $set: { updatedAt: now } },
+      { returnDocument: "after" },
+    );
 
-  const result = await sessionsCollection.findOneAndUpdate(
-    { id: sessionId },
-    { $set: { rsvps, updatedAt: now } },
+    return result ? toSession(result) : null;
+  }
+
+  const updated = await sessionsCollection.findOneAndUpdate(
+    { id: sessionId, "rsvps.userId": userId },
+    {
+      $set: { "rsvps.$[entry].answer": answer, "rsvps.$[entry].respondedAt": now, updatedAt: now },
+    },
+    { arrayFilters: [{ "entry.userId": userId }], returnDocument: "after" },
+  );
+
+  if (updated) {
+    return toSession(updated);
+  }
+
+  const inserted = await sessionsCollection.findOneAndUpdate(
+    { id: sessionId, "rsvps.userId": { $ne: userId } },
+    { $push: { rsvps: { userId, answer, respondedAt: now } }, $set: { updatedAt: now } },
     { returnDocument: "after" },
   );
 
-  return result ? toSession(result) : null;
+  return inserted ? toSession(inserted) : getPlayGroupSession(sessionId);
 }
 
 export async function updatePlayGroupSession(
@@ -246,12 +281,16 @@ export async function deletePlayGroupSessions(playGroupId: string): Promise<numb
  * Le taux de présence de chaque membre, dérivé des sessions passées.
  *
  * Seules les sessions confirmées et déjà écoulées comptent : une session à
- * venir sans réponse ne dit rien de l'assiduité de personne. Un groupe sans
- * session passée renvoie une carte vide, et l'appelant n'affiche pas de jauge.
+ * venir sans réponse ne dit rien de l'assiduité de personne.
+ *
+ * Les dates des sessions sont renvoyées avec les comptes, et pas seulement
+ * leur nombre : un membre arrivé le mois dernier ne doit pas être jugé sur les
+ * deux ans de soirées qui ont précédé son arrivée. C'est à l'appelant, qui
+ * connaît les dates d'entrée, de choisir le dénominateur de chacun.
  */
 export async function readPlayGroupAttendance(
   playGroupId: string,
-): Promise<{ total: number; attendedByUserId: Record<string, number> }> {
+): Promise<{ sessionDates: string[]; attendedByUserId: Record<string, number> }> {
   const now = new Date().toISOString();
   const docs = await sessionsCollection.find({ playGroupId, status: "confirmed" }).toArray();
   const past = docs.map(toSession).filter((session) => (session.endsAt ?? session.startsAt ?? "") < now);
@@ -265,7 +304,10 @@ export async function readPlayGroupAttendance(
     }
   }
 
-  return { total: past.length, attendedByUserId };
+  return {
+    sessionDates: past.map((session) => session.startsAt ?? session.createdAt).sort(),
+    attendedByUserId,
+  };
 }
 
 /** Les lieux du groupe, du plus utilisé au moins utilisé. */

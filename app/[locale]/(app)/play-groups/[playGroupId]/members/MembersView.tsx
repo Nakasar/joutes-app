@@ -48,7 +48,12 @@ export default async function MembersView({ playGroupId }: { playGroupId: string
 
           {members.map((member) => {
             const attended = attendance.attendedByUserId[member.userId] ?? 0;
-            const ratio = attendance.total > 0 ? Math.min(1, attended / attendance.total) : 0;
+            // Le dénominateur ne compte que les sessions tenues depuis l'arrivée
+            // du membre : juger un nouveau venu sur les soirées d'avant son
+            // entrée le montrerait absent de tout ce à quoi il ne pouvait pas
+            // venir.
+            const eligible = attendance.sessionDates.filter((date) => date >= member.joinedAt).length;
+            const ratio = eligible > 0 ? Math.min(1, attended / eligible) : 0;
             const joined = DateTime.fromISO(member.joinedAt).setLocale(locale);
 
             // Le fondateur n'est ni promu ni retiré : c'est lui qui répond du
@@ -102,7 +107,7 @@ export default async function MembersView({ playGroupId }: { playGroupId: string
                 </div>
 
                 <div className="flex items-center gap-2.5">
-                  {attendance.total > 0 ? (
+                  {eligible > 0 ? (
                     <>
                       <span className="h-[5px] flex-1 overflow-hidden rounded-[3px] bg-muted">
                         <span
