@@ -9,6 +9,15 @@ import { getSellListForOwner, getSellListItems } from "@/lib/db/sell-lists.ts";
 
 import { readGroupTradeMatches } from "../trade-data.ts";
 import { memberName, readGroupMembers, requirePlayGroupMember } from "../group-data.ts";
+
+/**
+ * Souhaits & ventes : le tableau de bord des listes du groupe.
+ *
+ * Il ne remplace pas les deux écrans qui font le travail — parcourir, filtrer,
+ * ajouter des cartes — mais il montre ce qu'aucun des deux ne peut voir seul :
+ * les rapprochements entre ce que les uns cherchent et ce que les autres
+ * vendent.
+ */
 export default async function ListsView({ playGroupId }: { playGroupId: string }) {
   const [, wishlists, t] = await Promise.all([
     requirePlayGroupMember(playGroupId),

@@ -4,10 +4,26 @@ import { FileText, Play, Plus, Radio } from "lucide-react";
 
 import { Link } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
-import { viewHref } from "../views.ts";
 
-import { memberName, readGroupMembers, requirePlayGroup, requirePlayGroupMember, sortContents } from "../group-data.ts";
+import { viewHref } from "../views.ts";
+import {
+  memberName,
+  readGroupMembers,
+  requirePlayGroup,
+  requirePlayGroupMember,
+  sortContents,
+} from "../group-data.ts";
+
 const ICONS = { video: Play, article: FileText, replay: Radio } as const;
+
+/**
+ * Ce que le groupe publie, vu de l'intérieur.
+ *
+ * La vitrine en montre les cartes ; ici, chacune est un lien vers son écriture.
+ * N'importe quel membre publie — écrire un compte rendu de tournoi ou déposer
+ * sa vidéo n'est pas un acte de gouvernance —, mais on ne reprend que ce qu'on
+ * a écrit, sauf à être admin.
+ */
 export default async function ContentsView({ playGroupId }: { playGroupId: string }) {
   const [group, viewer, members, t, locale] = await Promise.all([
     requirePlayGroup(playGroupId),

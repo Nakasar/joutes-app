@@ -20,6 +20,15 @@ import {
   requirePlayGroup,
   requirePlayGroupMember,
 } from "../group-data.ts";
+
+/**
+ * Les sessions du groupe : ce qui est proposé, ce qui est confirmé.
+ *
+ * Le sondage en cours passe en tête parce qu'il attend une réponse ; les
+ * sessions confirmées suivent par date. La colonne de droite dit le rythme
+ * habituel du groupe et les lieux qu'il fréquente — c'est elle qui préremplit
+ * le panneau de création.
+ */
 export default async function SessionsView({ playGroupId }: { playGroupId: string }) {
   const [group, viewer, sessions, members, games, places, t] = await Promise.all([
     requirePlayGroup(playGroupId),

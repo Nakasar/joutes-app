@@ -12,6 +12,14 @@ import { countPlayGroupFollowers } from "@/lib/db/play-groups.ts";
 import AnnouncementComposer from "./AnnouncementComposer.tsx";
 import AnnouncementCard from "./AnnouncementCard.tsx";
 import { memberName, readGroupMembers, requirePlayGroup, requirePlayGroupMember } from "../group-data.ts";
+
+/**
+ * Les annonces du groupe.
+ *
+ * Toutes sont listées ici, quelle que soit leur portée : c'est la vitrine qui
+ * filtre, pas le hub. Un membre doit pouvoir relire ce que le groupe a rendu
+ * public sans changer de vue.
+ */
 export default async function AnnouncementsView({ playGroupId }: { playGroupId: string }) {
   const [group, viewer, members, t, locale] = await Promise.all([
     requirePlayGroup(playGroupId),

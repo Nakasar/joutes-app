@@ -9,6 +9,14 @@ import { getUsersByIds } from "@/lib/db/users.ts";
 
 import { InvitationActions, InviteMemberForm, MemberRoleActions } from "./MemberActions.tsx";
 import { readGroupMembers, requirePlayGroup, requirePlayGroupMember } from "../group-data.ts";
+
+/**
+ * Les membres du groupe : qui en est, à quel titre, et à quel point il vient.
+ *
+ * La présence est dérivée des réponses aux sessions passées — aucun compteur
+ * n'est tenu à part. Un groupe qui n'a pas encore joué n'affiche donc pas de
+ * jauge plutôt qu'une jauge à zéro, qui accuserait tout le monde.
+ */
 export default async function MembersView({ playGroupId }: { playGroupId: string }) {
   const [group, viewer, members, attendance, invitations, t, locale] = await Promise.all([
     requirePlayGroup(playGroupId),

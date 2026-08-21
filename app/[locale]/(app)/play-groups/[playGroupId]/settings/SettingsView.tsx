@@ -10,6 +10,13 @@ import PlayGroupGamesSettings from "@/components/play-groups/PlayGroupGamesSetti
 
 import PlayGroupIdentityForm from "./PlayGroupIdentityForm.tsx";
 import { requirePlayGroup, requirePlayGroupMember } from "../group-data.ts";
+
+/**
+ * Les réglages du groupe : sa personnalisation, puis ses jeux.
+ *
+ * Réservés au fondateur et aux admins — le rail ne montre l'entrée qu'à eux, et
+ * la vue le vérifie de son côté : une URL partagée ne doit pas suffire.
+ */
 export default async function SettingsView({ playGroupId }: { playGroupId: string }) {
   const [group, viewer, t] = await Promise.all([
     requirePlayGroup(playGroupId),
