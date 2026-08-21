@@ -44,9 +44,17 @@ galerie officielle de Riftbound.
 
 Côté mobile, le pivot est décrit une seule fois en CSS (`.card-landscape`,
 `src/styles.css`) ; la vignette garde sa propre classe, qui continue de porter
-la taille, les coins et l'ombre. Une vignette qui n'est pas au format 5/7 (les
-vignettes de liste, mesurées en pixels) corrige `--card-frame-ratio` ; côté web,
-c'est la propriété `frame` du composant qui joue ce rôle.
+la taille, les coins et l'ombre. Une vignette qui n'est pas au format d'une
+carte corrige `--card-frame-ratio` ; côté web, c'est la propriété `frame` du
+composant qui joue ce rôle.
+
+Attention en ajoutant une vignette : le cadre est un `span` là où le code
+attendait une image, et une image porte d'elle-même deux choses qu'il n'a pas.
+Elle a des proportions propres, dont se déduit le côté qu'on ne lui donne pas —
+d'où l'`aspect-ratio` du cadre, sans lequel une vignette qui ne contraint qu'une
+dimension le réduit à un trait. Et elle est remplacée, donc dimensionnable même
+en ligne — d'où le `display: block` du cadre, sans lequel une vignette qui ne
+déclare que `width` et `height` s'effondre.
 
 ## Ce qui n'est pas couvert
 
