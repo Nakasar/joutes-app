@@ -1,5 +1,6 @@
 import {Game} from "@/lib/types/Game";
 import {User} from "@/lib/types/User";
+import type {LairSectionKey} from "@/lib/lairs/sections";
 
 // Type GeoJSON Point pour MongoDB
 export type GeoJSONPoint = {
@@ -175,6 +176,14 @@ export type Lair = {
      * onglet vide ni carte à moitié remplie.
      */
     theme?: LairTheme;
+
+    /**
+     * L'ordre et l'activation des sections de la vitrine.
+     *
+     * Une liste partielle est admise : `readLairSections` complète avec les
+     * clés manquantes, à leur place par défaut.
+     */
+    sections?: { key: LairSectionKey; enabled: boolean }[];
 
     live?: LairLiveStream | null;
 

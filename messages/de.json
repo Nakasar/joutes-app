@@ -1218,6 +1218,164 @@
       "eventSite": "Veranstaltungswebsite"
     },
     "manage": {
+      "tabs": {
+        "details": "Details",
+        "customization": "Anpassung",
+        "news": "Neuigkeiten",
+        "owners": "Eigentümer",
+        "subscription": "Abonnement"
+      },
+      "customization": {
+        "proBadge": "JOUTES PRO AKTIV",
+        "proLocked": "Joutes Pro",
+        "save": "Speichern",
+        "cancel": "Abbrechen",
+        "saved": "Anpassung gespeichert.",
+        "unsaved": "nicht gespeicherte Änderungen",
+        "errors": {
+          "invalid": "Einige Felder sind ungültig.",
+          "notFound": "Dieser Ort wurde nicht gefunden.",
+          "proRequired": "Diese Option erfordert ein Joutes-Pro-Abonnement.",
+          "failed": "Speichern fehlgeschlagen. Versuche es gleich noch einmal."
+        },
+        "upload": {
+          "failed": "Der Bild-Upload ist fehlgeschlagen.",
+          "remove": "Bild entfernen"
+        },
+        "identity": {
+          "title": "Identität",
+          "description": "Logo und Akzentfarbe der öffentlichen Seite.",
+          "logoLabel": "Logo ablegen",
+          "bannerNote": "Das Banner wird im Tab „Details“ eingestellt.",
+          "accent": "Akzentfarbe",
+          "noAccent": "kein Akzent",
+          "tint": "Karten und Schaltflächen einfärben",
+          "tintHint": "Wendet den Akzent über Überschriften hinaus an."
+        },
+        "sections": {
+          "title": "Abschnitte der Seite",
+          "description": "Zum Umsortieren ziehen. Ein leerer Abschnitt wird nicht angezeigt.",
+          "alwaysShown": "immer sichtbar",
+          "moveUp": "{section} nach oben",
+          "moveDown": "{section} nach unten",
+          "labels": {
+            "news": "Neuigkeiten & Ankündigungen",
+            "featured": "Hervorgehobene Veranstaltung",
+            "calendar": "Veranstaltungskalender",
+            "media": "Inhalte (Videos, Streams)",
+            "about": "Über uns & Fotogalerie"
+          }
+        },
+        "links": {
+          "title": "Links & Netzwerke",
+          "max": "max. {count}",
+          "add": "Link hinzufügen",
+          "remove": "Link entfernen",
+          "url": "Link-URL",
+          "types": {
+            "website": "Website",
+            "instagram": "Instagram",
+            "facebook": "Facebook",
+            "discord": "Discord",
+            "twitch": "Twitch",
+            "youtube": "YouTube",
+            "x": "X",
+            "other": "Andere"
+          }
+        },
+        "hours": {
+          "title": "Öffnungszeiten",
+          "description": "Für einen Ruhetag leer lassen.",
+          "closed": "Geschlossen",
+          "opensAt": "Öffnung {day}",
+          "closesAt": "Schließung {day}",
+          "days": {
+            "0": "Sonntag",
+            "1": "Montag",
+            "2": "Dienstag",
+            "3": "Mittwoch",
+            "4": "Donnerstag",
+            "5": "Freitag",
+            "6": "Samstag"
+          }
+        },
+        "contact": {
+          "phone": "Telefon",
+          "email": "E-Mail"
+        },
+        "about": {
+          "title": "Über uns & Galerie",
+          "description": "Text, Ausstattung und Fotos des Tabs „Über uns“.",
+          "category": "Art des Ortes",
+          "categoryPlaceholder": "Laden & Spielraum",
+          "text": "Über uns",
+          "textPlaceholder": "Beschreibe den Ort, seine Atmosphäre, was es dort gibt…",
+          "markdown": "Markdown möglich",
+          "amenities": "Ausstattung",
+          "amenityPlaceholder": "8 Tische",
+          "addAmenity": "Hinzufügen",
+          "removeAmenity": "{amenity} entfernen",
+          "photos": "Fotos (max. {count})",
+          "photoLabel": "Foto {index}",
+          "video": "Vorstellungsvideo",
+          "transit": "Öffentliche Verkehrsmittel",
+          "transitPlaceholder": "Bahnhof 7 Min. zu Fuß",
+          "parking": "Parken",
+          "parkingPlaceholder": "Kostenloser Parkplatz 100 m entfernt"
+        },
+        "featured": {
+          "title": "Hervorgehobene Veranstaltung",
+          "none": "Keine"
+        },
+        "preview": {
+          "title": "Vorschau",
+          "viewPublic": "Öffentliche Seite ansehen →"
+        },
+        "pro": {
+          "title": "Nur mit Joutes Pro",
+          "description": "Eigenes Logo, Akzentfarbe, Reihenfolge der Abschnitte, eingebettete Inhalte. Der Ort bleibt auch ohne Abonnement sichtbar und sein Kalender öffentlich.",
+          "manage": "Abonnement verwalten"
+        },
+        "news": {
+          "title": "Neuigkeiten & Ankündigungen",
+          "cardDescription": "Was der Ort auf seiner Seite veröffentlicht: Schließungen, Aktionen, Neuheiten.",
+          "description": "Nur eine Ankündigung kann oben angeheftet werden.",
+          "add": "Neuer Beitrag",
+          "empty": "Noch keine Neuigkeiten.",
+          "untitled": "Ohne Titel",
+          "edit": "Bearbeiten",
+          "save": "Speichern",
+          "cancel": "Abbrechen",
+          "saved": "Beitrag gespeichert.",
+          "delete": "Löschen",
+          "deleted": "Beitrag gelöscht.",
+          "deleteConfirmTitle": "Diesen Beitrag löschen?",
+          "deleteConfirmDescription": "Er verschwindet von der öffentlichen Seite. Das lässt sich nicht rückgängig machen.",
+          "pin": "Anheften",
+          "unpin": "Lösen",
+          "pinned": "Beitrag angeheftet.",
+          "unpinned": "Beitrag gelöst.",
+          "errors": {
+            "invalid": "Einige Felder sind ungültig.",
+            "notFound": "Dieser Ort wurde nicht gefunden.",
+            "proRequired": "Diese Option erfordert ein Joutes-Pro-Abonnement.",
+            "failed": "Speichern fehlgeschlagen. Versuche es gleich noch einmal."
+          },
+          "fields": {
+            "title": "Titel",
+            "category": "Kategorie",
+            "categoryPlaceholder": "Aktion, Neuheit…",
+            "publishedAt": "Datum",
+            "summary": "Zusammenfassung",
+            "content": "Inhalt",
+            "markdown": "Markdown möglich",
+            "link": "Link",
+            "linkLabel": "Linkbezeichnung",
+            "banner": "Bild",
+            "bannerLabel": "16:9-Bild ablegen"
+          }
+        }
+      },
       "backToLair": "Zurück zum Ort",
       "title": "{name} verwalten",
       "privateBadge": "Privat",
