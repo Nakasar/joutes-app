@@ -1418,18 +1418,22 @@
         },
         "hours": {
           "title": "Horaires",
-          "description": "Laissez vide pour un jour de fermeture.",
+          "description": "Laissez vide pour un jour de fermeture. Ajoutez une plage pour un horaire coupé — 10h — 12h, puis 14h — 19h.",
           "closed": "Fermé",
           "opensAt": "Ouverture {day}",
+          "opensAtRange": "Ouverture {day}, plage {index}",
           "closesAt": "Fermeture {day}",
+          "closesAtRange": "Fermeture {day}, plage {index}",
+          "addRange": "Ajouter une plage",
+          "removeRange": "Supprimer une plage {day}",
           "days": {
-            "0": "Dimanche",
             "1": "Lundi",
             "2": "Mardi",
             "3": "Mercredi",
             "4": "Jeudi",
             "5": "Vendredi",
-            "6": "Samedi"
+            "6": "Samedi",
+            "7": "Dimanche"
           }
         },
         "contact": {

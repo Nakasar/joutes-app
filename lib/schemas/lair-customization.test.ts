@@ -130,6 +130,48 @@ describe("lairCustomizationSchema", () => {
     assert.equal(lairCustomizationSchema.safeParse({ openingHours: [{ day: 1 }] }).success, true);
   });
 
+  it("accepte un horaire coupé, et ramène le dimanche sur la numérotation ISO", () => {
+    const result = lairCustomizationSchema.safeParse({
+      openingHours: [
+        { day: 2, open: "10:00", close: "12:00" },
+        { day: 2, open: "14:00", close: "19:00" },
+        { day: 0, open: "10:00", close: "19:00" },
+      ],
+    });
+
+    assert.equal(result.success, true);
+    assert.deepEqual(
+      result.data?.openingHours?.map((hours) => hours.day),
+      [2, 2, 7],
+    );
+  });
+
+  it("refuse des plages qui se chevauchent le même jour", () => {
+    assert.equal(
+      lairCustomizationSchema.safeParse({
+        openingHours: [
+          { day: 2, open: "10:00", close: "14:00" },
+          { day: 2, open: "12:00", close: "19:00" },
+        ],
+      }).success,
+      false,
+    );
+  });
+
+  it("borne le nombre de plages d'un même jour", () => {
+    assert.equal(
+      lairCustomizationSchema.safeParse({
+        openingHours: [
+          { day: 2, open: "08:00", close: "09:00" },
+          { day: 2, open: "10:00", close: "12:00" },
+          { day: 2, open: "14:00", close: "19:00" },
+          { day: 2, open: "20:00", close: "22:00" },
+        ],
+      }).success,
+      false,
+    );
+  });
+
   it("borne les liens, les photos et les équipements", () => {
     const link = { type: "other" as const, url: "https://exemple.test" };
     assert.equal(
