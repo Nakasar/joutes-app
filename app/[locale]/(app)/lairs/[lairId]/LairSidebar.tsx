@@ -191,8 +191,12 @@ export async function LairOpeningHoursCard({ lair }: { lair: Lair }) {
                   formatted.length === 0 && !isToday && "text-muted-foreground",
                 )}
               >
+                {/* La clé est le rang, non le texte : deux plages d'un même
+                    jour peuvent se formater à l'identique — des horaires
+                    anciens en portent le doublon, que l'ancien schéma laissait
+                    passer — et la clé collerait alors sur deux lignes. */}
                 {formatted.length > 0
-                  ? formatted.map((range) => <span key={range}>{range}</span>)
+                  ? formatted.map((range, index) => <span key={index}>{range}</span>)
                   : t("closed")}
               </dd>
             </div>

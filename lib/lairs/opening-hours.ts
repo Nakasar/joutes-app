@@ -194,7 +194,12 @@ export function weekOf(openingHours: LairOpeningHours[] | undefined): LairOpenin
  * ouvertures distinctes.
  *
  * Une plage qui déborde sur le lendemain ne peut être que la dernière du jour :
- * ce qui la suivrait tomberait dans la nuit qu'elle occupe déjà.
+ * ce qui la suivrait tomberait dans la nuit qu'elle occupe déjà. Et la nuit
+ * qu'elle occupe court sur le jour suivant : « lundi 22h — 12h » tient encore
+ * le lieu ouvert mardi midi, si bien qu'un « mardi 6h — 8h » lui répondrait par
+ * deux ouvertures contradictoires. Deux plages qui se **touchent** — « 10h —
+ * 12h » puis « 12h — 19h », ou une nuit qui finit à l'heure où le jour ouvre —
+ * ne se chevauchent pas et restent acceptées.
  */
 export function findOverlappingDay(openingHours: LairOpeningHours[]): number | null {
   const days = new Set(openingHours.map((hours) => isoDay(hours.day)));
@@ -214,6 +219,22 @@ export function findOverlappingDay(openingHours: LairOpeningHours[]): number | n
       if (previousClose <= previousOpen || open < previousClose) {
         return day;
       }
+    }
+
+    // La dernière plage du jour, quand elle passe minuit, est à confronter au
+    // lendemain : son heure de fermeture est déjà une heure du jour suivant.
+    const last = ranges[ranges.length - 1];
+    const lastOpen = minutesOf(last?.open);
+    const lastClose = minutesOf(last?.close);
+
+    if (lastOpen === null || lastClose === null || lastClose > lastOpen) {
+      continue;
+    }
+
+    const tomorrow = minutesOf(rangesOfDay(openingHours, day === 7 ? 1 : day + 1)[0]?.open);
+
+    if (tomorrow !== null && tomorrow < lastClose) {
+      return day;
     }
   }
 

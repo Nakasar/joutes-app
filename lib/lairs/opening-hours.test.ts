@@ -223,6 +223,46 @@ describe("findOverlappingDay", () => {
     );
   });
 
+  it("relève une nuit qui déborde sur l'ouverture du lendemain", () => {
+    // Lundi 22h — 12h tient encore le lieu ouvert mardi midi : un « mardi 6h —
+    // 8h » annoncerait deux ouvertures contradictoires sur la même matinée.
+    assert.equal(
+      findOverlappingDay([
+        { day: 1, open: "22:00", close: "12:00" },
+        { day: 2, open: "06:00", close: "08:00" },
+      ]),
+      1,
+    );
+
+    // Le dimanche déborde sur le lundi, non sur un huitième jour.
+    assert.equal(
+      findOverlappingDay([
+        { day: 7, open: "20:00", close: "04:00" },
+        { day: 1, open: "02:00", close: "08:00" },
+      ]),
+      7,
+    );
+  });
+
+  it("laisse passer une nuit qui s'achève avant le lendemain", () => {
+    assert.equal(
+      findOverlappingDay([
+        { day: 1, open: "20:00", close: "02:00" },
+        { day: 2, open: "10:00", close: "19:00" },
+      ]),
+      null,
+    );
+
+    // Une nuit qui finit à l'heure où le jour ouvre se touche sans se recouvrir.
+    assert.equal(
+      findOverlappingDay([
+        { day: 1, open: "20:00", close: "02:00" },
+        { day: 2, open: "02:00", close: "19:00" },
+      ]),
+      null,
+    );
+  });
+
   it("ne confond pas deux jours différents", () => {
     assert.equal(
       findOverlappingDay([
