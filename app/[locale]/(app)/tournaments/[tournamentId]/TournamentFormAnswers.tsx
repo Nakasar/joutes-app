@@ -202,6 +202,7 @@ export function DecklistAnswer({ decklist }: { decklist: TournamentFormDecklistA
                         src={card.image}
                         alt={card.name}
                         orientation={card.orientation}
+                        title={card.name}
                         loading="lazy"
                         className={cn(
                           "h-28 w-auto rounded-md border",

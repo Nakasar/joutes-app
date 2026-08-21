@@ -21,6 +21,11 @@ type Props = {
    * pas au format d'une carte (une tuile de collection en 3/4, par exemple).
    */
   frame?: string;
+  /**
+   * Infobulle au survol. Utile là où la vignette est seule à représenter la
+   * carte, sans son nom à côté (la vue visuelle d'une liste de deck).
+   */
+  title?: string;
   loading?: "lazy" | "eager";
 };
 
@@ -43,10 +48,11 @@ export default function CardImage({
   orientation,
   className,
   frame = DEFAULT_FRAME,
+  title,
   loading,
 }: Props) {
   if (!isLandscapeCard(orientation)) {
-    return <img src={src} alt={alt} loading={loading} className={className} />;
+    return <img src={src} alt={alt} title={title} loading={loading} className={className} />;
   }
 
   const [frameWidth, frameHeight] = frame.split("/").map(Number);
@@ -63,6 +69,7 @@ export default function CardImage({
       <img
         src={src}
         alt={alt}
+        title={title}
         loading={loading}
         className="absolute left-1/2 top-1/2 max-w-none -translate-x-1/2 -translate-y-1/2 -rotate-90 object-cover"
         style={{
