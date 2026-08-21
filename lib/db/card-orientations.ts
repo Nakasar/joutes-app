@@ -24,10 +24,18 @@ export type LandscapeCards = {
 
 const NONE: LandscapeCards = { has: () => false };
 
-const printKey = (entry: CardIdentity) =>
-  `${entry.gameId ?? ""}|${entry.setCode ?? ""}#${entry.collectorNumber ?? ""}`;
+/**
+ * Le jeu, ramené à ce qui peut réellement borner une recherche. Un identifiant
+ * qu'on ne saurait pas relire ne borne rien : il vaut alors l'absence de jeu,
+ * ici comme dans la requête — les deux doivent dire la même chose, sinon on
+ * chercherait large pour ensuite ne rien reconnaître.
+ */
+const gameScope = (gameId?: string) => (gameId && ObjectId.isValid(gameId) ? gameId : "");
 
-const idKey = (entry: CardIdentity) => `${entry.gameId ?? ""}|${entry.cardId ?? ""}`;
+const printKey = (entry: CardIdentity) =>
+  `${gameScope(entry.gameId)}|${entry.setCode ?? ""}#${entry.collectorNumber ?? ""}`;
+
+const idKey = (entry: CardIdentity) => `${gameScope(entry.gameId)}|${entry.cardId ?? ""}`;
 
 /**
  * Repère, parmi des exemplaires enregistrés, ceux dont la carte est imprimée
@@ -44,7 +52,7 @@ export async function findLandscapeCards(entries: CardIdentity[]): Promise<Lands
   const byGame = new Map<string, { ids: Set<string>; prints: Map<string, CardIdentity> }>();
 
   for (const entry of entries) {
-    const gameId = entry.gameId ?? "";
+    const gameId = gameScope(entry.gameId);
     const group = byGame.get(gameId) ?? { ids: new Set<string>(), prints: new Map<string, CardIdentity>() };
     if (entry.cardId) {
       group.ids.add(entry.cardId);
@@ -56,9 +64,9 @@ export async function findLandscapeCards(entries: CardIdentity[]): Promise<Lands
 
   const or: Record<string, unknown>[] = [];
   for (const [gameId, group] of byGame) {
-    // Un identifiant de jeu illisible ne borne rien : mieux vaut chercher sans
-    // lui que de laisser Mongo refuser tout le lot.
-    const scope = gameId && ObjectId.isValid(gameId) ? { gameId: new ObjectId(gameId) } : {};
+    // `gameScope` a déjà écarté ce qui n'est pas relisible : ce qui reste est
+    // soit un identifiant valide, soit l'absence de jeu, qui cherche large.
+    const scope = gameId ? { gameId: new ObjectId(gameId) } : {};
     if (group.ids.size > 0) {
       or.push({ ...scope, id: { $in: [...group.ids] } });
     }
