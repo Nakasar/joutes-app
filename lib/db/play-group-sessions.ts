@@ -82,6 +82,37 @@ export async function getNextPlayGroupSession(playGroupId: string): Promise<Play
   return upcoming ?? null;
 }
 
+/**
+ * La prochaine session confirmée de chaque groupe.
+ *
+ * Sert au rang d'activité de la page d'exploration : « une session à venir »
+ * est un signe de vie, au même titre qu'une publication récente. Seules les
+ * sessions confirmées comptent — un sondage n'a pas encore de date.
+ */
+export async function readNextSessionsByPlayGroup(
+  playGroupIds: string[],
+  now = new Date().toISOString(),
+): Promise<Map<string, string>> {
+  if (playGroupIds.length === 0) {
+    return new Map();
+  }
+
+  const rows = await sessionsCollection
+    .aggregate<{ _id: string; startsAt: string }>([
+      {
+        $match: {
+          playGroupId: { $in: playGroupIds },
+          status: "confirmed",
+          startsAt: { $gte: now },
+        },
+      },
+      { $group: { _id: "$playGroupId", startsAt: { $min: "$startsAt" } } },
+    ])
+    .toArray();
+
+  return new Map(rows.map((row) => [row._id, row.startsAt]));
+}
+
 export async function createPlayGroupSession(input: {
   playGroupId: string;
   title: string;

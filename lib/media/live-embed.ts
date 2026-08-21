@@ -22,6 +22,19 @@ export type LiveEmbed = {
   channelUrl: string;
   /** « twitch.tv/antretemps » — la légende sous le lecteur. */
   label: string;
+  /**
+   * L'image du direct, servie par la plateforme.
+   *
+   * Twitch et YouTube exposent tous deux une vignette publique à URL stable :
+   * elle évite d'intégrer un lecteur par groupe sur une page de liste, où une
+   * dizaine d'`iframe` qui démarrent en même temps coûteraient plus cher que
+   * toute la page. Les deux hôtes ne sont pas déclarés dans `next.config.ts` :
+   * cette URL se pose sur une balise `img` nue, pas sur `next/image`.
+   *
+   * Twitch renvoie une image grise « hors ligne » quand la chaîne ne diffuse
+   * plus ; c'est le comportement voulu — le direct est terminé.
+   */
+  thumbnailUrl: string;
 };
 
 function parse(url: string): URL | null {
@@ -59,6 +72,7 @@ export function readLiveEmbed(url: string, parentHost: string): LiveEmbed | null
       embedUrl: `https://player.twitch.tv/?channel=${encodeURIComponent(channel)}&parent=${encodeURIComponent(parent)}`,
       channelUrl: `https://twitch.tv/${channel}`,
       label: `twitch.tv/${channel}`,
+      thumbnailUrl: `https://static-cdn.jtvnw.net/previews-ttv/live_user_${encodeURIComponent(channel)}-640x360.jpg`,
     };
   }
 
@@ -79,6 +93,7 @@ export function readLiveEmbed(url: string, parentHost: string): LiveEmbed | null
       embedUrl: `https://www.youtube.com/embed/${encodeURIComponent(videoId)}`,
       channelUrl: `https://www.youtube.com/watch?v=${videoId}`,
       label: `youtube.com/${videoId}`,
+      thumbnailUrl: `https://img.youtube.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`,
     };
   }
 

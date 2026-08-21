@@ -291,8 +291,63 @@ export async function removePlayGroupLiveStream(playGroupId: string, liveId: str
   } as UpdateFilter<PlayGroupDocument>);
 }
 
+/**
+ * Tous les groupes, pour la page d'exploration.
+ *
+ * Aucun filtre de visibilité : un groupe de jeu n'a pas d'état privé — sa
+ * vitrine est publique, et c'est chaque vue qui décide de ce qu'elle en montre.
+ * La borne existe parce que la page classe et cherche en mémoire : au-delà,
+ * c'est une pagination qu'il faudra, pas une limite plus haute.
+ */
+export async function listPlayGroups(limit = 120): Promise<PlayGroup[]> {
+  const docs = await playGroupsCollection
+    .find({})
+    .sort({ updatedAt: -1 })
+    .limit(limit)
+    .toArray();
+
+  return docs.map(toPlayGroup);
+}
+
+/**
+ * Les abonnés de plusieurs groupes d'un coup.
+ *
+ * `countPlayGroupFollowers` appelée en boucle ferait une requête par groupe :
+ * sur une page qui en affiche cent, c'est cent allers-retours pour trois
+ * chiffres par ligne.
+ */
+export async function countFollowersByPlayGroup(playGroupIds: string[]): Promise<Map<string, number>> {
+  if (playGroupIds.length === 0) {
+    return new Map();
+  }
+
+  const rows = await playGroupFollowersCollection
+    .aggregate<{ _id: string; count: number }>([
+      { $match: { playGroupId: { $in: playGroupIds } } },
+      { $group: { _id: "$playGroupId", count: { $sum: 1 } } },
+    ])
+    .toArray();
+
+  return new Map(rows.map((row) => [row._id, row.count]));
+}
+
 export async function countPlayGroupFollowers(playGroupId: string): Promise<number> {
   return playGroupFollowersCollection.countDocuments({ playGroupId });
+}
+
+/**
+ * Les groupes qu'un lecteur suit déjà.
+ *
+ * Le pendant en gros de `isFollowingPlayGroup` : la page d'exploration doit
+ * savoir pour chaque ligne si le bouton dit « Suivre » ou « Suivi », et une
+ * requête par ligne pour un booléen ne se défend pas.
+ */
+export async function readFollowedPlayGroupIds(userId: string): Promise<Set<string>> {
+  const rows = await playGroupFollowersCollection
+    .find({ userId }, { projection: { playGroupId: 1 } })
+    .toArray();
+
+  return new Set(rows.map((row) => row.playGroupId));
 }
 
 export async function isFollowingPlayGroup(playGroupId: string, userId: string): Promise<boolean> {

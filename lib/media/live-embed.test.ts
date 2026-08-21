@@ -13,6 +13,23 @@ import { isSupportedLiveUrl, readLiveEmbed } from "./live-embed";
  * Exécution : `npm run test`.
  */
 
+describe("la vignette du direct", () => {
+  it("tire la vignette Twitch du nom de chaîne", () => {
+    const embed = readLiveEmbed("https://twitch.tv/antretemps", "www.joutes.app");
+
+    assert.equal(
+      embed?.thumbnailUrl,
+      "https://static-cdn.jtvnw.net/previews-ttv/live_user_antretemps-640x360.jpg",
+    );
+  });
+
+  it("tire la vignette YouTube de l'identifiant de vidéo", () => {
+    const embed = readLiveEmbed("https://www.youtube.com/watch?v=dQw4w9WgXcQ", "www.joutes.app");
+
+    assert.equal(embed?.thumbnailUrl, "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg");
+  });
+});
+
 describe("readLiveEmbed", () => {
   it("construit le lecteur Twitch avec le domaine parent", () => {
     const embed = readLiveEmbed("https://twitch.tv/antretemps", "www.joutes.app");

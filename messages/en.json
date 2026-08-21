@@ -1492,6 +1492,69 @@
     }
   },
   "PlayGroups": {
+    "explore": {
+      "link": "Explore groups",
+      "metaTitle": "Explore play-groups",
+      "metaDescription": "The roll of arms of play-groups: who plays, who streams and who publishes near you.",
+      "eyebrow": "Roll of arms",
+      "title": "Groups in the lists",
+      "subtitle": "Who plays, who streams, who publishes. The liveliest groups open the roll; the dormant ones close it.",
+      "searchLabel": "Search for a group",
+      "searchPlaceholder": "A name, a town, a game, a day…",
+      "locate": "Use my location",
+      "locating": "Locating…",
+      "locateError": "We could not locate you.",
+      "orders": {
+        "vifs": "Most alive",
+        "proches": "Closest",
+        "neufs": "Newest"
+      },
+      "orderNotice": {
+        "vifs": "live › publication › upcoming session",
+        "proches": "distance from your location",
+        "neufs": "date the group was created"
+      },
+      "live": {
+        "title": "In the lists",
+        "badge": "Live",
+        "count": "{count, plural, one {# group is streaming} other {# groups are streaming}}",
+        "viewers": "{count, plural, one {# viewer} other {# viewers}}"
+      },
+      "heralds": {
+        "title": "The heralds",
+        "subtitle": "What groups publish",
+        "kinds": {
+          "article": "Article",
+          "video": "Video",
+          "replay": "Replay"
+        }
+      },
+      "roll": {
+        "title": "The roll",
+        "resultsTitle": "Results",
+        "count": "{count, plural, =0 {Empty roll} one {# group on the roll} other {# groups on the roll}}",
+        "empty": "No group of that name on the roll.",
+        "reset": "Reopen the roll"
+      },
+      "entry": {
+        "liveCry": "{streamer} is streaming · {count, plural, one {# viewer} other {# viewers}}",
+        "quiet": "No news for a while",
+        "deeds": {
+          "content": "{title} — {at}",
+          "announcement": "{title} — {at}",
+          "session": "Next session {at}"
+        },
+        "noPlace": " · venue without an address",
+        "members": "{count, plural, one {member} other {members}}",
+        "followers": "{count, plural, one {follower} other {followers}}",
+        "published": "{count, plural, one {publication} other {publications}}",
+        "follow": "Follow",
+        "following": "Following",
+        "followError": "We could not update your follow.",
+        "signIn": "Sign in",
+        "enter": "Enter →"
+      }
+    },
     "hub": {
       "title": "Group workbench",
       "metadataTitle": "Workbench · {group}",

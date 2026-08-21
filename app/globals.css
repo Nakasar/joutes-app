@@ -202,6 +202,118 @@
   --group-accent-sweep: linear-gradient(90deg, var(--group-accent-14), var(--group-accent-8));
 }
 
+/*
+ * Le rôle d'armes — la page d'exploration des groupes de jeu.
+ *
+ * L'application s'appelle Joutes : un rôle d'armes est le registre où l'on
+ * consignait les blasons des équipes engagées dans un tournoi. La page en
+ * reprend la STRUCTURE — l'écu, la devise, le filet d'or — et rien de la
+ * pacotille : pas de parchemin, pas de gothique. Les couleurs restent celles
+ * de Joutes (`--background`, `--card`, `--border`…), l'accent reste celui du
+ * groupe, et l'or est déjà celui du palmarès.
+ *
+ * Ces quelques règles vivent ici plutôt qu'en classes utilitaires parce
+ * qu'elles portent une forme — le contour de l'écu — qu'aucune utilitaire ne
+ * dit, et parce que l'or a besoin de deux valeurs selon le thème.
+ */
+.play-group-roll {
+  --or: #e8b969;
+
+  /* Sur fond clair, l'or pur ne tient pas comme texte : on l'assombrit. */
+  --or-text: color-mix(in oklab, var(--or) 58%, black 42%);
+  --or-line: color-mix(in oklab, var(--or) 42%, transparent);
+  --or-faint: color-mix(in oklab, var(--or) 20%, transparent);
+}
+
+.dark .play-group-roll {
+  --or-text: var(--or);
+  --or-line: color-mix(in oklab, var(--or) 34%, transparent);
+  --or-faint: color-mix(in oklab, var(--or) 16%, transparent);
+}
+
+/*
+ * L'écu : une forme, pas une image — donc juste à toutes les tailles, et
+ * teintable par l'accent du groupe. Le liseré d'or est un second écu d'un
+ * pixel plus grand, posé dessous ; un `border` suivrait le rectangle, pas le
+ * contour découpé.
+ */
+.play-group-escu {
+  position: relative;
+  flex: none;
+}
+
+.play-group-escu::before,
+.play-group-escu > .play-group-escu-field {
+  clip-path: polygon(0 0, 100% 0, 100% 58%, 50% 100%, 0 58%);
+}
+
+.play-group-escu::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background: var(--or);
+}
+
+.play-group-escu > .play-group-escu-field {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 22%;
+  background: linear-gradient(
+    165deg,
+    color-mix(in oklab, var(--group-accent) 88%, white 12%),
+    color-mix(in oklab, var(--group-accent) 60%, black 40%)
+  );
+}
+
+/* L'oriflamme du direct, en travers de l'écu. */
+.play-group-escu > .play-group-escu-live {
+  position: absolute;
+  left: -6px;
+  right: -6px;
+  top: 47%;
+  z-index: 1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+/* Le filet double à losange qui sépare les mouvements du rôle. */
+.play-group-fleuron::before,
+.play-group-fleuron::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: linear-gradient(90deg, transparent, var(--or-line) 22%, var(--or-line) 78%, transparent);
+}
+
+/* Les quatre équerres d'or qui encadrent un direct. */
+.play-group-corner {
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  border: 1px solid var(--or);
+  opacity: 0.55;
+}
+
+.play-group-corner[data-corner="tl"] { top: 8px; left: 8px; border-right: 0; border-bottom: 0; }
+.play-group-corner[data-corner="tr"] { top: 8px; right: 8px; border-left: 0; border-bottom: 0; }
+.play-group-corner[data-corner="bl"] { bottom: 8px; left: 8px; border-right: 0; border-top: 0; }
+.play-group-corner[data-corner="br"] { bottom: 8px; right: 8px; border-left: 0; border-top: 0; }
+
+/*
+ * Le semé héraldique : le motif répété d'un blason, tenu dans l'accent du
+ * groupe. C'est la place de l'image que l'auteur téléverse — sans image, le
+ * semé tient debout tout seul plutôt que d'afficher un cadre vide.
+ */
+.play-group-seme {
+  background-image:
+    radial-gradient(circle at 25% 30%, color-mix(in oklab, var(--group-accent) 40%, transparent) 0 5px, transparent 6px),
+    radial-gradient(circle at 75% 80%, color-mix(in oklab, var(--group-accent) 40%, transparent) 0 5px, transparent 6px),
+    linear-gradient(148deg, color-mix(in oklab, var(--group-accent) 34%, transparent), transparent 62%);
+  background-size: 54px 54px, 54px 54px, 100% 100%;
+}
+
 @layer utilities {
   @keyframes fade-in {
     from {
