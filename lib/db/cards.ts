@@ -3,7 +3,7 @@ import 'server-only';
 import db from "@/lib/mongodb";
 import { ObjectId, type AnyBulkWriteOperation } from "mongodb";
 import { isReservedCardKey, RESERVED_CARD_KEYS, type CardSource } from "@/lib/constants/cards";
-import type { CardPrinting } from "@/lib/types/card";
+import type { CardOrientation, CardPrinting } from "@/lib/types/card";
 import type { CardFilterFacet } from "@/lib/cards/search-filters";
 import { planPrintingAddition, type BulkPrinting } from "@/lib/cards/bulk-printings";
 
@@ -14,6 +14,8 @@ export type CardNameMatch = {
   setCode: string;
   collectorNumber: string;
   type?: string;
+  /** Sens d'impression de la carte : une carte paysage s'affiche pivotée. */
+  orientation?: CardOrientation;
   text?: string;
 };
 
@@ -236,6 +238,8 @@ export type GameCardSummary = {
   collectorNumber?: string;
   lang?: string;
   image?: string;
+  /** Sens d'impression de la carte : une carte paysage s'affiche pivotée. */
+  orientation?: CardOrientation;
   source?: CardSource;
   manuallyEditedAt?: string;
 };
@@ -255,6 +259,7 @@ const CARD_SUMMARY_PROJECTION = {
   collectorNumber: 1,
   lang: 1,
   image: 1,
+  orientation: 1,
   source: 1,
   manuallyEditedAt: 1,
 } as const;
@@ -501,7 +506,7 @@ export async function getCardsByNames(gameId: ObjectId, names: string[]): Promis
     .collection<CardNameMatch & { gameId: ObjectId }>("cards")
     .find(
       { gameId, name: { $in: names } },
-      { projection: { _id: 0, id: 1, name: 1, image: 1, setCode: 1, collectorNumber: 1, type: 1, text: 1 } }
+      { projection: { _id: 0, id: 1, name: 1, image: 1, setCode: 1, collectorNumber: 1, type: 1, orientation: 1, text: 1 } }
     )
     .collation({ locale: "en", strength: 2 })
     .toArray();
@@ -514,7 +519,7 @@ export async function getCardsByIds(gameId: ObjectId, ids: string[]): Promise<Ca
     .collection<CardNameMatch & { gameId: ObjectId }>("cards")
     .find(
       { gameId, id: { $in: ids } },
-      { projection: { _id: 0, id: 1, name: 1, image: 1, setCode: 1, collectorNumber: 1, type: 1, text: 1 } }
+      { projection: { _id: 0, id: 1, name: 1, image: 1, setCode: 1, collectorNumber: 1, type: 1, orientation: 1, text: 1 } }
     )
     .toArray();
 }

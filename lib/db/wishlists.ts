@@ -8,6 +8,7 @@ import { getUserById } from "@/lib/db/users";
 import { getBadgesForUser, type UserBadges } from "@/lib/db/user-badges";
 import { ownerHasAdvancedCollection } from "@/lib/db/collection-access";
 import { FREE_WISHLIST_LIMIT, canCreateWishlist, isWishlistReadOnly } from "@/lib/wishlists/limits";
+import { withCardOrientation } from "@/lib/db/card-orientations";
 
 const WISHLISTS_COLLECTION = "wishlists";
 const WISHLIST_ITEMS_COLLECTION = "wishlist-items";
@@ -571,7 +572,9 @@ export async function getWishlistItems(
   const total = countRes.length > 0 ? (countRes[0].total as number) : 0;
 
   return {
-    items: docs.map(toWishlistItem),
+    // Le sens d'impression appartient à la carte, pas à l'exemplaire souhaité :
+    // il est relu du catalogue plutôt que recopié sur la ligne à sa création.
+    items: await withCardOrientation(docs.map(toWishlistItem)),
     total,
     page,
     limit,
@@ -646,7 +649,10 @@ export async function addWishlistItem(
   if (!result) {
     throw new Error("Échec de l'ajout à la wishlist");
   }
-  return toWishlistItem(result);
+  // La carte ajoutée rejoint la liste à l'écran sans rechargement : elle doit
+  // en sortir avec son sens d'impression, comme celles qui y étaient déjà.
+  const [added] = await withCardOrientation([toWishlistItem(result)]);
+  return added;
 }
 
 export async function updateWishlistItem(

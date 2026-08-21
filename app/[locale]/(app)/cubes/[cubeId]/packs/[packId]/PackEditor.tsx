@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRouter } from "@/i18n/navigation.ts";
-import Image from "next/image";
+import CardImage from "@/components/cards/CardImage.tsx";
 import { useTranslations } from "next-intl";
 import { ArrowLeft, Info, Layers, Loader2, Minus, Pencil, Plus, X } from "lucide-react";
+import type { CardOrientation } from "@/lib/types/card.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Input } from "@/components/ui/input.tsx";
@@ -48,6 +49,8 @@ export type PackCard = {
   setCode: string;
   collectorNumber: string;
   image: string;
+  /** Sens d'impression de la carte, relu du catalogue. */
+  orientation?: CardOrientation;
 };
 
 type Props = {
@@ -405,7 +408,14 @@ export default function PackEditor({ cube, pack, packLabel, initialCards, canEdi
                 <div key={card.cardId} className="group relative overflow-hidden rounded-lg border bg-card">
                   <div className="relative aspect-[3/4] w-full bg-muted">
                     {card.image ? (
-                      <Image src={card.image} alt={card.name} fill unoptimized sizes="120px" className="object-cover" />
+                      <CardImage
+                        src={card.image}
+                        alt={card.name}
+                        orientation={card.orientation}
+                        frame="3/4"
+                        loading="lazy"
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
                     ) : null}
                     {quantity > 1 ? (
                       <span className="absolute left-1 top-1 rounded-full bg-background/90 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums">
@@ -536,7 +546,14 @@ export default function PackEditor({ cube, pack, packLabel, initialCards, canEdi
                     >
                       <div className="relative aspect-[3/4] w-full bg-muted">
                         {found.image ? (
-                          <Image src={found.image} alt={found.name} fill unoptimized sizes="120px" className="object-cover" />
+                          <CardImage
+                            src={found.image}
+                            alt={found.name}
+                            orientation={found.orientation}
+                            frame="3/4"
+                            loading="lazy"
+                            className="absolute inset-0 h-full w-full object-cover"
+                          />
                         ) : null}
                         {inPack > 0 ? (
                           <span className="absolute left-1 top-1 rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-primary-foreground">

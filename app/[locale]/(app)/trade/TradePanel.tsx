@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import CardImage from "@/components/cards/CardImage.tsx";
 import { useLocale, useTranslations } from "next-intl";
 import { Check, ExternalLink, Loader2, Minus, Plus, RotateCcw, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select.tsx";
 import type { TradeCard, TradeCardScope, TradeCardSearchResult, TradeGame } from "@/lib/db/trades.ts";
 import type { CardMarketPrice } from "@/lib/prices/display.ts";
+import type { CardOrientation } from "@/lib/types/card.ts";
 import { formatCardPrice } from "@/lib/prices/display.ts";
 import { appliedUnitPrice, isNegotiatedPrice, sideTotal } from "@/lib/trade/pricing.ts";
 import { CardPriceTag } from "@/components/cards/CardPriceTag.tsx";
@@ -29,6 +30,8 @@ export type TradePanelCard = {
   setCode: string;
   collectorNumber: string;
   image: string;
+  /** Sens d'impression de la carte, relu du catalogue. */
+  orientation?: CardOrientation;
   gameName?: string;
   gameSlug?: string;
   quantity: number;
@@ -327,7 +330,7 @@ export default function TradePanel({
         ) : (
           cards.map((card) => (
             <div key={card.key} className="flex items-center gap-3 rounded-lg border bg-background p-2">
-              <CardThumb image={card.image} name={card.name} />
+              <CardThumb image={card.image} name={card.name} orientation={card.orientation} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium leading-tight" title={card.name}>
                   {card.name}
@@ -479,7 +482,7 @@ export default function TradePanel({
                 const inSelection = cardsByKey.has(card.key);
                 return (
                   <li key={`${card.key}|${card.cardId ?? ""}`} className="flex items-center gap-3 rounded-lg border p-2">
-                    <CardThumb image={card.image} name={card.name} />
+                    <CardThumb image={card.image} name={card.name} orientation={card.orientation} />
                     <div className="min-w-0 flex-1">
                       <div className="flex min-w-0 items-start justify-between gap-1.5">
                         <p className="min-w-0 flex-1 truncate text-sm font-medium leading-tight" title={card.name}>
@@ -543,14 +546,21 @@ export default function TradePanel({
   );
 }
 
-function CardThumb({ image, name }: { image: string; name: string }) {
+function CardThumb({ image, name, orientation }: { image: string; name: string; orientation?: CardOrientation }) {
   if (!image) {
     return <div className="h-16 w-12 shrink-0 rounded bg-muted" aria-hidden />;
   }
 
   return (
     <div className="relative h-16 w-12 shrink-0 overflow-hidden rounded bg-muted">
-      <Image src={image} alt={name} fill unoptimized sizes="48px" className="object-cover" />
+      <CardImage
+        src={image}
+        alt={name}
+        orientation={orientation}
+        frame="12/16"
+        loading="lazy"
+        className="absolute inset-0 h-full w-full object-cover"
+      />
     </div>
   );
 }

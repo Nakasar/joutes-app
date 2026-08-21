@@ -357,6 +357,7 @@ paths:
                         collectorNumber: { type: string }
                         image: { type: string }
                         type: { type: string }
+                        orientation: { type: string, enum: [portrait, landscape], description: "Absent means `portrait`; a landscape card is shown rotated a quarter turn." }
                         quantity: { type: integer }
                         variantsOwned: { type: integer }
                         marketPrice: { $ref: "#/components/schemas/CardMarketPrice" }
@@ -4221,6 +4222,13 @@ components:
         printingId: { type: string, description: "Print variant of this copy; absent means the card's base version." }
         printingName: { type: string }
         image: { type: string }
+        orientation:
+          type: string
+          enum: [portrait, landscape]
+          description: >
+            Print orientation of the card. Almost every card reads vertically;
+            some — Riftbound battlefields — are printed sideways and are shown
+            rotated a quarter turn. Absent means `portrait`.
         price: { type: number }
         marketPrice: { $ref: "#/components/schemas/CardMarketPrice" }
         newInCollection: { type: boolean }
@@ -4368,6 +4376,7 @@ components:
         quantity: { type: integer }
         cardId: { type: string }
         image: { type: string }
+        orientation: { type: string, enum: [portrait, landscape], description: "Absent means `portrait`; a landscape card is shown rotated a quarter turn." }
         banned: { type: boolean }
         recognized: { type: boolean }
         erratas: { type: array, items: { $ref: "#/components/schemas/Errata" } }
@@ -4728,6 +4737,7 @@ components:
         setCode: { type: string }
         collectorNumber: { type: string }
         image: { type: string }
+        orientation: { type: string, enum: [portrait, landscape], description: "Read back from the game's catalog on display; absent means `portrait`, and a landscape card is shown rotated a quarter turn." }
         createdAt: { type: string, format: date-time }
 
     CubeDrawRule:
@@ -4777,6 +4787,7 @@ components:
         setCode: { type: string }
         collectorNumber: { type: string }
         image: { type: string }
+        orientation: { type: string, enum: [portrait, landscape], description: "Read back from the game's catalog on display; absent means `portrait`, and a landscape card is shown rotated a quarter turn." }
 
     CubeDrawnPack:
       type: object
@@ -5155,6 +5166,7 @@ components:
         collectorNumber: { type: string }
         image: { type: string }
         type: { type: string }
+        orientation: { type: string, enum: [portrait, landscape], description: "Read back from the game's catalog on display; absent means `portrait`, and a landscape card is shown rotated a quarter turn." }
         foil: { type: boolean }
         language: { type: string, enum: [FR, EN, ZH, IT, JA, KO] }
         condition: { type: string, enum: [Damaged, Played, Good, "Near Mint", Mint] }
@@ -5193,6 +5205,7 @@ components:
         collectorNumber: { type: string }
         image: { type: string }
         type: { type: string }
+        orientation: { type: string, enum: [portrait, landscape], description: "Read back from the game's catalog on display; absent means `portrait`, and a landscape card is shown rotated a quarter turn." }
         quantity: { type: integer }
         note: { type: string }
         addedByUserId: { type: string }

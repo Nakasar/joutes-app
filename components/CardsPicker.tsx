@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { BoosterCard } from "@/lib/types/booster";
+import CardImage from "@/components/cards/CardImage";
 import { X } from "lucide-react";
 
 export default function CardsPicker({
@@ -125,7 +126,12 @@ export default function CardsPicker({
               onClick={() => addCard(card)}
               className="flex w-full items-center gap-2 p-2 text-left transition-colors hover:bg-muted"
             >
-              <img src={card.image} alt={card.name} className="h-12 w-auto rounded" />
+              <CardImage
+                src={card.image}
+                alt={card.name}
+                orientation={card.orientation}
+                className="h-12 w-auto rounded"
+              />
               <div>
                 <div className="font-medium">{card.name}</div>
                 <div className="text-xs text-muted-foreground">

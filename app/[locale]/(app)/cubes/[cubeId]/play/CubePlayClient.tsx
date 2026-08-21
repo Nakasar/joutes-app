@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Link } from "@/i18n/navigation.ts";
-import Image from "next/image";
+import CardImage from "@/components/cards/CardImage.tsx";
 import { useTranslations } from "next-intl";
 import { ArrowLeft, Dices, Layers, Loader2, TriangleAlert, Users } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
@@ -29,7 +29,14 @@ function CardGrid({ cards }: { cards: CubeDrawnCard[] }) {
         <div key={`${card.id}-${index}`} className="overflow-hidden rounded-lg border bg-card">
           <div className="relative aspect-[3/4] w-full bg-muted">
             {card.image ? (
-              <Image src={card.image} alt={card.name} fill unoptimized sizes="120px" className="object-cover" />
+              <CardImage
+                src={card.image}
+                alt={card.name}
+                orientation={card.orientation}
+                frame="3/4"
+                loading="lazy"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
             ) : null}
           </div>
           <div className="p-1.5">

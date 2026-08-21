@@ -74,13 +74,14 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
   return NextResponse.json({
     // Le paquet complet évite au client de recalculer les exemplaires restants.
-    cards: cards.map(({ id, cardId, name, setCode, collectorNumber, image }) => ({
+    cards: cards.map(({ id, cardId, name, setCode, collectorNumber, image, orientation }) => ({
       id,
       cardId,
       name,
       setCode,
       collectorNumber,
       image,
+      orientation,
     })),
   });
 }

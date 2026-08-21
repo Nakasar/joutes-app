@@ -4,10 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { BoosterCard } from "@/lib/types/booster.ts";
+import type { CardOrientation } from "@/lib/types/card.ts";
 import { Search, X, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import CardImage from "@/components/cards/CardImage.tsx";
 
-export type SelectedLegend = { id: string; name: string; image: string };
+export type SelectedLegend = {
+  id: string;
+  name: string;
+  image: string;
+  /** Sens d'impression de la carte : une carte paysage s'affiche pivotée. */
+  orientation?: CardOrientation;
+};
 
 export default function LegendPicker({
   value,
@@ -64,7 +72,7 @@ export default function LegendPicker({
   };
 
   const handleSelect = (card: BoosterCard) => {
-    onChange({ id: card.id, name: card.name, image: card.image });
+    onChange({ id: card.id, name: card.name, image: card.image, orientation: card.orientation });
     setSearchQuery("");
     setCards([]);
     setIsOpen(false);
@@ -74,7 +82,12 @@ export default function LegendPicker({
     return (
       <div className="flex items-center gap-2 rounded-lg border p-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={value.image} alt={value.name} className="h-12 w-auto rounded" />
+        <CardImage
+          src={value.image}
+          alt={value.name}
+          orientation={value.orientation}
+          className="h-12 w-auto rounded"
+        />
         <span className="min-w-0 flex-1 truncate text-sm font-medium">{value.name}</span>
         <Button type="button" variant="ghost" size="icon" onClick={() => onChange(null)} aria-label={t("clearLegend")}>
           <X className="h-4 w-4" />
@@ -108,7 +121,13 @@ export default function LegendPicker({
               className="flex w-full items-center gap-3 border-b p-2 text-left transition-colors last:border-b-0 hover:bg-muted"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={card.image} alt={card.name} className="h-12 w-auto rounded" />
+              <CardImage
+                src={card.image}
+                alt={card.name}
+                orientation={card.orientation}
+                loading="lazy"
+                className="h-12 w-auto rounded"
+              />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium">{card.name}</div>
                 <div className="text-xs text-muted-foreground">

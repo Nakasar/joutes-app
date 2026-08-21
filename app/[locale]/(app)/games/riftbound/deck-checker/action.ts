@@ -10,12 +10,15 @@ import {cardIdFromPiltoverFormat, parseDeckList} from "@/app/[locale]/(app)/game
 import {getDeckFromCode} from "@piltoverarchive/riftbound-deck-codes";
 import {ObjectId} from "mongodb";
 import {BoosterCard} from "@/lib/types/booster.ts";
+import {type CardOrientation} from "@/lib/types/card.ts";
 
 export type DeckListCard = {
   name: string;
   quantity: number;
   cardId?: string;
   image?: string;
+  /** Sens d'impression de la carte : un champ de bataille s'affiche pivoté. */
+  orientation?: CardOrientation;
   banned?: boolean;
   recognized?: boolean;
   erratas?: Errata[];
@@ -44,7 +47,7 @@ export async function validateDeckList(decklist: DeckList): Promise<DeckList> {
   const cardsFromDb =
     uniqueNames.length > 0
       ? await db
-        .collection<{ id: string; name: string; image?: string; banned?: boolean; erratas?: Errata[] }>('cards')
+        .collection<{ id: string; name: string; image?: string; orientation?: CardOrientation; banned?: boolean; erratas?: Errata[] }>('cards')
         .aggregate([
           {
             $match: {name: {$in: uniqueNames}, lang: 'en'},
@@ -88,6 +91,7 @@ export async function validateDeckList(decklist: DeckList): Promise<DeckList> {
               id: 1,
               name: 1,
               image: 1,
+              orientation: 1,
               banned: 1,
               erratas: 1,
             },
@@ -117,6 +121,7 @@ export async function validateDeckList(decklist: DeckList): Promise<DeckList> {
       quantity: card.quantity,
       cardId: cardDb?.id,
       image: cardDb?.image,
+      orientation: cardDb?.orientation,
       banned: cardDb?.banned ?? false,
       recognized: !!cardDb,
       erratas: cardDb?.erratas ?? [],

@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CardNameMatch } from "@/lib/db/cards";
 import { annotateCardText } from "@/lib/card-text-markdown";
 import GameMarkdown from "@/components/GameMarkdown";
+import CardImage from "@/components/cards/CardImage";
 
 export default function CardNameHoverPopover({
   card,
@@ -45,7 +46,12 @@ export default function CardNameHoverPopover({
         // skip that focus restoration entirely.
         onCloseAutoFocus={(e) => e.preventDefault()}
       >
-        <img src={card.image} alt={card.name} className="w-full h-auto rounded mb-2" />
+        <CardImage
+          src={card.image}
+          alt={card.name}
+          orientation={card.orientation}
+          className="w-full h-auto rounded mb-2"
+        />
         <div className="text-sm font-semibold leading-tight">{card.name}</div>
         <div className="text-xs text-muted-foreground mb-2">
           {card.type ? `${card.type} · ` : ""}

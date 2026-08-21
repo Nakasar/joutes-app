@@ -14,6 +14,18 @@ export type CardPrinting = {
 };
 
 /**
+ * Sens d'impression d'une carte. La quasi-totalité des cartes se lisent à la
+ * verticale ; certaines — les champs de bataille de Riftbound — sont imprimées
+ * dans le sens de la largeur. Une carte qui ne dit rien est en `portrait`.
+ */
+export type CardOrientation = "portrait" | "landscape";
+
+/** Seule lecture à faire du champ : tout ce qui n'est pas `landscape` se lit à la verticale. */
+export function isLandscapeCard(orientation?: string): boolean {
+  return orientation === "landscape";
+}
+
+/**
  * Propriétés de carte dépendantes du jeu : chaque jeu n'en renseigne qu'un
  * sous-ensemble (Riftbound remplit domain / energy / might…, d'autres jeux
  * n'exposeront que `type`). Toutes sont donc optionnelles.
@@ -29,6 +41,7 @@ export type CardAttributes = {
   rarity?: string;
   domain?: string[];
   illustrator?: string[];
+  orientation?: CardOrientation;
 };
 
 export const CARD_ATTRIBUTE_KEYS = [
@@ -42,4 +55,5 @@ export const CARD_ATTRIBUTE_KEYS = [
   "rarity",
   "domain",
   "illustrator",
+  "orientation",
 ] as const satisfies readonly (keyof CardAttributes)[];

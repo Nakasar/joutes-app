@@ -18,7 +18,9 @@ import {
   type TradeHistoryQuery,
 } from "@/lib/trade/history";
 import { getCardMarketPrices } from "@/lib/db/card-prices";
+import { findLandscapeCards, type LandscapeCards } from "@/lib/db/card-orientations";
 import type { CardMarketPrice } from "@/lib/prices/display";
+import type { CardOrientation } from "@/lib/types/card";
 
 /**
  * Échange de cartes.
@@ -46,6 +48,8 @@ export type TradeCard = {
   collectorNumber: string;
   image: string;
   type?: string;
+  /** Sens d'impression de la carte, relu du catalogue. */
+  orientation?: CardOrientation;
   gameId?: string;
   gameName?: string;
   gameSlug?: string;
@@ -254,8 +258,14 @@ export async function searchTradeCards({
     scope === "catalog" ? await getOwnedCountsByKey(userObjId, rawItems) : new Map<string, number>();
 
   // Le prix accompagne la carte dès la recherche : c'est aussi ce qui aide à
-  // choisir quoi mettre dans une offre.
-  const marketPrices = await marketPricesForCards(rawItems);
+  // choisir quoi mettre dans une offre. Le sens d'impression est relu de la
+  // même façon — sur la seule page renvoyée, et depuis le catalogue, qui en est
+  // la source —, et les deux lectures partent ensemble : elles ne dépendent que
+  // des cartes déjà connues ici.
+  const [marketPrices, landscapeCards] = await Promise.all([
+    marketPricesForCards(rawItems),
+    findLandscapeCards(rawItems),
+  ]);
 
   const items: TradeCard[] = rawItems.map((it) => {
     const key = cardKey(it.name, it.setCode, it.collectorNumber);
@@ -270,6 +280,7 @@ export async function searchTradeCards({
       collectorNumber: it.collectorNumber,
       image: it.image,
       type: it.type,
+      ...(landscapeCards.has(it) ? { orientation: "landscape" as const } : {}),
       gameId: it.gameId,
       gameName: game?.name,
       gameSlug: game?.slug,
@@ -338,6 +349,12 @@ export type TradeCardSnapshot = {
   setCode: string;
   collectorNumber: string;
   image: string;
+  /**
+   * Sens d'impression de la carte. Relu du catalogue à chaque lecture de
+   * l'échange, comme le prix de marché : il appartient à la carte, pas à
+   * l'exemplaire offert.
+   */
+  orientation?: CardOrientation;
   gameId?: string;
   gameName?: string;
   gameSlug?: string;
@@ -427,7 +444,8 @@ const tradeIndexesReady = Promise.all([
 function toTrade(
   doc: TradeDocument,
   usersById: Map<string, PublicUser>,
-  marketPrices: Map<string, CardMarketPrice>
+  marketPrices: Map<string, CardMarketPrice>,
+  landscapeCards: LandscapeCards
 ): Trade {
   return {
     id: doc._id.toString(),
@@ -439,7 +457,11 @@ function toTrade(
       user: side.userId ? usersById.get(side.userId.toString()) ?? null : null,
       cards: (side.cards ?? []).map((card) => {
         const marketPrice = card.cardId && card.gameId ? marketPrices.get(`${card.gameId}|${card.cardId}`) : undefined;
-        return marketPrice ? { ...card, marketPrice } : card;
+        return {
+          ...card,
+          ...(marketPrice ? { marketPrice } : {}),
+          ...(landscapeCards.has(card) ? { orientation: "landscape" as const } : {}),
+        };
       }),
       validatedAt: side.validatedAt ? side.validatedAt.toISOString() : null,
     })),
@@ -502,10 +524,11 @@ async function hydrateTrades(docs: TradeDocument[]): Promise<Trade[]> {
   // Les trois lectures sont lancées ensemble, et non les badges après les
   // profils : ils ne dépendent que des identifiants, déjà connus ici. Les
   // enchaîner allongerait le chemin critique d'un aller-retour pour rien.
-  const [users, marketPrices, badges] = await Promise.all([
+  const [users, marketPrices, badges, landscapeCards] = await Promise.all([
     getUsersByIds(userIds),
     marketPricesFor(docs),
     getUserBadges(userIds),
+    findLandscapeCards(docs.flatMap((doc) => doc.sides.flatMap((side) => side.cards ?? []))),
   ]);
   const usersById = new Map(
     users.map((user) => {
@@ -513,7 +536,7 @@ async function hydrateTrades(docs: TradeDocument[]): Promise<Trade[]> {
       return [publicUser.id, { ...publicUser, badges: badges[publicUser.id] ?? NO_BADGES }];
     })
   );
-  return docs.map((doc) => toTrade(doc, usersById, marketPrices));
+  return docs.map((doc) => toTrade(doc, usersById, marketPrices, landscapeCards));
 }
 
 function sideOf(doc: TradeDocument, userId: string): TradeSideDocument | null {

@@ -41,6 +41,7 @@ import {Locale} from "@/i18n/config.ts";
 import {CARD_ATTRIBUTE_KEYS, type CardPrinting} from "@/lib/types/card.ts";
 import ErrataList, {type ErrataEntry} from "@/app/[locale]/(app)/games/[gameSlugOrId]/cards/[cardId]/ErrataList.tsx";
 import CardPriceDetails from "@/components/cards/CardPriceDetails.tsx";
+import CardImage from "@/components/cards/CardImage.tsx";
 import {getCardPrices} from "@/lib/db/card-prices.ts";
 import { UserLabel } from "@/components/UserLabel.tsx";
 
@@ -375,9 +376,10 @@ async function CardDetail({
       {/* Une carte toujours foil est présentée comme telle : voile irisé sur
           l'illustration, comme dans la collection. */}
       <div className={`relative overflow-hidden rounded-xl shadow-lg ${card.foil ? "foil-shine" : ""}`}>
-        <img
+        <CardImage
           src={card.image}
           alt={card.name}
+          orientation={card.orientation}
           className="w-full"
         />
       </div>
@@ -421,9 +423,11 @@ async function CardDetail({
                 <div
                   className={`relative overflow-hidden rounded-md border ${printing.foil ? "foil-shine" : ""}`}
                 >
-                  <img
+                  <CardImage
                     src={printing.image || card.image}
                     alt={`${card.name} — ${printing.name}`}
+                    orientation={card.orientation}
+                    loading="lazy"
                     className="w-full"
                   />
                 </div>

@@ -2,7 +2,7 @@ import 'server-only';
 import db from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { printingKey, type OwnershipSnapshot } from "@/lib/collection/ownership";
-import type { CardPrinting } from "@/lib/types/card";
+import type { CardOrientation, CardPrinting } from "@/lib/types/card";
 import type { CollectionEntryGroup } from "@/lib/collection/formats";
 import { cardSearchFilter } from "@/lib/collection/search";
 import {
@@ -424,6 +424,8 @@ export type CollectionItem = {
   collectorNumber: string;
   image: string;
   type?: string;
+  /** Sens d'impression de la carte : une carte paysage s'affiche pivotée. */
+  orientation?: CardOrientation;
   /** Carte qui n'existe qu'en foil. */
   foil?: boolean;
   /** Variantes d'impression, proposées au moment d'ajouter un exemplaire. */
@@ -593,6 +595,7 @@ export async function getGameCollection({
   const project = {
     $project: {
       _id: 0, id: 1, name: 1, setCode: 1, collectorNumber: 1, image: 1, type: 1, foil: 1, printings: 1, quantity: 1,
+      orientation: 1,
     },
   };
 
@@ -662,6 +665,8 @@ export type CardVariant = {
   collectorNumber: string;
   image: string;
   type?: string;
+  /** Sens d'impression de la carte : une carte paysage s'affiche pivotée. */
+  orientation?: CardOrientation;
   quantity: number;
 };
 
@@ -714,7 +719,7 @@ export async function getCardVariants({
       },
       { $addFields: { quantity: { $ifNull: [{ $arrayElemAt: ["$owned.n", 0] }, 0] } } },
       { $sort: { setCode: 1, collectorNumber: 1 } },
-      { $project: { _id: 0, id: 1, name: 1, setCode: 1, collectorNumber: 1, image: 1, type: 1, quantity: 1 } },
+      { $project: { _id: 0, id: 1, name: 1, setCode: 1, collectorNumber: 1, image: 1, type: 1, orientation: 1, quantity: 1 } },
     ])
     .toArray();
 

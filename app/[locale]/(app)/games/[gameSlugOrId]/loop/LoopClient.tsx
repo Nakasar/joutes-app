@@ -7,7 +7,9 @@ import { Label } from "@/components/ui/label.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import GameMarkdown from "@/components/GameMarkdown.tsx";
 import { type ErrataType } from "@/lib/types/errata.ts";
+import type { CardOrientation } from "@/lib/types/card.ts";
 import { useLocale, useTranslations } from "next-intl";
+import CardImage from "@/components/cards/CardImage.tsx";
 
 type LoopErrata = {
   id: string;
@@ -25,6 +27,8 @@ type LoopCard = {
   setCode: string;
   collectorNumber: string;
   type?: string;
+  /** Sens d'impression de la carte : une carte paysage s'affiche pivotée. */
+  orientation?: CardOrientation;
   erratas: LoopErrata[];
 };
 
@@ -120,8 +124,13 @@ export default function LoopClient({ gameSlug, ruleLang }: { gameSlug: string; r
                 {result.cards.map((card) => (
                   <div key={card.id} className="border rounded-lg p-4 bg-card flex gap-4">
                     {card.image && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={card.image} alt={card.name} className="w-20 h-auto rounded shrink-0" />
+                      <CardImage
+                        src={card.image}
+                        alt={card.name}
+                        orientation={card.orientation}
+                        loading="lazy"
+                        className="w-20 h-auto rounded shrink-0"
+                      />
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-2">

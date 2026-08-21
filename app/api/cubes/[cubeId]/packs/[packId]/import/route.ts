@@ -20,8 +20,8 @@ import { cubePackImportSchema } from "@/lib/schemas/cube.schema";
 import type { CubeCard } from "@/lib/types/Cube";
 
 /** L'éditeur n'affiche que l'identité des cartes : la date de création reste côté serveur. */
-function toPackCard({ id, cardId, name, setCode, collectorNumber, image }: CubeCard) {
-  return { id, cardId, name, setCode, collectorNumber, image };
+function toPackCard({ id, cardId, name, setCode, collectorNumber, image, orientation }: CubeCard) {
+  return { id, cardId, name, setCode, collectorNumber, image, orientation };
 }
 
 /**

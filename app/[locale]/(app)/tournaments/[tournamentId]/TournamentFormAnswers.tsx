@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { AlertTriangle, Ban, Images, List } from "lucide-react";
 import { cn } from "@/lib/utils.ts";
+import CardImage from "@/components/cards/CardImage.tsx";
 import type {
   TournamentForm,
   TournamentFormAnswer,
@@ -197,11 +198,12 @@ export function DecklistAnswer({ decklist }: { decklist: TournamentFormDecklistA
                 {section.cards.map((card, index) => (
                   <div key={`${card.cardId ?? card.name}-${index}`} className="relative">
                     {card.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- visuels servis par les CDN des jeux
-                      <img
+                      <CardImage
                         src={card.image}
                         alt={card.name}
+                        orientation={card.orientation}
                         title={card.name}
+                        loading="lazy"
                         className={cn(
                           "h-28 w-auto rounded-md border",
                           card.banned && "ring-2 ring-destructive"

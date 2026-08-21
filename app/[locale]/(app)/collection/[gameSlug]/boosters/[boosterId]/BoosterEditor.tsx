@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRouter } from "@/i18n/navigation.ts";
-import Image from "next/image";
+import CardImage from "@/components/cards/CardImage.tsx";
 import { useLocale, useTranslations } from "next-intl";
 import { DateTime } from "luxon";
 import {
@@ -917,7 +917,14 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
                     }`}
                   >
                     <div className={`relative aspect-[3/4] w-full bg-muted ${card.foil ? "foil-shine" : ""}`}>
-                      <Image src={card.image} alt={card.name} fill unoptimized sizes="120px" className="object-cover" />
+                      <CardImage
+                        src={card.image}
+                        alt={card.name}
+                        orientation={card.orientation}
+                        frame="3/4"
+                        loading="lazy"
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
                       <Button
                         type="button"
                         size="icon-sm"
@@ -1060,7 +1067,14 @@ export default function BoosterEditor({ gameSlug, gameName, initialBooster }: Pr
                       className="block w-full overflow-hidden rounded-lg border bg-card text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <div className="relative aspect-[3/4] w-full bg-muted">
-                        <Image src={card.image} alt={card.name} fill unoptimized sizes="120px" className="object-cover" />
+                        <CardImage
+                          src={card.image}
+                          alt={card.name}
+                          orientation={card.orientation}
+                          frame="3/4"
+                          loading="lazy"
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
                         <span className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/40 group-hover:opacity-100 group-focus-within:bg-black/40 group-focus-within:opacity-100">
                           <span className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
                             {busyAddId === card.id ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-5" />}

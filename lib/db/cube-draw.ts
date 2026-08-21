@@ -2,7 +2,7 @@ import 'server-only';
 
 import db from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
-import { CARD_ATTRIBUTE_KEYS } from "@/lib/types/card";
+import { CARD_ATTRIBUTE_KEYS, type CardOrientation } from "@/lib/types/card";
 import type { CubeDrawConfig } from "@/lib/types/Cube";
 import { CUBE_CARDS_COLLECTION, CUBE_PACKS_COLLECTION } from "@/lib/db/cubes";
 import {
@@ -13,6 +13,7 @@ import {
   type CardIdentity,
   type ResolvedAttributes,
 } from "@/lib/db/cube-card-attributes";
+import { withCardOrientation } from "@/lib/db/card-orientations";
 
 export type CubeAttributeOption = {
   key: string;
@@ -27,6 +28,8 @@ export type CubeDrawnCard = {
   setCode: string;
   collectorNumber: string;
   image: string;
+  /** Sens d'impression de la carte, relu du catalogue à l'affichage. */
+  orientation?: CardOrientation;
 };
 
 export type CubeDrawnPack = {
@@ -132,15 +135,19 @@ export async function drawCube(
     db.collection(CUBE_CARDS_COLLECTION).find({ cubeId: _id }).sort({ createdAt: 1 }).toArray(),
   ]);
 
-  const cards: CardEntry[] = cardDocs.map((doc) => ({
-    id: doc._id.toString(),
-    packId: doc.packId.toString(),
-    cardId: doc.cardId,
-    name: doc.name,
-    setCode: doc.setCode,
-    collectorNumber: doc.collectorNumber,
-    image: doc.image,
-  }));
+  // Le sens d'impression est relu une fois pour tout le cube, avant le tirage :
+  // les deux modes recopient ensuite les cartes telles qu'elles sont ici.
+  const cards: CardEntry[] = await withCardOrientation(
+    cardDocs.map((doc) => ({
+      id: doc._id.toString(),
+      packId: doc.packId.toString(),
+      cardId: doc.cardId,
+      name: doc.name,
+      setCode: doc.setCode,
+      collectorNumber: doc.collectorNumber,
+      image: doc.image,
+    })),
+  );
 
   const shortfalls: CubeDrawShortfall[] = [];
 
@@ -157,6 +164,7 @@ export async function drawCube(
         setCode: card.setCode,
         collectorNumber: card.collectorNumber,
         image: card.image,
+        ...(card.orientation ? { orientation: card.orientation } : {}),
       });
       cardsByPack.set(card.packId, list);
     }
@@ -247,6 +255,7 @@ export async function drawCube(
         setCode: card.setCode,
         collectorNumber: card.collectorNumber,
         image: card.image,
+        ...(card.orientation ? { orientation: card.orientation } : {}),
       })),
     });
   }
