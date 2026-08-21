@@ -1218,6 +1218,36 @@
       "eventSite": "Veranstaltungswebsite"
     },
     "manage": {
+      "proGrant": {
+        "title": "Vom Team gewährter Pro-Zugang",
+        "cardDescription": "Nur für Joutes-Administratoren. Schaltet die Joutes-Pro-Funktionen für diesen Ort frei, ohne Abonnement.",
+        "description": "Ein gewährter Zugang gehört dem Ort, nicht einem Konto: Er belegt keinen Platz und übersteht Patreon-Synchronisierungen.",
+        "statusGranted": "Gewährter Zugang aktiv",
+        "statusNone": "Kein gewährter Zugang",
+        "alsoSponsored": "auch durch ein Abonnement unterstützt",
+        "grantedAt": "Gewährt am",
+        "reason": "Grund",
+        "reasonLabel": "Grund der Gewährung",
+        "reasonPlaceholder": "Partnerladen, Pilotort…",
+        "reasonHint": "Pflichtfeld: Das beantwortet später „Warum hat dieser Ort Pro gratis?“.",
+        "grant": "Joutes Pro gewähren",
+        "update": "Grund aktualisieren",
+        "revoke": "Zugang entziehen",
+        "cancel": "Abbrechen",
+        "granted": "Joutes Pro an {name} gewährt.",
+        "updated": "Grund aktualisiert.",
+        "revoked": "Gewährter Zugang entzogen.",
+        "revokeConfirmTitle": "Gewährten Pro-Zugang entziehen?",
+        "revokeConfirmDescription": "Der Ort verliert die Joutes-Pro-Funktionen beim nächsten Rendern. Seine Anpassung bleibt erhalten und kehrt zurück, wenn der Zugang erneut gewährt wird.",
+        "revokeConfirmSponsored": "Dieser Ort wird auch durch ein Pro-Abonnement unterstützt: Er behält die Joutes-Pro-Funktionen, solange dieses Abonnement aktiv bleibt.",
+        "errors": {
+          "invalidLair": "Dieser Ort ist ungültig.",
+          "reasonRequired": "Ein Grund ist erforderlich.",
+          "notFound": "Dieser Ort wurde nicht gefunden.",
+          "notGranted": "Dieser Ort hat keinen gewährten Zugang.",
+          "failed": "Der Vorgang ist fehlgeschlagen. Versuche es gleich noch einmal."
+        }
+      },
       "tabs": {
         "details": "Details",
         "customization": "Anpassung",

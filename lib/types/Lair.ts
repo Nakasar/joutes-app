@@ -138,6 +138,26 @@ export type LairAbout = {
   rhythm?: { label: string; value: string }[];
 };
 
+/**
+ * Un accès Joutes Pro offert à un lieu par l'équipe.
+ *
+ * Vit sur le lieu et non dans un abonnement : il n'y a précisément **personne**
+ * à qui le rattacher — c'est le lieu qu'on équipe, pas un compte. Forger un
+ * siège sur l'abonnement de quelqu'un aurait menti sur ses sièges consommés, et
+ * la projection Patreon, réécrite à chaque signal, l'aurait effacé.
+ *
+ * Hors de `options` à dessein : `options` est la surface que le gérant du lieu
+ * écrit lui-même. Un droit ne doit jamais se trouver là où celui à qui il
+ * profite peut écrire.
+ */
+export type LairProGrant = {
+  grantedAt: Date;
+  /** Le compte administrateur qui a accordé l'accès. */
+  grantedBy: User['id'];
+  /** Motif libre : « boutique partenaire », « lieu pilote »… */
+  reason: string;
+};
+
 export type Lair = {
   id: string;
   name: string;
@@ -161,6 +181,14 @@ export type Lair = {
   isPrivate?: boolean;
   
   invitationCode?: string;
+
+  /**
+   * L'accès Pro offert par l'équipe, s'il existe.
+   *
+   * S'ajoute au parrainage par un abonnement : `lairHasPro` compose les deux, et
+   * un lieu peut très bien tenir Pro des deux côtés à la fois.
+   */
+  proGrant?: LairProGrant | null;
 
   
   options?: {

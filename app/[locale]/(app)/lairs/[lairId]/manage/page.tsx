@@ -16,7 +16,9 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth.ts";
 import { getSubscriptionByUserId, getSubscriptionForLair } from "@/lib/db/subscriptions.ts";
 import { canAttachPro } from "@/lib/subscriptions/seats.ts";
-import { plansFromSubscription } from "@/lib/subscriptions/access.ts";
+import { plansFromSubscription, lairHasPro } from "@/lib/subscriptions/access.ts";
+import { checkAdmin } from "@/lib/middleware/admin.ts";
+import LairProGrantCard from "./LairProGrantCard.tsx";
 import PrivateLairInvitationManager from "./PrivateLairInvitationManager.tsx";
 import PrivateLairFollowersManager from "./PrivateLairFollowersManager.tsx";
 import { getTranslations } from "next-intl/server";
@@ -130,7 +132,12 @@ async function ManageLairContent({
   const proState = {
     // Les paliers composés, et non `sponsor.plans` : un lieu parrainé par
     // quelqu'un dont le Pro a été offert par l'équipe est un lieu Pro.
-    isPro: plansFromSubscription(sponsor).includes("pro"),
+    // `lairHasPro` et non le seul parrainage : un lieu équipé par l'équipe doit
+    // ouvrir exactement les mêmes options, sinon l'écran de personnalisation
+    // refuserait ce que sa vitrine accorde déjà.
+    isPro: await lairHasPro(lairId),
+    // Le parrainage seul, pour distinguer les deux voies dans la carte d'équipe.
+    isSponsored: plansFromSubscription(sponsor).includes("pro"),
     attachedByMe: Boolean(
       session?.user?.id && sponsor?.seats.some((seat) => seat.attachedBy === session.user.id)
     ),
@@ -161,6 +168,10 @@ async function ManageLairContent({
           .slice(0, 50)
           .map((event) => ({ id: event.id, name: event.name, startDateTime: event.startDateTime }))
       : [];
+
+  // Le statut d'administrateur, pour la carte d'octroi réservée à l'équipe.
+  // L'action serveur refait le contrôle : ceci ne décide que de l'affichage.
+  const viewerIsAdmin = tab === "subscription" ? await checkAdmin() : false;
 
   // Récupérer les abonnés pour les lairs privés
   let followers: User[] = [];
@@ -277,6 +288,25 @@ async function ManageLairContent({
             />
           </CardContent>
         </Card>
+        )}
+
+        {/* Réservé à l'équipe : offrir Pro à un lieu qu'aucun abonnement ne
+            parraine — boutique partenaire, lieu pilote. */}
+        {tab === "subscription" && viewerIsAdmin && (
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("manage.proGrant.title")}</CardTitle>
+              <CardDescription>{t("manage.proGrant.cardDescription")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LairProGrantCard
+                lairId={lairId}
+                lairName={lair.name}
+                grant={lair.proGrant ?? null}
+                isSponsored={proState.isSponsored}
+              />
+            </CardContent>
+          </Card>
         )}
       </div>
     </>
