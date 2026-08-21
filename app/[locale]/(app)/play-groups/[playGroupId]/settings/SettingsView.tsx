@@ -9,6 +9,9 @@ import { readAllGames } from "@/lib/db/games-cached.ts";
 import PlayGroupGamesSettings from "@/components/play-groups/PlayGroupGamesSettings.tsx";
 
 import PlayGroupIdentityForm from "./PlayGroupIdentityForm.tsx";
+import PlayGroupVisibilityForm from "./PlayGroupVisibilityForm.tsx";
+import { readPlayGroupVisibility } from "@/lib/play-groups/access.ts";
+
 import { requirePlayGroup, requirePlayGroupMember } from "../group-data.ts";
 
 /**
@@ -52,6 +55,8 @@ export default async function SettingsView({ playGroupId }: { playGroupId: strin
         <h1 className="text-[26px] font-bold tracking-[-0.02em]">{t("title")}</h1>
         <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
       </header>
+
+      <PlayGroupVisibilityForm playGroupId={group.id} visibility={readPlayGroupVisibility(group)} />
 
       <PlayGroupIdentityForm
         group={group}

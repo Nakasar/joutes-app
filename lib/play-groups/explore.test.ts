@@ -32,6 +32,7 @@ function group(overrides: Partial<ExploreGroup> = {}): ExploreGroup {
     id: "g",
     name: "Groupe",
     initials: "G",
+    visibility: "public",
     tagline: null,
     accentColor: null,
     logo: null,

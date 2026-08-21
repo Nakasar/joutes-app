@@ -60,7 +60,7 @@ async function Roll() {
   const userId = session?.user?.id ?? null;
 
   const [roll, followedIds] = await Promise.all([
-    readExploreRoll({ host: requestHeaders.get("host") ?? "localhost" }),
+    readExploreRoll({ host: requestHeaders.get("host") ?? "localhost", viewerId: userId }),
     userId ? readFollowedPlayGroupIds(userId) : Promise.resolve(new Set<string>()),
   ]);
 

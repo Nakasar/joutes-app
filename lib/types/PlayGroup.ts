@@ -2,6 +2,24 @@ import type { ObjectId } from "mongodb";
 
 export type PlayGroupMemberRole = "owner" | "admin" | "member";
 
+/**
+ * Qui peut trouver le groupe.
+ *
+ * `public` — le groupe paraît au rôle d'armes, où n'importe qui peut le
+ * découvrir. C'est la valeur par défaut, et l'absence du champ la vaut : les
+ * groupes créés avant ce réglage restent visibles, comme ils l'ont toujours été.
+ *
+ * `private` — le groupe disparaît du rôle pour tout le monde sauf ses membres.
+ * Sa vitrine reste ouverte à qui en a l'adresse — c'est ce qui permet d'inviter
+ * quelqu'un à la regarder — mais elle demande aux moteurs de ne pas l'indexer :
+ * un groupe privé qui ressort d'une recherche ne serait pas privé.
+ *
+ * Ce n'est pas un réglage de personnalisation : il ne vit pas dans `options`,
+ * qui ne porte que de l'apparence, mais sur le groupe lui-même, où une requête
+ * peut le filtrer avec un index.
+ */
+export type PlayGroupVisibility = "public" | "private";
+
 export type PlayGroupMember = {
   userId: string;
   role: PlayGroupMemberRole;
@@ -156,6 +174,8 @@ export type PlayGroup = {
   name: string;
   description?: string;
   ownerId: string;
+  /** Absent vaut `public` — voir `readPlayGroupVisibility`. */
+  visibility?: PlayGroupVisibility;
   members: PlayGroupMember[];
   /** Game ids enabled for this group's collection/wishlists. `null`/`undefined` means every game is allowed. */
   enabledGameIds?: string[] | null;
@@ -183,6 +203,7 @@ export type PlayGroupDocument = {
   name: string;
   description?: string;
   ownerId: string;
+  visibility?: PlayGroupVisibility;
   members: PlayGroupMemberDocument[];
   enabledGameIds?: string[] | null;
   options?: PlayGroupOptions;

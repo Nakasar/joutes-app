@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useFormatter, useTranslations } from "next-intl";
-import { Clock, LocateFixed, MapPin, Play, Repeat, Search } from "lucide-react";
+import { Clock, EyeOff, LocateFixed, MapPin, Play, Repeat, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Link } from "@/i18n/navigation.ts";
@@ -460,10 +460,19 @@ function RollEntry({
       <Escu initials={group.initials} logo={group.logo} live={!!live} liveLabel={t("live.badge")} size="lg" />
 
       <div className="flex min-w-[260px] flex-1 flex-col gap-2.5">
-        <h3 className="font-[family-name:var(--font-cinzel)] text-[26px] leading-tight font-semibold">
+        <h3 className="flex flex-wrap items-baseline gap-x-3 gap-y-1.5 font-[family-name:var(--font-cinzel)] text-[26px] leading-tight font-semibold">
           <Link href={`/play-groups/${group.id}`} className="hover:underline">
             {group.name}
           </Link>
+
+          {/* Seul un membre voit cette ligne : la pastille lui dit que ce
+              groupe-là n'apparaît au rôle de personne d'autre. */}
+          {group.visibility === "private" && (
+            <span className="inline-flex shrink-0 items-center gap-1.5 border border-[var(--or-line)] px-2 py-0.5 font-mono text-[10px] font-normal tracking-[.14em] text-muted-foreground uppercase">
+              <EyeOff className="size-3" aria-hidden />
+              {t("entry.private")}
+            </span>
+          )}
         </h3>
 
         {group.tagline && (
