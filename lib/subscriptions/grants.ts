@@ -43,6 +43,30 @@ export function effectivePlans({
 }
 
 /**
+ * Un lieu tient-il Joutes Pro ?
+ *
+ * La règle que `lairHasPro` applique, isolée ici pour deux raisons : elle est
+ * ainsi éprouvable — `lib/subscriptions/access.ts` est `server-only` et ouvre
+ * une connexion Mongo au chargement — et il n'en existe qu'une copie. Une
+ * version précédente du test rejouait une réimplémentation à la main, qui
+ * n'aurait rien attrapé d'une régression dans la vraie fonction.
+ */
+export function lairHoldsPro({
+  hasGrant,
+  paid,
+  granted,
+}: {
+  /** L'équipe a offert l'accès au lieu lui-même. */
+  hasGrant: boolean;
+  /** Les paliers payés de l'abonnement qui parraine le lieu. */
+  paid: readonly SubscriptionPlanKey[];
+  /** Ceux que l'équipe a offerts à ce même abonné. */
+  granted: readonly SubscriptionPlanKey[];
+}): boolean {
+  return hasGrant || effectivePlans({ paid, granted }).includes("pro");
+}
+
+/**
  * D'où vient ce palier. Sert à l'écran de compte, jamais aux droits.
  * Rend `null` si le compte ne le porte pas du tout.
  */

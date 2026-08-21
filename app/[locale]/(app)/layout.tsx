@@ -23,9 +23,12 @@ import {ThemeProvider} from "next-themes";
 import {ThemeToggle} from "@/components/theme-toggle.tsx";
 
 /**
- * Les quatre langues sont connues à la construction : chacune reçoit sa propre
- * coquille préfabriquée, au lieu d'une seule coquille impossible à figer parce
- * qu'un cookie en décidait le contenu.
+ * Les langues préfabriquées : chacune reçoit sa propre coquille, au lieu d'une
+ * seule impossible à figer parce qu'un cookie en décidait le contenu.
+ *
+ * Seules `fr` et `en` y figurent, alors que `locales` en compte quatre : `de` et
+ * `it` sont rendues à la demande. Le commentaire annonçait « les quatre »
+ * depuis que la liste a été réduite.
  */
 export function generateStaticParams() {
   return [{ locale: 'fr' }, { locale: 'en' }];

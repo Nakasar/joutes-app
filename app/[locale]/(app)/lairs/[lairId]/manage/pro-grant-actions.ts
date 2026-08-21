@@ -81,7 +81,13 @@ export async function revokeProFromLairAction(lairId: string): Promise<LairProGr
       return { success: false, error: "INVALID_LAIR" };
     }
 
-    if (!(await revokeProFromLair(parsed.data))) {
+    const outcome = await revokeProFromLair(parsed.data);
+
+    if (outcome === "not-found") {
+      return { success: false, error: "NOT_FOUND" };
+    }
+
+    if (outcome === "not-granted") {
       return { success: false, error: "NOT_GRANTED" };
     }
 
