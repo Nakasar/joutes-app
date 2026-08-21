@@ -1218,6 +1218,36 @@
       "eventSite": "Site de l'événement"
     },
     "manage": {
+      "proGrant": {
+        "title": "Accès Pro offert par l'équipe",
+        "cardDescription": "Réservé aux administrateurs de Joutes. Ouvre les fonctionnalités Joutes Pro à ce lieu sans passer par un abonnement.",
+        "description": "L'accès offert appartient au lieu, pas à un compte : il ne consomme aucun siège et survit aux synchronisations Patreon.",
+        "statusGranted": "Accès offert actif",
+        "statusNone": "Aucun accès offert",
+        "alsoSponsored": "aussi parrainé par un abonnement",
+        "grantedAt": "Offert le",
+        "reason": "Motif",
+        "reasonLabel": "Motif de l'octroi",
+        "reasonPlaceholder": "Boutique partenaire, lieu pilote…",
+        "reasonHint": "Obligatoire : c'est ce qui répondra à « pourquoi ce lieu a-t-il Pro gratuitement ? ».",
+        "grant": "Offrir Joutes Pro",
+        "update": "Mettre à jour le motif",
+        "revoke": "Retirer l'accès",
+        "cancel": "Annuler",
+        "granted": "Joutes Pro offert à {name}.",
+        "updated": "Motif mis à jour.",
+        "revoked": "Accès offert retiré.",
+        "revokeConfirmTitle": "Retirer l'accès Pro offert ?",
+        "revokeConfirmDescription": "Le lieu perdra les fonctionnalités Joutes Pro au prochain rendu. Sa personnalisation est conservée et réapparaîtra si l'accès lui est rendu.",
+        "revokeConfirmSponsored": "Ce lieu est aussi parrainé par un abonnement Pro : il gardera les fonctionnalités Joutes Pro tant que cet abonnement reste actif.",
+        "errors": {
+          "invalidLair": "Ce lieu est invalide.",
+          "reasonRequired": "Le motif est obligatoire.",
+          "notFound": "Ce lieu est introuvable.",
+          "notGranted": "Ce lieu n'a pas d'accès offert.",
+          "failed": "L'opération a échoué. Réessayez dans un instant."
+        }
+      },
       "tabs": {
         "details": "Détails",
         "customization": "Personnalisation",

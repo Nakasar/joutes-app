@@ -1,5 +1,5 @@
 import db from "@/lib/mongodb";
-import { Lair } from "@/lib/types/Lair";
+import { Lair, LairProGrant } from "@/lib/types/Lair";
 import { ObjectId, WithId, Document, Filter } from "mongodb";
 
 const COLLECTION_NAME = "lairs";
@@ -45,6 +45,7 @@ function toLair(doc: WithId<Document>): Lair {
     website: doc.website,
     isPrivate: doc.isPrivate || false,
     invitationCode: doc.invitationCode,
+    proGrant: doc.proGrant ?? null,
     options: doc.options,
   };
 }
@@ -225,6 +226,68 @@ export async function updateLair(id: string, lair: Partial<Omit<Lair, "id">>): P
   );
   
   return result ? toLair(result) : null;
+}
+
+/**
+ * Offre l'accès Pro à un lieu, ou en réécrit le motif.
+ *
+ * Écriture ciblée sur `proGrant` seul : passer par `updateLair` aurait exigé de
+ * relire puis renvoyer le lieu, avec la fenêtre de concurrence qui va avec.
+ *
+ * Un octroi déjà en place est **remplacé**, non refusé : corriger un motif mal
+ * saisi doit rester possible sans avoir à retirer puis rendre l'accès, ce qui
+ * ferait clignoter les droits du lieu entre les deux.
+ */
+export async function grantProToLair({
+  lairId,
+  grantedBy,
+  reason,
+}: {
+  lairId: string;
+  grantedBy: string;
+  reason: string;
+}): Promise<LairProGrant | null> {
+  const grant: LairProGrant = { grantedAt: new Date(), grantedBy, reason };
+
+  const result = await db.collection(COLLECTION_NAME).findOneAndUpdate(
+    { _id: new ObjectId(lairId) },
+    { $set: { proGrant: grant } },
+    { returnDocument: "after" }
+  );
+
+  return result ? grant : null;
+}
+
+/** Retire l'accès offert. Le lieu peut rester Pro par son parrainage. */
+export async function revokeProFromLair(lairId: string): Promise<boolean> {
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: new ObjectId(lairId), proGrant: { $ne: null } },
+    { $unset: { proGrant: "" } }
+  );
+
+  return result.modifiedCount > 0;
+}
+
+/**
+ * Parmi les lieux demandés, ceux qui tiennent un accès Pro offert.
+ *
+ * En une requête : `proLairIds` s'en sert pour l'index des lieux, où une
+ * lecture par lieu ferait un N+1.
+ */
+export async function getLairIdsWithProGrant(lairIds: string[]): Promise<Set<string>> {
+  if (lairIds.length === 0) {
+    return new Set();
+  }
+
+  const docs = await db
+    .collection(COLLECTION_NAME)
+    .find(
+      { _id: { $in: lairIds.map((id) => new ObjectId(id)) }, proGrant: { $ne: null } },
+      { projection: { _id: 1 } }
+    )
+    .toArray();
+
+  return new Set(docs.map((doc) => doc._id.toString()));
 }
 
 export async function deleteLair(id: string): Promise<boolean> {

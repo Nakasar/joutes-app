@@ -11,6 +11,7 @@ import {
   getSubscriptionByUserId,
   getSubscriptionForLair,
 } from "@/lib/db/subscriptions";
+import { getLairById, getLairIdsWithProGrant } from "@/lib/db/lairs";
 import type { Lair } from "@/lib/types/Lair";
 import type { Subscription, SubscriptionSummary } from "@/lib/types/Subscription";
 import { displayPlan, grantsEntitlement, resolveEntitlements, seatsFor } from "./entitlements";
@@ -127,15 +128,29 @@ export async function requireEntitlement(entitlement: EntitlementKey): Promise<t
 }
 
 /**
- * Vrai si ce lieu est parrainé par un abonnement Pro **actif**.
+ * Vrai si ce lieu tient Joutes Pro, par parrainage **ou** par octroi de l'équipe.
  *
- * Deux lectures indexées, et seulement sur les écrans de lieu. Le statut n'est
- * jamais recopié sur le lieu : il se dérive de l'abonnement qui détient son
- * siège. Quand cet abonnement s'éteint, `plans` se vide et le lieu perd Pro au
- * rendu suivant — sans révocation à écrire, et sans fenêtre d'incohérence.
+ * Deux voies, composées ici et nulle part ailleurs :
+ *
+ * - le **parrainage** — un abonnement Pro actif détient un siège pour ce lieu.
+ *   Rien n'est recopié sur le lieu : quand l'abonnement s'éteint, `plans` se
+ *   vide et le lieu perd Pro au rendu suivant, sans révocation à écrire ;
+ * - l'**octroi** — l'équipe a offert l'accès au lieu lui-même, pour une
+ *   boutique partenaire ou un lieu pilote qu'aucun compte ne parraine.
+ *
+ * Les deux restent séparés à l'écriture, comme les permissions et les paliers :
+ * une synchronisation Patreon ne peut donc pas effacer un octroi, et retirer un
+ * octroi ne touche à l'abonnement de personne.
  */
 export const lairHasPro = cache(async (lairId: Lair['id']): Promise<boolean> => {
-  const subscription = await getSubscriptionForLair(lairId);
+  const [subscription, lair] = await Promise.all([
+    getSubscriptionForLair(lairId),
+    getLairById(lairId),
+  ]);
+
+  if (lair?.proGrant) {
+    return true;
+  }
 
   // Les paliers composés, et non `subscription.plans` : un lieu parrainé par
   // quelqu'un dont le Pro a été offert par l'équipe ouvre les mêmes droits qu'un
@@ -151,7 +166,17 @@ export const lairHasPro = cache(async (lairId: Lair['id']): Promise<boolean> => 
  * ferait un N+1 sur la page d'index des lieux.
  */
 export async function proLairIds(lairIds: Lair['id'][]): Promise<Set<Lair['id']>> {
-  return getLairIdsWithPlan(lairIds, "pro");
+  // Les deux voies, en deux requêtes plutôt qu'une par lieu. Personne n'appelle
+  // encore cette fonction — elle attend le premier écran qui affichera le
+  // statut sur une liste. Raison de plus pour qu'elle réponde comme
+  // `lairHasPro` dès maintenant : le jour où elle servira, une divergence entre
+  // les deux se lirait comme un lieu Pro sur sa page et sans Pro dans la liste.
+  const [sponsored, granted] = await Promise.all([
+    getLairIdsWithPlan(lairIds, "pro"),
+    getLairIdsWithProGrant(lairIds),
+  ]);
+
+  return new Set([...sponsored, ...granted]);
 }
 
 /** Le plan à afficher sur un badge, ou `null`. */

@@ -1218,6 +1218,36 @@
       "eventSite": "Sito dell'evento"
     },
     "manage": {
+      "proGrant": {
+        "title": "Accesso Pro offerto dal team",
+        "cardDescription": "Riservato agli amministratori di Joutes. Apre le funzionalità Joutes Pro per questo locale senza passare da un abbonamento.",
+        "description": "L'accesso offerto appartiene al locale, non a un account: non occupa alcun posto e sopravvive alle sincronizzazioni Patreon.",
+        "statusGranted": "Accesso offerto attivo",
+        "statusNone": "Nessun accesso offerto",
+        "alsoSponsored": "anche sostenuto da un abbonamento",
+        "grantedAt": "Offerto il",
+        "reason": "Motivo",
+        "reasonLabel": "Motivo della concessione",
+        "reasonPlaceholder": "Negozio partner, locale pilota…",
+        "reasonHint": "Obbligatorio: è ciò che risponderà a « perché questo locale ha Pro gratis? ».",
+        "grant": "Offri Joutes Pro",
+        "update": "Aggiorna il motivo",
+        "revoke": "Revoca l'accesso",
+        "cancel": "Annulla",
+        "granted": "Joutes Pro offerto a {name}.",
+        "updated": "Motivo aggiornato.",
+        "revoked": "Accesso offerto revocato.",
+        "revokeConfirmTitle": "Revocare l'accesso Pro offerto?",
+        "revokeConfirmDescription": "Il locale perderà le funzionalità Joutes Pro al prossimo rendering. La sua personalizzazione è conservata e ricomparirà se l'accesso viene ridato.",
+        "revokeConfirmSponsored": "Questo locale è anche sostenuto da un abbonamento Pro: manterrà le funzionalità Joutes Pro finché quell'abbonamento resta attivo.",
+        "errors": {
+          "invalidLair": "Questo locale non è valido.",
+          "reasonRequired": "Il motivo è obbligatorio.",
+          "notFound": "Questo locale non è stato trovato.",
+          "notGranted": "Questo locale non ha un accesso offerto.",
+          "failed": "L'operazione non è riuscita. Riprova tra un istante."
+        }
+      },
       "tabs": {
         "details": "Dettagli",
         "customization": "Personalizzazione",

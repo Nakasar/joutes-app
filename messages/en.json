@@ -1218,6 +1218,36 @@
       "eventSite": "Event website"
     },
     "manage": {
+      "proGrant": {
+        "title": "Pro access granted by the team",
+        "cardDescription": "Joutes administrators only. Opens Joutes Pro features for this venue without going through a subscription.",
+        "description": "A granted access belongs to the venue, not to an account: it uses no seat and survives Patreon syncs.",
+        "statusGranted": "Granted access active",
+        "statusNone": "No granted access",
+        "alsoSponsored": "also sponsored by a subscription",
+        "grantedAt": "Granted on",
+        "reason": "Reason",
+        "reasonLabel": "Reason for the grant",
+        "reasonPlaceholder": "Partner shop, pilot venue…",
+        "reasonHint": "Required: this is what will answer “why does this venue have Pro for free?”.",
+        "grant": "Grant Joutes Pro",
+        "update": "Update the reason",
+        "revoke": "Revoke access",
+        "cancel": "Cancel",
+        "granted": "Joutes Pro granted to {name}.",
+        "updated": "Reason updated.",
+        "revoked": "Granted access revoked.",
+        "revokeConfirmTitle": "Revoke the granted Pro access?",
+        "revokeConfirmDescription": "The venue will lose Joutes Pro features on the next render. Its customization is kept and returns if access is granted again.",
+        "revokeConfirmSponsored": "This venue is also sponsored by a Pro subscription: it keeps Joutes Pro features as long as that subscription stays active.",
+        "errors": {
+          "invalidLair": "This venue is invalid.",
+          "reasonRequired": "A reason is required.",
+          "notFound": "This venue could not be found.",
+          "notGranted": "This venue has no granted access.",
+          "failed": "The operation failed. Try again in a moment."
+        }
+      },
       "tabs": {
         "details": "Details",
         "customization": "Customization",

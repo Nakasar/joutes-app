@@ -1,16 +1,13 @@
 import 'server-only';
 
-import { getSubscriptionForLair } from "@/lib/db/subscriptions";
-import { plansFromSubscription } from "@/lib/subscriptions/access";
+export { lairHasPro as isLairPro } from "@/lib/subscriptions/access";
 
 /**
  * Le lieu est-il Pro ?
  *
- * Dérivé de l'abonnement qui détient son siège, jamais stocké sur le lieu —
- * c'est ce qui fait qu'un abonnement éteint retire le statut au rendu suivant,
- * sans révocation à écrire.
+ * Simple ré-export de `lairHasPro`, l'API que documente `docs/SUBSCRIPTIONS.md`.
+ * Ce module en tenait une seconde implémentation, qui ne connaissait que le
+ * parrainage : les octrois de l'équipe y auraient été invisibles, et l'écran de
+ * personnalisation aurait refusé à un lieu équipé ce que sa vitrine lui
+ * accordait. Une règle, un endroit.
  */
-export async function isLairPro(lairId: string): Promise<boolean> {
-  const sponsor = await getSubscriptionForLair(lairId);
-  return plansFromSubscription(sponsor).includes("pro");
-}

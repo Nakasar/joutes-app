@@ -52,6 +52,31 @@ if (await lairHasPro(lairId)) { … }               // droits d'un lieu
 Sur une **liste** de lieux, ne jamais boucler `lairHasPro` : un seul appel à
 `proLairIds(ids)` évite le N+1.
 
+### Les deux voies vers le Pro d'un lieu
+
+`lairHasPro` compose deux sources, et c'est le seul endroit qui les connaît :
+
+- le **parrainage** — un abonnement Pro détient un siège pour ce lieu, posé par
+  son propriétaire depuis « Mon abonnement » ;
+- l'**octroi** — l'équipe a offert l'accès au lieu lui-même
+  (`lair.proGrant`), depuis l'onglet « Abonnement » de la gestion du lieu. Pour
+  une boutique partenaire ou un lieu pilote qu'aucun compte ne parraine.
+
+L'octroi vit **sur le lieu**, pas dans un abonnement. Il n'y a précisément
+personne à qui le rattacher : forger un siège chez un abonné aurait menti sur
+ses sièges consommés, et la projection Patreon — réécrite à chaque signal —
+l'aurait effacé. Il vit aussi **hors de `lair.options`**, la surface que le
+gérant écrit lui-même : un droit ne se range pas là où celui qui en profite peut
+écrire.
+
+Les deux voies s'additionnent sans se connaître. Une synchronisation Patreon ne
+peut pas effacer un octroi ; retirer un octroi ne touche à l'abonnement de
+personne ; et un lieu qui tient les deux garde Pro tant qu'il en reste une.
+
+L'octroi porte un **motif obligatoire**, exigé par l'action serveur et pas
+seulement par le formulaire — c'est ce qui répondra, dans six mois, à « pourquoi
+ce lieu a-t-il Pro gratuitement ? ».
+
 Les droits d'abonnement **ne se mélangent pas aux permissions**
 (`lib/db/permissions.ts`). Une permission s'accorde à la main et vaut capacité
 d'équipe ; un droit d'abonnement s'achète et se recalcule. Les fusionner ferait
