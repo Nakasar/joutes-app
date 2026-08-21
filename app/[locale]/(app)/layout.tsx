@@ -28,7 +28,7 @@ import {ThemeToggle} from "@/components/theme-toggle.tsx";
  * qu'un cookie en décidait le contenu.
  */
 export function generateStaticParams() {
-  return locales.map((locale) => ({ locale }));
+  return [{ locale: 'fr' }, { locale: 'en' }];
 }
 
 // Charger le thème hivernal si activé
