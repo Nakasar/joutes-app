@@ -74,8 +74,15 @@ export default function ExploreRoll({
    * se calcule ici, sur des coordonnées de lieux déjà publiques.
    */
   const locate = () => {
-    if (origin || !navigator.geolocation) {
+    if (origin) {
       setOrder("proches");
+      return;
+    }
+
+    // Sans position, l'ordre ne bascule pas : annoncer un classement par
+    // distance qui n'est pas appliqué vaut moins que de dire qu'on ne sait pas.
+    if (!navigator.geolocation) {
+      toast.error(t("locateError"));
       return;
     }
 
@@ -219,9 +226,13 @@ function LiveWall({ lives, now }: { lives: ExploreLive[]; now: number }) {
   const t = useTranslations("PlayGroups.explore");
   const [featured, ...rest] = lives;
 
+  // Un groupe dont trois membres diffusent reste un groupe : la mention compte
+  // des groupes, pas des flux.
+  const groupCount = new Set(lives.map((live) => live.groupId)).size;
+
   return (
     <section>
-      <Movement title={t("live.title")} aside={t("live.count", { count: lives.length })} />
+      <Movement title={t("live.title")} aside={t("live.count", { count: groupCount })} />
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,740fr)_minmax(0,360fr)]">
         <LiveScreen live={featured} now={now} />
@@ -412,8 +423,12 @@ function RollEntry({
   const [pending, startTransition] = useTransition();
 
   const live = group.lives[0];
+  // Le compteur de spectateurs n'est renseigné nulle part aujourd'hui : sans
+  // lui, on dit qui diffuse, pas « 0 spectateurs ».
   const cry = live
-    ? t("entry.liveCry", { streamer: live.streamer, count: live.viewers ?? 0 })
+    ? typeof live.viewers === "number"
+      ? t("entry.liveCry", { streamer: live.streamer, count: live.viewers })
+      : t("entry.liveCryPlain", { streamer: live.streamer })
     : group.lastDeed
       ? t(`entry.deeds.${group.lastDeed.kind}`, {
           at: format.relativeTime(new Date(group.lastDeed.at), now),

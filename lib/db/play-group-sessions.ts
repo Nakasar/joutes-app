@@ -99,18 +99,19 @@ export async function readNextSessionsByPlayGroup(
 
   const rows = await sessionsCollection
     .aggregate<{ _id: string; startsAt: string }>([
-      {
-        $match: {
-          playGroupId: { $in: playGroupIds },
-          status: "confirmed",
-          startsAt: { $gte: now },
-        },
-      },
+      { $match: { playGroupId: { $in: playGroupIds }, status: "confirmed" } },
+      // Le même critère que `getNextPlayGroupSession` : une session en cours
+      // n'est pas passée. Filtrer sur `startsAt` seul la ferait disparaître du
+      // classement précisément pendant que le groupe joue.
+      { $addFields: { until: { $ifNull: ["$endsAt", "$startsAt"] } } },
+      { $match: { until: { $gte: now } } },
       { $group: { _id: "$playGroupId", startsAt: { $min: "$startsAt" } } },
     ])
     .toArray();
 
-  return new Map(rows.map((row) => [row._id, row.startsAt]));
+  // Une session déjà commencée est datée à maintenant : le rang d'activité
+  // compte une attente, et une attente nulle vaut le maximum.
+  return new Map(rows.map((row) => [row._id, row.startsAt < now ? now : row.startsAt]));
 }
 
 export async function createPlayGroupSession(input: {

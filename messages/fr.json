@@ -1538,6 +1538,7 @@
       },
       "entry": {
         "liveCry": "{streamer} diffuse · {count, plural, one {# spectateur} other {# spectateurs}}",
+        "liveCryPlain": "{streamer} diffuse en ce moment",
         "quiet": "Pas de nouvelle depuis un moment",
         "deeds": {
           "content": "{title} — {at}",

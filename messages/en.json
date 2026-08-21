@@ -1538,6 +1538,7 @@
       },
       "entry": {
         "liveCry": "{streamer} is streaming · {count, plural, one {# viewer} other {# viewers}}",
+        "liveCryPlain": "{streamer} is streaming right now",
         "quiet": "No news for a while",
         "deeds": {
           "content": "{title} — {at}",

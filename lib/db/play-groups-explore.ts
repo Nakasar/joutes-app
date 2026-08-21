@@ -4,7 +4,9 @@ import { getGameSummariesByIds } from "@/lib/db/games";
 import { getLairsByIds } from "@/lib/db/lairs";
 import { getUsersByIds } from "@/lib/db/users";
 import { readLiveEmbed } from "@/lib/media/live-embed";
+import { externalUrl } from "@/lib/lairs/urls";
 import {
+  isFreshLive,
   readActivityRank,
   readInitials,
   sortExploreGroups,
@@ -77,7 +79,10 @@ export async function readExploreRoll(options: { host: string; limit?: number })
     const groupLives = (group.options?.lives ?? [])
       .map((live): ExploreLive | null => {
         const embed = readLiveEmbed(live.url, options.host);
-        if (!embed) {
+        // Un direct déclaré la veille n'en est plus un : il quitte « En lice »
+        // en même temps qu'il cesse de peser sur le rang. Montrer l'un sans
+        // l'autre donnerait une vitrine qui ment ou un classement qui triche.
+        if (!embed || !isFreshLive(live.startedAt, now)) {
           return null;
         }
 
@@ -89,7 +94,10 @@ export async function readExploreRoll(options: { host: string; limit?: number })
           initials,
           accentColor,
           title: live.title ?? null,
-          streamer: streamer?.displayName || streamer?.username || streamer?.email || live.memberId,
+          // Jamais l'adresse e-mail : cette page est servie à un visiteur non
+          // connecté. `memberName` retombe sur l'identifiant, pas sur le
+          // courriel, et c'est la règle qu'on suit ici.
+          streamer: streamer?.displayName || streamer?.username || live.memberId,
           gameName: live.gameId ? (gameById.get(live.gameId)?.name ?? null) : null,
           viewers: typeof live.viewers === "number" ? live.viewers : null,
           startedAt: live.startedAt,
@@ -144,7 +152,10 @@ export async function readExploreRoll(options: { host: string; limit?: number })
 
   return {
     groups: sortExploreGroups(rows, "vifs"),
-    lives: lives.sort((a, b) => (b.viewers ?? 0) - (a.viewers ?? 0)),
+    // Le compte de spectateurs n'est renseigné nulle part aujourd'hui (le
+    // schéma d'un direct ne l'accepte pas) : sans lui, c'est le plus récemment
+    // commencé qui prend le grand écran, plutôt qu'un ordre de base arbitraire.
+    lives: lives.sort((a, b) => (b.viewers ?? 0) - (a.viewers ?? 0) || b.startedAt.localeCompare(a.startedAt)),
     posts: posts
       .filter((post) => {
         const at = Date.parse(post.publishedAt);
@@ -199,6 +210,8 @@ function toPost(
     duration: content.duration ?? null,
     publishedAt: content.publishedAt,
     href: isArticle ? `/play-groups/${group.id}?view=showcase&article=${content.id}` : null,
-    url: isArticle ? null : (content.url ?? null),
+    // Le même garde que la vitrine : une URL saisie à la main n'est posée sur
+    // un `href` sortant qu'après avoir prouvé qu'elle est en http(s).
+    url: isArticle ? null : externalUrl(content.url),
   };
 }

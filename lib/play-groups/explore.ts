@@ -87,6 +87,26 @@ export type ExplorePost = {
 const DAY = 24 * 60 * 60 * 1000;
 
 /**
+ * L'âge au-delà duquel un direct déclaré ne compte plus.
+ *
+ * Rien ne retire un direct automatiquement : un membre le déclare, un
+ * responsable l'enlève. Un direct oublié épinglerait donc son groupe en tête du
+ * rôle pour toujours — alors qu'une publication, elle, perd sa valeur en trente
+ * jours. Vingt-quatre heures laissent passer un marathon et écartent l'oubli.
+ */
+export const LIVE_MAX_AGE_HOURS = 24;
+
+/** Un direct déclaré diffuse-t-il encore, ou a-t-il été oublié ? */
+export function isFreshLive(startedAt: string | null | undefined, now: number): boolean {
+  const time = readTime(startedAt);
+  if (time === null) {
+    return false;
+  }
+
+  return now - time <= LIVE_MAX_AGE_HOURS * 60 * 60 * 1000;
+}
+
+/**
  * Le rang d'activité — l'ordre par défaut de la page.
  *
  * Un direct passe devant tout : c'est le seul signe de vie qu'on peut rejoindre
@@ -97,6 +117,10 @@ const DAY = 24 * 60 * 60 * 1000;
  *
  * Les groupes sans aucun signe retombent à zéro et ferment le rôle, sans jamais
  * disparaître : un groupe endormi près de chez soi reste une information utile.
+ *
+ * `liveCount` ne compte que les directs encore frais (`isFreshLive`) : c'est à
+ * l'appelant de les filtrer, et c'est ce qui empêche un direct oublié de tenir
+ * la tête du rôle indéfiniment.
  */
 export function readActivityRank(input: {
   liveCount: number;
@@ -140,7 +164,11 @@ function readFreshness(at: string | null | undefined, now: number, windowDays: n
   return Math.max(0, 1 - age / (windowDays * DAY));
 }
 
-/** Comme `readFreshness`, mais pour une date à venir : passée, elle ne compte plus. */
+/**
+ * Comme `readFreshness`, mais pour une date à venir : passée, elle ne compte
+ * plus. Une session déjà commencée mais pas terminée est datée à `now` par
+ * l'appelant, et vaut donc le maximum — c'est le moment où le groupe joue.
+ */
 function readUpcoming(at: string | null | undefined, now: number, windowDays: number): number | null {
   const time = readTime(at);
   if (time === null) {

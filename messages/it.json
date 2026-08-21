@@ -1538,6 +1538,7 @@
       },
       "entry": {
         "liveCry": "{streamer} trasmette · {count, plural, one {# spettatore} other {# spettatori}}",
+        "liveCryPlain": "{streamer} sta trasmettendo ora",
         "quiet": "Nessuna novità da un po'",
         "deeds": {
           "content": "{title} — {at}",

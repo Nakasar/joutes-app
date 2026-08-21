@@ -2184,6 +2184,7 @@
       },
       "entry": {
         "liveCry": "{streamer} streamt · {count, plural, one {# Zuschauer} other {# Zuschauer}}",
+        "liveCryPlain": "{streamer} streamt gerade",
         "quiet": "Seit einer Weile nichts Neues",
         "deeds": {
           "content": "{title} — {at}",

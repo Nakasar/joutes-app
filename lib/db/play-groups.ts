@@ -301,7 +301,16 @@ export async function removePlayGroupLiveStream(playGroupId: string, liveId: str
  */
 export async function listPlayGroups(limit = 120): Promise<PlayGroup[]> {
   const docs = await playGroupsCollection
-    .find({})
+    .find(
+      {},
+      {
+        // Le corps d'un article fait des dizaines de milliers de caractères et
+        // la page n'en montre que le titre : les tirer pour cent groupes à
+        // chaque requête coûterait mille fois ce qui s'affiche. Une projection
+        // d'exclusion — les deux corps, rien d'autre — laisse le reste intact.
+        projection: { "options.contents.body": 0, "options.announcements.body": 0 },
+      },
+    )
     .sort({ updatedAt: -1 })
     .limit(limit)
     .toArray();

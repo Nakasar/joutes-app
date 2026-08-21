@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import {
   distanceKm,
+  isFreshLive,
   foldSearchText,
   matchesExploreQuery,
   readActivityRank,
@@ -73,6 +74,19 @@ describe("readActivityRank", () => {
     assert.equal(readActivityRank({ liveCount: 0, lastDeedAt: new Date(NOW - 90 * DAY).toISOString(), now: NOW }), 0);
   });
 
+  it("donne le maximum à une session en cours", () => {
+    // La couche base date une session commencée mais non terminée à `now` :
+    // l'attente est nulle, donc la valeur est pleine.
+    const enCours = readActivityRank({ liveCount: 0, nextSessionAt: new Date(NOW).toISOString(), now: NOW });
+    const dansTroisJours = readActivityRank({
+      liveCount: 0,
+      nextSessionAt: new Date(NOW + 3 * DAY).toISOString(),
+      now: NOW,
+    });
+
+    assert.ok(enCours > dansTroisJours);
+  });
+
   it("compte une session à venir, jamais une session passée", () => {
     const aVenir = readActivityRank({ liveCount: 0, nextSessionAt: new Date(NOW + 2 * DAY).toISOString(), now: NOW });
     const passee = readActivityRank({ liveCount: 0, nextSessionAt: new Date(NOW - 2 * DAY).toISOString(), now: NOW });
@@ -87,6 +101,25 @@ describe("readActivityRank", () => {
 
   it("ne se laisse pas casser par une date illisible", () => {
     assert.equal(readActivityRank({ liveCount: 0, lastDeedAt: "pas une date", now: NOW }), 0);
+  });
+});
+
+describe("isFreshLive", () => {
+  it("accepte un direct commencé il y a une heure", () => {
+    assert.ok(isFreshLive(new Date(NOW - 60 * 60 * 1000).toISOString(), NOW));
+  });
+
+  it("laisse passer un marathon de vingt heures", () => {
+    assert.ok(isFreshLive(new Date(NOW - 20 * 60 * 60 * 1000).toISOString(), NOW));
+  });
+
+  it("écarte un direct déclaré la veille et jamais retiré", () => {
+    assert.equal(isFreshLive(new Date(NOW - 30 * 60 * 60 * 1000).toISOString(), NOW), false);
+  });
+
+  it("écarte une date absente ou illisible", () => {
+    assert.equal(isFreshLive(null, NOW), false);
+    assert.equal(isFreshLive("pas une date", NOW), false);
   });
 });
 
