@@ -1418,18 +1418,22 @@
         },
         "hours": {
           "title": "Opening hours",
-          "description": "Leave empty for a closing day.",
+          "description": "Leave empty for a closing day. Add a range for split hours — 10 AM — 12 PM, then 2 PM — 7 PM.",
           "closed": "Closed",
           "opensAt": "{day} opening time",
+          "opensAtRange": "{day} opening time, range {index}",
           "closesAt": "{day} closing time",
+          "closesAtRange": "{day} closing time, range {index}",
+          "addRange": "Add a range",
+          "removeRange": "Remove a {day} range",
           "days": {
-            "0": "Sunday",
             "1": "Monday",
             "2": "Tuesday",
             "3": "Wednesday",
             "4": "Thursday",
             "5": "Friday",
-            "6": "Saturday"
+            "6": "Saturday",
+            "7": "Sunday"
           }
         },
         "contact": {

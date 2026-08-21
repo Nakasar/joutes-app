@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils.ts";
 import { LAIR_ACCENT_PALETTE } from "@/lib/lairs/theme.ts";
 import type { LairAccentColor } from "@/lib/lairs/theme.ts";
 import { readLairSections, type LairSection } from "@/lib/lairs/sections.ts";
+import { MAX_OPENING_RANGES_PER_DAY, rangesOfDay } from "@/lib/lairs/opening-hours.ts";
 import type { Lair, LairLink, LairOrganizer } from "@/lib/types/Lair";
 
 import ImageDropzone from "./ImageDropzone.tsx";
@@ -50,7 +51,11 @@ const LINK_TYPES = [
 
 const MAX_LINKS = 6;
 const MAX_PHOTOS = 4;
-const DAYS = [1, 2, 3, 4, 5, 6, 0];
+/** Les sept jours en numérotation ISO — 1 = lundi … 7 = dimanche. */
+const DAYS = [1, 2, 3, 4, 5, 6, 7];
+
+/** Une plage vide : la ligne qu'un jour fermé propose à la saisie. */
+const EMPTY_RANGE = { open: "", close: "" };
 
 type FormState = {
   logo?: string;
@@ -60,7 +65,8 @@ type FormState = {
   links: LairLink[];
   phone: string;
   email: string;
-  openingHours: Record<number, { open: string; close: string }>;
+  /** Les plages de chaque jour ISO — plusieurs pour un horaire coupé. */
+  openingHours: Record<number, { open: string; close: string }[]>;
   description: string;
   category: string;
   amenities: string[];
@@ -90,9 +96,12 @@ function initialState(lair: Lair): FormState {
     phone: options.contact?.phone ?? "",
     email: options.contact?.email ?? "",
     openingHours: Object.fromEntries(
-      (options.openingHours ?? []).map((entry) => [
-        entry.day,
-        { open: entry.open ?? "", close: entry.close ?? "" },
+      DAYS.map((day) => [
+        day,
+        rangesOfDay(options.openingHours, day).map((entry) => ({
+          open: entry.open ?? "",
+          close: entry.close ?? "",
+        })),
       ]),
     ),
     description: options.about?.description ?? "",
@@ -155,6 +164,12 @@ export default function LairCustomizationForm({
     // disparaissait au rechargement suivant.
     const cleaned: FormState = {
       ...state,
+      openingHours: Object.fromEntries(
+        DAYS.map((day) => [
+          day,
+          (state.openingHours[day] ?? []).filter((range) => range.open && range.close),
+        ]),
+      ),
       organizers: state.organizers.filter((entry) => entry.name.trim().length > 0),
       rhythm: state.rhythm.filter(
         (entry) => entry.label.trim().length > 0 && entry.value.trim().length > 0,
@@ -172,12 +187,15 @@ export default function LairCustomizationForm({
         sections: state.sections.map(({ key, enabled }) => ({ key, enabled })),
         links: state.links,
         contact: { phone: state.phone, email: state.email },
-        openingHours: DAYS.flatMap((day) => {
-          const entry = state.openingHours[day];
-          return entry?.open && entry?.close
-            ? [{ day, open: entry.open, close: entry.close }]
-            : [];
-        }),
+        // Une ligne par plage, plusieurs par jour quand l'horaire est coupé :
+        // c'est le format que la vitrine relit, `day` répété et tout.
+        openingHours: DAYS.flatMap((day) =>
+          (cleaned.openingHours[day] ?? []).map((range) => ({
+            day,
+            open: range.open,
+            close: range.close,
+          })),
+        ),
         about: {
           description: cleaned.description,
           category: cleaned.category,
@@ -388,40 +406,99 @@ export default function LairCustomizationForm({
           <p className="text-[13px] text-muted-foreground">{t("hours.description")}</p>
         </header>
 
-        <div className="flex flex-col gap-2">
+        {issues.openingHours && (
+          <p className="text-xs text-destructive">{issues.openingHours}</p>
+        )}
+
+        <div className="flex flex-col gap-3">
           {DAYS.map((day) => {
-            const entry = state.openingHours[day] ?? { open: "", close: "" };
-            const update = (next: { open: string; close: string }) =>
+            const dayLabel = t(`hours.days.${day}`);
+            // Un jour fermé garde une ligne vide : c'est là qu'on saisit ses
+            // horaires quand il ouvre enfin, et une ligne à faire apparaître
+            // avant de pouvoir taper serait un pas de trop.
+            const stored = state.openingHours[day] ?? [];
+            const ranges = stored.length > 0 ? stored : [EMPTY_RANGE];
+
+            const write = (next: { open: string; close: string }[]) =>
               set("openingHours", { ...state.openingHours, [day]: next });
 
             return (
-              <div key={day} className="flex flex-wrap items-center gap-2">
-                <span className="w-28 shrink-0 text-sm">{t(`hours.days.${day}`)}</span>
-                <Input
-                  type="time"
-                  value={entry.open}
-                  aria-label={t("hours.opensAt", { day: t(`hours.days.${day}`) })}
-                  className="w-32"
-                  onChange={(event) => update({ ...entry, open: event.target.value })}
-                />
-                <span className="text-muted-foreground">—</span>
-                <Input
-                  type="time"
-                  value={entry.close}
-                  aria-label={t("hours.closesAt", { day: t(`hours.days.${day}`) })}
-                  className="w-32"
-                  onChange={(event) => update({ ...entry, close: event.target.value })}
-                />
-                {(entry.open || entry.close) && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => update({ open: "", close: "" })}
-                  >
-                    {t("hours.closed")}
-                  </Button>
-                )}
+              <div key={day} className="flex flex-wrap items-start gap-2">
+                <span className="w-28 shrink-0 pt-2 text-sm">{dayLabel}</span>
+
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  {ranges.map((range, index) => {
+                    // Le libellé accessible ne numérote la plage que lorsqu'il y
+                    // en a plusieurs : « Ouverture mardi » suffit tant que mardi
+                    // n'a qu'un seul créneau.
+                    const label = (key: "opensAt" | "closesAt") =>
+                      ranges.length > 1
+                        ? t(`hours.${key}Range`, { day: dayLabel, index: index + 1 })
+                        : t(`hours.${key}`, { day: dayLabel });
+
+                    const update = (next: { open: string; close: string }) =>
+                      write(ranges.map((item, i) => (i === index ? next : item)));
+
+                    return (
+                      <div key={index} className="flex flex-wrap items-center gap-2">
+                        <Input
+                          type="time"
+                          value={range.open}
+                          aria-label={label("opensAt")}
+                          className="w-32"
+                          onChange={(event) => update({ ...range, open: event.target.value })}
+                        />
+                        <span className="text-muted-foreground">—</span>
+                        <Input
+                          type="time"
+                          value={range.close}
+                          aria-label={label("closesAt")}
+                          className="w-32"
+                          onChange={(event) => update({ ...range, close: event.target.value })}
+                        />
+                        {ranges.length > 1 ? (
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            aria-label={t("hours.removeRange", { day: dayLabel })}
+                            onClick={() => write(ranges.filter((_, i) => i !== index))}
+                          >
+                            <X className="size-4" aria-hidden />
+                          </Button>
+                        ) : (
+                          (range.open || range.close) && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => write([])}
+                            >
+                              {t("hours.closed")}
+                            </Button>
+                          )
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* La seconde plage ne s'ouvre qu'une fois la première tenue :
+                      un jour dont on n'a pas dit l'ouverture n'a pas de coupure
+                      à décrire. */}
+                  {ranges.length < MAX_OPENING_RANGES_PER_DAY &&
+                    ranges.every((range) => range.open && range.close) && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="self-start"
+                        onClick={() => write([...ranges, { ...EMPTY_RANGE }])}
+                      >
+                        <Plus className="mr-2 size-4" aria-hidden />
+                        {t("hours.addRange")}
+                      </Button>
+                    )}
+                </div>
               </div>
             );
           })}

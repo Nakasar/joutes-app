@@ -3,6 +3,7 @@ import { z } from "zod";
 import { LAIR_ACCENT_PALETTE } from "@/lib/lairs/theme";
 import { LAIR_SECTION_KEYS } from "@/lib/lairs/sections";
 import { externalUrl } from "@/lib/lairs/urls";
+import { findOverlappingDay, isoDay, MAX_OPENING_RANGES_PER_DAY } from "@/lib/lairs/opening-hours";
 
 /**
  * Ce qu'un lieu peut écrire sur sa propre vitrine.
@@ -86,7 +87,10 @@ export const lairNewsItemSchema = z.object({
 
 export const lairOpeningHoursSchema = z
   .object({
-    day: z.number().int().min(0).max(6),
+    // `0` reste accepté en entrée : c'est le dimanche des horaires écrits avant
+    // que la numérotation ISO soit fixée. Il est ramené sur `7` ici, pour que la
+    // base ne porte qu'une seule numérotation.
+    day: z.number().int().min(0).max(7).transform(isoDay),
     open: timeSchema.optional(),
     close: timeSchema.optional(),
   })
@@ -95,6 +99,29 @@ export const lairOpeningHoursSchema = z
   .refine(
     (value) => (value.open === undefined) === (value.close === undefined),
     "Renseignez l'ouverture et la fermeture, ou aucune des deux"
+  );
+
+/**
+ * Les horaires de la semaine, plages coupées comprises.
+ *
+ * Un jour peut porter plusieurs plages — « 10h — 12h » puis « 14h — 19h » —, si
+ * bien que la liste n'est plus bornée à sept lignes : c'est le nombre de plages
+ * *par jour* qui l'est.
+ */
+export const lairOpeningHoursCollectionSchema = z
+  .array(lairOpeningHoursSchema)
+  .max(7 * MAX_OPENING_RANGES_PER_DAY, "Trop de plages horaires")
+  .refine((hours) => {
+    const perDay = new Map<number, number>();
+    for (const entry of hours) {
+      perDay.set(entry.day, (perDay.get(entry.day) ?? 0) + 1);
+    }
+
+    return [...perDay.values()].every((count) => count <= MAX_OPENING_RANGES_PER_DAY);
+  }, `${MAX_OPENING_RANGES_PER_DAY} plages par jour au maximum`)
+  .refine(
+    (hours) => findOverlappingDay(hours) === null,
+    "Les plages d'un même jour ne peuvent pas se chevaucher"
   );
 
 export const lairAboutSchema = z.object({
@@ -145,7 +172,7 @@ export const lairCustomizationSchema = z.object({
         .optional(),
     })
     .optional(),
-  openingHours: z.array(lairOpeningHoursSchema).max(7, "Sept jours au maximum").optional(),
+  openingHours: lairOpeningHoursCollectionSchema.optional(),
   about: lairAboutSchema.optional(),
   // Les événements ne portent pas d'ObjectId : ils sont créés en `nanoid(12)`
   // ou en `crypto.randomUUID()` selon le chemin. Le gabarit couvre les deux —

@@ -80,6 +80,15 @@ export type LairNewsItem = {
  *
  * `day` suit la numérotation ISO de luxon : 1 = lundi … 7 = dimanche. Un jour
  * absent de la liste — ou sans `open` — est fermé.
+ *
+ * Un même jour peut porter **plusieurs plages** : c'est ainsi que se décrivent
+ * les horaires coupés, « mardi 10h — 12h puis 14h — 19h ». Deux entrées de même
+ * `day` plutôt qu'une liste de créneaux imbriquée, parce que les horaires déjà
+ * en base sont exactement ce format à une plage par jour, et qu'aucun n'a donc
+ * à être réécrit.
+ *
+ * Les horaires les plus anciens portent `0` pour le dimanche ; `isoDay`, dans
+ * `lib/lairs/opening-hours.ts`, les ramène sur `7` à la lecture.
  */
 export type LairOpeningHours = {
   day: number;

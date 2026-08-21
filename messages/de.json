@@ -1418,18 +1418,22 @@
         },
         "hours": {
           "title": "Öffnungszeiten",
-          "description": "Für einen Ruhetag leer lassen.",
+          "description": "Für einen Ruhetag leer lassen. Für geteilte Öffnungszeiten eine Zeitspanne hinzufügen — 10 — 12 Uhr, dann 14 — 19 Uhr.",
           "closed": "Geschlossen",
           "opensAt": "Öffnung {day}",
+          "opensAtRange": "Öffnung {day}, Zeitspanne {index}",
           "closesAt": "Schließung {day}",
+          "closesAtRange": "Schließung {day}, Zeitspanne {index}",
+          "addRange": "Zeitspanne hinzufügen",
+          "removeRange": "Zeitspanne am {day} entfernen",
           "days": {
-            "0": "Sonntag",
             "1": "Montag",
             "2": "Dienstag",
             "3": "Mittwoch",
             "4": "Donnerstag",
             "5": "Freitag",
-            "6": "Samstag"
+            "6": "Samstag",
+            "7": "Sonntag"
           }
         },
         "contact": {

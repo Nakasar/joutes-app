@@ -311,6 +311,10 @@ async function LairTabSidebar({ lairId, tab }: { lairId: string; tab: LairTab })
       <LairPracticalInfoCard lair={lair} />
       <LairOpeningHoursCard lair={lair} />
       <LairFollowCard lair={lair} followersCount={followersCount} />
+      {/* Le rythme habituel suit les horaires de la semaine et précède les jeux :
+          les trois répondent à « quand venir, et pour quoi ». Il tient sa place
+          juste avant le catalogue, qui lui ne dit rien du calendrier. */}
+      <LairAgendaRhythm lair={lair} />
       <LairGamesCard lairId={lairId} games={games} upcomingByGame={countUpcomingByGame(events)} />
     </>
   );

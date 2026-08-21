@@ -16,7 +16,7 @@ import type { LucideIcon } from "lucide-react";
 import { Link } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { cn } from "@/lib/utils.ts";
-import { formatOpeningRange, readOpeningState, weekOf } from "@/lib/lairs/opening-hours.ts";
+import { formatOpeningRanges, readOpeningState, weekOf } from "@/lib/lairs/opening-hours.ts";
 import { externalUrl } from "@/lib/lairs/urls.ts";
 import type { LairLink, Lair } from "@/lib/types/Lair";
 import type { Game } from "@/lib/types/Game";
@@ -154,6 +154,10 @@ export async function LairPracticalInfoCard({ lair }: { lair: Lair }) {
  * Le jour courant est repris à l'accent et annoncé comme « Aujourd'hui » : sur
  * une liste de sept lignes identiques, c'est la seule qu'on vient réellement
  * lire.
+ *
+ * Un jour coupé empile ses plages à droite du nom du jour plutôt que de les
+ * réunir sur une ligne : « 10h — 12h · 14h — 19h » tient mal dans une colonne
+ * de 320 px, et sa coupure se perd au milieu de quatre heures alignées.
  */
 export async function LairOpeningHoursCard({ lair }: { lair: Lair }) {
   const openingHours = lair.options?.openingHours;
@@ -163,26 +167,37 @@ export async function LairOpeningHoursCard({ lair }: { lair: Lair }) {
   }
 
   const [t, locale] = await Promise.all([getTranslations("Lairs.portal.hours"), getLocale()]);
-  const { today } = readOpeningState(openingHours, locale);
+  const { todayDay } = readOpeningState(openingHours, locale);
 
   return (
     <SidebarCard title={t("title")}>
       <dl className="flex flex-col gap-[7px] text-[13px]">
-        {weekOf(openingHours).map((hours) => {
-          const isToday = today?.day === hours.day;
-          const range = formatOpeningRange(hours, locale);
+        {weekOf(openingHours).map(({ day, ranges }) => {
+          const isToday = todayDay === day;
+          const formatted = formatOpeningRanges(ranges, locale);
 
           return (
             <div
-              key={hours.day}
+              key={day}
               className={cn(
                 "flex justify-between gap-3",
                 isToday ? "text-[var(--lair-accent-text)]" : "text-foreground/80",
               )}
             >
-              <dt>{isToday ? t("today") : dayName(hours.day, locale)}</dt>
-              <dd className={cn(!range && !isToday && "text-muted-foreground")}>
-                {range ?? t("closed")}
+              <dt>{isToday ? t("today") : dayName(day, locale)}</dt>
+              <dd
+                className={cn(
+                  "flex flex-col items-end text-right",
+                  formatted.length === 0 && !isToday && "text-muted-foreground",
+                )}
+              >
+                {/* La clé est le rang, non le texte : deux plages d'un même
+                    jour peuvent se formater à l'identique — des horaires
+                    anciens en portent le doublon, que l'ancien schéma laissait
+                    passer — et la clé collerait alors sur deux lignes. */}
+                {formatted.length > 0
+                  ? formatted.map((range, index) => <span key={index}>{range}</span>)
+                  : t("closed")}
               </dd>
             </div>
           );
