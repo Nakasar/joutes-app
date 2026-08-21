@@ -67,9 +67,12 @@ export default async function PlayGroupLiveSection({
 
   if (!first || !embed) {
     return (
-      <section className="flex flex-col gap-3 rounded-xl border border-dashed bg-card/60 p-5 sm:flex-row sm:items-center">
+      // Rangée qui passe à la ligne, et un texte à largeur plancher : le
+      // formulaire de déclaration prend toute une ligne quand il s'ouvre
+      // (`basis-full`), au lieu de comprimer la phrase à un mot par ligne.
+      <section className="flex flex-wrap items-center gap-3 rounded-xl border border-dashed bg-card/60 p-5">
         <Radio className="size-5 shrink-0 text-muted-foreground" aria-hidden />
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <div className="flex min-w-[14rem] flex-1 flex-col gap-0.5">
           <h2 className="text-sm font-semibold">{t("emptyTitle")}</h2>
           <p className="text-xs text-muted-foreground">{t("emptyDescription")}</p>
         </div>

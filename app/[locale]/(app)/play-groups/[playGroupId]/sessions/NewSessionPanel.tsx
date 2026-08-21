@@ -110,7 +110,10 @@ export default function NewSessionPanel({
   }
 
   return (
-    <section className="flex w-full flex-col gap-4 rounded-xl border border-[var(--group-accent-40)] bg-background/60 p-5">
+    // `basis-full` et non `w-full` : le panneau est posé dans la rangée du
+    // titre, qui passe à la ligne. Réclamer 100 % de cette rangée écrasait le
+    // titre au lieu de descendre sous lui.
+    <section className="flex basis-full flex-col gap-4 rounded-xl border border-[var(--group-accent-40)] bg-background/60 p-5">
       <div className="flex flex-wrap items-center gap-3">
         <Plus className="size-[18px] shrink-0 text-[var(--group-accent-text)]" aria-hidden />
         <h2 className="text-lg font-bold">{t("title")}</h2>

@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input.tsx";
 import { Label } from "@/components/ui/label.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { PLAY_GROUP_ACCENT_PALETTE } from "@/lib/play-groups/theme.ts";
+
+import PlayGroupImageField from "./PlayGroupImageField.tsx";
 import { cn } from "@/lib/utils.ts";
 import type { PlayGroup, PlayGroupLink, PlayGroupLinkType, PlayGroupPlaceKind } from "@/lib/types/PlayGroup";
 
@@ -141,28 +143,24 @@ export default function PlayGroupIdentityForm({
         <h2 className="text-lg font-bold">{t("brandTitle")}</h2>
         <p className="text-[13px] text-muted-foreground">{t("brandHint")}</p>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="group-logo">{t("logoLabel")}</Label>
-            <Input
-              id="group-logo"
-              type="url"
-              value={logo}
-              onChange={(event) => setLogo(event.target.value)}
-              placeholder="https://…"
-            />
-          </div>
+        <div className="grid gap-5 xl:grid-cols-2">
+          <PlayGroupImageField
+            playGroupId={group.id}
+            label={t("logoLabel")}
+            hint={t("logoHint")}
+            value={logo}
+            onChange={setLogo}
+            shape="square"
+          />
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="group-banner">{t("bannerLabel")}</Label>
-            <Input
-              id="group-banner"
-              type="url"
-              value={banner}
-              onChange={(event) => setBanner(event.target.value)}
-              placeholder="https://…"
-            />
-          </div>
+          <PlayGroupImageField
+            playGroupId={group.id}
+            label={t("bannerLabel")}
+            hint={t("bannerHint")}
+            value={banner}
+            onChange={setBanner}
+            shape="banner"
+          />
         </div>
 
         <fieldset className="flex flex-col gap-2">
