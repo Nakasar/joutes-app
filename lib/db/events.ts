@@ -4,6 +4,7 @@ import {getUserById} from "@/lib/db/users";
 import {getLairIdsNearLocation} from "./lairs";
 import {ObjectId} from "mongodb";
 import {DateTime} from "luxon";
+import {countRegisteredParticipants} from "@/lib/events/rules";
 
 const COLLECTION_NAME = "events";
 
@@ -1051,12 +1052,13 @@ export async function getEventById(eventId: string): Promise<Event | null> {
     runningState: event.runningState,
     participants: event.participants,
     participantRegistrations: event.participantRegistrations,
-    // Ne compter que les REGISTERED (cf. joinEventAction) : un participant
+    // Ne compter que les REGISTERED (cf. lib/events/rules.ts) : un participant
     // sans statut explicite est REGISTERED par défaut (addParticipantToEvent),
     // mais PRE_REGISTERED/EXCLUDED ne doivent pas compter dans le remplissage.
-    registeredParticipantsCount: (event.participants ?? []).filter(
-      (userId: string) => (event.participantRegistrations?.[userId] ?? 'REGISTERED') === 'REGISTERED'
-    ).length,
+    registeredParticipantsCount: countRegisteredParticipants({
+      participants: event.participants,
+      participantRegistrations: event.participantRegistrations,
+    }),
     preRegistration: event.preRegistration,
     maxParticipants: event.maxParticipants,
     favoritedBy: event.favoritedBy,

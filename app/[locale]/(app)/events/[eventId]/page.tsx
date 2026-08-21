@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { getEventById } from "@/lib/db/events.ts";
+import { canViewEvent } from "@/lib/events/rules.ts";
 import { getTournamentByEventId, canManageTournament } from "@/lib/db/tournaments.ts";
 import { Metadata } from "next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card.tsx";
@@ -129,10 +130,8 @@ const readEventAccess = cache(async (eventId: string) => {
   }
 
   const session = await auth.api.getSession({ headers: await headers() });
-  const isCreator = Boolean(session?.user && event.creatorId === session.user.id);
-  const isParticipant = Boolean(session?.user && event.participants?.includes(session.user.id));
 
-  return { event, isPrivateEvent, hasAccess: isCreator || isParticipant };
+  return { event, isPrivateEvent, hasAccess: canViewEvent(event, session?.user?.id) };
 });
 
 /**

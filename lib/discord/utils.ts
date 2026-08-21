@@ -1,7 +1,8 @@
-import {Event} from "@/lib/types/Event";
+import type {Event} from "@/lib/types/Event";
 import {ActionRowBuilder, ButtonBuilder, EmbedBuilder} from "@discordjs/builders";
 import {DateTime} from "luxon";
-import {APIEmbedField, ButtonStyle} from "discord-api-types/v10";
+import type {APIEmbedField} from "discord-api-types/v10";
+import {ButtonStyle} from "discord-api-types/v10";
 import {DiscordEmojis} from "@/app/discord/utils";
 
 export function makeEventDiscordInfoMessage(event: Event) {
