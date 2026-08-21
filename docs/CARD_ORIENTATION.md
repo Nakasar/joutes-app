@@ -18,8 +18,32 @@ c'est le cas de l'immense majorité du catalogue, et rien ne sert de l'écrire
 partout. `isLandscapeCard()` est la seule lecture à faire du champ.
 
 Étant listée dans `CARD_ATTRIBUTE_KEYS`, la propriété est recopiée sur les
-exemplaires qui reprennent les attributs du catalogue — cartes de booster,
-cartes de cube — sans plomberie supplémentaire.
+exemplaires qui reprennent les attributs du catalogue — les cartes d'un booster
+— sans plomberie supplémentaire.
+
+## Sur un exemplaire enregistré
+
+Une carte de liste de souhaits, de liste de vente, d'échange ou de cube n'est
+pas une carte du catalogue : c'est une copie, faite au moment où l'exemplaire a
+été créé, qui n'en garde que le nom, l'image et le numéro. Le sens d'impression
+n'y est **pas recopié**. Le recopier laisserait sans rien tous les exemplaires
+enregistrés avant l'arrivée du champ, et figerait sur chaque copie une valeur
+que le catalogue peut corriger.
+
+Il est donc relu à l'affichage, par `findLandscapeCards` /
+`withCardOrientation` (`lib/db/card-orientations.ts`) : une requête par lot de
+cartes affichées, qui ne remonte que les cartes paysage — une poignée dans un
+catalogue. Chaque chemin de lecture l'appelle une fois, à l'endroit où il
+appelle déjà les prix de marché, qui suivent la même logique et pour la même
+raison.
+
+L'identité d'une carte s'y lit d'abord sur `cardId`, puis sur son impression
+(extension + numéro) pour les entrées assez anciennes pour ne pas en porter. Le
+jeu borne les deux quand l'appelant le connaît — ni `cards.id` ni le couple
+extension/numéro ne sont uniques d'un jeu à l'autre. Les cartes d'un cube, qui
+n'emportent pas leur jeu, s'en passent : la recherche ne remontant que des
+cartes paysage, une confusion supposerait deux jeux partageant un identifiant
+*et* l'un d'eux imprimant cette carte en largeur.
 
 ## À l'import
 
@@ -56,10 +80,9 @@ dimension le réduit à un trait. Et elle est remplacée, donc dimensionnable m�
 en ligne — d'où le `display: block` du cadre, sans lequel une vignette qui ne
 déclare que `width` et `height` s'effondre.
 
-## Ce qui n'est pas couvert
+## Le formulaire d'administration
 
-Le sens d'impression suit la carte du catalogue. Les écrans qui affichent des
-copies enregistrées à part — listes de souhaits, listes de vente, échanges,
-cartes de cube — ne le connaissent pas : ces exemplaires ne recopient du
-catalogue que le nom, l'image et le numéro au moment où ils sont créés. Ils
-affichent donc les champs de bataille dans le sens de leur image, comme avant.
+Seul endroit où une carte paysage reste affichée telle quelle : l'aperçu de
+l'image dans `/admin/cards`. Ce qu'un administrateur y regarde, c'est le
+fichier qu'il vient de téléverser — le pivoter lui cacherait ce qu'il est en
+train de vérifier.

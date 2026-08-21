@@ -1,3 +1,5 @@
+import type { CardOrientation } from "@/lib/types/card";
+
 export type CubeVisibility = "private" | "unlisted" | "public";
 
 export type CubeDrawMode = "packs" | "random";
@@ -67,5 +69,7 @@ export type CubeCard = {
   setCode: string;
   collectorNumber: string;
   image: string;
+  /** Sens d'impression de la carte, relu du catalogue à l'affichage. */
+  orientation?: CardOrientation;
   createdAt: Date;
 };

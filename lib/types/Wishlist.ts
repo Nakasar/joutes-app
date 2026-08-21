@@ -1,3 +1,5 @@
+import type { CardOrientation } from "@/lib/types/card";
+
 export type WishlistVisibility = "private" | "unlisted" | "public";
 
 export type WishlistOwnerType = "user" | "playGroup";
@@ -32,6 +34,8 @@ export type WishlistItem = {
   collectorNumber: string;
   image: string;
   type?: string;
+  /** Sens d'impression de la carte, relu du catalogue à l'affichage. */
+  orientation?: CardOrientation;
   /** Variante d'impression souhaitée ; absente = version de base de la carte. */
   printingId?: string;
   printingName?: string;

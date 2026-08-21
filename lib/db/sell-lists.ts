@@ -6,6 +6,7 @@ import { SellList, SellListItem, SellListOwnerType } from "@/lib/types/SellList"
 import { getPlayGroupByIdAndUser, getPlayGroupById } from "@/lib/db/play-groups";
 import { getUserById } from "@/lib/db/users";
 import { getBadgesForUser, type UserBadges } from "@/lib/db/user-badges";
+import { withCardOrientation } from "@/lib/db/card-orientations";
 
 const SELL_LISTS_COLLECTION = "sellLists";
 const SELL_LIST_ITEMS_COLLECTION = "sellListItems";
@@ -282,7 +283,9 @@ export async function getSellListItems(
   ]);
 
   return {
-    items: docs.map(toSellListItem),
+    // Le sens d'impression appartient à la carte, pas à l'exemplaire mis en
+    // vente : il est relu du catalogue plutôt que recopié sur la ligne.
+    items: await withCardOrientation(docs.map(toSellListItem)),
     total,
     page,
     limit,

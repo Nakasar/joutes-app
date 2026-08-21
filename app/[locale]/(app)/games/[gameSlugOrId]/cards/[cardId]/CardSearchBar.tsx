@@ -6,6 +6,7 @@ import { BoosterCard } from "@/lib/types/booster.ts";
 import { Search } from "lucide-react";
 import { useRouter } from "@/i18n/navigation.ts";
 import { useLocale, useTranslations } from "next-intl";
+import CardImage from "@/components/cards/CardImage.tsx";
 
 export default function CardSearchBar() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -88,9 +89,11 @@ export default function CardSearchBar() {
               onClick={() => card.id && handleCardSelect(card.id)}
               className="w-full flex items-center gap-3 p-3 hover:bg-muted transition-colors text-left border-b last:border-b-0"
             >
-              <img
+              <CardImage
                 src={card.image}
                 alt={card.name}
+                orientation={card.orientation}
+                loading="lazy"
                 className="w-16 h-auto rounded"
               />
               <div className="flex-1">

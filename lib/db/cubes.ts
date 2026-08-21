@@ -5,6 +5,7 @@ import { ObjectId, WithId, Document } from "mongodb";
 import { Cube, CubeCard, CubeDrawConfig, CubePack, CubeVisibility } from "@/lib/types/Cube";
 import { getUserById } from "@/lib/db/users";
 import { getBadgesForUser, type UserBadges } from "@/lib/db/user-badges";
+import { withCardOrientation } from "@/lib/db/card-orientations";
 
 export const CUBES_COLLECTION = "cubes";
 export const CUBE_PACKS_COLLECTION = "cube-packs";
@@ -349,7 +350,9 @@ export async function getCubePackCards(packId: string): Promise<CubeCard[]> {
     .sort({ createdAt: 1, _id: 1 })
     .toArray();
 
-  return docs.map(toCubeCard);
+  // Le sens d'impression appartient à la carte du catalogue, pas à l'exemplaire
+  // déposé dans le paquet : il est relu à l'affichage.
+  return withCardOrientation(docs.map(toCubeCard));
 }
 
 export async function addCardToCubePack(

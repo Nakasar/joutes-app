@@ -1,3 +1,5 @@
+import type { CardOrientation } from "@/lib/types/card";
+
 export type SellListOwnerType = "user" | "playGroup";
 
 export type SellListCondition = "Damaged" | "Played" | "Good" | "Near Mint" | "Mint";
@@ -27,6 +29,8 @@ export type SellListItem = {
   collectorNumber: string;
   image: string;
   type?: string;
+  /** Sens d'impression de la carte, relu du catalogue à l'affichage. */
+  orientation?: CardOrientation;
   foil?: boolean;
   /** Variante d'impression de l'exemplaire mis en vente. */
   printingId?: string;

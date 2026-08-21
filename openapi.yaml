@@ -4737,6 +4737,7 @@ components:
         setCode: { type: string }
         collectorNumber: { type: string }
         image: { type: string }
+        orientation: { type: string, enum: [portrait, landscape], description: "Read back from the game's catalog on display; absent means `portrait`, and a landscape card is shown rotated a quarter turn." }
         createdAt: { type: string, format: date-time }
 
     CubeDrawRule:
@@ -4786,6 +4787,7 @@ components:
         setCode: { type: string }
         collectorNumber: { type: string }
         image: { type: string }
+        orientation: { type: string, enum: [portrait, landscape], description: "Read back from the game's catalog on display; absent means `portrait`, and a landscape card is shown rotated a quarter turn." }
 
     CubeDrawnPack:
       type: object
@@ -5164,6 +5166,7 @@ components:
         collectorNumber: { type: string }
         image: { type: string }
         type: { type: string }
+        orientation: { type: string, enum: [portrait, landscape], description: "Read back from the game's catalog on display; absent means `portrait`, and a landscape card is shown rotated a quarter turn." }
         foil: { type: boolean }
         language: { type: string, enum: [FR, EN, ZH, IT, JA, KO] }
         condition: { type: string, enum: [Damaged, Played, Good, "Near Mint", Mint] }
@@ -5202,6 +5205,7 @@ components:
         collectorNumber: { type: string }
         image: { type: string }
         type: { type: string }
+        orientation: { type: string, enum: [portrait, landscape], description: "Read back from the game's catalog on display; absent means `portrait`, and a landscape card is shown rotated a quarter turn." }
         quantity: { type: integer }
         note: { type: string }
         addedByUserId: { type: string }

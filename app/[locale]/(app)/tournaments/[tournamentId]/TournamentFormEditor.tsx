@@ -16,6 +16,7 @@ import type {
   TournamentFormField,
 } from "@/lib/types/Tournament.ts";
 import { CardAnswer, DecklistAnswer, FormAnswersView, LateBadge } from "./TournamentFormAnswers.tsx";
+import CardImage from "@/components/cards/CardImage.tsx";
 
 type FormPayload = {
   form: TournamentForm | null;
@@ -494,8 +495,13 @@ function CardPicker({
               className="flex w-full items-center gap-2.5 p-2 text-left transition-colors hover:bg-accent"
             >
               {card.image && (
-                // eslint-disable-next-line @next/next/no-img-element -- visuels servis par les CDN des jeux
-                <img src={card.image} alt="" className="h-12 w-auto rounded" />
+                <CardImage
+                  src={card.image}
+                  alt=""
+                  orientation={card.orientation}
+                  loading="lazy"
+                  className="h-12 w-auto rounded"
+                />
               )}
               <span className="min-w-0">
                 <span className="block truncate text-sm font-medium">{card.name}</span>

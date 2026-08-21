@@ -238,6 +238,8 @@ export type GameCardSummary = {
   collectorNumber?: string;
   lang?: string;
   image?: string;
+  /** Sens d'impression de la carte : une carte paysage s'affiche pivotée. */
+  orientation?: CardOrientation;
   source?: CardSource;
   manuallyEditedAt?: string;
 };
@@ -257,6 +259,7 @@ const CARD_SUMMARY_PROJECTION = {
   collectorNumber: 1,
   lang: 1,
   image: 1,
+  orientation: 1,
   source: 1,
   manuallyEditedAt: 1,
 } as const;

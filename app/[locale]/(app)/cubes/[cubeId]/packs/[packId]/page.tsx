@@ -51,13 +51,14 @@ async function CubePackPageContent({
         packLabel={packLabel}
         // L'éditeur n'affiche que l'identité des cartes : la date de création
         // reste côté serveur plutôt que de traverser sous deux formes.
-        initialCards={cards.map(({ id, cardId, name, setCode, collectorNumber, image }) => ({
+        initialCards={cards.map(({ id, cardId, name, setCode, collectorNumber, image, orientation }) => ({
           id,
           cardId,
           name,
           setCode,
           collectorNumber,
           image,
+          orientation,
         }))}
         canEdit={access.canEdit}
       />

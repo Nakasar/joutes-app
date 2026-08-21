@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation.ts";
 import type { GameCardSummary } from "@/lib/db/cards.ts";
 import { searchCards } from "./actions.ts";
 import CardOriginBadges from "./CardOriginBadges.tsx";
+import CardImage from "@/components/cards/CardImage.tsx";
 
 type Props = {
   gameId: string;
@@ -31,10 +32,11 @@ function CardRow({
   const content = (
     <>
       {card.image ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <CardImage
           src={card.image}
           alt=""
+          orientation={card.orientation}
+          frame="10/14"
           loading="lazy"
           className="h-14 w-10 flex-shrink-0 rounded border object-cover"
         />

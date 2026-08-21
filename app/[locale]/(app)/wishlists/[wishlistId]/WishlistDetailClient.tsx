@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useRouter } from "@/i18n/navigation.ts";
-import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
@@ -360,7 +359,14 @@ export default function WishlistDetailClient({
           {items.map((item) => (
             <div key={item.id} className="flex flex-col overflow-hidden rounded-xl border bg-card">
               <div className="relative aspect-[3/4] w-full overflow-hidden bg-muted">
-                <Image src={item.image} alt={item.name} fill unoptimized sizes="200px" className="object-cover" />
+                <CardImage
+                  src={item.image}
+                  alt={item.name}
+                  orientation={item.orientation}
+                  frame="3/4"
+                  loading="lazy"
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
                 {item.gameName && (
                   <span className="absolute left-1.5 top-1.5 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white">
                     {item.gameName}
