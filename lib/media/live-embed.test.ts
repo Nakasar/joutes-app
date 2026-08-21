@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { isSupportedLiveUrl, readLiveEmbed } from "./live";
+import { isSupportedLiveUrl, readLiveEmbed } from "./live-embed";
 
 /**
- * Le direct d'un lieu.
+ * Le direct d'un lieu ou d'un groupe de jeu.
  *
  * Ce que ces cas verrouillent : le lecteur Twitch ne démarre pas sans le
  * domaine parent, et celui-ci doit arriver sans port — c'est la forme que porte

@@ -8,7 +8,7 @@ import { Loader2, Pencil, Radio, Square } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog.tsx";
-import { isSupportedLiveUrl } from "@/lib/lairs/live.ts";
+import { isSupportedLiveUrl } from "@/lib/media/live-embed.ts";
 
 import { setLairLiveStream, stopLairLiveStream, type LairLiveError } from "./live-actions.ts";
 

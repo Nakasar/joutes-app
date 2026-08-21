@@ -11,6 +11,7 @@ import { deleteDeckAsModerator } from "@/lib/db/decks";
 import { deleteWishlistAsModerator, deleteWishlistsForPlayGroup } from "@/lib/db/wishlists";
 import { deleteSellListAsModerator, deleteSellListsForPlayGroup } from "@/lib/db/sell-lists";
 import { deletePlayGroup } from "@/lib/db/play-groups";
+import { deletePlayGroupSessions } from "@/lib/db/play-group-sessions";
 import { deleteEvent } from "@/lib/db/events";
 import { deleteLair } from "@/lib/db/lairs";
 import { deleteLeague } from "@/lib/db/leagues";
@@ -276,7 +277,11 @@ const HANDLERS: Record<ReportableContentType, ReportableContentHandler> = {
         return false;
       }
 
-      await Promise.all([deleteWishlistsForPlayGroup(id), deleteSellListsForPlayGroup(id)]);
+      await Promise.all([
+        deleteWishlistsForPlayGroup(id),
+        deleteSellListsForPlayGroup(id),
+        deletePlayGroupSessions(id),
+      ]);
       return true;
     },
   },

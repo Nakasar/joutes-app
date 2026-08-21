@@ -1,6 +1,10 @@
 /**
- * Le direct d'un lieu : reconnaître la plateforme, et en tirer une URL de
- * lecteur intégrable.
+ * Un direct : reconnaître la plateforme, et en tirer une URL de lecteur
+ * intégrable.
+ *
+ * Partagé par les lieux et les groupes de jeu — les deux acceptent les mêmes
+ * plateformes et affichent le même lecteur, et une seconde copie de cette
+ * reconnaissance d'URL divergerait au premier correctif.
  *
  * Twitch exige que le domaine de la page qui intègre son lecteur soit annoncé
  * dans le paramètre `parent`, faute de quoi il refuse de démarrer. C'est
@@ -8,10 +12,10 @@
  * l'écriture, il dépend du déploiement.
  */
 
-export type LairLivePlatform = "twitch" | "youtube";
+export type LivePlatform = "twitch" | "youtube";
 
-export type LairLiveEmbed = {
-  platform: LairLivePlatform;
+export type LiveEmbed = {
+  platform: LivePlatform;
   /** L'URL à donner à l'`iframe`. */
   embedUrl: string;
   /** L'URL publique, pour la légende et le repli en lien. */
@@ -33,7 +37,7 @@ export function isSupportedLiveUrl(url: string): boolean {
   return readLiveEmbed(url, "localhost") !== null;
 }
 
-export function readLiveEmbed(url: string, parentHost: string): LairLiveEmbed | null {
+export function readLiveEmbed(url: string, parentHost: string): LiveEmbed | null {
   const parsed = parse(url);
   if (!parsed || (parsed.protocol !== "https:" && parsed.protocol !== "http:")) {
     return null;

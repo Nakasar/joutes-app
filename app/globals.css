@@ -168,6 +168,40 @@
   --lair-accent-sweep: linear-gradient(90deg, var(--lair-accent-16), var(--lair-accent-4));
 }
 
+/*
+ * La marque blanche d'un groupe de jeu.
+ *
+ * Même mécanique que celle des lieux, et pour les mêmes raisons : l'accent
+ * arrive comme `--group-accent`, posé en ligne par `readPlayGroupAccent` sur le
+ * conteneur qui porte `.play-group-theme`, et les déclinaisons se dérivent ici
+ * sur ce même élément.
+ *
+ * Les couleurs de statut, elles, ne sont pas personnalisables : un direct est
+ * rouge, une disponibilité verte, une information cyan et la compétition dorée,
+ * quel que soit l'accent du groupe. Un groupe qui pourrait teindre son « en
+ * direct » en vert rendrait la pastille illisible d'une page à l'autre.
+ */
+.play-group-theme {
+  --group-accent: var(--primary);
+  --group-accent-foreground: var(--primary-foreground);
+
+  /* Le texte à l'accent : éclairci, pour tenir sur le fond sombre des cartes. */
+  --group-accent-text: color-mix(in oklab, var(--group-accent) 82%, white 18%);
+
+  --group-accent-8: color-mix(in oklab, var(--group-accent) 8%, transparent);
+  --group-accent-10: color-mix(in oklab, var(--group-accent) 10%, transparent);
+  --group-accent-14: color-mix(in oklab, var(--group-accent) 14%, transparent);
+  --group-accent-16: color-mix(in oklab, var(--group-accent) 16%, transparent);
+  --group-accent-20: color-mix(in oklab, var(--group-accent) 20%, transparent);
+  --group-accent-24: color-mix(in oklab, var(--group-accent) 24%, transparent);
+  --group-accent-28: color-mix(in oklab, var(--group-accent) 28%, transparent);
+  --group-accent-34: color-mix(in oklab, var(--group-accent) 34%, transparent);
+  --group-accent-40: color-mix(in oklab, var(--group-accent) 40%, transparent);
+
+  /* Le dégradé des annonces réservées au groupe. */
+  --group-accent-sweep: linear-gradient(90deg, var(--group-accent-14), var(--group-accent-8));
+}
+
 @layer utilities {
   @keyframes fade-in {
     from {

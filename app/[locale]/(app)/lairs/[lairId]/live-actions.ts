@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdminOrOwner } from "@/lib/middleware/admin.ts";
 import { lairIdSchema } from "@/lib/schemas/lair.schema.ts";
 import * as lairsDb from "@/lib/db/lairs.ts";
-import { isSupportedLiveUrl } from "@/lib/lairs/live.ts";
+import { isSupportedLiveUrl } from "@/lib/media/live-embed.ts";
 
 /**
  * Les échecs possibles, en codes plutôt qu'en phrases.

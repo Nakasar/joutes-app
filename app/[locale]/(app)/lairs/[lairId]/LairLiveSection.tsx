@@ -3,7 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { DateTime } from "luxon";
 import { Eye, Radio } from "lucide-react";
 
-import { readLiveEmbed } from "@/lib/lairs/live.ts";
+import { readLiveEmbed } from "@/lib/media/live-embed.ts";
 import type { Lair } from "@/lib/types/Lair";
 
 import LairLiveControls from "./LairLiveControls.tsx";
