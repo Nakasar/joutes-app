@@ -7,11 +7,28 @@ import {
   updatePrivateLairAction,
   deletePrivateLairAction,
   regenerateInvitationCodeAction,
+  type PrivateLairError,
 } from "./private-lairs-actions.ts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Alert, AlertDescription } from "@/components/ui/alert.tsx";
+
+/**
+ * Les refus de `regenerateInvitationCodeAction`, dans la langue de cet écran.
+ *
+ * L'action ne rend plus que des codes — elle ne sait pas dans quelle langue la
+ * page est rendue. Cet écran-ci n'étant pas traduit, il reprend mot pour mot
+ * les phrases qu'elle rendait auparavant : rien ne change pour qui l'utilise.
+ */
+const REGENERATE_ERRORS: Record<PrivateLairError, string> = {
+  NOT_AUTHENTICATED: "Non authentifié",
+  LAIR_NOT_FOUND: "Lair introuvable",
+  NOT_OWNER: "Vous n'êtes pas propriétaire de ce lieu",
+  NOT_PRIVATE: "Ce lieu n'est pas privé",
+  IS_OWNER: "Vous ne pouvez pas retirer un propriétaire",
+  FAILED: "Erreur lors de la régénération du code d'invitation",
+};
 import {
   Dialog,
   DialogContent,
@@ -150,7 +167,7 @@ export default function PrivateLairsManager({ userOwnedLairs }: PrivateLairsMana
     startTransition(async () => {
       const result = await regenerateInvitationCodeAction(lair.id);
 
-      if (result.success && result.invitationCode) {
+      if (result.success) {
         setSuccess("Code d'invitation régénéré avec succès !");
         setOwnedLairs(
           ownedLairs.map((l) =>
@@ -164,7 +181,7 @@ export default function PrivateLairsManager({ userOwnedLairs }: PrivateLairsMana
           setSelectedLairForQR({ ...lair, invitationCode: result.invitationCode });
         }
       } else {
-        setError(result.error || "Erreur lors de la régénération du code");
+        setError(REGENERATE_ERRORS[result.error]);
         setSuccess(null);
       }
     });

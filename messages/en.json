@@ -1218,6 +1218,89 @@
       "eventSite": "Event website"
     },
     "manage": {
+      "details": {
+        "fieldNames": {"name":"Venue name","banner":"Banner","address":"Address","website":"Website","location":"GPS coordinates","games":"Available games"},
+        "saved": "Changes saved.",
+        "save": "Save changes",
+        "saving": "Saving…",
+        "locationHint": "Format: latitude, longitude (for example 48.8566, 2.3522 for Paris).",
+        "noGames": "No game available. Add some in the admin area first.",
+        "fields": {
+          "name": "Venue name",
+          "banner": "Banner URL",
+          "address": "Address (optional)",
+          "website": "Website (optional)",
+          "location": "GPS coordinates (optional)",
+          "games": "Available games"
+        },
+        "placeholders": {
+          "banner": "https://example.com/banner.jpg",
+          "address": "123 Joust Street, London",
+          "website": "https://example.com",
+          "location": "48.8566, 2.3522"
+        },
+        "errors": {
+          "notFound": "This venue could not be found.",
+          "userNotFound": "No account matches that address.",
+          "invalid": "Some fields are invalid.",
+          "invalidField": "The “{field}” field is invalid.",
+          "failed": "Saving failed. Try again in a moment."
+        }
+      },
+      "owners": {
+        "add": "Add",
+        "added": "{name} was added as an owner.",
+        "removed": "The owner was removed.",
+        "empty": "No owner yet.",
+        "emailPlaceholder": "email@example.com",
+        "errors": {
+          "invalidEmail": "That email address is invalid.",
+          "invalid": "The request is invalid.",
+          "emailRequired": "Enter an email address.",
+          "notFound": "This venue could not be found.",
+          "userNotFound": "No account matches that address.",
+          "invalid": "That email address is invalid.",
+          "failed": "The operation failed. Try again in a moment."
+        }
+      },
+      "invitation": {
+        "description": "Share this link or QR code to invite players to follow this private venue.",
+        "copy": "Copy",
+        "regenerate": "Regenerate the code",
+        "title": "Invitation code",
+        "regenerateConfirm": "Regenerate the invitation code? The old one will stop working.",
+        "regenerated": "Invitation code regenerated.",
+        "copied": "Copied!",
+        "qrAlt": "Invitation QR code",
+        "errors": {
+          "notAuthenticated": "You are not signed in.",
+          "lairNotFound": "This venue could not be found.",
+          "notOwner": "Only an owner of this venue can regenerate its code.",
+          "notPrivate": "This venue is not private.",
+          "isOwner": "You cannot remove an owner.",
+          "failed": "Regenerating the code failed. Try again in a moment.",
+          "regenerateFailed": "Regenerating the code failed. Try again in a moment."
+        }
+      },
+      "followers": {
+        "remove": "Remove",
+        "removeConfirm": "Remove {name} from this venue? They will no longer see its events.",
+        "removed": "{name} was removed.",
+        "titleWithCount": "Followers ({count})",
+        "emptyHint": "Share the invitation code to invite players.",
+        "title": "Followers",
+        "description": "Manage the people following this private venue.",
+        "empty": "No follower yet.",
+        "errors": {
+          "notAuthenticated": "You are not signed in.",
+          "lairNotFound": "This venue could not be found.",
+          "notOwner": "Only an owner of this venue can remove a follower.",
+          "notPrivate": "This venue is not private.",
+          "isOwner": "An owner cannot be removed from the followers.",
+          "failed": "Removing failed. Try again in a moment.",
+          "removeFailed": "Removing failed. Try again in a moment."
+        }
+      },
       "proGrant": {
         "title": "Pro access granted by the team",
         "cardDescription": "Joutes administrators only. Opens Joutes Pro features for this venue without going through a subscription.",
@@ -1256,6 +1339,26 @@
         "subscription": "Subscription"
       },
       "customization": {
+        "organizers": {
+          "title": "Organisers",
+          "description": "The venue's team, shown in the About tab's column.",
+          "name": "Name",
+          "namePlaceholder": "Camille",
+          "role": "Role",
+          "rolePlaceholder": "TCG lead",
+          "add": "Add an organiser",
+          "remove": "Remove {name}"
+        },
+        "rhythm": {
+          "title": "Usual rhythm",
+          "description": "What happens here on ordinary days, shown in the Agenda tab's column.",
+          "label": "When",
+          "labelPlaceholder": "Friday evening",
+          "value": "What happens",
+          "valuePlaceholder": "Riftbound",
+          "add": "Add a row",
+          "remove": "Remove {label}"
+        },
         "proBadge": "JOUTES PRO ACTIVE",
         "proLocked": "Joutes Pro",
         "save": "Save",

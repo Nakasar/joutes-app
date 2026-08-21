@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Flag } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -49,7 +49,15 @@ export default function ReportButton({
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  if (isSessionPending || !session?.user) {
+  // Le premier rendu du navigateur doit reproduire celui du serveur, qui ne
+  // rend rien : `useSession` sert la session depuis son cache **dès la première
+  // passe** côté client, si bien que React comparait un bouton à du vide et
+  // rejetait l'hydratation de tout l'arbre au-dessus. Attendre le montage
+  // aligne les deux, au prix d'une image d'attente pour qui est connecté.
+  const [hasMounted, setHasMounted] = useState(false);
+  useEffect(() => setHasMounted(true), []);
+
+  if (!hasMounted || isSessionPending || !session?.user) {
     return null;
   }
 

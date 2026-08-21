@@ -1218,6 +1218,89 @@
       "eventSite": "Veranstaltungswebsite"
     },
     "manage": {
+      "details": {
+        "fieldNames": {"name":"Name des Ortes","banner":"Banner","address":"Adresse","website":"Website","location":"GPS-Koordinaten","games":"Verfügbare Spiele"},
+        "saved": "Änderungen gespeichert.",
+        "save": "Änderungen speichern",
+        "saving": "Wird gespeichert…",
+        "locationHint": "Format: Breitengrad, Längengrad (zum Beispiel 48.8566, 2.3522 für Paris).",
+        "noGames": "Kein Spiel verfügbar. Füge zuerst welche im Adminbereich hinzu.",
+        "fields": {
+          "name": "Name des Ortes",
+          "banner": "Banner-URL",
+          "address": "Adresse (optional)",
+          "website": "Website (optional)",
+          "location": "GPS-Koordinaten (optional)",
+          "games": "Verfügbare Spiele"
+        },
+        "placeholders": {
+          "banner": "https://beispiel.de/banner.jpg",
+          "address": "Musterstraße 123, Berlin",
+          "website": "https://beispiel.de",
+          "location": "48.8566, 2.3522"
+        },
+        "errors": {
+          "notFound": "Dieser Ort wurde nicht gefunden.",
+          "userNotFound": "Kein Konto passt zu dieser Adresse.",
+          "invalid": "Einige Felder sind ungültig.",
+          "invalidField": "Das Feld „{field}“ ist ungültig.",
+          "failed": "Speichern fehlgeschlagen. Versuche es gleich noch einmal."
+        }
+      },
+      "owners": {
+        "add": "Hinzufügen",
+        "added": "{name} wurde als Eigentümer hinzugefügt.",
+        "removed": "Der Eigentümer wurde entfernt.",
+        "empty": "Noch kein Eigentümer.",
+        "emailPlaceholder": "email@beispiel.de",
+        "errors": {
+          "invalidEmail": "Diese E-Mail-Adresse ist ungültig.",
+          "invalid": "Die Anfrage ist ungültig.",
+          "emailRequired": "Gib eine E-Mail-Adresse ein.",
+          "notFound": "Dieser Ort wurde nicht gefunden.",
+          "userNotFound": "Kein Konto passt zu dieser Adresse.",
+          "invalid": "Diese E-Mail-Adresse ist ungültig.",
+          "failed": "Der Vorgang ist fehlgeschlagen. Versuche es gleich noch einmal."
+        }
+      },
+      "invitation": {
+        "description": "Teile diesen Link oder QR-Code, um Spieler einzuladen, diesem privaten Ort zu folgen.",
+        "copy": "Kopieren",
+        "regenerate": "Code neu erzeugen",
+        "title": "Einladungscode",
+        "regenerateConfirm": "Einladungscode neu erzeugen? Der alte funktioniert dann nicht mehr.",
+        "regenerated": "Einladungscode neu erzeugt.",
+        "copied": "Kopiert!",
+        "qrAlt": "Einladungs-QR-Code",
+        "errors": {
+          "notAuthenticated": "Du bist nicht angemeldet.",
+          "lairNotFound": "Dieser Ort wurde nicht gefunden.",
+          "notOwner": "Nur ein Eigentümer dieses Ortes kann seinen Code neu erzeugen.",
+          "notPrivate": "Dieser Ort ist nicht privat.",
+          "isOwner": "Du kannst keinen Eigentümer entfernen.",
+          "failed": "Das Neuerzeugen des Codes ist fehlgeschlagen. Versuche es gleich noch einmal.",
+          "regenerateFailed": "Das Neuerzeugen des Codes ist fehlgeschlagen. Versuche es gleich noch einmal."
+        }
+      },
+      "followers": {
+        "remove": "Entfernen",
+        "removeConfirm": "{name} von diesem Ort entfernen? Diese Person sieht seine Veranstaltungen dann nicht mehr.",
+        "removed": "{name} wurde entfernt.",
+        "titleWithCount": "Abonnenten ({count})",
+        "emptyHint": "Teile den Einladungscode, um Spieler einzuladen.",
+        "title": "Abonnenten",
+        "description": "Verwalte die Personen, die diesem privaten Ort folgen.",
+        "empty": "Noch keine Abonnenten.",
+        "errors": {
+          "notAuthenticated": "Du bist nicht angemeldet.",
+          "lairNotFound": "Dieser Ort wurde nicht gefunden.",
+          "notOwner": "Nur ein Eigentümer dieses Ortes kann einen Abonnenten entfernen.",
+          "notPrivate": "Dieser Ort ist nicht privat.",
+          "isOwner": "Ein Eigentümer kann nicht aus den Abonnenten entfernt werden.",
+          "failed": "Das Entfernen ist fehlgeschlagen. Versuche es gleich noch einmal.",
+          "removeFailed": "Das Entfernen ist fehlgeschlagen. Versuche es gleich noch einmal."
+        }
+      },
       "proGrant": {
         "title": "Vom Team gewährter Pro-Zugang",
         "cardDescription": "Nur für Joutes-Administratoren. Schaltet die Joutes-Pro-Funktionen für diesen Ort frei, ohne Abonnement.",
@@ -1256,6 +1339,26 @@
         "subscription": "Abonnement"
       },
       "customization": {
+        "organizers": {
+          "title": "Organisatoren",
+          "description": "Das Team des Ortes, in der Spalte des Tabs „Über uns“.",
+          "name": "Name",
+          "namePlaceholder": "Camille",
+          "role": "Rolle",
+          "rolePlaceholder": "TCG-Leitung",
+          "add": "Organisator hinzufügen",
+          "remove": "{name} entfernen"
+        },
+        "rhythm": {
+          "title": "Üblicher Rhythmus",
+          "description": "Was hier an gewöhnlichen Tagen läuft, in der Spalte des Tabs „Kalender“.",
+          "label": "Wann",
+          "labelPlaceholder": "Freitagabend",
+          "value": "Was läuft",
+          "valuePlaceholder": "Riftbound",
+          "add": "Zeile hinzufügen",
+          "remove": "{label} entfernen"
+        },
         "proBadge": "JOUTES PRO AKTIV",
         "proLocked": "Joutes Pro",
         "save": "Speichern",

@@ -14,6 +14,26 @@ import {
 } from "@/lib/db/lairs.ts";
 import { addLairToUser, removeLairFromUser } from "@/lib/db/users.ts";
 import { lairSchema } from "@/lib/schemas/lair.schema.ts";
+
+/**
+ * Les échecs des deux actions que la gestion d'un lieu appelle, en codes.
+ *
+ * Une action serveur ne sait pas dans quelle langue la page est rendue. Ces
+ * deux-là renvoyaient des phrases françaises, et l'écran qui les relayait
+ * n'avait d'autre choix que de les afficher telles quelles — ou, en les
+ * remplaçant par un message générique, de dire « réessayez » à propos d'un
+ * refus qui ne passera jamais.
+ *
+ * Les autres actions de ce fichier ne servent que les écrans `/account` et
+ * gardent leurs phrases : les convertir dépasserait ce qui est traité ici.
+ */
+export type PrivateLairError =
+  | "NOT_AUTHENTICATED"
+  | "LAIR_NOT_FOUND"
+  | "NOT_OWNER"
+  | "NOT_PRIVATE"
+  | "IS_OWNER"
+  | "FAILED";
 import { generateInvitationCode, isValidInvitationCode } from "@/lib/utils/invitation-codes.ts";
 
 export async function createPrivateLair(
@@ -183,28 +203,28 @@ export async function deletePrivateLairAction(lairId: string): Promise<{ success
 
 export async function regenerateInvitationCodeAction(
   lairId: string
-): Promise<{ success: boolean; error?: string; invitationCode?: string }> {
+): Promise<{ success: true; invitationCode: string } | { success: false; error: PrivateLairError }> {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
 
     if (!session?.user?.id) {
-      return { success: false, error: "Non authentifié" };
+      return { success: false, error: "NOT_AUTHENTICATED" };
     }
 
     // Vérifier que le lair existe et que l'utilisateur en est propriétaire
     const lair = await getLairById(lairId);
     if (!lair) {
-      return { success: false, error: "Lair introuvable" };
+      return { success: false, error: "LAIR_NOT_FOUND" };
     }
 
     if (!lair.owners.includes(session.user.id)) {
-      return { success: false, error: "Vous n'êtes pas propriétaire de ce lieu" };
+      return { success: false, error: "NOT_OWNER" };
     }
 
     if (!lair.isPrivate) {
-      return { success: false, error: "Ce lieu n'est pas privé" };
+      return { success: false, error: "NOT_PRIVATE" };
     }
 
     // Générer un nouveau code d'invitation
@@ -212,7 +232,7 @@ export async function regenerateInvitationCodeAction(
     const result = await regenerateInvitationCode(lairId, newCode);
 
     if (!result) {
-      return { success: false, error: "Erreur lors de la régénération du code d'invitation" };
+      return { success: false, error: "FAILED" };
     }
 
     revalidatePath(`/lairs/${lairId}/manage`);
@@ -220,7 +240,7 @@ export async function regenerateInvitationCodeAction(
     return { success: true, invitationCode: newCode };
   } catch (error) {
     console.error("Erreur lors de la régénération du code d'invitation:", error);
-    return { success: false, error: "Erreur serveur" };
+    return { success: false, error: "FAILED" };
   }
 }
 
@@ -268,40 +288,40 @@ export async function acceptInvitationAction(
 export async function removeFollowerFromPrivateLair(
   lairId: string,
   userId: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: true } | { success: false; error: PrivateLairError }> {
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
 
     if (!session?.user?.id) {
-      return { success: false, error: "Non authentifié" };
+      return { success: false, error: "NOT_AUTHENTICATED" };
     }
 
     // Vérifier que le lair existe et que l'utilisateur en est propriétaire
     const lair = await getLairById(lairId);
     if (!lair) {
-      return { success: false, error: "Lair introuvable" };
+      return { success: false, error: "LAIR_NOT_FOUND" };
     }
 
     if (!lair.owners.includes(session.user.id)) {
-      return { success: false, error: "Vous n'êtes pas propriétaire de ce lieu" };
+      return { success: false, error: "NOT_OWNER" };
     }
 
     if (!lair.isPrivate) {
-      return { success: false, error: "Ce lieu n'est pas privé" };
+      return { success: false, error: "NOT_PRIVATE" };
     }
 
     // Empêcher de retirer un propriétaire
     if (lair.owners.includes(userId)) {
-      return { success: false, error: "Vous ne pouvez pas retirer un propriétaire" };
+      return { success: false, error: "IS_OWNER" };
     }
 
     // Retirer le lair de la liste des lairs suivis par l'utilisateur
     const result = await removeLairFromUser(userId, lairId);
 
     if (!result) {
-      return { success: false, error: "Erreur lors du retrait de l'utilisateur" };
+      return { success: false, error: "FAILED" };
     }
 
     revalidatePath(`/lairs/${lairId}/manage`);
@@ -309,6 +329,6 @@ export async function removeFollowerFromPrivateLair(
     return { success: true };
   } catch (error) {
     console.error("Erreur lors du retrait de l'utilisateur:", error);
-    return { success: false, error: "Erreur serveur" };
+    return { success: false as const, error: "FAILED" as const };
   }
 }

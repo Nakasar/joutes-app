@@ -1,7 +1,24 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState, useTransition, useEffect } from "react";
-import { regenerateInvitationCodeAction } from "@/app/[locale]/(app)/account/private-lairs-actions.ts";
+import { regenerateInvitationCodeAction, type PrivateLairError } from "@/app/[locale]/(app)/account/private-lairs-actions.ts";
+
+/**
+ * Les refus de l'action serveur, traduits ici.
+ *
+ * Ils sont distingués parce qu'ils ne se valent pas : « vous n'êtes pas
+ * propriétaire » ne passera jamais, et inviter à réessayer y était trompeur.
+ */
+const ERROR_KEYS: Record<PrivateLairError, string> = {
+  NOT_AUTHENTICATED: "errors.notAuthenticated",
+  LAIR_NOT_FOUND: "errors.lairNotFound",
+  NOT_OWNER: "errors.notOwner",
+  NOT_PRIVATE: "errors.notPrivate",
+  IS_OWNER: "errors.isOwner",
+  FAILED: "errors.failed",
+};
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Alert, AlertDescription } from "@/components/ui/alert.tsx";
@@ -20,6 +37,7 @@ export default function PrivateLairInvitationManager({
   lairName,
   initialInvitationCode,
 }: PrivateLairInvitationManagerProps) {
+  const t = useTranslations("Lairs.manage.invitation");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -63,7 +81,7 @@ export default function PrivateLairInvitationManager({
   const handleRegenerateCode = () => {
     if (
       !confirm(
-        "Êtes-vous sûr de vouloir régénérer le code d'invitation ? L'ancien code ne fonctionnera plus."
+        t("regenerateConfirm")
       )
     ) {
       return;
@@ -72,12 +90,12 @@ export default function PrivateLairInvitationManager({
     startTransition(async () => {
       const result = await regenerateInvitationCodeAction(lairId);
 
-      if (result.success && result.invitationCode) {
-        setSuccess("Code d'invitation régénéré avec succès !");
+      if (result.success) {
+        setSuccess(t("regenerated"));
         setInvitationCode(result.invitationCode);
         setError(null);
       } else {
-        setError(result.error || "Erreur lors de la régénération du code");
+        setError(t(ERROR_KEYS[result.error]));
         setSuccess(null);
       }
     });
@@ -90,9 +108,9 @@ export default function PrivateLairInvitationManager({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Code d&apos;invitation</CardTitle>
+        <CardTitle>{t("title")}</CardTitle>
         <CardDescription>
-          Partagez ce lien ou ce QR code pour inviter des utilisateurs à suivre ce lieu privé.
+          {t("description")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -122,11 +140,11 @@ export default function PrivateLairInvitationManager({
               onClick={copyInvitationUrl}
             >
               {copiedCode ? (
-                "Copié !"
+                t("copied")
               ) : (
                 <>
                   <Copy className="h-4 w-4 mr-2" />
-                  Copier
+                  {t("copy")}
                 </>
               )}
             </Button>
@@ -136,7 +154,7 @@ export default function PrivateLairInvitationManager({
             {qrCodeUrl ? (
               <img
                 src={qrCodeUrl}
-                alt="QR Code d'invitation"
+                alt={t("qrAlt")}
                 className="w-48 h-48 border-4 border-gray-200 rounded-lg"
               />
             ) : (
@@ -158,7 +176,7 @@ export default function PrivateLairInvitationManager({
             ) : (
               <RefreshCw className="mr-2 h-4 w-4" />
             )}
-            Régénérer le code
+            {t("regenerate")}
           </Button>
         </div>
       </CardContent>

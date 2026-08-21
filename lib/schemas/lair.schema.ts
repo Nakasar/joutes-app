@@ -95,6 +95,31 @@ export const lairSchema = z.object({
   }
 });
 
+/**
+ * Les seuls champs que l'onglet « Détails » de la gestion d'un lieu envoie.
+ *
+ * Un schéma à part, et non `lairSchema.omit(...)`, pour deux raisons.
+ *
+ * D'abord parce que `.omit()` **lève** : Zod refuse de l'appliquer à un objet
+ * portant des refinements, ce que `lairSchema` fait depuis son `superRefine`.
+ * L'appel partait donc en exception à chaque enregistrement, attrapée par le
+ * `catch` de l'action — l'onglet ne sauvegardait plus rien du tout, en
+ * annonçant une panne générique.
+ *
+ * Ensuite parce que réutiliser `lairSchema` aurait réintroduit ses valeurs par
+ * défaut dans la charge écrite : `isPrivate` serait retombé à `false` — un lieu
+ * privé redevenu public en enregistrant son nom — et `eventsSourceUrls` à `[]`.
+ * Ce que le formulaire n'envoie pas ne doit pas être réécrit.
+ */
+export const lairDetailsSchema = z.object({
+  name: z.string().min(1, "Le nom du lieu est requis").max(200, "Le nom est trop long"),
+  banner: z.url("L'URL de la bannière doit être valide").optional(),
+  games: z.array(objectIdSchema).default([]),
+  location: geoJSONPointSchema,
+  address: z.string().max(500, "L'adresse est trop longue").optional(),
+  website: z.url("L'URL du site web doit être valide").optional().or(z.literal("")),
+});
+
 export const lairIdSchema = objectIdSchema;
 
 export type LairInput = z.infer<typeof lairSchema>;

@@ -1218,6 +1218,89 @@
       "eventSite": "Sito dell'evento"
     },
     "manage": {
+      "details": {
+        "fieldNames": {"name":"Nome del locale","banner":"Banner","address":"Indirizzo","website":"Sito web","location":"Coordinate GPS","games":"Giochi disponibili"},
+        "saved": "Modifiche salvate.",
+        "save": "Salva le modifiche",
+        "saving": "Salvataggio…",
+        "locationHint": "Formato: latitudine, longitudine (per esempio 48.8566, 2.3522 per Parigi).",
+        "noGames": "Nessun gioco disponibile. Aggiungine prima nell'area di amministrazione.",
+        "fields": {
+          "name": "Nome del locale",
+          "banner": "URL del banner",
+          "address": "Indirizzo (facoltativo)",
+          "website": "Sito web (facoltativo)",
+          "location": "Coordinate GPS (facoltativo)",
+          "games": "Giochi disponibili"
+        },
+        "placeholders": {
+          "banner": "https://esempio.it/banner.jpg",
+          "address": "Via della Giostra 123, Roma",
+          "website": "https://esempio.it",
+          "location": "48.8566, 2.3522"
+        },
+        "errors": {
+          "notFound": "Questo locale non è stato trovato.",
+          "userNotFound": "Nessun account corrisponde a questo indirizzo.",
+          "invalid": "Alcuni campi non sono validi.",
+          "invalidField": "Il campo « {field} » non è valido.",
+          "failed": "Salvataggio non riuscito. Riprova tra un istante."
+        }
+      },
+      "owners": {
+        "add": "Aggiungi",
+        "added": "{name} è stato aggiunto come proprietario.",
+        "removed": "Il proprietario è stato rimosso.",
+        "empty": "Ancora nessun proprietario.",
+        "emailPlaceholder": "email@esempio.it",
+        "errors": {
+          "invalidEmail": "Questo indirizzo e-mail non è valido.",
+          "invalid": "La richiesta non è valida.",
+          "emailRequired": "Inserisci un indirizzo e-mail.",
+          "notFound": "Questo locale non è stato trovato.",
+          "userNotFound": "Nessun account corrisponde a questo indirizzo.",
+          "invalid": "Questo indirizzo e-mail non è valido.",
+          "failed": "L'operazione non è riuscita. Riprova tra un istante."
+        }
+      },
+      "invitation": {
+        "description": "Condividi questo link o QR code per invitare giocatori a seguire questo locale privato.",
+        "copy": "Copia",
+        "regenerate": "Rigenera il codice",
+        "title": "Codice d'invito",
+        "regenerateConfirm": "Rigenerare il codice d'invito? Quello vecchio smetterà di funzionare.",
+        "regenerated": "Codice d'invito rigenerato.",
+        "copied": "Copiato!",
+        "qrAlt": "QR code d'invito",
+        "errors": {
+          "notAuthenticated": "Non hai effettuato l'accesso.",
+          "lairNotFound": "Questo locale non è stato trovato.",
+          "notOwner": "Solo un proprietario di questo locale può rigenerarne il codice.",
+          "notPrivate": "Questo locale non è privato.",
+          "isOwner": "Non puoi rimuovere un proprietario.",
+          "failed": "La rigenerazione del codice non è riuscita. Riprova tra un istante.",
+          "regenerateFailed": "La rigenerazione del codice non è riuscita. Riprova tra un istante."
+        }
+      },
+      "followers": {
+        "remove": "Rimuovi",
+        "removeConfirm": "Rimuovere {name} da questo locale? Non vedrà più i suoi eventi.",
+        "removed": "{name} è stato rimosso.",
+        "titleWithCount": "Follower ({count})",
+        "emptyHint": "Condividi il codice d'invito per invitare giocatori.",
+        "title": "Follower",
+        "description": "Gestisci le persone che seguono questo locale privato.",
+        "empty": "Ancora nessun follower.",
+        "errors": {
+          "notAuthenticated": "Non hai effettuato l'accesso.",
+          "lairNotFound": "Questo locale non è stato trovato.",
+          "notOwner": "Solo un proprietario di questo locale può rimuovere un follower.",
+          "notPrivate": "Questo locale non è privato.",
+          "isOwner": "Un proprietario non può essere rimosso dai follower.",
+          "failed": "La rimozione non è riuscita. Riprova tra un istante.",
+          "removeFailed": "La rimozione non è riuscita. Riprova tra un istante."
+        }
+      },
       "proGrant": {
         "title": "Accesso Pro offerto dal team",
         "cardDescription": "Riservato agli amministratori di Joutes. Apre le funzionalità Joutes Pro per questo locale senza passare da un abbonamento.",
@@ -1256,6 +1339,26 @@
         "subscription": "Abbonamento"
       },
       "customization": {
+        "organizers": {
+          "title": "Organizzatori",
+          "description": "Il team del locale, mostrato nella colonna della scheda « Chi siamo ».",
+          "name": "Nome",
+          "namePlaceholder": "Camille",
+          "role": "Ruolo",
+          "rolePlaceholder": "responsabile TCG",
+          "add": "Aggiungi un organizzatore",
+          "remove": "Rimuovi {name}"
+        },
+        "rhythm": {
+          "title": "Ritmo abituale",
+          "description": "Cosa si trova qui nei giorni ordinari, mostrato nella colonna della scheda « Agenda ».",
+          "label": "Quando",
+          "labelPlaceholder": "Venerdì sera",
+          "value": "Cosa succede",
+          "valuePlaceholder": "Riftbound",
+          "add": "Aggiungi una riga",
+          "remove": "Rimuovi {label}"
+        },
         "proBadge": "JOUTES PRO ATTIVO",
         "proLocked": "Joutes Pro",
         "save": "Salva",

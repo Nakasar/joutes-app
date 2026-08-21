@@ -1,7 +1,24 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState, useTransition } from "react";
-import { removeFollowerFromPrivateLair } from "@/app/[locale]/(app)/account/private-lairs-actions.ts";
+import { removeFollowerFromPrivateLair, type PrivateLairError } from "@/app/[locale]/(app)/account/private-lairs-actions.ts";
+
+/**
+ * Les refus de l'action serveur, traduits ici.
+ *
+ * Ils sont distingués parce qu'ils ne se valent pas : « vous n'êtes pas
+ * propriétaire » ne passera jamais, et inviter à réessayer y était trompeur.
+ */
+const ERROR_KEYS: Record<PrivateLairError, string> = {
+  NOT_AUTHENTICATED: "errors.notAuthenticated",
+  LAIR_NOT_FOUND: "errors.lairNotFound",
+  NOT_OWNER: "errors.notOwner",
+  NOT_PRIVATE: "errors.notPrivate",
+  IS_OWNER: "errors.isOwner",
+  FAILED: "errors.failed",
+};
 import { User } from "@/lib/types/User.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { Alert, AlertDescription } from "@/components/ui/alert.tsx";
@@ -20,6 +37,7 @@ export default function PrivateLairFollowersManager({
   followers,
   owners,
 }: PrivateLairFollowersManagerProps) {
+  const t = useTranslations("Lairs.manage.followers");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -30,7 +48,7 @@ export default function PrivateLairFollowersManager({
   const handleRemoveFollower = (userId: string, userName: string) => {
     if (
       !confirm(
-        `Êtes-vous sûr de vouloir retirer ${userName} de ce lieu ? Il ne pourra plus voir les événements de ce lieu.`
+        t("removeConfirm", { name: userName })
       )
     ) {
       return;
@@ -40,12 +58,12 @@ export default function PrivateLairFollowersManager({
       const result = await removeFollowerFromPrivateLair(lairId, userId);
 
       if (result.success) {
-        setSuccess(`${userName} a été retiré avec succès`);
+        setSuccess(t("removed", { name: userName }));
         setLocalFollowers(localFollowers.filter((f) => f.id !== userId));
         setError(null);
         setTimeout(() => setSuccess(null), 3000);
       } else {
-        setError(result.error || "Erreur lors du retrait de l'utilisateur");
+        setError(t(ERROR_KEYS[result.error]));
         setSuccess(null);
       }
     });
@@ -60,18 +78,18 @@ export default function PrivateLairFollowersManager({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
-            Abonnés
+            {t("title")}
           </CardTitle>
           <CardDescription>
-            Gérez les utilisateurs qui suivent ce lieu privé
+            {t("description")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-muted-foreground">
             <Users className="h-12 w-12 mx-auto opacity-50 mb-2" />
-            <p>Aucun abonné pour le moment.</p>
+            <p>{t("empty")}</p>
             <p className="text-sm mt-1">
-              Partagez le code d&apos;invitation pour inviter des utilisateurs.
+              {t("emptyHint")}
             </p>
           </div>
         </CardContent>
@@ -84,10 +102,10 @@ export default function PrivateLairFollowersManager({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="h-5 w-5" />
-          Abonnés ({nonOwnerFollowers.length})
+          {t("titleWithCount", { count: nonOwnerFollowers.length })}
         </CardTitle>
         <CardDescription>
-          Gérez les utilisateurs qui suivent ce lieu privé
+          {t("description")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -144,7 +162,7 @@ export default function PrivateLairFollowersManager({
                 ) : (
                   <>
                     <UserMinus className="h-4 w-4 mr-2" />
-                    Retirer
+                    {t("remove")}
                   </>
                 )}
               </Button>

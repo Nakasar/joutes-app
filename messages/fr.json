@@ -1218,6 +1218,89 @@
       "eventSite": "Site de l'événement"
     },
     "manage": {
+      "details": {
+        "fieldNames": {"name":"Nom du lieu","banner":"Bannière","address":"Adresse","website":"Site web","location":"Coordonnées GPS","games":"Jeux disponibles"},
+        "saved": "Les modifications ont été enregistrées.",
+        "save": "Enregistrer les modifications",
+        "saving": "Enregistrement…",
+        "locationHint": "Format : latitude, longitude (par exemple 48.8566, 2.3522 pour Paris).",
+        "noGames": "Aucun jeu disponible. Ajoutez-en d'abord dans l'administration.",
+        "fields": {
+          "name": "Nom du lieu",
+          "banner": "URL de la bannière",
+          "address": "Adresse (optionnel)",
+          "website": "Site web (optionnel)",
+          "location": "Coordonnées GPS (optionnel)",
+          "games": "Jeux disponibles"
+        },
+        "placeholders": {
+          "banner": "https://exemple.com/banniere.jpg",
+          "address": "123 rue de la Joute, 75001 Paris",
+          "website": "https://exemple.com",
+          "location": "48.8566, 2.3522"
+        },
+        "errors": {
+          "notFound": "Ce lieu est introuvable.",
+          "userNotFound": "Aucun compte ne correspond à cette adresse.",
+          "invalid": "Certains champs sont invalides.",
+          "invalidField": "Le champ « {field} » est invalide.",
+          "failed": "L'enregistrement a échoué. Réessayez dans un instant."
+        }
+      },
+      "owners": {
+        "add": "Ajouter",
+        "added": "{name} a été ajouté comme propriétaire.",
+        "removed": "Le propriétaire a été retiré.",
+        "empty": "Aucun propriétaire pour le moment.",
+        "emailPlaceholder": "email@exemple.com",
+        "errors": {
+          "invalidEmail": "Cette adresse e-mail est invalide.",
+          "invalid": "La demande est invalide.",
+          "emailRequired": "Saisissez une adresse e-mail.",
+          "notFound": "Ce lieu est introuvable.",
+          "userNotFound": "Aucun compte ne correspond à cette adresse.",
+          "invalid": "Cette adresse e-mail est invalide.",
+          "failed": "L'opération a échoué. Réessayez dans un instant."
+        }
+      },
+      "invitation": {
+        "description": "Partagez ce lien ou ce QR code pour inviter des joueurs à suivre ce lieu privé.",
+        "copy": "Copier",
+        "regenerate": "Régénérer le code",
+        "title": "Code d'invitation",
+        "regenerateConfirm": "Régénérer le code d'invitation ? L'ancien cessera de fonctionner.",
+        "regenerated": "Code d'invitation régénéré.",
+        "copied": "Copié !",
+        "qrAlt": "QR code d'invitation",
+        "errors": {
+          "notAuthenticated": "Vous n'êtes pas connecté.",
+          "lairNotFound": "Ce lieu est introuvable.",
+          "notOwner": "Seul un propriétaire de ce lieu peut régénérer son code.",
+          "notPrivate": "Ce lieu n'est pas privé.",
+          "isOwner": "Vous ne pouvez pas retirer un propriétaire.",
+          "failed": "La régénération du code a échoué. Réessayez dans un instant.",
+          "regenerateFailed": "La régénération du code a échoué. Réessayez dans un instant."
+        }
+      },
+      "followers": {
+        "remove": "Retirer",
+        "removeConfirm": "Retirer {name} de ce lieu ? Cette personne ne verra plus ses événements.",
+        "removed": "{name} a été retiré.",
+        "titleWithCount": "Abonnés ({count})",
+        "emptyHint": "Partagez le code d'invitation pour inviter des joueurs.",
+        "title": "Abonnés",
+        "description": "Gérez les personnes qui suivent ce lieu privé.",
+        "empty": "Aucun abonné pour le moment.",
+        "errors": {
+          "notAuthenticated": "Vous n'êtes pas connecté.",
+          "lairNotFound": "Ce lieu est introuvable.",
+          "notOwner": "Seul un propriétaire de ce lieu peut retirer un abonné.",
+          "notPrivate": "Ce lieu n'est pas privé.",
+          "isOwner": "Un propriétaire ne peut pas être retiré des abonnés.",
+          "failed": "Le retrait a échoué. Réessayez dans un instant.",
+          "removeFailed": "Le retrait a échoué. Réessayez dans un instant."
+        }
+      },
       "proGrant": {
         "title": "Accès Pro offert par l'équipe",
         "cardDescription": "Réservé aux administrateurs de Joutes. Ouvre les fonctionnalités Joutes Pro à ce lieu sans passer par un abonnement.",
@@ -1256,6 +1339,26 @@
         "subscription": "Abonnement"
       },
       "customization": {
+        "organizers": {
+          "title": "Organisateurs",
+          "description": "L'équipe du lieu, affichée dans la colonne de l'onglet « À propos ».",
+          "name": "Nom",
+          "namePlaceholder": "Camille",
+          "role": "Rôle",
+          "rolePlaceholder": "responsable TCG",
+          "add": "Ajouter un organisateur",
+          "remove": "Retirer {name}"
+        },
+        "rhythm": {
+          "title": "Rythme habituel",
+          "description": "Ce qu'on trouve ici les jours ordinaires, affiché dans la colonne de l'onglet « Agenda ».",
+          "label": "Moment",
+          "labelPlaceholder": "Vendredi soir",
+          "value": "Ce qui s'y passe",
+          "valuePlaceholder": "Riftbound",
+          "add": "Ajouter une ligne",
+          "remove": "Retirer {label}"
+        },
         "proBadge": "JOUTES PRO ACTIF",
         "proLocked": "Joutes Pro",
         "save": "Enregistrer",

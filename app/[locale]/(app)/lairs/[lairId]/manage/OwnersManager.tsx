@@ -2,7 +2,29 @@
 
 import { useState, useTransition } from "react";
 import { User } from "@/lib/types/User.ts";
-import { addOwner, removeOwner } from "./actions.ts";
+import { useTranslations } from "next-intl";
+import { addOwner, removeOwner, type LairManageError } from "./actions.ts";
+
+/** Les échecs de l'action serveur, traduits ici — elle ne renvoie que des codes. */
+/**
+ * Les échecs de l'action serveur, traduits ici — elle ne renvoie que des codes.
+ *
+ * Deux tables : « invalide » ne veut pas dire la même chose selon le geste.
+ * Ajouter valide une adresse saisie ; retirer valide un identifiant que
+ * l'utilisateur n'a jamais tapé, et lui parler de son e-mail l'enverrait
+ * corriger un champ qui n'est pas en cause.
+ */
+const ADD_ERROR_KEYS: Record<LairManageError, string> = {
+  NOT_FOUND: "errors.notFound",
+  USER_NOT_FOUND: "errors.userNotFound",
+  INVALID: "errors.invalidEmail",
+  FAILED: "errors.failed",
+};
+
+const REMOVE_ERROR_KEYS: Record<LairManageError, string> = {
+  ...ADD_ERROR_KEYS,
+  INVALID: "errors.invalid",
+};
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Card } from "@/components/ui/card.tsx";
@@ -15,6 +37,7 @@ export default function OwnersManager({
   lairId: string;
   owners: User[];
 }) {
+  const t = useTranslations("Lairs.manage.owners");
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -26,7 +49,7 @@ export default function OwnersManager({
     setSuccess(null);
 
     if (!email) {
-      setError("Veuillez entrer un email");
+      setError(t("errors.emailRequired"));
       return;
     }
 
@@ -34,11 +57,11 @@ export default function OwnersManager({
       const result = await addOwner(lairId, email);
 
       if (result.success) {
-        setSuccess(`${result.user?.username || result.user?.email} a été ajouté comme propriétaire`);
+        setSuccess(t("added", { name: result.user?.username || result.user?.email || "" }));
         setEmail("");
         setTimeout(() => setSuccess(null), 3000);
       } else {
-        setError(result.error || "Erreur lors de l'ajout");
+        setError(t(ADD_ERROR_KEYS[result.error]));
       }
     });
   };
@@ -51,10 +74,10 @@ export default function OwnersManager({
       const result = await removeOwner(lairId, userId);
 
       if (result.success) {
-        setSuccess("Le propriétaire a été retiré");
+        setSuccess(t("removed"));
         setTimeout(() => setSuccess(null), 3000);
       } else {
-        setError(result.error || "Erreur lors de la suppression");
+        setError(t(REMOVE_ERROR_KEYS[result.error]));
       }
     });
   };
@@ -77,7 +100,7 @@ export default function OwnersManager({
       <form onSubmit={handleAddOwner} className="flex gap-2">
         <Input
           type="email"
-          placeholder="email@exemple.com"
+          placeholder={t("emailPlaceholder")}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={isPending}
@@ -85,7 +108,7 @@ export default function OwnersManager({
         />
         <Button type="submit" disabled={isPending}>
           <Plus className="mr-2 h-4 w-4" />
-          Ajouter
+          {t("add")}
         </Button>
       </form>
 
@@ -94,7 +117,7 @@ export default function OwnersManager({
         {owners.length === 0 ? (
           <Card className="p-4">
             <p className="text-sm text-muted-foreground text-center">
-              Aucun propriétaire pour le moment
+              {t("empty")}
             </p>
           </Card>
         ) : (

@@ -2,7 +2,7 @@
 
 import { requireAdminOrOwner } from "@/lib/middleware/admin.ts";
 import { revalidatePath } from "next/cache";
-import { lairSchema, lairIdSchema } from "@/lib/schemas/lair.schema.ts";
+import { lairDetailsSchema, lairIdSchema } from "@/lib/schemas/lair.schema.ts";
 import { z } from "zod";
 import * as lairsDb from "@/lib/db/lairs.ts";
 import * as usersDb from "@/lib/db/users.ts";
@@ -14,6 +14,38 @@ import { plansFromSubscription } from "@/lib/subscriptions/access.ts";
 import { seatsFor } from "@/lib/subscriptions/entitlements.ts";
 
 const emailSchema = z.string().email("Email invalide");
+
+/**
+ * Les échecs de cet écran, en codes plutôt qu'en phrases.
+ *
+ * Une action serveur ne sait pas dans quelle langue la page est rendue ; le
+ * composant qui l'appelle, si. Ces actions renvoyaient des phrases françaises
+ * que le client affichait telles quelles — donc du français sur les trois
+ * autres langues du catalogue.
+ *
+ * `field` accompagne `INVALID` quand la validation désigne un champ : le
+ * message reste traduit côté client, mais il peut nommer ce qui cloche plutôt
+ * que de s'en tenir à « certains champs sont invalides ».
+ */
+export type LairManageError = "NOT_FOUND" | "USER_NOT_FOUND" | "INVALID" | "FAILED";
+
+export type LairManageFailure = {
+  success: false;
+  error: LairManageError;
+  /** Le premier segment du chemin Zod fautif, quand il y en a un. */
+  field?: string;
+};
+
+/** Traduit un échec de validation en code, en gardant le champ visé. */
+function invalidFrom(error: z.ZodError): LairManageFailure {
+  const path = error.issues[0]?.path?.[0];
+
+  return {
+    success: false,
+    error: "INVALID",
+    field: typeof path === "string" ? path : undefined,
+  };
+}
 
 export async function updateLairDetails(
   lairId: string,
@@ -32,29 +64,27 @@ export async function updateLairDetails(
     // Valider l'ID
     const validatedId = lairIdSchema.parse(lairId);
 
-    // Valider les données avec Zod
-    const validatedData = lairSchema.omit({ eventsSourceUrls: true }).parse(data);
+    // `lairDetailsSchema` et non `lairSchema.omit(...)` : voir le schéma, cet
+    // `omit` levait sur un objet à refinements et l'onglet n'enregistrait rien.
+    const validatedData = lairDetailsSchema.parse(data);
 
     const updatedLair = await lairsDb.updateLair(validatedId, validatedData);
 
     if (!updatedLair) {
-      return { success: false, error: "Lieu non trouvé" };
+      return { success: false as const, error: "NOT_FOUND" as const };
     }
 
     revalidatePath(`/lairs`);
     revalidatePath(`/lairs/${lairId}`);
     revalidatePath(`/lairs/${lairId}/manage`);
 
-    return { success: true, lair: updatedLair };
+    return { success: true as const, lair: updatedLair };
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return {
-        success: false,
-        error: error.issues[0]?.message || "Données invalides",
-      };
+      return invalidFrom(error);
     }
     console.error("Erreur lors de la mise à jour du lieu:", error);
-    return { success: false, error: "Erreur lors de la mise à jour du lieu" };
+    return { success: false as const, error: "FAILED" as const };
   }
 }
 
@@ -72,7 +102,7 @@ export async function addOwner(lairId: string, email: string) {
     const user = await usersDb.getUserByEmail(validatedEmail);
 
     if (!user) {
-      return { success: false, error: "Utilisateur non trouvé avec cet email" };
+      return { success: false as const, error: "USER_NOT_FOUND" as const };
     }
 
     // Ajouter l'owner au lair
@@ -80,16 +110,13 @@ export async function addOwner(lairId: string, email: string) {
 
     revalidatePath(`/lairs/${lairId}/manage`);
 
-    return { success: true, user };
+    return { success: true as const, user };
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return {
-        success: false,
-        error: error.issues[0]?.message || "Données invalides",
-      };
+      return invalidFrom(error);
     }
     console.error("Erreur lors de l'ajout de l'owner:", error);
-    return { success: false, error: "Erreur lors de l'ajout de l'owner" };
+    return { success: false as const, error: "FAILED" as const };
   }
 }
 
@@ -106,16 +133,13 @@ export async function removeOwner(lairId: string, userId: string) {
 
     revalidatePath(`/lairs/${lairId}/manage`);
 
-    return { success: true };
+    return { success: true as const };
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return {
-        success: false,
-        error: error.issues[0]?.message || "ID invalide",
-      };
+      return invalidFrom(error);
     }
     console.error("Erreur lors de la suppression de l'owner:", error);
-    return { success: false, error: "Erreur lors de la suppression de l'owner" };
+    return { success: false as const, error: "FAILED" as const };
   }
 }
 
