@@ -70,8 +70,11 @@ export default function PlayGroupVisibilityForm({
           <button
             key={key}
             type="button"
-            role="radio"
-            aria-checked={current === key}
+            // `aria-pressed` plutôt que `role="radio"` : une radio ARIA promet
+            // un groupe et une navigation aux flèches, que ces deux boutons
+            // n'offrent pas. Un bouton bascule dit ce qu'il est vraiment, et
+            // c'est déjà le motif employé ailleurs dans les groupes.
+            aria-pressed={current === key}
             disabled={pending}
             onClick={() => choose(key)}
             className={cn(

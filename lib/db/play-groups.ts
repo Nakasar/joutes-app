@@ -295,12 +295,15 @@ export async function removePlayGroupLiveStream(playGroupId: string, liveId: str
 }
 
 /**
- * Tous les groupes, pour la page d'exploration.
+ * Les groupes visibles par ce lecteur, pour le rôle d'armes.
  *
- * Aucun filtre de visibilité : un groupe de jeu n'a pas d'état privé — sa
- * vitrine est publique, et c'est chaque vue qui décide de ce qu'elle en montre.
+ * Un groupe privé n'en sort que pour ses membres — la règle est écrite dans
+ * `readRollFilter`, à côté de `isPlayGroupListable` qui la dit en clair. Sans
+ * lecteur, seuls les groupes publics remontent.
+ *
  * La borne existe parce que la page classe et cherche en mémoire : au-delà,
- * c'est une pagination qu'il faudra, pas une limite plus haute.
+ * c'est une pagination qu'il faudra, pas une limite plus haute. Elle porte sur
+ * les groupes visibles, le filtre étant appliqué par la requête.
  */
 export async function listPlayGroups(
   limit = 120,

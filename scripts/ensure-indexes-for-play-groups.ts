@@ -14,10 +14,12 @@ async function ensureIndexesForPlayGroups() {
   await db.collection("playGroupFollowers").createIndex({ playGroupId: 1, userId: 1 }, { unique: true });
   await db.collection("playGroupFollowers").createIndex({ userId: 1 });
 
-  // Le rôle d'armes : les groupes visibles, les plus récemment touchés d'abord.
+  // Le rôle d'armes interroge `{ $or: [visibilité, appartenance] }` puis trie
+  // par `updatedAt` décroissant. Les deux branches portent donc la date : un
+  // index sur le seul critère d'égalité servirait la recherche mais laisserait
+  // le tri se faire en mémoire.
   await db.collection("playGroups").createIndex({ visibility: 1, updatedAt: -1 });
-  // La branche « mes groupes privés » de cette même requête.
-  await db.collection("playGroups").createIndex({ "members.userId": 1 });
+  await db.collection("playGroups").createIndex({ "members.userId": 1, updatedAt: -1 });
 
   console.log(`✅ Indexes pour les groupes de jeu créés avec succès`);
 }
