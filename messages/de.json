@@ -2241,6 +2241,70 @@
       }
     },
   "PlayGroups": {
+    "explore": {
+      "link": "Gruppen entdecken",
+      "metaTitle": "Spielgruppen entdecken",
+      "metaDescription": "Die Wappenrolle der Spielgruppen: wer spielt, wer streamt und wer in deiner Nähe veröffentlicht.",
+      "eyebrow": "Wappenrolle",
+      "title": "Die Gruppen in den Schranken",
+      "subtitle": "Wer spielt, wer streamt, wer veröffentlicht. Die lebendigsten Gruppen eröffnen die Rolle, die schlafenden beschließen sie.",
+      "searchLabel": "Eine Gruppe suchen",
+      "searchPlaceholder": "Ein Name, eine Stadt, ein Spiel, ein Tag…",
+      "locate": "Meinen Standort verwenden",
+      "locating": "Standort wird ermittelt…",
+      "locateError": "Dein Standort konnte nicht ermittelt werden.",
+      "orders": {
+        "vifs": "Die lebendigsten",
+        "proches": "Die nächsten",
+        "neufs": "Die neuesten"
+      },
+      "orderNotice": {
+        "vifs": "Live › Veröffentlichung › kommende Sitzung",
+        "proches": "Entfernung von deinem Standort",
+        "neufs": "Gründungsdatum der Gruppe"
+      },
+      "live": {
+        "title": "In den Schranken",
+        "badge": "Live",
+        "count": "{count, plural, one {# Gruppe streamt} other {# Gruppen streamen}}",
+        "viewers": "{count, plural, one {# Zuschauer} other {# Zuschauer}}"
+      },
+      "heralds": {
+        "title": "Die Herolde",
+        "subtitle": "Was die Gruppen veröffentlichen",
+        "kinds": {
+          "article": "Artikel",
+          "video": "Video",
+          "replay": "Replay"
+        }
+      },
+      "roll": {
+        "title": "Die Rolle",
+        "resultsTitle": "Ergebnisse",
+        "count": "{count, plural, =0 {Leere Rolle} one {# Gruppe auf der Rolle} other {# Gruppen auf der Rolle}}",
+        "empty": "Keine Gruppe dieses Namens auf der Rolle.",
+        "reset": "Rolle wieder öffnen"
+      },
+      "entry": {
+        "liveCry": "{streamer} streamt · {count, plural, one {# Zuschauer} other {# Zuschauer}}",
+        "liveCryPlain": "{streamer} streamt gerade",
+        "quiet": "Seit einer Weile nichts Neues",
+        "deeds": {
+          "content": "{title} — {at}",
+          "announcement": "{title} — {at}",
+          "session": "Nächste Sitzung {at}"
+        },
+        "noPlace": " · Ort ohne Adresse",
+        "members": "{count, plural, one {Mitglied} other {Mitglieder}}",
+        "followers": "{count, plural, one {Abonnent} other {Abonnenten}}",
+        "published": "{count, plural, one {Veröffentlichung} other {Veröffentlichungen}}",
+        "follow": "Folgen",
+        "following": "Folge ich",
+        "followError": "Dein Abonnement konnte nicht aktualisiert werden.",
+        "signIn": "Anmelden",
+        "enter": "Eintreten →"
+      }
+    },
     "hub": {
       "title": "Werkbank der Gruppe",
       "metadataTitle": "Werkbank · {group}",

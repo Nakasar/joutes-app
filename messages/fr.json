@@ -1595,6 +1595,70 @@
     }
   },
   "PlayGroups": {
+    "explore": {
+      "link": "Explorer les groupes",
+      "metaTitle": "Explorer les groupes de jeu",
+      "metaDescription": "Le rôle d'armes des groupes de jeu : qui joue, qui diffuse et qui publie près de chez vous.",
+      "eyebrow": "Rôle d'armes",
+      "title": "Les groupes en lice",
+      "subtitle": "Qui joue, qui diffuse, qui publie. Les groupes les plus vivants ouvrent le rôle ; les endormis le ferment.",
+      "searchLabel": "Chercher un groupe",
+      "searchPlaceholder": "Un nom, une ville, un jeu, un jour…",
+      "locate": "Utiliser ma position",
+      "locating": "Localisation…",
+      "locateError": "Impossible de vous localiser.",
+      "orders": {
+        "vifs": "Les plus vifs",
+        "proches": "Les plus proches",
+        "neufs": "Les derniers venus"
+      },
+      "orderNotice": {
+        "vifs": "direct › publication › session à venir",
+        "proches": "distance depuis votre position",
+        "neufs": "date de création du groupe"
+      },
+      "live": {
+        "title": "En lice",
+        "badge": "En direct",
+        "count": "{count, plural, one {# groupe diffuse} other {# groupes diffusent}}",
+        "viewers": "{count, plural, one {# spectateur} other {# spectateurs}}"
+      },
+      "heralds": {
+        "title": "Les hérauts",
+        "subtitle": "Ce que les groupes publient",
+        "kinds": {
+          "article": "Article",
+          "video": "Vidéo",
+          "replay": "Replay"
+        }
+      },
+      "roll": {
+        "title": "Le rôle",
+        "resultsTitle": "Résultats",
+        "count": "{count, plural, =0 {Rôle vide} one {# groupe au rôle} other {# groupes au rôle}}",
+        "empty": "Nul groupe de ce nom au rôle.",
+        "reset": "Rouvrir le rôle"
+      },
+      "entry": {
+        "liveCry": "{streamer} diffuse · {count, plural, one {# spectateur} other {# spectateurs}}",
+        "liveCryPlain": "{streamer} diffuse en ce moment",
+        "quiet": "Pas de nouvelle depuis un moment",
+        "deeds": {
+          "content": "{title} — {at}",
+          "announcement": "{title} — {at}",
+          "session": "Prochaine session {at}"
+        },
+        "noPlace": " · lieu non géolocalisé",
+        "members": "{count, plural, one {membre} other {membres}}",
+        "followers": "{count, plural, one {abonné} other {abonnés}}",
+        "published": "{count, plural, one {publication} other {publications}}",
+        "follow": "Suivre",
+        "following": "Suivi",
+        "followError": "Impossible de mettre à jour votre suivi.",
+        "signIn": "Se connecter",
+        "enter": "Entrer →"
+      }
+    },
     "hub": {
       "title": "Établi du groupe",
       "metadataTitle": "Établi · {group}",

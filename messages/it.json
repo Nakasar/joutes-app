@@ -1595,6 +1595,70 @@
     }
   },
   "PlayGroups": {
+    "explore": {
+      "link": "Esplorare i gruppi",
+      "metaTitle": "Esplorare i gruppi di gioco",
+      "metaDescription": "Il rotolo d'armi dei gruppi di gioco: chi gioca, chi trasmette e chi pubblica vicino a te.",
+      "eyebrow": "Rotolo d'armi",
+      "title": "I gruppi in lizza",
+      "subtitle": "Chi gioca, chi trasmette, chi pubblica. I gruppi più vivi aprono il rotolo; quelli assopiti lo chiudono.",
+      "searchLabel": "Cercare un gruppo",
+      "searchPlaceholder": "Un nome, una città, un gioco, un giorno…",
+      "locate": "Usare la mia posizione",
+      "locating": "Localizzazione…",
+      "locateError": "Non è stato possibile localizzarti.",
+      "orders": {
+        "vifs": "I più vivi",
+        "proches": "I più vicini",
+        "neufs": "Gli ultimi arrivati"
+      },
+      "orderNotice": {
+        "vifs": "diretta › pubblicazione › sessione in arrivo",
+        "proches": "distanza dalla tua posizione",
+        "neufs": "data di creazione del gruppo"
+      },
+      "live": {
+        "title": "In lizza",
+        "badge": "In diretta",
+        "count": "{count, plural, one {# gruppo trasmette} other {# gruppi trasmettono}}",
+        "viewers": "{count, plural, one {# spettatore} other {# spettatori}}"
+      },
+      "heralds": {
+        "title": "Gli araldi",
+        "subtitle": "Ciò che i gruppi pubblicano",
+        "kinds": {
+          "article": "Articolo",
+          "video": "Video",
+          "replay": "Replay"
+        }
+      },
+      "roll": {
+        "title": "Il rotolo",
+        "resultsTitle": "Risultati",
+        "count": "{count, plural, =0 {Rotolo vuoto} one {# gruppo nel rotolo} other {# gruppi nel rotolo}}",
+        "empty": "Nessun gruppo con questo nome nel rotolo.",
+        "reset": "Riaprire il rotolo"
+      },
+      "entry": {
+        "liveCry": "{streamer} trasmette · {count, plural, one {# spettatore} other {# spettatori}}",
+        "liveCryPlain": "{streamer} sta trasmettendo ora",
+        "quiet": "Nessuna novità da un po'",
+        "deeds": {
+          "content": "{title} — {at}",
+          "announcement": "{title} — {at}",
+          "session": "Prossima sessione {at}"
+        },
+        "noPlace": " · luogo senza indirizzo",
+        "members": "{count, plural, one {membro} other {membri}}",
+        "followers": "{count, plural, one {abbonato} other {abbonati}}",
+        "published": "{count, plural, one {pubblicazione} other {pubblicazioni}}",
+        "follow": "Seguire",
+        "following": "Seguito",
+        "followError": "Impossibile aggiornare il tuo abbonamento.",
+        "signIn": "Accedere",
+        "enter": "Entrare →"
+      }
+    },
     "hub": {
       "title": "Banco del gruppo",
       "metadataTitle": "Banco · {group}",
