@@ -1,67 +1,18 @@
 import { Suspense } from "react";
-import type { Metadata } from "next";
-import { connection } from "next/server";
 import { getLocale, getTranslations } from "next-intl/server";
 import { DateTime } from "luxon";
 import { Globe, Lock } from "lucide-react";
 
 import { Link } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
+import { viewHref } from "../views.ts";
 import { getPlayGroupById, sortPlayGroupAnnouncements } from "@/lib/db/play-groups.ts";
 import { countPlayGroupFollowers } from "@/lib/db/play-groups.ts";
-import { PlayGroupScreenSkeleton } from "@/components/play-groups/PlayGroupSkeletons.tsx";
 
-import PlayGroupShell from "../PlayGroupShell.tsx";
 import AnnouncementComposer from "./AnnouncementComposer.tsx";
 import AnnouncementCard from "./AnnouncementCard.tsx";
 import { memberName, readGroupMembers, requirePlayGroup, requirePlayGroupMember } from "../group-data.ts";
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ playGroupId: string }>;
-}): Promise<Metadata> {
-  const { playGroupId } = await params;
-  const t = await getTranslations("PlayGroups.hub.announcements");
-
-  await connection();
-  const group = await getPlayGroupById(playGroupId);
-
-  return { title: group ? t("metadataTitle", { group: group.name }) : t("title") };
-}
-
-/**
- * Les annonces du groupe.
- *
- * Toutes sont listées ici, quelle que soit leur portée : c'est la vitrine qui
- * filtre, pas le hub. Un membre doit pouvoir relire ce que le groupe a rendu
- * public sans changer de page.
- */
-export default function PlayGroupAnnouncementsPage({ params }: { params: Promise<{ playGroupId: string }> }) {
-  return (
-    <Suspense
-      fallback={
-        <div className="px-4 py-6 lg:px-8">
-          <PlayGroupScreenSkeleton rows={3} />
-        </div>
-      }
-    >
-      <AnnouncementsView params={params} />
-    </Suspense>
-  );
-}
-
-async function AnnouncementsView({ params }: { params: Promise<{ playGroupId: string }> }) {
-  const { playGroupId } = await params;
-
-  return (
-    <PlayGroupShell playGroupId={playGroupId} active="announcements">
-      <AnnouncementsContent playGroupId={playGroupId} />
-    </PlayGroupShell>
-  );
-}
-
-async function AnnouncementsContent({ playGroupId }: { playGroupId: string }) {
+export default async function AnnouncementsView({ playGroupId }: { playGroupId: string }) {
   const [group, viewer, members, t, locale] = await Promise.all([
     requirePlayGroup(playGroupId),
     requirePlayGroupMember(playGroupId),
@@ -144,7 +95,7 @@ async function ScopeCard({ playGroupId, memberCount }: { playGroupId: string; me
       </p>
 
       <Button variant="outline" size="sm" className="self-start" asChild>
-        <Link href={`/play-groups/${playGroupId}/showcase`}>{t("seeShowcase")}</Link>
+        <Link href={viewHref(playGroupId, "showcase")}>{t("seeShowcase")}</Link>
       </Button>
     </section>
   );

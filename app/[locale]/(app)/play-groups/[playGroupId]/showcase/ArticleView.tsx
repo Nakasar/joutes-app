@@ -1,6 +1,3 @@
-import { Suspense } from "react";
-import type { Metadata } from "next";
-import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { DateTime } from "luxon";
@@ -9,34 +6,10 @@ import { ArrowLeft } from "lucide-react";
 import { Link } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
 import GameMarkdown from "@/components/GameMarkdown.tsx";
-import { getPlayGroupById } from "@/lib/db/play-groups.ts";
 import { readPlayGroupAccent } from "@/lib/play-groups/theme.ts";
+import { viewHref } from "../views.ts";
 
-import { memberName, readGroupMembers, requirePlayGroup } from "../../group-data.ts";
-
-type ArticleParams = Promise<{ playGroupId: string; contentId: string }>;
-
-export async function generateMetadata({ params }: { params: ArticleParams }): Promise<Metadata> {
-  const { playGroupId, contentId } = await params;
-
-  await connection();
-  const group = await getPlayGroupById(playGroupId);
-  const content = group?.options?.contents?.find((item) => item.id === contentId);
-
-  if (!content) {
-    return {};
-  }
-
-  return {
-    title: content.title,
-    description: content.summary,
-    openGraph: {
-      title: content.title,
-      description: content.summary,
-      images: content.thumbnail ? [content.thumbnail] : [],
-    },
-  };
-}
+import { memberName, readGroupMembers, requirePlayGroup } from "../group-data.ts";
 
 /**
  * Un article du groupe, lu sur Joutes.
@@ -45,23 +18,13 @@ export async function generateMetadata({ params }: { params: ArticleParams }): P
  * n'a pas de raison d'attendre une connexion. Seuls les articles ont cette
  * page — une vidéo et un replay renvoient à leur plateforme.
  */
-export default function PlayGroupArticlePage({ params }: { params: ArticleParams }) {
-  return (
-    <Suspense
-      fallback={
-        <div className="container mx-auto max-w-3xl px-4 py-8" role="status" aria-busy="true">
-          <span className="sr-only">Chargement de l&apos;article…</span>
-          <div className="h-96 animate-pulse rounded-xl bg-muted/60" aria-hidden />
-        </div>
-      }
-    >
-      <Article params={params} />
-    </Suspense>
-  );
-}
-
-async function Article({ params }: { params: ArticleParams }) {
-  const { playGroupId, contentId } = await params;
+export default async function ArticleView({
+  playGroupId,
+  contentId,
+}: {
+  playGroupId: string;
+  contentId: string;
+}) {
   const [group, members, t, locale] = await Promise.all([
     requirePlayGroup(playGroupId),
     readGroupMembers(playGroupId),
@@ -82,7 +45,7 @@ async function Article({ params }: { params: ArticleParams }) {
     <div className="play-group-theme" style={accent.style}>
       <article className="container mx-auto max-w-3xl px-4 py-8">
         <Button variant="outline" size="sm" asChild>
-          <Link href={`/play-groups/${playGroupId}/showcase`}>
+          <Link href={viewHref(playGroupId, "showcase")}>
             <ArrowLeft aria-hidden />
             {group.name}
           </Link>

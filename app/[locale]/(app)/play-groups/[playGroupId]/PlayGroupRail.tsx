@@ -22,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
 import { cn } from "@/lib/utils.ts";
-import type { PlayGroupView } from "./group-data.ts";
+import { viewHref, type PlayGroupView } from "./views.ts";
 
 const ICONS = {
   hub: LayoutDashboard,
@@ -44,17 +44,15 @@ type RailEntry = {
 };
 
 function entriesFor(playGroupId: string, pendingCount: number, canManage: boolean): RailEntry[] {
-  const base = `/play-groups/${playGroupId}`;
-
   return [
-    { key: "hub", href: base },
-    { key: "sessions", href: `${base}/sessions`, badge: pendingCount },
-    { key: "announcements", href: `${base}/announcements` },
-    { key: "contents", href: `${base}/contents` },
-    { key: "lists", href: `${base}/lists` },
-    { key: "members", href: `${base}/members` },
-    { key: "showcase", href: `${base}/showcase`, aside: true },
-    ...(canManage ? [{ key: "settings" as const, href: `${base}/settings`, aside: true }] : []),
+    { key: "hub", href: viewHref(playGroupId, "hub") },
+    { key: "sessions", href: viewHref(playGroupId, "sessions"), badge: pendingCount },
+    { key: "announcements", href: viewHref(playGroupId, "announcements") },
+    { key: "contents", href: viewHref(playGroupId, "contents") },
+    { key: "lists", href: viewHref(playGroupId, "lists") },
+    { key: "members", href: viewHref(playGroupId, "members") },
+    { key: "showcase", href: viewHref(playGroupId, "showcase"), aside: true },
+    ...(canManage ? [{ key: "settings" as const, href: viewHref(playGroupId, "settings"), aside: true }] : []),
   ];
 }
 

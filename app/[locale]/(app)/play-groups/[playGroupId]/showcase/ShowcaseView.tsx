@@ -1,8 +1,6 @@
 import { Suspense } from "react";
 import Image from "next/image";
-import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { connection } from "next/server";
 import { getLocale, getTranslations } from "next-intl/server";
 import { DateTime } from "luxon";
 import { ArrowLeft, Eye, Globe, Repeat, Trophy, Users } from "lucide-react";
@@ -12,7 +10,6 @@ import { Button } from "@/components/ui/button.tsx";
 import ReportButton from "@/components/ReportButton.tsx";
 import {
   countPlayGroupFollowers,
-  getPlayGroupById,
   isFollowingPlayGroup,
   sortPlayGroupAnnouncements,
 } from "@/lib/db/play-groups.ts";
@@ -20,6 +17,7 @@ import { readPlayGroupResults } from "@/lib/db/play-group-results.ts";
 import { readPlayGroupAccent } from "@/lib/play-groups/theme.ts";
 import { readLiveEmbed } from "@/lib/media/live-embed.ts";
 import { externalUrl } from "@/lib/lairs/urls.ts";
+import { viewHref } from "../views.ts";
 
 import ShowcaseLives, { type ShowcaseLive } from "./ShowcaseLives.tsx";
 import ShowcaseContents, { type ShowcaseContent } from "./ShowcaseContents.tsx";
@@ -35,32 +33,6 @@ import {
   sortContents,
 } from "../group-data.ts";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ playGroupId: string }>;
-}): Promise<Metadata> {
-  const { playGroupId } = await params;
-  const t = await getTranslations("PlayGroups.showcase");
-
-  await connection();
-  const group = await getPlayGroupById(playGroupId);
-
-  if (!group) {
-    return { title: t("title") };
-  }
-
-  return {
-    title: group.name,
-    description: group.options?.theme?.tagline ?? group.description,
-    openGraph: {
-      title: group.name,
-      description: group.options?.theme?.tagline ?? group.description ?? undefined,
-      images: group.options?.theme?.banner ? [group.options.theme.banner] : [],
-    },
-  };
-}
-
 /**
  * La vitrine publique d'un groupe.
  *
@@ -72,28 +44,7 @@ export async function generateMetadata({
  * nominative. Les annonces n'y arrivent que si leur portée est publique, et la
  * page le dit en toutes lettres.
  */
-export default function PlayGroupShowcasePage({ params }: { params: Promise<{ playGroupId: string }> }) {
-  return (
-    <Suspense fallback={<ShowcaseSkeleton />}>
-      <Showcase params={params} />
-    </Suspense>
-  );
-}
-
-function ShowcaseSkeleton() {
-  return (
-    <div role="status" aria-busy="true">
-      <span className="sr-only">Chargement du groupe…</span>
-      <div className="h-60 w-full animate-pulse bg-muted" aria-hidden />
-      <div className="container mx-auto max-w-7xl px-4 py-8 lg:px-10">
-        <div className="h-64 animate-pulse rounded-xl bg-muted/60" aria-hidden />
-      </div>
-    </div>
-  );
-}
-
-async function Showcase({ params }: { params: Promise<{ playGroupId: string }> }) {
-  const { playGroupId } = await params;
+export default async function ShowcaseView({ playGroupId }: { playGroupId: string }) {
   const group = await requirePlayGroup(playGroupId);
   const accent = readPlayGroupAccent(group);
 
@@ -164,7 +115,7 @@ async function MemberPreviewBanner({ playGroupId }: { playGroupId: string }) {
       <Eye className="size-4 shrink-0 text-cyan-300" aria-hidden />
       <p className="min-w-0 flex-1 text-[13px] text-muted-foreground">{t("previewNotice")}</p>
       <Button variant="outline" size="sm" asChild>
-        <Link href={`/play-groups/${playGroupId}`}>
+        <Link href={viewHref(playGroupId, "hub")}>
           <ArrowLeft aria-hidden />
           {t("backToHub")}
         </Link>
@@ -327,7 +278,7 @@ async function ContentsSection({ playGroupId }: { playGroupId: string }) {
       duration: content.duration,
       // Un article se lit sur Joutes ; une vidéo et un replay renvoient à leur
       // plateforme, où le lecteur est chez lui.
-      href: content.kind === "article" ? `/play-groups/${playGroupId}/showcase/${content.id}` : undefined,
+      href: content.kind === "article" ? viewHref(playGroupId, "showcase", { article: content.id }) : undefined,
       url: content.kind === "article" ? undefined : externalUrl(content.url) ?? undefined,
       publishedLabel: date.isValid ? date.toFormat("d LLLL yyyy") : null,
     };

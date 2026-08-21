@@ -1,67 +1,15 @@
 import { Suspense } from "react";
-import type { Metadata } from "next";
-import { connection } from "next/server";
 import { getTranslations } from "next-intl/server";
 import { ArrowLeftRight, Globe, Heart, Info, Tag } from "lucide-react";
 
 import { Link } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
-import { getPlayGroupById } from "@/lib/db/play-groups.ts";
 import { getWishlistsForOwner } from "@/lib/db/wishlists.ts";
 import { getSellListForOwner, getSellListItems } from "@/lib/db/sell-lists.ts";
-import { PlayGroupScreenSkeleton } from "@/components/play-groups/PlayGroupSkeletons.tsx";
 
-import PlayGroupShell from "../PlayGroupShell.tsx";
 import { readGroupTradeMatches } from "../trade-data.ts";
 import { memberName, readGroupMembers, requirePlayGroupMember } from "../group-data.ts";
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ playGroupId: string }>;
-}): Promise<Metadata> {
-  const { playGroupId } = await params;
-  const t = await getTranslations("PlayGroups.hub.lists");
-
-  await connection();
-  const group = await getPlayGroupById(playGroupId);
-
-  return { title: group ? t("metadataTitle", { group: group.name }) : t("title") };
-}
-
-/**
- * Souhaits & ventes : le tableau de bord des listes du groupe.
- *
- * Il ne remplace pas les deux écrans qui font le travail — parcourir, filtrer,
- * ajouter des cartes — mais il montre ce qu'aucun des deux ne peut voir seul :
- * les rapprochements entre ce que les uns cherchent et ce que les autres
- * vendent.
- */
-export default function PlayGroupListsPage({ params }: { params: Promise<{ playGroupId: string }> }) {
-  return (
-    <Suspense
-      fallback={
-        <div className="px-4 py-6 lg:px-8">
-          <PlayGroupScreenSkeleton rows={3} />
-        </div>
-      }
-    >
-      <ListsView params={params} />
-    </Suspense>
-  );
-}
-
-async function ListsView({ params }: { params: Promise<{ playGroupId: string }> }) {
-  const { playGroupId } = await params;
-
-  return (
-    <PlayGroupShell playGroupId={playGroupId} active="lists">
-      <ListsContent playGroupId={playGroupId} />
-    </PlayGroupShell>
-  );
-}
-
-async function ListsContent({ playGroupId }: { playGroupId: string }) {
+export default async function ListsView({ playGroupId }: { playGroupId: string }) {
   const [, wishlists, t] = await Promise.all([
     requirePlayGroupMember(playGroupId),
     getWishlistsForOwner({ type: "playGroup", id: playGroupId }),

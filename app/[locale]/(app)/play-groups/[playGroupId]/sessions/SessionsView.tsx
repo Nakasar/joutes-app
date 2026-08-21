@@ -1,18 +1,13 @@
 import { Suspense } from "react";
-import type { Metadata } from "next";
-import { connection } from "next/server";
 import { getLocale, getTranslations } from "next-intl/server";
 import { DateTime } from "luxon";
 import { Home, MapPin, Repeat, Store } from "lucide-react";
 
-import { getPlayGroupById } from "@/lib/db/play-groups.ts";
 import { getLairsByIds } from "@/lib/db/lairs.ts";
 import { readPlayGroupPlaces } from "@/lib/db/play-group-sessions.ts";
 import { getUserById } from "@/lib/db/users.ts";
-import { PlayGroupScreenSkeleton } from "@/components/play-groups/PlayGroupSkeletons.tsx";
 import type { PlayGroupSession } from "@/lib/types/PlayGroupSession";
 
-import PlayGroupShell from "../PlayGroupShell.tsx";
 import PlayGroupPollCard from "../PlayGroupPollCard.tsx";
 import PlayGroupRsvpButtons from "../PlayGroupRsvpButtons.tsx";
 import PlayGroupPlaceCard from "../PlayGroupPlaceCard.tsx";
@@ -25,48 +20,7 @@ import {
   requirePlayGroup,
   requirePlayGroupMember,
 } from "../group-data.ts";
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ playGroupId: string }>;
-}): Promise<Metadata> {
-  const { playGroupId } = await params;
-  const t = await getTranslations("PlayGroups.hub.sessions");
-
-  await connection();
-  const group = await getPlayGroupById(playGroupId);
-
-  return { title: group ? t("metadataTitle", { group: group.name }) : t("title") };
-}
-
-/**
- * Les sessions du groupe : ce qui est proposé, ce qui est confirmé.
- *
- * Le sondage en cours est en tête parce qu'il attend une réponse ; les
- * sessions confirmées suivent par date. La colonne de droite dit le rythme
- * habituel du groupe et les lieux qu'il fréquente — c'est elle qui préremplit
- * le panneau de création.
- */
-export default function PlayGroupSessionsPage({ params }: { params: Promise<{ playGroupId: string }> }) {
-  return (
-    <Suspense fallback={<div className="px-4 py-6 lg:px-8"><PlayGroupScreenSkeleton rows={4} /></div>}>
-      <SessionsView params={params} />
-    </Suspense>
-  );
-}
-
-async function SessionsView({ params }: { params: Promise<{ playGroupId: string }> }) {
-  const { playGroupId } = await params;
-
-  return (
-    <PlayGroupShell playGroupId={playGroupId} active="sessions">
-      <SessionsContent playGroupId={playGroupId} />
-    </PlayGroupShell>
-  );
-}
-
-async function SessionsContent({ playGroupId }: { playGroupId: string }) {
+export default async function SessionsView({ playGroupId }: { playGroupId: string }) {
   const [group, viewer, sessions, members, games, places, t] = await Promise.all([
     requirePlayGroup(playGroupId),
     requirePlayGroupMember(playGroupId),

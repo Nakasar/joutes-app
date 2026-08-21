@@ -2206,6 +2206,7 @@
       },
       "settings": {
         "title": "Einstellungen der Gruppe",
+        "metadataTitle": "Einstellungen · {group}",
         "subtitle": "Die Identität der Gruppe, ihre Marke, ihre Links und ihr Rhythmus.",
         "identityTitle": "Identität",
         "nameLabel": "Name der Gruppe",

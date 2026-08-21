@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { ArrowDownSquareIcon } from "lucide-react";
+import { viewHref } from "@/app/[locale]/(app)/play-groups/[playGroupId]/views";
 
 type TabKey = "portal" | "members" | "collection" | "wishlists" | "sellList" | "settings";
 
@@ -25,12 +26,12 @@ export function PlayGroupToolsNavBar({
   const t = useTranslations('PlayGroups.nav');
 
   const tabs: { key: TabKey; href: string; show: boolean }[] = [
-    { key: 'portal', href: `/play-groups/${playGroupId}`, show: true },
-    { key: 'members', href: `/play-groups/${playGroupId}/members`, show: true },
+    { key: 'portal', href: viewHref(playGroupId, 'hub'), show: true },
+    { key: 'members', href: viewHref(playGroupId, 'members'), show: true },
     { key: 'collection', href: `/play-groups/${playGroupId}/collection`, show: true },
     { key: 'wishlists', href: `/play-groups/${playGroupId}/wishlists`, show: true },
     { key: 'sellList', href: `/play-groups/${playGroupId}/sell-list`, show: true },
-    { key: 'settings', href: `/play-groups/${playGroupId}/settings`, show: !!canManageSettings },
+    { key: 'settings', href: viewHref(playGroupId, 'settings'), show: !!canManageSettings },
   ];
 
   return (

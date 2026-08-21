@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { DateTime } from "luxon";
 import { Link } from "@/i18n/navigation";
+import { viewHref } from "@/app/[locale]/(app)/play-groups/[playGroupId]/views";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
@@ -132,7 +133,7 @@ export default function PlayGroupsPageClient() {
                   <Link href={`/play-groups/${group.id}`}>{t("page.details")}</Link>
                 </Button>
                 <Button asChild size="sm" variant="outline">
-                  <Link href={`/play-groups/${group.id}/members`}>{t("page.members")}</Link>
+                  <Link href={viewHref(group.id, "members")}>{t("page.members")}</Link>
                 </Button>
               </div>
             </div>

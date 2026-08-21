@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input.tsx";
 import { Label } from "@/components/ui/label.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { cn } from "@/lib/utils.ts";
+import { viewHref } from "../views.ts";
 import type { PlayGroupContentItem, PlayGroupContentKind } from "@/lib/types/PlayGroup";
 
 import {
@@ -56,7 +57,7 @@ export default function ContentForm({
   const [duration, setDuration] = useState(content?.duration ?? "");
   const [gameId, setGameId] = useState(content?.gameId ?? "");
 
-  const back = () => router.push(`/play-groups/${playGroupId}/contents`);
+  const back = () => router.push(viewHref(playGroupId, "contents"));
 
   const report = (result: PlayGroupActionResult) => {
     if (result.success) {

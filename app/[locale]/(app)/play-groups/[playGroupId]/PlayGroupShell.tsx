@@ -4,13 +4,8 @@ import { getTranslations } from "next-intl/server";
 import { readPlayGroupAccent } from "@/lib/play-groups/theme.ts";
 
 import PlayGroupRail from "./PlayGroupRail.tsx";
-import {
-  countPending,
-  readGroupSessions,
-  readGroupViewer,
-  requirePlayGroup,
-  type PlayGroupView,
-} from "./group-data.ts";
+import { countPending, readGroupSessions, readGroupViewer, requirePlayGroup } from "./group-data.ts";
+import type { PlayGroupView } from "./views.ts";
 
 /**
  * La coquille commune aux vues du hub : l'accent du groupe, le rail, le plan

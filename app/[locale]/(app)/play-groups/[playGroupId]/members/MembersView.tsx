@@ -1,6 +1,4 @@
 import { Suspense } from "react";
-import type { Metadata } from "next";
-import { connection } from "next/server";
 import { getLocale, getTranslations } from "next-intl/server";
 import { DateTime } from "luxon";
 import { AtSign, UserPlus } from "lucide-react";
@@ -8,58 +6,10 @@ import { AtSign, UserPlus } from "lucide-react";
 import { getPendingInvitationsForPlayGroup, getPlayGroupById } from "@/lib/db/play-groups.ts";
 import { readPlayGroupAttendance } from "@/lib/db/play-group-sessions.ts";
 import { getUsersByIds } from "@/lib/db/users.ts";
-import { PlayGroupScreenSkeleton } from "@/components/play-groups/PlayGroupSkeletons.tsx";
 
-import PlayGroupShell from "../PlayGroupShell.tsx";
 import { InvitationActions, InviteMemberForm, MemberRoleActions } from "./MemberActions.tsx";
 import { readGroupMembers, requirePlayGroup, requirePlayGroupMember } from "../group-data.ts";
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ playGroupId: string }>;
-}): Promise<Metadata> {
-  const { playGroupId } = await params;
-  const t = await getTranslations("PlayGroups.hub.members");
-
-  await connection();
-  const group = await getPlayGroupById(playGroupId);
-
-  return { title: group ? t("metadataTitle", { group: group.name }) : t("title") };
-}
-
-/**
- * Les membres du groupe : qui en est, à quel titre, et à quel point il vient.
- *
- * La présence est dérivée des réponses aux sessions passées — aucun compteur
- * n'est tenu à part. Un groupe qui n'a pas encore joué n'affiche donc pas de
- * jauge plutôt qu'une jauge à zéro, qui accuserait tout le monde.
- */
-export default function PlayGroupMembersPage({ params }: { params: Promise<{ playGroupId: string }> }) {
-  return (
-    <Suspense
-      fallback={
-        <div className="px-4 py-6 lg:px-8">
-          <PlayGroupScreenSkeleton rows={5} label="Chargement des membres" />
-        </div>
-      }
-    >
-      <MembersView params={params} />
-    </Suspense>
-  );
-}
-
-async function MembersView({ params }: { params: Promise<{ playGroupId: string }> }) {
-  const { playGroupId } = await params;
-
-  return (
-    <PlayGroupShell playGroupId={playGroupId} active="members">
-      <MembersContent playGroupId={playGroupId} />
-    </PlayGroupShell>
-  );
-}
-
-async function MembersContent({ playGroupId }: { playGroupId: string }) {
+export default async function MembersView({ playGroupId }: { playGroupId: string }) {
   const [group, viewer, members, attendance, invitations, t, locale] = await Promise.all([
     requirePlayGroup(playGroupId),
     requirePlayGroupMember(playGroupId),

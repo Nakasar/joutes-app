@@ -1,68 +1,16 @@
-import { Suspense } from "react";
-import type { Metadata } from "next";
-import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { EditorFormSkeleton } from "@/components/EditorFormSkeleton.tsx";
-import { getPlayGroupById } from "@/lib/db/play-groups.ts";
 import { getLairsByIds } from "@/lib/db/lairs.ts";
 import { readPlayGroupPlaces } from "@/lib/db/play-group-sessions.ts";
 import { getUserById } from "@/lib/db/users.ts";
 import { readAllGames } from "@/lib/db/games-cached.ts";
 import PlayGroupGamesSettings from "@/components/play-groups/PlayGroupGamesSettings.tsx";
 
-import PlayGroupShell from "../PlayGroupShell.tsx";
 import PlayGroupIdentityForm from "./PlayGroupIdentityForm.tsx";
 import { requirePlayGroup, requirePlayGroupMember } from "../group-data.ts";
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ playGroupId: string }>;
-}): Promise<Metadata> {
-  const { playGroupId } = await params;
-
-  // Le pilote Mongo touche à l'horloge en lisant le groupe, ce qu'un prérendu
-  // ne sait pas figer, et aucune frontière n'y change rien.
-  await connection();
-  const t = await getTranslations("PlayGroups.settings");
-  const group = await getPlayGroupById(playGroupId);
-
-  return { title: group ? t("metadataTitle", { group: group.name }) : t("title") };
-}
-
-/**
- * Les réglages du groupe : sa personnalisation, puis ses jeux.
- *
- * Réservés au fondateur et aux admins — le rail ne montre l'entrée qu'à eux, et
- * la page le vérifie de son côté : un lien partagé ne doit pas suffire.
- */
-export default function PlayGroupSettingsPage({ params }: { params: Promise<{ playGroupId: string }> }) {
-  return (
-    <Suspense
-      fallback={
-        <div className="px-4 py-6 lg:px-8">
-          <EditorFormSkeleton fields={5} label="Chargement des réglages" />
-        </div>
-      }
-    >
-      <SettingsView params={params} />
-    </Suspense>
-  );
-}
-
-async function SettingsView({ params }: { params: Promise<{ playGroupId: string }> }) {
-  const { playGroupId } = await params;
-
-  return (
-    <PlayGroupShell playGroupId={playGroupId} active="settings">
-      <SettingsContent playGroupId={playGroupId} />
-    </PlayGroupShell>
-  );
-}
-
-async function SettingsContent({ playGroupId }: { playGroupId: string }) {
+export default async function SettingsView({ playGroupId }: { playGroupId: string }) {
   const [group, viewer, t] = await Promise.all([
     requirePlayGroup(playGroupId),
     requirePlayGroupMember(playGroupId),

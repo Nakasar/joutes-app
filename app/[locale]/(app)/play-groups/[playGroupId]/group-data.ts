@@ -15,20 +15,6 @@ import type { Game } from "@/lib/types/Game";
 import type { PlayGroup, PlayGroupContentItem } from "@/lib/types/PlayGroup";
 import type { PlayGroupSession } from "@/lib/types/PlayGroupSession";
 
-/** Les vues du rail de l'Établi. */
-export const PLAY_GROUP_VIEWS = [
-  "hub",
-  "sessions",
-  "announcements",
-  "contents",
-  "lists",
-  "members",
-  "showcase",
-  "settings",
-] as const;
-
-export type PlayGroupView = (typeof PLAY_GROUP_VIEWS)[number];
-
 /**
  * Le groupe, lu une fois par rendu.
  *

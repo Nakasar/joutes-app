@@ -1560,6 +1560,7 @@
       },
       "settings": {
         "title": "Impostazioni del gruppo",
+        "metadataTitle": "Impostazioni · {group}",
         "subtitle": "L'identità del gruppo, il suo marchio, i suoi link e il suo ritmo.",
         "identityTitle": "Identità",
         "nameLabel": "Nome del gruppo",
