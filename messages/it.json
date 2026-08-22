@@ -4863,5 +4863,136 @@
     "seeBadge": "Vedi i miei traguardi",
     "emptyTitle": "Nessun evento questo mese",
     "emptyBody": "Anche i fantasmi se ne sono andati. Prova un altro mese, o organizzane uno tu."
+  },
+  "Users": {
+    "profile": {
+      "metadata": {
+        "description": "Profilo di {tag} su Joutes: mazzi, pubblicazioni, obiettivi e liste condivise.",
+        "openGraphTitle": "{tag} - Joutes"
+      },
+      "hero": {
+        "addBanner": "Aggiungi un banner"
+      },
+      "meta": {
+        "memberSince": "iscritto da {date}",
+        "followers": "{count, plural, =0 {nessun iscritto} one {# iscritto} other {# iscritti}}"
+      },
+      "actions": {
+        "follow": "Segui",
+        "following": "Seguito ✓",
+        "addFriend": "Aggiungi agli amici",
+        "friendPending": "Richiesta inviata",
+        "friend": "Amico ✓",
+        "friendRequested": "Richiesta di amicizia inviata.",
+        "proposeTrade": "Proponi uno scambio",
+        "customise": "Personalizza",
+        "errors": {
+          "UNAUTHENTICATED": "Accedi per farlo.",
+          "SELF": "Non puoi farlo sul tuo profilo.",
+          "NOT_FOUND": "Questo account non esiste più.",
+          "ALREADY": "È già fatto.",
+          "FAILED": "L'operazione non è riuscita."
+        }
+      },
+      "tabs": {
+        "label": "Sezioni del profilo",
+        "showcase": "Vetrina",
+        "decks": "Mazzi",
+        "publications": "Pubblicazioni",
+        "achievements": "Obiettivi",
+        "trade": "Desideri e vendite"
+      },
+      "live": {
+        "badge": "In diretta",
+        "untitled": "Diretta in corso",
+        "since": "iniziata {relative}",
+        "justNow": "poco fa",
+        "open": "Apri la diretta",
+        "openOn": "Apri su {platform}"
+      },
+      "about": {
+        "title": "Informazioni"
+      },
+      "decks": {
+        "title": "Mazzi",
+        "count": "{count, plural, one {# mazzo pubblico} other {# mazzi pubblici}}",
+        "pinned": "In evidenza",
+        "pin": "Metti questo mazzo in evidenza",
+        "unpin": "Togli dall'evidenza",
+        "errors": {
+          "UNAUTHENTICATED": "Accedi per farlo.",
+          "SELF": "Non puoi farlo sul tuo profilo.",
+          "NOT_FOUND": "Questo mazzo non è più pubblico.",
+          "ALREADY": "È già fatto.",
+          "FAILED": "L'operazione non è riuscita."
+        }
+      },
+      "publications": {
+        "title": "Pubblicazioni",
+        "manage": "Gestisci le mie pubblicazioni",
+        "count": "{shown} su {total}",
+        "emptyForFilter": "Ancora niente di questo tipo.",
+        "filters": {
+          "all": "Tutto",
+          "video": "Video",
+          "article": "Articoli",
+          "replay": "Replay"
+        },
+        "kinds": {
+          "video": "Video",
+          "article": "Articolo",
+          "replay": "Replay"
+        }
+      },
+      "achievements": {
+        "title": "Obiettivi",
+        "points": "{points} punti",
+        "pointsShort": "{points} pt",
+        "progress": "{unlocked} / {total}",
+        "more": "{count, plural, one {+ # altro obiettivo} other {+ # altri obiettivi}}"
+      },
+      "trade": {
+        "title": "Desideri e vendite",
+        "wishlists": "Liste dei desideri",
+        "sellList": "Lista di vendita",
+        "cards": "{count, plural, one {# carta} other {# carte}}",
+        "forSale": "{count, plural, one {# carta in vendita} other {# carte in vendita}}",
+        "seeSellList": "Vedi la lista di vendita",
+        "match": "{count, plural, one {# dei suoi desideri è nella tua lista di vendita.} other {# dei suoi desideri sono nella tua lista di vendita.}}",
+        "proposeTrade": "Proponi uno scambio"
+      },
+      "sidebar": {
+        "recognitions": "Riconoscimenti",
+        "planOrigin": "Un abbonamento, una tonalità per offerta.",
+        "statusOrigin": "Assegnato dal team. Non si compra.",
+        "games": "Giochi seguiti",
+        "favourite": "Gioco preferito",
+        "lairs": "Luoghi seguiti",
+        "groups": "Gruppi di gioco",
+        "members": "{count, plural, one {# membro} other {# membri}}",
+        "findMe": "Trova {name}",
+        "followers": "{count, plural, =0 {Ancora nessun iscritto} one {# iscritto} other {# iscritti}}"
+      },
+      "private": {
+        "badge": "Profilo privato",
+        "title": "Questo profilo è privato",
+        "visible": "Restano visibili: il nome, il tag, i distintivi, l'anzianità dell'account, la lista di vendita e le liste dei desideri contrassegnate come pubbliche.",
+        "hidden": "Sono nascosti: giochi e luoghi seguiti, obiettivi, mazzi, pubblicazioni e gruppi di gioco.",
+        "makePublic": "Rendi pubblico il mio profilo"
+      },
+      "onboarding": {
+        "title": "La tua vetrina è pronta al {percent} %",
+        "go": "Vai",
+        "subscribe": "Vedi le offerte",
+        "bannerLocked": "Richiede un abbonamento Supporter.",
+        "steps": {
+          "username": "Scegli il tuo nome",
+          "identity": "Aggiungi un avatar e una descrizione",
+          "banner": "Metti un banner",
+          "follows": "Segui i tuoi giochi e luoghi",
+          "public": "Rendi pubblico il tuo profilo"
+        }
+      }
+    }
   }
 }

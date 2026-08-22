@@ -4863,5 +4863,136 @@
     "seeBadge": "See my achievements",
     "emptyTitle": "No events this month",
     "emptyBody": "Even the ghosts have left. Try another month, or host your own."
+  },
+  "Users": {
+    "profile": {
+      "metadata": {
+        "description": "{tag} on Joutes: decks, publications, achievements and shared lists.",
+        "openGraphTitle": "{tag} - Joutes"
+      },
+      "hero": {
+        "addBanner": "Add a banner"
+      },
+      "meta": {
+        "memberSince": "member since {date}",
+        "followers": "{count, plural, =0 {no followers} one {# follower} other {# followers}}"
+      },
+      "actions": {
+        "follow": "Follow",
+        "following": "Following ✓",
+        "addFriend": "Add friend",
+        "friendPending": "Request sent",
+        "friend": "Friend ✓",
+        "friendRequested": "Friend request sent.",
+        "proposeTrade": "Propose a trade",
+        "customise": "Customise",
+        "errors": {
+          "UNAUTHENTICATED": "Sign in to do that.",
+          "SELF": "You cannot do that on your own profile.",
+          "NOT_FOUND": "This account no longer exists.",
+          "ALREADY": "Already done.",
+          "FAILED": "That did not work."
+        }
+      },
+      "tabs": {
+        "label": "Profile sections",
+        "showcase": "Showcase",
+        "decks": "Decks",
+        "publications": "Publications",
+        "achievements": "Achievements",
+        "trade": "Wishlists & sales"
+      },
+      "live": {
+        "badge": "Live",
+        "untitled": "Streaming now",
+        "since": "started {relative}",
+        "justNow": "just now",
+        "open": "Open the stream",
+        "openOn": "Open on {platform}"
+      },
+      "about": {
+        "title": "About"
+      },
+      "decks": {
+        "title": "Decks",
+        "count": "{count, plural, one {# public deck} other {# public decks}}",
+        "pinned": "Pinned",
+        "pin": "Pin this deck",
+        "unpin": "Unpin this deck",
+        "errors": {
+          "UNAUTHENTICATED": "Sign in to do that.",
+          "SELF": "You cannot do that on your own profile.",
+          "NOT_FOUND": "This deck is no longer public.",
+          "ALREADY": "Already done.",
+          "FAILED": "Pinning did not work."
+        }
+      },
+      "publications": {
+        "title": "Publications",
+        "manage": "Manage my publications",
+        "count": "{shown} of {total}",
+        "emptyForFilter": "Nothing of that kind yet.",
+        "filters": {
+          "all": "All",
+          "video": "Videos",
+          "article": "Articles",
+          "replay": "Replays"
+        },
+        "kinds": {
+          "video": "Video",
+          "article": "Article",
+          "replay": "Replay"
+        }
+      },
+      "achievements": {
+        "title": "Achievements",
+        "points": "{points} points",
+        "pointsShort": "{points} pts",
+        "progress": "{unlocked} / {total}",
+        "more": "{count, plural, one {+ # more achievement} other {+ # more achievements}}"
+      },
+      "trade": {
+        "title": "Wishlists & sales",
+        "wishlists": "Wishlists",
+        "sellList": "Sale list",
+        "cards": "{count, plural, one {# card} other {# cards}}",
+        "forSale": "{count, plural, one {# card for sale} other {# cards for sale}}",
+        "seeSellList": "See the sale list",
+        "match": "{count, plural, one {# of their wishes is in your sale list.} other {# of their wishes are in your sale list.}}",
+        "proposeTrade": "Propose a trade"
+      },
+      "sidebar": {
+        "recognitions": "Recognitions",
+        "planOrigin": "A subscription, one shade per tier.",
+        "statusOrigin": "Granted by the team. Not for sale.",
+        "games": "Followed games",
+        "favourite": "Favourite game",
+        "lairs": "Followed venues",
+        "groups": "Play groups",
+        "members": "{count, plural, one {# member} other {# members}}",
+        "findMe": "Find {name}",
+        "followers": "{count, plural, =0 {No followers yet} one {# follower} other {# followers}}"
+      },
+      "private": {
+        "badge": "Private profile",
+        "title": "This profile is private",
+        "visible": "Still visible: the display name, the tag, the badges, how long the account has existed, the sale list and any wishlist marked public.",
+        "hidden": "Hidden: followed games and venues, achievements, decks, publications and play groups.",
+        "makePublic": "Make my profile public"
+      },
+      "onboarding": {
+        "title": "Your showcase is {percent}% ready",
+        "go": "Go there",
+        "subscribe": "See the tiers",
+        "bannerLocked": "Requires a Supporter subscription.",
+        "steps": {
+          "username": "Choose your display name",
+          "identity": "Add an avatar and a description",
+          "banner": "Put up a banner",
+          "follows": "Follow your games and venues",
+          "public": "Make your profile public"
+        }
+      }
+    }
   }
 }

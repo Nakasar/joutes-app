@@ -4863,5 +4863,136 @@
     "seeBadge": "Voir mes succès",
     "emptyTitle": "Aucun événement ce mois-ci",
     "emptyBody": "Même les revenants ont déserté. Changez de mois, ou ouvrez le vôtre."
+  },
+  "Users": {
+    "profile": {
+      "metadata": {
+        "description": "Profil de {tag} sur Joutes : decks, publications, succès et listes partagées.",
+        "openGraphTitle": "{tag} - Joutes"
+      },
+      "hero": {
+        "addBanner": "Ajouter une bannière"
+      },
+      "meta": {
+        "memberSince": "membre depuis {date}",
+        "followers": "{count, plural, =0 {aucun abonné} one {# abonné} other {# abonnés}}"
+      },
+      "actions": {
+        "follow": "Suivre",
+        "following": "Suivi ✓",
+        "addFriend": "Ajouter en ami",
+        "friendPending": "Demande envoyée",
+        "friend": "Ami ✓",
+        "friendRequested": "Demande d'ami envoyée.",
+        "proposeTrade": "Proposer un échange",
+        "customise": "Personnaliser",
+        "errors": {
+          "UNAUTHENTICATED": "Connectez-vous pour faire cela.",
+          "SELF": "Vous ne pouvez pas le faire sur votre propre profil.",
+          "NOT_FOUND": "Ce compte n'existe plus.",
+          "ALREADY": "C'est déjà fait.",
+          "FAILED": "L'opération a échoué."
+        }
+      },
+      "tabs": {
+        "label": "Sections du profil",
+        "showcase": "Vitrine",
+        "decks": "Decks",
+        "publications": "Publications",
+        "achievements": "Succès",
+        "trade": "Souhaits & ventes"
+      },
+      "live": {
+        "badge": "En direct",
+        "untitled": "Diffusion en cours",
+        "since": "commencé {relative}",
+        "justNow": "à l'instant",
+        "open": "Ouvrir le direct",
+        "openOn": "Ouvrir sur {platform}"
+      },
+      "about": {
+        "title": "À propos"
+      },
+      "decks": {
+        "title": "Decks",
+        "count": "{count, plural, one {# deck public} other {# decks publics}}",
+        "pinned": "Épinglé",
+        "pin": "Épingler ce deck",
+        "unpin": "Ne plus épingler ce deck",
+        "errors": {
+          "UNAUTHENTICATED": "Connectez-vous pour faire cela.",
+          "SELF": "Vous ne pouvez pas le faire sur votre propre profil.",
+          "NOT_FOUND": "Ce deck n'est plus public.",
+          "ALREADY": "C'est déjà fait.",
+          "FAILED": "L'épinglage a échoué."
+        }
+      },
+      "publications": {
+        "title": "Publications",
+        "manage": "Gérer mes publications",
+        "count": "{shown} sur {total}",
+        "emptyForFilter": "Rien de ce genre pour le moment.",
+        "filters": {
+          "all": "Tout",
+          "video": "Vidéos",
+          "article": "Articles",
+          "replay": "Replays"
+        },
+        "kinds": {
+          "video": "Vidéo",
+          "article": "Article",
+          "replay": "Replay"
+        }
+      },
+      "achievements": {
+        "title": "Succès",
+        "points": "{points} points",
+        "pointsShort": "{points} pts",
+        "progress": "{unlocked} / {total}",
+        "more": "{count, plural, one {+ # autre succès} other {+ # autres succès}}"
+      },
+      "trade": {
+        "title": "Souhaits & ventes",
+        "wishlists": "Listes de souhaits",
+        "sellList": "Liste de vente",
+        "cards": "{count, plural, one {# carte} other {# cartes}}",
+        "forSale": "{count, plural, one {# carte en vente} other {# cartes en vente}}",
+        "seeSellList": "Voir la liste de vente",
+        "match": "{count, plural, one {# de ses souhaits est dans votre liste de vente.} other {# de ses souhaits sont dans votre liste de vente.}}",
+        "proposeTrade": "Proposer un échange"
+      },
+      "sidebar": {
+        "recognitions": "Reconnaissances",
+        "planOrigin": "Un abonnement, une teinte par offre.",
+        "statusOrigin": "Posé par l'équipe. Ne s'achète pas.",
+        "games": "Jeux suivis",
+        "favourite": "Jeu favori",
+        "lairs": "Lieux suivis",
+        "groups": "Groupes de jeu",
+        "members": "{count, plural, one {# membre} other {# membres}}",
+        "findMe": "Retrouver {name}",
+        "followers": "{count, plural, =0 {Aucun abonné pour le moment} one {# abonné} other {# abonnés}}"
+      },
+      "private": {
+        "badge": "Profil privé",
+        "title": "Ce profil est privé",
+        "visible": "Restent visibles : le pseudonyme, le tag, les badges, l'ancienneté du compte, la liste de vente et les listes de souhaits marquées publiques.",
+        "hidden": "Sont masqués : les jeux et lieux suivis, les succès, les decks, les publications et les groupes de jeu.",
+        "makePublic": "Rendre mon profil public"
+      },
+      "onboarding": {
+        "title": "Votre vitrine est prête à {percent} %",
+        "go": "Y aller",
+        "subscribe": "Voir les offres",
+        "bannerLocked": "Demande un abonnement Supporter.",
+        "steps": {
+          "username": "Choisir votre pseudonyme",
+          "identity": "Ajouter un avatar et une description",
+          "banner": "Poser une bannière",
+          "follows": "Suivre vos jeux et vos lieux",
+          "public": "Rendre votre profil public"
+        }
+      }
+    }
   }
 }
