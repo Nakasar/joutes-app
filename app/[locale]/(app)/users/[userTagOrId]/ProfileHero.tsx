@@ -60,7 +60,14 @@ export default async function ProfileHero({ userTagOrId }: { userTagOrId: string
         </Suspense>
       </div>
 
-      <div className="container mx-auto max-w-7xl px-4 lg:px-10">
+      {/* `relative z-10` n'est pas décoratif : la bannière au-dessus porte
+          `relative`, et un élément positionné se peint **après** les blocs qui
+          ne le sont pas, quel que soit l'ordre du DOM. Sans cela, la bannière
+          recouvrait l'avatar et le pseudonyme qui la suivent pourtant — c'est
+          l'avatar débordant sur elle qui pose la question, que la vitrine d'un
+          lieu ne rencontre pas puisqu'elle range son identité *dans* sa
+          bannière. */}
+      <div className="relative z-10 container mx-auto max-w-7xl px-4 lg:px-10">
         <div className="-mt-[38px] flex flex-col gap-4 md:-mt-[52px] md:flex-row md:items-end">
           <ProfileAvatar
             src={subject.avatar}

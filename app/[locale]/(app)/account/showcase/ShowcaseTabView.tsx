@@ -2,7 +2,6 @@ import { getTranslations } from "next-intl/server";
 
 import { plansForUserId } from "@/lib/subscriptions/access.ts";
 import { displayPlan, grantsEntitlement } from "@/lib/subscriptions/entitlements.ts";
-import { labelForPlan } from "@/lib/subscriptions/tone.ts";
 import type { User } from "@/lib/types/User";
 import { readUserLinks } from "@/lib/users/links.ts";
 import { readUserShowcaseSections } from "@/lib/users/showcase.ts";
@@ -36,7 +35,7 @@ export default async function ShowcaseTabView({ user }: { user: User }) {
 
       <ShowcaseForm
         canUseBanner={grantsEntitlement(plans, "sub:profile-banner")}
-        planLabel={labelForPlan(displayPlan(plans))}
+        hasPlan={displayPlan(plans) !== null}
         initial={{
           isPublic: user.isPublicProfile === true,
           banner: user.showcase?.banner,

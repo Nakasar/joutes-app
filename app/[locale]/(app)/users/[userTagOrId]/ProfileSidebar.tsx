@@ -2,13 +2,10 @@ import { getTranslations } from "next-intl/server";
 import { Award, Gamepad2, MapPin, Star, Users } from "lucide-react";
 
 import { Link } from "@/i18n/navigation.ts";
-import { PlanBadge } from "@/components/PlanBadge.tsx";
-import { StatusBadge } from "@/components/StatusBadge.tsx";
 
 import { ProfileLinkIcon } from "./ProfileLinkIcon.tsx";
 import {
   readFollowersCount,
-  readProfileBadges,
   readProfileGames,
   readProfileGroups,
   readProfileLairs,
@@ -30,44 +27,6 @@ function SidebarCard({ title, children }: { title: string; children: React.React
       <h2 className="text-[15px] font-semibold">{title}</h2>
       {children}
     </section>
-  );
-}
-
-/**
- * Les reconnaissances : le badge, et d'où il vient.
- *
- * La phrase compte autant que la pastille — « un abonnement, une teinte par
- * offre » d'un côté, « posé par l'équipe, ne s'achète pas » de l'autre. Sans
- * elle, les deux sortes de badges se lisent comme un seul classement.
- */
-export async function RecognitionsCard({ userTagOrId }: { userTagOrId: string }) {
-  const [badges, t] = await Promise.all([
-    readProfileBadges(userTagOrId),
-    getTranslations("Users.profile.sidebar"),
-  ]);
-
-  if (!badges.plan && badges.statuses.length === 0) {
-    return null;
-  }
-
-  return (
-    <SidebarCard title={t("recognitions")}>
-      <ul className="flex flex-col gap-3">
-        {badges.plan && (
-          <li className="flex flex-col gap-1.5">
-            <PlanBadge plan={badges.plan} className="self-start" />
-            <p className="text-[13px] text-pretty text-muted-foreground">{t("planOrigin")}</p>
-          </li>
-        )}
-
-        {badges.statuses.map((status) => (
-          <li key={status.id} className="flex flex-col gap-1.5">
-            <StatusBadge status={status} className="self-start" />
-            <p className="text-[13px] text-pretty text-muted-foreground">{t("statusOrigin")}</p>
-          </li>
-        ))}
-      </ul>
-    </SidebarCard>
   );
 }
 

@@ -4879,7 +4879,6 @@
         "openGraphTitle": "Community - Joutes"
       },
       "title": "Community",
-      "counts": "{total, plural, one {# player} other {# players}}, {publicProfiles, plural, one {# public profile} other {# public profiles}}",
       "empty": "No profile matches.",
       "reset": "Reset the filters",
       "loadMore": "Load {count} more profiles",
@@ -4919,17 +4918,9 @@
         "myShowcase": "My showcase",
         "settings": "Settings",
         "nearby": "Around {city}",
-        "nearbyHint": "Town level only, and only for the accounts that allowed it.",
         "leaderboard": "Achievement ranking",
         "points": "{points} pts",
         "yourRank": "You are #{rank} with {points} points.",
-        "notRanked": "You are not listed: the ranking only counts public profiles that unlocked at least one achievement.",
-        "badgeLegend": "The badges",
-        "planLegendTitle": "A subscription",
-        "planLegend": "One shade per tier, on the avatar ring and on the badge.",
-        "statusLegendTitle": "A status",
-        "statusLegend": "Granted by the team. Not for sale.",
-        "seePlans": "See the tiers",
         "joinTitle": "Join the community",
         "joinHint": "Build your showcase, follow your games and venues, and find the players near you.",
         "signIn": "Sign in"
@@ -5032,9 +5023,6 @@
         "proposeTrade": "Propose a trade"
       },
       "sidebar": {
-        "recognitions": "Recognitions",
-        "planOrigin": "A subscription, one shade per tier.",
-        "statusOrigin": "Granted by the team. Not for sale.",
         "games": "Followed games",
         "favourite": "Favourite game",
         "lairs": "Followed venues",
@@ -5046,8 +5034,6 @@
       "private": {
         "badge": "Private profile",
         "title": "This profile is private",
-        "visible": "Still visible: the display name, the tag, the badges, how long the account has existed, the sale list and any wishlist marked public.",
-        "hidden": "Hidden: followed games and venues, achievements, decks, publications and play groups.",
         "makePublic": "Make my profile public"
       },
       "onboarding": {
@@ -5163,13 +5149,12 @@
         "bannerLabel": "Banner",
         "bannerHint": "2400 × 600 recommended",
         "bannerLocked": "The banner requires a Supporter subscription.",
+        "getBadge": "Add a ring to your avatar and a badge by starting a subscription",
         "descriptionLabel": "Description",
         "descriptionPlaceholder": "The games you play, how you play them, where to find you…",
         "showCity": "Show my town",
         "showCityHint": "Only the town appears: {city}. Never your exact position.",
-        "showCityNoCity": "Set a location in the Profile tab first.",
-        "derived": "Your avatar ring and your badges are not settings: they come from your subscription and from statuses granted by the team.",
-        "derivedWithPlan": "Your avatar ring and your {plan} badge are not settings: they come from your subscription and from statuses granted by the team."
+        "showCityNoCity": "Set a location in the Profile tab first."
       },
       "sections": {
         "title": "Showcase blocks",
@@ -5213,10 +5198,6 @@
           "trade": "Wishlists & sales"
         }
       },
-      "neverPublic": {
-        "title": "Never public",
-        "description": "Your email, your exact position, your collection, your private groups, your sessions and your private lists appear on no showcase, whatever these settings say."
-      },
       "errors": {
         "UNAUTHENTICATED": "Sign in to do that.",
         "INVALID": "Some fields are not valid.",
@@ -5238,8 +5219,7 @@
         "public": "Public",
         "private": "Draft",
         "makePublic": "Publish",
-        "makePrivate": "Back to draft",
-        "hint": "A draft appears nowhere: not on your showcase, not on your groups'."
+        "makePrivate": "Back to draft"
       },
       "kinds": {
         "video": "Video",

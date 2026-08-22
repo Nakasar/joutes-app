@@ -11,7 +11,6 @@ import { listLiveStreamLinksForUsers, listLiveUserShowcases } from "@/lib/db/str
 import { getUserBadges, NO_BADGES, type UserBadges } from "@/lib/db/user-badges.ts";
 import { countFollowersByUser, readFollowedUserIds, readMostFollowedUserIds } from "@/lib/db/user-followers.ts";
 import {
-  countCommunity,
   countPublicUsers,
   getUserById,
   readNearbyPublicUsers,
@@ -243,12 +242,6 @@ async function readGamesFor(users: RegistryUser[]): Promise<Map<string, Game[]>>
     ]),
   );
 }
-
-/** Combien de comptes existent, et combien ont ouvert leur profil. */
-export const readCommunityCounts = cache(async () => {
-  await connection();
-  return countCommunity();
-});
 
 /**
  * Le classement des succès, et le rang du visiteur.

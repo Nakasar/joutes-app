@@ -22,6 +22,29 @@ décidée. `notFound()` sur un profil privé casserait de surcroît la modérati
 un profil qu'on ne peut plus atteindre est un profil qu'on ne peut plus
 signaler.
 
+## Ce qui s'écrit à l'écran, et ce qui s'écrit ici
+
+**Ce dossier est le seul endroit où le fonctionnement s'explique.** Les écrans
+ont d'abord porté des cartes de légende — « un abonnement, une teinte par
+offre », « posé par l'équipe, ne s'achète pas » —, un compteur de population, et
+des notes de mécanisme sous des cartes qui n'en demandaient pas. C'était de la
+documentation posée dans l'interface : elle est partie.
+
+La ligne de partage, pour la prochaine fois :
+
+- **Reste** ce qui dit l'**état courant** (« Votre vitrine est ouverte : n'importe
+  qui peut la voir »), ce qui explique un **contrôle désactivé** (« la bannière
+  demande un abonnement Supporter »), ce qui affiche une **valeur réelle**
+  (« Seule la commune apparaît : Thionville ») et ce qui **guide un geste**
+  (« 20 sur 4 812 » sous « charger plus »).
+- **Part** ce qui décrit le système à quelqu'un qui ne l'a pas demandé.
+
+Un cas mérite mieux qu'une suppression. Dire « le contour de votre avatar ne se
+règle pas » énonce une impossibilité ; « ajoutez un contour à votre avatar et un
+badge en activant un abonnement », avec un lien vers `/pricing`, dit la même
+chose en ouvrant une porte. Cet appel ne s'affiche **que faute d'abonnement** —
+le proposer à qui en a déjà un serait le même bruit sous une autre forme.
+
 ## Où ça vit
 
 | Fichier | Rôle |
@@ -61,6 +84,17 @@ stockage — parce qu'il a été ajouté après le dernier enregistrement — re
 revient toujours allumé, sa visibilité se réglant liste par liste.
 
 Ajouter un bloc plus tard ne demande donc aucune migration.
+
+### Un piège d'empilement
+
+L'avatar déborde sur la bannière par une marge négative, et les deux sont
+frères. La bannière portant `relative`, elle se peint **après** l'en-tête qui la
+suit pourtant — un élément positionné passe devant les blocs qui ne le sont pas,
+quel que soit l'ordre du DOM. D'où le `relative z-10` sur le conteneur
+d'en-tête : sans lui, la bannière voile l'avatar et le pseudonyme.
+
+La vitrine d'un lieu ne rencontre pas ce cas, elle range son identité *dans* sa
+bannière en `absolute inset-x-0 bottom-0`.
 
 ## Les onglets
 

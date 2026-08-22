@@ -22,14 +22,13 @@ import RegistryFilters from "./RegistryFilters.tsx";
 import RegistrySearchField from "./RegistrySearchField.tsx";
 import { RegistryListSkeleton, RegistrySidebarSkeleton } from "./RegistrySkeletons.tsx";
 import {
-  BadgeLegendCard,
   LeaderboardCard,
   NearbyCard,
   SignedOutCard,
   YourProfileCard,
 } from "./RegistrySidebar.tsx";
 import UserCard from "./UserCard.tsx";
-import { readCommunityCounts, readRegistry, readRegistryViewer } from "./registry-data.ts";
+import { readRegistry, readRegistryViewer } from "./registry-data.ts";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Users.registry.metadata");
@@ -87,7 +86,7 @@ async function RegistryMain({ searchParams }: { searchParams: RegistrySearchPara
   const [params, t] = await Promise.all([searchParams, getTranslations("Users.registry")]);
   const filters = readRegistryFilters(params);
 
-  const [counts, viewer] = await Promise.all([readCommunityCounts(), readRegistryViewer()]);
+  const viewer = await readRegistryViewer();
 
   // Les jeux proposés en pastilles sont ceux que le visiteur suit : un
   // annuaire filtré par un jeu auquel on ne joue pas n'aide personne. Un
@@ -99,14 +98,7 @@ async function RegistryMain({ searchParams }: { searchParams: RegistrySearchPara
 
   return (
     <>
-      <div className="flex flex-col gap-2">
-        <h1 className="text-[34px] leading-tight font-extrabold tracking-[-0.02em]">
-          {t("title")}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {t("counts", { total: counts.total, publicProfiles: counts.publicProfiles })}
-        </p>
-      </div>
+      <h1 className="text-[34px] leading-tight font-extrabold tracking-[-0.02em]">{t("title")}</h1>
 
       <RegistrySearchField value={filters.q} />
 
@@ -187,7 +179,6 @@ async function RegistryAside() {
       {viewer.isAuthenticated ? <YourProfileCard /> : <SignedOutCard />}
       <NearbyCard />
       <LeaderboardCard />
-      <BadgeLegendCard />
     </>
   );
 }

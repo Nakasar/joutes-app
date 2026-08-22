@@ -25,7 +25,6 @@ import {
   FollowedGamesCard,
   FollowedLairsCard,
   PlayGroupsCard,
-  RecognitionsCard,
 } from "./ProfileSidebar.tsx";
 import { PrivateProfileCard, ProfileOnboarding } from "./ProfileStates.tsx";
 import {
@@ -149,10 +148,6 @@ async function UserProfile({
           </div>
 
           <aside className="flex flex-col gap-4">
-            <Suspense fallback={<div className="h-40 rounded-xl bg-muted" aria-hidden />}>
-              <RecognitionsCard userTagOrId={userTagOrId} />
-            </Suspense>
-
             {subject.isPublic && (
               <Suspense fallback={null}>
                 <FollowedGamesCard userTagOrId={userTagOrId} />

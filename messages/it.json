@@ -4879,7 +4879,6 @@
         "openGraphTitle": "Comunità - Joutes"
       },
       "title": "Comunità",
-      "counts": "{total, plural, one {# giocatore} other {# giocatori}}, {publicProfiles, plural, one {# profilo pubblico} other {# profili pubblici}}",
       "empty": "Nessun profilo corrisponde.",
       "reset": "Azzera i filtri",
       "loadMore": "Carica altri {count} profili",
@@ -4919,17 +4918,9 @@
         "myShowcase": "La mia vetrina",
         "settings": "Impostazioni",
         "nearby": "Intorno a {city}",
-        "nearbyHint": "Solo a livello di comune, e solo per gli account che l'hanno consentito.",
         "leaderboard": "Classifica degli obiettivi",
         "points": "{points} pt",
         "yourRank": "Sei {rank}º con {points} punti.",
-        "notRanked": "Non compari: la classifica conta solo i profili pubblici che hanno sbloccato almeno un obiettivo.",
-        "badgeLegend": "I distintivi",
-        "planLegendTitle": "Un abbonamento",
-        "planLegend": "Una tonalità per offerta, sul contorno dell'avatar e sul distintivo.",
-        "statusLegendTitle": "Uno stato",
-        "statusLegend": "Assegnato dal team. Non si compra.",
-        "seePlans": "Vedi le offerte",
         "joinTitle": "Unisciti alla comunità",
         "joinHint": "Crea la tua vetrina, segui i tuoi giochi e luoghi, e trova i giocatori vicino a te.",
         "signIn": "Accedi"
@@ -5032,9 +5023,6 @@
         "proposeTrade": "Proponi uno scambio"
       },
       "sidebar": {
-        "recognitions": "Riconoscimenti",
-        "planOrigin": "Un abbonamento, una tonalità per offerta.",
-        "statusOrigin": "Assegnato dal team. Non si compra.",
         "games": "Giochi seguiti",
         "favourite": "Gioco preferito",
         "lairs": "Luoghi seguiti",
@@ -5046,8 +5034,6 @@
       "private": {
         "badge": "Profilo privato",
         "title": "Questo profilo è privato",
-        "visible": "Restano visibili: il nome, il tag, i distintivi, l'anzianità dell'account, la lista di vendita e le liste dei desideri contrassegnate come pubbliche.",
-        "hidden": "Sono nascosti: giochi e luoghi seguiti, obiettivi, mazzi, pubblicazioni e gruppi di gioco.",
         "makePublic": "Rendi pubblico il mio profilo"
       },
       "onboarding": {
@@ -5163,13 +5149,12 @@
         "bannerLabel": "Banner",
         "bannerHint": "2400 × 600 consigliato",
         "bannerLocked": "Il banner richiede un abbonamento Supporter.",
+        "getBadge": "Aggiungi un contorno al tuo avatar e un distintivo attivando un abbonamento",
         "descriptionLabel": "Descrizione",
         "descriptionPlaceholder": "I giochi che pratichi, il tuo modo di giocare, dove trovarti…",
         "showCity": "Mostra la mia città",
         "showCityHint": "Appare solo il comune: {city}. Mai la tua posizione esatta.",
-        "showCityNoCity": "Indica prima una posizione nella scheda Profilo.",
-        "derived": "Il contorno del tuo avatar e i tuoi distintivi non si impostano: vengono dal tuo abbonamento e dagli stati assegnati dal team.",
-        "derivedWithPlan": "Il contorno del tuo avatar e il tuo distintivo {plan} non si impostano: vengono dal tuo abbonamento e dagli stati assegnati dal team."
+        "showCityNoCity": "Indica prima una posizione nella scheda Profilo."
       },
       "sections": {
         "title": "Blocchi della vetrina",
@@ -5213,10 +5198,6 @@
           "trade": "Desideri e vendite"
         }
       },
-      "neverPublic": {
-        "title": "Mai pubblico",
-        "description": "La tua e-mail, la tua posizione esatta, la tua collezione, i tuoi gruppi privati, le tue sessioni e le tue liste private non compaiono su nessuna vetrina, qualunque cosa dicano queste impostazioni."
-      },
       "errors": {
         "UNAUTHENTICATED": "Accedi per farlo.",
         "INVALID": "Alcuni campi non sono validi.",
@@ -5238,8 +5219,7 @@
         "public": "Pubblica",
         "private": "Bozza",
         "makePublic": "Pubblica",
-        "makePrivate": "Torna a bozza",
-        "hint": "Una bozza non appare da nessuna parte: né sulla tua vetrina, né su quelle dei tuoi gruppi."
+        "makePrivate": "Torna a bozza"
       },
       "kinds": {
         "video": "Video",

@@ -2,10 +2,10 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { Eye, EyeOff, Info, Lock, Plus, X } from "lucide-react";
+import { Eye, Info, Lock, Plus, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 
-import { useRouter } from "@/i18n/navigation.ts";
+import { Link, useRouter } from "@/i18n/navigation.ts";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
@@ -52,11 +52,11 @@ export type ShowcaseFormState = {
 export default function ShowcaseForm({
   initial,
   canUseBanner,
-  planLabel,
+  hasPlan,
 }: {
   initial: ShowcaseFormState;
   canUseBanner: boolean;
-  planLabel: string | null;
+  hasPlan: boolean;
 }) {
   const t = useTranslations("Account.showcase");
   const router = useRouter();
@@ -255,13 +255,18 @@ export default function ShowcaseForm({
             />
           </div>
 
-          {/* Ce que le formulaire ne règle pas, et pourquoi. */}
-          <p className="flex items-start gap-2 rounded-lg bg-muted/50 p-3 text-[13px] text-pretty text-muted-foreground">
-            <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-            {planLabel
-              ? t("identity.derivedWithPlan", { plan: planLabel })
-              : t("identity.derived")}
-          </p>
+          {/* Rien à proposer à qui a déjà un palier : son contour et son badge
+              sont là, et le lui redire serait le même bruit sous une autre
+              forme. */}
+          {!hasPlan && (
+            <Link
+              href="/pricing"
+              className="flex items-start gap-2 rounded-lg bg-muted/50 p-3 text-[13px] text-pretty text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <Sparkles className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+              {t("identity.getBadge")}
+            </Link>
+          )}
         </section>
 
         {/* 3 — Les blocs. */}
@@ -368,16 +373,6 @@ export default function ShowcaseForm({
           avatar={state.avatar}
           sections={state.sections}
         />
-
-        <section className="flex flex-col gap-2 rounded-xl border border-dashed p-5">
-          <h2 className="flex items-center gap-2 text-[15px] font-semibold">
-            <EyeOff className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-            {t("neverPublic.title")}
-          </h2>
-          <p className="text-[13px] text-pretty text-muted-foreground">
-            {t("neverPublic.description")}
-          </p>
-        </section>
       </aside>
     </div>
   );

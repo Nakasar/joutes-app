@@ -4879,7 +4879,6 @@
         "openGraphTitle": "Gemeinschaft - Joutes"
       },
       "title": "Gemeinschaft",
-      "counts": "{total, plural, one {# Spieler} other {# Spieler}}, {publicProfiles, plural, one {# öffentliches Profil} other {# öffentliche Profile}}",
       "empty": "Kein Profil passt dazu.",
       "reset": "Filter zurücksetzen",
       "loadMore": "{count} weitere Profile laden",
@@ -4919,17 +4918,9 @@
         "myShowcase": "Mein Schaufenster",
         "settings": "Einstellungen",
         "nearby": "Rund um {city}",
-        "nearbyHint": "Nur auf Gemeindeebene, und nur für Konten, die es erlaubt haben.",
         "leaderboard": "Erfolgs-Rangliste",
         "points": "{points} P.",
         "yourRank": "Du bist auf Platz {rank} mit {points} Punkten.",
-        "notRanked": "Du stehst nicht darin: die Rangliste zählt nur öffentliche Profile mit mindestens einem Erfolg.",
-        "badgeLegend": "Die Abzeichen",
-        "planLegendTitle": "Ein Abo",
-        "planLegend": "Ein Farbton je Stufe, auf dem Avatar-Ring und auf dem Abzeichen.",
-        "statusLegendTitle": "Ein Status",
-        "statusLegend": "Vom Team vergeben. Nicht käuflich.",
-        "seePlans": "Angebote ansehen",
         "joinTitle": "Der Gemeinschaft beitreten",
         "joinHint": "Baue dein Schaufenster, folge deinen Spielen und Orten, und finde die Spieler in deiner Nähe.",
         "signIn": "Anmelden"
@@ -5032,9 +5023,6 @@
         "proposeTrade": "Tausch vorschlagen"
       },
       "sidebar": {
-        "recognitions": "Auszeichnungen",
-        "planOrigin": "Ein Abo, ein Farbton je Stufe.",
-        "statusOrigin": "Vom Team vergeben. Nicht käuflich.",
         "games": "Gefolgte Spiele",
         "favourite": "Lieblingsspiel",
         "lairs": "Gefolgte Orte",
@@ -5046,8 +5034,6 @@
       "private": {
         "badge": "Privates Profil",
         "title": "Dieses Profil ist privat",
-        "visible": "Weiterhin sichtbar: Name, Tag, Abzeichen, Kontoalter, die Verkaufsliste und alle als öffentlich markierten Wunschlisten.",
-        "hidden": "Verborgen: gefolgte Spiele und Orte, Erfolge, Decks, Beiträge und Spielgruppen.",
         "makePublic": "Mein Profil öffentlich machen"
       },
       "onboarding": {
@@ -5163,13 +5149,12 @@
         "bannerLabel": "Banner",
         "bannerHint": "2400 × 600 empfohlen",
         "bannerLocked": "Das Banner erfordert ein Supporter-Abo.",
+        "getBadge": "Hol dir einen Ring um deinen Avatar und ein Abzeichen mit einem Abo",
         "descriptionLabel": "Beschreibung",
         "descriptionPlaceholder": "Die Spiele, die du spielst, wie du sie spielst, wo man dich findet…",
         "showCity": "Meinen Ort zeigen",
         "showCityHint": "Nur die Gemeinde erscheint: {city}. Nie deine genaue Position.",
-        "showCityNoCity": "Trage zuerst einen Ort im Tab Profil ein.",
-        "derived": "Der Ring um deinen Avatar und deine Abzeichen sind keine Einstellung: sie kommen von deinem Abo und von Status, die das Team vergibt.",
-        "derivedWithPlan": "Der Ring um deinen Avatar und dein {plan}-Abzeichen sind keine Einstellung: sie kommen von deinem Abo und von Status, die das Team vergibt."
+        "showCityNoCity": "Trage zuerst einen Ort im Tab Profil ein."
       },
       "sections": {
         "title": "Blöcke des Schaufensters",
@@ -5213,10 +5198,6 @@
           "trade": "Wünsche & Verkäufe"
         }
       },
-      "neverPublic": {
-        "title": "Nie öffentlich",
-        "description": "Deine E-Mail, deine genaue Position, deine Sammlung, deine privaten Gruppen, deine Sitzungen und deine privaten Listen erscheinen auf keinem Schaufenster, was diese Einstellungen auch sagen."
-      },
       "errors": {
         "UNAUTHENTICATED": "Melde dich an, um das zu tun.",
         "INVALID": "Einige Felder sind nicht gültig.",
@@ -5238,8 +5219,7 @@
         "public": "Öffentlich",
         "private": "Entwurf",
         "makePublic": "Veröffentlichen",
-        "makePrivate": "Zurück zum Entwurf",
-        "hint": "Ein Entwurf erscheint nirgends: weder auf deinem Schaufenster noch auf denen deiner Gruppen."
+        "makePrivate": "Zurück zum Entwurf"
       },
       "kinds": {
         "video": "Video",

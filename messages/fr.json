@@ -4879,7 +4879,6 @@
         "openGraphTitle": "Communauté - Joutes"
       },
       "title": "Communauté",
-      "counts": "{total, plural, one {# joueur} other {# joueurs}}, {publicProfiles, plural, one {# profil public} other {# profils publics}}",
       "empty": "Aucun profil ne correspond.",
       "reset": "Réinitialiser les filtres",
       "loadMore": "Charger {count} profils de plus",
@@ -4919,17 +4918,9 @@
         "myShowcase": "Ma vitrine",
         "settings": "Réglages",
         "nearby": "Autour de {city}",
-        "nearbyHint": "Au niveau de la commune, et seulement pour les comptes qui l'ont autorisée.",
         "leaderboard": "Classement des succès",
         "points": "{points} pts",
         "yourRank": "Vous êtes {rank}ᵉ avec {points} points.",
-        "notRanked": "Vous n'y figurez pas : le classement ne compte que les profils publics ayant débloqué au moins un succès.",
-        "badgeLegend": "Les badges",
-        "planLegendTitle": "Un abonnement",
-        "planLegend": "Une teinte par offre, sur le contour de l'avatar et sur la pastille.",
-        "statusLegendTitle": "Un statut",
-        "statusLegend": "Posé par l'équipe. Ne s'achète pas.",
-        "seePlans": "Voir les offres",
         "joinTitle": "Rejoindre la communauté",
         "joinHint": "Créez votre vitrine, suivez vos jeux et vos lieux, et retrouvez les joueurs près de chez vous.",
         "signIn": "Se connecter"
@@ -5032,9 +5023,6 @@
         "proposeTrade": "Proposer un échange"
       },
       "sidebar": {
-        "recognitions": "Reconnaissances",
-        "planOrigin": "Un abonnement, une teinte par offre.",
-        "statusOrigin": "Posé par l'équipe. Ne s'achète pas.",
         "games": "Jeux suivis",
         "favourite": "Jeu favori",
         "lairs": "Lieux suivis",
@@ -5046,8 +5034,6 @@
       "private": {
         "badge": "Profil privé",
         "title": "Ce profil est privé",
-        "visible": "Restent visibles : le pseudonyme, le tag, les badges, l'ancienneté du compte, la liste de vente et les listes de souhaits marquées publiques.",
-        "hidden": "Sont masqués : les jeux et lieux suivis, les succès, les decks, les publications et les groupes de jeu.",
         "makePublic": "Rendre mon profil public"
       },
       "onboarding": {
@@ -5163,13 +5149,12 @@
         "bannerLabel": "Bannière",
         "bannerHint": "2400 × 600 recommandé",
         "bannerLocked": "La bannière demande un abonnement Supporter.",
+        "getBadge": "Ajoutez un contour à votre avatar et un badge en activant un abonnement",
         "descriptionLabel": "Description",
         "descriptionPlaceholder": "Les jeux que vous pratiquez, votre façon de jouer, où vous trouver…",
         "showCity": "Afficher ma ville",
         "showCityHint": "Seule la commune apparaît : {city}. Jamais votre position exacte.",
-        "showCityNoCity": "Renseignez d'abord une localisation dans l'onglet Profil.",
-        "derived": "Le contour de votre avatar et vos badges ne se règlent pas : ils viennent de votre abonnement et des statuts posés par l'équipe.",
-        "derivedWithPlan": "Le contour de votre avatar et votre badge {plan} ne se règlent pas : ils viennent de votre abonnement et des statuts posés par l'équipe."
+        "showCityNoCity": "Renseignez d'abord une localisation dans l'onglet Profil."
       },
       "sections": {
         "title": "Blocs de la vitrine",
@@ -5213,10 +5198,6 @@
           "trade": "Souhaits & ventes"
         }
       },
-      "neverPublic": {
-        "title": "Jamais public",
-        "description": "Votre e-mail, votre position exacte, votre collection, vos groupes privés, vos sessions et vos listes privées ne figurent sur aucune vitrine, quels que soient ces réglages."
-      },
       "errors": {
         "UNAUTHENTICATED": "Connectez-vous pour faire cela.",
         "INVALID": "Certains champs ne sont pas valides.",
@@ -5238,8 +5219,7 @@
         "public": "Publique",
         "private": "Brouillon",
         "makePublic": "Publier",
-        "makePrivate": "Repasser en brouillon",
-        "hint": "Un brouillon n'apparaît nulle part : ni sur votre vitrine, ni sur celles de vos groupes."
+        "makePrivate": "Repasser en brouillon"
       },
       "kinds": {
         "video": "Vidéo",

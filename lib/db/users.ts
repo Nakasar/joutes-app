@@ -806,16 +806,6 @@ export async function countPublicUsers(
   return db.collection(COLLECTION_NAME).countDocuments(query);
 }
 
-/** Combien de comptes existent, et combien ont ouvert leur profil. */
-export async function countCommunity(): Promise<{ total: number; publicProfiles: number }> {
-  const [total, publicProfiles] = await Promise.all([
-    db.collection(COLLECTION_NAME).estimatedDocumentCount(),
-    db.collection(COLLECTION_NAME).countDocuments({ isPublicProfile: true }),
-  ]);
-
-  return { total, publicProfiles };
-}
-
 /**
  * Les comptes publics d'une même commune.
  *

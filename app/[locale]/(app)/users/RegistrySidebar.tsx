@@ -4,7 +4,6 @@ import { Settings, Trophy } from "lucide-react";
 import { Link } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { PlanBadge } from "@/components/PlanBadge.tsx";
-import { UserBadges } from "@/components/UserBadges.tsx";
 import { ProfileAvatar } from "@/components/users/ProfileAvatar.tsx";
 import { userProfilePath } from "@/lib/users/handle.ts";
 
@@ -115,10 +114,6 @@ export async function NearbyCard() {
 
   return (
     <SidebarCard title={t("nearby", { city: nearby.city })}>
-      {/* Au niveau de la commune, et seulement pour les comptes qui l'ont
-          autorisée : la position exacte de personne n'entre ici. */}
-      <p className="text-[13px] text-muted-foreground">{t("nearbyHint")}</p>
-
       <ul className="flex flex-col gap-2">
         {nearby.users.map(({ user, badges }) => (
           <li key={user.id}>
@@ -183,45 +178,14 @@ export async function LeaderboardCard() {
         ))}
       </ol>
 
-      {leaderboard.rank ? (
+      {/* Rien quand le visiteur n'est pas classé : ne pas y figurer n'est pas
+          une information qu'on vient chercher ici. */}
+      {leaderboard.rank && (
         <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
           <Trophy className="size-3.5 shrink-0" aria-hidden />
           {t("yourRank", { rank: leaderboard.rank.rank, points: leaderboard.rank.points })}
         </p>
-      ) : (
-        // Ne pas figurer au classement n'est pas être dernier : le dire évite
-        // de chercher une panne là où il n'y en a pas.
-        <p className="text-[13px] text-pretty text-muted-foreground">{t("notRanked")}</p>
       )}
-    </SidebarCard>
-  );
-}
-
-/**
- * La légende des badges.
- *
- * Deux phrases, et c'est tout leur intérêt : sans elles, une pastille achetée
- * et une pastille méritée se lisent comme un seul classement.
- */
-export async function BadgeLegendCard() {
-  const t = await getTranslations("Users.registry.sidebar");
-
-  return (
-    <SidebarCard title={t("badgeLegend")}>
-      <dl className="flex flex-col gap-3 text-[13px]">
-        <div className="flex flex-col gap-0.5">
-          <dt className="font-medium">{t("planLegendTitle")}</dt>
-          <dd className="text-pretty text-muted-foreground">{t("planLegend")}</dd>
-        </div>
-        <div className="flex flex-col gap-0.5">
-          <dt className="font-medium">{t("statusLegendTitle")}</dt>
-          <dd className="text-pretty text-muted-foreground">{t("statusLegend")}</dd>
-        </div>
-      </dl>
-
-      <Button variant="ghost" size="sm" asChild className="self-start">
-        <Link href="/pricing">{t("seePlans")}</Link>
-      </Button>
     </SidebarCard>
   );
 }

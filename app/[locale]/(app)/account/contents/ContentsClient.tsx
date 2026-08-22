@@ -173,8 +173,6 @@ export default function ContentsClient({
           })}
         </ul>
       )}
-
-      <p className="text-[13px] text-muted-foreground">{t("visibility.hint")}</p>
     </div>
   );
 }

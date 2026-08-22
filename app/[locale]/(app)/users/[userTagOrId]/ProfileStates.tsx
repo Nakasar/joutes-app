@@ -15,13 +15,10 @@ import {
 /**
  * Le profil privé, vu par quelqu'un d'autre.
  *
- * La carte **énonce ce qui reste visible et ce qui ne l'est pas**, au lieu de
- * laisser une page à moitié vide passer pour cassée. C'est aussi ce qui rend
- * lisible un comportement déjà en place : le pseudonyme, les badges et
- * l'ancienneté restent, parce qu'une marque de reconnaissance posée par
- * l'équipe n'est pas du contenu ; la liste de vente et les listes de souhaits
- * marquées publiques restent, parce que leur visibilité se décide liste par
- * liste et a déjà été décidée.
+ * Le titre et le cadenas suffisent à dire que la page n'est pas cassée. Ce qui
+ * reste malgré tout visible — la liste de vente, les listes de souhaits
+ * marquées publiques — s'affiche juste en dessous : l'inventorier en toutes
+ * lettres au-dessus revenait à décrire à quelqu'un ce qu'il a sous les yeux.
  */
 export async function PrivateProfileCard({ userTagOrId }: { userTagOrId: string }) {
   const [viewer, t] = await Promise.all([
@@ -35,9 +32,6 @@ export async function PrivateProfileCard({ userTagOrId }: { userTagOrId: string 
         <Lock className="size-4 shrink-0 text-muted-foreground" aria-hidden />
         {t("title")}
       </h2>
-
-      <p className="max-w-[640px] text-sm text-pretty text-muted-foreground">{t("visible")}</p>
-      <p className="max-w-[640px] text-sm text-pretty text-muted-foreground">{t("hidden")}</p>
 
       {viewer.isOwner && (
         <Button variant="default" size="sm" asChild className="self-start">
