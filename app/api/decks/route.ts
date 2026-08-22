@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { searchDecks, createDeck } from "@/lib/db/decks";
+import { searchDecks, createDeck, type SearchDecksOptions } from "@/lib/db/decks";
+import type { DeckVisibility } from "@/lib/types/Deck";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
@@ -14,17 +15,33 @@ export async function GET(request: NextRequest) {
 
     const playerId = searchParams.get("playerId");
     const gameId = searchParams.get("gameId");
-    const visibility = searchParams.get("visibility") as "private" | "public" | null;
+    // Plusieurs valeurs sont acceptées : l'onglet « En cours » de « Mes decks »
+    // demande à la fois le privé et le non répertorié.
+    const visibilities = searchParams.getAll("visibility") as DeckVisibility[];
+    const visibility = visibilities.length > 1 ? visibilities : (visibilities[0] ?? null);
     const search = searchParams.get("search");
-    const sortBy = searchParams.get("sortBy") as "name" | "createdAt" | "updatedAt" | null;
+    const sortBy = searchParams.get("sortBy") as SearchDecksOptions["sortBy"] | null;
     const sortOrder = searchParams.get("sortOrder") as "asc" | "desc" | null;
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
-    const scope = searchParams.get("scope") as "mine" | "all" | null;
+    const scope = searchParams.get("scope") as "mine" | "all" | "public" | null;
     const favoritesOnly = searchParams.get("favoritesOnly") === "true";
+    const format = searchParams.get("format");
+    const legendCardId = searchParams.get("legendCardId");
+    const domains = searchParams.getAll("domain").filter(Boolean);
+
+    // Une liste accessible par lien ne se demande pas en lot : on l'ouvre par
+    // son adresse, jamais par une recherche — pas même par son auteur, qui la
+    // retrouve dans ses decks via `scope=mine`.
+    if (visibilities.includes("unlisted") && scope !== "mine") {
+      return NextResponse.json(
+        { error: "Les decks non répertoriés ne sont pas listables" },
+        { status: 400 }
+      );
+    }
 
     // Si on demande les decks privés d'un joueur, il faut être ce joueur
-    if (visibility === "private" && playerId && session?.user?.id !== playerId) {
+    if (visibilities.includes("private") && playerId && session?.user?.id !== playerId) {
       return NextResponse.json(
         { error: "Vous n'avez pas l'autorisation de voir ces decks" },
         { status: 403 }
@@ -33,13 +50,13 @@ export async function GET(request: NextRequest) {
 
     // Si aucun playerId n'est spécifié et qu'on demande private, on retourne les decks de l'utilisateur connecté
     let effectivePlayerId = playerId;
-    if (!playerId && visibility === "private" && session?.user?.id) {
+    if (!playerId && visibilities.includes("private") && session?.user?.id) {
       effectivePlayerId = session.user.id;
     }
 
     // Si on ne spécifie pas de playerId et pas de visibilité, on ne retourne que les decks publics
     let effectiveVisibility = visibility;
-    if (!effectivePlayerId && !visibility && !scope) {
+    if (!effectivePlayerId && visibilities.length === 0 && !scope) {
       effectiveVisibility = "public";
     }
 
@@ -55,6 +72,9 @@ export async function GET(request: NextRequest) {
       scope: scope || undefined,
       viewerId: session?.user?.id,
       favoritesOnly,
+      format: format || undefined,
+      legendCardId: legendCardId || undefined,
+      domains: domains.length > 0 ? domains : undefined,
     });
 
     return NextResponse.json(result);
@@ -95,6 +115,10 @@ export async function POST(request: NextRequest) {
       name: deckData.name,
       url: deckData.url,
       description: deckData.description,
+      // La liste collée à la création part avec le deck : la perdre obligerait
+      // à la recoller dans l'éditeur juste après.
+      decklist: deckData.decklist,
+      format: deckData.format,
       visibility: deckData.visibility,
     });
 

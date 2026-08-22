@@ -1,15 +1,24 @@
 import { Suspense } from "react";
-import { EditorFormSkeleton } from "@/components/EditorFormSkeleton.tsx";
-import { getDeckById } from "@/lib/db/decks.ts";
-import { getAllGames } from "@/lib/db/games.ts";
-import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
 import { connection } from "next/server";
 import { notFound, redirect } from "next/navigation";
 import { Metadata } from "next";
-import EditDeckForm from "./EditDeckForm.tsx";
+
+import { EditorFormSkeleton } from "@/components/EditorFormSkeleton.tsx";
+import { auth } from "@/lib/auth.ts";
+import { getDeckById } from "@/lib/db/decks.ts";
+import { getGameById } from "@/lib/db/games.ts";
+import { getDeckCardInfos } from "@/lib/db/deck-cards.ts";
+import { deckCardIds } from "@/lib/decks/contents.ts";
+import { getDeckCollectionCounts } from "@/lib/decks/collection.ts";
+import { riftboundDeckCode } from "@/lib/decks/export-code.ts";
+import { getDeckZones } from "@/lib/decks/zones.ts";
+import { DeckEditor } from "./DeckEditor.tsx";
 
 type Params = Promise<{ deckId: string }>;
+
+/** Nombre d'exemplaires d'une même carte que le format autorise, quand il en fixe un. */
+const COPY_LIMITS: Record<string, number> = { riftbound: 3 };
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   // Le pilote Mongo touche à l'horloge en lisant la base, ce qu'un prérendu
@@ -27,8 +36,11 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   }
 
   return {
-    title: `Modifier ${deck.name}`,
-    description: `Modifier les informations du deck ${deck.name}`,
+    title: `Construire ${deck.name}`,
+    description: `Construire et corriger le deck ${deck.name}`,
+    // L'éditeur d'un deck ne concerne que son auteur, quelle que soit la
+    // visibilité du deck lui-même.
+    robots: { index: false, follow: false },
   };
 }
 
@@ -38,7 +50,6 @@ async function EditDeckPageContent({ params }: { params: Params }) {
     headers: await headers(),
   });
 
-  // Vérifier l'authentification
   if (!session?.user?.id) {
     redirect("/login");
   }
@@ -49,27 +60,32 @@ async function EditDeckPageContent({ params }: { params: Params }) {
     notFound();
   }
 
-  // Vérifier que l'utilisateur est le propriétaire du deck
-  const isOwner = deck.playerId === session.user.id;
-  if (!isOwner) {
+  if (deck.playerId !== session.user.id) {
     redirect(`/decks/${deckId}`);
   }
 
-  // Récupérer la liste des jeux pour le sélecteur
-  const games = await getAllGames();
+  const game = await getGameById(deck.gameId);
+  const zones = getDeckZones(game);
+  const catalog = await getDeckCardInfos(deck.gameId, deckCardIds(deck.cards));
+  const ownedByCardId = await getDeckCollectionCounts(
+    session.user.id,
+    deck.gameId,
+    deck.cards,
+    new Map(catalog.map((card) => [card.id, card]))
+  );
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl">
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Modifier le deck</h1>
-          <p className="text-muted-foreground mt-2">
-            Modifiez les informations de votre deck.
-          </p>
-        </div>
-
-        <EditDeckForm deck={deck} games={games} />
-      </div>
+    <div className="container mx-auto max-w-[1400px] px-4 py-8">
+      <DeckEditor
+        deck={deck}
+        gameName={game?.name}
+        gameSlug={game?.slug ?? deck.gameId}
+        zones={zones}
+        initialCatalog={catalog}
+        ownedByCardId={Object.fromEntries(ownedByCardId)}
+        copyLimit={game?.slug ? COPY_LIMITS[game.slug] : undefined}
+        exportCode={game?.slug === "riftbound" ? riftboundDeckCode(deck.cards) : undefined}
+      />
     </div>
   );
 }
@@ -83,8 +99,8 @@ export default function EditDeckPage(props: Parameters<typeof EditDeckPageConten
   return (
     <Suspense
       fallback={
-        <div className="container mx-auto px-4 py-8 max-w-3xl">
-          <EditorFormSkeleton fields={4} label="Chargement du deck" />
+        <div className="container mx-auto max-w-[1400px] px-4 py-8">
+          <EditorFormSkeleton fields={6} label="Chargement de l'éditeur" />
         </div>
       }
     >

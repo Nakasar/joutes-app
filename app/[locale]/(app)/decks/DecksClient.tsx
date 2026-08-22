@@ -1,18 +1,39 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Deck } from "@/lib/types/Deck.ts";
-import { Game } from "@/lib/types/Game.ts";
-import { PaginatedDecksResult } from "@/lib/db/decks.ts";
-import { Link, usePathname, useRouter } from "@/i18n/navigation.ts";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card.tsx";
-import { Badge } from "@/components/ui/badge.tsx";
-import { Button } from "@/components/ui/button.tsx";
-import { Library, Eye, EyeOff, ChevronLeft, ChevronRight, Loader2, Plus, ExternalLink, User } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { DateTime } from "luxon";
-import DecksFilters, { DecksFiltersValues } from "./DecksFilters.tsx";
+import { ChevronLeft, ChevronRight, Hammer, Library, Loader2, Plus, Search, Share2, Star } from "lucide-react";
+
+import { Button } from "@/components/ui/button.tsx";
+import { Input } from "@/components/ui/input.tsx";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select.tsx";
+import { Link, usePathname, useRouter } from "@/i18n/navigation.ts";
+import { DeckLegalityBadge, DeckSizeLabel, DeckVisibilityBadge } from "@/components/decks/DeckBadges.tsx";
+import { ShareDeckDialog } from "@/components/decks/ShareDeckDialog.tsx";
+import { cn } from "@/lib/utils.ts";
+import { getDeckZones } from "@/lib/decks/zones.ts";
+import type { PaginatedDecksResult } from "@/lib/db/decks.ts";
+import type { Deck, DeckVisibility } from "@/lib/types/Deck.ts";
+import type { Game } from "@/lib/types/Game.ts";
 import CreateDeckDialog from "./CreateDeckDialog.tsx";
-import FavoriteDeckButton from "./FavoriteDeckButton.tsx";
+
+/** Onglets de tri de la page : ce que l'on cherche dans ses propres decks. */
+type DecksTab = "all" | "draft" | "published" | "favorites";
+
+const TABS: { key: DecksTab; label: string }[] = [
+  { key: "all", label: "Tous" },
+  { key: "draft", label: "En cours" },
+  { key: "published", label: "Publiés" },
+  { key: "favorites", label: "Favoris" },
+];
+
+const SEARCH_DEBOUNCE_MS = 500;
 
 type DecksClientProps = {
   initialData: PaginatedDecksResult;
@@ -20,309 +41,319 @@ type DecksClientProps = {
   currentUserId: string;
   initialFilters: {
     gameId?: string;
-    scope?: "mine" | "all";
     favoritesOnly?: boolean;
   };
 };
 
+/**
+ * « Mes decks » : la bibliothèque personnelle.
+ *
+ * Les onglets remplacent les interrupteurs d'autrefois — chercher ses
+ * brouillons, ses listes publiées ou ses favoris sont trois gestes distincts,
+ * pas trois cases à cocher qui se combinent.
+ */
 export default function DecksClient({ initialData, games, currentUserId, initialFilters }: DecksClientProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [data, setData] = useState<PaginatedDecksResult>(initialData);
+
+  const [data, setData] = useState(initialData);
   const [isLoading, setIsLoading] = useState(false);
-  const [filters, setFilters] = useState<DecksFiltersValues>({
-    search: "",
-    gameId: initialFilters.gameId || "all",
-    sortBy: "updatedAt",
-    sortOrder: "desc",
-    scope: initialFilters.scope || "mine",
-    favoritesOnly: initialFilters.favoritesOnly || false,
-  });
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [tab, setTab] = useState<DecksTab>(initialFilters.favoritesOnly ? "favorites" : "all");
+  const [gameId, setGameId] = useState(initialFilters.gameId ?? "all");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [sharing, setSharing] = useState<Deck | null>(null);
 
-  const fetchDecks = useCallback(async (
-    currentFilters: DecksFiltersValues,
-    page: number = 1
-  ) => {
-    setIsLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (currentFilters.search) params.append("search", currentFilters.search);
-      if (currentFilters.gameId !== "all") params.append("gameId", currentFilters.gameId);
-      if (currentFilters.sortBy) params.append("sortBy", currentFilters.sortBy);
-      if (currentFilters.sortOrder) params.append("sortOrder", currentFilters.sortOrder);
-      if (currentFilters.scope) params.append("scope", currentFilters.scope);
-      if (currentFilters.favoritesOnly) params.append("favoritesOnly", "true");
-      params.append("page", page.toString());
-      params.append("limit", "20");
-
-      const response = await fetch(`/api/decks?${params.toString()}`);
-      const result = await response.json();
-
-      if (response.ok) {
-        setData(result);
-      } else {
-        console.error("Error fetching decks:", result.error);
-      }
-    } catch (error) {
-      console.error("Error fetching decks:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  // Fetch when filters change
   useEffect(() => {
-    void fetchDecks(filters, 1);
-  }, [filters, fetchDecks]);
+    const timer = window.setTimeout(() => setDebouncedSearch(search), SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [search]);
 
-  const handleFiltersChange = (newFilters: DecksFiltersValues) => {
-    setFilters(newFilters);
+  const fetchDecks = useCallback(
+    async (currentTab: DecksTab, currentGameId: string, currentSearch: string, page: number) => {
+      setIsLoading(true);
+      try {
+        const params = new URLSearchParams({ scope: "mine", page: String(page), limit: "20" });
+        if (currentGameId !== "all") params.set("gameId", currentGameId);
+        if (currentSearch) params.set("search", currentSearch);
+        if (currentTab === "favorites") params.set("favoritesOnly", "true");
+        if (currentTab === "published") params.set("visibility", "public");
+        if (currentTab === "draft") {
+          // « En cours » = pas encore publié : le privé comme le non répertorié.
+          params.append("visibility", "private");
+          params.append("visibility", "unlisted");
+        }
+
+        const response = await fetch(`/api/decks?${params.toString()}`);
+        const result = await response.json();
+
+        if (response.ok) {
+          setData(result);
+        } else {
+          console.error("Error fetching decks:", result.error);
+        }
+      } catch (error) {
+        console.error("Error fetching decks:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    void fetchDecks(tab, gameId, debouncedSearch, 1);
+
     const params = new URLSearchParams();
-    if (newFilters.gameId !== "all") {
-      params.set("gameId", newFilters.gameId);
-    }
-    if (newFilters.scope !== "mine") {
-      params.set("scope", newFilters.scope);
-    }
-    if (newFilters.favoritesOnly) {
-      params.set("favoritesOnly", "true");
-    }
+    if (gameId !== "all") params.set("gameId", gameId);
+    if (tab === "favorites") params.set("favoritesOnly", "true");
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }, [tab, gameId, debouncedSearch, fetchDecks, pathname, router]);
 
-    const queryString = params.toString();
-    router.push(queryString ? `${pathname}?${queryString}` : pathname);
-  };
-
-  const handlePageChange = (newPage: number) => {
-    void fetchDecks(filters, newPage);
-  };
-
-  const handleDeckCreated = () => {
-    setIsCreateDialogOpen(false);
-    void fetchDecks(filters, 1);
-  };
-
-  const handleFavoriteToggle = () => {
-    void fetchDecks(filters, data.page);
-  };
+  const refresh = () => void fetchDecks(tab, gameId, debouncedSearch, data.page);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <DecksFilters
-          games={games}
-          filters={filters}
-          onFiltersChangeAction={handleFiltersChange}
-          isLoading={isLoading}
-        />
-        <Button onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nouveau deck
-        </Button>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          {TABS.map((entry) => (
+            <button
+              key={entry.key}
+              type="button"
+              onClick={() => setTab(entry.key)}
+              aria-pressed={tab === entry.key}
+              className={cn(
+                "h-8 shrink-0 rounded-full px-3.5 text-[13px] font-medium transition-colors",
+                tab === entry.key ? "bg-primary text-primary-foreground" : "border text-muted-foreground"
+              )}
+            >
+              {entry.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Button asChild variant="outline">
+            <Link href="/decks/library">
+              <Library />
+              Explorer la librairie
+            </Link>
+          </Button>
+          <Button type="button" onClick={() => setCreateOpen(true)}>
+            <Plus />
+            Nouveau deck
+          </Button>
+        </div>
       </div>
 
-      {/* Results count */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative min-w-56 flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Nom, légende, description…"
+            className="h-10 pl-9"
+            aria-label="Rechercher dans mes decks"
+          />
+        </div>
+        <Select value={gameId} onValueChange={setGameId}>
+          <SelectTrigger className="h-10 w-52">
+            <SelectValue placeholder="Tous les jeux" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les jeux</SelectItem>
+            {games.map((game) => (
+              <SelectItem key={game.id} value={game.id}>
+                {game.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
         <span>
-          {data.total} deck{data.total > 1 ? "s" : ""} trouvé{data.total > 1 ? "s" : ""}
+          {data.total} deck{data.total > 1 ? "s" : ""}
         </span>
         {isLoading && (
-          <span className="flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" />
+          <span className="inline-flex items-center gap-2">
+            <Loader2 className="size-4 animate-spin" />
             Chargement...
           </span>
         )}
       </div>
 
-      {/* Decks grid */}
       {data.decks.length === 0 ? (
-        <Card>
-          <CardContent className="text-center py-12">
-            <Library className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <p className="text-lg text-muted-foreground mb-4">
-              Aucun deck ne correspond à vos critères.
-            </p>
-            <Button onClick={() => setIsCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Créer mon premier deck
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col items-center gap-4 rounded-xl border bg-card p-12 text-center">
+          <Library className="size-16 text-muted-foreground" />
+          <p className="text-lg text-muted-foreground">Aucun deck ne correspond à vos critères.</p>
+          <Button type="button" onClick={() => setCreateOpen(true)}>
+            <Plus />
+            Créer mon premier deck
+          </Button>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {data.decks.map((deck) => (
             <DeckCard
               key={deck.id}
               deck={deck}
-              games={games}
+              game={games.find((game) => game.id === deck.gameId)}
               currentUserId={currentUserId}
-              onFavoriteToggle={handleFavoriteToggle}
+              onShareAction={() => setSharing(deck)}
+              onAfterFavoriteAction={refresh}
             />
           ))}
         </div>
       )}
 
-      {/* Pagination */}
       {data.totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex flex-wrap items-center justify-center gap-2">
           <Button
+            type="button"
             variant="outline"
             size="sm"
-            onClick={() => handlePageChange(data.page - 1)}
             disabled={data.page <= 1 || isLoading}
+            onClick={() => void fetchDecks(tab, gameId, debouncedSearch, data.page - 1)}
           >
-            <ChevronLeft className="h-4 w-4 mr-1" />
+            <ChevronLeft />
             Précédent
           </Button>
-
-          <div className="flex items-center gap-1">
-            {generatePaginationNumbers(data.page, data.totalPages).map((pageNum, index) => (
-              pageNum === "..." ? (
-                <span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">...</span>
-              ) : (
-                <Button
-                  key={pageNum}
-                  variant={pageNum === data.page ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => handlePageChange(pageNum as number)}
-                  disabled={isLoading}
-                  className="min-w-[40px]"
-                >
-                  {pageNum}
-                </Button>
-              )
-            ))}
-          </div>
-
+          <span className="text-sm text-muted-foreground">
+            Page {data.page} sur {data.totalPages}
+          </span>
           <Button
+            type="button"
             variant="outline"
             size="sm"
-            onClick={() => handlePageChange(data.page + 1)}
             disabled={data.page >= data.totalPages || isLoading}
+            onClick={() => void fetchDecks(tab, gameId, debouncedSearch, data.page + 1)}
           >
             Suivant
-            <ChevronRight className="h-4 w-4 ml-1" />
+            <ChevronRight />
           </Button>
         </div>
       )}
 
       <CreateDeckDialog
         games={games}
-        open={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
-        onSuccess={handleDeckCreated}
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onSuccess={() => {
+          setCreateOpen(false);
+          refresh();
+        }}
       />
+
+      {sharing && (
+        <ShareDeckDialog
+          open
+          onOpenChange={(open) => !open && setSharing(null)}
+          deckId={sharing.id}
+          deckName={sharing.name}
+          visibility={sharing.visibility}
+          onVisibilityChangeAction={async (next) => {
+            const response = await fetch(`/api/decks/${sharing.id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ visibility: next }),
+            }).catch(() => null);
+
+            if (response?.ok) {
+              setSharing(null);
+              refresh();
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
 
 function DeckCard({
   deck,
-  games,
+  game,
   currentUserId,
-  onFavoriteToggle,
+  onShareAction,
+  onAfterFavoriteAction,
 }: {
   deck: Deck;
-  games: Game[];
+  game?: Game;
   currentUserId: string;
-  onFavoriteToggle: () => void;
+  onShareAction: () => void;
+  onAfterFavoriteAction: () => void;
 }) {
-  const game = games.find((g) => g.id === deck.gameId);
+  const zones = getDeckZones(game);
   const updatedAt = DateTime.fromJSDate(new Date(deck.updatedAt)).setLocale("fr");
-  const isFavorited = (deck.favoritedBy || []).includes(currentUserId);
+  const [favorited, setFavorited] = useState((deck.favoritedBy ?? []).includes(currentUserId));
+  const [count, setCount] = useState(deck.favoritesCount ?? 0);
+
+  const toggleFavorite = async () => {
+    const next = !favorited;
+    setFavorited(next);
+    setCount((current) => Math.max(0, current + (next ? 1 : -1)));
+
+    const response = await fetch(`/api/decks/${deck.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ favorite: next }),
+    }).catch(() => null);
+
+    if (!response?.ok) {
+      setFavorited(!next);
+      setCount((current) => Math.max(0, current + (next ? -1 : 1)));
+      return;
+    }
+
+    onAfterFavoriteAction();
+  };
 
   return (
-    <Link href={`/decks/${deck.id}`} className="group">
-      <Card className="h-full overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-        <CardHeader>
-          <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
-            <CardTitle className="text-xl group-hover:text-primary transition-colors line-clamp-2 flex-1">
-              {deck.name}
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <FavoriteDeckButton
-                deckId={deck.id}
-                isFavorited={isFavorited}
-                onAfterToggleAction={onFavoriteToggle}
-                className="h-8 w-8 p-0"
-                showLabel={false}
-              />
-              <Badge variant={deck.visibility === "public" ? "default" : "secondary"}>
-                {deck.visibility === "public" ? (
-                  <>
-                    <Eye className="h-3 w-3 mr-1" />
-                    Public
-                  </>
-                ) : (
-                  <>
-                    <EyeOff className="h-3 w-3 mr-1" />
-                    Privé
-                  </>
-                )}
-              </Badge>
-            </div>
-          </div>
-          {game && (
-            <CardDescription className="flex items-center gap-2">
-              {game.icon && (
-                <img src={game.icon} alt={game.name} className="h-4 w-4 object-contain" />
-              )}
-              {game.name}
-            </CardDescription>
-          )}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <User className="h-4 w-4" />
-            <span>Par {deck.creatorName || "un joueur"}</span>
-          </div>
-        </CardHeader>
+    <article className="flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm transition-shadow hover:shadow-md">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <Link href={`/decks/${deck.id}`} className="min-w-0 truncate text-lg font-semibold hover:underline">
+          {deck.name}
+        </Link>
+        <DeckVisibilityBadge visibility={deck.visibility as DeckVisibility} />
+      </div>
 
-        {deck.description && (
-          <CardContent>
-            <p className="text-sm text-muted-foreground line-clamp-3">
-              {deck.description}
-            </p>
-          </CardContent>
-        )}
+      <p className="truncate text-sm text-muted-foreground">
+        {[game?.name, deck.legendName, deck.format].filter(Boolean).join(" · ") || "—"}
+      </p>
 
-        <CardFooter className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>Modifié {updatedAt.toRelative()}</span>
-          {deck.url && (
-            <ExternalLink className="h-3 w-3" />
-          )}
-        </CardFooter>
-      </Card>
-    </Link>
+      <div className="flex flex-wrap items-center gap-2">
+        <DeckLegalityBadge cards={deck.cards} zones={zones} />
+        <DeckSizeLabel cards={deck.cards} zones={zones} />
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+        <span>Modifié {updatedAt.toRelative()}</span>
+        <button
+          type="button"
+          onClick={toggleFavorite}
+          aria-label={favorited ? "Retirer des favoris" : "Ajouter aux favoris"}
+          className="inline-flex shrink-0 items-center gap-1 hover:text-foreground"
+        >
+          <Star className={cn("size-3.5", favorited && "fill-current text-primary")} />
+          {count}
+        </button>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Button asChild variant="outline" size="sm" className="min-w-28 flex-1">
+          <Link href={`/decks/${deck.id}/edit`}>
+            <Hammer />
+            Modifier
+          </Link>
+        </Button>
+        <Button type="button" variant="outline" size="sm" className="min-w-28 flex-1" onClick={onShareAction}>
+          <Share2 />
+          Partager
+        </Button>
+      </div>
+    </article>
   );
-}
-
-// Fonction pour générer les numéros de page avec ellipses
-function generatePaginationNumbers(currentPage: number, totalPages: number): (number | "...")[] {
-  const pages: (number | "...")[] = [];
-
-  if (totalPages <= 7) {
-    for (let i = 1; i <= totalPages; i++) {
-      pages.push(i);
-    }
-  } else {
-    pages.push(1);
-
-    if (currentPage > 3) {
-      pages.push("...");
-    }
-
-    const start = Math.max(2, currentPage - 1);
-    const end = Math.min(totalPages - 1, currentPage + 1);
-
-    for (let i = start; i <= end; i++) {
-      pages.push(i);
-    }
-
-    if (currentPage < totalPages - 2) {
-      pages.push("...");
-    }
-
-    pages.push(totalPages);
-  }
-
-  return pages;
 }
