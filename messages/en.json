@@ -4866,6 +4866,12 @@
     "emptyBody": "Even the ghosts have left. Try another month, or host your own."
   },
   "Users": {
+    "bottomNav": {
+      "label": "Community navigation",
+      "registry": "Community",
+      "profile": "My profile",
+      "settings": "Settings"
+    },
     "registry": {
       "metadata": {
         "title": "Community",

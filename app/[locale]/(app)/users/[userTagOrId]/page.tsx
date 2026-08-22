@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
-import ReportButton from "@/components/ReportButton.tsx";
+import CommunityBottomNav from "@/components/users/CommunityBottomNav.tsx";
 import { userProfilePath } from "@/lib/users/handle.ts";
 import { sectionsForTab, visibleProfileTabs } from "@/lib/users/profile-tabs.ts";
 import type { UserShowcaseSectionKey } from "@/lib/users/showcase.ts";
@@ -125,7 +125,7 @@ async function UserProfile({
         </Suspense>
       )}
 
-      <div className="container mx-auto max-w-7xl px-4 pt-8 pb-11 lg:px-10">
+      <div className="container mx-auto max-w-7xl px-4 pt-8 pb-20 lg:px-10 lg:pb-11">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="flex min-w-0 flex-col gap-[34px]">
             <Suspense fallback={null}>
@@ -173,6 +173,8 @@ async function UserProfile({
           </aside>
         </div>
       </div>
+
+      <CommunityBottomNav active="profile" />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { AccountPanelSkeleton } from "@/components/AccountPanelSkeleton.tsx";
+import CommunityBottomNav from "@/components/users/CommunityBottomNav.tsx";
 import { auth } from "@/lib/auth.ts";
 import { getUserById } from "@/lib/db/users.ts";
 
@@ -54,7 +55,7 @@ async function AccountPageContent({ searchParams }: { searchParams: AccountSearc
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8">
-      <div className="container mx-auto max-w-5xl px-4">
+      <div className="container mx-auto max-w-5xl px-4 pb-20 lg:pb-0">
         <LegacyAnchorRedirect />
 
         <div className="mb-6 space-y-2">
@@ -68,6 +69,8 @@ async function AccountPageContent({ searchParams }: { searchParams: AccountSearc
 
         <AccountTabContent tab={active} user={user} />
       </div>
+
+      <CommunityBottomNav active={active === "showcase" ? "profile" : "settings"} />
     </div>
   );
 }

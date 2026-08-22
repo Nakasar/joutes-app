@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { SearchX } from "lucide-react";
 
+import CommunityBottomNav from "@/components/users/CommunityBottomNav.tsx";
+
 import { Link } from "@/i18n/navigation.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { getUserById } from "@/lib/db/users.ts";
@@ -61,7 +63,7 @@ type RegistrySearchParams = Promise<Record<string, string | string[] | undefined
  */
 export default function UsersPage({ searchParams }: { searchParams: RegistrySearchParams }) {
   return (
-    <div className="container mx-auto max-w-7xl px-4 pt-8 pb-11 lg:px-10">
+    <div className="container mx-auto max-w-7xl px-4 pt-8 pb-20 lg:px-10 lg:pb-11">
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="flex min-w-0 flex-col gap-6">
           <Suspense fallback={<RegistryListSkeleton />}>
@@ -75,6 +77,8 @@ export default function UsersPage({ searchParams }: { searchParams: RegistrySear
           </Suspense>
         </aside>
       </div>
+
+      <CommunityBottomNav active="registry" />
     </div>
   );
 }

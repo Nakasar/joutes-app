@@ -4866,6 +4866,12 @@
     "emptyBody": "Anche i fantasmi se ne sono andati. Prova un altro mese, o organizzane uno tu."
   },
   "Users": {
+    "bottomNav": {
+      "label": "Navigazione della comunità",
+      "registry": "Comunità",
+      "profile": "Il mio profilo",
+      "settings": "Impostazioni"
+    },
     "registry": {
       "metadata": {
         "title": "Comunità",

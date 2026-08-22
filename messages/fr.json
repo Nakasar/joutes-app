@@ -4866,6 +4866,12 @@
     "emptyBody": "Même les revenants ont déserté. Changez de mois, ou ouvrez le vôtre."
   },
   "Users": {
+    "bottomNav": {
+      "label": "Navigation de la communauté",
+      "registry": "Communauté",
+      "profile": "Mon profil",
+      "settings": "Réglages"
+    },
     "registry": {
       "metadata": {
         "title": "Communauté",

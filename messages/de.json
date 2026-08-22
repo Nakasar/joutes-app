@@ -4866,6 +4866,12 @@
     "emptyBody": "Selbst die Gespenster sind fort. Probier einen anderen Monat, oder richte selbst etwas aus."
   },
   "Users": {
+    "bottomNav": {
+      "label": "Navigation der Gemeinschaft",
+      "registry": "Gemeinschaft",
+      "profile": "Mein Profil",
+      "settings": "Einstellungen"
+    },
     "registry": {
       "metadata": {
         "title": "Gemeinschaft",
