@@ -51,9 +51,11 @@ function revalidateShowcase() {
     revalidatePath(`/${locale}/account`);
   }
   // On arrive sur un profil par son pseudonyme, jamais par son identifiant :
-  // c'est le motif de route qu'il faut invalider.
-  revalidatePath("/users/[userTagOrId]", "page");
-  revalidatePath("/users", "page");
+  // c'est le motif de route qu'il faut invalider — et il porte `[locale]`,
+  // parce que ce chemin désigne la structure de fichiers de routes et non
+  // l'URL, que next-intl réécrit pour servir le français sans préfixe.
+  revalidatePath("/[locale]/users/[userTagOrId]", "page");
+  revalidatePath("/[locale]/users", "page");
 }
 
 async function requireUserId(): Promise<string | null> {

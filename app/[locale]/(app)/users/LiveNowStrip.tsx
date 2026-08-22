@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation.ts";
@@ -20,7 +21,17 @@ import { readLiveNow } from "./registry-data.ts";
  * lecteur, le titre et le reste de la personne.
  */
 export default async function LiveNowStrip() {
-  const [live, t] = await Promise.all([readLiveNow(), getTranslations("Users.registry.live")]);
+  const [live, t, headerList] = await Promise.all([
+    readLiveNow(),
+    getTranslations("Users.registry.live"),
+    headers(),
+  ]);
+
+  // L'hôte réel, et non une valeur en dur : Twitch refuse un lecteur dont le
+  // `parent` ne correspond pas au domaine qui l'intègre. Cette bande n'affiche
+  // aujourd'hui que la vignette, qui s'en moque — mais la première personne qui
+  // y posera un lecteur hériterait sinon d'un cadre vide en production.
+  const host = headerList.get("host") ?? "localhost";
 
   if (live.length === 0) {
     return null;
@@ -35,7 +46,7 @@ export default async function LiveNowStrip() {
 
       <ul className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {live.slice(0, 4).map((entry) => {
-          const embed = readLiveEmbed(entry.live.url, "localhost");
+          const embed = readLiveEmbed(entry.live.url, host);
           const displayName = entry.user.displayName || entry.user.username;
 
           return (

@@ -30,11 +30,29 @@ type UserFollowerDocument = {
 
 const userFollowersCollection = db.collection<UserFollowerDocument>(COLLECTION_NAME);
 
+/** Le code que MongoDB rend quand un index unique refuse un doublon. */
+const DUPLICATE_KEY = 11000;
+
+function isDuplicateKeyError(error: unknown): boolean {
+  return typeof error === "object" && error !== null && (error as { code?: number }).code === DUPLICATE_KEY;
+}
+
 /**
  * Bascule l'abonnement, et rend l'état obtenu.
  *
  * On ne s'abonne pas à soi-même : l'appelant s'en garde, mais la base aussi,
  * parce qu'un compteur d'abonnés qui se compte lui-même serait faux partout.
+ *
+ * **Le doublon est absorbé, pas propagé.** Deux clics coup sur coup — ou un
+ * navigateur qui rejoue la requête — font échouer les deux `deleteOne`, puis
+ * les deux `insertOne` : l'index unique en refuse un, et laisser cette erreur
+ * remonter ferait dire au bouton « ça n'a pas marché » alors que l'abonnement
+ * vient d'être posé. Le second insert ne fait donc que constater l'état déjà
+ * atteint, qui est celui qu'on voulait.
+ *
+ * L'index unique reste la garde : c'est lui qui empêche la ligne en double, et
+ * il ne peut pas être remplacé par une lecture préalable, qui a exactement la
+ * même course.
  */
 export async function toggleUserFollower(userId: string, followerId: string): Promise<boolean> {
   if (userId === followerId) {
@@ -46,12 +64,18 @@ export async function toggleUserFollower(userId: string, followerId: string): Pr
     return false;
   }
 
-  await userFollowersCollection.insertOne({
-    _id: new ObjectId(),
-    userId,
-    followerId,
-    createdAt: new Date().toISOString(),
-  });
+  try {
+    await userFollowersCollection.insertOne({
+      _id: new ObjectId(),
+      userId,
+      followerId,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    if (!isDuplicateKeyError(error)) {
+      throw error;
+    }
+  }
 
   return true;
 }

@@ -25,7 +25,9 @@ import { notifyUser } from "@/lib/services/notifications.ts";
  * **La revalidation vise le motif de route** et non une adresse : on arrive
  * presque toujours sur un profil par son pseudonyme, jamais par son
  * identifiant, et `revalidatePath('/users/' + userId)` n'invaliderait donc
- * jamais la page que les gens regardent.
+ * jamais la page que les gens regardent. Le motif porte `[locale]` parce que ce
+ * chemin désigne la structure de fichiers de routes et non l'URL — voir
+ * `revalidateProfiles`.
  */
 
 export type ProfileActionError =
@@ -37,9 +39,17 @@ export type ProfileActionError =
 
 export type ProfileActionResult = { success: true } | { success: false; error: ProfileActionError };
 
+/**
+ * Le chemin d'une revalidation désigne la **structure de fichiers de routes**,
+ * pas l'URL qu'on lit dans la barre d'adresse. Nos pages vivent sous
+ * `app/[locale]/…`, et next-intl sert le français sans préfixe par une
+ * réécriture : `"/users/[userTagOrId]"` ne désigne donc aucune route, et
+ * n'invalidait rien. C'est `[locale]` compris qu'il faut écrire — un seul appel
+ * couvre alors les quatre langues.
+ */
 function revalidateProfiles() {
-  revalidatePath("/users/[userTagOrId]", "page");
-  revalidatePath("/users", "page");
+  revalidatePath("/[locale]/users/[userTagOrId]", "page");
+  revalidatePath("/[locale]/users", "page");
 }
 
 async function requireViewer(): Promise<string | null> {

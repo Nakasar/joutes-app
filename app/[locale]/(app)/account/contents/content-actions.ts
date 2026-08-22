@@ -56,7 +56,9 @@ async function revalidateContents(userId: string) {
     revalidatePath(`/${locale}/account`);
   }
 
-  revalidatePath("/users/[userTagOrId]", "page");
+  // `[locale]` compris : ce chemin désigne la structure de fichiers de routes,
+  // pas l'URL que next-intl réécrit.
+  revalidatePath("/[locale]/users/[userTagOrId]", "page");
 
   // Les vitrines des groupes du compte : un contenu public y figure.
   const groups = await getPlayGroupsForUser(userId);

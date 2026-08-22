@@ -33,10 +33,11 @@ import type { StreamAnnouncement, StreamLink, StreamLinkLive, StreamTarget } fro
 
 function revalidateTarget(target: StreamTarget) {
   // On arrive presque toujours sur un profil par son pseudonyme, pas par son
-  // identifiant : c'est le motif de route qu'il faut invalider, comme le fait
-  // déjà l'administration des comptes. Les deux formes sont ainsi couvertes.
+  // identifiant : c'est le motif de route qu'il faut invalider, les deux formes
+  // étant ainsi couvertes. Et `[locale]` en fait partie — ce chemin désigne la
+  // structure de fichiers de routes, pas l'URL que next-intl réécrit.
   if (target.kind === "user") {
-    revalidatePath("/users/[userTagOrId]", "page");
+    revalidatePath("/[locale]/users/[userTagOrId]", "page");
     return;
   }
 
