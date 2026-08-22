@@ -1,5 +1,6 @@
 import {Lair} from "@/lib/types/Lair";
 import {Game} from "@/lib/types/Game";
+import {CardPricePreference} from "@/lib/types/card-price";
 
 export type User = {
   id: string;
@@ -25,7 +26,15 @@ export type User = {
   friendCode?: string; // Code unique partageable (QR code) pour être ajouté en ami instantanément
 
   isPublicProfile?: boolean; // Si true, le profil affiche les jeux et lieux de l'utilisateur
-  
+
+  /**
+   * Le fournisseur dont les prix représentent les cartes, à l'écran, pour ce
+   * joueur-là. Absent, c'est la plateforme qui choisit — cf.
+   * `lib/types/card-price.ts` et docs/CARD_PRICES.md.
+   */
+  pricePreference?: CardPricePreference;
+
+
   // Informations publiques du profil
   description?: string; // Description du profil
   website?: string; // Site web personnel

@@ -43,6 +43,8 @@ import ErrataList, {type ErrataEntry} from "@/app/[locale]/(app)/games/[gameSlug
 import CardPriceDetails from "@/components/cards/CardPriceDetails.tsx";
 import CardImage from "@/components/cards/CardImage.tsx";
 import {getCardPrices} from "@/lib/db/card-prices.ts";
+import {chosenPriceSource, referenceCardPrice} from "@/lib/prices/preference.ts";
+import {viewerPricePreference, viewerPriceSources} from "@/lib/prices/viewer.ts";
 import { UserLabel } from "@/components/UserLabel.tsx";
 
 function hasNegativeVoteRatio(errata: Errata): boolean {
@@ -164,10 +166,14 @@ async function CardDetail({
 
   const printings = card.printings ?? [];
 
-  // Une seule place de marché est relevée pour l'instant (cf.
-  // docs/CARD_PRICES.md) ; la fiche montre le premier relevé venu plutôt que
-  // de présumer laquelle.
-  const [cardPrice] = await getCardPrices(new ObjectId(game.id), card.id);
+  // La fiche est le seul écran qui montre tous les relevés d'une carte : dans
+  // une grille, un prix est un chiffre à côté d'un nom, et deux chiffres ne s'y
+  // liraient pas (cf. docs/CARD_PRICES.md). Le premier de la liste la
+  // représente — le premier fournisseur choisi par le joueur qui la cote.
+  const priceSources = await viewerPriceSources();
+  const cardPrices = await getCardPrices(new ObjectId(game.id), card.id, priceSources);
+  const referencePrice = referenceCardPrice(cardPrices, priceSources);
+  const pricePreference = await viewerPricePreference();
 
   const erratas = [...await getErratasByCardId(cardId, userId)].sort(
     (a, b) => Number(hasNegativeVoteRatio(a)) - Number(hasNegativeVoteRatio(b))
@@ -410,7 +416,13 @@ async function CardDetail({
         </div>
       )}
 
-      <CardPriceDetails price={cardPrice} gameSlug={game.slug ?? gameSlugOrId} />
+      <CardPriceDetails
+        prices={cardPrices}
+        reference={referencePrice}
+        chosenSource={chosenPriceSource(pricePreference)}
+        canChooseSource={Boolean(userId)}
+        gameSlug={game.slug ?? gameSlugOrId}
+      />
 
       {printings.length > 0 && (
         <div className="flex flex-col gap-2">

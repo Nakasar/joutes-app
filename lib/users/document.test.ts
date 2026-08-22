@@ -66,6 +66,7 @@ describe("toUser", () => {
       friends: ["u2"],
       friendCode: "ABCD1234",
       isPublicProfile: true,
+      pricePreference: { source: "cardmarket", fallback: false },
       description: "Joueur du mardi",
       website: "https://example.test",
       socialLinks: ["https://example.test/social"],
