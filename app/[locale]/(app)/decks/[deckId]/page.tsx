@@ -1,21 +1,21 @@
 import { Suspense } from "react";
-import { AccountPanelSkeleton } from "@/components/AccountPanelSkeleton.tsx";
-import { getDeckById } from "@/lib/db/decks.ts";
-import { getGameById } from "@/lib/db/games.ts";
-import { auth } from "@/lib/auth.ts";
 import { headers } from "next/headers";
-import { connection } from "next/server";
+import { after, connection } from "next/server";
 import { notFound, redirect } from "next/navigation";
 import { Metadata } from "next";
-import { Library, Eye, EyeOff, ExternalLink, Edit } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card.tsx";
-import { Badge } from "@/components/ui/badge.tsx";
-import { Button } from "@/components/ui/button.tsx";
-import { Link } from "@/i18n/navigation.ts";
-import { DateTime } from "luxon";
-import DeleteDeckButton from "./DeleteDeckButton.tsx";
-import FavoriteDeckButton from "../FavoriteDeckButton.tsx";
-import ReportButton from "@/components/ReportButton.tsx";
+
+import { AccountPanelSkeleton } from "@/components/AccountPanelSkeleton.tsx";
+import { auth } from "@/lib/auth.ts";
+import { getDeckById, incrementDeckViews } from "@/lib/db/decks.ts";
+import { getGameById } from "@/lib/db/games.ts";
+import { getDeckCardInfos } from "@/lib/db/deck-cards.ts";
+import { deckCardIds } from "@/lib/decks/contents.ts";
+import { getDeckCollectionCounts } from "@/lib/decks/collection.ts";
+import { riftboundDeckCode } from "@/lib/decks/export-code.ts";
+import { getDeckZones } from "@/lib/decks/zones.ts";
+import { isDeckIndexable } from "@/lib/types/Deck.ts";
+import { DeckSheet } from "./DeckSheet.tsx";
+import { PublicDeckSheet } from "./PublicDeckSheet.tsx";
 
 type Params = Promise<{ deckId: string }>;
 
@@ -34,9 +34,9 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     };
   }
 
-  // Les decks privés ne sont visibles que par leur propriétaire (la page redirige
-  // les autres utilisateurs) : on évite de les indexer ou d'en exposer le détail.
-  if (deck.visibility === "private") {
+  // Un deck privé n'est visible que de son auteur, et un deck non répertorié ne
+  // s'atteint que par son lien : ni l'un ni l'autre n'a sa place dans un index.
+  if (!isDeckIndexable(deck.visibility)) {
     return {
       title: deck.name,
       robots: { index: false, follow: false },
@@ -65,127 +65,57 @@ async function DeckPageContent({ params }: { params: Params }) {
     notFound();
   }
 
-  // Vérifier les permissions : le deck doit être public ou appartenir à l'utilisateur connecté
+  // Un deck non répertorié s'ouvre comme un deck public : c'est le lien qui
+  // fait l'autorisation. Seul le privé se referme sur son auteur.
   const isOwner = deck.playerId === session?.user?.id;
   if (deck.visibility === "private" && !isOwner) {
     redirect("/decks");
   }
 
   const game = await getGameById(deck.gameId);
-  const createdAt = DateTime.fromJSDate(new Date(deck.createdAt)).setLocale("fr");
-  const updatedAt = DateTime.fromJSDate(new Date(deck.updatedAt)).setLocale("fr");
+  const zones = getDeckZones(game);
+  const catalog = await getDeckCardInfos(deck.gameId, deckCardIds(deck.cards));
   const isFavorited = Boolean(session?.user && deck.favoritedBy?.includes(session.user.id));
 
-  return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex-1 space-y-2">
-            <div className="flex items-center gap-2">
-              <Link
-                href="/decks"
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Library className="h-5 w-5" />
-              </Link>
-              <span className="text-muted-foreground">/</span>
-              <h1 className="text-4xl font-bold tracking-tight">{deck.name}</h1>
-            </div>
-            {game && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                {game.icon && (
-                  <img src={game.icon} alt={game.name} className="h-5 w-5 object-contain" />
-                )}
-                <span>{game.name}</span>
-              </div>
-            )}
-            <p className="text-sm text-muted-foreground">
-              Créé par {deck.creatorName || "un joueur"}
-            </p>
-          </div>
+  if (!isOwner) {
+    // Le compteur ne doit pas retarder la page : la vue se compte une fois
+    // celle-ci envoyée, et son échec ne casse rien.
+    after(() => incrementDeckViews(deck.id));
 
-          <div className="flex items-center gap-2">
-            <Badge variant={deck.visibility === "public" ? "default" : "secondary"}>
-              {deck.visibility === "public" ? (
-                <>
-                  <Eye className="h-3 w-3 mr-1" />
-                  Public
-                </>
-              ) : (
-                <>
-                  <EyeOff className="h-3 w-3 mr-1" />
-                  Privé
-                </>
-              )}
-            </Badge>
-            {session?.user?.id && (
-              <FavoriteDeckButton deckId={deck.id} isFavorited={isFavorited} />
-            )}
-            {isOwner && (
-              <>
-                <Button asChild variant="outline" size="sm">
-                  <Link href={`/decks/${deck.id}/edit`}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Modifier
-                  </Link>
-                </Button>
-                <DeleteDeckButton deckId={deck.id} />
-              </>
-            )}
-            <ReportButton contentType="deck" contentId={deck.id} />
-          </div>
-        </div>
+    const ownedByCardId = session?.user?.id
+      ? await getDeckCollectionCounts(
+          session.user.id,
+          deck.gameId,
+          deck.cards,
+          new Map(catalog.map((card) => [card.id, card]))
+        )
+      : undefined;
 
-        {/* Main content */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Informations</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {deck.url && (
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Lien externe</h3>
-                <Button asChild variant="outline" size="sm">
-                  <a href={deck.url} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Voir le deck
-                  </a>
-                </Button>
-              </div>
-            )}
-
-            {deck.description && (
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Description</h3>
-                <p className="text-sm whitespace-pre-wrap">{deck.description}</p>
-              </div>
-            )}
-
-            {deck.decklist && (
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Liste de cartes</h3>
-                <pre className="text-sm whitespace-pre-wrap font-mono bg-muted/50 p-4 rounded-md">{deck.decklist}</pre>
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">Créé le</h3>
-                <p className="text-sm">{createdAt.toLocaleString(DateTime.DATETIME_MED)}</p>
-                <p className="text-xs text-muted-foreground">{createdAt.toRelative()}</p>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">
-                  Dernière modification
-                </h3>
-                <p className="text-sm">{updatedAt.toLocaleString(DateTime.DATETIME_MED)}</p>
-                <p className="text-xs text-muted-foreground">{updatedAt.toRelative()}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+    return (
+      <div className="container mx-auto max-w-7xl px-4 py-8">
+        <PublicDeckSheet
+          deck={{ ...deck, notes: undefined }}
+          gameName={game?.name}
+          zones={zones}
+          catalog={catalog}
+          isFavorited={isFavorited}
+          isAuthenticated={Boolean(session?.user?.id)}
+          ownedByCardId={ownedByCardId ? Object.fromEntries(ownedByCardId) : undefined}
+        />
       </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto max-w-7xl px-4 py-8">
+      <DeckSheet
+        deck={deck}
+        gameName={game?.name}
+        zones={zones}
+        catalog={catalog}
+        isFavorited={isFavorited}
+        exportCode={game?.slug === "riftbound" ? riftboundDeckCode(deck.cards) : undefined}
+      />
     </div>
   );
 }
@@ -199,8 +129,8 @@ export default function DeckPage(props: Parameters<typeof DeckPageContent>[0]) {
   return (
     <Suspense
       fallback={
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
-          <AccountPanelSkeleton cards={2} label="Chargement du deck" />
+        <div className="container mx-auto max-w-7xl px-4 py-8">
+          <AccountPanelSkeleton cards={3} label="Chargement du deck" />
         </div>
       }
     >

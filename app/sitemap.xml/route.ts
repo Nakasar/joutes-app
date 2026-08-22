@@ -39,6 +39,9 @@ const staticUrls: {
   { url: `${SITE}/games/riftbound/developers/discord`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.4 },
   { url: `${SITE}/games/riftbound/developers/api`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.4 },
   { url: `${SITE}/games`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
+  // La librairie de decks est publique et se renouvelle vite ; les fiches de
+  // deck, elles, ne s'indexent qu'une fois publiées et ne sont pas listées ici.
+  { url: `${SITE}/decks/library`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.6 },
   { url: `${SITE}/lairs`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.5 },
   { url: `${SITE}/events`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
   { url: `${SITE}/integrations`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.2 },

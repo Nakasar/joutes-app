@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   },
 };
 
-async function DecksPageContent({ searchParams }: { searchParams: Promise<{ gameId?: string; scope?: string; favoritesOnly?: string }> }) {
+async function DecksPageContent({ searchParams }: { searchParams: Promise<{ gameId?: string; favoritesOnly?: string }> }) {
   // Récupérer l'utilisateur connecté
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -30,7 +30,7 @@ async function DecksPageContent({ searchParams }: { searchParams: Promise<{ game
     redirect("/login");
   }
 
-  const { gameId, scope, favoritesOnly } = await searchParams;
+  const { gameId, favoritesOnly } = await searchParams;
 
   // Fetch initial data with pagination
   const [initialDecksData, games] = await Promise.all([
@@ -39,7 +39,7 @@ async function DecksPageContent({ searchParams }: { searchParams: Promise<{ game
       gameId: gameId || undefined,
       page: 1,
       limit: 20,
-      scope: scope === "all" ? "all" : "mine",
+      scope: "mine",
       viewerId: session.user.id,
       favoritesOnly: favoritesOnly === "true",
     }),
@@ -61,7 +61,12 @@ async function DecksPageContent({ searchParams }: { searchParams: Promise<{ game
           </div>
         </div>
 
-        <DecksClient currentUserId={session.user.id} initialData={initialDecksData} games={games} initialFilters={{ gameId, scope: scope === "all" ? "all" : "mine", favoritesOnly: favoritesOnly === "true" }} />
+        <DecksClient
+          currentUserId={session.user.id}
+          initialData={initialDecksData}
+          games={games}
+          initialFilters={{ gameId, favoritesOnly: favoritesOnly === "true" }}
+        />
       </div>
     </div>
   );

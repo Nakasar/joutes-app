@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select.tsx";
 import { Loader2 } from "lucide-react";
+import { DECK_VISIBILITIES, DECK_VISIBILITY_LABELS, type DeckVisibility } from "@/lib/types/Deck.ts";
 import { toast } from "sonner";
 
 type CreateDeckDialogProps = {
@@ -44,7 +45,7 @@ export default function CreateDeckDialog({
     url: "",
     description: "",
     decklist: "",
-    visibility: "private" as "private" | "public",
+    visibility: "private" as DeckVisibility,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -193,7 +194,7 @@ export default function CreateDeckDialog({
               <Label htmlFor="visibility">Visibilité</Label>
               <Select
                 value={formData.visibility}
-                onValueChange={(value: "private" | "public") =>
+                onValueChange={(value: DeckVisibility) =>
                   setFormData({ ...formData, visibility: value })
                 }
                 disabled={isLoading}
@@ -202,8 +203,11 @@ export default function CreateDeckDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="private">Privé (visible uniquement par moi)</SelectItem>
-                  <SelectItem value="public">Public (visible par tous)</SelectItem>
+                  {DECK_VISIBILITIES.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {DECK_VISIBILITY_LABELS[option].label} ({DECK_VISIBILITY_LABELS[option].hint.toLowerCase()})
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

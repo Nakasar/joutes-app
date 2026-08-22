@@ -39,6 +39,12 @@ export async function GET(
       );
     }
 
+    // Les notes du deck sont l'aide-mémoire de son auteur — les rendre avec la
+    // fiche publierait ce qu'il n'a pas écrit pour être lu.
+    if (deck.playerId !== session?.user?.id) {
+      return NextResponse.json({ ...deck, notes: undefined });
+    }
+
     return NextResponse.json(deck);
   } catch (error) {
     console.error("Error fetching deck:", error);
