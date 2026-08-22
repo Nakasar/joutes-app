@@ -1,7 +1,7 @@
 import {Game} from "@/lib/types/Game";
 import {User} from "@/lib/types/User";
 import {CardAttributes} from "@/lib/types/card";
-import {CardMarketPrice} from "@/lib/prices/display";
+import {MarketPrice} from "@/lib/prices/display";
 import {ObjectId} from "bson";
 
 export type BoosterCard = CardAttributes & {
@@ -20,7 +20,7 @@ export type BoosterCard = CardAttributes & {
   image: string;
   price?: string;
   /** Prix de marché relevé pour la carte du catalogue (cf. docs/CARD_PRICES.md). */
-  marketPrice?: CardMarketPrice;
+  marketPrice?: MarketPrice;
   newInCollection?: boolean;
   banned?: boolean;
   text?: string;

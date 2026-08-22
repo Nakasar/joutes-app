@@ -2,7 +2,7 @@ import 'server-only';
 
 import db from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
-import { getCardMarketPrices } from "@/lib/db/card-prices";
+import { getMarketPrices } from "@/lib/db/card-prices";
 import { sumOwnedCardPrices, type CollectionValue } from "@/lib/collection/value";
 import { ownerField, ownerMatch, type CollectionOwner } from "@/lib/db/collection-owner";
 
@@ -167,7 +167,7 @@ export async function computeGameCollectionValue(
 
   const gameObjId = new ObjectId(gameId);
   const owned = await getOwnedCopiesByCard(owner, gameObjId);
-  const prices = await getCardMarketPrices(gameObjId, owned.map((entry) => entry.cardId));
+  const prices = await getMarketPrices(gameObjId, owned.map((entry) => entry.cardId));
 
   const value = sumOwnedCardPrices(
     owned.map((entry) => ({ copies: entry.copies, price: prices.get(entry.cardId) })),

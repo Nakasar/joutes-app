@@ -139,7 +139,7 @@ function GameCard({ game, basePath }: { game: GameCollectionStats; basePath: str
             </span>
             <span className="font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">
               {formatCardPrice(
-                { amount: game.value.amount, currency: game.value.currency, updatedAt: game.value.computedAt },
+                { amount: game.value.amount, currency: game.value.currency },
                 locale
               )}
             </span>

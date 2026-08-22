@@ -360,7 +360,7 @@ paths:
                         orientation: { type: string, enum: [portrait, landscape], description: "Absent means `portrait`; a landscape card is shown rotated a quarter turn." }
                         quantity: { type: integer }
                         variantsOwned: { type: integer }
-                        marketPrice: { $ref: "#/components/schemas/CardMarketPrice" }
+                        marketPrice: { $ref: "#/components/schemas/MarketPrice" }
                   total: { type: integer }
                   page: { type: integer }
                   limit: { type: integer }
@@ -4230,7 +4230,7 @@ components:
             some — Riftbound battlefields — are printed sideways and are shown
             rotated a quarter turn. Absent means `portrait`.
         price: { type: number }
-        marketPrice: { $ref: "#/components/schemas/CardMarketPrice" }
+        marketPrice: { $ref: "#/components/schemas/MarketPrice" }
         newInCollection: { type: boolean }
         banned: { type: boolean }
         text: { type: string }
@@ -4247,19 +4247,26 @@ components:
         max: { type: number, description: "Numeric facets only." }
         values: { type: array, items: { type: string }, description: "Value facets only." }
 
-    CardMarketPrice:
+    MarketPrice:
       type: object
       description: >
-        Second-hand market price of a card, as read from a marketplace
-        (Cardmarket) on `updatedAt`. It is a "from" price: the cheapest printing
-        of the card, English edition only. Cards without a reading carry no
-        `marketPrice` field at all — absent is not zero.
-      required: [amount, currency, updatedAt]
+        Second-hand market price of a card, as read from a marketplace on
+        `updatedAt`. It is a "from" price: the cheapest printing of the card,
+        English edition only. Cards without a reading carry no `marketPrice`
+        field at all — absent is not zero. A card read by several marketplaces
+        carries a single price, from the one that identifies its printings most
+        reliably; `source` says which, and `productId` only means anything for
+        that marketplace.
+      required: [amount, currency, source, updatedAt]
       properties:
         amount: { type: number }
         currency: { type: string, description: "ISO 4217 code (`EUR`)." }
+        source:
+          type: string
+          enum: [cardnexus, cardmarket]
+          description: "Marketplace the amount was read from."
         updatedAt: { type: string, format: date-time, description: "Date of the marketplace reading, not of the response." }
-        productId: { type: integer, description: "Marketplace product the amount comes from, to link back to it." }
+        productId: { type: integer, description: "Product the amount comes from, in `source`'s catalogue, to link back to it." }
 
     CardPrinting:
       type: object

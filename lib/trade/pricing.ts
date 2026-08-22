@@ -1,4 +1,4 @@
-import type { CardMarketPrice } from "@/lib/prices/display";
+import type { MarketPrice } from "@/lib/prices/display";
 
 /**
  * Chiffrage d'un échange.
@@ -14,7 +14,7 @@ export type PricedTradeCard = {
   quantity: number;
   /** Prix décidé par le propriétaire de la face, à l'unité. */
   unitPrice?: number;
-  marketPrice?: CardMarketPrice;
+  marketPrice?: MarketPrice;
 };
 
 export type TradeSideTotal = {

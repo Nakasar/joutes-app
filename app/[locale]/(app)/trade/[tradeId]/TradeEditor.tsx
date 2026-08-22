@@ -33,8 +33,7 @@ import { UserBadges } from "@/components/UserBadges.tsx";
 import type { PublicUser } from "@/lib/db/users.ts";
 import type { Trade, TradeCard, TradeCardSnapshot, TradeGame } from "@/lib/db/trades.ts";
 import { sideTotal, tradeDifference } from "@/lib/trade/pricing.ts";
-import { formatCardPrice } from "@/lib/prices/display.ts";
-import { CARDMARKET_CURRENCY } from "@/lib/prices/cardmarket.ts";
+import { DEFAULT_MARKET_CURRENCY, formatCardPrice } from "@/lib/prices/display.ts";
 
 type OfferTarget = "mine" | "counterparty";
 
@@ -484,13 +483,13 @@ export default function TradeEditor({
 
   // Les deux faces se chiffrent avec la même règle : prix décidé, à défaut prix
   // de marché, et ce qui n'a pas de prix reste dehors (cf. lib/trade/pricing.ts).
-  const myTotal = sideTotal(drafts.mine, CARDMARKET_CURRENCY);
-  const theirTotal = sideTotal(drafts.counterparty, CARDMARKET_CURRENCY);
+  const myTotal = sideTotal(drafts.mine, DEFAULT_MARKET_CURRENCY);
+  const theirTotal = sideTotal(drafts.counterparty, DEFAULT_MARKET_CURRENCY);
   const difference = tradeDifference(myTotal, theirTotal);
   const differenceCurrency = myTotal.currency ?? theirTotal.currency;
   const unpricedCopies = myTotal.unpricedCopies + theirTotal.unpricedCopies;
   const money = (amount: number) =>
-    formatCardPrice({ amount, currency: differenceCurrency ?? CARDMARKET_CURRENCY, updatedAt: "" }, locale);
+    formatCardPrice({ amount, currency: differenceCurrency ?? DEFAULT_MARKET_CURRENCY }, locale);
   const canValidate = isOpen && !busy && (drafts.mine.length > 0 || drafts.counterparty.length > 0);
   const partnerName = partner ? userLabel(partner) : null;
 
@@ -768,7 +767,7 @@ function ConfirmColumn({
   const locale = useLocale();
   // La confirmation est le dernier moment pour se rendre compte de ce que
   // l'échange pèse : le total y est repris, avec les mêmes règles qu'ailleurs.
-  const total = sideTotal(cards, CARDMARKET_CURRENCY);
+  const total = sideTotal(cards, DEFAULT_MARKET_CURRENCY);
 
   return (
     <div className="rounded-lg border p-3">
@@ -800,7 +799,7 @@ function ConfirmColumn({
         <p className="mt-2 flex items-baseline justify-between gap-2 border-t pt-2 text-sm">
           <span className="text-xs uppercase tracking-wider text-muted-foreground">{t("panel.total")}</span>
           <span className="font-bold tabular-nums">
-            {formatCardPrice({ amount: total.amount, currency: total.currency, updatedAt: "" }, locale)}
+            {formatCardPrice({ amount: total.amount, currency: total.currency }, locale)}
           </span>
         </p>
       ) : null}

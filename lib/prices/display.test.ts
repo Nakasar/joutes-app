@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { cardPriceAmount, formatCardPrice, sumCardPrices, type CardMarketPrice } from "./display";
+import { cardPriceAmount, formatCardPrice, sumCardPrices, type MarketPrice } from "./display";
 
 /**
  * Mise en forme des prix affichés : le montant qui représente une carte, la
@@ -9,9 +9,10 @@ import { cardPriceAmount, formatCardPrice, sumCardPrices, type CardMarketPrice }
  * Exécution : `npm run test`.
  */
 
-const price = (amount: number, currency = "EUR"): CardMarketPrice => ({
+const price = (amount: number, currency = "EUR", source: MarketPrice["source"] = "cardmarket"): MarketPrice => ({
   amount,
   currency,
+  source,
   updatedAt: "2026-08-14T00:43:53.000Z",
 });
 

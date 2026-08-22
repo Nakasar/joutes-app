@@ -39,11 +39,11 @@ import {
 import { CardFacetFilters, FilterSection, facetLabel } from "@/components/cards/CardFacetFilters.tsx";
 import { CardSearchInput } from "@/components/cards/CardSearchInput.tsx";
 import { CardPriceTag } from "@/components/cards/CardPriceTag.tsx";
-import type { CardMarketPrice } from "@/lib/prices/display.ts";
+import type { MarketPrice } from "@/lib/prices/display.ts";
 
 // La recherche renvoie le document de catalogue : il porte aussi les variantes
 // d'impression de la carte, absentes d'un simple exemplaire de collection.
-type CardWithType = BoosterCard & { type?: string; printings?: CardPrinting[]; marketPrice?: CardMarketPrice };
+type CardWithType = BoosterCard & { type?: string; printings?: CardPrinting[]; marketPrice?: MarketPrice };
 type CardsApiResponse = {
   cards: CardWithType[];
   total: number;

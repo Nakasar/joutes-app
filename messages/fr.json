@@ -4178,7 +4178,6 @@
       "unitPrice": "Prix de « {name} », à l'unité",
       "resetPrice": "Revenir au prix du marché pour « {name} »",
       "marketPrice": "marché {price}",
-      "cardmarket": "Cardmarket",
       "lineTotal": "= {total}",
       "noPrice": "Sans prix",
       "total": "Total",
@@ -4505,11 +4504,11 @@
     "variantBadge": "Variante : {name}"
   },
   "Prices": {
-    "openOnCardmarket": "Voir sur Cardmarket — prix relevé le {date}",
+    "openOnMarket": "Voir sur {market} — prix relevé le {date}",
     "title": "Prix du marché",
     "none": "Aucun prix relevé pour cette carte.",
-    "tooltip": "Prix Cardmarket relevé le {date}",
-    "source": "Cardmarket · relevé le {date}",
+    "tooltip": "Prix {market} relevé le {date}",
+    "source": "{market} · relevé le {date}",
     "printings": "{count, plural, one {# tirage relevé} other {# tirages relevés}}",
     "figures": {
       "low": "Prix bas",

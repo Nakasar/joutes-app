@@ -11,11 +11,11 @@ import {
   type ProductCollectionStats,
 } from "@/lib/db/products-collection";
 import { getGameIdsWithProducts } from "@/lib/db/products";
-import { getCardMarketPrices } from "@/lib/db/card-prices";
+import { getMarketPrices } from "@/lib/db/card-prices";
 import { getCollectionValues } from "@/lib/db/collection-values";
 import { totalCollectionValue, type CollectionValue, type CollectionValueTotal } from "@/lib/collection/value";
 import { ownerField, ownerMatch, type CollectionOwner } from "@/lib/db/collection-owner";
-import type { CardMarketPrice } from "@/lib/prices/display";
+import type { MarketPrice } from "@/lib/prices/display";
 
 /**
  * Collection completion model.
@@ -434,7 +434,7 @@ export type CollectionItem = {
   /** Number of *other* printings of this same card name the user owns at least one copy of. */
   variantsOwned: number;
   /** Prix de marché de la carte, absent tant qu'aucun relevé ne la couvre. */
-  marketPrice?: CardMarketPrice;
+  marketPrice?: MarketPrice;
 };
 
 export type GameCollectionResult = {
@@ -629,7 +629,7 @@ export async function getGameCollection({
 
   const [variantsOwnedByKey, marketPrices] = await Promise.all([
     getVariantsOwnedByKey(owner, gameObjId, rawItems),
-    getCardMarketPrices(gameObjId, rawItems.map((it) => it.id)),
+    getMarketPrices(gameObjId, rawItems.map((it) => it.id)),
   ]);
   const items: CollectionItem[] = rawItems.map((it) => ({
     ...it,

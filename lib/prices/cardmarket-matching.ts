@@ -1,4 +1,5 @@
 import type { CardmarketProduct } from "@/lib/prices/cardmarket";
+import type { PriceableCard } from "@/lib/types/card-price";
 
 /**
  * Rapprochement des produits Cardmarket et des cartes de la plateforme.
@@ -20,16 +21,7 @@ import type { CardmarketProduct } from "@/lib/prices/cardmarket";
  * ressort pas, ou dont l'extension reste ambiguë, n'a simplement pas de prix.
  */
 
-export type PriceableCard = {
-  /** Identifiant de la carte au sein du jeu (`WTR020`). */
-  id: string;
-  name: string;
-  setCode?: string;
-  /** Départage les variantes d'un même nom dans une extension (`027`, `027a`). */
-  collectorNumber?: string;
-  /** Attributs de jeu utiles au rapprochement (le pitch en Flesh and Blood). */
-  [key: string]: unknown;
-};
+export type { PriceableCard };
 
 /**
  * Ce qui distingue deux cartes de même nom dans un jeu donné. Cardmarket

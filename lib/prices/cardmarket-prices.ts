@@ -1,5 +1,6 @@
 import type { CardmarketPriceGuide, CardmarketProduct } from "@/lib/prices/cardmarket";
 import { CARDMARKET_CURRENCY } from "@/lib/prices/cardmarket";
+import { referenceOffer } from "@/lib/prices/offers";
 import type { CardPrice, CardPriceOffer, CardPriceValues } from "@/lib/types/card-price";
 
 /**
@@ -41,38 +42,6 @@ function foilPriceValues(guide: CardmarketPriceGuide): CardPriceValues | undefin
     avg7: amount(guide["avg7-foil"]),
     avg30: amount(guide["avg30-foil"]),
   });
-}
-
-/**
- * Tirage retenu comme prix de référence : le moins cher. Cardmarket vend le
- * tirage normal d'un numéro et ses versions foil comme des produits distincts,
- * sans rien qui les distingue dans ses fichiers — mais une version foil ne
- * vaut jamais moins que la carte dont elle est tirée, et une réédition vaut
- * moins que la première édition. Le moins cher des produits est donc le tirage
- * de base, celui que l'application affiche.
- *
- * « Moins cher » se lit sur la tendance, le prix lissé par Cardmarket : le
- * prix bas ne dit que ce que demande une seule offre, parfois une carte
- * abîmée, et il ne sert donc qu'à départager deux tendances égales — ou à
- * classer les produits que Cardmarket ne sait pas encore situer, faute de
- * ventes, et qui passent en dernier.
- */
-export function referenceOffer(offers: CardPriceOffer[]): CardPriceOffer | undefined {
-  const rank = (offer: CardPriceOffer): [number, number, number] => [
-    offer.prices.trend ?? Number.POSITIVE_INFINITY,
-    offer.prices.low ?? Number.POSITIVE_INFINITY,
-    offer.productId,
-  ];
-
-  return [...offers].sort((a, b) => {
-    const [left, right] = [rank(a), rank(b)];
-    for (let index = 0; index < left.length; index++) {
-      if (left[index] !== right[index]) {
-        return left[index] - right[index];
-      }
-    }
-    return 0;
-  })[0];
 }
 
 /**
