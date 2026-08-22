@@ -2657,13 +2657,13 @@
     "Features": {
       "metadata": {
         "title": "Fonctionnalités",
-        "description": "Découvrez tout ce que Joutes propose pour vivre votre passion des jeux de cartes à collectionner : collection, wishlists, groupes de jeu, événements et bien plus."
+        "description": "Découvrez tout ce que Joutes propose pour vivre votre passion des jeux de cartes à collectionner : collection, wishlists, groupes de jeu et leur vitrine publique, lieux de jeu, événements et bien plus."
       },
       "hero": {
         "eyebrow": "Joutes",
         "titleHighlight": "Une seule application",
         "title": "pour tous vos jeux de cartes à collectionner",
-        "subtitle": "Catalogues de cartes, collection, listes de souhaits, groupes de jeu, événements… Joutes centralise tout ce dont vous avez besoin pour vivre votre passion des TCG, seul ou entre joueurs.",
+        "subtitle": "Catalogues de cartes, collection, listes de souhaits, groupes de jeu et leur vitrine, lieux de jeu, événements… Joutes centralise tout ce dont vous avez besoin pour vivre votre passion des TCG, seul ou entre joueurs.",
         "ctaPrimary": "Découvrir les jeux",
         "ctaSecondary": "Créer un compte"
       },
@@ -2696,12 +2696,39 @@
           ]
         },
         "playGroups": {
-          "title": "Jouez collectif avec vos groupes",
-          "description": "Créez des groupes de jeu, partagez une collection commune modifiable par tous les membres, et suivez qui a emprunté quelle carte.",
+          "title": "Votre groupe de jeu a son Établi",
+          "description": "Un groupe, une page : les sessions à venir, les sondages de disponibilités, les annonces et les listes du groupe se lisent d'un seul coup d'œil, sans fil de discussion à remonter.",
           "bullets": [
-            "Collection partagée entre tous les membres",
-            "Suivi des emprunts, carte par carte",
-            "Invitations et rôles (propriétaire, admin, membre)"
+            "Sessions posées à une date connue, ou ouvertes en sondage de disponibilités",
+            "Je viens, peut-être, absent : chacun répond, le compte se tient tout seul",
+            "Lieu de la session : un lieu Joutes avec sa fiche, un lieu libre ou chez un membre",
+            "Annonces du groupe, réservées aux membres ou reprises sur la vitrine",
+            "Rôles fondateur, admin et membre, invitations par pseudo ou par e-mail",
+            "Collection commune, listes de souhaits et liste de vente du groupe",
+            "Échanges rapprochés tout seuls : qui cherche une carte, qui la vend"
+          ]
+        },
+        "groupShowcase": {
+          "title": "Une vitrine publique à votre nom",
+          "description": "Un groupe n'est plus seulement un espace privé : il a une page publique, à sa marque, que l'on peut suivre. Vos sessions et vos annonces internes, elles, restent internes.",
+          "bullets": [
+            "Logo, bannière et couleur d'accent : l'Établi et la vitrine prennent vos couleurs",
+            "Sous-titre, description, rythme habituel et liens vers vos réseaux",
+            "Des abonnés qui suivent le groupe et voient ce qu'il publie",
+            "Palmarès en tournoi, jeux et lieux du groupe, repris sur la vitrine",
+            "Rôle d'armes : les groupes publics se découvrent par activité, par distance ou par nouveauté",
+            "Groupe privé : il quitte le rôle d'armes, et sa vitrine demande à ne pas être indexée"
+          ]
+        },
+        "groupContents": {
+          "title": "Articles, vidéos et directs",
+          "description": "Ce que votre groupe produit a enfin un endroit où vivre : des articles écrits en markdown, des vidéos et des replays, et vos directs Twitch ou YouTube annoncés en tête de vitrine.",
+          "bullets": [
+            "Articles rédigés en markdown, avec résumé, miniature et jeu associé",
+            "Vidéos et replays YouTube ou Twitch, avec leur durée",
+            "Filtres tout, vidéos, articles et replays sur la vitrine",
+            "Jusqu'à trois directs simultanés déclarés par les membres, spectateurs compris",
+            "Les directs et les publications remontent aussi au rôle d'armes"
           ]
         },
         "wishlists": {
@@ -2714,12 +2741,14 @@
           ]
         },
         "lairs": {
-          "title": "Repaires et événements près de chez vous",
-          "description": "Découvrez les lieux de jeu (repaires), leurs événements, et inscrivez-vous en quelques secondes.",
+          "title": "Les lieux de jeu, en vitrine",
+          "description": "La page d'un lieu n'est plus une fiche : c'est sa vitrine, avec ses actualités, son agenda, les jeux qu'on y joue et sa présentation — et son direct en tête de page quand il diffuse.",
           "bullets": [
-            "Calendrier des événements par lieu",
-            "Fiches de repaires avec infos pratiques",
-            "Rappels et notifications"
+            "Quatre onglets : actualités, agenda, jeux joués ici, à propos",
+            "Actualités du lieu, dont une épinglée, et un événement à la une",
+            "Agenda filtrable sur les jeux que vous suivez, inscription en quelques secondes",
+            "Horaires du jour, itinéraire, photos et équipements",
+            "Suivez un lieu pour recevoir ses annonces"
           ]
         },
         "decks": {
@@ -2766,11 +2795,27 @@
           "gameSet": "Game set"
         },
         "playGroups": {
-          "sharedCollection": "Collection partagée",
-          "cardName1": "Éclat runique",
-          "cardName2": "Garde d'acier",
-          "borrowedBy": "Empruntée · {name}",
-          "available": "×{count} disponibles"
+          "hub": "Établi du groupe",
+          "pollBadge": "Sondage ouvert",
+          "slot1": "Jeudi 19h30",
+          "slot2": "Samedi 14h",
+          "availability": "{count}/{total} disponibles",
+          "rsvp": "Je viens · {count} présents"
+        },
+        "groupShowcase": {
+          "name": "Les Corbeaux",
+          "tagline": "Groupe de jeu · Thionville",
+          "follow": "Suivre",
+          "followers": "{count} abonnés",
+          "accent": "Accent"
+        },
+        "groupContents": {
+          "liveBadge": "EN DIRECT",
+          "viewers": "{count} spectateurs",
+          "article": "Article",
+          "articleTitle": "Retour sur le GP de Metz",
+          "video": "Vidéo",
+          "videoTitle": "Draft commenté · 12 min"
         },
         "wishlists": {
           "title": "Ma liste de souhaits",
@@ -2782,6 +2827,12 @@
         },
         "lairs": {
           "name": "Le Repaire du Dragon",
+          "tabNews": "Actualités",
+          "tabAgenda": "Agenda",
+          "tabGames": "Jeux joués ici",
+          "tabAbout": "À propos",
+          "pinned": "ÉPINGLÉ",
+          "newsTitle": "Arrivage samedi matin",
           "event": "Tournoi Riftbound · Samedi 14h"
         },
         "decks": {
@@ -2797,7 +2848,7 @@
       "organizersLink": {
         "eyebrow": "Vous organisez ?",
         "title": "Joutes pour les organisateurs d'événements",
-        "subtitle": "Boutiques, associations, organisateurs, éditeurs : calendrier, inscriptions, tournois, ligues et intégrations, sur une page à part.",
+        "subtitle": "Boutiques, associations, organisateurs, éditeurs : la vitrine de votre lieu, le calendrier, les inscriptions, les tournois, les ligues et les intégrations, sur une page à part.",
         "cta": "Voir la page organisateurs"
       }
     },
@@ -4469,13 +4520,13 @@
   "FeaturesOrganizers": {
     "metadata": {
       "title": "Joutes pour les organisateurs",
-      "description": "Calendrier, inscriptions, tournois, ligues et intégrations : tout ce qu'il faut pour organiser vos événements de jeu et remplir vos tables — boutiques, associations, organisateurs et éditeurs."
+      "description": "La vitrine de votre lieu, le calendrier, les inscriptions, les tournois, les ligues et les intégrations : tout ce qu'il faut pour parler à vos joueurs et remplir vos tables — boutiques, associations, organisateurs et éditeurs."
     },
     "hero": {
       "eyebrow": "Boutiques · Associations · Organisateurs · Éditeurs",
       "titleHighlight": "Remplissez vos tables,",
       "title": "pas vos tableurs",
-      "subtitle": "Publiez votre calendrier, ouvrez les inscriptions, faites tourner vos tournois et vos ligues. Joutes prévient vos joueurs là où ils sont déjà : Discord, mobile, web, notifications.",
+      "subtitle": "Faites de la page de votre lieu une vitrine, publiez votre calendrier, ouvrez les inscriptions, faites tourner vos tournois et vos ligues. Joutes prévient vos joueurs là où ils sont déjà : Discord, mobile, web, notifications.",
       "ctaPrimary": "Créer un événement",
       "ctaSecondary": "Organiser un tournoi"
     },
@@ -4485,7 +4536,7 @@
       "items": {
         "stores": {
           "title": "Boutiques de jeu",
-          "description": "Votre programme de la semaine visible par les joueurs du quartier, et vos inscriptions tenues à jour sans registre papier."
+          "description": "Une vitrine à votre marque, votre programme de la semaine visible par les joueurs du quartier, et vos inscriptions tenues à jour sans registre papier."
         },
         "associations": {
           "title": "Associations et clubs",
@@ -4502,7 +4553,28 @@
       }
     },
     "soonLabel": "Bientôt",
+    "proLabel": "Joutes Pro",
     "items": {
+      "lairPage": {
+        "title": "La page de votre lieu devient votre vitrine",
+        "description": "Ce n'était qu'une fiche avec une adresse et une liste d'événements. C'est désormais la page où vous parlez à vos joueurs : quatre onglets, vos actualités, votre marque, et votre direct en tête de page quand vous diffusez.",
+        "bullets": [
+          "Quatre onglets — actualités, agenda, jeux joués ici, à propos — chacun avec sa colonne d'informations pratiques",
+          "Actualités du lieu : fermetures, arrivages, promotions, avec une annonce épinglée en tête",
+          "Un événement à la une, choisi par vous, avec ses places restantes et son bouton d'inscription",
+          "Direct Twitch ou YouTube : une URL collée, et le lecteur passe en tête de page pour tous les visiteurs",
+          "Horaires jour par jour, horaires coupés compris, et « ouvert jusqu'à 19h » calculé pour le visiteur",
+          "Rythme habituel : ce qu'on trouve ici le vendredi soir, même sans événement déclaré",
+          "Présentation en markdown, galerie photos, équipements, accès en transports et stationnement",
+          "L'équipe du lieu nommée, vos liens et réseaux, votre Discord",
+          "Des abonnés qui suivent le lieu et reçoivent ses annonces"
+        ],
+        "pro": [
+          "Logo et couleur d'accent : la page prend vos couleurs, jusqu'aux cartes et aux boutons",
+          "Ordre des sections de la page, réglé par vous",
+          "Vidéo de présentation intégrée à l'onglet « À propos »"
+        ]
+      },
       "calendar": {
         "title": "Un calendrier que vos joueurs consultent déjà",
         "description": "Vos événements ne vivent pas sur une page isolée : ils entrent dans le calendrier public de Joutes, sur la fiche de votre lieu, dans la recherche par jeu et dans la recherche autour d'une position.",
@@ -4654,6 +4726,19 @@
         "name": "Saison de printemps",
         "points": "{count} pts",
         "deadline": "Intervalle · 3 jours restants"
+      },
+      "lairPage": {
+        "name": "Le Repaire du Dragon",
+        "tabNews": "Actualités",
+        "tabAgenda": "Agenda",
+        "tabGames": "Jeux joués ici",
+        "tabAbout": "À propos",
+        "live": "EN DIRECT",
+        "pinned": "ÉPINGLÉ",
+        "newsTitle": "Arrivage : nouvelle extension samedi",
+        "featured": "À la une · Tournoi du samedi",
+        "seats": "18 / 24 inscrits",
+        "openUntil": "Ouvert jusqu'à 19h"
       },
       "integrations": {
         "endpoint": "GET /api/events",

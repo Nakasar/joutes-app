@@ -6,6 +6,7 @@ import {
   Heart,
   MapPin,
   Medal,
+  Radio,
   Search,
   Sparkles,
   Trophy,
@@ -156,36 +157,142 @@ export async function CollectionMockup() {
 
 export async function PlayGroupsMockup() {
   const t = await mockupT();
+  // Un sondage de disponibilités : c'est par là que commence une session, et
+  // c'est ce que l'Établi montre en premier.
+  const slots = [
+    { label: t("playGroups.slot1"), available: 4, total: 6, leading: true },
+    { label: t("playGroups.slot2"), available: 2, total: 6, leading: false },
+  ];
   return (
     <DeviceFrame accent="from-amber-500 to-orange-500">
-      <div className="mb-3 flex items-center gap-2">
-        <div className="flex -space-x-2">
-          {["A", "B", "C"].map((letter, i) => (
-            <span
-              key={letter}
-              className="flex size-6 items-center justify-center rounded-full border-2 border-card bg-gradient-to-br from-amber-400 to-orange-500 text-[10px] font-bold text-white"
-              style={{ zIndex: 3 - i }}
-            >
-              {letter}
-            </span>
-          ))}
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <span className="flex items-center gap-1.5 text-xs font-semibold">
+          <Users className="size-3.5 text-amber-500" />
+          {t("playGroups.hub")}
+        </span>
+        <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[9px] font-semibold text-amber-700 dark:text-amber-300">
+          {t("playGroups.pollBadge")}
+        </span>
+      </div>
+      <div className="space-y-2">
+        {slots.map((slot) => (
+          <div key={slot.label} className="rounded-md border px-2.5 py-1.5">
+            <div className="mb-1 flex items-center justify-between text-[10px]">
+              <span className={slot.leading ? "font-semibold" : "font-medium text-muted-foreground"}>
+                {slot.label}
+              </span>
+              <span className="text-muted-foreground">
+                {t("playGroups.availability", { count: slot.available, total: slot.total })}
+              </span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className={`h-full rounded-full ${
+                  slot.leading
+                    ? "bg-gradient-to-r from-amber-400 to-orange-500"
+                    : "bg-muted-foreground/30"
+                }`}
+                style={{ width: `${(slot.available / slot.total) * 100}%` }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 flex items-center gap-2 rounded-md bg-orange-500/10 px-2.5 py-1.5 text-[10px] text-orange-700 dark:text-orange-300">
+        <Check className="size-3.5 shrink-0" />
+        {t("playGroups.rsvp", { count: 5 })}
+      </div>
+    </DeviceFrame>
+  );
+}
+
+export async function GroupShowcaseMockup() {
+  const t = await mockupT();
+  const accents = [
+    "from-sky-400 to-indigo-500",
+    "from-emerald-400 to-teal-500",
+    "from-rose-400 to-pink-500",
+    "from-amber-400 to-orange-500",
+  ];
+  return (
+    <DeviceFrame accent="from-sky-500 to-indigo-500">
+      <div className="overflow-hidden rounded-lg border">
+        <div className="h-10 bg-gradient-to-r from-sky-500/70 via-indigo-500/60 to-indigo-600/70" />
+        <div className="flex items-end gap-2 px-2.5 pb-2">
+          <span className="-mt-4 flex size-9 shrink-0 items-center justify-center rounded-lg border-2 border-card bg-gradient-to-br from-sky-400 to-indigo-600 text-[11px] font-bold text-white">
+            LC
+          </span>
+          <div className="min-w-0 flex-1 pb-0.5">
+            <div className="truncate text-[11px] font-semibold">
+              {t("groupShowcase.name")}
+            </div>
+            <div className="truncate text-[9px] text-muted-foreground">
+              {t("groupShowcase.tagline")}
+            </div>
+          </div>
+          <span className="rounded-full bg-indigo-500 px-2 py-0.5 text-[9px] font-semibold text-white">
+            {t("groupShowcase.follow")}
+          </span>
         </div>
-        <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+      </div>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[10px] text-muted-foreground">
+        <span className="flex items-center gap-1">
           <Users className="size-3" />
-          {t("playGroups.sharedCollection")}
+          {t("groupShowcase.followers", { count: 128 })}
+        </span>
+        <span className="flex items-center gap-1.5">
+          {t("groupShowcase.accent")}
+          <span className="flex gap-1">
+            {accents.map((accent, i) => (
+              <span
+                key={accent}
+                className={`size-3 rounded-full bg-gradient-to-br ${accent} ${
+                  i === 0 ? "ring-2 ring-indigo-500/40" : ""
+                }`}
+              />
+            ))}
+          </span>
+        </span>
+      </div>
+    </DeviceFrame>
+  );
+}
+
+export async function GroupContentsMockup() {
+  const t = await mockupT();
+  const posts = [
+    {
+      kind: t("groupContents.article"),
+      title: t("groupContents.articleTitle"),
+      tone: "bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-300",
+    },
+    {
+      kind: t("groupContents.video"),
+      title: t("groupContents.videoTitle"),
+      tone: "bg-rose-500/15 text-rose-700 dark:text-rose-300",
+    },
+  ];
+  return (
+    <DeviceFrame accent="from-fuchsia-500 to-rose-500">
+      <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md bg-rose-500/10 px-2.5 py-2 text-[10px] text-rose-700 dark:text-rose-300">
+        <span className="flex items-center gap-1.5 font-bold">
+          <Radio className="size-3.5" />
+          {t("groupContents.liveBadge")}
+        </span>
+        <span className="text-muted-foreground">
+          {t("groupContents.viewers", { count: 42 })}
         </span>
       </div>
       <div className="space-y-1.5">
-        <div className="flex items-center justify-between rounded-md border px-2.5 py-1.5 text-[10px]">
-          <span className="font-medium">{t("playGroups.cardName1")}</span>
-          <span className="rounded-full bg-amber-500/15 px-2 py-0.5 font-semibold text-amber-700 dark:text-amber-300">
-            {t("playGroups.borrowedBy", { name: "Alex" })}
-          </span>
-        </div>
-        <div className="flex items-center justify-between rounded-md border px-2.5 py-1.5 text-[10px]">
-          <span className="font-medium">{t("playGroups.cardName2")}</span>
-          <span className="text-muted-foreground">{t("playGroups.available", { count: 3 })}</span>
-        </div>
+        {posts.map((post) => (
+          <div key={post.title} className="flex items-center gap-2 rounded-md border px-2.5 py-2 text-[10px]">
+            <span className="aspect-video w-10 shrink-0 rounded bg-gradient-to-br from-fuchsia-400/70 to-rose-500/70" />
+            <span className="min-w-0 flex-1 truncate font-medium">{post.title}</span>
+            <span className={`rounded-full px-2 py-0.5 text-[9px] font-semibold ${post.tone}`}>
+              {post.kind}
+            </span>
+          </div>
+        ))}
       </div>
     </DeviceFrame>
   );
@@ -223,11 +330,37 @@ export async function WishlistsMockup() {
 
 export async function LairsMockup() {
   const t = await mockupT();
+  // Les quatre onglets de la vitrine d'un lieu, dans leur ordre réel : la
+  // maquette illustre ce que la copie annonce, elle n'en montre pas trois.
+  const tabs = [
+    t("lairs.tabNews"),
+    t("lairs.tabAgenda"),
+    t("lairs.tabGames"),
+    t("lairs.tabAbout"),
+  ];
   return (
     <DeviceFrame accent="from-cyan-500 to-sky-500">
-      <div className="mb-3 flex items-center gap-1.5 text-xs font-semibold">
+      <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold">
         <MapPin className="size-3.5 text-cyan-500" />
         {t("lairs.name")}
+      </div>
+      <div className="mb-3 flex flex-wrap gap-1.5">
+        {tabs.map((tab, i) => (
+          <span
+            key={tab}
+            className={`rounded-full px-2.5 py-1 text-[9px] font-semibold ${
+              i === 1 ? "bg-cyan-500 text-white" : "bg-muted text-muted-foreground"
+            }`}
+          >
+            {tab}
+          </span>
+        ))}
+      </div>
+      <div className="mb-3 flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-[10px]">
+        <span className="rounded bg-cyan-500/15 px-1.5 py-0.5 text-[8px] font-bold text-cyan-700 dark:text-cyan-300">
+          {t("lairs.pinned")}
+        </span>
+        <span className="min-w-0 flex-1 truncate font-medium">{t("lairs.newsTitle")}</span>
       </div>
       <div className="grid grid-cols-7 gap-1">
         {Array.from({ length: 21 }, (_, i) => (
