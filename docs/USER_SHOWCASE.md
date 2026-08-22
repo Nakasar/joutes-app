@@ -181,6 +181,20 @@ Sécurité, Intégrations et Mes publications restent des routes sœurs : ce son
 des écrans qu'on ouvre trois fois par an, et les mettre dans la barre
 l'allongerait pour rien. On y accède depuis l'onglet Profil.
 
+**L'onglet Profil ne règle plus rien de public.** L'avatar, la description, les
+liens et la visibilité vivent dans « Ma vitrine », et nulle part ailleurs : les
+tenir à deux endroits laissait retirer d'un côté ce que l'autre réécrivait. Les
+éditeurs qui les portaient (`ProfileEditor`, `ProfileImageDisplay`,
+`ProfileVisibilitySwitch`) ont donc disparu, avec les quatre composants que
+`docs/ACCOUNT_PAGE_REDESIGN.md` documentait déjà comme morts.
+
+Cet écran-là écrit d'un seul geste : les deux écritures — le sous-objet
+`showcase` et les champs à plat — passent par une seule action, deux appels en
+parallèle pouvant réussir à moitié et laisser l'aperçu dire le contraire de la
+base. Il **replie** au passage `website` et `socialLinks[]` dans
+`showcase.links` : sans cela, retirer un lien hérité n'aurait aucun effet, il
+reviendrait au rechargement et resterait sur le profil public.
+
 Les trois anciennes routes (`/account/achievements`, `/account/notifications`,
 `/account/subscription`) **redirigent** vers leur onglet. Les deux ancres
 héritées (`#jeux`, `#prices`) ne pouvaient pas l'être — un fragment d'URL n'est
