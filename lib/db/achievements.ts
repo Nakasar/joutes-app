@@ -151,3 +151,69 @@ export async function deleteAchievement(id: string): Promise<boolean> {
 
   return false;
 }
+
+/**
+ * Le classement des succès.
+ *
+ * Le score se calcule **en mémoire** plutôt que par une jointure : les
+ * déblocages portent `achievementId` en chaîne alors que les succès portent un
+ * `ObjectId`, si bien qu'un `$lookup` demanderait une conversion à chaque
+ * document. Le catalogue tient dans une lecture — c'est déjà l'arbitrage de
+ * `lib/db/user-badges.ts` — et le regroupement, lui, se fait bien en base.
+ *
+ * Les succès cachés comptent : ne pas les afficher n'est pas ne pas les avoir.
+ */
+export type LeaderboardRow = { userId: string; points: number; unlocked: number };
+
+async function readScores(): Promise<LeaderboardRow[]> {
+  const [achievements, rows] = await Promise.all([
+    getAllAchievements(),
+    db
+      .collection(USER_ACHIEVEMENTS_COLLECTION)
+      .aggregate<{ _id: string; achievementIds: string[] }>([
+        { $group: { _id: "$userId", achievementIds: { $push: "$achievementId" } } },
+      ])
+      .toArray(),
+  ]);
+
+  const points = new Map(achievements.map((achievement) => [achievement.id, achievement.points]));
+
+  return rows
+    .map((row) => ({
+      userId: row._id,
+      unlocked: row.achievementIds.length,
+      points: row.achievementIds.reduce((total, id) => total + (points.get(id) ?? 0), 0),
+    }))
+    // À points égaux, celui qui a débloqué le plus de succès passe devant : il a
+    // fait plus de choses, même si elles valaient moins.
+    .sort((a, b) => b.points - a.points || b.unlocked - a.unlocked);
+}
+
+export async function readAchievementsLeaderboard(limit: number): Promise<LeaderboardRow[]> {
+  return (await readScores()).slice(0, Math.max(1, Math.min(limit, 100)));
+}
+
+/**
+ * Le rang d'un compte, et son score.
+ *
+ * `null` quand il n'a rien débloqué : il n'est pas dernier, il n'est pas
+ * classé, et lui annoncer un rang serait lui annoncer une place qu'il n'occupe
+ * pas.
+ */
+export async function readUserAchievementRank(
+  userId: string,
+): Promise<{ rank: number; points: number; unlocked: number; total: number } | null> {
+  const scores = await readScores();
+  const index = scores.findIndex((row) => row.userId === userId);
+
+  if (index === -1) {
+    return null;
+  }
+
+  return {
+    rank: index + 1,
+    points: scores[index].points,
+    unlocked: scores[index].unlocked,
+    total: scores.length,
+  };
+}

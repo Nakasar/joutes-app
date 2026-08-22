@@ -1,5 +1,5 @@
 import db from "@/lib/mongodb";
-import { User } from "@/lib/types/User";
+import { User, UserShowcase } from "@/lib/types/User";
 import { ObjectId } from "mongodb";
 import { toUser } from "@/lib/users/document";
 import { generateFriendCode } from "@/lib/utils/friend-codes";
@@ -7,6 +7,12 @@ import {
   type AdminUserSummary,
   parseAdminUserSearch,
 } from "@/lib/users/admin-search";
+import {
+  type RegistryQuery,
+  type RegistrySort,
+  type RegistryUser,
+  toRegistryUser,
+} from "@/lib/users/registry-search";
 import type { UserBadges } from "@/lib/db/user-badges";
 import type { CardPricePreference } from "@/lib/types/card-price";
 
@@ -656,4 +662,246 @@ export async function searchUsersForAdmin(
     avatar: doc.image || doc.avatar || undefined,
     isPublicProfile: doc.isPublicProfile === true,
   }));
+}
+
+/**
+ * Le registre public : ce que la page « Communauté » cherche.
+ *
+ * Distinct de `searchUsersForAdmin`, et pas seulement par sa projection.
+ * L'administration cherche **une** personne, dont elle connaît déjà quelque
+ * chose ; le registre en parcourt beaucoup, dont il ne sait rien. D'où trois
+ * différences de fond :
+ *
+ * - `isPublicProfile: true` est **dans la requête**, jamais laissé à
+ *   l'affichage. Un profil privé figure au registre par son nom et ses badges
+ *   (`readRegistryPrivateUsers`), mais il n'entre pas dans une recherche par
+ *   ville ni par jeu : ce sont des informations qu'il a choisi de ne pas
+ *   publier.
+ * - L'identifiant n'est pas une clef de recherche : un registre public n'a pas
+ *   à confirmer qu'un identifiant donné correspond à un compte.
+ * - La ville se cherche, parce que c'est une des trois raisons qu'on a de
+ *   parcourir un annuaire de joueurs.
+ */
+export type RegistryUserFilter = {
+  query?: RegistryQuery | null;
+  gameId?: string;
+  city?: string;
+  /**
+   * Restreindre à ces comptes. Sert aux filtres que la collection `user` ne
+   * porte pas — « vend des cartes », « en direct » — résolus ailleurs puis
+   * croisés ici. Une liste **vide** ne veut pas dire « aucune restriction » :
+   * elle veut dire « personne », et l'appelant n'a alors rien à demander.
+   */
+  userIds?: string[];
+  sort: RegistrySort;
+  limit: number;
+  skip: number;
+};
+
+const REGISTRY_PROJECTION = {
+  name: 1,
+  username: 1,
+  displayName: 1,
+  discriminator: 1,
+  image: 1,
+  avatar: 1,
+  profileImage: 1,
+  description: 1,
+  games: 1,
+  isPublicProfile: 1,
+  createdAt: 1,
+  "location.city": 1,
+  "showcase.showCity": 1,
+} as const;
+
+function registryFilter(filter: RegistryUserFilter): Record<string, unknown> | null {
+  const conditions: Record<string, unknown>[] = [{ isPublicProfile: true }];
+
+  if (filter.userIds) {
+    if (filter.userIds.length === 0) {
+      return null;
+    }
+
+    conditions.push({
+      _id: { $in: filter.userIds.filter(ObjectId.isValid).map(ObjectId.createFromHexString) },
+    });
+  }
+
+  if (filter.gameId) {
+    conditions.push({ games: filter.gameId });
+  }
+
+  if (filter.city) {
+    // La ville ne compte que si le compte a accepté de la montrer : la filtrer
+    // sur un compte qui la garde pour lui reviendrait à la révéler par
+    // recoupement.
+    conditions.push({ "showcase.showCity": true, "location.city": filter.city });
+  }
+
+  if (filter.query?.kind === "tag") {
+    conditions.push({
+      displayName: filter.query.displayName,
+      discriminator: filter.query.discriminator,
+    });
+  } else if (filter.query?.kind === "text") {
+    const pattern = { $regex: filter.query.pattern, $options: "i" };
+    conditions.push({
+      $or: [
+        { name: pattern },
+        { username: pattern },
+        { displayName: pattern },
+        { "showcase.showCity": true, "location.city": pattern },
+      ],
+    });
+  }
+
+  return conditions.length === 1 ? conditions[0] : { $and: conditions };
+}
+
+const REGISTRY_SORT_ORDER: Record<RegistrySort, Record<string, 1 | -1>> = {
+  // « Les plus actifs » se lit pour l'instant « les plus récents » : le dépôt
+  // ne tient pas de trace d'activité par compte, et inventer un score qu'aucune
+  // donnée ne soutient serait pire qu'un tri honnête.
+  active: { createdAt: -1 },
+  // Le classement par abonnés se fait dans `userFollowers`, la collection qui
+  // porte le chiffre, puis arrive ici en liste d'identifiants : l'ordre du
+  // `$in` n'étant pas garanti par Mongo, l'appelant le rétablit. Cette entrée
+  // n'est donc qu'un départage stable.
+  followers: { createdAt: -1 },
+  name: { displayName: 1, name: 1 },
+};
+
+export async function searchPublicUsers(filter: RegistryUserFilter): Promise<RegistryUser[]> {
+  const query = registryFilter(filter);
+  if (!query) {
+    return [];
+  }
+
+  const cursor = db
+    .collection(COLLECTION_NAME)
+    .find(query, { projection: REGISTRY_PROJECTION })
+    .sort(REGISTRY_SORT_ORDER[filter.sort])
+    .skip(Math.max(0, filter.skip))
+    .limit(Math.min(Math.max(filter.limit, 1), 100));
+
+  const docs = await (filter.query?.kind === "tag"
+    ? cursor.collation({ locale: "en", strength: 2 })
+    : cursor
+  ).toArray();
+
+  return docs.map(toRegistryUser);
+}
+
+export async function countPublicUsers(
+  filter: Omit<RegistryUserFilter, "limit" | "skip" | "sort">,
+): Promise<number> {
+  const query = registryFilter({ ...filter, sort: "active", limit: 1, skip: 0 });
+  if (!query) {
+    return 0;
+  }
+
+  return db.collection(COLLECTION_NAME).countDocuments(query);
+}
+
+/** Combien de comptes existent, et combien ont ouvert leur profil. */
+export async function countCommunity(): Promise<{ total: number; publicProfiles: number }> {
+  const [total, publicProfiles] = await Promise.all([
+    db.collection(COLLECTION_NAME).estimatedDocumentCount(),
+    db.collection(COLLECTION_NAME).countDocuments({ isPublicProfile: true }),
+  ]);
+
+  return { total, publicProfiles };
+}
+
+/**
+ * Les comptes publics d'une même commune.
+ *
+ * `readRegistryUsersByIds` sert le cas d'à côté — une liste d'identifiants déjà
+ * connue — mais ici c'est bien la ville qui désigne, et elle ne vaut que si le
+ * compte l'a rendue visible.
+ */
+export async function readNearbyPublicUsers(input: {
+  city: string;
+  excludeUserId?: string;
+  limit: number;
+}): Promise<RegistryUser[]> {
+  const filter: Record<string, unknown> = {
+    isPublicProfile: true,
+    "showcase.showCity": true,
+    "location.city": input.city,
+  };
+
+  if (input.excludeUserId && ObjectId.isValid(input.excludeUserId)) {
+    filter._id = { $ne: ObjectId.createFromHexString(input.excludeUserId) };
+  }
+
+  const docs = await db
+    .collection(COLLECTION_NAME)
+    .find(filter, { projection: REGISTRY_PROJECTION })
+    .limit(Math.min(Math.max(input.limit, 1), 50))
+    .toArray();
+
+  return docs.map(toRegistryUser);
+}
+
+/** Des comptes désignés par leur identifiant, dans la forme du registre. */
+export async function readRegistryUsersByIds(userIds: string[]): Promise<RegistryUser[]> {
+  const validIds = userIds.filter(ObjectId.isValid).map(ObjectId.createFromHexString);
+  if (validIds.length === 0) {
+    return [];
+  }
+
+  const docs = await db
+    .collection(COLLECTION_NAME)
+    .find({ _id: { $in: validIds } }, { projection: REGISTRY_PROJECTION })
+    .toArray();
+
+  return docs.map(toRegistryUser);
+}
+
+/**
+ * Enregistre la vitrine.
+ *
+ * L'écriture se fait **par sous-chemin** plutôt qu'en remplaçant `showcase`
+ * d'un bloc : deux onglets ouverts sur le même compte, l'un qui range les blocs
+ * et l'autre qui dépose une bannière, ne s'effacent plus l'un l'autre. C'est la
+ * leçon d'`updatePlayGroupOptions`, que la personnalisation d'un lieu n'a pas
+ * encore reprise.
+ *
+ * Une clef absente de l'objet n'est **pas** touchée ; une clef présente et
+ * `undefined` est retirée. Le formulaire renvoyant toujours tous ses champs,
+ * c'est ainsi qu'un champ vidé s'efface.
+ */
+export async function updateUserShowcase(
+  userId: string,
+  showcase: Partial<UserShowcase>,
+): Promise<boolean> {
+  if (!ObjectId.isValid(userId)) {
+    return false;
+  }
+
+  const set: Record<string, unknown> = {};
+  const unset: Record<string, ""> = {};
+
+  for (const [key, value] of Object.entries(showcase)) {
+    if (value === undefined) {
+      unset[`showcase.${key}`] = "";
+    } else {
+      set[`showcase.${key}`] = value;
+    }
+  }
+
+  if (Object.keys(set).length === 0 && Object.keys(unset).length === 0) {
+    return true;
+  }
+
+  const result = await db.collection(COLLECTION_NAME).updateOne(
+    { _id: ObjectId.createFromHexString(userId) },
+    {
+      ...(Object.keys(set).length > 0 ? { $set: set } : {}),
+      ...(Object.keys(unset).length > 0 ? { $unset: unset } : {}),
+    },
+  );
+
+  return result.matchedCount > 0;
 }

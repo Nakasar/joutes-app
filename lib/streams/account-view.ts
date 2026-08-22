@@ -1,6 +1,6 @@
 import "server-only";
 
-import { describeTargets, listAvailableTargets } from "@/lib/streams/announce";
+import { describeTargets, listAvailableTargets, type StreamTargetOption } from "@/lib/streams/announce";
 import {
   streamPlatformListeningConfigured,
   streamPlatformOAuthConfigured,
@@ -30,8 +30,8 @@ export type StreamAccountView = {
   channelName?: string;
   channelUrl?: string;
   subscriptionState: StreamLink["subscription"]["state"];
-  targets: { target: { kind: "lair" | "play-group"; id: string }; label: string }[];
-  available: { target: { kind: "lair" | "play-group"; id: string }; label: string }[];
+  targets: StreamTargetOption[];
+  available: StreamTargetOption[];
   live?: { url: string; title?: string; startedAt: string } | null;
 };
 

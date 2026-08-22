@@ -17,6 +17,7 @@ import { addTarget, hasTarget, removeTarget, targetKey } from "./targets";
 
 const LAIR: StreamTarget = { kind: "lair", id: "64f0000000000000000000aa" };
 const GROUP: StreamTarget = { kind: "play-group", id: "64f0000000000000000000aa" };
+const PROFILE: StreamTarget = { kind: "user", id: "64f0000000000000000000aa" };
 
 describe("targetKey", () => {
   it("distingue un lieu d'un groupe au même identifiant", () => {
@@ -69,5 +70,26 @@ describe("hasTarget", () => {
   it("compare la nature et l'identifiant, pas la référence", () => {
     assert.equal(hasTarget([LAIR], { kind: "lair", id: LAIR.id }), true);
     assert.equal(hasTarget([LAIR], GROUP), false);
+  });
+});
+
+describe("la destination « profil »", () => {
+  it("ne se confond pas avec un lieu ni un groupe du même identifiant", () => {
+    // Les trois collections ont leurs propres identifiants, et rien n'interdit
+    // une collision : c'est la nature qui distingue.
+    assert.notEqual(targetKey(PROFILE), targetKey(LAIR));
+    assert.notEqual(targetKey(PROFILE), targetKey(GROUP));
+    assert.equal(hasTarget([LAIR, GROUP], PROFILE), false);
+  });
+
+  it("s'ajoute et se retire comme les autres", () => {
+    const added = addTarget([LAIR], PROFILE);
+
+    assert.deepEqual(added, { ok: true, targets: [LAIR, PROFILE] });
+    assert.deepEqual(removeTarget([LAIR, PROFILE], PROFILE), [LAIR]);
+  });
+
+  it("refuse le doublon", () => {
+    assert.deepEqual(addTarget([PROFILE], PROFILE), { ok: false, reason: "ALREADY_ADDED" });
   });
 });

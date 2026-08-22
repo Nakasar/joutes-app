@@ -23,8 +23,14 @@ export const STREAM_PLATFORMS: StreamPlatform[] = ["twitch", "youtube"];
  * précédent. `play-group` — le groupe en affiche jusqu'à trois, un par membre.
  * Cette asymétrie n'est pas la nôtre, elle vient des deux vitrines ; elle est
  * absorbée par `lib/streams/announce.ts` et ne remonte pas jusqu'ici.
+ *
+ * `user` — la vitrine de son propre profil. C'est la destination la plus simple
+ * des trois : rien n'y est écrit ailleurs, le direct étant **déjà** porté par
+ * cette liaison. Elle n'en est pas décorative pour autant — l'abonnement chez
+ * la plateforme n'est posé que si une liaison a au moins une destination, si
+ * bien que sans elle un profil n'apprendrait jamais que son titulaire diffuse.
  */
-export type StreamTargetKind = "lair" | "play-group";
+export type StreamTargetKind = "lair" | "play-group" | "user";
 
 export type StreamTarget = {
   kind: StreamTargetKind;

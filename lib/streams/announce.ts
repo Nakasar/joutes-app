@@ -32,6 +32,14 @@ import type { StreamAnnouncement, StreamLink, StreamLinkLive, StreamTarget } fro
  */
 
 function revalidateTarget(target: StreamTarget) {
+  // On arrive presque toujours sur un profil par son pseudonyme, pas par son
+  // identifiant : c'est le motif de route qu'il faut invalider, comme le fait
+  // déjà l'administration des comptes. Les deux formes sont ainsi couvertes.
+  if (target.kind === "user") {
+    revalidatePath("/users/[userTagOrId]", "page");
+    return;
+  }
+
   const path = target.kind === "lair" ? `lairs/${target.id}` : `play-groups/${target.id}`;
 
   for (const locale of locales) {
@@ -49,6 +57,13 @@ function revalidateTarget(target: StreamTarget) {
  */
 export async function canAnnounceOn(userId: string, target: StreamTarget): Promise<boolean> {
   try {
+    // Son propre profil, et celui-là seulement : sans cette égalité, la
+    // destination « profil » annoncerait un direct sur la vitrine de n'importe
+    // qui.
+    if (target.kind === "user") {
+      return target.id === userId;
+    }
+
     if (target.kind === "lair") {
       if (!ObjectId.isValid(target.id)) {
         return false;
@@ -83,11 +98,26 @@ export async function listAvailableTargets(userId: string): Promise<StreamTarget
     playGroupsDb.getPlayGroupsForUser(userId),
   ]);
 
-  return [
+  const owned: StreamTargetOption[] = [
     ...lairs.map((lair) => ({ target: { kind: "lair" as const, id: lair.id }, label: lair.name })),
     ...groups.map((group) => ({ target: { kind: "play-group" as const, id: group.id }, label: group.name })),
   ].sort((a, b) => a.label.localeCompare(b.label));
+
+  // Son profil en tête, et hors du tri : c'est la destination que tout le monde
+  // possède, et celle qu'on vient chercher. Son libellé est traduit à
+  // l'affichage — cette liste ne connaît pas la langue de la page.
+  return [{ target: { kind: "user" as const, id: userId }, label: USER_TARGET_LABEL }, ...owned];
 }
+
+/**
+ * Le libellé de repli de la destination « mon profil ».
+ *
+ * Les autres destinations portent un nom qui leur appartient — celui du lieu,
+ * celui du groupe. Un profil n'en a pas : il *est* celui qui regarde. L'écran
+ * remplace donc cette chaîne par sa traduction, et elle ne sert qu'aux appelants
+ * qui n'ont pas de traducteur sous la main.
+ */
+export const USER_TARGET_LABEL = "Mon profil";
 
 /**
  * Le nom de chaque destination enregistrée.
@@ -122,7 +152,10 @@ export async function describeTargets(targets: StreamTarget[]): Promise<StreamTa
 
   return targets.map((target) => ({
     target,
-    label: names.get(`${target.kind}:${target.id}`) ?? "Destination supprimée",
+    label:
+      target.kind === "user"
+        ? USER_TARGET_LABEL
+        : (names.get(`${target.kind}:${target.id}`) ?? "Destination supprimée"),
   }));
 }
 
@@ -184,6 +217,18 @@ async function writeToPlayGroup(
 }
 
 /**
+ * Annoncer sur son propre profil ne demande aucune écriture.
+ *
+ * La vitrine lit `stream_links.live` directement — c'est le document qu'on est
+ * en train de mettre à jour. L'annonce est tout de même **enregistrée** : le
+ * retrait se fait sur ce qui a été écrit, et une destination qui n'apparaîtrait
+ * pas là rendrait la fin du direct asymétrique.
+ */
+function writeToUser(userId: string): StreamAnnouncement {
+  return { target: { kind: "user", id: userId } };
+}
+
+/**
  * Annonce le direct sur toutes les destinations autorisées.
  *
  * Rend la liaison mise à jour. Si aucune destination n'a pu être écrite, la
@@ -201,9 +246,11 @@ export async function announceLive(link: StreamLink, live: LiveInput): Promise<S
 
     try {
       const announcement =
-        target.kind === "lair"
-          ? await writeToLair(target.id, live, startedAt)
-          : await writeToPlayGroup(target.id, link.userId, live, startedAt);
+        target.kind === "user"
+          ? writeToUser(link.userId)
+          : target.kind === "lair"
+            ? await writeToLair(target.id, live, startedAt)
+            : await writeToPlayGroup(target.id, link.userId, live, startedAt);
 
       if (announcement) {
         announcements.push(announcement);
@@ -247,7 +294,10 @@ export async function retractLive(link: StreamLink): Promise<StreamLink | null> 
 
   for (const announcement of live.announcements) {
     try {
-      if (announcement.target.kind === "lair") {
+      if (announcement.target.kind === "user") {
+        // Rien à défaire : `setStreamLinkLive(link.id, null)`, plus bas, est
+        // l'effacement lui-même.
+      } else if (announcement.target.kind === "lair") {
         const lair = await lairsDb.getLairById(announcement.target.id);
 
         // Un autre direct a pris la place depuis : il n'est pas à nous.
