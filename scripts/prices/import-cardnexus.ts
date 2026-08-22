@@ -140,11 +140,14 @@ async function main() {
       `prix ${feeds.prices.recordCount} produits (${feeds.prices.generatedAt}).`
   );
 
+  // Le catalogue passe en flux : il ne sert qu'une fois, et le garder d'un bloc
+  // coûterait quelques centaines de mégaoctets sur un gros jeu pour des produits
+  // dont la plupart ne trouveront aucune carte. Les extensions, elles, se lisent
+  // d'un bloc — il en faut la table entière avant le premier produit.
   const expansions = await collect(streamCardnexusFeed<CardnexusExpansion>(feeds.expansions));
-  const products = await collect(streamCardnexusFeed<CardnexusProduct>(feeds.catalog));
 
-  const { matches, expansions: setReports, skipped } = matchCardnexusProducts(
-    products,
+  const { matches, expansions: setReports, skipped } = await matchCardnexusProducts(
+    streamCardnexusFeed<CardnexusProduct>(feeds.catalog),
     expansions,
     cards,
     CARDNEXUS_GAME_PROFILES[slug]

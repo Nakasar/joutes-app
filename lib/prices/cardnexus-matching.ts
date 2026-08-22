@@ -142,13 +142,20 @@ export type CardnexusMatchReport = {
  * alors tous rattachés, à charge pour l'appelant d'en tirer un prix de
  * référence. L'inverse, deux cartes pour un numéro, n'a pas de réponse : leur
  * donner le même prix reviendrait à en inventer un, elles sont écartées.
+ *
+ * Le catalogue n'est parcouru qu'une fois et n'est jamais gardé : le flux du
+ * feed se passe donc tel quel, sans l'avoir rangé d'abord — seuls les produits
+ * rapprochés survivent à l'appel. Un tableau reste accepté, ce qu'attendent les
+ * tests. Les extensions, elles, sont lues d'un bloc : il en faut la table
+ * entière avant le premier produit, et un jeu en compte quelques centaines tout
+ * au plus.
  */
-export function matchCardnexusProducts(
-  products: Iterable<CardnexusProduct>,
+export async function matchCardnexusProducts(
+  products: AsyncIterable<CardnexusProduct> | Iterable<CardnexusProduct>,
   expansions: Iterable<CardnexusExpansion>,
   cards: PriceableCard[],
   profile: CardnexusGameProfile = {}
-): CardnexusMatchReport {
+): Promise<CardnexusMatchReport> {
   const suffixes = profile.printNumberSuffixes ?? {};
 
   const expansionById = new Map<number, CardnexusExpansion>();
@@ -176,7 +183,7 @@ export function matchCardnexusProducts(
   const skipped = { sealed: 0, unknownExpansion: 0, noPrintNumber: 0, unknownCard: 0, ambiguous: 0 };
   const reports = new Map<number, CardnexusExpansionReport>();
 
-  for (const product of products) {
+  for await (const product of products) {
     if (product.productType !== "card") {
       skipped.sealed++;
       continue;
