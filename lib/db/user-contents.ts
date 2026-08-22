@@ -213,12 +213,6 @@ export async function deleteUserContentAsModerator(id: string): Promise<boolean>
   return result.deletedCount > 0;
 }
 
-/** Efface les contenus d'un compte supprimé. */
-export async function deleteContentsByAuthor(authorId: string): Promise<number> {
-  const result = await userContentsCollection.deleteMany({ authorId });
-  return result.deletedCount;
-}
-
 export async function createUserContentIndexes(): Promise<void> {
   await userContentsCollection.createIndex({ authorId: 1, publishedAt: -1 });
   // Le tri accompagne le filtre : la vitrine d'un groupe cherche les contenus

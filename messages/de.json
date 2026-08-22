@@ -5084,10 +5084,6 @@
         "email": "E-Mail-Adresse",
         "emailLocked": "Die E-Mail-Adresse lässt sich nicht ändern"
       },
-      "publicInfo": {
-        "title": "Öffentliche Angaben",
-        "description": "Diese Angaben erscheinen auf deinem öffentlichen Profil"
-      },
       "prices": {
         "title": "Kartenpreise",
         "description": "Woher die Preise auf deinen Karten, deiner Sammlung und deinen Tauschen kommen"
@@ -5098,6 +5094,7 @@
       },
       "links": {
         "security": "Sicherheit",
+        "showcase": "Mein Schaufenster",
         "integrations": "Integrationen",
         "contents": "Meine Beiträge"
       }

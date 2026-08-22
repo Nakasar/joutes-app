@@ -189,31 +189,19 @@ async function readScores(): Promise<LeaderboardRow[]> {
     .sort((a, b) => b.points - a.points || b.unlocked - a.unlocked);
 }
 
-export async function readAchievementsLeaderboard(limit: number): Promise<LeaderboardRow[]> {
-  return (await readScores()).slice(0, Math.max(1, Math.min(limit, 100)));
-}
-
 /**
- * Le rang d'un compte, et son score.
+ * Le classement, restreint aux comptes qu'on accepte d'y voir figurer.
  *
- * `null` quand il n'a rien débloqué : il n'est pas dernier, il n'est pas
- * classé, et lui annoncer un rang serait lui annoncer une place qu'il n'occupe
- * pas.
+ * L'allowlist est passée plutôt que devinée : ce module ne connaît pas la
+ * confidentialité d'un profil, et un classement qui montrerait trois comptes
+ * publics tout en annonçant un rang calculé sur tout le monde annoncerait un
+ * rang qui ne correspond à aucune place visible.
+ *
+ * Rend le classement **entier** : le rang d'un compte est son index, et le
+ * tronquer ici obligerait à le recalculer ailleurs.
  */
-export async function readUserAchievementRank(
-  userId: string,
-): Promise<{ rank: number; points: number; unlocked: number; total: number } | null> {
-  const scores = await readScores();
-  const index = scores.findIndex((row) => row.userId === userId);
-
-  if (index === -1) {
-    return null;
-  }
-
-  return {
-    rank: index + 1,
-    points: scores[index].points,
-    unlocked: scores[index].unlocked,
-    total: scores.length,
-  };
+export async function readAchievementsRanking(
+  eligibleUserIds: ReadonlySet<string>,
+): Promise<LeaderboardRow[]> {
+  return (await readScores()).filter((row) => eligibleUserIds.has(row.userId));
 }

@@ -12,7 +12,7 @@ import {
   getPendingRequestBetween,
 } from "@/lib/db/friends.ts";
 import { getUserById, updateUserShowcase } from "@/lib/db/users.ts";
-import { isFollowingUser, toggleUserFollower } from "@/lib/db/user-followers.ts";
+import { toggleUserFollower } from "@/lib/db/user-followers.ts";
 import { notifyUser } from "@/lib/services/notifications.ts";
 
 /**
@@ -184,16 +184,4 @@ export async function setPinnedDeckAction(deckId: string | null): Promise<Profil
     console.error("Épinglage impossible", error);
     return { success: false, error: "FAILED" };
   }
-}
-
-/** L'état d'abonnement, pour une bascule optimiste qui se recale. */
-export async function readFollowStateAction(
-  userId: string,
-): Promise<{ following: boolean } | null> {
-  const viewerId = await requireViewer();
-  if (!viewerId) {
-    return null;
-  }
-
-  return { following: await isFollowingUser(userId, viewerId) };
 }

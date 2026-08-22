@@ -1,11 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import {
-  USER_SHOWCASE_SECTION_KEYS,
-  isUserSectionEnabled,
-  readUserShowcaseSections,
-} from "./showcase";
+import { USER_SHOWCASE_SECTION_KEYS, readUserShowcaseSections } from "./showcase";
 
 /**
  * L'ordre et l'activation des blocs de la vitrine d'un profil.
@@ -110,18 +106,5 @@ describe("readUserShowcaseSections", () => {
     const trade = sections.find((section) => section.key === "trade");
     assert.equal(trade?.enabled, true);
     assert.equal(trade?.locked, true);
-  });
-});
-
-describe("isUserSectionEnabled", () => {
-  it("rend vrai pour un bloc absent de la liste", () => {
-    assert.equal(isUserSectionEnabled([], "decks"), true);
-  });
-
-  it("rend l'état du bloc quand il y figure", () => {
-    assert.equal(
-      isUserSectionEnabled([{ key: "decks", enabled: false }], "decks"),
-      false,
-    );
   });
 });

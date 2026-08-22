@@ -120,15 +120,6 @@ export async function readMostFollowedUserIds(limit: number): Promise<string[]> 
   return rows.map((row) => row._id);
 }
 
-/** Efface les abonnements d'un compte supprimé, dans les deux sens. */
-export async function purgeUserFollows(userId: string): Promise<number> {
-  const result = await userFollowersCollection.deleteMany({
-    $or: [{ userId }, { followerId: userId }],
-  });
-
-  return result.deletedCount;
-}
-
 export async function createUserFollowerIndexes(): Promise<void> {
   // Unique : deux clics rapides sur « Suivre » ne doivent pas compter deux fois.
   await userFollowersCollection.createIndex({ userId: 1, followerId: 1 }, { unique: true });

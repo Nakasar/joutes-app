@@ -19,7 +19,6 @@ import { cn } from "@/lib/utils.ts";
 
 import {
   setProfileVisibilityAction,
-  updateIdentityAction,
   updateShowcaseAction,
   type ShowcaseError,
 } from "../showcase-actions.ts";
@@ -116,8 +115,8 @@ export default function ShowcaseForm({
 
   const save = () => {
     startSaving(async () => {
-      const [showcase, identity] = await Promise.all([
-        updateShowcaseAction({
+      const result = await updateShowcaseAction({
+        showcase: {
           banner: state.banner ?? "",
           sections: state.sections.map((section) => ({
             key: section.key,
@@ -125,18 +124,16 @@ export default function ShowcaseForm({
           })),
           links: state.links,
           showCity: state.showCity,
-        }),
-        updateIdentityAction({
+        },
+        identity: {
           description: state.description,
           profileImage: state.avatar ?? "",
-        }),
-      ]);
+        },
+      });
 
-      const failure = !showcase.success ? showcase : !identity.success ? identity : null;
-
-      if (failure && !failure.success) {
-        setIssues(failure.issues ?? {});
-        toast.error(errorMessage(failure.error));
+      if (!result.success) {
+        setIssues(result.issues ?? {});
+        toast.error(errorMessage(result.error));
         return;
       }
 

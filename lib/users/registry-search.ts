@@ -83,11 +83,15 @@ export const REGISTRY_PAGE_SIZE = 20;
  * Le plafond du compteur de pagination.
  *
  * Il vient de l'URL, donc de n'importe qui : sans borne, `?count=100000000`
- * ferait lire cent millions de documents pour une page. Dix pages sont bien
+ * ferait lire cent millions de documents pour une page. Cinq pages sont bien
  * au-delà de ce qu'on parcourt à la main — au-delà, c'est la recherche qu'il
  * faut utiliser.
+ *
+ * **Il doit rester égal à la borne de `searchPublicUsers`.** Un plafond plus
+ * haut que ce que la lecture accepte laisserait le bouton « charger plus »
+ * s'afficher sans rien ajouter.
  */
-export const REGISTRY_MAX_COUNT = REGISTRY_PAGE_SIZE * 10;
+export const REGISTRY_MAX_COUNT = REGISTRY_PAGE_SIZE * 5;
 
 export type RegistryFilters = {
   /** La saisie brute, telle qu'elle se réaffiche dans le champ. */

@@ -6,6 +6,7 @@ import {
   GraduationCap,
   Mail,
   MapPin,
+  Eye,
   Settings,
   Shield,
   User as UserIcon,
@@ -29,9 +30,6 @@ import GamesManager from "./GamesManager.tsx";
 import LairsManager from "./LairsManager.tsx";
 import LocationDisplay from "./LocationDisplay.tsx";
 import PricePreferenceManager from "./PricePreferenceManager.tsx";
-import ProfileEditor from "./ProfileEditor.tsx";
-import ProfileImageDisplay from "./ProfileImageDisplay.tsx";
-import ProfileVisibilitySwitch from "./ProfileVisibilitySwitch.tsx";
 import QuizScores from "./QuizScores.tsx";
 import UsernameDisplay from "./UsernameDisplay.tsx";
 
@@ -88,34 +86,31 @@ export async function ProfileTabView({ user }: { user: User }) {
 
   return (
     <div className="space-y-8">
+      {/* L'avatar, la description, les liens et la visibilité vivent
+          désormais dans « Ma vitrine » : ce sont les mêmes réglages, et les
+          tenir à deux endroits laissait retirer d'un côté ce que l'autre
+          réécrivait. */}
       <SectionCard
         icon={UserIcon}
         title={t("identity.title")}
         description={t("identity.description")}
         action={
-          <ProfileVisibilitySwitch
-            initialIsPublic={user.isPublicProfile || false}
-            userTag={
-              user.displayName && user.discriminator
-                ? `${user.displayName}#${user.discriminator}`
-                : undefined
-            }
-          />
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/account?tab=showcase">
+              <Eye className="mr-2 h-4 w-4" />
+              {t("links.showcase")}
+            </Link>
+          </Button>
         }
       >
         <div className="space-y-6">
-          <div className="flex flex-wrap items-start gap-6 border-b pb-6">
-            <ProfileImageDisplay currentImage={user.profileImage} currentAvatar={user.avatar} />
-            <div className="flex-1 space-y-4">
-              <div>
-                <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
-                  <Mail className="h-4 w-4" />
-                  <span>{t("identity.email")}</span>
-                </div>
-                <p className="text-lg font-semibold">{user.email}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{t("identity.emailLocked")}</p>
-              </div>
+          <div className="border-b pb-6">
+            <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+              <Mail className="h-4 w-4" />
+              <span>{t("identity.email")}</span>
             </div>
+            <p className="text-lg font-semibold">{user.email}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t("identity.emailLocked")}</p>
           </div>
 
           <div className="border-b py-4">
@@ -135,18 +130,6 @@ export async function ProfileTabView({ user }: { user: User }) {
             />
           </div>
         </div>
-      </SectionCard>
-
-      <SectionCard
-        icon={FileText}
-        title={t("publicInfo.title")}
-        description={t("publicInfo.description")}
-      >
-        <ProfileEditor
-          initialDescription={user.description}
-          initialWebsite={user.website}
-          initialSocialLinks={user.socialLinks}
-        />
       </SectionCard>
 
       {/* L'ancre sert au raccourci « Choisir ma source de prix » de la fiche

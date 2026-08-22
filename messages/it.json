@@ -5084,10 +5084,6 @@
         "email": "Indirizzo e-mail",
         "emailLocked": "L'e-mail non può essere modificata"
       },
-      "publicInfo": {
-        "title": "Informazioni pubbliche",
-        "description": "Queste informazioni saranno visibili sul tuo profilo pubblico"
-      },
       "prices": {
         "title": "Prezzi delle carte",
         "description": "Da dove vengono i prezzi mostrati sulle tue carte, sulla collezione e sugli scambi"
@@ -5098,6 +5094,7 @@
       },
       "links": {
         "security": "Sicurezza",
+        "showcase": "La mia vetrina",
         "integrations": "Integrazioni",
         "contents": "Le mie pubblicazioni"
       }

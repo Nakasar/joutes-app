@@ -5,10 +5,7 @@ import { headers } from "next/headers";
 import { connection } from "next/server";
 
 import { auth } from "@/lib/auth.ts";
-import {
-  readAchievementsLeaderboard,
-  readUserAchievementRank,
-} from "@/lib/db/achievements.ts";
+import { readAchievementsRanking } from "@/lib/db/achievements.ts";
 import { readGameBySlugOrId } from "@/lib/db/games-cached.ts";
 import { listLiveStreamLinksForUsers, listLiveUserShowcases } from "@/lib/db/stream-links.ts";
 import { getUserBadges, NO_BADGES, type UserBadges } from "@/lib/db/user-badges.ts";
@@ -18,6 +15,7 @@ import {
   countPublicUsers,
   getUserById,
   readNearbyPublicUsers,
+  readPublicUserIds,
   readRegistryUsersByIds,
   searchPublicUsers,
 } from "@/lib/db/users.ts";
@@ -27,7 +25,7 @@ import { grantsEntitlement } from "@/lib/subscriptions/entitlements.ts";
 import type { Game } from "@/lib/types/Game";
 import { readShowcaseCompletion } from "@/lib/users/completion.ts";
 import {
-  REGISTRY_PAGE_SIZE,
+  REGISTRY_MAX_COUNT,
   type RegistryFilters,
   type RegistryUser,
 } from "@/lib/users/registry-search.ts";
@@ -137,9 +135,14 @@ export const readRegistry = cache(async (filters: RegistryFilters) => {
     userIds = live.map((entry) => entry.user.id);
   }
 
+  // L'ordre du classement par abonnés, que le `$in` de Mongo ne garantit pas :
+  // la lecture rend les comptes dans l'ordre de la collection, et c'est ici
+  // qu'on repose celui qu'on a demandé.
+  let followerOrder: string[] | null = null;
+
   if (filters.sort === "followers") {
-    const mostFollowed = await readMostFollowedUserIds(REGISTRY_PAGE_SIZE * 5);
-    userIds = userIds ? userIds.filter((id) => mostFollowed.includes(id)) : mostFollowed;
+    followerOrder = await readMostFollowedUserIds(REGISTRY_MAX_COUNT);
+    userIds = userIds ? userIds.filter((id) => followerOrder!.includes(id)) : followerOrder;
   }
 
   // « Vend des cartes » se résout en dernier : une lecture par candidat, et il
@@ -195,7 +198,13 @@ export const readRegistry = cache(async (filters: RegistryFilters) => {
       .map((link) => link.userId),
   );
 
-  const entries: RegistryEntry[] = users.map((user) => ({
+  const ordered = followerOrder
+    ? [...users].sort(
+        (a, b) => followerOrder.indexOf(a.id) - followerOrder.indexOf(b.id),
+      )
+    : users;
+
+  const entries: RegistryEntry[] = ordered.map((user) => ({
     user,
     badges: badges[user.id] ?? NO_BADGES,
     followers: followers.get(user.id) ?? 0,
@@ -204,7 +213,13 @@ export const readRegistry = cache(async (filters: RegistryFilters) => {
     games: (games.get(user.id) ?? []).slice(0, 5),
   }));
 
-  return { entries, total, hasMore: total > entries.length };
+  return {
+    entries,
+    total,
+    // Au plafond, il n'y a plus rien à charger : le bouton s'afficherait sans
+    // rien ajouter.
+    hasMore: total > entries.length && filters.count < REGISTRY_MAX_COUNT,
+  };
 });
 
 /**
@@ -235,38 +250,48 @@ export const readCommunityCounts = cache(async () => {
   return countCommunity();
 });
 
-/** Le classement des succès, et le rang du visiteur. */
+/**
+ * Le classement des succès, et le rang du visiteur.
+ *
+ * **Un seul classement, un seul filtre.** Les profils privés en sont écartés —
+ * y figurer serait apparaître dans un registre qu'on a choisi de quitter — et
+ * le rang du visiteur est son index *dans ce classement-là*. Les calculer
+ * séparément annoncerait un rang qui ne correspond à aucune place visible.
+ */
 export const readLeaderboard = cache(async () => {
   await connection();
 
-  const viewer = await readRegistryViewer();
+  const [viewer, eligible] = await Promise.all([readRegistryViewer(), readPublicUserIds()]);
+  const ranking = await readAchievementsRanking(eligible);
 
-  const [rows, rank] = await Promise.all([
-    readAchievementsLeaderboard(3),
-    viewer.viewerId ? readUserAchievementRank(viewer.viewerId) : Promise.resolve(null),
-  ]);
-
+  const top = ranking.slice(0, 3);
   const [users, badges] = await Promise.all([
-    readRegistryUsersByIds(rows.map((row) => row.userId)),
-    getUserBadges(rows.map((row) => row.userId)),
+    readRegistryUsersByIds(top.map((row) => row.userId)),
+    getUserBadges(top.map((row) => row.userId)),
   ]);
 
   const byId = new Map(users.map((user) => [user.id, user]));
 
+  const viewerIndex = viewer.viewerId
+    ? ranking.findIndex((row) => row.userId === viewer.viewerId)
+    : -1;
+
   return {
-    rows: rows
+    rows: top
       .map((row) => {
         const user = byId.get(row.userId);
-        // Un profil privé ne figure pas au classement : y paraître serait
-        // apparaître dans un registre qu'on a choisi de quitter.
-        return user?.isPublicProfile
-          ? { ...row, user, badges: badges[user.id] ?? NO_BADGES }
-          : null;
+        return user ? { ...row, user, badges: badges[user.id] ?? NO_BADGES } : null;
       })
       .filter((row): row is NonNullable<typeof row> => row !== null),
-    rank,
-    /** Le visiteur figure-t-il au classement ? Un profil privé n'y est pas. */
-    viewerIsListed: Boolean(rank),
+    rank:
+      viewerIndex === -1
+        ? null
+        : {
+            rank: viewerIndex + 1,
+            points: ranking[viewerIndex].points,
+            unlocked: ranking[viewerIndex].unlocked,
+            total: ranking.length,
+          },
   };
 });
 

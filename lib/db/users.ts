@@ -8,6 +8,7 @@ import {
   parseAdminUserSearch,
 } from "@/lib/users/admin-search";
 import {
+  REGISTRY_MAX_COUNT,
   type RegistryQuery,
   type RegistrySort,
   type RegistryUser,
@@ -782,7 +783,9 @@ export async function searchPublicUsers(filter: RegistryUserFilter): Promise<Reg
     .find(query, { projection: REGISTRY_PROJECTION })
     .sort(REGISTRY_SORT_ORDER[filter.sort])
     .skip(Math.max(0, filter.skip))
-    .limit(Math.min(Math.max(filter.limit, 1), 100));
+    // La même borne que `REGISTRY_MAX_COUNT` : au-delà, le bouton « charger
+    // plus » s'afficherait sans rien ajouter.
+    .limit(Math.min(Math.max(filter.limit, 1), REGISTRY_MAX_COUNT));
 
   const docs = await (filter.query?.kind === "tag"
     ? cursor.collation({ locale: "en", strength: 2 })
@@ -857,6 +860,22 @@ export async function readRegistryUsersByIds(userIds: string[]): Promise<Registr
     .toArray();
 
   return docs.map(toRegistryUser);
+}
+
+/**
+ * Les identifiants des comptes au profil ouvert.
+ *
+ * Une projection sur le seul `_id` : c'est ce qui permet au classement des
+ * succès de se restreindre aux profils publics sans que le module des succès
+ * ait à connaître la confidentialité d'un compte.
+ */
+export async function readPublicUserIds(): Promise<Set<string>> {
+  const docs = await db
+    .collection(COLLECTION_NAME)
+    .find({ isPublicProfile: true }, { projection: { _id: 1 } })
+    .toArray();
+
+  return new Set(docs.map((doc) => doc._id.toString()));
 }
 
 /**

@@ -5084,10 +5084,6 @@
         "email": "Email address",
         "emailLocked": "The email address cannot be changed"
       },
-      "publicInfo": {
-        "title": "Public information",
-        "description": "This information will be visible on your public profile"
-      },
       "prices": {
         "title": "Card prices",
         "description": "Where the prices on your cards, your collection and your trades come from"
@@ -5098,6 +5094,7 @@
       },
       "links": {
         "security": "Security",
+        "showcase": "My showcase",
         "integrations": "Integrations",
         "contents": "My publications"
       }

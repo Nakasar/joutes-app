@@ -98,11 +98,3 @@ export function readUserShowcaseSections(
     locked: LOCKED.includes(key) || undefined,
   }));
 }
-
-/** Un bloc est-il affiché sur la vitrine ? */
-export function isUserSectionEnabled(
-  sections: UserShowcaseSection[],
-  key: UserShowcaseSectionKey,
-): boolean {
-  return sections.find((section) => section.key === key)?.enabled ?? true;
-}

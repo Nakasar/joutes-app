@@ -16,7 +16,9 @@ import {
 import { plansForUserId } from "@/lib/subscriptions/access.ts";
 import { grantsEntitlement } from "@/lib/subscriptions/entitlements.ts";
 import {
+  userIdentitySchema,
   userShowcaseSchema,
+  type UserIdentityInput,
   type UserShowcaseInput,
 } from "@/lib/schemas/user-showcase.schema.ts";
 
@@ -60,7 +62,13 @@ async function requireUserId(): Promise<string | null> {
 }
 
 /**
- * Enregistre la vitrine.
+ * Enregistre la vitrine et l'identité, en un seul geste.
+ *
+ * Les deux ensemble parce que l'écran n'a qu'un bouton : deux actions en
+ * parallèle pouvaient réussir à moitié et laisser l'aperçu dire le contraire de
+ * la base. L'identité vit à plat sur le compte, la vitrine dans son
+ * sous-objet — le schéma les garde distincts pour que celle-ci ne devienne pas
+ * un chemin détourné vers le reste du document.
  *
  * **Un champ réservé n'est pas refusé, il est conservé.** Sans le droit
  * `sub:profile-banner`, la bannière déjà en base reste telle quelle et le reste
@@ -69,20 +77,34 @@ async function requireUserId(): Promise<string | null> {
  * à ranger ses blocs sans que le formulaire lui oppose un mur, et sans perdre
  * la bannière qu'il avait posée du temps de son abonnement.
  *
+ * **Les anciens champs sont repliés ici.** `website` et `socialLinks[]` disaient
+ * la même chose que `showcase.links` ; le formulaire les a fondus à l'affichage
+ * (`readUserLinks`), et cet enregistrement-ci les vide. Sans cela, retirer un
+ * lien hérité n'aurait aucun effet : il reviendrait au rechargement, et
+ * resterait sur le profil public.
+ *
  * Le contrôle est refait ici et non seulement dans le formulaire : un champ
  * désactivé dans le navigateur ne protège rien, l'action reste appelable telle
  * quelle.
  */
-export async function updateShowcaseAction(input: UserShowcaseInput): Promise<ShowcaseResult> {
+export async function updateShowcaseAction(input: {
+  showcase: UserShowcaseInput;
+  identity: UserIdentityInput;
+}): Promise<ShowcaseResult> {
   try {
     const userId = await requireUserId();
     if (!userId) {
       return { success: false, error: "UNAUTHENTICATED" };
     }
 
-    const parsed = userShowcaseSchema.safeParse(input);
-    if (!parsed.success) {
-      return { success: false, error: "INVALID", issues: issuesOf(parsed.error) };
+    const showcase = userShowcaseSchema.safeParse(input.showcase);
+    if (!showcase.success) {
+      return { success: false, error: "INVALID", issues: issuesOf(showcase.error) };
+    }
+
+    const identity = userIdentitySchema.safeParse(input.identity);
+    if (!identity.success) {
+      return { success: false, error: "INVALID", issues: issuesOf(identity.error) };
     }
 
     const [user, plans] = await Promise.all([getUserById(userId), plansForUserId(userId)]);
@@ -93,13 +115,24 @@ export async function updateShowcaseAction(input: UserShowcaseInput): Promise<Sh
     const canUseBanner = grantsEntitlement(plans, "sub:profile-banner");
 
     const updated = await updateUserShowcase(userId, {
-      ...parsed.data,
-      banner: canUseBanner ? parsed.data.banner : user.showcase?.banner,
+      ...showcase.data,
+      banner: canUseBanner ? showcase.data.banner : user.showcase?.banner,
     });
 
     if (!updated) {
       return { success: false, error: "NOT_FOUND" };
     }
+
+    await Promise.all([
+      updateUserProfileInfo(userId, {
+        description: identity.data.description ?? "",
+        // Le repli : les liens vivent désormais dans la vitrine, et un lien
+        // hérité qu'on retire doit rester retiré.
+        website: "",
+        socialLinks: [],
+      }),
+      updateUserProfileImage(userId, identity.data.profileImage ?? ""),
+    ]);
 
     revalidateShowcase();
     return { success: true };
@@ -133,46 +166,6 @@ export async function setProfileVisibilityAction(isPublic: boolean): Promise<Sho
     return { success: true };
   } catch (error) {
     console.error("Changement de visibilité impossible", error);
-    return { success: false, error: "FAILED" };
-  }
-}
-
-/**
- * L'avatar et la description, réglés dans le même écran mais **écrits ailleurs**.
- *
- * Ils vivent à plat sur le compte, et le schéma de vitrine les garde distincts
- * pour que celle-ci ne devienne pas un chemin détourné vers le reste du
- * document.
- */
-export async function updateIdentityAction(input: {
-  description?: string;
-  profileImage?: string;
-}): Promise<ShowcaseResult> {
-  try {
-    const userId = await requireUserId();
-    if (!userId) {
-      return { success: false, error: "UNAUTHENTICATED" };
-    }
-
-    const schema = z.object({
-      description: z.string().trim().max(500, "La description est trop longue").optional(),
-      profileImage: z.string().trim().max(2048).optional(),
-    });
-
-    const parsed = schema.safeParse(input);
-    if (!parsed.success) {
-      return { success: false, error: "INVALID", issues: issuesOf(parsed.error) };
-    }
-
-    await Promise.all([
-      updateUserProfileInfo(userId, { description: parsed.data.description ?? "" }),
-      updateUserProfileImage(userId, parsed.data.profileImage ?? ""),
-    ]);
-
-    revalidateShowcase();
-    return { success: true };
-  } catch (error) {
-    console.error("Enregistrement de l'identité impossible", error);
     return { success: false, error: "FAILED" };
   }
 }
